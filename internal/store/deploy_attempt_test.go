@@ -302,3 +302,243 @@ func TestListDeployAttempts_EmptyIsNotError(t *testing.T) {
 		t.Errorf("expected no attempts, got %d", len(got))
 	}
 }
+
+func TestNewDeployAttemptSnapshot(t *testing.T) {
+	hostPort := 8080
+	tests := []struct {
+		name string
+		svc  DesiredService
+		want DeployAttemptSnapshot
+	}{
+		{
+			name: "literal, secret, and database env keys classify correctly",
+			svc: DesiredService{
+				Env:         map[string]string{"PLAIN": "value"},
+				SecretEnv:   []string{"API_KEY"},
+				DatabaseEnv: map[string]DatabaseEnvRef{"DB_URL": {Database: "main", Field: "url"}},
+			},
+			want: DeployAttemptSnapshot{Env: []DeployAttemptEnvKey{
+				{Key: "API_KEY", Kind: DeployAttemptEnvKindSecret},
+				{Key: "DB_URL", Kind: DeployAttemptEnvKindDatabase},
+				{Key: "PLAIN", Kind: DeployAttemptEnvKindLiteral, Value: "value"},
+			}},
+		},
+		{
+			name: "port, host port, domains, and resources carry through",
+			svc: DesiredService{
+				Port: 3000, HostPort: &hostPort,
+				Domains:   []string{"app.example.com"},
+				Resources: &ServiceResources{MemoryBytes: 512 << 20, NanoCPUs: 5e8},
+			},
+			want: DeployAttemptSnapshot{
+				Port: 3000, HostPort: &hostPort,
+				Domains:   []string{"app.example.com"},
+				Resources: &ServiceResources{MemoryBytes: 512 << 20, NanoCPUs: 5e8},
+			},
+		},
+		{
+			name: "health, replicas, strategy, volumes, and labels carry through",
+			svc: DesiredService{
+				Health: &ServiceHealth{
+					Readiness: &ServiceProbe{Path: "/healthz", Interval: 5 * time.Second, Timeout: 2 * time.Second, Failures: 3},
+					Liveness:  &ServiceProbe{Path: "/livez", Interval: 30 * time.Second, Timeout: 3 * time.Second, Failures: 5},
+				},
+				Replicas: 3,
+				Strategy: "rolling",
+				Volumes:  []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}},
+				Labels:   map[string]string{"team": "platform"},
+			},
+			want: DeployAttemptSnapshot{
+				Health: &ServiceHealth{
+					Readiness: &ServiceProbe{Path: "/healthz", Interval: 5 * time.Second, Timeout: 2 * time.Second, Failures: 3},
+					Liveness:  &ServiceProbe{Path: "/livez", Interval: 30 * time.Second, Timeout: 3 * time.Second, Failures: 5},
+				},
+				Replicas: 3,
+				Strategy: "rolling",
+				Volumes:  []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}},
+				Labels:   map[string]string{"team": "platform"},
+			},
+		},
+		{
+			name: "no env, ports, domains, resources, health, volumes, or labels configured",
+			svc:  DesiredService{Port: 8080},
+			want: DeployAttemptSnapshot{Port: 8080},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewDeployAttemptSnapshot(tt.svc)
+			if len(got.Env) != len(tt.want.Env) {
+				t.Fatalf("Env = %+v, want %+v", got.Env, tt.want.Env)
+			}
+			for i, w := range tt.want.Env {
+				if got.Env[i] != w {
+					t.Errorf("Env[%d] = %+v, want %+v", i, got.Env[i], w)
+				}
+			}
+			if got.Port != tt.want.Port {
+				t.Errorf("Port = %d, want %d", got.Port, tt.want.Port)
+			}
+			if (got.HostPort == nil) != (tt.want.HostPort == nil) {
+				t.Errorf("HostPort = %v, want %v", got.HostPort, tt.want.HostPort)
+			} else if got.HostPort != nil && *got.HostPort != *tt.want.HostPort {
+				t.Errorf("HostPort = %d, want %d", *got.HostPort, *tt.want.HostPort)
+			}
+			if got.Replicas != tt.want.Replicas {
+				t.Errorf("Replicas = %d, want %d", got.Replicas, tt.want.Replicas)
+			}
+			if got.Strategy != tt.want.Strategy {
+				t.Errorf("Strategy = %q, want %q", got.Strategy, tt.want.Strategy)
+			}
+			if (got.Health == nil) != (tt.want.Health == nil) {
+				t.Errorf("Health = %v, want %v", got.Health, tt.want.Health)
+			} else if got.Health != nil {
+				if *got.Health.Readiness != *tt.want.Health.Readiness {
+					t.Errorf("Health.Readiness = %+v, want %+v", got.Health.Readiness, tt.want.Health.Readiness)
+				}
+				if *got.Health.Liveness != *tt.want.Health.Liveness {
+					t.Errorf("Health.Liveness = %+v, want %+v", got.Health.Liveness, tt.want.Health.Liveness)
+				}
+			}
+			if len(got.Volumes) != len(tt.want.Volumes) {
+				t.Errorf("Volumes = %+v, want %+v", got.Volumes, tt.want.Volumes)
+			} else {
+				for i, w := range tt.want.Volumes {
+					if got.Volumes[i] != w {
+						t.Errorf("Volumes[%d] = %+v, want %+v", i, got.Volumes[i], w)
+					}
+				}
+			}
+			if len(got.Labels) != len(tt.want.Labels) {
+				t.Errorf("Labels = %v, want %v", got.Labels, tt.want.Labels)
+			} else {
+				for k, w := range tt.want.Labels {
+					if got.Labels[k] != w {
+						t.Errorf("Labels[%q] = %q, want %q", k, got.Labels[k], w)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestNewDeployAttemptSnapshot_NeverCarriesASecretOrDatabaseValue(t *testing.T) {
+	svc := DesiredService{
+		Env:         map[string]string{"API_KEY": "this-must-never-appear", "DB_URL": "this-must-never-appear-either"},
+		SecretEnv:   []string{"API_KEY"},
+		DatabaseEnv: map[string]DatabaseEnvRef{"DB_URL": {Database: "main", Field: "url"}},
+	}
+	// A secret/database env key never has a real literal value in
+	// DesiredService.Env in practice (see internal/deploy/translate.go's
+	// literalEnv), but this asserts the snapshot builder itself would
+	// still refuse to surface one even if a caller's Env map somehow held
+	// a stray entry for a declared secret/database key.
+	got := NewDeployAttemptSnapshot(svc)
+	for _, e := range got.Env {
+		if e.Kind != DeployAttemptEnvKindLiteral && e.Value != "" {
+			t.Errorf("env key %q (kind %q) has a non-empty Value: %q", e.Key, e.Kind, e.Value)
+		}
+	}
+}
+
+func TestSaveAndGetDeployAttempt_Snapshot(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	hostPort := 9090
+	want := DeployAttemptSnapshot{
+		Env: []DeployAttemptEnvKey{
+			{Key: "API_KEY", Kind: DeployAttemptEnvKindSecret},
+			{Key: "DB_URL", Kind: DeployAttemptEnvKindDatabase},
+			{Key: "PLAIN", Kind: DeployAttemptEnvKindLiteral, Value: "value"},
+		},
+		Port: 3000, HostPort: &hostPort,
+		Domains:   []string{"app.example.com"},
+		Resources: &ServiceResources{MemoryBytes: 512 << 20, NanoCPUs: 5e8, SwapMemoryBytes: 1 << 30, CPUSetCPUs: "0-1"},
+		Health: &ServiceHealth{
+			Readiness: &ServiceProbe{Path: "/healthz", Interval: 5 * time.Second, Timeout: 2 * time.Second, Failures: 3},
+			Liveness:  &ServiceProbe{Path: "/livez", Interval: 30 * time.Second, Timeout: 3 * time.Second, Failures: 5},
+		},
+		Replicas: 3,
+		Strategy: "rolling",
+		Volumes:  []ServiceVolume{{Name: "app-web-data", ContainerPath: "/data"}},
+		Labels:   map[string]string{"team": "platform"},
+	}
+
+	if err := db.SaveDeployAttempt(ctx, DeployAttempt{
+		ID: "dep_snap1", ServiceName: "web", Image: "levelrail/web:1",
+		Status: DeployAttemptStatusRunning, StartedAt: time.Now().UTC().Truncate(time.Millisecond),
+		Snapshot: want,
+	}); err != nil {
+		t.Fatalf("SaveDeployAttempt() error = %v", err)
+	}
+
+	got, err := db.GetDeployAttempt(ctx, "dep_snap1")
+	if err != nil {
+		t.Fatalf("GetDeployAttempt() error = %v", err)
+	}
+
+	if len(got.Snapshot.Env) != len(want.Env) {
+		t.Fatalf("Snapshot.Env = %+v, want %+v", got.Snapshot.Env, want.Env)
+	}
+	for i, w := range want.Env {
+		if got.Snapshot.Env[i] != w {
+			t.Errorf("Snapshot.Env[%d] = %+v, want %+v", i, got.Snapshot.Env[i], w)
+		}
+	}
+	if got.Snapshot.Port != want.Port {
+		t.Errorf("Snapshot.Port = %d, want %d", got.Snapshot.Port, want.Port)
+	}
+	if got.Snapshot.HostPort == nil || *got.Snapshot.HostPort != *want.HostPort {
+		t.Errorf("Snapshot.HostPort = %v, want %d", got.Snapshot.HostPort, *want.HostPort)
+	}
+	if len(got.Snapshot.Domains) != 1 || got.Snapshot.Domains[0] != "app.example.com" {
+		t.Errorf("Snapshot.Domains = %v, want [app.example.com]", got.Snapshot.Domains)
+	}
+	if got.Snapshot.Resources == nil || *got.Snapshot.Resources != *want.Resources {
+		t.Errorf("Snapshot.Resources = %+v, want %+v", got.Snapshot.Resources, want.Resources)
+	}
+	if got.Snapshot.Replicas != want.Replicas {
+		t.Errorf("Snapshot.Replicas = %d, want %d", got.Snapshot.Replicas, want.Replicas)
+	}
+	if got.Snapshot.Strategy != want.Strategy {
+		t.Errorf("Snapshot.Strategy = %q, want %q", got.Snapshot.Strategy, want.Strategy)
+	}
+	if got.Snapshot.Health == nil || *got.Snapshot.Health.Readiness != *want.Health.Readiness || *got.Snapshot.Health.Liveness != *want.Health.Liveness {
+		t.Errorf("Snapshot.Health = %+v, want %+v", got.Snapshot.Health, want.Health)
+	}
+	if len(got.Snapshot.Volumes) != 1 || got.Snapshot.Volumes[0] != want.Volumes[0] {
+		t.Errorf("Snapshot.Volumes = %+v, want %+v", got.Snapshot.Volumes, want.Volumes)
+	}
+	if len(got.Snapshot.Labels) != 1 || got.Snapshot.Labels["team"] != "platform" {
+		t.Errorf("Snapshot.Labels = %v, want %v", got.Snapshot.Labels, want.Labels)
+	}
+}
+
+func TestGetDeployAttempt_PreMigrationRowHasZeroValueSnapshot(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	// Simulates a row written before migrations/0086 added config_snapshot:
+	// SaveDeployAttempt always writes a value now, so this bypasses it to
+	// insert a row the way the old schema's default ('{}') would have left
+	// one, and confirms GetDeployAttempt still reads it back cleanly.
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO deploy_attempts (id, service_name, image, commit_sha, source, status, started_at, finished_at, error)
+		VALUES ('dep_premigrate', 'web', 'levelrail/web:1', '', '', ?, ?, NULL, NULL)
+	`, DeployAttemptStatusSucceeded, time.Now().UTC().Format(time.RFC3339Nano))
+	if err != nil {
+		t.Fatalf("seed pre-migration row: %v", err)
+	}
+
+	got, err := db.GetDeployAttempt(ctx, "dep_premigrate")
+	if err != nil {
+		t.Fatalf("GetDeployAttempt() error = %v", err)
+	}
+	if len(got.Snapshot.Env) != 0 || got.Snapshot.Port != 0 || got.Snapshot.Resources != nil ||
+		got.Snapshot.Health != nil || got.Snapshot.Replicas != 0 || got.Snapshot.Strategy != "" ||
+		len(got.Snapshot.Volumes) != 0 || len(got.Snapshot.Labels) != 0 {
+		t.Errorf("Snapshot = %+v, want the zero value for a pre-migration row", got.Snapshot)
+	}
+}

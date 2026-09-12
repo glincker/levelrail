@@ -1,0 +1,45 @@
+# syntax=docker/dockerfile:1
+ARG VERSION=dev
+
+FROM node:22-alpine AS web
+WORKDIR /src/web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci --ignore-scripts
+COPY web/ ./
+RUN npm run build
+
+FROM golang:1.26-alpine AS build
+ARG VERSION
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+COPY --from=web /src/web/dist ./web/dist
+RUN CGO_ENABLED=0 go build -tags embedweb \
+    -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${VERSION}" \
+    -o /levelrail ./cmd/levelrail
+# A fresh named volume mounted here would otherwise be root-owned (no
+# VOLUME/directory exists in this image for Docker to copy ownership
+# from), which the nonroot runtime user below couldn't write its SQLite
+# database into.
+RUN mkdir -p /data/levelrail
+
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+# nonroot (uid/gid 65532): /var/run/docker.sock's host-side group varies
+# per install, so it can't be matched at build time. Grant access at run
+# time instead, e.g. `--group-add $(stat -c '%g' /var/run/docker.sock)`,
+# see docs/docker.md.
+# distroless static has no CA bundle by default; the control plane makes
+# outbound HTTPS calls (git provider APIs, ACME, S3-compatible backup
+# targets) that need one.
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+WORKDIR /app
+COPY --from=build --chown=nonroot:nonroot /levelrail /app/levelrail
+# brand.yaml is read from disk at startup (internal/brand.Load) via the
+# relative path "./brand.yaml", not embedded like web/dist, so it has to
+# sit in WORKDIR, not wherever the base image's own default WorkingDir
+# (distroless nonroot defaults to /home/nonroot) happens to be.
+COPY --from=build --chown=nonroot:nonroot /src/brand.yaml /app/brand.yaml
+COPY --from=build --chown=nonroot:nonroot /data/levelrail /var/lib/levelrail-data
+EXPOSE 8080
+ENTRYPOINT ["/app/levelrail"]

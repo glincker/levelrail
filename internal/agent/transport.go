@@ -1,4 +1,4 @@
-// Package agent is TASKS.md 3.1's transport boundary: the interface
+// Package agent is the transport boundary: the interface
 // ADR 003 describes ("the reconciler and everything above the transport
 // boundary never knows whether it's talking to a local in-process agent
 // or a remote one over mTLS") but that Phase 1 never actually built,
@@ -14,13 +14,15 @@
 // so nothing above this package changes shape yet. Wiring
 // internal/reconcile controllers to actually route through a Transport
 // selected per node, instead of the single shared docker.Runtime
-// dynamicSource still hands out today, is TASKS.md 3.3's job, once
+// dynamicSource still hands out today, is separate work, once
 // placement (which service runs on which node) exists to select by.
 // The real gRPC implementation of Transport, reached over the reverse-
-// dialed mTLS connection ADR 003 describes, is TASKS.md 3.2.
+// dialed mTLS connection ADR 003 describes, is GRPCTransport
+// (grpc_transport.go).
 package agent
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -32,14 +34,14 @@ import (
 // resource is placed on. Deliberately identical in shape to
 // docker.Runtime (embedded, not duplicated field by field, so the two
 // can never silently drift apart) rather than a new, narrower interface:
-// docker.Runtime is already the exact narrow surface TASKS.md 1.2/1.3
+// docker.Runtime is already the exact narrow surface
 // scoped down to "what a reconcile controller needs from Docker," and
 // Transport's whole point is "the same thing, now reachable on a
-// specific node," not a different capability set. A future RPC surface
-// an agent exposes beyond container operations (build dispatch for 3.5,
-// telemetry collection already covered by ADR 008's separate federated
-// design) extends Transport then, not now: this pass only closes the
-// gap ADR 003 already described as existing.
+// specific node," not a different capability set. An RPC surface an
+// agent exposes beyond container operations stays off this interface and
+// is advertised as an optional capability instead (see RemoteBuilder,
+// build_dispatch.go), so a Local transport does not have to pretend to
+// implement something only a remote agent can do.
 type Transport interface {
 	docker.Runtime
 }
@@ -64,6 +66,17 @@ func NewLocal(rt docker.Runtime) Local {
 	return Local{Runtime: rt}
 }
 
+// ExecTTY implements docker.TTYRuntime by forwarding to the wrapped
+// runtime, which the embedded docker.Runtime interface would otherwise
+// hide even when the concrete value behind it supports interactive exec.
+func (l Local) ExecTTY(ctx context.Context, containerID string, opts docker.ExecTTYOptions) (docker.ExecSession, error) {
+	tty, ok := l.Runtime.(docker.TTYRuntime)
+	if !ok {
+		return nil, ErrTTYUnsupported
+	}
+	return tty.ExecTTY(ctx, containerID, opts)
+}
+
 // ErrNodeNotRegistered is Registry.Get's failure mode for an unknown
 // node ID.
 var ErrNodeNotRegistered = errors.New("agent: node not registered in this transport registry")
@@ -71,7 +84,7 @@ var ErrNodeNotRegistered = errors.New("agent: node not registered in this transp
 // Registry resolves a node ID to the Transport that reaches it. A
 // single-node deployment registers exactly one entry (its own Local
 // transport, dynamicSource's own local docker.Runtime wrapped per
-// Local's doc comment); a multi-node deployment (TASKS.md 3.2/3.3)
+// Local's doc comment); a multi-node deployment
 // registers one entry per enrolled node, most of them real gRPC
 // transports. Registry itself has no opinion on how a node's transport
 // got built or how long it should live, only "given an ID, hand back

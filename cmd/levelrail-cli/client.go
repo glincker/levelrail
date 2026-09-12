@@ -23,6 +23,10 @@ type (
 	conditionResource                = apiclient.ConditionResource
 	networkResource                  = apiclient.NetworkResource
 	logEntryResource                 = apiclient.LogEntryResource
+	logStreamEntry                   = apiclient.LogStreamEntry
+	appMetricsResource               = apiclient.AppMetricsResource
+	metricPointResource              = apiclient.MetricPointResource
+	nodeMetricsResource              = apiclient.NodeMetricsResource
 	execRequest                      = apiclient.ExecRequest
 	execResponse                     = apiclient.ExecResponse
 	domainResource                   = apiclient.DomainResource
@@ -30,11 +34,20 @@ type (
 	updateCloudflareDNSRequest       = apiclient.UpdateCloudflareDNSRequest
 	cloudflareTunnelResource         = apiclient.CloudflareTunnelResource
 	updateCloudflareTunnelRequest    = apiclient.UpdateCloudflareTunnelRequest
+	registrySettingsResource         = apiclient.RegistrySettingsResource
+	updateRegistrySettingsRequest    = apiclient.UpdateRegistrySettingsRequest
+	registryRepositoriesResource     = apiclient.RegistryRepositoriesResource
+	registryTagsResource             = apiclient.RegistryTagsResource
 	domainBasicAuthResource          = apiclient.DomainBasicAuthResource
 	setDomainBasicAuthRequest        = apiclient.SetDomainBasicAuthRequest
 	domainMaintenanceResource        = apiclient.DomainMaintenanceResource
 	domainTLSCertResource            = apiclient.DomainTLSCertResource
 	setDomainTLSCertRequest          = apiclient.SetDomainTLSCertRequest
+	domainWAFResource                = apiclient.DomainWAFResource
+	setDomainWAFRequest              = apiclient.SetDomainWAFRequest
+	domainCheckResource              = apiclient.DomainCheckResource
+	cloneAppRequest                  = apiclient.CloneAppRequest
+	imageResource                    = apiclient.ImageResource
 	backupHistoryResource            = apiclient.BackupHistoryResource
 	backupVerificationResource       = apiclient.BackupVerificationResource
 	restoreHistoryResource           = apiclient.RestoreHistoryResource
@@ -52,6 +65,7 @@ type (
 	setBackupScheduleRequest         = apiclient.SetBackupScheduleRequest
 	triggerRestoreRequest            = apiclient.TriggerRestoreRequest
 	appVolumeResource                = apiclient.AppVolumeResource
+	appBindMountResource             = apiclient.AppBindMountResource
 	volumeBackupScheduleResource     = apiclient.VolumeBackupScheduleResource
 	setVolumeBackupScheduleRequest   = apiclient.SetVolumeBackupScheduleRequest
 	cloneRestoreResource             = apiclient.CloneRestoreResource
@@ -85,6 +99,7 @@ type (
 
 	notificationChannelResource      = apiclient.NotificationChannelResource
 	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest
+	updateNotificationChannelRequest = apiclient.UpdateNotificationChannelRequest
 	testNotificationChannelRequest   = apiclient.TestNotificationChannelRequest
 	notificationDeliveryResource     = apiclient.NotificationDeliveryResource
 	logDrainResource                 = apiclient.LogDrainResource
@@ -95,6 +110,10 @@ type (
 
 	alertRuleResource      = apiclient.AlertRuleResource
 	createAlertRuleRequest = apiclient.CreateAlertRuleRequest
+	updateAlertRuleRequest = apiclient.UpdateAlertRuleRequest
+
+	deployNotifyTargetResource      = apiclient.DeployNotifyTargetResource
+	createDeployNotifyTargetRequest = apiclient.CreateDeployNotifyTargetRequest
 
 	featureFlagResource  = apiclient.FeatureFlagResource
 	featureFlagRequest   = apiclient.FeatureFlagRequest
@@ -113,27 +132,32 @@ type (
 	nodePatchStatusResource     = apiclient.NodePatchStatusResource
 	nodeAlertStatusResource     = apiclient.NodeAlertStatusResource
 
-	organizationResource           = apiclient.OrganizationResource
-	createOrganizationRequest      = apiclient.CreateOrganizationRequest
-	projectResource                = apiclient.ProjectResource
-	createProjectRequest           = apiclient.CreateProjectRequest
-	projectLifecycleResult         = apiclient.ProjectLifecycleResult
-	setProjectOrganizationRequest  = apiclient.SetProjectOrganizationRequest
-	setAppProjectRequest           = apiclient.SetAppProjectRequest
-	setDatabaseProjectRequest      = apiclient.SetDatabaseProjectRequest
-	environmentResource            = apiclient.EnvironmentResource
-	createEnvironmentRequest       = apiclient.CreateEnvironmentRequest
-	updateEnvironmentRequest       = apiclient.UpdateEnvironmentRequest
-	setAppEnvironmentRequest       = apiclient.SetAppEnvironmentRequest
-	previewEnvironmentResource     = apiclient.PreviewEnvironmentResource
-	setPreviewSettingsRequest      = apiclient.SetPreviewSettingsRequest
-	previewSettingsResource        = apiclient.PreviewSettingsResource
-	sweepPreviewEnvironmentsResult = apiclient.SweepPreviewEnvironmentsResult
+	organizationResource             = apiclient.OrganizationResource
+	createOrganizationRequest        = apiclient.CreateOrganizationRequest
+	projectResource                  = apiclient.ProjectResource
+	createProjectRequest             = apiclient.CreateProjectRequest
+	projectLifecycleResult           = apiclient.ProjectLifecycleResult
+	setProjectOrganizationRequest    = apiclient.SetProjectOrganizationRequest
+	setAppProjectRequest             = apiclient.SetAppProjectRequest
+	setDatabaseProjectRequest        = apiclient.SetDatabaseProjectRequest
+	environmentResource              = apiclient.EnvironmentResource
+	createEnvironmentRequest         = apiclient.CreateEnvironmentRequest
+	updateEnvironmentRequest         = apiclient.UpdateEnvironmentRequest
+	setAppEnvironmentRequest         = apiclient.SetAppEnvironmentRequest
+	previewEnvironmentResource       = apiclient.PreviewEnvironmentResource
+	previewEphemeralDatabaseResource = apiclient.PreviewEphemeralDatabaseResource
+	setPreviewSettingsRequest        = apiclient.SetPreviewSettingsRequest
+	previewSettingsResource          = apiclient.PreviewSettingsResource
+	sweepPreviewEnvironmentsResult   = apiclient.SweepPreviewEnvironmentsResult
 
 	userResource               = apiclient.UserResource
 	createUserRequest          = apiclient.CreateUserRequest
 	updateUserAbilitiesRequest = apiclient.UpdateUserAbilitiesRequest
 	roleResource               = apiclient.RoleResource
+
+	inviteResource       = apiclient.InviteResource
+	createInviteRequest  = apiclient.CreateInviteRequest
+	createInviteResponse = apiclient.CreateInviteResponse
 
 	policyResource           = apiclient.PolicyResource
 	policyAttachmentResource = apiclient.PolicyAttachmentResource
@@ -164,6 +188,24 @@ type (
 	purgeAuditLogResult   = apiclient.PurgeAuditLogResult
 
 	rotateMasterKeyResult = apiclient.RotateMasterKeyResult
+
+	systemPruneResult = apiclient.SystemPruneResult
+
+	oauthProviderSettingsResource      = apiclient.OAuthProviderSettingsResource
+	updateOAuthProviderSettingsRequest = apiclient.UpdateOAuthProviderSettingsRequest
+	emailSettingsResource              = apiclient.EmailSettingsResource
+	ingressSettingsResource            = apiclient.IngressSettingsResource
+	appStorageResource                 = apiclient.AppStorageResource
+	certificateResource                = apiclient.CertificateResource
+	gitHubAppRepoResource              = apiclient.GitHubAppRepoResource
+	gitAppBranchResource               = apiclient.GitAppBranchResource
+	useRepoAsSourceRequest             = apiclient.UseRepoAsSourceRequest
+	useGitHubRepoAsSourceResponse      = apiclient.UseGitHubRepoAsSourceResponse
+	gitLabAppProjectResource           = apiclient.GitLabAppProjectResource
+	bitbucketAppRepoResource           = apiclient.BitbucketAppRepoResource
+	serviceTemplateListItem            = apiclient.ServiceTemplateListItem
+	serviceTemplateDetail              = apiclient.ServiceTemplateDetail
+	staticSiteResource                 = apiclient.StaticSiteResource
 )
 
 // NewClient builds a Client, identifying every request as this CLI's own

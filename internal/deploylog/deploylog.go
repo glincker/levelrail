@@ -5,10 +5,9 @@
 // (internal/telemetry's deploy_logs table) and any currently-connected
 // SSE viewer watching that same attempt live. Before this package
 // existed, build.SlogProgress was the only real consumer: output went to
-// slog and was gone the moment the process moved on, which
-// docs-local/research/deploy-attempt-id-and-log-persistence.md's own
-// framing (this product's core loop is unattended webhook deploys) calls
-// out as the actual gap worth closing.
+// slog and was gone the moment the process moved on: since this
+// product's core loop is unattended webhook deploys, that loss was
+// the actual gap worth closing.
 //
 // One Recorder is shared across every trigger path in a running control
 // plane (see cmd/levelrail/main.go's wiring): internal/api.Router's SSE

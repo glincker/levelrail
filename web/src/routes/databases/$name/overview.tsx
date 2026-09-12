@@ -7,6 +7,7 @@ import { BackupsSection } from '../../../components/BackupsSection'
 import { DatabasePublicAccessCard } from '../../../components/DatabasePublicAccessCard'
 import { useProjectListOptional } from '../../../queries/projects'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 // The first of Databases's two real sections (engine/version/node
 // summary, reconcile status, and this database's own backups; resources.tsx
@@ -59,6 +60,18 @@ function OverviewSection() {
               </dt>
               <dd className="mt-1 font-mono text-sm text-foreground">
                 {database.version}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground uppercase">
+                Connection
+              </dt>
+              <dd className="mt-1">
+                {database.tls_enabled ? (
+                  <Badge variant="success">TLS enabled</Badge>
+                ) : (
+                  <Badge variant="muted">Plaintext</Badge>
+                )}
               </dd>
             </div>
             <div>

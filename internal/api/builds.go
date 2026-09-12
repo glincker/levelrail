@@ -339,7 +339,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		ImageRepo:   imageRepo,
 	}
 
-	id, progress, finishAttempt := rt.beginBuildDeployAttempt(r.Context(), buildReq, store.DeployAttemptSourceManual)
+	id, progress, finishAttempt := rt.beginBuildDeployAttempt(r.Context(), buildReq, *existing, store.DeployAttemptSourceManual)
 
 	// AbilityDeploy alone (this route's own gate) is not enough to
 	// authorize minting a live GitHub App installation token: repoURL is

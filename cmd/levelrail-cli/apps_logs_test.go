@@ -6,68 +6,68 @@ import (
 	"time"
 )
 
-func TestResolveLogWindow(t *testing.T) {
+func TestResolveTimeRange(t *testing.T) {
 	now := time.Date(2026, 8, 14, 12, 0, 0, 0, time.UTC)
 
 	tests := []struct {
 		name     string
-		flags    logsWindowFlags
+		flags    timeRangeFlags
 		wantErr  string // substring; empty means no error
 		wantFrom time.Time
 		wantTo   time.Time
 	}{
 		{
 			name:     "nothing given defaults to the last hour",
-			flags:    logsWindowFlags{},
+			flags:    timeRangeFlags{},
 			wantFrom: now.Add(-time.Hour),
 			wantTo:   now,
 		},
 		{
 			name:     "since applied against now",
-			flags:    logsWindowFlags{since: "30m"},
+			flags:    timeRangeFlags{since: "30m"},
 			wantFrom: now.Add(-30 * time.Minute),
 			wantTo:   now,
 		},
 		{
 			name:     "from overrides the default window",
-			flags:    logsWindowFlags{from: "2026-08-14T10:00:00Z"},
+			flags:    timeRangeFlags{from: "2026-08-14T10:00:00Z"},
 			wantFrom: time.Date(2026, 8, 14, 10, 0, 0, 0, time.UTC),
 			wantTo:   now,
 		},
 		{
 			name:     "to overrides now",
-			flags:    logsWindowFlags{to: "2026-08-14T11:00:00Z"},
+			flags:    timeRangeFlags{to: "2026-08-14T11:00:00Z"},
 			wantFrom: time.Date(2026, 8, 14, 10, 0, 0, 0, time.UTC),
 			wantTo:   time.Date(2026, 8, 14, 11, 0, 0, 0, time.UTC),
 		},
 		{
 			name:    "since and from are mutually exclusive",
-			flags:   logsWindowFlags{since: "1h", from: "2026-08-14T10:00:00Z"},
+			flags:   timeRangeFlags{since: "1h", from: "2026-08-14T10:00:00Z"},
 			wantErr: "mutually exclusive",
 		},
 		{
 			name:    "invalid since",
-			flags:   logsWindowFlags{since: "not-a-duration"},
+			flags:   timeRangeFlags{since: "not-a-duration"},
 			wantErr: "--since must be a valid duration",
 		},
 		{
 			name:    "invalid from",
-			flags:   logsWindowFlags{from: "not-a-timestamp"},
+			flags:   timeRangeFlags{from: "not-a-timestamp"},
 			wantErr: "--from must be RFC3339",
 		},
 		{
 			name:    "invalid to",
-			flags:   logsWindowFlags{to: "not-a-timestamp"},
+			flags:   timeRangeFlags{to: "not-a-timestamp"},
 			wantErr: "--to must be RFC3339",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			from, to, err := resolveLogWindow(tt.flags, now)
+			from, to, err := resolveTimeRange(tt.flags, now)
 			if tt.wantErr != "" {
 				if err == nil {
-					t.Fatalf("resolveLogWindow() error = nil, want substring %q", tt.wantErr)
+					t.Fatalf("resolveTimeRange() error = nil, want substring %q", tt.wantErr)
 				}
 				if got := err.Error(); !strings.Contains(got, tt.wantErr) {
 					t.Errorf("error = %q, want substring %q", got, tt.wantErr)
@@ -75,7 +75,7 @@ func TestResolveLogWindow(t *testing.T) {
 				return
 			}
 			if err != nil {
-				t.Fatalf("resolveLogWindow() error = %v", err)
+				t.Fatalf("resolveTimeRange() error = %v", err)
 			}
 			if !from.Equal(tt.wantFrom) {
 				t.Errorf("from = %v, want %v", from, tt.wantFrom)

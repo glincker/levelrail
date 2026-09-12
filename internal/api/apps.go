@@ -5,23 +5,27 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"maps"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // appResource is the wire shape for an app: store.DesiredService plus
 // its name, marshaled and unmarshaled directly rather than through a
-// parallel domain type, since TASKS.md 1.9 doesn't ask this endpoint to
+// parallel domain type, since this endpoint doesn't need to
 // represent anything store.DesiredService can't already hold. Strategy
 // and Replicas got a home in store.DesiredService (migration
 // 0017_deploy_strategy.sql), so this resource now carries them too;
-// domains closed once TASKS.md 1.6 added the column, the same way.
+// domains closed once that column was added, the same way.
 type appResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
@@ -34,9 +38,20 @@ type appResource struct {
 	// the only thing that can authoritatively know at container-create
 	// time. Settable on create and update, like Port itself, not
 	// response-only.
-	HostPort  *int                    `json:"host_port,omitempty"`
-	Domains   []string                `json:"domains,omitempty"`
-	Env       map[string]string       `json:"env,omitempty"`
+	HostPort *int              `json:"host_port,omitempty"`
+	Domains  []string          `json:"domains,omitempty"`
+	Env      map[string]string `json:"env,omitempty"`
+	// SecretEnv names which env vars are backed by encrypted secret
+	// storage (store.DesiredService.SecretEnv): values live in
+	// internal/secrets, never here. Response-mirrors the store; settable
+	// at create time, see handleCreateApp and Secrets below.
+	SecretEnv []string `json:"secret_env,omitempty"`
+	// Secrets carries plaintext values for SecretEnv-named vars,
+	// encrypted immediately at create time via the same envelope
+	// encryption PUT /api/v1/apps/{name}/secrets/{key} uses. Write-only:
+	// toAppResource never sets this, matching that endpoint's own
+	// "never echo a value back" rule.
+	Secrets   map[string]string       `json:"secrets,omitempty"`
 	Resources *store.ServiceResources `json:"resources,omitempty"`
 	Health    *store.ServiceHealth    `json:"health,omitempty"`
 	// Hooks are this service's pre/post-deploy commands
@@ -66,13 +81,23 @@ type appResource struct {
 	// internal/spec.ValidateLabels against it, the same reserved-prefix
 	// and sanity-limit rules app.yaml-sourced labels get.
 	Labels map[string]string `json:"labels,omitempty"`
-	// NodeID is TASKS.md 3.3's placement (empty means this control
-	// plane's own local node). Response-only: toDesiredService below
-	// never reads it, the same "shown but not settable through this
+	// NodeID is the placement field (empty means this control
+	// plane's own local node). Response-only on update: toDesiredService
+	// below never reads it, the same "shown but not settable through this
 	// endpoint" boundary ruleResource's own evaluation-state fields
-	// already establish for a different resource. Set it via
-	// PUT /api/v1/apps/{name}/node (handleSetAppNode) instead.
+	// already establish for a different resource; PUT /api/v1/apps/{name}/node
+	// (handleSetAppNode) is how an existing app's placement changes.
+	// handleCreateApp is the one exception, mirroring ProjectID below: an
+	// explicit node_id in the create request (including an explicit "")
+	// overrides simple spread scheduling, see that handler's own doc
+	// comment.
 	NodeID string `json:"node_id,omitempty"`
+	// AutoPlaced is response-only, set only by handleCreateApp: true when
+	// node_id was omitted from the create request and simple spread
+	// scheduling (autoPlaceNode, scheduling.go) picked a non-local node
+	// for it. Every other handler returning an appResource leaves this
+	// false.
+	AutoPlaced bool `json:"auto_placed,omitempty"`
 	// ProjectID is which project (projects.go) this app is filed under,
 	// empty meaning no project. Response-only on PUT (handleUpdateApp
 	// echoes back the existing, unchanged value the same way it already
@@ -148,6 +173,16 @@ type appResource struct {
 	// endpoint. See app_volume_backups.go/app_volume_restore.go for the
 	// backup/restore/schedule endpoints each one supports.
 	Volumes []appVolumeResource `json:"volumes,omitempty"`
+	// BindMounts are this app's bind-mounted host directories
+	// (store.DesiredService.BindMounts), response-only for the same
+	// reason Volumes above is: see appBindMountResource's own doc
+	// comment for where these actually get set.
+	BindMounts []appBindMountResource `json:"bind_mounts,omitempty"`
+	// Command overrides the image's own default CMD
+	// (store.DesiredService.Command), response-only for the same reason
+	// Volumes above is: set through app.yaml's command: field or a
+	// compose import, never through this endpoint.
+	Command []string `json:"command,omitempty"`
 }
 
 func toAppResource(svc store.DesiredService) appResource {
@@ -175,6 +210,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		HostPort:           svc.HostPort,
 		Domains:            svc.Domains,
 		Env:                svc.Env,
+		SecretEnv:          svc.SecretEnv,
 		Resources:          svc.Resources,
 		Health:             svc.Health,
 		Hooks:              svc.Hooks,
@@ -192,6 +228,8 @@ func toAppResource(svc store.DesiredService) appResource {
 		LogDrain:           svc.LogDrain,
 		EnvDirty:           svc.EnvDirty,
 		Volumes:            toAppVolumeResources(svc),
+		BindMounts:         toAppBindMountResources(svc),
+		Command:            svc.Command,
 	}
 }
 
@@ -210,6 +248,32 @@ func (a appResource) toDesiredService() store.DesiredService {
 		Replicas:  a.Replicas,
 		Labels:    a.Labels,
 	}
+}
+
+// unionSecretEnvNames merges declared secret env var names with the
+// names of any inline value provided: a key present in values is
+// secret-backed even if the caller didn't also list it in declared.
+func unionSecretEnvNames(declared []string, values map[string]string) []string {
+	seen := make(map[string]bool, len(declared)+len(values))
+	var out []string
+	for _, k := range declared {
+		if !seen[k] {
+			seen[k] = true
+			out = append(out, k)
+		}
+	}
+	keys := make([]string, 0, len(values))
+	for k := range values {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		if !seen[k] {
+			seen[k] = true
+			out = append(out, k)
+		}
+	}
+	return out
 }
 
 // validKnownStrategies mirrors internal/spec's own
@@ -249,6 +313,14 @@ func validateAppResource(a appResource) error {
 	}
 	if err := spec.ValidateLabels(a.Labels); err != nil {
 		return err
+	}
+	for key, value := range a.Secrets {
+		if key == "" {
+			return errors.New("secrets: key must not be empty")
+		}
+		if value == "" {
+			return fmt.Errorf("secrets[%q]: value is required", key)
+		}
 	}
 	// Mirrors the app.yaml schema's own minProperties: 1 on hooks: (this
 	// endpoint's store.ServiceHooks bypasses that schema entirely, so the
@@ -323,13 +395,22 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 // create-with-a-project case instead of requiring a second client round
 // trip to PUT /api/v1/apps/{name}/project right after creation.
 func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
 	var req appResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.Unmarshal(body, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if err := validateAppResource(req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if len(req.Secrets) > 0 && rt.secrets == nil {
+		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
 		return
 	}
 	if err := rt.validateProjectID(r.Context(), req.ProjectID); err != nil {
@@ -342,7 +423,16 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := rt.apps.GetDesiredService(r.Context(), req.Name)
+	// node_id present in the body (even "") is an explicit placement
+	// override, validated the same way handleSetAppNode validates one.
+	// Omitted entirely lets simple spread scheduling (autoPlaceNode) pick
+	// a node when more than one is registered; AutoPlaced only turns
+	// true when that pick actually lands somewhere other than local.
+	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, "api: create app") {
+		return
+	}
+
+	_, err = rt.apps.GetDesiredService(r.Context(), req.Name)
 	if err == nil {
 		writeError(w, http.StatusConflict, "an app with this name already exists")
 		return
@@ -353,7 +443,28 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := rt.apps.SaveDesiredService(r.Context(), req.toDesiredService()); err != nil {
+	// Secret values are stored before SaveDesiredService, not after: the
+	// reconciler converges as soon as the desired state exists, so a
+	// required secret must already be resolvable by then rather than
+	// leaving a window where the app exists but its secret doesn't yet.
+	// internal/store's service_secret_values table has no foreign key to
+	// desired_services, so this ordering is safe even though the service
+	// row below doesn't exist yet.
+	for key, value := range req.Secrets {
+		if err := rt.secrets.SetValueGuarded(r.Context(), req.Name, key, value, false); err != nil {
+			if errors.Is(err, secrets.ErrSecretLocked) {
+				writeError(w, http.StatusConflict, fmt.Sprintf("secret %q is locked", key))
+				return
+			}
+			rt.logger.Error("api: create app: set secret failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("key", key))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
+
+	desired := req.toDesiredService()
+	desired.SecretEnv = unionSecretEnvNames(req.SecretEnv, req.Secrets)
+	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
 			writeError(w, http.StatusConflict, domainTaken.Error())
@@ -367,6 +478,18 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	if req.ProjectID != "" {
 		if err := rt.apps.UpdateServiceProject(r.Context(), req.Name, req.ProjectID); err != nil {
 			rt.logger.Error("api: create app: assign project failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("project_id", req.ProjectID))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
+
+	// SaveDesiredService never writes node_id (see toDesiredService above),
+	// so an explicit or auto-placed non-local req.NodeID needs this
+	// trailing call, the same pattern UpdateServiceProject just above
+	// already establishes for ProjectID.
+	if req.NodeID != "" {
+		if err := rt.apps.UpdateServiceNode(r.Context(), req.Name, req.NodeID); err != nil {
+			rt.logger.Error("api: create app: assign node failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("node_id", req.NodeID))
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
@@ -387,7 +510,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// pendingImageTag): its own POST .../builds call records the real
 	// history entry once a build actually succeeds.
 	if !strings.HasSuffix(req.Image, ":pending") {
-		rt.recordPlainDeployAttempt(r.Context(), req.Name, req.Image)
+		rt.recordPlainDeployAttempt(r.Context(), desired, req.Image)
 	}
 
 	// A new app is never dirty regardless of what the client sent:
@@ -395,6 +518,12 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// response-only), so echoing anything but false here would lie about
 	// what was actually persisted.
 	req.EnvDirty = false
+	// SecretEnv echoes back the union actually stored (declared names
+	// plus any inline value's own key); Secrets never round-trips a
+	// value, matching PUT .../secrets/{key}'s own "never echo it back"
+	// rule.
+	req.SecretEnv = desired.SecretEnv
+	req.Secrets = nil
 
 	writeJSON(w, http.StatusCreated, req)
 }
@@ -472,7 +601,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// that happens to change Image must not be a blind spot in deploy
 	// history just because it went through this endpoint instead.
 	if imageChanged {
-		rt.recordPlainDeployAttempt(r.Context(), name, req.Image)
+		rt.recordPlainDeployAttempt(r.Context(), desired, req.Image)
 	}
 	// SaveDesiredService never touches node_id or project_id (their own
 	// doc comments explain why), so the response reflects existing's
@@ -504,7 +633,7 @@ type setAppNodeRequest struct {
 	NodeID string `json:"node_id"`
 }
 
-// handleSetAppNode handles PUT /api/v1/apps/{name}/node (TASKS.md 3.3):
+// handleSetAppNode handles PUT /api/v1/apps/{name}/node:
 // the only way an app's placement actually changes, see appResource's
 // own NodeID field doc comment. A non-empty node_id is checked against
 // the real node registry first, so a typo'd or already-removed node ID
@@ -534,22 +663,24 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Cordon means "unschedulable for new placements," and this is a new
+	// placement even when the service already exists, since it's
+	// actively choosing to move it here.
 	if err := rt.validatePlacementTarget(r.Context(), req.NodeID); err != nil {
-		switch {
-		case errors.Is(err, store.ErrNodeNotFound):
-			writeError(w, http.StatusBadRequest, "unknown node_id")
-		case errors.Is(err, errNodeCordoned):
-			// TASKS.md 3.7: cordon means "unschedulable for new
-			// placements", and this is a new placement even when the
-			// service already exists, since it's actively choosing to
-			// move it here.
-			writeError(w, http.StatusBadRequest, "node is cordoned and not accepting new placements")
-		default:
-			rt.logger.Error("api: set app node: look up node failed", slog.String("error", err.Error()), slog.String("node_id", req.NodeID))
-			writeError(w, http.StatusInternalServerError, "internal error")
-		}
+		rt.respondPlacementValidationError(w, err, req.NodeID, "api: set app node: look up node failed")
 		return
 	}
+
+	existing, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set app node: load existing failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	oldNodeID := existing.NodeID
 
 	if err := rt.apps.UpdateServiceNode(r.Context(), name, req.NodeID); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -558,6 +689,10 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		rt.logger.Error("api: set app node failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
+	}
+
+	if oldNodeID != req.NodeID {
+		rt.teardownServiceContainers(name, oldNodeID)
 	}
 
 	rt.reloadAndWriteApp(w, r, name, "set app node")
@@ -706,11 +841,34 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.teardownServiceContainers(name, existing.NodeID)
+
 	if appID != "" {
 		rt.deleteAppIfOrphaned(r.Context(), appID)
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// teardownServiceContainers stops name's running containers in the
+// background after its desired state is already deleted: stopping a
+// container can take several seconds, so this must not make the
+// caller's own response wait, the same reasoning sendInviteEmail's own
+// background dispatch already applies.
+func (rt *Router) teardownServiceContainers(name, nodeID string) {
+	if rt.execRuntime == nil {
+		return
+	}
+	runtime, err := rt.execRuntime(nodeID)
+	if err != nil {
+		rt.logger.Error("api: teardown containers: resolve node runtime failed", slog.String("error", err.Error()), slog.String("name", name))
+		return
+	}
+	go func() { //nolint:gosec // deliberately outlives the request, same as sendInviteEmail's own background send
+		if err := application.New(name, rt.apps, runtime).Teardown(context.Background()); err != nil {
+			rt.logger.Error("api: teardown containers failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}()
 }
 
 // deleteAppIfOrphaned deletes the store.App row identified by appID once

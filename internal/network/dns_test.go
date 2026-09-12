@@ -46,8 +46,8 @@ func meshNodes() []NodeInfo {
 	}
 }
 
-// TestBuildRecords_MovedServiceKeepsItsName is TASKS.md 3.4's whole
-// reason for existing, and Phase 3's exit criterion in one assertion: a
+// TestBuildRecords_MovedServiceKeepsItsName is the whole
+// reason internal DNS exists, and Phase 3's exit criterion in one assertion: a
 // connection string is a literal string in a running container's
 // environment, nothing rewrites it when a service moves, so the name has
 // to resolve to wherever the service is now.
@@ -71,7 +71,7 @@ func TestBuildRecords_MovedServiceKeepsItsName(t *testing.T) {
 	}
 
 	// The move: the same service, now placed on the other node. This is
-	// exactly what TASKS.md 3.3's PUT /apps/{name}/node does.
+	// exactly what PUT /apps/{name}/node does.
 	after, err := BuildRecords(zone, "control", []Placement{{Service: "postgres", NodeID: "worker"}}, nodes)
 	if err != nil {
 		t.Fatalf("BuildRecords after the move: %v", err)

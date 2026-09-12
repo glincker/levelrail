@@ -83,6 +83,28 @@ func TestPrintAppNetworkHuman(t *testing.T) {
 	}
 }
 
+func TestPrintAppHuman_CommandAndVolumesAndBindMounts(t *testing.T) {
+	var buf bytes.Buffer
+	printAppHuman(&buf, appResource{
+		Name:       "web",
+		Image:      "levelrail/web:1",
+		Port:       3000,
+		Command:    []string{"node", "server.js"},
+		Volumes:    []appVolumeResource{{Name: "data", ContainerPath: "/var/lib/data"}},
+		BindMounts: []appBindMountResource{{HostPath: "/srv/web/uploads", ContainerPath: "/uploads", ReadOnly: true}},
+	})
+	out := buf.String()
+	for _, want := range []string{
+		"command:  [node server.js]",
+		"volume:   data -> /var/lib/data",
+		"bind mount: /srv/web/uploads -> /uploads (read-only)",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q; got:\n%s", want, out)
+		}
+	}
+}
+
 func TestPrintAppsTable(t *testing.T) {
 	var buf bytes.Buffer
 	printAppsTable(&buf, nil)

@@ -483,8 +483,8 @@ func TestListScheduledDatabases_ExcludesHalfConfigured(t *testing.T) {
 }
 
 // TestListDesiredDatabasesByNode is the database-kind counterpart to
-// TestListDesiredServicesByNode (service_test.go), same TASKS.md 3.7
-// drain/delete-guard callers.
+// TestListDesiredServicesByNode (service_test.go), same drain/delete-guard
+// callers.
 func TestListDesiredDatabasesByNode(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

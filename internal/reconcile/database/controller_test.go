@@ -1,6 +1,8 @@
 package database
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -47,10 +49,13 @@ type fakeRuntime struct {
 	stopErr            error
 	removeErr          error
 	updateResourcesErr error
+	inspectErr         error
 
 	createCalls          int
 	ensureVolumeCalls    int
 	updateResourcesCalls int
+	stopCalls            int
+	removeCalls          int
 	// lastUpdateResourcesID/lastUpdateResources record the most recent
 	// UpdateResources call's arguments, for tests asserting a
 	// resource-only diff converges via a live update rather than a
@@ -65,6 +70,17 @@ type fakeRuntime struct {
 	// call, for assertions (like the mesh DNS wiring tests) that need
 	// more than just Env.
 	lastCreateSpec docker.ContainerSpec
+
+	// execWithInputCalls/lastExecCmd/lastExecInput record provisionCerts'
+	// own calls (tls_mount.go): unlike Exec, which this package's
+	// controller never calls, ExecWithInput is the real mechanism TLS
+	// cert provisioning uses to write into a helper container's stdin, so
+	// the fake actually drains and records it rather than just erroring.
+	execWithInputCalls  int
+	execWithInputErr    error
+	lastExecContainerID string
+	lastExecCmd         []string
+	lastExecInput       []byte
 }
 
 func newFakeRuntime() *fakeRuntime {
@@ -120,6 +136,9 @@ func (f *fakeRuntime) ListNetworksByPrefix(_ context.Context, _ string) ([]docke
 func (f *fakeRuntime) InspectByName(_ context.Context, name string) (*docker.ContainerState, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.inspectErr != nil {
+		return nil, f.inspectErr
+	}
 	cs, ok := f.containers[name]
 	if !ok {
 		return nil, nil
@@ -160,6 +179,7 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.stopCalls++
 	if f.stopErr != nil {
 		return f.stopErr
 	}
@@ -174,6 +194,7 @@ func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error 
 func (f *fakeRuntime) Remove(_ context.Context, id string, _ bool) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.removeCalls++
 	if f.removeErr != nil {
 		return f.removeErr
 	}
@@ -225,11 +246,26 @@ func (f *fakeRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadClos
 	return nil, errors.New("fakeRuntime: Exec not implemented")
 }
 
-// ExecWithInput is unused for the same reason Exec above is:
-// internal/backup's Restorer is the real caller, exercised by that
-// package's own tests. Stubbed to satisfy docker.Runtime.
-func (f *fakeRuntime) ExecWithInput(_ context.Context, _ string, _ []string, _ io.Reader) (io.ReadCloser, error) {
-	return nil, errors.New("fakeRuntime: ExecWithInput not implemented")
+// ExecWithInput backs provisionCerts' own use of it (tls_mount.go): it
+// drains and records stdin (the tar archive) rather than erroring, so a
+// TLS-enabled reconcile test can assert exactly what was written, the
+// same real-mechanism testing this package already applies to Create/
+// Start/Stop above.
+func (f *fakeRuntime) ExecWithInput(_ context.Context, containerID string, cmd []string, stdin io.Reader) (io.ReadCloser, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.execWithInputCalls++
+	f.lastExecContainerID = containerID
+	f.lastExecCmd = cmd
+	if f.execWithInputErr != nil {
+		return nil, f.execWithInputErr
+	}
+	input, err := io.ReadAll(stdin)
+	if err != nil {
+		return nil, err
+	}
+	f.lastExecInput = input
+	return io.NopCloser(strings.NewReader("")), nil
 }
 
 func (f *fakeRuntime) count() int {
@@ -474,6 +510,46 @@ func TestController_Reconcile_Redis_VolumeFailure(t *testing.T) {
 	}
 }
 
+func TestController_Reconcile_Redis_CreateFails(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.createErr = errors.New("no such image")
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the create failure to surface")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CreateFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=CreateFailed", cond)
+	}
+}
+
+// TestController_Reconcile_Redis_CreateSucceedsStartFails is the
+// half-succeeded case the testing standard requires a test for: the
+// container was created but never started. Reported under its own
+// distinct reason so an operator can tell it apart from a clean create
+// failure.
+func TestController_Reconcile_Redis_CreateSucceedsStartFails(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.startErr = errors.New("start failed")
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineRedis, Version: "7"}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the start failure to surface")
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "StartFailedAfterCreate" {
+		t.Errorf("condition = %+v, want Status=False Reason=StartFailedAfterCreate", cond)
+	}
+}
+
 func TestController_Reconcile_Postgres_AlwaysCredentialsBlocked(t *testing.T) {
 	rt := newFakeRuntime()
 	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}
@@ -520,7 +596,7 @@ func TestController_Reconcile_Postgres_CredentialsBlocked_EvenIfAlreadyRunning(t
 
 func TestController_Reconcile_Postgres_WithCredentials_Reconciles(t *testing.T) {
 	// Proves the activation path: once credentials are supplied (as they
-	// will be once TASKS.md 1.7 lands), Postgres reconciles for real
+	// will be once envelope-encrypted secrets land), Postgres reconciles for real
 	// through the same shared logic Redis uses, no rewrite needed.
 	rt := newFakeRuntime()
 	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}
@@ -539,6 +615,200 @@ func TestController_Reconcile_Postgres_WithCredentials_Reconciles(t *testing.T) 
 	}
 	if rt.createCalls != 1 {
 		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+}
+
+// tarFileNames decodes a tls_mount.go-produced tar archive and returns
+// each entry's header, keyed by name, for a test to assert mode/owner/
+// content against without hand-parsing the tar format itself.
+func tarFileHeaders(t *testing.T, data []byte) map[string]*tar.Header {
+	t.Helper()
+	headers := map[string]*tar.Header{}
+	tr := tar.NewReader(bytes.NewReader(data))
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("read tar entry: %v", err)
+		}
+		hdrCopy := *hdr
+		headers[hdr.Name] = &hdrCopy
+	}
+	return headers
+}
+
+func TestController_Reconcile_Postgres_TLS_MountsCertsAndConfiguresSSL(t *testing.T) {
+	rt := newFakeRuntime()
+	certPEM, keyPEM, err := GenerateSelfSignedCert("db-main")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
+	material := &TLSMaterial{CertPEM: certPEM, KeyPEM: keyPEM}
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}
+	c := New("main", &fakeStore{db: desired}, rt,
+		WithPostgresCredentials(&PostgresCredentials{Username: "main", Password: "s3cret"}),
+		WithTLS(material),
+	)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+
+	// Exactly one real database container survives: the certs helper
+	// container is created, used, and removed within the same reconcile
+	// pass (createCalls counts both; count() only counts what's still
+	// there afterward).
+	if rt.createCalls != 2 {
+		t.Errorf("createCalls = %d, want 2 (certs helper + real database container)", rt.createCalls)
+	}
+	if got := rt.count(); got != 1 {
+		t.Errorf("surviving container count = %d, want 1 (helper must be removed)", got)
+	}
+
+	wantCommand := postgresTLSCommand()
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+
+	certsVol := certsVolumeName("main")
+	foundMount := false
+	for _, m := range rt.lastCreateSpec.Volumes {
+		if m.Name == certsVol {
+			foundMount = true
+			if m.ContainerPath != certsMountPath {
+				t.Errorf("certs mount path = %q, want %q", m.ContainerPath, certsMountPath)
+			}
+			if !m.ReadOnly {
+				t.Error("certs volume must be mounted read-only")
+			}
+		}
+	}
+	if !foundMount {
+		t.Errorf("database container Volumes = %+v, want a mount for %q", rt.lastCreateSpec.Volumes, certsVol)
+	}
+	if !rt.hasVolume(certsVol) {
+		t.Errorf("expected certs volume %q to have been ensured", certsVol)
+	}
+
+	if rt.execWithInputCalls != 1 {
+		t.Fatalf("execWithInputCalls = %d, want 1", rt.execWithInputCalls)
+	}
+	wantExecCmd := []string{"tar", "-xf", "-", "-C", certsHelperMountPath}
+	if !reflect.DeepEqual(rt.lastExecCmd, wantExecCmd) {
+		t.Errorf("exec command = %v, want %v", rt.lastExecCmd, wantExecCmd)
+	}
+
+	headers := tarFileHeaders(t, rt.lastExecInput)
+	certHdr, ok := headers[tlsCertFile]
+	if !ok {
+		t.Fatalf("tar archive missing %q, got %+v", tlsCertFile, headers)
+	}
+	if certHdr.Mode != 0o644 || certHdr.Uid != dbTLSUID || certHdr.Gid != dbTLSGID {
+		t.Errorf("%s header = mode %o uid %d gid %d, want mode 0644 uid/gid %d", tlsCertFile, certHdr.Mode, certHdr.Uid, certHdr.Gid, dbTLSUID)
+	}
+	keyHdr, ok := headers[tlsKeyFile]
+	if !ok {
+		t.Fatalf("tar archive missing %q, got %+v", tlsKeyFile, headers)
+	}
+	if keyHdr.Mode != 0o600 || keyHdr.Uid != dbTLSUID || keyHdr.Gid != dbTLSGID {
+		t.Errorf("%s header = mode %o uid %d gid %d, want mode 0600 uid/gid %d", tlsKeyFile, keyHdr.Mode, keyHdr.Uid, keyHdr.Gid, dbTLSUID)
+	}
+}
+
+// TestController_Reconcile_Postgres_TLS_NoCredentials_StillBlocked proves
+// WithTLS alone doesn't bypass the credentials gate: Postgres still
+// refuses to start unauthenticated even with a certificate configured,
+// since TLS encrypts the connection but was never meant to be a
+// substitute for authentication.
+func TestController_Reconcile_Postgres_TLS_NoCredentials_StillBlocked(t *testing.T) {
+	rt := newFakeRuntime()
+	certPEM, keyPEM, err := GenerateSelfSignedCert("db-main")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}
+	c := New("main", &fakeStore{db: desired}, rt, WithTLS(&TLSMaterial{CertPEM: certPEM, KeyPEM: keyPEM}))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionFalse || cond.Reason != "CredentialsNotConfigured" {
+		t.Errorf("condition = %+v, want Status=False Reason=CredentialsNotConfigured", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0", rt.createCalls)
+	}
+}
+
+func TestController_Reconcile_Redis_TLS_DisablesPlaintextPort(t *testing.T) {
+	rt := newFakeRuntime()
+	certPEM, keyPEM, err := GenerateSelfSignedCert("db-cache")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
+	material := &TLSMaterial{CertPEM: certPEM, KeyPEM: keyPEM}
+	desired := &store.DesiredDatabase{Name: "cache", Engine: store.EngineRedis, Version: "7"}
+	c := New("cache", &fakeStore{db: desired}, rt, WithTLS(material))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+
+	wantCommand, wantPort := redisCommandAndPort(material)
+	if wantPort != redisTLSContainerPort {
+		t.Fatalf("test setup: redisCommandAndPort port = %d, want %d", wantPort, redisTLSContainerPort)
+	}
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+	if rt.execWithInputCalls != 1 {
+		t.Errorf("execWithInputCalls = %d, want 1", rt.execWithInputCalls)
+	}
+}
+
+// TestController_Reconcile_TLS_AlreadyRunning_NeverReprovisions proves
+// the "generate/write at creation time, not every reconcile pass"
+// invariant WithTLS's own doc comment establishes: reconciling an
+// already-running TLS database a second time must not call
+// ExecWithInput again, since the certs volume already holds the same
+// stable material from the first create.
+func TestController_Reconcile_TLS_AlreadyRunning_NeverReprovisions(t *testing.T) {
+	rt := newFakeRuntime()
+	certPEM, keyPEM, err := GenerateSelfSignedCert("db-cache")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
+	material := &TLSMaterial{CertPEM: certPEM, KeyPEM: keyPEM}
+	desired := &store.DesiredDatabase{Name: "cache", Engine: store.EngineRedis, Version: "7"}
+	c := New("cache", &fakeStore{db: desired}, rt, WithTLS(material))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("first Reconcile() error = %v", err)
+	}
+	if rt.execWithInputCalls != 1 {
+		t.Fatalf("execWithInputCalls after first reconcile = %d, want 1", rt.execWithInputCalls)
+	}
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("second Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
+		t.Errorf("second condition = %+v, want Status=True Reason=AlreadyRunning", cond)
+	}
+	if rt.execWithInputCalls != 1 {
+		t.Errorf("execWithInputCalls after second reconcile = %d, want still 1 (no reprovisioning)", rt.execWithInputCalls)
 	}
 }
 
@@ -1354,3 +1624,167 @@ func TestController_Reconcile_Resources_NilLeavesContainerSpecResourcesNil(t *te
 		t.Errorf("created ContainerSpec.Resources = %+v, want nil", got)
 	}
 }
+
+// TestController_Teardown_RemovesRunningContainer covers the create
+// case an ephemeral preview database's teardown depends on: a running
+// container gets stopped and removed in one call.
+func TestController_Teardown_RemovesRunningContainer(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("previewdb"), "postgres:16", true)
+
+	c := New("previewdb", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+	if got := rt.count(); got != 0 {
+		t.Errorf("containers after teardown = %d, want 0", got)
+	}
+}
+
+// TestController_Teardown_StoppedContainer_RemovesWithoutStopping covers
+// a database container that crashed or was already stopped: Teardown
+// must still remove it, without calling Stop on an already-stopped
+// container.
+func TestController_Teardown_StoppedContainer_RemovesWithoutStopping(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("previewdb"), "postgres:16", false)
+
+	c := New("previewdb", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+	if got := rt.count(); got != 0 {
+		t.Errorf("containers after teardown = %d, want 0", got)
+	}
+}
+
+// TestController_Teardown_NoContainer_NoOp covers a preview whose
+// ephemeral database was tracked but never actually reconciled into a
+// running container (e.g. torn down before its first reconcile pass):
+// not an error, the same "not found is a valid observed state"
+// tolerance InspectByName's own doc comment establishes.
+func TestController_Teardown_NoContainer_NoOp(t *testing.T) {
+	rt := newFakeRuntime()
+	c := New("previewdb", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+}
+
+// TestController_Teardown_HalfSucceeded_RemoveFailsThenRetrySucceeds is
+// the half-succeeded case this codebase's own testing standard requires
+// for every reconciler (CLAUDE.md section 7): a crash or a transient
+// Docker error between Stop and Remove must leave the container in a
+// state a second Teardown call can still finish cleanly, not stuck or
+// double-stopped.
+func TestController_Teardown_HalfSucceeded_RemoveFailsThenRetrySucceeds(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seed(containerName("previewdb"), "postgres:16", true)
+	rt.removeErr = errors.New("engine temporarily unavailable")
+
+	c := New("previewdb", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err == nil {
+		t.Fatal("Teardown() error = nil, want the remove failure to surface")
+	}
+	if got := rt.count(); got != 1 {
+		t.Fatalf("containers after failed teardown = %d, want 1 (still present for retry)", got)
+	}
+	state, err := rt.InspectByName(context.Background(), containerName("previewdb"))
+	if err != nil {
+		t.Fatalf("InspectByName() error = %v", err)
+	}
+	if state == nil || state.Running {
+		t.Fatalf("state after failed teardown = %+v, want a stopped container left for retry", state)
+	}
+
+	rt.removeErr = nil
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("retried Teardown() error = %v", err)
+	}
+	if got := rt.count(); got != 0 {
+		t.Errorf("containers after retried teardown = %d, want 0", got)
+	}
+}
+
+// TestController_Teardown covers Teardown's own branches: no container to
+// clean up, a running container (stop then remove), a stopped container
+// (remove only), and each of Docker's own calls failing along the way.
+// Callers (handleSetAppNode/handleSetDatabaseNode's teardown dispatch)
+// treat a moved-off-this-node or deleted database exactly this way: best-
+// effort cleanup, never re-reconciled here again once desired state has
+// moved on.
+func TestController_Teardown(t *testing.T) {
+	tests := []struct {
+		name           string
+		seedRunning    *bool // nil: no container seeded
+		inspectErr     error
+		stopErr        error
+		removeErr      error
+		wantErr        bool
+		wantStopCalls  int
+		wantRemoveCall int
+	}{
+		{
+			name:        "no container: no-op",
+			seedRunning: nil,
+		},
+		{
+			name:           "running container: stops then removes",
+			seedRunning:    boolPtr(true),
+			wantStopCalls:  1,
+			wantRemoveCall: 1,
+		},
+		{
+			name:           "stopped container: removes only",
+			seedRunning:    boolPtr(false),
+			wantStopCalls:  0,
+			wantRemoveCall: 1,
+		},
+		{
+			name:       "inspect fails: propagates error, no stop/remove attempted",
+			inspectErr: errors.New("inspect failed"),
+			wantErr:    true,
+		},
+		{
+			name:          "stop fails: propagates error, remove never attempted",
+			seedRunning:   boolPtr(true),
+			stopErr:       errors.New("stop failed"),
+			wantErr:       true,
+			wantStopCalls: 1,
+		},
+		{
+			name:           "remove fails: propagates error",
+			seedRunning:    boolPtr(true),
+			removeErr:      errors.New("remove failed"),
+			wantErr:        true,
+			wantStopCalls:  1,
+			wantRemoveCall: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := newFakeRuntime()
+			rt.inspectErr = tt.inspectErr
+			rt.stopErr = tt.stopErr
+			rt.removeErr = tt.removeErr
+			if tt.seedRunning != nil {
+				rt.seed(containerName("main"), "redis:7", *tt.seedRunning)
+			}
+			c := New("main", &fakeStore{}, rt)
+
+			err := c.Teardown(context.Background())
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Teardown() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if rt.stopCalls != tt.wantStopCalls {
+				t.Errorf("stopCalls = %d, want %d", rt.stopCalls, tt.wantStopCalls)
+			}
+			if rt.removeCalls != tt.wantRemoveCall {
+				t.Errorf("removeCalls = %d, want %d", rt.removeCalls, tt.wantRemoveCall)
+			}
+		})
+	}
+}
+
+func boolPtr(v bool) *bool { return &v }

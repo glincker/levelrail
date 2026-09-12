@@ -58,9 +58,9 @@ export interface UseLogStreamResult {
   resume: () => void
 }
 
-// Ring buffer sizing per frontend-plan.md section 2: "last 5,000-10,000
-// lines; full history stays queryable from the backend log store per 4.8,
-// this is just the live-tail window." Shared by both consumers: a
+// Ring buffer sized to the last 5,000-10,000 lines; full history stays
+// queryable from the backend log store per 4.8, this is just the
+// live-tail window. Shared by both consumers: a
 // long-running app container can realistically produce far more total
 // output over its lifetime than a single build ever does, but the same
 // cap is still the right call for a *live-tail* window specifically

@@ -7,10 +7,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cronexpr"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -70,18 +68,9 @@ func (rt *Router) handleTriggerVolumeBackup(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.TargetID == "" {
-		writeError(w, http.StatusBadRequest, "target_id is required")
-		return
-	}
-	if !rt.loadBackupTarget(w, r, req.TargetID, "api: trigger volume backup: load backup target failed") {
-		return
-	}
 
-	historyID, err := randomBackupHistoryID()
-	if err != nil {
-		rt.logger.Error("api: trigger volume backup: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	historyID, ok := rt.prepareBackupTrigger(w, r, req.TargetID, "api: trigger volume backup")
+	if !ok {
 		return
 	}
 
@@ -111,27 +100,9 @@ func (rt *Router) handleListVolumeBackupHistory(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	limit := defaultBackupHistoryLimit
-	if raw := r.URL.Query().Get("limit"); raw != "" {
-		n, err := strconv.Atoi(raw)
-		if err != nil || n <= 0 {
-			writeError(w, http.StatusBadRequest, "limit must be a positive integer")
-			return
-		}
-		limit = n
-	}
-	if limit > maxBackupHistoryLimit {
-		limit = maxBackupHistoryLimit
-	}
-
-	var before *time.Time
-	if raw := r.URL.Query().Get("before"); raw != "" {
-		t, err := time.Parse(time.RFC3339, raw)
-		if err != nil {
-			writeError(w, http.StatusBadRequest, "before must be an RFC3339 timestamp")
-			return
-		}
-		before = &t
+	limit, before, ok := parseBackupHistoryListParams(w, r)
+	if !ok {
+		return
 	}
 
 	history, err := rt.serviceVolumeBackupHistory.ListServiceVolumeBackupHistory(r.Context(), serviceName, volumeName, limit, before)
@@ -218,24 +189,7 @@ func (rt *Router) handleSetVolumeBackupSchedule(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.TargetID == "" {
-		writeError(w, http.StatusBadRequest, "target_id is required")
-		return
-	}
-	if req.Schedule == "" {
-		writeError(w, http.StatusBadRequest, "schedule is required")
-		return
-	}
-	if _, err := cronexpr.Parse(req.Schedule); err != nil {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid schedule: %s", err.Error()))
-		return
-	}
-	if req.Retain < 0 {
-		writeError(w, http.StatusBadRequest, "retain must not be negative")
-		return
-	}
-	if req.RetainDays < 0 {
-		writeError(w, http.StatusBadRequest, "retain_days must not be negative")
+	if !validateBackupScheduleRequest(w, req.TargetID, req.Schedule, req.Retain, req.RetainDays) {
 		return
 	}
 	if !rt.loadBackupTarget(w, r, req.TargetID, "api: set volume backup schedule: load backup target failed") {
@@ -277,4 +231,27 @@ func (rt *Router) handleClearVolumeBackupSchedule(w http.ResponseWriter, r *http
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// loadVolumeBackupHistory resolves historyID via rt.backupHistory and
+// confirms it was taken from serviceName/volumeName, writing the
+// appropriate error response itself on failure. Shared by
+// handleVerifyVolumeBackup, handleListVolumeBackupVerifications, and
+// handleDownloadVolumeBackup.
+func (rt *Router) loadVolumeBackupHistory(w http.ResponseWriter, r *http.Request, serviceName, volumeName, historyID, logContext string) (store.BackupHistory, bool) {
+	h, err := rt.backupHistory.GetBackupHistory(r.Context(), historyID)
+	if errors.Is(err, store.ErrBackupHistoryNotFound) {
+		writeError(w, http.StatusNotFound, "backup not found")
+		return store.BackupHistory{}, false
+	}
+	if err != nil {
+		rt.logger.Error(logContext, slog.String("error", err.Error()), slog.String("backup_id", historyID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return store.BackupHistory{}, false
+	}
+	if h.ServiceName != serviceName || h.VolumeName != volumeName {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was not taken from %s/%s", historyID, serviceName, volumeName))
+		return store.BackupHistory{}, false
+	}
+	return h, true
 }

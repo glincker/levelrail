@@ -39,6 +39,32 @@ func toAppVolumeResources(svc store.DesiredService) []appVolumeResource {
 	return out
 }
 
+// appBindMountResource is the wire shape for one of an app's bind
+// mounts (store.ServiceBindMount), response-only like appVolumeResource
+// above: a bind mount is only ever set through the compose-import path
+// (POST /apps/{name}/compose, AbilityRoot-gated when the file carries
+// one, see handleDeployCompose's own doc comment), never through this
+// endpoint.
+type appBindMountResource struct {
+	HostPath      string `json:"host_path"`
+	ContainerPath string `json:"container_path"`
+	ReadOnly      bool   `json:"read_only,omitempty"`
+}
+
+// toAppBindMountResources is toAppVolumeResources' bind-mount
+// counterpart: nil when svc has none, matching appResource's own
+// omitempty on this field.
+func toAppBindMountResources(svc store.DesiredService) []appBindMountResource {
+	if len(svc.BindMounts) == 0 {
+		return nil
+	}
+	out := make([]appBindMountResource, len(svc.BindMounts))
+	for i, m := range svc.BindMounts {
+		out[i] = appBindMountResource{HostPath: m.HostPath, ContainerPath: m.ContainerPath, ReadOnly: m.ReadOnly}
+	}
+	return out
+}
+
 // loadServiceVolume resolves {name}/{volume} path values to volumeName's
 // real Docker volume name, writing the 404/500 response itself on
 // failure: the shared shape every volume backup/restore handler in

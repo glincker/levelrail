@@ -37,14 +37,22 @@ services:
     labels:
       team: platform
       tier: frontend
+    volumes:
+      - name: data              # named Docker volume
+        path: /var/lib/data
+      - hostPath: /srv/web/uploads  # bind mount of a real host directory
+        path: /uploads
+        readOnly: true
     hooks:
       preDeploy: rails db:migrate
       postDeploy: curl -f https://hooks.example.com/deployed
+    command: ["node", "server.js", "--port", "3000"]  # overrides the image's own CMD
 databases:
   main:
     engine: postgres          # postgres | redis | mysql | mongodb | mariadb | keydb | clickhouse | dragonfly
     version: "16"
     backup: { schedule: "0 3 * * *", retain: 7 }
+    ephemeralInPreviews: true # opt in to a disposable per-pull-request instance, see below
 ```
 
 This matches what `internal/spec` actually parses and validates today
@@ -80,7 +88,9 @@ as `LOG_LEVEL`).
 | `replicas` | integer | no | `1` | Minimum 1 if set. `Service.EffectiveReplicas()` returns this value or the default. |
 | `strategy` | string | no | `blue-green` | One of `rolling`, `recreate`, `blue-green`. `Service.EffectiveStrategy()` returns this value or the default, chosen because blue-green is easier to get right than rolling with a single replica. |
 | `labels` | map of string to string | no | none | Arbitrary operator-supplied Docker labels applied to the container at create time. See Validation below for the limits enforced on these. |
+| `volumes` | list of `Volume` | no | none | Named Docker volumes and host-directory bind mounts this service's container mounts. |
 | `hooks` | `Hooks` | no | none | Pre/post-deploy commands run inside the container. Not meaningful when `build.type` is `static` or `compose`. |
+| `command` | list of string | no | none | Overrides the image's own default `CMD`. A plain argv list, never shell-interpreted. |
 
 ### `Build`
 
@@ -89,6 +99,21 @@ as `LOG_LEVEL`).
 | `type` | string | yes | none | One of `dockerfile`, `compose`, `railpack`, `static`. |
 | `path` | string | conditional | none | Required when `type` is `compose`. Optional otherwise (for example, a non-default Dockerfile path). |
 | `args` | map of string to string | no | none | Dockerfile build-time `ARG` values, passed through to BuildKit as `--build-arg` equivalents. Only meaningful when `type` is `dockerfile`. |
+
+### `Volume` (an entry under `volumes`)
+
+Exactly one of `name` or `hostPath` must be set: `name` declares a named
+Docker volume, `hostPath` a bind mount of a real directory on whichever
+node the service runs on.
+
+| Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `name` | string | conditional | none | A named Docker volume, scoped to this service (two services can each declare a volume named `data` without colliding). Must match `^[a-z][a-z0-9-]*$`. |
+| `hostPath` | string | conditional | none | An absolute path on the host to bind-mount. Rejected if relative, or if it falls under a protected system path (see Validation below). |
+| `path` | string | yes | none | The container-side mount path. |
+| `readOnly` | boolean | no | `false` | Mounts read-only inside the container. Only meaningful alongside `hostPath`; rejected on a named volume. |
+
+Two volumes on the same service can never share a `path`.
 
 ### `Health`
 
@@ -156,6 +181,7 @@ The object form must set at least one of the three fields.
 | `engine` | string | yes | none | One of `postgres`, `redis`, `mysql`, `mongodb`, `mariadb`, `keydb`, `clickhouse`, `dragonfly`. |
 | `version` | string | no | none | For example `"16"`. |
 | `backup` | `Backup` | no | none | Backup schedule. |
+| `ephemeralInPreviews` | boolean | no | `false` | Provision a full, disposable database of its own for every pull-request preview, destroyed with the preview and with no restore path. Only meaningful once this app.yaml's git source has preview environments enabled; see [preview environments](roadmap.md) for the full lifecycle and its automatic env-var wiring. |
 
 ### `Backup`
 
@@ -166,8 +192,8 @@ The object form must set at least one of the three fields.
 
 ### Planned, not yet implemented
 
-None found. Every field in this project's own planning example
-(`CLAUDE.md` section 4.9) is parsed and validated by `internal/spec` today.
+None found. Every field in this project's original app-spec design is
+parsed and validated by `internal/spec` today.
 
 ## Validation
 
@@ -210,6 +236,18 @@ before a caller ever sees a `Spec`:
      services, none of which one `hooks` block could unambiguously target).
      An empty `hooks: {}` block (the schema's own `minProperties: 1`) is
      rejected at the schema layer.
+   - Each volume's `name` (if a named volume) must match
+     `^[a-z][a-z0-9-]*$`, and no two volumes on the same service may share
+     that name or the same `path`.
+   - Each volume's `hostPath` (if a bind mount) must be an absolute path,
+     and is rejected outright under a protected system path: `/`, `/etc`,
+     `/root`, `/boot`, `/sys`, `/proc`, `/var/lib/docker`,
+     `/var/run/docker.sock`, or `/var/run`. `/var/run/docker.sock`
+     specifically is excluded by design, not oversight: it's a full
+     container-escape-to-host-root vector, a categorically different
+     capability this feature doesn't grant.
+   - `readOnly: true` on a volume with `name` set (rather than `hostPath`)
+     is rejected: it has no meaning for a named Docker volume.
 
 `spec.Parse` also runs `yamlUnmarshalStrict`, a YAML decode with
 `KnownFields(true)`, as an independent second guard against the struct

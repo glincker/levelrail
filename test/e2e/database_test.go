@@ -26,12 +26,12 @@ import (
 // this test's job is narrower and complementary: prove the controller
 // composes with a real on-disk store the same way this package's other
 // live tests prove application reconciliation composes with build and
-// ingress, closing the gap noted in TASKS.md's Phase 1 section that only
-// applications had e2e coverage before this file.
+// ingress, closing the gap that only applications had e2e coverage
+// before this file.
 //
 // Deliberately out of scope, matching this package's other live tests
 // and internal/reconcile/database/controller.go's own doc comment:
-// Postgres (the controller refuses to start it until TASKS.md 1.7
+// Postgres (the controller refuses to start it until secrets support
 // supplies credentials), multi-node placement, and backups. No ingress
 // either: a database is not routed by Caddy, so there's no HTTPS leg
 // here the way TestDeploy_Live_BuildToHTTPS has one.

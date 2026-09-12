@@ -254,6 +254,82 @@ func TestRun_RegistryCredentialsCreate_InvalidExpiresAt(t *testing.T) {
 	}
 }
 
+func TestRun_RegistryCredentialsRepositories(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(registryRepositoriesResource{Repositories: []string{"alpha", "beta"}})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"registry-credentials", "repositories", "regcred_1", "--api-url", srv.URL})
+	if gotPath != "/api/v1/registry-credentials/regcred_1/repositories" {
+		t.Errorf("path = %q, want /api/v1/registry-credentials/regcred_1/repositories", gotPath)
+	}
+	if !strings.Contains(stdout, "alpha") || !strings.Contains(stdout, "beta") {
+		t.Errorf("stdout = %q, want both repositories listed", stdout)
+	}
+}
+
+func TestRun_RegistryCredentialsRepositories_MissingID(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"registry-credentials", "repositories"}, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d", got, exitUsage)
+	}
+	if !strings.Contains(stderr.String(), "requires exactly one") {
+		t.Errorf("stderr = %q, want a missing-id usage error", stderr.String())
+	}
+}
+
+func TestRun_RegistryCredentialsRepositories_UpstreamError(t *testing.T) {
+	srv := newJSONErrorServer(t, http.StatusBadGateway, `{"error":"could not reach the registry"}`)
+
+	stderr := runCLIExpectAPIError(t, []string{"registry-credentials", "repositories", "regcred_1", "--api-url", srv.URL})
+	if !strings.Contains(stderr, "could not reach the registry") {
+		t.Errorf("stderr = %q, want the server's error message", stderr)
+	}
+}
+
+func TestRun_RegistryCredentialsTags(t *testing.T) {
+	var gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotQuery = r.URL.Path, r.URL.Query().Get("repository")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(registryTagsResource{Repository: "myapp", Tags: []string{"latest", "v1"}})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"registry-credentials", "tags", "regcred_1", "myapp", "--api-url", srv.URL})
+	if gotPath != "/api/v1/registry-credentials/regcred_1/tags" || gotQuery != "myapp" {
+		t.Errorf("path/query = %q/%q, want /api/v1/registry-credentials/regcred_1/tags with repository=myapp", gotPath, gotQuery)
+	}
+	if !strings.Contains(stdout, "latest") || !strings.Contains(stdout, "v1") {
+		t.Errorf("stdout = %q, want both tags listed", stdout)
+	}
+}
+
+func TestRun_RegistryCredentialsTags_MissingArgs(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"registry-credentials", "tags", "regcred_1"}, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d", got, exitUsage)
+	}
+	if !strings.Contains(stderr.String(), "requires") {
+		t.Errorf("stderr = %q, want a missing-argument usage error", stderr.String())
+	}
+}
+
+func TestRun_RegistryCredentialsTags_NotFound(t *testing.T) {
+	srv := newJSONErrorServer(t, http.StatusNotFound, `{"error":"repository not found in this registry"}`)
+
+	stderr := runCLIExpectAPIError(t, []string{"registry-credentials", "tags", "regcred_1", "ghost", "--api-url", srv.URL})
+	if !strings.Contains(stderr, "not found") {
+		t.Errorf("stderr = %q, want the server's not-found message", stderr)
+	}
+}
+
 func TestRun_RegistryCredentials_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"registry-credentials", "-h"}, &stdout, &stderr, envMap())

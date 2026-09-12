@@ -1,11 +1,9 @@
 // Fetchers and hooks for internal/api/auth.go's three interactive routes:
 // POST /api/v1/auth/login, POST /api/v1/auth/register, POST
-// /api/v1/auth/logout. No SDK: docs-local/research/frontend-component-
-// reuse.md section 2 is explicit that the theauth SDK assumes a
-// fundamentally different backend (OAuth/agent-identity) than Levelrail's
-// actual bcrypt + server-side session cookie, so this is a plain fetch,
-// following packages/dashboard/src/components/login.tsx's shape from that
-// same research doc.
+// /api/v1/auth/logout. No SDK: the theauth SDK assumes a fundamentally
+// different backend (OAuth/agent-identity) than Levelrail's actual bcrypt
+// + server-side session cookie, so this is a plain fetch, following
+// packages/dashboard/src/components/login.tsx's shape.
 //
 // Both login and register set an httpOnly session_token cookie on
 // success and return the same {"username": "..."} body

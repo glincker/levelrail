@@ -1,4 +1,4 @@
-// Package ingress implements TASKS.md 1.6's ingress controller: the
+// Package ingress implements the ingress controller: the
 // reconcile.Controller that keeps Caddy's config (internal/ingress, ADR
 // 005) in sync with every service that declares domains.
 //
@@ -38,7 +38,7 @@
 // and the same TLS automation policy as every app/static-site route.
 //
 // Two further gaps this package's own doc comment used to flag as open
-// here are also closed, both TASKS.md 3.6:
+// here are also closed:
 //
 //   - Certificate storage no longer has to stay on Caddy's default
 //     file-system storage module (internal/ingress.FileStorage).
@@ -122,6 +122,22 @@ type ServiceStore interface {
 	// /api/v1/apps/{name}/domains/{domain}/tls-cert (internal/api) must
 	// take effect on this controller's very next pass.
 	ListDomainTLSCerts(ctx context.Context) ([]store.DomainTLSCert, error)
+	// GetRegistrySettings returns the built-in registry's single
+	// platform-wide row (store.RegistrySettings), read fresh every
+	// Reconcile like GetIngressSettings: an operator enabling the
+	// registry or changing its Host through PUT /api/v1/settings/registry
+	// (internal/api) must take effect on this controller's very next
+	// pass.
+	GetRegistrySettings(ctx context.Context) (store.RegistrySettings, error)
+	// ListDomainWAF returns every domain with opt-in WAF and/or rate
+	// limiting configured (migrations/0091), read fresh every Reconcile
+	// for the same reason ListDomainBasicAuth is: an operator setting or
+	// clearing a domain's WAF/rate-limit config through PUT/DELETE
+	// /api/v1/apps/{name}/domains/{domain}/waf (internal/api) must take
+	// effect on this controller's very next pass. Unlike basic auth or
+	// BYO TLS certs, there is no secret material here, so no resolver
+	// option is needed to actually enforce it.
+	ListDomainWAF(ctx context.Context) ([]store.DomainWAF, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -180,6 +196,10 @@ const (
 	// service or static site name and never looked up against either
 	// table.
 	dashboardRouteOwner = "platform dashboard"
+
+	// registryRouteOwner is dashboardRouteOwner's exact counterpart for
+	// the built-in registry's route.
+	registryRouteOwner = "builtin registry"
 )
 
 // Controller converges Caddy's config to match every service in
@@ -203,6 +223,13 @@ type Controller struct {
 	// dashboard route", the default, matching how every currently
 	// existing deployment has no such route today.
 	dashboardDial string
+
+	// registryDial is the built-in registry container's loopback dial
+	// address (see WithRegistryDial), reverse-proxied to whenever
+	// store.RegistrySettings.Enabled and .Host are both set. Empty means
+	// "no registry route", the default, the same shape dashboardDial's
+	// own absence already has.
+	registryDial string
 
 	// certStore, if set via WithCertStore, is built into a
 	// *ingress.SQLiteStorage and registered with ingress.SetActiveCertStorage
@@ -260,7 +287,7 @@ func WithAdminListen(addr string) Option {
 
 // WithStorageDir overrides Caddy's certificate/ACME-account storage root
 // (internal/ingress.FileStorage). Empty (the default) keeps Caddy's own
-// OS-specific default location. Production wiring (TASKS.md 1.9/1.10, not
+// OS-specific default location. Production wiring (not
 // yet built) should point this at a path under the control plane's data
 // directory once that constant exists; this package does not invent one,
 // keeping with the repo's brand/path indirection rule (no hardcoded
@@ -270,7 +297,7 @@ func WithStorageDir(dir string) Option {
 }
 
 // WithCertStore points Caddy's certificate/ACME-account storage at
-// internal/store's SQLite (TASKS.md 3.6) instead of the local
+// internal/store's SQLite instead of the local
 // filesystem, so multi-node deployments share cert state instead of each
 // node maintaining its own certificate storage. Takes precedence over
 // WithStorageDir if both are set. certStore is typically
@@ -297,6 +324,23 @@ func WithCertStore(certStore ingress.CertStore) Option {
 // erroring when its prerequisite wiring is absent.
 func WithDashboardDial(dial string) Option {
 	return func(c *Controller) { c.dashboardDial = dial }
+}
+
+// WithRegistryDial enables routing the built-in container registry
+// (internal/reconcile/registry) through this controller's shared Caddy
+// server whenever an operator enables it with a Host set (PUT
+// /api/v1/settings/registry). dial is the registry container's own
+// loopback dial address (127.0.0.1 plus registry.HostPort), the same
+// "published port, dialed via loopback" shape WithDashboardDial's own
+// doc comment establishes. No basic_auth handler is added here: the
+// registry container enforces its own htpasswd auth
+// (internal/reconcile/registry's own doc comment), so this route is a
+// plain TLS-terminating reverse proxy, the same shape the dashboard
+// route already has. Without this option (the default), an enabled
+// registry with a Host set is silently not routed, matching
+// WithDashboardDial's own "fails closed" absence behavior.
+func WithRegistryDial(dial string) Option {
+	return func(c *Controller) { c.registryDial = dial }
 }
 
 // WithCloudflareDNSTokens enables Cloudflare DNS-01 for wildcard domains
@@ -417,6 +461,14 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain tls certs: %w", err)
 	}
+	registrySettings, err := c.store.GetRegistrySettings(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: get registry settings: %w", err)
+	}
+	wafByDomain, err := c.domainWAFByDomain(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain waf: %w", err)
+	}
 
 	var routes []ingress.ProxyRoute
 	var maintenanceRoutes []ingress.MaintenanceRoute
@@ -426,7 +478,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			continue
 		}
 		if owner, host, dup := firstDuplicateHost(svc.Name, svc.Domains, claimedHosts); dup {
-			// store.SaveDesiredService (TASKS.md 3.6) now rejects a save
+			// store.SaveDesiredService now rejects a save
 			// that would create this situation for any service written
 			// after that change landed, so reaching this branch means
 			// either data written before the constraint existed, or a
@@ -435,7 +487,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			// host: skip the loser and say so loudly, rather than
 			// silently letting Caddy's own last-match-wins matcher
 			// evaluation decide.
-			c.logger.WarnContext(ctx, "ingress: service claims a domain another service already routed this pass, skipping; internal/store's service_domains uniqueness constraint should prevent this for any service saved since TASKS.md 3.6, this is a defense-in-depth guard for pre-existing data",
+			c.logger.WarnContext(ctx, "ingress: service claims a domain another service already routed this pass, skipping; internal/store's service_domains uniqueness constraint should prevent this for any service saved since that constraint landed, this is a defense-in-depth guard for pre-existing data",
 				slog.String("service", svc.Name),
 				slog.String("domain", host),
 				slog.String("already_routed_to", owner),
@@ -467,7 +519,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		for _, host := range activeHosts {
 			claimedHosts[host] = svc.Name
 		}
-		routes = append(routes, c.routesForService(ctx, activeHosts, dial, authByDomain)...)
+		routes = append(routes, c.routesForService(ctx, activeHosts, dial, authByDomain, wafByDomain)...)
 	}
 
 	var staticRoutes []ingress.StaticRoute
@@ -515,6 +567,28 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			routes = append(routes, ingress.ProxyRoute{
 				Hosts:       []string{settings.PrimaryDomain},
 				BackendDial: c.dashboardDial,
+			})
+		}
+	}
+
+	// Built-in registry (store.RegistrySettings): one more reverse-proxy
+	// route, the exact same shape the dashboard route above has (plain
+	// TLS termination, no basic_auth handler, since the registry
+	// container enforces its own htpasswd auth). Requires both a
+	// configured Host and WithRegistryDial having been set; either
+	// missing means no registry route this pass, the same "fails closed"
+	// shape the dashboard route already establishes.
+	if registrySettings.Enabled && registrySettings.Host != "" && c.registryDial != "" {
+		if owner, host, dup := firstDuplicateHost(registryRouteOwner, []string{registrySettings.Host}, claimedHosts); dup {
+			c.logger.WarnContext(ctx, "ingress: built-in registry host is already routed to a service or static site, skipping the registry route",
+				slog.String("domain", host),
+				slog.String("already_routed_to", owner),
+			)
+		} else {
+			claimedHosts[registrySettings.Host] = registryRouteOwner
+			routes = append(routes, ingress.ProxyRoute{
+				Hosts:       []string{registrySettings.Host},
+				BackendDial: c.registryDial,
 			})
 		}
 	}
@@ -701,41 +775,79 @@ func splitMaintenanceHosts(domains []string, maintenanceByDomain map[string]bool
 }
 
 // routesForService builds one ProxyRoute per entry in hosts that has
-// basic auth configured (each needs its own Handle chain, since Caddy
-// has no notion of "this host within a shared route is exempt"), plus
-// one shared ProxyRoute carrying every host that doesn't. A service
-// with no protected domains reproduces this controller's behavior
-// before this feature existed exactly: a single route with every host.
-// hosts is the caller's already-filtered subset of the service's own
-// domains (Reconcile excludes any domain in maintenance mode before
-// calling this), not necessarily svc.Domains verbatim.
-func (c *Controller) routesForService(ctx context.Context, hosts []string, dial string, authByDomain map[string]store.DomainBasicAuth) []ingress.ProxyRoute {
+// basic auth and/or WAF/rate-limit configured (each needs its own Handle
+// chain, since Caddy has no notion of "this host within a shared route
+// is exempt"), plus one shared ProxyRoute carrying every host that has
+// neither. A service with no customized domains reproduces this
+// controller's behavior before either feature existed exactly: a single
+// route with every host. hosts is the caller's already-filtered subset
+// of the service's own domains (Reconcile excludes any domain in
+// maintenance mode before calling this), not necessarily svc.Domains
+// verbatim.
+func (c *Controller) routesForService(ctx context.Context, hosts []string, dial string, authByDomain map[string]store.DomainBasicAuth, wafByDomain map[string]store.DomainWAF) []ingress.ProxyRoute {
 	var open []string
 	var routes []ingress.ProxyRoute
 	for _, host := range hosts {
-		auth, protected := authByDomain[host]
-		if !protected {
+		var account *ingress.BasicAuthAccount
+		if auth, protected := authByDomain[host]; protected {
+			resolved, ok := c.resolveBasicAuthAccount(ctx, host, auth)
+			if !ok {
+				// A domain configured for basic auth that this pass cannot
+				// resolve a password for (no resolver wired, or the secret
+				// itself failed to resolve) is left unrouted this pass
+				// rather than served unprotected: failing a security
+				// control closed is worse to leave silent than a domain
+				// being briefly unreachable, unlike dialForService's own
+				// "no backend yet" cases above, which fail open to "just
+				// not routed yet."
+				continue
+			}
+			account = resolved
+		}
+
+		waf := domainWAFConfig(wafByDomain[host])
+		if account == nil && waf == nil {
 			open = append(open, host)
 			continue
 		}
-		account, ok := c.resolveBasicAuthAccount(ctx, host, auth)
-		if !ok {
-			// A domain configured for basic auth that this pass cannot
-			// resolve a password for (no resolver wired, or the secret
-			// itself failed to resolve) is left unrouted this pass
-			// rather than served unprotected: failing a security
-			// control closed is worse to leave silent than a domain
-			// being briefly unreachable, unlike dialForService's own
-			// "no backend yet" cases above, which fail open to "just
-			// not routed yet."
-			continue
-		}
-		routes = append(routes, ingress.ProxyRoute{Hosts: []string{host}, BackendDial: dial, BasicAuth: account})
+		routes = append(routes, ingress.ProxyRoute{Hosts: []string{host}, BackendDial: dial, BasicAuth: account, WAF: waf})
 	}
 	if len(open) > 0 {
 		routes = append(routes, ingress.ProxyRoute{Hosts: open, BackendDial: dial})
 	}
 	return routes
+}
+
+// domainWAFConfig converts row into an ingress.WAFConfig, or nil when
+// row has neither the WAF nor rate limiting turned on: the zero value of
+// store.DomainWAF (what wafByDomain[host] returns for any host with no
+// row at all) always takes this nil branch, reproducing this
+// controller's behavior before this feature existed exactly.
+func domainWAFConfig(row store.DomainWAF) *ingress.WAFConfig {
+	if !row.WAFEnabled && row.RateLimitRPS <= 0 {
+		return nil
+	}
+	return &ingress.WAFConfig{
+		Enabled:        row.WAFEnabled,
+		Blocking:       row.WAFMode == store.DomainWAFModeBlock,
+		RateLimitRPS:   row.RateLimitRPS,
+		RateLimitBurst: row.RateLimitBurst,
+	}
+}
+
+// domainWAFByDomain returns every store.DomainWAF row keyed by domain,
+// mirroring domainBasicAuthByDomain's identical shape for a different
+// per-domain toggle.
+func (c *Controller) domainWAFByDomain(ctx context.Context) (map[string]store.DomainWAF, error) {
+	rows, err := c.store.ListDomainWAF(ctx)
+	if err != nil {
+		return nil, err
+	}
+	byDomain := make(map[string]store.DomainWAF, len(rows))
+	for _, row := range rows {
+		byDomain[row.Domain] = row
+	}
+	return byDomain, nil
 }
 
 // resolveBasicAuthAccount resolves domain's plaintext password through

@@ -26,14 +26,22 @@ import (
 	// DNS-01 automation policy (see config.go's
 	// NewCloudflareDNSACMEIssuer).
 	_ "github.com/caddy-dns/cloudflare"
+
+	// Registers http.handlers.waf (OWASP Coraza, module ID "waf" despite
+	// the import path's own "coraza-caddy" name): opt-in per-domain WAF,
+	// see routes.go's NewCorazaWAFHandler.
+	_ "github.com/corazawaf/coraza-caddy/v2"
+
+	// Registers http.handlers.rate_limit: opt-in per-domain rate
+	// limiting, see routes.go's NewRateLimitHandler.
+	_ "github.com/mholt/caddy-ratelimit"
 )
 
 // Driver drives an in-process Caddy instance through the same code path as
-// its HTTP admin API (caddy.Load calls the identical config-apply logic
-// the admin API's POST /load handler calls, see
-// docs-local/research/caddy-spike.md), without this package ever shelling
-// out to a `caddy` binary or running one as a subprocess or sibling
-// container. The embedded-ingress design requires this shape
+// its HTTP admin API: caddy.Load calls the identical config-apply logic
+// the admin API's POST /load handler calls, without this package ever
+// shelling out to a `caddy` binary or running one as a subprocess or
+// sibling container. The embedded-ingress design requires this shape
 // specifically: ingress state lives in the control plane's own
 // process, not in something else's.
 type Driver struct {
@@ -56,7 +64,7 @@ func New(logger *slog.Logger) *Driver {
 // replaces the entire process-wide config, which is a real constraint
 // Phase 1 needs to design around once ingress config is built
 // incrementally from many apps rather than handed over as one document
-// per call (see docs-local/research/caddy-spike.md).
+// per call.
 func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 	if cfg == nil {
 		return fmt.Errorf("ingress: apply: config is nil")

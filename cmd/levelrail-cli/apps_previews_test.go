@@ -38,6 +38,37 @@ func TestRun_AppsPreviewsList_ShowsStale(t *testing.T) {
 	}
 }
 
+func TestRun_AppsPreviewsList_ShowsEphemeralDatabases(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, []previewEnvironmentResource{
+		{
+			PRNumber: 42, PreviewAppID: "web-pr-42", Branch: "feature-x", Status: "active", UpdatedAt: "2026-08-20T00:00:00Z",
+			EphemeralDatabases: []previewEphemeralDatabaseResource{
+				{SourceKey: "main", DatabaseName: "web-pr-42-db-main", Engine: "postgres", Status: "provisioned", Ready: appStatusSummary{Label: "Healthy"}},
+			},
+		},
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "previews", "list", "web", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "main(Healthy)") {
+		t.Errorf("stdout = %q, want the EPHEMERAL DATABASES column to show main(Healthy)", stdout)
+	}
+}
+
+func TestRun_AppsPreviewsList_NoEphemeralDatabases_ShowsDash(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, []previewEnvironmentResource{
+		{PRNumber: 42, PreviewAppID: "web-pr-42", Branch: "feature-x", Status: "active", UpdatedAt: "2026-08-20T00:00:00Z"},
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "previews", "list", "web", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "-\n") && !strings.Contains(stdout, "\t-") {
+		t.Errorf("stdout = %q, want the EPHEMERAL DATABASES column to show -", stdout)
+	}
+}
+
 func TestRun_AppsPreviewsList_Empty(t *testing.T) {
 	var gotPath string
 	srv := newListEchoServer(t, &gotPath, []previewEnvironmentResource{})

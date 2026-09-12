@@ -8,9 +8,9 @@
 //
 // Pattern is the well-established one from the `ansi-regex` npm package
 // (sindresorhus/ansi-regex, MIT), inlined here rather than pulled in as a
-// dependency since this is the only place ANSI handling happens and a
-// route this deliberately isolated (frontend-plan.md section 1) should
-// not grow its dependency surface for a five-line regex. Matches both CSI
+// dependency since this is the only place ANSI handling happens and this
+// deliberately isolated concern should not grow its dependency surface
+// for a five-line regex. Matches both CSI
 // sequences (ESC [ ... <final byte>, e.g. "\x1B[31m" for color, "\x1B[2K"
 // to clear a line) and OSC sequences (ESC ] ... BEL, e.g. hyperlink/title
 // codes some build tools emit).

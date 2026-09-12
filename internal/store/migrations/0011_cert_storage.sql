@@ -1,4 +1,4 @@
--- Phase 3 (TASKS.md 3.6): distributed cert storage. Backs
+-- Phase 3: distributed cert storage. Backs
 -- internal/ingress.SQLiteStorage, a certmagic.Storage implementation
 -- that replaces Caddy's default file-system storage module
 -- (internal/ingress.FileStorage) for certificates and ACME account

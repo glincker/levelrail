@@ -34,8 +34,9 @@ type RegistryCredentialStore interface {
 }
 
 // RegistryCredentialSecretsSetter is the surface registry credential
-// create/update/test needs from internal/secrets.Manager. Resolve is used
-// only by handleTestRegistryCredential, to authenticate against the real
+// create/update/test/browse needs from internal/secrets.Manager. Resolve
+// is used by handleTestRegistryCredential and the two credential browse
+// handlers in registry_catalog.go, to authenticate against the real
 // registry on the operator's behalf; it is never used to echo a password
 // back in an HTTP response, the same boundary GitSourceSecrets already
 // draws for its own Resolve use.

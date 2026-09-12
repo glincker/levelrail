@@ -10,6 +10,7 @@ import {
   useDeployStatus,
 } from '../../queries/deploys'
 import { summarizeAppStatus } from '../../lib/appStatus'
+import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { CloneAppDialog } from '../../components/CloneAppDialog'
 import { DeleteAppDialog } from '../../components/DeleteAppDialog'
@@ -48,8 +49,8 @@ const APP_SECTION_LABELS: Record<string, string> = {
   exec: 'Exec',
 }
 
-// App detail layout route (TASKS.md 1.10, expanded into a per-section
-// nested-route layout): this file used to render all 8 sections itself as client-side
+// App detail layout route, expanded into a per-section nested-route
+// layout: this file used to render all 8 sections itself as client-side
 // Tabs/TabsContent panels. They are now real nested routes under
 // /apps/$name/* (overview.tsx, domains.tsx, environment.tsx, health.tsx,
 // resources.tsx, metrics.tsx, logs.tsx, alerts.tsx), each deep-linkable,
@@ -60,9 +61,8 @@ const APP_SECTION_LABELS: Record<string, string> = {
 // deploy-trigger form, then renders <Outlet /> for whichever section
 // route is active.
 //
-// Both queries are primed here, matching frontend-plan.md section 3's
-// "cross-cutting" rule that a route's data comes from typed loaders, not
-// fetches in the component body: the app resource itself (GET
+// Both queries are primed here so the route's data comes from typed
+// loaders, not fetches in the component body: the app resource itself (GET
 // /api/v1/apps/{name}) and its current reconcile status (GET
 // /api/v1/apps/{name}/deploys). Every child section route reads the same
 // cache via useApp/useDeployStatus (keyed identically, see queries/apps.ts
@@ -94,7 +94,7 @@ function AppDetailLayout() {
   // aside entirely rather than wrapping it. There is no in-app link to
   // this route yet: the backend has no deploy-history/attempt-listing
   // endpoint to source a deployId from, so this only fixes the route for
-  // direct navigation, see TASKS-v2.md.
+  // direct navigation.
   const isViewingDeployLogs = useRouterState({
     select: (s) => s.location.pathname.includes('/deploys/'),
   })
@@ -148,11 +148,11 @@ function AppDetailLayout() {
 // fetchApp (queries/apps.ts) throws a plain Error for a 404, which lands
 // here rather than crashing the whole route tree. Kept deliberately
 // minimal: a name, a message, and a way back to the list.
-function AppDetailError({ error }: { error: Error }) {
+function AppDetailError({ error }: { error: unknown }) {
   return (
     <Alert variant="destructive">
       <AlertDescription>
-        <p>{error.message}</p>
+        <p>{routeErrorMessage(error)}</p>
         <Link to="/apps" className="mt-2 inline-block underline">
           Back to apps
         </Link>

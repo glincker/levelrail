@@ -31,6 +31,10 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 		Volumes: []ServiceVolume{
 			{Name: "app-web-data", ContainerPath: "/var/lib/data"},
 		},
+		BindMounts: []ServiceBindMount{
+			{HostPath: "/srv/web/uploads", ContainerPath: "/uploads"},
+			{HostPath: "/srv/web/config", ContainerPath: "/config", ReadOnly: true},
+		},
 		Hooks: &ServiceHooks{PreDeploy: "rails db:migrate", PostDeploy: "curl -f https://hooks.example.com/deployed"},
 	}
 
@@ -63,6 +67,9 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got.Volumes, want.Volumes) {
 		t.Errorf("Volumes = %+v, want %+v", got.Volumes, want.Volumes)
+	}
+	if !reflect.DeepEqual(got.BindMounts, want.BindMounts) {
+		t.Errorf("BindMounts = %+v, want %+v", got.BindMounts, want.BindMounts)
 	}
 	if got.Hooks == nil || *got.Hooks != *want.Hooks {
 		t.Errorf("Hooks = %+v, want %+v", got.Hooks, want.Hooks)
@@ -898,7 +905,7 @@ func TestSaveDesiredService_RedeployDoesNotResetAppID(t *testing.T) {
 	}
 }
 
-// TestListDesiredServicesByNode is TASKS.md 3.7's drain and
+// TestListDesiredServicesByNode is the drain and
 // delete-guard primitive: find what's placed on a node without
 // listing every service and filtering client-side.
 func TestListDesiredServicesByNode(t *testing.T) {
@@ -1063,6 +1070,95 @@ func TestSaveDesiredService_NilLabels_RoundTripsToEmptyNonNilMap(t *testing.T) {
 	}
 	if len(got.Labels) != 0 {
 		t.Errorf("Labels = %+v, want empty", got.Labels)
+	}
+}
+
+func TestSaveDesiredService_Command_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredService{
+		Name: "minio", Image: "minio/minio:latest", Port: 9000,
+		Command: []string{"server", "/data", "--console-address", ":9001"},
+	}
+	if err := db.SaveDesiredService(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "minio")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !reflect.DeepEqual(got.Command, want.Command) {
+		t.Errorf("Command = %+v, want %+v", got.Command, want.Command)
+	}
+}
+
+// TestSaveDesiredService_NilCommand_RoundTripsToEmptyNonNilSlice mirrors
+// nonNilSlice's Domains guarantee: a service saved with no command:
+// override reads back a non-nil (if empty) slice, one less nil-check for
+// every caller.
+func TestSaveDesiredService_NilCommand_RoundTripsToEmptyNonNilSlice(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Command == nil {
+		t.Fatal("Command = nil, want a non-nil empty slice")
+	}
+	if len(got.Command) != 0 {
+		t.Errorf("Command = %+v, want empty", got.Command)
+	}
+}
+
+func TestSaveDesiredService_Entrypoint_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredService{
+		Name: "postgres", Image: "postgres:16", Port: 5432,
+		Entrypoint: []string{"docker-entrypoint.sh", "-c", "config_file=/etc/postgresql.conf"},
+	}
+	if err := db.SaveDesiredService(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "postgres")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !reflect.DeepEqual(got.Entrypoint, want.Entrypoint) {
+		t.Errorf("Entrypoint = %+v, want %+v", got.Entrypoint, want.Entrypoint)
+	}
+}
+
+// TestSaveDesiredService_NilEntrypoint_RoundTripsToEmptyNonNilSlice
+// mirrors TestSaveDesiredService_NilCommand_RoundTripsToEmptyNonNilSlice
+// above for the entrypoint column.
+func TestSaveDesiredService_NilEntrypoint_RoundTripsToEmptyNonNilSlice(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Entrypoint == nil {
+		t.Fatal("Entrypoint = nil, want a non-nil empty slice")
+	}
+	if len(got.Entrypoint) != 0 {
+		t.Errorf("Entrypoint = %+v, want empty", got.Entrypoint)
 	}
 }
 

@@ -27,8 +27,8 @@ trap 'rm -f "$FILTERED"' EXIT
 # First line of a coverprofile is the mode line (e.g. "mode: atomic"), the
 # rest are one statement-block per line. Keep the mode line, then keep only
 # statement lines whose file path contains the prefix we're gating on,
-# excluding generated *.pb.go/*_grpc.pb.go files (TASKS.md 3.2 added the
-# first of these, internal/agent/agentpb): protoc-generated code has no
+# excluding generated *.pb.go/*_grpc.pb.go files (internal/agent/agentpb
+# added the first of these): protoc-generated code has no
 # testable logic of its own (it's marshaling/dispatch boilerplate,
 # already exercised indirectly by every live test that actually talks
 # over the wire), so including it here only dilutes the number with

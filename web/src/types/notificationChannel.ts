@@ -10,6 +10,15 @@ export type NotificationChannelKind =
   | 'pushover'
   | 'pagerduty'
   | 'teams'
+  | 'resend'
+  | 'ntfy'
+  | 'gotify'
+  | 'mattermost'
+  | 'lark'
+  | 'rocketchat'
+  | 'opsgenie'
+  | 'webex'
+  | 'googlechat'
 
 export interface NotificationChannel {
   id: string

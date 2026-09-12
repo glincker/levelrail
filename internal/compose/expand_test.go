@@ -237,9 +237,10 @@ services:
 }
 
 func TestExpandBuildService_BindMountVolume_Rejected(t *testing.T) {
-	// ValidateForBuild must still reject everything Validate itself
-	// rejects other than build:, e.g. a bind-mount volume: allowing
-	// build: is the one, narrow carve-out, not a general loosening.
+	// A relative bind-mount path is rejected at Parse() itself
+	// (compose.Volume's own UnmarshalYAML), before ValidateForBuild ever
+	// runs; see TestExpandBuildService_AbsoluteBindMountVolume_Rejected
+	// for the case that reaches ValidateForBuild's own rejection.
 	sourceDir := t.TempDir()
 	writeComposeFile(t, sourceDir, "docker-compose.yml", `
 services:
@@ -247,6 +248,30 @@ services:
     build: ./web
     volumes:
       - ./local:/data
+`)
+
+	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}}
+	_, _, err := ExpandBuildService(svc, sourceDir)
+	if err == nil {
+		t.Fatal("ExpandBuildService() error = nil, want a bind-mount rejection error")
+	}
+}
+
+// TestExpandBuildService_AbsoluteBindMountVolume_Rejected proves
+// ValidateForBuild rejects a bind mount even when it's a well-formed,
+// non-deny-listed absolute path, unlike Validate (the direct-import
+// path, TestParse_AbsoluteBindMountVolume in compose_test.go): the
+// expanded result here is a spec.Service, and spec.Volume has no
+// host-path concept to carry a bind mount into (ValidateForBuild's own
+// doc comment).
+func TestExpandBuildService_AbsoluteBindMountVolume_Rejected(t *testing.T) {
+	sourceDir := t.TempDir()
+	writeComposeFile(t, sourceDir, "docker-compose.yml", `
+services:
+  web:
+    build: ./web
+    volumes:
+      - /srv/data:/data
 `)
 
 	svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}}

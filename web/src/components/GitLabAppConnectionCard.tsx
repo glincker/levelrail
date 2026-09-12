@@ -1,37 +1,24 @@
 import { useState } from 'react'
-import {
-  CheckCircleIcon,
-  GitlabLogoIcon,
-  WarningIcon,
-  XCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { GitlabLogoIcon } from '@phosphor-icons/react/dist/ssr'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { toast } from '@/components/ui/toast'
+import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   useConnectGitLabApp,
   useDisconnectGitLabApp,
   useGitLabAppStatus,
 } from '../queries/gitlabApp'
 import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
+import {
+  ConfiguredStatusHeading,
+  ConnectionCardHeader,
+  DisconnectConnectionDialog,
+  FormDialogFooter,
+  mutationToastCallbacks,
+  ResettableDialog,
+} from './ConnectionCard'
 
 // Status card for the GitLab App connection: not connected / configured
 // but not yet authorized / connected as <instance>. Unlike GitHub's
@@ -52,39 +39,18 @@ export function GitLabAppConnectionCard() {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <GitlabLogoIcon className="size-4" />
-          </div>
-          <div>
-            <CardTitle>GitLab App</CardTitle>
-            <CardDescription>
-              Connect a GitLab OAuth Application for project browsing and
-              webhook-driven deploys, including self-hosted instances.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
+      <ConnectionCardHeader
+        icon={GitlabLogoIcon}
+        title="GitLab App"
+        description="Connect a GitLab OAuth Application for project browsing and webhook-driven deploys, including self-hosted instances."
+      />
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
           <div className="space-y-1">
-            {status.connected ? (
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <CheckCircleIcon className="size-4 text-green-600 dark:text-green-400" />
-                Configured
-                {status.authorized ? (
-                  <Badge variant="success">authorized</Badge>
-                ) : (
-                  <Badge variant="warning">not authorized yet</Badge>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <XCircleIcon className="size-4" />
-                Not connected
-              </div>
-            )}
+            <ConfiguredStatusHeading
+              connected={status.connected}
+              authorized={status.authorized}
+            />
             {status.connected ? (
               <p className="font-mono text-sm text-muted-foreground">
                 {status.instance_url}
@@ -115,55 +81,29 @@ export function GitLabAppConnectionCard() {
                   Connect
                 </Button>
               ) : null}
-              <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-                  Disconnect
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-sm">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-1.5 text-destructive">
-                      <WarningIcon className="size-4" aria-hidden="true" />
-                      Disconnect GitLab App?
-                    </DialogTitle>
-                    <DialogDescription>
-                      This stops this control plane from using the connection to
-                      list projects or register webhooks. It does not revoke the
-                      authorization or delete the Application on GitLab itself.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setConfirmOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      disabled={disconnect.isPending}
-                      onClick={() => {
-                        disconnect.mutate(undefined, {
-                          onSuccess: () => {
-                            setConfirmOpen(false)
-                            toast.add({ title: 'GitLab App disconnected.', type: 'success' })
-                          },
-                          onError: (error) => {
-                            toast.add({
-                              title: 'Could not disconnect the GitLab App.',
-                              description: error.message,
-                              type: 'error',
-                            })
-                          },
-                        })
-                      }}
-                    >
-                      {disconnect.isPending ? 'Disconnecting...' : 'Disconnect'}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <DisconnectConnectionDialog
+                open={confirmOpen}
+                onOpenChange={setConfirmOpen}
+                title="Disconnect GitLab App?"
+                description={
+                  <>
+                    This stops this control plane from using the connection to
+                    list projects or register webhooks. It does not revoke the
+                    authorization or delete the Application on GitLab itself.
+                  </>
+                }
+                pending={disconnect.isPending}
+                onConfirm={() => {
+                  disconnect.mutate(
+                    undefined,
+                    mutationToastCallbacks(
+                      'GitLab App disconnected.',
+                      'Could not disconnect the GitLab App.',
+                      () => setConfirmOpen(false),
+                    ),
+                  )
+                }}
+              />
             </div>
           ) : (
             <Button type="button" size="sm" onClick={() => setConfigureOpen(true)}>
@@ -192,11 +132,11 @@ function ConfigureDialog({
   open,
   onOpenChange,
   baseURL,
-}: {
+}: Readonly<{
   open: boolean
   onOpenChange: (open: boolean) => void
   baseURL?: string
-}) {
+}>) {
   const connect = useConnectGitLabApp()
   const [instanceURL, setInstanceURL] = useState('https://gitlab.com')
   const [clientID, setClientID] = useState('')
@@ -221,33 +161,19 @@ function ConfigureDialog({
         client_id: clientID.trim(),
         client_secret: clientSecret,
       },
-      {
-        onSuccess: () => {
-          toast.add({ title: 'GitLab App configured.', type: 'success' })
+      mutationToastCallbacks(
+        'GitLab App configured.',
+        'Could not configure the GitLab App.',
+        () => {
           resetForm()
           onOpenChange(false)
         },
-        onError: (error) => {
-          toast.add({
-            title: 'Could not configure the GitLab App.',
-            description: error.message,
-            type: 'error',
-          })
-        },
-      },
+      ),
     )
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) {
-          resetForm()
-        }
-        onOpenChange(next)
-      }}
-    >
+    <ResettableDialog open={open} onOpenChange={onOpenChange} onReset={resetForm}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Configure a GitLab OAuth Application</DialogTitle>
@@ -310,26 +236,18 @@ function ConfigureDialog({
             />
           </Field>
         </div>
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              resetForm()
-              onOpenChange(false)
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            disabled={!canSubmit || connect.isPending}
-            onClick={handleSubmit}
-          >
-            {connect.isPending ? 'Saving...' : 'Save'}
-          </Button>
-        </DialogFooter>
+        <FormDialogFooter
+          onCancel={() => {
+            resetForm()
+            onOpenChange(false)
+          }}
+          submitDisabled={!canSubmit || connect.isPending}
+          pending={connect.isPending}
+          onSubmit={handleSubmit}
+          submitLabel="Save"
+          pendingLabel="Saving..."
+        />
       </DialogContent>
-    </Dialog>
+    </ResettableDialog>
   )
 }

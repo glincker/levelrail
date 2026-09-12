@@ -1,4 +1,4 @@
-// Package database implements TASKS.md 1.8's managed database controller:
+// Package database implements the managed database controller:
 // the reconcile.Controller that converges a store-backed
 // store.DesiredDatabase to a running, volume-backed container, the same
 // architectural pattern internal/reconcile/application already
@@ -21,7 +21,7 @@
 //
 // Postgres cannot run safely without credentials: database auth needs
 // the same envelope-encrypted secret storage the secrets design specifies
-// (TASKS.md 1.7, internal/secrets.Manager), which exists but is only
+// (internal/secrets.Manager), which exists but is only
 // wired into this controller when the control plane itself has a
 // master key configured (cmd/levelrail's dynamicSource calls
 // postgresCredentialsFor and passes the result via
@@ -42,6 +42,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -71,6 +72,11 @@ const (
 	mysqlContainerPort      = 3306
 	mongoContainerPort      = 27017
 	clickhouseContainerPort = 8123
+	// redisTLSContainerPort is Redis's own --tls-port value this
+	// controller sets when TLS is enabled (WithTLS): --port 0 disables
+	// the plaintext port entirely, so this becomes the only port a
+	// Redis-family container with TLS actually listens on.
+	redisTLSContainerPort = 6380
 )
 
 const defaultStopTimeout = 10 * time.Second
@@ -83,7 +89,7 @@ type Store interface {
 }
 
 // PostgresCredentials is what Postgres reconciliation needs once
-// TASKS.md 1.7 (envelope-encrypted secrets) lands: a username and
+// envelope-encrypted secrets land: a username and
 // password to inject as POSTGRES_USER/POSTGRES_PASSWORD. Deliberately a
 // plain struct, not wired to any secret store: Controller takes an
 // optional, currently-always-nil *PostgresCredentials so real Postgres
@@ -157,6 +163,7 @@ type Controller struct {
 	mongoCreds      *MongoDBCredentials
 	mariadbCreds    *MariaDBCredentials
 	clickhouseCreds *ClickHouseCredentials
+	tls             *TLSMaterial
 	meshDNSAddr     string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 }
 
@@ -164,8 +171,8 @@ type Controller struct {
 type Option func(*Controller)
 
 // WithPostgresCredentials supplies the credentials Postgres reconciliation
-// needs. Until TASKS.md 1.7 exists nothing calls this, so every Postgres
-// database reports the credentials-blocked condition instead of starting
+// needs. Until envelope-encrypted secrets exist nothing calls this, so
+// every Postgres database reports the credentials-blocked condition instead of starting
 // an unauthenticated container.
 func WithPostgresCredentials(creds *PostgresCredentials) Option {
 	return func(c *Controller) { c.postgresCreds = creds }
@@ -202,6 +209,17 @@ func WithMariaDBCredentials(creds *MariaDBCredentials) Option {
 // the credentials-blocked condition.
 func WithClickHouseCredentials(creds *ClickHouseCredentials) Option {
 	return func(c *Controller) { c.clickhouseCreds = creds }
+}
+
+// WithTLS supplies the self-signed certificate/key an engine that
+// SupportsTLS should terminate TLS with, generated once and persisted
+// the same way credentials already are (cmd/levelrail's tlsMaterialFor).
+// Only read by the Postgres and Redis cases in Reconcile; every other
+// engine ignores it. Nil (the default) reconciles exactly as before this
+// option existed: plaintext, same as every database created before this
+// feature.
+func WithTLS(material *TLSMaterial) Option {
+	return func(c *Controller) { c.tls = material }
 }
 
 // WithMeshDNSAddr points every container this controller creates at addr,
@@ -263,13 +281,14 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 	switch desired.Engine {
 	case store.EngineRedis:
-		return c.reconcileEngine(ctx, desired, nil, nil, redisDataPath, redisContainerPort)
+		command, containerPort := redisCommandAndPort(c.tls)
+		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls)
 
 	case store.EnginePostgres:
 		if c.postgresCreds == nil {
 			// Deliberately not an error: this is a known, permanent,
-			// documented block until TASKS.md 1.7 lands, not a transient
-			// failure that should retry-and-log-error forever. The
+			// documented block until envelope-encrypted secrets land, not
+			// a transient failure that should retry-and-log-error forever. The
 			// condition itself is the loud explanation.
 			return credentialsBlockedResult(), nil
 		}
@@ -277,7 +296,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"POSTGRES_USER":     c.postgresCreds.Username,
 			"POSTGRES_PASSWORD": c.postgresCreds.Password,
 		}
-		return c.reconcileEngine(ctx, desired, env, nil, postgresDataPath, postgresContainerPort)
+		var command []string
+		if c.tls != nil {
+			command = postgresTLSCommand()
+		}
+		return c.reconcileEngine(ctx, desired, env, command, postgresDataPath, postgresContainerPort, c.tls)
 
 	case store.EngineMySQL:
 		if c.mysqlCreds == nil {
@@ -298,7 +321,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MYSQL_USER":          c.mysqlCreds.Username,
 			"MYSQL_PASSWORD":      c.mysqlCreds.Password,
 		}
-		return c.reconcileEngine(ctx, desired, env, nil, mysqlDataPath, mysqlContainerPort)
+		return c.reconcileEngine(ctx, desired, env, nil, mysqlDataPath, mysqlContainerPort, nil)
 
 	case store.EngineMongoDB:
 		if c.mongoCreds == nil {
@@ -310,7 +333,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MONGO_INITDB_ROOT_USERNAME": c.mongoCreds.Username,
 			"MONGO_INITDB_ROOT_PASSWORD": c.mongoCreds.Password,
 		}
-		return c.reconcileEngine(ctx, desired, env, nil, mongoDataPath, mongoContainerPort)
+		return c.reconcileEngine(ctx, desired, env, nil, mongoDataPath, mongoContainerPort, nil)
 
 	case store.EngineMariaDB:
 		if c.mariadbCreds == nil {
@@ -331,7 +354,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// MariaDB is a MySQL-protocol-compatible fork: same data
 		// directory and port as the mysql image, reused directly rather
 		// than duplicating identical constants under a new name.
-		return c.reconcileEngine(ctx, desired, env, nil, mysqlDataPath, mysqlContainerPort)
+		return c.reconcileEngine(ctx, desired, env, nil, mysqlDataPath, mysqlContainerPort, nil)
 
 	case store.EngineKeyDB:
 		// KeyDB is a Redis-protocol-compatible drop-in fork: same
@@ -340,13 +363,13 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// under a new name. See the package doc comment for why an
 		// unauthenticated Redis-family database is an accepted posture
 		// here.
-		return c.reconcileEngine(ctx, desired, nil, nil, redisDataPath, redisContainerPort)
+		return c.reconcileEngine(ctx, desired, nil, nil, redisDataPath, redisContainerPort, nil)
 
 	case store.EngineDragonfly:
 		// dragonflyCommand pins dbfilename so restoreRedisLike's
 		// /data/dump.rdb write actually gets loaded on restart; Dragonfly's
 		// own default (dump-{timestamp}) never matches that path.
-		return c.reconcileEngine(ctx, desired, nil, dragonflyCommand, redisDataPath, redisContainerPort)
+		return c.reconcileEngine(ctx, desired, nil, dragonflyCommand, redisDataPath, redisContainerPort, nil)
 
 	case store.EngineClickHouse:
 		if c.clickhouseCreds == nil {
@@ -358,7 +381,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"CLICKHOUSE_PASSWORD":                  c.clickhouseCreds.Password,
 			"CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT": "1",
 		}
-		return c.reconcileEngine(ctx, desired, env, nil, clickhouseDataPath, clickhouseContainerPort)
+		return c.reconcileEngine(ctx, desired, env, nil, clickhouseDataPath, clickhouseContainerPort, nil)
 
 	default:
 		err := fmt.Errorf("unrecognized engine %q", desired.Engine)
@@ -366,11 +389,46 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 }
 
-// reconcileEngine is the real convergence logic, shared by Redis today
-// and by Postgres once credentials are supplied. It ensures the
-// database's data volume exists, then ensures the right container exists
-// and is running.
-func (c *Controller) reconcileEngine(ctx context.Context, desired *store.DesiredDatabase, env map[string]string, command []string, dataPath string, containerPort int) (reconcile.Result, error) {
+// Teardown stops and removes this database's container, if one exists.
+// Used both by a caller that owns this database's full lifecycle (an
+// ephemeral preview database, internal/api/preview_environments_databases.go)
+// and by callers that must call it themselves right after moving or
+// deleting desired state: Reconcile treats ErrDatabaseNotFound as "not
+// deployed yet," not "stop everything," so a moved-off-this-node or
+// deleted database is never reconciled here again otherwise. Idempotent
+// and safe to call again after a partial failure: InspectByName reports
+// the container's real state fresh on every call, so a Stop that already
+// ran (or a Remove that already succeeded) is simply skipped rather than
+// retried into an error. Does not remove the container's data volume;
+// see dataVolumeName's own doc comment.
+func (c *Controller) Teardown(ctx context.Context) error {
+	target := containerName(c.dbName)
+	state, err := c.runtime.InspectByName(ctx, target)
+	if err != nil {
+		return fmt.Errorf("database/%s: inspect %q: %w", c.dbName, target, err)
+	}
+	if state == nil {
+		return nil
+	}
+	if state.Running {
+		if err := c.runtime.Stop(ctx, state.ID, defaultStopTimeout); err != nil {
+			return fmt.Errorf("database/%s: stop %q: %w", c.dbName, target, err)
+		}
+	}
+	if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+		return fmt.Errorf("database/%s: remove %q: %w", c.dbName, target, err)
+	}
+	return nil
+}
+
+// reconcileEngine is the real convergence logic, shared by every engine
+// this controller reconciles. It ensures the database's data volume
+// exists, then ensures the right container exists and is running.
+// tlsMaterial is non-nil only for an engine WithTLS was configured for
+// and that SupportsTLS (Postgres, Redis today): reconcileEngine mounts
+// it read-only at certsMountPath and, on a brand new container, writes
+// it into that volume first (see the state == nil case below).
+func (c *Controller) reconcileEngine(ctx context.Context, desired *store.DesiredDatabase, env map[string]string, command []string, dataPath string, containerPort int, tlsMaterial *TLSMaterial) (reconcile.Result, error) {
 	image := dockerImageFor(desired.Engine) + ":" + versionOrDefault(desired.Version)
 	target := containerName(c.dbName)
 	volName := dataVolumeName(c.dbName)
@@ -390,6 +448,11 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		Env:     env,
 		Command: command,
 		Volumes: []docker.VolumeMount{{Name: volName, ContainerPath: dataPath}},
+	}
+	if tlsMaterial != nil {
+		spec.Volumes = append(spec.Volumes, docker.VolumeMount{
+			Name: certsVolumeName(c.dbName), ContainerPath: certsMountPath, ReadOnly: true,
+		})
 	}
 	if c.meshDNSAddr != "" {
 		spec.DNS = []string{c.meshDNSAddr}
@@ -416,8 +479,28 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	justDeployed := false
 	switch {
 	case state == nil:
+		if tlsMaterial != nil {
+			// Only on a brand new container: the certs volume is stable
+			// across replacements (see containerName's own doc comment on
+			// why this controller never runs two containers against the
+			// same volume), so an already-provisioned database never needs
+			// this again, matching the "generate at creation time, not
+			// every reconcile pass" invariant WithTLS's own doc comment
+			// establishes.
+			if err := c.runtime.EnsureVolume(ctx, certsVolumeName(c.dbName)); err != nil {
+				return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure certs volume: %w", c.dbName, err)
+			}
+			if err := c.provisionCerts(ctx, c.dbName, tlsMaterial); err != nil {
+				return notReady("TLSProvisionFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			}
+		}
 		if err := c.createAndStart(ctx, spec); err != nil {
-			return notReady("CreateFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			reason := "CreateFailed"
+			var startErr *startAfterCreateError
+			if errors.As(err, &startErr) {
+				reason = "StartFailedAfterCreate"
+			}
+			return notReady(reason, err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
 		justDeployed = true
 
@@ -469,13 +552,22 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	return ready("AlreadyRunning"), nil
 }
 
+// startAfterCreateError marks a createAndStart failure in the Start step,
+// after Create already succeeded, so reconcileEngine can report the
+// half-succeeded case under its own condition reason instead of the
+// plain create-failure one.
+type startAfterCreateError struct{ err error }
+
+func (e *startAfterCreateError) Error() string { return e.err.Error() }
+func (e *startAfterCreateError) Unwrap() error { return e.err }
+
 func (c *Controller) createAndStart(ctx context.Context, spec docker.ContainerSpec) error {
 	id, err := c.runtime.Create(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("create %q: %w", spec.Name, err)
 	}
 	if err := c.runtime.Start(ctx, id); err != nil {
-		return fmt.Errorf("start %q after create: %w", spec.Name, err)
+		return &startAfterCreateError{fmt.Errorf("start %q after create: %w", spec.Name, err)}
 	}
 	return nil
 }
@@ -555,6 +647,43 @@ var dockerImageMapping = map[string]string{
 	store.EngineClickHouse: "clickhouse/clickhouse-server",
 }
 
+// postgresTLSCommand overrides the postgres image's default CMD ("postgres"
+// with no args) to enable TLS via -c flags rather than a mounted
+// postgresql.conf: the entrypoint script only runs its full
+// initialization path when it recognizes the first argument as
+// "postgres", which this preserves.
+func postgresTLSCommand() []string {
+	return []string{
+		"postgres",
+		"-c", "ssl=on",
+		"-c", "ssl_cert_file=" + certsMountPath + "/" + tlsCertFile,
+		"-c", "ssl_key_file=" + certsMountPath + "/" + tlsKeyFile,
+	}
+}
+
+// redisCommandAndPort returns Redis's own container command and the port
+// it should be reached on. With tls nil this is nil/redisContainerPort,
+// byte-identical to every Redis database before this feature existed.
+// With tls set, --port 0 disables Redis's plaintext port entirely (there
+// is no partial-TLS state where both ports serve) and --tls-auth-clients
+// no skips requiring a CA certificate no client here needs, since
+// resolveDatabaseURL (internal/reconcile/application) never verifies
+// this certificate's issuer, only that the connection is encrypted.
+func redisCommandAndPort(tls *TLSMaterial) ([]string, int) {
+	if tls == nil {
+		return nil, redisContainerPort
+	}
+	command := []string{
+		"redis-server",
+		"--tls-port", strconv.Itoa(redisTLSContainerPort),
+		"--port", "0",
+		"--tls-cert-file", certsMountPath + "/" + tlsCertFile,
+		"--tls-key-file", certsMountPath + "/" + tlsKeyFile,
+		"--tls-auth-clients", "no",
+	}
+	return command, redisTLSContainerPort
+}
+
 // dragonflyCommand overrides the image's default CMD: its entrypoint.sh
 // prepends the "dragonfly" binary itself whenever the first arg starts
 // with "-", so this is passed as flags only, matching Dragonfly's own
@@ -598,7 +727,10 @@ func containerName(dbName string) string {
 
 // dataVolumeName is the named Docker volume backing dbName's data,
 // stable across container replacements (engine version bumps) so an
-// upgrade doesn't start the new version against an empty volume.
+// upgrade doesn't start the new version against an empty volume. Never
+// removed by this package, including by Teardown: docker.Runtime has no
+// RemoveVolume method today, the same gap handleDeleteDatabase's own doc
+// comment already documents for an ordinary database delete.
 func dataVolumeName(dbName string) string {
 	return "db-" + dbName + "-data"
 }

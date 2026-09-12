@@ -1,10 +1,10 @@
--- Phase 3 (TASKS.md 3.5): node workload capability. Every node has
+-- Phase 3: node workload capability. Every node has
 -- implicitly "accepted whatever's placed on it" since migration 0009
 -- added placement, with no capability gate at all; this migration makes
 -- that instead an explicit, per-node, per-workload-kind opt-in, because
 -- "does this node run application containers" and "does this node
--- accept build work" are genuinely independent questions (TASKS.md 3.5:
--- "a node can be either, both, or neither").
+-- accept build work" are genuinely independent questions: a node can be
+-- either, both, or neither.
 --
 -- accepts_app_workloads defaults to 1 (true): every node enrolled
 -- before this migration already accepts app/database placement via
@@ -18,7 +18,7 @@
 --
 -- accepts_build_workloads defaults to 0 (false): no node, including
 -- every node enrolled before this migration, has ever actually run a
--- build. Every build from Phase 1 through TASKS.md 3.4 runs against the
+-- build. Every build so far runs against the
 -- control plane's own local BuildKit connection
 -- (internal/deploy.Pipeline via cmd/levelrail's loadWebhookHandler), so
 -- "no" is the truthful default here: an operator has to explicitly opt

@@ -6,6 +6,7 @@ import { Link } from '@tanstack/react-router'
 import {
   CheckCircleIcon,
   InfoIcon,
+  ShieldWarningIcon,
   UploadSimpleIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -13,11 +14,13 @@ import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import { useDeployCompose } from '../queries/compose'
 import { useFormDraft } from '../hooks/useFormDraft'
+import { useIsRoot } from '../hooks/useIsRoot'
 import { DraftRestoredNotice } from './DraftRestoredNotice'
 
 // Same app-name shape validateAppResource (internal/api/apps.go)
@@ -49,6 +52,123 @@ const COMPOSE_PLACEHOLDER = `services:
     ports:
       - "80:80"`
 
+// BindMountHelper builds one volumes: line for a bind mount (an absolute
+// host path, not a Docker-managed named volume) and hands it to onInsert
+// to append into the compose textarea, since this form otherwise has no
+// structured place to put one: compose.yaml itself stays a single raw-
+// text field (CreateComposeFields' own doc comment), so this is a
+// generator for a line the operator pastes under the right service's
+// volumes: list, not a field that submits on its own.
+//
+// Root-gated client-side via useIsRoot, mirroring routes/settings/
+// users.tsx's own create-user/invite trigger gating: the real boundary
+// is server-side (internal/api/apps_compose.go's handleDeployCompose
+// requires AbilityRoot whenever the parsed compose body carries a bind
+// mount, 403 otherwise), this only avoids showing a control that would
+// just come back rejected for a non-root caller.
+function BindMountHelper({ onInsert }: { onInsert: (line: string) => void }) {
+  const isRoot = useIsRoot()
+  const [hostPath, setHostPath] = useState('')
+  const [containerPath, setContainerPath] = useState('')
+  const [readOnly, setReadOnly] = useState(false)
+
+  if (!isRoot) {
+    return (
+      <FieldHint>
+        Bind-mounting a real host directory (unlike a Docker-managed named
+        volume above) requires the root ability. Ask an admin for access if
+        this service needs one.
+      </FieldHint>
+    )
+  }
+
+  const canInsert = hostPath.startsWith('/') && containerPath.startsWith('/')
+
+  function handleInsert() {
+    if (!canInsert) return
+    onInsert(`      - "${hostPath}:${containerPath}${readOnly ? ':ro' : ''}"`)
+    setHostPath('')
+    setContainerPath('')
+    setReadOnly(false)
+  }
+
+  return (
+    <div className="space-y-3 rounded-lg border border-border p-3">
+      <div className="flex items-center gap-2">
+        <ShieldWarningIcon
+          className="size-4 text-amber-600 dark:text-amber-400"
+          aria-hidden="true"
+        />
+        <p className="text-sm font-medium text-foreground">
+          Add a bind mount
+        </p>
+      </div>
+      <Alert variant="destructive">
+        <WarningIcon />
+        <AlertDescription>
+          This gives the container direct access to a real directory on the
+          host machine it runs on, not a Docker-managed volume. Never point
+          this at a system directory: paths like /, /etc, /root, /boot,
+          /sys, /proc, /var/lib/docker, and /var/run (including the Docker
+          socket) are always rejected, even for a root caller.
+        </AlertDescription>
+      </Alert>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field>
+          <FieldLabel htmlFor="bind-mount-host-path">Host path</FieldLabel>
+          <Input
+            id="bind-mount-host-path"
+            placeholder="/srv/myapp/data"
+            value={hostPath}
+            onChange={(e) => {
+              setHostPath(e.target.value)
+            }}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="bind-mount-container-path">
+            Container path
+          </FieldLabel>
+          <Input
+            id="bind-mount-container-path"
+            placeholder="/data"
+            value={containerPath}
+            onChange={(e) => {
+              setContainerPath(e.target.value)
+            }}
+          />
+        </Field>
+      </div>
+      <Field orientation="horizontal">
+        <Checkbox
+          id="bind-mount-read-only"
+          checked={readOnly}
+          onCheckedChange={(checked) => {
+            setReadOnly(checked === true)
+          }}
+        />
+        <FieldLabel htmlFor="bind-mount-read-only">Read-only</FieldLabel>
+      </Field>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!canInsert}
+          onClick={handleInsert}
+        >
+          Insert into compose.yaml
+        </Button>
+        {!canInsert && (hostPath || containerPath) ? (
+          <span className="text-xs text-muted-foreground">
+            Both paths must be absolute (start with &ldquo;/&rdquo;).
+          </span>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 // The "Docker Compose" step 2 path CreateResourceWizard adds: name plus
 // a raw compose.yaml body, POSTed as-is to
 // POST /api/v1/apps/{name}/compose (handleDeployCompose,
@@ -75,11 +195,15 @@ export function CreateComposeFields({
   const deployCompose = useDeployCompose()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [fileError, setFileError] = useState<string | null>(null)
-  const { register, handleSubmit, formState, reset, setValue, watch } = useForm<
-    FormInput,
-    unknown,
-    FormOutput
-  >({
+  const {
+    register,
+    handleSubmit,
+    formState,
+    reset,
+    setValue,
+    getValues,
+    watch,
+  } = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(createComposeSchema),
     defaultValues: DEFAULT_VALUES,
   })
@@ -115,6 +239,18 @@ export function CreateComposeFields({
       { onSuccess: clearDraft },
     )
   })
+
+  // handleInsertBindMountLine appends a generated volumes: line
+  // (BindMountHelper's own doc comment) to the end of whatever compose
+  // YAML is already there, the same "no cursor-position tracking, just
+  // append" approach handleFileChange takes for an uploaded file.
+  function handleInsertBindMountLine(line: string) {
+    const current = getValues('compose')
+    const separator = current && !current.endsWith('\n') ? '\n' : ''
+    setValue('compose', current + separator + line + '\n', {
+      shouldValidate: true,
+    })
+  }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -249,6 +385,8 @@ export function CreateComposeFields({
         <FieldError errors={[formState.errors.compose]} />
         {fileError ? <FieldHint>{fileError}</FieldHint> : null}
       </Field>
+
+      <BindMountHelper onInsert={handleInsertBindMountLine} />
 
       {deployCompose.isError ? (
         <Alert variant="destructive">

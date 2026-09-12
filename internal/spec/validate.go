@@ -162,20 +162,39 @@ func (svc *Service) validatePorts(name string) error {
 	return nil
 }
 
-// validateVolumes checks svc.Volumes for a bad name and for two volumes
-// colliding on name or mount path, split out from svc.validate for the
-// same reason validateBuild's own doc comment gives.
+// validateVolumes checks svc.Volumes for a bad name, a forbidden bind-mount
+// host path, and for two volumes colliding on name or mount path, split
+// out from svc.validate for the same reason validateBuild's own doc
+// comment gives.
 func (svc *Service) validateVolumes(name string) error {
 	seenVolumeNames := make(map[string]bool, len(svc.Volumes))
 	seenVolumePaths := make(map[string]bool, len(svc.Volumes))
 	for _, v := range svc.Volumes {
-		if !nameLike.MatchString(v.Name) {
-			return fmt.Errorf("spec: service %q: volume name %q must be lowercase alphanumeric and hyphens, starting with a letter", name, v.Name)
+		switch {
+		case v.Name != "" && v.HostPath != "":
+			return fmt.Errorf("spec: service %q: volume mounted at %q must set exactly one of name or hostPath, not both", name, v.Path)
+		case v.HostPath != "":
+			if err := validateBindMountHostPath(v.HostPath); err != nil {
+				return fmt.Errorf("spec: service %q: %w", name, err)
+			}
+		case v.Name != "":
+			if v.ReadOnly {
+				return fmt.Errorf("spec: service %q: volume %q: readOnly is only meaningful alongside hostPath", name, v.Name)
+			}
+			if !nameLike.MatchString(v.Name) {
+				return fmt.Errorf("spec: service %q: volume name %q must be lowercase alphanumeric and hyphens, starting with a letter", name, v.Name)
+			}
+			if seenVolumeNames[v.Name] {
+				return fmt.Errorf("spec: service %q: duplicate volume name %q", name, v.Name)
+			}
+			seenVolumeNames[v.Name] = true
+		default:
+			// Unreachable while the JSON Schema's own oneOf (name xor
+			// hostPath) stays in sync with this, kept anyway since
+			// Validate is documented as safe to call on a hand-built Spec
+			// that never went through schema validation.
+			return fmt.Errorf("spec: service %q: volume mounted at %q must set either name or hostPath", name, v.Path)
 		}
-		if seenVolumeNames[v.Name] {
-			return fmt.Errorf("spec: service %q: duplicate volume name %q", name, v.Name)
-		}
-		seenVolumeNames[v.Name] = true
 		if seenVolumePaths[v.Path] {
 			return fmt.Errorf("spec: service %q: two volumes both mount %q", name, v.Path)
 		}

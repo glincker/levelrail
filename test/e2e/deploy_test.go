@@ -10,9 +10,9 @@
 // compose into one pipeline the way cmd/levelrail/main.go's dynamicSource
 // actually wires them at runtime.
 //
-// See TASKS.md's Phase 1 section (after 1.10) for exactly what this
-// proves and, as importantly, what it deliberately does not: no rollback,
-// no webhook/git-push path, a single service only, no multi-node.
+// What this proves, and as importantly, what it deliberately does not:
+// no rollback, no webhook/git-push path, a single service only, no
+// multi-node.
 package e2e
 
 import (
@@ -87,9 +87,9 @@ func TestDeploy_Live_BuildToHTTPS(t *testing.T) {
 	// internal/deploy.Pipeline.deployDockerfile's own call shape, called
 	// directly rather than through internal/deploy so this test owns the
 	// desired-state fields (Domains, Health.Readiness) that package's
-	// Request/translate.go don't currently expose a path to set (see
-	// TASKS.md 1.4's own scope note: domains flow through spec.Service.Domains
-	// today, but this test's fixture has no app.yaml, just a raw build).
+	// Request/translate.go don't currently expose a path to set (domains
+	// flow through spec.Service.Domains today, but this test's fixture
+	// has no app.yaml, just a raw build).
 	res, err := buildClient.Build(buildCtx, build.Request{
 		ContextDir: "../fixtures/hello-e2e",
 		Tag:        tag,

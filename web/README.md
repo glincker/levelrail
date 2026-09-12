@@ -5,9 +5,7 @@ Frontend for the control plane, embedded into the Go binary via `embed.FS`
 TanStack Router (file-based routing, per-route code splitting), TanStack
 Query, TanStack Virtual.
 
-Architecture and route structure are documented in
-`docs-local/research/frontend-plan.md`. This scaffold implements the App
-List route from that plan's section 4 skeleton; the remaining routes
+This scaffold implements the App List route; the remaining routes
 (app detail, deploy history, live build logs, env editor, domain config)
 are deferred to follow-up passes.
 

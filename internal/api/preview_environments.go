@@ -27,6 +27,17 @@ type PreviewEnvironmentStore interface {
 	ListPreviewEnvironmentsByApp(ctx context.Context, appName string) ([]store.PreviewEnvironment, error)
 	DeletePreviewEnvironment(ctx context.Context, id string) error
 	ListStalePreviewEnvironments(ctx context.Context, cutoff time.Time) ([]store.PreviewEnvironment, error)
+
+	// SavePreviewEphemeralDatabase through DeletePreviewEphemeralDatabase
+	// back the ephemeralInPreviews lifecycle
+	// (preview_environments_databases.go): provisioning a preview-scoped
+	// database instance, listing them for the API's own status surface,
+	// and tearing them down alongside the preview that owns them.
+	SavePreviewEphemeralDatabase(ctx context.Context, p store.PreviewEphemeralDatabase) error
+	GetPreviewEphemeralDatabaseByPreviewAndKey(ctx context.Context, previewEnvironmentID, sourceKey string) (*store.PreviewEphemeralDatabase, error)
+	ListPreviewEphemeralDatabasesByPreview(ctx context.Context, previewEnvironmentID string) ([]store.PreviewEphemeralDatabase, error)
+	UpdatePreviewEphemeralDatabaseStatus(ctx context.Context, id, status, statusReason, updatedAt string) error
+	DeletePreviewEphemeralDatabase(ctx context.Context, id string) error
 }
 
 // previewAppName is the naming scheme every preview deploys under. Every
@@ -144,6 +155,13 @@ func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, 
 		rt.logger.Error("api: pull request webhook: deploy failed", slog.String("error", deployErr.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
 		rt.finishPreviewFailed(ctx, gs, *preview, deployErr.Error())
 		return http.StatusInternalServerError, "deploy failed\n"
+	}
+
+	if len(gs.Databases) > 0 {
+		provisioned := rt.provisionEphemeralDatabases(ctx, preview.ID, previewName, gs.Databases)
+		if len(gs.Services) == 0 && len(provisioned) == 1 {
+			rt.attachEphemeralDatabase(ctx, previewName, provisioned[0])
+		}
 	}
 
 	if _, environmentID, envErr := rt.ensurePreviewEnvironmentTier(ctx, appName); envErr != nil {
@@ -420,15 +438,17 @@ func (rt *Router) teardownPullRequestPreview(ctx context.Context, appName string
 // (the row, or the still-linked app) for the next attempt to find and
 // retry rather than an orphan with no record at all.
 func (rt *Router) teardownPreviewRecord(ctx context.Context, preview store.PreviewEnvironment) (int, string) {
-	if failed := rt.teardownPreviewApp(ctx, preview.PreviewAppID); len(failed) > 0 {
+	failed := rt.teardownPreviewApp(ctx, preview.PreviewAppID)
+	failed = append(failed, rt.teardownPreviewEphemeralDatabases(ctx, preview.ID)...)
+	if len(failed) > 0 {
 		preview.Status = store.PreviewStatusFailed
-		preview.StatusReason = fmt.Sprintf("teardown left %d service(s) undeleted: %s", len(failed), strings.Join(failed, ", "))
+		preview.StatusReason = fmt.Sprintf("teardown left %d resource(s) undeleted: %s", len(failed), strings.Join(failed, ", "))
 		preview.UpdatedAt = time.Now().UTC().Format(time.RFC3339Nano)
 		if err := rt.previewEnvironments.UpdatePreviewEnvironment(ctx, preview); err != nil {
 			rt.logger.Error("api: preview teardown: record failure failed", slog.String("error", err.Error()), slog.String("preview_id", preview.ID))
 		}
-		rt.logger.Error("api: preview teardown partially failed", slog.String("app_name", preview.AppName), slog.Int("pr_number", preview.PRNumber), slog.Any("failed_services", failed))
-		return http.StatusMultiStatus, fmt.Sprintf("preview teardown partially failed: %d service(s) undeleted\n", len(failed))
+		rt.logger.Error("api: preview teardown partially failed", slog.String("app_name", preview.AppName), slog.Int("pr_number", preview.PRNumber), slog.Any("failed_resources", failed))
+		return http.StatusMultiStatus, fmt.Sprintf("preview teardown partially failed: %d resource(s) undeleted\n", len(failed))
 	}
 
 	if err := rt.previewEnvironments.DeletePreviewEnvironment(ctx, preview.ID); err != nil {
@@ -449,11 +469,6 @@ func (rt *Router) teardownPreviewRecord(ctx context.Context, preview store.Previ
 // nil means teardown fully succeeded. A previewAppID with no matching
 // store.App (already deleted, e.g. a retried teardown) is treated as
 // already torn down, not a failure.
-//
-// Like every other delete in this codebase (store.DeleteDesiredService's
-// own doc comment), this removes desired state; it does not itself stop
-// the running container, a known, pre-existing reconciler gap this
-// feature inherits rather than introduces.
 func (rt *Router) teardownPreviewApp(ctx context.Context, previewAppID string) []string {
 	app, err := rt.appGroups.GetAppByName(ctx, previewAppID)
 	if errors.Is(err, store.ErrAppNotFound) {
@@ -475,7 +490,9 @@ func (rt *Router) teardownPreviewApp(ctx context.Context, previewAppID string) [
 		if err := rt.apps.DeleteDesiredService(ctx, svc.Name); err != nil && !errors.Is(err, store.ErrServiceNotFound) {
 			rt.logger.Error("api: teardown preview app: delete service failed", slog.String("error", err.Error()), slog.String("service", svc.Name))
 			failed = append(failed, svc.Name)
+			continue
 		}
+		rt.teardownServiceContainers(svc.Name, svc.NodeID)
 	}
 	if len(failed) > 0 {
 		return failed

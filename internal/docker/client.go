@@ -177,6 +177,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 			Env:          toDockerEnv(spec.Env),
 			Labels:       spec.Labels,
 			Cmd:          spec.Command,
+			Entrypoint:   spec.Entrypoint,
 		},
 		hostConfig,
 		toNetworkingConfig(spec.Network), nil,
@@ -265,7 +266,7 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 		// Explicitly "no": the reconciler, not Docker, decides whether a
 		// dead container comes back. See ContainerSpec's doc comment.
 		RestartPolicy: container.RestartPolicy{Name: container.RestartPolicyDisabled},
-		Mounts:        toDockerMounts(spec.Volumes),
+		Mounts:        append(toDockerMounts(spec.Volumes), toDockerBindMounts(spec.BindMounts)...),
 	}
 	if spec.Resources != nil {
 		hostConfig.Resources = container.Resources{
@@ -353,6 +354,22 @@ func toDockerMounts(volumes []VolumeMount) []mount.Mount {
 			Source:   v.Name,
 			Target:   v.ContainerPath,
 			ReadOnly: v.ReadOnly,
+		})
+	}
+	return out
+}
+
+func toDockerBindMounts(mounts []BindMount) []mount.Mount {
+	if len(mounts) == 0 {
+		return nil
+	}
+	out := make([]mount.Mount, 0, len(mounts))
+	for _, m := range mounts {
+		out = append(out, mount.Mount{
+			Type:     mount.TypeBind,
+			Source:   m.HostPath,
+			Target:   m.ContainerPath,
+			ReadOnly: m.ReadOnly,
 		})
 	}
 	return out

@@ -1,7 +1,7 @@
 package main
 
-// mesh.go wires TASKS.md 3.4's WireGuard mesh into the control plane,
-// gated behind APP_MESH_ENABLED (default off).
+// mesh.go wires the WireGuard mesh into the control plane, gated
+// behind APP_MESH_ENABLED (default off).
 //
 // It is opt-in rather than always-on for a concrete reason, not general
 // caution: internal/network.ConfigSink's gRPC arm, the piece that would

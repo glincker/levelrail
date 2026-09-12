@@ -92,6 +92,48 @@ export function useCreateNotificationChannel() {
   })
 }
 
+// PUT /api/v1/notification-channels/{id} (handleUpdateNotificationChannel):
+// a full replace, same request shape as create.
+export async function updateNotificationChannel(
+  id: string,
+  req: CreateNotificationChannelRequest,
+): Promise<NotificationChannel> {
+  const res = await fetch(
+    `/api/v1/notification-channels/${encodeURIComponent(id)}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `update notification channel failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as NotificationChannel
+}
+
+export function useUpdateNotificationChannel() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    NotificationChannel,
+    ApiError,
+    { id: string; req: CreateNotificationChannelRequest }
+  >({
+    mutationFn: ({ id, req }) => updateNotificationChannel(id, req),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: notificationChannelKeys.list(),
+      })
+    },
+  })
+}
+
 export async function deleteNotificationChannel(id: string): Promise<void> {
   const res = await fetch(
     `/api/v1/notification-channels/${encodeURIComponent(id)}`,

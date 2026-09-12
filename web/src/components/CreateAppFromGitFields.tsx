@@ -262,10 +262,9 @@ function gitSourceBuildFields(
   }
 }
 
-// connectGitSourceFor is the fix for both bugs docs-local/research/git-
-// provider-connect-ux-unification-proposal.md documents: every provider,
-// including GitHub, now gets an actual git_source row connected between
-// app creation and the first build, not just GitLab/Bitbucket.
+// connectGitSourceFor fixes both bugs: every provider, including GitHub,
+// now gets an actual git_source row connected between app creation and
+// the first build, not just GitLab/Bitbucket.
 //
 // `source` is trusted only when its repoUrl/branch still match what's
 // actually in the form: GitBuildSourceFields' own Repository URL/Branch

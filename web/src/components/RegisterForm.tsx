@@ -31,8 +31,8 @@ const registerSchema = z
 type RegisterFormValues = z.infer<typeof registerSchema>
 
 // First-run admin setup. There is deliberately no "does an admin already
-// exist" signal from the backend (TASKS.md's own framing, kept out of
-// scope to avoid backend churn), so this form is reached by the operator
+// exist" signal from the backend (deliberately kept out of scope to
+// avoid backend churn), so this form is reached by the operator
 // picking the "Set up admin account" tab themselves (routes/login.tsx),
 // not by any auto-detection. A 409 here means they picked wrong, an
 // admin already exists, so this is the one place (per the task's

@@ -2,9 +2,8 @@
 -- solely from its image (internal/reconcile/application.ContainerName),
 -- so re-deploying the exact same image tag was a genuine no-op: the
 -- reconciler saw no diff and did nothing, meaning there was no way to
--- ask "restart this app" without a real image change. See
--- docs-local/logs/QUEUE.md's own backlog note on this, and this
--- migration's companion change to ContainerName, which folds this
+-- ask "restart this app" without a real image change. This
+-- migration's companion change to ContainerName folds this
 -- column into the container name hash (only when non-empty, so every
 -- pre-existing, never-restarted service keeps the exact container name
 -- it already has on upgrade).

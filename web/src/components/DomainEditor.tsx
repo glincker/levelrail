@@ -12,6 +12,7 @@ import { DomainDnsCheck } from './DomainDnsCheck'
 import { DomainBasicAuthControl } from './DomainBasicAuthControl'
 import { DomainMaintenanceControl } from './DomainMaintenanceControl'
 import { DomainTLSCertControl } from './DomainTLSCertControl'
+import { DomainWafControl } from './DomainWafControl'
 import { certStatusMeta } from '../lib/certStatus'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -188,6 +189,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                             <DomainBasicAuthControl appName={app.name} domain={domain} />
                             <DomainMaintenanceControl appName={app.name} domain={domain} />
                             <DomainTLSCertControl appName={app.name} domain={domain} />
+                            <DomainWafControl appName={app.name} domain={domain} />
                           </>
                         ) : null}
                       </div>

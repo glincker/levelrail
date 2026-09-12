@@ -77,10 +77,11 @@ export function useNodeMetricSeries(
   nodeId: string,
   metric: NodeMetricName,
   range: MetricRangeParams,
-  options?: { enabled?: boolean },
+  options?: { enabled?: boolean; retry?: boolean },
 ) {
   return useQuery({
     ...nodeMetricSeriesQueryOptions(nodeId, metric, range),
     enabled: options?.enabled ?? true,
+    retry: options?.retry ?? true,
   })
 }

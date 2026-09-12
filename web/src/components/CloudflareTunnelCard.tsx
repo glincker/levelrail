@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   CloudCheckIcon,
   CheckCircleIcon,
@@ -12,9 +11,8 @@ import {
   useDisconnectCloudflareTunnel,
   useUpdateCloudflareTunnelSettings,
 } from '../queries/cloudflareTunnel'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge, type badgeVariants } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import type { badgeVariants } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Card,
   CardContent,
@@ -24,8 +22,12 @@ import {
 } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { toast } from '@/components/ui/toast'
+import {
+  SettingsEnabledRow,
+  SettingsFormActions,
+  SettingsFormAlerts,
+  useTokenToggleForm,
+} from './SettingsCard'
 
 const STATUS_VARIANT: Record<
   CloudflareTunnelSettings['status'],
@@ -48,16 +50,6 @@ const STATUS_ICON: Record<CloudflareTunnelSettings['status'], Icon> = {
   disconnected: MinusCircleIcon,
 }
 
-function StatusBadge({ status }: { status: CloudflareTunnelSettings['status'] }) {
-  const StatusIcon = STATUS_ICON[status]
-  return (
-    <Badge variant={STATUS_VARIANT[status]} className="shrink-0">
-      <StatusIcon className="size-3" />
-      {STATUS_LABEL[status]}
-    </Badge>
-  )
-}
-
 // Instance-level Cloudflare Tunnel connection: GET/PUT/DELETE
 // /api/v1/settings/cloudflare-tunnel. One tunnel per control plane (not
 // per-app), matching store.CloudflareTunnelSettings' own single-row
@@ -70,41 +62,25 @@ export function CloudflareTunnelCard({
 }: {
   settings: CloudflareTunnelSettings
 }) {
-  const [enabled, setEnabled] = useState(settings.enabled)
-  const [token, setToken] = useState('')
-  const [formError, setFormError] = useState<string | null>(null)
   const updateSettings = useUpdateCloudflareTunnelSettings()
   const disconnect = useDisconnectCloudflareTunnel()
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setFormError(null)
-    if (enabled && !settings.has_token && !token.trim()) {
-      setFormError('A tunnel token is required to enable Cloudflare Tunnel.')
-      return
-    }
-    updateSettings.mutate(
-      { enabled, token: token.trim() || undefined },
-      {
-        onSuccess: () => {
-          setToken('')
-          toast.add({ title: 'Cloudflare Tunnel settings saved.', type: 'success' })
-        },
-      },
-    )
-  }
-
-  function handleDisconnect() {
-    disconnect.mutate(undefined, {
-      onSuccess: () => {
-        setEnabled(false)
-        setToken('')
-        toast.add({ title: 'Cloudflare Tunnel disconnected.', type: 'success' })
-      },
-    })
-  }
-
-  const pending = updateSettings.isPending || disconnect.isPending
+  const {
+    enabled,
+    setEnabled,
+    token,
+    setToken,
+    formError,
+    handleSubmit,
+    handleDisconnect,
+    pending,
+  } = useTokenToggleForm({
+    settings,
+    updateMutation: updateSettings,
+    disconnectMutation: disconnect,
+    requiredTokenMessage: 'A tunnel token is required to enable Cloudflare Tunnel.',
+    saveSuccessTitle: 'Cloudflare Tunnel settings saved.',
+    disconnectSuccessTitle: 'Cloudflare Tunnel disconnected.',
+  })
 
   return (
     <Card>
@@ -112,7 +88,11 @@ export function CloudflareTunnelCard({
         <CardTitle className="flex items-center gap-2">
           <CloudCheckIcon className="size-4" />
           Cloudflare Tunnel
-          <StatusBadge status={settings.status} />
+          <StatusBadge
+            variant={STATUS_VARIANT[settings.status]}
+            label={STATUS_LABEL[settings.status]}
+            icon={STATUS_ICON[settings.status]}
+          />
         </CardTitle>
         <CardDescription>
           Expose this control plane through a Cloudflare Tunnel instead of
@@ -123,20 +103,13 @@ export function CloudflareTunnelCard({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">Enabled</p>
-              <p className="text-sm text-muted-foreground">
-                Runs the cloudflared container connected to your tunnel.
-              </p>
-            </div>
-            <Switch
-              checked={enabled}
-              onCheckedChange={setEnabled}
-              disabled={pending}
-              aria-label="Cloudflare Tunnel enabled"
-            />
-          </div>
+          <SettingsEnabledRow
+            description="Runs the cloudflared container connected to your tunnel."
+            checked={enabled}
+            onCheckedChange={setEnabled}
+            disabled={pending}
+            ariaLabel="Cloudflare Tunnel enabled"
+          />
 
           <Field>
             <FieldLabel htmlFor="cloudflare-tunnel-token">
@@ -160,38 +133,27 @@ export function CloudflareTunnelCard({
             </FieldDescription>
           </Field>
 
-          {settings.status === 'error' && settings.message ? (
-            <Alert variant="destructive">
-              <AlertDescription>{settings.message}</AlertDescription>
-            </Alert>
-          ) : null}
-          {formError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{formError}</AlertDescription>
-            </Alert>
-          ) : null}
-          {updateSettings.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{updateSettings.error.message}</AlertDescription>
-            </Alert>
-          ) : null}
+          <SettingsFormAlerts
+            alerts={[
+              settings.status === 'error' && settings.message
+                ? { key: 'status', message: settings.message }
+                : null,
+              formError ? { key: 'form', message: formError } : null,
+              updateSettings.isError
+                ? { key: 'update', message: updateSettings.error.message }
+                : null,
+            ]}
+          />
 
-          <div className="flex items-center gap-2">
-            <Button type="submit" size="sm" disabled={pending}>
-              {updateSettings.isPending ? 'Saving...' : 'Save'}
-            </Button>
-            {(settings.enabled || settings.has_token) && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={pending}
-                onClick={handleDisconnect}
-              >
-                {disconnect.isPending ? 'Disconnecting...' : 'Disconnect'}
-              </Button>
-            )}
-          </div>
+          <SettingsFormActions
+            pending={pending}
+            savePending={updateSettings.isPending}
+            showSecondary={settings.enabled || settings.has_token}
+            secondaryPending={disconnect.isPending}
+            secondaryLabel="Disconnect"
+            secondaryPendingLabel="Disconnecting..."
+            onSecondaryClick={handleDisconnect}
+          />
         </form>
       </CardContent>
     </Card>

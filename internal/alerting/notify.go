@@ -26,9 +26,8 @@ type Event struct {
 	// failure mode a useful alerting feature has to avoid.
 	Resolved bool
 	// LogLines is populated only for a firing (not resolved) crashloop
-	// event: the last up-to-200 lines of the failing container's logs,
-	// per TASKS.md 2.7's literal requirement. Nil for threshold rules
-	// and for resolved events.
+	// event: the last up-to-200 lines of the failing container's logs.
+	// Nil for threshold rules and for resolved events.
 	LogLines []string
 	// CertNotices is populated only for a firing (not resolved)
 	// cert_expiry event: one line per non-healthy certificate, from
@@ -112,6 +111,24 @@ func NewNotifier(client *http.Client, sender email.Sender, r Rule) Notifier {
 		build = notifyPagerDuty
 	case NotifyTeams:
 		build = notifyTeams
+	case NotifyResend:
+		build = notifyResend
+	case NotifyNtfy:
+		build = notifyNtfy
+	case NotifyGotify:
+		build = notifyGotify
+	case NotifyMattermost:
+		build = notifyMattermost
+	case NotifyLark:
+		build = notifyLark
+	case NotifyRocketChat:
+		build = notifyRocketChat
+	case NotifyOpsgenie:
+		build = notifyOpsgenie
+	case NotifyWebex:
+		build = notifyWebex
+	case NotifyGoogleChat:
+		build = notifyGoogleChat
 	}
 	return httpNotifier{client: client, url: r.NotifyURL, build: build}
 }
@@ -295,6 +312,269 @@ func notifyTeams(ctx context.Context, client *http.Client, url string, ev Event)
 	})
 }
 
+// mattermostPayload is Mattermost's incoming-webhook body, the same
+// shape family as Slack's own incoming webhook (Mattermost documents its
+// webhook format as Slack-compatible). Username/IconOverrideURL are
+// omitted here: leaving them unset keeps whatever the webhook itself was
+// configured with in Mattermost's admin console.
+type mattermostPayload struct {
+	Text     string `json:"text"`
+	Username string `json:"username,omitempty"`
+	IconURL  string `json:"icon_url,omitempty"`
+}
+
+func notifyMattermost(ctx context.Context, client *http.Client, url string, ev Event) error {
+	return postJSON(ctx, client, url, mattermostPayload{Text: summaryText(ev)})
+}
+
+// larkContent is the "text" message body Lark (Feishu)'s incoming
+// webhook expects nested under larkPayload.Content.
+type larkContent struct {
+	Text string `json:"text"`
+}
+
+// larkPayload is Lark/Feishu's incoming-webhook body for a plain text
+// message (https://open.larksuite.com/document, custom bot webhooks).
+type larkPayload struct {
+	MsgType string      `json:"msg_type"`
+	Content larkContent `json:"content"`
+}
+
+func notifyLark(ctx context.Context, client *http.Client, url string, ev Event) error {
+	return postJSON(ctx, client, url, larkPayload{MsgType: "text", Content: larkContent{Text: summaryText(ev)}})
+}
+
+// rocketChatPayload is Rocket.Chat's incoming-webhook body
+// (https://docs.rocket.chat/docs/integrations#incoming-webhook-script), a
+// superset of Slack's own shape rather than a byte-identical copy of it
+// (unlike Mattermost's, which Mattermost itself documents as
+// Slack-compatible): alias/emoji override the bot's posted name and
+// avatar per message, fields this package uses to mark a firing event
+// distinctly from a resolved one without needing a second payload shape.
+type rocketChatPayload struct {
+	Text  string `json:"text"`
+	Alias string `json:"alias,omitempty"`
+	Emoji string `json:"emoji,omitempty"`
+}
+
+func notifyRocketChat(ctx context.Context, client *http.Client, url string, ev Event) error {
+	emoji := ":rotating_light:"
+	if ev.Resolved {
+		emoji = ":white_check_mark:"
+	}
+	return postJSON(ctx, client, url, rocketChatPayload{Text: summaryText(ev), Alias: "Levelrail", Emoji: emoji})
+}
+
+// webexPayload is a Cisco Webex Teams incoming webhook's message body
+// (https://developer.webex.com/messaging/docs/api/guides/webhooks):
+// markdown renders as Markdown in the space, letting summaryText's own
+// code-fenced log lines and bullet lists actually format instead of
+// showing up as literal backticks.
+type webexPayload struct {
+	Markdown string `json:"markdown"`
+}
+
+func notifyWebex(ctx context.Context, client *http.Client, url string, ev Event) error {
+	return postJSON(ctx, client, url, webexPayload{Markdown: summaryText(ev)})
+}
+
+// googleChatPayload is a Google Chat incoming webhook's message body
+// (https://developers.google.com/workspace/chat/quickstart/webhooks): a
+// single required "text" field, the same plain shape as Slack/Discord.
+type googleChatPayload struct {
+	Text string `json:"text"`
+}
+
+func notifyGoogleChat(ctx context.Context, client *http.Client, url string, ev Event) error {
+	return postJSON(ctx, client, url, googleChatPayload{Text: summaryText(ev)})
+}
+
+// opsgenieAPIURL is Opsgenie's fixed Alerts API endpoint. A var, not a
+// const, so tests can point it at an httptest server, the same pattern
+// pagerDutyEventsURL and resendAPIURL already use.
+var opsgenieAPIURL = "https://api.opsgenie.com/v2/alerts"
+
+// opsgeniePayload is the Alerts API's create-alert request body
+// (https://docs.opsgenie.com/docs/alert-api#create-alert-request).
+type opsgeniePayload struct {
+	Message     string `json:"message"`
+	Description string `json:"description,omitempty"`
+	Priority    string `json:"priority,omitempty"`
+}
+
+// notifyOpsgenie always posts to opsgenieAPIURL, not rawURL: rawURL here
+// packs the channel's API key as a query parameter against that fixed
+// endpoint, the same "NotifyURL packs credentials, not a destination"
+// convention notifyResend already establishes; see parseOpsgenieCreds.
+// The key travels in Opsgenie's own "GenieKey <key>" Authorization
+// scheme, not Bearer.
+func notifyOpsgenie(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
+	key, err := parseOpsgenieCreds(rawURL)
+	if err != nil {
+		return fmt.Errorf("alerting: notify: %w", err)
+	}
+	priority := "P1"
+	if ev.Resolved {
+		priority = "P5"
+	}
+	payload := opsgeniePayload{Message: ev.Rule.Name, Description: summaryText(ev), Priority: priority}
+	return postJSONWithAuth(ctx, client, opsgenieAPIURL, payload, "GenieKey "+key)
+}
+
+// parseOpsgenieCreds extracts the key query parameter an Opsgenie
+// notify_url must carry (see notifyOpsgenie's own doc comment for why it
+// travels this way).
+func parseOpsgenieCreds(rawURL string) (key string, err error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid opsgenie notify_url: %w", err)
+	}
+	key = u.Query().Get("key")
+	if key == "" {
+		return "", fmt.Errorf("opsgenie notify_url must include a key query parameter")
+	}
+	return key, nil
+}
+
+// gotifyPayload is Gotify's message API body
+// (https://gotify.net/docs/pushmsg). rawURL for this kind is the whole
+// "<server>/message?token=<apptoken>" endpoint, a real, literal query
+// parameter Gotify's own API expects there, not a packed convention like
+// Pushover's or Resend's: no parsing needed, notifyGotify posts to it
+// directly.
+type gotifyPayload struct {
+	Title    string `json:"title,omitempty"`
+	Message  string `json:"message"`
+	Priority int    `json:"priority,omitempty"`
+}
+
+func notifyGotify(ctx context.Context, client *http.Client, url string, ev Event) error {
+	priority := 5
+	if ev.Resolved {
+		priority = 2
+	}
+	return postJSON(ctx, client, url, gotifyPayload{Title: ev.Rule.Name, Message: summaryText(ev), Priority: priority})
+}
+
+// ntfyPayload is ntfy's publish API body (https://docs.ntfy.sh/publish/).
+// Topic isn't included here: rawURL already names the topic
+// (https://ntfy.sh/<topic> or a self-hosted equivalent), so ntfy infers
+// it from the request path the same way a plain-text POST to that URL
+// would.
+type ntfyPayload struct {
+	Title    string `json:"title,omitempty"`
+	Message  string `json:"message"`
+	Priority int    `json:"priority,omitempty"`
+}
+
+// notifyNtfy posts to rawURL as given. An access-controlled ntfy topic
+// carries its bearer token as an "auth" query parameter on rawURL (this
+// package's own convention, parsed out here rather than forwarded in the
+// query string, matching notifyTelegram/notifyPushover's own "credentials
+// travel in the query string, not the final request" pattern): when
+// present it's removed from the URL and sent as an Authorization header
+// instead, since ntfy authenticates that way, not via the query string.
+func notifyNtfy(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
+	token, cleanURL, err := extractNtfyToken(rawURL)
+	if err != nil {
+		return fmt.Errorf("alerting: notify: %w", err)
+	}
+	priority := 4
+	if ev.Resolved {
+		priority = 3
+	}
+	payload := ntfyPayload{Title: ev.Rule.Name, Message: summaryText(ev), Priority: priority}
+	if token == "" {
+		return postJSON(ctx, client, cleanURL, payload)
+	}
+	return postJSONWithAuth(ctx, client, cleanURL, payload, "Bearer "+token)
+}
+
+// extractNtfyToken pulls an optional "auth" query parameter (an access
+// token for a protected ntfy topic) out of rawURL, returning the token
+// and rawURL with that parameter removed. No token present is not an
+// error: most ntfy topics, including the public ntfy.sh ones, need none.
+func extractNtfyToken(rawURL string) (token, cleanURL string, err error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", "", fmt.Errorf("invalid ntfy notify_url: %w", err)
+	}
+	q := u.Query()
+	token = q.Get("auth")
+	if token == "" {
+		return "", rawURL, nil
+	}
+	q.Del("auth")
+	u.RawQuery = q.Encode()
+	return token, u.String(), nil
+}
+
+// resendAPIURL is Resend's fixed transactional-email endpoint. A var,
+// not a const, so tests can point it at an httptest server, the same
+// pattern pagerDutyEventsURL already uses.
+var resendAPIURL = "https://api.resend.com/emails"
+
+// resendPayload is the Resend Emails API's request body
+// (https://resend.com/docs/api-reference/emails/send-email).
+type resendPayload struct {
+	From    string   `json:"from"`
+	To      []string `json:"to"`
+	Subject string   `json:"subject"`
+	Text    string   `json:"text"`
+}
+
+// resendDefaultFrom is Resend's own sandbox sender: it works for any
+// account without a verified sending domain, so a channel that only
+// supplies an API key and a destination address still sends.
+const resendDefaultFrom = "onboarding@resend.dev"
+
+// notifyResend sends via the Resend Emails API rather than a webhook:
+// Resend needs an API key (as an Authorization header, never a query
+// parameter) and a destination address, neither of which fits
+// notify.go's "NotifyURL is a webhook URL" convention. Rather than
+// changing Rule's shape, rawURL packs both as query parameters against
+// resendAPIURL as a fixed placeholder, the identical convention
+// notifyPushover already established for its own two credentials
+// (token/user) and notifyNtfy now reuses for its own optional token;
+// parseResendCreds below reads them back out and notifyResend posts the
+// real request to resendAPIURL with the key moved into the Authorization
+// header where Resend's API actually expects it.
+func notifyResend(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
+	key, to, from, err := parseResendCreds(rawURL)
+	if err != nil {
+		return fmt.Errorf("alerting: notify: %w", err)
+	}
+	subject := fmt.Sprintf("[Levelrail] %s", ev.Rule.Name)
+	if ev.Resolved {
+		subject = fmt.Sprintf("[Levelrail][RESOLVED] %s", ev.Rule.Name)
+	}
+	payload := resendPayload{From: from, To: []string{to}, Subject: subject, Text: summaryText(ev)}
+	return postJSONWithAuth(ctx, client, resendAPIURL, payload, "Bearer "+key)
+}
+
+// parseResendCreds extracts the key/to/from query parameters a Resend
+// notify_url must carry (see notifyResend's own doc comment for why they
+// travel this way). from defaults to resendDefaultFrom when absent, so a
+// channel only has to supply the two credentials that actually vary per
+// account.
+func parseResendCreds(rawURL string) (key, to, from string, err error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", "", "", fmt.Errorf("invalid resend notify_url: %w", err)
+	}
+	q := u.Query()
+	key = q.Get("key")
+	to = q.Get("to")
+	if key == "" || to == "" {
+		return "", "", "", fmt.Errorf("resend notify_url must include key and to query parameters")
+	}
+	from = q.Get("from")
+	if from == "" {
+		from = resendDefaultFrom
+	}
+	return key, to, from, nil
+}
+
 // parseTelegramChatID extracts the chat_id query parameter a Telegram
 // notify_url must carry (notifyTelegram's own doc comment explains why
 // it lives in the query string rather than the body Telegram actually
@@ -354,6 +634,15 @@ func summaryText(ev Event) string {
 }
 
 func postJSON(ctx context.Context, client *http.Client, url string, payload any) error {
+	return postJSONWithAuth(ctx, client, url, payload, "")
+}
+
+// postJSONWithAuth is postJSON plus an optional Authorization header,
+// needed by the two kinds (Resend, and ntfy on a protected topic) that
+// authenticate via a bearer header rather than a field in the JSON body
+// itself. authHeader is skipped entirely when empty, so postJSON above
+// is just this with no header to set.
+func postJSONWithAuth(ctx context.Context, client *http.Client, url string, payload any, authHeader string) error {
 	if url == "" {
 		return fmt.Errorf("alerting: notify: no notify_url configured")
 	}
@@ -366,6 +655,9 @@ func postJSON(ctx context.Context, client *http.Client, url string, payload any)
 		return fmt.Errorf("alerting: notify: build request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if authHeader != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {

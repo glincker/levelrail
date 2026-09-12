@@ -1,9 +1,11 @@
 package api
 
 import (
+	"bufio"
 	"context"
 	"encoding/csv"
 	"log/slog"
+	"net"
 	"net/http"
 	"strconv"
 	"time"
@@ -46,6 +48,17 @@ func (s *statusRecorder) Flush() {
 	if f, ok := s.ResponseWriter.(http.Flusher); ok {
 		f.Flush()
 	}
+}
+
+// Hijack keeps the connection reachable through this wrapper, which the
+// terminal route's WebSocket upgrade needs and which wrapping an
+// http.ResponseWriter would otherwise hide.
+func (s *statusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := s.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, http.ErrNotSupported
+	}
+	return h.Hijack()
 }
 
 // auditWorthy reports whether required is sensitive enough to record in

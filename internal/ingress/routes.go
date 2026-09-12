@@ -1,6 +1,6 @@
 package ingress
 
-// This file: the "many routes on one shared server" API (TASKS.md 1.6's
+// This file: the "many routes on one shared server" API (the
 // real ingress controller, internal/reconcile/ingress) plus its
 // build.type: static (served by the embedded Caddy directly, no
 // container) extension. config.go stays scoped
@@ -9,7 +9,10 @@ package ingress
 // controller tracking many independently host-routed backends, of
 // either kind, needs on top of that.
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // FileServerHandler is Caddy's "file_server" handler
 // (http.handlers.file_server): serves files directly from Root, no
@@ -54,6 +57,124 @@ type ProxyRoute struct {
 	// behavior exactly: a plain reverse-proxy route with no
 	// authentication handler.
 	BasicAuth *BasicAuthAccount
+	// WAF, if non-nil, adds a WAF and/or rate-limit handler ahead of
+	// BasicAuth and the reverse-proxy handler. Nil (the default)
+	// reproduces this package's prior behavior exactly: no such handler
+	// at all.
+	WAF *WAFConfig
+}
+
+// WAFConfig is one domain's opt-in Web Application Firewall and rate
+// limiting settings (store.DomainWAF), threaded through from
+// internal/reconcile/ingress into a route's Handle chain.
+type WAFConfig struct {
+	// Enabled turns on the OWASP Coraza handler (NewCorazaWAFHandler).
+	Enabled bool
+	// Blocking selects Coraza's SecRuleEngine mode: true is "On" (CRS
+	// matches reject the request), false is "DetectionOnly" (CRS runs
+	// and logs but never rejects). Only meaningful when Enabled is true.
+	Blocking bool
+	// RateLimitRPS, if greater than zero, adds a rate-limit handler
+	// (NewRateLimitHandler) independent of Enabled: an operator can rate
+	// limit a domain without also enabling the WAF, or vice versa.
+	RateLimitRPS int
+	// RateLimitBurst is the short-window (1s) cap; values at or below
+	// RateLimitRPS are treated as "no extra burst allowance" by
+	// NewRateLimitHandler.
+	RateLimitBurst int
+}
+
+// CorazaWAFHandler is Caddy's OWASP Coraza WAF handler
+// (http.handlers.waf, github.com/corazawaf/coraza-caddy/v2). Handler is
+// the literal string "waf": the module's own CaddyModule ID, distinct
+// from its Caddyfile directive name "coraza_waf".
+type CorazaWAFHandler struct {
+	Handler string `json:"handler"`
+	// Directives is a ModSecurity/Coraza directives block, evaluated
+	// verbatim. NewCorazaWAFHandler always sets SecRuleEngine plus the
+	// three @-prefixed OWASP CRS includes LoadOWASPCRS makes resolvable.
+	Directives string `json:"directives"`
+	// LoadOWASPCRS makes the coraza-coreruleset ruleset (compiled into
+	// this binary via the blank import in driver.go) resolvable from
+	// Directives' @-prefixed Include paths. NewCorazaWAFHandler always
+	// sets this true; there is no per-domain custom-ruleset authoring in
+	// this package, only the stock OWASP CRS.
+	LoadOWASPCRS bool `json:"load_owasp_crs"`
+}
+
+// corazaWAFDirectives is the fixed OWASP CRS bootstrap Coraza's own
+// README documents (Include order matters: the recommended base config,
+// then the CRS setup file, then every CRS rule file), with only the
+// SecRuleEngine mode varying between detect and block.
+const corazaWAFDirectives = `Include @coraza.conf-recommended
+Include @crs-setup.conf.example
+Include @owasp_crs/*.conf
+SecRuleEngine %s
+`
+
+// NewCorazaWAFHandler builds the OWASP Coraza handler for a domain that
+// opted into the WAF. blocking selects SecRuleEngine On (reject on
+// match) versus DetectionOnly (log on match, never reject); see
+// docs/domains-and-ingress.md for why detection-only is this platform's
+// recommended first-enable default.
+func NewCorazaWAFHandler(blocking bool) CorazaWAFHandler {
+	engine := "DetectionOnly"
+	if blocking {
+		engine = "On"
+	}
+	return CorazaWAFHandler{
+		Handler:      "waf",
+		Directives:   fmt.Sprintf(corazaWAFDirectives, engine),
+		LoadOWASPCRS: true,
+	}
+}
+
+// RateLimitZone is one named zone within a RateLimitHandler
+// (github.com/mholt/caddy-ratelimit's own RateLimit struct, mirrored
+// here the same way this package hand-rolls every other Caddy module's
+// wire shape rather than importing it directly). Window is a Caddy
+// duration string (e.g. "1s", "10s"), not a number of nanoseconds:
+// caddy.Duration's UnmarshalJSON accepts either, this package always
+// emits the string form for readability.
+type RateLimitZone struct {
+	Key       string `json:"key,omitempty"`
+	MaxEvents int    `json:"max_events,omitempty"`
+	Window    string `json:"window,omitempty"`
+}
+
+// RateLimitHandler is Caddy's rate_limit handler (http.handlers.rate_limit,
+// github.com/mholt/caddy-ratelimit).
+type RateLimitHandler struct {
+	Handler    string                   `json:"handler"`
+	RateLimits map[string]RateLimitZone `json:"rate_limits,omitempty"`
+}
+
+// rateLimitKey is the client-identifying placeholder every zone this
+// package builds uses: one rate limiter bucket per remote address.
+const rateLimitKey = "{http.request.remote.host}"
+
+// NewRateLimitHandler builds the rate-limit handler for a domain that
+// opted into rate limiting. zonePrefix must be globally unique across
+// every domain's rate_limit handler in the same Caddy config (the
+// underlying module keys its limiter state by zone name across the
+// whole process, not just within one handler instance); callers pass
+// the domain itself, which service_domains already enforces as unique.
+//
+// Two zones approximate a token-bucket's sustained-rate-plus-burst
+// shape on top of caddy-ratelimit's sliding-window primitive: a 10s
+// window bounds the sustained average at rps, and (only when burst
+// exceeds rps) a 1s window separately allows up to burst requests in
+// any single second. burst at or below rps adds no second zone, since
+// it would never be the tighter constraint.
+func NewRateLimitHandler(zonePrefix string, rps, burst int) RateLimitHandler {
+	const sustainedWindowSeconds = 10
+	zones := map[string]RateLimitZone{
+		zonePrefix + "-sustained": {Key: rateLimitKey, MaxEvents: rps * sustainedWindowSeconds, Window: "10s"},
+	}
+	if burst > rps {
+		zones[zonePrefix+"-burst"] = RateLimitZone{Key: rateLimitKey, MaxEvents: burst, Window: "1s"}
+	}
+	return RateLimitHandler{Handler: "rate_limit", RateLimits: zones}
 }
 
 // StaticRoute is one static site routed by hostname within a Server
@@ -93,7 +214,7 @@ type MaintenanceRoute struct {
 // RoutesOptions is the input to BuildRoutesConfig: everything needed to
 // stand up one Caddy server carrying many independently host-routed
 // backends on a single shared listener. This is the shape a real ingress
-// controller needs (TASKS.md 1.6): ADR 005's Verified section found that
+// controller needs: ADR 005's Verified section found that
 // caddy.Load replaces Caddy's entire process-wide config on every call,
 // so a controller tracking many services builds one complete Config from
 // every currently routable service and applies it whole on every
@@ -198,7 +319,7 @@ type RoutesOptions struct {
 	// CertStorage, if non-nil, overrides StorageDir with an arbitrary
 	// Caddy storage module reference (e.g. NewSQLiteStorageRef()),
 	// letting the caller point Caddy's certificate/ACME-account storage
-	// at internal/store's SQLite (TASKS.md 3.6) instead of the local
+	// at internal/store's SQLite instead of the local
 	// filesystem, so certificate storage lives in the database and
 	// multi-node deployments can share cert state. Takes precedence over
 	// StorageDir when both are set, rather than being an error, so a
@@ -242,6 +363,22 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			// order, so authentication must short-circuit with 401 before
 			// reverse_proxy ever dials the backend.
 			handle = append([]any{NewBasicAuthHandler(r.BasicAuth.Username, r.BasicAuth.Password)}, handle...)
+		}
+		if r.WAF != nil {
+			// Prepended ahead of BasicAuth too: a malicious or excessive
+			// request should be rejected or throttled before this route
+			// spends any effort authenticating it. Rate limit runs first
+			// among the two so a client already being throttled never
+			// reaches the (more expensive) WAF rule evaluation either.
+			zonePrefix := strings.Join(r.Hosts, "+")
+			var wafHandle []any
+			if r.WAF.RateLimitRPS > 0 {
+				wafHandle = append(wafHandle, NewRateLimitHandler(zonePrefix, r.WAF.RateLimitRPS, r.WAF.RateLimitBurst))
+			}
+			if r.WAF.Enabled {
+				wafHandle = append(wafHandle, NewCorazaWAFHandler(r.WAF.Blocking))
+			}
+			handle = append(wafHandle, handle...)
 		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},

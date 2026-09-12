@@ -16,6 +16,7 @@ import {
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { DeleteOrganizationDialog } from '../../components/DeleteOrganizationDialog'
 import { OrganizationEnvEditor } from '../../components/OrganizationEnvEditor'
+import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 // Organization detail route: the org's own name plus every project
@@ -165,11 +166,11 @@ function OrganizationDetailPending() {
   )
 }
 
-function OrganizationDetailError({ error }: { error: Error }) {
+function OrganizationDetailError({ error }: { error: unknown }) {
   return (
     <Alert variant="destructive">
       <AlertDescription>
-        <p>{error.message}</p>
+        <p>{routeErrorMessage(error)}</p>
         <Link to="/settings/organizations" className="mt-2 inline-block underline">
           Back to organizations
         </Link>

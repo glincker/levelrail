@@ -1,0 +1,36 @@
+name: stale
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93 # v11
+        with:
+          days-before-stale: 30
+          days-before-close: 7
+          stale-issue-label: stale
+          stale-pr-label: stale
+          exempt-issue-labels: "priority/critical,priority/high,blocked"
+          exempt-pr-labels: "priority/critical,priority/high,blocked"
+          stale-issue-message: >
+            This has been quiet for 30 days, so it's marked stale. It'll close
+            in 7 days without further activity. Remove the label or comment
+            to keep it open.
+          stale-pr-message: >
+            This PR has been quiet for 30 days, so it's marked stale. It'll
+            close in 7 days without further activity. Push a commit or
+            comment to keep it open.
+          close-issue-message: >
+            Closing due to inactivity. Reopen if this is still relevant.
+          close-pr-message: >
+            Closing due to inactivity. Reopen or open a fresh PR if this is
+            still relevant.

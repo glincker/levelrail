@@ -1,4 +1,4 @@
--- Phase 3 (TASKS.md 3.7): health, cordon, drain. Health reuses
+-- Phase 3: health, cordon, drain. Health reuses
 -- 0008_nodes.sql's existing status/last_seen_at columns as-is (that
 -- migration's own comment already names last_seen_at as the heartbeat
 -- column, nothing new to add for it); this migration is only for

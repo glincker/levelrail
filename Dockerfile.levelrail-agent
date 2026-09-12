@@ -1,0 +1,23 @@
+# syntax=docker/dockerfile:1
+ARG VERSION=dev
+
+FROM golang:1.26-alpine AS build
+ARG VERSION
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build \
+    -ldflags "-X github.com/GLINCKER/levelrail/internal/version.Version=${VERSION}" \
+    -o /levelrail-agent ./cmd/levelrail-agent
+# See Dockerfile.levelrail: a fresh named volume mounted here would
+# otherwise be root-owned, which the nonroot runtime user couldn't
+# write its persisted mTLS identity file into.
+RUN mkdir -p /data/levelrail-agent
+
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+# nonroot: same /var/run/docker.sock access reasoning as Dockerfile.levelrail.
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=build --chown=nonroot:nonroot /levelrail-agent /levelrail-agent
+COPY --from=build --chown=nonroot:nonroot /data/levelrail-agent /var/lib/levelrail-agent
+ENTRYPOINT ["/levelrail-agent"]

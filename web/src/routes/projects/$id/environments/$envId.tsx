@@ -18,6 +18,7 @@ import { DeleteEnvironmentDialog } from '../../../../components/DeleteEnvironmen
 import { ProtectedEnvironmentToggle } from '../../../../components/ProtectedEnvironmentToggle'
 import { EnvironmentEnvEditor } from '../../../../components/EnvironmentEnvEditor'
 import { AppRow, RowSkeleton } from '../../../../components/AppRow'
+import { routeErrorMessage } from '../../../../lib/apiError'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
@@ -204,11 +205,11 @@ function EnvironmentDetailPending() {
   )
 }
 
-function EnvironmentDetailError({ error }: { error: Error }) {
+function EnvironmentDetailError({ error }: { error: unknown }) {
   return (
     <Alert variant="destructive">
       <AlertDescription>
-        <p>{error.message}</p>
+        <p>{routeErrorMessage(error)}</p>
         <Link to="/projects" className="mt-2 inline-block underline">
           Back to projects
         </Link>

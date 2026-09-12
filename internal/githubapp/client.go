@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 )
 
 // defaultBaseURL is api.github.com's REST API root. Overridable
@@ -85,27 +86,17 @@ func NewClient() *Client {
 	}
 }
 
-// apiError is returned for any non-2xx GitHub API response. Carries the
-// status code (callers, e.g. internal/api's installation lookup, branch
-// on this to distinguish "not found" from "server error") and a
-// truncated body snippet for logs. GitHub error response bodies are
-// ordinary JSON describing what went wrong with the request, never an
-// echo of request credentials, so including a snippet here is safe;
-// callers still only log the wrapped error's Error() string, never a
-// full raw body.
-type apiError struct {
-	StatusCode int
-	Body       string
-}
+// apiError is githubapp's own name for the shared gitprovider.APIError,
+// kept as a distinct type so callers and tests can refer to it (e.g.
+// internal/api's installation lookup, branching on StatusCode to
+// distinguish "not found" from "server error") without importing
+// internal/gitprovider directly.
+type apiError = gitprovider.APIError
 
-func (e *apiError) Error() string {
-	return fmt.Sprintf("githubapp: github api returned %d: %s", e.StatusCode, e.Body)
-}
-
-// maxErrorBodySnippet caps how much of an error response body apiError
-// retains, so a misbehaving upstream can't inflate a log line
-// unboundedly.
-const maxErrorBodySnippet = 512
+const (
+	errPrefix = "githubapp"
+	apiName   = "github"
+)
 
 // do issues a request against every endpoint this client calls: every
 // one of them is a GET or a POST with no JSON request body (path/query
@@ -117,34 +108,14 @@ const maxErrorBodySnippet = 512
 func (c *Client) do(ctx context.Context, baseURL, method, path string, authHeader string, out any) error {
 	req, err := http.NewRequestWithContext(ctx, method, baseURL+path, nil)
 	if err != nil {
-		return fmt.Errorf("githubapp: build request: %w", err)
+		return fmt.Errorf("%s: build request: %w", errPrefix, err)
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", apiVersion)
 	if authHeader != "" {
 		req.Header.Set("Authorization", authHeader)
 	}
-
-	resp, err := c.HTTP.Do(req)
-	if err != nil {
-		return fmt.Errorf("githubapp: request %s %s: %w", method, path, err)
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySnippet))
-		return &apiError{StatusCode: resp.StatusCode, Body: string(snippet)}
-	}
-
-	if out == nil {
-		return nil
-	}
-	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
-		return fmt.Errorf("githubapp: decode response for %s %s: %w", method, path, err)
-	}
-	return nil
+	return gitprovider.Execute(c.HTTP, req, errPrefix, apiName, method+" "+path, out)
 }
 
 // doWithBody is do's sibling for the one call in this client that sends
@@ -154,7 +125,7 @@ func (c *Client) do(ctx context.Context, baseURL, method, path string, authHeade
 func (c *Client) doWithBody(ctx context.Context, baseURL, method, path, authHeader string, body []byte) error {
 	req, err := http.NewRequestWithContext(ctx, method, baseURL+path, bytes.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("githubapp: build request: %w", err)
+		return fmt.Errorf("%s: build request: %w", errPrefix, err)
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", apiVersion)
@@ -163,23 +134,12 @@ func (c *Client) doWithBody(ctx context.Context, baseURL, method, path, authHead
 		req.Header.Set("Authorization", authHeader)
 	}
 
-	resp, err := c.HTTP.Do(req)
-	if err != nil {
-		return fmt.Errorf("githubapp: request %s %s: %w", method, path, err)
+	err = gitprovider.Execute(c.HTTP, req, errPrefix, apiName, method+" "+path, nil)
+	var apiErr *apiError
+	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusForbidden {
+		return fmt.Errorf("%w: %w", ErrPermissionDenied, apiErr)
 	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySnippet))
-		apiErr := &apiError{StatusCode: resp.StatusCode, Body: string(snippet)}
-		if resp.StatusCode == http.StatusForbidden {
-			return fmt.Errorf("%w: %w", ErrPermissionDenied, apiErr)
-		}
-		return apiErr
-	}
-	return nil
+	return err
 }
 
 // ErrPermissionDenied wraps the API error GitHub returns for a request

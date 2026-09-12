@@ -14,19 +14,20 @@ import type { VariantProps } from 'class-variance-authority'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
+import { EditAlertRuleDialog } from './EditAlertRuleDialog'
 import { DeleteAlertRuleDialog } from './DeleteAlertRuleDialog'
 import { useAlertRules } from '../queries/alerts'
 import type { AlertRule } from '../types/alerts'
 
-// Alert rules section for the app detail page (TASKS.md 2.5/2.7),
-// wired against GET/POST/DELETE /api/v1/apps/{name}/alerts. This is the
-// dashboard-side half of the gap TASKS.md 2.7 leaves explicit: the
-// backend already evaluates threshold and crashloop rules and dispatches
-// webhook/Slack/Discord notifications, but until this panel there was no
-// way to see or manage a rule without leaving the dashboard.
+// Alert rules section for the app detail page, wired against
+// GET/POST/DELETE /api/v1/apps/{name}/alerts. This is the dashboard-side
+// half of a known gap: the backend already evaluates threshold and
+// crashloop rules and dispatches webhook/Slack/Discord notifications,
+// but until this panel there was no way to see or manage a rule without
+// leaving the dashboard.
 //
-// One honest gap this panel does NOT paper over: TASKS.md 2.7 also says
-// the last 200 lines of a crashlooping container's logs get attached to
+// One honest gap this panel does NOT paper over: the backend also
+// attaches the last 200 lines of a crashlooping container's logs to
 // the *notification event* (internal/alerting's Engine.dispatch,
 // fetchRecentLogLines), sent to whatever notify_url is configured. There
 // is no API endpoint that returns "the log lines attached to the most
@@ -243,7 +244,10 @@ function RuleRow({ appName, rule }: { appName: string; rule: AlertRule }) {
         <NotifyChannelCell rule={rule} />
       </TableCell>
       <TableCell className="text-right">
-        <DeleteAlertRuleDialog appName={appName} rule={rule} />
+        <div className="flex justify-end gap-2">
+          <EditAlertRuleDialog appName={appName} rule={rule} />
+          <DeleteAlertRuleDialog appName={appName} rule={rule} />
+        </div>
       </TableCell>
     </TableRow>
   )

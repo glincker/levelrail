@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -134,17 +133,7 @@ func newTestRouterWithBitbucketApp(t *testing.T, secrets BitbucketAppSecrets, cl
 }
 
 func TestHandleGetBitbucketAppStatus_NotConnected(t *testing.T) {
-	rt, db := newTestRouter(t)
-	cookie := loginTestSession(t, rt, db)
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/bitbucket-app", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
-	}
-	if !strings.Contains(rec.Body.String(), `"connected":false`) {
-		t.Errorf("body = %s, want connected:false", rec.Body.String())
-	}
+	assertProviderStatusNotConnected(t, "/api/v1/bitbucket-app")
 }
 
 func TestHandleConnectBitbucketApp_NotConfigured(t *testing.T) {
@@ -198,16 +187,7 @@ func TestHandleConnectBitbucketApp_Success(t *testing.T) {
 
 	statusRec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(statusRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/bitbucket-app", ""))
-	body := statusRec.Body.String()
-	if !strings.Contains(body, `"connected":true`) {
-		t.Errorf("status body = %s, want connected:true", body)
-	}
-	if !strings.Contains(body, `"key":"the-key"`) {
-		t.Errorf("status body = %s, want key=the-key", body)
-	}
-	if !strings.Contains(body, `"authorized":false`) {
-		t.Errorf("status body = %s, want authorized:false (no oauth flow completed yet)", body)
-	}
+	assertBodyContainsAll(t, statusRec.Body.String(), `"connected":true`, `"key":"the-key"`, `"authorized":false`)
 
 	got, err := secrets.Resolve(context.Background(), store.BitbucketAppSecretsKey(), bitbucketAppSecretKey)
 	if err != nil || got != "the-secret" {
@@ -254,47 +234,23 @@ func TestHandleDisconnectBitbucketApp_ClearsSecrets(t *testing.T) {
 func TestBitbucketAppRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct{ method, path string }{
-		{http.MethodGet, "/api/v1/bitbucket-app"},
-		{http.MethodPut, "/api/v1/bitbucket-app"},
-		{http.MethodDelete, "/api/v1/bitbucket-app"},
-		{http.MethodGet, "/api/v1/bitbucket-app/connect"},
-		{http.MethodGet, "/api/v1/bitbucket-app/repos"},
-	}
-	for _, r := range routes {
-		req := httptest.NewRequest(r.method, r.path, nil)
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, req)
-		if rec.Code != http.StatusUnauthorized {
-			t.Errorf("%s %s: status = %d, want 401 for an unauthenticated request", r.method, r.path, rec.Code)
-		}
-	}
+	assertProviderRoutesRequireAuth(t, rt, []providerRouteCase{
+		{method: http.MethodGet, path: "/api/v1/bitbucket-app"},
+		{method: http.MethodPut, path: "/api/v1/bitbucket-app"},
+		{method: http.MethodDelete, path: "/api/v1/bitbucket-app"},
+		{method: http.MethodGet, path: "/api/v1/bitbucket-app/connect"},
+		{method: http.MethodGet, path: "/api/v1/bitbucket-app/repos"},
+	})
 }
 
 func TestBitbucketAppRoutes_PlainWriteSensitiveTokenForbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
-	ctx := context.Background()
 
 	const plaintext = "bb-write-sensitive-token" //nolint:gosec // fake fixture, not a real credential
-	if err := db.SaveAPIToken(ctx, store.APIToken{
-		ID: "tok_bbws", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWriteSensitive}, CreatedAt: time.Now(),
-	}); err != nil {
-		t.Fatalf("seed token: %v", err)
-	}
-
-	routes := []struct{ method, path string }{
-		{http.MethodGet, "/api/v1/bitbucket-app"},
-		{http.MethodPut, "/api/v1/bitbucket-app"},
-		{http.MethodDelete, "/api/v1/bitbucket-app"},
-		{http.MethodGet, "/api/v1/bitbucket-app/connect"},
-	}
-	for _, r := range routes {
-		req := httptest.NewRequest(r.method, r.path, nil)
-		req.Header.Set("Authorization", "Bearer "+plaintext)
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, req)
-		if rec.Code != http.StatusForbidden {
-			t.Errorf("%s %s: status = %d, want 403 (AbilityWriteSensitive must not reach an AbilityRoot route)", r.method, r.path, rec.Code)
-		}
-	}
+	assertProviderRoutesForbiddenForAbilities(t, rt, db, "tok_bbws", plaintext, []string{AbilityWriteSensitive}, []providerRouteCase{
+		{method: http.MethodGet, path: "/api/v1/bitbucket-app"},
+		{method: http.MethodPut, path: "/api/v1/bitbucket-app"},
+		{method: http.MethodDelete, path: "/api/v1/bitbucket-app"},
+		{method: http.MethodGet, path: "/api/v1/bitbucket-app/connect"},
+	})
 }

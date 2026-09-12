@@ -273,7 +273,7 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		ImageRepo:   name,
 	}
 
-	_, progress, finishAttempt := rt.beginBuildDeployAttempt(ctx, buildReq, store.DeployAttemptSourceWebhook)
+	_, progress, finishAttempt := rt.beginBuildDeployAttempt(ctx, buildReq, *existing, store.DeployAttemptSourceWebhook)
 	tag, err := rt.builder.Deploy(ctx, buildReq, progress)
 	finishAttempt(err)
 	if err != nil {
@@ -384,7 +384,7 @@ func (rt *Router) deployAdditionalServices(ctx context.Context, additional map[s
 			ImageRepo:   svcName,
 		}
 
-		_, progress, finishAttempt := rt.beginBuildDeployAttempt(ctx, req, store.DeployAttemptSourceWebhook)
+		_, progress, finishAttempt := rt.beginBuildDeployAttempt(ctx, req, *svc, store.DeployAttemptSourceWebhook)
 		tag, err := rt.builder.Deploy(ctx, req, progress)
 		finishAttempt(err)
 		if err != nil {

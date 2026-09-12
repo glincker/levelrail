@@ -1,6 +1,6 @@
 package network
 
-// This file: the DNS wire protocol half of TASKS.md 3.4's internal DNS.
+// This file: the DNS wire protocol half of the internal DNS.
 // The decisions live in dns.go; this only speaks the protocol.
 //
 // Authoritative-only, deliberately. This server answers for its own zone
