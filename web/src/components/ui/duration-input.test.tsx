@@ -59,15 +59,21 @@ describe('parseGoDuration / composeGoDuration round-trip', () => {
   })
 })
 
-// Mirrors RegistryImagePicker.test.tsx's own pickOption: retries the
-// open+click pair on base-ui's Select, since a same-tick click can be
-// dropped under concurrent test-file load.
+// Mirrors RegistryImagePicker.test.tsx's own pickOption (retrying the
+// open+click pair, since a same-tick click can be dropped under
+// concurrent test-file load), plus a leading pointerDown: base-ui's
+// SelectItem only treats a click as a real selection once a pointerdown
+// on that same item preceded it (SelectItem.mjs's own
+// allowMouseSelectionRef), which a real click always does but
+// fireEvent.click alone does not synthesize.
 async function pickOption(triggerRole: string, optionText: string) {
   const maxAttempts = 5
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     fireEvent.click(screen.getByRole(triggerRole))
     try {
-      fireEvent.click(screen.getByText(optionText))
+      const option = screen.getByText(optionText)
+      fireEvent.pointerDown(option, { pointerType: 'mouse' })
+      fireEvent.click(option)
       return
     } catch (err) {
       if (attempt === maxAttempts) throw err

@@ -163,7 +163,11 @@ export function DurationInput({
           emit(amount, nextUnit)
         }}
       >
-        <SelectTrigger className="w-32 shrink-0" disabled={disabled}>
+        <SelectTrigger
+          id={id ? `${id}-unit` : undefined}
+          className="w-32 shrink-0"
+          disabled={disabled}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
