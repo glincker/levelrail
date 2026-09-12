@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.2.0-beta](https://github.com/glincker/levelrail/compare/v0.1.0...v0.2.0-beta) (2026-09-12)
+
+
+### Features
+
+* add CLI metrics query and live log tailing ([#394](https://github.com/glincker/levelrail/issues/394)) ([41d253c](https://github.com/glincker/levelrail/commit/41d253c05f6082c32be4647dc27971f02c2bfbdb))
+* add VitePress docs and landing site for GitHub Pages ([#387](https://github.com/glincker/levelrail/issues/387)) ([e2b3ee1](https://github.com/glincker/levelrail/commit/e2b3ee1b61a07941dcb0db7c1f02858937b7cbba))
+* alert/channel editing, deploy-notify+promote MCP, secrets at app-create, reconciler test gaps ([#433](https://github.com/glincker/levelrail/issues/433)) ([22e6032](https://github.com/glincker/levelrail/commit/22e6032c433b270e5d666a0b85c57775b1be3681))
+* close CLI feature-completeness gaps for settings, storage, and git apps ([#396](https://github.com/glincker/levelrail/issues/396)) ([ebf8362](https://github.com/glincker/levelrail/commit/ebf8362e4151b7ee602bd5ea27b7fb6328f3e597))
+* compose command/bind-mounts, self-service invites, more templates/tools/channels, e2e hardening ([53846e6](https://github.com/glincker/levelrail/commit/53846e6537255552e2ab0cadda461121546a1823))
+* compose entrypoint, app.yaml command/bind-mounts, external registry browsing, more templates and MCP tools ([#385](https://github.com/glincker/levelrail/issues/385)) ([753b57f](https://github.com/glincker/levelrail/commit/753b57f8b84a3f2e6f39717db264e55441f9d6a6))
+* dispatch builds to a remote build node over the agent transport ([#432](https://github.com/glincker/levelrail/issues/432)) ([0a269e3](https://github.com/glincker/levelrail/commit/0a269e3939df9a9fc12cbb459c5f912d9c97a638))
+* ephemeral database per preview environment ([#397](https://github.com/glincker/levelrail/issues/397)) ([fc08202](https://github.com/glincker/levelrail/commit/fc0820226eb1e326cb09487acae485b39c5b543e))
+* interactive exec terminal over WebSocket ([#436](https://github.com/glincker/levelrail/issues/436)) ([27266e3](https://github.com/glincker/levelrail/commit/27266e33c9970bcbf9a3b71b8553d68a8ad18c07))
+* liveness probing and automatic restart ([#434](https://github.com/glincker/levelrail/issues/434)) ([3725693](https://github.com/glincker/levelrail/commit/37256933b45db253dbf07784f729cf2b7812d41a))
+* node-move teardown fix, simple spread scheduling, CLI/MCP completeness batch ([#395](https://github.com/glincker/levelrail/issues/395)) ([c8c9e5f](https://github.com/glincker/levelrail/commit/c8c9e5fa2939fbb3384fc5c628d3fd0d762324be))
+* opt-in per-domain WAF and rate limiting for embedded ingress ([#398](https://github.com/glincker/levelrail/issues/398)) ([6df1bb0](https://github.com/glincker/levelrail/commit/6df1bb0e5d96f9e7b71bf8bcb9f6b400b26dc9e6))
+* remote exec and Docker networking over the agent transport ([#399](https://github.com/glincker/levelrail/issues/399)) ([610afd5](https://github.com/glincker/levelrail/commit/610afd57f10ee01d71ca597dd9e0ca8d07bda465))
+* replace guesswork form fields with real pickers and suggestions ([#437](https://github.com/glincker/levelrail/issues/437)) ([39f9c5d](https://github.com/glincker/levelrail/commit/39f9c5d9d40753974c3eea5eb20c087f30c381ec))
+* TLS for managed Postgres and Redis connections ([#364](https://github.com/glincker/levelrail/issues/364)) ([6138335](https://github.com/glincker/levelrail/commit/613833521837c91b6635d83df7b35a9c68169b77))
+
+
+### Bug Fixes
+
+* address containerd and docs-site dependabot alerts ([#392](https://github.com/glincker/levelrail/issues/392)) ([148094b](https://github.com/glincker/levelrail/commit/148094b8e5adac6c22b16da0e2bc34745e56656a))
+* chain release.yml to actually run after release-please tags a release ([#373](https://github.com/glincker/levelrail/issues/373)) ([7c8a6bb](https://github.com/glincker/levelrail/commit/7c8a6bb19ac1d6c64441b97956e0b55c3a0783c6))
+* derive Select trigger label automatically from item children ([#438](https://github.com/glincker/levelrail/issues/438)) ([849f2de](https://github.com/glincker/levelrail/commit/849f2def05460a6319434b72f59b601f096c4ee5))
+* make manual release.yml dispatch actually target the right tag ([#375](https://github.com/glincker/levelrail/issues/375)) ([d52596d](https://github.com/glincker/levelrail/commit/d52596da829e977ddd4cd28b5d985fed16d526b0))
+* pin cel-go to v0.28.1, restoring build compatibility with caddy ([#389](https://github.com/glincker/levelrail/issues/389)) ([0b4695b](https://github.com/glincker/levelrail/commit/0b4695b64d6ca357169a310faa72838e686007dd))
+* raise Docker image build timeout and add layer caching ([#378](https://github.com/glincker/levelrail/issues/378)) ([d3732f1](https://github.com/glincker/levelrail/commit/d3732f1be1a77bab94fedaf8dd34e169843d4438))
+* route error components against unknown, not Error ([#431](https://github.com/glincker/levelrail/issues/431)) ([3903d1f](https://github.com/glincker/levelrail/commit/3903d1f6f6da9f23953adc8cbca1f8bc99813ed8))
+* spread drained resources across nodes, warn on dropped depends_on ([#435](https://github.com/glincker/levelrail/issues/435)) ([6a418eb](https://github.com/glincker/levelrail/commit/6a418ebf8c35425a659499f5640933044bf6aa91))
+* stop and remove containers when a service is deleted ([#381](https://github.com/glincker/levelrail/issues/381)) ([a608ebb](https://github.com/glincker/levelrail/commit/a608ebbab2fae7fd4a76c20642f8391b995c623d))
+
+
+### Performance Improvements
+
+* build Docker images on native per-arch runners instead of QEMU ([#380](https://github.com/glincker/levelrail/issues/380)) ([c42d372](https://github.com/glincker/levelrail/commit/c42d372648b0dfd3622b9192c7a36daaca93b6db))
+
 ## 0.1.0 (2026-09-09)
 
 
