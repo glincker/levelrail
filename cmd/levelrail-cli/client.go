@@ -97,6 +97,7 @@ type (
 
 	notificationChannelResource      = apiclient.NotificationChannelResource
 	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest
+	updateNotificationChannelRequest = apiclient.UpdateNotificationChannelRequest
 	testNotificationChannelRequest   = apiclient.TestNotificationChannelRequest
 	notificationDeliveryResource     = apiclient.NotificationDeliveryResource
 	logDrainResource                 = apiclient.LogDrainResource
@@ -107,6 +108,10 @@ type (
 
 	alertRuleResource      = apiclient.AlertRuleResource
 	createAlertRuleRequest = apiclient.CreateAlertRuleRequest
+	updateAlertRuleRequest = apiclient.UpdateAlertRuleRequest
+
+	deployNotifyTargetResource      = apiclient.DeployNotifyTargetResource
+	createDeployNotifyTargetRequest = apiclient.CreateDeployNotifyTargetRequest
 
 	featureFlagResource  = apiclient.FeatureFlagResource
 	featureFlagRequest   = apiclient.FeatureFlagRequest

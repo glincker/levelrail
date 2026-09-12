@@ -80,6 +80,36 @@ services:
 				{Level: NoticeLevelWarning, Message: "networks: is declared but not enforced; every service in this app shares one network and can already reach every other service, regardless of any networks: assignment"},
 			},
 		},
+		{
+			name: "list-form depends_on warns that startup order isn't sequenced",
+			yaml: `
+services:
+  web:
+    image: nginx:latest
+    depends_on: [db]
+  db:
+    image: postgres:16
+`,
+			wants: []Notice{
+				{Level: NoticeLevelWarning, Message: "depends_on: is parsed but not enforced; the reconciler doesn't sequence container startup order, so a dependent service may start before what it depends on is ready"},
+			},
+		},
+		{
+			name: "map-form depends_on with a condition also warns",
+			yaml: `
+services:
+  web:
+    image: nginx:latest
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:16
+`,
+			wants: []Notice{
+				{Level: NoticeLevelWarning, Message: "depends_on: is parsed but not enforced; the reconciler doesn't sequence container startup order, so a dependent service may start before what it depends on is ready"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -161,5 +191,58 @@ networks:
 	}
 	if err := f.Validate(); err != nil {
 		t.Fatalf("Validate() error = %v, want nil: restart/networks are notices, not validation failures", err)
+	}
+}
+
+func TestParse_DependsOn(t *testing.T) {
+	data := []byte(`
+services:
+  web:
+    image: nginx:latest
+    depends_on: [db, cache]
+  db:
+    image: postgres:16
+    depends_on:
+      cache:
+        condition: service_started
+  cache:
+    image: redis:7
+`)
+	f, err := Parse(data)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	web := f.Services["web"]
+	if len(web.DependsOn) != 2 || web.DependsOn[0] != "db" || web.DependsOn[1] != "cache" {
+		t.Errorf("web.DependsOn = %v, want [db cache]", web.DependsOn)
+	}
+
+	db := f.Services["db"]
+	if len(db.DependsOn) != 1 || db.DependsOn[0] != "cache" {
+		t.Errorf("db.DependsOn = %v, want [cache]", db.DependsOn)
+	}
+
+	cache := f.Services["cache"]
+	if len(cache.DependsOn) != 0 {
+		t.Errorf("cache.DependsOn = %v, want none", cache.DependsOn)
+	}
+}
+
+func TestValidate_DependsOnDoesNotFailValidation(t *testing.T) {
+	data := []byte(`
+services:
+  web:
+    image: nginx:latest
+    depends_on: [db]
+  db:
+    image: postgres:16
+`)
+	f, err := Parse(data)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if err := f.Validate(); err != nil {
+		t.Fatalf("Validate() error = %v, want nil: depends_on is a notice, not a validation failure", err)
 	}
 }

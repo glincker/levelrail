@@ -17,7 +17,11 @@ still open. This page describes what's actually true today.
 - Docker Engine API wrapper. No shelling out to the `docker` CLI
   anywhere.
 - Application reconciler: desired state to running containers, with
-  readiness and liveness probes.
+  readiness probes gating every deploy's cutover and liveness probes
+  run on each reconcile pass afterward, restarting a container that
+  fails its configured threshold of consecutive checks (the case where
+  a process is still running but wedged) and reporting it as a
+  `LivenessFailedRestarting` condition.
 - BuildKit-based Dockerfile builds with local cache and live build-log
   streaming over SSE.
 - Railpack auto-detection for Node.js and Go.
@@ -346,8 +350,16 @@ still open. This page describes what's actually true today.
 - WireGuard mesh with internal DNS resolving service names across
   nodes.
 - Dedicated build nodes, with registry-backed remote BuildKit cache and
-  per-node capability flags. The registry backend no longer requires an
-  external service: a built-in registry (`registry:2`, generated
+  per-node capability flags. Marking a node build-capable actually moves
+  builds there: the control plane picks a build-capable, currently
+  reachable node per build, streams the build context up over the same
+  mTLS agent transport everything else uses, runs the solve against that
+  node's own BuildKit, and streams progress and the finished image back,
+  so build logs and the resulting image land exactly where a local build
+  would have put them while the CPU work happens off the control plane.
+  A build node that goes offline mid-build fails that build with the
+  reason rather than silently falling back. The registry backend no
+  longer requires an external service: a built-in registry (`registry:2`, generated
   htpasswd-style credentials via the same envelope encryption as managed
   database passwords, TLS-fronted through the embedded Caddy ingress) can
   be enabled from Settings > Container registry, the CLI's `registry`

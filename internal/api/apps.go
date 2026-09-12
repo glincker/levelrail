@@ -9,10 +9,12 @@ import (
 	"log/slog"
 	"maps"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -36,9 +38,20 @@ type appResource struct {
 	// the only thing that can authoritatively know at container-create
 	// time. Settable on create and update, like Port itself, not
 	// response-only.
-	HostPort  *int                    `json:"host_port,omitempty"`
-	Domains   []string                `json:"domains,omitempty"`
-	Env       map[string]string       `json:"env,omitempty"`
+	HostPort *int              `json:"host_port,omitempty"`
+	Domains  []string          `json:"domains,omitempty"`
+	Env      map[string]string `json:"env,omitempty"`
+	// SecretEnv names which env vars are backed by encrypted secret
+	// storage (store.DesiredService.SecretEnv): values live in
+	// internal/secrets, never here. Response-mirrors the store; settable
+	// at create time, see handleCreateApp and Secrets below.
+	SecretEnv []string `json:"secret_env,omitempty"`
+	// Secrets carries plaintext values for SecretEnv-named vars,
+	// encrypted immediately at create time via the same envelope
+	// encryption PUT /api/v1/apps/{name}/secrets/{key} uses. Write-only:
+	// toAppResource never sets this, matching that endpoint's own
+	// "never echo a value back" rule.
+	Secrets   map[string]string       `json:"secrets,omitempty"`
 	Resources *store.ServiceResources `json:"resources,omitempty"`
 	Health    *store.ServiceHealth    `json:"health,omitempty"`
 	// Hooks are this service's pre/post-deploy commands
@@ -197,6 +210,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		HostPort:           svc.HostPort,
 		Domains:            svc.Domains,
 		Env:                svc.Env,
+		SecretEnv:          svc.SecretEnv,
 		Resources:          svc.Resources,
 		Health:             svc.Health,
 		Hooks:              svc.Hooks,
@@ -236,6 +250,32 @@ func (a appResource) toDesiredService() store.DesiredService {
 	}
 }
 
+// unionSecretEnvNames merges declared secret env var names with the
+// names of any inline value provided: a key present in values is
+// secret-backed even if the caller didn't also list it in declared.
+func unionSecretEnvNames(declared []string, values map[string]string) []string {
+	seen := make(map[string]bool, len(declared)+len(values))
+	var out []string
+	for _, k := range declared {
+		if !seen[k] {
+			seen[k] = true
+			out = append(out, k)
+		}
+	}
+	keys := make([]string, 0, len(values))
+	for k := range values {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		if !seen[k] {
+			seen[k] = true
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
 // validKnownStrategies mirrors internal/spec's own
 // StrategyRolling/StrategyRecreate/StrategyBlueGreen exactly, all three
 // reconciler-backed (internal/reconcile/application's controller runs
@@ -273,6 +313,14 @@ func validateAppResource(a appResource) error {
 	}
 	if err := spec.ValidateLabels(a.Labels); err != nil {
 		return err
+	}
+	for key, value := range a.Secrets {
+		if key == "" {
+			return errors.New("secrets: key must not be empty")
+		}
+		if value == "" {
+			return fmt.Errorf("secrets[%q]: value is required", key)
+		}
 	}
 	// Mirrors the app.yaml schema's own minProperties: 1 on hooks: (this
 	// endpoint's store.ServiceHooks bypasses that schema entirely, so the
@@ -361,6 +409,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if len(req.Secrets) > 0 && rt.secrets == nil {
+		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
+		return
+	}
 	if err := rt.validateProjectID(r.Context(), req.ProjectID); err != nil {
 		if errors.Is(err, store.ErrProjectNotFound) {
 			writeError(w, http.StatusBadRequest, "unknown project_id")
@@ -391,7 +443,28 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := rt.apps.SaveDesiredService(r.Context(), req.toDesiredService()); err != nil {
+	// Secret values are stored before SaveDesiredService, not after: the
+	// reconciler converges as soon as the desired state exists, so a
+	// required secret must already be resolvable by then rather than
+	// leaving a window where the app exists but its secret doesn't yet.
+	// internal/store's service_secret_values table has no foreign key to
+	// desired_services, so this ordering is safe even though the service
+	// row below doesn't exist yet.
+	for key, value := range req.Secrets {
+		if err := rt.secrets.SetValueGuarded(r.Context(), req.Name, key, value, false); err != nil {
+			if errors.Is(err, secrets.ErrSecretLocked) {
+				writeError(w, http.StatusConflict, fmt.Sprintf("secret %q is locked", key))
+				return
+			}
+			rt.logger.Error("api: create app: set secret failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("key", key))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+	}
+
+	desired := req.toDesiredService()
+	desired.SecretEnv = unionSecretEnvNames(req.SecretEnv, req.Secrets)
+	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
 			writeError(w, http.StatusConflict, domainTaken.Error())
@@ -437,7 +510,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// pendingImageTag): its own POST .../builds call records the real
 	// history entry once a build actually succeeds.
 	if !strings.HasSuffix(req.Image, ":pending") {
-		rt.recordPlainDeployAttempt(r.Context(), req.toDesiredService(), req.Image)
+		rt.recordPlainDeployAttempt(r.Context(), desired, req.Image)
 	}
 
 	// A new app is never dirty regardless of what the client sent:
@@ -445,6 +518,12 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// response-only), so echoing anything but false here would lie about
 	// what was actually persisted.
 	req.EnvDirty = false
+	// SecretEnv echoes back the union actually stored (declared names
+	// plus any inline value's own key); Secrets never round-trips a
+	// value, matching PUT .../secrets/{key}'s own "never echo it back"
+	// rule.
+	req.SecretEnv = desired.SecretEnv
+	req.Secrets = nil
 
 	writeJSON(w, http.StatusCreated, req)
 }

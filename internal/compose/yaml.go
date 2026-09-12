@@ -29,6 +29,7 @@ type rawService struct {
 	Networks    Networks          `yaml:"networks"`
 	Restart     string            `yaml:"restart"`
 	Healthcheck *Healthcheck      `yaml:"healthcheck"`
+	DependsOn   DependsOn         `yaml:"depends_on"`
 	Command     Command           `yaml:"command"`
 	Entrypoint  Command           `yaml:"entrypoint"`
 }
@@ -127,6 +128,34 @@ func (n *Networks) UnmarshalYAML(node *yaml.Node) error {
 		return nil
 	default:
 		return fmt.Errorf("networks: must be a list or map of network names")
+	}
+}
+
+// DependsOn is a service's own depends_on:'s list-or-map union, the same
+// shape as Networks: either a plain list of service names, or a map of
+// name to per-dependency config (condition, restart, ...) decoded down
+// to just the names.
+type DependsOn []string
+
+// UnmarshalYAML implements the list-or-map union described above.
+func (d *DependsOn) UnmarshalYAML(node *yaml.Node) error {
+	switch node.Kind {
+	case yaml.SequenceNode:
+		var items []string
+		if err := node.Decode(&items); err != nil {
+			return fmt.Errorf("depends_on: %w", err)
+		}
+		*d = items
+		return nil
+	case yaml.MappingNode:
+		names := make([]string, 0, len(node.Content)/2)
+		for i := 0; i < len(node.Content); i += 2 {
+			names = append(names, node.Content[i].Value)
+		}
+		*d = names
+		return nil
+	default:
+		return fmt.Errorf("depends_on: must be a list or map of service names")
 	}
 }
 

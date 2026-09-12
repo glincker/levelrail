@@ -82,6 +82,24 @@ func (rt *Router) autoPlaceNode(ctx context.Context) (string, error) {
 	return selectLeastLoadedNode(candidates), nil
 }
 
+// selectLeastLoadedNodeExcluding is autoPlaceNode's per-resource sibling
+// for handleDrainNode: same schedulable+online eligibility and the same
+// least-loaded ranking, but excludes excludeNodeID (the node being
+// drained) so a resource is never "moved" back onto itself. counts is
+// read, not mutated: callers bump the picked node's count themselves so
+// repeated calls within one drain spread resources across candidates
+// instead of all landing on the same one.
+func selectLeastLoadedNodeExcluding(nodes []store.Node, counts map[string]int, excludeNodeID string) string {
+	candidates := make([]nodePlacementLoad, 0, len(nodes))
+	for _, n := range nodes {
+		if n.ID == excludeNodeID || !n.Schedulable || n.Status != store.NodeStatusOnline {
+			continue
+		}
+		candidates = append(candidates, nodePlacementLoad{NodeID: n.ID, Count: counts[n.ID]})
+	}
+	return selectLeastLoadedNode(candidates)
+}
+
 // nodeIDKeyPresent reports whether body's top-level JSON object includes
 // a "node_id" key at all (any value, including null or ""), the
 // distinction handleCreateApp/handleCreateDatabase need between an

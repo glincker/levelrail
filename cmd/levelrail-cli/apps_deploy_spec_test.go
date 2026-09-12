@@ -183,7 +183,7 @@ func TestRun_AppsDeploySpec_NoServices(t *testing.T) {
 	}
 }
 
-func TestRun_AppsDeploySpec_SecretEnvRejected(t *testing.T) {
+func TestRun_AppsDeploySpec_SecretEnv(t *testing.T) {
 	yaml := `version: 1
 services:
   web:
@@ -195,13 +195,79 @@ services:
 `
 	file := writeDeploySpecFixture(t, yaml)
 
+	var gotBody deploySpecRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(deploySpecResult{
+			AppID:        "myapp",
+			Services:     []deploySpecServiceResult{{ServiceKey: "web", ServiceName: "myapp-web", Image: "myapp-web:abc"}},
+			AllSucceeded: true,
+		})
+	}))
+	defer srv.Close()
+
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "deploy-spec", "myapp", "--file", file, "--repo-url", "https://github.com/you/app.git", "--ref", "main"}, &stdout, &stderr, envMap())
-	if got != exitValidation {
-		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitValidation, stderr.String())
+	got := run("levelrail-cli-test", []string{
+		"apps", "deploy-spec", "myapp", "--file", file, "--repo-url", "https://github.com/you/app.git", "--ref", "main",
+		"--secret", "API_KEY=sk-abc", "--api-url", srv.URL, "--json",
+	}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "secret") {
-		t.Errorf("stderr = %q, want a secret-env-not-supported error", stderr.String())
+	web, ok := gotBody.Services["web"]
+	if !ok {
+		t.Fatalf("request body services = %+v, want a web entry", gotBody.Services)
+	}
+	env, ok := web.Env["API_KEY"]
+	if !ok || !env.Secret || !env.Required || env.Value != "sk-abc" {
+		t.Errorf("web.Env[API_KEY] = %+v, want Secret=true Required=true Value=%q", env, "sk-abc")
+	}
+	if strings.Contains(stdout.String(), "sk-abc") {
+		t.Errorf("stdout = %q, must never echo the secret value back", stdout.String())
+	}
+}
+
+// TestRun_AppsDeploySpec_SecretEnvNoValue covers declaring a secret's
+// NAME with no --secret value at all: the request must still carry
+// Secret/Required so the app can be created, with the value set later
+// via "apps secrets set" or a follow-up "apps deploy-spec --secret" run.
+func TestRun_AppsDeploySpec_SecretEnvNoValue(t *testing.T) {
+	yaml := `version: 1
+services:
+  web:
+    build:
+      type: dockerfile
+    port: 3000
+    env:
+      API_KEY: { secret: true, required: true }
+`
+	file := writeDeploySpecFixture(t, yaml)
+
+	var gotBody deploySpecRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(deploySpecResult{
+			AppID:        "myapp",
+			Services:     []deploySpecServiceResult{{ServiceKey: "web", ServiceName: "myapp-web", Image: "myapp-web:abc"}},
+			AllSucceeded: true,
+		})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"apps", "deploy-spec", "myapp", "--file", file, "--repo-url", "https://github.com/you/app.git", "--ref", "main", "--api-url", srv.URL,
+	}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	env, ok := gotBody.Services["web"].Env["API_KEY"]
+	if !ok || !env.Secret || !env.Required || env.Value != "" {
+		t.Errorf("web.Env[API_KEY] = %+v, want Secret=true Required=true Value=\"\"", env)
 	}
 }
 

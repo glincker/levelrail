@@ -157,6 +157,12 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		// state and serveSession routes it there directly.
 		resp.Error = "agent: exec requests are dispatched through ExecRelay, not Execute"
 
+	case *agentpb.AgentRequest_Build:
+		// Same as exec: a build spans many frames in both directions, so
+		// BuildRelay holds its per-session state and serveSession routes
+		// it there directly.
+		resp.Error = "agent: build requests are dispatched through BuildRelay, not Execute"
+
 	default:
 		resp.Error = fmt.Sprintf("agent: unknown request op %T", op)
 	}

@@ -53,7 +53,7 @@ func TestServeSession_DispatchesRequest_SendsResponse(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	done := make(chan error, 1)
-	go func() { done <- serveSession(ctx, stream, rt, testLogger()) }()
+	go func() { done <- serveSession(ctx, stream, rt, nil, testLogger()) }()
 
 	stream.recv <- controlRequest(&agentpb.AgentRequest{
 		RequestId: "r1",
@@ -96,7 +96,7 @@ func TestServeSession_RecvError_ReturnsImmediately(t *testing.T) {
 	stream.recvErr = errors.New("connection reset")
 	close(stream.recv)
 
-	err := serveSession(context.Background(), stream, newExecRuntime(), testLogger())
+	err := serveSession(context.Background(), stream, newExecRuntime(), nil, testLogger())
 	if err == nil {
 		t.Fatal("serveSession() error = nil, want the recv error wrapped")
 	}
@@ -108,7 +108,7 @@ func TestServeSession_MultipleRequests_AllAnswered(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go func() { _ = serveSession(ctx, stream, rt, testLogger()) }()
+	go func() { _ = serveSession(ctx, stream, rt, nil, testLogger()) }()
 
 	stream.recv <- controlRequest(&agentpb.AgentRequest{
 		RequestId: "r1", Op: &agentpb.AgentRequest_Start{Start: &agentpb.StartRequest{Id: "c1"}},
@@ -137,7 +137,7 @@ func TestServeSession_WatchEvents_EmitsProxiedEvent(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go func() { _ = serveSession(ctx, stream, rt, testLogger()) }()
+	go func() { _ = serveSession(ctx, stream, rt, nil, testLogger()) }()
 
 	stream.recv <- controlRequest(&agentpb.AgentRequest{
 		RequestId: "r1",

@@ -70,6 +70,14 @@ type createFlags struct {
 	attachDatabase       string
 	attachDatabaseEnvVar string
 	attachDatabaseField  string
+
+	// secrets backs --secret (repeatable KEY=VALUE): plaintext values to
+	// store via envelope-encrypted secret storage as part of this same
+	// create call, applied to plan.CreateBody.Secrets after
+	// planFromFlags regardless of which of the three paths built the
+	// plan, the same "apply after planning, not threaded through every
+	// plan* function" shape --node-id already uses (see runAppsCreate).
+	secrets map[string]string
 }
 
 // createPlan is planFromFlags's output: exactly the HTTP requests
@@ -220,11 +228,7 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 	if buildType != spec.BuildDockerfile && len(f.buildArgs) > 0 {
 		return createPlan{}, newValidationError("--build-arg is only meaningful for a dockerfile build (service %q has build.type %q)", key, buildType)
 	}
-	if secretKeys := secretEnvKeys(svc.Env); len(secretKeys) > 0 {
-		return createPlan{}, newValidationError(
-			"service %q declares secret env var(s) %s; apps create does not yet set secrets, create the app without them and set each one via PUT /api/v1/apps/{name}/secrets/{key} afterward",
-			key, strings.Join(secretKeys, ", "))
-	}
+	secretEnv := secretEnvKeys(svc.Env)
 
 	name := f.name
 	if name == "" {
@@ -292,6 +296,7 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 			HostPort:  toHostPort(hostPort),
 			Domains:   svc.Domains,
 			Env:       literalEnv(svc.Env),
+			SecretEnv: secretEnv,
 			Resources: resources,
 			Health:    health,
 		},
@@ -311,11 +316,7 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 	if svc.Build.Image == "" {
 		return createPlan{}, newValidationError("service %q has build.type %q but no build.image set", key, spec.BuildImage)
 	}
-	if secretKeys := secretEnvKeys(svc.Env); len(secretKeys) > 0 {
-		return createPlan{}, newValidationError(
-			"service %q declares secret env var(s) %s; apps create does not yet set secrets, create the app without them and set each one via PUT /api/v1/apps/{name}/secrets/{key} afterward",
-			key, strings.Join(secretKeys, ", "))
-	}
+	secretEnv := secretEnvKeys(svc.Env)
 
 	name := f.name
 	if name == "" {
@@ -351,6 +352,7 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 			HostPort:  toHostPort(hostPort),
 			Domains:   svc.Domains,
 			Env:       literalEnv(svc.Env),
+			SecretEnv: secretEnv,
 			Resources: resources,
 			Health:    health,
 		},
@@ -413,13 +415,24 @@ func secretEnvKeys(env map[string]spec.EnvVar) []string {
 	return keys
 }
 
+// literalEnv skips { secret: true } and { from: ... } entries: neither
+// carries a plain literal value this endpoint can send as Env (a secret's
+// value goes through Secrets/SecretEnv instead, and a database reference
+// has no field this endpoint accepts at all), mirroring
+// internal/deploy/translate.go's own literalEnv.
 func literalEnv(env map[string]spec.EnvVar) map[string]string {
 	if len(env) == 0 {
 		return nil
 	}
 	out := make(map[string]string, len(env))
 	for k, v := range env {
+		if v.Secret || v.From != "" {
+			continue
+		}
 		out[k] = v.Value
+	}
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }
@@ -597,6 +610,9 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if f.nodeIDSet {
 		plan.CreateBody.NodeID = f.nodeID
 	}
+	if len(f.secrets) > 0 {
+		plan.CreateBody.Secrets = f.secrets
+	}
 
 	profile := resolveProfile(profileFlag, lookupEnv)
 	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
@@ -700,6 +716,8 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.attachDatabase, "attach-database", "", "name of an existing managed database to attach after create (injects a connection env var, see --attach-database-env-var/--attach-database-field)")
 	fs.StringVar(&f.attachDatabaseEnvVar, "attach-database-env-var", "", "env var name the attached database's value is injected as (default: DATABASE_URL); only meaningful with --attach-database")
 	fs.StringVar(&f.attachDatabaseField, "attach-database-field", "", "which field to inject: url, host, port, username, password, or database (default: url); only meaningful with --attach-database")
+	f.secrets = make(map[string]string)
+	fs.Var(stringMapFlag(f.secrets), "secret", "secret env var value as KEY=VALUE, repeatable; stored via envelope-encrypted secret storage as part of this same create call (any path above), same value-on-the-command-line convention \"apps secrets set\" already uses")
 	fs.BoolVar(&f.yes, "yes", false, "accept defaults without prompting (reserved: no-op outside --interactive, accepted for forward compatibility and script portability)")
 	fs.BoolVar(&f.yes, "y", false, "shorthand for --yes")
 	fs.BoolVar(&f.interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, source, port, domain, health check, resource limits, and optionally more services, then writes app.yaml or calls the API")
@@ -799,6 +817,14 @@ Database attachment (any path above):
   --attach-database string           name of an existing managed database to attach after create
   --attach-database-env-var string   env var name for the injected value (default: DATABASE_URL)
   --attach-database-field string     url, host, port, username, password, or database (default: url)
+
+Secrets (any path above):
+  --secret KEY=VALUE      secret env var value, repeatable; stored via envelope-encrypted
+                            secret storage as part of this same create call, so a { secret: true }
+                            var declared in app.yaml (--file path) does not need a separate
+                            PUT /api/v1/apps/{name}/secrets/{key} call afterward. A declared name
+                            with no matching --secret still creates fine; set its value later the
+                            same way.
 
 Common flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

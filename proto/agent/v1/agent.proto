@@ -87,6 +87,10 @@ message AgentMessage {
     // ExecCredit here refunds the control plane's stdin window: the
     // agent has consumed that many ExecInput frames.
     ExecCredit exec_credit = 4;
+    BuildOutput build_output = 5;
+    // BuildCredit here refunds the control plane's build-context window:
+    // the agent has consumed that many BuildInput frames.
+    BuildCredit build_credit = 6;
   }
 }
 
@@ -101,7 +105,12 @@ message ControlMessage {
     // ExecCredit here refunds the agent's output window: the control
     // plane has consumed that many ExecOutput frames.
     ExecCredit exec_credit = 4;
-    ExecResize exec_resize = 5;
+    BuildInput build_input = 5;
+    BuildCancel build_cancel = 6;
+    // BuildCredit here refunds the agent's output window: the control
+    // plane has consumed that many BuildOutput frames.
+    BuildCredit build_credit = 7;
+    ExecResize exec_resize = 8;
   }
 }
 
@@ -126,6 +135,7 @@ message AgentRequest {
     RemoveNetworkRequest remove_network = 13;
     ListNetworksByPrefixRequest list_networks_by_prefix = 14;
     ExecRequest exec = 15;
+    BuildRequest build = 16;
   }
 }
 
@@ -389,6 +399,108 @@ message ExecExit {
   string container = 2;
   int32 exit_code = 3;
   string stderr = 4;
+}
+
+// BuildRequest dispatches one image build to this node's own BuildKit
+// instance, so build CPU lands on a dedicated build node instead of the
+// control plane. The control plane streams the build context up as
+// BuildInput frames tagged with this request's request_id, the agent
+// streams progress and the resulting docker-save image tar back as
+// BuildOutput frames under the same ID, and the AgentResponse for this
+// request is only the acknowledgment that the agent accepted the build.
+message BuildRequest {
+  BuildKind kind = 1;
+  // Tag is the image reference the built image is exported under.
+  string tag = 2;
+  // DockerfilePath is relative to the build context root, since the
+  // control plane's own absolute paths mean nothing on this node. Empty
+  // means the context root's own Dockerfile.
+  string dockerfile_path = 3;
+  string target = 4;
+  map<string, string> build_args = 5;
+  bool no_cache = 6;
+  BuildCache cache = 7;
+}
+
+enum BuildKind {
+  BUILD_KIND_UNSPECIFIED = 0;
+  BUILD_KIND_DOCKERFILE = 1;
+  BUILD_KIND_RAILPACK = 2;
+}
+
+// BuildCache carries only internal/build.CacheConfig's registry backend.
+// Its local-directory backend is deliberately not sent: that path names a
+// directory on the control plane's own disk, which this node does not
+// have, while a registry ref is shared by construction.
+message BuildCache {
+  string registry_ref = 1;
+  bool registry_insecure = 2;
+}
+
+// BuildInput is one build-context frame for the in-flight build whose
+// request_id is build_id, carrying a tar stream of the context
+// directory. Exactly one of chunk, eof, or error is meaningful per frame,
+// the same contract ExecInput follows.
+message BuildInput {
+  string build_id = 1;
+  bytes chunk = 2;
+  bool eof = 3;
+  string error = 4;
+}
+
+// BuildCancel ends an in-flight build early, when the control plane's
+// caller gave up before it finished.
+message BuildCancel {
+  string build_id = 1;
+}
+
+// BuildCredit refunds flow-control window for one build, in frames, the
+// same windowing ExecCredit documents for exec.
+message BuildCredit {
+  string build_id = 1;
+  uint32 frames = 2;
+}
+
+// BuildOutput is one frame of an in-flight build: a progress update, a
+// chunk of the resulting image tar, or that stream's terminal frame.
+// Exactly one terminal frame (done or failure) is ever sent per build.
+message BuildOutput {
+  string build_id = 1;
+  oneof frame {
+    BuildProgress progress = 2;
+    bytes image_chunk = 3;
+    BuildDone done = 4;
+    BuildFailure failure = 5;
+  }
+}
+
+// BuildProgress mirrors internal/build.ProgressEvent field for field, so
+// a remote build's log lines reach the control plane's existing SSE
+// stream in the same shape a local build's do.
+message BuildProgress {
+  string step = 1;
+  bool cached = 2;
+  bool completed = 3;
+  string error = 4;
+  string log = 5;
+  string stream = 6;
+}
+
+// BuildDone carries what internal/build.Result holds beyond the tag the
+// control plane already knows.
+message BuildDone {
+  int64 duration_ms = 1;
+  map<string, string> exporter_response = 2;
+}
+
+// BuildFailure is the error that ended a build. unsupported_provider is
+// set when the failure was internal/build.UnsupportedProviderError, so
+// the control plane can rebuild that typed error rather than a flat
+// string: internal/deploy branches on it with errors.As.
+message BuildFailure {
+  string message = 1;
+  bool unsupported_provider = 2;
+  string provider = 3;
 }
 
 // WatchEventsRequest starts (or, sent a second time with the same
