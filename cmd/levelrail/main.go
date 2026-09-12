@@ -535,6 +535,7 @@ func run(logger *slog.Logger) error {
 		meshDNSAddr:      meshDNSAddr,
 		dashboardDial:    dashboardDialAddr(httpAddr()),
 		networkPrefix:    b.ShortName,
+		livenessTracker:  application.NewLivenessTracker(),
 	}))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
@@ -2381,6 +2382,9 @@ type dynamicSourceDeps struct {
 	meshDNSAddr      string
 	dashboardDial    string
 	networkPrefix    string
+	// livenessTracker outlives the per-pass controllers below, which is
+	// the whole point: see application.WithLivenessTracker.
+	livenessTracker *application.LivenessTracker
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -2491,6 +2495,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithOrganizationEnv(deps.db),
 		application.WithEnvironmentEnv(deps.db),
 		application.WithNetworkPrefix(deps.networkPrefix),
+		application.WithLivenessTracker(deps.livenessTracker),
 	}
 	if deps.secretsManager != nil {
 		appOpts = append(appOpts, application.WithSecretResolver(deps.secretsManager))
