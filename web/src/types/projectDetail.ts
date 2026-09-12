@@ -28,3 +28,12 @@ export interface ProjectLifecycleResult {
   failed_apps?: string[]
   failed_databases?: string[]
 }
+
+// Wire type for POST /api/v1/projects/{id}/restart's response
+// (internal/api/project_restart.go's projectRestartResponse): which
+// apps a bulk restart succeeded or failed on.
+export interface ProjectRestartResponse {
+  restarted_count: number
+  apps: string[]
+  failed?: string[]
+}

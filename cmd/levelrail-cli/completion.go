@@ -54,7 +54,7 @@ var cliCommandTree = map[string]*cmdNode{
 			"create": nil, "list": nil, "get": nil, "delete": nil,
 			"set-project": nil, "clear-project": nil, "env-get": nil, "env-set": nil,
 		}},
-		"projects":          {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "env-get": nil, "env-set": nil}},
+		"projects":          {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "restart": nil, "env-get": nil, "env-set": nil}},
 		"environments":      {subs: map[string]*cmdNode{"create": nil, "list": nil, "update": nil, "delete": nil, "env-get": nil, "env-set": nil}},
 		"set-environment":   nil,
 		"clear-environment": nil,

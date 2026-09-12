@@ -29,8 +29,9 @@ type AppStore interface {
 	ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]store.DesiredService, error)
 	// ListDesiredServicesByProject is ListDesiredServicesByNode's
 	// project-kind counterpart: handleStopProject/handleStartProject
-	// (project_stop_start.go) use it to find every app in a project
-	// without listing every service.
+	// (project_stop_start.go) and handleRestartProject
+	// (project_restart.go) use it to find every app in a project without
+	// listing every service.
 	ListDesiredServicesByProject(ctx context.Context, projectID string) ([]store.DesiredService, error)
 	// RestartService is the only way to force a running container to be
 	// recreated without an image change: a redeploy of the same image

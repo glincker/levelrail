@@ -91,6 +91,40 @@ func TestRun_AppsProjectsDelete(t *testing.T) {
 	}
 }
 
+func TestRun_AppsProjectsRestart(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(projectRestartResponse{RestartedCount: 2, Apps: []string{"web", "worker"}})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "projects", "restart", "proj_1", "--api-url", srv.URL})
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/projects/proj_1/restart" {
+		t.Errorf("request = %s %s, want POST /api/v1/projects/proj_1/restart", gotMethod, gotPath)
+	}
+	if !strings.Contains(stdout, `2 app(s) restart requested`) {
+		t.Errorf("stdout = %q, want a restart-count confirmation", stdout)
+	}
+}
+
+func TestRun_AppsProjectsRestart_PartialFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(projectRestartResponse{RestartedCount: 1, Apps: []string{"web"}, Failed: []string{"worker"}})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "projects", "restart", "proj_1", "--api-url", srv.URL})
+	if !strings.Contains(stdout, `1 app(s) restart requested`) {
+		t.Errorf("stdout = %q, want a restart-count confirmation", stdout)
+	}
+	if !strings.Contains(stdout, "failed to restart: worker") {
+		t.Errorf("stdout = %q, want the failed app listed", stdout)
+	}
+}
+
 func TestRun_AppsProjectsEnvGet(t *testing.T) {
 	testEnvGet(t, []string{"apps", "projects"}, "proj_1", "/api/v1/projects/proj_1")
 }

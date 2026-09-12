@@ -136,6 +136,7 @@ type (
 	organizationResource             = apiclient.OrganizationResource
 	createOrganizationRequest        = apiclient.CreateOrganizationRequest
 	projectResource                  = apiclient.ProjectResource
+	projectRestartResponse           = apiclient.ProjectRestartResponse
 	createProjectRequest             = apiclient.CreateProjectRequest
 	projectLifecycleResult           = apiclient.ProjectLifecycleResult
 	setProjectOrganizationRequest    = apiclient.SetProjectOrganizationRequest

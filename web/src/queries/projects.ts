@@ -19,6 +19,7 @@ import {
 import type {
   ProjectLifecycleResult,
   ProjectResource,
+  ProjectRestartResponse,
 } from '../types/projectDetail'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { appKeys } from './apps'
@@ -194,6 +195,41 @@ export function useStopProject() {
 
 export function useStartProject() {
   return useProjectLifecycleMutation(startProject)
+}
+
+// POST /api/v1/projects/{id}/restart (handleRestartProject): forces
+// every app filed under this project to have its running container
+// recreated with no image change, the project-scoped counterpart of
+// restartApp (queries/apps.ts). No request body.
+export async function restartProject(id: string): Promise<ProjectRestartResponse> {
+  const res = await fetch(`/api/v1/projects/${encodeURIComponent(id)}/restart`, {
+    method: 'POST',
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `restart project failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as ProjectRestartResponse
+}
+
+// Unlike useRestartApp (which gets a full AppDetail back and can write
+// it straight into the cache), this only gets back a list of names, so
+// it invalidates the apps list/detail queries instead of writing them,
+// the same cross-resource invalidation shape useDeleteProject already
+// uses below for its own multi-resource side effect.
+export function useRestartProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: restartProject,
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      for (const name of result.apps) {
+        void queryClient.invalidateQueries({ queryKey: appKeys.detail(name) })
+      }
+    },
+  })
 }
 
 export function useDeleteProject() {

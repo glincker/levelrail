@@ -21,6 +21,7 @@ import { Breadcrumbs } from '../../../components/Breadcrumbs'
 import { DeleteProjectDialog } from '../../../components/DeleteProjectDialog'
 import { PauseResumeProjectButton } from '../../../components/PauseResumeProjectButton'
 import { MoveToOrganizationDialog } from '../../../components/MoveToOrganizationDialog'
+import { RestartProjectButton } from '../../../components/RestartProjectButton'
 import { routeErrorMessage } from '../../../lib/apiError'
 import { ProjectEnvironmentsPanel } from '../../../components/ProjectEnvironmentsPanel'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -86,6 +87,10 @@ function ProjectDetailPage() {
             {isEmpty ? null : (
               <PauseResumeProjectButton id={project.id} name={project.name} />
             )}
+            <RestartProjectButton
+              id={project.id}
+              disabled={projectApps.length === 0}
+            />
             <DeleteProjectDialog
               id={project.id}
               name={project.name}

@@ -1143,6 +1143,15 @@ type CreateProjectRequest struct {
 	Name string `json:"name"`
 }
 
+// ProjectRestartResponse mirrors internal/api's projectRestartResponse
+// (internal/api/project_restart.go): which apps a bulk restart succeeded
+// or failed on.
+type ProjectRestartResponse struct {
+	RestartedCount int      `json:"restarted_count"`
+	Apps           []string `json:"apps"`
+	Failed         []string `json:"failed,omitempty"`
+}
+
 // SetAppProjectRequest mirrors internal/api's setAppProjectRequest. An
 // empty ProjectID clears the assignment.
 type SetAppProjectRequest struct {
