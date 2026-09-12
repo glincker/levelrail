@@ -10,13 +10,13 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// TASKS.md 3.6 tests: the domain-uniqueness defense-in-depth guard in
+// Tests for the domain-uniqueness defense-in-depth guard in
 // Reconcile, and WithCertStore actually threading through to
 // ingress.RoutesOptions.CertStorage. Split into its own file from
 // controller_test.go per this codebase's max-500-lines-per-file rule.
 
 func TestController_Reconcile_DuplicateDomain_DefenseInDepthSkipsLoser(t *testing.T) {
-	// store.SaveDesiredService (TASKS.md 3.6) now rejects a write that
+	// store.SaveDesiredService now rejects a write that
 	// would create this situation for any service saved after that
 	// change landed, but fakeStore here stands in for data that could
 	// still exist from before the constraint did (or a hypothetical

@@ -46,17 +46,38 @@
         "volumes": {
           "type": "array",
           "items": { "$ref": "#/$defs/volume" }
+        },
+        "hooks": { "$ref": "#/$defs/hooks" },
+        "command": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
         }
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "preDeploy": { "type": "string", "minLength": 1 },
+        "postDeploy": { "type": "string", "minLength": 1 }
       }
     },
     "volume": {
       "type": "object",
-      "required": ["name", "path"],
+      "required": ["path"],
       "additionalProperties": false,
       "properties": {
         "name": { "type": "string", "minLength": 1 },
-        "path": { "type": "string", "minLength": 1 }
-      }
+        "hostPath": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "readOnly": { "type": "boolean" }
+      },
+      "oneOf": [
+        { "required": ["name"] },
+        { "required": ["hostPath"] }
+      ]
     },
     "build": {
       "type": "object",
@@ -125,7 +146,8 @@
       "properties": {
         "engine": { "enum": ["postgres", "redis", "mysql", "mongodb", "mariadb", "keydb", "clickhouse", "dragonfly"] },
         "version": { "type": "string", "minLength": 1 },
-        "backup": { "$ref": "#/$defs/backup" }
+        "backup": { "$ref": "#/$defs/backup" },
+        "ephemeralInPreviews": { "type": "boolean" }
       }
     },
     "backup": {

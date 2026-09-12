@@ -16,7 +16,7 @@ type logEntryResource struct {
 	Structured bool      `json:"structured"`
 	// FieldsJSON is Message's parsed JSON as a raw string when
 	// Structured is true, empty otherwise, so a frontend log viewer
-	// (TASKS.md 2.4) can render a structured line without re-parsing
+	// can render a structured line without re-parsing
 	// Message itself. Passed through verbatim rather than re-encoded:
 	// it's already valid JSON text (telemetry.LogEntry.FieldsJSON's own
 	// contract), and json.Marshal would otherwise escape it as a string

@@ -7,7 +7,7 @@ import "net/http"
 // integrations, and audit. See routes.go's own doc comment for why the
 // split.
 func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
-	// Secrets (TASKS.md 1.7). Set-only: there is deliberately no GET,
+	// Secrets. Set-only: there is deliberately no GET,
 	// returning a value (even to its own owner over an authenticated
 	// session) is exactly the kind of exposure envelope encryption
 	// exists to avoid.
@@ -20,7 +20,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/secrets", rt.requireAbility(AbilityRead, rt.handleListSecrets))
 	mux.HandleFunc("POST /api/v1/apps/{name}/secrets/{key}/lock", rt.requireAbility(AbilityWriteSensitive, rt.handleSetSecretLock))
 
-	// Git source (TASKS.md 1.7's own deferred follow-up, git_sources.go):
+	// Git source (a deferred follow-up, git_sources.go):
 	// persist a repo/branch/build config per app so a git push can
 	// auto-deploy it, the multi-app evolution of internal/webhook's own
 	// single-app, env-var-configured Config. AbilityWriteSensitive for
@@ -69,7 +69,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// AbilityDeploy tier.
 	mux.HandleFunc("POST /api/v1/previews/sweep", rt.requireAbility(AbilityDeploy, rt.handleSweepPreviewEnvironments))
 
-	// Telemetry query (TASKS.md 2.3): metrics and logs for one app,
+	// Telemetry query: metrics and logs for one app,
 	// fanned out through a Federator (today, exactly one local source).
 	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryMetrics))
 	mux.HandleFunc("GET /api/v1/apps/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryLogs))
@@ -85,11 +85,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// telemetry.QueryLogs call, nothing more sensitive than either.
 	mux.HandleFunc("GET /api/v1/apps/{name}/logs/download", rt.requireAbility(AbilityRead, rt.handleDownloadLogs))
 
-	// Alerting (TASKS.md 2.5/2.7): threshold and crashloop rules scoped
+	// Alerting: threshold and crashloop rules scoped
 	// to one app, fanned through a *alerting.DB when configured (see
 	// WithAlertRules).
 	mux.HandleFunc("POST /api/v1/apps/{name}/alerts", rt.requireAbility(AbilityWrite, rt.handleCreateAlertRule))
 	mux.HandleFunc("GET /api/v1/apps/{name}/alerts", rt.requireAbility(AbilityRead, rt.handleListAlertRules))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/alerts/{id}", rt.requireAbility(AbilityWrite, rt.handleUpdateAlertRule))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/alerts/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteAlertRule))
 
 	// Scheduled tasks: run an arbitrary command inside this app's
@@ -138,12 +139,13 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// AbilityWrite, same tier as deploy-notify-targets' own POST.
 	mux.HandleFunc("GET /api/v1/notification-channels", rt.requireAbility(AbilityRead, rt.handleListNotificationChannels))
 	mux.HandleFunc("POST /api/v1/notification-channels", rt.requireAbility(AbilityWrite, rt.handleCreateNotificationChannel))
+	mux.HandleFunc("PUT /api/v1/notification-channels/{id}", rt.requireAbility(AbilityWrite, rt.handleUpdateNotificationChannel))
 	mux.HandleFunc("DELETE /api/v1/notification-channels/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteNotificationChannel))
 	mux.HandleFunc("POST /api/v1/notification-channels/test", rt.requireAbility(AbilityWrite, rt.handleTestNotificationChannel))
 	mux.HandleFunc("POST /api/v1/notification-channels/{id}/test", rt.requireAbility(AbilityWrite, rt.handleTestExistingNotificationChannel))
 	mux.HandleFunc("GET /api/v1/notification-channels/{id}/deliveries", rt.requireAbility(AbilityRead, rt.handleListNotificationDeliveries))
 
-	// Prometheus remote read (TASKS.md 2.6). Gated by requireAbility the
+	// Prometheus remote read. Gated by requireAbility the
 	// same as every other read route, not left open: leaving a metrics
 	// endpoint unauthenticated would let any caller pull every service's
 	// resource usage. Prometheus's own remote_read config supports
@@ -157,7 +159,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// grouping, explicitly not the deferred Phase 4 teams/RBAC work (see
 	// that file's own package doc comment). AbilityRead/AbilityWrite,
 	// the same ordinary boundary apps/databases CRUD already uses, not
-	// AbilityRoot: unlike a node (real infrastructure, TASKS.md 3.1),
+	// AbilityRoot: unlike a node (real infrastructure),
 	// creating or deleting a project has no fleet-level consequence.
 	mux.HandleFunc("GET /api/v1/projects", rt.requireAbility(AbilityRead, rt.handleListProjects))
 	mux.HandleFunc("POST /api/v1/projects", rt.requireAbility(AbilityWrite, rt.handleCreateProject))
@@ -220,7 +222,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// fleet-level placement.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/resources", rt.requireAbility(AbilityWrite, rt.handleSetDatabaseResources))
 
-	// Nodes (TASKS.md 3.1): fleet-level infrastructure, not scoped to any
+	// Nodes: fleet-level infrastructure, not scoped to any
 	// one app, so every route here requires AbilityRoot specifically
 	// rather than AbilityRead/AbilityWrite: minting a join token or
 	// removing a node is a materially more sensitive operation than
@@ -232,7 +234,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteNode))
 	mux.HandleFunc("PUT /api/v1/nodes/{id}/workloads", rt.requireAbility(AbilityRoot, rt.handleSetNodeWorkloads))
 	mux.HandleFunc("POST /api/v1/nodes/join-tokens", rt.requireAbility(AbilityRoot, rt.handleCreateNodeJoinToken))
-	// Health, cordon, drain (TASKS.md 3.7), same AbilityRoot boundary as
+	// Health, cordon, drain, same AbilityRoot boundary as
 	// every other node route above.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/health", rt.requireAbility(AbilityRoot, rt.handleGetNodeHealth))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/cordon", rt.requireAbility(AbilityRoot, rt.handleCordonNode))
@@ -312,6 +314,30 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbility(AbilityDeploy, rt.handleSetDomainMaintenance))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbility(AbilityDeploy, rt.handleClearDomainMaintenance))
 
+	// BYO TLS certificate upload (domain_tls_cert.go): an operator-
+	// supplied certificate/key pair used in place of Caddy's automatic
+	// ACME/internal issuance for one app-owned domain, enforced on the
+	// next ingress reconcile pass. GET is AbilityRead, matching the auth
+	// routes' own passive-visibility tier. PUT/DELETE are AbilityRoot,
+	// the same "real infrastructure, high blast radius" tier PUT/DELETE
+	// .../domains/{domain}/auth already reserves for a credential-bearing
+	// change.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbility(AbilityRead, rt.handleGetDomainTLSCert))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbility(AbilityRoot, rt.handleSetDomainTLSCert))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbility(AbilityRoot, rt.handleClearDomainTLSCert))
+
+	// Opt-in WAF and rate limiting (domain_waf.go): OWASP Coraza and
+	// Caddy's rate_limit handler on one app-owned domain, enforced on
+	// the next ingress reconcile pass. GET is AbilityRead, matching the
+	// auth/maintenance routes' own passive-visibility tier. PUT/DELETE
+	// are AbilityDeploy, the same "app lifecycle, runtime routing
+	// behavior, not a credential" tier PUT/DELETE .../maintenance
+	// already uses: unlike basic auth or a BYO cert, nothing here is
+	// secret material.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbility(AbilityRead, rt.handleGetDomainWAF))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbility(AbilityDeploy, rt.handleSetDomainWAF))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbility(AbilityDeploy, rt.handleClearDomainWAF))
+
 	// Email settings: same precedent as ingress settings just above.
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
@@ -327,6 +353,23 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRead, rt.handleGetCloudflareDNSSettings))
 	mux.HandleFunc("PUT /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudflareDNSSettings))
 	mux.HandleFunc("DELETE /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectCloudflareDNS))
+
+	// Built-in container registry (instance-level, one registry per
+	// control plane): GET is AbilityRead; PUT/DELETE are AbilityRoot,
+	// matching PUT /api/v1/settings/cloudflare-tunnel's own tier for
+	// infrastructure config that runs a system container and generates
+	// credentials.
+	mux.HandleFunc("GET /api/v1/settings/registry", rt.requireAbility(AbilityRead, rt.handleGetRegistrySettings))
+	mux.HandleFunc("PUT /api/v1/settings/registry", rt.requireAbility(AbilityRoot, rt.handleUpdateRegistrySettings))
+	mux.HandleFunc("DELETE /api/v1/settings/registry", rt.requireAbility(AbilityRoot, rt.handleDisableRegistry))
+
+	// Built-in registry catalog (registry_catalog.go): read-only browsing
+	// for the app-creation "existing image" step's repository/tag picker.
+	// AbilityRead, same tier as the settings GET just above: no secret is
+	// ever returned, the resolved password is only used server-side to
+	// authenticate the upstream catalog query.
+	mux.HandleFunc("GET /api/v1/registry/repositories", rt.requireAbility(AbilityRead, rt.handleListRegistryRepositories))
+	mux.HandleFunc("GET /api/v1/registry/tags", rt.requireAbility(AbilityRead, rt.handleListRegistryTags))
 
 	// Domains (centralized cross-app list, web/src/routes/domains):
 	// every service_domains row, AbilityRead like GET /api/v1/apps,
@@ -366,6 +409,16 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateRegistryCredential))
 	mux.HandleFunc("DELETE /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteRegistryCredential))
 	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryCredential))
+
+	// Registry credential browsing (registry_catalog.go): repository/tag
+	// lookup for a stored external credential, the same generic catalog
+	// client GET /api/v1/registry/repositories and /api/v1/registry/tags
+	// use above for the built-in registry. AbilityReadSensitive, the same
+	// tier GET /api/v1/git-providers and the github-app/gitlab-app/
+	// bitbucket-app repo-browsing routes below use: read-only, but only
+	// works because a stored credential's secret is resolved server-side.
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/repositories", rt.requireAbility(AbilityReadSensitive, rt.handleListRegistryCredentialRepositories))
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/tags", rt.requireAbility(AbilityReadSensitive, rt.handleListRegistryCredentialTags))
 
 	// Aggregated git provider capability summary (git_providers.go): one
 	// AbilityReadSensitive call the git-source picker uses instead of the

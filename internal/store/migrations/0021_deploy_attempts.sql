@@ -1,9 +1,8 @@
 -- One row per deploy attempt: the plain image-tag trigger
 -- (handleTriggerDeploy), the manual git-source build trigger
 -- (handleTriggerBuild), and the unattended git-push webhook receiver
--- (internal/webhook) all mint one of these, closing the gap
--- docs-local/research/deploy-attempt-id-and-log-persistence.md documents
--- (see that note's section 1): reconcile_status/UpsertConditions only
+-- (internal/webhook) all mint one of these, closing the gap left by
+-- reconcile_status/UpsertConditions, which only
 -- ever keeps the latest condition per (controller, type) pair, never a
 -- row-per-attempt history, so an operator could never see "attempt 3
 -- failed, attempt 4 succeeded" for the same app, only "currently Ready".

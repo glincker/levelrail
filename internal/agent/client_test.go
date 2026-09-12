@@ -38,6 +38,10 @@ func (f *fakeAgentClientStream) Recv() (*agentpb.ControlMessage, error) {
 	return msg, nil
 }
 
+func controlRequest(req *agentpb.AgentRequest) *agentpb.ControlMessage {
+	return &agentpb.ControlMessage{Payload: &agentpb.ControlMessage_Request{Request: req}}
+}
+
 func testLogger() *slog.Logger {
 	return slog.New(slog.DiscardHandler)
 }
@@ -49,12 +53,12 @@ func TestServeSession_DispatchesRequest_SendsResponse(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	done := make(chan error, 1)
-	go func() { done <- serveSession(ctx, stream, rt, testLogger()) }()
+	go func() { done <- serveSession(ctx, stream, rt, nil, testLogger()) }()
 
-	stream.recv <- &agentpb.ControlMessage{Request: &agentpb.AgentRequest{
+	stream.recv <- controlRequest(&agentpb.AgentRequest{
 		RequestId: "r1",
 		Op:        &agentpb.AgentRequest_Start{Start: &agentpb.StartRequest{Id: "c1"}},
-	}}
+	})
 
 	select {
 	case msg := <-stream.sent:
@@ -92,7 +96,7 @@ func TestServeSession_RecvError_ReturnsImmediately(t *testing.T) {
 	stream.recvErr = errors.New("connection reset")
 	close(stream.recv)
 
-	err := serveSession(context.Background(), stream, newExecRuntime(), testLogger())
+	err := serveSession(context.Background(), stream, newExecRuntime(), nil, testLogger())
 	if err == nil {
 		t.Fatal("serveSession() error = nil, want the recv error wrapped")
 	}
@@ -104,14 +108,14 @@ func TestServeSession_MultipleRequests_AllAnswered(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go func() { _ = serveSession(ctx, stream, rt, testLogger()) }()
+	go func() { _ = serveSession(ctx, stream, rt, nil, testLogger()) }()
 
-	stream.recv <- &agentpb.ControlMessage{Request: &agentpb.AgentRequest{
+	stream.recv <- controlRequest(&agentpb.AgentRequest{
 		RequestId: "r1", Op: &agentpb.AgentRequest_Start{Start: &agentpb.StartRequest{Id: "c1"}},
-	}}
-	stream.recv <- &agentpb.ControlMessage{Request: &agentpb.AgentRequest{
+	})
+	stream.recv <- controlRequest(&agentpb.AgentRequest{
 		RequestId: "r2", Op: &agentpb.AgentRequest_EnsureVolume{EnsureVolume: &agentpb.EnsureVolumeRequest{Name: "v1"}},
-	}}
+	})
 
 	seen := map[string]bool{}
 	for range 2 {
@@ -133,12 +137,12 @@ func TestServeSession_WatchEvents_EmitsProxiedEvent(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go func() { _ = serveSession(ctx, stream, rt, testLogger()) }()
+	go func() { _ = serveSession(ctx, stream, rt, nil, testLogger()) }()
 
-	stream.recv <- &agentpb.ControlMessage{Request: &agentpb.AgentRequest{
+	stream.recv <- controlRequest(&agentpb.AgentRequest{
 		RequestId: "r1",
 		Op:        &agentpb.AgentRequest_WatchEvents{WatchEvents: &agentpb.WatchEventsRequest{WatchId: "w1"}},
-	}}
+	})
 
 	// First frame back is the WatchEvents acknowledgment.
 	select {

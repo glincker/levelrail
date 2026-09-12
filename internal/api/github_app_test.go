@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -105,6 +104,33 @@ type fakeGitHubAppClient struct {
 	createHookURL  string
 	createHookSec  string
 	createHookCall bool
+
+	commentErr   error
+	commentCalls []fakeIssueComment
+
+	statusErr   error
+	statusCalls []fakeCommitStatus
+}
+
+// fakeIssueComment records one fakeGitHubAppClient.CreateIssueComment
+// call: preview_environments_github_test.go asserts against these
+// instead of a hand-rolled httptest.Server, the same "narrow fake,
+// caller inspects recorded calls" shape createHookURL/createHookSec
+// already establish for CreateRepoWebhook above.
+type fakeIssueComment struct {
+	owner, repo string
+	number      int
+	body        string
+}
+
+// fakeCommitStatus records one fakeGitHubAppClient.CreateCommitStatus
+// call.
+type fakeCommitStatus struct {
+	owner, repo, sha string
+	state            githubapp.CommitStatusState
+	targetURL        string
+	description      string
+	context          string
 }
 
 func (f *fakeGitHubAppClient) CheckInstanceReachable(_ context.Context, instanceURL string) error {
@@ -154,18 +180,20 @@ func (f *fakeGitHubAppClient) CreateRepoWebhook(_ context.Context, _, _, _, _, h
 	return f.createHookErr
 }
 
-func TestHandleGetGitHubAppStatus_NotConnected(t *testing.T) {
-	rt, db := newTestRouter(t)
-	cookie := loginTestSession(t, rt, db)
+func (f *fakeGitHubAppClient) CreateIssueComment(_ context.Context, _, _, owner, repo string, number int, body string) error {
+	f.commentCalls = append(f.commentCalls, fakeIssueComment{owner: owner, repo: repo, number: number, body: body})
+	return f.commentErr
+}
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/github-app", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
-	}
-	if !strings.Contains(rec.Body.String(), `"connected":false`) {
-		t.Errorf("body = %s, want connected:false", rec.Body.String())
-	}
+func (f *fakeGitHubAppClient) CreateCommitStatus(_ context.Context, _, _, owner, repo, sha string, state githubapp.CommitStatusState, targetURL, description, statusContext string) error {
+	f.statusCalls = append(f.statusCalls, fakeCommitStatus{
+		owner: owner, repo: repo, sha: sha, state: state, targetURL: targetURL, description: description, context: statusContext,
+	})
+	return f.statusErr
+}
+
+func TestHandleGetGitHubAppStatus_NotConnected(t *testing.T) {
+	assertProviderStatusNotConnected(t, "/api/v1/github-app")
 }
 
 func TestHandleGetGitHubAppStatus_Connected(t *testing.T) {
@@ -393,33 +421,15 @@ func TestHandleGetGitHubAppStatus_LiveCheckErrorFallsBack(t *testing.T) {
 // TestHandleSetAppNode_PlainWriteToken_Forbidden already establish.
 func TestGitHubAppRoutes_PlainTokenForbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
-	ctx := context.Background()
 
 	const plaintext = "write-sensitive-token" //nolint:gosec // fake fixture, not a real credential
-	if err := db.SaveAPIToken(ctx, store.APIToken{
-		ID: "tok_ws", Name: "writer", TokenHash: hashToken(plaintext), Abilities: []string{AbilityWriteSensitive}, CreatedAt: time.Now(),
-	}); err != nil {
-		t.Fatalf("seed token: %v", err)
-	}
-
-	routes := []struct {
-		method, path string
-	}{
-		{http.MethodGet, "/api/v1/github-app"},
-		{http.MethodDelete, "/api/v1/github-app"},
-		{http.MethodGet, "/api/v1/github-app/register/start"},
-		{http.MethodGet, "/api/v1/github-app/callback?code=x&state=y"},
-		{http.MethodGet, "/api/v1/github-app/installed?installation_id=1"},
-	}
-	for _, rt2 := range routes {
-		req := httptest.NewRequest(rt2.method, rt2.path, nil)
-		req.Header.Set("Authorization", "Bearer "+plaintext)
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, req)
-		if rec.Code != http.StatusForbidden {
-			t.Errorf("%s %s: status = %d, want 403 (AbilityWriteSensitive must not reach an AbilityRoot route)", rt2.method, rt2.path, rec.Code)
-		}
-	}
+	assertProviderRoutesForbiddenForAbilities(t, rt, db, "tok_ws", plaintext, []string{AbilityWriteSensitive}, []providerRouteCase{
+		{method: http.MethodGet, path: "/api/v1/github-app"},
+		{method: http.MethodDelete, path: "/api/v1/github-app"},
+		{method: http.MethodGet, path: "/api/v1/github-app/register/start"},
+		{method: http.MethodGet, path: "/api/v1/github-app/callback?code=x&state=y"},
+		{method: http.MethodGet, path: "/api/v1/github-app/installed?installation_id=1"},
+	})
 }
 
 // TestGitHubAppRepoRoutes_PlainReadTokenForbidden proves the repo/branch
@@ -427,45 +437,21 @@ func TestGitHubAppRoutes_PlainTokenForbidden(t *testing.T) {
 // AbilityRead tier: a token scoped only to AbilityRead must be rejected.
 func TestGitHubAppRepoRoutes_PlainReadTokenForbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
-	ctx := context.Background()
 
 	const plaintext = "read-only-token" //nolint:gosec // fake fixture, not a real credential
-	if err := db.SaveAPIToken(ctx, store.APIToken{
-		ID: "tok_read", Name: "reader", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead}, CreatedAt: time.Now(),
-	}); err != nil {
-		t.Fatalf("seed token: %v", err)
-	}
-
-	routes := []string{
-		"/api/v1/github-app/repos",
-		"/api/v1/github-app/repos/acme/widgets/branches",
-	}
-	for _, path := range routes {
-		req := httptest.NewRequest(http.MethodGet, path, nil)
-		req.Header.Set("Authorization", "Bearer "+plaintext)
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, req)
-		if rec.Code != http.StatusForbidden {
-			t.Errorf("GET %s: status = %d, want 403 (AbilityRead must not reach an AbilityReadSensitive route)", path, rec.Code)
-		}
-	}
+	assertProviderRoutesForbiddenForAbilities(t, rt, db, "tok_read", plaintext, []string{AbilityRead}, []providerRouteCase{
+		{method: http.MethodGet, path: "/api/v1/github-app/repos"},
+		{method: http.MethodGet, path: "/api/v1/github-app/repos/acme/widgets/branches"},
+	})
 }
 
 func TestGitHubAppRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct{ method, path string }{
-		{http.MethodGet, "/api/v1/github-app"},
-		{http.MethodDelete, "/api/v1/github-app"},
-		{http.MethodGet, "/api/v1/github-app/register/start"},
-		{http.MethodGet, "/api/v1/github-app/repos"},
-	}
-	for _, r := range routes {
-		req := httptest.NewRequest(r.method, r.path, nil)
-		rec := httptest.NewRecorder()
-		rt.Handler().ServeHTTP(rec, req)
-		if rec.Code != http.StatusUnauthorized {
-			t.Errorf("%s %s: status = %d, want 401 for an unauthenticated request", r.method, r.path, rec.Code)
-		}
-	}
+	assertProviderRoutesRequireAuth(t, rt, []providerRouteCase{
+		{method: http.MethodGet, path: "/api/v1/github-app"},
+		{method: http.MethodDelete, path: "/api/v1/github-app"},
+		{method: http.MethodGet, path: "/api/v1/github-app/register/start"},
+		{method: http.MethodGet, path: "/api/v1/github-app/repos"},
+	})
 }

@@ -28,14 +28,12 @@ all-or-nothing API keys cannot express that ceiling: the token itself
 carries no information about what it should be trusted to do, only who
 issued it.
 
-This decision was researched in
-`docs-local/research/competitor-onboarding-auth-ux.md`, specifically
-"finding 9" in its synthesis section, which compares Coolify's and
-Dokploy's token models on exactly this axis. `TASKS.md`'s "Dashboard &
-auth" section records the resulting settled decision ("API tokens use
+This decision was informed by internal competitive research, specifically
+a finding that compares Coolify's and Dokploy's token models on exactly
+this axis. The resulting settled decision was recorded ("API tokens use
 Coolify's scoped-ability model... This is what lets an MCP-issued token
-be provably read-only at the token layer, per the AI-ready API design goal") and its
-"API tokens (2026-08-12)" checklist item records what was actually built:
+be provably read-only at the token layer, per the AI-ready API design goal"),
+and what was actually built is:
 `internal/store/tokens.go`, migration 0007 (`api_tokens(id, name,
 token_hash, abilities, created_at, last_used_at, expires_at,
 revoked_at)`), and `internal/api/abilities.go`.

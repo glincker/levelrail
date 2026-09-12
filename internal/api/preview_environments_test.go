@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sort"
@@ -147,11 +146,15 @@ func sendPullRequestWebhook(rt *Router, secret string, body []byte) *httptest.Re
 	return rec
 }
 
-func setPreviewEnabled(t *testing.T, rt *Router, cookie *http.Cookie, appName string, enabled bool) {
+// setPreviewEnabled opts app "web" into preview environments: every
+// caller across this package's preview environment tests seeds exactly
+// that one app name and only ever turns previews on (the disabled case
+// is the default, never toggled off in a test), the same fixed-name
+// convention seedApp's own callers already use.
+func setPreviewEnabled(t *testing.T, rt *Router, cookie *http.Cookie) {
 	t.Helper()
 	rec := httptest.NewRecorder()
-	body := fmt.Sprintf(`{"enabled":%t}`, enabled)
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/"+appName+"/preview-settings", body))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/preview-settings", `{"enabled":true}`))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("set preview enabled: status = %d, body = %s", rec.Code, rec.Body.String())
 	}
@@ -171,7 +174,7 @@ func setUpPreviewApp(t *testing.T) (rt *Router, db *store.DB, secret string, bui
 	seedApp(t, db, "web")
 
 	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
-	setPreviewEnabled(t, rt, cookie, "web", true)
+	setPreviewEnabled(t, rt, cookie)
 
 	builder = &sequencedBuilder{db: db, tag: "levelrail/web-pr-42:sha1"}
 	rt.builder = builder

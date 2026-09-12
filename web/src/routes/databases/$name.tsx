@@ -6,6 +6,7 @@ import {
   useDatabaseStatus,
 } from '../../queries/databases'
 import { summarizeDatabaseStatus } from '../../lib/databaseStatus'
+import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { DeleteDatabaseDialog } from '../../components/DeleteDatabaseDialog'
 import { StopStartDatabaseButton } from '../../components/StopStartDatabaseButton'
@@ -76,11 +77,11 @@ function DatabaseDetailLayout() {
 // fetchDatabase (queries/databases.ts) throws a plain ApiError for a
 // 404, which lands here rather than crashing the whole route tree,
 // mirroring AppDetailError.
-function DatabaseDetailError({ error }: { error: Error }) {
+function DatabaseDetailError({ error }: { error: unknown }) {
   return (
     <Alert variant="destructive">
       <AlertDescription>
-        <p>{error.message}</p>
+        <p>{routeErrorMessage(error)}</p>
         <Link to="/databases" className="mt-2 inline-block underline">
           Back to databases
         </Link>

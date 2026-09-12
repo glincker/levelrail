@@ -22,17 +22,16 @@ export to Vercel) and `theauth` (a JS/TS auth SDK: `packages/client`,
 The project's own Phase 4 work list names both explicitly: "Integration of
 first-party GLINCKER libraries: theauth for the auth layer, thesvg for the
 icon system," deferred to Phase 4 "so the platform's own auth is boring
-and proven first." The Dashboard & auth work pass (TASKS.md, started
+and proven first." The Dashboard & auth work pass (started
 2026-08-12) needed a login screen and a component foundation now, in
 Phase 1, ahead of that deferred integration point, so the reuse question
 had to be answered early rather than assumed away.
 
 Four research streams ran in parallel on 2026-08-12 to settle this and
-related dashboard/auth questions; `docs-local/research/frontend-component-
-reuse.md` is the one that covers thesvg's component system and theauth's
-SDK. It was read in full before this decision. Its recommendation was
-adopted and implemented before this ADR was written, which is the gap
-this ADR closes: the project's process requires "one ADR per architectural
+related dashboard/auth questions; one of them assessed thesvg's component
+system and theauth's SDK in full before this decision was made. Its
+recommendation was adopted and implemented before this ADR was written,
+which is the gap this ADR closes: the project's process requires "one ADR per architectural
 decision... with the rejected alternatives written down," and this
 decision (a new component library, a new primitive dependency, a new
 `web/package.json` diff, and an explicit choice to not integrate an
@@ -51,8 +50,8 @@ aliases, and costs nothing extra since it's the same shadcn registry
 either way (`frontend-component-reuse.md` section 1.5). The resulting
 `web/components.json` records `"style": "base-nova"`, and `web/
 package.json`'s `@base-ui/react ^1.7.0` dependency (not
-`@radix-ui/react-*`) confirms Base UI landed as the primitive backend,
-per TASKS.md's "shadcn/ui setup" entry. 14 files generated into `web/src/
+`@radix-ui/react-*`) confirms Base UI landed as the primitive backend.
+14 files generated into `web/src/
 components/ui/`: `button`, `input`, `label`, `card`, `table`, `dialog`,
 `select`, `checkbox`, `switch`, `alert`, `popover`, `tabs`, `separator`,
 `field` (the last replacing the classic `form` RHF wrapper the research
@@ -64,8 +63,8 @@ dropped into `web/src/components/ui/`. New work uses them (the login
 screen this work pass built, Phase 2.4's metrics dashboard later);
 existing hand-rolled components (`DomainEditor.tsx`, `EnvEditor.tsx`, and
 the rest of `web/src/components/`) migrate opportunistically when touched
-for other reasons, not as a dedicated migration task. TASKS.md's own
-verification confirms this held in practice: `git diff --stat` showed no
+for other reasons, not as a dedicated migration task. Verification
+confirms this held in practice: `git diff --stat` showed no
 file under `web/src/components/*.tsx` or `web/src/routes/**` touched by
 the init itself.
 
@@ -76,7 +75,7 @@ login.tsx` plus `web/src/components/LoginForm.tsx` and `RegisterForm.tsx`,
 styled with the shadcn primitives from part (a) (`Card`, `Tabs`, `Input`,
 `Label`/`Field`, `Button`, `Alert`), cookie-based session (same-origin
 `fetch` already sends the `session_token` cookie, no `credentials:
-'include'` needed), per TASKS.md's "Login screen" entry.
+'include'` needed).
 
 ## Rejected alternatives
 
@@ -105,8 +104,8 @@ styled with the shadcn primitives from part (a) (`Card`, `Tabs`, `Input`,
   components with the same bundling behavior as `DomainEditor.tsx` today
   (`frontend-component-reuse.md` section 3), so there is no technical
   forcing function to migrate anything that isn't already being touched.
-  TASKS.md's shadcn/ui setup entry confirms no existing component file was
-  touched by the init.
+  The setup work confirms no existing component file was touched by
+  the init.
 
 - **Using the theauth SDK (`@glinr/theauth-react`'s `useSignIn` plus
   `packages/ui`'s `<SignIn>`) for the login screen.** Rejected on a
@@ -121,7 +120,7 @@ styled with the shadcn primitives from part (a) (`Card`, `Tabs`, `Input`,
   yet." Using the SDK against that backend meant either standing up
   theauth-go as Levelrail's auth backend (a separate, larger decision the
   parallel theauth-go fit-assessment work evaluated independently and
-  rejected for Phase 1, per TASKS.md's "Don't adopt theauth-go now" entry)
+  rejected for Phase 1)
   or reimplementing `useSignIn`'s context contract by hand, at which point
   the SDK import is dead weight around what section 2.4 measured as an
   8-line `fetch` call. The strongest evidence cited is concrete, not
@@ -147,9 +146,8 @@ styled with the shadcn primitives from part (a) (`Card`, `Tabs`, `Input`,
   (`^3.6.0`), and `tw-animate-css` (`^1.4.0`). None of these existed in
   `web/package.json` before this work. The root GLINRV5 project's
   file-boundaries rule requires approval for `package.json` changes and
-  this repo has no override of that rule; per TASKS.md's shadcn/ui setup
-  entry, this diff was explicitly flagged for founder sign-off before
-  merge, and it was obtained.
+  this repo has no override of that rule; this diff was explicitly
+  flagged for founder sign-off before merge, and it was obtained.
 - Choosing Base UI over classic Radix as the primitive backend was a real,
   named open call in the research doc (section 1.5), resolved in favor of
   Base UI specifically because it matches thesvg's own primitive choice
@@ -171,9 +169,9 @@ styled with the shadcn primitives from part (a) (`Card`, `Tabs`, `Input`,
 - The login screen's own shape sets the precedent this ADR's part (b)
   establishes for any future GLINCKER-SDK reuse question in `/web`: fit is
   evaluated against Levelrail's actual backend contract, not against how
-  polished or well-built the SDK's own components are. TASKS.md's "Don't
-  adopt theauth-go now" entry already names the reconsideration trigger:
-  if theauth-go is adopted as Levelrail's backend auth service at Phase 4
+  polished or well-built the SDK's own components are. That decision
+  already names the reconsideration trigger: if theauth-go is adopted
+  as Levelrail's backend auth service at Phase 4
   when teams/RBAC are in scope, `packages/ui`/`packages/react` become the
   matching frontend half and this specific rejection should be revisited,
   not treated as permanent.

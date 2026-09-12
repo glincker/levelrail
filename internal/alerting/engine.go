@@ -30,8 +30,8 @@ type RuleStore interface {
 	ListCertExpiryObservations(ctx context.Context, ruleID string) ([]CertExpiryObservation, error)
 }
 
-// crashloopLogLines is TASKS.md 2.7's literal number: "the last 200
-// lines."
+// crashloopLogLines surfaces the last 200 lines of a crashlooping
+// container's logs.
 const crashloopLogLines = 200
 
 // crashloopLogLookback bounds how far back Engine searches for those

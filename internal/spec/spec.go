@@ -47,19 +47,53 @@ type Service struct {
 	// platform's own bookkeeping labels.
 	Labels map[string]string `yaml:"labels,omitempty"`
 
-	// Volumes are named Docker volumes this service's container mounts,
-	// previously a database-only capability. Name is a logical name
-	// scoped to this service, not a global Docker volume name (see
-	// internal/deploy's translation into store.ServiceVolume for the
-	// actual, platform-prefixed name); two services can each declare a
-	// volume named "data" without colliding.
+	// Volumes are named Docker volumes or host-directory bind mounts this
+	// service's container mounts (see Volume's own doc comment for how
+	// the two are distinguished): named volumes were previously a
+	// database-only capability, bind mounts a compose-import-only one. A
+	// named volume's Name is a logical name scoped to this service, not a
+	// global Docker volume name (see internal/deploy's translation into
+	// store.ServiceVolume for the actual, platform-prefixed name); two
+	// services can each declare a volume named "data" without colliding.
 	Volumes []Volume `yaml:"volumes,omitempty"`
+
+	// Hooks are shell commands the reconciler runs inside this service's
+	// own container at defined points in a deploy (internal/reconcile/
+	// application's controller). Nil means neither is configured, the
+	// same "declarative, resolved before storing" shape Health/Resources
+	// already follow.
+	Hooks *Hooks `yaml:"hooks,omitempty"`
+
+	// Command overrides the image's own default CMD
+	// (store.DesiredService.Command), nil meaning the image's own
+	// default: the app.yaml equivalent of
+	// internal/compose.Service.Command, which this mirrors. A plain argv
+	// list, never shell-interpreted.
+	Command []string `yaml:"command,omitempty"`
 }
 
-// Volume is one entry under a service's volumes:.
+// Hooks are the two deploy-lifecycle commands a service can declare.
+// Both run via "sh -c" inside the newly created container (see
+// internal/reconcile/application.Controller's own doc comment for the
+// full timing and failure-handling contract): PreDeploy before the
+// container's readiness probe and before any old container is retired,
+// PostDeploy after the whole replica set has cut over. Either field may
+// be set alone.
+type Hooks struct {
+	PreDeploy  string `yaml:"preDeploy,omitempty"`
+	PostDeploy string `yaml:"postDeploy,omitempty"`
+}
+
+// Volume is one entry under a service's volumes:. Exactly one of Name (a
+// named Docker volume) or HostPath (a bind mount of a real host
+// directory, gated the same as internal/compose's own bind-mount support:
+// see validateBindMountHostPath) is set; see Validate. ReadOnly is only
+// meaningful alongside HostPath, matching store.ServiceBindMount.
 type Volume struct {
-	Name string `yaml:"name"`
-	Path string `yaml:"path"`
+	Name     string `yaml:"name,omitempty"`
+	HostPath string `yaml:"hostPath,omitempty"`
+	Path     string `yaml:"path"`
+	ReadOnly bool   `yaml:"readOnly,omitempty"`
 }
 
 // Build input types: the app spec's build.type values, matching the
@@ -164,6 +198,15 @@ type Database struct {
 	Engine  string  `yaml:"engine"`
 	Version string  `yaml:"version,omitempty"`
 	Backup  *Backup `yaml:"backup,omitempty"`
+	// EphemeralInPreviews opts this database into a disposable,
+	// preview-scoped instance of its own (a full container, its own
+	// volume, its own credentials) rather than sharing whatever this
+	// database resolves to in production: one per pull request, created
+	// alongside the preview and destroyed with it, with no restore path
+	// once torn down. Off by default, like every other opt-in toggle in
+	// this codebase; only meaningful for a database attached to an app
+	// with preview environments enabled (store.GitSource.PreviewEnabled).
+	EphemeralInPreviews bool `yaml:"ephemeralInPreviews,omitempty"`
 }
 
 // Backup describes a database's backup schedule.

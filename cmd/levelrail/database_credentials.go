@@ -13,12 +13,12 @@ import (
 // database.WithPostgresCredentials needs for dbName, generating and
 // persisting a random password on first call and returning the same
 // one on every subsequent call, so a reconcile pass never rotates a
-// running database's password out from under it (TASKS.md 1.7's
-// envelope encryption is exactly what makes "persisted, but only this
-// process can read it back" possible here).
+// running database's password out from under it (envelope encryption
+// is exactly what makes "persisted, but only this process can read it
+// back" possible here).
 //
-// Returns (nil, nil), not an error, when mgr is nil: TASKS.md 1.7's
-// secrets support is itself optional (no APP_MASTER_KEY configured),
+// Returns (nil, nil), not an error, when mgr is nil: secrets support
+// is itself optional (no APP_MASTER_KEY configured),
 // and a Postgres database on an instance without secrets configured
 // stays exactly as blocked as it already was, database.Controller's own
 // credentialsBlockedResult condition explains why to the operator.

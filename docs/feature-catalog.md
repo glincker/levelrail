@@ -24,7 +24,7 @@ stub, the substance lives in the imported component.
 | --- | --- |
 | Overview | Hero, conditions, `DiagnosisPanel` |
 | Deploys | History, live/replay log stream, `deploys/compare` |
-| Deploy settings | Strategy config |
+| Deploy settings | Strategy config, `HooksEditor` (pre/post-deploy commands + last run outcome) |
 | Domains | `DomainEditor` |
 | Environment | Env var editor |
 | Exec | `ExecPanel` (one-off container exec) |
@@ -43,7 +43,8 @@ stub, the substance lives in the imported component.
 
 ### Databases (`/databases/$name/*`)
 
-Overview (backups, public access, attachment), logs, metrics, resources.
+Overview (backups, public access, attachment, TLS status badge), logs,
+metrics, resources.
 
 ### System / org structure
 
@@ -55,27 +56,28 @@ cross-app domains, projects, environments, organizations.
 Account, security (2FA/TOTP), general (system status, Docker cleanup,
 certificates, master key rotation), tokens, CLI access, users,
 IAM policies, audit log (+ purge), backup targets, registry credentials,
-notification channels, organizations, OAuth sign-in, GitHub/GitLab/
-Bitbucket apps, Cloudflare Tunnel, email, system status (doctor bundle),
-containers, updates.
+container registry (built-in), notification channels, organizations,
+OAuth sign-in, GitHub/GitLab/Bitbucket apps, Cloudflare Tunnel, email,
+system status (doctor bundle), containers, updates.
 
 ## API resource groups (`internal/api/routes.go`, `routes_platform.go`)
 
-259 registered routes total, grouped by resource:
+271 registered routes total, grouped by resource:
 
 | Resource | Routes | Representative paths |
 | --- | --- | --- |
 | System (status/doctor/containers/prune/master-key/firewall/onboarding/updates) | 12 | `GET /system/status`, `POST /system/prune`, `POST /system/master-key/rotate` |
 | Auth/2FA/users/roles/IAM/device-auth/OAuth | 33 | `/auth/login`, `/auth/2fa/*`, `/iam/policies*`, `/auth/device/*` |
-| Apps CRUD/lifecycle/deploy | 30 | `/apps`, `/apps/{name}/deploys`, `/restart`, `/exec`, `/deploy-spec` |
+| Apps CRUD/lifecycle/deploy | 31 | `/apps`, `/apps/{name}/deploys`, `/restart`, `/exec`, `/deploy-spec`, `/hook-runs` |
 | Secrets / git-source / webhooks / previews | 12 | `/apps/{name}/secrets*`, `/webhooks/github/{name}`, `/previews*` |
 | Telemetry (metrics/logs) | 10 | `/apps/{name}/metrics`, `/logs/stream`, `/logs/download` |
 | Alerts / scheduled tasks / feature flags / notify channels | 22 | `/apps/{name}/alerts`, `/flags/evaluate/{key}`, `/notification-channels*` |
 | Databases CRUD + engines + resources | 10 | `/database-engines`, `/databases/{name}/resource-recommendation` |
 | Projects / orgs / environments (+ shared env layers) | 20 | `/projects*`, `/organizations/{id}/env` |
 | Nodes | 11 | `/nodes`, `/{id}/cordon`, `/drain`, `/workloads` |
-| Ingress / certs / domains / email / Cloudflare | 16 | `/certificates`, `/settings/ingress*`, `/settings/cloudflare-tunnel*` |
+| Ingress / certs / domains / email / Cloudflare | 19 | `/certificates`, `/settings/ingress*`, `/settings/cloudflare-tunnel*`, `/domains/{domain}/tls-cert` |
 | Static sites / backup targets / registry credentials | 15 | `/static-sites`, `/backup-targets*`, `/registry-credentials*` |
+| Built-in container registry | 5 | `/settings/registry`, `/registry/repositories`, `/registry/tags` |
 | Git provider apps (GitHub/GitLab/Bitbucket) | 27 | `/github-app*`, `/gitlab-app*`, `/bitbucket-app*` |
 | DB backups/restore/clone-restore | 16 | `/databases/{name}/backups*`, `/restore-as-new`, `/backup-schedule` |
 | App volume backups/restore | 11 | `/apps/{name}/volumes/{volume}/backups*` |
@@ -86,24 +88,40 @@ containers, updates.
 
 `apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`,
 `app-volume-backups`, `cloudflare-tunnel`, `channels`,
-`backup-targets`, `registry-credentials`, `flags`, `nodes`, `status`,
-`version`, `audit-log`, `audit-purge`, `doctor`, `containers`,
-`firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`.
+`backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`,
+`status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`,
+`firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`,
+`settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `templates`,
+`static-sites`.
 
 Key subcommand groups:
 
 - **apps**: create, list, get, deploy, deploy-compose, deploy-spec,
-  group, rollback, deploys, promote, restart, stop, start, delete,
-  status, diagnose, resource-recommendation, network, logs, exec,
-  log-drain, scheduled-tasks, alerts, organizations, projects,
-  environments, previews, secrets, git-source, webhook-deliveries
-- **databases**: create, list, get, delete, resource-recommendation
+  group, hook-runs, rollback, deploys, promote, restart, stop, start,
+  delete, status, diagnose, resource-recommendation, network, logs
+  (`--follow`/`-f` for a live tail), metrics, exec, log-drain,
+  scheduled-tasks, alerts, organizations, projects, environments,
+  previews, secrets, git-source, webhook-deliveries, storage
+- **databases**: create, list, get, delete, resource-recommendation, metrics
 - **nodes**: list, get, delete, join-token, cordon, uncordon, drain,
-  workloads, health, patch-status
+  workloads, health, patch-status, metrics
 - **iam**: policies create/list/get/update/delete/attach/detach
 - **backups** / **app-volume-backups**: list, trigger, restore,
   restore-as-new, schedule, verify, verifications
 - **migrate**: coolify, dokploy, caprover
+- **domains**: list, cloudflare-dns, basic-auth, maintenance, tls-cert,
+  certificates
+- **settings**: oauth (list/set), email (get/set), ingress (get/set):
+  instance-wide OAuth sign-in, outbound email, and ingress/ACME config,
+  for headless first-run setup with no browser
+- **github-app** / **gitlab-app** / **bitbucket-app**: repos (or
+  `projects` for gitlab-app), branches, use-as-source. Connecting the
+  App/OAuth integration itself stays dashboard-only (a real browser
+  redirect through the provider's own OAuth flow); these subcommands
+  browse and use an already-connected integration's repos from the CLI
+- **templates**: list, get, deploy (deploys a catalog entry's own
+  compose.yaml as an app, the same call `apps deploy-compose` makes)
+- **static-sites**: list
 
 ## Known gaps (backend done, UI thin or missing)
 

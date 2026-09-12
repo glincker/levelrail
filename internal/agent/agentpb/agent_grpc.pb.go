@@ -1,8 +1,8 @@
-// TASKS.md 3.2: the wire contract for ADR 003's reverse-dialed gRPC
+// The wire contract for ADR 003's reverse-dialed gRPC
 // agent. Message shapes mirror internal/docker's Go types (ContainerSpec,
 // ContainerState, Event, ImageInfo, VolumeMount, PortBinding, Resources)
 // field for field, deliberately: this is the exact narrow surface
-// internal/agent.Transport already committed to in TASKS.md 3.1
+// internal/agent.Transport already committed to
 // (docker.Runtime's own 9 methods, no more), not a redesign.
 //
 // AgentService is defined from the control plane's perspective (it is
@@ -48,8 +48,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AgentServiceClient interface {
-	// Enroll exchanges a one-time join token (internal/store.NodeJoinToken,
-	// TASKS.md 3.1) for a signed client certificate, over a connection
+	// Enroll exchanges a one-time join token (internal/store.NodeJoinToken)
+	// for a signed client certificate, over a connection
 	// that does not yet present a client cert (the token itself is the
 	// credential for this one call). Called once per node, before Session
 	// is ever called.
@@ -99,8 +99,8 @@ type AgentService_SessionClient = grpc.BidiStreamingClient[AgentMessage, Control
 // All implementations must embed UnimplementedAgentServiceServer
 // for forward compatibility.
 type AgentServiceServer interface {
-	// Enroll exchanges a one-time join token (internal/store.NodeJoinToken,
-	// TASKS.md 3.1) for a signed client certificate, over a connection
+	// Enroll exchanges a one-time join token (internal/store.NodeJoinToken)
+	// for a signed client certificate, over a connection
 	// that does not yet present a client cert (the token itself is the
 	// credential for this one call). Called once per node, before Session
 	// is ever called.

@@ -65,6 +65,19 @@ func writeJSONValue(out io.Writer, v any) error {
 	return err
 }
 
+// writeJSONLine marshals v as one unindented line of JSON followed by a
+// newline (JSON Lines), for a live stream (apps logs --follow) that has
+// no complete result set to marshal as one JSON array the way
+// writeJSONValue's --json mode does for every other command.
+func writeJSONLine(out io.Writer, v any) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Errorf("encode json line: %w", err)
+	}
+	_, err = fmt.Fprintln(out, string(data))
+	return err
+}
+
 // writeJSONError writes {"error": "..."} to out: --json mode's error
 // shape, deliberately the same {"error": "..."} field name
 // internal/api/respond.go's own apiError already uses, so a caller
@@ -318,6 +331,27 @@ func printAppHuman(out io.Writer, a appResource) {
 	if a.EnvDirty {
 		_, _ = fmt.Fprintln(out, "env:      pending restart (env vars saved since the running container was last recreated)")
 	}
+	if a.Hooks != nil {
+		if a.Hooks.PreDeploy != "" {
+			_, _ = fmt.Fprintf(out, "pre-deploy hook:  %s\n", a.Hooks.PreDeploy)
+		}
+		if a.Hooks.PostDeploy != "" {
+			_, _ = fmt.Fprintf(out, "post-deploy hook: %s\n", a.Hooks.PostDeploy)
+		}
+	}
+	if len(a.Command) > 0 {
+		_, _ = fmt.Fprintf(out, "command:  %v\n", a.Command)
+	}
+	for _, v := range a.Volumes {
+		_, _ = fmt.Fprintf(out, "volume:   %s -> %s\n", v.Name, v.ContainerPath)
+	}
+	for _, m := range a.BindMounts {
+		ro := ""
+		if m.ReadOnly {
+			ro = " (read-only)"
+		}
+		_, _ = fmt.Fprintf(out, "bind mount: %s -> %s%s\n", m.HostPath, m.ContainerPath, ro)
+	}
 }
 
 // printAppsTable prints a compact, aligned table of apps: list output's
@@ -444,6 +478,57 @@ func printLogEntriesHuman(out io.Writer, entries []logEntryResource) {
 	}
 }
 
+// printMetricPointsHuman prints "apps metrics"/"databases metrics"/
+// "nodes metrics" output: one row per aggregated bucket, oldest first
+// (the order telemetry.Aggregate returns them in), the same table shape
+// every other list command in this package uses.
+func printMetricPointsHuman(out io.Writer, metric string, points []metricPointResource) {
+	_, _ = fmt.Fprintf(out, "metric: %s\n", metric)
+	if len(points) == 0 {
+		_, _ = fmt.Fprintln(out, "no data points in range")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "TIMESTAMP\tVALUE\tCOUNT")
+	for _, p := range points {
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\n", p.Timestamp.Format(time.RFC3339), strconv.FormatFloat(p.Value, 'g', -1, 64), p.Count)
+	}
+	_ = tw.Flush()
+}
+
+// printAppHookRunsHuman prints "apps hook-runs" output: each configured
+// hook's most recent outcome, including its output, or a plain "never
+// run" line when a hook type has no recorded run yet.
+func printAppHookRunsHuman(out io.Writer, r appHookRunsResource) {
+	printOneHookRun := func(label string, run *hookRunResource) {
+		if run == nil {
+			_, _ = fmt.Fprintf(out, "%s: never run\n", label)
+			return
+		}
+		status := "success"
+		if !run.Success {
+			status = "failed"
+		}
+		_, _ = fmt.Fprintf(out, "%s: %s (exit %d, %s)\n", label, status, run.ExitCode, run.RanAt.Format(time.RFC3339))
+		_, _ = fmt.Fprintf(out, "  command: %s\n", run.Command)
+		if run.Output != "" {
+			_, _ = fmt.Fprintf(out, "  output:\n%s\n", indentLines(run.Output, "    "))
+		}
+	}
+	printOneHookRun("pre-deploy", r.PreDeploy)
+	printOneHookRun("post-deploy", r.PostDeploy)
+}
+
+// indentLines prefixes every line of s with prefix, for
+// printAppHookRunsHuman's own multi-line hook output block.
+func indentLines(s, prefix string) string {
+	lines := strings.Split(strings.TrimRight(s, "\n"), "\n")
+	for i, line := range lines {
+		lines[i] = prefix + line
+	}
+	return strings.Join(lines, "\n")
+}
+
 // printAppGroupHuman prints "apps group" output: name's sibling services
 // under the same app, plus the group's own rollup status.
 func printAppGroupHuman(out io.Writer, g appGroupResource) {
@@ -484,6 +569,11 @@ func printDatabaseHuman(out io.Writer, d databaseResource) {
 	if d.NodeID != "" {
 		_, _ = fmt.Fprintf(out, "node:     %s\n", d.NodeID)
 	}
+	tls := "no"
+	if d.TLSEnabled {
+		tls = "yes"
+	}
+	_, _ = fmt.Fprintf(out, "tls:      %s\n", tls)
 	if d.Resources != nil {
 		if d.Resources.MemoryBytes > 0 {
 			_, _ = fmt.Fprintf(out, "memory:   %d bytes\n", d.Resources.MemoryBytes)
@@ -508,13 +598,17 @@ func printDatabasesTable(out io.Writer, dbs []databaseResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "NAME\tENGINE\tVERSION\tNODE")
+	_, _ = fmt.Fprintln(tw, "NAME\tENGINE\tVERSION\tNODE\tTLS")
 	for _, d := range dbs {
 		node := d.NodeID
 		if node == "" {
 			node = "(local)"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", d.Name, d.Engine, d.Version, node)
+		tls := "no"
+		if d.TLSEnabled {
+			tls = "yes"
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", d.Name, d.Engine, d.Version, node, tls)
 	}
 	_ = tw.Flush()
 }

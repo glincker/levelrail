@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -33,18 +32,8 @@ func (rt *Router) handleVerifyVolumeBackup(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	h, err := rt.backupHistory.GetBackupHistory(r.Context(), historyID)
-	if errors.Is(err, store.ErrBackupHistoryNotFound) {
-		writeError(w, http.StatusNotFound, "backup not found")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: verify volume backup: load backup history failed", slog.String("error", err.Error()), slog.String("backup_id", historyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	if h.ServiceName != serviceName || h.VolumeName != volumeName {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was not taken from %s/%s", historyID, serviceName, volumeName))
+	h, ok := rt.loadVolumeBackupHistory(w, r, serviceName, volumeName, historyID, "api: verify volume backup: load backup history failed")
+	if !ok {
 		return
 	}
 	if h.Status != store.BackupStatusSucceeded {
@@ -90,30 +79,9 @@ func (rt *Router) handleListVolumeBackupVerifications(w http.ResponseWriter, r *
 		return
 	}
 
-	h, err := rt.backupHistory.GetBackupHistory(r.Context(), historyID)
-	if errors.Is(err, store.ErrBackupHistoryNotFound) {
-		writeError(w, http.StatusNotFound, "backup not found")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: list volume backup verifications: load backup history failed", slog.String("error", err.Error()), slog.String("backup_id", historyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	if h.ServiceName != serviceName || h.VolumeName != volumeName {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("backup %q was not taken from %s/%s", historyID, serviceName, volumeName))
+	if _, ok := rt.loadVolumeBackupHistory(w, r, serviceName, volumeName, historyID, "api: list volume backup verifications: load backup history failed"); !ok {
 		return
 	}
 
-	verifications, err := rt.backupVerifications.ListBackupVerifications(r.Context(), historyID, defaultBackupHistoryLimit)
-	if err != nil {
-		rt.logger.Error("api: list volume backup verifications failed", slog.String("error", err.Error()), slog.String("backup_id", historyID))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	out := make([]backupVerificationResource, 0, len(verifications))
-	for _, v := range verifications {
-		out = append(out, toBackupVerificationResource(v))
-	}
-	writeJSON(w, http.StatusOK, out)
+	rt.writeBackupVerificationsList(w, r, historyID, "api: list volume backup verifications failed")
 }

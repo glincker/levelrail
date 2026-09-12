@@ -34,13 +34,11 @@ const DEV_MODE_PASSWORD = 'dev'
 type LoginTab = 'sign-in' | 'register'
 
 // The one login route, handling both the returning-operator and the
-// first-run cases (docs-local/research/dashboard-gap-audit-and-devmode.md
-// gap #1 and #3). There is deliberately no "does an admin already exist"
+// first-run cases. There is deliberately no "does an admin already exist"
 // signal from the backend, so this does not auto-detect first-run and
 // render a different screen for it; it's one screen with a tab toggle the
 // operator picks themselves, a real, intentional deviation from
-// auto-detection, not an oversight (see TASKS.md's note on this task for
-// the full reasoning).
+// auto-detection, not an oversight.
 //
 // Already-authenticated visitors get bounced to the dashboard: this
 // route's own job is only ever reached when there's no session to speak

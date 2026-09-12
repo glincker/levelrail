@@ -24,14 +24,12 @@ import type { BitbucketAppRepo } from '../types/bitbucketApp'
 import type { GitProviderStatus } from '../types/gitProviders'
 
 // GitRepoSourcePicker is the shared "step 1" of both CreateAppFromGitFields
-// (this PR) and, per the connect-UX unification proposal's PR 3, a future
-// GitSourceCard: one list, one mental model, for all three connected git
-// providers plus a manual paste-a-URL fallback, instead of a different
-// widget per entry point. See docs-local/research/git-provider-connect-ux-
-// unification-proposal.md sections 2 and 4 for the full design and the two
-// bugs this closes: the GitHub wizard path never created a git_source row
-// (no continuous deployment), and the GitLab/Bitbucket settings-page paths
-// never triggered a first build (nothing running until a manual push).
+// and a future GitSourceCard: one list, one mental model, for all three
+// connected git providers plus a manual paste-a-URL fallback, instead of a
+// different widget per entry point. Fixes two bugs: the GitHub wizard path
+// never created a git_source row (no continuous deployment), and the
+// GitLab/Bitbucket settings-page paths never triggered a first build
+// (nothing running until a manual push).
 //
 // Connection status and per-provider capability (branch listing, webhook
 // registration) come from one aggregated GET /api/v1/git-providers call

@@ -95,6 +95,22 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// populate a role picker even without AbilityRoot.
 	mux.HandleFunc("GET /api/v1/roles", rt.requireAbility(AbilityRead, rt.handleListRoles))
 
+	// Team invites (invites.go): unlike POST /api/v1/auth/users above,
+	// create/revoke are AbilityWrite, not AbilityRoot: handleCreateInvite
+	// itself caps the abilities an invite can carry at the caller's own
+	// resolved abilities, so a write-level caller can never hand out more
+	// than they hold, closing off the escalation risk without needing a
+	// root gate. Revoke additionally requires the caller be either root or
+	// the invite's own creator (handleRevokeInvite). Listing stays
+	// AbilityRead, same tier as the user list, but scopes non-root callers
+	// to invites they created (handleListInvites). Accept is necessarily
+	// public, gated by possession of the emailed token instead of a
+	// session or ability, the same shape as reset-password below.
+	mux.HandleFunc("POST /api/v1/invites", rt.requireAbility(AbilityWrite, rt.handleCreateInvite))
+	mux.HandleFunc("GET /api/v1/invites", rt.requireAbility(AbilityRead, rt.handleListInvites))
+	mux.HandleFunc("DELETE /api/v1/invites/{id}", rt.requireAbility(AbilityWrite, rt.handleRevokeInvite))
+	mux.HandleFunc("POST /api/v1/invites/accept", rt.handleAcceptInvite)
+
 	// IAM policies (iam.go/iam_handlers.go): resource-scoped Allow/Deny
 	// documents attached to a user or token, additive on top of the flat
 	// Abilities list above. Reading the catalog is AbilityRead like roles
@@ -175,6 +191,11 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// read-only; GET /api/v1/apps/{name} above is unchanged.
 	mux.HandleFunc("GET /api/v1/apps/{name}/group", rt.requireAbility(AbilityRead, rt.handleGetAppGroup))
 
+	// Latest pre/post-deploy hook outcome (apps_hooks.go,
+	// internal/reconcile/application's own HookRunRecorder). Read-only,
+	// same ability tier as the group route just above.
+	mux.HandleFunc("GET /api/v1/apps/{name}/hook-runs", rt.requireAbility(AbilityRead, rt.handleGetAppHookRuns))
+
 	// Compose ingestion (apps_compose.go): fans a compose.yaml's
 	// services: out into one store.App plus its member services.
 	// AbilityDeploy, the same tier POST .../deploys uses: this creates
@@ -194,7 +215,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// and doesn't carry over.
 	mux.HandleFunc("POST /api/v1/apps/{name}/clone", rt.requireAbility(AbilityWrite, rt.handleCloneApp))
 
-	// Placement (TASKS.md 3.3): AbilityRoot, not AbilityWrite, matching
+	// Placement: AbilityRoot, not AbilityWrite, matching
 	// the sensitivity of the standalone node routes above: moving a
 	// service between physical machines is infrastructure placement,
 	// not ordinary app config, even though it's reached through this
@@ -219,7 +240,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 
 	// One-off exec (handleExecApp's own doc comment): AbilityRoot, not
 	// AbilityDeploy. Secrets are injected as plaintext env vars into a
-	// container at create time (CLAUDE.md 4.10) and this package
+	// container at create time and this package
 	// deliberately never decrypts one back into a response body anywhere
 	// else, see the secrets route above: "never decrypts a value for a
 	// response body." Exec is the one route that can read them anyway,
@@ -228,6 +249,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// tier. AbilityRoot is this project's existing "breaks an assumption
 	// other tiers rely on" boundary (see restore's own reasoning below).
 	mux.HandleFunc("POST /api/v1/apps/{name}/exec", rt.requireAbility(AbilityRoot, rt.handleExecApp))
+
+	// Interactive terminal (terminal.go): the same AbilityRoot tier as
+	// one-off exec above, since a shell can read the same secrets. A
+	// WebSocket rather than SSE, which that file's own doc comment
+	// argues for at length.
+	mux.HandleFunc("GET /api/v1/apps/{name}/terminal", rt.requireAbility(AbilityRoot, rt.handleAppTerminal))
 
 	// Real deploy-attempt history (deploy_attempts.go): a row per
 	// trigger call across all three real trigger paths, additional to
@@ -346,7 +373,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// (database_resource_recommendation.go).
 	mux.HandleFunc("GET /api/v1/databases/{name}/resource-recommendation", rt.requireAbility(AbilityRead, rt.handleDatabaseResourceRecommendation))
 
-	// Placement (TASKS.md 3.3), the database counterpart to
+	// Placement, the database counterpart to
 	// PUT /apps/{name}/node above: same AbilityRoot gating.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/node", rt.requireAbility(AbilityRoot, rt.handleSetDatabaseNode))
 }

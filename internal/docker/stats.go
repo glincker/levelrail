@@ -10,7 +10,7 @@ import (
 )
 
 // ContainerStats is one point-in-time resource usage snapshot, trimmed
-// and computed down to what TASKS.md 2.1's metrics store actually needs
+// and computed down to what the metrics store actually needs
 // (CPU/memory/disk IO/network IO), same shape of simplification
 // ContainerState already applies to Docker's raw container summary.
 type ContainerStats struct {
@@ -39,8 +39,8 @@ type ContainerStats struct {
 
 // Stats fetches one resource-usage snapshot for the container with this
 // ID, via Docker's one-shot stats endpoint (a single accurate sample,
-// not a subscription): correct for a periodic 15s-resolution collector
-// (TASKS.md 2.1), unlike the streaming variant which is built for a
+// not a subscription): correct for a periodic 15s-resolution collector,
+// unlike the streaming variant which is built for a
 // live-updating `docker stats`-style display instead.
 func (c *Client) Stats(ctx context.Context, containerID string) (ContainerStats, error) {
 	reader, err := c.cli.ContainerStatsOneShot(ctx, containerID)

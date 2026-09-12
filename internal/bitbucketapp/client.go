@@ -20,6 +20,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 )
 
 const (
@@ -59,21 +61,20 @@ func (c *Client) apiBaseURL() string {
 	return defaultAPIBaseURL
 }
 
-type apiError struct {
-	StatusCode int
-	Body       string
-}
+// apiError is bitbucketapp's own name for the shared
+// gitprovider.APIError, kept as a distinct type so callers and tests can
+// refer to it without importing internal/gitprovider directly.
+type apiError = gitprovider.APIError
 
-func (e *apiError) Error() string {
-	return fmt.Sprintf("bitbucketapp: bitbucket api returned %d: %s", e.StatusCode, e.Body)
-}
-
-const maxErrorBodySnippet = 512
+const (
+	errPrefix = "bitbucketapp"
+	apiName   = "bitbucket"
+)
 
 func (c *Client) do(ctx context.Context, method, fullURL, authHeader string, body io.Reader, out any) error {
 	req, err := http.NewRequestWithContext(ctx, method, fullURL, body)
 	if err != nil {
-		return fmt.Errorf("bitbucketapp: build request: %w", err)
+		return fmt.Errorf("%s: build request: %w", errPrefix, err)
 	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
@@ -81,26 +82,7 @@ func (c *Client) do(ctx context.Context, method, fullURL, authHeader string, bod
 	if authHeader != "" {
 		req.Header.Set("Authorization", authHeader)
 	}
-
-	resp, err := c.HTTP.Do(req)
-	if err != nil {
-		return fmt.Errorf("bitbucketapp: request %s %s: %w", method, fullURL, err)
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySnippet))
-		return &apiError{StatusCode: resp.StatusCode, Body: string(snippet)}
-	}
-	if out == nil {
-		return nil
-	}
-	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
-		return fmt.Errorf("bitbucketapp: decode response for %s %s: %w", method, fullURL, err)
-	}
-	return nil
+	return gitprovider.Execute(c.HTTP, req, errPrefix, apiName, method+" "+fullURL, out)
 }
 
 // Tokens is ExchangeCode's and RefreshToken's shared result.
@@ -162,27 +144,17 @@ func (c *Client) RefreshToken(ctx context.Context, key, secret, refreshToken str
 }
 
 func (c *Client) token(ctx context.Context, key, secret string, form url.Values) (Tokens, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.tokenURL(), strings.NewReader(form.Encode()))
+	tokenURL := c.tokenURL()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, tokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		return Tokens{}, fmt.Errorf("bitbucketapp: build token request: %w", err)
+		return Tokens{}, fmt.Errorf("%s: build token request: %w", errPrefix, err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", basicAuth(key, secret))
 
-	resp, err := c.HTTP.Do(req)
-	if err != nil {
-		return Tokens{}, fmt.Errorf("bitbucketapp: token request: %w", err)
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySnippet))
-		return Tokens{}, &apiError{StatusCode: resp.StatusCode, Body: string(snippet)}
-	}
 	var out tokenResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return Tokens{}, fmt.Errorf("bitbucketapp: decode token response: %w", err)
+	if err := gitprovider.Execute(c.HTTP, req, errPrefix, apiName, http.MethodPost+" "+tokenURL, &out); err != nil {
+		return Tokens{}, err
 	}
 	return toTokens(out), nil
 }

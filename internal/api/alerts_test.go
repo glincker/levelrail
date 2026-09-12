@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -61,6 +63,7 @@ func TestAlertRoutes_NotConfigured(t *testing.T) {
 	}{
 		{http.MethodPost, "/api/v1/apps/web/alerts", `{"name":"high cpu","kind":"threshold","metric":"cpu_percent","comparator":">","threshold":80}`},
 		{http.MethodGet, "/api/v1/apps/web/alerts", ""},
+		{http.MethodPut, "/api/v1/apps/web/alerts/whatever", `{"name":"high cpu","kind":"threshold","metric":"cpu_percent","comparator":">","threshold":80}`},
 		{http.MethodDelete, "/api/v1/apps/web/alerts/whatever", ""},
 	}
 	for _, tt := range tests {
@@ -483,6 +486,173 @@ func TestHandleListAlertRules_AppNotFound(t *testing.T) {
 	}
 }
 
+func TestHandleUpdateAlertRule_Success(t *testing.T) {
+	rt, db, adb := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	ctx := context.Background()
+	if err := adb.SaveRule(ctx, alerting.Rule{ID: "r1", Name: "high cpu", Kind: alerting.KindThreshold, ResourceID: "service:web", Metric: "cpu_percent", Comparator: alerting.GreaterThan, Threshold: 80, Enabled: true}); err != nil {
+		t.Fatalf("seed rule: %v", err)
+	}
+
+	body := `{"name":"even higher cpu","kind":"threshold","metric":"cpu_percent","comparator":">","threshold":95,"enabled":false}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/alerts/r1", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got ruleResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.ID != "r1" || got.Name != "even higher cpu" || got.Threshold != 95 || got.Enabled {
+		t.Errorf("got = %+v, want the updated fields with the same id", got)
+	}
+	if got.ResourceID != "service:web" {
+		t.Errorf("ResourceID = %q, want %q", got.ResourceID, "service:web")
+	}
+}
+
+// TestHandleUpdateAlertRule_PreservesEvaluationState checks SaveRule's own
+// contract (rules.go's doc comment): editing a rule's configuration must
+// not reset its current firing state, only the evaluator (UpdateState)
+// ever touches that.
+func TestHandleUpdateAlertRule_PreservesEvaluationState(t *testing.T) {
+	rt, db, adb := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	ctx := context.Background()
+	if err := adb.SaveRule(ctx, alerting.Rule{ID: "r1", Name: "high cpu", Kind: alerting.KindThreshold, ResourceID: "service:web", Metric: "cpu_percent", Comparator: alerting.GreaterThan, Threshold: 80, Enabled: true}); err != nil {
+		t.Fatalf("seed rule: %v", err)
+	}
+	firingSince := time.Now().UTC()
+	if err := adb.UpdateState(ctx, "r1", nil, &firingSince, true, firingSince, nil); err != nil {
+		t.Fatalf("seed evaluation state: %v", err)
+	}
+
+	body := `{"name":"high cpu","kind":"threshold","metric":"cpu_percent","comparator":">","threshold":90,"enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/alerts/r1", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got ruleResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.Firing {
+		t.Error("Firing = false, want true: updating a rule's config must not reset its evaluation state")
+	}
+}
+
+func TestHandleUpdateAlertRule_NotFound(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	body := `{"name":"x","kind":"threshold","metric":"cpu_percent","comparator":">","threshold":80}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/alerts/nonexistent", body))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+// TestHandleUpdateAlertRule_OwnershipMismatch mirrors
+// TestHandleDeleteAlertRule_OwnershipMismatch: a rule belonging to
+// service:worker must not be editable by guessing its ID through
+// service:web's URL.
+func TestHandleUpdateAlertRule_OwnershipMismatch(t *testing.T) {
+	rt, db, adb := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	seedApp(t, db, "worker")
+
+	ctx := context.Background()
+	if err := adb.SaveRule(ctx, alerting.Rule{ID: "r1", Name: "worker high cpu", Kind: alerting.KindThreshold, ResourceID: "service:worker", Metric: "cpu_percent", Comparator: alerting.GreaterThan, Threshold: 80, Enabled: true}); err != nil {
+		t.Fatalf("seed rule: %v", err)
+	}
+
+	body := `{"name":"hijacked","kind":"threshold","metric":"cpu_percent","comparator":">","threshold":1}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/alerts/r1", body))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d: updating another app's rule through this app's URL must fail as if the rule didn't exist", rec.Code, http.StatusNotFound)
+	}
+
+	unchanged, err := adb.GetRule(ctx, "r1")
+	if err != nil {
+		t.Fatalf("GetRule() error = %v", err)
+	}
+	if unchanged.Name != "worker high cpu" {
+		t.Errorf("rule was modified despite the ownership mismatch: Name = %q", unchanged.Name)
+	}
+}
+
+func TestHandleUpdateAlertRule_ValidationFailures(t *testing.T) {
+	rt, db, adb := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	ctx := context.Background()
+	if err := adb.SaveRule(ctx, alerting.Rule{ID: "r1", Name: "high cpu", Kind: alerting.KindThreshold, ResourceID: "service:web", Metric: "cpu_percent", Comparator: alerting.GreaterThan, Threshold: 80, Enabled: true}); err != nil {
+		t.Fatalf("seed rule: %v", err)
+	}
+
+	tests := []struct {
+		name string
+		body string
+	}{
+		{"missing name", `{"kind":"threshold","metric":"cpu_percent","comparator":">","threshold":80}`},
+		{"bad kind", `{"name":"x","kind":"bogus","metric":"cpu_percent","comparator":">","threshold":80}`},
+		{"threshold missing metric", `{"name":"x","kind":"threshold","comparator":">","threshold":80}`},
+		{"malformed body", `{not json`},
+		{"unknown channel_id", `{"name":"x","kind":"threshold","metric":"cpu_percent","comparator":">","threshold":80,"channel_id":"chn_ghost"}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/alerts/r1", tt.body))
+			if rec.Code != http.StatusBadRequest {
+				t.Errorf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+			}
+		})
+	}
+}
+
+// TestHandleUpdateAlertRule_RequiresWriteAbility checks the same ability
+// gate handleCreateAlertRule's own route registration uses (AbilityWrite):
+// a read-only token must be rejected, the same shape
+// assertPlainWriteTokenForbidden (apps_test.go) uses for its own
+// ability-gating checks.
+func TestHandleUpdateAlertRule_RequiresWriteAbility(t *testing.T) {
+	rt, db, adb := newTestRouterWithAlerting(t)
+	seedApp(t, db, "web")
+	ctx := context.Background()
+	if err := adb.SaveRule(ctx, alerting.Rule{ID: "r1", Name: "high cpu", Kind: alerting.KindThreshold, ResourceID: "service:web", Metric: "cpu_percent", Comparator: alerting.GreaterThan, Threshold: 80, Enabled: true}); err != nil {
+		t.Fatalf("seed rule: %v", err)
+	}
+	const plaintext = "read-only-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(ctx, store.APIToken{
+		ID: "tok_ro", Name: "reader", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	body := `{"name":"x","kind":"threshold","metric":"cpu_percent","comparator":">","threshold":80}`
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/apps/web/alerts/r1", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusForbidden, rec.Body.String())
+	}
+}
+
 func TestHandleDeleteAlertRule_Success(t *testing.T) {
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -551,6 +721,7 @@ func TestAlertRoutes_RequireAuth(t *testing.T) {
 	}{
 		{http.MethodPost, "/api/v1/apps/web/alerts"},
 		{http.MethodGet, "/api/v1/apps/web/alerts"},
+		{http.MethodPut, "/api/v1/apps/web/alerts/r1"},
 		{http.MethodDelete, "/api/v1/apps/web/alerts/r1"},
 	}
 	for _, tt := range tests {

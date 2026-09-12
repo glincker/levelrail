@@ -186,7 +186,7 @@ func TestController_Reconcile_IdempotentReconcile_AlreadyNetworked(t *testing.T)
 }
 
 // TestController_Reconcile_EnsureNetworkFails_ContainerNeverCreated is
-// the half-succeeded case CLAUDE.md's testing standard requires: a
+// the half-succeeded case reconciler tests must cover: a
 // network operation that fails before the container operation ever
 // runs, so nothing partially exists.
 func TestController_Reconcile_EnsureNetworkFails_ContainerNeverCreated(t *testing.T) {

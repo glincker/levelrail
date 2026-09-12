@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
+import type { UseMutationResult } from '@tanstack/react-query'
 import {
   CloudArrowUpIcon,
   DownloadSimpleIcon,
@@ -84,7 +85,7 @@ import type { DatabaseResource } from '../types/databaseDetail'
 // don't leave a broken control on screen" reasoning
 // CreateBackupTargetDialog's own 501 branch already follows for the
 // master-key gap.
-function NoTargetsConfigured() {
+export function NoTargetsConfigured() {
   return (
     <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-6 py-8 text-center">
       <CloudArrowUpIcon
@@ -104,11 +105,21 @@ function NoTargetsConfigured() {
   )
 }
 
-function TriggerBackupRow({ databaseName }: { databaseName: string }) {
+// TriggerBackupRowView is the shared target-picker-plus-button UI for
+// starting a backup, used identically for a database's own backups and
+// an app volume's backups: only the mutation (and its picker element id,
+// so two of these can coexist on the volume-backups section without a
+// duplicate-id a11y issue) differs between the two.
+export function TriggerBackupRowView({
+  pickerId,
+  trigger,
+}: {
+  pickerId: string
+  trigger: UseMutationResult<unknown, ApiError, string>
+}) {
   const targetsQuery = useBackupTargetsOptional()
   const targets = targetsQuery.data ?? []
   const [targetId, setTargetId] = useState<string>('')
-  const triggerBackup = useTriggerBackup(databaseName)
 
   if (targetsQuery.isLoading) {
     return <Skeleton className="h-16 w-full" />
@@ -122,7 +133,7 @@ function TriggerBackupRow({ databaseName }: { databaseName: string }) {
     if (!targetId) {
       return
     }
-    triggerBackup.mutate(targetId, {
+    trigger.mutate(targetId, {
       onSuccess: () => {
         toast.add({
           title: 'Backup started.',
@@ -130,7 +141,7 @@ function TriggerBackupRow({ databaseName }: { databaseName: string }) {
           type: 'success',
         })
       },
-      onError: (error) => {
+      onError: (error: ApiError) => {
         toast.add({
           title: 'Could not start backup.',
           description: error.message,
@@ -141,22 +152,22 @@ function TriggerBackupRow({ databaseName }: { databaseName: string }) {
   }
 
   const notConfigured =
-    triggerBackup.isError &&
-    triggerBackup.error instanceof ApiError &&
-    triggerBackup.error.status === 501
+    trigger.isError &&
+    trigger.error instanceof ApiError &&
+    trigger.error.status === 501
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-end">
         <Field className="w-full sm:w-64">
-          <FieldLabel htmlFor="backup-target-picker">Backup target</FieldLabel>
+          <FieldLabel htmlFor={pickerId}>Backup target</FieldLabel>
           <Select
             value={targetId}
             onValueChange={(value: string | null) => {
               setTargetId(value ?? '')
             }}
           >
-            <SelectTrigger id="backup-target-picker" className="w-full">
+            <SelectTrigger id={pickerId} className="w-full">
               <SelectValue placeholder="Choose a backup target..." />
             </SelectTrigger>
             <SelectContent>
@@ -171,18 +182,23 @@ function TriggerBackupRow({ databaseName }: { databaseName: string }) {
         <Button
           type="button"
           onClick={handleTrigger}
-          disabled={!targetId || triggerBackup.isPending}
+          disabled={!targetId || trigger.isPending}
         >
           <CloudArrowUpIcon aria-hidden="true" />
-          {triggerBackup.isPending ? 'Starting...' : 'Back up now'}
+          {trigger.isPending ? 'Starting...' : 'Back up now'}
         </Button>
       </div>
       {notConfigured ? (
-        <p className="text-sm text-destructive">
-          {triggerBackup.error.message}
-        </p>
+        <p className="text-sm text-destructive">{trigger.error.message}</p>
       ) : null}
     </div>
+  )
+}
+
+function TriggerBackupRow({ databaseName }: { databaseName: string }) {
+  const triggerBackup = useTriggerBackup(databaseName)
+  return (
+    <TriggerBackupRowView pickerId="backup-target-picker" trigger={triggerBackup} />
   )
 }
 
@@ -194,16 +210,13 @@ function TriggerBackupRow({ databaseName }: { databaseName: string }) {
 // httpOnly session cookie every other same-origin request in this app
 // already relies on (see backupDownloadURL's own doc comment), so no
 // fetch/blob dance is needed here to attach a token.
-function DownloadBackupLink({
-  databaseName,
-  backup,
-}: {
-  databaseName: string
-  backup: BackupHistoryRecord
-}) {
+// DownloadBackupLinkView is the shared browser-navigated download
+// action, used identically for a database backup and a volume backup:
+// only the URL builder differs.
+export function DownloadBackupLinkView({ href }: { href: string }) {
   return (
     <a
-      href={backupDownloadURL(databaseName, backup.id)}
+      href={href}
       download
       className={buttonVariants({ variant: 'outline', size: 'sm' })}
     >
@@ -213,13 +226,29 @@ function DownloadBackupLink({
   )
 }
 
-// "Load older entries" via plain component state rather than
-// useInfiniteQuery, mirroring routes/settings/audit-log.tsx's pattern
-// for its own cursor-paginated endpoint.
-function BackupHistoryTable({ databaseName }: { databaseName: string }) {
-  const targetsQuery = useBackupTargetsOptional()
-  const { data, isLoading, error } = useBackupHistory(databaseName)
-  const firstPage = useMemo(() => data ?? [], [data])
+function DownloadBackupLink({
+  databaseName,
+  backup,
+}: {
+  databaseName: string
+  backup: BackupHistoryRecord
+}) {
+  return (
+    <DownloadBackupLinkView href={backupDownloadURL(databaseName, backup.id)} />
+  )
+}
+
+// useBackupHistoryPagination is the shared "load older entries" state
+// machine, plain component state rather than useInfiniteQuery, mirroring
+// routes/settings/audit-log.tsx's pattern for its own cursor-paginated
+// endpoint. Used identically for a database's own backups and an app
+// volume's backups: only the fetch function and page size differ.
+// eslint-disable-next-line react-refresh/only-export-components
+export function useBackupHistoryPagination(
+  firstPage: BackupHistoryRecord[],
+  fetchMore: (before: string) => Promise<BackupHistoryRecord[]>,
+  pageSize: number,
+) {
   const [olderRows, setOlderRows] = useState<BackupHistoryRecord[]>([])
   const [loadingMore, setLoadingMore] = useState(false)
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null)
@@ -230,9 +259,7 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
   // size already means there's nothing older; after one, noMoreOlder
   // (set by handleLoadMore below) is the only signal that matters.
   const exhausted =
-    olderRows.length === 0
-      ? firstPage.length < BACKUP_HISTORY_PAGE_SIZE
-      : noMoreOlder
+    olderRows.length === 0 ? firstPage.length < pageSize : noMoreOlder
 
   async function handleLoadMore() {
     const oldest = history[history.length - 1]
@@ -240,11 +267,9 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
     setLoadingMore(true)
     setLoadMoreError(null)
     try {
-      const next = await fetchBackupHistory(databaseName, {
-        before: oldest.started_at,
-      })
+      const next = await fetchMore(oldest.started_at)
       setOlderRows((prev) => [...prev, ...next])
-      if (next.length < BACKUP_HISTORY_PAGE_SIZE) {
+      if (next.length < pageSize) {
         setNoMoreOlder(true)
       }
     } catch (err) {
@@ -256,12 +281,40 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
     }
   }
 
-  const targetName = useMemo(() => {
-    const targets = targetsQuery.data ?? []
-    const byId = new Map(targets.map((t) => [t.id, t.name]))
-    return (targetId: string) => byId.get(targetId) ?? 'Deleted target'
-  }, [targetsQuery.data])
+  return { history, exhausted, loadingMore, loadMoreError, handleLoadMore }
+}
 
+// BackupHistoryTableView is the shared table shell for a database's own
+// backups and an app volume's backups: identical columns, skeleton,
+// empty, and load-more states. The two callers differ only in which
+// per-row verification badge and action buttons they render and how
+// target ids resolve to names, so those are render props / a lookup
+// function rather than baked in here.
+export function BackupHistoryTableView({
+  isLoading,
+  error,
+  history,
+  emptyMessage,
+  exhausted,
+  loadingMore,
+  loadMoreError,
+  onLoadMore,
+  targetName,
+  renderVerification,
+  renderActions,
+}: {
+  isLoading: boolean
+  error: Error | null
+  history: BackupHistoryRecord[]
+  emptyMessage: string
+  exhausted: boolean
+  loadingMore: boolean
+  loadMoreError: string | null
+  onLoadMore: () => void
+  targetName: (targetId: string) => string
+  renderVerification: (record: BackupHistoryRecord) => ReactNode
+  renderActions: (record: BackupHistoryRecord) => ReactNode
+}) {
   if (isLoading) {
     return <TableSkeleton columnCount={7} rowCount={3} />
   }
@@ -269,11 +322,7 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
     return <p className="text-sm text-destructive">{error.message}</p>
   }
   if (history.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No backups triggered yet for this database.
-      </p>
-    )
+    return <p className="text-sm text-muted-foreground">{emptyMessage}</p>
   }
 
   return (
@@ -325,10 +374,7 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
                 </TableCell>
                 <TableCell>
                   {record.status === 'succeeded' ? (
-                    <BackupVerificationBadge
-                      databaseName={databaseName}
-                      backup={record}
-                    />
+                    renderVerification(record)
                   ) : (
                     <span className="text-muted-foreground">-</span>
                   )}
@@ -336,18 +382,7 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
                 <TableCell>
                   {record.status === 'succeeded' ? (
                     <div className="flex items-center gap-2">
-                      <DownloadBackupLink
-                        databaseName={databaseName}
-                        backup={record}
-                      />
-                      <RestoreBackupDialog
-                        databaseName={databaseName}
-                        backup={record}
-                      />
-                      <CloneRestoreDialog
-                        databaseName={databaseName}
-                        backup={record}
-                      />
+                      {renderActions(record)}
                     </div>
                   ) : null}
                 </TableCell>
@@ -367,14 +402,55 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
           variant="outline"
           size="sm"
           disabled={loadingMore}
-          onClick={() => {
-            void handleLoadMore()
-          }}
+          onClick={onLoadMore}
         >
           {loadingMore ? 'Loading...' : 'Load older backups'}
         </Button>
       ) : null}
     </div>
+  )
+}
+
+function BackupHistoryTable({ databaseName }: { databaseName: string }) {
+  const targetsQuery = useBackupTargetsOptional()
+  const { data, isLoading, error } = useBackupHistory(databaseName)
+  const firstPage = useMemo(() => data ?? [], [data])
+  const pagination = useBackupHistoryPagination(
+    firstPage,
+    (before) => fetchBackupHistory(databaseName, { before }),
+    BACKUP_HISTORY_PAGE_SIZE,
+  )
+
+  const targetName = useMemo(() => {
+    const targets = targetsQuery.data ?? []
+    const byId = new Map(targets.map((t) => [t.id, t.name]))
+    return (targetId: string) => byId.get(targetId) ?? 'Deleted target'
+  }, [targetsQuery.data])
+
+  return (
+    <BackupHistoryTableView
+      isLoading={isLoading}
+      error={error}
+      history={pagination.history}
+      emptyMessage="No backups triggered yet for this database."
+      exhausted={pagination.exhausted}
+      loadingMore={pagination.loadingMore}
+      loadMoreError={pagination.loadMoreError}
+      onLoadMore={() => {
+        void pagination.handleLoadMore()
+      }}
+      targetName={targetName}
+      renderVerification={(record) => (
+        <BackupVerificationBadge databaseName={databaseName} backup={record} />
+      )}
+      renderActions={(record) => (
+        <>
+          <DownloadBackupLink databaseName={databaseName} backup={record} />
+          <RestoreBackupDialog databaseName={databaseName} backup={record} />
+          <CloneRestoreDialog databaseName={databaseName} backup={record} />
+        </>
+      )}
+    />
   )
 }
 

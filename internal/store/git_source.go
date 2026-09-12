@@ -49,6 +49,15 @@ type GitSource struct {
 	// walking AdditionalServices exactly as before when this is empty,
 	// see handleGitPushWebhook's own doc comment.
 	Services map[string]spec.Service
+	// Databases is an app.yaml-style databases: map, persisted the same
+	// way and for the same reason Services is (migrations/
+	// 0091_git_source_databases_spec.sql): a pull request webhook needs
+	// to see which databases the app declares, in particular which ones
+	// set ephemeralInPreviews, without re-fetching and parsing app.yaml
+	// on every push. Independent of Services/AdditionalServices: a
+	// single-service preview (no Services map at all) can still declare
+	// databases.
+	Databases map[string]spec.Database
 	// PreviewEnabled opts an app into preview environments per pull
 	// request (migrations/0064_preview_environments.sql): off by
 	// default, like every other opt-in feature toggle in this codebase.
@@ -57,6 +66,18 @@ type GitSource struct {
 	// establish for a value that must never move silently on an
 	// unrelated connect-form edit.
 	PreviewEnabled bool
+	// PostPRComments opts an app's preview environments into posting a
+	// GitHub PR comment (the live preview URL, or a teardown notice) and
+	// a commit status (pending/success/failure) on the pull request's
+	// head commit (migrations/0081_git_source_pr_status.sql). Off by
+	// default; only meaningful once PreviewEnabled is also on, but kept
+	// as its own field rather than folded into PreviewEnabled: an
+	// operator may want previews without the GitHub-visible noise, or
+	// vice versa want the notifications wired up before flipping previews
+	// on. Set only via SetGitSourcePostPRComments, the same
+	// "SaveGitSource never writes it" shape PreviewEnabled's own doc
+	// comment already establishes.
+	PostPRComments bool
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -102,9 +123,13 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 	if err != nil {
 		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
 	}
+	databasesJSON, err := marshalGitSourceDatabases(g.Databases)
+	if err != nil {
+		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
+	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, databases_spec, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (service_name) DO UPDATE SET
 			repo_url = excluded.repo_url,
 			branch = excluded.branch,
@@ -112,8 +137,9 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 			build_path = excluded.build_path,
 			additional_services = excluded.additional_services,
 			services_spec = excluded.services_spec,
+			databases_spec = excluded.databases_spec,
 			updated_at = excluded.updated_at
-	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, additionalJSON, servicesJSON)
+	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, additionalJSON, servicesJSON, databasesJSON)
 	if err != nil {
 		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
 	}
@@ -124,7 +150,7 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 // ErrGitSourceNotFound if none is.
 func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, preview_enabled, created_at, updated_at
+		SELECT service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, databases_spec, preview_enabled, post_pr_comments, created_at, updated_at
 		FROM service_git_sources WHERE service_name = ?
 	`, serviceName)
 	g, err := scanGitSource(row.Scan)
@@ -166,6 +192,19 @@ func marshalGitSourceServices(m map[string]spec.Service) (string, error) {
 	return string(b), nil
 }
 
+// marshalGitSourceDatabases is marshalGitSourceServices' exact
+// counterpart for Databases.
+func marshalGitSourceDatabases(m map[string]spec.Database) (string, error) {
+	if len(m) == 0 {
+		return "{}", nil
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return "", fmt.Errorf("marshal databases: %w", err)
+	}
+	return string(b), nil
+}
+
 // DeleteGitSource disconnects serviceName's git source, returning
 // ErrGitSourceNotFound if none exists. Known gap, matching
 // DeleteBackupTarget's own honestly-documented one: internal/secrets.Manager
@@ -195,20 +234,37 @@ func (db *DB) DeleteGitSource(ctx context.Context, serviceName string) error {
 // move it" shape UpdateServiceSuspended already establishes for
 // DesiredService.Suspended.
 func (db *DB) SetGitSourcePreviewEnabled(ctx context.Context, serviceName string, enabled bool) error {
+	return db.setGitSourceBoolColumn(ctx, "preview_enabled", serviceName, enabled)
+}
+
+// SetGitSourcePostPRComments toggles a connected git source's GitHub PR
+// comment/commit status opt-in (GitSource.PostPRComments's own doc
+// comment); returns ErrGitSourceNotFound if no source is connected for
+// serviceName. Mirrors SetGitSourcePreviewEnabled exactly, its own
+// sibling opt-in toggle.
+func (db *DB) SetGitSourcePostPRComments(ctx context.Context, serviceName string, enabled bool) error {
+	return db.setGitSourceBoolColumn(ctx, "post_pr_comments", serviceName, enabled)
+}
+
+// setGitSourceBoolColumn is SetGitSourcePreviewEnabled/
+// SetGitSourcePostPRComments's shared implementation: column is always
+// one of this file's own literal column names, never caller/request
+// input, so building the query with it is safe.
+func (db *DB) setGitSourceBoolColumn(ctx context.Context, column, serviceName string, enabled bool) error {
 	value := 0
 	if enabled {
 		value = 1
 	}
 	res, err := db.ExecContext(ctx, `
-		UPDATE service_git_sources SET preview_enabled = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		UPDATE service_git_sources SET `+column+` = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 		WHERE service_name = ?
 	`, value, serviceName)
 	if err != nil {
-		return fmt.Errorf("store: set git source %q preview enabled: %w", serviceName, err)
+		return fmt.Errorf("store: set git source %q %s: %w", serviceName, column, err)
 	}
 	n, err := res.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("store: set git source %q preview enabled: rows affected: %w", serviceName, err)
+		return fmt.Errorf("store: set git source %q %s: rows affected: %w", serviceName, column, err)
 	}
 	if n == 0 {
 		return ErrGitSourceNotFound
@@ -218,20 +274,25 @@ func (db *DB) SetGitSourcePreviewEnabled(ctx context.Context, serviceName string
 
 func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 	var (
-		g                       GitSource
-		additionalJSON, svcJSON string
-		previewEnabled          int
-		createdAt, updatedAt    string
+		g                             GitSource
+		additionalJSON, svcJSON       string
+		dbJSON                        string
+		previewEnabled, postPRComment int
+		createdAt, updatedAt          string
 	)
-	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &additionalJSON, &svcJSON, &previewEnabled, &createdAt, &updatedAt); err != nil {
+	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &additionalJSON, &svcJSON, &dbJSON, &previewEnabled, &postPRComment, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
 	g.PreviewEnabled = previewEnabled != 0
+	g.PostPRComments = postPRComment != 0
 	if err := json.Unmarshal([]byte(additionalJSON), &g.AdditionalServices); err != nil {
 		return nil, fmt.Errorf("unmarshal additional_services: %w", err)
 	}
 	if err := json.Unmarshal([]byte(svcJSON), &g.Services); err != nil {
 		return nil, fmt.Errorf("unmarshal services_spec: %w", err)
+	}
+	if err := json.Unmarshal([]byte(dbJSON), &g.Databases); err != nil {
+		return nil, fmt.Errorf("unmarshal databases_spec: %w", err)
 	}
 	var err error
 	g.CreatedAt, err = time.Parse(time.RFC3339Nano, createdAt)

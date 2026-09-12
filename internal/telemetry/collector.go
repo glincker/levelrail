@@ -112,7 +112,7 @@ func (c *Collector) Run(ctx context.Context, targetsFunc func(context.Context) (
 
 // sampleValues maps one container's stats snapshot into the metric_samples
 // rows it produces. Metric names here are the store's stable, permanent
-// vocabulary: TASKS.md 2.3's query API and 2.4's dashboard read these
+// vocabulary: the query API and the dashboard read these
 // exact strings, so a rename here is a breaking change to both.
 func sampleValues(resourceID string, at time.Time, stats docker.ContainerStats) []Sample {
 	return []Sample{

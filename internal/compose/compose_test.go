@@ -143,13 +143,23 @@ services:
 `,
 		},
 		{
-			name: "bind mount is rejected",
+			name: "deny-listed bind mount host path is rejected",
 			yaml: `
 services:
   web:
     image: nginx:1.27
     volumes:
-      - ./local:/data
+      - /etc:/data
+`,
+		},
+		{
+			name: "docker socket bind mount is rejected",
+			yaml: `
+services:
+  web:
+    image: nginx:1.27
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 `,
 		},
 	}
@@ -196,6 +206,74 @@ services:
 	}
 }
 
+func TestParse_RelativeBindMountPath_Rejected(t *testing.T) {
+	_, err := Parse([]byte(`
+services:
+  web:
+    image: nginx:1.27
+    volumes:
+      - ./local:/data
+`))
+	if err == nil {
+		t.Fatal("Parse() error = nil, want an error for a relative bind-mount path")
+	}
+}
+
+func TestParse_AbsoluteBindMountVolume(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  web:
+    image: nginx:1.27
+    volumes:
+      - /srv/myapp/data:/data
+      - /srv/myapp/config:/config:ro
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	web := f.Services["web"]
+	if len(web.Volumes) != 2 {
+		t.Fatalf("web.Volumes = %+v, want 2 entries", web.Volumes)
+	}
+	rw := web.Volumes[0]
+	if rw.Name != "" || rw.HostPath != "/srv/myapp/data" || rw.ContainerPath != "/data" || rw.ReadOnly {
+		t.Errorf("web.Volumes[0] = %+v, want HostPath=/srv/myapp/data ContainerPath=/data ReadOnly=false", rw)
+	}
+	ro := web.Volumes[1]
+	if ro.Name != "" || ro.HostPath != "/srv/myapp/config" || ro.ContainerPath != "/config" || !ro.ReadOnly {
+		t.Errorf("web.Volumes[1] = %+v, want HostPath=/srv/myapp/config ContainerPath=/config ReadOnly=true", ro)
+	}
+
+	if err := f.Validate(); err != nil {
+		t.Fatalf("Validate() error = %v, want an absolute bind-mount path to be accepted", err)
+	}
+}
+
+func TestValidate_ForbiddenBindMountPaths(t *testing.T) {
+	tests := []string{
+		"/", "/etc", "/root", "/boot", "/sys", "/proc",
+		"/var/lib/docker", "/var/run/docker.sock", "/var/run", "/var/run/subdir",
+	}
+	for _, hostPath := range tests {
+		t.Run(hostPath, func(t *testing.T) {
+			f, err := Parse([]byte(`
+services:
+  web:
+    image: nginx:1.27
+    volumes:
+      - "` + hostPath + `:/data"
+`))
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			if err := f.Validate(); err == nil {
+				t.Fatalf("Validate() error = nil, want %q to be rejected even for a root caller", hostPath)
+			}
+		})
+	}
+}
+
 func TestParse_EnvironmentListForm(t *testing.T) {
 	f, err := Parse([]byte(`
 services:
@@ -214,5 +292,97 @@ services:
 	}
 	if v, ok := env["BARE_KEY"]; !ok || v != "" {
 		t.Errorf("env[BARE_KEY] = %q, ok=%v, want empty string, ok=true", v, ok)
+	}
+}
+
+func TestParse_Command(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		want []string
+	}{
+		{
+			name: "string form wraps as sh -c",
+			yaml: "command: server /data",
+			want: []string{"/bin/sh", "-c", "server /data"},
+		},
+		{
+			name: "list form passes through",
+			yaml: `command: ["server", "/data", "--console-address", ":9001"]`,
+			want: []string{"server", "/data", "--console-address", ":9001"},
+		},
+		{
+			name: "absent stays nil",
+			yaml: "",
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc := "services:\n  web:\n    image: nginx:1.27\n"
+			if tt.yaml != "" {
+				doc += "    " + tt.yaml + "\n"
+			}
+			f, err := Parse([]byte(doc))
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			got := []string(f.Services["web"].Command)
+			if len(got) != len(tt.want) {
+				t.Fatalf("Command = %v, want %v", got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("Command[%d] = %q, want %q", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestParse_Entrypoint(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		want []string
+	}{
+		{
+			name: "string form wraps as sh -c",
+			yaml: "entrypoint: docker-entrypoint.sh",
+			want: []string{"/bin/sh", "-c", "docker-entrypoint.sh"},
+		},
+		{
+			name: "list form passes through",
+			yaml: `entrypoint: ["docker-entrypoint.sh", "-c", "postgresql.conf"]`,
+			want: []string{"docker-entrypoint.sh", "-c", "postgresql.conf"},
+		},
+		{
+			name: "absent stays nil",
+			yaml: "",
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc := "services:\n  web:\n    image: nginx:1.27\n"
+			if tt.yaml != "" {
+				doc += "    " + tt.yaml + "\n"
+			}
+			f, err := Parse([]byte(doc))
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			got := []string(f.Services["web"].Entrypoint)
+			if len(got) != len(tt.want) {
+				t.Fatalf("Entrypoint = %v, want %v", got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("Entrypoint[%d] = %q, want %q", i, got[i], tt.want[i])
+				}
+			}
+		})
 	}
 }

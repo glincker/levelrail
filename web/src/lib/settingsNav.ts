@@ -22,6 +22,7 @@ import {
   TerminalWindowIcon,
   HeartbeatIcon,
   StackIcon,
+  HardDrivesIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
 export interface SettingsNavItem {
@@ -138,6 +139,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: PackageIcon,
         title: 'Registry credentials',
         description: 'Pull private images with build.type: image.',
+      },
+      {
+        to: '/settings/registry',
+        icon: HardDrivesIcon,
+        title: 'Container registry',
+        description: 'Built-in image registry for multi-node build caching.',
       },
       {
         to: '/settings/email',

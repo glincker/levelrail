@@ -224,7 +224,7 @@ func TestClient_Create_Live_DNS(t *testing.T) {
 }
 
 // TestClient_EnsureVolume_Live_IdempotentAndMounted proves two things a
-// database controller (TASKS.md 1.8) depends on: EnsureVolume actually
+// database controller depends on: EnsureVolume actually
 // creates a real named volume and is safe to call twice (no error on the
 // second call, matching the Engine API's own by-name idempotency), and a
 // ContainerSpec's Volumes actually reach a real container's mounts.

@@ -136,16 +136,17 @@ export function useDatabaseStatus(name: string) {
 // separate anyway for the same reason CreateAppRequest is kept separate
 // from AppDetail: the request is what a form collects, the response is
 // what the server may additionally attach.
-// project_id is optional and sent directly in this same create request,
-// the database-kind counterpart to CreateAppRequest's own project_id
-// field: see that type's own doc comment (queries/apps.ts) for why
-// that's safe at create time in a way it isn't through an ordinary
-// update.
+// project_id and node_id are both optional and sent directly in this
+// same create request, the database-kind counterpart to CreateAppRequest's
+// own fields: see that type's own doc comment (queries/apps.ts) for why
+// both are safe at create time in a way an ordinary update isn't, and for
+// node_id specifically, how an omitted value differs from an explicit one.
 export interface CreateDatabaseRequest {
   name: string
   engine: string
   version: string
   project_id?: string
+  node_id?: string
 }
 
 // POST /api/v1/databases. Rejects a name that already exists with a 409

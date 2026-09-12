@@ -1,0 +1,34 @@
+name: PR Quality
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+jobs:
+  anti-slop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: write
+    steps:
+      - uses: peakoss/anti-slop@57858eead489d08b255fab2af45a506c2ca6eab2 # v0.3.0
+        with:
+          max-failures: 4
+          require-conventional-title: true
+          require-description: true
+          max-description-length: 2500
+          max-emoji-count: 2
+          max-code-references: 5
+          require-linked-issue: false
+          require-pr-template: true
+          strict-pr-template-sections: "What changed,What this doesn't do,Test plan"
+          max-commit-message-length: 500
+          require-conventional-commits: true
+          require-commit-author-match: true
+          blocked-terms: |
+            Generated with Claude Code
+            🤖 Generated with Claude Code
+            Co-Authored-By: Claude
+            Claude-Session:

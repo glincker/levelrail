@@ -30,6 +30,17 @@ func registerDatabaseTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, database, nil
 	})
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "list_database_engines",
+		Description: "List every database engine this control plane can create right now: id, display label, and default version. Backed by the embedded database engine registry, not a hardcoded list, so this reflects exactly what the creation wizard's engine picker offers.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.DatabaseEngineResource, error) {
+		engines, err := client.ListDatabaseEngines(ctx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("list database engines: %w", err)
+		}
+		return nil, engines, nil
+	})
 }
 
 type databaseNameInput struct {

@@ -45,10 +45,17 @@ type fakeRuntime struct {
 	nextID     int
 	hostPort   int
 
-	createErr          error
-	startErr           error
-	stopErr            error
-	removeErr          error
+	createErr  error
+	startErr   error
+	stopErr    error
+	removeErr  error
+	inspectErr error
+	// inspectErrOnCall fails exactly the Nth (1-based) InspectByName
+	// call and no other, so a test can break the one inspect a specific
+	// step makes (the liveness check's own, say) without breaking the
+	// earlier inspects that step depends on having succeeded.
+	inspectErrOnCall   int
+	inspectCalls       int
 	ensureVolumeErr    error
 	updateResourcesErr error
 	// startErrOnce fails exactly the next Start call, then clears
@@ -58,6 +65,8 @@ type fakeRuntime struct {
 
 	createCalls          int
 	removeCalls          int
+	stopCalls            int
+	startCalls           int
 	updateResourcesCalls int
 	ensureVolumeCalls    []string
 	lastCreateEnv        map[string]string
@@ -86,7 +95,47 @@ type fakeRuntime struct {
 	removeNetworkErr   error
 	removedNetworks    []string
 	callOrder          []string
+
+	// execErr, when set, makes Exec itself fail (a transport-level
+	// failure, e.g. the exec session never started), distinct from
+	// execExitCode below which simulates the command running to
+	// completion and exiting nonzero.
+	execErr      error
+	execExitCode int
+	execOutput   string
+	execStderr   string
+	execCalls    []execCallRecord
 }
+
+// execCallRecord is one Exec call fakeRuntime observed, for assertions
+// that need to know exactly what command ran and against which
+// container, the same "stateful fake, not just a call counter" reasoning
+// this type's own doc comment already gives for containers.
+type execCallRecord struct {
+	containerID string
+	cmd         []string
+}
+
+// execExitReader simulates docker.Runtime.Exec's real contract: cmd's
+// output is delivered by ordinary Reads, and (if err is non-nil) a
+// trailing error, typically a *docker.ExecExitError, is returned once
+// that output is exhausted rather than up front, exactly as
+// streamExecOutput's own doc comment (internal/docker/client.go)
+// documents for the real implementation.
+type execExitReader struct {
+	r   *strings.Reader
+	err error
+}
+
+func (e *execExitReader) Read(p []byte) (int, error) {
+	n, err := e.r.Read(p)
+	if err == io.EOF && e.err != nil {
+		return n, e.err
+	}
+	return n, err
+}
+
+func (e *execExitReader) Close() error { return nil }
 
 func newFakeRuntime(hostPort int) *fakeRuntime {
 	return &fakeRuntime{containers: map[string]*docker.ContainerState{}, networks: map[string]string{}, hostPort: hostPort}
@@ -106,6 +155,13 @@ func (f *fakeRuntime) seed(name string, running bool) {
 func (f *fakeRuntime) InspectByName(_ context.Context, name string) (*docker.ContainerState, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.inspectCalls++
+	if f.inspectErr != nil {
+		return nil, f.inspectErr
+	}
+	if f.inspectErrOnCall != 0 && f.inspectCalls == f.inspectErrOnCall {
+		return nil, errors.New("docker daemon unavailable")
+	}
 	cs, ok := f.containers[name]
 	if !ok {
 		return nil, nil
@@ -133,6 +189,7 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 func (f *fakeRuntime) Start(_ context.Context, id string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.startCalls++
 	if f.startErr != nil {
 		return f.startErr
 	}
@@ -155,6 +212,7 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.stopCalls++
 	if f.stopErr != nil {
 		return f.stopErr
 	}
@@ -265,12 +323,25 @@ func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan err
 	return nil, nil
 }
 
-// Exec is a no-op here for the same reason EnsureVolume above is: this
-// controller never runs a command inside a container, only manages
-// container lifecycle. internal/backup's Dumper is the real caller,
-// covered by that package's own tests.
-func (f *fakeRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadCloser, error) {
-	return nil, errors.New("fakeRuntime: Exec not implemented")
+// Exec simulates this controller's own pre/post-deploy hook execution
+// (runHook): execErr fails the exec session itself (a transport-level
+// failure); otherwise execExitCode 0 means the command succeeded
+// (execOutput is its stdout), and a nonzero execExitCode simulates the
+// command running to completion and exiting nonzero, surfaced as a
+// trailing *docker.ExecExitError the same way the real implementation
+// does (execExitReader's own doc comment).
+func (f *fakeRuntime) Exec(_ context.Context, containerID string, cmd []string) (io.ReadCloser, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.execCalls = append(f.execCalls, execCallRecord{containerID: containerID, cmd: cmd})
+	if f.execErr != nil {
+		return nil, f.execErr
+	}
+	var trailing error
+	if f.execExitCode != 0 {
+		trailing = &docker.ExecExitError{ExitCode: f.execExitCode, Stderr: f.execStderr}
+	}
+	return &execExitReader{r: strings.NewReader(f.execOutput), err: trailing}, nil
 }
 
 // ExecWithInput is the same no-op stub as Exec above, for the same
@@ -407,6 +478,79 @@ func TestController_Reconcile_Resources_ReachesContainerSpec(t *testing.T) {
 	}
 }
 
+// TestController_Reconcile_Command_ReachesContainerSpec confirms
+// desired.Command (a compose service's own command:, internal/compose's
+// ToDesiredServices) reaches ContainerSpec.Command, and that an unset
+// Command leaves ContainerSpec.Command nil rather than an empty slice
+// (docker.ContainerSpec.Command's own doc comment: nil means the
+// image's own default).
+func TestController_Reconcile_Command_ReachesContainerSpec(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "minio", Image: "minio/minio:latest",
+		Command: []string{"server", "/data", "--console-address", ":9001"},
+	}
+	c := New("minio", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	want := []string{"server", "/data", "--console-address", ":9001"}
+	if got := rt.lastCreateSpec.Command; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Command = %v, want %v", got, want)
+	}
+}
+
+func TestController_Reconcile_NoCommand_ContainerSpecCommandStaysNil(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1"}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	if got := rt.lastCreateSpec.Command; got != nil {
+		t.Errorf("created ContainerSpec.Command = %v, want nil", got)
+	}
+}
+
+// TestController_Reconcile_Entrypoint_ReachesContainerSpec mirrors
+// TestController_Reconcile_Command_ReachesContainerSpec above for
+// desired.Entrypoint.
+func TestController_Reconcile_Entrypoint_ReachesContainerSpec(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "postgres", Image: "postgres:16",
+		Entrypoint: []string{"docker-entrypoint.sh", "-c", "config_file=/etc/postgresql.conf"},
+	}
+	c := New("postgres", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	want := []string{"docker-entrypoint.sh", "-c", "config_file=/etc/postgresql.conf"}
+	if got := rt.lastCreateSpec.Entrypoint; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Entrypoint = %v, want %v", got, want)
+	}
+}
+
+func TestController_Reconcile_NoEntrypoint_ContainerSpecEntrypointStaysNil(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1"}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	if got := rt.lastCreateSpec.Entrypoint; got != nil {
+		t.Errorf("created ContainerSpec.Entrypoint = %v, want nil", got)
+	}
+}
+
 func TestController_Reconcile_FreshDeploy_ReadinessSucceeds(t *testing.T) {
 	srv := alwaysHealthy()
 	defer srv.Close()
@@ -516,7 +660,7 @@ func TestController_Reconcile_RestartAfterCrash_EnsuresNetworkFirst(t *testing.T
 }
 
 // TestController_Reconcile_RestartAfterCrash_EnsureNetworkFails_StartNeverCalled
-// is the half-succeeded case CLAUDE.md's testing standard requires for
+// is the half-succeeded case reconciler tests must cover for
 // this path: if the network can't be re-ensured, Start must never run
 // against a container whose network isn't there, and the container must
 // stay stopped rather than being reported as recovered.
@@ -579,7 +723,7 @@ func TestController_Reconcile_RestartAfterCrash_StartFails_RecreatesAndRecovers(
 }
 
 // TestController_Reconcile_RestartAfterCrash_StartFails_RemoveAlsoFails is
-// the half-succeeded case CLAUDE.md's testing standard requires: if the
+// the half-succeeded case reconciler tests must cover: if the
 // broken container can't even be removed, the controller must report
 // both failures clearly rather than silently losing the original Start
 // error or claiming success.
@@ -718,6 +862,40 @@ func TestController_Reconcile_Suspended_NoContainers_NoOp(t *testing.T) {
 	}
 	if names := rt.names(); len(names) != 0 {
 		t.Errorf("containers after suspend = %v, want none", names)
+	}
+}
+
+func TestController_Teardown_RemovesRunningContainers(t *testing.T) {
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v1", "")
+	rt.seed(target, true)
+
+	c := New("web", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+	if names := rt.names(); len(names) != 0 {
+		t.Errorf("containers after teardown = %v, want none", names)
+	}
+}
+
+func TestController_Teardown_RemoveFails_ReturnsError(t *testing.T) {
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v1", "")
+	rt.seed(target, true)
+	rt.removeErr = errors.New("permission denied")
+
+	c := New("web", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err == nil {
+		t.Fatal("Teardown() error = nil, want the removal failure to surface")
+	}
+}
+
+func TestController_Teardown_NoContainers_NoOp(t *testing.T) {
+	rt := newFakeRuntime(0)
+	c := New("web", &fakeStore{}, rt)
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
 	}
 }
 
@@ -2394,7 +2572,7 @@ func TestController_Reconcile_Rolling_FirstReplicaReadinessFails_NoOldReplicaRem
 }
 
 // TestController_Reconcile_Rolling_PerStepRetirementFails_FinalSweepReportsIt
-// is the half-succeeded case CLAUDE.md's testing standard requires for
+// is the half-succeeded case reconciler tests must cover for
 // reconcileRolling's own new logic: its per-step retirement error is
 // deliberately discarded (the container just stays stale for the final
 // removeStale sweep to retry). With removeErr set for the whole pass,
@@ -2662,6 +2840,39 @@ func TestController_Reconcile_Volumes_EnsureFails_CreateNeverCalled(t *testing.T
 	}
 }
 
+// TestController_Reconcile_BindMounts_MountedOnCreate is
+// TestController_Reconcile_Volumes_EnsuredAndMountedOnCreate's bind-mount
+// counterpart: unlike a named volume, a bind mount is a real host path
+// that already exists, so there's no ensure step, only the direct
+// ContainerSpec.BindMounts translation.
+func TestController_Reconcile_BindMounts_MountedOnCreate(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		BindMounts: []store.ServiceBindMount{
+			{HostPath: "/srv/web/uploads", ContainerPath: "/uploads"},
+			{HostPath: "/srv/web/config", ContainerPath: "/config", ReadOnly: true},
+		},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue {
+		t.Fatalf("condition = %+v, want Status=True", cond)
+	}
+
+	wantMounts := []docker.BindMount{
+		{HostPath: "/srv/web/uploads", ContainerPath: "/uploads"},
+		{HostPath: "/srv/web/config", ContainerPath: "/config", ReadOnly: true},
+	}
+	if got := rt.lastCreateSpec.BindMounts; !reflect.DeepEqual(got, wantMounts) {
+		t.Errorf("created ContainerSpec.BindMounts = %+v, want %+v", got, wantMounts)
+	}
+}
+
 // TestController_Reconcile_NoVolumes_LeavesContainerSpecVolumesNil is the
 // regression-safety counterpart, same reasoning
 // TestController_Reconcile_NoLabels_LeavesContainerSpecLabelsNil gives
@@ -2680,6 +2891,9 @@ func TestController_Reconcile_NoVolumes_LeavesContainerSpecVolumesNil(t *testing
 	}
 	if rt.ensureVolumeCalls != nil {
 		t.Errorf("EnsureVolume calls = %v, want none", rt.ensureVolumeCalls)
+	}
+	if got := rt.lastCreateSpec.BindMounts; got != nil {
+		t.Errorf("created ContainerSpec.BindMounts = %+v, want nil", got)
 	}
 }
 

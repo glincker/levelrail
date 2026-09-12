@@ -45,7 +45,7 @@ Levelrail without Levelrail needing to run or manage Grafana itself.
   push pipeline does work constantly whether anyone is looking or not.
 
 - **SSH/CLI-polling as the mechanism for observing state, Coolify's actual
-  v4 architecture**: `prior-art-coolify.md` documents the scheduler in
+  v4 architecture**: Coolify's own source documents the scheduler in
   concrete detail (`app/Console/Kernel.php:38-99`): `ServerManagerJob` runs
   every minute and iterates all registered servers, dispatching a
   connection check plus `ServerCheckJob`, which runs
@@ -61,7 +61,7 @@ Levelrail without Levelrail needing to run or manage Grafana itself.
   runs continuously regardless of whether anyone is watching, versus
   Levelrail's node-local-store-plus-pull-query, where idle cost stays flat
   because nothing runs unless queried.
-  - `prior-art-coolify.md` also documents the highest-signal real-world
+  - Coolify's own issue tracker also has the highest-signal real-world
     cost example in this category: issue
     [#2110](https://github.com/coollabsio/coolify/issues/2110),
     "Unexplained High CPU Usage Spike Following Deployment Attempt" (166
@@ -82,11 +82,11 @@ Levelrail without Levelrail needing to run or manage Grafana itself.
 - **Coolify's "Sentinel" optional metrics agent, i.e. the bolted-on
   pattern generically**: this is the concrete instance of the exact
   pattern the project criticizes in the abstract ("telling the
-  user to install Grafana as a one-click app"). `prior-art-coolify.md`
-  describes Sentinel as "Coolify's own lightweight Go binary, not literally
+  user to install Grafana as a one-click app"). Sentinel is
+  Coolify's own lightweight Go binary, not literally
   Grafana, but the same architectural pattern: opt-in, separately
   installed, and the UI explicitly gates which metrics can be shown by
-  what Sentinel happens to expose." The research doc quotes Coolify's own
+  what Sentinel happens to expose. This ADR quotes Coolify's own
   `DESIGN.md:649-652` directly: "Only add a metric if Sentinel exposes
   historical data for it." That's a real engineering constraint stated
   plainly by the maintainers themselves, and it shows exactly what a

@@ -382,6 +382,46 @@ func TestReconcile_ImageChanged_ReplacesContainer(t *testing.T) {
 	}
 }
 
+func TestReconcile_CreateFails_ReportsCreateFailed(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.createErr = errors.New("no such image")
+	tokens := &fakeTokens{value: "tok", set: true}
+	c := New(&fakeStore{settings: store.CloudflareTunnelSettings{Enabled: true}}, tokens, rt, WithContainerPrefix("acme"))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want an error")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "CreateFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=CreateFailed", cond)
+	}
+}
+
+// TestReconcile_CreateSucceedsStartFails_ReportsHalfSucceeded is the
+// half-succeeded case the testing standard requires a test for: the
+// container was created but never started. Reported under its own
+// distinct reason so an operator can tell it apart from a clean create
+// failure.
+func TestReconcile_CreateSucceedsStartFails_ReportsHalfSucceeded(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.startErr = errors.New("start failed")
+	tokens := &fakeTokens{value: "tok", set: true}
+	c := New(&fakeStore{settings: store.CloudflareTunnelSettings{Enabled: true}}, tokens, rt, WithContainerPrefix("acme"))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want an error")
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "StartFailedAfterCreate" {
+		t.Errorf("condition = %+v, want Status=False Reason=StartFailedAfterCreate", cond)
+	}
+}
+
 func TestContainerName_DefaultsWhenPrefixEmpty(t *testing.T) {
 	if got, want := ContainerName(""), "platform-cloudflared"; got != want {
 		t.Errorf("ContainerName(\"\") = %q, want %q", got, want)

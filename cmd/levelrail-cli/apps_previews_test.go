@@ -38,6 +38,37 @@ func TestRun_AppsPreviewsList_ShowsStale(t *testing.T) {
 	}
 }
 
+func TestRun_AppsPreviewsList_ShowsEphemeralDatabases(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, []previewEnvironmentResource{
+		{
+			PRNumber: 42, PreviewAppID: "web-pr-42", Branch: "feature-x", Status: "active", UpdatedAt: "2026-08-20T00:00:00Z",
+			EphemeralDatabases: []previewEphemeralDatabaseResource{
+				{SourceKey: "main", DatabaseName: "web-pr-42-db-main", Engine: "postgres", Status: "provisioned", Ready: appStatusSummary{Label: "Healthy"}},
+			},
+		},
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "previews", "list", "web", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "main(Healthy)") {
+		t.Errorf("stdout = %q, want the EPHEMERAL DATABASES column to show main(Healthy)", stdout)
+	}
+}
+
+func TestRun_AppsPreviewsList_NoEphemeralDatabases_ShowsDash(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, []previewEnvironmentResource{
+		{PRNumber: 42, PreviewAppID: "web-pr-42", Branch: "feature-x", Status: "active", UpdatedAt: "2026-08-20T00:00:00Z"},
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "previews", "list", "web", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "-\n") && !strings.Contains(stdout, "\t-") {
+		t.Errorf("stdout = %q, want the EPHEMERAL DATABASES column to show -", stdout)
+	}
+}
+
 func TestRun_AppsPreviewsList_Empty(t *testing.T) {
 	var gotPath string
 	srv := newListEchoServer(t, &gotPath, []previewEnvironmentResource{})
@@ -76,13 +107,13 @@ func TestRun_AppsPreviewsTeardown_BadPRNumber(t *testing.T) {
 
 func TestRun_AppsPreviewsEnable(t *testing.T) {
 	var gotMethod, gotPath string
-	var gotBody setPreviewEnabledRequest
+	var gotBody setPreviewSettingsRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotMethod, gotPath = r.Method, r.URL.Path
 		_ = json.NewDecoder(r.Body).Decode(&gotBody)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(gotBody)
+		_ = json.NewEncoder(w).Encode(previewSettingsResource{Enabled: gotBody.Enabled != nil && *gotBody.Enabled})
 	}))
 	defer srv.Close()
 
@@ -90,8 +121,11 @@ func TestRun_AppsPreviewsEnable(t *testing.T) {
 	if gotMethod != http.MethodPut || gotPath != "/api/v1/apps/web/preview-settings" {
 		t.Errorf("request = %s %s, want PUT /api/v1/apps/web/preview-settings", gotMethod, gotPath)
 	}
-	if !gotBody.Enabled {
-		t.Errorf("request body Enabled = false, want true")
+	if gotBody.Enabled == nil || !*gotBody.Enabled {
+		t.Errorf("request body Enabled = %v, want true", gotBody.Enabled)
+	}
+	if gotBody.PostPRComments != nil {
+		t.Errorf("request body PostPRComments = %v, want nil (untouched)", gotBody.PostPRComments)
 	}
 	if !strings.Contains(stdout, "enabled") {
 		t.Errorf("stdout = %q, want an enabled confirmation", stdout)
@@ -118,18 +152,64 @@ func TestRun_AppsPreviewsSweep(t *testing.T) {
 }
 
 func TestRun_AppsPreviewsDisable(t *testing.T) {
-	var gotBody setPreviewEnabledRequest
+	var gotBody setPreviewSettingsRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&gotBody)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(gotBody)
+		_ = json.NewEncoder(w).Encode(previewSettingsResource{Enabled: gotBody.Enabled != nil && *gotBody.Enabled})
 	}))
 	defer srv.Close()
 
 	stdout, _ := runCLIExpectOK(t, []string{"apps", "previews", "disable", "web", "--api-url", srv.URL})
-	if gotBody.Enabled {
-		t.Errorf("request body Enabled = true, want false")
+	if gotBody.Enabled == nil || *gotBody.Enabled {
+		t.Errorf("request body Enabled = %v, want false", gotBody.Enabled)
+	}
+	if !strings.Contains(stdout, "disabled") {
+		t.Errorf("stdout = %q, want a disabled confirmation", stdout)
+	}
+}
+
+func TestRun_AppsPreviewsPRStatusEnable(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody setPreviewSettingsRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(previewSettingsResource{PostPRComments: gotBody.PostPRComments != nil && *gotBody.PostPRComments})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "previews", "pr-status", "enable", "web", "--api-url", srv.URL})
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/apps/web/preview-settings" {
+		t.Errorf("request = %s %s, want PUT /api/v1/apps/web/preview-settings", gotMethod, gotPath)
+	}
+	if gotBody.PostPRComments == nil || !*gotBody.PostPRComments {
+		t.Errorf("request body PostPRComments = %v, want true", gotBody.PostPRComments)
+	}
+	if gotBody.Enabled != nil {
+		t.Errorf("request body Enabled = %v, want nil (untouched)", gotBody.Enabled)
+	}
+	if !strings.Contains(stdout, "enabled") {
+		t.Errorf("stdout = %q, want an enabled confirmation", stdout)
+	}
+}
+
+func TestRun_AppsPreviewsPRStatusDisable(t *testing.T) {
+	var gotBody setPreviewSettingsRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(previewSettingsResource{PostPRComments: gotBody.PostPRComments != nil && *gotBody.PostPRComments})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "previews", "pr-status", "disable", "web", "--api-url", srv.URL})
+	if gotBody.PostPRComments == nil || *gotBody.PostPRComments {
+		t.Errorf("request body PostPRComments = %v, want false", gotBody.PostPRComments)
 	}
 	if !strings.Contains(stdout, "disabled") {
 		t.Errorf("stdout = %q, want a disabled confirmation", stdout)

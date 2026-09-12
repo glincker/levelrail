@@ -402,6 +402,486 @@ func TestNewNotifier_Email_UnreachableServer_ErrorPropagates(t *testing.T) {
 	}
 }
 
+func TestNotifyMattermost_PostsTextField(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyMattermost}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+
+	text, ok := got["text"].(string)
+	if !ok || !strings.Contains(text, "high cpu") || !strings.Contains(text, "FIRING") {
+		t.Errorf("Mattermost payload = %+v, want a text field mentioning the rule name and FIRING", got)
+	}
+}
+
+func TestNotifyLark_PostsMsgTypeAndContent(t *testing.T) {
+	var got larkPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyLark}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if got.MsgType != "text" {
+		t.Errorf("payload.MsgType = %q, want text", got.MsgType)
+	}
+	if !strings.Contains(got.Content.Text, "high cpu") {
+		t.Errorf("payload.Content.Text = %q, want it to mention the rule name", got.Content.Text)
+	}
+}
+
+func TestNotifyGotify_PostsTitleMessageAndToken(t *testing.T) {
+	var got gotifyPayload
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.RequestURI()
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{
+		ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web",
+		NotifyURL: srv.URL + "/message?token=app-token-123", NotifyKind: NotifyGotify,
+	}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if gotPath != "/message?token=app-token-123" {
+		t.Errorf("request URI = %q, want the token query parameter preserved", gotPath)
+	}
+	if got.Title != "high cpu" {
+		t.Errorf("payload.Title = %q, want the rule name", got.Title)
+	}
+	if !strings.Contains(got.Message, "high cpu") {
+		t.Errorf("payload.Message = %q, want it to mention the rule name", got.Message)
+	}
+	if got.Priority != 5 {
+		t.Errorf("payload.Priority = %d, want 5 for a firing event", got.Priority)
+	}
+}
+
+func TestNotifyGotify_ResolvedEvent_LowerPriority(t *testing.T) {
+	var got gotifyPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: srv.URL + "/message?token=x", NotifyKind: NotifyGotify}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if got.Priority != 2 {
+		t.Errorf("payload.Priority = %d, want 2 for a resolved event", got.Priority)
+	}
+}
+
+func TestNotifyNtfy_PostsTitleAndMessage_NoAuthHeaderWhenNoToken(t *testing.T) {
+	var got ntfyPayload
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{
+		ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web",
+		NotifyURL: srv.URL + "/my-topic", NotifyKind: NotifyNtfy,
+	}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if gotAuth != "" {
+		t.Errorf("Authorization header = %q, want none when notify_url carries no auth token", gotAuth)
+	}
+	if got.Title != "high cpu" {
+		t.Errorf("payload.Title = %q, want the rule name", got.Title)
+	}
+	if !strings.Contains(got.Message, "high cpu") {
+		t.Errorf("payload.Message = %q, want it to mention the rule name", got.Message)
+	}
+	if got.Priority != 4 {
+		t.Errorf("payload.Priority = %d, want 4 for a firing event", got.Priority)
+	}
+}
+
+func TestNotifyNtfy_AuthTokenMovedToHeaderAndStrippedFromURL(t *testing.T) {
+	var got ntfyPayload
+	var gotAuth, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		gotPath = r.URL.RequestURI()
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{
+		ID: "r1", Name: "high cpu", NotifyURL: srv.URL + "/my-topic?auth=tk_secret", NotifyKind: NotifyNtfy,
+	}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if gotAuth != "Bearer tk_secret" {
+		t.Errorf("Authorization header = %q, want Bearer tk_secret", gotAuth)
+	}
+	if gotPath != "/my-topic" {
+		t.Errorf("request URI = %q, want the auth query parameter stripped", gotPath)
+	}
+	if got.Priority != 3 {
+		t.Errorf("payload.Priority = %d, want 3 for a resolved event", got.Priority)
+	}
+}
+
+func TestNotifyNtfy_InvalidURL_Errors(t *testing.T) {
+	r := Rule{ID: "r1", Name: "x", NotifyURL: "://not a url", NotifyKind: NotifyNtfy}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+		t.Error("Notify() error = nil, want an error for an unparseable notify_url")
+	}
+}
+
+func TestNotifyResend_PostsAuthHeaderAndPayload(t *testing.T) {
+	var got resendPayload
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	original := resendAPIURL
+	resendAPIURL = srv.URL
+	t.Cleanup(func() { resendAPIURL = original })
+
+	r := Rule{
+		ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web",
+		NotifyURL:  "https://api.resend.com/emails?key=re_secret123&to=ops%40example.com",
+		NotifyKind: NotifyResend,
+	}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if gotAuth != "Bearer re_secret123" {
+		t.Errorf("Authorization header = %q, want Bearer re_secret123", gotAuth)
+	}
+	if len(got.To) != 1 || got.To[0] != "ops@example.com" {
+		t.Errorf("payload.To = %v, want [ops@example.com]", got.To)
+	}
+	if got.From != resendDefaultFrom {
+		t.Errorf("payload.From = %q, want the default sandbox sender %q when no from param is given", got.From, resendDefaultFrom)
+	}
+	if !strings.Contains(got.Subject, "high cpu") {
+		t.Errorf("payload.Subject = %q, want it to mention the rule name", got.Subject)
+	}
+}
+
+func TestNotifyResend_CustomFromParam(t *testing.T) {
+	var got resendPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	original := resendAPIURL
+	resendAPIURL = srv.URL
+	t.Cleanup(func() { resendAPIURL = original })
+
+	r := Rule{
+		ID: "r1", Name: "x",
+		NotifyURL:  "https://api.resend.com/emails?key=re_secret&to=ops%40example.com&from=alerts%40example.com",
+		NotifyKind: NotifyResend,
+	}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if got.From != "alerts@example.com" {
+		t.Errorf("payload.From = %q, want the explicit from param", got.From)
+	}
+}
+
+func TestNotifyResend_ResolvedEvent_SubjectMarksResolved(t *testing.T) {
+	var got resendPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	original := resendAPIURL
+	resendAPIURL = srv.URL
+	t.Cleanup(func() { resendAPIURL = original })
+
+	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "https://api.resend.com/emails?key=k&to=ops%40example.com", NotifyKind: NotifyResend}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if !strings.Contains(got.Subject, "RESOLVED") {
+		t.Errorf("payload.Subject = %q, want it to mention RESOLVED", got.Subject)
+	}
+}
+
+func TestNotifyResend_MissingCreds_Errors(t *testing.T) {
+	tests := []struct {
+		name string
+		url  string
+	}{
+		{"missing key", "https://api.resend.com/emails?to=ops%40example.com"},
+		{"missing to", "https://api.resend.com/emails?key=re_secret"},
+		{"missing both", "https://api.resend.com/emails"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := Rule{ID: "r1", Name: "x", NotifyURL: tt.url, NotifyKind: NotifyResend}
+			notifier := NewNotifier(nil, nil, r)
+
+			if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+				t.Error("Notify() error = nil, want an error when notify_url is missing key or to")
+			}
+		})
+	}
+}
+
+func TestNotifyResend_InvalidURL_Errors(t *testing.T) {
+	r := Rule{ID: "r1", Name: "x", NotifyURL: "://not a url", NotifyKind: NotifyResend}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+		t.Error("Notify() error = nil, want an error for an unparseable notify_url")
+	}
+}
+
+func TestNotifyRocketChat_PostsTextAliasAndEmoji(t *testing.T) {
+	var got rocketChatPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyRocketChat}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if !strings.Contains(got.Text, "high cpu") {
+		t.Errorf("payload.Text = %q, want it to mention the rule name", got.Text)
+	}
+	if got.Alias != "Levelrail" {
+		t.Errorf("payload.Alias = %q, want Levelrail", got.Alias)
+	}
+	if got.Emoji != ":rotating_light:" {
+		t.Errorf("payload.Emoji = %q, want :rotating_light: for a firing event", got.Emoji)
+	}
+}
+
+func TestNotifyRocketChat_ResolvedEvent_DifferentEmoji(t *testing.T) {
+	var got rocketChatPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: srv.URL, NotifyKind: NotifyRocketChat}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if got.Emoji != ":white_check_mark:" {
+		t.Errorf("payload.Emoji = %q, want :white_check_mark: for a resolved event", got.Emoji)
+	}
+}
+
+func TestNotifyWebex_PostsMarkdownField(t *testing.T) {
+	var got webexPayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyWebex}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if !strings.Contains(got.Markdown, "high cpu") {
+		t.Errorf("payload.Markdown = %q, want it to mention the rule name", got.Markdown)
+	}
+}
+
+func TestNotifyGoogleChat_PostsTextField(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web", NotifyURL: srv.URL, NotifyKind: NotifyGoogleChat}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	text, ok := got["text"].(string)
+	if !ok || !strings.Contains(text, "high cpu") {
+		t.Errorf("Google Chat payload = %+v, want a text field mentioning the rule name", got)
+	}
+}
+
+func withOpsgenieAPIURL(t *testing.T, url string) {
+	t.Helper()
+	original := opsgenieAPIURL
+	opsgenieAPIURL = url
+	t.Cleanup(func() { opsgenieAPIURL = original })
+}
+
+func TestNotifyOpsgenie_PostsAuthHeaderAndPayload(t *testing.T) {
+	var got opsgeniePayload
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+	withOpsgenieAPIURL(t, srv.URL)
+
+	r := Rule{
+		ID: "r1", Name: "high cpu", Kind: KindThreshold, ResourceID: "service:web",
+		NotifyURL: "https://api.opsgenie.com/v2/alerts?key=og_secret123", NotifyKind: NotifyOpsgenie,
+	}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if gotAuth != "GenieKey og_secret123" {
+		t.Errorf("Authorization header = %q, want GenieKey og_secret123", gotAuth)
+	}
+	if got.Message != "high cpu" {
+		t.Errorf("payload.Message = %q, want the rule name", got.Message)
+	}
+	if !strings.Contains(got.Description, "high cpu") {
+		t.Errorf("payload.Description = %q, want it to mention the rule name", got.Description)
+	}
+	if got.Priority != "P1" {
+		t.Errorf("payload.Priority = %q, want P1 for a firing event", got.Priority)
+	}
+}
+
+func TestNotifyOpsgenie_ResolvedEvent_LowerPriority(t *testing.T) {
+	var got opsgeniePayload
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer srv.Close()
+	withOpsgenieAPIURL(t, srv.URL)
+
+	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "https://api.opsgenie.com/v2/alerts?key=og_secret", NotifyKind: NotifyOpsgenie}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r, Resolved: true}); err != nil {
+		t.Fatalf("Notify() error = %v", err)
+	}
+	if got.Priority != "P5" {
+		t.Errorf("payload.Priority = %q, want P5 for a resolved event", got.Priority)
+	}
+}
+
+func TestNotifyOpsgenie_MissingKey_Errors(t *testing.T) {
+	r := Rule{ID: "r1", Name: "x", NotifyURL: "https://api.opsgenie.com/v2/alerts", NotifyKind: NotifyOpsgenie}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+		t.Error("Notify() error = nil, want an error when notify_url is missing the key query parameter")
+	}
+}
+
+func TestNotifyOpsgenie_InvalidURL_Errors(t *testing.T) {
+	r := Rule{ID: "r1", Name: "x", NotifyURL: "://not a url", NotifyKind: NotifyOpsgenie}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+		t.Error("Notify() error = nil, want an error for an unparseable notify_url")
+	}
+}
+
+func TestNewNotifier_AllValidKinds_Recognized(t *testing.T) {
+	kinds := []NotifyKind{
+		NotifyGeneric, NotifySlack, NotifyDiscord, NotifyTelegram, NotifyPushover,
+		NotifyPagerDuty, NotifyTeams, NotifyMattermost, NotifyLark, NotifyGotify,
+		NotifyRocketChat, NotifyWebex, NotifyGoogleChat,
+	}
+	for _, kind := range kinds {
+		t.Run(string(kind), func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer srv.Close()
+
+			notifyURL := srv.URL
+			switch kind {
+			case NotifyTelegram:
+				notifyURL = srv.URL + "?chat_id=1"
+			case NotifyPushover:
+				notifyURL = srv.URL + "?token=t&user=u"
+			case NotifyPagerDuty:
+				notifyURL = "routing-key"
+			case NotifyGotify:
+				notifyURL = srv.URL + "?token=t"
+			}
+			r := Rule{ID: "r1", Name: "x", NotifyURL: notifyURL, NotifyKind: kind}
+			if kind == NotifyPagerDuty {
+				withPagerDutyEventsURL(t, srv.URL)
+			}
+			notifier := NewNotifier(nil, nil, r)
+			if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+				t.Errorf("Notify() error = %v for kind %q", err, kind)
+			}
+		})
+	}
+}
+
 func TestNewNotifier_UnknownKind_FallsBackToGeneric(t *testing.T) {
 	var got genericPayload
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -48,139 +49,52 @@ func TestRun_AppsAlertsCreate_Threshold(t *testing.T) {
 	}
 }
 
-func TestRun_AppsAlertsCreate_CertExpiry_NoExtraFieldsRequired(t *testing.T) {
+// testAppsAlertsCreateSimpleKind runs "apps alerts create web" for an alert
+// kind that needs only --name and --kind, and asserts the request body and
+// creation confirmation.
+func testAppsAlertsCreateSimpleKind(t *testing.T, kind, name, id string) {
+	t.Helper()
 	var gotBody createAlertRuleRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&gotBody)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(alertRuleResource{ID: "alr_2", Name: gotBody.Name, Kind: gotBody.Kind, Enabled: gotBody.Enabled})
+		_ = json.NewEncoder(w).Encode(alertRuleResource{ID: id, Name: gotBody.Name, Kind: gotBody.Kind, Enabled: gotBody.Enabled})
 	}))
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
+	stdout, _ := runCLIExpectOK(t, []string{
 		"apps", "alerts", "create", "web",
-		"--name", "cert-expiry-watch", "--kind", "cert_expiry",
+		"--name", name, "--kind", kind,
 		"--api-url", srv.URL,
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	})
+	if gotBody.Kind != kind {
+		t.Errorf("request body Kind = %q, want %s", gotBody.Kind, kind)
 	}
-	if gotBody.Kind != "cert_expiry" {
-		t.Errorf("request body Kind = %q, want cert_expiry", gotBody.Kind)
+	wantMsg := fmt.Sprintf(`alert rule %q (id %s, kind %s) created for app "web"`, name, id, kind)
+	if !strings.Contains(stdout, wantMsg) {
+		t.Errorf("stdout = %q, want a creation confirmation", stdout)
 	}
-	if !strings.Contains(stdout.String(), `alert rule "cert-expiry-watch" (id alr_2, kind cert_expiry) created for app "web"`) {
-		t.Errorf("stdout = %q, want a creation confirmation", stdout.String())
-	}
+}
+
+func TestRun_AppsAlertsCreate_CertExpiry_NoExtraFieldsRequired(t *testing.T) {
+	testAppsAlertsCreateSimpleKind(t, "cert_expiry", "cert-expiry-watch", "alr_2")
 }
 
 func TestRun_AppsAlertsCreate_PatchStatus_NoExtraFieldsRequired(t *testing.T) {
-	var gotBody createAlertRuleRequest
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewDecoder(r.Body).Decode(&gotBody)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(alertRuleResource{ID: "alr_3", Name: gotBody.Name, Kind: gotBody.Kind, Enabled: gotBody.Enabled})
-	}))
-	defer srv.Close()
-
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"apps", "alerts", "create", "web",
-		"--name", "patch-status-watch", "--kind", "patch_status",
-		"--api-url", srv.URL,
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotBody.Kind != "patch_status" {
-		t.Errorf("request body Kind = %q, want patch_status", gotBody.Kind)
-	}
-	if !strings.Contains(stdout.String(), `alert rule "patch-status-watch" (id alr_3, kind patch_status) created for app "web"`) {
-		t.Errorf("stdout = %q, want a creation confirmation", stdout.String())
-	}
+	testAppsAlertsCreateSimpleKind(t, "patch_status", "patch-status-watch", "alr_3")
 }
 
 func TestRun_AppsAlertsCreate_NodeDiskSpace_NoExtraFieldsRequired(t *testing.T) {
-	var gotBody createAlertRuleRequest
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewDecoder(r.Body).Decode(&gotBody)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(alertRuleResource{ID: "alr_4", Name: gotBody.Name, Kind: gotBody.Kind, Enabled: gotBody.Enabled})
-	}))
-	defer srv.Close()
-
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"apps", "alerts", "create", "web",
-		"--name", "disk-space-watch", "--kind", "node_disk_space",
-		"--api-url", srv.URL,
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotBody.Kind != "node_disk_space" {
-		t.Errorf("request body Kind = %q, want node_disk_space", gotBody.Kind)
-	}
-	if !strings.Contains(stdout.String(), `alert rule "disk-space-watch" (id alr_4, kind node_disk_space) created for app "web"`) {
-		t.Errorf("stdout = %q, want a creation confirmation", stdout.String())
-	}
+	testAppsAlertsCreateSimpleKind(t, "node_disk_space", "disk-space-watch", "alr_4")
 }
 
 func TestRun_AppsAlertsCreate_NodeResourceUsage_NoExtraFieldsRequired(t *testing.T) {
-	var gotBody createAlertRuleRequest
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewDecoder(r.Body).Decode(&gotBody)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(alertRuleResource{ID: "alr_5", Name: gotBody.Name, Kind: gotBody.Kind, Enabled: gotBody.Enabled})
-	}))
-	defer srv.Close()
-
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"apps", "alerts", "create", "web",
-		"--name", "node-load-watch", "--kind", "node_resource_usage",
-		"--api-url", srv.URL,
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotBody.Kind != "node_resource_usage" {
-		t.Errorf("request body Kind = %q, want node_resource_usage", gotBody.Kind)
-	}
-	if !strings.Contains(stdout.String(), `alert rule "node-load-watch" (id alr_5, kind node_resource_usage) created for app "web"`) {
-		t.Errorf("stdout = %q, want a creation confirmation", stdout.String())
-	}
+	testAppsAlertsCreateSimpleKind(t, "node_resource_usage", "node-load-watch", "alr_5")
 }
 
 func TestRun_AppsAlertsCreate_DomainHealth_NoExtraFieldsRequired(t *testing.T) {
-	var gotBody createAlertRuleRequest
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewDecoder(r.Body).Decode(&gotBody)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(alertRuleResource{ID: "alr_6", Name: gotBody.Name, Kind: gotBody.Kind, Enabled: gotBody.Enabled})
-	}))
-	defer srv.Close()
-
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"apps", "alerts", "create", "web",
-		"--name", "domain-watch", "--kind", "domain_health",
-		"--api-url", srv.URL,
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotBody.Kind != "domain_health" {
-		t.Errorf("request body Kind = %q, want domain_health", gotBody.Kind)
-	}
-	if !strings.Contains(stdout.String(), `alert rule "domain-watch" (id alr_6, kind domain_health) created for app "web"`) {
-		t.Errorf("stdout = %q, want a creation confirmation", stdout.String())
-	}
+	testAppsAlertsCreateSimpleKind(t, "domain_health", "domain-watch", "alr_6")
 }
 
 func TestRun_AppsAlertsCreate_ScheduledTaskFailure(t *testing.T) {
@@ -249,48 +163,99 @@ func TestRun_AppsAlertsCreate_ThresholdMissingMetric(t *testing.T) {
 }
 
 func TestRun_AppsAlertsList(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, []alertRuleResource{
+		{ID: "alr_1", Name: "cert watch", Kind: "cert_expiry", Enabled: true, Firing: true},
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "alerts", "list", "web", "--api-url", srv.URL})
+	if gotPath != "/api/v1/apps/web/alerts" {
+		t.Errorf("path = %q, want /api/v1/apps/web/alerts", gotPath)
+	}
+	if !strings.Contains(stdout, "cert watch") || !strings.Contains(stdout, "cert_expiry") {
+		t.Errorf("stdout = %q, want the cert_expiry rule listed", stdout)
+	}
+}
+
+func TestRun_AppsAlertsUpdate_Threshold(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody updateAlertRuleRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/apps/web/alerts" {
-			t.Errorf("path = %q, want /api/v1/apps/web/alerts", r.URL.Path)
-		}
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode([]alertRuleResource{
-			{ID: "alr_1", Name: "cert watch", Kind: "cert_expiry", Enabled: true, Firing: true},
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(alertRuleResource{
+			ID: "alr_1", Name: gotBody.Name, Kind: gotBody.Kind, Metric: gotBody.Metric,
+			Comparator: gotBody.Comparator, Threshold: gotBody.Threshold, Enabled: gotBody.Enabled,
 		})
 	}))
 	defer srv.Close()
 
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "alerts", "list", "web", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	got := run("levelrail-cli-test", []string{
+		"apps", "alerts", "update", "web", "alr_1",
+		"--name", "even-higher-cpu", "--kind", "threshold", "--metric", "cpu_percent", "--comparator", ">", "--threshold", "95",
+		"--api-url", srv.URL, "--json",
+	}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "cert watch") || !strings.Contains(stdout.String(), "cert_expiry") {
-		t.Errorf("stdout = %q, want the cert_expiry rule listed", stdout.String())
-	}
-}
-
-func TestRun_AppsAlertsDelete(t *testing.T) {
-	var gotMethod, gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotMethod = r.Method
-		gotPath = r.URL.Path
-		w.WriteHeader(http.StatusNoContent)
-	}))
-	defer srv.Close()
-
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "alerts", "delete", "web", "alr_1", "--api-url", srv.URL}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotMethod != http.MethodDelete {
-		t.Errorf("method = %q, want DELETE", gotMethod)
+	if gotMethod != http.MethodPut {
+		t.Errorf("method = %q, want PUT", gotMethod)
 	}
 	if gotPath != "/api/v1/apps/web/alerts/alr_1" {
 		t.Errorf("path = %q, want /api/v1/apps/web/alerts/alr_1", gotPath)
 	}
-	if !strings.Contains(stdout.String(), `alert rule "alr_1" deleted`) {
-		t.Errorf("stdout = %q, want a deletion confirmation", stdout.String())
+	if gotBody.Kind != "threshold" || gotBody.Metric != "cpu_percent" || gotBody.Comparator != ">" || gotBody.Threshold != 95 {
+		t.Errorf("request body = %+v, want a threshold rule on cpu_percent > 95", gotBody)
+	}
+	if !strings.Contains(stdout.String(), `"id": "alr_1"`) {
+		t.Errorf("stdout = %q, want the updated rule as JSON", stdout.String())
+	}
+}
+
+func TestRun_AppsAlertsUpdate_MissingKind(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "alerts", "update", "web", "alr_1", "--name", "x"}, &stdout, &stderr, envMap())
+	if got != exitValidation {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitValidation, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--kind is required") {
+		t.Errorf("stderr = %q, want a missing --kind error", stderr.String())
+	}
+}
+
+func TestRun_AppsAlertsUpdate_MissingName(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "alerts", "update", "web", "alr_1", "--kind", "cert_expiry"}, &stdout, &stderr, envMap())
+	if got != exitValidation {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitValidation, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--name is required") {
+		t.Errorf("stderr = %q, want a missing --name error", stderr.String())
+	}
+}
+
+func TestRun_AppsAlertsUpdate_MissingArgs(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "alerts", "update", "web", "--name", "x", "--kind", "cert_expiry"}, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitUsage, stderr.String())
+	}
+}
+
+func TestRun_AppsAlertsDelete(t *testing.T) {
+	srv, gotPath, gotMethod := newNoContentEchoServer(t)
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "alerts", "delete", "web", "alr_1", "--api-url", srv.URL})
+	if *gotMethod != http.MethodDelete || *gotPath != "/api/v1/apps/web/alerts/alr_1" {
+		t.Errorf("request = %s %s, want DELETE /api/v1/apps/web/alerts/alr_1", *gotMethod, *gotPath)
+	}
+	if !strings.Contains(stdout, `alert rule "alr_1" deleted`) {
+		t.Errorf("stdout = %q, want a deletion confirmation", stdout)
 	}
 }

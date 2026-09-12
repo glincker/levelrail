@@ -215,6 +215,51 @@ func parseAPIFlags(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog stri
 	return *flags.token, *flags.apiURL, *flags.profile, *flags.jsonOut, outputFlags{format, *flags.query}, 0, true
 }
 
+// parseSessionFlags is parseAPIFlags' sessionFlagSet counterpart: the
+// identical fs.Parse-then-resolve-output-format block every "auth 2fa
+// <verb>" subcommand repeated before this function existed. ok is false
+// once fs.Parse, --help, or an invalid --output has already written its
+// own message to stderr (or produced exitOK for -h); the caller should
+// return exitCode unchanged in that case.
+func parseSessionFlags(fs *flag.FlagSet, args []string, jsonOutP *bool, outputFlagP, queryFlagP *string, prog string, stderr io.Writer) (jsonOut bool, of outputFlags, exitCode int, ok bool) {
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return false, outputFlags{}, exitOK, false
+		}
+		return false, outputFlags{}, exitUsage, false
+	}
+	jsonOut = *jsonOutP
+	format, ferr := resolveOutputFormat(jsonOut, *outputFlagP)
+	if ferr != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %s\n", prog, ferr)
+		return false, outputFlags{}, exitValidation, false
+	}
+	return jsonOut, outputFlags{format, *queryFlagP}, 0, true
+}
+
+// buildSessionClient logs in (or reuses a persisted session) and returns
+// a ready client, the ctx/loggedInSessionClient/err-report sequence every
+// "auth 2fa <verb>" subcommand repeats right after resolving its own
+// output format. ok is false once the login failure has already been
+// reported via reportError; the caller should return exitCode unchanged.
+func buildSessionClient(ctx context.Context, sf sessionFlags, prog string, lookupEnv func(string) (string, bool), stdin io.Reader, stdout, stderr io.Writer, jsonOut bool) (client *authSessionClient, exitCode int, ok bool) {
+	sessionClient, _, err := loggedInSessionClient(ctx, sf, prog, lookupEnv, stdin, stderr)
+	if err != nil {
+		return nil, reportError(stdout, stderr, jsonOut, err), false
+	}
+	return sessionClient, 0, true
+}
+
+// sessionFlagPtrs bundles sessionFlagSet's returned flag pointers,
+// keeping requireCodeAndSessionClient under golangci-lint's parameter-
+// count limit, the same "bundle related params into one value" pattern
+// apiFlagPtrs/credentialFlags already establish.
+type sessionFlagPtrs struct {
+	username, password, apiURL, profile *string
+	jsonOut                             *bool
+	output, query                       *string
+}
+
 // singleArgCmd bundles a single-positional-argument command's own
 // identity (prog, its cmdLabel, and what that one argument is called in
 // a usage message, e.g. "app name" or "policy id") into one value,
@@ -245,6 +290,19 @@ func parseSingleArgClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, st
 	}
 
 	return apiClientFromFlags(cmd.prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), name, jsonOut, of, exitOK, true
+}
+
+// parseListClient is parseSingleArgClient's zero-positional-argument
+// counterpart: the parse-flags-then-build-client sequence every "list"
+// subcommand needs before its own request logic diverges. ok is false
+// once fs.Parse, --help, or an invalid --output has already written its
+// own message to stderr; the caller should return exitCode unchanged.
+func parseListClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog string, stderr io.Writer, lookupEnv func(string) (string, bool)) (client *Client, jsonOut bool, of outputFlags, exitCode int, ok bool) {
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, flags, prog, stderr)
+	if !ok {
+		return nil, false, outputFlags{}, exitCode, false
+	}
+	return apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), jsonOut, of, exitOK, true
 }
 
 // reorderArgsFlagsFirst rewrites args so every flag (and its value, if

@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-// APIToken is one non-interactive credential (TASKS.md "Backend auth
-// foundation"): a CLI, an MCP server, or a third-party integration
+// APIToken is one non-interactive credential, the backend auth
+// foundation: a CLI, an MCP server, or a third-party integration
 // authenticates with the plaintext token this row's TokenHash is a
 // SHA-256 digest of, scoped to Abilities. The plaintext itself is never
 // stored anywhere, generated once by internal/api and returned to the

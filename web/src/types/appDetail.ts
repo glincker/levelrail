@@ -25,6 +25,16 @@ export interface ServiceHealth {
   liveness?: ServiceProbe | null
 }
 
+// Matches internal/api/apps.go's appResource.Hooks exactly
+// (store.ServiceHooks' JSON encoding): commands the reconciler runs
+// inside the service's own container at defined points in a deploy. See
+// internal/reconcile/application.Controller's own doc comment for the
+// full timing and failure-handling contract.
+export interface ServiceHooks {
+  pre_deploy?: string
+  post_deploy?: string
+}
+
 // The three deploy strategy values internal/spec.Service.Strategy
 // accepts (internal/spec/spec.go's StrategyRolling/StrategyRecreate/
 // StrategyBlueGreen), all three reconciler-backed.
@@ -48,8 +58,8 @@ export interface LogDrain {
 // possibly undefined, not assume an empty array/object.
 //
 // node_id carries `omitempty` on the Go side and is response-only:
-// appResource's own doc comment is explicit it is TASKS.md 3.3's
-// placement field, set via PUT /api/v1/apps/{name}/node
+// appResource's own doc comment is explicit it is a placement field,
+// set via PUT /api/v1/apps/{name}/node
 // (handleSetAppNode) rather than through this type, the same
 // response-only convention databaseDetail.ts's DatabaseResource
 // documents for the equivalent field.
@@ -75,6 +85,10 @@ export interface AppDetail {
   // rather than waiting for the next deploy or restart.
   resources_applied_live?: boolean
   health?: ServiceHealth | null
+  // hooks carries `omitempty` on the Go side: undefined means neither a
+  // pre-deploy nor a post-deploy command is configured. Settable on
+  // create and update, like health/resources above.
+  hooks?: ServiceHooks | null
   strategy: DeployStrategy
   replicas: number
   // Custom Docker labels applied to the container at create time
@@ -83,7 +97,17 @@ export interface AppDetail {
   // `omitempty` on the Go side, same optional-map convention `env`
   // already establishes above.
   labels?: Record<string, string>
+  // node_id carries `omitempty` on the Go side and is response-only on
+  // update: appResource's own doc comment is explicit an existing app's
+  // placement changes via PUT /api/v1/apps/{name}/node (handleSetAppNode)
+  // rather than through this type. POST /api/v1/apps (create) is the one
+  // exception: an explicit node_id there overrides simple spread
+  // scheduling, see CreateAppRequest's own doc comment (queries/apps.ts).
   node_id?: string
+  // auto_placed carries `omitempty` on the Go side and is response-only,
+  // set only by POST /api/v1/apps: true when the create request omitted
+  // node_id and simple spread scheduling picked a non-local node for it.
+  auto_placed?: boolean
   // project_id carries `omitempty` on the Go side and is response-only
   // on PUT (internal/api/apps.go's appResource own doc comment): set an
   // existing app's project via PUT /api/v1/apps/{name}/project
@@ -150,6 +174,12 @@ export interface AppDetail {
   // and AppVolumeBackupsSection for the backup/restore/schedule
   // endpoints each one supports.
   volumes?: AppVolume[]
+  // bind_mounts is volumes' bind-mount counterpart
+  // (internal/api/app_volumes.go's appBindMountResource), response-only
+  // for the identical reason: only ever set via the compose-import path
+  // (POST /apps/{name}/compose, root-ability-gated when the file
+  // carries one), undefined meaning none declared.
+  bind_mounts?: AppBindMount[]
 }
 
 // Matches internal/api/apps.go's appVolumeResource exactly: one of an
@@ -159,6 +189,15 @@ export interface AppDetail {
 export interface AppVolume {
   name: string
   container_path: string
+}
+
+// Matches internal/api/app_volumes.go's appBindMountResource exactly:
+// one of an app's bind-mounted host directories. host_path is a real
+// path on whichever node the service runs on, not a Docker volume name.
+export interface AppBindMount {
+  host_path: string
+  container_path: string
+  read_only?: boolean
 }
 
 // GET /api/v1/apps' own wire shape (internal/api/apps.go's

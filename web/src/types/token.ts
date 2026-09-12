@@ -73,6 +73,16 @@ export const ABILITY_OPTIONS: { value: Ability; label: string; hint: string }[] 
   },
 ]
 
+// Mirrors internal/api/abilities.go's own hasAbility: granted includes
+// required either directly or via 'root', which implies everything. Used
+// client-side to cap what a UI control offers (e.g. InviteMemberDialog's
+// role picker) to what the signed-in session actually holds; the
+// server-side check (handleCreateInvite's own privilege cap) is the real
+// security boundary, this is only a UX nicety on top of it.
+export function hasAbility(granted: Ability[], required: Ability): boolean {
+  return granted.includes(required) || granted.includes('root')
+}
+
 // Mirrors abilities.go's own validateAbilities exclusivity rule:
 // selecting root clears every other checkbox;
 // selecting any other checkbox clears root if it was set. Root is never

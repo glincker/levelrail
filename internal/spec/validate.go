@@ -74,7 +74,26 @@ func (svc *Service) validate(name string) error {
 	if err := ValidateLabels(svc.Labels); err != nil {
 		return fmt.Errorf("spec: service %q: %w", name, err)
 	}
+	if err := svc.validateHooks(name); err != nil {
+		return err
+	}
 	return svc.validateVolumes(name)
+}
+
+// validateHooks rejects a hooks: block on a build.type with no single
+// container for the reconciler to exec a command inside: static (no
+// container at all) and compose (a wrapper that expands into N real
+// services at deploy time, per validatePorts' own comment on the same
+// build.type, none of which this one hooks: block could unambiguously
+// target).
+func (svc *Service) validateHooks(name string) error {
+	if svc.Hooks == nil {
+		return nil
+	}
+	if svc.Build.Type == BuildStatic || svc.Build.Type == BuildCompose {
+		return fmt.Errorf("spec: service %q: hooks is not meaningful for build.type %q, there is no single container to run a command in", name, svc.Build.Type)
+	}
+	return nil
 }
 
 // validateBuild checks the build.type/path/image/args/baseDirectory
@@ -143,20 +162,39 @@ func (svc *Service) validatePorts(name string) error {
 	return nil
 }
 
-// validateVolumes checks svc.Volumes for a bad name and for two volumes
-// colliding on name or mount path, split out from svc.validate for the
-// same reason validateBuild's own doc comment gives.
+// validateVolumes checks svc.Volumes for a bad name, a forbidden bind-mount
+// host path, and for two volumes colliding on name or mount path, split
+// out from svc.validate for the same reason validateBuild's own doc
+// comment gives.
 func (svc *Service) validateVolumes(name string) error {
 	seenVolumeNames := make(map[string]bool, len(svc.Volumes))
 	seenVolumePaths := make(map[string]bool, len(svc.Volumes))
 	for _, v := range svc.Volumes {
-		if !nameLike.MatchString(v.Name) {
-			return fmt.Errorf("spec: service %q: volume name %q must be lowercase alphanumeric and hyphens, starting with a letter", name, v.Name)
+		switch {
+		case v.Name != "" && v.HostPath != "":
+			return fmt.Errorf("spec: service %q: volume mounted at %q must set exactly one of name or hostPath, not both", name, v.Path)
+		case v.HostPath != "":
+			if err := validateBindMountHostPath(v.HostPath); err != nil {
+				return fmt.Errorf("spec: service %q: %w", name, err)
+			}
+		case v.Name != "":
+			if v.ReadOnly {
+				return fmt.Errorf("spec: service %q: volume %q: readOnly is only meaningful alongside hostPath", name, v.Name)
+			}
+			if !nameLike.MatchString(v.Name) {
+				return fmt.Errorf("spec: service %q: volume name %q must be lowercase alphanumeric and hyphens, starting with a letter", name, v.Name)
+			}
+			if seenVolumeNames[v.Name] {
+				return fmt.Errorf("spec: service %q: duplicate volume name %q", name, v.Name)
+			}
+			seenVolumeNames[v.Name] = true
+		default:
+			// Unreachable while the JSON Schema's own oneOf (name xor
+			// hostPath) stays in sync with this, kept anyway since
+			// Validate is documented as safe to call on a hand-built Spec
+			// that never went through schema validation.
+			return fmt.Errorf("spec: service %q: volume mounted at %q must set either name or hostPath", name, v.Path)
 		}
-		if seenVolumeNames[v.Name] {
-			return fmt.Errorf("spec: service %q: duplicate volume name %q", name, v.Name)
-		}
-		seenVolumeNames[v.Name] = true
 		if seenVolumePaths[v.Path] {
 			return fmt.Errorf("spec: service %q: two volumes both mount %q", name, v.Path)
 		}

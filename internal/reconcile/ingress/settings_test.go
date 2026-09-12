@@ -196,9 +196,8 @@ func TestController_Reconcile_PlatformDomainRoute_ConflictsWithService_Skipped(t
 }
 
 // TestController_Reconcile_GetIngressSettingsError is the partial-
-// failure case this project's own testing standard requires for every
-// reconciler ("Every reconciler must have a test for the case where the
-// operation half-succeeded", CLAUDE.md): ListDesiredServices and
+// failure case every reconciler test must cover (a test for the case
+// where the operation half-succeeded): ListDesiredServices and
 // ListStaticSites both succeed, only the new GetIngressSettings call
 // fails. The whole reconcile must still fail (no route built with only
 // half the desired-state picture is safer than routing with a stale or

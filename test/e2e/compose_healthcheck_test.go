@@ -9,8 +9,8 @@
 // through the real ToDesiredServices translation, produces a readiness
 // probe strict enough to actually fail a deploy against a container that
 // never serves the declared health path. This is exactly the failure
-// mode CLAUDE.md section 10 names as the project's main risk: a health
-// check that silently stops being enforced.
+// mode this project treats as its main risk: a health check that
+// silently stops being enforced.
 package e2e
 
 import (
@@ -88,12 +88,13 @@ func TestComposeHealthcheck_Live_GatesDeploySuccess(t *testing.T) {
 			t.Error("condition Message is empty, want the probe's own failure reason surfaced")
 		}
 
-		// This is the exact failure mode CLAUDE.md section 10 calls out:
-		// the container the controller created is genuinely still
-		// running (it never became unhealthy, it simply never answers
-		// the declared path), so a caller that only checked "is
-		// something running" rather than Reconcile's own error and
-		// False condition would wrongly call this a successful deploy.
+		// This is the exact failure mode a deploy platform's worst
+		// failures come from: the container the controller created is
+		// genuinely still running (it never became unhealthy, it
+		// simply never answers the declared path), so a caller that
+		// only checked "is something running" rather than Reconcile's
+		// own error and False condition would wrongly call this a
+		// successful deploy.
 		target := application.ContainerName(serviceName, res.Tag, "")
 		state, err := runtime.InspectByName(ctx, target)
 		if err != nil {

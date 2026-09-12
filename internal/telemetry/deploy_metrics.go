@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Metric names for TASKS.md 2.1's remaining gap: deploy frequency and
+// Metric names for the remaining gap: deploy frequency and
 // build duration. Unlike every other metric in this store, neither comes
 // from a Docker stats poll (collector.go's sampleValues): a deploy or a
 // build is a discrete event, not a continuously observable resource, so

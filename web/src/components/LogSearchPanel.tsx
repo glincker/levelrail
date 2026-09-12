@@ -19,7 +19,7 @@ import {
 } from '../lib/timeRange'
 
 // Historical log search over GET /api/v1/apps/{name}/logs
-// (internal/api/logs.go, TASKS.md 2.3): a full-text query over entries
+// (internal/api/logs.go): a full-text query over entries
 // telemetry has already stored, distinct from the live SSE tail this
 // panel now sits alongside as the "Search" tab in
 // routes/apps/$name/logs.tsx (components/LiveLogViewer.tsx renders the

@@ -22,9 +22,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// This file: TASKS.md's Railpack integration, scoped to node, golang,
-// and java (see supportedRailpackProviders), per
-// docs-local/research/railpack-integration-decision.md. Railpack
+// This file: the Railpack integration, scoped to node, golang,
+// and java (see supportedRailpackProviders). Railpack
 // (github.com/railwayapp/railpack) is a real, embeddable Go library, not
 // a CLI wrapped by exec.Command: core.GenerateBuildPlan inspects a source
 // directory and returns Railpack's own build IR (a graph of named steps,
@@ -35,9 +34,8 @@ import (
 // path, built here, that hands BuildKit a marshaled llb.Definition
 // instead of a Dockerfile frontend, and carries the image config Railpack
 // computed as an exporter attribute since there's no Dockerfile FROM/CMD
-// for BuildKit to read it from otherwise. See the decision note for the
-// full evidence trail (a real third-party integration, unbindapp/
-// unbind-api, doing exactly this).
+// for BuildKit to read it from otherwise. A real third-party
+// integration, unbindapp/unbind-api, does exactly this.
 //
 // Everything below reuses the existing hijacked-/grpc BuildKit connection
 // (client.go's Client.bk) and the same relayProgress/loadImage helpers
@@ -83,9 +81,8 @@ func (r RailpackRequest) Validate() error {
 }
 
 // supportedRailpackProviders is this slice's entire scope: Node.js, Go,
-// and Java, per docs-local/research/railpack-integration-decision.md's
-// original node/golang recommendation plus Java added to unblock a
-// Spring Boot guided-picker option in the frontend. Verified against
+// and Java: node/golang was the original recommendation, with Java added
+// to unblock a Spring Boot guided-picker option in the frontend. Verified against
 // testdata/railpack-java-spring-boot, a real Spring Boot Maven project:
 // Railpack's own detection and GenerateBuildPlan/ConvertPlanToLLB both
 // confirmed correct for it (TestGenerateRailpackPlan/
@@ -343,6 +340,15 @@ func (c *Client) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 	if progress == nil {
 		progress = func(ProgressEvent) {}
 	}
+	return c.solveAndLoad(ctx, req.Tag, progress, func(solveCtx context.Context, out io.Writer) (*Result, error) {
+		return c.solveRailpack(solveCtx, req, out, progress)
+	})
+}
+
+// solveRailpack is solveDockerfile's Railpack counterpart: the same split
+// between solving and loading, so a dispatched build can export the tar
+// onto the wire instead (SolveRemote, remote.go).
+func (c *Client) solveRailpack(ctx context.Context, req RailpackRequest, out io.Writer, progress func(ProgressEvent)) (*Result, error) {
 	start := time.Now()
 
 	result, err := generateRailpackPlan(req)
@@ -350,22 +356,16 @@ func (c *Client) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 		return nil, err
 	}
 
-	pipeR, pipeW := io.Pipe()
-
-	def, solveOpt, err := newRailpackSolveOpt(ctx, result.Plan, req, pipeW)
+	def, solveOpt, err := newRailpackSolveOpt(ctx, result.Plan, req, nopWriteCloser{out})
 	if err != nil {
-		_ = pipeW.Close()
-		_ = pipeR.Close()
 		return nil, err
 	}
 
 	statusCh := make(chan *bkclient.SolveStatus)
-
 	eg, egCtx := errgroup.WithContext(ctx)
 
 	var solveResp *bkclient.SolveResponse
 	eg.Go(func() error {
-		defer func() { _ = pipeW.Close() }()
 		resp, err := c.bk.Solve(egCtx, def, *solveOpt, statusCh)
 		if err != nil {
 			return fmt.Errorf("build: railpack: solve %q: %w", req.Tag, err)
@@ -373,27 +373,13 @@ func (c *Client) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 		solveResp = resp
 		return nil
 	})
-
 	eg.Go(func() error {
 		relayProgress(statusCh, progress)
 		return nil
 	})
 
-	eg.Go(func() error {
-		defer func() { _ = pipeR.Close() }()
-		return loadImage(egCtx, c.docker, pipeR, req.Tag, progress)
-	})
-
 	if err := eg.Wait(); err != nil {
 		return nil, err
 	}
-
-	res := &Result{
-		Tag:      req.Tag,
-		Duration: time.Since(start),
-	}
-	if solveResp != nil {
-		res.ExporterResponse = solveResp.ExporterResponse
-	}
-	return res, nil
+	return newResult(req.Tag, start, solveResp), nil
 }

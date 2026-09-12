@@ -28,6 +28,7 @@ function fakeGitSourceResource(overrides: Record<string, unknown> = {}) {
     has_token: false,
     webhook_url: '/api/v1/webhooks/github/demo-app',
     preview_enabled: false,
+    post_pr_comments: false,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
     ...overrides,
@@ -58,13 +59,17 @@ function renderCard() {
 describe('PreviewEnvironmentsCard', () => {
   let fetchMock: ReturnType<typeof vi.fn>
   let previewEnabled: boolean
+  let postPRComments: boolean
   let gitSourceConnected: boolean
   let staleFixture: boolean
+  let ephemeralDatabasesFixture: unknown[]
 
   beforeEach(() => {
     previewEnabled = false
+    postPRComments = false
     gitSourceConnected = true
     staleFixture = false
+    ephemeralDatabasesFixture = []
     fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrlOf(input)
       const method = init?.method ?? 'GET'
@@ -73,12 +78,15 @@ describe('PreviewEnvironmentsCard', () => {
         if (!gitSourceConnected) {
           return Promise.resolve(fakeJsonResponse({ error: 'not found' }, 404))
         }
-        return Promise.resolve(fakeJsonResponse(fakeGitSourceResource({ preview_enabled: previewEnabled }), 200))
+        return Promise.resolve(
+          fakeJsonResponse(fakeGitSourceResource({ preview_enabled: previewEnabled, post_pr_comments: postPRComments }), 200),
+        )
       }
       if (url === '/api/v1/apps/demo-app/preview-settings' && method === 'PUT') {
-        const body = JSON.parse(init?.body as string) as { enabled: boolean }
-        previewEnabled = body.enabled
-        return Promise.resolve(fakeJsonResponse({ enabled: body.enabled }, 200))
+        const body = JSON.parse(init?.body as string) as { enabled?: boolean; post_pr_comments?: boolean }
+        if (body.enabled !== undefined) previewEnabled = body.enabled
+        if (body.post_pr_comments !== undefined) postPRComments = body.post_pr_comments
+        return Promise.resolve(fakeJsonResponse({ enabled: previewEnabled, post_pr_comments: postPRComments }, 200))
       }
       if (url === '/api/v1/apps/demo-app/previews' && method === 'GET') {
         return Promise.resolve(
@@ -95,6 +103,7 @@ describe('PreviewEnvironmentsCard', () => {
                     created_at: '2026-01-01T00:00:00Z',
                     updated_at: '2026-01-01T00:00:00Z',
                     stale: staleFixture,
+                    ephemeral_databases: ephemeralDatabasesFixture,
                   },
                 ]
               : [],
@@ -166,6 +175,48 @@ describe('PreviewEnvironmentsCard', () => {
     })
   })
 
+  it('shows an ephemeral database row with its live status', async () => {
+    previewEnabled = true
+    ephemeralDatabasesFixture = [
+      {
+        source_key: 'main',
+        database_name: 'demo-app-pr-42-db-main',
+        engine: 'postgres',
+        version: '16',
+        status: 'provisioned',
+        ready: { label: 'Healthy', variant: 'success' },
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+    renderCard()
+
+    await screen.findByText('PR #42')
+    expect(screen.getByText('demo-app-pr-42-db-main')).toBeInTheDocument()
+    expect(screen.getByText('Healthy')).toBeInTheDocument()
+  })
+
+  it('shows a teardown-failed badge for an ephemeral database that could not be removed', async () => {
+    previewEnabled = true
+    ephemeralDatabasesFixture = [
+      {
+        source_key: 'main',
+        database_name: 'demo-app-pr-42-db-main',
+        engine: 'postgres',
+        version: '16',
+        status: 'teardown_failed',
+        status_reason: 'remove container: engine temporarily unavailable',
+        ready: { label: 'Healthy', variant: 'success' },
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+    renderCard()
+
+    await screen.findByText('PR #42')
+    expect(screen.getByText('Teardown failed')).toBeInTheDocument()
+  })
+
   it('shows a stale badge and sweep button for a stale preview, and sweeps on click', async () => {
     previewEnabled = true
     staleFixture = true
@@ -192,5 +243,38 @@ describe('PreviewEnvironmentsCard', () => {
     await screen.findByText('PR #42')
     expect(screen.queryByText('Stale')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /sweep stale previews/i })).not.toBeInTheDocument()
+  })
+
+  it('hides the PR comments toggle until previews are enabled', async () => {
+    renderCard()
+
+    await screen.findByRole('switch', { name: 'Preview environments enabled' })
+    expect(
+      screen.queryByRole('switch', { name: 'Preview environment PR comments and status checks enabled' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('toggles PR comments and status checks independently of the enabled toggle', async () => {
+    previewEnabled = true
+    const user = userEvent.setup()
+    renderCard()
+
+    const toggle = await screen.findByRole('switch', {
+      name: 'Preview environment PR comments and status checks enabled',
+    })
+    await user.click(toggle)
+
+    await waitFor(() => {
+      const call = fetchMock.mock.calls.find(([input, init]) =>
+        requestUrlOf(input as RequestInfo) === '/api/v1/apps/demo-app/preview-settings' && (init as RequestInit)?.method === 'PUT',
+      )
+      expect(call).toBeDefined()
+      const body = JSON.parse((call?.[1] as RequestInit).body as string) as {
+        enabled?: boolean
+        post_pr_comments?: boolean
+      }
+      expect(body.post_pr_comments).toBe(true)
+      expect(body.enabled).toBeUndefined()
+    })
   })
 })

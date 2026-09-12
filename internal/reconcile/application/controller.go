@@ -1,5 +1,5 @@
 // Package application implements the declarative app spec's service
-// contract and TASKS.md 1.3's application controller: the
+// contract and the application controller: the
 // reconcile.Controller that converges a
 // real, store-backed desired service to a running container, replacing
 // nginxdemo's hardcoded desired state with the real thing.
@@ -14,7 +14,7 @@
 // switching itself (updating Caddy to point at the new container) is
 // deliberately not this controller's job: this codebase's reconciler
 // pattern is a reconcile loop per resource type, and ingress is its own
-// resource type (TASKS.md 1.6, not yet wired in). This controller's
+// resource type (not yet wired in). This controller's
 // contract with that future ingress controller is simple: whichever
 // container currently exists and is running for a service is the one
 // meant to receive traffic.
@@ -26,6 +26,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -47,7 +48,7 @@ type ServiceStore interface {
 }
 
 // SecretResolver is the narrow surface this controller needs from
-// internal/secrets.Manager (TASKS.md 1.7), so tests can fake it without
+// internal/secrets.Manager, so tests can fake it without
 // a real master key or database. *secrets.Manager satisfies this
 // structurally. Resolve's plaintext return value is used exactly once,
 // merged into a container's env map immediately before
@@ -117,7 +118,7 @@ type EnvironmentEnvLister interface {
 }
 
 // DeployRecorder is the narrow surface this controller needs to record
-// TASKS.md 2.1's deploy-frequency metric. *telemetry.DB satisfies this
+// the deploy-frequency metric. *telemetry.DB satisfies this
 // structurally; not imported directly, same reasoning ServiceStore/
 // SecretResolver above already establish. RecordDeploy is only ever
 // called on a real deploy cutover (justDeployed below, the "Deployed"
@@ -128,7 +129,36 @@ type DeployRecorder interface {
 	RecordDeploy(ctx context.Context, serviceName string, at time.Time) error
 }
 
+// HookRunRecorder is the narrow surface this controller needs to persist
+// a pre/post-deploy hook's outcome (store.ServiceHooks,
+// migrations/0083_service_hook_runs.sql), so GET
+// /api/v1/apps/{name}/hook-runs has something to show. *store.DB
+// satisfies this structurally. nil is valid: a hook still executes and
+// still gates the deploy exactly the same way, its outcome (this pass)
+// is just never persisted for later viewing, the same "optional
+// persistence, mandatory behavior" split DeployRecorder above already
+// makes for the deploy-frequency metric.
+type HookRunRecorder interface {
+	UpsertHookRun(ctx context.Context, run store.HookRun) error
+}
+
 const defaultReadyBudget = 60 * time.Second
+
+// defaultHookTimeout bounds how long a single pre/post-deploy hook
+// command may run before this controller gives up on it and treats it as
+// a failure. Considerably longer than defaultReadyBudget: a database
+// migration is exactly the kind of command an operator would put here,
+// and those can legitimately take minutes on a large table, unlike an
+// HTTP readiness probe.
+const defaultHookTimeout = 5 * time.Minute
+
+// hookOutputCap bounds how much of a hook command's output this
+// controller holds in memory and persists via HookRunRecorder, the same
+// "an unbounded buffer fed by a command this package doesn't control is
+// not acceptable" reasoning internal/api's own exec endpoint
+// (cappedWriter, internal/api/exec.go) already applies to the identical
+// docker.Runtime.Exec stream.
+const hookOutputCap = 64 * 1024
 
 // Deploy strategies this controller actually implements. Values match
 // internal/spec's StrategyRolling/StrategyRecreate/StrategyBlueGreen
@@ -157,10 +187,13 @@ type Controller struct {
 	storageTargets StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
 	projectEnv     ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
 	orgEnv         OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
-	environmentEnv EnvironmentEnvLister     // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
+	environmentEnv EnvironmentEnvLister    // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
 	networkPrefix  string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
 	registryCreds  RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
 	databases      DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
+	hookRuns       HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
+	hookTimeout    time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
+	liveness       *LivenessTracker        // per-container liveness failure counts, in memory only, see LivenessTracker
 }
 
 // Option configures optional Controller behavior.
@@ -190,7 +223,7 @@ func WithSecretResolver(r SecretResolver) Option {
 	return func(ctrl *Controller) { ctrl.secretResolver = r }
 }
 
-// WithDeployRecorder enables recording TASKS.md 2.1's deploy_count
+// WithDeployRecorder enables recording the deploy_count
 // metric every time Reconcile actually performs a deploy cutover.
 // Without one configured (the default), Reconcile behaves exactly as
 // before, deploys just aren't measured.
@@ -291,6 +324,34 @@ func WithNetworkPrefix(prefix string) Option {
 	return func(ctrl *Controller) { ctrl.networkPrefix = prefix }
 }
 
+// WithHookRunRecorder enables persisting every pre/post-deploy hook run's
+// outcome. Without one configured (the default), configured hooks still
+// execute and still gate the deploy exactly the same way; only the
+// persisted-for-later-viewing record is skipped.
+func WithHookRunRecorder(r HookRunRecorder) Option {
+	return func(ctrl *Controller) { ctrl.hookRuns = r }
+}
+
+// WithLivenessTracker shares one liveness failure history across every
+// controller a caller builds, which is what makes the failure threshold
+// mean anything: without it each Controller keeps its own, and a caller
+// that rebuilds its controllers every reconcile pass (cmd/levelrail)
+// would never count past a single failure.
+func WithLivenessTracker(t *LivenessTracker) Option {
+	return func(ctrl *Controller) {
+		if t != nil {
+			ctrl.liveness = t
+		}
+	}
+}
+
+// WithHookTimeout overrides how long a single pre/post-deploy hook
+// command may run before it's treated as failed. Defaults to
+// defaultHookTimeout.
+func WithHookTimeout(d time.Duration) Option {
+	return func(ctrl *Controller) { ctrl.hookTimeout = d }
+}
+
 // New builds a Controller for serviceName.
 func New(serviceName string, svcStore ServiceStore, runtime docker.Runtime, opts ...Option) *Controller {
 	ctrl := &Controller{
@@ -299,6 +360,8 @@ func New(serviceName string, svcStore ServiceStore, runtime docker.Runtime, opts
 		runtime:     runtime,
 		httpClient:  http.DefaultClient,
 		readyBudget: defaultReadyBudget,
+		hookTimeout: defaultHookTimeout,
+		liveness:    NewLivenessTracker(),
 	}
 	for _, opt := range opts {
 		opt(ctrl)
@@ -374,6 +437,14 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 }
 
+// Teardown stops and removes every container this controller owns.
+// Callers must call it themselves right after deleting desired state:
+// Reconcile treats ErrServiceNotFound as "not deployed yet," not "stop
+// everything," so a deleted service is never reconciled again otherwise.
+func (c *Controller) Teardown(ctx context.Context) error {
+	return c.removeStale(ctx, nil)
+}
+
 // reconcileBlueGreen is today's original single-replica shape (this
 // package's own doc comment: create new alongside old, wait for
 // readiness, then remove every other container), generalized to
@@ -386,8 +457,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 // serving.
 func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
 	anyDeployed := false
-	for _, target := range targets {
-		deployed, err := c.ensureReplicaRunning(ctx, target, desired)
+	for i, target := range targets {
+		deployed, err := c.ensureReplicaRunning(ctx, target, i, desired)
 		if err != nil {
 			return notReady(deployed.reason, err), fmt.Errorf("application/%s: %w", c.serviceName, err)
 		}
@@ -411,7 +482,7 @@ func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, d
 		}}}, fmt.Errorf("application/%s: cleanup stale containers: %w", c.serviceName, err)
 	}
 
-	return c.finishReconcile(ctx, anyDeployed)
+	return c.finishReconcile(ctx, targets, desired, anyDeployed)
 }
 
 // reconcileRecreate is the stop-everything-then-start-fresh strategy:
@@ -425,7 +496,7 @@ func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, d
 // naive "always stop everything, then start everything" implementation
 // would tear down and restart a perfectly healthy, already-converged
 // replica set on every single resync tick (every reconcile.Engine pass,
-// TASKS.md 1.3's own resyncInterval), which is a permanent recreate-loop
+// its own resyncInterval), which is a permanent recreate-loop
 // bug, not a strategy. Reconcile must be idempotent (this codebase's own
 // reconciler contract), so this only ever stops anything when the
 // desired target set genuinely differs from what is currently running.
@@ -448,7 +519,7 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 	}
 
 	if allRunning && len(stale) == 0 {
-		return ready("AlreadyRunning"), nil
+		return c.steadyStateResult(ctx, targets, desired)
 	}
 
 	// Genuinely converging: stop and remove every existing container for
@@ -463,14 +534,14 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 		return notReady("CleanupFailed", err), fmt.Errorf("application/%s: stop existing containers: %w", c.serviceName, err)
 	}
 
-	for _, target := range targets {
-		deployed, err := c.ensureReplicaRunning(ctx, target, desired)
+	for i, target := range targets {
+		deployed, err := c.ensureReplicaRunning(ctx, target, i, desired)
 		if err != nil {
 			return notReady(deployed.reason, err), fmt.Errorf("application/%s: %w", c.serviceName, err)
 		}
 	}
 
-	return c.finishReconcile(ctx, true)
+	return c.finishReconcile(ctx, targets, desired, true)
 }
 
 // reconcileRolling replaces targets one at a time: ensure the next
@@ -516,8 +587,8 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 // strategies, not scoped to this one.
 func (c *Controller) reconcileRolling(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
 	anyDeployed := false
-	for _, target := range targets {
-		deployed, err := c.ensureReplicaRunning(ctx, target, desired)
+	for i, target := range targets {
+		deployed, err := c.ensureReplicaRunning(ctx, target, i, desired)
 		if err != nil {
 			return notReady(deployed.reason, err), fmt.Errorf("application/%s: %w", c.serviceName, err)
 		}
@@ -541,16 +612,39 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 		}}}, fmt.Errorf("application/%s: cleanup stale containers: %w", c.serviceName, err)
 	}
 
-	return c.finishReconcile(ctx, anyDeployed)
+	return c.finishReconcile(ctx, targets, desired, anyDeployed)
 }
 
 // finishReconcile records the deploy metric (if a real cutover happened
 // this pass) and returns the final Ready condition, the shared tail
 // every strategy's reconcile* method ends with.
-func (c *Controller) finishReconcile(ctx context.Context, justDeployed bool) (reconcile.Result, error) {
+func (c *Controller) finishReconcile(ctx context.Context, targets []string, desired *store.DesiredService, justDeployed bool) (reconcile.Result, error) {
 	if !justDeployed {
-		return ready("AlreadyRunning"), nil
+		return c.steadyStateResult(ctx, targets, desired)
 	}
+
+	// Every target was just (re)started and proven ready, so its
+	// liveness history belongs to an instance that no longer exists.
+	c.liveness.resetAll(c.serviceName, targets, time.Now())
+
+	// Runs once per deploy (this codebase's own DeployRecorder below
+	// already treats "any target freshly (re)created this pass" as one
+	// deploy event regardless of cause, image change or scale change
+	// alike; the post-deploy hook follows that same, already-established
+	// signal rather than inventing a second, narrower one), against
+	// targets[0]: by this point every target is confirmed running and
+	// ready, and any stale container has already been removed, so
+	// targets[0] is the service's genuinely cut-over container. Unlike a
+	// pre-deploy hook failure (ensureReplicaRunning's own rollback), a
+	// post-deploy hook failure never undoes a cutover that already
+	// succeeded: see runPostDeployHookIfConfigured's own doc comment.
+	if err := c.runPostDeployHookIfConfigured(ctx, targets, desired); err != nil {
+		return reconcile.Result{Conditions: []reconcile.Condition{{
+			Type: "Ready", Status: reconcile.ConditionTrue,
+			Reason: "PostDeployHookFailed", Message: err.Error(),
+		}}}, fmt.Errorf("application/%s: post-deploy hook: %w", c.serviceName, err)
+	}
+
 	// Best-effort, secondary to the deploy itself: every target is
 	// already confirmed running (and ready, and stale ones already
 	// cleaned up) by this point, so a metrics-store hiccup is surfaced
@@ -584,19 +678,29 @@ type replicaOutcome struct {
 // behavior, extracted so both reconcileBlueGreen and reconcileRecreate
 // share exactly one implementation of it rather than two copies that
 // could drift.
-func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, desired *store.DesiredService) (replicaOutcome, error) {
+func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, index int, desired *store.DesiredService) (replicaOutcome, error) {
 	state, err := c.runtime.InspectByName(ctx, target)
 	if err != nil {
 		return replicaOutcome{reason: "InspectFailed"}, fmt.Errorf("inspect %q: %w", target, err)
 	}
 
 	justDeployed := false
+	// created is narrower than justDeployed: true only when this pass
+	// actually built a brand new container for target (createAndStart
+	// ran), never when an existing, never-destroyed container merely
+	// needed an ordinary Start. The pre-deploy hook keys off created, not
+	// justDeployed: a container recovering from a crash (still the same
+	// instance, never removed) is not a new deploy, and re-running a
+	// migration on every crash restart would be wrong even though the
+	// container transitions to Running either way.
+	created := false
 	switch {
 	case state == nil:
 		if err := c.createAndStart(ctx, target, desired); err != nil {
 			return replicaOutcome{reason: "CreateFailed"}, err
 		}
 		justDeployed = true
+		created = true
 	case !state.Running:
 		// The container's own network can go missing between reconcile
 		// passes (an operator running docker network prune, or any other
@@ -622,6 +726,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, de
 			if err := c.createAndStart(ctx, target, desired); err != nil {
 				return replicaOutcome{reason: "CreateFailed"}, fmt.Errorf("restart %q: start failed (%w), recreated instead: %w", target, startErr, err)
 			}
+			created = true
 		}
 		justDeployed = true
 	}
@@ -639,6 +744,32 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, de
 	if state == nil {
 		return replicaOutcome{reason: "VanishedAfterStart"}, fmt.Errorf("%q not found immediately after starting it", target)
 	}
+
+	// Runs once per deploy, only against the primary replica (index 0):
+	// see this method's own "created is narrower than justDeployed"
+	// comment above for why a genuinely new container is the trigger, and
+	// runPreDeployHook's own doc comment for why index 0 alone runs it
+	// (a migration must not run once per replica). Sequenced before
+	// waitReady deliberately: an app whose readiness depends on schema a
+	// migration hasn't applied yet would otherwise never pass its own
+	// readiness probe.
+	if created && index == 0 {
+		if err := c.runPreDeployHook(ctx, state.ID, desired); err != nil {
+			// A failing pre-deploy hook must block cutover, so this
+			// container never becomes the one a later reconcile pass (or
+			// internal/reconcile/ingress's own, independent
+			// ContainerName-based lookup) treats as this service's live
+			// target: remove it rather than leave it running to be picked
+			// up. Best-effort: if cleanup itself fails, the broken
+			// container survives, but Reconcile still reports failure
+			// (this method's own error return) so it's never mistaken for
+			// a healthy deploy.
+			_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)
+			_ = c.runtime.Remove(ctx, state.ID, true)
+			return replicaOutcome{reason: "PreDeployHookFailed"}, fmt.Errorf("pre-deploy hook: %w", err)
+		}
+	}
+
 	if err := c.waitReady(ctx, state, desired); err != nil {
 		return replicaOutcome{reason: "ReadinessFailed"}, err
 	}
@@ -911,6 +1042,16 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, dbName, field str
 	host := database.ContainerName(dbName)
 	port, _ := database.ContainerPort(desiredDB.Engine) // ok already confirmed by SupportsField above
 
+	tlsEnabled, err := c.databaseTLSEnabled(ctx, dbName, desiredDB.Engine)
+	if err != nil {
+		return "", err
+	}
+	if tlsEnabled {
+		if tlsPort, ok := database.TLSContainerPort(desiredDB.Engine); ok {
+			port = tlsPort
+		}
+	}
+
 	switch field {
 	case "host":
 		return host, nil
@@ -923,10 +1064,28 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, dbName, field str
 	case "password":
 		return c.resolveDatabasePassword(ctx, dbName, desiredDB.Engine)
 	case "url":
-		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port)
+		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, tlsEnabled)
 	default:
 		return "", fmt.Errorf("unsupported database field %q", field)
 	}
+}
+
+// databaseTLSEnabled reports whether dbName's managed database is
+// currently reconciled with TLS (internal/reconcile/database's WithTLS):
+// true exactly when database.SupportsTLS(engine) and the same TLS
+// certificate cmd/levelrail's tlsMaterialFor persists has actually been
+// generated, checked the same way resolveDatabasePassword already checks
+// for a generated password, via SecretResolver against the shared
+// per-database secrets keying database.TLSCertEnvKey establishes.
+func (c *Controller) databaseTLSEnabled(ctx context.Context, dbName, engine string) (bool, error) {
+	if !database.SupportsTLS(engine) || c.secretResolver == nil {
+		return false, nil
+	}
+	exists, err := c.secretResolver.Exists(ctx, dbName, database.TLSCertEnvKey)
+	if err != nil {
+		return false, fmt.Errorf("check tls material for database %q: %w", dbName, err)
+	}
+	return exists, nil
 }
 
 func (c *Controller) resolveDatabasePassword(ctx context.Context, dbName, engine string) (string, error) {
@@ -953,9 +1112,24 @@ func (c *Controller) resolveDatabasePassword(ctx context.Context, dbName, engine
 // identical to store's engine identifier (store.EnginePostgres is
 // "postgres", store.EngineMongoDB is "mongodb", and so on), so no
 // separate scheme mapping is needed there.
-func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, host string, port int) (string, error) {
+//
+// tlsEnabled flips Redis's scheme to "rediss" (its own client-library
+// convention for "dial with TLS") and appends Postgres' own
+// "?sslmode=require" query param: both mean "encrypt, don't verify the
+// certificate's issuer" to mainstream client libraries with zero
+// additional app-side configuration, matching the self-signed,
+// no-shared-CA certificate database.WithTLS actually configures the
+// server with (see internal/reconcile/database's TLSMaterial doc
+// comment). databaseTLSEnabled only ever passes true for an engine
+// database.SupportsTLS agrees on, so no other engine reaches either
+// branch below with tlsEnabled set.
+func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, host string, port int, tlsEnabled bool) (string, error) {
 	if engine == store.EngineRedis || engine == store.EngineKeyDB || engine == store.EngineDragonfly {
-		return fmt.Sprintf("redis://%s:%d", host, port), nil
+		scheme := "redis"
+		if tlsEnabled {
+			scheme = "rediss"
+		}
+		return fmt.Sprintf("%s://%s:%d", scheme, host, port), nil
 	}
 	password, err := c.resolveDatabasePassword(ctx, dbName, engine)
 	if err != nil {
@@ -966,6 +1140,11 @@ func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, hos
 		User:   url.UserPassword(dbName, password),
 		Host:   fmt.Sprintf("%s:%d", host, port),
 		Path:   "/" + dbName,
+	}
+	if tlsEnabled {
+		q := url.Values{}
+		q.Set("sslmode", "require")
+		u.RawQuery = q.Encode()
 	}
 	return u.String(), nil
 }
@@ -1070,6 +1249,143 @@ func (c *Controller) resolveStorageEnv(ctx context.Context, targetID string) (ma
 		env[envKeyS3Region] = target.Region
 	}
 	return env, nil
+}
+
+// runPreDeployHook runs desired.Hooks.PreDeploy (if configured) inside
+// containerID via runHook. See ensureReplicaRunning's own call site for
+// the full timing contract; this method is only ever invoked there, for
+// index 0 of a genuinely new container.
+func (c *Controller) runPreDeployHook(ctx context.Context, containerID string, desired *store.DesiredService) error {
+	if desired.Hooks == nil || desired.Hooks.PreDeploy == "" {
+		return nil
+	}
+	return c.runHook(ctx, containerID, store.HookTypePreDeploy, desired.Hooks.PreDeploy)
+}
+
+// runPostDeployHookIfConfigured runs desired.Hooks.PostDeploy (if
+// configured) inside targets[0], the primary replica, once per deploy,
+// after every target is confirmed running and ready and every stale
+// container has already been removed (finishReconcile's own call site):
+// the full cutover this pass performs has already succeeded by the time
+// this runs. A failure here is therefore never rolled back the way a
+// pre-deploy hook failure is: the healthy, already-serving container(s)
+// stay up, and the failure only ever downgrades the returned Reason
+// (finishReconcile's own PostDeployHookFailed branch), not Status,
+// matching this codebase's existing "the important fact, a healthy set
+// is serving, is still true" tolerance (RunningStaleCleanupFailed/
+// DeployedMetricRecordFailed above). In keeping with this project's bias
+// toward surfacing a boring problem loudly rather than swallowing it,
+// this failure still surfaces: the returned error propagates through
+// reconcile.Engine's own logging, and the outcome is persisted via
+// hookRuns for GET /api/v1/apps/{name}/hook-runs, it just never undoes a
+// cutover that already succeeded.
+func (c *Controller) runPostDeployHookIfConfigured(ctx context.Context, targets []string, desired *store.DesiredService) error {
+	if desired.Hooks == nil || desired.Hooks.PostDeploy == "" {
+		return nil
+	}
+	primary := targets[0]
+	state, err := c.runtime.InspectByName(ctx, primary)
+	if err != nil {
+		return fmt.Errorf("inspect %q for post-deploy hook: %w", primary, err)
+	}
+	if state == nil || !state.Running {
+		return fmt.Errorf("%q is not running, cannot run post-deploy hook", primary)
+	}
+	return c.runHook(ctx, state.ID, store.HookTypePostDeploy, desired.Hooks.PostDeploy)
+}
+
+// runHook execs command inside containerID via a shell ("sh", "-c",
+// command), so an app.yaml hook string can use ordinary shell syntax
+// (&&, pipes, env expansion) the same way execRequest's own doc comment
+// (internal/api/exec.go) documents that same "sh", "-c" escape hatch
+// for, without every hook author needing to pre-split their command into
+// argv themselves. Bounded by c.hookTimeout; output up to hookOutputCap
+// plus (on a nonzero exit) stderr are persisted via hookRuns if
+// configured, always best-effort: see recordHookRun's own doc comment
+// for why a persistence failure never changes the outcome this method
+// itself reports.
+func (c *Controller) runHook(ctx context.Context, containerID, hookType, command string) error {
+	hookCtx, cancel := context.WithTimeout(ctx, c.hookTimeout)
+	defer cancel()
+
+	rc, err := c.runtime.Exec(hookCtx, containerID, []string{"sh", "-c", command})
+	if err != nil {
+		c.recordHookRun(ctx, hookType, command, 0, "", err)
+		return fmt.Errorf("start hook: %w", err)
+	}
+	defer func() {
+		_ = rc.Close()
+	}()
+
+	buf := &cappedBuffer{limit: hookOutputCap}
+	_, readErr := io.Copy(buf, rc)
+
+	var execErr *docker.ExecExitError
+	switch {
+	case readErr == nil:
+		c.recordHookRun(ctx, hookType, command, 0, buf.String(), nil)
+		return nil
+	case errors.As(readErr, &execErr):
+		output := buf.String()
+		if execErr.Stderr != "" {
+			output += "\n" + execErr.Stderr
+		}
+		c.recordHookRun(ctx, hookType, command, execErr.ExitCode, output, readErr)
+		return fmt.Errorf("exited %d: %s", execErr.ExitCode, execErr.Stderr)
+	default:
+		c.recordHookRun(ctx, hookType, command, 0, buf.String(), readErr)
+		return fmt.Errorf("read output: %w", readErr)
+	}
+}
+
+// recordHookRun persists run's outcome via hookRuns, if configured.
+// Best-effort: a persistence hiccup here must never change whether the
+// hook itself is treated as having passed or failed, that outcome is
+// already fixed by runHook's own return value by the time this is
+// called, the same "one failure must not mask another, unrelated one"
+// shape reconcileRolling's own per-step retirement failure (`_ =
+// c.removeContainers(...)`) already tolerates in this file.
+func (c *Controller) recordHookRun(ctx context.Context, hookType, command string, exitCode int, output string, hookErr error) {
+	if c.hookRuns == nil {
+		return
+	}
+	_ = c.hookRuns.UpsertHookRun(ctx, store.HookRun{
+		ServiceName: c.serviceName,
+		HookType:    hookType,
+		Command:     command,
+		ExitCode:    exitCode,
+		Success:     hookErr == nil,
+		Output:      output,
+		RanAt:       time.Now(),
+	})
+}
+
+// cappedBuffer accumulates up to limit bytes and silently discards the
+// rest while still reporting every Write as fully successful, the same
+// contract internal/api/exec.go's own cappedWriter establishes for the
+// identical "an unbounded buffer fed by a command this package doesn't
+// control is not acceptable" reason; kept as this package's own
+// unexported copy rather than an exported one there, since the two live
+// in different packages with no shared internal one to hang a common
+// helper off of.
+type cappedBuffer struct {
+	buf   []byte
+	limit int
+}
+
+func (b *cappedBuffer) Write(p []byte) (int, error) {
+	if remaining := b.limit - len(b.buf); remaining > 0 {
+		if len(p) > remaining {
+			b.buf = append(b.buf, p[:remaining]...)
+		} else {
+			b.buf = append(b.buf, p...)
+		}
+	}
+	return len(p), nil
+}
+
+func (b *cappedBuffer) String() string {
+	return string(b.buf)
 }
 
 // waitReady gates a freshly (re)started container on its readiness
@@ -1195,7 +1511,7 @@ const hashLen = 8
 // image produce the same name (a genuine no-op redeploy correctly finds
 // nothing to do); two different images always produce different names
 // (so both can exist side by side during a cutover). Exported so the
-// ingress controller (internal/reconcile/ingress, TASKS.md 1.6) can
+// ingress controller (internal/reconcile/ingress) can
 // derive the exact same name to find a service's currently active
 // container, without reimplementing this hash logic a second time and
 // risking the two drifting apart.
@@ -1328,6 +1644,12 @@ func toContainerSpec(name string, desired *store.DesiredService) docker.Containe
 		Env:    desired.Env,
 		Labels: desired.Labels,
 	}
+	if len(desired.Command) > 0 {
+		spec.Command = desired.Command
+	}
+	if len(desired.Entrypoint) > 0 {
+		spec.Entrypoint = desired.Entrypoint
+	}
 	if desired.Port != 0 {
 		binding := docker.PortBinding{ContainerPort: desired.Port}
 		if desired.HostPort != nil {
@@ -1346,12 +1668,27 @@ func toContainerSpec(name string, desired *store.DesiredService) docker.Containe
 	for _, v := range desired.Volumes {
 		spec.Volumes = append(spec.Volumes, docker.VolumeMount{Name: v.Name, ContainerPath: v.ContainerPath})
 	}
+	for _, m := range desired.BindMounts {
+		spec.BindMounts = append(spec.BindMounts, docker.BindMount{HostPath: m.HostPath, ContainerPath: m.ContainerPath, ReadOnly: m.ReadOnly})
+	}
 	return spec
 }
 
 func ready(reason string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
 		Type: "Ready", Status: reconcile.ConditionTrue, Reason: reason,
+	}}}
+}
+
+// readyWithDetail is ready plus err's text as the condition Message:
+// still serving, but with something an operator should see.
+func readyWithDetail(reason string, err error) reconcile.Result {
+	msg := ""
+	if err != nil {
+		msg = err.Error()
+	}
+	return reconcile.Result{Conditions: []reconcile.Condition{{
+		Type: "Ready", Status: reconcile.ConditionTrue, Reason: reason, Message: msg,
 	}}}
 }
 

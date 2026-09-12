@@ -74,9 +74,9 @@ scope, but gated on Docker Compose support landing first:
 
 ## Consequences
 
-- Section 2 of `CLAUDE.md` now marks the "no large template catalog"
-  bullet as reversed, pointing here, rather than deleting it outright:
-  the original reasoning (avoid stale, untested templates) still
+- The project's own non-goals list now marks the "no large template
+  catalog" bullet as reversed, pointing here, rather than deleting it
+  outright: the original reasoning (avoid stale, untested templates) still
   matters and should inform how the real catalog gets imported
   (curated, tested, not a blind bulk copy), even though the "don't do
   it at all" conclusion no longer holds.

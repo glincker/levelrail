@@ -52,20 +52,35 @@ const (
 // NotifyKind selects the notification payload shape (notify.go).
 type NotifyKind string
 
-// The eight payload shapes NewNotifier knows how to build; an unknown or
-// empty NotifyKind falls back to NotifyGeneric. NotifyEmail is the one
+// The seventeen payload shapes NewNotifier knows how to build; an unknown
+// or empty NotifyKind falls back to NotifyGeneric. NotifyEmail is the one
 // exception to "NotifyURL is a webhook URL": see emailNotifier's doc
 // comment in notify.go. NotifyPagerDuty is another: NotifyURL there
 // holds a routing key, not a URL, per notifyPagerDuty's own comment.
+// NotifyResend is a third: it needs both an API key and a destination
+// address, so NotifyURL there packs both as query parameters against a
+// fixed endpoint, the same convention NotifyPushover already uses for
+// its own two credentials; see parseResendCreds in notify.go.
+// NotifyOpsgenie is a fourth: it needs only an API key, packed the same
+// way against its own fixed endpoint; see parseOpsgenieCreds in notify.go.
 const (
-	NotifyGeneric   NotifyKind = "generic"
-	NotifySlack     NotifyKind = "slack"
-	NotifyDiscord   NotifyKind = "discord"
-	NotifyTelegram  NotifyKind = "telegram"
-	NotifyEmail     NotifyKind = "email"
-	NotifyPushover  NotifyKind = "pushover"
-	NotifyPagerDuty NotifyKind = "pagerduty"
-	NotifyTeams     NotifyKind = "teams"
+	NotifyGeneric    NotifyKind = "generic"
+	NotifySlack      NotifyKind = "slack"
+	NotifyDiscord    NotifyKind = "discord"
+	NotifyTelegram   NotifyKind = "telegram"
+	NotifyEmail      NotifyKind = "email"
+	NotifyPushover   NotifyKind = "pushover"
+	NotifyPagerDuty  NotifyKind = "pagerduty"
+	NotifyTeams      NotifyKind = "teams"
+	NotifyResend     NotifyKind = "resend"
+	NotifyNtfy       NotifyKind = "ntfy"
+	NotifyGotify     NotifyKind = "gotify"
+	NotifyMattermost NotifyKind = "mattermost"
+	NotifyLark       NotifyKind = "lark"
+	NotifyRocketChat NotifyKind = "rocketchat"
+	NotifyOpsgenie   NotifyKind = "opsgenie"
+	NotifyWebex      NotifyKind = "webex"
+	NotifyGoogleChat NotifyKind = "googlechat"
 )
 
 // Rule is one alert rule: either a threshold check (Kind ==
@@ -241,7 +256,7 @@ func (db *DB) ListEnabledRules(ctx context.Context) ([]Rule, error) {
 
 // ListRulesForResource returns every rule scoped to resourceID, ordered
 // by name, regardless of enabled state. internal/api's alert-rule
-// handlers (TASKS.md 2.5) use this to list only one app's own rules
+// handlers use this to list only one app's own rules
 // rather than every rule in the database; alert_rules already carries
 // idx_alert_rules_resource (migrations/0001_alert_rules.sql) for
 // exactly this lookup.

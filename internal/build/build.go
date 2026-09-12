@@ -90,24 +90,28 @@ func (c *Client) Build(ctx context.Context, req Request, progress func(ProgressE
 	if progress == nil {
 		progress = func(ProgressEvent) {}
 	}
+	return c.solveAndLoad(ctx, req.Tag, progress, func(solveCtx context.Context, out io.Writer) (*Result, error) {
+		return c.solveDockerfile(solveCtx, req, c.cache, out, progress)
+	})
+}
+
+// solveDockerfile runs req's dockerfile.v0 solve and writes the resulting
+// docker-save tar to out, without loading it anywhere. Split out of Build
+// so a build dispatched to this node from a control plane can export the
+// same tar onto the wire instead (SolveRemote, remote.go).
+func (c *Client) solveDockerfile(ctx context.Context, req Request, cache CacheConfig, out io.Writer, progress func(ProgressEvent)) (*Result, error) {
 	start := time.Now()
 
-	pipeR, pipeW := io.Pipe()
-
-	solveOpt, err := newSolveOpt(req, c.cache, pipeW)
+	solveOpt, err := newSolveOpt(req, cache, nopWriteCloser{out})
 	if err != nil {
-		_ = pipeW.Close()
-		_ = pipeR.Close()
 		return nil, err
 	}
 
 	statusCh := make(chan *bkclient.SolveStatus)
-
 	eg, egCtx := errgroup.WithContext(ctx)
 
 	var solveResp *bkclient.SolveResponse
 	eg.Go(func() error {
-		defer func() { _ = pipeW.Close() }()
 		resp, err := c.bk.Solve(egCtx, nil, *solveOpt, statusCh)
 		if err != nil {
 			return fmt.Errorf("build: solve %q: %w", req.Tag, err)
@@ -115,30 +119,66 @@ func (c *Client) Build(ctx context.Context, req Request, progress func(ProgressE
 		solveResp = resp
 		return nil
 	})
-
 	eg.Go(func() error {
 		relayProgress(statusCh, progress)
 		return nil
 	})
 
-	eg.Go(func() error {
-		defer func() { _ = pipeR.Close() }()
-		return loadImage(egCtx, c.docker, pipeR, req.Tag, progress)
-	})
-
 	if err := eg.Wait(); err != nil {
 		return nil, err
 	}
+	return newResult(req.Tag, start, solveResp), nil
+}
 
-	res := &Result{
-		Tag:      req.Tag,
-		Duration: time.Since(start),
+// solveAndLoad runs solve and streams the docker-save tar it produces into
+// this node's own image store.
+func (c *Client) solveAndLoad(ctx context.Context, tag string, progress func(ProgressEvent), solve func(context.Context, io.Writer) (*Result, error)) (*Result, error) {
+	pipeR, pipeW := io.Pipe()
+	eg, egCtx := errgroup.WithContext(ctx)
+
+	var (
+		res      *Result
+		solveErr error
+	)
+	eg.Go(func() error {
+		res, solveErr = solve(egCtx, pipeW)
+		// CloseWithError(nil) is a plain Close: a failed solve has to fail
+		// the reader too, not hand it a truncated but cleanly ended tar.
+		_ = pipeW.CloseWithError(solveErr)
+		return solveErr
+	})
+	eg.Go(func() error {
+		defer func() { _ = pipeR.Close() }()
+		return loadImage(egCtx, c.docker, pipeR, tag, progress)
+	})
+
+	err := eg.Wait()
+	// The solve's own error wins over the load's: a failed solve always
+	// breaks the load too, and "solve failed because X" is the one that
+	// says why.
+	if solveErr != nil {
+		return nil, solveErr
 	}
-	if solveResp != nil {
-		res.ExporterResponse = solveResp.ExporterResponse
+	if err != nil {
+		return nil, err
 	}
 	return res, nil
 }
+
+func newResult(tag string, start time.Time, solveResp *bkclient.SolveResponse) *Result {
+	res := &Result{Tag: tag, Duration: time.Since(start)}
+	if solveResp != nil {
+		res.ExporterResponse = solveResp.ExporterResponse
+	}
+	return res
+}
+
+// nopWriteCloser hands BuildKit's exporter a WriteCloser whose Close does
+// nothing, so whoever owns the underlying writer decides when (and with
+// what error) it actually closes.
+type nopWriteCloser struct{ io.Writer }
+
+func (nopWriteCloser) Close() error { return nil }
 
 // relayProgress drains a SolveStatus channel, converting each vertex and
 // log line into a ProgressEvent for progress. BuildKit closes ch when the

@@ -18,6 +18,40 @@ export const WEEKDAY_LABEL: Record<string, string> = {
   '6': 'Saturday',
 }
 
+export interface CronFieldsValues {
+  frequency: 'daily' | 'weekly' | 'custom'
+  time: string
+  weekday: string
+  customCron: string
+}
+
+// Validates the daily/weekly/custom shape shared by every cron builder
+// (BackupScheduleFormView, ScheduledTaskDialog): a real time for
+// daily/weekly, a 5-field cron for custom. Exported so a caller with its
+// own schema (fields beyond backup targeting/retention) can compose this
+// via superRefine instead of re-implementing the same rule.
+export function refineCronFields(
+  data: Pick<CronFieldsValues, 'frequency' | 'time' | 'customCron'>,
+  ctx: z.RefinementCtx,
+): void {
+  if (data.frequency === 'custom') {
+    if (data.customCron.split(/\s+/).filter(Boolean).length !== 5) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'Cron expression needs 5 fields: minute hour day-of-month month day-of-week',
+        path: ['customCron'],
+      })
+    }
+  } else if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(data.time)) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Enter a valid time',
+      path: ['time'],
+    })
+  }
+}
+
 export const scheduleSchema = z
   .object({
     targetId: z.string().trim().min(1, 'Choose a backup target'),
@@ -29,22 +63,7 @@ export const scheduleSchema = z
     retainDays: z.string().trim(),
   })
   .superRefine((data, ctx) => {
-    if (data.frequency === 'custom') {
-      if (data.customCron.split(/\s+/).filter(Boolean).length !== 5) {
-        ctx.addIssue({
-          code: 'custom',
-          message:
-            'Cron expression needs 5 fields: minute hour day-of-month month day-of-week',
-          path: ['customCron'],
-        })
-      }
-    } else if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(data.time)) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Enter a valid time',
-        path: ['time'],
-      })
-    }
+    refineCronFields(data, ctx)
     const retain = Number(data.retain)
     if (!Number.isInteger(retain) || retain < 0) {
       ctx.addIssue({
@@ -65,7 +84,9 @@ export const scheduleSchema = z
 
 export type ScheduleFormValues = z.infer<typeof scheduleSchema>
 
-export function toCron(values: ScheduleFormValues): string {
+export function toCron(
+  values: Pick<CronFieldsValues, 'frequency' | 'time' | 'weekday' | 'customCron'>,
+): string {
   if (values.frequency === 'custom') {
     return values.customCron.trim()
   }
@@ -80,9 +101,7 @@ export function toCron(values: ScheduleFormValues): string {
 
 // Inverse of toCron; anything not matching its daily/weekly shapes falls
 // back to the custom cron field with the raw string intact.
-export function fromCron(
-  cron: string | undefined,
-): Pick<ScheduleFormValues, 'frequency' | 'time' | 'weekday' | 'customCron'> {
+export function fromCron(cron: string | undefined): CronFieldsValues {
   const raw = cron ?? ''
   const parts = raw.trim().split(/\s+/)
   const isNum = (s: string) => /^\d{1,2}$/.test(s)

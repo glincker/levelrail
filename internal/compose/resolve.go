@@ -17,12 +17,17 @@ func (u UnresolvedVar) String() string {
 	return fmt.Sprintf("service %q: env %q: %s", u.Service, u.EnvKey, u.Token)
 }
 
-// ResolveMagicVars scans every service's environment for SERVICE_
-// placeholders, mutating f in place: a token with a bash-style default
-// substitutes that default as a literal value; a generatable token
-// (PASSWORD/USER/BASE64/HEX/REALBASE64) is removed from Environment
-// entirely and returned via secretEnv instead, since its real value
-// belongs in secret storage, not a literal desired-state column.
+// ResolveMagicVars scans every service's environment and command for
+// SERVICE_ placeholders, mutating f in place: a token with a bash-style
+// default substitutes that default as a literal value; a generatable
+// token (PASSWORD/USER/BASE64/HEX/REALBASE64) found in Environment is
+// removed from it entirely and returned via secretEnv instead, since its
+// real value belongs in secret storage, not a literal desired-state
+// column. Command has no equivalent secret-storage indirection (a
+// Command entry can't be swapped for a decrypted-at-create-time secret
+// the way an env var can), so a generatable token found there is always
+// reported as unresolved instead, same as a default-less non-generatable
+// token.
 //
 // generate is called once per unique (kind, key) pair even when
 // referenced by several services, so they all resolve to the same
@@ -50,7 +55,23 @@ func ResolveMagicVars(
 
 	for _, svcKey := range sortedServiceNames(f) {
 		svc := f.Services[svcKey]
+		changed := false
+
+		if len(svc.Command) > 0 {
+			newCommand := make(Command, len(svc.Command))
+			for i, entry := range svc.Command {
+				resolved, entryUnresolved := resolveCommandEntry(f, svcKey, i, entry)
+				newCommand[i] = resolved
+				unresolved = append(unresolved, entryUnresolved...)
+			}
+			svc.Command = newCommand
+			changed = true
+		}
+
 		if len(svc.Environment) == 0 {
+			if changed {
+				f.Services[svcKey] = svc
+			}
 			continue
 		}
 		newEnv := make(Environment, len(svc.Environment))
@@ -138,6 +159,41 @@ func resolveFQDN(f *File, svcKey string) (string, bool) {
 		return "", false
 	}
 	return "https://" + domain, true
+}
+
+// resolveCommandEntry resolves every magic var in one Command entry the
+// same way an embedded Environment token resolves (FQDN and
+// bash-default tokens substitute in place), except a generatable-kind
+// token: Command has no secret-storage indirection to land a generated
+// value in (see ResolveMagicVars), so it's reported as unresolved
+// instead of generated.
+func resolveCommandEntry(f *File, svcKey string, index int, entry string) (string, []UnresolvedVar) {
+	vars := FindMagicVars(entry)
+	if len(vars) == 0 {
+		return entry, nil
+	}
+
+	location := fmt.Sprintf("command[%d]", index)
+	resolved := entry
+	var unresolved []UnresolvedVar
+	for _, v := range vars {
+		if v.Kind == "FQDN" {
+			if url, ok := resolveFQDN(f, svcKey); ok {
+				resolved = strings.Replace(resolved, v.Token, url, 1)
+				continue
+			}
+		}
+		if v.Generatable {
+			unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: location, Token: v.Token})
+			continue
+		}
+		if v.HasDefault {
+			resolved = strings.Replace(resolved, v.Token, v.Default, 1)
+			continue
+		}
+		unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: location, Token: v.Token})
+	}
+	return resolved, unresolved
 }
 
 func resolveGenerated(cache map[string]string, v MagicVar, generate func(kind, key string, length int) (string, error)) (string, error) {

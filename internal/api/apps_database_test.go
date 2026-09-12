@@ -13,23 +13,10 @@ import (
 func TestAppDatabaseRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodPut, "/api/v1/apps/web/database"},
 		{http.MethodDelete, "/api/v1/apps/web/database"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }
 
 func TestHandleSetAppDatabase_AppNotFound(t *testing.T) {
@@ -49,9 +36,7 @@ func TestHandleSetAppDatabase_AppNotFound(t *testing.T) {
 func TestHandleSetAppDatabase_UnknownDatabase(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedWebAppForTest(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/database", `{"database_name":"missing"}`))
@@ -63,9 +48,7 @@ func TestHandleSetAppDatabase_UnknownDatabase(t *testing.T) {
 func TestHandleSetAppDatabase_MissingDatabaseName(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedWebAppForTest(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/database", `{}`))
@@ -77,9 +60,7 @@ func TestHandleSetAppDatabase_MissingDatabaseName(t *testing.T) {
 func TestHandleSetAppDatabase_UnsupportedField(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedWebAppForTest(t, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "cache", Engine: store.EngineRedis}); err != nil {
 		t.Fatalf("seed database: %v", err)
 	}
@@ -94,9 +75,7 @@ func TestHandleSetAppDatabase_UnsupportedField(t *testing.T) {
 func TestHandleSetAppDatabase_Success_Defaults(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedWebAppForTest(t, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres}); err != nil {
 		t.Fatalf("seed database: %v", err)
 	}
@@ -132,9 +111,7 @@ func TestHandleSetAppDatabase_Success_Defaults(t *testing.T) {
 func TestHandleGetApp_SurfacesDatabaseAttachment(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedWebAppForTest(t, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres}); err != nil {
 		t.Fatalf("seed database: %v", err)
 	}
@@ -172,9 +149,7 @@ func TestHandleClearAppDatabase_AppNotFound(t *testing.T) {
 func TestHandleClearAppDatabase_Success(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedWebAppForTest(t, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres}); err != nil {
 		t.Fatalf("seed database: %v", err)
 	}

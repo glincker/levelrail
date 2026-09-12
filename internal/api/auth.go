@@ -258,7 +258,7 @@ func (rt *Router) establishSession(ctx context.Context, w http.ResponseWriter, u
 	// doing TLS termination in any real deployment, and a
 	// session cookie is exactly the kind of value that must never be
 	// sent back over a plain connection. Local development against this
-	// listener directly (no Caddy in front yet, TASKS.md 1.6) needs to go
+	// listener directly (no Caddy in front yet) needs to go
 	// through something that terminates TLS, e.g. a local reverse proxy,
 	// for the cookie to round-trip; that's a known dev-workflow gap, not
 	// a reason to weaken the cookie.
@@ -537,6 +537,30 @@ func (rt *Router) currentSessionUserID(r *http.Request) (userID string, ok bool)
 	}
 	userID, ok = rt.sessions.lookup(c.Value)
 	return userID, ok
+}
+
+// callerAbilities resolves the requesting principal's own resolved
+// abilities: a session's user.Abilities, or a bearer token's stored
+// abilities. Handlers that hand out access to someone else (e.g.
+// handleCreateInvite) use this to cap what they can grant at what they
+// hold themselves. Only meaningful behind requireAbility, which already
+// verified the request is authenticated one way or the other.
+func (rt *Router) callerAbilities(r *http.Request) ([]string, error) {
+	if userID, ok := rt.currentSessionUserID(r); ok {
+		user, err := rt.auth.GetUserByID(r.Context(), userID)
+		if err != nil {
+			return nil, fmt.Errorf("api: load caller user %q: %w", userID, err)
+		}
+		return user.Abilities, nil
+	}
+	if token, ok := bearerToken(r); ok {
+		rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(token))
+		if err != nil {
+			return nil, fmt.Errorf("api: load caller token: %w", err)
+		}
+		return rec.Abilities, nil
+	}
+	return nil, errors.New("api: no authenticated principal on request")
 }
 
 // bearerToken extracts the token from a "Bearer <token>" Authorization
