@@ -92,7 +92,7 @@ describe('ScheduledTaskDialog cron builder', () => {
 
     expect(
       screen.getByRole('combobox', { name: /frequency/i }),
-    ).toHaveTextContent('custom')
+    ).toHaveTextContent('Custom cron expression')
     expect(screen.getByLabelText('Cron expression')).toHaveValue('*/15 * * * *')
   })
 })
