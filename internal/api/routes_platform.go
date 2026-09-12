@@ -73,6 +73,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// fanned out through a Federator (today, exactly one local source).
 	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryMetrics))
 	mux.HandleFunc("GET /api/v1/apps/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryLogs))
+	// Cross-app resource usage ranking (app_resource_usage.go): a
+	// literal segment, so Go's ServeMux resolves it ahead of the
+	// {name} wildcard on GET /api/v1/apps/{name} in routes.go.
+	mux.HandleFunc("GET /api/v1/apps/resource-usage", rt.requireAbility(AbilityRead, rt.handleAppResourceUsage))
 	// Live log tail (additive to the historical search route just above,
 	// see handleLiveLogStream's own doc comment): AbilityRead, the same
 	// passive-visibility boundary as every other view of telemetry data

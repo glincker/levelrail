@@ -1549,6 +1549,21 @@ type AppMetricsResource struct {
 	Points []MetricPointResource `json:"points"`
 }
 
+// AppResourceUsageResource mirrors internal/api's
+// appResourceUsageResource (internal/api/app_resource_usage.go): one
+// app's latest known CPU/memory/network reading, for the dashboard's
+// "what's consuming the most resources right now" ranking. A nil field
+// means telemetry has never recorded that metric for this app yet, not
+// zero usage.
+type AppResourceUsageResource struct {
+	Name             string   `json:"name"`
+	CPUPercent       *float64 `json:"cpu_percent,omitempty"`
+	MemoryUsageBytes *float64 `json:"memory_usage_bytes,omitempty"`
+	MemoryLimitBytes *float64 `json:"memory_limit_bytes,omitempty"`
+	NetworkRxBytes   *float64 `json:"network_rx_bytes,omitempty"`
+	NetworkTxBytes   *float64 `json:"network_tx_bytes,omitempty"`
+}
+
 // NodeMetricsResource mirrors internal/api's nodeMetricsResponse
 // (internal/api/node_metrics.go): AppMetricsResource's fields plus
 // ResourceCount, how many of the node's placed services actually

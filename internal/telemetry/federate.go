@@ -16,6 +16,7 @@ import (
 // an in-memory transport that implements the same interface.
 type MetricsSource interface {
 	Query(ctx context.Context, resourceID, metric string, from, to time.Time) ([]Sample, error)
+	LatestByMetric(ctx context.Context, metric string) ([]Sample, error)
 }
 
 // LogsSource is the log-query equivalent of MetricsSource.
@@ -86,6 +87,35 @@ func (f *Federator) QueryLogs(ctx context.Context, resourceID string, from, to t
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].Timestamp.Before(all[j].Timestamp) })
 	return all, errors.Join(errs...)
+}
+
+// LatestByMetric is LatestByMetric's federated equivalent: fans out to
+// every source and keeps, per resource_id, whichever source reported
+// the newest sample. A resource split across sources (not possible
+// today, single-node only, but Phase 3's per-node agents could each
+// report a same-named resource) should never happen in practice, so
+// "newest wins" is a defensive tie-break, not a real merge strategy.
+func (f *Federator) LatestByMetric(ctx context.Context, metric string) ([]Sample, error) {
+	latest := make(map[string]Sample)
+	var errs []error
+	for _, src := range f.metrics {
+		got, err := src.LatestByMetric(ctx, metric)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		for _, s := range got {
+			if existing, ok := latest[s.ResourceID]; !ok || s.Timestamp.After(existing.Timestamp) {
+				latest[s.ResourceID] = s
+			}
+		}
+	}
+	out := make([]Sample, 0, len(latest))
+	for _, s := range latest {
+		out = append(out, s)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ResourceID < out[j].ResourceID })
+	return out, errors.Join(errs...)
 }
 
 // AggregatedPoint is one bucketed value from Aggregate.
