@@ -75,6 +75,11 @@ type databaseResource struct {
 	// doc comment. Only ever set by handleSetDatabaseResources; every
 	// other handler returning a databaseResource leaves it false.
 	ResourcesAppliedLive bool `json:"resources_applied_live,omitempty"`
+	// Suspended: response-only, the identical boundary NodeID/
+	// ProjectID/the backup fields already establish. Set or clear it via
+	// POST /api/v1/databases/{name}/stop and .../start
+	// (database_stop_start.go), mirroring appResource.Suspended.
+	Suspended bool `json:"suspended,omitempty"`
 	// TLSEnabled: response-only, computed fresh on every read rather
 	// than stored (databaseTLSEnabled), true exactly when
 	// internal/reconcile/application's own identically-named check
@@ -100,6 +105,7 @@ func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 		PubliclyAccessible: d.PubliclyAccessible,
 		PublicPort:         d.PublicPort,
 		Resources:          d.Resources,
+		Suspended:          d.Suspended,
 	}
 }
 

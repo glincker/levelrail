@@ -59,6 +59,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsLogs(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "metrics":
 		return runAppsMetrics(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "resource-usage":
+		return runAppsResourceUsage(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "exec":
 		return runAppsExec(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "log-drain":
@@ -127,6 +129,7 @@ func appsUsage(prog string) string {
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps logs <name> [flags]     search an app's stored log entries, or --follow to stream live
   %[1]s apps metrics <name> --metric NAME [flags]   query an app's metric time series
+  %[1]s apps resource-usage [flags]   rank every app by latest CPU/memory/network usage
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
   %[1]s apps log-drain get|set|clear <name> [flags]   configure an external log drain
   %[1]s apps scheduled-tasks <verb> [flags]   manage cron-scheduled commands run inside the app's container

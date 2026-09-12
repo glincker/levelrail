@@ -10,10 +10,19 @@ import (
 type fakeMetricsSource struct {
 	samples []Sample
 	err     error
+	latest  []Sample
+	// latestErr is separate from err: a test exercising QueryMetrics's
+	// error path should not accidentally also fail LatestByMetric calls
+	// it never intended to make, and vice versa.
+	latestErr error
 }
 
 func (f *fakeMetricsSource) Query(_ context.Context, _, _ string, _, _ time.Time) ([]Sample, error) {
 	return f.samples, f.err
+}
+
+func (f *fakeMetricsSource) LatestByMetric(_ context.Context, _ string) ([]Sample, error) {
+	return f.latest, f.latestErr
 }
 
 type fakeLogsSource struct {
@@ -72,6 +81,53 @@ func TestFederator_QueryLogs_MergesAndSorts(t *testing.T) {
 	}
 	if len(got) != 2 || got[0].Message != "a" || got[1].Message != "b" {
 		t.Errorf("QueryLogs() = %+v, want [a, b] in timestamp order", got)
+	}
+}
+
+func TestFederator_LatestByMetric_MergesByResourceKeepingNewest(t *testing.T) {
+	base := time.Unix(1_700_000_000, 0).UTC()
+	// service:web reported by both sources at different times: the
+	// newer one (src2's) must win, not whichever source happened first.
+	src1 := &fakeMetricsSource{latest: []Sample{
+		{ResourceID: "service:web", Timestamp: base, Value: 10},
+		{ResourceID: "service:worker", Timestamp: base, Value: 5},
+	}}
+	src2 := &fakeMetricsSource{latest: []Sample{
+		{ResourceID: "service:web", Timestamp: base.Add(time.Minute), Value: 40},
+	}}
+
+	f := NewFederator([]MetricsSource{src1, src2}, nil)
+	got, err := f.LatestByMetric(context.Background(), "cpu_percent")
+	if err != nil {
+		t.Fatalf("LatestByMetric() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("LatestByMetric() = %d resources, want 2", len(got))
+	}
+	byResource := make(map[string]Sample, len(got))
+	for _, s := range got {
+		byResource[s.ResourceID] = s
+	}
+	if s := byResource["service:web"]; s.Value != 40 {
+		t.Errorf("service:web = %+v, want the newer sample (40)", s)
+	}
+	if s := byResource["service:worker"]; s.Value != 5 {
+		t.Errorf("service:worker = %+v, want 5", s)
+	}
+}
+
+func TestFederator_LatestByMetric_OneSourceErrors_OthersStillReturned(t *testing.T) {
+	base := time.Unix(1_700_000_000, 0).UTC()
+	healthy := &fakeMetricsSource{latest: []Sample{{ResourceID: "service:web", Timestamp: base, Value: 1}}}
+	broken := &fakeMetricsSource{latestErr: errors.New("agent unreachable")}
+
+	f := NewFederator([]MetricsSource{healthy, broken}, nil)
+	got, err := f.LatestByMetric(context.Background(), "cpu_percent")
+	if err == nil {
+		t.Fatal("LatestByMetric() error = nil, want the broken source's error surfaced")
+	}
+	if len(got) != 1 {
+		t.Errorf("LatestByMetric() = %d resources, want 1 (the healthy source's result)", len(got))
 	}
 }
 

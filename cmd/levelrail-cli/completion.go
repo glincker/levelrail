@@ -44,6 +44,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"network":                 nil,
 		"logs":                    nil,
 		"metrics":                 nil,
+		"resource-usage":          nil,
 		"exec":                    nil,
 		"log-drain":               {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"scheduled-tasks":         {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "update": nil, "delete": nil, "run": nil}},
@@ -70,7 +71,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"images":             nil,
 		"storage":            {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
-	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "resource-recommendation": nil, "metrics": nil, "set-project": nil, "clear-project": nil}},
+	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "set-project": nil, "clear-project": nil}},
 	"auth": {subs: map[string]*cmdNode{"login": nil, "whoami": nil, "2fa": {subs: map[string]*cmdNode{
 		"status": nil, "setup": nil, "enable": nil, "disable": nil, "recovery-codes": nil,
 	}}}},

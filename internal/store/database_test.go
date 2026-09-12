@@ -193,6 +193,74 @@ func TestUpdateDatabaseNode_NotFound(t *testing.T) {
 	}
 }
 
+func TestUpdateDatabaseSuspended(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+
+	if err := db.UpdateDatabaseSuspended(ctx, "main", true); err != nil {
+		t.Fatalf("UpdateDatabaseSuspended(true) error = %v", err)
+	}
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if !got.Suspended {
+		t.Error("Suspended = false, want true")
+	}
+
+	if err := db.UpdateDatabaseSuspended(ctx, "main", false); err != nil {
+		t.Fatalf("UpdateDatabaseSuspended(false) error = %v", err)
+	}
+	got, err = db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.Suspended {
+		t.Error("Suspended = true, want false")
+	}
+}
+
+func TestUpdateDatabaseSuspended_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateDatabaseSuspended(context.Background(), "nonexistent", true)
+	if !errors.Is(err, ErrDatabaseNotFound) {
+		t.Errorf("UpdateDatabaseSuspended() error = %v, want ErrDatabaseNotFound", err)
+	}
+}
+
+// TestSaveDesiredDatabase_ResaveDoesNotResetSuspended mirrors
+// TestSaveDesiredService_RedeployDoesNotResetSuspended: an ordinary
+// resave must not silently un-stop a stopped database.
+func TestSaveDesiredDatabase_ResaveDoesNotResetSuspended(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "15"}); err != nil {
+		t.Fatalf("initial save: %v", err)
+	}
+	if err := db.UpdateDatabaseSuspended(ctx, "main", true); err != nil {
+		t.Fatalf("UpdateDatabaseSuspended() error = %v", err)
+	}
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("resave: %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.Version != "16" {
+		t.Errorf("Version = %q, want 16", got.Version)
+	}
+	if !got.Suspended {
+		t.Error("Suspended = false, want true (a resave must not clear it)")
+	}
+}
+
 func TestSaveDesiredDatabase_ResaveDoesNotResetNodeID(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
@@ -568,45 +636,6 @@ func TestListDesiredDatabasesByProject(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestUpdateDatabaseSuspended(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-
-	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
-		t.Fatalf("SaveDesiredDatabase() error = %v", err)
-	}
-
-	if err := db.UpdateDatabaseSuspended(ctx, "main", true); err != nil {
-		t.Fatalf("UpdateDatabaseSuspended(true) error = %v", err)
-	}
-	got, err := db.GetDesiredDatabase(ctx, "main")
-	if err != nil {
-		t.Fatalf("GetDesiredDatabase() error = %v", err)
-	}
-	if !got.Suspended {
-		t.Error("Suspended = false, want true")
-	}
-
-	if err := db.UpdateDatabaseSuspended(ctx, "main", false); err != nil {
-		t.Fatalf("UpdateDatabaseSuspended(false) error = %v", err)
-	}
-	got, err = db.GetDesiredDatabase(ctx, "main")
-	if err != nil {
-		t.Fatalf("GetDesiredDatabase() error = %v", err)
-	}
-	if got.Suspended {
-		t.Error("Suspended = true, want false")
-	}
-}
-
-func TestUpdateDatabaseSuspended_NotFound(t *testing.T) {
-	db := openTestDB(t)
-	err := db.UpdateDatabaseSuspended(context.Background(), "nonexistent", true)
-	if !errors.Is(err, ErrDatabaseNotFound) {
-		t.Errorf("UpdateDatabaseSuspended() error = %v, want ErrDatabaseNotFound", err)
 	}
 }
 

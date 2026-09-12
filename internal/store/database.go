@@ -78,11 +78,11 @@ type DesiredDatabase struct {
 	// same "whole record, not a special exception" treatment
 	// DesiredService.Resources gets from SaveDesiredService.
 	Resources *ServiceResources
-	// Suspended is DesiredService.Suspended's database-kind counterpart
-	// (migrations/0094_desired_databases_suspended.sql mirrors 0037's
-	// reasoning): an operator-requested stop, distinct from delete.
-	// SaveDesiredDatabase never writes it, only UpdateDatabaseSuspended
-	// does, the same NodeID/ProjectID exception above.
+
+	// Suspended: see DesiredService.Suspended's own doc comment, identical
+	// meaning and identical "SaveDesiredDatabase never writes it, only
+	// UpdateDatabaseSuspended does" exception NodeID/ProjectID already
+	// establish above (migrations/0094_database_suspended.sql).
 	Suspended bool
 }
 
@@ -144,6 +144,29 @@ func (db *DB) UpdateDatabaseProject(ctx context.Context, name, projectID string)
 	n, err := res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("store: update project for database %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrDatabaseNotFound
+	}
+	return nil
+}
+
+// UpdateDatabaseSuspended is DesiredDatabase.Suspended's only writer,
+// the database counterpart to UpdateServiceSuspended. Unlike that
+// method, resuming does not need to clear anything else: a database has
+// no EnvDirty-equivalent latch, since nothing about its desired state
+// can change while suspended (there is no env editor for a database the
+// way there is for an app).
+func (db *DB) UpdateDatabaseSuspended(ctx context.Context, name string, suspended bool) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_databases SET suspended = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, suspended, name)
+	if err != nil {
+		return fmt.Errorf("store: update suspended for database %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update suspended for database %q: rows affected: %w", name, err)
 	}
 	if n == 0 {
 		return ErrDatabaseNotFound
@@ -284,30 +307,6 @@ func (db *DB) ListDesiredDatabasesByProject(ctx context.Context, projectID strin
 		return nil, fmt.Errorf("store: iterate desired database rows: %w", err)
 	}
 	return out, nil
-}
-
-// UpdateDatabaseSuspended is DesiredDatabase's counterpart to
-// UpdateServiceSuspended: the only way Suspended ever changes, the same
-// "own single-purpose setter, excluded from SaveDesiredDatabase"
-// reasoning UpdateDatabaseNode/UpdateDatabaseProject already establish.
-// Setting it true does not by itself stop any container:
-// internal/reconcile/database's controller is what converges to zero
-// containers once it observes Suspended on its next reconcile.
-func (db *DB) UpdateDatabaseSuspended(ctx context.Context, name string, suspended bool) error {
-	res, err := db.ExecContext(ctx, `
-		UPDATE desired_databases SET suspended = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
-	`, suspended, name)
-	if err != nil {
-		return fmt.Errorf("store: update suspended for database %q: %w", name, err)
-	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("store: update suspended for database %q: rows affected: %w", name, err)
-	}
-	if n == 0 {
-		return ErrDatabaseNotFound
-	}
-	return nil
 }
 
 // SetDatabaseBackupSchedule is DesiredDatabase's counterpart to
@@ -521,10 +520,12 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 		publiclyAccessible        bool
 		publicPort                sql.NullInt64
 		resourcesJSON             string
+		suspended                 bool
 	)
-	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &resourcesJSON, &d.Suspended); err != nil {
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &resourcesJSON, &suspended); err != nil {
 		return nil, err
 	}
+	d.Suspended = suspended
 	d.ProjectID = projectID.String
 	d.BackupTargetID = backupTargetID.String
 	d.PubliclyAccessible = publiclyAccessible

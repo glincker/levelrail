@@ -201,7 +201,7 @@ function rolloutStageSummary(
     return stage.detail || 'Roll out failed.'
   }
   if (stage.status === 'done') {
-    const deployed = conditions.find((c) => c.Reason === 'Deployed')
+    const deployed = conditions.find((c) => c.Reason === 'Deployed' || c.Reason === 'AlreadyRunning')
     return deployed?.Message || 'Deployed successfully.'
   }
   const latest = [...conditions].sort(

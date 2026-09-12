@@ -25,6 +25,7 @@ type (
 	logEntryResource                 = apiclient.LogEntryResource
 	logStreamEntry                   = apiclient.LogStreamEntry
 	appMetricsResource               = apiclient.AppMetricsResource
+	appResourceUsageResource         = apiclient.AppResourceUsageResource
 	metricPointResource              = apiclient.MetricPointResource
 	nodeMetricsResource              = apiclient.NodeMetricsResource
 	execRequest                      = apiclient.ExecRequest

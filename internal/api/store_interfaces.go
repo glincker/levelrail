@@ -191,8 +191,9 @@ type DatabaseStore interface {
 	ListDesiredDatabasesByProject(ctx context.Context, projectID string) ([]store.DesiredDatabase, error)
 	// UpdateDatabaseSuspended is AppStore.UpdateServiceSuspended's
 	// counterpart, backing POST /api/v1/projects/{id}/stop and .../start
-	// (project_stop_start.go): same separation-from-ordinary-update
-	// reasoning as UpdateDatabaseNode/UpdateDatabaseProject, see
+	// (project_stop_start.go) and POST /api/v1/databases/{name}/stop and
+	// .../start (database_stop_start.go): same separation-from-ordinary-
+	// update reasoning as UpdateDatabaseNode/UpdateDatabaseProject, see
 	// store.DB.UpdateDatabaseSuspended's own doc comment.
 	UpdateDatabaseSuspended(ctx context.Context, name string, suspended bool) error
 	// UpdateDatabaseProject is AppStore.UpdateServiceProject's

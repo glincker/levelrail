@@ -751,6 +751,10 @@ type DatabaseResource struct {
 	BackupSchedule     string            `json:"backup_schedule,omitempty"`
 	BackupRetain       int               `json:"backup_retain,omitempty"`
 	BackupRetainDays   int               `json:"backup_retain_days,omitempty"`
+	// Suspended is set via POST /api/v1/databases/{name}/stop and
+	// .../start (StopDatabase/StartDatabase), the same response-only
+	// boundary NodeID/ProjectID already establish.
+	Suspended bool `json:"suspended,omitempty"`
 	// TLSEnabled mirrors internal/api's databaseResource.TLSEnabled:
 	// response-only, computed fresh on every read, true when this
 	// database's connection string (DATABASE_URL/REDIS_URL, injected
@@ -1557,6 +1561,21 @@ type MetricPointResource struct {
 type AppMetricsResource struct {
 	Metric string                `json:"metric"`
 	Points []MetricPointResource `json:"points"`
+}
+
+// AppResourceUsageResource mirrors internal/api's
+// appResourceUsageResource (internal/api/app_resource_usage.go): one
+// app's latest known CPU/memory/network reading, for the dashboard's
+// "what's consuming the most resources right now" ranking. A nil field
+// means telemetry has never recorded that metric for this app yet, not
+// zero usage.
+type AppResourceUsageResource struct {
+	Name             string   `json:"name"`
+	CPUPercent       *float64 `json:"cpu_percent,omitempty"`
+	MemoryUsageBytes *float64 `json:"memory_usage_bytes,omitempty"`
+	MemoryLimitBytes *float64 `json:"memory_limit_bytes,omitempty"`
+	NetworkRxBytes   *float64 `json:"network_rx_bytes,omitempty"`
+	NetworkTxBytes   *float64 `json:"network_tx_bytes,omitempty"`
 }
 
 // NodeMetricsResource mirrors internal/api's nodeMetricsResponse
