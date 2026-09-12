@@ -20,6 +20,7 @@ import {
 import { Breadcrumbs } from '../../../components/Breadcrumbs'
 import { DeleteProjectDialog } from '../../../components/DeleteProjectDialog'
 import { MoveToOrganizationDialog } from '../../../components/MoveToOrganizationDialog'
+import { RestartProjectButton } from '../../../components/RestartProjectButton'
 import { routeErrorMessage } from '../../../lib/apiError'
 import { ProjectEnvironmentsPanel } from '../../../components/ProjectEnvironmentsPanel'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -81,13 +82,19 @@ function ProjectDetailPage() {
           <h1 className="text-lg font-semibold text-foreground">
             {project.name}
           </h1>
-          <DeleteProjectDialog
-            id={project.id}
-            name={project.name}
-            onDeleted={() => {
-              void navigate({ to: '/projects' })
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <RestartProjectButton
+              id={project.id}
+              disabled={projectApps.length === 0}
+            />
+            <DeleteProjectDialog
+              id={project.id}
+              name={project.name}
+              onDeleted={() => {
+                void navigate({ to: '/projects' })
+              }}
+            />
+          </div>
         </div>
         <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
           <span>Organization:</span>

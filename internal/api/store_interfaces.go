@@ -64,6 +64,11 @@ type AppStore interface {
 	// path both handleCreateApp (an ordinary single-service app) and
 	// handleDeploySpec (a multi-service fan-out) go through.
 	UpdateServiceApp(ctx context.Context, name, appID string) error
+	// ListDesiredServicesByProject is ListDesiredServicesByNode's
+	// project-scoped counterpart: handleRestartProject (project_restart.go)
+	// uses this to find every app to restart without listing every
+	// service.
+	ListDesiredServicesByProject(ctx context.Context, projectID string) ([]store.DesiredService, error)
 	// UpdateServiceLogDrain backs PUT/DELETE
 	// /api/v1/apps/{name}/log-drain (apps_log_drain.go): which external
 	// sink (internal/telemetry.DrainForwarder) this app's container logs

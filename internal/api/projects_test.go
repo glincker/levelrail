@@ -21,6 +21,7 @@ func TestProjectsRoutes_RequireAuth(t *testing.T) {
 		{http.MethodPost, "/api/v1/projects"},
 		{http.MethodGet, "/api/v1/projects/proj_1"},
 		{http.MethodDelete, "/api/v1/projects/proj_1"},
+		{http.MethodPost, "/api/v1/projects/proj_1/restart"},
 		{http.MethodPut, "/api/v1/apps/web/project"},
 		{http.MethodPut, "/api/v1/databases/main/project"},
 	}

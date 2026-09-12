@@ -169,6 +169,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/projects", rt.requireAbility(AbilityWrite, rt.handleCreateProject))
 	mux.HandleFunc("GET /api/v1/projects/{id}", rt.requireAbility(AbilityRead, rt.handleGetProject))
 	mux.HandleFunc("DELETE /api/v1/projects/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteProject))
+	// Bulk restart every app filed under this project (project_restart.go):
+	// AbilityDeploy, the same ability POST /api/v1/apps/{name}/restart
+	// itself uses, not AbilityWrite, since this triggers a real container
+	// recreation rather than an ordinary label edit.
+	mux.HandleFunc("POST /api/v1/projects/{id}/restart", rt.requireAbility(AbilityDeploy, rt.handleRestartProject))
 
 	// Organizations (organizations.go): groups projects, same ordinary
 	// AbilityRead/AbilityWrite boundary as projects above.

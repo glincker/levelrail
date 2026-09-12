@@ -954,6 +954,47 @@ func TestListDesiredServicesByNode(t *testing.T) {
 	}
 }
 
+func TestListDesiredServicesByProject(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	for _, svc := range []DesiredService{
+		{Name: "web", Image: "img:v1", Port: 8080},
+		{Name: "worker", Image: "img:v1", Port: 8081},
+		{Name: "api", Image: "img:v1", Port: 8082},
+	} {
+		if err := db.SaveDesiredService(ctx, svc); err != nil {
+			t.Fatalf("SaveDesiredService(%s) error = %v", svc.Name, err)
+		}
+	}
+	if err := db.SaveProject(ctx, Project{ID: "proj-1", Name: "one"}); err != nil {
+		t.Fatalf("SaveProject(proj-1) error = %v", err)
+	}
+	if err := db.UpdateServiceProject(ctx, "web", "proj-1"); err != nil {
+		t.Fatalf("UpdateServiceProject(web) error = %v", err)
+	}
+	if err := db.UpdateServiceProject(ctx, "worker", "proj-1"); err != nil {
+		t.Fatalf("UpdateServiceProject(worker) error = %v", err)
+	}
+	// api stays project-less.
+
+	got, err := db.ListDesiredServicesByProject(ctx, "proj-1")
+	if err != nil {
+		t.Fatalf("ListDesiredServicesByProject(proj-1) error = %v", err)
+	}
+	if len(got) != 2 || got[0].Name != "web" || got[1].Name != "worker" {
+		t.Fatalf("ListDesiredServicesByProject(proj-1) = %+v, want [web worker] ordered by name", got)
+	}
+
+	gotEmpty, err := db.ListDesiredServicesByProject(ctx, "proj-2")
+	if err != nil {
+		t.Fatalf("ListDesiredServicesByProject(proj-2) error = %v", err)
+	}
+	if len(gotEmpty) != 0 {
+		t.Errorf("ListDesiredServicesByProject(proj-2) = %+v, want empty", gotEmpty)
+	}
+}
+
 func TestSaveDesiredService_StrategyAndReplicas_RoundTrip(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

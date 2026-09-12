@@ -1468,6 +1468,16 @@ func (c *Client) DeleteProject(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, projectPath(id), nil, nil)
 }
 
+// RestartProject calls POST /api/v1/projects/{id}/restart: force every
+// app filed under this project to have its running container recreated
+// with no image change (internal/api/project_restart.go's own
+// handleRestartProject). No request body.
+func (c *Client) RestartProject(ctx context.Context, id string) (ProjectRestartResponse, error) {
+	var out ProjectRestartResponse
+	err := c.do(ctx, http.MethodPost, projectPath(id)+"/restart", nil, &out)
+	return out, err
+}
+
 // GetProjectEnv calls GET /api/v1/projects/{id}/env.
 func (c *Client) GetProjectEnv(ctx context.Context, id string) (map[string]string, error) {
 	var out map[string]string
