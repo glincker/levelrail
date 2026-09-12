@@ -174,7 +174,7 @@ export function ScheduledTaskDialog({
             <FieldError errors={[formState.errors.command]} />
           </Field>
 
-          <CronScheduleFields
+          <CronScheduleFields<ScheduledTaskFormValues>
             idPrefix="task-schedule"
             control={control}
             register={register}

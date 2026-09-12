@@ -36,7 +36,7 @@ export function CronScheduleFields<T extends FieldValues & CronFieldsValues>({
           control={control}
           name={'frequency' as never}
           render={({ field }) => (
-            <Select
+            <Select<string>
               value={field.value}
               onValueChange={(value: string | null) => {
                 field.onChange(value ?? 'daily')
@@ -62,7 +62,7 @@ export function CronScheduleFields<T extends FieldValues & CronFieldsValues>({
             control={control}
             name={'weekday' as never}
             render={({ field }) => (
-              <Select
+              <Select<string>
                 value={field.value}
                 onValueChange={(value: string | null) => {
                   field.onChange(value ?? '0')
@@ -92,7 +92,9 @@ export function CronScheduleFields<T extends FieldValues & CronFieldsValues>({
             type="time"
             {...register('time' as never)}
           />
-          <FieldError errors={[formState.errors.time]} />
+          <FieldError
+            errors={[formState.errors.time as { message?: string } | undefined]}
+          />
         </Field>
       ) : (
         <Field className="sm:col-span-2">
@@ -106,7 +108,9 @@ export function CronScheduleFields<T extends FieldValues & CronFieldsValues>({
           <FieldDescription>
             Standard 5-field cron: minute hour day-of-month month day-of-week.
           </FieldDescription>
-          <FieldError errors={[formState.errors.customCron]} />
+          <FieldError
+            errors={[formState.errors.customCron as { message?: string } | undefined]}
+          />
         </Field>
       )}
     </>

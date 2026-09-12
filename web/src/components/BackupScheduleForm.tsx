@@ -226,7 +226,7 @@ export function BackupScheduleFormView({
           <FieldError errors={[formState.errors.targetId]} />
         </Field>
 
-        <CronScheduleFields
+        <CronScheduleFields<ScheduleFormValues>
           idPrefix={idPrefix}
           control={control}
           register={register}
