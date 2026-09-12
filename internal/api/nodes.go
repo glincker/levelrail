@@ -328,19 +328,33 @@ func (rt *Router) setNodeSchedulable(w http.ResponseWriter, r *http.Request, sch
 // operator can retry just that resource, e.g. via
 // PUT /api/v1/apps/{name}/node directly.
 type drainNodeResponse struct {
-	TargetNodeID   string   `json:"target_node_id"`
+	// TargetNodeID is the explicit override from the request. Left ""
+	// when target_node_id was omitted, since per-resource auto-placement
+	// (see AutoPlaced) may send different resources to different nodes.
+	TargetNodeID string `json:"target_node_id"`
+	// AutoPlaced is true when target_node_id was omitted and simple
+	// spread scheduling (selectLeastLoadedNodeExcluding, scheduling.go)
+	// picked at least one resource's destination itself, the same signal
+	// appResource.AutoPlaced/databaseResource.AutoPlaced give for create.
+	// An explicit target_node_id always leaves this false.
+	AutoPlaced     bool     `json:"auto_placed,omitempty"`
 	MovedServices  []string `json:"moved_services"`
 	MovedDatabases []string `json:"moved_databases"`
 	Errors         []string `json:"errors,omitempty"`
 }
 
 // handleDrainNode handles POST /api/v1/nodes/{id}/drain?target_node_id=:
-// moves every service and database currently placed on
-// id to target_node_id (default "", the local-node sentinel), reusing
-// UpdateServiceNode/UpdateDatabaseNode one resource
-// at a time rather than inventing a second placement mechanism. This is
-// the only supported way to clear a node's placements before deleting it
+// moves every service and database currently placed on id off it,
+// reusing UpdateServiceNode/UpdateDatabaseNode one resource at a time
+// rather than inventing a second placement mechanism. This is the only
+// supported way to clear a node's placements before deleting it
 // (handleDeleteNode's own doc comment).
+//
+// An explicit target_node_id sends every resource to that one node, same
+// as before. Omitted entirely, each resource gets its own pick from
+// simple spread scheduling (selectLeastLoadedNodeExcluding, scheduling.go)
+// instead of piling everything onto the local node, so draining actually
+// spreads load across whatever else is registered and eligible.
 //
 // One failure does not stop the rest: the same "one broken resource
 // must not block others" principle cmd/levelrail's dynamicSource already
@@ -352,6 +366,7 @@ type drainNodeResponse struct {
 // handleSetAppNode/handleSetDatabaseNode make.
 func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	targetSpecified := r.URL.Query().Has("target_node_id")
 	targetNodeID := r.URL.Query().Get("target_node_id")
 
 	if _, err := rt.nodes.GetNode(r.Context(), id); errors.Is(err, store.ErrNodeNotFound) {
@@ -363,17 +378,19 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := rt.validatePlacementTarget(r.Context(), targetNodeID); err != nil {
-		switch {
-		case errors.Is(err, store.ErrNodeNotFound):
-			writeError(w, http.StatusBadRequest, "unknown target_node_id")
-		case errors.Is(err, errNodeCordoned):
-			writeError(w, http.StatusBadRequest, "target node is cordoned and not accepting new placements")
-		default:
-			rt.logger.Error("api: drain node: validate target failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("target_node_id", targetNodeID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+	if targetSpecified {
+		if err := rt.validatePlacementTarget(r.Context(), targetNodeID); err != nil {
+			switch {
+			case errors.Is(err, store.ErrNodeNotFound):
+				writeError(w, http.StatusBadRequest, "unknown target_node_id")
+			case errors.Is(err, errNodeCordoned):
+				writeError(w, http.StatusBadRequest, "target node is cordoned and not accepting new placements")
+			default:
+				rt.logger.Error("api: drain node: validate target failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("target_node_id", targetNodeID))
+				writeError(w, http.StatusInternalServerError, "internal error")
+			}
+			return
 		}
-		return
 	}
 
 	services, err := rt.apps.ListDesiredServicesByNode(r.Context(), id)
@@ -395,8 +412,61 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 		MovedDatabases: make([]string, 0, len(databases)),
 	}
 
+	// nextTarget resolves where one resource goes: the explicit override
+	// when given, otherwise this drain's own per-resource pick from
+	// simple spread scheduling. candidateNodes/counts are loaded lazily,
+	// only when there is auto-placing left to do.
+	var (
+		candidatesLoaded bool
+		candidateNodes   []store.Node
+		counts           map[string]int
+	)
+	nextTarget := func() (string, error) {
+		if targetSpecified {
+			return targetNodeID, nil
+		}
+		if !rt.autoPlacementEnabled {
+			return "", nil
+		}
+		if !candidatesLoaded {
+			nodes, err := rt.nodes.ListNodes(r.Context())
+			if err != nil {
+				return "", err
+			}
+			allServices, err := rt.apps.ListDesiredServices(r.Context())
+			if err != nil {
+				return "", err
+			}
+			allDatabases, err := rt.databases.ListDesiredDatabases(r.Context())
+			if err != nil {
+				return "", err
+			}
+			counts = make(map[string]int, len(nodes))
+			for _, s := range allServices {
+				counts[s.NodeID]++
+			}
+			for _, d := range allDatabases {
+				counts[d.NodeID]++
+			}
+			candidateNodes = nodes
+			candidatesLoaded = true
+		}
+		picked := selectLeastLoadedNodeExcluding(candidateNodes, counts, id)
+		if picked != "" {
+			counts[picked]++
+			resp.AutoPlaced = true
+		}
+		return picked, nil
+	}
+
 	for _, svc := range services {
-		if err := rt.apps.UpdateServiceNode(r.Context(), svc.Name, targetNodeID); err != nil {
+		target, err := nextTarget()
+		if err != nil {
+			rt.logger.Error("api: drain node: select placement failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("service", svc.Name))
+			resp.Errors = append(resp.Errors, fmt.Sprintf("service %s: %s", svc.Name, err.Error()))
+			continue
+		}
+		if err := rt.apps.UpdateServiceNode(r.Context(), svc.Name, target); err != nil {
 			rt.logger.Error("api: drain node: move service failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("service", svc.Name))
 			resp.Errors = append(resp.Errors, fmt.Sprintf("service %s: %s", svc.Name, err.Error()))
 			continue
@@ -405,7 +475,13 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 		rt.teardownServiceContainers(svc.Name, id)
 	}
 	for _, d := range databases {
-		if err := rt.databases.UpdateDatabaseNode(r.Context(), d.Name, targetNodeID); err != nil {
+		target, err := nextTarget()
+		if err != nil {
+			rt.logger.Error("api: drain node: select placement failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("database", d.Name))
+			resp.Errors = append(resp.Errors, fmt.Sprintf("database %s: %s", d.Name, err.Error()))
+			continue
+		}
+		if err := rt.databases.UpdateDatabaseNode(r.Context(), d.Name, target); err != nil {
 			rt.logger.Error("api: drain node: move database failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("database", d.Name))
 			resp.Errors = append(resp.Errors, fmt.Sprintf("database %s: %s", d.Name, err.Error()))
 			continue

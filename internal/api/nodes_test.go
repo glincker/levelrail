@@ -499,6 +499,9 @@ func TestHandleDrainNode_MovesServicesAndDatabases(t *testing.T) {
 	if got.TargetNodeID != "" {
 		t.Errorf("TargetNodeID = %q, want empty (default local node)", got.TargetNodeID)
 	}
+	if got.AutoPlaced {
+		t.Error("AutoPlaced = true, want false: no other node is registered, so this must fall back to local")
+	}
 	if len(got.MovedServices) != 1 || got.MovedServices[0] != "web" {
 		t.Errorf("MovedServices = %v, want [web]", got.MovedServices)
 	}
@@ -614,6 +617,206 @@ func TestHandleDrainNode_UnknownNode_NotFound(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/nonexistent/drain", ""))
 	if rec.Code != http.StatusNotFound {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+// TestHandleDrainNode_AutoPlacementSpreadsAcrossNodes is the actual bug
+// fix: target_node_id omitted with more than one eligible node registered
+// must spread resources via per-resource least-loaded selection, not pile
+// everything onto one node (previously: the local node by default).
+// node_a and node_b start at equal load, so selectLeastLoadedNode's own
+// deterministic tie-break (lexicographically smallest id) makes the
+// resulting placement exact and assertable, not just "spread somehow".
+func TestHandleDrainNode_AutoPlacementSpreadsAcrossNodes(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	seedNode(t, db, "node_1", "draining")
+	seedOnlineNode(t, db, "node_a", "alpha", true)
+	seedOnlineNode(t, db, "node_b", "bravo", true)
+
+	for _, name := range []string{"svc1", "svc2", "svc3", "svc4"} {
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: name, Image: "img:1", Port: 3000}); err != nil {
+			t.Fatalf("seed service %s: %v", name, err)
+		}
+		if err := db.UpdateServiceNode(ctx, name, "node_1"); err != nil {
+			t.Fatalf("place service %s: %v", name, err)
+		}
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/node_1/drain", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got drainNodeResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.AutoPlaced {
+		t.Error("AutoPlaced = false, want true: multiple eligible nodes are registered")
+	}
+	if got.TargetNodeID != "" {
+		t.Errorf("TargetNodeID = %q, want empty: resources may land on different nodes", got.TargetNodeID)
+	}
+
+	wantNode := map[string]string{"svc1": "node_a", "svc2": "node_b", "svc3": "node_a", "svc4": "node_b"}
+	landedOn := map[string]int{}
+	for name, want := range wantNode {
+		svc, err := db.GetDesiredService(ctx, name)
+		if err != nil {
+			t.Fatalf("GetDesiredService(%s): %v", name, err)
+		}
+		landedOn[svc.NodeID]++
+		if svc.NodeID != want {
+			t.Errorf("%s NodeID = %q, want %q", name, svc.NodeID, want)
+		}
+	}
+	if landedOn["node_a"] == 0 || landedOn["node_b"] == 0 {
+		t.Errorf("landedOn = %v, want a real spread across both node_a and node_b, not piled on one", landedOn)
+	}
+}
+
+// TestHandleDrainNode_ExplicitTargetHonoredWithMultipleEligibleNodes
+// proves an explicit target_node_id still overrides auto-placement even
+// when other eligible nodes exist that spread scheduling would otherwise
+// have picked from.
+func TestHandleDrainNode_ExplicitTargetHonoredWithMultipleEligibleNodes(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	seedNode(t, db, "node_1", "draining")
+	seedOnlineNode(t, db, "node_a", "alpha", true)
+	seedOnlineNode(t, db, "node_b", "bravo", true)
+
+	for _, name := range []string{"svc1", "svc2", "svc3"} {
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: name, Image: "img:1", Port: 3000}); err != nil {
+			t.Fatalf("seed service %s: %v", name, err)
+		}
+		if err := db.UpdateServiceNode(ctx, name, "node_1"); err != nil {
+			t.Fatalf("place service %s: %v", name, err)
+		}
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/node_1/drain?target_node_id=node_b", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got drainNodeResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.AutoPlaced {
+		t.Error("AutoPlaced = true, want false: target_node_id was explicit")
+	}
+	if got.TargetNodeID != "node_b" {
+		t.Errorf("TargetNodeID = %q, want node_b", got.TargetNodeID)
+	}
+
+	for _, name := range []string{"svc1", "svc2", "svc3"} {
+		svc, err := db.GetDesiredService(ctx, name)
+		if err != nil {
+			t.Fatalf("GetDesiredService(%s): %v", name, err)
+		}
+		if svc.NodeID != "node_b" {
+			t.Errorf("%s NodeID = %q, want node_b (explicit target must not be spread)", name, svc.NodeID)
+		}
+	}
+}
+
+// TestHandleDrainNode_AutoPlacementSingleOtherNode covers autoPlaceNode's
+// own "one eligible node: selected regardless of load" fallback, applied
+// per resource: with exactly one other eligible node registered, every
+// resource lands on it.
+func TestHandleDrainNode_AutoPlacementSingleOtherNode(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	seedNode(t, db, "node_1", "draining")
+	seedOnlineNode(t, db, "node_a", "alpha", true)
+
+	for _, name := range []string{"svc1", "svc2"} {
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: name, Image: "img:1", Port: 3000}); err != nil {
+			t.Fatalf("seed service %s: %v", name, err)
+		}
+		if err := db.UpdateServiceNode(ctx, name, "node_1"); err != nil {
+			t.Fatalf("place service %s: %v", name, err)
+		}
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/node_1/drain", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got drainNodeResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.AutoPlaced {
+		t.Error("AutoPlaced = false, want true: one other eligible node is registered")
+	}
+
+	for _, name := range []string{"svc1", "svc2"} {
+		svc, err := db.GetDesiredService(ctx, name)
+		if err != nil {
+			t.Fatalf("GetDesiredService(%s): %v", name, err)
+		}
+		if svc.NodeID != "node_a" {
+			t.Errorf("%s NodeID = %q, want node_a", name, svc.NodeID)
+		}
+	}
+}
+
+// TestHandleDrainNode_AutoPlacementDisabled_FallsBackToLocal mirrors
+// TestRouter_AutoPlaceNode's "disabled: local even with other nodes
+// registered" case: WithAutoPlacement(false) must disable per-resource
+// drain placement the same way it disables create placement, not just
+// leave drain with its own separate on/off behavior.
+func TestHandleDrainNode_AutoPlacementDisabled_FallsBackToLocal(t *testing.T) {
+	rt, db := newTestRouter(t)
+	rt.autoPlacementEnabled = false
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	seedNode(t, db, "node_1", "draining")
+	seedOnlineNode(t, db, "node_a", "alpha", true)
+	seedOnlineNode(t, db, "node_b", "bravo", true)
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:1", Port: 3000}); err != nil {
+		t.Fatalf("seed service: %v", err)
+	}
+	if err := db.UpdateServiceNode(ctx, "web", "node_1"); err != nil {
+		t.Fatalf("place service: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/node_1/drain", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got drainNodeResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.AutoPlaced {
+		t.Error("AutoPlaced = true, want false: auto-placement is disabled")
+	}
+
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService: %v", err)
+	}
+	if svc.NodeID != "" {
+		t.Errorf("service NodeID = %q, want empty (local): auto-placement is disabled", svc.NodeID)
 	}
 }
 
