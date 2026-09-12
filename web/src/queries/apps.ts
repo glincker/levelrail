@@ -6,6 +6,7 @@
 import {
   queryOptions,
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
@@ -49,6 +50,15 @@ export function appListQueryOptions() {
     queryKey: appKeys.list(),
     queryFn: fetchApps,
   })
+}
+
+// For call sites that show an app picker as an optional convenience
+// inside another flow (PromoteAppDialog's target-app select): mirrors
+// useNodeListOptional/useProjectListOptional's own doc comment exactly.
+// A failure degrades to "no apps to pick from" rather than blocking the
+// surrounding form.
+export function useAppListOptional() {
+  return useQuery({ ...appListQueryOptions(), retry: false })
 }
 
 // Fetches the full app resource for the detail route, GET
