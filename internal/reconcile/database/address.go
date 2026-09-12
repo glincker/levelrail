@@ -77,6 +77,51 @@ func PasswordSecretKey(engine string) (key string, ok bool) {
 	}
 }
 
+// TLSCertEnvKey, TLSKeyEnvKey are the internal/secrets envKeys a
+// TLS-capable database's generated certificate and private key are
+// stored under (cmd/levelrail's tlsMaterialFor), the same per-database
+// keying PostgresPasswordEnvKey and its siblings already establish.
+// Exported so internal/reconcile/application and internal/api can check
+// whether TLS material exists for a given database without importing
+// cmd/levelrail.
+const (
+	TLSCertEnvKey = "tls_cert"
+	TLSKeyEnvKey  = "tls_key"
+)
+
+// SupportsTLS reports whether engine's managed database gets TLS
+// enabled by this controller (see WithTLS). Scoped to Postgres and
+// Redis for now: both expose an "encrypt without verifying" mode
+// entirely within a standard connection URI (sslmode=require, rediss://)
+// that mainstream client libraries already honor with zero app-side
+// code changes, the "no user action required" bar this feature is held
+// to. The other engines this package reconciles (MySQL, MariaDB,
+// MongoDB, ClickHouse, KeyDB, Dragonfly) don't share that property yet:
+// MongoDB's own tlsAllowInvalidCertificates URI option is a plausible
+// future candidate, KeyDB/Dragonfly fork Redis's TLS flags under
+// different names not verified here, and MySQL/MariaDB have no
+// driver-agnostic URI knob for "encrypt but don't verify" at all.
+func SupportsTLS(engine string) bool {
+	return engine == store.EnginePostgres || engine == store.EngineRedis
+}
+
+// TLSContainerPort returns the port engine's image listens on once TLS
+// is enabled, which for Redis differs from ContainerPort's plaintext
+// port (controller.go's own redisTLSContainerPort doc comment: --port 0
+// disables the plaintext port entirely once TLS is on). Postgres
+// negotiates TLS on its one existing port, so its value is identical to
+// ContainerPort.
+func TLSContainerPort(engine string) (int, bool) {
+	switch engine {
+	case store.EnginePostgres:
+		return postgresContainerPort, true
+	case store.EngineRedis:
+		return redisTLSContainerPort, true
+	default:
+		return 0, false
+	}
+}
+
 // SupportsField reports whether field is resolvable for a database of
 // engine. The single source of truth internal/deploy.Pipeline.validateEnv
 // (deploy-time) and internal/reconcile/application's resolveDatabaseField

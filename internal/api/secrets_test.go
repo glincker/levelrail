@@ -38,11 +38,24 @@ type fakeSecretSetter struct {
 	setLockedErr       error
 	lastLockedKey      string
 	lastLockedTo       bool
+	// existsValues/existsErr back Exists: keyed by serviceName+"/"+envKey,
+	// so a test can make one specific (service, key) pair "exist" without
+	// affecting any other lookup the router makes during the same
+	// request (e.g. databases_test.go's TLSEnabled coverage).
+	existsValues map[string]bool
+	existsErr    error
 	// sets records every SetValueGuarded call in order, for tests that
 	// need to verify more than just the most recent one (e.g. create-app
 	// with multiple secrets at once). lastService/lastKey/lastValue above
 	// stay the older, single-call surface every pre-existing test uses.
 	sets []fakeSecretSetterCall
+}
+
+func (f *fakeSecretSetter) Exists(_ context.Context, serviceName, envKey string) (bool, error) {
+	if f.existsErr != nil {
+		return false, f.existsErr
+	}
+	return f.existsValues[serviceName+"/"+envKey], nil
 }
 
 func (f *fakeSecretSetter) SetValueGuarded(_ context.Context, serviceName, envKey, plaintext string, overwriteLocked bool) error {

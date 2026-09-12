@@ -393,14 +393,17 @@ type Store interface {
 
 // SecretSetter is the surface the secrets handlers need from
 // internal/secrets.Manager: set a value (with a reversible per-key lock
-// guard), list which keys exist, toggle a key's lock, never read one
-// back. Every other secret-backed feature in this file keeps using
-// Manager's plain SetValue directly, unaffected by this narrower
-// interface.
+// guard), list which keys exist, toggle a key's lock, and check whether
+// one exists without decrypting it (Exists, used by
+// databases.go's databaseTLSEnabled to show a database's TLS status,
+// never to read the certificate back). Every other secret-backed
+// feature in this file keeps using Manager's plain SetValue/Resolve
+// directly, unaffected by this narrower interface.
 type SecretSetter interface {
 	SetValueGuarded(ctx context.Context, serviceName, envKey, plaintext string, overwriteLocked bool) error
 	ListKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
 	SetLocked(ctx context.Context, serviceName, envKey string, locked bool) error
+	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
 }
 
 // MasterKeyRotator is the surface POST /api/v1/system/master-key/rotate

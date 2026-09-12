@@ -729,6 +729,11 @@ type DatabaseResource struct {
 	BackupSchedule     string            `json:"backup_schedule,omitempty"`
 	BackupRetain       int               `json:"backup_retain,omitempty"`
 	BackupRetainDays   int               `json:"backup_retain_days,omitempty"`
+	// TLSEnabled mirrors internal/api's databaseResource.TLSEnabled:
+	// response-only, computed fresh on every read, true when this
+	// database's connection string (DATABASE_URL/REDIS_URL, injected
+	// into consuming app containers) is TLS-encrypted.
+	TLSEnabled bool `json:"tls_enabled,omitempty"`
 }
 
 // DatabaseEngineResource mirrors internal/api's databaseEngineResource

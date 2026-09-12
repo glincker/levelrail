@@ -75,6 +75,15 @@ type databaseResource struct {
 	// doc comment. Only ever set by handleSetDatabaseResources; every
 	// other handler returning a databaseResource leaves it false.
 	ResourcesAppliedLive bool `json:"resources_applied_live,omitempty"`
+	// TLSEnabled: response-only, computed fresh on every read rather
+	// than stored (databaseTLSEnabled), true exactly when
+	// internal/reconcile/application's own identically-named check
+	// would resolve this database's connection string with TLS. Not
+	// settable through this or any other resource: TLS activates
+	// automatically at database-creation time (internal/reconcile/
+	// database's WithTLS), never through an operator toggle, so there is
+	// no corresponding request field.
+	TLSEnabled bool `json:"tls_enabled,omitempty"`
 }
 
 func toDatabaseResource(d store.DesiredDatabase) databaseResource {
@@ -92,6 +101,36 @@ func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 		PublicPort:         d.PublicPort,
 		Resources:          d.Resources,
 	}
+}
+
+// toDatabaseResourceWithStatus is toDatabaseResource plus TLSEnabled,
+// which needs a secrets lookup (rt.secrets) toDatabaseResource's own
+// pure-function signature has no room for. Every handler that returns a
+// live database's current state uses this; toDesiredDatabase's own
+// create-time caller (handleCreateDatabase) doesn't, since a database's
+// TLS material is only ever generated once it's actually reconciled.
+func (rt *Router) toDatabaseResourceWithStatus(ctx context.Context, d store.DesiredDatabase) databaseResource {
+	res := toDatabaseResource(d)
+	res.TLSEnabled = rt.databaseTLSEnabled(ctx, d)
+	return res
+}
+
+// databaseTLSEnabled mirrors internal/reconcile/application's own
+// identically-purposed check: true exactly when d's engine
+// database.SupportsTLS and its TLS certificate has actually been
+// generated and persisted (cmd/levelrail's tlsMaterialFor). A lookup
+// error is treated as "not enabled" rather than failing the whole
+// request: this field is a display nicety, never load-bearing for a
+// database's actual reconciled state.
+func (rt *Router) databaseTLSEnabled(ctx context.Context, d store.DesiredDatabase) bool {
+	if rt.secrets == nil || !database.SupportsTLS(d.Engine) {
+		return false
+	}
+	exists, err := rt.secrets.Exists(ctx, d.Name, database.TLSCertEnvKey)
+	if err != nil {
+		return false
+	}
+	return exists
 }
 
 func (d databaseResource) toDesiredDatabase() store.DesiredDatabase {
@@ -165,7 +204,7 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 	out := make([]databaseListResource, 0, len(dbs))
 	for _, d := range dbs {
 		out = append(out, databaseListResource{
-			databaseResource: toDatabaseResource(d),
+			databaseResource: rt.toDatabaseResourceWithStatus(r.Context(), d),
 			Status:           summarizeAppConditions(conditionsByController[databaseControllerName(d.Name)]),
 		})
 	}
@@ -298,7 +337,7 @@ func (rt *Router) handleGetDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, toDatabaseResource(*d))
+	writeJSON(w, http.StatusOK, rt.toDatabaseResourceWithStatus(r.Context(), *d))
 }
 
 // handleDeleteDatabase handles DELETE /api/v1/databases/{name}. Same
@@ -330,7 +369,7 @@ func (rt *Router) reloadAndWriteDatabase(w http.ResponseWriter, r *http.Request,
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, toDatabaseResource(*d))
+	writeJSON(w, http.StatusOK, rt.toDatabaseResourceWithStatus(r.Context(), *d))
 }
 
 // setDatabaseNodeRequest is PUT /api/v1/databases/{name}/node's body,
@@ -499,7 +538,7 @@ func (rt *Router) handleSetDatabaseResources(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	resp := toDatabaseResource(*saved)
+	resp := rt.toDatabaseResourceWithStatus(r.Context(), *saved)
 	resp.ResourcesAppliedLive = rt.applyResourcesLive(r.Context(), saved.NodeID, databaseContainerName(name), saved.Resources)
 	writeJSON(w, http.StatusOK, resp)
 }

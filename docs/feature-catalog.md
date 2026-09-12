@@ -43,7 +43,8 @@ stub, the substance lives in the imported component.
 
 ### Databases (`/databases/$name/*`)
 
-Overview (backups, public access, attachment), logs, metrics, resources.
+Overview (backups, public access, attachment, TLS status badge), logs,
+metrics, resources.
 
 ### System / org structure
 
