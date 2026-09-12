@@ -19,40 +19,26 @@ import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui
 import { toast } from '@/components/ui/toast'
 import { useCreateScheduledTask, useUpdateScheduledTask } from '../queries/scheduledTasks'
 import type { ScheduledTask, ScheduledTaskRequest } from '../types/scheduledTasks'
+import { fromCron, refineCronFields, toCron } from '../lib/cronSchedule'
+import { CronScheduleFields } from './CronScheduleFields'
 
-// Sanity-check for a standard 5-field cron expression ("minute hour
-// day-of-month month day-of-week"), the exact grammar internal/cronexpr
-// parses server-side (cronexpr.Parse). This is a shape check, not a real
-// parser: it catches an obviously wrong field count or character before
-// a round trip, the same "catch the obvious case, let the server's own
-// error surface whatever this lets through" reasoning
-// CreateAlertRuleDialog's own GO_DURATION_REGEX comment establishes for
-// a different field.
-const CRON_FIELD_REGEX = /^[0-9*/,-]+$/
-
-function looksLikeCronExpression(value: string): boolean {
-  const fields = value.trim().split(/\s+/)
-  return fields.length === 5 && fields.every((field) => CRON_FIELD_REGEX.test(field))
-}
-
-const scheduledTaskSchema = z.object({
-  command: z.string().trim().min(1, 'Command is required'),
-  schedule: z
-    .string()
-    .trim()
-    .min(1, 'Schedule is required')
-    .refine(looksLikeCronExpression, {
-      message: 'Must be a 5-field cron expression, e.g. "0 3 * * *"',
-    }),
-  enabled: z.boolean(),
-})
+const scheduledTaskSchema = z
+  .object({
+    command: z.string().trim().min(1, 'Command is required'),
+    frequency: z.enum(['daily', 'weekly', 'custom']),
+    time: z.string().trim(),
+    weekday: z.string().trim(),
+    customCron: z.string().trim(),
+    enabled: z.boolean(),
+  })
+  .superRefine(refineCronFields)
 
 type ScheduledTaskFormValues = z.infer<typeof scheduledTaskSchema>
 
 const DEFAULT_VALUES: ScheduledTaskFormValues = {
   command: '',
-  schedule: '0 3 * * *',
   enabled: true,
+  ...fromCron('0 3 * * *'),
 }
 
 // commandToDisplay/displayToCommand round-trip the backend's argv-array
@@ -92,13 +78,20 @@ export function ScheduledTaskDialog({
   const mutation = isEdit ? updateTask : createTask
 
   const defaultValues: ScheduledTaskFormValues = task
-    ? { command: commandToDisplay(task.command), schedule: task.schedule, enabled: task.enabled }
+    ? {
+        command: commandToDisplay(task.command),
+        enabled: task.enabled,
+        ...fromCron(task.schedule),
+      }
     : DEFAULT_VALUES
 
-  const { control, register, handleSubmit, formState, reset } = useForm<ScheduledTaskFormValues>({
-    resolver: zodResolver(scheduledTaskSchema),
-    defaultValues,
-  })
+  const { control, register, handleSubmit, formState, reset, watch } =
+    useForm<ScheduledTaskFormValues>({
+      resolver: zodResolver(scheduledTaskSchema),
+      defaultValues,
+    })
+
+  const frequency = watch('frequency')
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -111,7 +104,7 @@ export function ScheduledTaskDialog({
   const onSubmit = handleSubmit((values) => {
     const req: ScheduledTaskRequest = {
       command: displayToCommand(values.command),
-      schedule: values.schedule.trim(),
+      schedule: toCron(values),
       enabled: values.enabled,
     }
     const onSuccess = () => {
@@ -181,19 +174,13 @@ export function ScheduledTaskDialog({
             <FieldError errors={[formState.errors.command]} />
           </Field>
 
-          <Field>
-            <FieldLabel htmlFor="task-schedule">Schedule</FieldLabel>
-            <Input
-              id="task-schedule"
-              placeholder="0 3 * * *"
-              {...register('schedule')}
-            />
-            <FieldDescription>
-              Standard 5-field cron: minute hour day-of-month month
-              day-of-week.
-            </FieldDescription>
-            <FieldError errors={[formState.errors.schedule]} />
-          </Field>
+          <CronScheduleFields
+            idPrefix="task-schedule"
+            control={control}
+            register={register}
+            formState={formState}
+            frequency={frequency}
+          />
 
           <Field orientation="horizontal">
             <Controller
