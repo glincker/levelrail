@@ -43,6 +43,8 @@ type (
 	domainMaintenanceResource        = apiclient.DomainMaintenanceResource
 	domainTLSCertResource            = apiclient.DomainTLSCertResource
 	setDomainTLSCertRequest          = apiclient.SetDomainTLSCertRequest
+	domainWAFResource                = apiclient.DomainWAFResource
+	setDomainWAFRequest              = apiclient.SetDomainWAFRequest
 	domainCheckResource              = apiclient.DomainCheckResource
 	cloneAppRequest                  = apiclient.CloneAppRequest
 	imageResource                    = apiclient.ImageResource

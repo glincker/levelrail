@@ -660,6 +660,38 @@ func (c *Client) ClearDomainTLSCert(ctx context.Context, name, domain string) (D
 	return out, err
 }
 
+// domainWAFPath builds /api/v1/apps/{name}/domains/{domain}/waf, shared
+// by all three domain WAF/rate-limit methods below, mirroring
+// domainAuthPath's identical shape for a different per-domain toggle.
+func domainWAFPath(name, domain string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/domains/" + PathEscape(domain) + "/waf"
+}
+
+// GetDomainWAF calls GET /api/v1/apps/{name}/domains/{domain}/waf:
+// domain's current WAF and rate-limit state.
+func (c *Client) GetDomainWAF(ctx context.Context, name, domain string) (DomainWAFResource, error) {
+	var out DomainWAFResource
+	err := c.do(ctx, http.MethodGet, domainWAFPath(name, domain), nil, &out)
+	return out, err
+}
+
+// SetDomainWAF calls PUT /api/v1/apps/{name}/domains/{domain}/waf: sets
+// WAF and/or rate-limit configuration for domain, enforced by Caddy on
+// the next ingress reconcile pass.
+func (c *Client) SetDomainWAF(ctx context.Context, name, domain string, req SetDomainWAFRequest) (DomainWAFResource, error) {
+	var out DomainWAFResource
+	err := c.do(ctx, http.MethodPut, domainWAFPath(name, domain), req, &out)
+	return out, err
+}
+
+// ClearDomainWAF calls DELETE /api/v1/apps/{name}/domains/{domain}/waf:
+// resets domain to no WAF and no rate limiting.
+func (c *Client) ClearDomainWAF(ctx context.Context, name, domain string) (DomainWAFResource, error) {
+	var out DomainWAFResource
+	err := c.do(ctx, http.MethodDelete, domainWAFPath(name, domain), nil, &out)
+	return out, err
+}
+
 // CheckDomain calls GET /api/v1/apps/{name}/domains/{domain}/check: a
 // real DNS lookup reporting whether domain currently resolves to this
 // control plane's own advertised address.

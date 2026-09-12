@@ -127,6 +127,7 @@ type Router struct {
 	domainMaintenance      DomainMaintenanceStore // always set, same "core Store interface" shape as domainBasicAuth above; unlike it, no secrets dependency at all, so no nil/501 case
 	domainTLSCert          DomainTLSCertStore     // always set, same "core Store interface" shape as domainBasicAuth above
 	domainTLSCertSecrets   DomainTLSCertSecrets   // nil is valid: PUT/DELETE .../domains/{domain}/tls-cert return 501, same shape as domainBasicAuthSecrets above
+	domainWAF              DomainWAFStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	masterKeyRotator       MasterKeyRotator       // nil is valid: POST /system/master-key/rotate returns 501, same shape as domainBasicAuthSecrets above
 	// masterKeyFilePath is where the currently active master key came
 	// from on disk, "" if it was sourced from APP_MASTER_KEY instead
@@ -320,6 +321,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainMaintenance:           s,
 		hookRuns:                    s,
 		domainTLSCert:               s,
+		domainWAF:                   s,
 		lookupHost:                  defaultLookupHost,
 		domainChecks:                newDomainCheckCache(),
 		backupTargets:               s,

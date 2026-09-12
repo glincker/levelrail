@@ -405,6 +405,28 @@ type SetDomainTLSCertRequest struct {
 	Key  string `json:"key"`
 }
 
+// DomainWAFResource mirrors internal/api's domainWAFResource
+// (internal/api/domain_waf.go): GET/PUT/DELETE
+// /api/v1/apps/{name}/domains/{domain}/waf's wire shape.
+type DomainWAFResource struct {
+	Domain           string `json:"domain"`
+	WAFEnabled       bool   `json:"waf_enabled"`
+	WAFMode          string `json:"waf_mode"`
+	RateLimitEnabled bool   `json:"rate_limit_enabled"`
+	RateLimitRPS     int    `json:"rate_limit_rps"`
+	RateLimitBurst   int    `json:"rate_limit_burst"`
+}
+
+// SetDomainWAFRequest mirrors internal/api's setDomainWAFRequest.
+// WAFMode empty defaults server-side to "detect". RateLimitRPS 0 means
+// rate limiting is off, independent of WAFEnabled.
+type SetDomainWAFRequest struct {
+	WAFEnabled     bool   `json:"waf_enabled"`
+	WAFMode        string `json:"waf_mode,omitempty"`
+	RateLimitRPS   int    `json:"rate_limit_rps"`
+	RateLimitBurst int    `json:"rate_limit_burst"`
+}
+
 // DomainCheckResource mirrors internal/api's domainCheckResponse
 // (internal/api/domain_check.go): GET
 // /api/v1/apps/{name}/domains/{domain}/check's wire shape.
