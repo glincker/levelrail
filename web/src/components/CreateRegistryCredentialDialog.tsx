@@ -20,11 +20,50 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
 import { ApiError } from '../lib/apiError'
 import { useBrand } from '../hooks/useBrand'
 import { useCreateRegistryCredential } from '../queries/registryCredentials'
+
+type RegistryHostPreset = 'docker-hub' | 'ghcr' | 'gcr' | 'ecr' | 'acr' | 'custom'
+
+// Fixed-host presets fill registry_host directly; account-specific ones
+// (gcr/ecr/acr) instead clear it and fall back to the free-text input
+// with a hint, since there is no single correct hostname to fill in.
+const REGISTRY_HOST_PRESETS: Record<
+  Exclude<RegistryHostPreset, 'custom'>,
+  { label: string; host?: string; placeholder: string; hint?: string }
+> = {
+  'docker-hub': { label: 'Docker Hub', host: 'docker.io', placeholder: 'docker.io' },
+  ghcr: {
+    label: 'GitHub Container Registry (GHCR)',
+    host: 'ghcr.io',
+    placeholder: 'ghcr.io',
+  },
+  gcr: {
+    label: 'Google Container / Artifact Registry',
+    placeholder: 'gcr.io or us-docker.pkg.dev/my-project/my-repo',
+    hint: 'Classic GCR (gcr.io) and Artifact Registry (region-docker.pkg.dev) hostnames both work here.',
+  },
+  ecr: {
+    label: 'AWS Elastic Container Registry (ECR)',
+    placeholder: '123456789012.dkr.ecr.us-east-1.amazonaws.com',
+    hint: 'Per-AWS-account hostname: account-id.dkr.ecr.region.amazonaws.com',
+  },
+  acr: {
+    label: 'Azure Container Registry (ACR)',
+    placeholder: 'myregistry.azurecr.io',
+    hint: 'Per-Azure-account hostname: registry-name.azurecr.io',
+  },
+}
 
 // Mirrors validateCreateRegistryCredentialRequest (internal/api/
 // registry_credentials.go): name/registry_host/username/password are
@@ -64,17 +103,30 @@ export function CreateRegistryCredentialDialog() {
   const displayName = brand.ShortName || brand.Name
   const [open, setOpen] = useState(false)
   const [revealPassword, setRevealPassword] = useState(false)
+  const [hostPreset, setHostPreset] = useState<RegistryHostPreset>('custom')
   const createCredential = useCreateRegistryCredential()
-  const { register, handleSubmit, formState, reset } =
+  const { register, handleSubmit, formState, reset, setValue } =
     useForm<CreateRegistryCredentialFormValues>({
       resolver: zodResolver(createRegistryCredentialSchema),
       defaultValues,
     })
 
+  const selectedPreset = hostPreset === 'custom' ? undefined : REGISTRY_HOST_PRESETS[hostPreset]
+
+  function handleHostPresetChange(preset: RegistryHostPreset) {
+    setHostPreset(preset)
+    const known = preset === 'custom' ? undefined : REGISTRY_HOST_PRESETS[preset]
+    setValue('registry_host', known?.host ?? '', {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+  }
+
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
       reset(defaultValues)
+      setHostPreset('custom')
       setRevealPassword(false)
       createCredential.reset()
     }
@@ -177,15 +229,43 @@ export function CreateRegistryCredentialDialog() {
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="registry-credential-host">
+                <FieldLabel htmlFor="registry-credential-host-preset">
                   Registry host
                 </FieldLabel>
+                <Select
+                  value={hostPreset}
+                  onValueChange={(value) => {
+                    if (typeof value === 'string') {
+                      handleHostPresetChange(value)
+                    }
+                  }}
+                >
+                  <SelectTrigger id="registry-credential-host-preset" className="w-full">
+                    <SelectValue>
+                      {(value: RegistryHostPreset) =>
+                        value === 'custom' ? 'Custom' : REGISTRY_HOST_PRESETS[value].label
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="docker-hub">{REGISTRY_HOST_PRESETS['docker-hub'].label}</SelectItem>
+                    <SelectItem value="ghcr">{REGISTRY_HOST_PRESETS.ghcr.label}</SelectItem>
+                    <SelectItem value="gcr">{REGISTRY_HOST_PRESETS.gcr.label}</SelectItem>
+                    <SelectItem value="ecr">{REGISTRY_HOST_PRESETS.ecr.label}</SelectItem>
+                    <SelectItem value="acr">{REGISTRY_HOST_PRESETS.acr.label}</SelectItem>
+                    <SelectItem value="custom">Custom</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Input
                   id="registry-credential-host"
                   className="font-mono"
-                  placeholder="ghcr.io"
+                  readOnly={Boolean(selectedPreset?.host)}
+                  placeholder={selectedPreset?.placeholder ?? 'ghcr.io'}
                   {...register('registry_host')}
                 />
+                {selectedPreset?.hint ? (
+                  <FieldDescription>{selectedPreset.hint}</FieldDescription>
+                ) : null}
                 <FieldError errors={[formState.errors.registry_host]} />
               </Field>
 

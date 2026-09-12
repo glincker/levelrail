@@ -26,13 +26,13 @@ import {
 import type { DatabaseResource } from '../types/databaseDetail'
 import type { BackupTarget } from '../types/backupTarget'
 import {
-  WEEKDAY_LABEL,
   fromCron,
   scheduleRetentionSummary,
   scheduleSchema,
   toCron,
   type ScheduleFormValues,
 } from '../lib/cronSchedule'
+import { CronScheduleFields } from './CronScheduleFields'
 
 function scheduleSummary(database: DatabaseResource): string {
   const retention = scheduleRetentionSummary(
@@ -226,85 +226,13 @@ export function BackupScheduleFormView({
           <FieldError errors={[formState.errors.targetId]} />
         </Field>
 
-        <Field>
-          <FieldLabel htmlFor={`${idPrefix}-frequency`}>Frequency</FieldLabel>
-          <Controller
-            control={control}
-            name="frequency"
-            render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={(value: string | null) => {
-                  field.onChange(value ?? 'daily')
-                }}
-              >
-                <SelectTrigger id={`${idPrefix}-frequency`} className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="custom">Custom cron expression</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </Field>
-
-        {frequency === 'weekly' ? (
-          <Field>
-            <FieldLabel htmlFor={`${idPrefix}-weekday`}>
-              Day of week
-            </FieldLabel>
-            <Controller
-              control={control}
-              name="weekday"
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(value: string | null) => {
-                    field.onChange(value ?? '0')
-                  }}
-                >
-                  <SelectTrigger id={`${idPrefix}-weekday`} className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(WEEKDAY_LABEL).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </Field>
-        ) : null}
-
-        {frequency !== 'custom' ? (
-          <Field>
-            <FieldLabel htmlFor={`${idPrefix}-time`}>Time</FieldLabel>
-            <Input id={`${idPrefix}-time`} type="time" {...register('time')} />
-            <FieldError errors={[formState.errors.time]} />
-          </Field>
-        ) : (
-          <Field className="sm:col-span-2">
-            <FieldLabel htmlFor={`${idPrefix}-cron`}>
-              Cron expression
-            </FieldLabel>
-            <Input
-              id={`${idPrefix}-cron`}
-              placeholder="0 3 * * *"
-              className="font-mono"
-              {...register('customCron')}
-            />
-            <FieldDescription>
-              Standard 5-field cron: minute hour day-of-month month day-of-week.
-            </FieldDescription>
-            <FieldError errors={[formState.errors.customCron]} />
-          </Field>
-        )}
+        <CronScheduleFields<ScheduleFormValues>
+          idPrefix={idPrefix}
+          control={control}
+          register={register}
+          formState={formState}
+          frequency={frequency}
+        />
 
         <Field>
           <FieldLabel htmlFor={`${idPrefix}-retain`}>
