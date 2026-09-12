@@ -236,12 +236,16 @@ export function CreateRegistryCredentialDialog() {
                   value={hostPreset}
                   onValueChange={(value) => {
                     if (typeof value === 'string') {
-                      handleHostPresetChange(value as RegistryHostPreset)
+                      handleHostPresetChange(value)
                     }
                   }}
                 >
                   <SelectTrigger id="registry-credential-host-preset" className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {(value: RegistryHostPreset) =>
+                        value === 'custom' ? 'Custom' : REGISTRY_HOST_PRESETS[value].label
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="docker-hub">{REGISTRY_HOST_PRESETS['docker-hub'].label}</SelectItem>

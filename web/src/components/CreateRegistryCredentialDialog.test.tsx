@@ -58,9 +58,12 @@ function renderDialog() {
   )
 }
 
-// Mirrors RegistryImagePicker.test.tsx's own pickOption: retries the
-// open+click pair on base-ui's Select, since a same-tick click can be
-// dropped under concurrent test-file load.
+// Mirrors RegistryImagePicker.test.tsx's own pickOption, plus a
+// pointerdown before the click: base-ui's Select ignores a bare click on
+// an option that isn't already keyboard-highlighted (it treats that as
+// an accidental click from the popup opening under the cursor), and only
+// commits the selection once onPointerDown has marked the interaction as
+// a real mouse pick.
 async function pickOption(
   triggerId: string,
   optionText: string,
@@ -72,7 +75,9 @@ async function pickOption(
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     fireEvent.click(trigger)
     try {
-      fireEvent.click(screen.getByText(optionText))
+      const option = screen.getByText(optionText)
+      fireEvent.pointerDown(option, { pointerType: 'mouse' })
+      fireEvent.click(option)
       settled()
       return
     } catch (err) {
