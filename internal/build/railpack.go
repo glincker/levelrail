@@ -340,6 +340,15 @@ func (c *Client) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 	if progress == nil {
 		progress = func(ProgressEvent) {}
 	}
+	return c.solveAndLoad(ctx, req.Tag, progress, func(solveCtx context.Context, out io.Writer) (*Result, error) {
+		return c.solveRailpack(solveCtx, req, out, progress)
+	})
+}
+
+// solveRailpack is solveDockerfile's Railpack counterpart: the same split
+// between solving and loading, so a dispatched build can export the tar
+// onto the wire instead (SolveRemote, remote.go).
+func (c *Client) solveRailpack(ctx context.Context, req RailpackRequest, out io.Writer, progress func(ProgressEvent)) (*Result, error) {
 	start := time.Now()
 
 	result, err := generateRailpackPlan(req)
@@ -347,22 +356,16 @@ func (c *Client) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 		return nil, err
 	}
 
-	pipeR, pipeW := io.Pipe()
-
-	def, solveOpt, err := newRailpackSolveOpt(ctx, result.Plan, req, pipeW)
+	def, solveOpt, err := newRailpackSolveOpt(ctx, result.Plan, req, nopWriteCloser{out})
 	if err != nil {
-		_ = pipeW.Close()
-		_ = pipeR.Close()
 		return nil, err
 	}
 
 	statusCh := make(chan *bkclient.SolveStatus)
-
 	eg, egCtx := errgroup.WithContext(ctx)
 
 	var solveResp *bkclient.SolveResponse
 	eg.Go(func() error {
-		defer func() { _ = pipeW.Close() }()
 		resp, err := c.bk.Solve(egCtx, def, *solveOpt, statusCh)
 		if err != nil {
 			return fmt.Errorf("build: railpack: solve %q: %w", req.Tag, err)
@@ -370,27 +373,13 @@ func (c *Client) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 		solveResp = resp
 		return nil
 	})
-
 	eg.Go(func() error {
 		relayProgress(statusCh, progress)
 		return nil
 	})
 
-	eg.Go(func() error {
-		defer func() { _ = pipeR.Close() }()
-		return loadImage(egCtx, c.docker, pipeR, req.Tag, progress)
-	})
-
 	if err := eg.Wait(); err != nil {
 		return nil, err
 	}
-
-	res := &Result{
-		Tag:      req.Tag,
-		Duration: time.Since(start),
-	}
-	if solveResp != nil {
-		res.ExporterResponse = solveResp.ExporterResponse
-	}
-	return res, nil
+	return newResult(req.Tag, start, solveResp), nil
 }

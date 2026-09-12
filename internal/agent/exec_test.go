@@ -88,7 +88,7 @@ func newExecHarness(t *testing.T, rt docker.Runtime) *GRPCTransport {
 
 	l := newLoopback()
 	ctx, cancel := context.WithCancel(context.Background())
-	go func() { _ = serveSession(ctx, agentSide{l}, rt, testLogger()) }()
+	go func() { _ = serveSession(ctx, agentSide{l}, rt, nil, testLogger()) }()
 
 	t.Cleanup(func() {
 		cancel()

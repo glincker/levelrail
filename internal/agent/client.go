@@ -98,9 +98,14 @@ type agentClientStream interface {
 // kept out of this function so it stays a single, directly testable
 // connection attempt rather than a policy about how many times or how
 // fast to retry.
-func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtime, logger *slog.Logger) error {
+func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtime, logger *slog.Logger, opts ...SessionOption) error {
 	if logger == nil {
 		logger = slog.Default()
+	}
+
+	var cfg sessionConfig
+	for _, opt := range opts {
+		opt(&cfg)
 	}
 
 	cert, err := tls.X509KeyPair(id.ClientCertPEM, id.ClientKeyPEM)
@@ -127,7 +132,23 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 		return fmt.Errorf("agent: open session: %w", err)
 	}
 
-	return serveSession(ctx, stream, rt, logger)
+	return serveSession(ctx, stream, rt, cfg.builder, logger)
+}
+
+// sessionConfig holds RunSession's optional wiring.
+type sessionConfig struct {
+	builder BuildRunner
+}
+
+// SessionOption configures optional RunSession behavior.
+type SessionOption func(*sessionConfig)
+
+// WithBuildRunner lets this node accept builds dispatched to it by the
+// control plane. Without one, a dispatched build is rejected with a clear
+// error instead of failing partway through: an agent whose local BuildKit
+// is unreachable still serves every container operation normally.
+func WithBuildRunner(runner BuildRunner) SessionOption {
+	return func(c *sessionConfig) { c.builder = runner }
 }
 
 // serveSession is RunSession's pure loop, split out so it's directly
@@ -145,7 +166,7 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 // is not safe for concurrent Send calls, the identical reasoning mux.go's
 // own sendMu already documents for the control-plane side of this same
 // connection.
-func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runtime, logger *slog.Logger) error {
+func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runtime, builder BuildRunner, logger *slog.Logger) error {
 	var sendMu sync.Mutex
 	send := func(msg *agentpb.AgentMessage) {
 		sendMu.Lock()
@@ -161,6 +182,9 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 	execs := NewExecRelay(rt, send)
 	defer execs.CloseAll()
 
+	builds := NewBuildRelay(builder, send)
+	defer builds.CloseAll()
+
 	for {
 		msg, err := stream.Recv()
 		if err != nil {
@@ -173,6 +197,10 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 				execs.Start(ctx, req.GetRequestId(), exec)
 				continue
 			}
+			if b := req.GetBuild(); b != nil {
+				builds.Start(ctx, req.GetRequestId(), b)
+				continue
+			}
 			go func() {
 				resp := Execute(ctx, rt, req, emitEvent)
 				send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Response{Response: resp}})
@@ -183,6 +211,12 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 			execs.Cancel(p.ExecCancel.GetExecId())
 		case *agentpb.ControlMessage_ExecCredit:
 			execs.Credit(p.ExecCredit)
+		case *agentpb.ControlMessage_BuildInput:
+			builds.Input(p.BuildInput)
+		case *agentpb.ControlMessage_BuildCancel:
+			builds.Cancel(p.BuildCancel.GetBuildId())
+		case *agentpb.ControlMessage_BuildCredit:
+			builds.Credit(p.BuildCredit)
 		}
 	}
 }
