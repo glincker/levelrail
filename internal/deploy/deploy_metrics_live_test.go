@@ -15,8 +15,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
-// TestPipeline_Deploy_Live_RecordsBuildDuration is TASKS.md 2.1's
-// remaining-gap proof for build duration: a real BuildKit build against
+// TestPipeline_Deploy_Live_RecordsBuildDuration is the remaining-gap
+// proof for build duration: a real BuildKit build against
 // this package's testdata Dockerfile, wired to a real telemetry.DB via
 // WithBuildMetricsRecorder, actually produces a queryable
 // build_duration_seconds sample with the build's real wall-clock

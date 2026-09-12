@@ -10,6 +10,16 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// ToDesiredService exports toDesiredService for internal/webhook's own
+// legacy single-app path (webhook.Handler.beginDeployAttempt), which has
+// a static spec.Service from its Config but no store.DesiredService to
+// read one back from: it needs the identical spec.Service -> desired
+// state translation this package already does for every real deploy, to
+// build that attempt's store.DeployAttemptSnapshot.
+func ToDesiredService(name, image string, svc spec.Service) (store.DesiredService, error) {
+	return toDesiredService(name, image, svc)
+}
+
 // toDesiredService translates a build's result into the runtime desired
 // state the application controller reconciles against. validateEnv
 // already rejected any unresolvable { from: ... } reference (unknown
@@ -38,6 +48,7 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		Strategy: svc.EffectiveStrategy(),
 		Replicas: svc.EffectiveReplicas(),
 		Labels:   svc.Labels,
+		Command:  svc.Command,
 	}
 
 	if svc.HostPort != 0 {
@@ -61,11 +72,12 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		d.Health = &health
 	}
 
-	if len(svc.Volumes) > 0 {
-		d.Volumes = make([]store.ServiceVolume, len(svc.Volumes))
-		for i, v := range svc.Volumes {
-			d.Volumes[i] = store.ServiceVolume{Name: volumeName(name, v.Name), ContainerPath: v.Path}
+	for _, v := range svc.Volumes {
+		if v.HostPath != "" {
+			d.BindMounts = append(d.BindMounts, store.ServiceBindMount{HostPath: v.HostPath, ContainerPath: v.Path, ReadOnly: v.ReadOnly})
+			continue
 		}
+		d.Volumes = append(d.Volumes, store.ServiceVolume{Name: volumeName(name, v.Name), ContainerPath: v.Path})
 	}
 
 	if svc.Hooks != nil {

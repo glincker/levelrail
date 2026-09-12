@@ -77,23 +77,10 @@ func seedSucceededVolumeBackupForCloneRestore(t *testing.T, db *store.DB, volume
 func TestVolumeCloneRestoreRoutes_RequireAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 
-	routes := []struct {
-		method string
-		target string
-	}{
+	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodPost, "/api/v1/apps/web/volumes/data/restore-as-new"},
 		{http.MethodGet, "/api/v1/apps/web/volumes/data/clone-restores"},
-	}
-	for _, r := range routes {
-		t.Run(r.method+" "+r.target, func(t *testing.T) {
-			req := httptest.NewRequest(r.method, r.target, nil)
-			rec := httptest.NewRecorder()
-			rt.Handler().ServeHTTP(rec, req)
-			if rec.Code != http.StatusUnauthorized {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
-			}
-		})
-	}
+	})
 }
 
 func TestHandleVolumeCloneRestore_NoRunnerConfigured(t *testing.T) {

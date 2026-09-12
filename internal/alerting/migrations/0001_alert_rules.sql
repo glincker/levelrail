@@ -9,9 +9,9 @@
 -- kind='threshold' rules use metric/comparator/threshold/
 -- for_duration_seconds; kind='crashloop' rules use
 -- restart_count_threshold/restart_window_seconds instead. Not split
--- into two tables: TASKS.md 2.5's own framing treats crashloop
--- detection as a built-in alert rule, not a separate system, and a
--- single polymorphic table with kind-specific columns left at their
+-- into two tables: crashloop detection is treated as a built-in alert
+-- rule, not a separate system, and a single polymorphic table with
+-- kind-specific columns left at their
 -- zero value for the other kind mirrors how internal/store.DesiredService
 -- already stores optional, kind-varying shape (Resources, Health) as
 -- nullable JSON rather than separate tables per variant.

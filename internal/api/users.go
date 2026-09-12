@@ -1,8 +1,10 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -116,28 +118,8 @@ func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		displayName = req.Email
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		rt.logger.Error("api: create user: hash password failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	id, err := randomOpaqueID("user_")
-	if err != nil {
-		rt.logger.Error("api: create user: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	hashStr := string(hash)
-	user := store.User{
-		ID:           id,
-		Email:        req.Email,
-		DisplayName:  displayName,
-		PasswordHash: &hashStr,
-		Abilities:    abilities,
-		CreatedAt:    time.Now(),
-	}
-	if err := rt.auth.CreateUser(r.Context(), user); errors.Is(err, store.ErrUserEmailExists) {
+	user, err := rt.createLocalUser(r.Context(), req.Email, displayName, req.Password, abilities)
+	if errors.Is(err, store.ErrUserEmailExists) {
 		writeError(w, http.StatusConflict, "a user with this email already exists")
 		return
 	} else if err != nil {
@@ -147,6 +129,39 @@ func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, toUserResource(user, nil))
+}
+
+// createLocalUser inserts a new local-password user: hash the password,
+// mint an opaque ID, save the row. The one insertion path handleCreateUser
+// and handleAcceptInvite (invites.go) both go through, so a user created
+// via an accepted invite is indistinguishable from one an admin created
+// directly. displayName falling back to email is this function's own
+// default, not each caller's.
+func (rt *Router) createLocalUser(ctx context.Context, email, displayName, password string, abilities []string) (store.User, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return store.User{}, fmt.Errorf("hash password: %w", err)
+	}
+	id, err := randomOpaqueID("user_")
+	if err != nil {
+		return store.User{}, fmt.Errorf("generate id: %w", err)
+	}
+	if displayName == "" {
+		displayName = email
+	}
+	hashStr := string(hash)
+	user := store.User{
+		ID:           id,
+		Email:        email,
+		DisplayName:  displayName,
+		PasswordHash: &hashStr,
+		Abilities:    abilities,
+		CreatedAt:    time.Now(),
+	}
+	if err := rt.auth.CreateUser(ctx, user); err != nil {
+		return store.User{}, err
+	}
+	return user, nil
 }
 
 type updateUserAbilitiesRequest struct {

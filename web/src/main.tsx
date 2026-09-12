@@ -28,8 +28,7 @@ import { routeTree } from './routeTree.gen'
 // reference sidesteps the whole issue.
 let navigateToLogin: (() => void) | null = null
 
-// Global 401 handling (docs-local/research/dashboard-gap-audit-and-
-// devmode.md gap #2): every fetcher under src/queries/*.ts now throws an
+// Global 401 handling: every fetcher under src/queries/*.ts now throws an
 // ApiError with a real status code (lib/apiError.ts) instead of a plain
 // Error, so a 401 arriving from any query or mutation, anywhere in the
 // app, is detected here in exactly one place and redirected to /login,

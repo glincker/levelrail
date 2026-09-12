@@ -8,10 +8,10 @@
 -- collecting and stay queryable for a resource whose desired state has
 -- since been deleted.
 --
--- structured/fields_json implement TASKS.md 2.2's "structured log
--- parsing where the app emits JSON": a line whose full text is valid
+-- structured/fields_json implement structured log
+-- parsing where the app emits JSON: a line whose full text is valid
 -- JSON is flagged structured = 1 and its parsed form is duplicated into
--- fields_json, so a future log viewer (TASKS.md 2.4) can query or render
+-- fields_json, so a future log viewer can query or render
 -- it distinctly without re-parsing message on every read. A line that
 -- doesn't parse as JSON, the common case for most containers, gets
 -- structured = 0 and a NULL fields_json: not an error, just the normal

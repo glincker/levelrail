@@ -1,12 +1,9 @@
-import { useState } from 'react'
 import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
 import type { CloudflareDnsSettings } from '../queries/cloudflareDns'
 import {
   useDisconnectCloudflareDns,
   useUpdateCloudflareDnsSettings,
 } from '../queries/cloudflareDns'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -16,8 +13,12 @@ import {
 } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { toast } from '@/components/ui/toast'
+import {
+  SettingsEnabledRow,
+  SettingsFormActions,
+  SettingsFormAlerts,
+  useTokenToggleForm,
+} from './SettingsCard'
 
 // Instance-level Cloudflare DNS-01 credential: GET/PUT/DELETE
 // /api/v1/settings/cloudflare-dns. Lives next to IngressSettingsCard
@@ -33,43 +34,26 @@ export function CloudflareDnsCard({
 }: {
   settings: CloudflareDnsSettings
 }) {
-  const [enabled, setEnabled] = useState(settings.enabled)
-  const [token, setToken] = useState('')
-  const [formError, setFormError] = useState<string | null>(null)
   const updateSettings = useUpdateCloudflareDnsSettings()
   const disconnect = useDisconnectCloudflareDns()
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setFormError(null)
-    if (enabled && !settings.has_token && !token.trim()) {
-      setFormError(
-        'A Cloudflare API token is required to enable DNS-01 for wildcard domains.',
-      )
-      return
-    }
-    updateSettings.mutate(
-      { enabled, token: token.trim() || undefined },
-      {
-        onSuccess: () => {
-          setToken('')
-          toast.add({ title: 'Cloudflare DNS-01 settings saved.', type: 'success' })
-        },
-      },
-    )
-  }
-
-  function handleDisconnect() {
-    disconnect.mutate(undefined, {
-      onSuccess: () => {
-        setEnabled(false)
-        setToken('')
-        toast.add({ title: 'Cloudflare DNS-01 disconnected.', type: 'success' })
-      },
-    })
-  }
-
-  const pending = updateSettings.isPending || disconnect.isPending
+  const {
+    enabled,
+    setEnabled,
+    token,
+    setToken,
+    formError,
+    handleSubmit,
+    handleDisconnect,
+    pending,
+  } = useTokenToggleForm({
+    settings,
+    updateMutation: updateSettings,
+    disconnectMutation: disconnect,
+    requiredTokenMessage:
+      'A Cloudflare API token is required to enable DNS-01 for wildcard domains.',
+    saveSuccessTitle: 'Cloudflare DNS-01 settings saved.',
+    disconnectSuccessTitle: 'Cloudflare DNS-01 disconnected.',
+  })
 
   return (
     <Card>
@@ -88,21 +72,13 @@ export function CloudflareDnsCard({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">Enabled</p>
-              <p className="text-sm text-muted-foreground">
-                Issues wildcard certificates via DNS-01 instead of skipping
-                them.
-              </p>
-            </div>
-            <Switch
-              checked={enabled}
-              onCheckedChange={setEnabled}
-              disabled={pending}
-              aria-label="Cloudflare DNS-01 enabled"
-            />
-          </div>
+          <SettingsEnabledRow
+            description="Issues wildcard certificates via DNS-01 instead of skipping them."
+            checked={enabled}
+            onCheckedChange={setEnabled}
+            disabled={pending}
+            ariaLabel="Cloudflare DNS-01 enabled"
+          />
 
           <Field>
             <FieldLabel htmlFor="cloudflare-dns-token">
@@ -128,33 +104,24 @@ export function CloudflareDnsCard({
             </FieldDescription>
           </Field>
 
-          {formError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{formError}</AlertDescription>
-            </Alert>
-          ) : null}
-          {updateSettings.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{updateSettings.error.message}</AlertDescription>
-            </Alert>
-          ) : null}
+          <SettingsFormAlerts
+            alerts={[
+              formError ? { key: 'form', message: formError } : null,
+              updateSettings.isError
+                ? { key: 'update', message: updateSettings.error.message }
+                : null,
+            ]}
+          />
 
-          <div className="flex items-center gap-2">
-            <Button type="submit" size="sm" disabled={pending}>
-              {updateSettings.isPending ? 'Saving...' : 'Save'}
-            </Button>
-            {(settings.enabled || settings.has_token) && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={pending}
-                onClick={handleDisconnect}
-              >
-                {disconnect.isPending ? 'Disconnecting...' : 'Disconnect'}
-              </Button>
-            )}
-          </div>
+          <SettingsFormActions
+            pending={pending}
+            savePending={updateSettings.isPending}
+            showSecondary={settings.enabled || settings.has_token}
+            secondaryPending={disconnect.isPending}
+            secondaryLabel="Disconnect"
+            secondaryPendingLabel="Disconnecting..."
+            onSecondaryClick={handleDisconnect}
+          />
         </form>
       </CardContent>
     </Card>

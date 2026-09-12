@@ -1,6 +1,6 @@
 // Wire types for the alert-rule resource, matching
-// internal/api/alerts.go's ruleResource exactly (TASKS.md 2.5/2.7):
-// same field names, same snake_case JSON tags, same "threshold-kind
+// internal/api/alerts.go's ruleResource exactly: same field names, same
+// snake_case JSON tags, same "threshold-kind
 // fields ignored for a crashloop rule and vice versa" shape rather than
 // two separate response types, because that's what the server actually
 // sends back for both kinds through one endpoint.
@@ -40,6 +40,11 @@ export type NotifyKind =
   | 'pushover'
   | 'pagerduty'
   | 'teams'
+  | 'resend'
+  | 'ntfy'
+  | 'gotify'
+  | 'mattermost'
+  | 'lark'
 
 // GET/POST /api/v1/apps/{name}/alerts response shape. `id` and
 // `resource_id` are always server-assigned (ruleResource's doc comment

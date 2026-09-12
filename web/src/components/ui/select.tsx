@@ -8,8 +8,6 @@ import {
   CaretUpIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
-const Select = SelectPrimitive.Root
-
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
     <SelectPrimitive.Group
@@ -138,6 +136,54 @@ function SelectItem({
         <CheckIcon className="pointer-events-none" />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
+  )
+}
+
+interface SelectItemEntry {
+  value: unknown
+  label: React.ReactNode
+}
+
+// base-ui only shows a matched label on the closed trigger when `items` is
+// passed to Select.Root (see SelectValue's resolveSelectedLabel). Callers
+// write labels as SelectItem children instead, so walk the JSX tree once to
+// build that `items` list automatically rather than requiring every call
+// site to duplicate it.
+function collectSelectItems(node: React.ReactNode, out: SelectItemEntry[]): void {
+  React.Children.forEach(node, (child) => {
+    if (
+      !React.isValidElement<{ value?: unknown; children?: React.ReactNode }>(
+        child,
+      )
+    ) {
+      return
+    }
+    if (child.type === SelectItem) {
+      out.push({ value: child.props.value, label: child.props.children ?? null })
+      return
+    }
+    if (child.props.children !== undefined) {
+      collectSelectItems(child.props.children, out)
+    }
+  })
+}
+
+function Select<Value = unknown, Multiple extends boolean | undefined = false>({
+  items,
+  children,
+  ...props
+}: SelectPrimitive.Root.Props<Value, Multiple>) {
+  const derivedItems = React.useMemo(() => {
+    if (items != null) return undefined
+    const collected: SelectItemEntry[] = []
+    collectSelectItems(children, collected)
+    return collected
+  }, [items, children])
+
+  return (
+    <SelectPrimitive.Root items={items ?? derivedItems} {...props}>
+      {children}
+    </SelectPrimitive.Root>
   )
 }
 

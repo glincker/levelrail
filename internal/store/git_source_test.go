@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 func TestSaveAndGetGitSource(t *testing.T) {
@@ -31,6 +33,60 @@ func TestSaveAndGetGitSource(t *testing.T) {
 	}
 	if got.CreatedAt.IsZero() || got.UpdatedAt.IsZero() {
 		t.Errorf("GetGitSource() timestamps not populated: %+v", got)
+	}
+}
+
+// TestSaveAndGetGitSource_Databases covers Databases' own JSON-column
+// round trip (migrations/0091_git_source_databases_spec.sql), the same
+// shape TestSaveAndGetGitSource already proves for Services.
+func TestSaveAndGetGitSource_Databases(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := GitSource{
+		ServiceName: "web",
+		RepoURL:     "https://github.com/org/web.git",
+		Branch:      "main",
+		BuildType:   "dockerfile",
+		Databases: map[string]spec.Database{
+			"main": {Engine: spec.EnginePostgres, Version: "16", EphemeralInPreviews: true},
+		},
+	}
+	if err := db.SaveGitSource(ctx, want); err != nil {
+		t.Fatalf("SaveGitSource() error = %v", err)
+	}
+
+	got, err := db.GetGitSource(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetGitSource() error = %v", err)
+	}
+	main, ok := got.Databases["main"]
+	if !ok {
+		t.Fatal("expected a \"main\" database")
+	}
+	if main.Engine != spec.EnginePostgres || main.Version != "16" || !main.EphemeralInPreviews {
+		t.Errorf("Databases[main] = %+v, want Engine=postgres Version=16 EphemeralInPreviews=true", main)
+	}
+}
+
+// TestGetGitSource_Databases_EmptyDefaultsToNil covers a git source
+// saved with no Databases at all (every one saved before this field
+// existed): reading it back must not error, and must not confuse an
+// absent map with one holding some default entry.
+func TestGetGitSource_Databases_EmptyDefaultsToNil(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveGitSource(ctx, GitSource{ServiceName: "web", RepoURL: "https://github.com/org/web.git", Branch: "main", BuildType: "dockerfile"}); err != nil {
+		t.Fatalf("SaveGitSource() error = %v", err)
+	}
+
+	got, err := db.GetGitSource(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetGitSource() error = %v", err)
+	}
+	if len(got.Databases) != 0 {
+		t.Errorf("Databases = %+v, want empty", got.Databases)
 	}
 }
 

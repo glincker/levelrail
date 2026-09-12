@@ -65,16 +65,11 @@ function splitCommandLine(line: string): { command: string; args: string[] } {
   return { command: command ?? '', args }
 }
 
-// ExecPanel is Overview's one-off command runner: a command input, a
-// Run button, and a read-only output area, deliberately not a real
-// terminal (no PTY, no keystroke-by-keystroke interaction, no session
-// kept alive between runs). See internal/api/exec.go's own package doc
-// comment for exactly why: the backend endpoint this calls is a
-// synchronous run-and-wait, not a stream, so there is nothing here for
-// a fancier UI to attach to yet. Rendered as its own tab
-// (routes/apps/$name/exec.tsx), not a dialog off Overview, the same
-// "large enough a concern to earn its own URL" reasoning
-// routes/apps/$name/deploys's own doc comment gives for deploy history.
+// ExecPanel is the one-off command runner: a command input, a Run
+// button, and a read-only output area. Not a terminal, on purpose: it
+// runs one command and hands back its whole output and real exit code,
+// which is what a scripted check wants and what a shell makes awkward.
+// AppTerminal, above it on the same page, is the interactive half.
 export function ExecPanel({ name }: { name: string }) {
   const execApp = useExecApp(name)
   const { register, handleSubmit, formState, setValue, setFocus } =
@@ -99,10 +94,10 @@ export function ExecPanel({ name }: { name: string }) {
         </CardTitle>
         <CardDescription>
           Runs inside this app&apos;s currently running container and waits for
-          it to finish (up to 30 seconds). Not an interactive shell: no pipes,
-          redirects, or globbing, type{' '}
+          it to finish (up to 30 seconds), then shows its full output and exit
+          code. No pipes, redirects, or globbing here, type{' '}
           <code className="font-mono">sh -c &quot;...&quot;</code> if you need
-          any of those.
+          any of those, or use the terminal above.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -82,12 +82,7 @@ describe('fromCron', () => {
 
   it('round-trips through toCron for a daily schedule', () => {
     const parsed = fromCron('30 3 * * *')
-    const roundTripped = toCron({
-      targetId: 't1',
-      retain: '0',
-      retainDays: '0',
-      ...parsed,
-    })
+    const roundTripped = toCron(parsed)
     expect(roundTripped).toBe('30 3 * * *')
   })
 })

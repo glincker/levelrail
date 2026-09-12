@@ -274,6 +274,62 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		return postJSON(ctx, client, t.NotifyURL, teamsPayload{
 			Type: "MessageCard", Context: "http://schema.org/extensions", Summary: text, Text: text,
 		})
+	case NotifyMattermost:
+		return postJSON(ctx, client, t.NotifyURL, mattermostPayload{Text: summaryDeployText(ev)})
+	case NotifyLark:
+		return postJSON(ctx, client, t.NotifyURL, larkPayload{MsgType: "text", Content: larkContent{Text: summaryDeployText(ev)}})
+	case NotifyRocketChat:
+		emoji := ":rotating_light:"
+		if ev.Succeeded {
+			emoji = ":white_check_mark:"
+		}
+		return postJSON(ctx, client, t.NotifyURL, rocketChatPayload{Text: summaryDeployText(ev), Alias: "Levelrail", Emoji: emoji})
+	case NotifyWebex:
+		return postJSON(ctx, client, t.NotifyURL, webexPayload{Markdown: summaryDeployText(ev)})
+	case NotifyGoogleChat:
+		return postJSON(ctx, client, t.NotifyURL, googleChatPayload{Text: summaryDeployText(ev)})
+	case NotifyOpsgenie:
+		key, err := parseOpsgenieCreds(t.NotifyURL)
+		if err != nil {
+			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
+		}
+		priority := "P1"
+		if ev.Succeeded {
+			priority = "P5"
+		}
+		payload := opsgeniePayload{Message: fmt.Sprintf("deploy: %s", ev.AppName), Description: summaryDeployText(ev), Priority: priority}
+		return postJSONWithAuth(ctx, client, opsgenieAPIURL, payload, "GenieKey "+key)
+	case NotifyGotify:
+		priority := 5
+		if ev.Succeeded {
+			priority = 2
+		}
+		return postJSON(ctx, client, t.NotifyURL, gotifyPayload{Title: ev.AppName, Message: summaryDeployText(ev), Priority: priority})
+	case NotifyNtfy:
+		token, cleanURL, err := extractNtfyToken(t.NotifyURL)
+		if err != nil {
+			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
+		}
+		priority := 4
+		if ev.Succeeded {
+			priority = 3
+		}
+		payload := ntfyPayload{Title: ev.AppName, Message: summaryDeployText(ev), Priority: priority}
+		if token == "" {
+			return postJSON(ctx, client, cleanURL, payload)
+		}
+		return postJSONWithAuth(ctx, client, cleanURL, payload, "Bearer "+token)
+	case NotifyResend:
+		key, to, from, err := parseResendCreds(t.NotifyURL)
+		if err != nil {
+			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
+		}
+		subject := fmt.Sprintf("[Levelrail] deploy succeeded: %s", ev.AppName)
+		if !ev.Succeeded {
+			subject = fmt.Sprintf("[Levelrail] deploy FAILED: %s", ev.AppName)
+		}
+		payload := resendPayload{From: from, To: []string{to}, Subject: subject, Text: summaryDeployText(ev)}
+		return postJSONWithAuth(ctx, client, resendAPIURL, payload, "Bearer "+key)
 	case NotifyEmail:
 		if sender == nil {
 			return fmt.Errorf("alerting: notify deploy outcome: email is not configured on this control plane")

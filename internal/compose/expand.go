@@ -100,6 +100,9 @@ func toSpecService(key string, csvc Service, domain string, composeDir string) (
 		build = spec.Build{Type: spec.BuildImage, Image: csvc.Image}
 	}
 
+	// csvc.Command is not carried through: spec.Service (app.yaml) has no
+	// command field yet, unlike store.DesiredService.Command, which the
+	// direct-import path (ToDesiredServices) does populate.
 	s := spec.Service{
 		Build:  build,
 		Labels: csvc.Labels,

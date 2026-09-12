@@ -37,7 +37,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "get_app",
-		Description: "Get one app's current desired state: image, port, domains, env, resources, health checks.",
+		Description: "Get one app's current desired state: image, port, domains, env, resources, health checks, command override, volumes, bind mounts.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
 		app, err := client.GetApp(ctx, in.Name)
 		if err != nil {
@@ -77,6 +77,28 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 			return nil, apiclient.AppResource{}, fmt.Errorf("roll back app %q to image %q: %w", in.Name, in.Image, err)
 		}
 		return nil, app, nil
+	})
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "clone_app",
+		Description: "Duplicate an existing app's desired state (image, port, env, secret names, resources, health checks, strategy, replicas, project) under a new name, creating a new app. Domains and secret values never carry over: the clone starts domainless and with its secrets unset, and always starts on the local node regardless of where the source is pinned. Fails with a conflict if the new name already exists. This is a mutating, app-creating action, the same category deploy_app/restart_app already expose here.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneAppInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
+		app, err := client.CloneApp(ctx, in.Name, in.NewName)
+		if err != nil {
+			return nil, apiclient.AppResource{}, fmt.Errorf("clone app %q to %q: %w", in.Name, in.NewName, err)
+		}
+		return nil, app, nil
+	})
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "list_app_images",
+		Description: "List every locally-present image tag under an app's current image's repo, newest first. Useful for finding an exact tag to pass to deploy_app or rollback_app. Read-only; an empty list means nothing to suggest, not an error.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.ImageResource, error) {
+		images, err := client.ListAppImages(ctx, in.Name)
+		if err != nil {
+			return nil, nil, fmt.Errorf("list images for app %q: %w", in.Name, err)
+		}
+		return nil, images, nil
 	})
 
 	mcp.AddTool(server, &mcp.Tool{
@@ -133,6 +155,17 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, tailLogEntries(entries, in.Tail), nil
 	})
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "list_deploy_attempts",
+		Description: "List an app's real deploy-attempt history: one row per actual trigger call (manual deploy, build, or webhook), newest first, with status, image, commit SHA, and timestamps. Additive to get_app_status/list_deploys' current reconcile conditions, not a replacement: this is a real log of what was tried, not just the latest state.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.DeployAttemptResource, error) {
+		attempts, err := client.ListDeployAttempts(ctx, in.Name)
+		if err != nil {
+			return nil, nil, fmt.Errorf("list deploy attempts for app %q: %w", in.Name, err)
+		}
+		return nil, attempts, nil
+	})
 }
 
 // tailLogEntries applies get_app_logs' client-side "last N entries"
@@ -154,6 +187,11 @@ func tailLogEntries(entries []apiclient.LogEntryResource, tail int) []apiclient.
 
 type appNameInput struct {
 	Name string `json:"name" jsonschema:"the app's name"`
+}
+
+type cloneAppInput struct {
+	Name    string `json:"name" jsonschema:"the app to duplicate"`
+	NewName string `json:"new_name" jsonschema:"name for the new, cloned app"`
 }
 
 type deployAppInput struct {

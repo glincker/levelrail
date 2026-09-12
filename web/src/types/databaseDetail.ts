@@ -6,10 +6,13 @@
 // backend contract, not a public SDK, and a remapping layer would just
 // be one more place for the two shapes to silently drift apart.
 //
-// node_id carries `omitempty` on the Go side and is response-only:
-// databaseResource's own doc comment is explicit there is no
-// create/edit affordance for it yet (no PUT /databases/{name}/node
-// route), so this type exists to display it, never to send it back.
+// node_id carries `omitempty` on the Go side and is response-only on
+// update: databaseResource's own doc comment is explicit an existing
+// database's placement changes via PUT /api/v1/databases/{name}/node
+// (handleSetDatabaseNode, useSetDatabaseNode) rather than through this
+// type. POST /api/v1/databases (create) is the one exception: an
+// explicit node_id there overrides simple spread scheduling, see
+// CreateDatabaseRequest's own doc comment (queries/databases.ts).
 
 import type { AppStatusSummary, ServiceResources } from './appDetail'
 export type { ServiceResources } from './appDetail'
@@ -21,6 +24,11 @@ export interface DatabaseResource {
   engine: string
   version: string
   node_id?: string
+  // auto_placed carries `omitempty` on the Go side and is response-only,
+  // set only by POST /api/v1/databases: true when the create request
+  // omitted node_id and simple spread scheduling picked a non-local node
+  // for it.
+  auto_placed?: boolean
   // project_id: response-only on PUT, the same shape appDetail.ts
   // documents for AppDetail's own project_id, set via
   // PUT /api/v1/databases/{name}/project (useSetDatabaseProject) or, at
@@ -56,6 +64,13 @@ export interface DatabaseResource {
   backup_schedule?: string
   backup_retain?: number
   backup_retain_days?: number
+  // tls_enabled: response-only, computed fresh on every GET
+  // (internal/api's databaseTLSEnabled), true when this database's
+  // connection string (handed to consuming app containers as
+  // DATABASE_URL/REDIS_URL) is TLS-encrypted. Never settable: TLS
+  // activates automatically at database-creation time, not through an
+  // operator toggle.
+  tls_enabled?: boolean
 }
 
 // GET /api/v1/databases' own wire shape (internal/api/databases.go's

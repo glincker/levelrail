@@ -1,11 +1,10 @@
--- Dashboard & auth: API tokens (TASKS.md, "Backend auth foundation").
+-- Dashboard & auth: API tokens, the backend auth foundation.
 -- The concrete near-term answer to "how does a CLI or MCP server call
--- the API non-interactively," scoped to what Phase 1 actually needs per
--- docs-local/research/theauth-go-fit-assessment.md's recommendation:
--- adopt Coolify's scoped-ability model rather than an all-or-nothing key
--- (docs-local/research/competitor-onboarding-auth-ux.md, finding 9), so
--- an MCP-issued token can be provably read-only at the token layer
--- itself, not just by convention in what a caller chooses to do with it.
+-- the API non-interactively," scoped to what Phase 1 actually needs:
+-- adopt Coolify's scoped-ability model rather than an all-or-nothing
+-- key, so an MCP-issued token can be provably read-only at the token
+-- layer itself, not just by convention in what a caller chooses to do
+-- with it.
 --
 -- Only the hash is ever stored, matching this codebase's existing
 -- instinct (bcrypt for the admin password, session tokens never

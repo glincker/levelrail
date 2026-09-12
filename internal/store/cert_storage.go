@@ -13,7 +13,7 @@ import (
 // StatCertStorageValue when key has no stored value. Named distinctly
 // from ErrServiceNotFound/ErrNodeNotFound, even though the shape is
 // identical, because internal/ingress's certmagic.Storage adapter
-// (TASKS.md 3.6) needs to translate this into fs.ErrNotExist
+// needs to translate this into fs.ErrNotExist
 // specifically, per certmagic.Storage's own doc comment ("Load, Delete,
 // List, and Stat methods should return fs.ErrNotExist if the key does
 // not exist"); a store-package-wide NotFound sentinel would make that
@@ -41,8 +41,8 @@ type CertStorageKeyInfo struct {
 }
 
 // SaveCertStorageValue writes value at key, creating or overwriting.
-// Backs certmagic.Storage's Store method (internal/ingress, TASKS.md
-// 3.6): Caddy's TLS automation calls this to persist ACME account keys,
+// Backs certmagic.Storage's Store method (internal/ingress):
+// Caddy's TLS automation calls this to persist ACME account keys,
 // issued certificates, and OCSP staples.
 func (db *DB) SaveCertStorageValue(ctx context.Context, key string, value []byte) error {
 	_, err := db.ExecContext(ctx, `

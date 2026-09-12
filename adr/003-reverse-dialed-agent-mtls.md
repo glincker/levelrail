@@ -9,10 +9,10 @@ Levelrail needs a way for the control plane to observe and act on containers
 running on remote nodes, including nodes the operator doesn't control the
 network perimeter of: a home lab box behind residential NAT, a VPS with no
 public inbound firewall rule opened, a machine on a network the operator
-can't get a port-forward on. Every tool studied in Phase 0
-(`docs-local/research/prior-art-*.md`) solves node communication by requiring
-*something* to dial *into* the managed node, whether that's an operator's SSH
-session or a Swarm cluster member reaching a peer directly. That requirement
+can't get a port-forward on. Every tool studied in Phase 0 solves node
+communication by requiring *something* to dial *into* the managed node,
+whether that's an operator's SSH session or a Swarm cluster member
+reaching a peer directly. That requirement
 is the thing this ADR rejects, not any one specific competitor's
 implementation of it.
 
@@ -47,8 +47,7 @@ criterion depends on this holding).
   through a real API client). This is the most heavily evidenced rejection
   in the whole research set:
   - **Kamal's own highest-comment GitHub issue, by a wide margin, is a pure
-    transport failure.** `#1619` (76 comments, `prior-art-kamal.md`
-    Q6/Implications point 1): `Net::SSH::Disconnect` breaks every single
+    transport failure.** `#1619` (76 comments): `Net::SSH::Disconnect` breaks every single
     Kamal command for affected users, while a manual `ssh` to the same host
     works fine. Nothing about this issue is about deploy logic, build
     correctness, or health checking, it's Kamal's SSHKit/`net-ssh` session
@@ -65,8 +64,8 @@ criterion depends on this holding).
     (`app/Helpers/SshMultiplexingHelper.php:178-217`). Multiplexing
     amortizes but doesn't eliminate per-call SSH overhead, and it leaves
     behind `ControlMaster` sockets that need a dedicated hourly
-    `CleanupStaleMultiplexedConnections` job just to reap
-    (`prior-art-coolify.md` section 5). That's operational complexity that
+    `CleanupStaleMultiplexedConnections` job just to reap.
+    That's operational complexity that
     exists purely to manage the transport, not to serve a user-facing
     feature.
   - **Dokku has no persistent process at all**, which is a legitimate design
@@ -75,8 +74,8 @@ criterion depends on this holding).
     cannot maintain a live Docker event stream between commands. Its
     boot-time container recovery is a systemd unit explicitly commented in
     its own source as `# temporary hack for
-    https://github.com/dokku/dokku/issues/82`
-    (`prior-art-dokku.md` Q5), and SSH-key-as-the-entire-auth-model produces
+    https://github.com/dokku/dokku/issues/82`,
+    and SSH-key-as-the-entire-auth-model produces
     its own onboarding failure class (`#1242`, 55 comments, users not
     understanding `authorized_keys` *is* the account system). A reverse-
     dialed agent with certificate-based enrollment is a structurally
@@ -88,8 +87,8 @@ criterion depends on this holding).
     lifecycle commands (`docker service scale`, `docker service rm`),
     system/image/volume/builder pruning, and the entire build pipeline
     (git clone plus build command), is a single large shell string executed
-    over an `ssh2` exec channel (`prior-art-dokploy.md` section 5,
-    `execAsyncRemote`). Whichever path is used, both require the control
+    over an `ssh2` exec channel (Dokploy's own `execAsyncRemote`). Whichever
+    path is used, both require the control
     plane to be able to open an outbound TCP connection to port 22 on every
     managed server, exactly the reachability requirement this ADR is
     designed around not needing.
@@ -102,7 +101,7 @@ criterion depends on this holding).
   worker and worker-to-worker reachability to route a published port to
   whichever node currently runs the task. CapRover's own most-discussed
   networking issue, `#1628` ("Worker node can't reach service on another
-  node," 29 comments, `prior-art-caprover.md` section 6), is the direct,
+  node," 29 comments), is the direct,
   empirical cost of that requirement: as soon as nodes aren't uniformly
   reachable from each other, the architecture breaks. A reverse-dialed
   agent has no node-to-node or inbound-to-node reachability requirement at
@@ -116,10 +115,9 @@ criterion depends on this holding).
   concerns (explicitly scoped as Phase 3 work: "Real gRPC transport
   replacing the in-process one, with reconnection, backpressure, and
   version negotiation"). This is a standing cost SSH-per-command tools don't
-  carry between invocations. `prior-art-kamal.md`'s own framing is the
-  right way to think about this trade: "we pay Kamal's exact idle-cost delta
-  to get event-driven state and NAT-friendly multi-node," not "our
-  architecture is simply better."
+  carry between invocations. The honest framing is that Levelrail pays
+  Kamal's exact idle-cost delta to get event-driven state and NAT-friendly
+  multi-node, not that this architecture is simply better.
 - Enrollment needs a join-token UX (Phase 3) instead of "paste in a root SSH
   key," which is a materially higher one-time setup cost in exchange for a
   materially more reliable steady-state transport. That trade needs to be

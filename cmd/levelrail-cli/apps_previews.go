@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"text/tabwriter"
 )
 
@@ -98,7 +99,7 @@ func printPreviewEnvironmentsTable(out io.Writer, previews []previewEnvironmentR
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "PR\tPREVIEW APP\tBRANCH\tSTATUS\tDOMAIN\tUPDATED\tSTALE")
+	_, _ = fmt.Fprintln(tw, "PR\tPREVIEW APP\tBRANCH\tSTATUS\tDOMAIN\tUPDATED\tSTALE\tEPHEMERAL DATABASES")
 	for _, p := range previews {
 		domain := p.Domain
 		if domain == "" {
@@ -108,9 +109,30 @@ func printPreviewEnvironmentsTable(out io.Writer, previews []previewEnvironmentR
 		if p.Stale {
 			stale = "yes"
 		}
-		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\n", p.PRNumber, p.PreviewAppID, p.Branch, p.Status, domain, p.UpdatedAt, stale)
+		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", p.PRNumber, p.PreviewAppID, p.Branch, p.Status, domain, p.UpdatedAt, stale, previewEphemeralDatabasesSummary(p.EphemeralDatabases))
 	}
 	_ = tw.Flush()
+}
+
+// previewEphemeralDatabasesSummary renders one preview row's own
+// EphemeralDatabases as a compact "name(status)" list, "-" when there
+// are none: a table row has no room for the full detail GET
+// .../previews itself already returns, this is just enough to see at a
+// glance whether a preview has a disposable database and whether it or
+// its teardown needs attention.
+func previewEphemeralDatabasesSummary(dbs []previewEphemeralDatabaseResource) string {
+	if len(dbs) == 0 {
+		return "-"
+	}
+	parts := make([]string, len(dbs))
+	for i, d := range dbs {
+		status := d.Ready.Label
+		if d.Status == "teardown_failed" {
+			status = "teardown failed"
+		}
+		parts[i] = fmt.Sprintf("%s(%s)", d.SourceKey, status)
+	}
+	return strings.Join(parts, ", ")
 }
 
 func appsPreviewsListUsage(prog string) string {

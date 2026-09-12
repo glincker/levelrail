@@ -32,6 +32,12 @@ type fakeStore struct {
 	basicAuthErr   error
 	maintenance    []string
 	maintenanceErr error
+	tlsCerts       []store.DomainTLSCert
+	tlsCertsErr    error
+	registry       store.RegistrySettings
+	registryErr    error
+	waf            []store.DomainWAF
+	wafErr         error
 }
 
 func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredService, error) {
@@ -91,6 +97,38 @@ func (f *fakeStore) ListDomainMaintenance(_ context.Context) ([]string, error) {
 		return nil, f.maintenanceErr
 	}
 	return f.maintenance, nil
+}
+
+// ListDomainTLSCerts mirrors ListDomainMaintenance's own "empty unless a
+// test opts in" convention: no BYO certificates unless f.tlsCerts is
+// set, so tests written before this method existed are unaffected.
+func (f *fakeStore) ListDomainTLSCerts(_ context.Context) ([]store.DomainTLSCert, error) {
+	if f.tlsCertsErr != nil {
+		return nil, f.tlsCertsErr
+	}
+	return f.tlsCerts, nil
+}
+
+// GetRegistrySettings mirrors GetIngressSettings' own "zero value unless
+// a test opts in" convention: disabled, no host, matching a fresh
+// migration's seeded row, so tests written before this method existed
+// are unaffected.
+func (f *fakeStore) GetRegistrySettings(_ context.Context) (store.RegistrySettings, error) {
+	if f.registryErr != nil {
+		return store.RegistrySettings{}, f.registryErr
+	}
+	return f.registry, nil
+}
+
+// ListDomainWAF mirrors ListDomainMaintenance's own "empty unless a test
+// opts in" convention: no domains with WAF/rate-limit configured unless
+// f.waf is set, so tests written before this method existed are
+// unaffected.
+func (f *fakeStore) ListDomainWAF(_ context.Context) ([]store.DomainWAF, error) {
+	if f.wafErr != nil {
+		return nil, f.wafErr
+	}
+	return f.waf, nil
 }
 
 // fakeRuntime implements docker.Runtime with an in-memory container set,

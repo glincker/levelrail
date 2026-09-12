@@ -10,6 +10,11 @@ export type DeployNotifyKind =
   | 'pushover'
   | 'pagerduty'
   | 'teams'
+  | 'resend'
+  | 'ntfy'
+  | 'gotify'
+  | 'mattermost'
+  | 'lark'
 
 // notify_url/notify_kind are the *resolved* values: the attached
 // channel's own when channel_id is set, this row's legacy columns

@@ -10,8 +10,8 @@ import (
 )
 
 // coolifyApplication mirrors the subset of Coolify's own Application
-// model (docs-local/competitor-clones/coolify/openapi.json,
-// #/components/schemas/Application) that field mapping actually reads.
+// model, matching Coolify's own public OpenAPI schema
+// (#/components/schemas/Application), that field mapping actually reads.
 // Deliberately partial: this client depends on Coolify's documented wire
 // contract, not a full reimplementation of a model this project doesn't
 // own.
@@ -67,9 +67,9 @@ func (e *coolifyAPIError) Error() string {
 }
 
 // CoolifyClient is a minimal, read-only HTTP client for Coolify's REST
-// API, bearer-token authenticated per its own OpenAPI spec
-// (docs-local/competitor-clones/coolify/openapi.json). This migration
-// tool never writes back to the source Coolify instance.
+// API, bearer-token authenticated per Coolify's own public OpenAPI
+// spec. This migration tool never writes back to the source Coolify
+// instance.
 type CoolifyClient struct {
 	baseURL string
 	token   string

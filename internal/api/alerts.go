@@ -14,7 +14,7 @@ import (
 )
 
 // AlertRules is the surface the alert-rule handlers need from
-// internal/alerting.DB (TASKS.md 2.5/2.7). *alerting.DB satisfies this
+// internal/alerting.DB. *alerting.DB satisfies this
 // structurally, the same "narrow consumer-defined interface" convention
 // TelemetryQuerier and SecretSetter already establish in this package.
 type AlertRules interface {
@@ -195,8 +195,48 @@ func parseOptionalDuration(raw string) (time.Duration, error) {
 	return d, nil
 }
 
-// handleCreateAlertRule handles POST /api/v1/apps/{name}/alerts
-// (TASKS.md 2.5). resource_id is always resourceIDForApp(name),
+// validateAlertRuleReferences checks rule's optional ScheduledTaskID and
+// ChannelID references before it is saved, the two checks
+// handleCreateAlertRule and handleUpdateAlertRule both need: a
+// scheduled_task_id must belong to appName, the same ownership check
+// loadOwnedScheduledTask (scheduled_tasks.go) applies when a caller
+// reaches a task through its own app URL, and a channel_id must name a
+// real, already-saved channel, validated the same way
+// handleCreateDeployNotifyTarget validates its own channel_id. Writes the
+// appropriate error response and returns false on failure.
+func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Request, appName, op string, rule alerting.Rule) bool {
+	if rule.ScheduledTaskID != "" {
+		task, err := rt.scheduledTasks.GetScheduledTask(r.Context(), rule.ScheduledTaskID)
+		if errors.Is(err, store.ErrScheduledTaskNotFound) || (err == nil && task.ServiceName != appName) {
+			writeError(w, http.StatusBadRequest, "unknown scheduled_task_id")
+			return false
+		} else if err != nil {
+			rt.logger.Error("api: "+op+": look up scheduled task failed", slog.String("error", err.Error()), slog.String("scheduled_task_id", rule.ScheduledTaskID))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return false
+		}
+	}
+
+	if rule.ChannelID != "" {
+		if rt.notificationChannels == nil {
+			writeError(w, http.StatusNotImplemented, "notification channels are not configured on this control plane")
+			return false
+		}
+		if _, err := rt.notificationChannels.GetNotificationChannel(r.Context(), rule.ChannelID); errors.Is(err, alerting.ErrNotificationChannelNotFound) {
+			writeError(w, http.StatusBadRequest, "unknown channel_id")
+			return false
+		} else if err != nil {
+			rt.logger.Error("api: "+op+": look up channel failed", slog.String("error", err.Error()), slog.String("channel_id", rule.ChannelID))
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return false
+		}
+	}
+
+	return true
+}
+
+// handleCreateAlertRule handles POST /api/v1/apps/{name}/alerts.
+// resource_id is always resourceIDForApp(name),
 // regardless of what the request body carries: an app's own URL is the
 // only thing that gets to say which resource a rule it creates through
 // that URL is scoped to.
@@ -237,38 +277,8 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// A scheduled_task_id must actually belong to this app, the same
-	// ownership check loadOwnedScheduledTask (scheduled_tasks.go) applies
-	// when a caller reaches a task through its own app URL: without it, a
-	// caller who can guess another app's task ID could point a rule
-	// created through this app's URL at that task instead.
-	if rule.ScheduledTaskID != "" {
-		task, err := rt.scheduledTasks.GetScheduledTask(r.Context(), rule.ScheduledTaskID)
-		if errors.Is(err, store.ErrScheduledTaskNotFound) || (err == nil && task.ServiceName != name) {
-			writeError(w, http.StatusBadRequest, "unknown scheduled_task_id")
-			return
-		} else if err != nil {
-			rt.logger.Error("api: create alert rule: look up scheduled task failed", slog.String("error", err.Error()), slog.String("scheduled_task_id", rule.ScheduledTaskID))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-	}
-
-	// Validated against the real registry first, same as
-	// handleCreateDeployNotifyTarget does for its own channel_id.
-	if rule.ChannelID != "" {
-		if rt.notificationChannels == nil {
-			writeError(w, http.StatusNotImplemented, "notification channels are not configured on this control plane")
-			return
-		}
-		if _, err := rt.notificationChannels.GetNotificationChannel(r.Context(), rule.ChannelID); errors.Is(err, alerting.ErrNotificationChannelNotFound) {
-			writeError(w, http.StatusBadRequest, "unknown channel_id")
-			return
-		} else if err != nil {
-			rt.logger.Error("api: create alert rule: look up channel failed", slog.String("error", err.Error()), slog.String("channel_id", rule.ChannelID))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
+	if !rt.validateAlertRuleReferences(w, r, name, "create alert rule", rule) {
+		return
 	}
 
 	if err := rt.alertRules.SaveRule(r.Context(), rule); err != nil {
@@ -289,8 +299,74 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusCreated, toRuleResource(*saved))
 }
 
-// handleListAlertRules handles GET /api/v1/apps/{name}/alerts
-// (TASKS.md 2.5): every rule scoped to this app's resource, including
+// handleUpdateAlertRule handles PUT /api/v1/apps/{name}/alerts/{id}: a
+// full replace of a rule's configuration, reusing ruleResource.toRule
+// (the same validation handleCreateAlertRule already runs) and
+// alerting.DB's SaveRule, which already upserts and leaves evaluation
+// state untouched (SaveRule's own doc comment), so this needs no
+// separate store-layer update method. The existing rule's ResourceID
+// must match resourceIDForApp(name) first, the same ownership check and
+// 404-either-way information hiding handleDeleteAlertRule's own doc
+// comment explains.
+func (rt *Router) handleUpdateAlertRule(w http.ResponseWriter, r *http.Request) {
+	if rt.alertRules == nil {
+		writeError(w, http.StatusNotImplemented, "alerting is not configured on this control plane")
+		return
+	}
+
+	name := r.PathValue("name")
+	id := r.PathValue("id")
+
+	existing, err := rt.alertRules.GetRule(r.Context(), id)
+	if errors.Is(err, alerting.ErrRuleNotFound) {
+		writeError(w, http.StatusNotFound, "alert rule not found")
+		return
+	}
+	if err != nil {
+		rt.logger.Error("api: update alert rule: load rule failed", slog.String("error", err.Error()), slog.String("rule_id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	if existing.ResourceID != resourceIDForApp(name) {
+		writeError(w, http.StatusNotFound, "alert rule not found")
+		return
+	}
+
+	var req ruleResource
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	req.ResourceID = resourceIDForApp(name) // caller-supplied value, if any, is discarded
+
+	rule, err := req.toRule(id)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if !rt.validateAlertRuleReferences(w, r, name, "update alert rule", rule) {
+		return
+	}
+
+	if err := rt.alertRules.SaveRule(r.Context(), rule); err != nil {
+		rt.logger.Error("api: update alert rule failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("rule_id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	saved, err := rt.alertRules.GetRule(r.Context(), id)
+	if err != nil {
+		rt.logger.Error("api: update alert rule: reload after save failed", slog.String("error", err.Error()), slog.String("rule_id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toRuleResource(*saved))
+}
+
+// handleListAlertRules handles GET /api/v1/apps/{name}/alerts:
+// every rule scoped to this app's resource, including
 // disabled ones, so the UI can show and let an operator re-enable a
 // paused rule.
 func (rt *Router) handleListAlertRules(w http.ResponseWriter, r *http.Request) {
@@ -324,8 +400,8 @@ func (rt *Router) handleListAlertRules(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-// handleDeleteAlertRule handles DELETE /api/v1/apps/{name}/alerts/{id}
-// (TASKS.md 2.5). A rule ID is globally unique and never itself encodes
+// handleDeleteAlertRule handles DELETE /api/v1/apps/{name}/alerts/{id}.
+// A rule ID is globally unique and never itself encodes
 // which app it belongs to, but the URL implies app-scoping, so this
 // verifies the rule's own ResourceID actually matches
 // resourceIDForApp(name) before deleting it: without that check, a

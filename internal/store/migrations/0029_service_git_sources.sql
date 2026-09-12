@@ -1,4 +1,4 @@
--- Per-app git source (TASKS.md 1.7's own deferred follow-up: internal/webhook's
+-- Per-app git source, a deferred follow-up: internal/webhook's
 -- own package doc comment scopes it to "a single app... deploying from a
 -- git push," not a multi-tenant registry). This table is that registry:
 -- one row per app that has a repo connected, so a git push can trigger

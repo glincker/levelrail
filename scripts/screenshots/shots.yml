@@ -1,0 +1,35 @@
+# shot-scraper multi-shot config, run via capture.sh (see docs/screenshots.md).
+#
+# __BASE_URL__ is substituted by capture.sh with the running control
+# plane's actual address (port varies run to run, whatever was free);
+# this file is not run directly against a literal __BASE_URL__ host.
+
+- output: docs/assets/screenshots/app-overview.png
+  url: __BASE_URL__/apps/marketing-site/metrics
+  width: 1280
+  height: 900
+  wait: 3000
+
+- output: docs/assets/screenshots/apps-list.png
+  url: __BASE_URL__/apps/
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/deploy-history.png
+  url: __BASE_URL__/apps/marketing-site/deploys
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/logs.png
+  url: __BASE_URL__/apps/marketing-site/logs
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/nodes.png
+  url: __BASE_URL__/nodes/
+  width: 1280
+  height: 700
+  wait: 2000

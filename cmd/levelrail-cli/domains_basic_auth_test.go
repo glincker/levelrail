@@ -110,47 +110,29 @@ func TestRun_DomainsBasicAuthGet_NotConfigured(t *testing.T) {
 
 func TestRun_DomainsBasicAuthClear(t *testing.T) {
 	var gotMethod, gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotMethod = r.Method
-		gotPath = r.URL.Path
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(domainBasicAuthResource{Domain: "app.example.com"})
-	}))
+	srv := newEchoServer(t, &gotMethod, &gotPath, domainBasicAuthResource{Domain: "app.example.com"})
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"domains", "basic-auth", "clear", "web", "app.example.com", "--api-url", srv.URL}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
+	stdout, _ := runCLIExpectOK(t, []string{"domains", "basic-auth", "clear", "web", "app.example.com", "--api-url", srv.URL})
 	if gotMethod != http.MethodDelete {
 		t.Errorf("method = %q, want DELETE", gotMethod)
 	}
 	if gotPath != "/api/v1/apps/web/domains/app.example.com/auth" {
 		t.Errorf("path = %q, want /api/v1/apps/web/domains/app.example.com/auth", gotPath)
 	}
-	if !strings.Contains(stdout.String(), `basic auth removed for domain "app.example.com"`) {
-		t.Errorf("stdout = %q, want a removal confirmation", stdout.String())
+	if !strings.Contains(stdout, `basic auth removed for domain "app.example.com"`) {
+		t.Errorf("stdout = %q, want a removal confirmation", stdout)
 	}
 }
 
 func TestRun_DomainsBasicAuthClear_JSON(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(domainBasicAuthResource{Domain: "app.example.com"})
-	}))
+	srv := newEchoServer(t, nil, nil, domainBasicAuthResource{Domain: "app.example.com"})
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"domains", "basic-auth", "clear", "web", "app.example.com", "--api-url", srv.URL, "--json"}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
+	stdout, _ := runCLIExpectOK(t, []string{"domains", "basic-auth", "clear", "web", "app.example.com", "--api-url", srv.URL, "--json"})
 	var auth domainBasicAuthResource
-	if err := json.Unmarshal(stdout.Bytes(), &auth); err != nil {
-		t.Fatalf("stdout not valid JSON: %v (stdout=%q)", err, stdout.String())
+	if err := json.Unmarshal([]byte(stdout), &auth); err != nil {
+		t.Fatalf("stdout not valid JSON: %v (stdout=%q)", err, stdout)
 	}
 	if auth.Domain != "app.example.com" {
 		t.Errorf("domain = %q, want app.example.com", auth.Domain)

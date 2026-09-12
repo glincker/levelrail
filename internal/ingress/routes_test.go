@@ -8,7 +8,7 @@ import (
 
 // TestBuildRoutesConfig_Validation covers the pure-logic error paths for
 // the multi-service builder the ingress reconcile controller
-// (internal/reconcile/ingress, TASKS.md 1.6) uses to assemble one config
+// (internal/reconcile/ingress) uses to assemble one config
 // from every currently routable service.
 func TestBuildRoutesConfig_Validation(t *testing.T) {
 	validRoute := ProxyRoute{Hosts: []string{"app.example.internal"}, BackendDial: "127.0.0.1:9090"}
@@ -468,4 +468,259 @@ func TestBuildRoutesConfig_JSONShape(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("route with WAF enabled and no rate limit gets exactly a waf handler ahead of reverse_proxy", func(t *testing.T) {
+		cfg, err := BuildRoutesConfig(RoutesOptions{
+			ServerName: "ingress",
+			ListenAddr: ":443",
+			Routes: []ProxyRoute{
+				{
+					Hosts:       []string{"waffed.example.internal"},
+					BackendDial: "127.0.0.1:9001",
+					WAF:         &WAFConfig{Enabled: true, Blocking: false},
+				},
+				{Hosts: []string{"open.example.internal"}, BackendDial: "127.0.0.1:9002"},
+			},
+		})
+		if err != nil {
+			t.Fatalf("BuildRoutesConfig() error: %v", err)
+		}
+
+		routesByHost := decodeRoutesByHost(t, cfg)
+
+		wafHandle := routesByHost["waffed.example.internal"]
+		if len(wafHandle) != 2 {
+			t.Fatalf("waffed route handle = %v, want [waf, reverse_proxy]", wafHandle)
+		}
+		waf := wafHandle[0].(map[string]any)
+		if waf["handler"] != "waf" {
+			t.Errorf("handle[0].handler = %v, want waf", waf["handler"])
+		}
+		if waf["load_owasp_crs"] != true {
+			t.Errorf("load_owasp_crs = %v, want true", waf["load_owasp_crs"])
+		}
+		if directives, _ := waf["directives"].(string); !strings.Contains(directives, "SecRuleEngine DetectionOnly") {
+			t.Errorf("directives = %q, want SecRuleEngine DetectionOnly for Blocking=false", directives)
+		}
+		if wafHandle[1].(map[string]any)["handler"] != "reverse_proxy" {
+			t.Errorf("handle[1].handler = %v, want reverse_proxy", wafHandle[1])
+		}
+
+		openHandle := routesByHost["open.example.internal"]
+		if len(openHandle) != 1 || openHandle[0].(map[string]any)["handler"] != "reverse_proxy" {
+			t.Errorf("open route handle = %v, want exactly [reverse_proxy], WAF must never affect an opted-out domain", openHandle)
+		}
+	})
+
+	t.Run("WAF Blocking true sets SecRuleEngine On instead of DetectionOnly", func(t *testing.T) {
+		cfg, err := BuildRoutesConfig(RoutesOptions{
+			ServerName: "ingress",
+			ListenAddr: ":443",
+			Routes: []ProxyRoute{
+				{Hosts: []string{"blocking.example.internal"}, BackendDial: "127.0.0.1:9001", WAF: &WAFConfig{Enabled: true, Blocking: true}},
+			},
+		})
+		if err != nil {
+			t.Fatalf("BuildRoutesConfig() error: %v", err)
+		}
+		handle := decodeRoutesByHost(t, cfg)["blocking.example.internal"]
+		directives, _ := handle[0].(map[string]any)["directives"].(string)
+		if !strings.Contains(directives, "SecRuleEngine On") {
+			t.Errorf("directives = %q, want SecRuleEngine On for Blocking=true", directives)
+		}
+	})
+
+	t.Run("route with rate limit only gets a rate_limit handler, no waf handler", func(t *testing.T) {
+		cfg, err := BuildRoutesConfig(RoutesOptions{
+			ServerName: "ingress",
+			ListenAddr: ":443",
+			Routes: []ProxyRoute{
+				{
+					Hosts:       []string{"limited.example.internal"},
+					BackendDial: "127.0.0.1:9001",
+					WAF:         &WAFConfig{RateLimitRPS: 10, RateLimitBurst: 50},
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("BuildRoutesConfig() error: %v", err)
+		}
+		handle := decodeRoutesByHost(t, cfg)["limited.example.internal"]
+		if len(handle) != 2 {
+			t.Fatalf("handle = %v, want [rate_limit, reverse_proxy]", handle)
+		}
+		rl := handle[0].(map[string]any)
+		if rl["handler"] != "rate_limit" {
+			t.Errorf("handle[0].handler = %v, want rate_limit", rl["handler"])
+		}
+		zones := rl["rate_limits"].(map[string]any)
+		sustained := zones["limited.example.internal-sustained"].(map[string]any)
+		if sustained["max_events"] != float64(100) || sustained["window"] != "10s" {
+			t.Errorf("sustained zone = %v, want max_events=100 (10*rps) window=10s", sustained)
+		}
+		burst := zones["limited.example.internal-burst"].(map[string]any)
+		if burst["max_events"] != float64(50) || burst["window"] != "1s" {
+			t.Errorf("burst zone = %v, want max_events=50 window=1s", burst)
+		}
+	})
+
+	t.Run("rate limit burst at or below rps adds no separate burst zone", func(t *testing.T) {
+		cfg, err := BuildRoutesConfig(RoutesOptions{
+			ServerName: "ingress",
+			ListenAddr: ":443",
+			Routes: []ProxyRoute{
+				{
+					Hosts:       []string{"steady.example.internal"},
+					BackendDial: "127.0.0.1:9001",
+					WAF:         &WAFConfig{RateLimitRPS: 10, RateLimitBurst: 10},
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("BuildRoutesConfig() error: %v", err)
+		}
+		handle := decodeRoutesByHost(t, cfg)["steady.example.internal"]
+		zones := handle[0].(map[string]any)["rate_limits"].(map[string]any)
+		if len(zones) != 1 {
+			t.Errorf("zones = %v, want exactly one (no burst zone when burst <= rps)", zones)
+		}
+	})
+
+	t.Run("WAF and rate limit together: rate_limit runs before waf, both before reverse_proxy", func(t *testing.T) {
+		cfg, err := BuildRoutesConfig(RoutesOptions{
+			ServerName: "ingress",
+			ListenAddr: ":443",
+			Routes: []ProxyRoute{
+				{
+					Hosts:       []string{"both.example.internal"},
+					BackendDial: "127.0.0.1:9001",
+					WAF:         &WAFConfig{Enabled: true, Blocking: true, RateLimitRPS: 5},
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("BuildRoutesConfig() error: %v", err)
+		}
+		handle := decodeRoutesByHost(t, cfg)["both.example.internal"]
+		if len(handle) != 3 {
+			t.Fatalf("handle = %v, want [rate_limit, waf, reverse_proxy]", handle)
+		}
+		if handle[0].(map[string]any)["handler"] != "rate_limit" {
+			t.Errorf("handle[0].handler = %v, want rate_limit", handle[0])
+		}
+		if handle[1].(map[string]any)["handler"] != "waf" {
+			t.Errorf("handle[1].handler = %v, want waf", handle[1])
+		}
+		if handle[2].(map[string]any)["handler"] != "reverse_proxy" {
+			t.Errorf("handle[2].handler = %v, want reverse_proxy", handle[2])
+		}
+	})
+
+	t.Run("domain with a BYO TLS certificate gets a load_pem entry alongside automation", func(t *testing.T) {
+		cfg, err := BuildRoutesConfig(RoutesOptions{
+			ServerName: "ingress",
+			ListenAddr: ":443",
+			TLS:        true,
+			Routes: []ProxyRoute{
+				{Hosts: []string{"byo.example.internal"}, BackendDial: "127.0.0.1:9001"},
+				{Hosts: []string{"acme.example.internal"}, BackendDial: "127.0.0.1:9002"},
+			},
+			TLSCertificates: []TLSCertificateOverride{
+				{Host: "byo.example.internal", CertPEM: "cert-pem-bytes", KeyPEM: "key-pem-bytes"},
+			},
+		})
+		if err != nil {
+			t.Fatalf("BuildRoutesConfig() error: %v", err)
+		}
+
+		raw, err := json.Marshal(cfg)
+		if err != nil {
+			t.Fatalf("json.Marshal() error: %v", err)
+		}
+		var decoded map[string]any
+		if err := json.Unmarshal(raw, &decoded); err != nil {
+			t.Fatalf("json.Unmarshal() error: %v", err)
+		}
+
+		tlsApp := decoded["apps"].(map[string]any)["tls"].(map[string]any)
+
+		// The internal-issuer automation policy still covers both hosts:
+		// BuildRoutesConfig never special-cases a BYO host out of
+		// Subjects. Caddy itself is what skips issuance for a host with a
+		// matching loaded certificate (caddyhttp's
+		// AutoHTTPSConfig.IgnoreLoadedCerts check), not this builder.
+		policies := tlsApp["automation"].(map[string]any)["policies"].([]any)
+		subjects := policies[0].(map[string]any)["subjects"].([]any)
+		if len(subjects) != 2 {
+			t.Errorf("subjects = %v, want both hosts, BYO and ACME/internal alike", subjects)
+		}
+
+		certificates, ok := tlsApp["certificates"].(map[string]any)
+		if !ok {
+			t.Fatalf("tls.certificates missing, want a load_pem entry")
+		}
+		loadPEM, ok := certificates["load_pem"].([]any)
+		if !ok || len(loadPEM) != 1 {
+			t.Fatalf("tls.certificates.load_pem = %v, want exactly one pair", certificates["load_pem"])
+		}
+		pair := loadPEM[0].(map[string]any)
+		if pair["certificate"] != "cert-pem-bytes" || pair["key"] != "key-pem-bytes" {
+			t.Errorf("load_pem pair = %v, want the given cert/key PEM verbatim", pair)
+		}
+		tags := pair["tags"].([]any)
+		if len(tags) != 1 || tags[0] != "byo.example.internal" {
+			t.Errorf("load_pem pair tags = %v, want [byo.example.internal]", tags)
+		}
+	})
+
+	t.Run("no BYO certificates: tls.certificates stays omitted", func(t *testing.T) {
+		cfg, err := BuildRoutesConfig(RoutesOptions{
+			ServerName: "ingress",
+			ListenAddr: ":443",
+			TLS:        true,
+			Routes:     []ProxyRoute{{Hosts: []string{"app.example.internal"}, BackendDial: "127.0.0.1:9001"}},
+		})
+		if err != nil {
+			t.Fatalf("BuildRoutesConfig() error: %v", err)
+		}
+		raw, err := json.Marshal(cfg)
+		if err != nil {
+			t.Fatalf("json.Marshal() error: %v", err)
+		}
+		var decoded map[string]any
+		if err := json.Unmarshal(raw, &decoded); err != nil {
+			t.Fatalf("json.Unmarshal() error: %v", err)
+		}
+		tlsApp := decoded["apps"].(map[string]any)["tls"].(map[string]any)
+		if _, has := tlsApp["certificates"]; has {
+			t.Errorf("tls.certificates present with no TLSCertificates configured, want it omitted")
+		}
+	})
+}
+
+// decodeRoutesByHost marshals cfg to JSON and back, returning each
+// route's Handle chain keyed by its first matched host. Every route this
+// package builds matches on a single host or a set of hosts sharing one
+// identical Handle, so keying by the first host alone is enough for
+// every test that uses this helper.
+func decodeRoutesByHost(t *testing.T, cfg *Config) map[string][]any {
+	t.Helper()
+	raw, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatalf("json.Marshal() error: %v", err)
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		t.Fatalf("json.Unmarshal() error: %v", err)
+	}
+	servers := decoded["apps"].(map[string]any)["http"].(map[string]any)["servers"].(map[string]any)
+	ingressSrv := servers["ingress"].(map[string]any)
+	out := make(map[string][]any)
+	for _, r := range ingressSrv["routes"].([]any) {
+		route := r.(map[string]any)
+		match := route["match"].([]any)[0].(map[string]any)
+		host := match["host"].([]any)[0].(string)
+		out[host] = route["handle"].([]any)
+	}
+	return out
 }

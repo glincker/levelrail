@@ -1,4 +1,4 @@
--- Phase 3 (TASKS.md 3.1): the node registry. Nothing before this
+-- Phase 3: the node registry. Nothing before this
 -- migration has any concept of more than one node at all; every
 -- controller and every store table implicitly assumes the single local
 -- Docker daemon this process itself talks to.
@@ -7,9 +7,9 @@
 -- "the control plane issues a one-time join token, agent exchanges it
 -- for a client certificate"), not by an operator directly POSTing node
 -- details: there is deliberately no INSERT path here from
--- internal/api's 3.1 routes, only list/get/delete. Node creation itself
--- is TASKS.md 3.2 scope (the real gRPC agent binary calling the
--- exchange), once there's an actual agent to issue a certificate to.
+-- internal/api's routes, only list/get/delete. Node creation itself
+-- is out of scope until the real gRPC agent binary calls the
+-- exchange, once there's an actual agent to issue a certificate to.
 CREATE TABLE nodes (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,

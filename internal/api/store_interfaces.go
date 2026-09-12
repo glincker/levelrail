@@ -18,12 +18,12 @@ type AppStore interface {
 	GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 	DeleteDesiredService(ctx context.Context, name string) error
-	// UpdateServiceNode is TASKS.md 3.3's placement mutation, separate
+	// UpdateServiceNode is the placement mutation, separate
 	// from SaveDesiredService on purpose: see store.DB.SaveDesiredService's
 	// own doc comment for why an ordinary app update must never be able
 	// to silently move a service between nodes.
 	UpdateServiceNode(ctx context.Context, name, nodeID string) error
-	// ListDesiredServicesByNode is TASKS.md 3.7's drain and
+	// ListDesiredServicesByNode is the drain and
 	// delete-guard primitive (handleDrainNode, handleDeleteNode): find
 	// what's placed on a node without listing every service.
 	ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]store.DesiredService, error)
@@ -274,6 +274,14 @@ type CloudflareDNSStore interface {
 	UpdateCloudflareDNSSettings(ctx context.Context, s store.CloudflareDNSSettings) error
 }
 
+// RegistryStore is the store surface GET/PUT/DELETE
+// /api/v1/settings/registry need: the single platform-wide row, always
+// present, the same shape CloudflareTunnelStore has for its own row.
+type RegistryStore interface {
+	GetRegistrySettings(ctx context.Context) (store.RegistrySettings, error)
+	UpdateRegistrySettings(ctx context.Context, s store.RegistrySettings) error
+}
+
 // PasswordResetTokenStore is the store surface the forgot-password flow
 // needs: always set, part of the core Store interface.
 type PasswordResetTokenStore interface {
@@ -282,9 +290,20 @@ type PasswordResetTokenStore interface {
 	ClaimPasswordResetToken(ctx context.Context, id string) error
 }
 
+// InviteStore is the store surface the team-invite flow needs: always
+// set, part of the core Store interface, same shape as
+// PasswordResetTokenStore above.
+type InviteStore interface {
+	SaveInvite(ctx context.Context, inv store.Invite) error
+	GetInviteByHash(ctx context.Context, hash string) (*store.Invite, error)
+	GetInviteByID(ctx context.Context, id string) (*store.Invite, error)
+	ListPendingInvites(ctx context.Context) ([]store.Invite, error)
+	RevokeInvite(ctx context.Context, id string) error
+	ClaimInvite(ctx context.Context, id string) error
+}
+
 // TokenStore is the store surface the API-token handlers and the
-// ability-aware auth middleware need (TASKS.md "Backend auth
-// foundation").
+// ability-aware auth middleware need.
 type TokenStore interface {
 	SaveAPIToken(ctx context.Context, t store.APIToken) error
 	GetAPITokenByHash(ctx context.Context, hash string) (*store.APIToken, error)
@@ -352,6 +371,8 @@ type Store interface {
 	DomainStore
 	DomainBasicAuthStore
 	DomainMaintenanceStore
+	DomainTLSCertStore
+	DomainWAFStore
 	GitSourceStore
 	PreviewEnvironmentStore
 	GitHubAppStore
@@ -361,8 +382,10 @@ type Store interface {
 	OAuthIdentityStore
 	EmailSettingsStore
 	CloudflareTunnelStore
+	RegistryStore
 	CloudflareDNSStore
 	PasswordResetTokenStore
+	InviteStore
 	RecoveryCodeStore
 	AuditStore
 	ScheduledTaskStore
@@ -376,14 +399,17 @@ type Store interface {
 
 // SecretSetter is the surface the secrets handlers need from
 // internal/secrets.Manager: set a value (with a reversible per-key lock
-// guard), list which keys exist, toggle a key's lock, never read one
-// back. Every other secret-backed feature in this file keeps using
-// Manager's plain SetValue directly, unaffected by this narrower
-// interface.
+// guard), list which keys exist, toggle a key's lock, and check whether
+// one exists without decrypting it (Exists, used by
+// databases.go's databaseTLSEnabled to show a database's TLS status,
+// never to read the certificate back). Every other secret-backed
+// feature in this file keeps using Manager's plain SetValue/Resolve
+// directly, unaffected by this narrower interface.
 type SecretSetter interface {
 	SetValueGuarded(ctx context.Context, serviceName, envKey, plaintext string, overwriteLocked bool) error
 	ListKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
 	SetLocked(ctx context.Context, serviceName, envKey string, locked bool) error
+	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
 }
 
 // MasterKeyRotator is the surface POST /api/v1/system/master-key/rotate

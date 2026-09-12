@@ -4,7 +4,7 @@
 //
 // masterkey.go, dek.go, and value.go are the primitives layer: MasterKey,
 // DEK wrap/unwrap, and value encrypt/decrypt, standalone and fully
-// tested, knowing nothing about storage. manager.go (TASKS.md 1.7's
+// tested, knowing nothing about storage. manager.go (the secret-storage
 // follow-up, landed 2026-08-12) is the integration layer: Manager
 // combines a MasterKey with internal/store's new service_secrets/
 // service_secret_values tables to generate-or-reuse a per-app DEK,

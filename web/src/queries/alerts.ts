@@ -1,6 +1,6 @@
 // Query-key factory and fetchers for GET/POST /api/v1/apps/{name}/alerts
-// and DELETE /api/v1/apps/{name}/alerts/{id} (internal/api/alerts.go,
-// TASKS.md 2.5/2.7). Kept in its own module for the same reason
+// and DELETE /api/v1/apps/{name}/alerts/{id} (internal/api/alerts.go).
+// Kept in its own module for the same reason
 // queries/metrics.ts and queries/logs.ts are: a genuinely different
 // resource shape than AppDetail, nested under the same app name.
 //
@@ -85,6 +85,45 @@ export function useCreateAlertRule(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (req: CreateAlertRuleRequest) => createAlertRule(appName, req),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: alertRuleKeys.list(appName),
+      })
+    },
+  })
+}
+
+// PUT /api/v1/apps/{name}/alerts/{id} (internal/api/alerts.go's
+// handleUpdateAlertRule). A full replace, same request shape as create;
+// returns the updated rule with its evaluation state preserved (SaveRule
+// never touches firing/pending_since/etc).
+export async function updateAlertRule(
+  appName: string,
+  id: string,
+  req: CreateAlertRuleRequest,
+): Promise<AlertRule> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(appName)}/alerts/${encodeURIComponent(id)}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `update alert rule failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AlertRule
+}
+
+export function useUpdateAlertRule(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, req }: { id: string; req: CreateAlertRuleRequest }) =>
+      updateAlertRule(appName, id, req),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: alertRuleKeys.list(appName),

@@ -52,9 +52,8 @@ func (rt *Router) handleListGitProviders(w http.ResponseWriter, r *http.Request)
 // it isn't "connected" from the picker's point of view either.
 // CanAuthClone doesn't distinguish github.com from a GitHub Enterprise
 // Server instance: the GHE clone-auth gap (isGitHubHTTPSRepoURL
-// hardcoding github.com, docs-local/research/git-provider-connect-ux-
-// unification-proposal.md section 1) is a separately tracked bug, not
-// this endpoint's concern to model.
+// hardcoding github.com) is a separately tracked bug, not this
+// endpoint's concern to model.
 func (rt *Router) githubProviderStatus(ctx context.Context) gitProviderResource {
 	res := gitProviderResource{Provider: "github"}
 	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
@@ -75,8 +74,7 @@ func (rt *Router) githubProviderStatus(ctx context.Context) gitProviderResource 
 // OAuth Application is authorized (an access token exists): a
 // configured-but-not-yet-authorized connection can't list projects
 // either. CanAuthClone stays false: GitLab has no authenticated clone
-// path today (docs-local/research/git-provider-connect-ux-unification-
-// proposal.md section 3's capability table).
+// path today.
 func (rt *Router) gitlabProviderStatus(ctx context.Context) gitProviderResource {
 	res := gitProviderResource{Provider: "gitlab"}
 	if _, err := rt.gitlabApp.GetGitLabAppConnection(ctx); err != nil {

@@ -14,10 +14,10 @@ import (
 )
 
 // This file (logs.go) is the node-local log store: read a container's
-// log stream directly (per TASKS.md 2.2) from the Docker Engine API
+// log stream directly from the Docker Engine API
 // (never the json-file driver's on-disk files), chunk it into batches,
 // index it for full-text search, and flag
-// lines that parse as JSON so a future log viewer (TASKS.md 2.4) can
+// lines that parse as JSON so a future log viewer can
 // render them distinctly. Lives in the same package and the same
 // telemetry.db as store.go's metric samples: ADR 008 frames metrics and
 // logs as the same "node-local telemetry" category, and ADR 009's
@@ -84,8 +84,8 @@ type LogEntry struct {
 	// object; see classifyLine.
 	Structured bool
 	// FieldsJSON holds Message's parsed JSON when Structured is true,
-	// stored in its own column (per TASKS.md 2.2's "store the parsed JSON
-	// separately from the raw line") so a future log viewer doesn't need
+	// stored in its own column, separately from the raw line, so a future
+	// log viewer doesn't need
 	// to re-parse Message to tell structured and plain lines apart or to
 	// render one differently from the other. Empty when Structured is
 	// false.
@@ -237,7 +237,7 @@ func (db *DB) RetainLogs(ctx context.Context, cutoff time.Time) (deleted int64, 
 // classifyLine decides whether raw is a structured (JSON) log line.
 // Only a JSON object counts: a bare JSON string, number, or array is
 // technically valid JSON per encoding/json, but not what "the app emits
-// JSON" (TASKS.md 2.2) actually means in practice, every structured
+// JSON" actually means in practice, every structured
 // logging library (zap, logrus, pino, zerolog, ...) emits one JSON
 // object per line, never a bare scalar or array. Restricting to objects
 // avoids misclassifying an ordinary plain-text line that happens to be a

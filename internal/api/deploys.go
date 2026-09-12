@@ -32,7 +32,7 @@ type deployTriggerRequest struct {
 // points the app's desired image at a new tag; the application
 // controller's next reconcile (once main.go wires one for this app, see
 // router.go's package doc comment) is what actually creates a container
-// from it. This is exactly the mechanism TASKS.md 1.3 documents for
+// from it. This is exactly the mechanism used for
 // rollback ("pointing desired.Image back at an older tag and
 // reconciling converges to it the same way any other redeploy does"),
 // run forward with a newer tag instead of an older one. The build that
@@ -74,7 +74,7 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rt.recordPlainDeployAttempt(r.Context(), name, req.Image)
+	rt.recordPlainDeployAttempt(r.Context(), updated, req.Image)
 
 	writeJSON(w, http.StatusAccepted, toAppResource(updated))
 }
@@ -96,10 +96,13 @@ func (rt *Router) setDesiredImage(ctx context.Context, existing store.DesiredSer
 // recordPlainDeployAttempt records a deploy_attempts row for the plain
 // image-tag path (create, update, and manual redeploy/rollback all share
 // it): it deserves history and rollback treatment just like the two
-// build-triggering paths, even with no build step to wait on. See
-// recordInstantDeployAttempt for the mechanics.
-func (rt *Router) recordPlainDeployAttempt(ctx context.Context, serviceName, image string) {
-	rt.recordInstantDeployAttempt(ctx, serviceName, image, store.DeployAttemptSourceImage)
+// build-triggering paths, even with no build step to wait on. svc is the
+// service's desired state as of this trigger (already carrying image, in
+// every real call site), snapshotted onto the row for
+// GET .../deploys/compare. See recordInstantDeployAttempt for the
+// mechanics.
+func (rt *Router) recordPlainDeployAttempt(ctx context.Context, svc store.DesiredService, image string) {
+	rt.recordInstantDeployAttempt(ctx, svc, image, store.DeployAttemptSourceImage)
 }
 
 // recordInstantDeployAttempt saves and immediately finishes (as
@@ -115,7 +118,8 @@ func (rt *Router) recordPlainDeployAttempt(ctx context.Context, serviceName, ima
 // returned as the caller's own error: the desired-state write already
 // succeeded, so a history-tracking hiccup must never turn an otherwise-
 // successful deploy trigger into a client-visible failure.
-func (rt *Router) recordInstantDeployAttempt(ctx context.Context, serviceName, image, source string) {
+func (rt *Router) recordInstantDeployAttempt(ctx context.Context, svc store.DesiredService, image, source string) {
+	serviceName := svc.Name
 	id, err := store.NewDeployAttemptID()
 	if err != nil {
 		rt.logger.Error("api: record deploy attempt: mint id failed", slog.String("error", err.Error()), slog.String("name", serviceName))
@@ -126,6 +130,7 @@ func (rt *Router) recordInstantDeployAttempt(ctx context.Context, serviceName, i
 		ID: id, ServiceName: serviceName, Image: image,
 		Source: source,
 		Status: store.DeployAttemptStatusRunning, StartedAt: now,
+		Snapshot: store.NewDeployAttemptSnapshot(svc),
 	}); err != nil {
 		rt.logger.Error("api: record deploy attempt: save failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return

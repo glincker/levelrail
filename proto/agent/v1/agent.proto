@@ -1,8 +1,8 @@
-// TASKS.md 3.2: the wire contract for ADR 003's reverse-dialed gRPC
+// The wire contract for ADR 003's reverse-dialed gRPC
 // agent. Message shapes mirror internal/docker's Go types (ContainerSpec,
 // ContainerState, Event, ImageInfo, VolumeMount, PortBinding, Resources)
 // field for field, deliberately: this is the exact narrow surface
-// internal/agent.Transport already committed to in TASKS.md 3.1
+// internal/agent.Transport already committed to
 // (docker.Runtime's own 9 methods, no more), not a redesign.
 //
 // AgentService is defined from the control plane's perspective (it is
@@ -27,8 +27,8 @@ option go_package = "github.com/GLINCKER/levelrail/internal/agent/agentpb;agentp
 import "google/protobuf/timestamp.proto";
 
 service AgentService {
-  // Enroll exchanges a one-time join token (internal/store.NodeJoinToken,
-  // TASKS.md 3.1) for a signed client certificate, over a connection
+  // Enroll exchanges a one-time join token (internal/store.NodeJoinToken)
+  // for a signed client certificate, over a connection
   // that does not yet present a client cert (the token itself is the
   // credential for this one call). Called once per node, before Session
   // is ever called.
@@ -75,29 +75,49 @@ message EnrollResponse {
   bytes ca_cert_pem = 4;
 }
 
-// AgentMessage is one frame the agent sends up the Session stream:
-// either a reply to an outstanding AgentRequest, or an unprompted
-// streamed Docker event.
+// AgentMessage is one frame the agent sends up the Session stream: a
+// reply to an outstanding AgentRequest, an unprompted streamed Docker
+// event, or one frame of an in-flight exec's output or stdin flow
+// control.
 message AgentMessage {
   oneof payload {
     AgentResponse response = 1;
     ProxiedEvent event = 2;
+    ExecOutput exec_output = 3;
+    // ExecCredit here refunds the control plane's stdin window: the
+    // agent has consumed that many ExecInput frames.
+    ExecCredit exec_credit = 4;
+    BuildOutput build_output = 5;
+    // BuildCredit here refunds the control plane's build-context window:
+    // the agent has consumed that many BuildInput frames.
+    BuildCredit build_credit = 6;
   }
 }
 
 // ControlMessage is one frame the control plane sends down the Session
-// stream: always a request. (A dedicated envelope message, not just
-// AgentRequest directly, so this type can grow a second oneof arm later
-// without an incompatible wire change, the same reasoning AgentMessage
-// already needs one today for its two arms.)
+// stream: a request, or one frame of an in-flight exec's stdin,
+// cancellation, or output flow control.
 message ControlMessage {
-  AgentRequest request = 1;
+  oneof payload {
+    AgentRequest request = 1;
+    ExecInput exec_input = 2;
+    ExecCancel exec_cancel = 3;
+    // ExecCredit here refunds the agent's output window: the control
+    // plane has consumed that many ExecOutput frames.
+    ExecCredit exec_credit = 4;
+    BuildInput build_input = 5;
+    BuildCancel build_cancel = 6;
+    // BuildCredit here refunds the agent's output window: the control
+    // plane has consumed that many BuildOutput frames.
+    BuildCredit build_credit = 7;
+    ExecResize exec_resize = 8;
+  }
 }
 
 // AgentRequest is one control-plane-issued operation, tagged with
 // request_id so out-of-order AgentResponse frames on the same stream
-// still resolve to the right caller (internal/agent's multiplexer,
-// TASKS.md 3.2, owns matching these).
+// still resolve to the right caller (internal/agent's multiplexer
+// owns matching these).
 message AgentRequest {
   string request_id = 1;
   oneof op {
@@ -111,6 +131,11 @@ message AgentRequest {
     EnsureVolumeRequest ensure_volume = 9;
     WatchEventsRequest watch_events = 10;
     UpdateResourcesRequest update_resources = 11;
+    EnsureNetworkRequest ensure_network = 12;
+    RemoveNetworkRequest remove_network = 13;
+    ListNetworksByPrefixRequest list_networks_by_prefix = 14;
+    ExecRequest exec = 15;
+    BuildRequest build = 16;
   }
 }
 
@@ -128,10 +153,12 @@ message AgentResponse {
     CreateResponse create = 4;
     ListImagesResponse list_images = 5;
     ListByPrefixResponse list_by_prefix = 6;
-    // Start, Stop, Remove, EnsureVolume, and the WatchEvents
-    // acknowledgment all return nothing but success/Error above, so
-    // none of them needs its own response message.
+    // Start, Stop, Remove, EnsureVolume, RemoveNetwork, and the
+    // WatchEvents acknowledgment all return nothing but success/Error
+    // above, so none of them needs its own response message.
     Empty empty = 7;
+    EnsureNetworkResponse ensure_network = 8;
+    ListNetworksByPrefixResponse list_networks_by_prefix = 9;
   }
 }
 
@@ -250,6 +277,230 @@ message ListByPrefixResponse {
 
 message EnsureVolumeRequest {
   string name = 1;
+}
+
+// NetworkInfo mirrors internal/docker.NetworkInfo.
+message NetworkInfo {
+  string id = 1;
+  string name = 2;
+}
+
+message EnsureNetworkRequest {
+  string name = 1;
+}
+message EnsureNetworkResponse {
+  string id = 1;
+}
+
+message RemoveNetworkRequest {
+  string name = 1;
+}
+
+message ListNetworksByPrefixRequest {
+  string prefix = 1;
+}
+message ListNetworksByPrefixResponse {
+  repeated NetworkInfo networks = 1;
+}
+
+// ExecRequest runs cmd inside an already-running container and streams
+// its stdout back as ExecOutput frames tagged with this request's own
+// request_id. The AgentResponse for this request is only an
+// acknowledgment that the exec attached (or the error that stopped it
+// from attaching); output arrives afterwards, frame by frame, exactly
+// as docker.Runtime.Exec's returned io.ReadCloser produces it locally.
+message ExecRequest {
+  string container_id = 1;
+  repeated string cmd = 2;
+  // AttachStdin selects docker.Runtime.ExecWithInput over Exec: the
+  // control plane then streams ExecInput frames for the same exec_id.
+  bool attach_stdin = 3;
+  // Tty selects docker.TTYRuntime.ExecTTY instead: the command runs on
+  // a real PTY, its output frames carry stdout and stderr already
+  // merged the way a terminal merges them, and the control plane may
+  // send ExecResize frames for the same exec_id. Implies attach_stdin.
+  bool tty = 4;
+  // TtySize is the PTY's initial size, meaningful only when tty is set.
+  ExecTTYSize tty_size = 5;
+  // Env is extra environment for the exec'd process, on top of whatever
+  // the container itself was created with. A terminal needs TERM here.
+  repeated string env = 6;
+}
+
+message ExecTTYSize {
+  uint32 rows = 1;
+  uint32 cols = 2;
+}
+
+// ExecResize tells the agent that a TTY exec's terminal changed size,
+// so the process inside sees a SIGWINCH and redraws. Ignored for an
+// exec that did not ask for a PTY.
+message ExecResize {
+  string exec_id = 1;
+  uint32 rows = 2;
+  uint32 cols = 3;
+}
+
+// ExecInput is one stdin frame for the in-flight exec whose request_id
+// is exec_id. Exactly one of chunk, eof, or error is meaningful per
+// frame: eof ends stdin the way closing a pipe's write half does, error
+// carries a failure reading the control plane's own source reader so
+// the exec fails loudly instead of seeing a silently truncated stdin.
+message ExecInput {
+  string exec_id = 1;
+  bytes chunk = 2;
+  bool eof = 3;
+  string error = 4;
+}
+
+// ExecCancel ends an in-flight exec early, when the control plane's
+// caller closed the stream before the command finished. The agent stops
+// reading and closes its local exec, so the remote process does not
+// outlive the caller that asked for it.
+message ExecCancel {
+  string exec_id = 1;
+}
+
+// ExecCredit refunds flow-control window for one exec, in frames. Both
+// exec directions are windowed: a sender may have at most a fixed
+// number of unacknowledged data frames outstanding, and the receiver
+// credits frames back as it consumes them. Without this, one slow exec
+// consumer would either stall every other logical call sharing the
+// Session stream or force unbounded buffering of a multi-gigabyte dump.
+message ExecCredit {
+  string exec_id = 1;
+  uint32 frames = 2;
+}
+
+// ExecOutput is one stdout frame for an in-flight exec, or that stream's
+// terminal frame. A data frame sets chunk; the terminal frame sets
+// either eof (the command's output ended cleanly) or failure. Exactly
+// one terminal frame is ever sent per exec.
+message ExecOutput {
+  string exec_id = 1;
+  bytes chunk = 2;
+  bool eof = 3;
+  ExecFailure failure = 4;
+}
+
+// ExecFailure is the error that ended an exec's output stream, mirroring
+// the trailing error docker.Runtime.Exec's own io.ReadCloser returns.
+message ExecFailure {
+  string message = 1;
+  // Exit is set when the failure was the command's own non-zero exit
+  // (internal/docker.ExecExitError), so the control plane can rebuild
+  // that typed error rather than a flat string: internal/api's exec
+  // endpoint branches on it with errors.As to report a real exit code.
+  ExecExit exit = 2;
+}
+
+message ExecExit {
+  repeated string cmd = 1;
+  string container = 2;
+  int32 exit_code = 3;
+  string stderr = 4;
+}
+
+// BuildRequest dispatches one image build to this node's own BuildKit
+// instance, so build CPU lands on a dedicated build node instead of the
+// control plane. The control plane streams the build context up as
+// BuildInput frames tagged with this request's request_id, the agent
+// streams progress and the resulting docker-save image tar back as
+// BuildOutput frames under the same ID, and the AgentResponse for this
+// request is only the acknowledgment that the agent accepted the build.
+message BuildRequest {
+  BuildKind kind = 1;
+  // Tag is the image reference the built image is exported under.
+  string tag = 2;
+  // DockerfilePath is relative to the build context root, since the
+  // control plane's own absolute paths mean nothing on this node. Empty
+  // means the context root's own Dockerfile.
+  string dockerfile_path = 3;
+  string target = 4;
+  map<string, string> build_args = 5;
+  bool no_cache = 6;
+  BuildCache cache = 7;
+}
+
+enum BuildKind {
+  BUILD_KIND_UNSPECIFIED = 0;
+  BUILD_KIND_DOCKERFILE = 1;
+  BUILD_KIND_RAILPACK = 2;
+}
+
+// BuildCache carries only internal/build.CacheConfig's registry backend.
+// Its local-directory backend is deliberately not sent: that path names a
+// directory on the control plane's own disk, which this node does not
+// have, while a registry ref is shared by construction.
+message BuildCache {
+  string registry_ref = 1;
+  bool registry_insecure = 2;
+}
+
+// BuildInput is one build-context frame for the in-flight build whose
+// request_id is build_id, carrying a tar stream of the context
+// directory. Exactly one of chunk, eof, or error is meaningful per frame,
+// the same contract ExecInput follows.
+message BuildInput {
+  string build_id = 1;
+  bytes chunk = 2;
+  bool eof = 3;
+  string error = 4;
+}
+
+// BuildCancel ends an in-flight build early, when the control plane's
+// caller gave up before it finished.
+message BuildCancel {
+  string build_id = 1;
+}
+
+// BuildCredit refunds flow-control window for one build, in frames, the
+// same windowing ExecCredit documents for exec.
+message BuildCredit {
+  string build_id = 1;
+  uint32 frames = 2;
+}
+
+// BuildOutput is one frame of an in-flight build: a progress update, a
+// chunk of the resulting image tar, or that stream's terminal frame.
+// Exactly one terminal frame (done or failure) is ever sent per build.
+message BuildOutput {
+  string build_id = 1;
+  oneof frame {
+    BuildProgress progress = 2;
+    bytes image_chunk = 3;
+    BuildDone done = 4;
+    BuildFailure failure = 5;
+  }
+}
+
+// BuildProgress mirrors internal/build.ProgressEvent field for field, so
+// a remote build's log lines reach the control plane's existing SSE
+// stream in the same shape a local build's do.
+message BuildProgress {
+  string step = 1;
+  bool cached = 2;
+  bool completed = 3;
+  string error = 4;
+  string log = 5;
+  string stream = 6;
+}
+
+// BuildDone carries what internal/build.Result holds beyond the tag the
+// control plane already knows.
+message BuildDone {
+  int64 duration_ms = 1;
+  map<string, string> exporter_response = 2;
+}
+
+// BuildFailure is the error that ended a build. unsupported_provider is
+// set when the failure was internal/build.UnsupportedProviderError, so
+// the control plane can rebuild that typed error rather than a flat
+// string: internal/deploy branches on it with errors.As.
+message BuildFailure {
+  string message = 1;
+  bool unsupported_provider = 2;
+  string provider = 3;
 }
 
 // WatchEventsRequest starts (or, sent a second time with the same

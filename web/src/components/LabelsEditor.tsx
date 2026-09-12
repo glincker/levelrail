@@ -20,11 +20,10 @@ import { toast } from '@/components/ui/toast'
 // Mirrors internal/spec.ReservedLabelPrefix (internal/spec/labels.go)
 // exactly: the platform's own reserved Docker label namespace, kept out
 // of operator hands so it stays open for this platform's own bookkeeping
-// labels later. Not the product name (CLAUDE.md's "no product name
-// string in source" rule doesn't apply here), so it's fine as a plain
-// literal on this side too; internal/spec.ValidateLabels is still the
-// real enforcement, this is just an early, friendlier error before a
-// round trip to the server.
+// labels later. Not the product name, so the no-hardcoded-brand-string
+// rule doesn't apply here, and it's fine as a plain literal on this side
+// too; internal/spec.ValidateLabels is still the real enforcement, this
+// is just an early, friendlier error before a round trip to the server.
 const RESERVED_LABEL_PREFIX = 'platform-reserved.'
 
 const labelsSchema = z

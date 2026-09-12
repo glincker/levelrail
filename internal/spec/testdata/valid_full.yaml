@@ -27,11 +27,16 @@ services:
     volumes:
       - name: data
         path: /var/lib/data
+      - hostPath: /srv/web/uploads
+        path: /uploads
+        readOnly: true
     hooks:
       preDeploy: rails db:migrate
       postDeploy: curl -f https://hooks.example.com/deployed
+    command: ["node", "server.js", "--port", "3000"]
 databases:
   main:
     engine: postgres
     version: "16"
     backup: { schedule: "0 3 * * *", retain: 7 }
+    ephemeralInPreviews: true

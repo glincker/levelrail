@@ -15,7 +15,7 @@ import (
 )
 
 // TestController_Reconcile_Live_SecretEnv is the whole-chain proof for
-// TASKS.md 1.7's env-injection follow-up: a real master key, a real
+// the env-injection follow-up: a real master key, a real
 // store, a real secrets.Manager, and a real Controller.Reconcile that
 // creates a real container. Independently verified via the raw Docker
 // Engine API, not this controller's own return value, that the

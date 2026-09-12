@@ -1,8 +1,8 @@
-// Package deploy is TASKS.md 1.4's build integration: it connects
+// Package deploy is the build integration: it connects
 // internal/spec's build declaration to internal/build's BuildKit client,
 // and a successful build's output to internal/store's desired state,
 // closing the loop the application controller (internal/reconcile/
-// application, TASKS.md 1.3) reads from on every reconcile.
+// application) reads from on every reconcile.
 package deploy
 
 import (
@@ -60,7 +60,7 @@ type SecretChecker interface {
 }
 
 // BuildMetricsRecorder is the narrow surface this package needs to
-// record TASKS.md 2.1's build-duration metric. *telemetry.DB satisfies
+// record the build-duration metric. *telemetry.DB satisfies
 // this structurally; not imported directly to avoid a dependency this
 // package doesn't otherwise need, the same reasoning ImageBuilder/
 // ServiceStore/SecretChecker above already establish.
@@ -85,7 +85,7 @@ type Option func(*Pipeline)
 // WithSecretChecker enables { secret: true } env vars to pass through
 // deployment instead of being rejected outright. Without one configured
 // (the default), a service declaring any secret-backed env var fails to
-// deploy with an explicit error, the same as before TASKS.md 1.7's
+// deploy with an explicit error, the same as before envelope-encrypted
 // secret storage existed: an operator running Levelrail without a
 // master key configured should get a clear failure, not a container
 // silently missing a variable it declared as required.
@@ -94,7 +94,7 @@ func WithSecretChecker(checker SecretChecker) Option {
 }
 
 // WithBuildMetricsRecorder enables recording build.Result.Duration as
-// TASKS.md 2.1's build_duration_seconds metric after a successful
+// the build_duration_seconds metric after a successful
 // build. Without one configured (the default), a deploy still succeeds
 // exactly as before, it just isn't measured: a metrics-store outage
 // must never block a real deploy.
@@ -243,16 +243,14 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 
 // deployRailpack mirrors deployDockerfile's shape exactly, substituting
 // Railpack's own provider detection for a user-authored Dockerfile: no
-// build.Path to resolve, since there is no Dockerfile to point at. See
-// docs-local/research/railpack-integration-decision.md for why this
-// needs internal/build's separate BuildRailpack method (a different,
+// build.Path to resolve, since there is no Dockerfile to point at.
+// This needs internal/build's separate BuildRailpack method (a different,
 // Definition-based BuildKit solve path) rather than a variant
 // build.Request fed through deployDockerfile's existing p.builder.Build
 // call.
 //
-// This slice supports exactly two Railpack providers, node and golang
-// (docs-local/research/railpack-integration-decision.md's recommendation
-// section): any other provider Railpack itself detects fails loudly here
+// This slice supports exactly two Railpack providers, node and golang:
+// any other provider Railpack itself detects fails loudly here
 // with the service name and the detected provider named explicitly, the
 // same "fail loudly, not silently" pattern validateEnv already
 // establishes for unsupported env resolution, rather than a generic
@@ -369,8 +367,8 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 // split { secret: true } already has between this existence check and
 // the application controller's own SecretResolver.Resolve call.
 //
-// { secret: true } is resolvable now that TASKS.md 1.7's secret storage
-// exists, but only if this Pipeline has a SecretChecker configured
+// { secret: true } is resolvable now that envelope-encrypted secret
+// storage exists, but only if this Pipeline has a SecretChecker configured
 // (WithSecretChecker); without one, secret-backed env vars are rejected
 // exactly like before, so a control plane running without a master key
 // configured fails a deploy clearly rather than silently starting a

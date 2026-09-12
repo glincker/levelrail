@@ -201,7 +201,7 @@ export function useCreateNodeJoinToken() {
 // DELETE /api/v1/nodes/{id} (internal/api/nodes.go's handleDeleteNode).
 // Same known gap that handler's own doc comment names: this deletes the
 // registry row only, it does not drain or disconnect a real agent
-// session (TASKS.md 3.7, not built).
+// session (not built yet).
 export async function deleteNode(id: string): Promise<void> {
   const res = await fetch(`/api/v1/nodes/${encodeURIComponent(id)}`, {
     method: 'DELETE',

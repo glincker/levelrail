@@ -1,6 +1,6 @@
 // Shared "last N" time range presets for the metrics dashboard and log
-// search panel (TASKS.md 2.4), so both pick from the same vocabulary
-// instead of each inventing its own set of range options.
+// search panel, so both pick from the same vocabulary instead of each
+// inventing its own set of range options.
 
 export type TimeRangeKey = '1h' | '6h' | '24h' | '7d'
 
@@ -10,8 +10,8 @@ export interface TimeRangePreset {
   durationMs: number
   // Passed as the metrics query's `step` param (a Go duration string,
   // internal/api/metrics.go's parseStep). Omitted for the 1h preset:
-  // internal/telemetry's collector samples every 15s (TASKS.md 2.1), so
-  // an hour of raw samples is ~240 points per metric, small enough to
+  // internal/telemetry's collector samples every 15s, so an hour of raw
+  // samples is ~240 points per metric, small enough to
   // render unaggregated. Set for longer ranges so both the response body
   // and the number of rendered chart points stay bounded (7 days of raw
   // 15s samples would be ~40,000 points per metric).

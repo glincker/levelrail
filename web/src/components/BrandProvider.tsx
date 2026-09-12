@@ -6,8 +6,7 @@ import { BrandContext } from '../lib/brandContext'
 // Rebrandability rule: the frontend reads brand from a /api/v1/brand
 // endpoint on boot and hydrates a React context, so no product name or
 // styling is hardcoded in components. routes/__root.tsx used to carry a
-// comment flagging this as deferred work; this closes it
-// (docs-local/research/dashboard-gap-audit-and-devmode.md gap #6). See
+// comment flagging this as deferred work; this closes it. See
 // hooks/useBrand.ts for the consumer side.
 //
 // Relies on the root route's loader having already primed

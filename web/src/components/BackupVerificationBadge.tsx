@@ -11,6 +11,7 @@ import {
   useVerifyBackup,
 } from '../queries/backupVerification'
 import type { BackupHistoryRecord } from '../types/backupHistory'
+import type { BackupVerificationStatus } from '../types/backupVerification'
 
 // One succeeded backup's verification status plus a "Verify" action,
 // rendered alongside DownloadBackupLink/RestoreBackupDialog in
@@ -54,18 +55,41 @@ export function BackupVerificationBadge({
   }
 
   return (
+    <VerificationBadgeAction
+      status={latest?.status}
+      error={latest?.error}
+      checkedBy={latest?.checked_by}
+      disabled={verify.isPending || latest?.status === 'running'}
+      onVerify={handleVerify}
+    />
+  )
+}
+
+// Shared between BackupVerificationBadge and VolumeBackupVerificationBadge:
+// same badge/status logic and Verify action for both resource kinds, only
+// the data source (which hook fetches/mutates) differs between callers.
+export function VerificationBadgeAction({
+  status,
+  error,
+  checkedBy,
+  disabled,
+  onVerify,
+}: {
+  status?: BackupVerificationStatus
+  error?: string
+  checkedBy?: string
+  disabled: boolean
+  onVerify: () => void
+}) {
+  return (
     <div className="flex items-center gap-2">
-      <VerificationStatusBadge
-        status={latest?.status}
-        error={latest?.error}
-        checkedBy={latest?.checked_by}
-      />
+      <VerificationStatusBadge status={status} error={error} checkedBy={checkedBy} />
       <Button
         type="button"
         variant="outline"
         size="sm"
-        disabled={verify.isPending || latest?.status === 'running'}
-        onClick={handleVerify}
+        disabled={disabled}
+        onClick={onVerify}
       >
         Verify
       </Button>
@@ -82,7 +106,7 @@ function VerificationStatusBadge({
   error,
   checkedBy,
 }: {
-  status?: 'running' | 'passed' | 'failed'
+  status?: BackupVerificationStatus
   error?: string
   checkedBy?: string
 }) {
