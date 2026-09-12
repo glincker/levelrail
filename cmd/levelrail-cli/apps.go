@@ -67,6 +67,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsScheduledTasks(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "alerts":
 		return runAppsAlerts(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "deploy-notify-targets":
+		return runAppsDeployNotifyTargets(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "organizations":
 		return runAppsOrganizations(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "projects":
@@ -129,6 +131,7 @@ func appsUsage(prog string) string {
   %[1]s apps log-drain get|set|clear <name> [flags]   configure an external log drain
   %[1]s apps scheduled-tasks <verb> [flags]   manage cron-scheduled commands run inside the app's container
   %[1]s apps alerts <verb> [flags]   manage alert rules (threshold, crashloop, cert_expiry)
+  %[1]s apps deploy-notify-targets <verb> [flags]   manage which notification channels get a deploy's outcome
   %[1]s apps organizations <verb> [flags]   manage organizations, which group projects
   %[1]s apps projects <verb> [flags]   manage projects, which group apps and databases
   %[1]s apps environments <verb> [flags]   manage a project's environments (staging, production, ...)

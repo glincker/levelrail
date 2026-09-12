@@ -1755,6 +1755,28 @@ func (c *Client) DeleteAlertRule(ctx context.Context, name, id string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/alerts/"+PathEscape(id), nil, nil)
 }
 
+// ListDeployNotifyTargets calls GET /api/v1/apps/{name}/deploy-notify-targets:
+// every deploy-outcome notification target scoped to name, including
+// disabled ones.
+func (c *Client) ListDeployNotifyTargets(ctx context.Context, name string) ([]DeployNotifyTargetResource, error) {
+	var out []DeployNotifyTargetResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploy-notify-targets", nil, &out)
+	return out, err
+}
+
+// CreateDeployNotifyTarget calls POST /api/v1/apps/{name}/deploy-notify-targets.
+func (c *Client) CreateDeployNotifyTarget(ctx context.Context, name string, req CreateDeployNotifyTargetRequest) (DeployNotifyTargetResource, error) {
+	var out DeployNotifyTargetResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploy-notify-targets", req, &out)
+	return out, err
+}
+
+// DeleteDeployNotifyTarget calls DELETE
+// /api/v1/apps/{name}/deploy-notify-targets/{id}.
+func (c *Client) DeleteDeployNotifyTarget(ctx context.Context, name, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/deploy-notify-targets/"+PathEscape(id), nil, nil)
+}
+
 // QueryAppMetrics calls GET /api/v1/apps/{name}/metrics?metric=&from=&to=&step=
 // (internal/api/metrics.go's handleQueryMetrics). from/to are sent as
 // RFC3339; step of zero omits the query param, matching the server's own
