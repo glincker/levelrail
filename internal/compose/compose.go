@@ -7,11 +7,12 @@
 // ValidateForBuild) allows build: for exactly that reason: it always
 // has a real checkout. Both paths share the same narrow scope
 // otherwise: environment/ports/volumes support only their short-form
-// syntax, and depends_on parses but is ignored (reconciler-level
-// startup ordering, out of scope here). restart: and networks: parse
-// and are surfaced as non-blocking Notices instead of being silently
-// dropped or translated: see Notices for why neither has a real
-// translation onto how Levelrail runs a service. command: and
+// syntax. restart:, networks:, and depends_on: all parse and are
+// surfaced as non-blocking Notices instead of being silently dropped or
+// translated: see Notices for why none of the three has a real
+// translation onto how Levelrail runs a service (depends_on: in
+// particular is never used to sequence container startup order, that's
+// reconciler-level work out of scope here). command: and
 // entrypoint: both parse and translate into store.DesiredService's own
 // Command and Entrypoint fields. volumes: additionally accepts an
 // absolute host path on the left side as a bind mount (ValidateForBuild
@@ -57,6 +58,9 @@ type Service struct {
 	Networks    Networks
 	Restart     string
 	Healthcheck *Healthcheck
+	// DependsOn is depends_on:, never used to sequence container startup
+	// order (see Notices); kept only so Notices can tell it was declared.
+	DependsOn DependsOn
 	// Command overrides the image's own default CMD
 	// (store.DesiredService.Command), parsed from command:'s own
 	// string-or-list union (Command's own UnmarshalYAML in yaml.go): a
