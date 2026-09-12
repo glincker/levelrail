@@ -45,10 +45,17 @@ type fakeRuntime struct {
 	nextID     int
 	hostPort   int
 
-	createErr          error
-	startErr           error
-	stopErr            error
-	removeErr          error
+	createErr  error
+	startErr   error
+	stopErr    error
+	removeErr  error
+	inspectErr error
+	// inspectErrOnCall fails exactly the Nth (1-based) InspectByName
+	// call and no other, so a test can break the one inspect a specific
+	// step makes (the liveness check's own, say) without breaking the
+	// earlier inspects that step depends on having succeeded.
+	inspectErrOnCall   int
+	inspectCalls       int
 	ensureVolumeErr    error
 	updateResourcesErr error
 	// startErrOnce fails exactly the next Start call, then clears
@@ -58,6 +65,8 @@ type fakeRuntime struct {
 
 	createCalls          int
 	removeCalls          int
+	stopCalls            int
+	startCalls           int
 	updateResourcesCalls int
 	ensureVolumeCalls    []string
 	lastCreateEnv        map[string]string
@@ -146,6 +155,13 @@ func (f *fakeRuntime) seed(name string, running bool) {
 func (f *fakeRuntime) InspectByName(_ context.Context, name string) (*docker.ContainerState, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.inspectCalls++
+	if f.inspectErr != nil {
+		return nil, f.inspectErr
+	}
+	if f.inspectErrOnCall != 0 && f.inspectCalls == f.inspectErrOnCall {
+		return nil, errors.New("docker daemon unavailable")
+	}
 	cs, ok := f.containers[name]
 	if !ok {
 		return nil, nil
@@ -173,6 +189,7 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 func (f *fakeRuntime) Start(_ context.Context, id string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.startCalls++
 	if f.startErr != nil {
 		return f.startErr
 	}
@@ -195,6 +212,7 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.stopCalls++
 	if f.stopErr != nil {
 		return f.stopErr
 	}
