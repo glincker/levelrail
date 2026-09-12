@@ -24,39 +24,39 @@ function condition(reason: string, lastTransitionTime: string): ReconcileConditi
 }
 
 describe('computeDeployStages rollout stage', () => {
-  it('marks rollout done on a Deployed condition after the attempt finished', () => {
-    const [, rollout] = computeDeployStages(
-      baseAttempt,
-      [condition('Deployed', '2026-01-01T00:00:10Z')],
-      true,
-    )
-    expect(rollout.status).toBe('done')
-  })
+  const cases: { name: string; reason: string; transitionTime: string; want: string }[] = [
+    {
+      name: 'marks rollout done on a Deployed condition after the attempt finished',
+      reason: 'Deployed',
+      transitionTime: '2026-01-01T00:00:10Z',
+      want: 'done',
+    },
+    {
+      name: 'marks rollout done on an AlreadyRunning condition, e.g. redeploying the image already running',
+      reason: 'AlreadyRunning',
+      transitionTime: '2026-01-01T00:00:10Z',
+      want: 'done',
+    },
+    {
+      name: 'stays running when the only matching condition predates the attempt finishing',
+      reason: 'AlreadyRunning',
+      transitionTime: '2025-12-31T00:00:00Z',
+      want: 'running',
+    },
+    {
+      name: 'marks rollout failed on a rollout failure reason after the attempt finished',
+      reason: 'StartFailed',
+      transitionTime: '2026-01-01T00:00:10Z',
+      want: 'failed',
+    },
+  ]
 
-  it('marks rollout done on an AlreadyRunning condition, e.g. redeploying the image already running', () => {
+  it.each(cases)('$name', ({ reason, transitionTime, want }) => {
     const [, rollout] = computeDeployStages(
       baseAttempt,
-      [condition('AlreadyRunning', '2026-01-01T00:00:10Z')],
+      [condition(reason, transitionTime)],
       true,
     )
-    expect(rollout.status).toBe('done')
-  })
-
-  it('stays running when the only matching condition predates the attempt finishing', () => {
-    const [, rollout] = computeDeployStages(
-      baseAttempt,
-      [condition('AlreadyRunning', '2025-12-31T00:00:00Z')],
-      true,
-    )
-    expect(rollout.status).toBe('running')
-  })
-
-  it('marks rollout failed on a rollout failure reason after the attempt finished', () => {
-    const [, rollout] = computeDeployStages(
-      baseAttempt,
-      [condition('StartFailed', '2026-01-01T00:00:10Z')],
-      true,
-    )
-    expect(rollout.status).toBe('failed')
+    expect(rollout.status).toBe(want)
   })
 })
