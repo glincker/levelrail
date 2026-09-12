@@ -361,6 +361,59 @@ func TestHandleGetDatabase_Success(t *testing.T) {
 	}
 }
 
+// TestHandleGetDatabase_TLSEnabled proves databaseResource.TLSEnabled
+// reflects whether this database's TLS certificate has actually been
+// generated (database.TLSCertEnvKey), not just whether its engine
+// supports TLS: a mysql database (SupportsTLS == false) never reports
+// it true even with a secrets manager configured, and a postgres
+// database only reports it true once the secret actually exists.
+func TestHandleGetDatabase_TLSEnabled(t *testing.T) {
+	setter := &fakeSecretSetter{existsValues: map[string]bool{
+		"main/tls_cert": true,
+	}}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	for _, body := range []string{
+		`{"name":"main","engine":"postgres","version":"16"}`,
+		`{"name":"orders","engine":"mysql","version":"8"}`,
+	} {
+		mustCreateDatabase(t, rt, cookie, body)
+	}
+
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{name: "main", want: true},    // postgres, cert exists
+		{name: "orders", want: false}, // mysql: SupportsTLS is false regardless of secrets
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getDatabaseResource(t, rt, cookie, tt.name)
+			if got.TLSEnabled != tt.want {
+				t.Errorf("TLSEnabled = %v, want %v", got.TLSEnabled, tt.want)
+			}
+		})
+	}
+}
+
+// TestHandleGetDatabase_TLSEnabled_NoSecretsManager proves TLSEnabled
+// stays false when no secrets manager is configured at all, the same
+// "no master key means no TLS" fallback WithTLS's own doc comment
+// establishes at the reconciler level.
+func TestHandleGetDatabase_TLSEnabled_NoSecretsManager(t *testing.T) {
+	rt, db := newTestRouter(t) // no WithSecretSetter
+	cookie := loginTestSession(t, rt, db)
+
+	mustCreateDatabase(t, rt, cookie, `{"name":"main","engine":"postgres","version":"16"}`)
+
+	got := getDatabaseResource(t, rt, cookie, "main")
+	if got.TLSEnabled {
+		t.Errorf("TLSEnabled = true, want false with no secrets manager configured")
+	}
+}
+
 func TestHandleDeleteDatabase(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

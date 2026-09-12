@@ -115,6 +115,27 @@ still open. This page describes what's actually true today.
   connected GitHub App installation. GitHub only, matching preview
   environments' own current scope. Wired into the same dashboard card
   and the CLI (`apps previews pr-status enable/disable`).
+- Ephemeral databases per preview: opt-in per database, one level below
+  the preview toggle itself. A `databases:` entry in the connected git
+  source (`ephemeralInPreviews: true`) gets a full, disposable
+  `database.Controller`-managed container of its own for every open pull
+  request (its own volume, its own generated credentials), named
+  `<preview-app>-db-<key>`, provisioned the moment the preview deploys
+  and destroyed the moment the preview is, whichever teardown path fires
+  (pull-request-closed webhook, manual teardown, or the TTL sweep). For a
+  single-service preview with exactly one such database, its connection
+  string is also wired in automatically as `DATABASE_URL`, the same
+  attachment mechanism `PUT /api/v1/apps/{name}/database` already
+  exposes for any app; a multi-service preview, or more than one
+  ephemeral database on the same preview, leaves that wiring to be done
+  by hand since there is no single service to attach it to
+  unambiguously. **Destroyed with no recovery path**: there is no backup,
+  no restore, and no snapshot for an ephemeral preview database, by
+  design, since the entire point is a schema an operator never has to
+  worry about leaking into or diverging from anything real. Never point
+  a production dependency, a shared secret, or real user data at one.
+  Visible in the same dashboard card as the rest of a preview's status,
+  and in `apps previews list`'s own output.
 - Embedded Caddy ingress with automatic TLS and domain routing. TLS
   today defaults to an internal, self-signed issuer; a public ACME
   issuer exists and is toggleable but is still unverified against a
@@ -148,6 +169,28 @@ still open. This page describes what's actually true today.
   restore is now live-Docker-tested for every engine, including
   MariaDB, ClickHouse, KeyDB, and Dragonfly's own restore paths and a
   fix scoping MongoDB restore to drop only non-system databases first.
+- TLS for managed database connections, on by default for newly created
+  Postgres and Redis databases, no operator action required: the
+  reconciler generates a self-signed certificate at container-creation
+  time (`internal/reconcile/database`'s `WithTLS`), stores it through
+  the same envelope-encrypted secrets path credentials already use, and
+  mounts it into the container via a short-lived helper container (the
+  same create-helper-then-exec pattern app volume backups already use
+  to write into a named volume with no tool of its own). Postgres
+  negotiates TLS on its existing port with `ssl=on` and the connection
+  string gets `?sslmode=require`; Redis disables its plaintext port
+  entirely (`--port 0`) and the connection string switches to
+  `rediss://` on the TLS-only port. Scoped to these two engines only:
+  both have a "encrypt without verifying the certificate" mode expressible
+  entirely in the connection URI that mainstream client libraries already
+  honor with zero app-side changes, which the other six managed engines
+  don't yet have verified. An already-running database (created before
+  this feature, or before a master key was configured) is never
+  retroactively switched to TLS: the reconciler only ever diffs a
+  container's image and published ports, never its env/command, so an
+  existing container simply keeps running as it always has. Surfaced as
+  a "TLS enabled" / "Plaintext" badge on a database's Overview page and
+  a `tls` column/field in `databases list`/`databases get`.
 - Restore into a brand-new, standalone resource rather than only
   in-place: `POST /api/v1/databases/{name}/restore-as-new` for managed
   databases and `POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new`

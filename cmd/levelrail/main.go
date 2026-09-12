@@ -2555,6 +2555,12 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		} else if creds != nil {
 			opts = append(opts, database.WithPostgresCredentials(creds))
 		}
+		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name)...)
+	case store.EngineRedis:
+		// Redis needs no credentials to reconcile at all (this package's
+		// own doc comment), so TLS is the only per-engine option it ever
+		// gets here.
+		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name)...)
 	case store.EngineMySQL:
 		creds, err := mysqlCredentialsFor(ctx, deps.secretsManager, desired.Name)
 		if err != nil {
@@ -2589,6 +2595,23 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		}
 	}
 	return opts
+}
+
+// databaseTLSOpt resolves dbName's TLS material (tlsMaterialFor) into a
+// database.WithTLS option, logging and skipping (not failing) on a
+// transient error, the same "one broken resource must not block others"
+// shape every other case in databaseCredentialOpts already follows.
+func databaseTLSOpt(ctx context.Context, deps dynamicSourceDeps, dbName string) []database.Option {
+	material, err := tlsMaterialFor(ctx, deps.secretsManager, dbName)
+	if err != nil {
+		deps.logger.Warn("skipping tls material for this reconcile pass",
+			slog.String("database", dbName), slog.String("error", err.Error()))
+		return nil
+	}
+	if material == nil {
+		return nil
+	}
+	return []database.Option{database.WithTLS(material)}
 }
 
 // resolveNodeTransport picks the docker.Runtime a controller for

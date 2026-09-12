@@ -3,6 +3,7 @@ import {
   BroomIcon,
   CheckCircleIcon,
   ClockIcon,
+  DatabaseIcon,
   GitPullRequestIcon,
   SpinnerIcon,
   TrashIcon,
@@ -25,7 +26,7 @@ import {
 } from '../queries/previewEnvironments'
 import { ApiError } from '../lib/apiError'
 import type { AppDetail } from '../types/appDetail'
-import type { PreviewEnvironmentStatus } from '../types/previewEnvironment'
+import type { PreviewEnvironmentStatus, PreviewEphemeralDatabase } from '../types/previewEnvironment'
 
 // Preview environments per pull request (internal/api/preview_environments.go):
 // the opt-in toggle plus the active-preview list, rendered alongside
@@ -68,6 +69,37 @@ function PreviewStatusBadge({ status }: { status: PreviewEnvironmentStatus }) {
       />
       {STATUS_LABEL[status]}
     </Badge>
+  )
+}
+
+// EphemeralDatabaseRow renders one preview's own disposable database
+// instance (spec.Database.EphemeralInPreviews): its live container
+// status (`ready`, computed server-side from the same reconcile
+// conditions GET /api/v1/databases uses) plus, when teardown failed and
+// left the row behind for a retry, why. There is no direct action here
+// (no delete/retry button): retrying is exactly what tearing down or
+// re-closing the pull request already does, this is a status display
+// only.
+function EphemeralDatabaseRow({ database }: { database: PreviewEphemeralDatabase }) {
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-border/70 bg-muted/30 px-2 py-1.5">
+      <div className="flex min-w-0 items-center gap-2">
+        <DatabaseIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <span className="truncate font-mono text-xs text-foreground">{database.database_name}</span>
+        <span className="text-xs text-muted-foreground">{database.engine}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {database.status === 'teardown_failed' ? (
+          <Badge variant="destructive" className="rounded-full text-[10px]">
+            Teardown failed
+          </Badge>
+        ) : (
+          <Badge variant={database.ready.variant} className="rounded-full text-[10px]">
+            {database.ready.label}
+          </Badge>
+        )}
+      </div>
+    </li>
   )
 }
 
@@ -236,6 +268,13 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                     </p>
                     {preview.status_reason ? (
                       <p className="text-xs text-amber-700 dark:text-amber-400">{preview.status_reason}</p>
+                    ) : null}
+                    {preview.ephemeral_databases && preview.ephemeral_databases.length > 0 ? (
+                      <ul className="space-y-1 pt-1">
+                        {preview.ephemeral_databases.map((database) => (
+                          <EphemeralDatabaseRow key={database.source_key} database={database} />
+                        ))}
+                      </ul>
                     ) : null}
                   </div>
                   <Button

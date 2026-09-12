@@ -751,6 +751,11 @@ type DatabaseResource struct {
 	BackupSchedule     string            `json:"backup_schedule,omitempty"`
 	BackupRetain       int               `json:"backup_retain,omitempty"`
 	BackupRetainDays   int               `json:"backup_retain_days,omitempty"`
+	// TLSEnabled mirrors internal/api's databaseResource.TLSEnabled:
+	// response-only, computed fresh on every read, true when this
+	// database's connection string (DATABASE_URL/REDIS_URL, injected
+	// into consuming app containers) is TLS-encrypted.
+	TLSEnabled bool `json:"tls_enabled,omitempty"`
 }
 
 // DatabaseEngineResource mirrors internal/api's databaseEngineResource
@@ -1179,6 +1184,28 @@ type PreviewEnvironmentResource struct {
 	CreatedAt    string `json:"created_at"`
 	UpdatedAt    string `json:"updated_at"`
 	Stale        bool   `json:"stale"`
+	// EphemeralDatabases mirrors internal/api's own EphemeralDatabases
+	// field: every disposable, preview-scoped database instance
+	// provisioned for this preview (spec.Database.EphemeralInPreviews),
+	// empty when none were declared or none opted in.
+	EphemeralDatabases []PreviewEphemeralDatabaseResource `json:"ephemeral_databases,omitempty"`
+}
+
+// PreviewEphemeralDatabaseResource mirrors internal/api's
+// previewEphemeralDatabaseResource (preview_environments_handlers.go).
+// Ready reuses AppStatusSummary's exact shape: it's computed the same
+// way, from the same database.Controller reconcile conditions GET
+// /api/v1/databases already summarizes per database.
+type PreviewEphemeralDatabaseResource struct {
+	SourceKey    string           `json:"source_key"`
+	DatabaseName string           `json:"database_name"`
+	Engine       string           `json:"engine"`
+	Version      string           `json:"version"`
+	Status       string           `json:"status"`
+	StatusReason string           `json:"status_reason,omitempty"`
+	Ready        AppStatusSummary `json:"ready"`
+	CreatedAt    string           `json:"created_at"`
+	UpdatedAt    string           `json:"updated_at"`
 }
 
 // SetPreviewSettingsRequest mirrors internal/api's

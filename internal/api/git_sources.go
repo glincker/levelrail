@@ -10,12 +10,19 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"regexp"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
+
+// gitSourceDatabaseNamePattern mirrors internal/spec's own unexported
+// nameLike: lowercase alphanumeric and hyphens, since a database key
+// here becomes a desired_databases.name component the same way an
+// app.yaml database key does.
+var gitSourceDatabaseNamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
 // GitSourceStore is the store surface the git source handlers need.
 // *store.DB satisfies this structurally.
@@ -84,10 +91,15 @@ type gitSourceResource struct {
 	// deploy.Pipeline.DeploySpec logic POST .../deploy-spec uses, instead
 	// of the AdditionalServices walk. Mutually exclusive with
 	// AdditionalServices, see validateGitSourceServices.
-	Services      map[string]spec.Service `json:"services,omitempty"`
-	HasToken      bool                    `json:"has_token"`
-	WebhookURL    string                  `json:"webhook_url"`
-	WebhookSecret string                  `json:"webhook_secret,omitempty"`
+	Services map[string]spec.Service `json:"services,omitempty"`
+	// Databases is an app.yaml-style databases: map (store.GitSource.Databases's
+	// own doc comment): a pull request deploy reads it to decide which
+	// databases get a disposable, preview-scoped instance of their own
+	// (spec.Database.EphemeralInPreviews), independent of Services.
+	Databases     map[string]spec.Database `json:"databases,omitempty"`
+	HasToken      bool                     `json:"has_token"`
+	WebhookURL    string                   `json:"webhook_url"`
+	WebhookSecret string                   `json:"webhook_secret,omitempty"`
 	// PreviewEnabled mirrors store.GitSource.PreviewEnabled: read-only
 	// here, set via PUT /api/v1/apps/{name}/preview-settings
 	// (preview_environments_handlers.go), not this resource's own PUT.
@@ -121,6 +133,7 @@ func toGitSourceResource(g store.GitSource, hasToken bool) gitSourceResource {
 		BuildPath:          g.BuildPath,
 		AdditionalServices: g.AdditionalServices,
 		Services:           g.Services,
+		Databases:          g.Databases,
 		HasToken:           hasToken,
 		WebhookURL:         gitSourceWebhookPath(g.ServiceName),
 		PreviewEnabled:     g.PreviewEnabled,
@@ -171,6 +184,32 @@ type setGitSourceRequest struct {
 	// handleDeploySpec validates its own services map
 	// (validateDeploySpecServiceTypes).
 	Services map[string]spec.Service `json:"services,omitempty"`
+	// Databases is an app.yaml-style databases: map (store.GitSource.Databases's
+	// own doc comment): validated the same way handleCreateDatabase
+	// validates a database's engine (validateGitSourceDatabases), stored
+	// so a pull request deploy can act on EphemeralInPreviews without
+	// re-parsing app.yaml.
+	Databases map[string]spec.Database `json:"databases,omitempty"`
+}
+
+// validateGitSourceDatabases rejects a database key that doesn't match
+// spec's own database-name pattern or an engine spec.Parse itself
+// wouldn't accept: the same "validate against the real registry first"
+// shape validateDatabaseResource (databases.go) already establishes,
+// applied here because this map bypasses spec.Parse entirely (it never
+// goes through app.yaml, only this JSON body).
+func validateGitSourceDatabases(databases map[string]spec.Database) error {
+	for name, d := range databases {
+		if !gitSourceDatabaseNamePattern.MatchString(name) {
+			return fmt.Errorf("databases[%q]: name must be lowercase alphanumeric and hyphens, starting with a letter", name)
+		}
+		switch d.Engine {
+		case spec.EnginePostgres, spec.EngineRedis, spec.EngineMySQL, spec.EngineMongoDB, spec.EngineMariaDB, spec.EngineKeyDB, spec.EngineClickHouse, spec.EngineDragonfly:
+		default:
+			return fmt.Errorf("databases[%q]: engine %q is not supported", name, d.Engine)
+		}
+	}
+	return nil
 }
 
 // validateAdditionalServices rejects a self-reference (name fanning out
@@ -425,10 +464,14 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if err := validateGitSourceDatabases(req.Databases); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	result, err := rt.connectGitSource(r.Context(), name, connectGitSourceParams{
 		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath, Token: req.Token,
-		AdditionalServices: additionalServices, Services: req.Services,
+		AdditionalServices: additionalServices, Services: req.Services, Databases: req.Databases,
 	})
 	if err != nil {
 		rt.logger.Error("api: set git source failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -459,6 +502,7 @@ type connectGitSourceParams struct {
 	Token              string
 	AdditionalServices map[string]store.GitSourceBuild
 	Services           map[string]spec.Service
+	Databases          map[string]spec.Database
 }
 
 // connectGitSourceResult is connectGitSource's return: the resource to
@@ -506,7 +550,7 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 
 	if err := rt.gitSources.SaveGitSource(ctx, store.GitSource{
 		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath,
-		AdditionalServices: p.AdditionalServices, Services: p.Services,
+		AdditionalServices: p.AdditionalServices, Services: p.Services, Databases: p.Databases,
 	}); err != nil {
 		return connectGitSourceResult{}, fmt.Errorf("save git source: %w", err)
 	}
