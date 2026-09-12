@@ -1444,6 +1444,25 @@ type AlertRuleResource struct {
 	LastValue       *float64   `json:"last_value,omitempty"`
 }
 
+// DeployNotifyTargetResource mirrors internal/api's deployTargetResource
+// (internal/api/deploy_notify_targets.go). NotifyURL/NotifyKind are
+// always the resolved values from the attached channel, response-only.
+type DeployNotifyTargetResource struct {
+	ID         string `json:"id,omitempty"`
+	ResourceID string `json:"resource_id,omitempty"`
+	ChannelID  string `json:"channel_id,omitempty"`
+	NotifyURL  string `json:"notify_url,omitempty"`
+	NotifyKind string `json:"notify_kind,omitempty"`
+	Enabled    bool   `json:"enabled"`
+}
+
+// CreateDeployNotifyTargetRequest mirrors internal/api's
+// createDeployTargetRequest: attach an already-connected channel by ID.
+type CreateDeployNotifyTargetRequest struct {
+	ChannelID string `json:"channel_id"`
+	Enabled   bool   `json:"enabled"`
+}
+
 // MetricPointResource mirrors internal/api's metricPoint
 // (internal/api/metrics.go): one aggregated bucket of a queried metric.
 type MetricPointResource struct {

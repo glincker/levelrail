@@ -108,6 +108,9 @@ type (
 	alertRuleResource      = apiclient.AlertRuleResource
 	createAlertRuleRequest = apiclient.CreateAlertRuleRequest
 
+	deployNotifyTargetResource      = apiclient.DeployNotifyTargetResource
+	createDeployNotifyTargetRequest = apiclient.CreateDeployNotifyTargetRequest
+
 	featureFlagResource  = apiclient.FeatureFlagResource
 	featureFlagRequest   = apiclient.FeatureFlagRequest
 	evaluateFlagResource = apiclient.EvaluateFlagResource

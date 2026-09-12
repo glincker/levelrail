@@ -121,6 +121,7 @@ func newServer(client *apiclient.Client) *mcp.Server {
 	registerWebhookTools(server, client)
 	registerBackupVerificationTools(server, client)
 	registerDeployCompareTools(server, client)
+	registerPromoteTools(server, client)
 	registerNotificationTools(server, client)
 	registerAuditTools(server, client)
 	registerIAMTools(server, client)
