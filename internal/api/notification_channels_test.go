@@ -1,11 +1,14 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -32,6 +35,7 @@ func TestNotificationChannelRoutes_NotConfigured(t *testing.T) {
 	}{
 		{http.MethodGet, "/api/v1/notification-channels", ""},
 		{http.MethodPost, "/api/v1/notification-channels", `{"name":"x","kind":"slack","notify_url":"https://example.com"}`},
+		{http.MethodPut, "/api/v1/notification-channels/whatever", `{"name":"x","kind":"slack","notify_url":"https://example.com"}`},
 		{http.MethodDelete, "/api/v1/notification-channels/whatever", ""},
 		{http.MethodPost, "/api/v1/notification-channels/test", `{"kind":"slack","notify_url":"https://example.com"}`},
 		{http.MethodPost, "/api/v1/notification-channels/whatever/test", ""},
@@ -169,6 +173,92 @@ func TestHandleCreateNotificationChannel_ValidationFailures(t *testing.T) {
 				t.Errorf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
 			}
 		})
+	}
+}
+
+func TestHandleUpdateNotificationChannel_Success(t *testing.T) {
+	rt, db, adb := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNotificationChannel(t, adb, "chn_1", alerting.NotifySlack, "https://example.com/typo")
+
+	body := `{"name":"Team Slack (fixed)","kind":"slack","notify_url":"https://hooks.slack.com/services/real"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/notification-channels/chn_1", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got notificationChannelResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.ID != "chn_1" || got.Name != "Team Slack (fixed)" || got.NotifyURL != "https://hooks.slack.com/services/real" {
+		t.Errorf("got = %+v, want the updated fields with the same id", got)
+	}
+	if !got.Enabled {
+		t.Error("Enabled = false, want true: enabled defaults true the same way create does")
+	}
+}
+
+func TestHandleUpdateNotificationChannel_NotFound(t *testing.T) {
+	rt, db, _ := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"x","kind":"slack","notify_url":"https://example.com"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/notification-channels/nonexistent", body))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNotFound, rec.Body.String())
+	}
+}
+
+func TestHandleUpdateNotificationChannel_ValidationFailures(t *testing.T) {
+	rt, db, adb := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNotificationChannel(t, adb, "chn_1", alerting.NotifySlack, "https://example.com")
+
+	tests := []struct {
+		name string
+		body string
+	}{
+		{"missing name", `{"kind":"slack","notify_url":"https://example.com"}`},
+		{"missing notify_url", `{"name":"x","kind":"slack"}`},
+		{"bad kind", `{"name":"x","kind":"bogus","notify_url":"https://example.com"}`},
+		{"malformed body", `{not json`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/notification-channels/chn_1", tt.body))
+			if rec.Code != http.StatusBadRequest {
+				t.Errorf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+			}
+		})
+	}
+}
+
+// TestHandleUpdateNotificationChannel_RequiresWriteAbility checks the
+// same ability gate handleCreateNotificationChannel's own route
+// registration uses (AbilityWrite): a read-only token must be rejected,
+// the same shape assertPlainWriteTokenForbidden (apps_test.go) uses for
+// its own ability-gating checks.
+func TestHandleUpdateNotificationChannel_RequiresWriteAbility(t *testing.T) {
+	rt, db, adb := newTestRouterWithNotificationChannels(t)
+	seedNotificationChannel(t, adb, "chn_1", alerting.NotifySlack, "https://example.com")
+	const plaintext = "read-only-token" //nolint:gosec // fake fixture, not a real credential
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
+		ID: "tok_ro", Name: "reader", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+
+	body := `{"name":"x","kind":"slack","notify_url":"https://example.com"}`
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/notification-channels/chn_1", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+plaintext)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusForbidden, rec.Body.String())
 	}
 }
 
@@ -460,6 +550,7 @@ func TestNotificationChannelRoutes_RequireAuth(t *testing.T) {
 	}{
 		{http.MethodGet, "/api/v1/notification-channels"},
 		{http.MethodPost, "/api/v1/notification-channels"},
+		{http.MethodPut, "/api/v1/notification-channels/chn_1"},
 		{http.MethodDelete, "/api/v1/notification-channels/chn_1"},
 		{http.MethodPost, "/api/v1/notification-channels/test"},
 		{http.MethodPost, "/api/v1/notification-channels/chn_1/test"},

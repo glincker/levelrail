@@ -861,6 +861,13 @@ type TestNotificationChannelRequest struct {
 	NotifyURL string `json:"notify_url"`
 }
 
+// UpdateNotificationChannelRequest is the same shape as
+// CreateNotificationChannelRequest: handleUpdateNotificationChannel
+// reuses createNotificationChannelRequest.toChannel for both, the same
+// "one request type for create and update" shape ScheduledTaskRequest
+// and FeatureFlagRequest already use for their own resources.
+type UpdateNotificationChannelRequest = CreateNotificationChannelRequest
+
 // NotificationDeliveryResource mirrors internal/api's
 // notificationDeliveryResource (internal/api/notification_channels.go).
 type NotificationDeliveryResource struct {
@@ -964,6 +971,12 @@ type CreateAlertRuleRequest struct {
 	NotifyKind      string `json:"notify_kind,omitempty"`
 	Enabled         bool   `json:"enabled"`
 }
+
+// UpdateAlertRuleRequest is the same shape as CreateAlertRuleRequest:
+// handleUpdateAlertRule reuses ruleResource.toRule for both, the same
+// "one request type for create and update" shape ScheduledTaskRequest
+// and FeatureFlagRequest already use for their own resources.
+type UpdateAlertRuleRequest = CreateAlertRuleRequest
 
 // BackupTargetResource mirrors internal/api's backupTargetResource
 // (internal/api/backup_targets.go). No credential fields: access_key_id

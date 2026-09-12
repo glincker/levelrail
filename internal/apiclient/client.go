@@ -1154,6 +1154,15 @@ func (c *Client) CreateNotificationChannel(ctx context.Context, req CreateNotifi
 	return out, err
 }
 
+// UpdateNotificationChannel calls PUT
+// /api/v1/notification-channels/{id}: a full replace of the channel's
+// configuration.
+func (c *Client) UpdateNotificationChannel(ctx context.Context, id string, req UpdateNotificationChannelRequest) (NotificationChannelResource, error) {
+	var out NotificationChannelResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/notification-channels/"+PathEscape(id), req, &out)
+	return out, err
+}
+
 // ListNotificationChannels calls GET /api/v1/notification-channels.
 func (c *Client) ListNotificationChannels(ctx context.Context) ([]NotificationChannelResource, error) {
 	var out []NotificationChannelResource
@@ -1730,6 +1739,14 @@ func (c *Client) ListAlertRules(ctx context.Context, name string) ([]AlertRuleRe
 func (c *Client) CreateAlertRule(ctx context.Context, name string, req CreateAlertRuleRequest) (AlertRuleResource, error) {
 	var out AlertRuleResource
 	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/alerts", req, &out)
+	return out, err
+}
+
+// UpdateAlertRule calls PUT /api/v1/apps/{name}/alerts/{id}: a full
+// replace of the rule's configuration.
+func (c *Client) UpdateAlertRule(ctx context.Context, name, id string, req UpdateAlertRuleRequest) (AlertRuleResource, error) {
+	var out AlertRuleResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/alerts/"+PathEscape(id), req, &out)
 	return out, err
 }
 
