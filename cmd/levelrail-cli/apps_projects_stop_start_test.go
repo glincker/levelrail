@@ -24,32 +24,14 @@ func TestRun_AppsProjectsStartStop(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.action, func(t *testing.T) {
-			var gotMethod, gotPath string
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				gotMethod = r.Method
-				gotPath = r.URL.Path
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
+			stdout := runStartStopSuccess(t, []string{"apps", "projects", tt.action, "proj_1"}, tt.path, func(w http.ResponseWriter) {
 				_ = json.NewEncoder(w).Encode(projectLifecycleResult{
 					SucceededApps:      []string{"web"},
 					SucceededDatabases: []string{"main"},
 				})
-			}))
-			defer srv.Close()
-
-			var stdout, stderr bytes.Buffer
-			got := run("levelrail-cli-test", []string{"apps", "projects", tt.action, "proj_1", "--api-url", srv.URL}, &stdout, &stderr, envMap())
-			if got != exitOK {
-				t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-			}
-			if gotMethod != http.MethodPost {
-				t.Errorf("method = %q, want POST", gotMethod)
-			}
-			if gotPath != tt.path {
-				t.Errorf("path = %q, want %q", gotPath, tt.path)
-			}
-			if !strings.Contains(stdout.String(), "1 app(s) and 1 database(s)") {
-				t.Errorf("stdout = %q, want the per-resource-type count", stdout.String())
+			})
+			if !strings.Contains(stdout, "1 app(s) and 1 database(s)") {
+				t.Errorf("stdout = %q, want the per-resource-type count", stdout)
 			}
 		})
 	}

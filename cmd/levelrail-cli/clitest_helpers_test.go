@@ -72,6 +72,33 @@ func newNoContentEchoServer(t *testing.T) (srv *httptest.Server, gotPath, gotMet
 	return srv, gotPath, gotMethod
 }
 
+// runStartStopSuccess runs a start/stop lifecycle CLI command against a
+// fake server whose response is built by respond, asserts the request was
+// a POST to wantPath, and returns stdout for the caller's own
+// confirmation-message assertion. Shared by "apps start/stop" and "apps
+// projects start/stop", whose success path is otherwise identical.
+func runStartStopSuccess(t *testing.T, args []string, wantPath string, respond func(w http.ResponseWriter)) string {
+	t.Helper()
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		respond(w)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, append(append([]string{}, args...), "--api-url", srv.URL))
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != wantPath {
+		t.Errorf("path = %q, want %q", gotPath, wantPath)
+	}
+	return stdout
+}
+
 // newJSONErrorServer starts a test server that always responds with status
 // and body, closed automatically when the test ends.
 func newJSONErrorServer(t *testing.T, status int, body string) *httptest.Server {

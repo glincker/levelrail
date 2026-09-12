@@ -51,14 +51,7 @@ func TestHandleStopProject_SuspendsEveryAppAndDatabase(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/projects/proj_1/stop", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
-
-	var got projectLifecycleResult
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	got := decodeProjectLifecycleResponse(t, rec)
 	if len(got.SucceededApps) != 2 || got.SucceededApps[0] != "api" || got.SucceededApps[1] != "web" {
 		t.Fatalf("SucceededApps = %v, want [api web]", got.SucceededApps)
 	}
@@ -131,6 +124,20 @@ func TestHandleStartProject_ResumesEveryAppAndDatabase(t *testing.T) {
 	if mainDB.Suspended {
 		t.Error("main.Suspended = true, want false")
 	}
+}
+
+// decodeProjectLifecycleResponse asserts rec is a 200 OK and decodes its
+// JSON body into a projectLifecycleResult.
+func decodeProjectLifecycleResponse(t *testing.T, rec *httptest.ResponseRecorder) projectLifecycleResult {
+	t.Helper()
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var got projectLifecycleResult
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	return got
 }
 
 // seedStopProjectFixtures saves two apps and one database under proj_1
@@ -321,14 +328,7 @@ func TestHandleStopProject_PartialFailure(t *testing.T) {
 	rec := httptest.NewRecorder()
 	rt.handleStopProject(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
-
-	var got projectLifecycleResult
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	got := decodeProjectLifecycleResponse(t, rec)
 	if len(got.SucceededApps) != 2 || got.SucceededApps[0] != "api" || got.SucceededApps[1] != "worker" {
 		t.Fatalf("SucceededApps = %v, want [api worker] (must keep going past the failure)", got.SucceededApps)
 	}

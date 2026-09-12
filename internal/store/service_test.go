@@ -405,10 +405,11 @@ func TestSaveDesiredService_NewService_DefaultsToNoProject(t *testing.T) {
 	}
 }
 
-func TestUpdateServiceProject(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-
+// seedServiceWithProject saves a "web" service, a "proj_1" project, and
+// attaches one to the other: the shared setup every project-attachment test
+// below starts from.
+func seedServiceWithProject(ctx context.Context, t *testing.T, db *DB) {
+	t.Helper()
 	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
 		t.Fatalf("SaveDesiredService() error = %v", err)
 	}
@@ -418,6 +419,13 @@ func TestUpdateServiceProject(t *testing.T) {
 	if err := db.UpdateServiceProject(ctx, "web", "proj_1"); err != nil {
 		t.Fatalf("UpdateServiceProject() error = %v", err)
 	}
+}
+
+func TestUpdateServiceProject(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	seedServiceWithProject(ctx, t, db)
 
 	got, err := db.GetDesiredService(ctx, "web")
 	if err != nil {
@@ -432,15 +440,7 @@ func TestUpdateServiceProject_BackToNoProject(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 
-	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("SaveDesiredService() error = %v", err)
-	}
-	if err := db.SaveProject(ctx, Project{ID: "proj_1", Name: "my-saas", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
-		t.Fatalf("SaveProject() error = %v", err)
-	}
-	if err := db.UpdateServiceProject(ctx, "web", "proj_1"); err != nil {
-		t.Fatalf("UpdateServiceProject(proj_1) error = %v", err)
-	}
+	seedServiceWithProject(ctx, t, db)
 	if err := db.UpdateServiceProject(ctx, "web", ""); err != nil {
 		t.Fatalf("UpdateServiceProject(\"\") error = %v", err)
 	}
@@ -467,10 +467,11 @@ func TestUpdateServiceProject_NotFound(t *testing.T) {
 // (migrations/0030_service_storage_target.sql): same nullable,
 // FK-backed, non-unique column shape, just pointed at backup_targets
 // instead of projects.
-func TestUpdateServiceStorageTarget(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-
+// seedServiceWithStorageTarget saves a "web" service, a "bkt_1" backup
+// target, and attaches one to the other: the shared setup every
+// storage-target test below starts from.
+func seedServiceWithStorageTarget(ctx context.Context, t *testing.T, db *DB) {
+	t.Helper()
 	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
 		t.Fatalf("SaveDesiredService() error = %v", err)
 	}
@@ -480,6 +481,13 @@ func TestUpdateServiceStorageTarget(t *testing.T) {
 	if err := db.UpdateServiceStorageTarget(ctx, "web", "bkt_1"); err != nil {
 		t.Fatalf("UpdateServiceStorageTarget() error = %v", err)
 	}
+}
+
+func TestUpdateServiceStorageTarget(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	seedServiceWithStorageTarget(ctx, t, db)
 
 	got, err := db.GetDesiredService(ctx, "web")
 	if err != nil {
@@ -526,15 +534,7 @@ func TestUpdateServiceStorageTarget_BackToNoStorage(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 
-	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("SaveDesiredService() error = %v", err)
-	}
-	if err := db.SaveBackupTarget(ctx, BackupTarget{ID: "bkt_1", Name: "main-bucket", Provider: BackupProviderR2, Endpoint: "https://r2.example.com", Bucket: "app-data", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
-		t.Fatalf("SaveBackupTarget() error = %v", err)
-	}
-	if err := db.UpdateServiceStorageTarget(ctx, "web", "bkt_1"); err != nil {
-		t.Fatalf("UpdateServiceStorageTarget(bkt_1) error = %v", err)
-	}
+	seedServiceWithStorageTarget(ctx, t, db)
 	if err := db.UpdateServiceStorageTarget(ctx, "web", ""); err != nil {
 		t.Fatalf("UpdateServiceStorageTarget(\"\") error = %v", err)
 	}
@@ -565,15 +565,7 @@ func TestUpdateServiceStorageTarget_TargetDeletedClearsColumn(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 
-	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("SaveDesiredService() error = %v", err)
-	}
-	if err := db.SaveBackupTarget(ctx, BackupTarget{ID: "bkt_1", Name: "main-bucket", Provider: BackupProviderR2, Endpoint: "https://r2.example.com", Bucket: "app-data", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
-		t.Fatalf("SaveBackupTarget() error = %v", err)
-	}
-	if err := db.UpdateServiceStorageTarget(ctx, "web", "bkt_1"); err != nil {
-		t.Fatalf("UpdateServiceStorageTarget() error = %v", err)
-	}
+	seedServiceWithStorageTarget(ctx, t, db)
 	if err := db.DeleteBackupTarget(ctx, "bkt_1"); err != nil {
 		t.Fatalf("DeleteBackupTarget() error = %v", err)
 	}
@@ -595,15 +587,7 @@ func TestSaveDesiredService_RedeployDoesNotResetStorageTargetID(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 
-	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("initial SaveDesiredService() error = %v", err)
-	}
-	if err := db.SaveBackupTarget(ctx, BackupTarget{ID: "bkt_1", Name: "main-bucket", Provider: BackupProviderR2, Endpoint: "https://r2.example.com", Bucket: "app-data", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
-		t.Fatalf("SaveBackupTarget() error = %v", err)
-	}
-	if err := db.UpdateServiceStorageTarget(ctx, "web", "bkt_1"); err != nil {
-		t.Fatalf("UpdateServiceStorageTarget() error = %v", err)
-	}
+	seedServiceWithStorageTarget(ctx, t, db)
 
 	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
 		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
@@ -827,15 +811,7 @@ func TestSaveDesiredService_RedeployDoesNotResetProjectID(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 
-	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
-		t.Fatalf("initial SaveDesiredService() error = %v", err)
-	}
-	if err := db.SaveProject(ctx, Project{ID: "proj_1", Name: "my-saas", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
-		t.Fatalf("SaveProject() error = %v", err)
-	}
-	if err := db.UpdateServiceProject(ctx, "web", "proj_1"); err != nil {
-		t.Fatalf("UpdateServiceProject() error = %v", err)
-	}
+	seedServiceWithProject(ctx, t, db)
 
 	// A redeploy: a new image, same service, no ProjectID opinion at
 	// all (the zero value), exactly what internal/deploy.Pipeline sends.
@@ -963,23 +939,21 @@ func TestListDesiredServicesByProject(t *testing.T) {
 			t.Fatalf("SaveProject(%s) error = %v", p.ID, err)
 		}
 	}
-	for _, svc := range []DesiredService{
-		{Name: "web", Image: "img:v1", Port: 8080},
-		{Name: "worker", Image: "img:v1", Port: 8081},
-		{Name: "api", Image: "img:v1", Port: 8082},
+	for _, svc := range []struct {
+		name      string
+		port      int
+		projectID string
+	}{
+		{"web", 8080, "proj-1"},
+		{"worker", 8081, "proj-1"},
+		{"api", 8082, "proj-2"},
 	} {
-		if err := db.SaveDesiredService(ctx, svc); err != nil {
-			t.Fatalf("SaveDesiredService(%s) error = %v", svc.Name, err)
+		if err := db.SaveDesiredService(ctx, DesiredService{Name: svc.name, Image: "img:v1", Port: svc.port}); err != nil {
+			t.Fatalf("SaveDesiredService(%s) error = %v", svc.name, err)
 		}
-	}
-	if err := db.UpdateServiceProject(ctx, "web", "proj-1"); err != nil {
-		t.Fatalf("UpdateServiceProject(web) error = %v", err)
-	}
-	if err := db.UpdateServiceProject(ctx, "worker", "proj-1"); err != nil {
-		t.Fatalf("UpdateServiceProject(worker) error = %v", err)
-	}
-	if err := db.UpdateServiceProject(ctx, "api", "proj-2"); err != nil {
-		t.Fatalf("UpdateServiceProject(api) error = %v", err)
+		if err := db.UpdateServiceProject(ctx, svc.name, svc.projectID); err != nil {
+			t.Fatalf("UpdateServiceProject(%s) error = %v", svc.name, err)
+		}
 	}
 
 	tests := []struct {

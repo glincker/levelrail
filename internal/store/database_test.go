@@ -219,11 +219,12 @@ func TestSaveDesiredDatabase_ResaveDoesNotResetNodeID(t *testing.T) {
 	}
 }
 
-func TestUpdateDatabaseProject(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-
-	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+// seedDatabaseWithProject saves a "main" database at version, a "proj_1"
+// project, and attaches one to the other: the shared setup every
+// project-attachment test below starts from.
+func seedDatabaseWithProject(ctx context.Context, t *testing.T, db *DB, version string) {
+	t.Helper()
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: version}); err != nil {
 		t.Fatalf("SaveDesiredDatabase() error = %v", err)
 	}
 	if err := db.SaveProject(ctx, Project{ID: "proj_1", Name: "my-saas", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
@@ -232,6 +233,13 @@ func TestUpdateDatabaseProject(t *testing.T) {
 	if err := db.UpdateDatabaseProject(ctx, "main", "proj_1"); err != nil {
 		t.Fatalf("UpdateDatabaseProject() error = %v", err)
 	}
+}
+
+func TestUpdateDatabaseProject(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	seedDatabaseWithProject(ctx, t, db, "16")
 
 	got, err := db.GetDesiredDatabase(ctx, "main")
 	if err != nil {
@@ -254,15 +262,7 @@ func TestSaveDesiredDatabase_ResaveDoesNotResetProjectID(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 
-	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "15"}); err != nil {
-		t.Fatalf("initial save: %v", err)
-	}
-	if err := db.SaveProject(ctx, Project{ID: "proj_1", Name: "my-saas", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
-		t.Fatalf("SaveProject() error = %v", err)
-	}
-	if err := db.UpdateDatabaseProject(ctx, "main", "proj_1"); err != nil {
-		t.Fatalf("UpdateDatabaseProject() error = %v", err)
-	}
+	seedDatabaseWithProject(ctx, t, db, "15")
 	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
 		t.Fatalf("resave: %v", err)
 	}
@@ -528,23 +528,20 @@ func TestListDesiredDatabasesByProject(t *testing.T) {
 			t.Fatalf("SaveProject(%s) error = %v", p.ID, err)
 		}
 	}
-	for _, d := range []DesiredDatabase{
-		{Name: "main", Engine: EngineRedis, Version: "7"},
-		{Name: "cache", Engine: EngineRedis, Version: "7"},
-		{Name: "other", Engine: EngineRedis, Version: "7"},
+	for _, d := range []struct {
+		name      string
+		projectID string
+	}{
+		{"main", "proj-1"},
+		{"cache", "proj-1"},
+		{"other", "proj-2"},
 	} {
-		if err := db.SaveDesiredDatabase(ctx, d); err != nil {
-			t.Fatalf("SaveDesiredDatabase(%s) error = %v", d.Name, err)
+		if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: d.name, Engine: EngineRedis, Version: "7"}); err != nil {
+			t.Fatalf("SaveDesiredDatabase(%s) error = %v", d.name, err)
 		}
-	}
-	if err := db.UpdateDatabaseProject(ctx, "main", "proj-1"); err != nil {
-		t.Fatalf("UpdateDatabaseProject(main) error = %v", err)
-	}
-	if err := db.UpdateDatabaseProject(ctx, "cache", "proj-1"); err != nil {
-		t.Fatalf("UpdateDatabaseProject(cache) error = %v", err)
-	}
-	if err := db.UpdateDatabaseProject(ctx, "other", "proj-2"); err != nil {
-		t.Fatalf("UpdateDatabaseProject(other) error = %v", err)
+		if err := db.UpdateDatabaseProject(ctx, d.name, d.projectID); err != nil {
+			t.Fatalf("UpdateDatabaseProject(%s) error = %v", d.name, err)
+		}
 	}
 
 	tests := []struct {
