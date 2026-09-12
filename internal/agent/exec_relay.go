@@ -226,9 +226,11 @@ func (r *ExecRelay) attachTTY(ctx context.Context, ex *agentExec, req *agentpb.E
 	// pumpStdin already owns the credit accounting on the stdin side, so
 	// the PTY gets fed from the same pipe every other exec uses rather
 	// than a second, parallel flow-control path.
-	go func() {
-		_, _ = io.Copy(sess, stdinR)
-	}()
+	if stdinR != nil {
+		go func() {
+			_, _ = io.Copy(sess, stdinR)
+		}()
+	}
 	go r.applyResizes(ctx, ex, sess)
 	return sess, nil
 }
