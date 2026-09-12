@@ -17,14 +17,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Field, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+import { Field, FieldHint, FieldLabel } from '@/components/ui/field'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/components/ui/toast'
 import { useEnvironmentListOptional } from '../queries/environments'
+import { useAppListOptional } from '../queries/apps'
 import { usePromoteApp, usePromotePreview } from '../queries/promote'
 import { ApiError } from '../lib/apiError'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
+
+// Sentinel for "let the server auto-detect the target app", the same
+// reasoning PlacementFields.tsx's LOCAL_NODE_VALUE/NO_PROJECT_VALUE give:
+// base-ui's Select can't use "" as a real item value, but the promote
+// request treats an empty target as "auto-detect".
+const AUTO_DETECT_VALUE = '__auto__'
 
 // PromoteAppDialog is "apps promote" (cmd/levelrail-cli/apps_promote.go)
 // and POST/GET /api/v1/apps/{name}/promote[/preview]
@@ -49,9 +55,21 @@ export function PromoteAppDialog({
 
   const environmentList = useEnvironmentListOptional(projectId ?? '')
   const environments = environmentList.data ?? []
+  const appList = useAppListOptional()
   const preview = usePromotePreview(appName, environmentId, target)
   const promote = usePromoteApp(appName)
   const selectedEnvironment = environments.find((e) => e.id === environmentId)
+
+  // The same disambiguation set resolvePromotion itself uses when target
+  // is left blank (internal/api/promote.go): siblings in this app's
+  // project tagged with the picked environment, excluding appName since
+  // it can't promote onto itself.
+  const candidateApps = (appList.data ?? []).filter(
+    (a) =>
+      a.name !== appName &&
+      a.project_id === projectId &&
+      a.environment_id === environmentId,
+  )
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -142,14 +160,33 @@ export function PromoteAppDialog({
               <FieldLabel htmlFor="promote-target-app">
                 Target app (optional)
               </FieldLabel>
-              <Input
-                id="promote-target-app"
-                placeholder="auto-detected when only one app is tagged"
-                value={target}
-                onChange={(e) => {
-                  setTarget(e.target.value)
+              <Select
+                value={target || AUTO_DETECT_VALUE}
+                onValueChange={(value) => {
+                  setTarget(value === AUTO_DETECT_VALUE ? '' : (value ?? ''))
                 }}
-              />
+              >
+                <SelectTrigger id="promote-target-app" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={AUTO_DETECT_VALUE}>
+                    Auto-detect (only app tagged with this environment)
+                  </SelectItem>
+                  {candidateApps.map((a) => (
+                    <SelectItem key={a.name} value={a.name}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {environmentId && candidateApps.length === 0 ? (
+                <FieldHint>
+                  No other apps in this project are tagged with that
+                  environment yet. Auto-detect only works when exactly one
+                  is.
+                </FieldHint>
+              ) : null}
             </Field>
 
             {environmentId && preview.isPending ? (
