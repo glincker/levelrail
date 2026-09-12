@@ -1154,6 +1154,15 @@ func (c *Client) CreateNotificationChannel(ctx context.Context, req CreateNotifi
 	return out, err
 }
 
+// UpdateNotificationChannel calls PUT
+// /api/v1/notification-channels/{id}: a full replace of the channel's
+// configuration.
+func (c *Client) UpdateNotificationChannel(ctx context.Context, id string, req UpdateNotificationChannelRequest) (NotificationChannelResource, error) {
+	var out NotificationChannelResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/notification-channels/"+PathEscape(id), req, &out)
+	return out, err
+}
+
 // ListNotificationChannels calls GET /api/v1/notification-channels.
 func (c *Client) ListNotificationChannels(ctx context.Context) ([]NotificationChannelResource, error) {
 	var out []NotificationChannelResource
@@ -1733,9 +1742,39 @@ func (c *Client) CreateAlertRule(ctx context.Context, name string, req CreateAle
 	return out, err
 }
 
+// UpdateAlertRule calls PUT /api/v1/apps/{name}/alerts/{id}: a full
+// replace of the rule's configuration.
+func (c *Client) UpdateAlertRule(ctx context.Context, name, id string, req UpdateAlertRuleRequest) (AlertRuleResource, error) {
+	var out AlertRuleResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/alerts/"+PathEscape(id), req, &out)
+	return out, err
+}
+
 // DeleteAlertRule calls DELETE /api/v1/apps/{name}/alerts/{id}.
 func (c *Client) DeleteAlertRule(ctx context.Context, name, id string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/alerts/"+PathEscape(id), nil, nil)
+}
+
+// ListDeployNotifyTargets calls GET /api/v1/apps/{name}/deploy-notify-targets:
+// every deploy-outcome notification target scoped to name, including
+// disabled ones.
+func (c *Client) ListDeployNotifyTargets(ctx context.Context, name string) ([]DeployNotifyTargetResource, error) {
+	var out []DeployNotifyTargetResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploy-notify-targets", nil, &out)
+	return out, err
+}
+
+// CreateDeployNotifyTarget calls POST /api/v1/apps/{name}/deploy-notify-targets.
+func (c *Client) CreateDeployNotifyTarget(ctx context.Context, name string, req CreateDeployNotifyTargetRequest) (DeployNotifyTargetResource, error) {
+	var out DeployNotifyTargetResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploy-notify-targets", req, &out)
+	return out, err
+}
+
+// DeleteDeployNotifyTarget calls DELETE
+// /api/v1/apps/{name}/deploy-notify-targets/{id}.
+func (c *Client) DeleteDeployNotifyTarget(ctx context.Context, name, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/deploy-notify-targets/"+PathEscape(id), nil, nil)
 }
 
 // QueryAppMetrics calls GET /api/v1/apps/{name}/metrics?metric=&from=&to=&step=

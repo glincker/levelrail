@@ -14,6 +14,7 @@ import type { VariantProps } from 'class-variance-authority'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
+import { EditAlertRuleDialog } from './EditAlertRuleDialog'
 import { DeleteAlertRuleDialog } from './DeleteAlertRuleDialog'
 import { useAlertRules } from '../queries/alerts'
 import type { AlertRule } from '../types/alerts'
@@ -243,7 +244,10 @@ function RuleRow({ appName, rule }: { appName: string; rule: AlertRule }) {
         <NotifyChannelCell rule={rule} />
       </TableCell>
       <TableCell className="text-right">
-        <DeleteAlertRuleDialog appName={appName} rule={rule} />
+        <div className="flex justify-end gap-2">
+          <EditAlertRuleDialog appName={appName} rule={rule} />
+          <DeleteAlertRuleDialog appName={appName} rule={rule} />
+        </div>
       </TableCell>
     </TableRow>
   )

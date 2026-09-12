@@ -52,9 +52,18 @@ type AppResource struct {
 	// HostPort mirrors internal/api's appResource.HostPort: nil means
 	// "let Docker assign one", a value pins the host-side port. Settable
 	// on create and update, like Port.
-	HostPort  *int              `json:"host_port,omitempty"`
-	Domains   []string          `json:"domains,omitempty"`
-	Env       map[string]string `json:"env,omitempty"`
+	HostPort *int              `json:"host_port,omitempty"`
+	Domains  []string          `json:"domains,omitempty"`
+	Env      map[string]string `json:"env,omitempty"`
+	// SecretEnv mirrors internal/api's appResource.SecretEnv: names of
+	// env vars backed by encrypted secret storage, values held only in
+	// Secrets below or set later via PUT .../secrets/{key}, never here.
+	SecretEnv []string `json:"secret_env,omitempty"`
+	// Secrets mirrors internal/api's appResource.Secrets: plaintext
+	// values to encrypt and store for SecretEnv-named vars at create
+	// time. Write-only, like SetSecretRequest's own Value: never
+	// populated on a response.
+	Secrets   map[string]string `json:"secrets,omitempty"`
 	Resources *ServiceResources `json:"resources,omitempty"`
 	Health    *ServiceHealth    `json:"health,omitempty"`
 	// Hooks mirrors internal/api's appResource.Hooks: settable on create
@@ -861,6 +870,13 @@ type TestNotificationChannelRequest struct {
 	NotifyURL string `json:"notify_url"`
 }
 
+// UpdateNotificationChannelRequest is the same shape as
+// CreateNotificationChannelRequest: handleUpdateNotificationChannel
+// reuses createNotificationChannelRequest.toChannel for both, the same
+// "one request type for create and update" shape ScheduledTaskRequest
+// and FeatureFlagRequest already use for their own resources.
+type UpdateNotificationChannelRequest = CreateNotificationChannelRequest
+
 // NotificationDeliveryResource mirrors internal/api's
 // notificationDeliveryResource (internal/api/notification_channels.go).
 type NotificationDeliveryResource struct {
@@ -964,6 +980,12 @@ type CreateAlertRuleRequest struct {
 	NotifyKind      string `json:"notify_kind,omitempty"`
 	Enabled         bool   `json:"enabled"`
 }
+
+// UpdateAlertRuleRequest is the same shape as CreateAlertRuleRequest:
+// handleUpdateAlertRule reuses ruleResource.toRule for both, the same
+// "one request type for create and update" shape ScheduledTaskRequest
+// and FeatureFlagRequest already use for their own resources.
+type UpdateAlertRuleRequest = CreateAlertRuleRequest
 
 // BackupTargetResource mirrors internal/api's backupTargetResource
 // (internal/api/backup_targets.go). No credential fields: access_key_id
@@ -1442,6 +1464,25 @@ type AlertRuleResource struct {
 	FiringSince     *time.Time `json:"firing_since,omitempty"`
 	LastEvaluatedAt *time.Time `json:"last_evaluated_at,omitempty"`
 	LastValue       *float64   `json:"last_value,omitempty"`
+}
+
+// DeployNotifyTargetResource mirrors internal/api's deployTargetResource
+// (internal/api/deploy_notify_targets.go). NotifyURL/NotifyKind are
+// always the resolved values from the attached channel, response-only.
+type DeployNotifyTargetResource struct {
+	ID         string `json:"id,omitempty"`
+	ResourceID string `json:"resource_id,omitempty"`
+	ChannelID  string `json:"channel_id,omitempty"`
+	NotifyURL  string `json:"notify_url,omitempty"`
+	NotifyKind string `json:"notify_kind,omitempty"`
+	Enabled    bool   `json:"enabled"`
+}
+
+// CreateDeployNotifyTargetRequest mirrors internal/api's
+// createDeployTargetRequest: attach an already-connected channel by ID.
+type CreateDeployNotifyTargetRequest struct {
+	ChannelID string `json:"channel_id"`
+	Enabled   bool   `json:"enabled"`
 }
 
 // MetricPointResource mirrors internal/api's metricPoint

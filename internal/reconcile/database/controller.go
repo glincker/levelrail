@@ -430,7 +430,12 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	switch {
 	case state == nil:
 		if err := c.createAndStart(ctx, spec); err != nil {
-			return notReady("CreateFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			reason := "CreateFailed"
+			var startErr *startAfterCreateError
+			if errors.As(err, &startErr) {
+				reason = "StartFailedAfterCreate"
+			}
+			return notReady(reason, err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
 		justDeployed = true
 
@@ -482,13 +487,22 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	return ready("AlreadyRunning"), nil
 }
 
+// startAfterCreateError marks a createAndStart failure in the Start step,
+// after Create already succeeded, so reconcileEngine can report the
+// half-succeeded case under its own condition reason instead of the
+// plain create-failure one.
+type startAfterCreateError struct{ err error }
+
+func (e *startAfterCreateError) Error() string { return e.err.Error() }
+func (e *startAfterCreateError) Unwrap() error { return e.err }
+
 func (c *Controller) createAndStart(ctx context.Context, spec docker.ContainerSpec) error {
 	id, err := c.runtime.Create(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("create %q: %w", spec.Name, err)
 	}
 	if err := c.runtime.Start(ctx, id); err != nil {
-		return fmt.Errorf("start %q after create: %w", spec.Name, err)
+		return &startAfterCreateError{fmt.Errorf("start %q after create: %w", spec.Name, err)}
 	}
 	return nil
 }

@@ -168,6 +168,57 @@ func (rt *Router) handleCreateNotificationChannel(w http.ResponseWriter, r *http
 	writeJSON(w, http.StatusCreated, toNotificationChannelResource(channel))
 }
 
+// handleUpdateNotificationChannel handles PUT
+// /api/v1/notification-channels/{id}: a full replace of a channel's
+// configuration, reusing createNotificationChannelRequest.toChannel (the
+// same validation handleCreateNotificationChannel already runs) and
+// SaveNotificationChannel, which already upserts without touching
+// created_at (that method's own doc comment), so this needs no separate
+// store-layer update method.
+func (rt *Router) handleUpdateNotificationChannel(w http.ResponseWriter, r *http.Request) {
+	if rt.notificationChannels == nil {
+		writeError(w, http.StatusNotImplemented, "notification channels are not configured on this control plane")
+		return
+	}
+
+	id := r.PathValue("id")
+	if _, err := rt.notificationChannels.GetNotificationChannel(r.Context(), id); errors.Is(err, alerting.ErrNotificationChannelNotFound) {
+		writeError(w, http.StatusNotFound, "notification channel not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: update notification channel: load channel failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	var req createNotificationChannelRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	channel, err := req.toChannel(id)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := rt.notificationChannels.SaveNotificationChannel(r.Context(), channel); err != nil {
+		rt.logger.Error("api: update notification channel failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	updated, err := rt.notificationChannels.GetNotificationChannel(r.Context(), id)
+	if err != nil {
+		rt.logger.Error("api: update notification channel: reload after save failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toNotificationChannelResource(*updated))
+}
+
 // handleDeleteNotificationChannel handles DELETE
 // /api/v1/notification-channels/{id}. Unlike handleDeleteBackupTarget,
 // this never 409s: the FK's ON DELETE SET NULL clears channel_id instead.

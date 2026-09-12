@@ -220,6 +220,144 @@ func TestHandleCreateApp(t *testing.T) {
 	}
 }
 
+// TestHandleCreateApp_WithSecrets_Success covers creating an app with
+// inline secret values in the same POST /api/v1/apps request: each value
+// is stored via SecretSetter under the new app's own name, SecretEnv is
+// derived (declared names union'd with any inline value's own key), and
+// the response never echoes a value back.
+func TestHandleCreateApp_WithSecrets_Success(t *testing.T) {
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"secret_env":["API_KEY"],"secrets":{"API_KEY":"sk-abc","DB_PASSWORD":"hunter2"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "sk-abc") || strings.Contains(rec.Body.String(), "hunter2") {
+		t.Errorf("body = %s, must never echo a secret value back", rec.Body.String())
+	}
+
+	if setter.calls != 2 {
+		t.Fatalf("setter.calls = %d, want 2", setter.calls)
+	}
+	got := map[string]string{}
+	for _, c := range setter.sets {
+		if c.service != "web" {
+			t.Errorf("set call service = %q, want %q", c.service, "web")
+		}
+		got[c.key] = c.value
+	}
+	want := map[string]string{"API_KEY": "sk-abc", "DB_PASSWORD": "hunter2"}
+	if len(got) != len(want) || got["API_KEY"] != want["API_KEY"] || got["DB_PASSWORD"] != want["DB_PASSWORD"] {
+		t.Errorf("secrets set = %v, want %v", got, want)
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after create: %v", err)
+	}
+	wantSecretEnv := map[string]bool{"API_KEY": true, "DB_PASSWORD": true}
+	if len(svc.SecretEnv) != len(wantSecretEnv) {
+		t.Fatalf("SecretEnv = %v, want %v", svc.SecretEnv, wantSecretEnv)
+	}
+	for _, k := range svc.SecretEnv {
+		if !wantSecretEnv[k] {
+			t.Errorf("SecretEnv = %v, want only %v", svc.SecretEnv, wantSecretEnv)
+		}
+	}
+}
+
+// TestHandleCreateApp_SecretEnvNoValue_StillCreates covers declaring a
+// secret's NAME with no inline value at all: the app still creates, the
+// name is recorded so it shows up as "needs a value", and no
+// SetValueGuarded call happens.
+func TestHandleCreateApp_SecretEnvNoValue_StillCreates(t *testing.T) {
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"secret_env":["API_KEY"]}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if setter.calls != 0 {
+		t.Errorf("setter.calls = %d, want 0: no value was given", setter.calls)
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after create: %v", err)
+	}
+	if len(svc.SecretEnv) != 1 || svc.SecretEnv[0] != "API_KEY" {
+		t.Errorf("SecretEnv = %v, want [API_KEY]", svc.SecretEnv)
+	}
+}
+
+// TestHandleCreateApp_Secrets_NotConfigured_Returns501 covers a control
+// plane with no master key configured: the request must fail fast (no
+// app row created) rather than silently dropping the secret values.
+func TestHandleCreateApp_Secrets_NotConfigured_Returns501(t *testing.T) {
+	rt, db := newTestRouter(t) // no WithSecretSetter
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"secrets":{"API_KEY":"sk-abc"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("app must not have been created when secrets aren't configured")
+	}
+}
+
+// TestHandleCreateApp_Secrets_EmptyValueRejected covers validateAppResource's
+// own guard: an empty secret value is a 400 before anything is stored.
+func TestHandleCreateApp_Secrets_EmptyValueRejected(t *testing.T) {
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"secrets":{"API_KEY":""}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if setter.calls != 0 {
+		t.Errorf("setter.calls = %d, want 0", setter.calls)
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("app must not have been created for an invalid request")
+	}
+}
+
+// TestHandleCreateApp_Secrets_Locked_Returns409 covers the same reversible
+// overwrite guard PUT .../secrets/{key} already enforces, reached this
+// time through create: a locked key refuses even a brand-new app's own
+// first SetValueGuarded call (only meaningful if a same-named app existed
+// before and was deleted without its secrets being cleared).
+func TestHandleCreateApp_Secrets_Locked_Returns409(t *testing.T) {
+	setter := &fakeSecretSetter{locked: true}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"secrets":{"API_KEY":"sk-abc"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "web"); err == nil {
+		t.Error("app must not have been created when a secret value is locked")
+	}
+}
+
 // TestHandleCreateApp_AutoPlacement covers handleCreateApp's own node_id
 // resolution: omitted picks the least-loaded registered node, an
 // explicit node_id (including an explicit "") is always honored as an
