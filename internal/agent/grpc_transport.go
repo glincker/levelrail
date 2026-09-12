@@ -34,7 +34,11 @@ func newGRPCTransport(m *mux) *GRPCTransport {
 	return &GRPCTransport{mux: m}
 }
 
-var _ Transport = (*GRPCTransport)(nil)
+var (
+	_ Transport          = (*GRPCTransport)(nil)
+	_ docker.TTYRuntime  = (*GRPCTransport)(nil)
+	_ docker.ExecSession = (*execTTYStream)(nil)
+)
 
 // InspectByName implements Transport (docker.Runtime).
 func (t *GRPCTransport) InspectByName(ctx context.Context, name string) (*docker.ContainerState, error) {
@@ -133,7 +137,7 @@ func (t *GRPCTransport) ListByPrefix(ctx context.Context, prefix string) ([]dock
 // than on a later Read. Output arrives afterwards as ExecOutput frames,
 // reassembled by the returned stream.
 func (t *GRPCTransport) Exec(ctx context.Context, containerID string, cmd []string) (io.ReadCloser, error) {
-	return t.startExec(ctx, containerID, cmd, nil, false)
+	return t.startExec(ctx, containerID, cmd, nil, execAttach{})
 }
 
 // ExecWithInput implements Transport (docker.Runtime). Exec plus a stdin
@@ -147,10 +151,45 @@ func (t *GRPCTransport) ExecWithInput(ctx context.Context, containerID string, c
 		// needs an EOF from somewhere or it waits forever.
 		stdin = bytes.NewReader(nil)
 	}
-	return t.startExec(ctx, containerID, cmd, stdin, true)
+	return t.startExec(ctx, containerID, cmd, stdin, execAttach{stdin: true})
 }
 
-func (t *GRPCTransport) startExec(ctx context.Context, containerID string, cmd []string, stdin io.Reader, attachStdin bool) (io.ReadCloser, error) {
+// ExecTTY implements docker.TTYRuntime. The PTY lives on the agent's
+// side; this end is the same windowed frame stream every other exec
+// uses, plus a resize frame, so a remote terminal and a local one differ
+// only in how far the bytes travel.
+func (t *GRPCTransport) ExecTTY(ctx context.Context, containerID string, opts docker.ExecTTYOptions) (docker.ExecSession, error) {
+	// The caller drives input by calling Write, so the pipe stands in for
+	// the source reader an ordinary exec would have handed startExec, and
+	// pumpStdin's existing credit accounting covers the terminal too.
+	inR, inW := io.Pipe()
+
+	rc, err := t.startExec(ctx, containerID, opts.Cmd, inR, execAttach{stdin: true, tty: true, opts: opts})
+	if err != nil {
+		_ = inW.Close()
+		return nil, err
+	}
+
+	stream, ok := rc.(*execStream)
+	if !ok {
+		_ = inW.Close()
+		_ = rc.Close()
+		return nil, errors.New("agent: exec tty: unexpected stream type")
+	}
+	sess := &execTTYStream{execStream: stream, in: inW}
+	go sess.closeInputOnEnd()
+	return sess, nil
+}
+
+// execAttach is startExec's set of exec-shape options, grouped rather
+// than passed as a run of bare booleans at the call site.
+type execAttach struct {
+	stdin bool
+	tty   bool
+	opts  docker.ExecTTYOptions
+}
+
+func (t *GRPCTransport) startExec(ctx context.Context, containerID string, cmd []string, stdin io.Reader, attach execAttach) (io.ReadCloser, error) {
 	execID, err := randomRequestID()
 	if err != nil {
 		return nil, err
@@ -164,12 +203,19 @@ func (t *GRPCTransport) startExec(ctx context.Context, containerID string, cmd [
 		return nil, ErrSessionClosed
 	}
 
+	req := &agentpb.ExecRequest{
+		ContainerId: containerID,
+		Cmd:         cmd,
+		AttachStdin: attach.stdin,
+		Tty:         attach.tty,
+	}
+	if attach.tty {
+		req.Env = attach.opts.Env
+		req.TtySize = ttySizeToPB(attach.opts.Size)
+	}
+
 	if _, callErr := t.mux.CallWithID(ctx, execID, &agentpb.AgentRequest{
-		Op: &agentpb.AgentRequest_Exec{Exec: &agentpb.ExecRequest{
-			ContainerId: containerID,
-			Cmd:         cmd,
-			AttachStdin: attachStdin,
-		}},
+		Op: &agentpb.AgentRequest_Exec{Exec: req},
 	}); callErr != nil {
 		t.mux.unsubscribeExec(execID)
 		// The acknowledgment may have failed only on this side (a caller
@@ -181,7 +227,7 @@ func (t *GRPCTransport) startExec(ctx context.Context, containerID string, cmd [
 
 	s := &execStream{mux: t.mux, execID: execID, sub: sub, ctx: ctx, done: make(chan struct{})}
 	go s.watchContext()
-	if attachStdin {
+	if attach.stdin {
 		go s.pumpStdin(stdin)
 	}
 	return s, nil
@@ -345,6 +391,35 @@ func (s *execStream) pumpStdin(r io.Reader) {
 			return
 		}
 	}
+}
+
+// execTTYStream is ExecTTY's docker.ExecSession: an ordinary exec stream
+// for the output direction, a pipe into pumpStdin for the input one, and
+// a resize frame on top.
+type execTTYStream struct {
+	*execStream
+	in *io.PipeWriter
+}
+
+func (s *execTTYStream) Write(p []byte) (int, error) {
+	return s.in.Write(p)
+}
+
+func (s *execTTYStream) Resize(_ context.Context, size docker.TTYSize) error {
+	return s.mux.sendExecResize(s.execID, size)
+}
+
+func (s *execTTYStream) Close() error {
+	_ = s.in.Close()
+	return s.execStream.Close()
+}
+
+// closeInputOnEnd unblocks a Write waiting on a session that already
+// ended (the remote command exited, the caller closed), which would
+// otherwise wait forever on a pipe pumpStdin has stopped draining.
+func (s *execTTYStream) closeInputOnEnd() {
+	<-s.done
+	_ = s.in.CloseWithError(errExecStreamClosed)
 }
 
 func execFailureToError(f *agentpb.ExecFailure) error {

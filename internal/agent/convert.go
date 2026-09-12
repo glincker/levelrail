@@ -9,6 +9,7 @@ package agent
 // defined exactly once.
 
 import (
+	"math"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -239,4 +240,22 @@ func timestampFromPB(ts *timestamppb.Timestamp) time.Time {
 		return time.Time{}
 	}
 	return ts.AsTime()
+}
+
+func ttySizeFromPB(s *agentpb.ExecTTYSize) docker.TTYSize {
+	return docker.TTYSize{Rows: clampTTYDimension(s.GetRows()), Cols: clampTTYDimension(s.GetCols())}
+}
+
+func ttySizeToPB(s docker.TTYSize) *agentpb.ExecTTYSize {
+	return &agentpb.ExecTTYSize{Rows: uint32(s.Rows), Cols: uint32(s.Cols)}
+}
+
+// clampTTYDimension narrows the wire's uint32 to the uint16 a terminal
+// dimension actually is, since no PTY has 65536 rows and a peer sending
+// one must not wrap around to a small number.
+func clampTTYDimension(v uint32) uint16 {
+	if v > math.MaxUint16 {
+		return math.MaxUint16
+	}
+	return uint16(v)
 }

@@ -183,6 +183,8 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 			execs.Cancel(p.ExecCancel.GetExecId())
 		case *agentpb.ControlMessage_ExecCredit:
 			execs.Credit(p.ExecCredit)
+		case *agentpb.ControlMessage_ExecResize:
+			execs.Resize(p.ExecResize)
 		}
 	}
 }

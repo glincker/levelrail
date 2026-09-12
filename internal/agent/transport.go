@@ -22,6 +22,7 @@
 package agent
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -63,6 +64,17 @@ type Local struct {
 // NewLocal wraps rt as this process's own node Transport.
 func NewLocal(rt docker.Runtime) Local {
 	return Local{Runtime: rt}
+}
+
+// ExecTTY implements docker.TTYRuntime by forwarding to the wrapped
+// runtime, which the embedded docker.Runtime interface would otherwise
+// hide even when the concrete value behind it supports interactive exec.
+func (l Local) ExecTTY(ctx context.Context, containerID string, opts docker.ExecTTYOptions) (docker.ExecSession, error) {
+	tty, ok := l.Runtime.(docker.TTYRuntime)
+	if !ok {
+		return nil, ErrTTYUnsupported
+	}
+	return tty.ExecTTY(ctx, containerID, opts)
 }
 
 // ErrNodeNotRegistered is Registry.Get's failure mode for an unknown

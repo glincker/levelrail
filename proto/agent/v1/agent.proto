@@ -101,6 +101,7 @@ message ControlMessage {
     // ExecCredit here refunds the agent's output window: the control
     // plane has consumed that many ExecOutput frames.
     ExecCredit exec_credit = 4;
+    ExecResize exec_resize = 5;
   }
 }
 
@@ -304,6 +305,30 @@ message ExecRequest {
   // AttachStdin selects docker.Runtime.ExecWithInput over Exec: the
   // control plane then streams ExecInput frames for the same exec_id.
   bool attach_stdin = 3;
+  // Tty selects docker.TTYRuntime.ExecTTY instead: the command runs on
+  // a real PTY, its output frames carry stdout and stderr already
+  // merged the way a terminal merges them, and the control plane may
+  // send ExecResize frames for the same exec_id. Implies attach_stdin.
+  bool tty = 4;
+  // TtySize is the PTY's initial size, meaningful only when tty is set.
+  ExecTTYSize tty_size = 5;
+  // Env is extra environment for the exec'd process, on top of whatever
+  // the container itself was created with. A terminal needs TERM here.
+  repeated string env = 6;
+}
+
+message ExecTTYSize {
+  uint32 rows = 1;
+  uint32 cols = 2;
+}
+
+// ExecResize tells the agent that a TTY exec's terminal changed size,
+// so the process inside sees a SIGWINCH and redraws. Ignored for an
+// exec that did not ask for a PTY.
+message ExecResize {
+  string exec_id = 1;
+  uint32 rows = 2;
+  uint32 cols = 3;
 }
 
 // ExecInput is one stdin frame for the in-flight exec whose request_id
