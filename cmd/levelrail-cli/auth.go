@@ -26,6 +26,8 @@ func runAuth(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAuthLogin(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "whoami":
 		return runAuthWhoami(prog, args[1:], stdout, stderr, lookupEnv)
+	case "2fa":
+		return runAuthTwoFactor(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown auth subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, authUsage(prog))
@@ -37,6 +39,7 @@ func authUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s auth login [flags]     authenticate and persist a new API token
   %[1]s auth whoami [flags]   show who the current token authenticates as
+  %[1]s auth 2fa <verb>          manage this account's own two-factor authentication
 
 Run "%[1]s auth <subcommand> -h" for a subcommand's own flags.
 `, prog)

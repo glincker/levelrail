@@ -98,9 +98,14 @@ type agentClientStream interface {
 // kept out of this function so it stays a single, directly testable
 // connection attempt rather than a policy about how many times or how
 // fast to retry.
-func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtime, logger *slog.Logger) error {
+func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtime, logger *slog.Logger, opts ...SessionOption) error {
 	if logger == nil {
 		logger = slog.Default()
+	}
+
+	var cfg sessionConfig
+	for _, opt := range opts {
+		opt(&cfg)
 	}
 
 	cert, err := tls.X509KeyPair(id.ClientCertPEM, id.ClientKeyPEM)
@@ -127,24 +132,41 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 		return fmt.Errorf("agent: open session: %w", err)
 	}
 
-	return serveSession(ctx, stream, rt, logger)
+	return serveSession(ctx, stream, rt, cfg.builder, logger)
+}
+
+// sessionConfig holds RunSession's optional wiring.
+type sessionConfig struct {
+	builder BuildRunner
+}
+
+// SessionOption configures optional RunSession behavior.
+type SessionOption func(*sessionConfig)
+
+// WithBuildRunner lets this node accept builds dispatched to it by the
+// control plane. Without one, a dispatched build is rejected with a clear
+// error instead of failing partway through: an agent whose local BuildKit
+// is unreachable still serves every container operation normally.
+func WithBuildRunner(runner BuildRunner) SessionOption {
+	return func(c *sessionConfig) { c.builder = runner }
 }
 
 // serveSession is RunSession's pure loop, split out so it's directly
 // testable against a fake agentClientStream: reads incoming
-// ControlMessage (AgentRequest) frames and dispatches each via Execute
-// against rt, replying with the resulting AgentResponse (and any
-// ProxiedEvent frames a WatchEvents request's relay goroutine produces
-// along the way).
+// ControlMessage frames and dispatches each against rt, replying with
+// the resulting AgentResponse (and any ProxiedEvent or ExecOutput frames
+// a watch or an exec produces along the way).
 //
 // Each request is dispatched in its own goroutine, not handled
 // sequentially in this loop: a slow operation (Create pulling a large
 // image, in particular) must not stall Recv from processing other,
-// unrelated, concurrent requests on the same connection. Send is
-// serialized by sendMu, since a gRPC stream is not safe for concurrent
-// Send calls, the identical reasoning mux.go's own sendMu already
-// documents for the control-plane side of this same connection.
-func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runtime, logger *slog.Logger) error {
+// unrelated, concurrent requests on the same connection. Exec's own
+// frames are routed to ExecRelay instead, which never blocks this loop
+// for the same reason. Send is serialized by sendMu, since a gRPC stream
+// is not safe for concurrent Send calls, the identical reasoning mux.go's
+// own sendMu already documents for the control-plane side of this same
+// connection.
+func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runtime, builder BuildRunner, logger *slog.Logger) error {
 	var sendMu sync.Mutex
 	send := func(msg *agentpb.AgentMessage) {
 		sendMu.Lock()
@@ -157,15 +179,46 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 		send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Event{Event: ev}})
 	}
 
+	execs := NewExecRelay(rt, send)
+	defer execs.CloseAll()
+
+	builds := NewBuildRelay(builder, send)
+	defer builds.CloseAll()
+
 	for {
 		msg, err := stream.Recv()
 		if err != nil {
 			return fmt.Errorf("agent: session: recv: %w", err)
 		}
-		req := msg.GetRequest()
-		go func() {
-			resp := Execute(ctx, rt, req, emitEvent)
-			send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Response{Response: resp}})
-		}()
+		switch p := msg.GetPayload().(type) {
+		case *agentpb.ControlMessage_Request:
+			req := p.Request
+			if exec := req.GetExec(); exec != nil {
+				execs.Start(ctx, req.GetRequestId(), exec)
+				continue
+			}
+			if b := req.GetBuild(); b != nil {
+				builds.Start(ctx, req.GetRequestId(), b)
+				continue
+			}
+			go func() {
+				resp := Execute(ctx, rt, req, emitEvent)
+				send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Response{Response: resp}})
+			}()
+		case *agentpb.ControlMessage_ExecInput:
+			execs.Input(p.ExecInput)
+		case *agentpb.ControlMessage_ExecCancel:
+			execs.Cancel(p.ExecCancel.GetExecId())
+		case *agentpb.ControlMessage_ExecCredit:
+			execs.Credit(p.ExecCredit)
+		case *agentpb.ControlMessage_ExecResize:
+			execs.Resize(p.ExecResize)
+		case *agentpb.ControlMessage_BuildInput:
+			builds.Input(p.BuildInput)
+		case *agentpb.ControlMessage_BuildCancel:
+			builds.Cancel(p.BuildCancel.GetBuildId())
+		case *agentpb.ControlMessage_BuildCredit:
+			builds.Credit(p.BuildCredit)
+		}
 	}
 }

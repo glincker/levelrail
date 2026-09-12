@@ -121,6 +121,7 @@ func newServer(client *apiclient.Client) *mcp.Server {
 	registerWebhookTools(server, client)
 	registerBackupVerificationTools(server, client)
 	registerDeployCompareTools(server, client)
+	registerPromoteTools(server, client)
 	registerNotificationTools(server, client)
 	registerAuditTools(server, client)
 	registerIAMTools(server, client)
@@ -135,6 +136,7 @@ func newServer(client *apiclient.Client) *mcp.Server {
 	registerCloudflareTools(server, client)
 	registerCertificateTools(server, client)
 	registerLogDrainTools(server, client)
+	registerSettingsTools(server, client)
 
 	return server
 }

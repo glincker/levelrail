@@ -39,9 +39,14 @@ type fakeExecAppRuntime struct {
 	listByPrefixResult []docker.ContainerState
 	listByPrefixErr    error
 	listByPrefixCalls  chan struct{}
+
+	inspectByNameCalls chan struct{}
 }
 
 func (f *fakeExecAppRuntime) InspectByName(_ context.Context, _ string) (*docker.ContainerState, error) {
+	if f.inspectByNameCalls != nil {
+		f.inspectByNameCalls <- struct{}{}
+	}
 	return f.inspectState, f.inspectErr
 }
 

@@ -283,6 +283,13 @@ type Router struct {
 	hookRuns                       HookRunStore                     // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
 	invites                        InviteStore                      // always set, same "core Store interface" shape as passwordResetTokens above
 	inviteTTL                      time.Duration                    // 0 means "use defaultInviteTTL", set via WithInviteTTL
+	// autoPlacementEnabled gates autoPlaceNode (scheduling.go): simple
+	// spread scheduling for a create request that omits node_id. Defaults
+	// to true (NewRouter's own struct literal below); cmd/levelrail/
+	// main.go reads APP_AUTO_PLACEMENT and calls WithAutoPlacement(false)
+	// to disable it, the same "this package never reads the environment
+	// directly" convention WithSessionTTL's own doc comment establishes.
+	autoPlacementEnabled bool
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -367,6 +374,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		volumeCloneRestoreHistory:   s,
 		policies:                    s,
 		invites:                     s,
+		autoPlacementEnabled:        true,
 	}
 	for _, opt := range opts {
 		opt(rt)

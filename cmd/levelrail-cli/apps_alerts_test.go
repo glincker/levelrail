@@ -178,6 +178,75 @@ func TestRun_AppsAlertsList(t *testing.T) {
 	}
 }
 
+func TestRun_AppsAlertsUpdate_Threshold(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody updateAlertRuleRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(alertRuleResource{
+			ID: "alr_1", Name: gotBody.Name, Kind: gotBody.Kind, Metric: gotBody.Metric,
+			Comparator: gotBody.Comparator, Threshold: gotBody.Threshold, Enabled: gotBody.Enabled,
+		})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"apps", "alerts", "update", "web", "alr_1",
+		"--name", "even-higher-cpu", "--kind", "threshold", "--metric", "cpu_percent", "--comparator", ">", "--threshold", "95",
+		"--api-url", srv.URL, "--json",
+	}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if gotMethod != http.MethodPut {
+		t.Errorf("method = %q, want PUT", gotMethod)
+	}
+	if gotPath != "/api/v1/apps/web/alerts/alr_1" {
+		t.Errorf("path = %q, want /api/v1/apps/web/alerts/alr_1", gotPath)
+	}
+	if gotBody.Kind != "threshold" || gotBody.Metric != "cpu_percent" || gotBody.Comparator != ">" || gotBody.Threshold != 95 {
+		t.Errorf("request body = %+v, want a threshold rule on cpu_percent > 95", gotBody)
+	}
+	if !strings.Contains(stdout.String(), `"id": "alr_1"`) {
+		t.Errorf("stdout = %q, want the updated rule as JSON", stdout.String())
+	}
+}
+
+func TestRun_AppsAlertsUpdate_MissingKind(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "alerts", "update", "web", "alr_1", "--name", "x"}, &stdout, &stderr, envMap())
+	if got != exitValidation {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitValidation, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--kind is required") {
+		t.Errorf("stderr = %q, want a missing --kind error", stderr.String())
+	}
+}
+
+func TestRun_AppsAlertsUpdate_MissingName(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "alerts", "update", "web", "alr_1", "--kind", "cert_expiry"}, &stdout, &stderr, envMap())
+	if got != exitValidation {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitValidation, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--name is required") {
+		t.Errorf("stderr = %q, want a missing --name error", stderr.String())
+	}
+}
+
+func TestRun_AppsAlertsUpdate_MissingArgs(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "alerts", "update", "web", "--name", "x", "--kind", "cert_expiry"}, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitUsage, stderr.String())
+	}
+}
+
 func TestRun_AppsAlertsDelete(t *testing.T) {
 	srv, gotPath, gotMethod := newNoContentEchoServer(t)
 	defer srv.Close()

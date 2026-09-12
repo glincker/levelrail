@@ -97,7 +97,17 @@ export interface AppDetail {
   // `omitempty` on the Go side, same optional-map convention `env`
   // already establishes above.
   labels?: Record<string, string>
+  // node_id carries `omitempty` on the Go side and is response-only on
+  // update: appResource's own doc comment is explicit an existing app's
+  // placement changes via PUT /api/v1/apps/{name}/node (handleSetAppNode)
+  // rather than through this type. POST /api/v1/apps (create) is the one
+  // exception: an explicit node_id there overrides simple spread
+  // scheduling, see CreateAppRequest's own doc comment (queries/apps.ts).
   node_id?: string
+  // auto_placed carries `omitempty` on the Go side and is response-only,
+  // set only by POST /api/v1/apps: true when the create request omitted
+  // node_id and simple spread scheduling picked a non-local node for it.
+  auto_placed?: boolean
   // project_id carries `omitempty` on the Go side and is response-only
   // on PUT (internal/api/apps.go's appResource own doc comment): set an
   // existing app's project via PUT /api/v1/apps/{name}/project

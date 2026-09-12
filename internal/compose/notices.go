@@ -36,6 +36,11 @@ type Notice struct {
 //     here the way they would under real Compose. That's a real
 //     semantic gap for a file that expressed isolation intent, worth a
 //     warning rather than a silent drop.
+//   - depends_on: (NoticeLevelWarning): parsed but never used to
+//     sequence container startup order, so a service can start before
+//     what it depends on is ready. A real semantic gap, worth a warning
+//     so an operator whose service crashloops on startup isn't left
+//     guessing why.
 func (f *File) Notices() []Notice {
 	var notices []Notice
 	for _, name := range sortedServiceNames(f) {
@@ -53,6 +58,12 @@ func (f *File) Notices() []Notice {
 			Message: "networks: is declared but not enforced; every service in this app shares one network and can already reach every other service, regardless of any networks: assignment",
 		})
 	}
+	if f.declaresDependsOn() {
+		notices = append(notices, Notice{
+			Level:   NoticeLevelWarning,
+			Message: "depends_on: is parsed but not enforced; the reconciler doesn't sequence container startup order, so a dependent service may start before what it depends on is ready",
+		})
+	}
 	return notices
 }
 
@@ -62,6 +73,15 @@ func (f *File) declaresCustomNetworks() bool {
 	}
 	for _, name := range sortedServiceNames(f) {
 		if len(f.Services[name].Networks) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (f *File) declaresDependsOn() bool {
+	for _, name := range sortedServiceNames(f) {
+		if len(f.Services[name].DependsOn) > 0 {
 			return true
 		}
 	}

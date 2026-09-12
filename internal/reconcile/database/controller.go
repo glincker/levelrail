@@ -354,33 +354,34 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 }
 
-// Teardown stops and removes this database's own container, if any:
-// used by a caller that owns this database's full lifecycle (an
+// Teardown stops and removes this database's container, if one exists.
+// Used both by a caller that owns this database's full lifecycle (an
 // ephemeral preview database, internal/api/preview_environments_databases.go)
-// rather than just its running state, unlike ordinary DeleteDesiredDatabase
-// callers which leave the container for a future reconcile pass to
-// notice is now orphaned. Idempotent and safe to call again after a
-// partial failure: InspectByName reports the container's real state
-// fresh on every call, so a Stop that already ran (or a Remove that
-// already succeeded) is simply skipped rather than retried into an
-// error. Does not remove the container's data volume; see
-// dataVolumeName's own doc comment.
+// and by callers that must call it themselves right after moving or
+// deleting desired state: Reconcile treats ErrDatabaseNotFound as "not
+// deployed yet," not "stop everything," so a moved-off-this-node or
+// deleted database is never reconciled here again otherwise. Idempotent
+// and safe to call again after a partial failure: InspectByName reports
+// the container's real state fresh on every call, so a Stop that already
+// ran (or a Remove that already succeeded) is simply skipped rather than
+// retried into an error. Does not remove the container's data volume;
+// see dataVolumeName's own doc comment.
 func (c *Controller) Teardown(ctx context.Context) error {
 	target := containerName(c.dbName)
 	state, err := c.runtime.InspectByName(ctx, target)
 	if err != nil {
-		return fmt.Errorf("database/%s: inspect %q for teardown: %w", c.dbName, target, err)
+		return fmt.Errorf("database/%s: inspect %q: %w", c.dbName, target, err)
 	}
 	if state == nil {
 		return nil
 	}
 	if state.Running {
 		if err := c.runtime.Stop(ctx, state.ID, defaultStopTimeout); err != nil {
-			return fmt.Errorf("database/%s: stop %q for teardown: %w", c.dbName, target, err)
+			return fmt.Errorf("database/%s: stop %q: %w", c.dbName, target, err)
 		}
 	}
 	if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
-		return fmt.Errorf("database/%s: remove %q for teardown: %w", c.dbName, target, err)
+		return fmt.Errorf("database/%s: remove %q: %w", c.dbName, target, err)
 	}
 	return nil
 }
@@ -436,7 +437,12 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	switch {
 	case state == nil:
 		if err := c.createAndStart(ctx, spec); err != nil {
-			return notReady("CreateFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+			reason := "CreateFailed"
+			var startErr *startAfterCreateError
+			if errors.As(err, &startErr) {
+				reason = "StartFailedAfterCreate"
+			}
+			return notReady(reason, err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
 		justDeployed = true
 
@@ -488,13 +494,22 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	return ready("AlreadyRunning"), nil
 }
 
+// startAfterCreateError marks a createAndStart failure in the Start step,
+// after Create already succeeded, so reconcileEngine can report the
+// half-succeeded case under its own condition reason instead of the
+// plain create-failure one.
+type startAfterCreateError struct{ err error }
+
+func (e *startAfterCreateError) Error() string { return e.err.Error() }
+func (e *startAfterCreateError) Unwrap() error { return e.err }
+
 func (c *Controller) createAndStart(ctx context.Context, spec docker.ContainerSpec) error {
 	id, err := c.runtime.Create(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("create %q: %w", spec.Name, err)
 	}
 	if err := c.runtime.Start(ctx, id); err != nil {
-		return fmt.Errorf("start %q after create: %w", spec.Name, err)
+		return &startAfterCreateError{fmt.Errorf("start %q after create: %w", spec.Name, err)}
 	}
 	return nil
 }

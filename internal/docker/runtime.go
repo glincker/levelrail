@@ -355,3 +355,49 @@ type Runtime interface {
 	// must be called once done, same contract.
 	ExecWithInput(ctx context.Context, containerID string, cmd []string, stdin io.Reader) (io.ReadCloser, error)
 }
+
+// TTYSize is a terminal's character grid. Zero in either field means
+// "let the daemon pick," the same as leaving Docker's own ConsoleSize
+// unset.
+type TTYSize struct {
+	Rows uint16
+	Cols uint16
+}
+
+// ExecTTYOptions configures one interactive exec. Cmd is required; Env
+// carries the terminal's own environment (TERM above all, without which
+// most full-screen programs refuse to draw).
+type ExecTTYOptions struct {
+	Cmd        []string
+	Env        []string
+	User       string
+	WorkingDir string
+	Size       TTYSize
+}
+
+// ExecSession is one PTY-backed exec running inside a container: Read
+// yields the terminal's output (stdout and stderr merged, as a real
+// terminal merges them), Write feeds its input, Resize tells the
+// process its window changed, and Close ends the session.
+//
+// Read's trailing error carries the exec's own exit status the same way
+// Runtime.Exec's does: io.EOF for a clean exit, *ExecExitError for a
+// non-zero one. Close is best effort at stopping the remote process:
+// the Engine API has no "kill this exec," so closing the PTY is the
+// only lever, which ends a shell but cannot end a process that ignores
+// its terminal hanging up.
+type ExecSession interface {
+	io.ReadWriteCloser
+	Resize(ctx context.Context, size TTYSize) error
+}
+
+// TTYRuntime is the interactive half of Runtime's exec surface, kept
+// separate because Runtime is implemented by a dozen narrow test fakes
+// that have no interactive exec to offer and no reason to grow a stub
+// for one. Every real implementation (docker.Client, the agent's gRPC
+// transport, and the in-process transport wrapping either) implements
+// both, so a caller resolving a node's Runtime type-asserts to this and
+// reports "not supported on this node" if it fails.
+type TTYRuntime interface {
+	ExecTTY(ctx context.Context, containerID string, opts ExecTTYOptions) (ExecSession, error)
+}

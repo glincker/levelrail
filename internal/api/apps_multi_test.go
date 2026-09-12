@@ -243,6 +243,133 @@ func TestHandleDeploySpec_PartialFailure_StillReturns2xxWithPerServiceErrors(t *
 	}
 }
 
+func newTestRouterWithBuilderAndSecrets(t *testing.T, builder Builder, fetch *fakeFetch, setter SecretSetter) (*Router, *store.DB) {
+	t.Helper()
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db, WithBuilder(builder), WithSecretSetter(setter))
+	if fetch != nil {
+		rt.fetch = fetch.fetch
+	}
+	return rt, db
+}
+
+// TestHandleDeploySpec_WithInlineSecret_Success covers an env entry with
+// both secret: true and an inline value: the value must reach
+// SecretSetter under "<app>-<service key>" (internal/deploy/multi.go's
+// own naming convention) before the builder ever runs, so a { required:
+// true } secret's own validateEnv check (internal/deploy.Pipeline) sees
+// it as already set.
+func TestHandleDeploySpec_WithInlineSecret_Success(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithBuilderAndSecrets(t, builder, newFakeFetch("/tmp/checkout", nil), setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"web": {"build": {"type": "dockerfile"}, "port": 3000, "env": {"API_KEY": {"secret": true, "required": true, "value": "sk-abc"}}}
+		}
+	}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "sk-abc") {
+		t.Errorf("body = %s, must never echo a secret value back", rec.Body.String())
+	}
+	if setter.calls != 1 || setter.lastService != "myapp-web" || setter.lastKey != "API_KEY" || setter.lastValue != "sk-abc" {
+		t.Errorf("setter called with (%q, %q, %q), calls=%d, want (myapp-web, API_KEY, sk-abc), calls=1",
+			setter.lastService, setter.lastKey, setter.lastValue, setter.calls)
+	}
+	if builder.multiCalls != 1 {
+		t.Fatalf("builder.multiCalls = %d, want 1", builder.multiCalls)
+	}
+}
+
+// TestHandleDeploySpec_SecretDeclaredNoValue_BuilderStillRuns covers
+// declaring a secret's NAME with no inline value: no SetValueGuarded
+// call happens, and the request still reaches the builder (an
+// unresolved value is Pipeline.Deploy's own concern via validateEnv, not
+// this handler's).
+func TestHandleDeploySpec_SecretDeclaredNoValue_BuilderStillRuns(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithBuilderAndSecrets(t, builder, newFakeFetch("/tmp/checkout", nil), setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"web": {"build": {"type": "dockerfile"}, "port": 3000, "env": {"API_KEY": {"secret": true, "required": true}}}
+		}
+	}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if setter.calls != 0 {
+		t.Errorf("setter.calls = %d, want 0: no value was given", setter.calls)
+	}
+	if builder.multiCalls != 1 {
+		t.Fatalf("builder.multiCalls = %d, want 1", builder.multiCalls)
+	}
+}
+
+// TestHandleDeploySpec_Secrets_NotConfigured_Returns501 covers a control
+// plane with no master key configured: an inline secret value must fail
+// fast, before any git fetch or build work starts.
+func TestHandleDeploySpec_Secrets_NotConfigured_Returns501(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil)) // no WithSecretSetter
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"web": {"build": {"type": "dockerfile"}, "port": 3000, "env": {"API_KEY": {"secret": true, "value": "sk-abc"}}}
+		}
+	}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", body))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
+	}
+	if builder.multiCalls != 0 {
+		t.Errorf("builder.multiCalls = %d, want 0: must fail before reaching the builder", builder.multiCalls)
+	}
+}
+
+// TestHandleDeploySpec_Secrets_Locked_Returns409 mirrors
+// TestHandleCreateApp_Secrets_Locked_Returns409 for the fan-out path.
+func TestHandleDeploySpec_Secrets_Locked_Returns409(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	setter := &fakeSecretSetter{locked: true}
+	rt, db := newTestRouterWithBuilderAndSecrets(t, builder, newFakeFetch("/tmp/checkout", nil), setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{
+		"repo_url": "https://example.com/org/app.git",
+		"ref": "main",
+		"services": {
+			"web": {"build": {"type": "dockerfile"}, "port": 3000, "env": {"API_KEY": {"secret": true, "value": "sk-new"}}}
+		}
+	}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", body))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+	if builder.multiCalls != 0 {
+		t.Errorf("builder.multiCalls = %d, want 0", builder.multiCalls)
+	}
+}
+
 func TestHandleDeploySpec_MissingRepoURL_Rejected(t *testing.T) {
 	builder := &fakeBuilder{tag: "img:sha"}
 	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))

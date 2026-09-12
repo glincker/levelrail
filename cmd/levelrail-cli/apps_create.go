@@ -47,6 +47,18 @@ type createFlags struct {
 	// apps_create_interactive.go's runAppsCreateWizard.
 	interactive bool
 
+	// nodeID/nodeIDSet back --node-id: an explicit placement override,
+	// honored even when nodeID is "" (pins to the local node). Left unset
+	// (nodeIDSet false) omits node_id from the create request entirely,
+	// letting the control plane auto-place this app via simple spread
+	// scheduling when more than one node is registered. See
+	// parseCreateFlags for how nodeIDSet is derived from fs.Visit, the
+	// same "flag omitted vs explicitly set" distinction
+	// nodes_workloads.go's own doc comment explains plain BoolVar/
+	// StringVar defaults alone can't make.
+	nodeID    string
+	nodeIDSet bool
+
 	// attachDatabase, attachDatabaseEnvVar, attachDatabaseField back
 	// --attach-database and its two optional refinements: a post-create
 	// call to PUT /api/v1/apps/{name}/database (apiclient's
@@ -58,6 +70,14 @@ type createFlags struct {
 	attachDatabase       string
 	attachDatabaseEnvVar string
 	attachDatabaseField  string
+
+	// secrets backs --secret (repeatable KEY=VALUE): plaintext values to
+	// store via envelope-encrypted secret storage as part of this same
+	// create call, applied to plan.CreateBody.Secrets after
+	// planFromFlags regardless of which of the three paths built the
+	// plan, the same "apply after planning, not threaded through every
+	// plan* function" shape --node-id already uses (see runAppsCreate).
+	secrets map[string]string
 }
 
 // createPlan is planFromFlags's output: exactly the HTTP requests
@@ -208,11 +228,7 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 	if buildType != spec.BuildDockerfile && len(f.buildArgs) > 0 {
 		return createPlan{}, newValidationError("--build-arg is only meaningful for a dockerfile build (service %q has build.type %q)", key, buildType)
 	}
-	if secretKeys := secretEnvKeys(svc.Env); len(secretKeys) > 0 {
-		return createPlan{}, newValidationError(
-			"service %q declares secret env var(s) %s; apps create does not yet set secrets, create the app without them and set each one via PUT /api/v1/apps/{name}/secrets/{key} afterward",
-			key, strings.Join(secretKeys, ", "))
-	}
+	secretEnv := secretEnvKeys(svc.Env)
 
 	name := f.name
 	if name == "" {
@@ -280,6 +296,7 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 			HostPort:  toHostPort(hostPort),
 			Domains:   svc.Domains,
 			Env:       literalEnv(svc.Env),
+			SecretEnv: secretEnv,
 			Resources: resources,
 			Health:    health,
 		},
@@ -299,11 +316,7 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 	if svc.Build.Image == "" {
 		return createPlan{}, newValidationError("service %q has build.type %q but no build.image set", key, spec.BuildImage)
 	}
-	if secretKeys := secretEnvKeys(svc.Env); len(secretKeys) > 0 {
-		return createPlan{}, newValidationError(
-			"service %q declares secret env var(s) %s; apps create does not yet set secrets, create the app without them and set each one via PUT /api/v1/apps/{name}/secrets/{key} afterward",
-			key, strings.Join(secretKeys, ", "))
-	}
+	secretEnv := secretEnvKeys(svc.Env)
 
 	name := f.name
 	if name == "" {
@@ -339,6 +352,7 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 			HostPort:  toHostPort(hostPort),
 			Domains:   svc.Domains,
 			Env:       literalEnv(svc.Env),
+			SecretEnv: secretEnv,
 			Resources: resources,
 			Health:    health,
 		},
@@ -401,13 +415,24 @@ func secretEnvKeys(env map[string]spec.EnvVar) []string {
 	return keys
 }
 
+// literalEnv skips { secret: true } and { from: ... } entries: neither
+// carries a plain literal value this endpoint can send as Env (a secret's
+// value goes through Secrets/SecretEnv instead, and a database reference
+// has no field this endpoint accepts at all), mirroring
+// internal/deploy/translate.go's own literalEnv.
 func literalEnv(env map[string]spec.EnvVar) map[string]string {
 	if len(env) == 0 {
 		return nil
 	}
 	out := make(map[string]string, len(env))
 	for k, v := range env {
+		if v.Secret || v.From != "" {
+			continue
+		}
 		out[k] = v.Value
+	}
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }
@@ -572,6 +597,22 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, err)
 	}
+	// --node-id is an explicit override, applied after planFromFlags so
+	// every path (existing-image, git-build, --file) gets it uniformly
+	// rather than threading it through each plan* function. Left unset,
+	// plan.CreateBody.NodeID stays "" and, since AppResource.NodeID
+	// carries `omitempty`, is indistinguishable on the wire from an
+	// explicit --node-id "": the control plane sees a genuinely omitted
+	// field either way and may auto-place this app, see AppResource's own
+	// NodeID field doc comment (internal/apiclient/types.go). Pinning
+	// back to the local node after auto-placement is available via
+	// PUT /api/v1/apps/{name}/node instead.
+	if f.nodeIDSet {
+		plan.CreateBody.NodeID = f.nodeID
+	}
+	if len(f.secrets) > 0 {
+		plan.CreateBody.Secrets = f.secrets
+	}
 
 	profile := resolveProfile(profileFlag, lookupEnv)
 	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
@@ -582,6 +623,9 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	created, err := client.CreateApp(ctx, plan.CreateBody)
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("create app %q: %w", plan.CreateBody.Name, err))
+	}
+	if created.AutoPlaced && !f.jsonOut {
+		_, _ = fmt.Fprintf(stderr, "app %q auto-placed on node %q (simple spread scheduling)\n", created.Name, created.NodeID)
 	}
 
 	if buildErr := triggerCreatePlanBuild(ctx, client, created, plan, stderr, f.jsonOut); buildErr != nil {
@@ -668,9 +712,12 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.imageRepo, "image-repo", "", "image name without a tag, e.g. registry.example.com/org/app (git-build path)")
 	fs.StringVar(&f.file, "file", "", "path to an app.yaml (or equivalent) spec file; an alternative to the flag-only paths above")
 	fs.StringVar(&f.service, "service", "", "which service in --file's services: map to create, required when it declares more than one")
+	fs.StringVar(&f.nodeID, "node-id", "", "node to place this app on (default: auto-placed on the least-loaded registered node, or the local node if only one exists)")
 	fs.StringVar(&f.attachDatabase, "attach-database", "", "name of an existing managed database to attach after create (injects a connection env var, see --attach-database-env-var/--attach-database-field)")
 	fs.StringVar(&f.attachDatabaseEnvVar, "attach-database-env-var", "", "env var name the attached database's value is injected as (default: DATABASE_URL); only meaningful with --attach-database")
 	fs.StringVar(&f.attachDatabaseField, "attach-database-field", "", "which field to inject: url, host, port, username, password, or database (default: url); only meaningful with --attach-database")
+	f.secrets = make(map[string]string)
+	fs.Var(stringMapFlag(f.secrets), "secret", "secret env var value as KEY=VALUE, repeatable; stored via envelope-encrypted secret storage as part of this same create call (any path above), same value-on-the-command-line convention \"apps secrets set\" already uses")
 	fs.BoolVar(&f.yes, "yes", false, "accept defaults without prompting (reserved: no-op outside --interactive, accepted for forward compatibility and script portability)")
 	fs.BoolVar(&f.yes, "y", false, "shorthand for --yes")
 	fs.BoolVar(&f.interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, source, port, domain, health check, resource limits, and optionally more services, then writes app.yaml or calls the API")
@@ -685,6 +732,11 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 		return createFlags{}, err
 	}
 	f.outputFlag, f.queryFlag = *outputFlagP, *queryFlagP
+	fs.Visit(func(fl *flag.Flag) {
+		if fl.Name == "node-id" {
+			f.nodeIDSet = true
+		}
+	})
 	return f, nil
 }
 
@@ -757,10 +809,22 @@ Manifest path:
   build.args from app.yaml's own build.args flow through automatically for a dockerfile build;
     --build-arg overrides them entirely rather than merging
 
+Placement (any path above):
+  --node-id string        node to place this app on; omitted auto-places it on the
+                                    least-loaded registered node (or the local node if only one exists)
+
 Database attachment (any path above):
   --attach-database string           name of an existing managed database to attach after create
   --attach-database-env-var string   env var name for the injected value (default: DATABASE_URL)
   --attach-database-field string     url, host, port, username, password, or database (default: url)
+
+Secrets (any path above):
+  --secret KEY=VALUE      secret env var value, repeatable; stored via envelope-encrypted
+                            secret storage as part of this same create call, so a { secret: true }
+                            var declared in app.yaml (--file path) does not need a separate
+                            PUT /api/v1/apps/{name}/secrets/{key} call afterward. A declared name
+                            with no matching --secret still creates fine; set its value later the
+                            same way.
 
 Common flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

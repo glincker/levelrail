@@ -24,6 +24,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { NodeCapacityHint } from './NodeCapacityHint'
 
 // Database counterpart to ResourceLimitsEditor.tsx (apps): same schema,
 // same lossless-MiB-integer field choice (see that component's own
@@ -254,6 +255,10 @@ export function DatabaseResourceLimitsEditor({
                           placeholder="512"
                         />
                         <FieldError errors={[formState.errors.memoryMib]} />
+                        <NodeCapacityHint
+                          nodeId={database.node_id}
+                          dimension="memory"
+                        />
                       </Field>
                     </FieldGroup>
                   ) : (
@@ -300,6 +305,10 @@ export function DatabaseResourceLimitsEditor({
                           placeholder="0.5"
                         />
                         <FieldError errors={[formState.errors.cpuCores]} />
+                        <NodeCapacityHint
+                          nodeId={database.node_id}
+                          dimension="cpu"
+                        />
                       </Field>
                     </FieldGroup>
                   ) : (

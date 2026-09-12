@@ -67,6 +67,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsScheduledTasks(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "alerts":
 		return runAppsAlerts(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "deploy-notify-targets":
+		return runAppsDeployNotifyTargets(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "organizations":
 		return runAppsOrganizations(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "projects":
@@ -89,6 +91,12 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsGitSource(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "webhook-deliveries":
 		return runAppsWebhookDeliveries(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "clone":
+		return runAppsClone(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "images":
+		return runAppsImages(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "storage":
+		return runAppsStorage(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n\n", prog, args[0]) //nolint:gosec // same guard as above
 		_, _ = fmt.Fprint(stderr, appsUsage(prog))
@@ -123,6 +131,7 @@ func appsUsage(prog string) string {
   %[1]s apps log-drain get|set|clear <name> [flags]   configure an external log drain
   %[1]s apps scheduled-tasks <verb> [flags]   manage cron-scheduled commands run inside the app's container
   %[1]s apps alerts <verb> [flags]   manage alert rules (threshold, crashloop, cert_expiry)
+  %[1]s apps deploy-notify-targets <verb> [flags]   manage which notification channels get a deploy's outcome
   %[1]s apps organizations <verb> [flags]   manage organizations, which group projects
   %[1]s apps projects <verb> [flags]   manage projects, which group apps and databases
   %[1]s apps environments <verb> [flags]   manage a project's environments (staging, production, ...)
@@ -134,6 +143,9 @@ func appsUsage(prog string) string {
   %[1]s apps secrets <verb> [flags]   manage an app's encrypted secret values
   %[1]s apps git-source <verb> [flags]   connect a repo for auto-deploy-on-push
   %[1]s apps webhook-deliveries <verb> [flags]   inspect and replay recent inbound git webhook requests
+  %[1]s apps clone <name> <new-name> [flags]   duplicate an app's desired state under a new name
+  %[1]s apps images <name> [flags]   list locally-present image tags under an app's current image repo
+  %[1]s apps storage <verb> [flags]   attach/detach a connected bucket as this app's object storage
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.
 `, prog)

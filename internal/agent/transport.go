@@ -22,6 +22,7 @@
 package agent
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -36,11 +37,11 @@ import (
 // docker.Runtime is already the exact narrow surface
 // scoped down to "what a reconcile controller needs from Docker," and
 // Transport's whole point is "the same thing, now reachable on a
-// specific node," not a different capability set. A future RPC surface
-// an agent exposes beyond container operations (build dispatch for 3.5,
-// telemetry collection already covered by ADR 008's separate federated
-// design) extends Transport then, not now: this pass only closes the
-// gap ADR 003 already described as existing.
+// specific node," not a different capability set. An RPC surface an
+// agent exposes beyond container operations stays off this interface and
+// is advertised as an optional capability instead (see RemoteBuilder,
+// build_dispatch.go), so a Local transport does not have to pretend to
+// implement something only a remote agent can do.
 type Transport interface {
 	docker.Runtime
 }
@@ -63,6 +64,17 @@ type Local struct {
 // NewLocal wraps rt as this process's own node Transport.
 func NewLocal(rt docker.Runtime) Local {
 	return Local{Runtime: rt}
+}
+
+// ExecTTY implements docker.TTYRuntime by forwarding to the wrapped
+// runtime, which the embedded docker.Runtime interface would otherwise
+// hide even when the concrete value behind it supports interactive exec.
+func (l Local) ExecTTY(ctx context.Context, containerID string, opts docker.ExecTTYOptions) (docker.ExecSession, error) {
+	tty, ok := l.Runtime.(docker.TTYRuntime)
+	if !ok {
+		return nil, ErrTTYUnsupported
+	}
+	return tty.ExecTTY(ctx, containerID, opts)
 }
 
 // ErrNodeNotRegistered is Registry.Get's failure mode for an unknown

@@ -19,6 +19,7 @@ import (
 	"context"
 	"io"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
@@ -131,6 +132,67 @@ func TestLive_EnrollAndSession(t *testing.T) {
 	}
 	if len(containers) != 1 || containers[0].ID != state.ID {
 		t.Errorf("ListByPrefix() = %+v, want exactly the one container InspectByName already found", containers)
+	}
+
+	// Exec: a real command run inside a real container, its output
+	// streamed back frame by frame over the same connection.
+	execCtx, execCancel := context.WithTimeout(longCtx, 20*time.Second)
+	stdout, err := transport.Exec(execCtx, state.ID, []string{"sh", "-c", "echo hello from the remote node"})
+	if err != nil {
+		execCancel()
+		t.Fatalf("transport.Exec() error = %v", err)
+	}
+	out, err := io.ReadAll(stdout)
+	_ = stdout.Close()
+	execCancel()
+	if err != nil {
+		t.Fatalf("reading remote exec output: %v", err)
+	}
+	if got := strings.TrimSpace(string(out)); got != "hello from the remote node" {
+		t.Errorf("remote exec output = %q, want %q", got, "hello from the remote node")
+	}
+
+	// ExecWithInput: a payload larger than one frame, streamed to the
+	// remote command's stdin and echoed straight back, so both
+	// directions are proven against a real container at once.
+	payload := strings.Repeat("levelrail-remote-restore\n", 8000)
+	inputCtx, inputCancel := context.WithTimeout(longCtx, 30*time.Second)
+	echoed, err := transport.ExecWithInput(inputCtx, state.ID, []string{"cat"}, strings.NewReader(payload))
+	if err != nil {
+		inputCancel()
+		t.Fatalf("transport.ExecWithInput() error = %v", err)
+	}
+	got, err := io.ReadAll(echoed)
+	_ = echoed.Close()
+	inputCancel()
+	if err != nil {
+		t.Fatalf("reading remote exec-with-input output: %v", err)
+	}
+	if string(got) != payload {
+		t.Errorf("remote exec echoed %d bytes, want the %d bytes sent to stdin", len(got), len(payload))
+	}
+
+	// Networks: created, listed, and removed on the remote node.
+	netCtx, netCancel := context.WithTimeout(longCtx, 20*time.Second)
+	defer netCancel()
+	const netName = "levelrail-test-agent-live-net"
+	netID, err := transport.EnsureNetwork(netCtx, netName)
+	if err != nil {
+		t.Fatalf("transport.EnsureNetwork() error = %v", err)
+	}
+	t.Cleanup(func() { _ = rt.RemoveNetwork(context.Background(), netName) })
+	if netID == "" {
+		t.Error("EnsureNetwork() returned an empty network ID")
+	}
+	networks, err := transport.ListNetworksByPrefix(netCtx, netName)
+	if err != nil {
+		t.Fatalf("transport.ListNetworksByPrefix() error = %v", err)
+	}
+	if len(networks) != 1 || networks[0].Name != netName {
+		t.Errorf("ListNetworksByPrefix() = %+v, want exactly the network just created", networks)
+	}
+	if err := transport.RemoveNetwork(netCtx, netName); err != nil {
+		t.Fatalf("transport.RemoveNetwork() error = %v", err)
 	}
 
 	// Events: a real Docker event (stopping the container), relayed

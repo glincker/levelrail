@@ -1,6 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
@@ -278,15 +282,40 @@ func TestPlanFromFlags(t *testing.T) {
 			},
 		},
 		{
-			name:  "file mode secret env vars rejected",
+			name:  "file mode secret env vars declare a name, not a literal",
 			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
 			fileSpec: &spec.Spec{Services: map[string]spec.Service{
 				"web": {
 					Build: spec.Build{Type: spec.BuildDockerfile}, Port: 3000,
-					Env: map[string]spec.EnvVar{"API_KEY": {Secret: true}},
+					Env: map[string]spec.EnvVar{"API_KEY": {Secret: true}, "PLAIN": {Value: "v"}},
 				},
 			}},
-			wantErr: "secret env var",
+			wantPlan: func(t *testing.T, p createPlan) {
+				if len(p.CreateBody.SecretEnv) != 1 || p.CreateBody.SecretEnv[0] != "API_KEY" {
+					t.Errorf("CreateBody.SecretEnv = %v, want [API_KEY]", p.CreateBody.SecretEnv)
+				}
+				if _, ok := p.CreateBody.Env["API_KEY"]; ok {
+					t.Errorf("CreateBody.Env = %v, must not carry a literal for a secret-declared var", p.CreateBody.Env)
+				}
+				if p.CreateBody.Env["PLAIN"] != "v" {
+					t.Errorf("CreateBody.Env[PLAIN] = %q, want %q", p.CreateBody.Env["PLAIN"], "v")
+				}
+			},
+		},
+		{
+			name:  "file mode from ref env vars are never sent as a literal",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {
+					Build: spec.Build{Type: spec.BuildDockerfile}, Port: 3000,
+					Env: map[string]spec.EnvVar{"DATABASE_URL": {From: "postgres.main.url"}},
+				},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if _, ok := p.CreateBody.Env["DATABASE_URL"]; ok {
+					t.Errorf("CreateBody.Env = %v, must not carry an empty literal for a { from: ... } var", p.CreateBody.Env)
+				}
+			},
 		},
 		{
 			name:  "file mode missing port and no --port flag",
@@ -605,6 +634,50 @@ func TestParseCreateFlags_AttachDatabase(t *testing.T) {
 	}
 }
 
+// TestParseCreateFlags_NodeID covers the fs.Visit-based distinction
+// runAppsCreate relies on: --node-id omitted must not be confused with
+// --node-id "" explicitly given, the same "flag omitted vs explicitly
+// set" concern nodes_workloads.go's own doc comment explains.
+func TestParseCreateFlags_NodeID(t *testing.T) {
+	tests := []struct {
+		name          string
+		args          []string
+		wantNodeID    string
+		wantNodeIDSet bool
+	}{
+		{
+			name:          "omitted",
+			args:          []string{"--name", "web", "--image", "img:v1", "--port", "3000"},
+			wantNodeID:    "",
+			wantNodeIDSet: false,
+		},
+		{
+			name:          "explicit value",
+			args:          []string{"--name", "web", "--image", "img:v1", "--port", "3000", "--node-id", "node_a"},
+			wantNodeID:    "node_a",
+			wantNodeIDSet: true,
+		},
+		{
+			name:          "explicit empty string",
+			args:          []string{"--name", "web", "--image", "img:v1", "--port", "3000", "--node-id", ""},
+			wantNodeID:    "",
+			wantNodeIDSet: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var token, apiURL, profile string
+			f, err := parseCreateFlags("levelrail", tt.args, &strings.Builder{}, &token, &apiURL, &profile)
+			if err != nil {
+				t.Fatalf("parseCreateFlags() error = %v", err)
+			}
+			if f.nodeID != tt.wantNodeID || f.nodeIDSet != tt.wantNodeIDSet {
+				t.Errorf("nodeID=%q nodeIDSet=%v, want nodeID=%q nodeIDSet=%v", f.nodeID, f.nodeIDSet, tt.wantNodeID, tt.wantNodeIDSet)
+			}
+		})
+	}
+}
+
 func TestParseCreateFlags_BuildArg(t *testing.T) {
 	var token, apiURL, profile string
 	f, err := parseCreateFlags("levelrail", []string{
@@ -618,6 +691,57 @@ func TestParseCreateFlags_BuildArg(t *testing.T) {
 	want := map[string]string{"VERSION": "1.2.3", "FEATURE_FLAG": "on"}
 	if !reflect.DeepEqual(f.buildArgs, want) {
 		t.Errorf("buildArgs = %+v, want %+v", f.buildArgs, want)
+	}
+}
+
+func TestParseCreateFlags_Secret(t *testing.T) {
+	var token, apiURL, profile string
+	f, err := parseCreateFlags("levelrail", []string{
+		"--name", "web", "--port", "3000", "--image", "web:v1",
+		"--secret", "API_KEY=sk-abc",
+		"--secret", "DB_PASSWORD=hunter2",
+	}, &strings.Builder{}, &token, &apiURL, &profile)
+	if err != nil {
+		t.Fatalf("parseCreateFlags() error = %v", err)
+	}
+	want := map[string]string{"API_KEY": "sk-abc", "DB_PASSWORD": "hunter2"}
+	if !reflect.DeepEqual(f.secrets, want) {
+		t.Errorf("secrets = %+v, want %+v", f.secrets, want)
+	}
+}
+
+// TestRun_AppsCreate_SecretFlag covers the full "apps create --secret"
+// path end to end: the value reaches POST /api/v1/apps's request body
+// (CreateBody.Secrets) and is never echoed back on stdout.
+func TestRun_AppsCreate_SecretFlag(t *testing.T) {
+	var gotMethod string
+	var gotBody appResource
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			gotMethod = r.Method
+			_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(appResource{Name: "web", Image: "web:v1", Port: 8080, SecretEnv: []string{"API_KEY"}})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"apps", "create", "--name", "web", "--image", "web:v1", "--port", "8080",
+		"--secret", "API_KEY=sk-abc", "--api-url", srv.URL, "--json",
+	}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if gotMethod != http.MethodPost {
+		t.Fatalf("POST /api/v1/apps was not observed")
+	}
+	if gotBody.Secrets["API_KEY"] != "sk-abc" {
+		t.Errorf("request body Secrets = %v, want API_KEY=sk-abc", gotBody.Secrets)
+	}
+	if strings.Contains(stdout.String(), "sk-abc") {
+		t.Errorf("stdout = %q, must never echo the secret value back", stdout.String())
 	}
 }
 
