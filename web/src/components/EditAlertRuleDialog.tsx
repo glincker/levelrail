@@ -33,11 +33,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import { DurationInput } from '@/components/ui/duration-input'
 import { toast } from '@/components/ui/toast'
 import { useUpdateAlertRule } from '../queries/alerts'
 import { useNotificationChannelsOptional } from '../queries/notificationChannels'
 import { useScheduledTasks } from '../queries/scheduledTasks'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
+import { METRIC_NAME_LABEL, METRIC_NAME_OPTIONS } from './metricName'
 import type {
   AlertRule,
   AlertRuleKind,
@@ -358,10 +360,17 @@ export function EditAlertRuleDialog({
               <FieldLabel htmlFor="edit-rule-domain-health-for-duration">
                 For duration (optional)
               </FieldLabel>
-              <Input
-                id="edit-rule-domain-health-for-duration"
-                placeholder="e.g. 10m"
-                {...register('forDuration')}
+              <Controller
+                control={control}
+                name="forDuration"
+                render={({ field }) => (
+                  <DurationInput
+                    id="edit-rule-domain-health-for-duration"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
+                )}
               />
               <FieldError errors={[formState.errors.forDuration]} />
             </Field>
@@ -369,10 +378,23 @@ export function EditAlertRuleDialog({
             <>
               <Field>
                 <FieldLabel htmlFor="edit-rule-metric">Metric</FieldLabel>
-                <Input
-                  id="edit-rule-metric"
-                  placeholder="e.g. cpu_percent"
-                  {...register('metric')}
+                <Controller
+                  control={control}
+                  name="metric"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="edit-rule-metric" className="w-full">
+                        <SelectValue placeholder="Choose a metric" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {METRIC_NAME_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {METRIC_NAME_LABEL[option]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
                 <FieldError errors={[formState.errors.metric]} />
               </Field>
@@ -422,10 +444,17 @@ export function EditAlertRuleDialog({
                 <FieldLabel htmlFor="edit-rule-for-duration">
                   For duration (optional)
                 </FieldLabel>
-                <Input
-                  id="edit-rule-for-duration"
-                  placeholder="2m"
-                  {...register('forDuration')}
+                <Controller
+                  control={control}
+                  name="forDuration"
+                  render={({ field }) => (
+                    <DurationInput
+                      id="edit-rule-for-duration"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
                 <FieldError errors={[formState.errors.forDuration]} />
               </Field>
@@ -496,10 +525,17 @@ export function EditAlertRuleDialog({
                 <FieldLabel htmlFor="edit-rule-restart-window">
                   Restart window
                 </FieldLabel>
-                <Input
-                  id="edit-rule-restart-window"
-                  placeholder="5m"
-                  {...register('restartWindow')}
+                <Controller
+                  control={control}
+                  name="restartWindow"
+                  render={({ field }) => (
+                    <DurationInput
+                      id="edit-rule-restart-window"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
                 <FieldError errors={[formState.errors.restartWindow]} />
               </Field>
