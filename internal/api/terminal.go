@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/coder/websocket"
@@ -41,12 +42,19 @@ import (
 // for the identical reason (see exec.go's own doc comment): a shell can
 // read the plaintext secrets injected into the container.
 
-// terminalIdleTimeout bounds how long a session with no traffic at all
-// stays open. An abandoned tab that never sent a close frame (a laptop
-// suspended, a network dropped) would otherwise hold a shell open on the
-// node indefinitely, which is exactly the leak this endpoint's cleanup
-// discipline exists to prevent.
+// terminalIdleTimeout ends a session that has carried no traffic in
+// either direction for this long. An abandoned tab that never sent a
+// close frame (a laptop suspended, a network dropped) would otherwise
+// hold a shell open on the node indefinitely, which is exactly the leak
+// this endpoint's cleanup discipline exists to prevent. Idle, not a
+// hard session cap: a terminal watching a chatty log for an hour is
+// being used, and cutting it off would be a bug, not a safeguard.
 const terminalIdleTimeout = 30 * time.Minute
+
+// terminalIdleCheckInterval is how often the watchdog re-checks
+// idleness, trading a little imprecision at the deadline for a timer
+// that fires a handful of times per session rather than per frame.
+const terminalIdleCheckInterval = time.Minute
 
 // terminalWriteTimeout bounds one frame's write to a browser that has
 // stopped reading, so a stalled client cannot pin the output pump.
@@ -122,9 +130,9 @@ func (rt *Router) handleAppTerminal(w http.ResponseWriter, r *http.Request) {
 
 	// Deliberately not r.Context(): some servers cancel a hijacked
 	// request's context on upgrade, and this session outlives the
-	// request either way. The idle timeout and the client's own close
+	// request either way. The idle watchdog and the client's own close
 	// are what bound it.
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), terminalIdleTimeout)
+	ctx, cancel := context.WithCancel(context.WithoutCancel(r.Context()))
 	defer cancel()
 
 	sess, err := tty.ExecTTY(ctx, state.ID, docker.ExecTTYOptions{
@@ -152,11 +160,14 @@ func (rt *Router) runTerminalSession(ctx context.Context, cancel context.CancelF
 		_ = conn.CloseNow()
 	}()
 
+	activity := newTerminalActivity()
+	go watchTerminalIdle(ctx, activity, cancel)
+
 	outcome := make(chan error, 1)
-	go func() { outcome <- rt.pumpTerminalOutput(ctx, conn, sess) }()
+	go func() { outcome <- rt.pumpTerminalOutput(ctx, conn, sess, activity) }()
 
 	go func() {
-		rt.pumpTerminalInput(ctx, conn, sess, name)
+		rt.pumpTerminalInput(ctx, conn, sess, activity, name)
 		// The client hung up: ending the session here is what stops the
 		// remote shell instead of leaving it attached to nobody.
 		cancel()
@@ -169,13 +180,49 @@ func (rt *Router) runTerminalSession(ctx context.Context, cancel context.CancelF
 	}
 }
 
+// terminalActivity is the last moment either direction carried a frame,
+// shared by both pumps and the idle watchdog.
+type terminalActivity struct {
+	lastUnixNano atomic.Int64
+}
+
+func newTerminalActivity() *terminalActivity {
+	a := &terminalActivity{}
+	a.touch()
+	return a
+}
+
+func (a *terminalActivity) touch() { a.lastUnixNano.Store(time.Now().UnixNano()) }
+
+func (a *terminalActivity) idleFor() time.Duration {
+	return time.Since(time.Unix(0, a.lastUnixNano.Load()))
+}
+
+// watchTerminalIdle ends a session nobody has used in terminalIdleTimeout.
+func watchTerminalIdle(ctx context.Context, activity *terminalActivity, cancel context.CancelFunc) {
+	ticker := time.NewTicker(terminalIdleCheckInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if activity.idleFor() >= terminalIdleTimeout {
+				cancel()
+				return
+			}
+		}
+	}
+}
+
 // pumpTerminalOutput forwards the PTY's bytes to the browser as binary
 // frames, returning the error that ended the stream.
-func (rt *Router) pumpTerminalOutput(ctx context.Context, conn *websocket.Conn, sess docker.ExecSession) error {
+func (rt *Router) pumpTerminalOutput(ctx context.Context, conn *websocket.Conn, sess docker.ExecSession, activity *terminalActivity) error {
 	buf := make([]byte, 32<<10)
 	for {
 		n, readErr := sess.Read(buf)
 		if n > 0 {
+			activity.touch()
 			writeCtx, cancelWrite := context.WithTimeout(ctx, terminalWriteTimeout)
 			err := conn.Write(writeCtx, websocket.MessageBinary, buf[:n])
 			cancelWrite()
@@ -191,12 +238,13 @@ func (rt *Router) pumpTerminalOutput(ctx context.Context, conn *websocket.Conn, 
 
 // pumpTerminalInput forwards the browser's frames to the PTY: binary
 // frames are keystrokes, text frames are control messages.
-func (rt *Router) pumpTerminalInput(ctx context.Context, conn *websocket.Conn, sess docker.ExecSession, name string) {
+func (rt *Router) pumpTerminalInput(ctx context.Context, conn *websocket.Conn, sess docker.ExecSession, activity *terminalActivity, name string) {
 	for {
 		kind, data, err := conn.Read(ctx)
 		if err != nil {
 			return
 		}
+		activity.touch()
 		if kind == websocket.MessageText {
 			rt.applyTerminalControl(ctx, sess, data, name)
 			continue
