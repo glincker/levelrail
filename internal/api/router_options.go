@@ -282,6 +282,17 @@ func WithTelemetryQuerier(q TelemetryQuerier) Option {
 	return func(rt *Router) { rt.telemetry = q }
 }
 
+// WithReconcileNudger lets desired-state-changing handlers (app/database
+// create, stop, start, restart, delete) request an immediate reconcile
+// pass right after they save, instead of every such action waiting up
+// to a full resyncInterval to visibly take effect. Without one
+// configured (the default), those handlers still work exactly as
+// before: the resync ticker and Docker's own event stream are what
+// converge desired and observed state regardless.
+func WithReconcileNudger(n ReconcileNudger) Option {
+	return func(rt *Router) { rt.reconcileNudger = n }
+}
+
 // WithAlertRules enables POST/GET /api/v1/apps/{name}/alerts and DELETE
 // /api/v1/apps/{name}/alerts/{id}. Without one
 // configured (the default), all three routes return 501, the same

@@ -114,6 +114,7 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 
 	rt.recordInstantDeployAttempt(r.Context(), updated, res.source.Image, store.DeployAttemptSourcePromote)
 
+	rt.nudgeReconciler()
 	writeJSON(w, http.StatusAccepted, toAppResource(updated))
 }
 

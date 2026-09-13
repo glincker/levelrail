@@ -22,7 +22,9 @@ func (rt *Router) applyResourcesLive(ctx context.Context, nodeID, containerName 
 	if err != nil {
 		return false
 	}
-	state, err := runtime.InspectByName(ctx, containerName)
+	inspectCtx, cancel := context.WithTimeout(ctx, dockerInspectTimeout)
+	state, err := runtime.InspectByName(inspectCtx, containerName)
+	cancel()
 	if err != nil || state == nil || !state.Running {
 		return false
 	}

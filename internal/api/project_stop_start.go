@@ -84,5 +84,6 @@ func (rt *Router) handleProjectLifecycle(w http.ResponseWriter, r *http.Request,
 		result.SucceededDatabases = append(result.SucceededDatabases, db.Name)
 	}
 
+	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, result)
 }

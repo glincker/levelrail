@@ -41,9 +41,17 @@ type fakeExecAppRuntime struct {
 	listByPrefixCalls  chan struct{}
 
 	inspectByNameCalls chan struct{}
+
+	// gotInspectCtx is the context InspectByName was actually called
+	// with, captured so a test can assert a caller bounded it with its
+	// own deadline (dockerInspectTimeout) rather than passing the bare
+	// request context through, which would let an unresponsive Docker
+	// daemon hang the request forever.
+	gotInspectCtx context.Context
 }
 
-func (f *fakeExecAppRuntime) InspectByName(_ context.Context, _ string) (*docker.ContainerState, error) {
+func (f *fakeExecAppRuntime) InspectByName(ctx context.Context, _ string) (*docker.ContainerState, error) {
+	f.gotInspectCtx = ctx
 	if f.inspectByNameCalls != nil {
 		f.inspectByNameCalls <- struct{}{}
 	}

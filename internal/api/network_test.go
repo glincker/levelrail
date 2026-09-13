@@ -146,6 +146,31 @@ func TestHandleGetAppNetwork_NodeResolverError(t *testing.T) {
 	}
 }
 
+// TestHandleGetAppNetwork_InspectBoundedByTimeout proves the live
+// InspectByName call is never handed the bare request context (which
+// carries no deadline of its own): an unresponsive Docker daemon must
+// time this request out rather than hang the Network tab's page load
+// forever.
+func TestHandleGetAppNetwork_InspectBoundedByTimeout(t *testing.T) {
+	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	seedExecApp(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/network", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	if fake.gotInspectCtx == nil {
+		t.Fatal("InspectByName was never called")
+	}
+	if _, ok := fake.gotInspectCtx.Deadline(); !ok {
+		t.Error("InspectByName's context has no deadline, want one bounded by dockerInspectTimeout")
+	}
+}
+
 func TestNetworkAppRoute_RequiresAuth(t *testing.T) {
 	rt, _ := newTestRouter(t)
 

@@ -227,6 +227,7 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 	if !resp.AllSucceeded {
 		status = http.StatusMultiStatus
 	}
+	rt.nudgeReconciler()
 	writeJSON(w, status, resp)
 }
 
