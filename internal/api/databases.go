@@ -326,6 +326,7 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 	if !rt.createDesiredDatabase(w, r, req) {
 		return
 	}
+	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)
 }
 
@@ -362,6 +363,7 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rt.nudgeReconciler()
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -375,6 +377,7 @@ func (rt *Router) reloadAndWriteDatabase(w http.ResponseWriter, r *http.Request,
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, rt.toDatabaseResourceWithStatus(r.Context(), *d))
 }
 

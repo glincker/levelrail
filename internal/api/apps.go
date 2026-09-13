@@ -525,6 +525,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	req.SecretEnv = desired.SecretEnv
 	req.Secrets = nil
 
+	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)
 }
 
@@ -651,6 +652,7 @@ func (rt *Router) reloadAndWriteApp(w http.ResponseWriter, r *http.Request, name
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, toAppResource(*svc))
 }
 
@@ -847,6 +849,11 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 		rt.deleteAppIfOrphaned(r.Context(), appID)
 	}
 
+	// teardownServiceContainers above already removes this app's own
+	// containers directly, not via the reconciler; the nudge here is for
+	// application/network-cleanup, the other controller with work to do
+	// once this app's App row is gone.
+	rt.nudgeReconciler()
 	w.WriteHeader(http.StatusNoContent)
 }
 

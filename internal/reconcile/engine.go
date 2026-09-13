@@ -56,6 +56,15 @@ type Engine struct {
 	mu         sync.RWMutex
 	lastResult map[string]Result
 	lastErr    map[string]error
+
+	// nudge lets a caller outside the reconcile loop (internal/api, on a
+	// desired-state-changing request) request an immediate ReconcileAll
+	// instead of waiting for the next Docker event or resync tick.
+	// Buffered 1: a nudge is a level-triggered "something changed, look
+	// again" signal, not a queue of individual requests, so any number
+	// of Nudge calls between two Run passes collapses into the one
+	// ReconcileAll that was already going to happen anyway.
+	nudge chan struct{}
 }
 
 // Source dynamically supplies the current set of controllers to reconcile,
@@ -83,6 +92,21 @@ func NewEngine(logger *slog.Logger, controllers ...Controller) *Engine {
 		logger:      logger,
 		lastResult:  make(map[string]Result, len(controllers)),
 		lastErr:     make(map[string]error, len(controllers)),
+		nudge:       make(chan struct{}, 1),
+	}
+}
+
+// Nudge requests an immediate ReconcileAll pass on the next Run
+// iteration, instead of waiting for the next Docker event or
+// resyncInterval tick. Safe to call from any goroutine, including
+// concurrently with Run and with other Nudge calls; a full buffer means
+// a pass is already pending, so this never blocks. Reconcile's own
+// idempotent, level-triggered contract is what makes an extra,
+// unscheduled pass always safe to run.
+func (e *Engine) Nudge() {
+	select {
+	case e.nudge <- struct{}{}:
+	default:
 	}
 }
 
@@ -198,6 +222,10 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 
 		case <-ticker.C:
 			e.logger.Debug("resync tick")
+			e.ReconcileAll(ctx)
+
+		case <-e.nudge:
+			e.logger.Debug("nudge triggered reconcile")
 			e.ReconcileAll(ctx)
 
 		case ev, ok := <-events:

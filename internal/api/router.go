@@ -119,6 +119,7 @@ type Router struct {
 	dockerPruner           DockerPruner           // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
 	registryAuthTester     RegistryAuthTester     // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
 	execRuntime            NodeRuntimeResolver    // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
+	reconcileNudger        ReconcileNudger        // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
 	certs                  CertStore              // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
 	ingressSettings        IngressSettingsStore   // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
 	domains                DomainStore            // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result

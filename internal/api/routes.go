@@ -11,9 +11,15 @@ import "net/http"
 // under a readable size; there is no other meaning to the split.
 func (rt *Router) Handler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /healthz", rt.handleHealthz)
 	rt.registerCoreRoutes(mux)
 	rt.registerPlatformRoutes(mux)
-	return mux
+
+	var h http.Handler = mux
+	h = securityHeadersMiddleware(h)
+	h = panicRecoveryMiddleware(rt.logger)(h)
+	h = requestIDMiddleware(h)
+	return h
 }
 
 func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {

@@ -487,11 +487,30 @@ func run(logger *slog.Logger) error {
 		logger.Warn("webhook not configured", slog.String("error", err.Error()))
 	}
 
-	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner)
+	// Created here, before the router that needs to hand it to mutating
+	// handlers (api.WithReconcileNudger), rather than down at its own
+	// SetStore/SetSource call below: both setters, and Nudge itself, are
+	// safe to call on an Engine before Run starts (Run doesn't begin
+	// until further down this same function).
+	engine := reconcile.NewEngine(logger)
+
+	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner, engine)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
 		Handler:           apiHandler,
 		ReadHeaderTimeout: 10 * time.Second,
+		// ReadTimeout bounds the slowest legitimate case (a plain POST
+		// body, e.g. a large secrets/env payload), not response
+		// duration, so it's safe alongside the SSE log/deploy streams
+		// and the exec terminal's own WebSocket (Hijack takes the
+		// connection out of net/http's own timeout enforcement once
+		// upgraded). IdleTimeout only bounds a keep-alive connection
+		// sitting between requests, same reasoning. WriteTimeout is
+		// deliberately not set here: it's an absolute per-request
+		// deadline net/http cannot exempt a specific route from, and
+		// would kill every one of those same long-lived streams.
+		ReadTimeout: 30 * time.Second,
+		IdleTimeout: 120 * time.Second,
 	}
 
 	ingressDriver := ingressdriver.New(logger)
@@ -520,7 +539,6 @@ func run(logger *slog.Logger) error {
 	// daemon on every tick.
 	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
 
-	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
 	engine.SetSource(dynamicSource(dynamicSourceDeps{
 		db:               db,
@@ -1235,12 +1253,25 @@ func osPatchCheckInterval() time.Duration {
 	return d
 }
 
+// loadBrand resolves brand.yaml the same way the install script's own
+// systemd unit does (WorkingDirectory=$DATA_DIR, so defaultBrandFile's
+// "./brand.yaml" lands on the copy install.sh wrote there): correct for
+// every documented install path, but a plain file-not-found error here
+// reads as an opaque startup crash to anyone who instead just built and
+// ran the binary directly from an arbitrary directory. Turning that one
+// case into an actionable message, rather than teaching brand.Load
+// itself to guess a fallback, keeps that function's own contract simple
+// (a real path in, a real Brand or a real error out).
 func loadBrand() (*brand.Brand, error) {
 	path := os.Getenv("APP_BRAND_FILE")
 	if path == "" {
 		path = defaultBrandFile
 	}
-	return brand.Load(path)
+	b, err := brand.Load(path)
+	if err != nil && os.IsNotExist(errors.Unwrap(err)) {
+		return nil, fmt.Errorf("%w (running via install.sh sets this up automatically; running the binary directly needs either a brand.yaml file at %q or APP_BRAND_FILE pointing at one)", err, path)
+	}
+	return b, err
 }
 
 func loadGitHubAppManifestConfig() (githubapp.ManifestConfig, error) {
@@ -1677,12 +1708,13 @@ func buildNodeSource(db *store.DB, agentRegistry *agent.Registry) build.NodeSour
 // internal/api importing internal/agent.Registry directly (see
 // api.NodeRuntimeResolver's own doc comment for why this stays a
 // closure over resolveNodeTransport instead of a new dependency edge).
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner) (http.Handler, *api.Router) {
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner, engine *reconcile.Engine) (http.Handler, *api.Router) {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
 	}
 	opts := []api.Option{
+		api.WithReconcileNudger(engine),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
 		api.WithAlertRules(alertingDB),
 		api.WithDeployNotifyTargets(alertingDB),

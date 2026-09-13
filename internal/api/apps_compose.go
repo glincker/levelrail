@@ -122,6 +122,7 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 		notices = append(notices, composeNoticeResult{Level: string(n.Level), Message: n.Message})
 	}
 
+	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, composeDeployResponse{AppID: name, Services: out, Notices: notices})
 }
 
