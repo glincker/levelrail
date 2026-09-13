@@ -1,13 +1,24 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// dockerInspectTimeout bounds one live container-state check
+// (docker.Runtime.InspectByName) issued directly from an HTTP handler:
+// network.go, exec.go, and resources_live_apply.go all read the request
+// context, which by default carries no deadline of its own, so a
+// blackholed or overloaded Docker daemon would otherwise hang the whole
+// request (and, for network.go, the entire Network tab's page load)
+// indefinitely instead of the page degrading to "status unknown."
+const dockerInspectTimeout = 3 * time.Second
 
 // networkResource is GET /api/v1/apps/{name}/network's wire shape: the
 // live traffic path from Caddy ingress down to the container, for the
@@ -57,7 +68,9 @@ func (rt *Router) handleGetAppNetwork(w http.ResponseWriter, r *http.Request) {
 	// internal/reconcile/ingress already use to find a service's
 	// currently active container from its own desired state.
 	target := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
-	state, err := rt2.InspectByName(r.Context(), target)
+	inspectCtx, cancel := context.WithTimeout(r.Context(), dockerInspectTimeout)
+	state, err := rt2.InspectByName(inspectCtx, target)
+	cancel()
 	if err != nil || state == nil {
 		writeJSON(w, http.StatusOK, resp)
 		return

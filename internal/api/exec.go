@@ -262,7 +262,9 @@ func (rt *Router) resolveExecContainer(w http.ResponseWriter, r *http.Request, s
 	}
 
 	target := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
-	state, err := nodeRuntime.InspectByName(r.Context(), target)
+	inspectCtx, cancel := context.WithTimeout(r.Context(), dockerInspectTimeout)
+	state, err := nodeRuntime.InspectByName(inspectCtx, target)
+	cancel()
 	if err != nil {
 		rt.logger.Error("api: exec app: inspect container failed",
 			slog.String("error", err.Error()), slog.String("name", svc.Name), slog.String("container", target))
