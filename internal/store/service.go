@@ -860,9 +860,10 @@ func (db *DB) ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]D
 }
 
 // ListDesiredServicesByProject returns every saved service filed under
-// projectID, ordered by name, the project-scoped counterpart of
-// ListDesiredServicesByNode above: internal/api's bulk-restart endpoint
-// uses this to find every app to restart without listing every service.
+// projectID, ordered by name, the project-kind counterpart to
+// ListDesiredServicesByNode. Used by handleStopProject/handleStartProject
+// (internal/api/project_stop_start.go) and internal/api's bulk-restart
+// endpoint to find every app in a project without listing every service.
 func (db *DB) ListDesiredServicesByProject(ctx context.Context, projectID string) ([]DesiredService, error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT `+desiredServiceColumns+`

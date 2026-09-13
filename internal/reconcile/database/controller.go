@@ -268,23 +268,13 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 
 	// Suspended is an operator-requested stop (DesiredDatabase.Suspended's
-	// own doc comment): remove the container and return early. Unlike
-	// application.Controller's own suspend path, there is no replica set
-	// to tear down (containerName's own doc comment explains why a
-	// database controller only ever manages one container), and the data
-	// volume is untouched: dataVolumeName's own volume is never removed
-	// here, only the container that had it mounted, so resuming starts
-	// the same engine against the same data.
+	// own doc comment): converge to zero containers and return early, via
+	// the same Teardown every other full-lifecycle caller of this
+	// controller already uses. The data volume is untouched, so resuming
+	// later recreates a fresh container against the same data.
 	if desired.Suspended {
-		target := containerName(c.dbName)
-		state, err := c.runtime.InspectByName(ctx, target)
-		if err != nil {
-			return notReady("InspectFailed", err), fmt.Errorf("database/%s: suspend: inspect %q: %w", c.dbName, target, err)
-		}
-		if state != nil {
-			if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
-				return notReady("SuspendFailed", err), fmt.Errorf("database/%s: suspend: remove %q: %w", c.dbName, target, err)
-			}
+		if err := c.Teardown(ctx); err != nil {
+			return notReady("SuspendFailed", err), fmt.Errorf("database/%s: suspend: %w", c.dbName, err)
 		}
 		return unknownResult("Suspended"), nil
 	}

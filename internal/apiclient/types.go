@@ -1128,6 +1128,16 @@ type SetProjectOrganizationRequest struct {
 	OrgID string `json:"org_id"`
 }
 
+// ProjectLifecycleResult mirrors internal/api's projectLifecycleResult:
+// the response for StopProject/StartProject, which apps and databases in
+// the project succeeded or failed the requested state change.
+type ProjectLifecycleResult struct {
+	SucceededApps      []string `json:"succeeded_apps"`
+	SucceededDatabases []string `json:"succeeded_databases"`
+	FailedApps         []string `json:"failed_apps,omitempty"`
+	FailedDatabases    []string `json:"failed_databases,omitempty"`
+}
+
 // CreateProjectRequest mirrors internal/api's createProjectRequest.
 type CreateProjectRequest struct {
 	Name string `json:"name"`

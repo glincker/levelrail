@@ -182,7 +182,7 @@ var ErrDatabaseNotFound = errors.New("store: database not found")
 // ErrDatabaseNotFound if no such database has been saved.
 func (db *DB) GetDesiredDatabase(ctx context.Context, name string) (*DesiredDatabase, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources, suspended
+		SELECT `+desiredDatabaseColumns+`
 		FROM desired_databases
 		WHERE name = ?
 	`, name)
@@ -219,7 +219,7 @@ func (db *DB) DeleteDesiredDatabase(ctx context.Context, name string) error {
 // ListDesiredDatabases returns every saved database, ordered by name.
 func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources, suspended
+		SELECT `+desiredDatabaseColumns+`
 		FROM desired_databases
 		ORDER BY name
 	`)
@@ -250,13 +250,46 @@ func (db *DB) ListDesiredDatabases(ctx context.Context) ([]DesiredDatabase, erro
 // callers.
 func (db *DB) ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources, suspended
+		SELECT `+desiredDatabaseColumns+`
 		FROM desired_databases
 		WHERE node_id = ?
 		ORDER BY name
 	`, nodeID)
 	if err != nil {
 		return nil, fmt.Errorf("store: list desired databases for node %q: %w", nodeID, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var out []DesiredDatabase
+	for rows.Next() {
+		d, err := scanDesiredDatabase(rows.Scan)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan desired database row: %w", err)
+		}
+		out = append(out, *d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate desired database rows: %w", err)
+	}
+	return out, nil
+}
+
+// ListDesiredDatabasesByProject returns every saved database filed under
+// projectID, ordered by name, the project-kind counterpart to
+// ListDesiredDatabasesByNode. Used by handleStopProject/handleStartProject
+// (internal/api/project_stop_start.go) to find every database in a
+// project without listing every database.
+func (db *DB) ListDesiredDatabasesByProject(ctx context.Context, projectID string) ([]DesiredDatabase, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT `+desiredDatabaseColumns+`
+		FROM desired_databases
+		WHERE project_id = ?
+		ORDER BY name
+	`, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("store: list desired databases for project %q: %w", projectID, err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -442,7 +475,7 @@ func claimPublicPort(ctx context.Context, tx *sql.Tx, name string, requestedPort
 // all.
 func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources, suspended
+		SELECT `+desiredDatabaseColumns+`
 		FROM desired_databases
 		WHERE backup_schedule != '' AND backup_target_id IS NOT NULL
 		ORDER BY name
@@ -468,12 +501,18 @@ func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, er
 	return out, nil
 }
 
-// scanDesiredDatabase reads the column shape every desired_databases
-// read method queries (GetDesiredDatabase, ListDesiredDatabases,
-// ListDesiredDatabasesByNode, ListScheduledDatabases), via either
-// row.Scan or rows.Scan (same signature), so the nullable-column
-// handling exists exactly once. Mirrors scanDesiredService's shape in
-// service.go, this package's own precedent for the identical problem.
+// desiredDatabaseColumns is the column list every desired_databases
+// SELECT uses (GetDesiredDatabase, ListDesiredDatabases,
+// ListDesiredDatabasesByNode, ListDesiredDatabasesByProject,
+// ListScheduledDatabases), the database-kind counterpart to
+// desiredServiceColumns in service.go.
+const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources, suspended"
+
+// scanDesiredDatabase reads the column shape desiredDatabaseColumns
+// selects, via either row.Scan or rows.Scan (same signature), so the
+// nullable-column handling exists exactly once. Mirrors
+// scanDesiredService's shape in service.go, this package's own
+// precedent for the identical problem.
 func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error) {
 	var (
 		d                         DesiredDatabase

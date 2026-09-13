@@ -19,6 +19,16 @@ export interface ProjectResource {
   org_id?: string
 }
 
+// Wire type for POST /api/v1/projects/{id}/stop and .../start
+// (internal/api's projectLifecycleResult): which apps and databases in
+// the project succeeded or failed the requested state change.
+export interface ProjectLifecycleResult {
+  succeeded_apps: string[]
+  succeeded_databases: string[]
+  failed_apps?: string[]
+  failed_databases?: string[]
+}
+
 // Wire type for POST /api/v1/projects/{id}/restart's response
 // (internal/api/project_restart.go's projectRestartResponse): which
 // apps a bulk restart succeeded or failed on.

@@ -17,6 +17,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import type {
+  ProjectLifecycleResult,
   ProjectResource,
   ProjectRestartResponse,
 } from '../types/projectDetail'
@@ -143,6 +144,57 @@ export async function deleteProject(id: string): Promise<void> {
       await readErrorMessage(res, `delete project failed: ${res.status}`),
     )
   }
+}
+
+// POST /api/v1/projects/{id}/stop and .../start (handleStopProject/
+// handleStartProject): suspend or resume every app and database filed
+// under the project at once. Both invalidate the apps and databases list
+// caches alongside the project's own detail cache, the same
+// cross-resource invalidation reasoning useDeleteProject already applies,
+// since every member app/database's own suspended state just changed.
+async function projectLifecycleAction(
+  id: string,
+  action: 'stop' | 'start',
+): Promise<ProjectLifecycleResult> {
+  const res = await fetch(
+    `/api/v1/projects/${encodeURIComponent(id)}/${action}`,
+    { method: 'POST' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `${action} project failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as ProjectLifecycleResult
+}
+
+export function stopProject(id: string): Promise<ProjectLifecycleResult> {
+  return projectLifecycleAction(id, 'stop')
+}
+
+export function startProject(id: string): Promise<ProjectLifecycleResult> {
+  return projectLifecycleAction(id, 'start')
+}
+
+function useProjectLifecycleMutation(mutationFn: typeof stopProject) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: (_data, id) => {
+      void queryClient.invalidateQueries({ queryKey: projectKeys.detail(id) })
+      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+    },
+  })
+}
+
+export function useStopProject() {
+  return useProjectLifecycleMutation(stopProject)
+}
+
+export function useStartProject() {
+  return useProjectLifecycleMutation(startProject)
 }
 
 // POST /api/v1/projects/{id}/restart (handleRestartProject): forces

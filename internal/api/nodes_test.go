@@ -897,6 +897,12 @@ func (fakeDrainDatabaseStore) UpdateDatabaseNode(context.Context, string, string
 func (fakeDrainDatabaseStore) ListDesiredDatabasesByNode(context.Context, string) ([]store.DesiredDatabase, error) {
 	return nil, nil
 }
+func (fakeDrainDatabaseStore) ListDesiredDatabasesByProject(context.Context, string) ([]store.DesiredDatabase, error) {
+	return nil, nil
+}
+func (fakeDrainDatabaseStore) UpdateDatabaseSuspended(context.Context, string, bool) error {
+	return nil
+}
 func (fakeDrainDatabaseStore) UpdateDatabaseProject(context.Context, string, string) error {
 	return nil
 }
@@ -905,9 +911,6 @@ func (fakeDrainDatabaseStore) SetDatabaseBackupSchedule(context.Context, string,
 }
 func (fakeDrainDatabaseStore) SetDatabasePublicAccess(context.Context, string, bool, int) (int, error) {
 	return 0, nil
-}
-func (fakeDrainDatabaseStore) UpdateDatabaseSuspended(context.Context, string, bool) error {
-	return nil
 }
 
 type fakeDrainNodeStore struct {
