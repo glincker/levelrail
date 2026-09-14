@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -91,17 +92,39 @@ func TestSecurityHeadersMiddleware_SetsExpectedHeaders(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/whatever", nil)
-	securityHeadersMiddleware(inner).ServeHTTP(rec, req)
+	securityHeadersMiddleware(false)(inner).ServeHTTP(rec, req)
 
 	tests := map[string]string{
-		"X-Content-Type-Options": "nosniff",
-		"X-Frame-Options":        "DENY",
-		"Referrer-Policy":        "strict-origin-when-cross-origin",
+		"X-Content-Type-Options":  "nosniff",
+		"X-Frame-Options":         "DENY",
+		"Referrer-Policy":         "strict-origin-when-cross-origin",
+		"Content-Security-Policy": contentSecurityPolicy,
 	}
 	for header, want := range tests {
 		if got := rec.Header().Get(header); got != want {
 			t.Errorf("%s = %q, want %q", header, got, want)
 		}
+	}
+	if got := rec.Header().Get("Strict-Transport-Security"); got != "" {
+		t.Errorf("Strict-Transport-Security = %q, want unset when hstsEnabled is false", got)
+	}
+}
+
+func TestSecurityHeadersMiddleware_HSTSEnabled_SetsHeader(t *testing.T) {
+	inner := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/whatever", nil)
+	securityHeadersMiddleware(true)(inner).ServeHTTP(rec, req)
+
+	got := rec.Header().Get("Strict-Transport-Security")
+	if got == "" {
+		t.Fatal("Strict-Transport-Security is unset, want it set when hstsEnabled is true")
+	}
+	if !strings.Contains(got, "includeSubDomains") {
+		t.Errorf("Strict-Transport-Security = %q, want includeSubDomains", got)
 	}
 }
 

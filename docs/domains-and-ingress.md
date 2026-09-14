@@ -136,6 +136,17 @@ Be clear-eyed about where this stands, because it's easy to overstate:
   by step. Don't take "toggle exists" as "proven to work at internet
   scale" until that runbook (or your own experience) confirms it.
 
+- **HTTP Strict Transport Security (HSTS): opt-in, once you're on real
+  certificates.** Set `APP_ENABLE_HSTS=true` on the control plane to send
+  `Strict-Transport-Security` on every response. It defaults to off on
+  purpose: HSTS tells a browser to refuse plain HTTP and refuse to let a
+  visitor click through a certificate warning on this host for the next
+  180 days, so turning it on before `ACMEEnabled` is true (i.e. while
+  you're still on Caddy's self-signed internal issuer above) can lock
+  you out of your own dashboard the next time that self-signed cert
+  looks untrusted. Only enable it once real, browser-trusted certificates
+  are actually issuing.
+
 - **Bring your own certificate.** If ACME can't reach a domain (an
   internal-only host, an externally issued wildcard, a cert already
   provisioned before DNS cuts over), you can upload your own

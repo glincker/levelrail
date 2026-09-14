@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"runtime/debug"
+	"time"
 )
 
 // requestIDContextKey is unexported, the standard "don't collide with
@@ -92,22 +94,57 @@ func panicRecoveryMiddleware(logger *slog.Logger) func(http.Handler) http.Handle
 	}
 }
 
+// contentSecurityPolicy locks script execution down to the app's own
+// same-origin bundle: no inline script survives web/index.html's own
+// theme-init.js extraction, so script-src needs no 'unsafe-inline' or
+// 'unsafe-eval'. style-src keeps 'unsafe-inline' because @xterm/xterm
+// (AppTerminal.tsx's exec terminal) injects its own <style> element at
+// runtime for cursor rendering; inline style is a far smaller blast
+// radius than inline script (no code execution) and locking it down
+// would need per-request nonce plumbing through the embedded, otherwise
+// static web/dist/index.html, not worth it for the risk it removes.
+// connect-src 'self' already covers the exec terminal's WebSocket and
+// the log/deploy-log SSE streams: CSP3 upgrades a 'self' connect-src
+// match to ws/wss automatically for a same-origin WebSocket, no explicit
+// ws:／wss: entry needed.
+const contentSecurityPolicy = "default-src 'self'; " +
+	"script-src 'self'; " +
+	"style-src 'self' 'unsafe-inline'; " +
+	"img-src 'self' data:; " +
+	"font-src 'self' data:; " +
+	"connect-src 'self'; " +
+	"object-src 'none'; " +
+	"base-uri 'self'; " +
+	"form-action 'self'; " +
+	"frame-ancestors 'none'"
+
+// hstsMaxAge is 180 days: long enough to be meaningful, short enough
+// that disabling APP_ENABLE_HSTS again (see Router.hstsEnabled) doesn't
+// leave a browser enforcing HTTPS-only against this host indefinitely.
+const hstsMaxAge = 180 * 24 * time.Hour
+
 // securityHeadersMiddleware sets the response headers that cost nothing
 // to get right and directly reduce the blast radius of an XSS or
 // clickjacking attempt against a dashboard with root-level actions
-// (deploys, secrets, rollbacks) behind it. Deliberately narrow: a
-// Content-Security-Policy or Strict-Transport-Security header needs
-// verifying against the actual frontend bundle and the embedded-Caddy
-// TLS story respectively before shipping, so both are left for a
-// follow-up rather than guessed at here.
-func securityHeadersMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		h := w.Header()
-		h.Set("X-Content-Type-Options", "nosniff")
-		h.Set("X-Frame-Options", "DENY")
-		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		next.ServeHTTP(w, r)
-	})
+// (deploys, secrets, rollbacks) behind it. Strict-Transport-Security is
+// gated on hstsEnabled (Router.hstsEnabled's own doc comment explains
+// why it isn't inferred automatically); everything else, including
+// Content-Security-Policy, is unconditional.
+func securityHeadersMiddleware(hstsEnabled bool) func(http.Handler) http.Handler {
+	hsts := fmt.Sprintf("max-age=%d; includeSubDomains", int(hstsMaxAge.Seconds()))
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			h := w.Header()
+			h.Set("X-Content-Type-Options", "nosniff")
+			h.Set("X-Frame-Options", "DENY")
+			h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+			h.Set("Content-Security-Policy", contentSecurityPolicy)
+			if hstsEnabled {
+				h.Set("Strict-Transport-Security", hsts)
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 // handleHealthz handles GET /healthz: an unauthenticated liveness check

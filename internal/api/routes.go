@@ -16,7 +16,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerPlatformRoutes(mux)
 
 	var h http.Handler = mux
-	h = securityHeadersMiddleware(h)
+	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
 	h = panicRecoveryMiddleware(rt.logger)(h)
 	h = requestIDMiddleware(h)
 	return h
