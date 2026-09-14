@@ -256,6 +256,17 @@ configured SMTP sender (Settings -> Email, falling back to
 if the dashboard settings are unset), and returns a clear "email is not
 configured" error if neither path is set up.
 
+**Retries**: every HTTP-based kind (everything except `email`) shares
+one send path (`postJSONWithAuth`), which retries up to 3 times with a
+short exponential backoff (500ms, 1s) on a transient failure: a
+transport-level error (DNS, TLS, connection refused, timeout) or a
+5xx/429 response. Any other status (a malformed payload, a bad
+credential, a 404'd webhook URL) fails on the first attempt with no
+retry, since retrying an inherently-wrong request only delays surfacing
+the real problem. `email` isn't covered: it sends through the control
+plane's own SMTP client, a different transport with different failure
+semantics, not yet wired into this retry path.
+
 **Test-send** fires one real message through the channel's own kind and
 URL, either before a channel is ever saved
 (`POST /api/v1/notification-channels/test`, kind+notify_url in the
