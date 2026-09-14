@@ -1725,6 +1725,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithNotificationDeliveries(alertingDB),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
+		api.WithHSTS(hstsEnabled(logger)),
 		api.WithAPIRateLimit(apiRateLimitReadRPM(logger), apiRateLimitWriteRPM(logger)),
 		api.WithDataDir(dataDir),
 		api.WithDockerPinger(client),
@@ -1922,13 +1923,33 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 
 	rt := api.NewRouter(logger, b, db, opts...)
+	return composeMux(rt.Handler(), webhookHandler, web.Handler()), rt
+}
+
+// composeMux wires the three top-level handlers rootHandler serves
+// behind one *http.Server into a single mux. Pulled out of rootHandler
+// so the routing precedence itself, not just rootHandler's much larger
+// dependency graph, is directly unit-testable.
+//
+// "/healthz" is registered ahead of "/api/" and "/" as its own
+// exact-path pattern so a plain GET /healthz (what a systemd unit,
+// container orchestrator, or load balancer actually probes, see
+// handleHealthz's own doc comment) reaches apiHandler's own "GET
+// /healthz" route. Without this explicit entry, "/healthz" has no
+// "/api/" prefix, so it would fall through to the "/" SPA fallback and
+// get back a 200 with the dashboard's index.html body instead of the
+// {"status":"ok"} JSON a prober actually expects. webhookHandler is
+// nil-able: a control plane started without git-webhook config just
+// serves no POST /webhook route.
+func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler http.Handler) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.Handle("/api/", rt.Handler())
+	mux.Handle("/healthz", apiHandler)
+	mux.Handle("/api/", apiHandler)
 	if webhookHandler != nil {
 		mux.Handle("POST /webhook", webhookHandler)
 	}
-	mux.Handle("/", web.Handler())
-	return mux, rt
+	mux.Handle("/", webHandler)
+	return mux
 }
 
 // backupSchedulerInterval reads APP_BACKUP_SCHEDULER_INTERVAL as a Go
@@ -2038,6 +2059,25 @@ func autoPlacementEnabled(logger *slog.Logger) bool {
 	if err != nil {
 		logger.Warn("invalid APP_AUTO_PLACEMENT, defaulting to enabled", slog.String("value", raw), slog.String("error", err.Error()))
 		return true
+	}
+	return v
+}
+
+// hstsEnabled reads APP_ENABLE_HSTS as a bool, api.WithHSTS's own
+// enabled param. Defaults to false (unlike autoPlacementEnabled above):
+// Strict-Transport-Security is safe only once an operator has real,
+// browser-trusted certificates (APP_PUBLIC_HOST plus ACMEEnabled, see
+// Router.hstsEnabled's own doc comment), which this process has no way
+// to confirm on its own, so it's opt-in rather than assumed.
+func hstsEnabled(logger *slog.Logger) bool {
+	raw := os.Getenv("APP_ENABLE_HSTS")
+	if raw == "" {
+		return false
+	}
+	v, err := strconv.ParseBool(raw)
+	if err != nil {
+		logger.Warn("invalid APP_ENABLE_HSTS, defaulting to disabled", slog.String("value", raw), slog.String("error", err.Error()))
+		return false
 	}
 	return v
 }

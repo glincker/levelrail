@@ -148,6 +148,17 @@ type Router struct {
 	// handleCheckDomain (domain_check.go) falls back to the request's own
 	// Host header in that case, see advertisedHost's own doc comment.
 	publicHost string
+	// hstsEnabled sends Strict-Transport-Security when true. Defaults to
+	// false: this control plane's own HTTP server never terminates TLS
+	// itself (the embedded Caddy ingress does, see WithDashboardDial in
+	// internal/reconcile/ingress), so it has no way to know from a
+	// request alone whether the certificate a browser actually saw was a
+	// trusted ACME one or the self-signed/internal-issuer default. HSTS
+	// on a self-signed deployment removes the browser's "proceed anyway"
+	// escape hatch on the next visit, turning a certificate warning into
+	// a hard lockout, so this stays opt-in (APP_ENABLE_HSTS) rather than
+	// inferred. Set via WithHSTS.
+	hstsEnabled bool
 	// lookupHost resolves a hostname's A/AAAA addresses for
 	// handleCheckDomain; always non-nil, defaulted to defaultLookupHost
 	// (a thin net.DefaultResolver.LookupHost wrapper) in NewRouter,

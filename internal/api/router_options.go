@@ -293,6 +293,13 @@ func WithReconcileNudger(n ReconcileNudger) Option {
 	return func(rt *Router) { rt.reconcileNudger = n }
 }
 
+// WithHSTS enables the Strict-Transport-Security response header.
+// Without it (the default), Strict-Transport-Security is never sent, see
+// Router.hstsEnabled's own doc comment for why that's the safe default.
+func WithHSTS(enabled bool) Option {
+	return func(rt *Router) { rt.hstsEnabled = enabled }
+}
+
 // WithAlertRules enables POST/GET /api/v1/apps/{name}/alerts and DELETE
 // /api/v1/apps/{name}/alerts/{id}. Without one
 // configured (the default), all three routes return 501, the same
