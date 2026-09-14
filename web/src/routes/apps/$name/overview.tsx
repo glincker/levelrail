@@ -1,10 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
-import { useDeployStatus } from '../../../queries/deploys'
-import {
-  deployAttemptsQueryOptions,
-  useDeployAttempts,
-} from '../../../queries/deployAttempts'
+import { deployAttemptsQueryOptions } from '../../../queries/deployAttempts'
+import { useDeployProgress } from '../../../hooks/useDeployProgress'
+import { computeDeployStages } from '../../../lib/deployStages'
 import { AppOverviewHero } from '../../../components/AppOverviewHero'
 import { AppQuickStats } from '../../../components/AppQuickStats'
 import { AppOverview } from '../../../components/AppOverview'
@@ -44,13 +42,23 @@ export const Route = createFileRoute('/apps/$name/overview')({
 function OverviewSection() {
   const { name } = Route.useParams()
   const { data: app } = useApp(name)
-  const { data: conditions } = useDeployStatus(name)
-  const { data: attempts } = useDeployAttempts(name)
+  const { attempts, conditions } = useDeployProgress(name)
   const latestAttempt = attempts[0]
+  // Not just latestAttempt?.status === 'running': a plain image-tag
+  // redeploy or rollback is marked 'succeeded' the instant its desired-
+  // state write lands (recordInstantDeployAttempt, internal/api/
+  // deploys.go), before the reconciler has run even once, so checking
+  // attempt status alone missed every one of those (the common case)
+  // and never showed this banner for them at all. computeDeployStages'
+  // own rollout-stage status is the signal that actually covers both
+  // "still building" and "built, but roll-out hasn't converged yet."
+  const stillInProgress =
+    latestAttempt !== undefined &&
+    computeDeployStages(latestAttempt, conditions, true).some((s) => s.status === 'running')
 
   return (
     <div className="space-y-6">
-      {latestAttempt?.status === 'running' ? (
+      {latestAttempt && stillInProgress ? (
         <DeployInProgressBanner
           appName={name}
           attempt={latestAttempt}
