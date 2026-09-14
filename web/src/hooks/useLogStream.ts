@@ -36,6 +36,16 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 // clean reconnection behavior, plus being simpler through proxies, is
 // exactly why SSE was chosen over WebSockets), so this hook does not
 // implement any retry/backoff logic itself.
+//
+// Neither backend supports SSE's own Last-Event-ID resume (no `id:`
+// field is ever sent, see either handler's own doc comment on its
+// backfill/replay burst), so a same-URL reconnect after a genuine
+// network drop re-runs that same burst from scratch: up to the last 200
+// lines for a live app/database log, or the whole persisted log for a
+// deploy log. Left uncorrected, every such reconnect would visibly
+// duplicate onto whatever this hook already rendered, since onmessage
+// only ever appends. See suppressReconnectDuplicates below for the
+// client-side fix.
 
 export interface LogLine {
   /** Monotonic id local to this hook instance, stable virtualization key. */
@@ -143,11 +153,34 @@ export function useLogStream(url: string): UseLogStreamResult {
     // state reset above. This still runs before the new EventSource can
     // deliver its first message, since effects commit after render.
     nextIdRef.current = 0
+    let bufferedLines: LogLine[] = []
+
+    // Reconnect-duplicate suppression (see this module's own doc comment
+    // above for why the server has no Last-Event-ID resume to rely on
+    // instead). hasConnectedOnce distinguishes the very first open
+    // (backfill is wanted and correct) from every later one (a same-URL
+    // EventSource reconnect after a network drop, whose backfill/replay
+    // burst duplicates content already rendered): from the second onopen
+    // forward, overlapExpected snapshots everything currently buffered,
+    // and each incoming line is compared against it in order. An exact
+    // match means "already rendered before the reconnect," dropped
+    // silently; the first mismatch (or running out of overlap to compare
+    // against, if the resumed burst is longer than what's buffered)
+    // clears overlapExpected and every line from there on is appended
+    // normally, the same as before this existed.
+    let hasConnectedOnce = false
+    let overlapExpected: ParsedLogEvent[] = []
+    let overlapIndex = 0
 
     const source = new EventSource(url)
 
     source.onopen = () => {
       setConnectionState('open')
+      if (hasConnectedOnce) {
+        overlapExpected = bufferedLines.map((l) => ({ line: l.line, stream: l.stream }))
+        overlapIndex = 0
+      }
+      hasConnectedOnce = true
     }
 
     // EventSource fires onerror both for a genuine failure and for the
@@ -159,14 +192,28 @@ export function useLogStream(url: string): UseLogStreamResult {
     }
 
     source.onmessage = (event: MessageEvent<string>) => {
-      const { line, stream } = parseEventPayload(event.data)
+      const parsed = parseEventPayload(event.data)
+
+      const expected = overlapExpected[overlapIndex]
+      if (expected !== undefined) {
+        if (expected.line === parsed.line && expected.stream === parsed.stream) {
+          overlapIndex += 1
+          return
+        }
+        overlapExpected = []
+      }
+
+      const { line, stream } = parsed
       const id = nextIdRef.current
       nextIdRef.current += 1
       setLines((prev) => {
         const withNewLine = [...prev, { id, line, stream }]
-        return withNewLine.length > MAX_BUFFERED_LINES
-          ? withNewLine.slice(withNewLine.length - MAX_BUFFERED_LINES)
-          : withNewLine
+        const capped =
+          withNewLine.length > MAX_BUFFERED_LINES
+            ? withNewLine.slice(withNewLine.length - MAX_BUFFERED_LINES)
+            : withNewLine
+        bufferedLines = capped
+        return capped
       })
     }
 
