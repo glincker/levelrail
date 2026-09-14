@@ -806,9 +806,10 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 	rt.reloadAndWriteApp(w, r, name, "start app")
 }
 
-// handleDeleteApp handles DELETE /api/v1/apps/{name}. See
-// store.DeleteDesiredService's doc comment for the known gap: this
-// removes desired state, it does not itself stop the running container.
+// handleDeleteApp handles DELETE /api/v1/apps/{name}: removes desired
+// state and, via teardownServiceContainers below, stops and removes the
+// running container in the background (not before responding, since
+// that can take several seconds).
 //
 // If the deleted service was the last member of its store.App
 // (migrations/0039_apps.sql), the now-empty App row is deleted too, via
