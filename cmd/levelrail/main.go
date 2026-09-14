@@ -487,11 +487,30 @@ func run(logger *slog.Logger) error {
 		logger.Warn("webhook not configured", slog.String("error", err.Error()))
 	}
 
-	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner)
+	// Created here, before the router that needs to hand it to mutating
+	// handlers (api.WithReconcileNudger), rather than down at its own
+	// SetStore/SetSource call below: both setters, and Nudge itself, are
+	// safe to call on an Engine before Run starts (Run doesn't begin
+	// until further down this same function).
+	engine := reconcile.NewEngine(logger)
+
+	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner, engine)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
 		Handler:           apiHandler,
 		ReadHeaderTimeout: 10 * time.Second,
+		// ReadTimeout bounds the slowest legitimate case (a plain POST
+		// body, e.g. a large secrets/env payload), not response
+		// duration, so it's safe alongside the SSE log/deploy streams
+		// and the exec terminal's own WebSocket (Hijack takes the
+		// connection out of net/http's own timeout enforcement once
+		// upgraded). IdleTimeout only bounds a keep-alive connection
+		// sitting between requests, same reasoning. WriteTimeout is
+		// deliberately not set here: it's an absolute per-request
+		// deadline net/http cannot exempt a specific route from, and
+		// would kill every one of those same long-lived streams.
+		ReadTimeout: 30 * time.Second,
+		IdleTimeout: 120 * time.Second,
 	}
 
 	ingressDriver := ingressdriver.New(logger)
@@ -520,7 +539,6 @@ func run(logger *slog.Logger) error {
 	// daemon on every tick.
 	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
 
-	engine := reconcile.NewEngine(logger)
 	engine.SetStore(db)
 	engine.SetSource(dynamicSource(dynamicSourceDeps{
 		db:               db,
@@ -536,6 +554,7 @@ func run(logger *slog.Logger) error {
 		dashboardDial:    dashboardDialAddr(httpAddr()),
 		networkPrefix:    b.ShortName,
 		livenessTracker:  application.NewLivenessTracker(),
+		publicHost:       publicHost(),
 	}))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
@@ -1235,12 +1254,25 @@ func osPatchCheckInterval() time.Duration {
 	return d
 }
 
+// loadBrand resolves brand.yaml the same way the install script's own
+// systemd unit does (WorkingDirectory=$DATA_DIR, so defaultBrandFile's
+// "./brand.yaml" lands on the copy install.sh wrote there): correct for
+// every documented install path, but a plain file-not-found error here
+// reads as an opaque startup crash to anyone who instead just built and
+// ran the binary directly from an arbitrary directory. Turning that one
+// case into an actionable message, rather than teaching brand.Load
+// itself to guess a fallback, keeps that function's own contract simple
+// (a real path in, a real Brand or a real error out).
 func loadBrand() (*brand.Brand, error) {
 	path := os.Getenv("APP_BRAND_FILE")
 	if path == "" {
 		path = defaultBrandFile
 	}
-	return brand.Load(path)
+	b, err := brand.Load(path)
+	if err != nil && os.IsNotExist(errors.Unwrap(err)) {
+		return nil, fmt.Errorf("%w (running via install.sh sets this up automatically; running the binary directly needs either a brand.yaml file at %q or APP_BRAND_FILE pointing at one)", err, path)
+	}
+	return b, err
 }
 
 func loadGitHubAppManifestConfig() (githubapp.ManifestConfig, error) {
@@ -1677,12 +1709,13 @@ func buildNodeSource(db *store.DB, agentRegistry *agent.Registry) build.NodeSour
 // internal/api importing internal/agent.Registry directly (see
 // api.NodeRuntimeResolver's own doc comment for why this stays a
 // closure over resolveNodeTransport instead of a new dependency edge).
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner) (http.Handler, *api.Router) {
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner, engine *reconcile.Engine) (http.Handler, *api.Router) {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
 	}
 	opts := []api.Option{
+		api.WithReconcileNudger(engine),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
 		api.WithAlertRules(alertingDB),
 		api.WithDeployNotifyTargets(alertingDB),
@@ -1692,6 +1725,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithNotificationDeliveries(alertingDB),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
+		api.WithHSTS(hstsEnabled(logger)),
 		api.WithAPIRateLimit(apiRateLimitReadRPM(logger), apiRateLimitWriteRPM(logger)),
 		api.WithDataDir(dataDir),
 		api.WithDockerPinger(client),
@@ -1889,13 +1923,33 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 
 	rt := api.NewRouter(logger, b, db, opts...)
+	return composeMux(rt.Handler(), webhookHandler, web.Handler()), rt
+}
+
+// composeMux wires the three top-level handlers rootHandler serves
+// behind one *http.Server into a single mux. Pulled out of rootHandler
+// so the routing precedence itself, not just rootHandler's much larger
+// dependency graph, is directly unit-testable.
+//
+// "/healthz" is registered ahead of "/api/" and "/" as its own
+// exact-path pattern so a plain GET /healthz (what a systemd unit,
+// container orchestrator, or load balancer actually probes, see
+// handleHealthz's own doc comment) reaches apiHandler's own "GET
+// /healthz" route. Without this explicit entry, "/healthz" has no
+// "/api/" prefix, so it would fall through to the "/" SPA fallback and
+// get back a 200 with the dashboard's index.html body instead of the
+// {"status":"ok"} JSON a prober actually expects. webhookHandler is
+// nil-able: a control plane started without git-webhook config just
+// serves no POST /webhook route.
+func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler http.Handler) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.Handle("/api/", rt.Handler())
+	mux.Handle("/healthz", apiHandler)
+	mux.Handle("/api/", apiHandler)
 	if webhookHandler != nil {
 		mux.Handle("POST /webhook", webhookHandler)
 	}
-	mux.Handle("/", web.Handler())
-	return mux, rt
+	mux.Handle("/", webHandler)
+	return mux
 }
 
 // backupSchedulerInterval reads APP_BACKUP_SCHEDULER_INTERVAL as a Go
@@ -2005,6 +2059,25 @@ func autoPlacementEnabled(logger *slog.Logger) bool {
 	if err != nil {
 		logger.Warn("invalid APP_AUTO_PLACEMENT, defaulting to enabled", slog.String("value", raw), slog.String("error", err.Error()))
 		return true
+	}
+	return v
+}
+
+// hstsEnabled reads APP_ENABLE_HSTS as a bool, api.WithHSTS's own
+// enabled param. Defaults to false (unlike autoPlacementEnabled above):
+// Strict-Transport-Security is safe only once an operator has real,
+// browser-trusted certificates (APP_PUBLIC_HOST plus ACMEEnabled, see
+// Router.hstsEnabled's own doc comment), which this process has no way
+// to confirm on its own, so it's opt-in rather than assumed.
+func hstsEnabled(logger *slog.Logger) bool {
+	raw := os.Getenv("APP_ENABLE_HSTS")
+	if raw == "" {
+		return false
+	}
+	v, err := strconv.ParseBool(raw)
+	if err != nil {
+		logger.Warn("invalid APP_ENABLE_HSTS, defaulting to disabled", slog.String("value", raw), slog.String("error", err.Error()))
+		return false
 	}
 	return v
 }
@@ -2385,6 +2458,10 @@ type dynamicSourceDeps struct {
 	// livenessTracker outlives the per-pass controllers below, which is
 	// the whole point: see application.WithLivenessTracker.
 	livenessTracker *application.LivenessTracker
+	// publicHost is APP_PUBLIC_HOST, threaded to the ingress controller
+	// for the zero-config fallback domain feature; see
+	// ingressreconcile.WithPublicHost's own doc comment.
+	publicHost string
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -2409,7 +2486,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			controllers = append(controllers, nodehealth.New(n.ID, deps.db, deps.heartbeatTimeout))
 		}
 
-		ingressOpts := []ingressreconcile.Option{ingressreconcile.WithLogger(deps.logger)}
+		ingressOpts := []ingressreconcile.Option{ingressreconcile.WithLogger(deps.logger), ingressreconcile.WithPublicHost(deps.publicHost)}
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial))
 		}

@@ -12,6 +12,12 @@ export interface AppNetwork {
   container_port: number
   host_port?: number
   running: boolean
+  // fallback_url is the zero-config sslip.io URL this app is reachable
+  // at when it has no operator-configured domain and this control
+  // plane's own APP_PUBLIC_HOST is a real, publicly routable IP.
+  // Absent (not just empty) when the app has a real domain or no
+  // fallback is available.
+  fallback_url?: string
 }
 
 export const appNetworkKeys = {

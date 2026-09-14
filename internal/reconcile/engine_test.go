@@ -128,6 +128,60 @@ func TestEngine_Run_ReactsToEventsAndTicks(t *testing.T) {
 	}
 }
 
+// TestEngine_Run_NudgeTriggersImmediateReconcile proves a caller outside
+// the Run loop (internal/api, right after a desired-state-changing
+// request) can force a reconcile pass without waiting for the next
+// resync tick: this is what keeps an interactive create/stop/start feel
+// responsive instead of taking up to a full resyncInterval to visibly
+// take effect.
+func TestEngine_Run_NudgeTriggersImmediateReconcile(t *testing.T) {
+	c := &countingController{name: "c"}
+	e := NewEngine(testLogger(), c)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+
+	events := make(chan docker.Event)
+	done := make(chan error, 1)
+	go func() {
+		done <- e.Run(ctx, events, time.Hour) // resync so slow it would never fire on its own within the test
+	}()
+
+	time.Sleep(10 * time.Millisecond) // let the initial ReconcileAll land
+	before := c.calls.Load()
+
+	e.Nudge()
+	time.Sleep(20 * time.Millisecond) // let the nudge-triggered pass land
+
+	cancel()
+	<-done
+
+	if got := c.calls.Load(); got <= before {
+		t.Errorf("reconcile count after Nudge = %d, want more than %d (the pre-nudge count)", got, before)
+	}
+}
+
+// TestEngine_Nudge_CollapsesBurstsIntoOnePendingReconcile proves Nudge
+// never blocks and never queues more than one pending reconcile: it's a
+// level-triggered "something changed" signal, not a request counter.
+func TestEngine_Nudge_CollapsesBurstsIntoOnePendingReconcile(t *testing.T) {
+	e := NewEngine(testLogger(), &countingController{name: "c"})
+
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 100; i++ {
+			e.Nudge()
+		}
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("100 Nudge calls did not return promptly; Nudge must never block")
+	}
+}
+
 func TestEngine_Run_ClosedEventChannelFallsBackToTicker(t *testing.T) {
 	c := &countingController{name: "c"}
 	e := NewEngine(testLogger(), c)

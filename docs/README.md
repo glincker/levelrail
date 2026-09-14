@@ -54,6 +54,15 @@ proposals):
 | [migrating-from-coolify-and-dokploy.md](migrating-from-coolify-and-dokploy.md) | Move apps off a live Coolify or Dokploy instance with `levelrail-cli migrate` |
 | [domains-and-ingress.md](domains-and-ingress.md) | Why there's no reverse proxy to install, how `app.yaml` domains route to containers, and TLS's current honest status |
 | [acme-verification-runbook.md](acme-verification-runbook.md) | Verify real ACME certificate issuance against a live domain, step by step |
+| [deploying-apps.md](deploying-apps.md) | An app's lifecycle: create, deploy, roll back, promote, health checks, resource limits, exec, and scheduled tasks |
+| [managing-databases.md](managing-databases.md) | Create and manage Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse resources |
+| [observability.md](observability.md) | Node-local metrics and log storage, federated queries, and the alert engine |
+| [multi-node.md](multi-node.md) | Add and manage additional nodes, node health, and simple spread placement |
+| [projects-and-organizations.md](projects-and-organizations.md) | The optional organization/project/environment grouping hierarchy for apps and databases |
+| [identity-and-access.md](identity-and-access.md) | Users, roles, abilities, IAM policies, invites, tokens, 2FA, OAuth, and audit logging |
+| [git-integrations.md](git-integrations.md) | Connect GitHub, GitLab, and Bitbucket, webhooks, and preview environments |
+| [backups-and-storage.md](backups-and-storage.md) | Backup targets, registry credentials, and app volume backups |
+| [templates-and-registry.md](templates-and-registry.md) | Deploy curated service templates from the catalog as Compose-backed apps |
 
 ### Reference
 
@@ -61,6 +70,8 @@ proposals):
 | --- | --- |
 | [app-spec-reference.md](app-spec-reference.md) | Every `app.yaml` field, validated against `internal/spec`'s JSON Schema |
 | [feature-catalog.md](feature-catalog.md) | Every dashboard page, API resource group, and CLI command group, plus known UI gaps |
+| [cli-reference.md](cli-reference.md) | Every `levelrail` CLI command, organized by command group, extracted from source |
+| [api-reference.md](api-reference.md) | Every REST route (272 total) grouped by resource, with ability and handler |
 
 ### Explanation
 

@@ -525,6 +525,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	req.SecretEnv = desired.SecretEnv
 	req.Secrets = nil
 
+	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)
 }
 
@@ -651,6 +652,7 @@ func (rt *Router) reloadAndWriteApp(w http.ResponseWriter, r *http.Request, name
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, toAppResource(*svc))
 }
 
@@ -804,9 +806,10 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 	rt.reloadAndWriteApp(w, r, name, "start app")
 }
 
-// handleDeleteApp handles DELETE /api/v1/apps/{name}. See
-// store.DeleteDesiredService's doc comment for the known gap: this
-// removes desired state, it does not itself stop the running container.
+// handleDeleteApp handles DELETE /api/v1/apps/{name}: removes desired
+// state and, via teardownServiceContainers below, stops and removes the
+// running container in the background (not before responding, since
+// that can take several seconds).
 //
 // If the deleted service was the last member of its store.App
 // (migrations/0039_apps.sql), the now-empty App row is deleted too, via
@@ -847,6 +850,11 @@ func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 		rt.deleteAppIfOrphaned(r.Context(), appID)
 	}
 
+	// teardownServiceContainers above already removes this app's own
+	// containers directly, not via the reconciler; the nudge here is for
+	// application/network-cleanup, the other controller with work to do
+	// once this app's App row is gone.
+	rt.nudgeReconciler()
 	w.WriteHeader(http.StatusNoContent)
 }
 

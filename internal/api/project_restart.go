@@ -63,5 +63,6 @@ func (rt *Router) handleRestartProject(w http.ResponseWriter, r *http.Request) {
 	}
 	resp.RestartedCount = len(resp.Apps)
 
+	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, resp)
 }

@@ -8,13 +8,18 @@
 [![Last commit](https://img.shields.io/github/last-commit/glincker/levelrail)](https://github.com/glincker/levelrail/commits/main)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Discussions](https://img.shields.io/github/discussions/glincker/levelrail)](https://github.com/glincker/levelrail/discussions)
+[![Status: pre-release](https://img.shields.io/badge/status-pre--release-orange.svg)](#status)
 
-Levelrail is a self-hosted deployment platform whose agent talks to
+Levelrail is a self-hosted, open-source PaaS: an alternative to Heroku,
+Vercel, and Railway for teams who'd rather run their own deployment
+platform on their own Linux boxes than rent one. Its agent talks to
 Docker's own Engine API directly instead of SSHing into your servers
 and shelling out `docker` commands, with metrics and log storage built
 into the core instead of a separately-installed extra. Point it at one
 or more Linux boxes and it turns them into a private cloud: push to a
 git repo, get a running app with TLS, logs, metrics, and rollback.
+Built for 3-50 services across 1-10 machines, not a Kubernetes
+competitor.
 
 <p align="center">
   <img src="docs/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="900">
@@ -108,7 +113,7 @@ layout can all still change without notice.
 
 From the team behind [thesvg](https://github.com/glincker/thesvg) (6,400+ brand SVG icons) and [theauth-go](https://github.com/glincker/theauth-go) (OAuth 2.1 auth library for Go).
 
-## Why not Coolify or Dokploy
+## Why not Coolify or Dokploy (self-hosted Heroku/Vercel alternative)
 
 Most self-hosted platforms in this category drive remote servers by
 SSHing in and shelling out to the `docker` CLI, then parsing its text
@@ -162,6 +167,10 @@ so the code path is the same whether you're running one node or ten.
 
 Positioning, not a ranking. All of these are worth using; the differences
 below are the ones that matter for choosing between them.
+
+Short version: Levelrail is the only one of these six that streams
+events instead of polling, verifies backups instead of trusting them,
+and pins rollback images so garbage collection can't eat them.
 
 | Project | Node control | Orchestration | Observability | Ingress | Rollback |
 | --- | --- | --- | --- | --- | --- |

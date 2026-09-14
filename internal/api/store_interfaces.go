@@ -453,6 +453,26 @@ type DockerPinger interface {
 	Ping(ctx context.Context) error
 }
 
+// ReconcileNudger is *reconcile.Engine's own Nudge method, narrowed the
+// same consumer-defined way DockerPinger is above: a handler that just
+// changed desired state calls it to request an immediate reconcile pass
+// instead of leaving an operator watching a create/stop/start/restart
+// take up to a full resyncInterval (default 30s) to visibly do anything.
+// Reconcile's own idempotent, level-triggered contract is what makes an
+// extra, unscheduled pass always safe.
+type ReconcileNudger interface {
+	Nudge()
+}
+
+// nudgeReconciler calls rt.reconcileNudger.Nudge() if one is configured,
+// the one-line nil-check every mutating handler below shares instead of
+// repeating "if rt.reconcileNudger != nil" at each call site.
+func (rt *Router) nudgeReconciler() {
+	if rt.reconcileNudger != nil {
+		rt.reconcileNudger.Nudge()
+	}
+}
+
 // ImageLister is the surface GET /api/v1/apps/{name}/images needs:
 // discover previously-built tags under a repo, so the deploy trigger
 // form (web/src/components/DeployTriggerForm.tsx) can offer a dropdown

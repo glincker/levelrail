@@ -462,6 +462,9 @@ func printAppNetworkHuman(out io.Writer, n networkResource) {
 		_, _ = fmt.Fprintln(out, "host port:       (not running)")
 	}
 	_, _ = fmt.Fprintf(out, "running:         %t\n", n.Running)
+	if n.FallbackURL != "" {
+		_, _ = fmt.Fprintf(out, "fallback url:    %s\n", n.FallbackURL)
+	}
 }
 
 // printLogEntriesHuman prints "apps logs" output: one line per entry,

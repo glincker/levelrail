@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.0-beta.1](https://github.com/glincker/levelrail/compare/v0.2.0-beta...v0.2.0-beta.1) (2026-09-13)
+
+
+### Features
+
+* add bulk restart for every app in a project ([#442](https://github.com/glincker/levelrail/issues/442)) ([ce023a2](https://github.com/glincker/levelrail/commit/ce023a227434dd9c67b04d1380e59c4b0fc59f52))
+* add database stop/start lifecycle, API, CLI, and dashboard ([#440](https://github.com/glincker/levelrail/issues/440)) ([6a0bba5](https://github.com/glincker/levelrail/commit/6a0bba50dc55d18496f95b819d1b6cee86b07b47))
+* pause and resume an entire project ([#441](https://github.com/glincker/levelrail/issues/441)) ([577760b](https://github.com/glincker/levelrail/commit/577760b3e77271f7321db5cc283924a6a70355d0))
+* production-readiness batch - reconciler responsiveness, hardening, README ([#445](https://github.com/glincker/levelrail/issues/445)) ([13fde27](https://github.com/glincker/levelrail/commit/13fde27d8e23c715bd9c85e5f0890b165bb6c444))
+* rank apps by live CPU, memory, and network usage on the dashboard ([#443](https://github.com/glincker/levelrail/issues/443)) ([76d514a](https://github.com/glincker/levelrail/commit/76d514a9cdcbc3db6b98b9e873612eeb7b3bdc70))
+
+
+### Bug Fixes
+
+* recognize AlreadyRunning as a done rollout condition ([#439](https://github.com/glincker/levelrail/issues/439)) ([315ae9c](https://github.com/glincker/levelrail/commit/315ae9ce5f64b3b9721d5df1722ba2b36648f1a7))
+
 ## [0.2.0-beta](https://github.com/glincker/levelrail/compare/v0.1.0...v0.2.0-beta) (2026-09-12)
 
 

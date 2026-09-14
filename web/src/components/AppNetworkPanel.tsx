@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import {
   ArrowRightIcon,
+  CheckIcon,
   CloudIcon,
+  CopyIcon,
   GlobeIcon,
   PackageIcon,
   ShareNetworkIcon,
@@ -13,7 +16,7 @@ import { useAppNetwork } from '../queries/appNetwork'
 import { DomainDnsCheck } from './DomainDnsCheck'
 import { DomainBasicAuthControl } from './DomainBasicAuthControl'
 import { Badge } from '@/components/ui/badge'
-import { buttonVariants } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -35,6 +38,7 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
   const domains = app.domains ?? []
   const running = network?.running ?? false
   const hostPort = network?.host_port
+  const fallbackURL = network?.fallback_url
   // pinnedHostPort is the configured value (PortEditor), independent of
   // whether a container is actually running right now; hostPort above is
   // the live value Docker actually bound, only meaningful while running
@@ -59,6 +63,7 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
       <CardContent className="space-y-5">
         <TrafficPath
           domains={domains}
+          fallbackURL={fallbackURL}
           containerPort={app.port}
           hostPort={hostPort}
           pinnedHostPort={pinnedHostPort}
@@ -102,10 +107,14 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
           </h3>
           {domains.length === 0 ? (
             <div className="mt-2 space-y-2">
-              <p className="text-sm text-muted-foreground">
-                No domain configured. This app is only reachable on this
-                server&apos;s host port directly.
-              </p>
+              {fallbackURL ? (
+                <FallbackURLRow url={fallbackURL} />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No domain configured. This app is only reachable on this
+                  server&apos;s host port directly.
+                </p>
+              )}
               <Link
                 to="/apps/$name/domains"
                 params={{ name: app.name }}
@@ -127,6 +136,48 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+// FallbackURLRow shows the zero-config sslip.io URL an app with no
+// operator-configured domain gets automatically (network.fallback_url,
+// see internal/api/network.go and ingress.FallbackDomain): a real,
+// copyable HTTPS link, not just "no domain configured" text, since this
+// URL already works the moment the container is running.
+function FallbackURLRow({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false)
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-sm text-muted-foreground">
+        No domain configured. Reachable at this zero-config URL in the
+        meantime:
+      </p>
+      <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="min-w-0 flex-1 overflow-x-auto text-xs break-all font-mono text-foreground hover:underline"
+        >
+          {url}
+        </a>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            void navigator.clipboard.writeText(url).then(() => {
+              setCopied(true)
+              setTimeout(() => setCopied(false), 2000)
+            })
+          }}
+        >
+          {copied ? <CheckIcon /> : <CopyIcon />}
+          {copied ? 'Copied' : 'Copy'}
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -155,6 +206,7 @@ function FlowField({
 // Caddy or a Docker host-port mapping are.
 function TrafficPath({
   domains,
+  fallbackURL,
   containerPort,
   hostPort,
   pinnedHostPort,
@@ -162,21 +214,27 @@ function TrafficPath({
   isLoading,
 }: {
   domains: string[]
+  fallbackURL?: string
   containerPort: number
   hostPort?: number
   pinnedHostPort?: number
   running: boolean
   isLoading: boolean
 }) {
+  const fallbackHost = fallbackURL?.replace(/^https?:\/\//, '')
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 p-3">
       <PathNode
         icon={GlobeIcon}
-        label={domains[0] ?? 'No domain'}
+        label={domains[0] ?? fallbackHost ?? 'No domain'}
         sublabel={
-          domains.length > 1 ? `+${domains.length - 1} more` : undefined
+          domains.length > 1
+            ? `+${domains.length - 1} more`
+            : domains.length === 0 && fallbackHost
+              ? 'zero-config'
+              : undefined
         }
-        muted={domains.length === 0}
+        muted={domains.length === 0 && !fallbackHost}
       />
       <ArrowRightIcon className="size-4 shrink-0 text-muted-foreground" />
       <PathNode icon={CloudIcon} label="Caddy" sublabel="ingress" />

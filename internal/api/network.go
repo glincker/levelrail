@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -29,6 +30,16 @@ type networkResource struct {
 	ContainerPort int  `json:"container_port"`
 	HostPort      int  `json:"host_port,omitempty"`
 	Running       bool `json:"running"`
+	// FallbackURL is the zero-config sslip.io URL this app is reachable
+	// at when it has no operator-configured domain (svc.Domains empty)
+	// and this control plane's own APP_PUBLIC_HOST is a real, publicly
+	// routable IP: the same host internal/reconcile/ingress's own
+	// Reconcile pass routes it under, see ingress.FallbackDomain's own
+	// doc comment for exactly when this is empty instead. Omitted
+	// entirely (not just empty) when the app has a real domain or no
+	// fallback is available, so the frontend can render this field's
+	// mere presence as "show a copyable public URL."
+	FallbackURL string `json:"fallback_url,omitempty"`
 }
 
 // handleGetAppNetwork handles GET /api/v1/apps/{name}/network. Host port
@@ -51,6 +62,11 @@ func (rt *Router) handleGetAppNetwork(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := networkResource{ContainerPort: svc.Port}
+	if len(svc.Domains) == 0 {
+		if fallback, ok := ingress.FallbackDomain(rt.publicHost, svc.Name); ok {
+			resp.FallbackURL = "https://" + fallback
+		}
+	}
 
 	if rt.execRuntime == nil {
 		writeJSON(w, http.StatusOK, resp)

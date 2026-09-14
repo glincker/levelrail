@@ -76,6 +76,7 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 
 	rt.recordPlainDeployAttempt(r.Context(), updated, req.Image)
 
+	rt.nudgeReconciler()
 	writeJSON(w, http.StatusAccepted, toAppResource(updated))
 }
 

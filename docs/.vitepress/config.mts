@@ -65,6 +65,18 @@ export default defineConfig({
             link: '/migrating-from-coolify-and-dokploy',
           },
           { text: 'Screenshots', link: '/screenshots' },
+          { text: 'Deploying apps', link: '/deploying-apps' },
+          { text: 'Managing databases', link: '/managing-databases' },
+          { text: 'Observability', link: '/observability' },
+          { text: 'Multi-node', link: '/multi-node' },
+          {
+            text: 'Projects and organizations',
+            link: '/projects-and-organizations',
+          },
+          { text: 'Identity and access', link: '/identity-and-access' },
+          { text: 'Git integrations', link: '/git-integrations' },
+          { text: 'Backups and storage', link: '/backups-and-storage' },
+          { text: 'Templates and registry', link: '/templates-and-registry' },
         ],
       },
       {
@@ -72,6 +84,8 @@ export default defineConfig({
         items: [
           { text: 'App spec reference', link: '/app-spec-reference' },
           { text: 'Feature catalog', link: '/feature-catalog' },
+          { text: 'CLI reference', link: '/cli-reference' },
+          { text: 'API reference', link: '/api-reference' },
         ],
       },
       {
