@@ -554,6 +554,7 @@ func run(logger *slog.Logger) error {
 		dashboardDial:    dashboardDialAddr(httpAddr()),
 		networkPrefix:    b.ShortName,
 		livenessTracker:  application.NewLivenessTracker(),
+		publicHost:       publicHost(),
 	}))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
@@ -2417,6 +2418,10 @@ type dynamicSourceDeps struct {
 	// livenessTracker outlives the per-pass controllers below, which is
 	// the whole point: see application.WithLivenessTracker.
 	livenessTracker *application.LivenessTracker
+	// publicHost is APP_PUBLIC_HOST, threaded to the ingress controller
+	// for the zero-config fallback domain feature; see
+	// ingressreconcile.WithPublicHost's own doc comment.
+	publicHost string
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -2441,7 +2446,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			controllers = append(controllers, nodehealth.New(n.ID, deps.db, deps.heartbeatTimeout))
 		}
 
-		ingressOpts := []ingressreconcile.Option{ingressreconcile.WithLogger(deps.logger)}
+		ingressOpts := []ingressreconcile.Option{ingressreconcile.WithLogger(deps.logger), ingressreconcile.WithPublicHost(deps.publicHost)}
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial))
 		}

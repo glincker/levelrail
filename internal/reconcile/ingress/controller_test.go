@@ -303,6 +303,120 @@ func TestController_Reconcile_NoServicesWithDomains(t *testing.T) {
 	}
 }
 
+// TestController_Reconcile_NoDomains_NoPublicHost_StillNoRoute proves
+// WithPublicHost's absence (the default, unchanged from before the
+// fallback-domain feature existed) never synthesizes anything: a
+// service with no domains and no configured APP_PUBLIC_HOST gets no
+// route at all, same as TestController_Reconcile_NoServicesWithDomains.
+func TestController_Reconcile_NoDomains_NoPublicHost_StillNoRoute(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80} // no Domains
+	target := application.ContainerName(desired.Name, desired.Image, "")
+
+	rt := newFakeRuntime()
+	rt.seedRunning(target, 34567)
+
+	st := &fakeStore{services: []store.DesiredService{desired}}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger())) // no WithPublicHost
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Reason != "Routed0Services" {
+		t.Errorf("condition = %+v, want Reason=Routed0Services", cond)
+	}
+	if routes := applier.routes(t); len(routes) != 0 {
+		t.Errorf("applied routes = %v, want none", routes)
+	}
+}
+
+// TestController_Reconcile_NoDomains_PublicHostSet_FallbackRouteAppears
+// is the actual zero-config feature: a service with no domains, a
+// running container, and a real public-IP APP_PUBLIC_HOST gets routed
+// under its sslip.io fallback host, with no operator action beyond
+// having configured APP_PUBLIC_HOST at all.
+func TestController_Reconcile_NoDomains_PublicHostSet_FallbackRouteAppears(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80} // no Domains
+	target := application.ContainerName(desired.Name, desired.Image, "")
+
+	rt := newFakeRuntime()
+	rt.seedRunning(target, 34567)
+
+	st := &fakeStore{services: []store.DesiredService{desired}}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("203.0.113.5"))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Reason != "Routed1Services" {
+		t.Errorf("condition = %+v, want Reason=Routed1Services", cond)
+	}
+
+	routes := applier.routes(t)
+	if len(routes) != 1 {
+		t.Fatalf("applied routes = %v, want exactly 1", routes)
+	}
+	wantHost := "web.203-0-113-5.sslip.io"
+	if len(routes[0].Match) != 1 || len(routes[0].Match[0].Host) != 1 || routes[0].Match[0].Host[0] != wantHost {
+		t.Errorf("route match = %+v, want host %s", routes[0].Match, wantHost)
+	}
+}
+
+// TestController_Reconcile_NoDomains_PublicHostPrivate_NoRoute proves a
+// non-publicly-routable APP_PUBLIC_HOST (a private IP, a bare hostname,
+// unset) degrades to no route rather than synthesizing a fallback host
+// nobody could ever actually reach or get a trusted certificate for.
+func TestController_Reconcile_NoDomains_PublicHostPrivate_NoRoute(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	target := application.ContainerName(desired.Name, desired.Image, "")
+
+	rt := newFakeRuntime()
+	rt.seedRunning(target, 34567)
+
+	st := &fakeStore{services: []store.DesiredService{desired}}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("10.0.0.5"))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Reason != "Routed0Services" {
+		t.Errorf("condition = %+v, want Reason=Routed0Services", cond)
+	}
+	if routes := applier.routes(t); len(routes) != 0 {
+		t.Errorf("applied routes = %v, want none", routes)
+	}
+}
+
+// TestController_Reconcile_NoDomains_PublicHostSet_ContainerNotRunning_NoRoute
+// proves the fallback host still goes through the same dial-required
+// path every real domain already does: no running container means no
+// route, fallback or not.
+func TestController_Reconcile_NoDomains_PublicHostSet_ContainerNotRunning_NoRoute(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+
+	rt := newFakeRuntime() // nothing seeded: no container at all
+
+	st := &fakeStore{services: []store.DesiredService{desired}}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("203.0.113.5"))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Reason != "Routed0Services" {
+		t.Errorf("condition = %+v, want Reason=Routed0Services", cond)
+	}
+	if routes := applier.routes(t); len(routes) != 0 {
+		t.Errorf("applied routes = %v, want none", routes)
+	}
+}
+
 func TestController_Reconcile_OneServiceRunning_RouteAppears(t *testing.T) {
 	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"web.example.com"}}
 	target := application.ContainerName(desired.Name, desired.Image, "")

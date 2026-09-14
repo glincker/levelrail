@@ -215,6 +215,11 @@ type NetworkResource struct {
 	ContainerPort int  `json:"container_port"`
 	HostPort      int  `json:"host_port,omitempty"`
 	Running       bool `json:"running"`
+	// FallbackURL is the zero-config sslip.io URL this app is reachable
+	// at when it has no operator-configured domain and this control
+	// plane's own APP_PUBLIC_HOST is a real, publicly routable IP; see
+	// internal/api's own networkResource.FallbackURL doc comment.
+	FallbackURL string `json:"fallback_url,omitempty"`
 }
 
 // LogEntryResource mirrors internal/api's logEntryResource
