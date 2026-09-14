@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -637,11 +638,56 @@ func postJSON(ctx context.Context, client *http.Client, url string, payload any)
 	return postJSONWithAuth(ctx, client, url, payload, "")
 }
 
+// notifyMaxAttempts bounds postJSONWithAuth's retry loop: 3, not
+// unbounded, since Engine.Tick evaluates every firing rule in one
+// sequential pass (engine.go's own Tick), so a channel stuck retrying
+// delays every rule notified after it in that same pass, not just its
+// own.
+const notifyMaxAttempts = 3
+
+// notifyRetryBaseDelay is the first retry's wait, doubled on each
+// subsequent attempt (500ms, 1s for 3 total attempts). A var, not a
+// const, so a test can shrink it and keep a retry-path test fast
+// without a real multi-second sleep.
+var notifyRetryBaseDelay = 500 * time.Millisecond
+
+// notifyHTTPError carries the receiver's actual response status, so
+// postJSONWithAuth's retry loop can tell a transient failure (5xx, 429:
+// worth retrying) from a permanent one (any other 4xx: a malformed
+// payload or a bad credential fails identically on every attempt, so
+// retrying it only delays surfacing the real, fixable problem).
+type notifyHTTPError struct {
+	statusCode int
+}
+
+func (e *notifyHTTPError) Error() string {
+	return fmt.Sprintf("alerting: notify: receiver returned status %d", e.statusCode)
+}
+
+// isRetryableNotifyError reports whether err is worth a retry: any
+// transport-level failure (err is not a *notifyHTTPError at all - DNS,
+// TLS, connection refused, a client-side timeout) is a transient
+// network condition and always worth one, a 5xx or 429 response usually
+// resolves itself, and anything else (4xx) will not.
+func isRetryableNotifyError(err error) bool {
+	var httpErr *notifyHTTPError
+	if errors.As(err, &httpErr) {
+		return httpErr.statusCode >= http.StatusInternalServerError || httpErr.statusCode == http.StatusTooManyRequests
+	}
+	return true
+}
+
 // postJSONWithAuth is postJSON plus an optional Authorization header,
 // needed by the two kinds (Resend, and ntfy on a protected topic) that
 // authenticate via a bearer header rather than a field in the JSON body
 // itself. authHeader is skipped entirely when empty, so postJSON above
 // is just this with no header to set.
+//
+// Retries up to notifyMaxAttempts times on a transient failure
+// (isRetryableNotifyError), with a short exponential backoff between
+// attempts: previously a single transient hiccup from Slack, Discord,
+// or any other receiver permanently dropped that notification with no
+// second chance, indistinguishable from a genuinely broken channel.
 func postJSONWithAuth(ctx context.Context, client *http.Client, url string, payload any, authHeader string) error {
 	if url == "" {
 		return fmt.Errorf("alerting: notify: no notify_url configured")
@@ -650,6 +696,30 @@ func postJSONWithAuth(ctx context.Context, client *http.Client, url string, payl
 	if err != nil {
 		return fmt.Errorf("alerting: notify: encode payload: %w", err)
 	}
+
+	var lastErr error
+	delay := notifyRetryBaseDelay
+	for attempt := 1; attempt <= notifyMaxAttempts; attempt++ {
+		lastErr = postJSONAttempt(ctx, client, url, body, authHeader)
+		if lastErr == nil {
+			return nil
+		}
+		if attempt == notifyMaxAttempts || !isRetryableNotifyError(lastErr) {
+			return lastErr
+		}
+		timer := time.NewTimer(delay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return lastErr
+		case <-timer.C:
+		}
+		delay *= 2
+	}
+	return lastErr
+}
+
+func postJSONAttempt(ctx context.Context, client *http.Client, url string, body []byte, authHeader string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("alerting: notify: build request: %w", err)
@@ -666,7 +736,7 @@ func postJSONWithAuth(ctx context.Context, client *http.Client, url string, payl
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("alerting: notify: receiver returned status %d", resp.StatusCode)
+		return &notifyHTTPError{statusCode: resp.StatusCode}
 	}
 	return nil
 }

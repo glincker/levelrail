@@ -5,11 +5,23 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
 )
+
+// TestMain shrinks notifyRetryBaseDelay to keep every test in this
+// package fast: without this, TestNotify_ReceiverErrorStatus_Errors and
+// the retry-specific tests below would each take upward of a second and
+// a half waiting out postJSONWithAuth's real backoff between attempts.
+func TestMain(m *testing.M) {
+	notifyRetryBaseDelay = time.Millisecond
+	os.Exit(m.Run())
+}
 
 func TestNotifyGeneric_PostsExpectedPayload(t *testing.T) {
 	var gotBody genericPayload
@@ -125,6 +137,110 @@ func TestNotify_ReceiverErrorStatus_Errors(t *testing.T) {
 
 	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
 		t.Error("Notify() error = nil, want an error when the receiver returns a non-2xx status")
+	}
+}
+
+func TestNotify_TransientServerError_RetriesThenSucceeds(t *testing.T) {
+	var attempts atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if attempts.Add(1) < notifyMaxAttempts {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", NotifyURL: srv.URL}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err != nil {
+		t.Fatalf("Notify() error = %v, want the last attempt (which succeeds) to win", err)
+	}
+	if got := attempts.Load(); got != notifyMaxAttempts {
+		t.Errorf("attempts = %d, want exactly %d (fails until the last one)", got, notifyMaxAttempts)
+	}
+}
+
+func TestNotify_PersistentServerError_RetriesExactlyMaxAttemptsThenFails(t *testing.T) {
+	var attempts atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		attempts.Add(1)
+		w.WriteHeader(http.StatusBadGateway)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", NotifyURL: srv.URL}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+		t.Fatal("Notify() error = nil, want every attempt to fail against an always-502 receiver")
+	}
+	if got := attempts.Load(); got != notifyMaxAttempts {
+		t.Errorf("attempts = %d, want exactly notifyMaxAttempts (%d), not fewer or unbounded", got, notifyMaxAttempts)
+	}
+}
+
+func TestNotify_ClientErrorStatus_NeverRetried(t *testing.T) {
+	var attempts atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		attempts.Add(1)
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer srv.Close()
+
+	r := Rule{ID: "r1", NotifyURL: srv.URL}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+		t.Fatal("Notify() error = nil, want an error for a 400 response")
+	}
+	if got := attempts.Load(); got != 1 {
+		t.Errorf("attempts = %d, want exactly 1: a 400 is a permanent failure (bad payload/config), retrying it wastes time surfacing that", got)
+	}
+}
+
+func TestNotify_TransportError_Retries(t *testing.T) {
+	// A server that's already closed: every request fails at the
+	// transport level (connection refused), never even reaching an HTTP
+	// status, the other retryable case isRetryableNotifyError covers.
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+	url := srv.URL
+	srv.Close()
+
+	r := Rule{ID: "r1", NotifyURL: url}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(context.Background(), Event{Rule: r}); err == nil {
+		t.Fatal("Notify() error = nil, want an error against a closed server")
+	}
+}
+
+func TestNotify_ContextCanceledDuringBackoff_StopsRetrying(t *testing.T) {
+	var attempts atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		attempts.Add(1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer srv.Close()
+
+	// A real, positive backoff (unlike TestMain's shrunk default) so
+	// there's actually a window to cancel inside, proving the retry loop
+	// honors ctx instead of blindly sleeping through it.
+	notifyRetryBaseDelay = 50 * time.Millisecond
+	defer func() { notifyRetryBaseDelay = time.Millisecond }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	r := Rule{ID: "r1", NotifyURL: srv.URL}
+	notifier := NewNotifier(nil, nil, r)
+
+	if err := notifier.Notify(ctx, Event{Rule: r}); err == nil {
+		t.Fatal("Notify() error = nil, want an error once the context is canceled mid-backoff")
+	}
+	if got := attempts.Load(); got >= notifyMaxAttempts {
+		t.Errorf("attempts = %d, want fewer than notifyMaxAttempts (%d): the context should have been canceled during the first backoff wait", got, notifyMaxAttempts)
 	}
 }
 
