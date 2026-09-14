@@ -62,7 +62,8 @@ system status (doctor bundle), containers, updates.
 
 ## API resource groups (`internal/api/routes.go`, `routes_platform.go`)
 
-271 registered routes total, grouped by resource:
+290 registered routes total (see [api-reference.md](api-reference.md) for
+the exact method/path/ability of every one), grouped by resource:
 
 | Resource | Routes | Representative paths |
 | --- | --- | --- |
