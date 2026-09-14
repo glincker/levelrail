@@ -260,6 +260,16 @@ type Controller struct {
 	// ever gets a BYO certificate loaded, unchanged from this
 	// controller's behavior before this feature existed.
 	tlsCertSecrets DomainTLSCertPEMResolver
+
+	// publicHost is APP_PUBLIC_HOST (see WithPublicHost): this control
+	// plane's own advertised address, the same value internal/api's
+	// domain-check feature already uses. When it's a real, publicly
+	// routable IP literal, a service with no domains configured gets a
+	// zero-config ingress.FallbackDomain route instead of no route at
+	// all. Empty (the default) means no fallback ever gets synthesized,
+	// unchanged from this controller's behavior before this feature
+	// existed.
+	publicHost string
 }
 
 // Option configures optional Controller behavior.
@@ -378,6 +388,16 @@ func WithDomainTLSCertSecrets(resolver DomainTLSCertPEMResolver) Option {
 	return func(c *Controller) { c.tlsCertSecrets = resolver }
 }
 
+// WithPublicHost sets APP_PUBLIC_HOST for the zero-config fallback
+// domain feature (see the Controller.publicHost field's own doc
+// comment and ingress.FallbackDomain). Passing a hostname instead of an
+// IP literal, or leaving this unset, both mean "never synthesize a
+// fallback," the same as today: FallbackDomain itself is what actually
+// enforces the IP-literal, publicly-routable requirement.
+func WithPublicHost(host string) Option {
+	return func(c *Controller) { c.publicHost = host }
+}
+
 // WithLogger overrides the logger used for per-service skip decisions.
 // Defaults to slog.Default().
 func WithLogger(logger *slog.Logger) Option {
@@ -474,10 +494,24 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	var maintenanceRoutes []ingress.MaintenanceRoute
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
 	for _, svc := range services {
-		if len(svc.Domains) == 0 {
-			continue
+		hosts := svc.Domains
+		if len(hosts) == 0 {
+			// No operator-configured domain: fall back to a zero-config
+			// sslip.io URL when this control plane's own APP_PUBLIC_HOST
+			// is a real, publicly routable IP (ingress.FallbackDomain's
+			// own doc comment covers every case this degrades to "no
+			// route" for). Never persisted to svc.Domains: it's
+			// re-derived identically every pass from svc.Name and
+			// c.publicHost, and none of the domain-scoped features below
+			// (basic auth, WAF, BYO TLS, maintenance mode, the DNS-check
+			// endpoint) make sense for a hostname nobody configured.
+			fallback, ok := ingress.FallbackDomain(c.publicHost, svc.Name)
+			if !ok {
+				continue
+			}
+			hosts = []string{fallback}
 		}
-		if owner, host, dup := firstDuplicateHost(svc.Name, svc.Domains, claimedHosts); dup {
+		if owner, host, dup := firstDuplicateHost(svc.Name, hosts, claimedHosts); dup {
 			// store.SaveDesiredService now rejects a save
 			// that would create this situation for any service written
 			// after that change landed, so reaching this branch means
@@ -501,7 +535,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// containers, unlike every other route kind here, which needs a
 		// real backend to dial. Only the remaining, non-maintenance
 		// hosts still go through the ordinary dial-required path below.
-		maintenanceHosts, activeHosts := splitMaintenanceHosts(svc.Domains, maintenanceByDomain)
+		maintenanceHosts, activeHosts := splitMaintenanceHosts(hosts, maintenanceByDomain)
 		if len(maintenanceHosts) > 0 {
 			for _, host := range maintenanceHosts {
 				claimedHosts[host] = svc.Name

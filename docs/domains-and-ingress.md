@@ -73,6 +73,39 @@ status inline, and see its certificate status once it's routed.
 `levelrail-cli domains list` shows every domain currently routed across
 your apps.
 
+## Zero-config URL: no domain, no DNS record, still HTTPS
+
+Deploying an app with no `domains:` at all doesn't leave it reachable
+only at a raw `host:port`. When `APP_PUBLIC_HOST` is set to your
+server's real, publicly routable IP address (not a private/LAN address,
+not a hostname), every app with no domain configured is automatically
+routed under a [sslip.io](https://sslip.io) hostname instead:
+`<app-name>.<ip-with-dots-as-dashes>.sslip.io`. sslip.io is a public DNS
+service that resolves any hostname containing a dash-encoded IP address
+straight to that IP, so this "just works" with zero DNS setup on your
+end: no record to create, nothing to wait to propagate.
+
+Because it's a real, publicly resolvable hostname, it goes through
+exactly the same TLS path any other domain does (see below): Caddy's
+internal issuer by default, or a real Let's Encrypt certificate once
+[`ACMEEnabled`](#tls-whats-actually-shipped-today) is turned on. There's
+no separate toggle for this feature and no extra security surface
+beyond what a bare `host:port` binding already had: the app was already
+reachable at that IP, this only adds a real hostname and TLS termination
+in front of it.
+
+Find your app's zero-config URL on its **Network** tab (shown wherever
+"No domain configured" would otherwise appear) or via
+`levelrail-cli apps network <name>`, under `fallback url:`. It
+disappears the moment you add a real domain: a domain you actually
+configured is always the one true address, not a second, synthetic one
+shown alongside it.
+
+If `APP_PUBLIC_HOST` isn't set, or is a private IP or a hostname rather
+than a public IP literal, no fallback is ever synthesized: this feature
+degrades to exactly today's "no domain, no route" behavior, not an
+error.
+
 ## TLS: what's actually shipped today
 
 Be clear-eyed about where this stands, because it's easy to overstate:

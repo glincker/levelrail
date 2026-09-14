@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func TestHandleGetAppNetwork_UnknownApp_NotFound(t *testing.T) {
@@ -168,6 +170,88 @@ func TestHandleGetAppNetwork_InspectBoundedByTimeout(t *testing.T) {
 	}
 	if _, ok := fake.gotInspectCtx.Deadline(); !ok {
 		t.Error("InspectByName's context has no deadline, want one bounded by dockerInspectTimeout")
+	}
+}
+
+// TestHandleGetAppNetwork_NoDomains_PublicHostSet_FallbackURL proves the
+// same zero-config sslip.io URL internal/reconcile/ingress's Reconcile
+// pass routes an app under is also surfaced here, so the dashboard/CLI
+// can show an operator a copyable link without them ever configuring a
+// domain.
+func TestHandleGetAppNetwork_NoDomains_PublicHostSet_FallbackURL(t *testing.T) {
+	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}
+	db := openTestDB(t)
+	resolver := func(string) (docker.Runtime, error) { return fake, nil }
+	rt := NewRouter(discardLogger(), testBrand(), db, WithExecRuntime(resolver), WithPublicHost("203.0.113.5"))
+	cookie := loginTestSession(t, rt, db)
+	seedExecApp(t, db) // "web", no Domains
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/network", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got networkResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if want := "https://web.203-0-113-5.sslip.io"; got.FallbackURL != want {
+		t.Errorf("FallbackURL = %q, want %q", got.FallbackURL, want)
+	}
+}
+
+// TestHandleGetAppNetwork_HasDomain_NoFallbackURL proves an app with a
+// real, operator-configured domain never gets a fallback URL alongside
+// it: the domain the operator actually set is the one true address,
+// there's no reason to also compute and show a second, synthetic one.
+func TestHandleGetAppNetwork_HasDomain_NoFallbackURL(t *testing.T) {
+	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}
+	db := openTestDB(t)
+	resolver := func(string) (docker.Runtime, error) { return fake, nil }
+	rt := NewRouter(discardLogger(), testBrand(), db, WithExecRuntime(resolver), WithPublicHost("203.0.113.5"))
+	cookie := loginTestSession(t, rt, db)
+	svc := store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, Domains: []string{"web.example.com"}}
+	if err := db.SaveDesiredService(context.Background(), svc); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/network", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got networkResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.FallbackURL != "" {
+		t.Errorf("FallbackURL = %q, want empty when a real domain is configured", got.FallbackURL)
+	}
+}
+
+// TestHandleGetAppNetwork_NoDomains_NoPublicHost_NoFallbackURL proves
+// the default (no APP_PUBLIC_HOST configured) never surfaces a
+// fallback URL, matching the reconciler's own "no route" default.
+func TestHandleGetAppNetwork_NoDomains_NoPublicHost_NoFallbackURL(t *testing.T) {
+	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}
+	rt, db := newTestRouterWithExecRuntime(t, fake) // no WithPublicHost
+	cookie := loginTestSession(t, rt, db)
+	seedExecApp(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/network", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got networkResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.FallbackURL != "" {
+		t.Errorf("FallbackURL = %q, want empty with no APP_PUBLIC_HOST configured", got.FallbackURL)
 	}
 }
 

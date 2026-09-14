@@ -81,6 +81,16 @@ func TestPrintAppNetworkHuman(t *testing.T) {
 	if strings.Contains(out, "host port:       0") {
 		t.Errorf("stopped output = %q, must not print a zero host port as if it were real", out)
 	}
+	if strings.Contains(out, "fallback url:") {
+		t.Errorf("output = %q, must not print a fallback url line when FallbackURL is empty", out)
+	}
+
+	buf.Reset()
+	printAppNetworkHuman(&buf, networkResource{ContainerPort: 3000, FallbackURL: "https://web.203-0-113-5.sslip.io"})
+	out = buf.String()
+	if !strings.Contains(out, "fallback url:    https://web.203-0-113-5.sslip.io") {
+		t.Errorf("output missing fallback url line; got:\n%s", out)
+	}
 }
 
 func TestPrintAppHuman_CommandAndVolumesAndBindMounts(t *testing.T) {
