@@ -2,11 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { TerminalIcon } from '@phosphor-icons/react/dist/ssr'
 import { useLogStream, type LogLine } from '../../../../../hooks/useLogStream'
 import { buildDeployLogStreamUrl } from '../../../../../queries/deployLogs'
-import {
-  deployAttemptsQueryOptions,
-  useDeployAttempts,
-} from '../../../../../queries/deployAttempts'
-import { useDeployStatus } from '../../../../../queries/deploys'
+import { deployAttemptsQueryOptions } from '../../../../../queries/deployAttempts'
+import { useDeployProgress } from '../../../../../hooks/useDeployProgress'
 import { useApp } from '../../../../../queries/apps'
 import { useGitSource } from '../../../../../queries/gitSources'
 import {
@@ -56,8 +53,7 @@ function DeployLogsPage() {
   const { name, deployId } = Route.useParams()
   const url = buildDeployLogStreamUrl(name, deployId)
   const { lines, connectionState, isPaused, pause, resume } = useLogStream(url)
-  const { data: attempts } = useDeployAttempts(name)
-  const { data: conditions } = useDeployStatus(name)
+  const { attempts, conditions } = useDeployProgress(name)
   const { data: app } = useApp(name)
   // Non-suspense: most apps have no git source connected, the common
   // steady state, not an exceptional one (see queries/gitSources.ts).

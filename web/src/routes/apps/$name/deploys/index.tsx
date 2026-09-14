@@ -1,9 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import {
-  deployAttemptsQueryOptions,
-  useDeployAttempts,
-} from '../../../../queries/deployAttempts'
-import { useDeployStatus } from '../../../../queries/deploys'
+import { deployAttemptsQueryOptions } from '../../../../queries/deployAttempts'
+import { useDeployProgress } from '../../../../hooks/useDeployProgress'
 import { DeployAttemptsList } from '../../../../components/DeployAttemptsList'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -29,8 +26,7 @@ export const Route = createFileRoute('/apps/$name/deploys/')({
 
 function DeploysSection() {
   const { name } = Route.useParams()
-  const { data: attempts } = useDeployAttempts(name)
-  const { data: conditions } = useDeployStatus(name)
+  const { attempts, conditions } = useDeployProgress(name)
 
   return (
     <DeployAttemptsList appName={name} attempts={attempts} conditions={conditions} />
