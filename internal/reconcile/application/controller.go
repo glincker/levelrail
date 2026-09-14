@@ -771,6 +771,13 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	if err := c.waitReady(ctx, state, desired); err != nil {
+		var crash *readinessCrashError
+		if errors.As(err, &crash) {
+			if crash.oomKilled {
+				return replicaOutcome{reason: "OOMKilledDuringReadiness"}, err
+			}
+			return replicaOutcome{reason: "ExitedDuringReadiness"}, err
+		}
 		return replicaOutcome{reason: "ReadinessFailed"}, err
 	}
 	return replicaOutcome{justDeployed: true}, nil
@@ -1388,6 +1395,35 @@ func (b *cappedBuffer) String() string {
 	return string(b.buf)
 }
 
+// readinessCrashError is waitReady's signal that the container being
+// waited on exited or was OOM-killed before its readiness probe ever
+// succeeded, distinct from probe.WaitReady's own plain timeout error:
+// ensureReplicaRunning uses errors.As to give this a specific,
+// actionable reconcile condition reason (OOMKilledDuringReadiness /
+// ExitedDuringReadiness) instead of the generic ReadinessFailed a
+// connection-refused-until-timeout would otherwise get, the exact
+// "boring problem" this project's own CLAUDE.md names as its main risk:
+// a deploy that fails, but without ever surfacing why.
+type readinessCrashError struct {
+	containerName string
+	oomKilled     bool
+	exitCode      int
+}
+
+func (e *readinessCrashError) Error() string {
+	if e.oomKilled {
+		return fmt.Sprintf("container %s was OOM-killed before becoming ready", e.containerName)
+	}
+	return fmt.Sprintf("container %s exited (code %d) before becoming ready", e.containerName, e.exitCode)
+}
+
+// defaultCrashCheckInterval mirrors probe package's own unexported
+// default (probe.WaitReady applies the same 2s when cfg.Interval is
+// unset): watchForCrash polls at the same cadence a service's own
+// configured (or defaulted) readiness Interval already implies, rather
+// than inventing a second, independently-tuned timing knob.
+const defaultCrashCheckInterval = 2 * time.Second
+
 // waitReady gates a freshly (re)started container on its readiness
 // probe, if the service declares one and has a port to probe at all. A
 // service with no port (a worker with nothing listening) or no
@@ -1414,10 +1450,62 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 		Interval: desired.Health.Readiness.Interval,
 		Timeout:  desired.Health.Readiness.Timeout,
 	}
-	if err := probe.WaitReady(probeCtx, c.httpClient, addr, cfg); err != nil {
-		return fmt.Errorf("readiness probe: %w", err)
+
+	readyErr := make(chan error, 1)
+	go func() { readyErr <- probe.WaitReady(probeCtx, c.httpClient, addr, cfg) }()
+
+	// inspector is present only for a Runtime that can tell "still
+	// starting" apart from "already exited/OOM-killed" (docker.Client
+	// today; the gRPC agent transport and most test fakes don't, and
+	// gracefully just don't get the fast-fail below, same as before this
+	// existed).
+	inspector, ok := c.runtime.(docker.ExitStateInspector)
+	if !ok {
+		if err := <-readyErr; err != nil {
+			return fmt.Errorf("readiness probe: %w", err)
+		}
+		return nil
 	}
-	return nil
+
+	crashErr := make(chan error, 1)
+	go watchForCrash(probeCtx, inspector, state.Name, cfg.Interval, crashErr)
+
+	select {
+	case err := <-readyErr:
+		if err != nil {
+			return fmt.Errorf("readiness probe: %w", err)
+		}
+		return nil
+	case err := <-crashErr:
+		return err
+	}
+}
+
+// watchForCrash polls name's live exit state on interval (defaulted per
+// defaultCrashCheckInterval) until ctx is done or the container has
+// stopped running, in which case it sends a *readinessCrashError
+// describing why and returns. out is buffered by 1, so this goroutine
+// never blocks or leaks if waitReady's own select already returned via
+// the readiness probe branch first.
+func watchForCrash(ctx context.Context, inspector docker.ExitStateInspector, name string, interval time.Duration, out chan<- error) {
+	if interval <= 0 {
+		interval = defaultCrashCheckInterval
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			state, err := inspector.InspectExitState(ctx, name)
+			if err != nil || state == nil || state.Running {
+				continue
+			}
+			out <- &readinessCrashError{containerName: name, oomKilled: state.OOMKilled, exitCode: state.ExitCode}
+			return
+		}
+	}
 }
 
 // removeStale finds every container for this service other than keep

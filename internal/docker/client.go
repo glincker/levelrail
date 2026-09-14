@@ -99,6 +99,30 @@ func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerStat
 	return toContainerState(summaries[0]), nil
 }
 
+// InspectExitState implements ExitStateInspector. Unlike InspectByName,
+// this calls the real container-inspect endpoint (ContainerList's
+// Summary shape carries no OOMKilled/ExitCode field at all), so it costs
+// one extra round trip a caller should only pay for when it actually
+// needs to tell "still starting" apart from "already exited or
+// OOM-killed."
+func (c *Client) InspectExitState(ctx context.Context, name string) (*ExitState, error) {
+	resp, err := c.cli.ContainerInspect(ctx, name)
+	if err != nil {
+		if cerrdefs.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("docker: inspect %q: %w", name, err)
+	}
+	if resp.State == nil {
+		return nil, nil
+	}
+	return &ExitState{
+		Running:   resp.State.Running,
+		OOMKilled: resp.State.OOMKilled,
+		ExitCode:  resp.State.ExitCode,
+	}, nil
+}
+
 // ListByPrefix implements Runtime.
 func (c *Client) ListByPrefix(ctx context.Context, prefix string) ([]ContainerState, error) {
 	f := filters.NewArgs()

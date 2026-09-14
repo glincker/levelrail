@@ -42,6 +42,12 @@ func (f *fakeStore) GetDesiredService(_ context.Context, _ string) (*store.Desir
 type fakeRuntime struct {
 	mu         sync.Mutex
 	containers map[string]*docker.ContainerState
+	// exitStates backs InspectExitState (docker.ExitStateInspector),
+	// keyed by container name; absent means "no exit info recorded yet,"
+	// distinct from a zero-value *docker.ExitState. crashContainer sets
+	// this to simulate an OOM-killed or otherwise-exited container mid
+	// readiness wait.
+	exitStates map[string]*docker.ExitState
 	nextID     int
 	hostPort   int
 
@@ -138,7 +144,38 @@ func (e *execExitReader) Read(p []byte) (int, error) {
 func (e *execExitReader) Close() error { return nil }
 
 func newFakeRuntime(hostPort int) *fakeRuntime {
-	return &fakeRuntime{containers: map[string]*docker.ContainerState{}, networks: map[string]string{}, hostPort: hostPort}
+	return &fakeRuntime{containers: map[string]*docker.ContainerState{}, exitStates: map[string]*docker.ExitState{}, networks: map[string]string{}, hostPort: hostPort}
+}
+
+// crashContainer simulates a container dying mid readiness-wait: it
+// flips the container's own Running state (so a subsequent
+// InspectByName also reflects it, matching what waitReady's OOM-kill
+// fast path expects to observe) and records the exit reason
+// InspectExitState reports.
+func (f *fakeRuntime) crashContainer(name string, oomKilled bool, exitCode int) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if cs, ok := f.containers[name]; ok {
+		cs.Running = false
+	}
+	f.exitStates[name] = &docker.ExitState{Running: false, OOMKilled: oomKilled, ExitCode: exitCode}
+}
+
+// InspectExitState implements docker.ExitStateInspector, unconditionally
+// (not opt-in): every existing waitReady-driven test now also exercises
+// watchForCrash's "still running, keep waiting" path harmlessly, proving
+// its presence alone doesn't change behavior for a container that never
+// crashes, on top of the tests that call crashContainer to prove the
+// fast-fail path itself.
+func (f *fakeRuntime) InspectExitState(_ context.Context, name string) (*docker.ExitState, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	es, ok := f.exitStates[name]
+	if !ok {
+		return nil, nil
+	}
+	cp := *es
+	return &cp, nil
 }
 
 func (f *fakeRuntime) seed(name string, running bool) {
@@ -590,6 +627,116 @@ func TestController_Reconcile_FreshDeploy_ReadinessFails(t *testing.T) {
 	cond := conditionOf(t, result)
 	if cond.Status != reconcile.ConditionFalse || cond.Reason != "ReadinessFailed" {
 		t.Errorf("condition = %+v, want Status=False Reason=ReadinessFailed", cond)
+	}
+}
+
+// TestController_Reconcile_FreshDeploy_OOMKilledDuringReadiness_FastFail
+// proves waitReady doesn't wait out its full readyBudget when the
+// container it's waiting on gets OOM-killed mid-probe: this is the
+// project's own CLAUDE.md's stated main risk in miniature (a deploy
+// that fails without ever surfacing why), verified both for speed (must
+// return well before readyBudget expires) and for the specific reason
+// surfaced (OOMKilledDuringReadiness, not a generic ReadinessFailed).
+func TestController_Reconcile_FreshDeploy_OOMKilledDuringReadiness_FastFail(t *testing.T) {
+	srv := neverHealthy()
+	defer srv.Close()
+
+	rt := newFakeRuntime(serverPort(t, srv))
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+	}
+	target := ContainerName("web", desired.Image, "")
+	time.AfterFunc(30*time.Millisecond, func() { rt.crashContainer(target, true, 137) })
+
+	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(2*time.Second))
+
+	start := time.Now()
+	result, err := c.Reconcile(context.Background())
+	elapsed := time.Since(start)
+
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the OOM-kill surfaced as an error")
+	}
+	if elapsed > 500*time.Millisecond {
+		t.Errorf("Reconcile() took %v, want a fast fail once the container was OOM-killed, well under the 2s readyBudget", elapsed)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "OOMKilledDuringReadiness" {
+		t.Errorf("condition = %+v, want Status=False Reason=OOMKilledDuringReadiness", cond)
+	}
+}
+
+// TestController_Reconcile_FreshDeploy_ExitedDuringReadiness_FastFail is
+// the non-OOM sibling: an ordinary crash (e.g. an unhandled panic in the
+// app) gets its own reason, ExitedDuringReadiness, distinct from
+// OOMKilledDuringReadiness above, so an operator can tell "the process
+// itself crashed" apart from "the kernel killed it for using too much
+// memory" without opening a shell to inspect the container by hand.
+func TestController_Reconcile_FreshDeploy_ExitedDuringReadiness_FastFail(t *testing.T) {
+	srv := neverHealthy()
+	defer srv.Close()
+
+	rt := newFakeRuntime(serverPort(t, srv))
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+	}
+	target := ContainerName("web", desired.Image, "")
+	time.AfterFunc(30*time.Millisecond, func() { rt.crashContainer(target, false, 1) })
+
+	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(2*time.Second))
+
+	start := time.Now()
+	result, err := c.Reconcile(context.Background())
+	elapsed := time.Since(start)
+
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the crash surfaced as an error")
+	}
+	if elapsed > 500*time.Millisecond {
+		t.Errorf("Reconcile() took %v, want a fast fail once the container exited, well under the 2s readyBudget", elapsed)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "ExitedDuringReadiness" {
+		t.Errorf("condition = %+v, want Status=False Reason=ExitedDuringReadiness", cond)
+	}
+}
+
+// runtimeWithoutExitState wraps a docker.Runtime to deliberately hide
+// any docker.ExitStateInspector implementation the underlying concrete
+// type might have (Go only promotes docker.Runtime's own method set
+// through this embedding, not fakeRuntime's extra InspectExitState),
+// simulating a Runtime that can't distinguish "still starting" from
+// "already exited" (the gRPC agent transport, or any future
+// docker.Runtime implementation that doesn't add this optional
+// capability): waitReady must fall back to its pre-existing behavior in
+// that case, not panic or silently misbehave.
+type runtimeWithoutExitState struct {
+	docker.Runtime
+}
+
+func TestController_Reconcile_FreshDeploy_NoExitStateInspector_FallsBackToFullBudget(t *testing.T) {
+	srv := neverHealthy()
+	defer srv.Close()
+
+	rt := newFakeRuntime(serverPort(t, srv))
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+	}
+	target := ContainerName("web", desired.Image, "")
+	time.AfterFunc(30*time.Millisecond, func() { rt.crashContainer(target, true, 137) })
+
+	c := New("web", &fakeStore{svc: desired}, runtimeWithoutExitState{rt}, WithReadyBudget(150*time.Millisecond))
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want a readiness timeout error")
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "ReadinessFailed" {
+		t.Errorf("condition = %+v, want Status=False Reason=ReadinessFailed: no ExitStateInspector available, so no fast-fail reason", cond)
 	}
 }
 

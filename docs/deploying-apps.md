@@ -169,6 +169,16 @@ call every other field goes through (there's no dedicated health
 endpoint); the CLI's `apps create --file app.yaml` path picks these up
 straight from the spec's own `health:` block.
 
+A deploy waiting on a readiness probe doesn't just retry HTTP requests
+against a container that's already gone: it also watches the
+container's own live state, so one that gets OOM-killed or otherwise
+exits mid-wait fails immediately with a specific reason
+(`OOMKilledDuringReadiness` or `ExitedDuringReadiness` in the deploy's
+reconcile condition, visible in the dashboard's deploy history and
+`apps deploys` in the CLI) instead of a generic `ReadinessFailed` only
+after the full readiness budget (60s by default) has been spent
+retrying a dead address.
+
 ## Resource limits and auto-recommendation
 
 `store.ServiceResources` covers four dimensions: `memory_bytes`,

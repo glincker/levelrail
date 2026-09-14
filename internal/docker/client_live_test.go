@@ -517,6 +517,71 @@ func TestClient_ListByPrefix_Stop_Remove_Live(t *testing.T) {
 	}
 }
 
+// TestClient_InspectExitState_Live proves InspectExitState reports a
+// real container's actual exit state from the Engine API's own inspect
+// response, not just this package's local bookkeeping (InspectByName's
+// ContainerList-based Summary has no ExitCode/OOMKilled field at all,
+// the entire reason this method exists as a separate call). alpine's
+// default CMD (/bin/sh) hits EOF on its unattached stdin immediately and
+// exits 0 on its own: no command override needed, and ContainerSpec has
+// none to give it anyway.
+func TestClient_InspectExitState_Live(t *testing.T) {
+	c := liveClient(t)
+	ctx := context.Background()
+
+	name := "levelrail-test-inspect-exit-state"
+	removeIfExists(ctx, t, c, name)
+	t.Cleanup(func() { removeIfExists(context.Background(), t, c, name) })
+
+	if err := c.ensureImage(ctx, "alpine:latest", nil); err != nil {
+		t.Fatalf("ensureImage() error = %v", err)
+	}
+	id, err := c.Create(ctx, ContainerSpec{Name: name, Image: "alpine:latest"})
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if err := c.Start(ctx, id); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+
+	deadline := time.Now().Add(10 * time.Second)
+	var state *ExitState
+	for {
+		state, err = c.InspectExitState(ctx, name)
+		if err != nil {
+			t.Fatalf("InspectExitState() error = %v", err)
+		}
+		if state != nil && !state.Running {
+			break
+		}
+		if !time.Now().Before(deadline) {
+			t.Fatalf("container never exited within 10s, last state = %+v", state)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	if state.OOMKilled {
+		t.Error("state.OOMKilled = true, want false: this container was never memory-constrained")
+	}
+	if state.ExitCode != 0 {
+		t.Errorf("state.ExitCode = %d, want 0", state.ExitCode)
+	}
+}
+
+// TestClient_InspectExitState_Live_NotFound proves InspectExitState
+// follows InspectByName's own "not found is (nil, nil), never an error"
+// contract.
+func TestClient_InspectExitState_Live_NotFound(t *testing.T) {
+	c := liveClient(t)
+	state, err := c.InspectExitState(context.Background(), "levelrail-test-definitely-does-not-exist")
+	if err != nil {
+		t.Fatalf("InspectExitState() error = %v", err)
+	}
+	if state != nil {
+		t.Errorf("state = %+v, want nil for a nonexistent container", state)
+	}
+}
+
 // TestClient_Exec_Live proves Exec actually runs a command inside a
 // real running container via the Engine API's exec facility and streams
 // its real stdout back byte for byte, the exact mechanism
