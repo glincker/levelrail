@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.0-beta.2](https://github.com/glincker/levelrail/compare/v0.2.0-beta.1...v0.2.0-beta.2) (2026-09-14)
+
+
+### Features
+
+* add Content-Security-Policy and opt-in HSTS, fix healthz routing ([#449](https://github.com/glincker/levelrail/issues/449)) ([b193889](https://github.com/glincker/levelrail/commit/b193889413c5a4afcd17034a7622f43140c0047b))
+* fail fast when a container is OOM-killed during readiness wait ([#451](https://github.com/glincker/levelrail/issues/451)) ([911d56e](https://github.com/glincker/levelrail/commit/911d56ec5f473c6b4626b2e66da41ee1e5214d01))
+* zero-config sslip.io URL for apps with no domain configured ([#447](https://github.com/glincker/levelrail/issues/447)) ([6087a06](https://github.com/glincker/levelrail/commit/6087a060388096cde95c7ba22f92a42f4fe5d43e))
+
+
+### Bug Fixes
+
+* bound live Docker inspect calls with a timeout ([#450](https://github.com/glincker/levelrail/issues/450)) ([1f98102](https://github.com/glincker/levelrail/commit/1f98102547b79de4cb30ad6d8aaf8cf79b29309f))
+* poll deploy status live so a rollback's actual progress is visible ([#452](https://github.com/glincker/levelrail/issues/452)) ([cce8eef](https://github.com/glincker/levelrail/commit/cce8eef1d02b31a35606ff29059c2f4a631fa2ec))
+* retry transient notification delivery failures ([#454](https://github.com/glincker/levelrail/issues/454)) ([ec36d75](https://github.com/glincker/levelrail/commit/ec36d75ef7b7ce5fd92574d34b4d3555ebbe0fe1))
+* suppress duplicate lines when a log stream's EventSource reconnects ([#453](https://github.com/glincker/levelrail/issues/453)) ([65d53ce](https://github.com/glincker/levelrail/commit/65d53ce86b80407bd14e8daee9125f651f8d03dd))
+
 ## [0.2.0-beta.1](https://github.com/glincker/levelrail/compare/v0.2.0-beta...v0.2.0-beta.1) (2026-09-13)
 
 
