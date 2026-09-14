@@ -226,6 +226,37 @@ type NetworkInfo struct {
 	Name string
 }
 
+// ExitState is a container's exit-relevant state: whether it's still
+// running, and if not, why. Deliberately its own type rather than more
+// fields on ContainerState: getting OOMKilled/ExitCode requires a real
+// Docker inspect call, not the ContainerList-based summary InspectByName
+// and ListByPrefix already use (container.Summary carries no such
+// fields), and every Runtime consumer that only ever checked
+// ContainerState.Running has no reason to pay for that extra call.
+type ExitState struct {
+	Running   bool
+	OOMKilled bool
+	ExitCode  int
+}
+
+// ExitStateInspector is an optional Runtime capability, checked via a
+// type assertion (application.Controller.waitReady is the one caller
+// today) rather than added to the Runtime interface itself: doing the
+// latter would force every existing docker.Runtime implementation,
+// including the gRPC agent transport (internal/agent.Transport embeds
+// docker.Runtime) and every hand-written test fake across the
+// reconcile packages, to grow a method most of them have no use for.
+// Only *Client implements it; a caller lacking this capability (a
+// remote node's transport, most test fakes) just skips the
+// fail-fast-on-crash check and falls back to waiting out the full
+// readiness budget, same as before this existed.
+type ExitStateInspector interface {
+	// InspectExitState returns the container's exit state, or (nil, nil)
+	// if no such container exists, the same "not found is a valid
+	// observed state" contract InspectByName documents below.
+	InspectExitState(ctx context.Context, name string) (*ExitState, error)
+}
+
 // Runtime is the surface reconcile controllers are allowed to depend on.
 // The real implementation (Client, in client.go) talks to the Docker
 // Engine API. Tests use a hand-written fake: see nginxdemo's test file
