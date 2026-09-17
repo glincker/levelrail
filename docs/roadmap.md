@@ -1,6 +1,6 @@
 # Roadmap
 
-Status as of 2026-09-01 (refreshed against current `main`), not the
+Status as of 2026-09-17 (refreshed against current `main`), not the
 aspirational plan. See `/adr` for the phase-by-phase architectural
 decisions behind this build order.
 The build has moved further and less linearly than that phase plan
@@ -21,7 +21,11 @@ still open. This page describes what's actually true today.
   run on each reconcile pass afterward, restarting a container that
   fails its configured threshold of consecutive checks (the case where
   a process is still running but wedged) and reporting it as a
-  `LivenessFailedRestarting` condition.
+  `LivenessFailedRestarting` condition. A container that gets OOM-killed
+  or otherwise exits while a deploy is still waiting on its readiness
+  probe fails immediately with a specific reason
+  (`OOMKilledDuringReadiness`/`ExitedDuringReadiness`) instead of
+  retrying against a dead address for the full readiness budget.
 - BuildKit-based Dockerfile builds with local cache and live build-log
   streaming over SSE.
 - Railpack auto-detection for Node.js and Go.
@@ -139,7 +143,12 @@ still open. This page describes what's actually true today.
 - Embedded Caddy ingress with automatic TLS and domain routing. TLS
   today defaults to an internal, self-signed issuer; a public ACME
   issuer exists and is toggleable but is still unverified against a
-  live domain (see In progress). A per-domain BYO (bring your own)
+  live domain (see In progress). A service with no domain configured at
+  all gets a zero-config, real, publicly resolvable fallback URL
+  (`<app>.<public-ip-dash-encoded>.sslip.io`, real HTTPS via the same
+  Caddy issuer path, no DNS setup) whenever `APP_PUBLIC_HOST` is a
+  genuine public IP, surfaced in the dashboard's Network tab and
+  `apps network` in the CLI. A per-domain BYO (bring your own)
   certificate upload (`PUT/GET/DELETE
   /api/v1/apps/{name}/domains/{domain}/tls-cert`, `levelrail-cli domains
   tls-cert get/set/clear`, a `DomainEditor` control) lets an operator
@@ -278,10 +287,10 @@ still open. This page describes what's actually true today.
   from a "CLI access" dashboard settings page, and the CLI polls until
   a real API token is minted. Works over plain HTTP, since no password
   crosses the wire.
-- `levelrail migrate coolify` and `levelrail migrate dokploy` CLI
-  commands: pull every app off a live Coolify or Dokploy instance and
-  either write app.yaml files or apply them directly to a target
-  Levelrail instance.
+- `levelrail migrate coolify`, `levelrail migrate dokploy`, and
+  `levelrail migrate caprover` CLI commands: pull every app off a live
+  source instance and either write app.yaml files or apply them
+  directly to a target Levelrail instance.
 - `levelrail apps create --interactive` (`-i`): a step-by-step wizard
   for creating an app without hand-writing app.yaml or knowing every
   flag up front, ending in either a written app.yaml or a direct API
@@ -345,8 +354,12 @@ still open. This page describes what's actually true today.
   channel kinds: webhook, Slack, Discord, email, Telegram, Pushover,
   PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark,
   Rocket.Chat, Opsgenie, Webex, and Google Chat, plus separate
-  deploy-outcome notifications. Delivery history for every notification
-  channel is
+  deploy-outcome notifications. Every HTTP-based channel kind retries a
+  transient failure (a transport error or a 5xx/429 response) up to 3
+  times with a short backoff before giving up, rather than dropping a
+  real alert to a one-off receiver hiccup; email isn't covered yet
+  (different transport, different failure semantics). Delivery history
+  for every notification channel is
   independently queryable via API/CLI/MCP. A dismissible dashboard
   nudge prompts enabling the platform-wide alert rules (patch-status,
   node-disk-space, node-resource-usage) when none are configured yet.
@@ -427,6 +440,16 @@ still open. This page describes what's actually true today.
   ability-gated route beyond login, stricter for writes than reads,
   keyed per token, per session user, or per client IP if
   unauthenticated, configurable via env vars.
+- Baseline security headers on every response (nosniff, frame-deny,
+  referrer policy, a same-origin Content-Security-Policy with no
+  inline script or eval) plus request-ID tagging and panic recovery
+  that turns an unhandled handler panic into a logged, diagnosable
+  entry instead of a raw stack dump. Strict-Transport-Security is
+  opt-in (`APP_ENABLE_HSTS`, default off): this control plane can't
+  tell from a request alone whether the certificate a browser saw was
+  ACME-trusted or the self-signed internal-issuer default, and HSTS on
+  a self-signed deployment turns a certificate warning into a hard
+  lockout.
 - Real multi-user accounts, not a single shared admin: per-user email
   sign-in or OAuth, TOTP two-factor with recovery codes, and per-user
   scoped abilities (the same ability model API tokens already had,

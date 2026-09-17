@@ -61,8 +61,8 @@ export default defineConfig({
           { text: 'Feature flags', link: '/feature-flags' },
           { text: 'Master key rotation', link: '/master-key-rotation' },
           {
-            text: 'Migrating from Coolify and Dokploy',
-            link: '/migrating-from-coolify-and-dokploy',
+            text: 'Migrating from Coolify, Dokploy, or CapRover',
+            link: '/migrating-from-coolify-dokploy-and-caprover',
           },
           { text: 'Screenshots', link: '/screenshots' },
           { text: 'Deploying apps', link: '/deploying-apps' },
