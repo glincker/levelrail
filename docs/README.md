@@ -51,7 +51,7 @@ proposals):
 | [feature-flags.md](feature-flags.md) | Toggle app behavior at runtime without a redeploy |
 | [screenshots.md](screenshots.md) | Regenerate the dashboard screenshots used in the README |
 | [master-key-rotation.md](master-key-rotation.md) | Rotate the envelope-encryption master key without losing access to stored secrets |
-| [migrating-from-coolify-and-dokploy.md](migrating-from-coolify-and-dokploy.md) | Move apps off a live Coolify or Dokploy instance with `levelrail-cli migrate` |
+| [migrating-from-coolify-dokploy-and-caprover.md](migrating-from-coolify-dokploy-and-caprover.md) | Move apps off a live Coolify, Dokploy, or CapRover instance with `levelrail-cli migrate` |
 | [domains-and-ingress.md](domains-and-ingress.md) | Why there's no reverse proxy to install, how `app.yaml` domains route to containers, and TLS's current honest status |
 | [acme-verification-runbook.md](acme-verification-runbook.md) | Verify real ACME certificate issuance against a live domain, step by step |
 | [deploying-apps.md](deploying-apps.md) | An app's lifecycle: create, deploy, roll back, promote, health checks, resource limits, exec, and scheduled tasks |
