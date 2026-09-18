@@ -734,9 +734,7 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	oldNodeID := existing.NodeID
-
-	if err := rt.apps.UpdateServiceNode(r.Context(), name, req.NodeID); errors.Is(err, store.ErrServiceNotFound) {
+	if err := rt.applyPlainNodeMove(r.Context(), name, existing.NodeID, req.NodeID); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
@@ -745,11 +743,22 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if oldNodeID != req.NodeID {
+	rt.reloadAndWriteApp(w, r, name, "set app node")
+}
+
+// applyPlainNodeMove updates name's node_id and tears down containers left
+// on oldNodeID if it actually changed: the mechanics behind both
+// handleSetAppNode and handleMoveAppWithVolumes' own no-volumes/same-node
+// shortcut (apps_move_with_volumes.go), so there is exactly one place that
+// performs an ordinary, no-volumes-involved placement change.
+func (rt *Router) applyPlainNodeMove(ctx context.Context, name, oldNodeID, newNodeID string) error {
+	if err := rt.apps.UpdateServiceNode(ctx, name, newNodeID); err != nil {
+		return err
+	}
+	if oldNodeID != newNodeID {
 		rt.teardownServiceContainers(name, oldNodeID)
 	}
-
-	rt.reloadAndWriteApp(w, r, name, "set app node")
+	return nil
 }
 
 // setAppProjectRequest is PUT /api/v1/apps/{name}/project's body, the

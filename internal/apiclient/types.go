@@ -753,6 +753,47 @@ type TriggerVolumeCloneRestoreRequest struct {
 	NewVolumeName string `json:"new_volume_name,omitempty"`
 }
 
+// SetAppNodeRequest mirrors internal/api's setAppNodeRequest. An empty
+// NodeID moves the app back to the control plane's own local node.
+type SetAppNodeRequest struct {
+	NodeID string `json:"node_id"`
+}
+
+// MoveAppWithVolumesRequest mirrors internal/api's
+// moveAppWithVolumesRequest, the same node_id shape SetAppNodeRequest
+// establishes.
+type MoveAppWithVolumesRequest struct {
+	NodeID string `json:"node_id"`
+}
+
+// AppVolumeMoveStepResource mirrors internal/api's
+// appVolumeMoveStepResource (apps_move_with_volumes.go).
+type AppVolumeMoveStepResource struct {
+	Name       string `json:"name"`
+	Status     string `json:"status"`
+	Error      string `json:"error,omitempty"`
+	StartedAt  string `json:"started_at"`
+	FinishedAt string `json:"finished_at,omitempty"`
+}
+
+// AppVolumeMoveResource mirrors internal/api's appVolumeMoveResource: one
+// "move this app to another node, taking its volumes with it" attempt.
+// MoveAppWithVolumes always returns this shape regardless of status code:
+// 200 means it already finished (an app with no volumes, or already on the
+// target node), 202 means Status is "running" and the caller should poll
+// GetAppVolumeMove until it isn't.
+type AppVolumeMoveResource struct {
+	ID          string                      `json:"id"`
+	ServiceName string                      `json:"service_name"`
+	FromNodeID  string                      `json:"from_node_id"`
+	ToNodeID    string                      `json:"to_node_id"`
+	Status      string                      `json:"status"`
+	Error       string                      `json:"error,omitempty"`
+	Steps       []AppVolumeMoveStepResource `json:"steps"`
+	StartedAt   string                      `json:"started_at"`
+	FinishedAt  string                      `json:"finished_at,omitempty"`
+}
+
 // OnboardingStateResource mirrors internal/api's onboardingStateResource
 // (internal/api/onboarding.go).
 type OnboardingStateResource struct {

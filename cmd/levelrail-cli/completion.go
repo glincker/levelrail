@@ -61,6 +61,8 @@ var cliCommandTree = map[string]*cmdNode{
 		"clear-environment": nil,
 		"set-project":       nil,
 		"clear-project":     nil,
+		"set-node":          nil,
+		"clear-node":        nil,
 		"previews": {subs: map[string]*cmdNode{
 			"list": nil, "teardown": nil, "enable": nil, "disable": nil, "sweep": nil,
 			"pr-status": {subs: map[string]*cmdNode{"enable": nil, "disable": nil}},

@@ -237,6 +237,7 @@ type Router struct {
 	serviceVolumeRestoreHistory    ServiceVolumeRestoreHistoryStore // always set, same "core Store interface" shape as restoreHistory above
 	serviceVolumeRestoreRunner     ServiceVolumeRestoreRunner       // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore returns 501, same shape as restoreRunner above
 	volumeCloneRestoreHistory      VolumeCloneRestoreHistoryStore   // always set, same "core Store interface" shape as cloneRestoreHistory above
+	appVolumeMoves                 AppVolumeMoveStore               // always set, same "core Store interface" shape as backupHistory above
 	volumeCloneRestoreRunner       VolumeCloneRestoreRunner         // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new returns 501, same shape as cloneRestoreRunner above
 	deployAttempts                 DeployAttemptStore               // always set, same "core Store interface" shape as certs/staticSites above
 	deployLogStore                 DeployLogQuerier                 // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
@@ -390,6 +391,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		webhookDeliveries:           s,
 		cloneRestoreHistory:         s,
 		volumeCloneRestoreHistory:   s,
+		appVolumeMoves:              s,
 		policies:                    s,
 		invites:                     s,
 		autoPlacementEnabled:        true,

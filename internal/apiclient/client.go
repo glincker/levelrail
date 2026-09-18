@@ -1696,6 +1696,55 @@ func (c *Client) SetAppProject(ctx context.Context, name, projectID string) (App
 	return out, err
 }
 
+// SetAppNode calls PUT /api/v1/apps/{name}/node: an instant placement
+// change (internal/api's handleSetAppNode), no volumes involved. An empty
+// nodeID moves the app back to the control plane's own local node. Returns
+// the updated app. See MoveAppWithVolumes for the same move, taking the
+// app's named volumes along with it.
+func (c *Client) SetAppNode(ctx context.Context, name, nodeID string) (AppResource, error) {
+	var out AppResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/node", SetAppNodeRequest{NodeID: nodeID}, &out)
+	return out, err
+}
+
+// MoveAppWithVolumes calls POST /api/v1/apps/{name}/move-with-volumes: the
+// same placement change SetAppNode makes, plus archiving and restoring
+// every one of the app's named Docker volumes onto the destination node
+// (internal/api's handleMoveAppWithVolumes). Always returns an
+// AppVolumeMoveResource: check its Status field, not the status code
+// alone, to tell "already done" (an app with no volumes, or already on
+// nodeID) from "still running" (real volumes to copy: poll
+// GetAppVolumeMove with the returned ID until Status is no longer
+// "running"). An empty nodeID moves the app back to the control plane's
+// own local node.
+func (c *Client) MoveAppWithVolumes(ctx context.Context, name, nodeID string) (AppVolumeMoveResource, error) {
+	var out AppVolumeMoveResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/move-with-volumes", MoveAppWithVolumesRequest{NodeID: nodeID}, &out)
+	return out, err
+}
+
+// appVolumeMovesPath builds /api/v1/apps/{name}/moves, shared by
+// ListAppVolumeMoves and GetAppVolumeMove below.
+func appVolumeMovesPath(name string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/moves"
+}
+
+// ListAppVolumeMoves calls GET /api/v1/apps/{name}/moves: every
+// "move with volumes" attempt for name, newest first.
+func (c *Client) ListAppVolumeMoves(ctx context.Context, name string) ([]AppVolumeMoveResource, error) {
+	var out []AppVolumeMoveResource
+	err := c.do(ctx, http.MethodGet, appVolumeMovesPath(name), nil, &out)
+	return out, err
+}
+
+// GetAppVolumeMove calls GET /api/v1/apps/{name}/moves/{id}: what a caller
+// polls while MoveAppWithVolumes' own returned Status is still "running".
+func (c *Client) GetAppVolumeMove(ctx context.Context, name, id string) (AppVolumeMoveResource, error) {
+	var out AppVolumeMoveResource
+	err := c.do(ctx, http.MethodGet, appVolumeMovesPath(name)+"/"+PathEscape(id), nil, &out)
+	return out, err
+}
+
 // SetDatabaseProject calls PUT /api/v1/databases/{name}/project. An
 // empty projectID clears the assignment. Returns the updated database.
 func (c *Client) SetDatabaseProject(ctx context.Context, name, projectID string) (DatabaseResource, error) {
