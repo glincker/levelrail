@@ -19,6 +19,8 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, appsDeploysUsage(prog))
 		return exitOK
+	case "list":
+		return runAppsDeploysList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compare":
 		return runAppsDeploysCompare(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -30,10 +32,56 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 
 func appsDeploysUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
+  %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
 
 Run "%[1]s apps deploys <subcommand> -h" for a subcommand's own flags.
 `, prog)
+}
+
+// runAppsDeploysList implements "apps deploys list <name>": GET
+// /api/v1/apps/{name}/deploy-attempts (internal/api/deploy_attempts.go's
+// handleListDeployAttempts), the real row-per-trigger-call history the
+// dashboard's own DeployAttemptsList.tsx already renders. Existed at the
+// API layer with no CLI command reaching it at all until now: apps
+// deploys compare's own doc comment used to point a caller here with
+// "--json elsewhere" as the only way to actually get an ID, since there
+// was no "elsewhere" in this CLI to point at.
+func runAppsDeploysList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps deploys list", "print the attempt list as a JSON array to stdout and nothing else", stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysListUsage(prog)) }
+
+	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps deploys list", "app name"}, lookupEnv)
+	if !ok {
+		return exitCode
+	}
+
+	attempts, err := client.ListDeployAttempts(context.Background(), name)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list deploy attempts for app %q: %w", name, err))
+	}
+
+	return writeScheduledTaskResult(stdout, stderr, of, attempts, func() { printDeployAttemptsHuman(stdout, attempts) })
+}
+
+func appsDeploysListUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s apps deploys list <name> [flags]
+
+Lists name's real deploy history, newest first: one row per "apps
+deploy"/"apps rollback"/webhook-triggered/compose-fan-out trigger, with
+its id, image, source, status, and timing. Use an id from here with
+"apps deploys compare --from ID" or "apps wait --attempt-id ID".
+
+Flags:
+  --token string          API token (default: %[2]s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                    print the attempt list as a JSON array to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
 // runAppsDeploysCompare implements "apps deploys compare <name> --from ID

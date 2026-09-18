@@ -1,0 +1,120 @@
+name: 'Levelrail Deploy'
+description: 'Deploy an already-built image to a Levelrail app, optionally waiting for the rollout to actually converge'
+branding:
+  icon: 'upload-cloud'
+  color: 'blue'
+
+inputs:
+  api-url:
+    description: 'Levelrail control plane base URL, e.g. https://levelrail.example.com'
+    required: true
+  api-token:
+    description: 'Levelrail API token with at least the deploy ability'
+    required: true
+  app:
+    description: 'Name of the existing Levelrail app to deploy'
+    required: true
+  image:
+    description: 'Image reference to deploy, e.g. ghcr.io/org/app:sha-abc123. Build and push it in an earlier step; this action never builds anything itself.'
+    required: true
+  confirm:
+    description: 'Set to "true" to confirm deploying into a protected environment (matches "apps deploy --confirm")'
+    required: false
+    default: 'false'
+  wait:
+    description: 'Set to "false" to return immediately after the deploy is accepted, without waiting for the rollout to converge'
+    required: false
+    default: 'true'
+  timeout:
+    description: 'Max time to wait for the rollout to converge (Go duration string, e.g. 5m, 90s). Only used when wait is "true".'
+    required: false
+    default: '5m'
+  cli-version:
+    description: 'levelrail-cli release tag to install, e.g. v0.3.0. Defaults to the latest release.'
+    required: false
+    default: 'latest'
+
+outputs:
+  status:
+    description: '"succeeded", "failed", or "skipped" (wait was "false")'
+    value: ${{ steps.deploy.outputs.status }}
+
+runs:
+  using: composite
+  steps:
+    # levelrail-cli ships prebuilt linux/darwin binaries as GitHub Release
+    # assets (see .github/workflows/release.yml's own build-cli-binaries
+    # job); this installs the one matching the runner rather than
+    # building from source, so a consumer's own workflow doesn't need Go
+    # installed just to deploy.
+    - name: Install levelrail-cli
+      shell: bash
+      run: |
+        set -euo pipefail
+        os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+        case "$os" in
+          linux|darwin) ;;
+          *)
+            echo "::error::unsupported runner OS \"$os\": levelrail-cli only ships linux and darwin binaries, matching this project's own non-goal of not supporting Windows nodes" >&2
+            exit 1
+            ;;
+        esac
+        arch="$(uname -m)"
+        case "$arch" in
+          x86_64|amd64) arch="amd64" ;;
+          aarch64|arm64) arch="arm64" ;;
+          *)
+            echo "::error::unsupported runner architecture: $arch" >&2
+            exit 1
+            ;;
+        esac
+
+        tag="${{ inputs.cli-version }}"
+        asset="levelrail-cli-${os}-${arch}"
+        if [ "$tag" = "latest" ]; then
+          url="https://github.com/glincker/levelrail/releases/latest/download/${asset}"
+        else
+          url="https://github.com/glincker/levelrail/releases/download/${tag}/${asset}"
+        fi
+
+        install_dir="${RUNNER_TEMP:-/tmp}/levelrail-cli-bin"
+        mkdir -p "$install_dir"
+        curl -fsSL "$url" -o "$install_dir/levelrail-cli"
+        chmod +x "$install_dir/levelrail-cli"
+        echo "$install_dir" >> "$GITHUB_PATH"
+
+    - name: Verify levelrail-cli
+      shell: bash
+      run: levelrail-cli version
+
+    - name: Deploy
+      id: deploy
+      shell: bash
+      env:
+        APP_API_URL: ${{ inputs.api-url }}
+        APP_API_TOKEN: ${{ inputs.api-token }}
+      run: |
+        set -euo pipefail
+        confirm_flag=()
+        if [ "${{ inputs.confirm }}" = "true" ]; then
+          confirm_flag=(--confirm)
+        fi
+        levelrail-cli apps deploy "${{ inputs.app }}" --image "${{ inputs.image }}" "${confirm_flag[@]}"
+
+        if [ "${{ inputs.wait }}" != "true" ]; then
+          echo "status=skipped" >> "$GITHUB_OUTPUT"
+          echo "Deploy accepted; not waiting for convergence (wait: false)."
+          exit 0
+        fi
+
+        # apps wait's own exit codes: 0 succeeded, 5 (exitDeployFailed)
+        # converged as a failure, 6 (exitDeployTimeout) gave up first.
+        # Either non-zero case should fail this Action step, not just
+        # this shell script, so the calling workflow's job actually goes
+        # red instead of silently continuing.
+        if levelrail-cli apps wait "${{ inputs.app }}" --timeout "${{ inputs.timeout }}"; then
+          echo "status=succeeded" >> "$GITHUB_OUTPUT"
+        else
+          echo "status=failed" >> "$GITHUB_OUTPUT"
+          exit 1
+        fi
