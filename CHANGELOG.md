@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.2.0-beta.2](https://github.com/glincker/levelrail/compare/v0.2.0-beta.1...v0.2.0-beta.2) (2026-09-18)
+
+
+### Features
+
+* add apps wait and apps deploys list CLI commands ([#460](https://github.com/glincker/levelrail/issues/460)) ([3438a5a](https://github.com/glincker/levelrail/commit/3438a5ab82c629e95950955dbb9d9bf37f8e676f))
+* add backup_missing alert rule kind ([#463](https://github.com/glincker/levelrail/issues/463)) ([380dc71](https://github.com/glincker/levelrail/commit/380dc71e7602c0df59b2e05125acd29d703aef06))
+* add Content-Security-Policy and opt-in HSTS, fix healthz routing ([#449](https://github.com/glincker/levelrail/issues/449)) ([b193889](https://github.com/glincker/levelrail/commit/b193889413c5a4afcd17034a7622f43140c0047b))
+* fail fast when a container is OOM-killed during readiness wait ([#451](https://github.com/glincker/levelrail/issues/451)) ([911d56e](https://github.com/glincker/levelrail/commit/911d56ec5f473c6b4626b2e66da41ee1e5214d01))
+* first-party GitHub Action for deploying to Levelrail from CI ([#461](https://github.com/glincker/levelrail/issues/461)) ([a8c9450](https://github.com/glincker/levelrail/commit/a8c9450494d0aca441f413bc033621a9aa53405b))
+* move an app to another node with its volumes ([#464](https://github.com/glincker/levelrail/issues/464)) ([11464b8](https://github.com/glincker/levelrail/commit/11464b89711c324a8424f11174ac61128868cd47))
+* resolve app secrets live from an external HashiCorp Vault instance ([#465](https://github.com/glincker/levelrail/issues/465)) ([e2ae8b5](https://github.com/glincker/levelrail/commit/e2ae8b540624473594c9c5784637690b865cce15))
+* selective backup archive deletion ([#462](https://github.com/glincker/levelrail/issues/462)) ([e32977e](https://github.com/glincker/levelrail/commit/e32977e6810555d72e942554fda117c17cc98da3))
+* zero-config sslip.io URL for apps with no domain configured ([#447](https://github.com/glincker/levelrail/issues/447)) ([6087a06](https://github.com/glincker/levelrail/commit/6087a060388096cde95c7ba22f92a42f4fe5d43e))
+
+
+### Bug Fixes
+
+* bound live Docker inspect calls with a timeout ([#450](https://github.com/glincker/levelrail/issues/450)) ([1f98102](https://github.com/glincker/levelrail/commit/1f98102547b79de4cb30ad6d8aaf8cf79b29309f))
+* cut new-code duplication in the move-with-volumes handler and CLI ([#466](https://github.com/glincker/levelrail/issues/466)) ([6bb56d7](https://github.com/glincker/levelrail/commit/6bb56d7187c356f6194321038a0076d2ead83842))
+* poll deploy status live so a rollback's actual progress is visible ([#452](https://github.com/glincker/levelrail/issues/452)) ([cce8eef](https://github.com/glincker/levelrail/commit/cce8eef1d02b31a35606ff29059c2f4a631fa2ec))
+* recognize every reconciler failure reason in the rollout stage ([#458](https://github.com/glincker/levelrail/issues/458)) ([3879743](https://github.com/glincker/levelrail/commit/3879743aade245b128d148c85e8b2b9512b2c5e3))
+* retry transient notification delivery failures ([#454](https://github.com/glincker/levelrail/issues/454)) ([ec36d75](https://github.com/glincker/levelrail/commit/ec36d75ef7b7ce5fd92574d34b4d3555ebbe0fe1))
+* revert cel-go bump that broke the build ([#459](https://github.com/glincker/levelrail/issues/459)) ([4f7c263](https://github.com/glincker/levelrail/commit/4f7c26335c0864d6948b1396c808573be7c30fe1))
+* suppress duplicate lines when a log stream's EventSource reconnects ([#453](https://github.com/glincker/levelrail/issues/453)) ([65d53ce](https://github.com/glincker/levelrail/commit/65d53ce86b80407bd14e8daee9125f651f8d03dd))
+
 ## [0.2.0-beta.1](https://github.com/glincker/levelrail/compare/v0.2.0-beta...v0.2.0-beta.1) (2026-09-13)
 
 
