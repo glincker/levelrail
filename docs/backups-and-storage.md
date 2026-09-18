@@ -178,6 +178,20 @@ separate `--confirm` flag: naming the exact backup id, the same way
 `backup-targets delete <id>` requires no confirmation flag beyond the id
 itself, is already the deliberate, unambiguous signal.
 
+## Alerting on a missing or failing scheduled backup
+
+A `kind=backup_missing` alert rule (`internal/alerting.EvaluateBackupMissing`,
+see `docs/observability.md`'s own alert-rule table) watches one
+database's or one app volume's own `backup_schedule` and fires once its
+last successful backup trails that schedule's expected interval by more
+than a grace period (`for_duration`, default 6h). It reads the exact
+same schedule and `backup_history` rows `internal/backup.Scheduler`
+itself already uses, not a second cadence calculation, so a database or
+volume whose scheduled backup silently stopped running, or has been
+failing on every attempt with no recent success, surfaces the same way
+any other alert rule does: dashboard badge, webhook, Slack, Discord, or
+any other connected notification channel.
+
 ## The built-in container registry
 
 Separate from registry credentials. Registry credentials store a
@@ -413,8 +427,10 @@ region, so `aws` must omit it).
   endpoint proves the bucket exists and the credential can read it, not
   that the credential also has write/delete permission, which is what a
   real backup and its later retention pruning both need.
-- **No UI or CLI surface for orphaned scheduled-backup failures beyond
-  the log line.** A pruning failure or a per-object delete failure after
-  a successful scheduled backup is logged server-side
+- **No UI or CLI surface for a retention-pruning failure beyond the log
+  line.** A pruning failure or a per-object delete failure *after* an
+  already-successful scheduled backup is logged server-side
   (`internal/backup.Scheduler`) and nothing else; there's no dashboard
-  alert distinct from the backup's own success/failure status.
+  alert for that specific case. The backup itself silently stopping or
+  failing is covered by a `kind=backup_missing` alert rule instead (see
+  "Alerting on a missing or failing scheduled backup" above).

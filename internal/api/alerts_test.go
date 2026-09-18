@@ -302,6 +302,113 @@ func TestHandleCreateAlertRule_ScheduledTaskFailure_TaskBelongsToOtherApp(t *tes
 	}
 }
 
+// TestHandleCreateAlertRule_BackupMissingDatabaseSuccess checks that a
+// kind=backup_missing rule watching a database requires and accepts a
+// real backup_database_name, reusing for_duration as its overdue grace
+// period (see alerting.Rule's own doc comment).
+func TestHandleCreateAlertRule_BackupMissingDatabaseSuccess(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: "postgres", Version: "16"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+
+	body := `{"name":"main backup missing","kind":"backup_missing","backup_resource_kind":"database","backup_database_name":"main","for_duration":"6h","notify_url":"https://example.com/hook","enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got ruleResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.BackupResourceKind != "database" || got.BackupDatabaseName != "main" || got.ForDuration != "6h0m0s" {
+		t.Errorf("got = %+v, want BackupResourceKind=database BackupDatabaseName=main ForDuration=6h0m0s", got)
+	}
+}
+
+// TestHandleCreateAlertRule_BackupMissingVolumeSuccess checks the service
+// volume variant: backup_service_name/backup_volume_name must resolve to
+// a real, already-configured service_volume_backups row.
+func TestHandleCreateAlertRule_BackupMissingVolumeSuccess(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	if err := db.SaveBackupTarget(context.Background(), store.BackupTarget{ID: "tgt_1", Name: "s3", Provider: "aws", Bucket: "backups"}); err != nil {
+		t.Fatalf("seed backup target: %v", err)
+	}
+	if err := db.SetServiceVolumeBackupSchedule(context.Background(), "web", "uploads", "tgt_1", "0 3 * * *", 7, 0); err != nil {
+		t.Fatalf("seed service volume backup schedule: %v", err)
+	}
+
+	body := `{"name":"uploads backup missing","kind":"backup_missing","backup_resource_kind":"volume","backup_service_name":"web","backup_volume_name":"uploads","enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got ruleResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.BackupResourceKind != "volume" || got.BackupServiceName != "web" || got.BackupVolumeName != "uploads" {
+		t.Errorf("got = %+v, want BackupResourceKind=volume BackupServiceName=web BackupVolumeName=uploads", got)
+	}
+}
+
+// TestHandleCreateAlertRule_BackupMissing_UnknownDatabase checks
+// validateAlertRuleReferences' own existence check: a backup_database_name
+// naming a database that doesn't exist must be rejected.
+func TestHandleCreateAlertRule_BackupMissing_UnknownDatabase(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	body := `{"name":"missing db","kind":"backup_missing","backup_resource_kind":"database","backup_database_name":"gone","enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+// TestHandleCreateAlertRule_BackupMissing_UnconfiguredVolume checks the
+// volume counterpart: a backup_service_name/backup_volume_name pair with
+// no service_volume_backups row at all must be rejected too, the same
+// "watched thing must already exist" guard the database branch enforces.
+func TestHandleCreateAlertRule_BackupMissing_UnconfiguredVolume(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	body := `{"name":"missing volume","kind":"backup_missing","backup_resource_kind":"volume","backup_service_name":"web","backup_volume_name":"never-configured","enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+// TestHandleCreateAlertRule_BackupMissing_MissingResourceKind checks
+// toRule's own validation: an empty/unknown backup_resource_kind is
+// rejected rather than silently defaulting to database.
+func TestHandleCreateAlertRule_BackupMissing_MissingResourceKind(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	body := `{"name":"no kind","kind":"backup_missing","backup_database_name":"main","enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
 // TestHandleCreateAlertRule_ResourceIDNotCallerSuppliable checks that a
 // caller-supplied resource_id in the request body is discarded in favor
 // of resourceIDForApp(name): a rule created through /apps/web/alerts is

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -46,6 +47,8 @@ func appsAlertsUsage(prog string) string {
   %[1]s apps alerts create <app> --kind node_disk_space [flags]
   %[1]s apps alerts create <app> --kind node_resource_usage [flags]
   %[1]s apps alerts create <app> --kind domain_health [flags]
+  %[1]s apps alerts create <app> --kind backup_missing --backup-resource-kind database --backup-database-name NAME [flags]
+  %[1]s apps alerts create <app> --kind backup_missing --backup-resource-kind volume --backup-volume-name NAME [flags]
   %[1]s apps alerts update <app> <id> --kind KIND [flags]
   %[1]s apps alerts delete <app> <id> [flags]
 
@@ -62,8 +65,13 @@ consecutive-failure count (see "apps scheduled-tasks list"), reusing
 --restart-count-threshold as that count's threshold. A domain_health rule
 watches this app's own configured domains for a DNS check gone bad (a
 CNAME repointed away, a record missing entirely), needing no flags
-either, though --for-duration optionally debounces a single blip. All
-eight notify the same way once they fire.
+either, though --for-duration optionally debounces a single blip. A
+backup_missing rule watches one database's (--backup-database-name) or
+one of this app's own volumes' (--backup-volume-name) scheduled backup
+cadence and fires once its last successful backup trails that schedule's
+own expected interval by more than --for-duration (reused here as the
+overdue grace period, default 6h). All nine notify the same way once
+they fire.
 
 Run "%[1]s apps alerts <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -134,6 +142,16 @@ func alertRuleCondition(r alertRuleResource) string {
 		return fmt.Sprintf("task %s fails %d runs in a row", r.ScheduledTaskID, r.RestartCountThreshold)
 	case "domain_health":
 		return "any of this app's own domains not resolving correctly or pointing elsewhere"
+	case "backup_missing":
+		target := r.BackupDatabaseName
+		if r.BackupResourceKind == "volume" {
+			target = r.BackupServiceName + "/" + r.BackupVolumeName
+		}
+		grace := r.ForDuration
+		if grace == "" {
+			grace = "6h (default)"
+		}
+		return fmt.Sprintf("%s has no successful backup within its schedule plus %s", target, grace)
 	default:
 		return "-"
 	}
@@ -162,7 +180,7 @@ Flags:
 // flag.FlagSet's worth of registration plus this switch in one function
 // was the actual source of the overage, not any single case's own
 // logic.
-func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountThreshold int, restartWindow, scheduledTaskID string) error {
+func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountThreshold int, restartWindow, scheduledTaskID, backupResourceKind, backupDatabaseName, backupVolumeName string) error {
 	switch kind {
 	case "threshold":
 		if metric == "" {
@@ -195,12 +213,59 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 	case "domain_health":
 		// No required flags: watches every domain already configured on
 		// this app. --for-duration is accepted but optional.
+	case "backup_missing":
+		switch backupResourceKind {
+		case "database":
+			if backupDatabaseName == "" {
+				return newValidationError("--backup-database-name is required for --kind backup_missing --backup-resource-kind database")
+			}
+		case "volume":
+			if backupVolumeName == "" {
+				return newValidationError("--backup-volume-name is required for --kind backup_missing --backup-resource-kind volume")
+			}
+		default:
+			return newValidationError("--backup-resource-kind must be \"database\" or \"volume\" for --kind backup_missing")
+		}
 	case "":
-		return newValidationError("--kind is required (threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, or domain_health)")
+		return newValidationError("--kind is required (threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, or backup_missing)")
 	default:
-		return newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, or domain_health", kind)
+		return newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, or backup_missing", kind)
 	}
 	return nil
+}
+
+// registerBackupMissingFlags wires up the three --backup-* flags shared,
+// flag for flag, by "apps alerts create" and "apps alerts update".
+func registerBackupMissingFlags(fs *flag.FlagSet) (resourceKind, databaseName, volumeName *string) {
+	var rk, db, vol string
+	fs.StringVar(&rk, "backup-resource-kind", "", "\"database\" or \"volume\" (--kind backup_missing only, required for that kind)")
+	fs.StringVar(&db, "backup-database-name", "", "which database to watch (--kind backup_missing --backup-resource-kind database only, required for that combination; see \"databases list\")")
+	fs.StringVar(&vol, "backup-volume-name", "", "which of this app's own volumes to watch (--kind backup_missing --backup-resource-kind volume only, required for that combination)")
+	return &rk, &db, &vol
+}
+
+// backupMissingRequestFields computes the four backup_missing-specific
+// request fields shared by createAlertRuleRequest and
+// updateAlertRuleRequest, so "apps alerts create" and "apps alerts
+// update" don't each carry their own copy of the same "resolve the
+// volume's owning service to appName" logic.
+type backupMissingRequestFields struct {
+	ResourceKind, DatabaseName, ServiceName, VolumeName string
+}
+
+func resolveBackupMissingRequestFields(kind, appName, backupResourceKind, backupDatabaseName, backupVolumeName string) backupMissingRequestFields {
+	if kind != "backup_missing" {
+		return backupMissingRequestFields{}
+	}
+	fields := backupMissingRequestFields{ResourceKind: backupResourceKind, DatabaseName: backupDatabaseName}
+	if backupResourceKind == "volume" {
+		// A volume's owning service is always this same app in this
+		// codebase's single-service-per-app model, so there is no
+		// separate --backup-service-name flag to set.
+		fields.ServiceName = appName
+		fields.VolumeName = backupVolumeName
+	}
+	return fields
 }
 
 func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -215,14 +280,15 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
-	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing (required)")
 	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
 	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
 	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold only)")
-	fs.StringVar(&forDuration, "for-duration", "", "how long the condition must hold before firing, e.g. \"2m\" (--kind threshold or domain_health only, optional)")
+	fs.StringVar(&forDuration, "for-duration", "", "how long the condition must hold before firing, e.g. \"2m\" (--kind threshold or domain_health only, optional); for --kind backup_missing, the overdue grace period past the schedule's own expected interval, e.g. \"6h\" (optional, defaults to 6h)")
 	fs.IntVar(&restartCountThreshold, "restart-count-threshold", 0, "restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing, required for both kinds")
 	fs.StringVar(&restartWindow, "restart-window", "", "time window restarts are counted in, e.g. \"5m\" (--kind crashloop only, required for that kind)")
 	fs.StringVar(&scheduledTaskID, "scheduled-task-id", "", "which of this app's scheduled tasks to watch (--kind scheduled_task_failure only, required for that kind; see \"apps scheduled-tasks list\")")
+	backupResourceKindP, backupDatabaseNameP, backupVolumeNameP := registerBackupMissingFlags(fs)
 	fs.StringVar(&channelID, "channel-id", "", "attach an already-connected notification channel (see \"channels list\")")
 	fs.StringVar(&notifyURL, "notify-url", "", "legacy alternative to --channel-id: a raw webhook URL/destination")
 	fs.StringVar(&notifyKind, "notify-kind", "", "legacy alternative to --channel-id: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat")
@@ -242,17 +308,22 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
 	}
-	if err := validateAppsAlertsCreateKind(kind, metric, comparator, restartCountThreshold, restartWindow, scheduledTaskID); err != nil {
+	if err := validateAppsAlertsCreateKind(kind, metric, comparator, restartCountThreshold, restartWindow, scheduledTaskID, *backupResourceKindP, *backupDatabaseNameP, *backupVolumeNameP); err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	created, err := client.CreateAlertRule(context.Background(), appName, createAlertRuleRequest{
+	backupFields := resolveBackupMissingRequestFields(kind, appName, *backupResourceKindP, *backupDatabaseNameP, *backupVolumeNameP)
+	req := createAlertRuleRequest{
 		Name: name, Kind: kind, Metric: metric, Comparator: comparator, Threshold: threshold, ForDuration: forDuration,
 		RestartCountThreshold: restartCountThreshold, RestartWindow: restartWindow, ScheduledTaskID: scheduledTaskID,
 		ChannelID: channelID, NotifyURL: notifyURL, NotifyKind: notifyKind,
-		Enabled: !disabled,
-	})
+		Enabled:            !disabled,
+		BackupResourceKind: backupFields.ResourceKind, BackupDatabaseName: backupFields.DatabaseName,
+		BackupServiceName: backupFields.ServiceName, BackupVolumeName: backupFields.VolumeName,
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	created, err := client.CreateAlertRule(context.Background(), appName, req)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create alert rule for app %q: %w", appName, err))
 	}
@@ -276,6 +347,8 @@ func appsAlertsCreateUsage(prog string) string {
   %[1]s apps alerts create <app> --name NAME --kind node_disk_space [flags]
   %[1]s apps alerts create <app> --name NAME --kind node_resource_usage [flags]
   %[1]s apps alerts create <app> --name NAME --kind domain_health [flags]
+  %[1]s apps alerts create <app> --name NAME --kind backup_missing --backup-resource-kind database --backup-database-name NAME [flags]
+  %[1]s apps alerts create <app> --name NAME --kind backup_missing --backup-resource-kind volume --backup-volume-name NAME [flags]
 
 Creates a new alert rule for <app>. cert_expiry, patch_status,
 node_disk_space, and node_resource_usage rules are platform-wide
@@ -289,18 +362,28 @@ of <app>'s own scheduled tasks (--scheduled-task-id must belong to
 <app>; see "apps scheduled-tasks list") and fires once it has failed
 --restart-count-threshold runs in a row. A domain_health rule watches
 every domain currently configured on <app> itself and fires if any of
-them stops resolving correctly or starts pointing elsewhere.
+them stops resolving correctly or starts pointing elsewhere. A
+backup_missing rule watches one database (platform-wide, like
+cert_expiry above, not limited to <app>; --backup-database-name, see
+"databases list") or one of <app>'s own volumes
+(--backup-volume-name; the schedule must already exist, see
+"app-volume-backups schedule set") and fires once its last successful
+backup trails that schedule's own expected interval by more than
+--for-duration (the overdue grace period here, default 6h if omitted).
 
 Flags:
   --name string                        display name for the rule (required)
-  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, or domain_health (required)
+  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, or backup_missing (required)
   --metric string                      metric name (--kind threshold only)
   --comparator string                  >, <, >=, or <= (--kind threshold only)
   --threshold float                    threshold value (--kind threshold only)
-  --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold or domain_health only)
+  --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold or domain_health); overdue grace period, e.g. "6h" (--kind backup_missing, default 6h)
   --restart-count-threshold int        restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing
   --restart-window string              time window restarts are counted in, e.g. "5m" (--kind crashloop only)
   --scheduled-task-id string           which of <app>'s scheduled tasks to watch (--kind scheduled_task_failure only)
+  --backup-resource-kind string        "database" or "volume" (--kind backup_missing only)
+  --backup-database-name string        which database to watch (--kind backup_missing --backup-resource-kind database only)
+  --backup-volume-name string          which of <app>'s own volumes to watch (--kind backup_missing --backup-resource-kind volume only)
   --channel-id string                  attach an already-connected notification channel
   --notify-url string                  legacy alternative to --channel-id
   --notify-kind string                 legacy alternative to --channel-id
@@ -333,14 +416,15 @@ func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, l
 		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
-	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing (required)")
 	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
 	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
 	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold only)")
-	fs.StringVar(&forDuration, "for-duration", "", "how long the condition must hold before firing, e.g. \"2m\" (--kind threshold or domain_health only, optional)")
+	fs.StringVar(&forDuration, "for-duration", "", "how long the condition must hold before firing, e.g. \"2m\" (--kind threshold or domain_health only, optional); for --kind backup_missing, the overdue grace period, e.g. \"6h\" (optional, defaults to 6h)")
 	fs.IntVar(&restartCountThreshold, "restart-count-threshold", 0, "restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing, required for both kinds")
 	fs.StringVar(&restartWindow, "restart-window", "", "time window restarts are counted in, e.g. \"5m\" (--kind crashloop only, required for that kind)")
 	fs.StringVar(&scheduledTaskID, "scheduled-task-id", "", "which of this app's scheduled tasks to watch (--kind scheduled_task_failure only, required for that kind; see \"apps scheduled-tasks list\")")
+	backupResourceKindP, backupDatabaseNameP, backupVolumeNameP := registerBackupMissingFlags(fs)
 	fs.StringVar(&channelID, "channel-id", "", "attach an already-connected notification channel (see \"channels list\")")
 	fs.StringVar(&notifyURL, "notify-url", "", "legacy alternative to --channel-id: a raw webhook URL/destination")
 	fs.StringVar(&notifyKind, "notify-kind", "", "legacy alternative to --channel-id: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat")
@@ -361,17 +445,22 @@ func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, l
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
 	}
-	if err := validateAppsAlertsCreateKind(kind, metric, comparator, restartCountThreshold, restartWindow, scheduledTaskID); err != nil {
+	if err := validateAppsAlertsCreateKind(kind, metric, comparator, restartCountThreshold, restartWindow, scheduledTaskID, *backupResourceKindP, *backupDatabaseNameP, *backupVolumeNameP); err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	updated, err := client.UpdateAlertRule(context.Background(), appName, id, updateAlertRuleRequest{
+	backupFields := resolveBackupMissingRequestFields(kind, appName, *backupResourceKindP, *backupDatabaseNameP, *backupVolumeNameP)
+	req := updateAlertRuleRequest{
 		Name: name, Kind: kind, Metric: metric, Comparator: comparator, Threshold: threshold, ForDuration: forDuration,
 		RestartCountThreshold: restartCountThreshold, RestartWindow: restartWindow, ScheduledTaskID: scheduledTaskID,
 		ChannelID: channelID, NotifyURL: notifyURL, NotifyKind: notifyKind,
-		Enabled: !disabled,
-	})
+		Enabled:            !disabled,
+		BackupResourceKind: backupFields.ResourceKind, BackupDatabaseName: backupFields.DatabaseName,
+		BackupServiceName: backupFields.ServiceName, BackupVolumeName: backupFields.VolumeName,
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	updated, err := client.UpdateAlertRule(context.Background(), appName, id, req)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update alert rule %q for app %q: %w", id, appName, err))
 	}
@@ -395,6 +484,7 @@ func appsAlertsUpdateUsage(prog string) string {
   %[1]s apps alerts update <app> <id> --name NAME --kind node_disk_space [flags]
   %[1]s apps alerts update <app> <id> --name NAME --kind node_resource_usage [flags]
   %[1]s apps alerts update <app> <id> --name NAME --kind domain_health [flags]
+  %[1]s apps alerts update <app> <id> --name NAME --kind backup_missing --backup-resource-kind database --backup-database-name NAME [flags]
 
 Fully replaces an existing alert rule's configuration: every flag you
 want kept must be passed again on this call, the same convention
@@ -406,14 +496,17 @@ help for what each kind needs.
 
 Flags:
   --name string                        display name for the rule (required)
-  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, or domain_health (required)
+  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, or backup_missing (required)
   --metric string                      metric name (--kind threshold only)
   --comparator string                  >, <, >=, or <= (--kind threshold only)
   --threshold float                    threshold value (--kind threshold only)
-  --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold or domain_health only)
+  --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold or domain_health); overdue grace period (--kind backup_missing, default 6h)
   --restart-count-threshold int        restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing
   --restart-window string              time window restarts are counted in, e.g. "5m" (--kind crashloop only)
   --scheduled-task-id string           which of <app>'s scheduled tasks to watch (--kind scheduled_task_failure only)
+  --backup-resource-kind string        "database" or "volume" (--kind backup_missing only)
+  --backup-database-name string        which database to watch (--kind backup_missing --backup-resource-kind database only)
+  --backup-volume-name string          which of <app>'s own volumes to watch (--kind backup_missing --backup-resource-kind volume only)
   --channel-id string                  attach an already-connected notification channel
   --notify-url string                  legacy alternative to --channel-id
   --notify-kind string                 legacy alternative to --channel-id

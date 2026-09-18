@@ -192,7 +192,7 @@ metric backs this, not one query per app.
 
 ## Alert rules
 
-Eight rule kinds, one shared table (`alert_rules`), one evaluation loop
+Nine rule kinds, one shared table (`alert_rules`), one evaluation loop
 (`internal/alerting.Engine`) ticking every 30 seconds
 (`alertEvaluationInterval`, fixed, not env-configurable). Each rule
 tracks its own pending/firing state and only notifies on a firing or
@@ -209,6 +209,7 @@ state, so a channel doesn't get trained to be ignored.
 | `node_resource_usage` | platform-wide | every node's summed placed-container CPU and memory | none required |
 | `scheduled_task_failure` | one app's own scheduled task | consecutive failed runs of one task | `scheduled_task_id`, `restart_count_threshold` (reused as the failure-count threshold) |
 | `domain_health` | one app's own domains | a DNS check gone bad (not resolving, or resolving somewhere else) on any of the app's configured domains | `for_duration` (optional debounce) |
+| `backup_missing` | one database (platform-wide) or one app's own volume | last successful backup trailing its own cron schedule's expected interval by more than a grace period | `backup_resource_kind` (`database` or `volume`), `backup_database_name` or `backup_service_name`/`backup_volume_name`, `for_duration` (reused as the overdue grace period, default 6h) |
 
 The four platform-wide kinds (`cert_expiry`, `patch_status`,
 `node_disk_space`, `node_resource_usage`) are still created through an
@@ -226,6 +227,24 @@ per rule, via env vars: `APP_ALERT_PATCH_STATUS_THRESHOLD`,
 `APP_ALERT_NODE_CPU_THRESHOLD_PERCENT`,
 `APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES`,
 `APP_ALERT_DOMAIN_HEALTH_CHECK_INTERVAL`.
+
+`backup_missing` never invents a second cadence calculation: it reads
+the identical `backup_schedule` cron expression and recent
+`backup_history` rows `internal/backup.Scheduler` itself already uses,
+computes the expected interval between two scheduled runs from that
+cron expression (`internal/cronexpr`), and fires once the last
+*succeeded* attempt is older than that interval plus its grace period.
+A target with attempts but no success at all in the lookback window
+still fires, anchored on its oldest known attempt, so a backup silently
+failing on every run reads the same as one that stopped running
+outright. A target with no schedule configured, or no history yet
+(nothing has had a chance to run), stays quiet rather than firing on
+day one. The grace period defaults to 6h
+(`DefaultBackupMissingGracePeriod`), overridable control-plane-wide via
+`APP_ALERT_BACKUP_MISSING_GRACE_PERIOD` the same way the platform-wide
+kinds above override their own defaults, and further overridable per
+rule via `for_duration` when a particular database or volume needs a
+tighter or looser window than the control-plane default.
 
 A firing `crashloop` rule attaches the last 200 lines of the
 crashlooping container's own logs (from the last 15 minutes,

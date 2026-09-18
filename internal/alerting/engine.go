@@ -57,6 +57,7 @@ type Engine struct {
 	scheduledTasks ScheduledTaskSource
 	domainApps     AppDomainSource
 	domainChecker  DomainCheckSource
+	backups        BackupSource
 	newNotifier    func(Rule) Notifier
 	logger         *slog.Logger
 
@@ -68,6 +69,7 @@ type Engine struct {
 	nodeMemoryThreshold         float64
 	domainHealthCheckInterval   time.Duration
 	domainHealthThrottle        *domainHealthThrottle
+	backupMissingGracePeriod    time.Duration
 }
 
 // NewEngine builds an Engine. newNotifier defaults to a Notifier with no
@@ -88,8 +90,11 @@ type Engine struct {
 // way a kind=patch_status rule is when nodes is nil. domainApps and
 // domainChecker may likewise be nil, in which case a kind=domain_health
 // rule is skipped the same way; domainHealthCheckInterval falls back to
-// DefaultDomainHealthCheckInterval when passed as 0.
-func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, certs CertSource, scheduledTasks ScheduledTaskSource, certExpiryWarningWindow, certRenewalStalledThreshold time.Duration, nodes NodeSource, patchStatusThreshold, nodeDiskSpaceThreshold float64, nodeServices NodeServiceSource, nodeCPUThreshold, nodeMemoryThreshold float64, domainApps AppDomainSource, domainChecker DomainCheckSource, domainHealthCheckInterval time.Duration, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
+// DefaultDomainHealthCheckInterval when passed as 0. backups may likewise
+// be nil, in which case a kind=backup_missing rule is skipped the same
+// way; backupMissingGracePeriod falls back to
+// DefaultBackupMissingGracePeriod when passed as 0.
+func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, certs CertSource, scheduledTasks ScheduledTaskSource, certExpiryWarningWindow, certRenewalStalledThreshold time.Duration, nodes NodeSource, patchStatusThreshold, nodeDiskSpaceThreshold float64, nodeServices NodeServiceSource, nodeCPUThreshold, nodeMemoryThreshold float64, domainApps AppDomainSource, domainChecker DomainCheckSource, domainHealthCheckInterval time.Duration, backups BackupSource, backupMissingGracePeriod time.Duration, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
 	if newNotifier == nil {
 		newNotifier = func(r Rule) Notifier { return NewNotifier(nil, nil, r) }
 	}
@@ -117,14 +122,18 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 	if domainHealthCheckInterval <= 0 {
 		domainHealthCheckInterval = DefaultDomainHealthCheckInterval
 	}
+	if backupMissingGracePeriod <= 0 {
+		backupMissingGracePeriod = DefaultBackupMissingGracePeriod
+	}
 	return &Engine{
 		rules: rules, metrics: metrics, logs: logs, tracker: tracker, certs: certs, nodes: nodes, nodeServices: nodeServices, scheduledTasks: scheduledTasks,
-		domainApps: domainApps, domainChecker: domainChecker,
+		domainApps: domainApps, domainChecker: domainChecker, backups: backups,
 		newNotifier: newNotifier, logger: logger,
 		certExpiryWarningWindow: certExpiryWarningWindow, certRenewalStalledThreshold: certRenewalStalledThreshold,
 		patchStatusThreshold: patchStatusThreshold, nodeDiskSpaceThreshold: nodeDiskSpaceThreshold,
 		nodeCPUThreshold: nodeCPUThreshold, nodeMemoryThreshold: nodeMemoryThreshold,
 		domainHealthCheckInterval: domainHealthCheckInterval, domainHealthThrottle: newDomainHealthThrottle(),
+		backupMissingGracePeriod: backupMissingGracePeriod,
 	}
 }
 
@@ -146,7 +155,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 	for _, r := range rules {
 		var next Rule
 		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices []string
-		var taskFailureNotice string
+		var taskFailureNotice, backupMissingNoticeText string
 		switch r.Kind {
 		case KindThreshold:
 			next, err = EvaluateThreshold(ctx, e.metrics, r, now)
@@ -219,6 +228,16 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindBackupMissing:
+			if e.backups == nil {
+				e.logger.Warn("alerting: backup_missing rule found but no backup source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateBackupMissing(ctx, e.backups, r, e.backupMissingGracePeriod, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		default:
 			e.logger.Warn("alerting: rule has unknown kind, skipping", slog.String("rule_id", r.ID), slog.String("kind", string(r.Kind)))
 			continue
@@ -234,9 +253,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 		switch {
 		case becameFiring:
-			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, taskFailureNotice)
+			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, taskFailureNotice, backupMissingNoticeText)
 		case becameResolved:
-			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, "")
+			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, "", "")
 		}
 	}
 
@@ -249,7 +268,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 // persisted successfully before dispatch is called, so a lost
 // notification doesn't leave the rule's stored state inconsistent with
 // reality, only the operator momentarily uninformed.
-func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices []string, taskFailureNotice string) {
+func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices []string, taskFailureNotice, backupMissingNotice string) {
 	// r.Enabled is already resolved against its attached channel
 	// (scanRule): a disabled channel silences the rule the same way
 	// DeployDispatcher.Dispatch skips a target with a disabled channel.
@@ -278,6 +297,9 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	}
 	if r.Kind == KindDomainHealth && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
+	}
+	if r.Kind == KindBackupMissing && !resolved {
+		ev.BackupMissingNotice = backupMissingNotice
 	}
 
 	sendErr := e.newNotifier(r).Notify(ctx, ev)

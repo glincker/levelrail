@@ -13,7 +13,7 @@ import (
 // Kind distinguishes what a Rule evaluates.
 type Kind string
 
-// The eight rule kinds this package evaluates; see Rule's own doc
+// The nine rule kinds this package evaluates; see Rule's own doc
 // comment for which fields each uses. KindCertExpiry, KindPatchStatus,
 // KindNodeDiskSpace, and KindNodeResourceUsage use none of Rule's
 // threshold/crashloop fields: they watch every certificate
@@ -25,7 +25,10 @@ type Kind string
 // KindDomainHealth is app-scoped like KindThreshold/KindCrashloop
 // (ResourceID picks out a real app), but watches every domain currently
 // configured on that app rather than a single Metric; see
-// domain_health.go.
+// domain_health.go. KindBackupMissing watches one specific database's or
+// service volume's scheduled backup cadence, picked out by the
+// Backup*-prefixed fields below rather than ResourceID; see
+// backup_missing.go.
 const (
 	KindThreshold            Kind = "threshold"
 	KindCrashloop            Kind = "crashloop"
@@ -35,6 +38,7 @@ const (
 	KindNodeDiskSpace        Kind = "node_disk_space"
 	KindNodeResourceUsage    Kind = "node_resource_usage"
 	KindDomainHealth         Kind = "domain_health"
+	KindBackupMissing        Kind = "backup_missing"
 )
 
 // Comparator is how a threshold Rule compares the latest sample value
@@ -114,6 +118,23 @@ type Rule struct {
 	// every other kind.
 	ScheduledTaskID string
 
+	// KindBackupMissing-only fields: which backup schedule this rule
+	// watches, mirroring store.BackupHistory's own database-vs-volume
+	// identity shape (ResourceKind/DatabaseName vs ServiceName/VolumeName,
+	// mutually exclusive). BackupResourceKind is
+	// store.BackupResourceKindDatabase or store.BackupResourceKindVolume;
+	// BackupDatabaseName is set for the former, BackupServiceName/
+	// BackupVolumeName for the latter. Empty for every other kind.
+	// ForDuration above is reused here as the grace period past a
+	// schedule's expected interval before a missing backup counts as
+	// overdue, the same "field means something slightly different per
+	// kind" reuse RestartCountThreshold already establishes for
+	// KindScheduledTaskFailure.
+	BackupResourceKind string
+	BackupDatabaseName string
+	BackupServiceName  string
+	BackupVolumeName   string
+
 	// ChannelID attaches an already-connected NotificationChannel; empty
 	// for legacy rules, which use NotifyURL/NotifyKind below directly.
 	ChannelID  string
@@ -162,9 +183,10 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 			id, name, kind, resource_id,
 			metric, comparator, threshold, for_duration_seconds,
 			restart_count_threshold, restart_window_seconds, scheduled_task_id,
+			backup_resource_kind, backup_database_name, backup_service_name, backup_volume_name,
 			channel_id, notify_url, notify_kind, enabled,
 			created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET
 			name = excluded.name,
 			kind = excluded.kind,
@@ -176,6 +198,10 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 			restart_count_threshold = excluded.restart_count_threshold,
 			restart_window_seconds = excluded.restart_window_seconds,
 			scheduled_task_id = excluded.scheduled_task_id,
+			backup_resource_kind = excluded.backup_resource_kind,
+			backup_database_name = excluded.backup_database_name,
+			backup_service_name = excluded.backup_service_name,
+			backup_volume_name = excluded.backup_volume_name,
 			channel_id = excluded.channel_id,
 			notify_url = excluded.notify_url,
 			notify_kind = excluded.notify_kind,
@@ -185,6 +211,7 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 		r.ID, r.Name, string(r.Kind), r.ResourceID,
 		r.Metric, string(r.Comparator), r.Threshold, int64(r.ForDuration.Seconds()),
 		r.RestartCountThreshold, int64(r.RestartWindow.Seconds()), r.ScheduledTaskID,
+		r.BackupResourceKind, r.BackupDatabaseName, r.BackupServiceName, r.BackupVolumeName,
 		nullIfEmpty(r.ChannelID), r.NotifyURL, string(r.NotifyKind), boolToInt(r.Enabled),
 		now, now,
 	)
@@ -323,6 +350,7 @@ const ruleSelectColumns = `
 	SELECT r.id, r.name, r.kind, r.resource_id,
 		r.metric, r.comparator, r.threshold, r.for_duration_seconds,
 		r.restart_count_threshold, r.restart_window_seconds, r.scheduled_task_id,
+		r.backup_resource_kind, r.backup_database_name, r.backup_service_name, r.backup_volume_name,
 		r.channel_id, COALESCE(c.notify_url, r.notify_url), COALESCE(c.kind, r.notify_kind),
 		r.enabled, c.enabled,
 		r.pending_since, r.firing, r.firing_since, r.last_evaluated_at, r.last_value
@@ -346,6 +374,7 @@ func scanRule(scan func(dest ...any) error) (*Rule, error) {
 		&r.ID, &r.Name, &kind, &r.ResourceID,
 		&r.Metric, &comparator, &r.Threshold, &forDurationSeconds,
 		&r.RestartCountThreshold, &restartWindowSeconds, &r.ScheduledTaskID,
+		&r.BackupResourceKind, &r.BackupDatabaseName, &r.BackupServiceName, &r.BackupVolumeName,
 		&channelID, &r.NotifyURL, &notifyKind,
 		&enabledInt, &channelEnabled,
 		&pendingSince, &firingInt, &firingSince, &lastEvaluatedAt, &lastValue,

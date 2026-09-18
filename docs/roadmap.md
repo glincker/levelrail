@@ -345,12 +345,16 @@ still open. This page describes what's actually true today.
   aggregation.
 - Frontend metrics dashboard with a range selector, historical log
   search, and deploy markers overlaid on metric charts.
-- Alerting over eight rule kinds: the original threshold and crashloop
+- Alerting over nine rule kinds: the original threshold and crashloop
   detection, plus certificate-expiry, OS-patch-status,
   scheduled-task-failure, node-disk-space, node-resource-usage
-  (per-node CPU/memory), and domain-health (a periodic DNS check
+  (per-node CPU/memory), domain-health (a periodic DNS check
   against every domain configured on an app, catching a silently
-  repointed CNAME), each with its own evaluator. Seventeen notification
+  repointed CNAME), and backup-missing (a database's or app volume's
+  last successful scheduled backup trailing its own cron schedule by
+  more than a grace period, catching a backup that silently stopped
+  running or has been failing on every attempt), each with its own
+  evaluator. Seventeen notification
   channel kinds: webhook, Slack, Discord, email, Telegram, Pushover,
   PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark,
   Rocket.Chat, Opsgenie, Webex, and Google Chat, plus separate

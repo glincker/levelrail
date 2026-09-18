@@ -140,6 +140,82 @@ func TestRun_AppsAlertsCreate_ScheduledTaskFailureMissingTaskID(t *testing.T) {
 	}
 }
 
+// mustRunAppsAlertsCreate runs "apps alerts create web ..." against srv
+// and fails the test immediately on a non-exitOK result, factored out of
+// the backup_missing tests below since they otherwise repeat this exact
+// invoke-and-check shape.
+func mustRunAppsAlertsCreate(t *testing.T, apiURL string, args ...string) (stdout bytes.Buffer) {
+	t.Helper()
+	var stderr bytes.Buffer
+	fullArgs := append([]string{"apps", "alerts", "create", "web"}, args...)
+	fullArgs = append(fullArgs, "--api-url", apiURL, "--json")
+	got := run("levelrail-cli-test", fullArgs, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	return stdout
+}
+
+func TestRun_AppsAlertsCreate_BackupMissingDatabase(t *testing.T) {
+	var gotBody createAlertRuleRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(alertRuleResource{
+			ID: "alr_4", Name: gotBody.Name, Kind: gotBody.Kind,
+			BackupResourceKind: gotBody.BackupResourceKind, BackupDatabaseName: gotBody.BackupDatabaseName, Enabled: gotBody.Enabled,
+		})
+	}))
+	defer srv.Close()
+
+	stdout := mustRunAppsAlertsCreate(t, srv.URL,
+		"--name", "main-backup-missing", "--kind", "backup_missing", "--backup-resource-kind", "database", "--backup-database-name", "main",
+	)
+	if gotBody.Kind != "backup_missing" || gotBody.BackupResourceKind != "database" || gotBody.BackupDatabaseName != "main" {
+		t.Errorf("request body = %+v, want a backup_missing rule on database main", gotBody)
+	}
+	if !strings.Contains(stdout.String(), `"id": "alr_4"`) {
+		t.Errorf("stdout = %q, want the created rule as JSON", stdout.String())
+	}
+}
+
+// TestRun_AppsAlertsCreate_BackupMissingVolume checks that a
+// --backup-resource-kind volume rule automatically sets
+// backup_service_name to <app>, with no separate flag for it: a volume's
+// owning service is always this same app in this codebase's
+// single-service-per-app model.
+func TestRun_AppsAlertsCreate_BackupMissingVolume(t *testing.T) {
+	var gotBody createAlertRuleRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(alertRuleResource{ID: "alr_5", Name: gotBody.Name, Kind: gotBody.Kind})
+	}))
+	defer srv.Close()
+
+	mustRunAppsAlertsCreate(t, srv.URL,
+		"--name", "uploads-backup-missing", "--kind", "backup_missing", "--backup-resource-kind", "volume", "--backup-volume-name", "uploads",
+	)
+	if gotBody.BackupResourceKind != "volume" || gotBody.BackupServiceName != "web" || gotBody.BackupVolumeName != "uploads" {
+		t.Errorf("request body = %+v, want BackupServiceName=web (from app name) BackupVolumeName=uploads", gotBody)
+	}
+}
+
+func TestRun_AppsAlertsCreate_BackupMissingMissingResourceKind(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"apps", "alerts", "create", "web", "--name", "x", "--kind", "backup_missing",
+	}, &stdout, &stderr, envMap())
+	if got != exitValidation {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitValidation, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "--backup-resource-kind must be") {
+		t.Errorf("stderr = %q, want a missing --backup-resource-kind error", stderr.String())
+	}
+}
+
 func TestRun_AppsAlertsCreate_MissingKind(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"apps", "alerts", "create", "web", "--name", "x"}, &stdout, &stderr, envMap())

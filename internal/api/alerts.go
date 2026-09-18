@@ -61,6 +61,14 @@ type ruleResource struct {
 	// consecutive-failure threshold; see alerting.Rule's own doc comment.
 	ScheduledTaskID string `json:"scheduled_task_id,omitempty"`
 
+	// KindBackupMissing-only fields: which database or service volume the
+	// rule watches. ForDuration above doubles as its overdue grace period;
+	// see alerting.Rule's own doc comment.
+	BackupResourceKind string `json:"backup_resource_kind,omitempty"`
+	BackupDatabaseName string `json:"backup_database_name,omitempty"`
+	BackupServiceName  string `json:"backup_service_name,omitempty"`
+	BackupVolumeName   string `json:"backup_volume_name,omitempty"`
+
 	NotifyURL  string `json:"notify_url,omitempty"`
 	NotifyKind string `json:"notify_kind,omitempty"`
 	Enabled    bool   `json:"enabled"`
@@ -89,6 +97,10 @@ func toRuleResource(r alerting.Rule) ruleResource {
 		Threshold:             r.Threshold,
 		RestartCountThreshold: r.RestartCountThreshold,
 		ScheduledTaskID:       r.ScheduledTaskID,
+		BackupResourceKind:    r.BackupResourceKind,
+		BackupDatabaseName:    r.BackupDatabaseName,
+		BackupServiceName:     r.BackupServiceName,
+		BackupVolumeName:      r.BackupVolumeName,
 		NotifyURL:             r.NotifyURL,
 		NotifyKind:            string(r.NotifyKind),
 		Enabled:               r.Enabled,
@@ -117,10 +129,10 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 
 	kind := alerting.Kind(a.Kind)
 	switch kind {
-	case alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth:
+	case alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing:
 	default:
-		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, %q, %q, %q, %q, %q, or %q",
-			alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth)
+		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, %q, %q, %q, %q, %q, %q, or %q",
+			alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing)
 	}
 
 	forDuration, err := parseOptionalDuration(a.ForDuration)
@@ -144,6 +156,10 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		RestartCountThreshold: a.RestartCountThreshold,
 		RestartWindow:         restartWindow,
 		ScheduledTaskID:       a.ScheduledTaskID,
+		BackupResourceKind:    a.BackupResourceKind,
+		BackupDatabaseName:    a.BackupDatabaseName,
+		BackupServiceName:     a.BackupServiceName,
+		BackupVolumeName:      a.BackupVolumeName,
 		ChannelID:             a.ChannelID,
 		NotifyURL:             a.NotifyURL,
 		NotifyKind:            alerting.NotifyKind(a.NotifyKind),
@@ -174,6 +190,19 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		}
 		if r.RestartCountThreshold <= 0 {
 			return alerting.Rule{}, errors.New("restart_count_threshold must be a positive integer for a scheduled_task_failure rule")
+		}
+	case alerting.KindBackupMissing:
+		switch r.BackupResourceKind {
+		case store.BackupResourceKindDatabase:
+			if r.BackupDatabaseName == "" {
+				return alerting.Rule{}, errors.New("backup_database_name is required for a backup_missing rule watching a database")
+			}
+		case store.BackupResourceKindVolume:
+			if r.BackupServiceName == "" || r.BackupVolumeName == "" {
+				return alerting.Rule{}, errors.New("backup_service_name and backup_volume_name are required for a backup_missing rule watching a service volume")
+			}
+		default:
+			return alerting.Rule{}, fmt.Errorf("backup_resource_kind must be %q or %q", store.BackupResourceKindDatabase, store.BackupResourceKindVolume)
 		}
 	}
 
@@ -214,6 +243,40 @@ func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Req
 			rt.logger.Error("api: "+op+": look up scheduled task failed", slog.String("error", err.Error()), slog.String("scheduled_task_id", rule.ScheduledTaskID))
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return false
+		}
+	}
+
+	if rule.Kind == alerting.KindBackupMissing {
+		switch rule.BackupResourceKind {
+		case store.BackupResourceKindDatabase:
+			if _, err := rt.databases.GetDesiredDatabase(r.Context(), rule.BackupDatabaseName); errors.Is(err, store.ErrDatabaseNotFound) {
+				writeError(w, http.StatusBadRequest, "unknown backup_database_name")
+				return false
+			} else if err != nil {
+				rt.logger.Error("api: "+op+": look up database failed", slog.String("error", err.Error()), slog.String("backup_database_name", rule.BackupDatabaseName))
+				writeError(w, http.StatusInternalServerError, "internal error")
+				return false
+			}
+		case store.BackupResourceKindVolume:
+			// A volume's owning service is always this same app in this
+			// codebase's single-service-per-app model (every volume backup
+			// endpoint derives serviceName from the app's own URL, never a
+			// caller-supplied value; see handleTriggerVolumeBackup), the
+			// same ownership boundary ScheduledTaskID's own check enforces
+			// for a scheduled task.
+			if rule.BackupServiceName != appName {
+				writeError(w, http.StatusBadRequest, "unknown backup_service_name/backup_volume_name")
+				return false
+			}
+			if _, err := rt.serviceVolumeBackupSchedule.GetServiceVolumeBackupSchedule(r.Context(), rule.BackupServiceName, rule.BackupVolumeName); errors.Is(err, store.ErrServiceVolumeBackupNotFound) {
+				writeError(w, http.StatusBadRequest, "unknown backup_service_name/backup_volume_name: no backup schedule has ever been configured for that volume")
+				return false
+			} else if err != nil {
+				rt.logger.Error("api: "+op+": look up service volume backup schedule failed", slog.String("error", err.Error()),
+					slog.String("backup_service_name", rule.BackupServiceName), slog.String("backup_volume_name", rule.BackupVolumeName))
+				writeError(w, http.StatusInternalServerError, "internal error")
+				return false
+			}
 		}
 	}
 

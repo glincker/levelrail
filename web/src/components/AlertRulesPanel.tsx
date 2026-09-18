@@ -18,6 +18,7 @@ import { EditAlertRuleDialog } from './EditAlertRuleDialog'
 import { DeleteAlertRuleDialog } from './DeleteAlertRuleDialog'
 import { useAlertRules } from '../queries/alerts'
 import type { AlertRule } from '../types/alerts'
+import type { AppVolume } from '../types/appDetail'
 
 // Alert rules section for the app detail page, wired against
 // GET/POST/DELETE /api/v1/apps/{name}/alerts. This is the dashboard-side
@@ -127,6 +128,14 @@ function formatCondition(rule: AlertRule): string {
     const forPart = rule.for_duration ? ` for ${rule.for_duration}` : ''
     return `any of this app's own domains not resolving correctly or pointing elsewhere${forPart}`
   }
+  if (rule.kind === 'backup_missing') {
+    const target =
+      rule.backup_resource_kind === 'volume'
+        ? `${rule.backup_service_name ?? '?'}/${rule.backup_volume_name ?? '?'}`
+        : (rule.backup_database_name ?? '?')
+    const grace = rule.for_duration || '6h (default)'
+    return `${target} has no successful backup within its schedule plus ${grace}`
+  }
   return `${rule.restart_count_threshold} restarts in ${rule.restart_window ?? '?'}`
 }
 
@@ -162,6 +171,9 @@ function formatLastValue(rule: AlertRule): string {
   if (rule.kind === 'domain_health') {
     return `${rule.last_value} domain(s) unhealthy`
   }
+  if (rule.kind === 'backup_missing') {
+    return `${rule.last_value.toFixed(1)}h since last successful backup`
+  }
   return String(rule.last_value)
 }
 
@@ -195,7 +207,15 @@ function NotifyChannelCell({ rule }: { rule: AlertRule }) {
   )
 }
 
-function RuleRow({ appName, rule }: { appName: string; rule: AlertRule }) {
+function RuleRow({
+  appName,
+  rule,
+  volumes,
+}: {
+  appName: string
+  rule: AlertRule
+  volumes: AppVolume[] | undefined
+}) {
   const state = ruleState(rule)
   const showLogsLink = rule.kind === 'crashloop' && state === 'firing'
 
@@ -245,7 +265,7 @@ function RuleRow({ appName, rule }: { appName: string; rule: AlertRule }) {
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
-          <EditAlertRuleDialog appName={appName} rule={rule} />
+          <EditAlertRuleDialog appName={appName} rule={rule} volumes={volumes} />
           <DeleteAlertRuleDialog appName={appName} rule={rule} />
         </div>
       </TableCell>
@@ -280,7 +300,13 @@ function StateSummary({ rules }: { rules: AlertRule[] }) {
   )
 }
 
-export function AlertRulesPanel({ appName }: { appName: string }) {
+export function AlertRulesPanel({
+  appName,
+  volumes,
+}: {
+  appName: string
+  volumes?: AppVolume[]
+}) {
   const { data, isLoading, error } = useAlertRules(appName)
   const rules = data ?? []
 
@@ -297,14 +323,15 @@ export function AlertRulesPanel({ appName }: { appName: string }) {
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Threshold, crashloop, certificate expiry, scheduled task
-            failure, and domain health rules over this app&apos;s metrics,
-            restarts, jobs, and domains. Notifies via webhook, Slack, or
-            Discord on a firing/resolved transition.
+            failure, domain health, and missing backup rules over this
+            app&apos;s metrics, restarts, jobs, domains, and backup
+            schedules. Notifies via webhook, Slack, or Discord on a
+            firing/resolved transition.
           </p>
         </div>
         <div className="flex items-center gap-3">
           {rules.length > 0 ? <StateSummary rules={rules} /> : null}
-          <CreateAlertRuleDialog appName={appName} />
+          <CreateAlertRuleDialog appName={appName} volumes={volumes} />
         </div>
       </div>
 
@@ -318,7 +345,7 @@ export function AlertRulesPanel({ appName }: { appName: string }) {
             icon={<BellRingingIcon className="size-5" />}
             title="No alert rules yet"
             description="Get notified the moment a metric crosses a threshold or a container starts crashlooping, via webhook, Slack, or Discord."
-            action={<CreateAlertRuleDialog appName={appName} />}
+            action={<CreateAlertRuleDialog appName={appName} volumes={volumes} />}
           />
         ) : (
           <div className="rounded-lg border border-border">
@@ -337,7 +364,12 @@ export function AlertRulesPanel({ appName }: { appName: string }) {
               </TableHeader>
               <TableBody>
                 {rules.map((rule) => (
-                  <RuleRow key={rule.id} appName={appName} rule={rule} />
+                  <RuleRow
+                    key={rule.id}
+                    appName={appName}
+                    rule={rule}
+                    volumes={volumes}
+                  />
                 ))}
               </TableBody>
             </Table>

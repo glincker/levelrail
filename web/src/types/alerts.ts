@@ -18,7 +18,10 @@
 // domain_health watches every domain configured on this app itself
 // (app-scoped, unlike the four platform-wide kinds above), needing none
 // of the threshold/crashloop fields either, though for_duration
-// optionally debounces a single check.
+// optionally debounces a single check. backup_missing watches one
+// database (platform-wide, like cert_expiry) or one of this app's own
+// volumes' scheduled backup cadence, reusing for_duration as its overdue
+// grace period.
 export type AlertRuleKind =
   | 'threshold'
   | 'crashloop'
@@ -28,6 +31,9 @@ export type AlertRuleKind =
   | 'node_disk_space'
   | 'node_resource_usage'
   | 'domain_health'
+  | 'backup_missing'
+
+export type BackupResourceKind = 'database' | 'volume'
 
 export type Comparator = '>' | '<' | '>=' | '<='
 
@@ -72,6 +78,13 @@ export interface AlertRule {
   // consecutive-failure threshold.
   scheduled_task_id?: string
 
+  // backup_missing-only: which database or service volume the rule
+  // watches. for_duration above doubles as its overdue grace period.
+  backup_resource_kind?: BackupResourceKind
+  backup_database_name?: string
+  backup_service_name?: string
+  backup_volume_name?: string
+
   // notify_url/notify_kind are the *resolved* values: the attached
   // channel's own when channel_id is set, this rule's legacy columns
   // otherwise (rules created before notification channels existed).
@@ -106,6 +119,10 @@ export interface CreateAlertRuleRequest {
   restart_count_threshold?: number
   restart_window?: string
   scheduled_task_id?: string
+  backup_resource_kind?: BackupResourceKind
+  backup_database_name?: string
+  backup_service_name?: string
+  backup_volume_name?: string
   channel_id?: string
   notify_url?: string
   notify_kind?: NotifyKind

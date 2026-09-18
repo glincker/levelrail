@@ -1092,10 +1092,18 @@ type CreateAlertRuleRequest struct {
 	// app's scheduled tasks the rule watches. RestartCountThreshold above
 	// doubles as its consecutive-failure threshold.
 	ScheduledTaskID string `json:"scheduled_task_id,omitempty"`
-	ChannelID       string `json:"channel_id,omitempty"`
-	NotifyURL       string `json:"notify_url,omitempty"`
-	NotifyKind      string `json:"notify_kind,omitempty"`
-	Enabled         bool   `json:"enabled"`
+	// BackupResourceKind/BackupDatabaseName/BackupServiceName/
+	// BackupVolumeName are kind=backup_missing-only: which database or
+	// service volume the rule watches. ForDuration above doubles as its
+	// overdue grace period.
+	BackupResourceKind string `json:"backup_resource_kind,omitempty"`
+	BackupDatabaseName string `json:"backup_database_name,omitempty"`
+	BackupServiceName  string `json:"backup_service_name,omitempty"`
+	BackupVolumeName   string `json:"backup_volume_name,omitempty"`
+	ChannelID          string `json:"channel_id,omitempty"`
+	NotifyURL          string `json:"notify_url,omitempty"`
+	NotifyKind         string `json:"notify_kind,omitempty"`
+	Enabled            bool   `json:"enabled"`
 }
 
 // UpdateAlertRuleRequest is the same shape as CreateAlertRuleRequest:
@@ -1612,6 +1620,14 @@ type AlertRuleResource struct {
 	RestartWindow         string `json:"restart_window,omitempty"`
 
 	ScheduledTaskID string `json:"scheduled_task_id,omitempty"`
+
+	// BackupResourceKind/BackupDatabaseName/BackupServiceName/
+	// BackupVolumeName are kind=backup_missing-only: see
+	// CreateAlertRuleRequest's own doc comment.
+	BackupResourceKind string `json:"backup_resource_kind,omitempty"`
+	BackupDatabaseName string `json:"backup_database_name,omitempty"`
+	BackupServiceName  string `json:"backup_service_name,omitempty"`
+	BackupVolumeName   string `json:"backup_volume_name,omitempty"`
 
 	NotifyURL  string `json:"notify_url,omitempty"`
 	NotifyKind string `json:"notify_kind,omitempty"`

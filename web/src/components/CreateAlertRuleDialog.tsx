@@ -12,6 +12,7 @@ import {
   HardDriveIcon,
   CpuIcon,
   GlobeIcon,
+  ArchiveIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -38,13 +39,16 @@ import { toast } from '@/components/ui/toast'
 import { useCreateAlertRule } from '../queries/alerts'
 import { useNotificationChannelsOptional } from '../queries/notificationChannels'
 import { useScheduledTasks } from '../queries/scheduledTasks'
+import { useDatabases } from '../queries/databases'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
 import { METRIC_NAME_LABEL, METRIC_NAME_OPTIONS } from './metricName'
+import { BackupMissingFields } from './BackupMissingFields'
 import type {
   AlertRuleKind,
   Comparator,
   CreateAlertRuleRequest,
 } from '../types/alerts'
+import type { AppVolume } from '../types/appDetail'
 
 // Sanity-check regex for a Go `time.Duration` string ("2m", "30s",
 // "1h30m", "500ms"), not a real parser: `time.ParseDuration` only runs
@@ -92,6 +96,7 @@ const KIND_OPTIONS: {
   { value: 'node_disk_space', label: 'Node disk space', Icon: HardDriveIcon },
   { value: 'node_resource_usage', label: 'Node CPU/memory usage', Icon: CpuIcon },
   { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
+  { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -119,6 +124,7 @@ const createAlertRuleSchema = z
       'node_disk_space',
       'node_resource_usage',
       'domain_health',
+      'backup_missing',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -127,6 +133,9 @@ const createAlertRuleSchema = z
     restartCountThreshold: z.coerce.number({ error: 'Must be a number' }),
     restartWindow: z.string().trim(),
     scheduledTaskId: z.string(),
+    backupResourceKind: z.enum(['database', 'volume', '']),
+    backupDatabaseName: z.string(),
+    backupVolumeName: z.string(),
     channelId: z.string(),
     enabled: z.boolean(),
   })
@@ -198,6 +207,36 @@ const createAlertRuleSchema = z
       return
     }
 
+    if (data.kind === 'backup_missing') {
+      if (!data.backupResourceKind) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose what this rule watches',
+          path: ['backupResourceKind'],
+        })
+      } else if (data.backupResourceKind === 'database' && !data.backupDatabaseName) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose which database to watch',
+          path: ['backupDatabaseName'],
+        })
+      } else if (data.backupResourceKind === 'volume' && !data.backupVolumeName) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose which volume to watch',
+          path: ['backupVolumeName'],
+        })
+      }
+      if (data.forDuration && !GO_DURATION_REGEX.test(data.forDuration)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must look like a duration, e.g. "6h"',
+          path: ['forDuration'],
+        })
+      }
+      return
+    }
+
     if (
       !Number.isInteger(data.restartCountThreshold) ||
       data.restartCountThreshold <= 0
@@ -244,6 +283,9 @@ const DEFAULT_VALUES: CreateAlertRuleFormInput = {
   restartCountThreshold: 5,
   restartWindow: '5m',
   scheduledTaskId: '',
+  backupResourceKind: '',
+  backupDatabaseName: '',
+  backupVolumeName: '',
   channelId: '',
   enabled: true,
 }
@@ -255,13 +297,21 @@ const DEFAULT_VALUES: CreateAlertRuleFormInput = {
 // /api/v1/apps/{name}/alerts's response has nothing sensitive in it, so
 // the dialog just closes on success rather than swapping to a second
 // view.
-export function CreateAlertRuleDialog({ appName }: { appName: string }) {
+export function CreateAlertRuleDialog({
+  appName,
+  volumes,
+}: {
+  appName: string
+  volumes?: AppVolume[]
+}) {
   const [open, setOpen] = useState(false)
   const createRule = useCreateAlertRule(appName)
   const channelsQuery = useNotificationChannelsOptional()
   const channels = channelsQuery.data ?? []
   const scheduledTasksQuery = useScheduledTasks(appName)
   const scheduledTasks = scheduledTasksQuery.data ?? []
+  const databasesQuery = useDatabases()
+  const databases = databasesQuery.data ?? []
   const { control, register, handleSubmit, formState, reset, watch } = useForm<
     CreateAlertRuleFormInput,
     unknown,
@@ -271,6 +321,7 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
     defaultValues: DEFAULT_VALUES,
   })
   const kind = watch('kind')
+  const backupResourceKind = watch('backupResourceKind')
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -300,6 +351,18 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
       req.restart_count_threshold = values.restartCountThreshold
     } else if (values.kind === 'domain_health') {
       req.for_duration = values.forDuration.trim() || undefined
+    } else if (values.kind === 'backup_missing') {
+      req.backup_resource_kind = values.backupResourceKind || undefined
+      req.for_duration = values.forDuration.trim() || undefined
+      if (values.backupResourceKind === 'database') {
+        req.backup_database_name = values.backupDatabaseName
+      } else if (values.backupResourceKind === 'volume') {
+        // A volume's owning service is always this same app in this
+        // codebase's single-service-per-app model, so backup_service_name
+        // is set here rather than exposed as its own form field.
+        req.backup_service_name = appName
+        req.backup_volume_name = values.backupVolumeName
+      }
     }
     // cert_expiry, patch_status, node_disk_space, and node_resource_usage
     // send no kind-specific fields at all.
@@ -336,7 +399,9 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
             node&apos;s summed CPU and memory usage; a scheduled task
             failure rule watches one of this app&apos;s scheduled tasks; a
             domain health rule watches every domain configured on this
-            app. All eight notify the same way once they fire.
+            app; a backup missing rule watches a database or one of this
+            app&apos;s volumes for a scheduled backup that stopped
+            running. All nine notify the same way once they fire.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -578,6 +643,15 @@ export function CreateAlertRuleDialog({ appName }: { appName: string }) {
                 <FieldError errors={[formState.errors.restartCountThreshold]} />
               </Field>
             </>
+          ) : kind === 'backup_missing' ? (
+            <BackupMissingFields
+              idPrefix="rule"
+              control={control}
+              errors={formState.errors}
+              backupResourceKind={backupResourceKind}
+              databases={databases}
+              volumes={volumes}
+            />
           ) : (
             <>
               <Field>
