@@ -249,6 +249,21 @@ func (c *Client) ClearAppVaultEnv(ctx context.Context, name, key string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/vault-env/"+PathEscape(key), nil, nil)
 }
 
+// SetAppPreviewEnvOverride calls PUT /api/v1/apps/{name}/preview-env/{key}:
+// declares (or replaces) one env var's preview-specific value on an app
+// that already exists, applied only the next time a preview environment
+// is created from it.
+func (c *Client) SetAppPreviewEnvOverride(ctx context.Context, name, key, value string) (AppPreviewEnvOverride, error) {
+	var out AppPreviewEnvOverride
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/preview-env/"+PathEscape(key), setAppPreviewEnvOverrideRequest{Value: value}, &out)
+	return out, err
+}
+
+// ClearAppPreviewEnvOverride calls DELETE /api/v1/apps/{name}/preview-env/{key}.
+func (c *Client) ClearAppPreviewEnvOverride(ctx context.Context, name, key string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/preview-env/"+PathEscape(key), nil, nil)
+}
+
 // DeployCompose calls POST /api/v1/apps/{name}/compose with composeYAML
 // as the raw request body. Unlike every other Client method, this
 // doesn't go through do(): handleDeployCompose (internal/api/apps_compose.go)

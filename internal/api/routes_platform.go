@@ -667,6 +667,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// reasoning as PUT/DELETE .../database just above.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/vault-env/{key}", rt.requireAbility(AbilityWrite, rt.handleSetAppVaultEnv))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/vault-env/{key}", rt.requireAbility(AbilityWrite, rt.handleClearAppVaultEnv))
+	// One preview-specific env var override at a time (apps_preview_env.go):
+	// same AbilityWrite tier and "config write, not a deploy trigger"
+	// reasoning as PUT/DELETE .../vault-env just above; only takes effect
+	// the next time a preview environment is created from this app.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-env/{key}", rt.requireAbility(AbilityWrite, rt.handleSetAppPreviewEnvOverride))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/preview-env/{key}", rt.requireAbility(AbilityWrite, rt.handleClearAppPreviewEnvOverride))
 	// Read-only, not scoped to any one app: the static list of env var
 	// names attaching storage can inject, backed by
 	// application.StorageEnvKeys rather than a hardcoded list, see

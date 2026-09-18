@@ -39,6 +39,7 @@ type (
 	vaultSettingsResource            = apiclient.VaultSettingsResource
 	updateVaultSettingsRequest       = apiclient.UpdateVaultSettingsRequest
 	appVaultEnvRef                   = apiclient.AppVaultEnvRef
+	appPreviewEnvOverride            = apiclient.AppPreviewEnvOverride
 	registrySettingsResource         = apiclient.RegistrySettingsResource
 	updateRegistrySettingsRequest    = apiclient.UpdateRegistrySettingsRequest
 	registryRepositoriesResource     = apiclient.RegistryRepositoriesResource
