@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, type Control } from 'react-hook-form'
 import { z } from 'zod'
 import {
   GaugeIcon,
@@ -42,7 +42,7 @@ import { useScheduledTasks } from '../queries/scheduledTasks'
 import { useDatabases } from '../queries/databases'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
 import { METRIC_NAME_LABEL, METRIC_NAME_OPTIONS } from './metricName'
-import { BackupMissingFields } from './BackupMissingFields'
+import { BackupMissingFields, type BackupMissingFormShape } from './BackupMissingFields'
 import type {
   AlertRule,
   AlertRuleKind,
@@ -565,7 +565,7 @@ export function EditAlertRuleDialog({
           ) : kind === 'backup_missing' ? (
             <BackupMissingFields
               idPrefix="edit-rule"
-              control={control}
+              control={control as unknown as Control<BackupMissingFormShape>}
               errors={formState.errors}
               backupResourceKind={backupResourceKind}
               databases={databases}
