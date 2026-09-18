@@ -58,23 +58,16 @@ func runAppsPreviewEnvSet(prog string, args []string, stdout, stderr io.Writer, 
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	cmd := twoArgCmd{prog: prog, cmdLabel: "apps preview-env set", argsLabel: "an app name and an env var key"}
+	client, name, key, jsonOut, of, exitCode, ok := parseTwoArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, cmd, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-
-	positional, ok := requireArgs(fs, stderr, prog, "apps preview-env set", "an app name and an env var key", 2)
-	if !ok {
-		return exitUsage
-	}
-	name, key := positional[0], positional[1]
 	if value == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: apps preview-env set requires --value\n\n", prog)
 		fs.Usage()
 		return exitUsage
 	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	result, err := client.SetAppPreviewEnvOverride(context.Background(), name, key, value)
 	if err != nil {
@@ -93,18 +86,11 @@ func runAppsPreviewEnvClear(prog string, args []string, stdout, stderr io.Writer
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	cmd := twoArgCmd{prog: prog, cmdLabel: "apps preview-env clear", argsLabel: "an app name and an env var key"}
+	client, name, key, jsonOut, of, exitCode, ok := parseTwoArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, cmd, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-
-	positional, ok := requireArgs(fs, stderr, prog, "apps preview-env clear", "an app name and an env var key", 2)
-	if !ok {
-		return exitUsage
-	}
-	name, key := positional[0], positional[1]
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	if err := client.ClearAppPreviewEnvOverride(context.Background(), name, key); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear preview-env %q for app %q: %w", key, name, err))
