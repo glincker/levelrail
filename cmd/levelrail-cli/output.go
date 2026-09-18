@@ -19,11 +19,13 @@ import (
 // way"), so a script or an AI agent driving this CLI can branch on
 // *why* a call failed without parsing stderr text.
 const (
-	exitOK         = 0
-	exitUsage      = 1 // unknown command, missing positional argument, bad flag syntax
-	exitValidation = 2 // well-formed flags/file, but the request they describe is invalid
-	exitNetwork    = 3 // could not reach the API at all (connection refused, DNS, timeout)
-	exitAPIError   = 4 // the API was reached and returned a non-2xx response
+	exitOK            = 0
+	exitUsage         = 1 // unknown command, missing positional argument, bad flag syntax
+	exitValidation    = 2 // well-formed flags/file, but the request they describe is invalid
+	exitNetwork       = 3 // could not reach the API at all (connection refused, DNS, timeout)
+	exitAPIError      = 4 // the API was reached and returned a non-2xx response
+	exitDeployFailed  = 5 // "apps wait": every API call succeeded, but the deploy itself converged as a failure
+	exitDeployTimeout = 6 // "apps wait": gave up before the deploy converged either way
 )
 
 // exitCodeForError classifies err into one of the exit codes above.
@@ -389,6 +391,25 @@ func printConditionsHuman(out io.Writer, conditions []conditionResource) {
 	_, _ = fmt.Fprintln(tw, "TYPE\tSTATUS\tREASON\tMESSAGE\tLAST TRANSITION")
 	for _, c := range conditions {
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", c.Type, c.Status, c.Reason, c.Message, c.LastTransitionTime.Format(time.RFC3339))
+	}
+	_ = tw.Flush()
+}
+
+// printDeployAttemptsHuman prints "apps deploys list" output.
+func printDeployAttemptsHuman(out io.Writer, attempts []deployAttemptResource) {
+	if len(attempts) == 0 {
+		_, _ = fmt.Fprintln(out, "no deploy attempts recorded yet")
+		return
+	}
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "ID\tIMAGE\tSOURCE\tSTATUS\tSTARTED\tFINISHED\tERROR")
+	for _, a := range attempts {
+		finished := "-"
+		if a.FinishedAt != nil {
+			finished = a.FinishedAt.Format(time.RFC3339)
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			a.ID, a.Image, a.Source, a.Status, a.StartedAt.Format(time.RFC3339), finished, a.Error)
 	}
 	_ = tw.Flush()
 }

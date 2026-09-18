@@ -50,6 +50,11 @@ levelrail apps deploy <name> --image IMAGE [flags]
 ```
 
 ```
+levelrail apps wait <name> [flags]
+```
+poll until a deploy attempt actually converges, exit accordingly (a CI gate for "apps deploy")
+
+```
 levelrail apps deploy-compose <name> --file compose.yaml [flags]
 ```
 
@@ -68,6 +73,11 @@ levelrail apps deploy-notify-targets list <app> [flags]
 ```
 levelrail apps deploy-spec <name> --file app.yaml --repo-url <url> --ref <ref> [flags]
 ```
+
+```
+levelrail apps deploys list <name> [flags]
+```
+real, row-per-attempt deploy history, newest first
 
 ```
 levelrail apps deploys compare <name> --from ID [--to ID] [flags]

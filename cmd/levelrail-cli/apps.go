@@ -25,6 +25,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy":
 		return runAppsDeploy(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+	case "wait":
+		return runAppsWait(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-compose":
 		return runAppsDeployCompose(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-spec":
@@ -48,7 +50,7 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "delete":
 		return runAppsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
-		return runAppsStatus(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsStatus(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "diagnose":
 		return runAppsDiagnose(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "resource-recommendation":
@@ -112,11 +114,13 @@ func appsUsage(prog string) string {
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
+  %[1]s apps wait <name> [flags]        poll until a deploy attempt actually converges, exit accordingly (a CI gate for "apps deploy")
   %[1]s apps deploy-compose <name> --file compose.yaml [flags]   deploy a Docker Compose file as an app
   %[1]s apps deploy-spec <name> --file app.yaml --repo-url <url> --ref <ref> [flags]   fan an app.yaml's services: map out into N independent builds under one app
   %[1]s apps group <name> [flags]   show name's sibling services under the same multi-service app
   %[1]s apps hook-runs <name> [flags]   show the most recent outcome of name's pre/post-deploy hooks
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
+  %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
   %[1]s apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [flags]   promote name's image onto a sibling app in another environment
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
