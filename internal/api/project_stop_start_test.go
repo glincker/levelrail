@@ -270,7 +270,7 @@ func (f *fakeProjectLifecycleDatabaseStore) UpdateDatabaseSuspended(_ context.Co
 func (fakeProjectLifecycleDatabaseStore) SetDatabaseBackupSchedule(context.Context, string, string, string, int, int) error {
 	return nil
 }
-func (fakeProjectLifecycleDatabaseStore) SetDatabasePublicAccess(context.Context, string, bool, int) (int, error) {
+func (fakeProjectLifecycleDatabaseStore) SetDatabasePublicAccess(context.Context, string, bool, int, string) (int, error) {
 	return 0, nil
 }
 

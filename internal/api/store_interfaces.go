@@ -221,8 +221,10 @@ type DatabaseStore interface {
 	// (database_public_access.go): the same "own endpoint, own store
 	// method" separation SetDatabaseBackupSchedule already establishes,
 	// applied to whether this database's container port is bound to a
-	// host port. Returns the port actually assigned (0 when disabling).
-	SetDatabasePublicAccess(ctx context.Context, name string, enabled bool, requestedPort int) (int, error)
+	// host port. requestedBindAddress empty resolves to
+	// store.DefaultBindAddress; ignored when enabled is false. Returns
+	// the port actually assigned (0 when disabling).
+	SetDatabasePublicAccess(ctx context.Context, name string, enabled bool, requestedPort int, requestedBindAddress string) (int, error)
 }
 
 // ProjectStore is the store surface the projects handlers need

@@ -305,7 +305,11 @@ func applyDatabaseWizardPublicAccess(ctx context.Context, client *Client, a data
 	if !jsonOut {
 		_, _ = fmt.Fprintf(stderr, "enabling public access for %q...\n", created.Name)
 	}
-	if _, err := client.SetDatabasePublicAccess(ctx, created.Name, a.publicPort); err != nil {
+	// "" bind address: the server's own default (private, loopback
+	// only). The wizard has no prompt for this yet; "levelrail-cli
+	// databases public-access" (databases_public_access.go) is the
+	// explicit path for choosing public or a specific interface.
+	if _, err := client.SetDatabasePublicAccess(ctx, created.Name, a.publicPort, ""); err != nil {
 		return fmt.Errorf("database %q was created but enabling public access failed: %w", created.Name, err)
 	}
 	return nil

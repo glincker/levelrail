@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -38,9 +39,18 @@ type appResource struct {
 	// the only thing that can authoritatively know at container-create
 	// time. Settable on create and update, like Port itself, not
 	// response-only.
-	HostPort *int              `json:"host_port,omitempty"`
-	Domains  []string          `json:"domains,omitempty"`
-	Env      map[string]string `json:"env,omitempty"`
+	HostPort *int `json:"host_port,omitempty"`
+	// BindAddress picks which network interface Port (and HostPort, if
+	// pinned) binds to on the host (store.DesiredService.BindAddress,
+	// migrations/0098): "private" (loopback only, the default), "public"
+	// (every interface), or a literal IP, see internal/bindaddr.Resolve.
+	// No omitempty: a real store.DesiredService read back always carries
+	// the resolved value, never "", the same always-resolved treatment
+	// Strategy/Replicas get above. An empty value on the way in is not an
+	// error, it falls through to store.DefaultBindAddress.
+	BindAddress string            `json:"bind_address"`
+	Domains     []string          `json:"domains,omitempty"`
+	Env         map[string]string `json:"env,omitempty"`
 	// SecretEnv names which env vars are backed by encrypted secret
 	// storage (store.DesiredService.SecretEnv): values live in
 	// internal/secrets, never here. Response-mirrors the store; settable
@@ -61,7 +71,7 @@ type appResource struct {
 	// trips" shape SecretEnv/Secrets establish for local secrets.
 	VaultEnv  map[string]appVaultEnvRef `json:"vault_env,omitempty"`
 	Resources *store.ServiceResources   `json:"resources,omitempty"`
-	Health    *store.ServiceHealth    `json:"health,omitempty"`
+	Health    *store.ServiceHealth      `json:"health,omitempty"`
 	// Hooks are this service's pre/post-deploy commands
 	// (store.DesiredService.Hooks), settable on create and update like
 	// Resources/Health above. See internal/reconcile/application.Controller's
@@ -231,6 +241,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		Image:              svc.Image,
 		Port:               svc.Port,
 		HostPort:           svc.HostPort,
+		BindAddress:        svc.BindAddress,
 		Domains:            svc.Domains,
 		Env:                svc.Env,
 		SecretEnv:          svc.SecretEnv,
@@ -259,18 +270,19 @@ func toAppResource(svc store.DesiredService) appResource {
 
 func (a appResource) toDesiredService() store.DesiredService {
 	return store.DesiredService{
-		Name:      a.Name,
-		Image:     a.Image,
-		Port:      a.Port,
-		HostPort:  a.HostPort,
-		Domains:   a.Domains,
-		Env:       a.Env,
-		Resources: a.Resources,
-		Health:    a.Health,
-		Hooks:     a.Hooks,
-		Strategy:  a.Strategy,
-		Replicas:  a.Replicas,
-		Labels:    a.Labels,
+		Name:        a.Name,
+		Image:       a.Image,
+		Port:        a.Port,
+		HostPort:    a.HostPort,
+		BindAddress: a.BindAddress,
+		Domains:     a.Domains,
+		Env:         a.Env,
+		Resources:   a.Resources,
+		Health:      a.Health,
+		Hooks:       a.Hooks,
+		Strategy:    a.Strategy,
+		Replicas:    a.Replicas,
+		Labels:      a.Labels,
 	}
 }
 
@@ -322,6 +334,13 @@ func validateAppResource(a appResource) error {
 	}
 	if a.HostPort != nil && (*a.HostPort < 1 || *a.HostPort > 65535) {
 		return errors.New("host_port must be between 1 and 65535")
+	}
+	// Empty is valid (falls through to store.DefaultBindAddress), only a
+	// value that fails internal/bindaddr.Validate is an error.
+	if a.BindAddress != "" {
+		if err := bindaddr.Validate(a.BindAddress); err != nil {
+			return fmt.Errorf("bind_address: %w", err)
+		}
 	}
 	// Empty is valid (falls through to store.DefaultDeployStrategy), but
 	// a non-empty value that isn't one of the three known spec constants

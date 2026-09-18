@@ -26,7 +26,11 @@ type createFlags struct {
 	// port's own zero-means-unset convention, since a real host port is
 	// always positive. See toHostPort below for how this becomes
 	// appResource.HostPort's *int.
-	hostPort      int
+	hostPort int
+	// bindAddress backs --bind-address: "" means unset (falls through to
+	// the server's own default, "private"), matching appResource.BindAddress's
+	// own empty-means-unset-not-invalid convention.
+	bindAddress   string
 	repo          string
 	ref           string
 	dockerfile    string
@@ -153,7 +157,7 @@ func planExistingImage(f createFlags) (createPlan, error) {
 		return createPlan{}, newValidationError("missing required flag(s) for the existing-image path: %s", strings.Join(missing, ", "))
 	}
 	return createPlan{
-		CreateBody: appResource{Name: f.name, Image: f.image, Port: f.port, HostPort: toHostPort(f.hostPort)},
+		CreateBody: appResource{Name: f.name, Image: f.image, Port: f.port, HostPort: toHostPort(f.hostPort), BindAddress: f.bindAddress},
 	}, nil
 }
 
@@ -199,7 +203,7 @@ func planGitBuildFlags(f createFlags, detected detectedGit) (createPlan, error) 
 	}
 
 	return createPlan{
-		CreateBody: appResource{Name: f.name, Image: pendingImageTag(f.imageRepo), Port: f.port, HostPort: toHostPort(f.hostPort)},
+		CreateBody: appResource{Name: f.name, Image: pendingImageTag(f.imageRepo), Port: f.port, HostPort: toHostPort(f.hostPort), BindAddress: f.bindAddress},
 		Build: &buildTriggerRequest{
 			RepoURL:   repo,
 			Ref:       ref,
@@ -252,6 +256,10 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 	if hostPort <= 0 {
 		hostPort = svc.HostPort
 	}
+	bindAddress := f.bindAddress
+	if bindAddress == "" {
+		bindAddress = svc.BindAddress
+	}
 
 	if f.imageRepo == "" {
 		return createPlan{}, newValidationError("--image-repo is required: app.yaml has no field for it")
@@ -296,15 +304,16 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 
 	return createPlan{
 		CreateBody: appResource{
-			Name:      name,
-			Image:     pendingImageTag(f.imageRepo),
-			Port:      port,
-			HostPort:  toHostPort(hostPort),
-			Domains:   svc.Domains,
-			Env:       literalEnv(svc.Env),
-			SecretEnv: secretEnv,
-			Resources: resources,
-			Health:    health,
+			Name:        name,
+			Image:       pendingImageTag(f.imageRepo),
+			Port:        port,
+			HostPort:    toHostPort(hostPort),
+			BindAddress: bindAddress,
+			Domains:     svc.Domains,
+			Env:         literalEnv(svc.Env),
+			SecretEnv:   secretEnv,
+			Resources:   resources,
+			Health:      health,
 		},
 		Build: &buildTriggerRequest{
 			RepoURL:   repo,
@@ -340,6 +349,10 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 	if hostPort <= 0 {
 		hostPort = svc.HostPort
 	}
+	bindAddress := f.bindAddress
+	if bindAddress == "" {
+		bindAddress = svc.BindAddress
+	}
 
 	resources, err := toServiceResources(svc.Resources)
 	if err != nil {
@@ -352,15 +365,16 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 
 	return createPlan{
 		CreateBody: appResource{
-			Name:      name,
-			Image:     svc.Build.Image,
-			Port:      port,
-			HostPort:  toHostPort(hostPort),
-			Domains:   svc.Domains,
-			Env:       literalEnv(svc.Env),
-			SecretEnv: secretEnv,
-			Resources: resources,
-			Health:    health,
+			Name:        name,
+			Image:       svc.Build.Image,
+			Port:        port,
+			HostPort:    toHostPort(hostPort),
+			BindAddress: bindAddress,
+			Domains:     svc.Domains,
+			Env:         literalEnv(svc.Env),
+			SecretEnv:   secretEnv,
+			Resources:   resources,
+			Health:      health,
 		},
 	}, nil
 }
@@ -711,6 +725,7 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.image, "image", "", "existing image to deploy, e.g. registry.example.com/org/app:tag (existing-image path)")
 	fs.IntVar(&f.port, "port", 0, "container port the app listens on")
 	fs.IntVar(&f.hostPort, "host-port", 0, "host port to pin the container port to (default: auto-assigned by Docker)")
+	fs.StringVar(&f.bindAddress, "bind-address", "", "network interface the port binds to: \"private\" (loopback only, the default), \"public\" (every interface), or a literal IP")
 	fs.StringVar(&f.repo, "repo", "", "git repository URL to build from (git-build path); auto-detected from the current directory's git remote \"origin\" when omitted")
 	fs.StringVar(&f.ref, "ref", "", "git ref (branch) to build from (git-build path); defaults to the current directory's branch, then \"main\"")
 	fs.StringVar(&f.dockerfile, "dockerfile", "", "Dockerfile path relative to the repo root (git-build path, --build-type dockerfile only); defaults to \"Dockerfile\" at the repo root")
@@ -797,11 +812,13 @@ Existing-image path:
   --image string        image reference to deploy, e.g. registry.example.com/org/app:tag (required)
   --port int             container port (required)
   --host-port int      host port to pin the container port to (default: auto-assigned by Docker)
+  --bind-address string  network interface the port binds to: "private" (default), "public", or a literal IP
 
 Git-build path (flags):
   --name string          app name (required)
   --port int              container port (required)
   --host-port int      host port to pin the container port to (default: auto-assigned by Docker)
+  --bind-address string  network interface the port binds to: "private" (default), "public", or a literal IP
   --repo string           git repository URL (required unless auto-detected from ./.git's "origin" remote)
   --ref string            git ref/branch (default: current branch, then "main")
   --image-repo string     image name without a tag (required)
@@ -813,7 +830,7 @@ Git-build path (flags):
 Manifest path:
   --file string           path to an app.yaml (or equivalent) spec file
   --service string      which service to create, if the file declares more than one
-  --name, --port, --host-port, --repo, --ref, --dockerfile, --base-directory, --build-arg, --image-repo above
+  --name, --port, --host-port, --bind-address, --repo, --ref, --dockerfile, --base-directory, --build-arg, --image-repo above
     all override the file's own values or supply what it cannot express (repo location, image name)
   build.type: dockerfile or railpack builds from git (repo/ref/image-repo required, as above);
     build.type: image creates the app directly with build.image, no build triggered

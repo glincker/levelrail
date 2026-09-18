@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"path/filepath"
 	"strconv"
 	"testing"
 )
@@ -646,7 +648,7 @@ func TestSetDatabasePublicAccess_AutoAssignsFromRange(t *testing.T) {
 		t.Fatalf("SaveDesiredDatabase() error = %v", err)
 	}
 
-	port, err := db.SetDatabasePublicAccess(ctx, "main", true, 0)
+	port, err := db.SetDatabasePublicAccess(ctx, "main", true, 0, "")
 	if err != nil {
 		t.Fatalf("SetDatabasePublicAccess() error = %v", err)
 	}
@@ -663,6 +665,165 @@ func TestSetDatabasePublicAccess_AutoAssignsFromRange(t *testing.T) {
 	}
 }
 
+// TestDatabasePublicBindAddressMigration_BackfillsExistingPublicRows
+// mirrors TestServiceBindAddressMigration_BackfillsExistingRowsToPublic's
+// own technique (service_test.go): applies every migration up to, but
+// not including, 0099_database_public_bind_address by hand, inserts a
+// desired_databases row already publicly_accessible the way a pre-0099
+// database would have one, then applies 0099 and checks the backfill.
+// A database that was never publicly accessible must stay NULL, not
+// backfilled to any value.
+func TestDatabasePublicBindAddressMigration_BackfillsExistingPublicRows(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "levelrail.db")
+
+	sqlDB, err := sql.Open("sqlite", dsn(path))
+	if err != nil {
+		t.Fatalf("sql.Open() error = %v", err)
+	}
+	sqlDB.SetMaxOpenConns(1)
+	db := &DB{DB: sqlDB}
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("closing test db: %v", err)
+		}
+	})
+
+	if _, err := db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version    INTEGER PRIMARY KEY,
+			name       TEXT NOT NULL,
+			applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		)
+	`); err != nil {
+		t.Fatalf("create schema_migrations: %v", err)
+	}
+
+	migrations, err := loadMigrations()
+	if err != nil {
+		t.Fatalf("loadMigrations() error = %v", err)
+	}
+
+	var bindAddressMigration *migration
+	for i, m := range migrations {
+		if m.name == "database_public_bind_address" {
+			bindAddressMigration = &migrations[i]
+			continue
+		}
+		if err := db.applyMigration(ctx, m); err != nil {
+			t.Fatalf("apply migration %04d_%s: %v", m.version, m.name, err)
+		}
+	}
+	if bindAddressMigration == nil {
+		t.Fatal("database_public_bind_address migration not found among embedded migrations")
+	}
+
+	if _, err := db.ExecContext(ctx, `
+		INSERT INTO desired_databases (name, engine, version, publicly_accessible, public_port, updated_at)
+		VALUES ('legacy-cache', 'redis', '7', 1, 20000, '2026-08-01T00:00:00Z')
+	`); err != nil {
+		t.Fatalf("insert pre-migration public desired_databases row: %v", err)
+	}
+	if _, err := db.ExecContext(ctx, `
+		INSERT INTO desired_databases (name, engine, version, updated_at)
+		VALUES ('legacy-main', 'postgres', '16', '2026-08-01T00:00:00Z')
+	`); err != nil {
+		t.Fatalf("insert pre-migration private desired_databases row: %v", err)
+	}
+
+	if err := db.applyMigration(ctx, *bindAddressMigration); err != nil {
+		t.Fatalf("apply database_public_bind_address migration: %v", err)
+	}
+
+	public, err := db.GetDesiredDatabase(ctx, "legacy-cache")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase(legacy-cache) after backfill error = %v", err)
+	}
+	if public.PublicBindAddress != "public" {
+		t.Errorf("backfilled PublicBindAddress = %q, want %q (preserve pre-existing exposure)", public.PublicBindAddress, "public")
+	}
+
+	private, err := db.GetDesiredDatabase(ctx, "legacy-main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase(legacy-main) after backfill error = %v", err)
+	}
+	if private.PublicBindAddress != "" {
+		t.Errorf("PublicBindAddress = %q, want empty for a database that was never publicly accessible", private.PublicBindAddress)
+	}
+}
+
+// TestSetDatabasePublicAccess_BindAddressDefaultsToPrivate proves an
+// empty requestedBindAddress resolves to DefaultBindAddress, the same
+// "resolve and always persist a concrete value" guarantee
+// SaveDesiredService gives BindAddress.
+func TestSetDatabasePublicAccess_BindAddressDefaultsToPrivate(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+
+	if _, err := db.SetDatabasePublicAccess(ctx, "main", true, 0, ""); err != nil {
+		t.Fatalf("SetDatabasePublicAccess() error = %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.PublicBindAddress != DefaultBindAddress {
+		t.Errorf("PublicBindAddress = %q, want default %q", got.PublicBindAddress, DefaultBindAddress)
+	}
+}
+
+// TestSetDatabasePublicAccess_ExplicitBindAddress proves an explicit
+// requestedBindAddress round-trips as-is.
+func TestSetDatabasePublicAccess_ExplicitBindAddress(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+
+	if _, err := db.SetDatabasePublicAccess(ctx, "main", true, 0, "public"); err != nil {
+		t.Fatalf("SetDatabasePublicAccess() error = %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.PublicBindAddress != "public" {
+		t.Errorf("PublicBindAddress = %q, want %q", got.PublicBindAddress, "public")
+	}
+}
+
+// TestSetDatabasePublicAccess_DisableClearsBindAddress proves disabling
+// clears public_bind_address back to "" (SQL NULL), the same treatment
+// PublicPort itself already gets.
+func TestSetDatabasePublicAccess_DisableClearsBindAddress(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EngineRedis, Version: "7"}); err != nil {
+		t.Fatalf("SaveDesiredDatabase() error = %v", err)
+	}
+	if _, err := db.SetDatabasePublicAccess(ctx, "main", true, 0, "public"); err != nil {
+		t.Fatalf("enable SetDatabasePublicAccess() error = %v", err)
+	}
+
+	if _, err := db.SetDatabasePublicAccess(ctx, "main", false, 0, ""); err != nil {
+		t.Fatalf("disable SetDatabasePublicAccess() error = %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.PublicBindAddress != "" {
+		t.Errorf("PublicBindAddress = %q, want empty after disabling", got.PublicBindAddress)
+	}
+}
+
 func TestSetDatabasePublicAccess_ExplicitPort(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
@@ -670,7 +831,7 @@ func TestSetDatabasePublicAccess_ExplicitPort(t *testing.T) {
 		t.Fatalf("SaveDesiredDatabase() error = %v", err)
 	}
 
-	port, err := db.SetDatabasePublicAccess(ctx, "main", true, 15432)
+	port, err := db.SetDatabasePublicAccess(ctx, "main", true, 15432, "")
 	if err != nil {
 		t.Fatalf("SetDatabasePublicAccess() error = %v", err)
 	}
@@ -691,11 +852,11 @@ func TestSetDatabasePublicAccess_ExplicitPortAlreadyTaken(t *testing.T) {
 			t.Fatalf("SaveDesiredDatabase(%s) error = %v", name, err)
 		}
 	}
-	if _, err := db.SetDatabasePublicAccess(ctx, "main", true, 15432); err != nil {
+	if _, err := db.SetDatabasePublicAccess(ctx, "main", true, 15432, ""); err != nil {
 		t.Fatalf("SetDatabasePublicAccess(main) error = %v", err)
 	}
 
-	_, err := db.SetDatabasePublicAccess(ctx, "cache", true, 15432)
+	_, err := db.SetDatabasePublicAccess(ctx, "cache", true, 15432, "")
 	if !errors.Is(err, ErrPublicPortInUse) {
 		t.Errorf("SetDatabasePublicAccess(cache) error = %v, want ErrPublicPortInUse", err)
 	}
@@ -720,11 +881,11 @@ func TestSetDatabasePublicAccess_ReenablingSamePortDoesNotConflictWithSelf(t *te
 	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EngineRedis, Version: "7"}); err != nil {
 		t.Fatalf("SaveDesiredDatabase() error = %v", err)
 	}
-	if _, err := db.SetDatabasePublicAccess(ctx, "main", true, 15432); err != nil {
+	if _, err := db.SetDatabasePublicAccess(ctx, "main", true, 15432, ""); err != nil {
 		t.Fatalf("first SetDatabasePublicAccess() error = %v", err)
 	}
 
-	port, err := db.SetDatabasePublicAccess(ctx, "main", true, 15432)
+	port, err := db.SetDatabasePublicAccess(ctx, "main", true, 15432, "")
 	if err != nil {
 		t.Fatalf("second SetDatabasePublicAccess() error = %v", err)
 	}
@@ -739,11 +900,11 @@ func TestSetDatabasePublicAccess_DisableClearsPort(t *testing.T) {
 	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EngineRedis, Version: "7"}); err != nil {
 		t.Fatalf("SaveDesiredDatabase() error = %v", err)
 	}
-	if _, err := db.SetDatabasePublicAccess(ctx, "main", true, 15432); err != nil {
+	if _, err := db.SetDatabasePublicAccess(ctx, "main", true, 15432, ""); err != nil {
 		t.Fatalf("enable SetDatabasePublicAccess() error = %v", err)
 	}
 
-	port, err := db.SetDatabasePublicAccess(ctx, "main", false, 0)
+	port, err := db.SetDatabasePublicAccess(ctx, "main", false, 0, "")
 	if err != nil {
 		t.Fatalf("disable SetDatabasePublicAccess() error = %v", err)
 	}
@@ -761,7 +922,7 @@ func TestSetDatabasePublicAccess_DisableClearsPort(t *testing.T) {
 }
 
 func TestSetDatabasePublicAccess_NotFound(t *testing.T) {
-	_, err := openTestDB(t).SetDatabasePublicAccess(context.Background(), "missing", true, 0)
+	_, err := openTestDB(t).SetDatabasePublicAccess(context.Background(), "missing", true, 0, "")
 	if !errors.Is(err, ErrDatabaseNotFound) {
 		t.Errorf("SetDatabasePublicAccess() error = %v, want ErrDatabaseNotFound", err)
 	}
@@ -797,7 +958,7 @@ func TestSetDatabasePublicAccess_RangeExhausted(t *testing.T) {
 		}
 	}
 
-	_, err := db.SetDatabasePublicAccess(ctx, "main", true, 0)
+	_, err := db.SetDatabasePublicAccess(ctx, "main", true, 0, "")
 	if !errors.Is(err, ErrPublicPortRangeExhausted) {
 		t.Errorf("SetDatabasePublicAccess() error = %v, want ErrPublicPortRangeExhausted", err)
 	}

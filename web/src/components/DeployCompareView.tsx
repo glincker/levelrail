@@ -36,6 +36,7 @@ const CHANGE_FIELD_LABEL: Record<string, string> = {
   source: 'Trigger source',
   port: 'Port',
   host_port: 'Host port',
+  bind_address: 'Network interface',
   domains: 'Domains',
   'resources.memory_bytes': 'Memory limit',
   'resources.nano_cpus': 'CPU limit',

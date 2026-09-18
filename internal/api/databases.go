@@ -62,6 +62,11 @@ type databaseResource struct {
 	// create/update body.
 	PubliclyAccessible bool `json:"publicly_accessible,omitempty"`
 	PublicPort         int  `json:"public_port,omitempty"`
+	// PublicBindAddress: see databasePublicAccessResource's own
+	// BindAddress field doc comment (database_public_access.go) for what
+	// this holds; same response-only boundary as PubliclyAccessible/
+	// PublicPort above.
+	PublicBindAddress string `json:"public_bind_address,omitempty"`
 	// Resources: unlike NodeID/ProjectID/the backup fields above, this is
 	// ordinary desired state, the same appResource.Resources field
 	// carries for apps, not a response-only/dedicated-route field. There
@@ -104,6 +109,7 @@ func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 		BackupRetainDays:   d.BackupRetainDays,
 		PubliclyAccessible: d.PubliclyAccessible,
 		PublicPort:         d.PublicPort,
+		PublicBindAddress:  d.PublicBindAddress,
 		Resources:          d.Resources,
 		Suspended:          d.Suspended,
 	}

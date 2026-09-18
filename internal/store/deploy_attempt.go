@@ -101,11 +101,14 @@ type DeployAttemptEnvKey struct {
 // only Image/CommitSHA/Source/Status/timestamps were ever recorded per
 // attempt.
 type DeployAttemptSnapshot struct {
-	Env       []DeployAttemptEnvKey `json:"env,omitempty"`
-	Port      int                   `json:"port,omitempty"`
-	HostPort  *int                  `json:"host_port,omitempty"`
-	Domains   []string              `json:"domains,omitempty"`
-	Resources *ServiceResources     `json:"resources,omitempty"`
+	Env      []DeployAttemptEnvKey `json:"env,omitempty"`
+	Port     int                   `json:"port,omitempty"`
+	HostPort *int                  `json:"host_port,omitempty"`
+	// BindAddress mirrors DesiredService.BindAddress
+	// (migrations/0098_service_bind_address.sql).
+	BindAddress string            `json:"bind_address,omitempty"`
+	Domains     []string          `json:"domains,omitempty"`
+	Resources   *ServiceResources `json:"resources,omitempty"`
 	// Health, Replicas, Strategy, Volumes, and Labels mirror
 	// DesiredService's own fields of the same name, closing the
 	// remaining gap this migration's own comment named.
@@ -166,16 +169,17 @@ func NewDeployAttemptSnapshot(svc DesiredService) DeployAttemptSnapshot {
 	}
 
 	return DeployAttemptSnapshot{
-		Env:       env,
-		Port:      svc.Port,
-		HostPort:  hostPort,
-		Domains:   svc.Domains,
-		Resources: svc.Resources,
-		Health:    svc.Health,
-		Replicas:  svc.Replicas,
-		Strategy:  svc.Strategy,
-		Volumes:   svc.Volumes,
-		Labels:    svc.Labels,
+		Env:         env,
+		Port:        svc.Port,
+		HostPort:    hostPort,
+		BindAddress: svc.BindAddress,
+		Domains:     svc.Domains,
+		Resources:   svc.Resources,
+		Health:      svc.Health,
+		Replicas:    svc.Replicas,
+		Strategy:    svc.Strategy,
+		Volumes:     svc.Volumes,
+		Labels:      svc.Labels,
 	}
 }
 

@@ -41,6 +41,7 @@ const app: AppDetail = {
   image: 'demo-app:latest',
   port: 3000,
   strategy: 'rolling',
+  bind_address: 'private',
   replicas: 1,
   suspended: false,
   env_dirty: false,

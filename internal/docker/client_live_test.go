@@ -55,9 +55,14 @@ func TestClient_Create_Live_PortsEnvAndNoRestartPolicy(t *testing.T) {
 	t.Cleanup(func() { removeIfExists(ctx, t, c, name) })
 
 	id, err := c.Create(ctx, ContainerSpec{
-		Name:   name,
-		Image:  "nginx:alpine",
-		Ports:  []PortBinding{{ContainerPort: 80}}, // HostPort 0: let Docker assign one
+		Name: name,
+		Image: "nginx:alpine",
+		// HostPort 0: let Docker assign one. HostIP explicit (every real
+		// caller resolves internal/bindaddr before building a
+		// PortBinding, never leaves it empty): binding a single address
+		// family, so InspectByName's own observedPorts sees exactly one
+		// entry, not Docker's own implicit dual-stack pair.
+		Ports:  []PortBinding{{ContainerPort: 80, HostIP: "127.0.0.1"}},
 		Env:    map[string]string{"LEVELRAIL_TEST": "1"},
 		Labels: map[string]string{"team": "platform"},
 	})
@@ -97,6 +102,9 @@ func TestClient_Create_Live_PortsEnvAndNoRestartPolicy(t *testing.T) {
 	}
 	if state.Ports[0].HostPort == 0 {
 		t.Error("HostPort = 0, want a real assigned port")
+	}
+	if state.Ports[0].HostIP != "127.0.0.1" {
+		t.Errorf("HostIP = %q, want %q", state.Ports[0].HostIP, "127.0.0.1")
 	}
 
 	// Independent verification, not trusting this package's own

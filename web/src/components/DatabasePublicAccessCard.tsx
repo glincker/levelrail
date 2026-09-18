@@ -10,6 +10,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
 import {
   useClearDatabasePublicAccess,
@@ -42,12 +49,27 @@ import type { DatabaseResource } from '../types/databaseDetail'
 // gating the toggle; the other engines keep the single passive warning.
 const NO_AUTH_ENGINES = new Set(['redis', 'keydb', 'dragonfly'])
 
+// BIND_ADDRESS_MODES mirrors PortEditor's own identically-named
+// constant: internal/bindaddr's Private/Public shorthand plus a
+// UI-only "custom" mode for a literal IP.
+const BIND_ADDRESS_MODES = ['private', 'public', 'custom'] as const
+type BindAddressMode = (typeof BIND_ADDRESS_MODES)[number]
+
+const BIND_ADDRESS_LABELS: Record<BindAddressMode, string> = {
+  private: 'Private (127.0.0.1)',
+  public: 'Public (0.0.0.0)',
+  custom: 'Custom IP',
+}
+
 export function DatabasePublicAccessCard({
   database,
 }: {
   database: DatabaseResource
 }) {
   const [portInput, setPortInput] = useState('')
+  const [bindAddressMode, setBindAddressMode] =
+    useState<BindAddressMode>('private')
+  const [customBindAddress, setCustomBindAddress] = useState('')
   const [noAuthAcknowledged, setNoAuthAcknowledged] = useState(false)
   const setPublicAccess = useSetDatabasePublicAccess()
   const clearPublicAccess = useClearDatabasePublicAccess()
@@ -62,14 +84,19 @@ export function DatabasePublicAccessCard({
       if (requiresNoAuthAck && !noAuthAcknowledged) {
         return
       }
+      if (bindAddressMode === 'custom' && !customBindAddress.trim()) {
+        return
+      }
       const port = portInput.trim() ? Number(portInput) : undefined
+      const bindAddress =
+        bindAddressMode === 'custom' ? customBindAddress.trim() : bindAddressMode
       setPublicAccess.mutate(
-        { name: database.name, port },
+        { name: database.name, port, bindAddress },
         {
           onSuccess: (result) => {
             toast.add({
               title: 'Public access enabled.',
-              description: `Reachable on port ${result.public_port}.`,
+              description: `Reachable on port ${result.public_port}, bound to ${result.bind_address}.`,
               type: 'success',
             })
           },
@@ -89,6 +116,8 @@ export function DatabasePublicAccessCard({
         setPortInput('')
         setCopied(false)
         setNoAuthAcknowledged(false)
+        setBindAddressMode('private')
+        setCustomBindAddress('')
       },
       onError: (error) => {
         toast.add({
@@ -183,8 +212,54 @@ export function DatabasePublicAccessCard({
           </Field>
         )}
 
+        {!enabled && (
+          <Field>
+            <FieldLabel htmlFor="public-access-bind-address">
+              Network interface
+            </FieldLabel>
+            <Select
+              value={bindAddressMode}
+              onValueChange={(value) => {
+                setBindAddressMode(value as BindAddressMode)
+              }}
+            >
+              <SelectTrigger id="public-access-bind-address" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BIND_ADDRESS_MODES.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {BIND_ADDRESS_LABELS[value]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FieldDescription>
+              Private is reachable only from this host. Public exposes it to
+              any network that can reach this host.
+            </FieldDescription>
+            {bindAddressMode === 'custom' && (
+              <Input
+                id="public-access-custom-bind-address"
+                placeholder="10.0.0.5"
+                value={customBindAddress}
+                onChange={(e) => {
+                  setCustomBindAddress(e.target.value)
+                }}
+                disabled={pending}
+                className="mt-2 max-w-48"
+              />
+            )}
+          </Field>
+        )}
+
         {enabled && connectionString ? (
           <div className="space-y-2">
+            {database.public_bind_address ? (
+              <p className="text-sm text-muted-foreground">
+                Bound to {BIND_ADDRESS_LABELS[database.public_bind_address as BindAddressMode] ?? database.public_bind_address}
+              </p>
+            ) : null}
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
               <WarningIcon className="mt-0.5 size-4 shrink-0" />
               <p className="text-sm">

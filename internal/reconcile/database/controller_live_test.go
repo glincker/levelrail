@@ -151,7 +151,7 @@ func TestController_Reconcile_PublicAccess_Live(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("SaveDesiredDatabase() error = %v", err)
 	}
-	if _, err := db.SetDatabasePublicAccess(ctx, dbName, true, hostPort); err != nil {
+	if _, err := db.SetDatabasePublicAccess(ctx, dbName, true, hostPort, ""); err != nil {
 		t.Fatalf("SetDatabasePublicAccess() error = %v", err)
 	}
 
@@ -243,7 +243,7 @@ func TestController_Reconcile_Redis_TLS_Live(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("SaveDesiredDatabase() error = %v", err)
 	}
-	if _, err := db.SetDatabasePublicAccess(ctx, dbName, true, hostPort); err != nil {
+	if _, err := db.SetDatabasePublicAccess(ctx, dbName, true, hostPort, ""); err != nil {
 		t.Fatalf("SetDatabasePublicAccess() error = %v", err)
 	}
 

@@ -53,8 +53,8 @@ export interface DeployCompareEnvKey {
 // on a side means it's the app's current live desired state, not a
 // stored attempt: DeployId is empty and CommitSha/Source/Status/
 // StartedAt/FinishedAt carry no meaning there (DesiredService is live
-// state, not a historical record). Port/host_port/domains/resources/env/
-// health/replicas/strategy/volumes/labels are that side's config snapshot
+// state, not a historical record). Port/host_port/bind_address/domains/
+// resources/env/health/replicas/strategy/volumes/labels are that side's config snapshot
 // (store.DeployAttemptSnapshot): for a real attempt recorded before that
 // snapshot existed (or before a given field was added to it), these are
 // all empty/zero, not a real "port 0" or "no domains".
@@ -69,6 +69,7 @@ export interface DeployCompareSide {
   finished_at?: string
   port?: number
   host_port?: number
+  bind_address?: string
   domains?: string[]
   resources?: DeployCompareResources
   env?: DeployCompareEnvKey[]

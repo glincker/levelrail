@@ -52,9 +52,14 @@ type AppResource struct {
 	// HostPort mirrors internal/api's appResource.HostPort: nil means
 	// "let Docker assign one", a value pins the host-side port. Settable
 	// on create and update, like Port.
-	HostPort *int              `json:"host_port,omitempty"`
-	Domains  []string          `json:"domains,omitempty"`
-	Env      map[string]string `json:"env,omitempty"`
+	HostPort *int `json:"host_port,omitempty"`
+	// BindAddress mirrors internal/api's appResource.BindAddress:
+	// "private" (loopback only, the default), "public" (every
+	// interface), or a literal IP. No omitempty: a response always
+	// carries the resolved value.
+	BindAddress string            `json:"bind_address"`
+	Domains     []string          `json:"domains,omitempty"`
+	Env         map[string]string `json:"env,omitempty"`
 	// SecretEnv mirrors internal/api's appResource.SecretEnv: names of
 	// env vars backed by encrypted secret storage, values held only in
 	// Secrets below or set later via PUT .../secrets/{key}, never here.
@@ -871,13 +876,18 @@ type DatabasePublicAccessResource struct {
 	DatabaseName       string `json:"database_name"`
 	PubliclyAccessible bool   `json:"publicly_accessible"`
 	PublicPort         int    `json:"public_port,omitempty"`
+	// BindAddress: see SetDatabasePublicAccessRequest's own field doc
+	// comment for what this holds.
+	BindAddress string `json:"bind_address,omitempty"`
 }
 
 // SetDatabasePublicAccessRequest mirrors internal/api's
 // setDatabasePublicAccessRequest. Port 0 means auto-assign the next
-// free port.
+// free port. BindAddress empty means the server's own default
+// ("private", loopback only); "public" opts into every interface.
 type SetDatabasePublicAccessRequest struct {
-	Port int `json:"port,omitempty"`
+	Port        int    `json:"port,omitempty"`
+	BindAddress string `json:"bind_address,omitempty"`
 }
 
 // ServiceTemplateListItem mirrors internal/api's serviceTemplateListItem

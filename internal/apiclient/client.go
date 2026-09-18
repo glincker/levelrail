@@ -446,11 +446,19 @@ func (c *Client) SetDatabaseResources(ctx context.Context, name string, resource
 }
 
 // SetDatabasePublicAccess calls PUT /api/v1/databases/{name}/public-access:
-// exposes name on the host at port (0 requests auto-assignment).
-func (c *Client) SetDatabasePublicAccess(ctx context.Context, name string, port int) (DatabasePublicAccessResource, error) {
+// exposes name on the host at port (0 requests auto-assignment) bound to
+// bindAddress ("" requests the server's own default, "private").
+func (c *Client) SetDatabasePublicAccess(ctx context.Context, name string, port int, bindAddress string) (DatabasePublicAccessResource, error) {
 	var out DatabasePublicAccessResource
-	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/public-access", SetDatabasePublicAccessRequest{Port: port}, &out)
+	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/public-access", SetDatabasePublicAccessRequest{Port: port, BindAddress: bindAddress}, &out)
 	return out, err
+}
+
+// ClearDatabasePublicAccess calls DELETE /api/v1/databases/{name}/public-access:
+// returns name to internal-network-only, the reverse of
+// SetDatabasePublicAccess.
+func (c *Client) ClearDatabasePublicAccess(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/public-access", nil, nil)
 }
 
 // ExecApp calls POST /api/v1/apps/{name}/exec: runs command (plus args)

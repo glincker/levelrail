@@ -135,7 +135,15 @@ type DesiredService struct {
 	// to be able to change or clear a pin the same way it already
 	// changes Port.
 	HostPort *int
-	Domains  []string
+	// BindAddress picks which network interface Port (and HostPort, if
+	// pinned) binds to on the host (migrations/0098_service_bind_address.sql):
+	// "private", "public", or a literal IP, see internal/bindaddr.Resolve.
+	// Unlike HostPort, this is never empty after SaveDesiredService: an
+	// unset value resolves to DefaultBindAddress there, the same
+	// resolve-and-always-persist-concrete treatment Strategy/Replicas
+	// already get.
+	BindAddress string
+	Domains     []string
 	Env      map[string]string
 	// Command overrides the image's own default CMD
 	// (internal/docker.ContainerSpec.Command), nil/empty meaning the
@@ -344,6 +352,10 @@ type DesiredService struct {
 const (
 	DefaultDeployStrategy = "blue-green"
 	DefaultReplicas       = 1
+	// DefaultBindAddress mirrors internal/bindaddr.Default (same value,
+	// same "define locally" reasoning above): loopback-only, the safe
+	// default for a service whose caller never set BindAddress.
+	DefaultBindAddress = "private"
 )
 
 // ErrDomainTaken is returned by SaveDesiredService when one of svc's
@@ -467,6 +479,10 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	if replicas <= 0 {
 		replicas = DefaultReplicas
 	}
+	bindAddress := svc.BindAddress
+	if bindAddress == "" {
+		bindAddress = DefaultBindAddress
+	}
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -477,12 +493,13 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, host_port, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, host_port, bind_address, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
 			host_port = excluded.host_port,
+			bind_address = excluded.bind_address,
 			domains = excluded.domains,
 			env = excluded.env,
 			command = excluded.command,
@@ -501,7 +518,7 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			bind_mounts = excluded.bind_mounts,
 			registry_credential_id = excluded.registry_credential_id,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
+	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), bindAddress, string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -1008,7 +1025,7 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint"
+const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
@@ -1021,7 +1038,7 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		hostPort                                                                                                                                           sql.NullInt64
 		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                            string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String

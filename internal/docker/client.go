@@ -156,11 +156,16 @@ func toContainerState(s container.Summary) *ContainerState {
 }
 
 func observedPorts(ports []container.Port) []PortBinding {
-	// Docker reports one entry per (IP, port) combination, so a port
-	// published on all interfaces typically appears twice, once for the
-	// IPv4 wildcard and once for IPv6. PortBinding doesn't carry the
-	// bind IP, so from a caller's view those are the same binding;
-	// dedupe on the fields that are actually kept.
+	// Docker reports one entry per (IP, port) combination: a container
+	// created with no explicit HostIP (every container before
+	// migrations/0098_service_bind_address.sql and 0099's own database
+	// counterpart) binds both address families, so it typically appears
+	// twice, once for the IPv4 wildcard and once for IPv6. Kept as
+	// distinct bindings now that HostIP is tracked, not deduped away:
+	// internal/reconcile/database's portsMatch needs the real, complete
+	// set to detect drift when an already-running container's implicit
+	// dual-stack bind no longer matches this platform's new, always-
+	// explicit single-address one.
 	seen := make(map[PortBinding]bool, len(ports))
 	var out []PortBinding
 	for _, p := range ports {
@@ -170,6 +175,7 @@ func observedPorts(ports []container.Port) []PortBinding {
 		binding := PortBinding{
 			ContainerPort: int(p.PrivatePort),
 			HostPort:      int(p.PublicPort),
+			HostIP:        p.IP,
 			Protocol:      p.Type,
 		}
 		if seen[binding] {
@@ -361,7 +367,7 @@ func toDockerPorts(ports []PortBinding) (nat.PortSet, nat.PortMap, error) {
 		if p.HostPort != 0 {
 			hostPort = strconv.Itoa(p.HostPort)
 		}
-		bindings[natPort] = append(bindings[natPort], nat.PortBinding{HostPort: hostPort})
+		bindings[natPort] = append(bindings[natPort], nat.PortBinding{HostIP: p.HostIP, HostPort: hostPort})
 	}
 
 	return exposed, bindings, nil

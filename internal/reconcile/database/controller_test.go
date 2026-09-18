@@ -1481,9 +1481,56 @@ func TestController_Reconcile_PublicAccess_FreshDeploy_SetsPortBinding(t *testin
 		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
 	}
 
-	want := []docker.PortBinding{{ContainerPort: redisContainerPort, HostPort: 16379}}
+	want := []docker.PortBinding{{ContainerPort: redisContainerPort, HostPort: 16379, HostIP: "127.0.0.1"}}
 	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
 		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_PublicAccess_BindAddress_PublicIsExplicitOptIn
+// is the database counterpart to the application controller's own
+// identically-named test: an explicit "public" PublicBindAddress
+// resolves to 0.0.0.0, and empty (the state every publicly accessible
+// database had before this field existed) resolves to loopback-only via
+// TestController_Reconcile_PublicAccess_FreshDeploy_SetsPortBinding's own
+// assertion above, not Docker's own 0.0.0.0 default.
+func TestController_Reconcile_PublicAccess_BindAddress_PublicIsExplicitOptIn(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{
+		Name: "main", Engine: store.EngineRedis, Version: "7",
+		PubliclyAccessible: true, PublicPort: 16379, PublicBindAddress: "public",
+	}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := []docker.PortBinding{{ContainerPort: redisContainerPort, HostPort: 16379, HostIP: "0.0.0.0"}}
+	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_PublicAccess_BindAddress_InvalidFailsReconcile
+// proves a malformed PublicBindAddress (stored state corrupted some
+// other way than through SetDatabasePublicAccess, which validates and
+// resolves it before it ever reaches here) fails the reconcile with a
+// NotReady condition rather than silently falling back to any
+// particular interface.
+func TestController_Reconcile_PublicAccess_BindAddress_InvalidFailsReconcile(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{
+		Name: "main", Engine: store.EngineRedis, Version: "7",
+		PubliclyAccessible: true, PublicPort: 16379, PublicBindAddress: "not-a-value",
+	}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want an error for an invalid public bind address")
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionFalse || cond.Reason != "BindAddressInvalid" {
+		t.Errorf("condition = %+v, want Status=False Reason=BindAddressInvalid", cond)
 	}
 }
 
@@ -1547,7 +1594,7 @@ func TestController_Reconcile_PublicAccess_ChangedWhileRunning_ReplacesInPlace(t
 func TestController_Reconcile_PublicAccess_AlreadyMatching_NoOp(t *testing.T) {
 	rt := newFakeRuntime()
 	rt.seedWithPorts(containerName("main"), "redis:7", true, []docker.PortBinding{
-		{ContainerPort: redisContainerPort, HostPort: 16379, Protocol: "tcp"},
+		{ContainerPort: redisContainerPort, HostPort: 16379, HostIP: "127.0.0.1", Protocol: "tcp"},
 	})
 
 	desired := &store.DesiredDatabase{
@@ -1565,6 +1612,36 @@ func TestController_Reconcile_PublicAccess_AlreadyMatching_NoOp(t *testing.T) {
 	}
 	if rt.createCalls != 0 {
 		t.Errorf("createCalls = %d, want 0: matching ports must be a no-op", rt.createCalls)
+	}
+}
+
+// TestController_Reconcile_PublicAccess_BindAddressDrift_ReplacesInPlace
+// proves the flip side of the no-op test above: a running container
+// whose observed bind IP no longer matches desired (an operator changed
+// PublicBindAddress, or an already-running database is converging onto
+// its post-migration explicit bind for the first time) must be
+// replaced, the same drift portsMatch's own doc comment describes.
+func TestController_Reconcile_PublicAccess_BindAddressDrift_ReplacesInPlace(t *testing.T) {
+	rt := newFakeRuntime()
+	rt.seedWithPorts(containerName("main"), "redis:7", true, []docker.PortBinding{
+		{ContainerPort: redisContainerPort, HostPort: 16379, HostIP: "0.0.0.0", Protocol: "tcp"},
+	})
+
+	desired := &store.DesiredDatabase{
+		Name: "main", Engine: store.EngineRedis, Version: "7",
+		PubliclyAccessible: true, PublicPort: 16379, PublicBindAddress: "private",
+	}
+	c := New("main", &fakeStore{db: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed (a bind-address change must be applied, not ignored)", cond)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1: a bind-address-only change must still go through replaceContainer", rt.createCalls)
 	}
 }
 
@@ -1592,6 +1669,27 @@ func TestPortsMatch(t *testing.T) {
 			observed: []docker.PortBinding{{ContainerPort: 6379, HostPort: 16379, Protocol: "tcp"}},
 			desired:  nil,
 			want:     false,
+		},
+		{
+			name:     "identical binding including bind IP",
+			observed: []docker.PortBinding{{ContainerPort: 6379, HostPort: 16379, HostIP: "127.0.0.1", Protocol: "tcp"}},
+			desired:  []docker.PortBinding{{ContainerPort: 6379, HostPort: 16379, HostIP: "127.0.0.1"}},
+			want:     true,
+		},
+		{
+			name:     "different bind IP",
+			observed: []docker.PortBinding{{ContainerPort: 6379, HostPort: 16379, HostIP: "0.0.0.0", Protocol: "tcp"}},
+			desired:  []docker.PortBinding{{ContainerPort: 6379, HostPort: 16379, HostIP: "127.0.0.1"}},
+			want:     false,
+		},
+		{
+			name: "legacy implicit dual-stack bind never matches the new explicit single-address one",
+			observed: []docker.PortBinding{
+				{ContainerPort: 6379, HostPort: 16379, HostIP: "0.0.0.0", Protocol: "tcp"},
+				{ContainerPort: 6379, HostPort: 16379, HostIP: "::", Protocol: "tcp"},
+			},
+			desired: []docker.PortBinding{{ContainerPort: 6379, HostPort: 16379, HostIP: "0.0.0.0"}},
+			want:    false,
 		},
 	}
 	for _, tt := range tests {

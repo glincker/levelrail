@@ -18,8 +18,8 @@ import (
 // CommitSHA/Source/Status/timestamps, because DesiredService is live
 // state, not a historical record: there is nothing to show for "now".
 //
-// Port/HostPort/Domains/Resources/Env/Health/Replicas/Strategy/Volumes/
-// Labels are this side's config snapshot (store.DeployAttemptSnapshot,
+// Port/HostPort/BindAddress/Domains/Resources/Env/Health/Replicas/
+// Strategy/Volumes/Labels are this side's config snapshot (store.DeployAttemptSnapshot,
 // migrations/0086): for a real attempt it's that attempt's own historical
 // snapshot; for the current side it's built fresh from the app's live
 // DesiredService, so both sides carry the identical shape and
@@ -37,16 +37,17 @@ type deployCompareSide struct {
 	StartedAt  *time.Time `json:"started_at,omitempty"`
 	FinishedAt *time.Time `json:"finished_at,omitempty"`
 
-	Port      int                         `json:"port,omitempty"`
-	HostPort  *int                        `json:"host_port,omitempty"`
-	Domains   []string                    `json:"domains,omitempty"`
-	Resources *store.ServiceResources     `json:"resources,omitempty"`
-	Env       []store.DeployAttemptEnvKey `json:"env,omitempty"`
-	Health    *store.ServiceHealth        `json:"health,omitempty"`
-	Replicas  int                         `json:"replicas,omitempty"`
-	Strategy  string                      `json:"strategy,omitempty"`
-	Volumes   []store.ServiceVolume       `json:"volumes,omitempty"`
-	Labels    map[string]string           `json:"labels,omitempty"`
+	Port        int                         `json:"port,omitempty"`
+	HostPort    *int                        `json:"host_port,omitempty"`
+	BindAddress string                      `json:"bind_address,omitempty"`
+	Domains     []string                    `json:"domains,omitempty"`
+	Resources   *store.ServiceResources     `json:"resources,omitempty"`
+	Env         []store.DeployAttemptEnvKey `json:"env,omitempty"`
+	Health      *store.ServiceHealth        `json:"health,omitempty"`
+	Replicas    int                         `json:"replicas,omitempty"`
+	Strategy    string                      `json:"strategy,omitempty"`
+	Volumes     []store.ServiceVolume       `json:"volumes,omitempty"`
+	Labels      map[string]string           `json:"labels,omitempty"`
 }
 
 // deployCompareField is one field that differs between From and To.
@@ -102,7 +103,7 @@ type deployCompareResource struct {
 // has somewhere to be listed.
 var unsnapshottedDeployFields = []string{}
 
-const deployCompareUnsnapshottedNote = "Deploy attempts record image tag, commit, trigger source, outcome, environment variable keys, ports, domains, resource limits, health check config, replica count, deploy strategy, volumes, and labels at trigger time (attempts recorded before a given field was added show an empty snapshot for it). A secret- or database-backed env var's value is never recorded: only its key, and whether it was added or removed, ever appears in env_changes, since this control plane cannot know if such a value changed without decrypting it."
+const deployCompareUnsnapshottedNote = "Deploy attempts record image tag, commit, trigger source, outcome, environment variable keys, ports, bind addresses, domains, resource limits, health check config, replica count, deploy strategy, volumes, and labels at trigger time (attempts recorded before a given field was added show an empty snapshot for it). A secret- or database-backed env var's value is never recorded: only its key, and whether it was added or removed, ever appears in env_changes, since this control plane cannot know if such a value changed without decrypting it."
 
 // handleCompareDeploys handles
 // GET /api/v1/apps/{name}/deploys/compare?from={deployId}&to={deployId}.
@@ -164,7 +165,7 @@ func currentDeployCompareSide(svc store.DesiredService) deployCompareSide {
 	snap := store.NewDeployAttemptSnapshot(svc)
 	return deployCompareSide{
 		IsCurrent: true, Image: svc.Image,
-		Port: snap.Port, HostPort: snap.HostPort, Domains: snap.Domains,
+		Port: snap.Port, HostPort: snap.HostPort, BindAddress: snap.BindAddress, Domains: snap.Domains,
 		Resources: snap.Resources, Env: snap.Env,
 		Health: snap.Health, Replicas: snap.Replicas, Strategy: snap.Strategy,
 		Volumes: snap.Volumes, Labels: snap.Labels,
@@ -190,23 +191,24 @@ func (rt *Router) loadDeployCompareSide(w http.ResponseWriter, r *http.Request, 
 		return deployCompareSide{}, false
 	}
 	return deployCompareSide{
-		DeployID:   a.ID,
-		Image:      a.Image,
-		CommitSHA:  a.CommitSHA,
-		Source:     a.Source,
-		Status:     a.Status,
-		StartedAt:  &a.StartedAt,
-		FinishedAt: a.FinishedAt,
-		Port:       a.Snapshot.Port,
-		HostPort:   a.Snapshot.HostPort,
-		Domains:    a.Snapshot.Domains,
-		Resources:  a.Snapshot.Resources,
-		Env:        a.Snapshot.Env,
-		Health:     a.Snapshot.Health,
-		Replicas:   a.Snapshot.Replicas,
-		Strategy:   a.Snapshot.Strategy,
-		Volumes:    a.Snapshot.Volumes,
-		Labels:     a.Snapshot.Labels,
+		DeployID:    a.ID,
+		Image:       a.Image,
+		CommitSHA:   a.CommitSHA,
+		Source:      a.Source,
+		Status:      a.Status,
+		StartedAt:   &a.StartedAt,
+		FinishedAt:  a.FinishedAt,
+		Port:        a.Snapshot.Port,
+		HostPort:    a.Snapshot.HostPort,
+		BindAddress: a.Snapshot.BindAddress,
+		Domains:     a.Snapshot.Domains,
+		Resources:   a.Snapshot.Resources,
+		Env:         a.Snapshot.Env,
+		Health:      a.Snapshot.Health,
+		Replicas:    a.Snapshot.Replicas,
+		Strategy:    a.Snapshot.Strategy,
+		Volumes:     a.Snapshot.Volumes,
+		Labels:      a.Snapshot.Labels,
 	}, true
 }
 
@@ -232,6 +234,9 @@ func diffDeployCompareSides(from, to deployCompareSide) []deployCompareField {
 	}
 	if fromHostPort, toHostPort := hostPortString(from.HostPort), hostPortString(to.HostPort); fromHostPort != toHostPort {
 		changes = append(changes, deployCompareField{Field: "host_port", From: fromHostPort, To: toHostPort})
+	}
+	if from.BindAddress != to.BindAddress {
+		changes = append(changes, deployCompareField{Field: "bind_address", From: from.BindAddress, To: to.BindAddress})
 	}
 	if fromDomains, toDomains := strings.Join(from.Domains, ", "), strings.Join(to.Domains, ", "); fromDomains != toDomains {
 		changes = append(changes, deployCompareField{Field: "domains", From: fromDomains, To: toDomains})

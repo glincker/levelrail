@@ -38,6 +38,7 @@ function fakeApp(overrides: Partial<AppDetail> = {}): AppDetail {
     port: 3000,
     strategy: 'rolling',
     replicas: 1,
+    bind_address: 'private',
     suspended: false,
     env_dirty: false,
     ...overrides,

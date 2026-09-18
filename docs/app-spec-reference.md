@@ -22,6 +22,8 @@ services:
     domains:
       - app.example.com
     port: 3000
+    host_port: 30001        # pin the host-side port; omit to let Docker assign one
+    bind_address: private   # private (default, loopback only) | public | a literal IP
     health:
       readiness: { path: /healthz, interval: 5s, timeout: 2s }
       liveness:  { path: /healthz, interval: 30s, failures: 3 }
@@ -83,6 +85,8 @@ as `LOG_LEVEL`).
 | `build` | `Build` | yes | none | How the service's image gets built. |
 | `domains` | list of string | no | none | Public hostnames routed to this service. A domain can only be claimed by one service across the whole spec. |
 | `port` | integer | conditional | none | 1 to 65535. Required unless `build.type` is `static`; must be omitted when `build.type` is `static`, since a static site has no running container to route to. |
+| `host_port` | integer | no | auto-assigned | 1 to 65535. Pins the host-side port Docker binds `port` to. Omit to let Docker assign one. Must be omitted when `build.type` is `static`. |
+| `bind_address` | string | no | `private` | `private` (loopback only), `public` (every interface, an explicit opt-in), or a literal IP (a specific host interface, or a WireGuard mesh peer address once that lands). Picks which network interface `port` (and `host_port`, if pinned) publishes to; see [Bind addresses and exposure](#bind-addresses-and-exposure) below. Must be omitted when `build.type` is `static`. |
 | `health` | `Health` | no | none | Readiness and liveness probe configuration. |
 | `resources` | `Resources` | no | none | Memory and CPU limits. |
 | `env` | map of name to `EnvVar` | no | none | Environment variables. See the `EnvVar` shapes below. |
@@ -210,6 +214,26 @@ rather than starting the container with the variable empty.
 | --- | --- | --- | --- | --- |
 | `schedule` | string | yes | none | A cron expression, for example `"0 3 * * *"`. |
 | `retain` | integer | no | none | Minimum 1 if set. |
+
+## Bind addresses and exposure
+
+Every published port (a service's `port`/`host_port`, and a managed
+database's public-access port, see [managing databases](managing-databases.md))
+binds to `bind_address`, resolved by `internal/bindaddr.Resolve`:
+
+| Value | Resolves to | Meaning |
+| --- | --- | --- |
+| `private` (default, or omitted) | `127.0.0.1` | Reachable only from this host. |
+| `public` | `0.0.0.0` | Reachable from any network that can route to this host. Requires the literal string `public`; a blank or malformed value never resolves here. |
+| any other value | itself | Treated as a literal IP: a specific host interface, or (once the WireGuard mesh is wired up) a mesh peer address. Must parse as a valid IP. |
+
+`private` is the default for anything newly created after this field
+shipped. A service or database that was already publicly exposed before
+this field existed keeps that exposure across the upgrade (backfilled to
+`public` by `migrations/0098_service_bind_address.sql` and
+`migrations/0099_database_public_bind_address.sql`); it only picks up the
+new `private` default on its next explicit redeploy or public-access
+change that leaves `bind_address` unset.
 
 ### Planned, not yet implemented
 

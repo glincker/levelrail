@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/bindaddr"
 )
 
 // nameLike matches the pattern service and database keys must follow:
@@ -59,6 +61,9 @@ func (svc *Service) validate(name string) error {
 		return err
 	}
 	if err := svc.validatePorts(name); err != nil {
+		return err
+	}
+	if err := svc.validateBindAddress(name); err != nil {
 		return err
 	}
 	if svc.Strategy != "" && svc.Strategy != StrategyRolling && svc.Strategy != StrategyRecreate && svc.Strategy != StrategyBlueGreen {
@@ -162,6 +167,23 @@ func (svc *Service) validatePorts(name string) error {
 	return nil
 }
 
+// validateBindAddress checks svc.BindAddress: either empty (falls
+// through to EffectiveBindAddress's default), or a value
+// internal/bindaddr.Resolve accepts. Gated the same as HostPort above:
+// not meaningful for a build.type with no single running container.
+func (svc *Service) validateBindAddress(name string) error {
+	if svc.BindAddress == "" {
+		return nil
+	}
+	if err := bindaddr.Validate(svc.BindAddress); err != nil {
+		return fmt.Errorf("spec: service %q: bind_address: %w", name, err)
+	}
+	if svc.Build.Type == BuildStatic {
+		return fmt.Errorf("spec: service %q: bind_address must not be set when build.type is %q, static sites have no running container to publish a port for", name, BuildStatic)
+	}
+	return nil
+}
+
 // validateVolumes checks svc.Volumes for a bad name, a forbidden bind-mount
 // host path, and for two volumes colliding on name or mount path, split
 // out from svc.validate for the same reason validateBuild's own doc
@@ -237,4 +259,14 @@ func (svc *Service) EffectiveStrategy() string {
 		return StrategyBlueGreen
 	}
 	return svc.Strategy
+}
+
+// EffectiveBindAddress returns svc.BindAddress, or bindaddr.Default
+// (private, loopback-only) if unset. Mirrors EffectiveStrategy/
+// EffectiveReplicas' own "resolve the default here, once" shape.
+func (svc *Service) EffectiveBindAddress() string {
+	if svc.BindAddress == "" {
+		return bindaddr.Default
+	}
+	return svc.BindAddress
 }

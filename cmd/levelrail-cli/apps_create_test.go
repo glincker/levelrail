@@ -65,6 +65,16 @@ func TestPlanFromFlags(t *testing.T) {
 			},
 		},
 		{
+			name:  "existing image with explicit bind address",
+			flags: createFlags{image: "registry.example.com/x:1", name: "web", port: 3000, bindAddress: "public"},
+			wantPlan: func(t *testing.T, p createPlan) {
+				want := appResource{Name: "web", Image: "registry.example.com/x:1", Port: 3000, BindAddress: "public"}
+				if !reflect.DeepEqual(p.CreateBody, want) {
+					t.Errorf("CreateBody = %+v, want %+v", p.CreateBody, want)
+				}
+			},
+		},
+		{
 			name:    "git-build flags missing image-repo",
 			flags:   createFlags{repo: "https://example.com/x.git", name: "web", port: 3000},
 			wantErr: "--image-repo",
@@ -358,6 +368,30 @@ func TestPlanFromFlags(t *testing.T) {
 			wantPlan: func(t *testing.T, p createPlan) {
 				if p.CreateBody.HostPort == nil || *p.CreateBody.HostPort != 40002 {
 					t.Errorf("HostPort = %v, want overridden pointer to 40002", p.CreateBody.HostPort)
+				}
+			},
+		},
+		{
+			name:  "file mode bind_address from spec",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildDockerfile}, Port: 3000, BindAddress: "public"},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.CreateBody.BindAddress != "public" {
+					t.Errorf("BindAddress = %q, want %q", p.CreateBody.BindAddress, "public")
+				}
+			},
+		},
+		{
+			name:  "file mode --bind-address overrides spec",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git", bindAddress: "10.0.0.5"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildDockerfile}, Port: 3000, BindAddress: "public"},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.CreateBody.BindAddress != "10.0.0.5" {
+					t.Errorf("BindAddress = %q, want overridden %q", p.CreateBody.BindAddress, "10.0.0.5")
 				}
 			},
 		},

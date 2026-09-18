@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
@@ -1240,6 +1242,105 @@ func TestSaveDesiredService_EmptyStrategyAndZeroReplicas_DefaultsPersisted(t *te
 	}
 	if got.Replicas != DefaultReplicas {
 		t.Errorf("Replicas = %d, want default %d", got.Replicas, DefaultReplicas)
+	}
+	if got.BindAddress != DefaultBindAddress {
+		t.Errorf("BindAddress = %q, want default %q", got.BindAddress, DefaultBindAddress)
+	}
+}
+
+// TestSaveDesiredService_BindAddress_RoundTrip proves an explicit
+// BindAddress round-trips as-is, the counterpart to the empty-value
+// default-fill test above.
+func TestSaveDesiredService_BindAddress_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000, BindAddress: "public"}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.BindAddress != "public" {
+		t.Errorf("BindAddress = %q, want %q", got.BindAddress, "public")
+	}
+}
+
+// TestServiceBindAddressMigration_BackfillsExistingRowsToPublic mirrors
+// TestAppsMigration_BackfillsExistingServices' own technique (apps_test.go):
+// applies every migration up to, but not including,
+// 0098_service_bind_address by hand, inserts a desired_services row the
+// way a pre-0098 database would have one (no bind_address column touched
+// yet), then applies 0098 and checks the backfill. This is the
+// "existing rows keep their current, already-relied-on 0.0.0.0 exposure
+// until their next deploy" half of the migration's design; a brand new
+// row inserted after 0098 gets DefaultBindAddress ("private") instead,
+// covered separately by TestSaveDesiredService_EmptyStrategyAndZeroReplicas_DefaultsPersisted's
+// own bind_address assertion.
+func TestServiceBindAddressMigration_BackfillsExistingRowsToPublic(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "levelrail.db")
+
+	sqlDB, err := sql.Open("sqlite", dsn(path))
+	if err != nil {
+		t.Fatalf("sql.Open() error = %v", err)
+	}
+	sqlDB.SetMaxOpenConns(1)
+	db := &DB{DB: sqlDB}
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("closing test db: %v", err)
+		}
+	})
+
+	if _, err := db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version    INTEGER PRIMARY KEY,
+			name       TEXT NOT NULL,
+			applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		)
+	`); err != nil {
+		t.Fatalf("create schema_migrations: %v", err)
+	}
+
+	migrations, err := loadMigrations()
+	if err != nil {
+		t.Fatalf("loadMigrations() error = %v", err)
+	}
+
+	var bindAddressMigration *migration
+	for i, m := range migrations {
+		if m.name == "service_bind_address" {
+			bindAddressMigration = &migrations[i]
+			continue
+		}
+		if err := db.applyMigration(ctx, m); err != nil {
+			t.Fatalf("apply migration %04d_%s: %v", m.version, m.name, err)
+		}
+	}
+	if bindAddressMigration == nil {
+		t.Fatal("service_bind_address migration not found among embedded migrations")
+	}
+
+	if _, err := db.ExecContext(ctx, `
+		INSERT INTO desired_services (name, image, port, updated_at)
+		VALUES ('legacy-web', 'img:v1', 8080, '2026-08-01T00:00:00Z')
+	`); err != nil {
+		t.Fatalf("insert pre-migration desired_services row: %v", err)
+	}
+
+	if err := db.applyMigration(ctx, *bindAddressMigration); err != nil {
+		t.Fatalf("apply service_bind_address migration: %v", err)
+	}
+
+	svc, err := db.GetDesiredService(ctx, "legacy-web")
+	if err != nil {
+		t.Fatalf("GetDesiredService(legacy-web) after backfill error = %v", err)
+	}
+	if svc.BindAddress != "public" {
+		t.Errorf("backfilled BindAddress = %q, want %q (preserve pre-existing exposure)", svc.BindAddress, "public")
 	}
 }
 

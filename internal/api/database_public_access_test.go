@@ -81,6 +81,74 @@ func TestHandleSetDatabasePublicAccess_ExplicitPort(t *testing.T) {
 	}
 }
 
+// TestHandleSetDatabasePublicAccess_BindAddressDefaultsToPrivate proves
+// an omitted bind_address resolves to internal/bindaddr.Default, never a
+// silent "public".
+func TestHandleSetDatabasePublicAccess_BindAddressDefaultsToPrivate(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedRedisDatabaseForTest(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/public-access", `{}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got databasePublicAccessResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.BindAddress != "private" {
+		t.Errorf("BindAddress = %q, want %q", got.BindAddress, "private")
+	}
+
+	saved, err := db.GetDesiredDatabase(context.Background(), "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if saved.PublicBindAddress != "private" {
+		t.Errorf("persisted PublicBindAddress = %q, want %q", saved.PublicBindAddress, "private")
+	}
+}
+
+// TestHandleSetDatabasePublicAccess_ExplicitBindAddress proves an
+// explicit "public" bind_address is honored and persisted.
+func TestHandleSetDatabasePublicAccess_ExplicitBindAddress(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedRedisDatabaseForTest(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/public-access", `{"bind_address":"public"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got databasePublicAccessResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.BindAddress != "public" {
+		t.Errorf("BindAddress = %q, want %q", got.BindAddress, "public")
+	}
+}
+
+// TestHandleSetDatabasePublicAccess_InvalidBindAddress proves a
+// malformed bind_address is rejected with a 400 before it ever reaches
+// store.SetDatabasePublicAccess.
+func TestHandleSetDatabasePublicAccess_InvalidBindAddress(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedRedisDatabaseForTest(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/databases/main/public-access", `{"bind_address":"publik"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
 func TestHandleSetDatabasePublicAccess_PortTooLow(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

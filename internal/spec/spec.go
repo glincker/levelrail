@@ -32,12 +32,18 @@ type Service struct {
 	// auto-assign (the same zero-value-means-unset convention Port
 	// itself uses). Its storage home is store.DesiredService.HostPort
 	// (migrations/0056_service_host_port.sql).
-	HostPort  int               `yaml:"host_port,omitempty"`
-	Health    *Health           `yaml:"health,omitempty"`
-	Resources *Resources        `yaml:"resources,omitempty"`
-	Env       map[string]EnvVar `yaml:"env,omitempty"`
-	Replicas  int               `yaml:"replicas,omitempty"`
-	Strategy  string            `yaml:"strategy,omitempty"`
+	HostPort int `yaml:"host_port,omitempty"`
+	// BindAddress picks which network interface Port (and HostPort, if
+	// pinned) binds to on the host: "private" (loopback only, the
+	// default when empty), "public" (every interface, an explicit opt-
+	// in), or a literal IP. See internal/bindaddr.Resolve for the exact
+	// rules; EffectiveBindAddress applies the default.
+	BindAddress string            `yaml:"bind_address,omitempty"`
+	Health      *Health           `yaml:"health,omitempty"`
+	Resources   *Resources        `yaml:"resources,omitempty"`
+	Env         map[string]EnvVar `yaml:"env,omitempty"`
+	Replicas    int               `yaml:"replicas,omitempty"`
+	Strategy    string            `yaml:"strategy,omitempty"`
 	// Labels are arbitrary operator-supplied Docker labels applied to the
 	// service's container at create time, an escape hatch for tooling
 	// this platform doesn't know about (a monitoring agent or log
