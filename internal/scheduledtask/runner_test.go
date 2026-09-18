@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -26,7 +27,11 @@ func (f *fakeAppStore) GetDesiredService(context.Context, string) (*store.Desire
 }
 
 // fakeRunStore is Runner's own fake for RunStore: records every call.
+// Guarded by mu since the concurrency-policy tests (concurrency_test.go)
+// deliberately call RecordScheduledTaskRun from more than one goroutine
+// at once.
 type fakeRunStore struct {
+	mu    sync.Mutex
 	calls []struct {
 		id     string
 		ranAt  time.Time
@@ -37,6 +42,8 @@ type fakeRunStore struct {
 }
 
 func (f *fakeRunStore) RecordScheduledTaskRun(_ context.Context, id string, ranAt time.Time, status, output string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.calls = append(f.calls, struct {
 		id     string
 		ranAt  time.Time
@@ -44,6 +51,26 @@ func (f *fakeRunStore) RecordScheduledTaskRun(_ context.Context, id string, ranA
 		output string
 	}{id, ranAt, status, output})
 	return f.err
+}
+
+// snapshot returns a copy of every recorded call so far, safe to inspect
+// without racing a still-in-flight RecordScheduledTaskRun call.
+func (f *fakeRunStore) snapshot() []struct {
+	id     string
+	ranAt  time.Time
+	status string
+	output string
+} {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]struct {
+		id     string
+		ranAt  time.Time
+		status string
+		output string
+	}, len(f.calls))
+	copy(out, f.calls)
+	return out
 }
 
 // fakeRuntime is a hand-written fake docker.Runtime, the same convention
@@ -58,6 +85,13 @@ type fakeRuntime struct {
 
 	gotContainerID string
 	gotCmd         []string
+
+	// execStarted, when non-nil, gets a non-blocking send every time Exec
+	// is called: the concurrency-policy tests (concurrency_test.go) use
+	// this to know a background Run call has reached its blocking exec
+	// phase before triggering a second, overlapping Run call, without a
+	// sleep-based race.
+	execStarted chan struct{}
 }
 
 func (f *fakeRuntime) InspectByName(context.Context, string) (*docker.ContainerState, error) {
@@ -66,6 +100,12 @@ func (f *fakeRuntime) InspectByName(context.Context, string) (*docker.ContainerS
 func (f *fakeRuntime) Exec(_ context.Context, containerID string, cmd []string) (io.ReadCloser, error) {
 	f.gotContainerID = containerID
 	f.gotCmd = cmd
+	if f.execStarted != nil {
+		select {
+		case f.execStarted <- struct{}{}:
+		default:
+		}
+	}
 	return f.execReader, f.execErr
 }
 func (f *fakeRuntime) ExecWithInput(context.Context, string, []string, io.Reader) (io.ReadCloser, error) {

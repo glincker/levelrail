@@ -107,6 +107,69 @@ func TestHandleCreateScheduledTask_EmptyCommand_BadRequest(t *testing.T) {
 	}
 }
 
+// TestHandleCreateScheduledTask_ConcurrencyPolicy_DefaultsToAllow proves
+// a request that omits concurrency_policy (every existing client, before
+// this field existed) still creates a task with the allow default,
+// today's existing behavior.
+func TestHandleCreateScheduledTask_ConcurrencyPolicy_DefaultsToAllow(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedScheduledTaskApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	body := `{"command":["echo","hi"],"schedule":"0 3 * * *","enabled":true}`
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/scheduled-tasks", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var got scheduledTaskResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.ConcurrencyPolicy != store.ScheduledTaskConcurrencyAllow {
+		t.Errorf("ConcurrencyPolicy = %q, want %q", got.ConcurrencyPolicy, store.ScheduledTaskConcurrencyAllow)
+	}
+}
+
+// TestHandleCreateScheduledTask_ConcurrencyPolicy_Explicit proves an
+// explicit forbid/replace round-trips through create.
+func TestHandleCreateScheduledTask_ConcurrencyPolicy_Explicit(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedScheduledTaskApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	body := `{"command":["echo","hi"],"schedule":"0 3 * * *","enabled":true,"concurrency_policy":"forbid"}`
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/scheduled-tasks", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var got scheduledTaskResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.ConcurrencyPolicy != store.ScheduledTaskConcurrencyForbid {
+		t.Errorf("ConcurrencyPolicy = %q, want %q", got.ConcurrencyPolicy, store.ScheduledTaskConcurrencyForbid)
+	}
+}
+
+// TestHandleCreateScheduledTask_ConcurrencyPolicy_Invalid_BadRequest
+// proves an unrecognized concurrency_policy value is rejected, the same
+// "validate against the real allowed set" precedent validateScheduledTaskInput
+// establishes for schedule.
+func TestHandleCreateScheduledTask_ConcurrencyPolicy_Invalid_BadRequest(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedScheduledTaskApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	body := `{"command":["echo","hi"],"schedule":"0 3 * * *","enabled":true,"concurrency_policy":"bogus"}`
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/scheduled-tasks", body))
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
 func TestHandleCreateScheduledTask_InvalidSchedule_BadRequest(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -195,6 +258,62 @@ func TestHandleUpdateScheduledTask_Success(t *testing.T) {
 	}
 	if got.Schedule != "*/5 * * * *" || got.Enabled {
 		t.Errorf("updated resource = %+v, want schedule=*/5 * * * * enabled=false", got)
+	}
+}
+
+// TestHandleUpdateScheduledTask_ConcurrencyPolicy proves an update can
+// change concurrency_policy, and that omitting it on a later update
+// resets it back to allow: PUT is a full replace, not a partial patch,
+// the same contract every other field on this resource already has.
+func TestHandleUpdateScheduledTask_ConcurrencyPolicy(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedScheduledTaskApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/scheduled-tasks", `{"command":["echo","hi"],"schedule":"0 3 * * *","enabled":true}`))
+	var created scheduledTaskResource
+	_ = json.Unmarshal(rec.Body.Bytes(), &created)
+
+	rec = httptest.NewRecorder()
+	updateBody := `{"command":["echo","hi"],"schedule":"0 3 * * *","enabled":true,"concurrency_policy":"replace"}`
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/scheduled-tasks/"+created.ID, updateBody))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var got scheduledTaskResource
+	_ = json.Unmarshal(rec.Body.Bytes(), &got)
+	if got.ConcurrencyPolicy != store.ScheduledTaskConcurrencyReplace {
+		t.Fatalf("ConcurrencyPolicy after update = %q, want %q", got.ConcurrencyPolicy, store.ScheduledTaskConcurrencyReplace)
+	}
+
+	rec = httptest.NewRecorder()
+	updateBody = `{"command":["echo","hi"],"schedule":"0 3 * * *","enabled":true}`
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/scheduled-tasks/"+created.ID, updateBody))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &got)
+	if got.ConcurrencyPolicy != store.ScheduledTaskConcurrencyAllow {
+		t.Errorf("ConcurrencyPolicy after omitting the field on update = %q, want %q (full-replace semantics)", got.ConcurrencyPolicy, store.ScheduledTaskConcurrencyAllow)
+	}
+}
+
+func TestHandleUpdateScheduledTask_ConcurrencyPolicy_Invalid_BadRequest(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedScheduledTaskApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/scheduled-tasks", `{"command":["echo","hi"],"schedule":"0 3 * * *","enabled":true}`))
+	var created scheduledTaskResource
+	_ = json.Unmarshal(rec.Body.Bytes(), &created)
+
+	rec = httptest.NewRecorder()
+	updateBody := `{"command":["echo","hi"],"schedule":"0 3 * * *","enabled":true,"concurrency_policy":"bogus"}`
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/scheduled-tasks/"+created.ID, updateBody))
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
 }
 

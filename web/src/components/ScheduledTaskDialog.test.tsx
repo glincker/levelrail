@@ -36,6 +36,7 @@ const BASE_TASK: ScheduledTask = {
   command: ['sh', '-c', 'echo hi'],
   schedule: '0 3 * * *',
   enabled: true,
+  concurrency_policy: 'allow',
   consecutive_failures: 0,
   created_at: '2026-01-01T00:00:00.000000000Z',
   updated_at: '2026-01-01T00:00:00.000000000Z',
