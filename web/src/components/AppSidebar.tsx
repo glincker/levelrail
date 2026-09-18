@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
   GaugeIcon,
@@ -27,9 +28,24 @@ import { Button } from '@/components/ui/button'
 import { useBrand } from '../hooks/useBrand'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { useLogout } from '../queries/auth'
-import { AppScopedSidebar } from './AppScopedSidebar'
-import { DatabaseScopedSidebar } from './DatabaseScopedSidebar'
-import { SettingsScopedSidebar } from './SettingsScopedSidebar'
+
+// Lazy: exactly one of these three renders at a time (mutually exclusive
+// by pathname below), so a session that never visits /databases or
+// /settings should not pay for their query modules in the eagerly-loaded
+// root chunk either.
+const AppScopedSidebar = lazy(() =>
+  import('./AppScopedSidebar').then((m) => ({ default: m.AppScopedSidebar })),
+)
+const DatabaseScopedSidebar = lazy(() =>
+  import('./DatabaseScopedSidebar').then((m) => ({
+    default: m.DatabaseScopedSidebar,
+  })),
+)
+const SettingsScopedSidebar = lazy(() =>
+  import('./SettingsScopedSidebar').then((m) => ({
+    default: m.SettingsScopedSidebar,
+  })),
+)
 
 // Matches /apps/<name> and any nested path under it, capturing <name>.
 // Deliberately excludes the bare /apps list route (no trailing segment)
@@ -88,13 +104,19 @@ export function AppSidebar() {
 
       <SidebarContent>
         {scopedAppName ? (
-          <AppScopedSidebar name={decodeURIComponent(scopedAppName)} />
+          <Suspense fallback={null}>
+            <AppScopedSidebar name={decodeURIComponent(scopedAppName)} />
+          </Suspense>
         ) : scopedDatabaseName ? (
-          <DatabaseScopedSidebar
-            name={decodeURIComponent(scopedDatabaseName)}
-          />
+          <Suspense fallback={null}>
+            <DatabaseScopedSidebar
+              name={decodeURIComponent(scopedDatabaseName)}
+            />
+          </Suspense>
         ) : isSettingsScoped ? (
-          <SettingsScopedSidebar />
+          <Suspense fallback={null}>
+            <SettingsScopedSidebar />
+          </Suspense>
         ) : (
           <>
             <SidebarGroup>
