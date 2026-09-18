@@ -110,6 +110,11 @@ type AppResource struct {
 	// image's own default CMD, response-only (declared through app.yaml's
 	// command: or a compose import, not settable here).
 	Command []string `json:"command,omitempty"`
+	// PullPolicy mirrors internal/api's appResource.PullPolicy: "always"
+	// forces a fresh image pull on every deploy, empty is the default
+	// pull-if-absent behavior. Response-only (declared through a compose
+	// import's pull_policy:, not settable here).
+	PullPolicy string `json:"pull_policy,omitempty"`
 }
 
 // AppVaultEnvRef mirrors internal/api's appVaultEnvRef: one env var's

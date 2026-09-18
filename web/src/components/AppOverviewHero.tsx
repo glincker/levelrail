@@ -19,7 +19,12 @@ import { useGitSource } from '../queries/gitSources'
 import { useRestartApp } from '../queries/apps'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 
@@ -65,9 +70,9 @@ export function AppOverviewHero({
   const hasHealthCheck = Boolean(app.health?.readiness || app.health?.liveness)
   const hasResourceLimits = Boolean(
     app.resources?.memory_bytes ||
-      app.resources?.nano_cpus ||
-      app.resources?.swap_memory_bytes ||
-      app.resources?.cpuset_cpus,
+    app.resources?.nano_cpus ||
+    app.resources?.swap_memory_bytes ||
+    app.resources?.cpuset_cpus,
   )
 
   // Both queries are supplementary signals for the "Domain connected"
@@ -77,7 +82,8 @@ export function AppOverviewHero({
   // queries/domainCheck.ts's useDomainCheck already applies.
   const { data: network } = useAppNetwork(app.name)
   const { data: tunnelStatus } = useCloudflareTunnelStatus()
-  const tunnelAvailable = tunnelStatus?.enabled && tunnelStatus.status === 'connected'
+  const tunnelAvailable =
+    tunnelStatus?.enabled && tunnelStatus.status === 'connected'
   // Same "supplementary signal, plain query" reasoning as network/tunnel
   // above: a 404 here just means no git source is connected yet (its own
   // normal steady state, see queries/gitSources.ts), not an error to show.
@@ -102,7 +108,10 @@ export function AppOverviewHero({
             onRestart={() => {
               restartApp.mutate(app.name, {
                 onSuccess: () => {
-                  toast.add({ title: `Restarting "${app.name}".`, type: 'success' })
+                  toast.add({
+                    title: `Restarting "${app.name}".`,
+                    type: 'success',
+                  })
                 },
                 onError: (error) => {
                   toast.add({ title: error.message, type: 'error' })
@@ -130,6 +139,11 @@ export function AppOverviewHero({
           </HeroField>
           <HeroField label="Image">
             <span className="font-mono">{app.image}</span>
+            {app.pull_policy === 'always' ? (
+              <Badge variant="outline" className="ml-2">
+                always pulls latest
+              </Badge>
+            ) : null}
           </HeroField>
           <HeroField label="Node">
             <span className="font-mono">
@@ -214,7 +228,10 @@ export function AppOverviewHero({
               action={
                 hasHealthCheck
                   ? undefined
-                  : { label: 'Configure health checks', to: '/apps/$name/health' }
+                  : {
+                      label: 'Configure health checks',
+                      to: '/apps/$name/health',
+                    }
               }
               appName={app.name}
             />
@@ -230,7 +247,10 @@ export function AppOverviewHero({
               action={
                 hasResourceLimits
                   ? undefined
-                  : { label: 'Set resource limits', to: '/apps/$name/resources' }
+                  : {
+                      label: 'Set resource limits',
+                      to: '/apps/$name/resources',
+                    }
               }
               appName={app.name}
             />
@@ -341,7 +361,11 @@ function ChecklistRow({
   // "Domain connected" row's Cloudflare Tunnel pointer uses this, kept
   // as its own prop rather than a union with action so the two never
   // get confused about which params shape they need.
-  extraAction?: { label: string; detail: string; to: '/settings/cloudflare-tunnel' }
+  extraAction?: {
+    label: string
+    detail: string
+    to: '/settings/cloudflare-tunnel'
+  }
   appName: string
 }) {
   const Icon = met ? CheckCircleIcon : SEVERITY_ICON[severity]
@@ -351,7 +375,10 @@ function ChecklistRow({
 
   return (
     <li className="flex items-start gap-2.5 text-sm">
-      <Icon className={`mt-0.5 size-4 shrink-0 ${iconClass}`} aria-hidden="true" />
+      <Icon
+        className={`mt-0.5 size-4 shrink-0 ${iconClass}`}
+        aria-hidden="true"
+      />
       <div className="min-w-0 flex-1">
         <p className="font-medium text-foreground">{label}</p>
         <p className="text-muted-foreground">{detail}</p>

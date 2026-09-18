@@ -139,6 +139,54 @@ func TestHandleDeployCompose_CreatesAppAndServices(t *testing.T) {
 	}
 }
 
+// TestHandleDeployCompose_PullPolicyPropagates checks that a service's
+// pull_policy: always makes it all the way through the HTTP response
+// and into the persisted store.DesiredService, and that a sibling
+// service with no pull_policy: declared stays empty.
+func TestHandleDeployCompose_PullPolicyPropagates(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	const composeYAML = `
+services:
+  web:
+    image: nginx:latest
+    ports: ["8080:80"]
+    pull_policy: always
+  redis:
+    image: redis:7
+`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", composeYAML))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got composeDeployResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+
+	byName := make(map[string]appResource, len(got.Services))
+	for _, svc := range got.Services {
+		byName[svc.Name] = svc
+	}
+	if pp := byName["myapp-web"].PullPolicy; pp != store.PullPolicyAlways {
+		t.Errorf("myapp-web PullPolicy = %q, want %q", pp, store.PullPolicyAlways)
+	}
+	if pp := byName["myapp-redis"].PullPolicy; pp != "" {
+		t.Errorf("myapp-redis PullPolicy = %q, want empty", pp)
+	}
+
+	saved, err := db.GetDesiredService(context.Background(), "myapp-web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if saved.PullPolicy != store.PullPolicyAlways {
+		t.Errorf("persisted PullPolicy = %q, want %q", saved.PullPolicy, store.PullPolicyAlways)
+	}
+}
+
 // TestHandleDeployCompose_RecordsDeployAttempts covers the gap found via
 // live testing (deploying a template such as "Homepage" showed the
 // reconciler's own real rollout, but the Deploys tab stayed "No deploys

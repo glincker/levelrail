@@ -32,6 +32,7 @@ type rawService struct {
 	DependsOn   DependsOn         `yaml:"depends_on"`
 	Command     Command           `yaml:"command"`
 	Entrypoint  Command           `yaml:"entrypoint"`
+	PullPolicy  string            `yaml:"pull_policy"`
 }
 
 // Healthcheck is one service's healthcheck: block, Docker Compose's own

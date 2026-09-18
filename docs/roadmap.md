@@ -609,6 +609,14 @@ still open. This page describes what's actually true today.
   platform already used for its own built-in registry. Wired into the
   UI (a browse dialog on the registry-credentials settings page), the
   CLI (`registry-credentials repositories`/`tags`), and two MCP tools.
+- Docker Compose `pull_policy:` support: `always` forces a fresh image
+  pull at deploy time even when the tag already exists locally (the
+  case a mutable tag like `:latest` needs, since Docker's own
+  tag-based caching otherwise skips a real upstream update), anything
+  else (including an unset field) keeps the existing pull-if-absent
+  behavior. Response-only in the API/CLI, the same boundary
+  `command:`/`entrypoint:` already established: set through a compose
+  import, surfaced read-only in `apps get` and the app detail page.
 
 ## In progress
 

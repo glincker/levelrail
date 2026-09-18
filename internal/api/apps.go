@@ -61,7 +61,7 @@ type appResource struct {
 	// trips" shape SecretEnv/Secrets establish for local secrets.
 	VaultEnv  map[string]appVaultEnvRef `json:"vault_env,omitempty"`
 	Resources *store.ServiceResources   `json:"resources,omitempty"`
-	Health    *store.ServiceHealth    `json:"health,omitempty"`
+	Health    *store.ServiceHealth      `json:"health,omitempty"`
 	// Hooks are this service's pre/post-deploy commands
 	// (store.DesiredService.Hooks), settable on create and update like
 	// Resources/Health above. See internal/reconcile/application.Controller's
@@ -191,6 +191,11 @@ type appResource struct {
 	// Volumes above is: set through app.yaml's command: field or a
 	// compose import, never through this endpoint.
 	Command []string `json:"command,omitempty"`
+	// PullPolicy is store.PullPolicyAlways to force a fresh image pull on
+	// every deploy, or empty for the default pull-if-absent behavior.
+	// Response-only, same reason Command above is: set through a compose
+	// import's pull_policy:, never through this endpoint.
+	PullPolicy string `json:"pull_policy,omitempty"`
 }
 
 // appVaultEnvRef is store.VaultEnvRef's wire shape, used both inside
@@ -254,6 +259,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		Volumes:            toAppVolumeResources(svc),
 		BindMounts:         toAppBindMountResources(svc),
 		Command:            svc.Command,
+		PullPolicy:         svc.PullPolicy,
 	}
 }
 

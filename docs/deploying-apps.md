@@ -101,8 +101,12 @@ initial wizard, because it fans out under an app that already exists.
    `deploy`. Anything compose declares but Levelrail can't faithfully
    translate (a health check with no readiness-probe equivalent, for
    example) comes back as a `notices` entry rather than failing or being
-   silently dropped. Dashboard: the "Docker Compose" wizard card
-   (`CreateComposeFields.tsx`). CLI: `apps deploy-compose <name> --file compose.yaml`.
+   silently dropped. A service's `pull_policy: always` forces a fresh
+   image pull on every deploy even when the tag already exists locally
+   (useful for a mutable tag like `:latest`); anything else, including
+   an unset field, keeps the default pull-if-absent behavior. Dashboard:
+   the "Docker Compose" wizard card (`CreateComposeFields.tsx`). CLI:
+   `apps deploy-compose <name> --file compose.yaml`.
 
 4. **`app.yaml` deploy-spec (multi-service).** `POST
    /api/v1/apps/{name}/deploy-spec` takes a git repo/ref plus an

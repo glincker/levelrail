@@ -34,6 +34,10 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 		if err := spec.ValidateLabels(svc.Labels); err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
 		}
+		pullPolicy, err := normalizePullPolicy(svc.PullPolicy)
+		if err != nil {
+			return nil, nil, fmt.Errorf("service %q: %w", key, err)
+		}
 
 		d := store.DesiredService{
 			Name:       appName + "-" + key,
@@ -43,6 +47,7 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			Labels:     svc.Labels,
 			Command:    svc.Command,
 			Entrypoint: svc.Entrypoint,
+			PullPolicy: pullPolicy,
 		}
 		for _, p := range svc.Ports {
 			d.Port = p.ContainerPort
