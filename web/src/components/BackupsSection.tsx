@@ -37,6 +37,7 @@ import {
   useTriggerBackup,
 } from '../queries/backupHistory'
 import { RestoreBackupDialog } from './RestoreBackupDialog'
+import { DeleteBackupDialog } from './DeleteBackupDialog'
 import { RestoreHistoryTable } from './RestoreHistoryTable'
 import { CloneRestoreDialog } from './CloneRestoreDialog'
 import { CloneRestoreHistoryTable } from './CloneRestoreHistoryTable'
@@ -302,6 +303,7 @@ export function BackupHistoryTableView({
   targetName,
   renderVerification,
   renderActions,
+  renderDeleteAction,
 }: {
   isLoading: boolean
   error: Error | null
@@ -314,6 +316,7 @@ export function BackupHistoryTableView({
   targetName: (targetId: string) => string
   renderVerification: (record: BackupHistoryRecord) => ReactNode
   renderActions: (record: BackupHistoryRecord) => ReactNode
+  renderDeleteAction: (record: BackupHistoryRecord) => ReactNode
 }) {
   if (isLoading) {
     return <TableSkeleton columnCount={7} rowCount={3} />
@@ -380,11 +383,12 @@ export function BackupHistoryTableView({
                   )}
                 </TableCell>
                 <TableCell>
-                  {record.status === 'succeeded' ? (
-                    <div className="flex items-center gap-2">
-                      {renderActions(record)}
-                    </div>
-                  ) : null}
+                  <div className="flex items-center gap-2">
+                    {record.status === 'succeeded' ? renderActions(record) : null}
+                    {record.status !== 'running'
+                      ? renderDeleteAction(record)
+                      : null}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -449,6 +453,9 @@ function BackupHistoryTable({ databaseName }: { databaseName: string }) {
           <RestoreBackupDialog databaseName={databaseName} backup={record} />
           <CloneRestoreDialog databaseName={databaseName} backup={record} />
         </>
+      )}
+      renderDeleteAction={(record) => (
+        <DeleteBackupDialog databaseName={databaseName} backup={record} />
       )}
     />
   )

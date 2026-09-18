@@ -141,6 +141,43 @@ backups" field to 7 and "delete backups older than (days)" to 0 (no age
 limit); both are plain number inputs, 0 meaning no limit for that
 dimension, documented inline in the form itself.
 
+## Deleting one archived backup on demand
+
+Retention only ever removes backups your schedule's `retain`/`retain_days`
+settings say are old enough to go. Deleting one specific archive right
+now, without touching the rest of that resource's history or its
+schedule, is a separate, on-demand action: `DELETE
+/api/v1/databases/{name}/backups/{historyId}` for a database, `DELETE
+/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}` for an app
+volume. Both routes resolve `{historyId}` against the same
+`backup_history` table (database and app volume backups share one row
+shape, distinguished by `resource_kind`, see "How database backups and
+app volume backups share one concept" above), so a single
+`internal/backup.DeleteRunner` backs both.
+
+Deleting an archive removes the stored object first (best-effort, via the
+same `Deleter` interface and `S3Deleter` implementation
+`internal/backup.Scheduler` already uses to prune retired backups) and
+then the `backup_history` row. A storage-side failure there, an already-
+deleted backup target, or an object that's already gone from the bucket
+all get logged and skipped rather than blocking the delete: an operator
+who explicitly asked to delete this archive should not be stuck with it
+still showing up in history because removing the underlying bytes hit a
+snag. A backup that's still `running` is refused with `409`, since its
+own dump-and-upload is still writing to that row; a `succeeded` or
+`failed` attempt can always be deleted.
+
+This is `write:sensitive`, the same tier as triggering a backup or
+deleting the backup target itself, not the `root` tier a live restore
+needs: nothing here touches a database's actual live data, only a
+historical archive of it. On the dashboard, every non-running row in a
+backup history table has its own Delete action, behind a confirm dialog.
+On the CLI, `backups delete <database> <backup-id>` and
+`app-volume-backups delete <app> <volume> <backup-id>` require no
+separate `--confirm` flag: naming the exact backup id, the same way
+`backup-targets delete <id>` requires no confirmation flag beyond the id
+itself, is already the deliberate, unambiguous signal.
+
 ## The built-in container registry
 
 Separate from registry credentials. Registry credentials store a
@@ -304,10 +341,12 @@ built-in registry's loopback address.
 | `GET` | `/api/v1/registry/tags?repository=...` | `read` |
 | `POST` | `/api/v1/databases/{name}/backups` | `write:sensitive` |
 | `GET` | `/api/v1/databases/{name}/backups?limit=&before=` | `read` |
+| `DELETE` | `/api/v1/databases/{name}/backups/{historyId}` | `write:sensitive` |
 | `PUT` | `/api/v1/databases/{name}/backup-schedule` | `write:sensitive` |
 | `DELETE` | `/api/v1/databases/{name}/backup-schedule` | `write:sensitive` |
 | `POST` | `/api/v1/apps/{name}/volumes/{volume}/backups` | `write:sensitive` |
 | `GET` | `/api/v1/apps/{name}/volumes/{volume}/backups?limit=&before=` | `read` |
+| `DELETE` | `/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}` | `write:sensitive` |
 | `GET` | `/api/v1/apps/{name}/volumes/{volume}/backup-schedule` | `read` |
 | `PUT` | `/api/v1/apps/{name}/volumes/{volume}/backup-schedule` | `write:sensitive` |
 | `DELETE` | `/api/v1/apps/{name}/volumes/{volume}/backup-schedule` | `write:sensitive` |
@@ -343,9 +382,11 @@ levelrail-cli registry tags --repository NAME [flags]
 
 levelrail-cli backups schedule set <database> --target ID --cron EXPR [--retain N] [--retain-days N]
 levelrail-cli backups schedule clear <database> [flags]
+levelrail-cli backups delete <database> <backup-id> [flags]
 
 levelrail-cli app-volume-backups schedule set <app> <volume> --target ID --cron EXPR [--retain N] [--retain-days N]
 levelrail-cli app-volume-backups schedule clear <app> <volume> [flags]
+levelrail-cli app-volume-backups delete <app> <volume> <backup-id> [flags]
 ```
 
 `--provider` accepts `aws`, `r2`, or `custom`. `--endpoint` is required

@@ -223,6 +223,7 @@ type Router struct {
 	backupHistory                  BackupHistoryStore               // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
 	backupRunner                   BackupRunner                     // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
 	backupDownloader               BackupDownloader                 // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
+	backupDeleter                  BackupDeleter                    // nil is valid: DELETE .../backups/{historyId} returns 501, same shape as backupDownloader above
 	backupVerifications            BackupVerificationStore          // always set, same "core Store interface" shape as backupHistory above: listing verification attempts needs no runner configuration, only triggering a new one does
 	backupVerifier                 BackupVerifier                   // nil is valid: POST .../backups/{historyId}/verify returns 501, same shape as backupRunner above
 	backupTargetTester             BackupTargetTester               // nil is valid: POST /api/v1/backup-targets/{id}/test returns 501, same shape as registryAuthTester above

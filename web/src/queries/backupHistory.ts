@@ -167,3 +167,47 @@ export function useTriggerBackup(databaseName: string) {
     },
   })
 }
+
+// DELETE /api/v1/databases/{name}/backups/{historyId} (handleDeleteBackup).
+// Permanently removes one archived backup, both its stored object and its
+// history row. 204 on success, no body to parse; 409 if the named backup
+// is still running, the same "let the real status/message through"
+// treatment deleteBackupTarget's own doc comment describes for its own
+// reachable-but-rare failure code.
+export async function deleteBackup(
+  databaseName: string,
+  historyId: string,
+): Promise<void> {
+  const res = await fetch(
+    `/api/v1/databases/${encodeURIComponent(databaseName)}/backups/${encodeURIComponent(historyId)}`,
+    { method: 'DELETE' },
+  )
+  if (res.status === 204) {
+    return
+  }
+  throw new ApiError(
+    res.status,
+    await readErrorMessage(res, `delete backup failed: ${res.status}`),
+  )
+}
+
+// On success, the deleted row is removed straight from the history list's
+// cache (the mirror image of useTriggerBackup's optimistic insert above),
+// then the query is invalidated so a follow-up refetch confirms it against
+// real server state.
+export function useDeleteBackup(databaseName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<void, ApiError, string>({
+    mutationFn: (historyId: string) => deleteBackup(databaseName, historyId),
+    onSuccess: (_data, historyId) => {
+      queryClient.setQueryData(
+        backupHistoryKeys.list(databaseName),
+        (existing: BackupHistoryRecord[] | undefined) =>
+          existing?.filter((record) => record.id !== historyId),
+      )
+      void queryClient.invalidateQueries({
+        queryKey: backupHistoryKeys.list(databaseName),
+      })
+    },
+  })
+}
