@@ -38,6 +38,44 @@ func (m stringMapFlag) Set(s string) error {
 	return nil
 }
 
+// vaultEnvFlag is a flag.Value for a repeatable "KEY=path#field" flag
+// (--vault-secret), the vault-sourced counterpart to stringMapFlag's
+// literal-value shape above: the value is a Vault KV v2 path and a field
+// name within it, never a value itself.
+type vaultEnvFlag map[string]appVaultEnvRef
+
+func (m vaultEnvFlag) String() string {
+	if len(m) == 0 {
+		return ""
+	}
+	pairs := make([]string, 0, len(m))
+	for k, v := range m {
+		pairs = append(pairs, k+"="+v.Path+"#"+v.Key)
+	}
+	return strings.Join(pairs, ",")
+}
+
+// Set splits s on the first "=" into a key and a "path#field" value,
+// then splits that on the last "#" into path and field: a Vault KV path
+// itself may legitimately contain "#", so splitting from the right
+// keeps a path like "secret/data/my#app" intact.
+func (m vaultEnvFlag) Set(s string) error {
+	key, ref, ok := strings.Cut(s, "=")
+	if !ok || key == "" {
+		return fmt.Errorf("invalid KEY=path#field %q, want a key, an \"=\", and a path#field value", s)
+	}
+	sep := strings.LastIndex(ref, "#")
+	if sep < 0 {
+		return fmt.Errorf("invalid vault reference %q, want \"path#field\"", ref)
+	}
+	path, field := ref[:sep], ref[sep+1:]
+	if path == "" || field == "" {
+		return fmt.Errorf("invalid vault reference %q, want \"path#field\"", ref)
+	}
+	m[key] = appVaultEnvRef{Path: path, Key: field}
+	return nil
+}
+
 // apiFlagSet builds a FlagSet named prog+" "+cmdLabel with the
 // --token/--api-url/--profile/--json/--output/--query flags most
 // subcommands take, so each command only wires up the flags unique to

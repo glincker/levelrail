@@ -78,6 +78,12 @@ type createFlags struct {
 	// plan, the same "apply after planning, not threaded through every
 	// plan* function" shape --node-id already uses (see runAppsCreate).
 	secrets map[string]string
+
+	// vaultSecrets backs --vault-secret (repeatable KEY=path#field): env
+	// vars resolved live from an external Vault instance instead of a
+	// value this platform stores, applied to plan.CreateBody.VaultEnv the
+	// same "apply after planning" way secrets above is.
+	vaultSecrets map[string]appVaultEnvRef
 }
 
 // createPlan is planFromFlags's output: exactly the HTTP requests
@@ -613,6 +619,9 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if len(f.secrets) > 0 {
 		plan.CreateBody.Secrets = f.secrets
 	}
+	if len(f.vaultSecrets) > 0 {
+		plan.CreateBody.VaultEnv = f.vaultSecrets
+	}
 
 	profile := resolveProfile(profileFlag, lookupEnv)
 	token := resolveToken(tokenFlag, lookupEnv, prog, profile)
@@ -718,6 +727,8 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.attachDatabaseField, "attach-database-field", "", "which field to inject: url, host, port, username, password, or database (default: url); only meaningful with --attach-database")
 	f.secrets = make(map[string]string)
 	fs.Var(stringMapFlag(f.secrets), "secret", "secret env var value as KEY=VALUE, repeatable; stored via envelope-encrypted secret storage as part of this same create call (any path above), same value-on-the-command-line convention \"apps secrets set\" already uses")
+	f.vaultSecrets = make(map[string]appVaultEnvRef)
+	fs.Var(vaultEnvFlag(f.vaultSecrets), "vault-secret", "env var resolved live from an external Vault instance as KEY=path#field, repeatable; requires \"levelrail-cli vault set\" to have configured vault on this control plane, mutually exclusive per key with --secret")
 	fs.BoolVar(&f.yes, "yes", false, "accept defaults without prompting (reserved: no-op outside --interactive, accepted for forward compatibility and script portability)")
 	fs.BoolVar(&f.yes, "y", false, "shorthand for --yes")
 	fs.BoolVar(&f.interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, source, port, domain, health check, resource limits, and optionally more services, then writes app.yaml or calls the API")
@@ -825,6 +836,13 @@ Secrets (any path above):
                             PUT /api/v1/apps/{name}/secrets/{key} call afterward. A declared name
                             with no matching --secret still creates fine; set its value later the
                             same way.
+  --vault-secret KEY=path#field   env var resolved live from an external Vault instance instead
+                            of a value this platform stores, repeatable; requires
+                            "%[1]s vault set" to have configured vault first. A
+                            { vault: { path, key } } var declared in app.yaml (--file path) is
+                            equivalent and needs no --vault-secret flag; this flag is for the
+                            existing-image and git-build paths, which have no app.yaml to declare
+                            it in.
 
 Common flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

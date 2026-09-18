@@ -88,6 +88,24 @@ type DatabaseAttachmentStore interface {
 	GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error)
 }
 
+// VaultSettingsStore is the narrow surface this controller needs to
+// resolve a { vault: ... } env var (store.DesiredService.VaultEnv)
+// against the platform's own Vault connection config: just the one
+// read, the same shape StorageTargetStore/DatabaseAttachmentStore
+// already establish. *store.DB satisfies this structurally.
+type VaultSettingsStore interface {
+	GetVaultSettings(ctx context.Context) (store.VaultSettings, error)
+}
+
+// VaultResolver is the narrow surface this controller needs from
+// internal/vault.Resolver: a live read against an external Vault
+// instance, never persisted anywhere by this controller, the same
+// discipline SecretResolver.Resolve already holds for envelope-encrypted
+// values.
+type VaultResolver interface {
+	Resolve(ctx context.Context, cfg store.VaultSettings, credential, path, key string) (string, error)
+}
+
 // ProjectEnvStore is the narrow surface this controller needs to
 // resolve store.DesiredService.ProjectID into that project's shared env
 // vars (resolveEnv's own doc comment on precedence). *store.DB satisfies
@@ -191,6 +209,8 @@ type Controller struct {
 	networkPrefix  string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
 	registryCreds  RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
 	databases      DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
+	vaultSettings  VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
+	vaultResolver  VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
 	hookRuns       HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
 	hookTimeout    time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
 	liveness       *LivenessTracker        // per-container liveness failure counts, in memory only, see LivenessTracker
@@ -278,6 +298,24 @@ func WithRegistryCredentials(s RegistryCredentialStore) Option {
 // value it needs.
 func WithDatabaseAttachments(s DatabaseAttachmentStore) Option {
 	return func(ctrl *Controller) { ctrl.databases = s }
+}
+
+// WithVaultSettings enables container creation to resolve
+// store.DesiredService.VaultEnv against the platform's own Vault
+// connection config, the same "fail loudly if declared but unconfigured"
+// shape WithStorageTargets already establishes. Both this and
+// WithVaultResolver are needed for a VaultEnv entry to resolve; either
+// missing is treated as "not configured" (see resolveEnv).
+func WithVaultSettings(s VaultSettingsStore) Option {
+	return func(ctrl *Controller) { ctrl.vaultSettings = s }
+}
+
+// WithVaultResolver enables container creation to read a VaultEnv
+// entry's live value from an external Vault instance, the same
+// "fail loudly if declared but unconfigured" shape WithVaultSettings
+// establishes.
+func WithVaultResolver(r VaultResolver) Option {
+	return func(ctrl *Controller) { ctrl.vaultResolver = r }
 }
 
 // WithProjectEnv enables resolving store.DesiredService.ProjectID's
@@ -908,7 +946,7 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 	hasOrgEnv := desired.ProjectID != "" && c.orgEnv != nil
 	hasEnvironmentEnv := desired.EnvironmentID != "" && c.environmentEnv != nil
 	hasDatabaseEnv := len(desired.DatabaseEnv) > 0 || desired.DatabaseAttachment != nil
-	if len(desired.SecretEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv && !hasOrgEnv && !hasEnvironmentEnv && !hasDatabaseEnv {
+	if len(desired.SecretEnv) == 0 && len(desired.VaultEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv && !hasOrgEnv && !hasEnvironmentEnv && !hasDatabaseEnv {
 		return desired.Env, nil
 	}
 
@@ -968,6 +1006,16 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 		}
 	}
 
+	if len(desired.VaultEnv) > 0 {
+		vaultEnvVars, err := c.resolveVaultEnv(ctx, desired.VaultEnv)
+		if err != nil {
+			return nil, fmt.Errorf("resolve vault env: %w", err)
+		}
+		for k, v := range vaultEnvVars {
+			env[k] = v
+		}
+	}
+
 	if desired.StorageTargetID != "" {
 		storageEnv, err := c.resolveStorageEnv(ctx, desired.StorageTargetID)
 		if err != nil {
@@ -988,6 +1036,41 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 		}
 	}
 
+	return env, nil
+}
+
+// resolveVaultEnv resolves every entry in vaultEnv against a live read to
+// the platform's configured external Vault instance. Fails loudly (no
+// entry is silently skipped or left empty) if Vault isn't configured,
+// isn't enabled, or a read fails for any reason, e.g. unreachable: a
+// container must never start with a Vault-sourced variable silently
+// missing its value.
+func (c *Controller) resolveVaultEnv(ctx context.Context, vaultEnv map[string]store.VaultEnvRef) (map[string]string, error) {
+	if c.vaultSettings == nil || c.vaultResolver == nil || c.secretResolver == nil {
+		return nil, fmt.Errorf("service declares %d vault-backed env var(s) but vault is not configured on this control plane", len(vaultEnv))
+	}
+
+	settings, err := c.vaultSettings.GetVaultSettings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get vault settings: %w", err)
+	}
+	if !settings.Enabled {
+		return nil, fmt.Errorf("service declares %d vault-backed env var(s) but vault is not enabled on this control plane", len(vaultEnv))
+	}
+
+	credential, err := c.secretResolver.Resolve(ctx, store.VaultSecretsKey(), store.VaultCredentialEnvKey)
+	if err != nil {
+		return nil, fmt.Errorf("resolve vault credential: %w", err)
+	}
+
+	env := make(map[string]string, len(vaultEnv))
+	for envVar, ref := range vaultEnv {
+		value, err := c.vaultResolver.Resolve(ctx, settings, credential, ref.Path, ref.Key)
+		if err != nil {
+			return nil, fmt.Errorf("env var %q (vault path %q, key %q): %w", envVar, ref.Path, ref.Key, err)
+		}
+		env[envVar] = value
+	}
 	return env, nil
 }
 

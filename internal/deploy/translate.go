@@ -40,6 +40,7 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		Env:         literalEnv(svc.Env),
 		SecretEnv:   secretEnvNames(svc.Env),
 		DatabaseEnv: databaseEnv,
+		VaultEnv:    vaultEnvRefs(svc.Env),
 		// Effective*, not the raw field: svc.Strategy/svc.Replicas can be
 		// "" / 0 (unset in app.yaml), and store.DesiredService's own doc
 		// comment on these two fields requires them to always be the
@@ -103,10 +104,30 @@ func literalEnv(env map[string]spec.EnvVar) map[string]string {
 	}
 	out := make(map[string]string, len(env))
 	for k, v := range env {
-		if v.Secret || v.From != "" {
+		if v.Secret || v.From != "" || v.Vault != nil {
 			continue
 		}
 		out[k] = v.Value
+	}
+	return out
+}
+
+// vaultEnvRefs lists every { vault: { path, key } } env var into
+// store.DesiredService's own VaultEnv shape, the same "declaration
+// only, resolved later" split databaseEnvRefs already makes for
+// { from: ... }. app.yaml parsing (internal/spec.EnvVar.UnmarshalYAML)
+// already rejects a malformed vault block (empty path/key, or vault
+// combined with secret/from), so this needs no error return.
+func vaultEnvRefs(env map[string]spec.EnvVar) map[string]store.VaultEnvRef {
+	var out map[string]store.VaultEnvRef
+	for k, v := range env {
+		if v.Vault == nil {
+			continue
+		}
+		if out == nil {
+			out = make(map[string]store.VaultEnvRef)
+		}
+		out[k] = store.VaultEnvRef{Path: v.Vault.Path, Key: v.Vault.Key}
 	}
 	return out
 }

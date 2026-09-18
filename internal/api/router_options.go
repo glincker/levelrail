@@ -68,6 +68,13 @@ func WithRegistrySecrets(s RegistrySecrets) Option {
 	return func(rt *Router) { rt.registrySecrets = s }
 }
 
+// WithVaultSecrets enables PUT/DELETE /api/v1/settings/vault. Without
+// one configured (the default), both return 501; GET works regardless,
+// the same shape WithCloudflareTunnelSecrets establishes.
+func WithVaultSecrets(s VaultSecrets) Option {
+	return func(rt *Router) { rt.vaultSecrets = s }
+}
+
 // WithRegistryCatalogSecrets enables GET /api/v1/registry/repositories
 // and GET /api/v1/registry/tags. Without one configured (the default),
 // both return 501, the same shape WithRegistrySecrets establishes.

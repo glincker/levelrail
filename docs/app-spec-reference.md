@@ -31,6 +31,7 @@ services:
     env:
       DATABASE_URL: { from: postgres.main.url }
       API_KEY:      { secret: true, required: true }
+      STRIPE_KEY:   { vault: { path: myapp/config, key: stripe_key } }
       LOG_LEVEL: debug        # plain string shorthand for a literal value
     replicas: 2
     strategy: rolling         # rolling | recreate | blue-green
@@ -171,8 +172,28 @@ union via a custom `UnmarshalYAML`.
 | `from` | string | no | none | References another resource's computed value, for example `postgres.main.url`. |
 | `secret` | boolean | no | `false` | The operator provides this value at deploy time through envelope-encrypted secret storage; it is never written to `app.yaml` or the git repo. |
 | `required` | boolean | no | `false` | Only meaningful alongside `secret: true`: fail the deploy if no value has been provided, rather than starting the container with the variable unset. |
+| `vault` | `VaultRef` | no | none | Resolves this value live from an external HashiCorp Vault instance instead of Levelrail's own envelope-encrypted storage. Mutually exclusive with `from` and `secret`. See [external secrets: HashiCorp Vault](deploying-apps.md#external-secrets-hashicorp-vault). |
 
-The object form must set at least one of the three fields.
+The object form must set at least one of `from`, `secret`, or `vault`.
+`vault` is mutually exclusive with both `from` and `secret`: a given env
+var resolves its value from exactly one source.
+
+### `VaultRef` (the value of `vault` on an `EnvVar`)
+
+| Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `path` | string | yes | none | The secret's path in Vault's KV v2 engine, for example `myapp/config`. Resolved against the mount path configured under Settings → Vault (default `secret`). |
+| `key` | string | yes | none | The field name inside that secret's data, for example `api_key`. |
+
+```yaml
+env:
+  API_KEY: { vault: { path: myapp/config, key: api_key } }
+```
+
+The value is read fresh from Vault immediately before the container is
+created and is never persisted by Levelrail. If Vault is unreachable, not
+configured, or the secret/field doesn't exist, the deploy fails loudly
+rather than starting the container with the variable empty.
 
 ### `Database` (an entry under `databases`)
 

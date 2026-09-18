@@ -5,6 +5,7 @@ import {
   InfoIcon,
   LockIcon,
   DatabaseIcon,
+  VaultIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type {
   DeployCompare,
@@ -241,6 +242,12 @@ function DeployCompareEnvChangesCard({
                     <DatabaseIcon
                       className="size-3.5 shrink-0 text-muted-foreground"
                       aria-label="Database-resolved value"
+                    />
+                  ) : null}
+                  {c.kind === 'vault' ? (
+                    <VaultIcon
+                      className="size-3.5 shrink-0 text-muted-foreground"
+                      aria-label="Vault-resolved value"
                     />
                   ) : null}
                   <span className="truncate">{c.key}</span>

@@ -84,6 +84,16 @@ type AppStore interface {
 	// UpdateServiceStorageTarget, see store.DB.UpdateServiceDatabaseAttachment's
 	// own doc comment.
 	UpdateServiceDatabaseAttachment(ctx context.Context, name string, att *store.DatabaseAttachment) error
+	// SetServiceVaultEnvVar backs PUT/DELETE
+	// /api/v1/apps/{name}/vault-env/{key} (apps_vault_env.go): the
+	// UI/CLI-facing way to declare (or remove) one Vault-sourced env var
+	// on an app that already exists, without going through the general
+	// PUT /api/v1/apps/{name}, which would silently drop every other
+	// declarative field (VaultEnv included) it doesn't itself carry
+	// forward. Same separation-from-ordinary-update reasoning as
+	// UpdateServiceDatabaseAttachment, see store.DB.SetServiceVaultEnvVar's
+	// own doc comment.
+	SetServiceVaultEnvVar(ctx context.Context, name, envVar string, ref *store.VaultEnvRef) error
 }
 
 // AppGroupLister is the store surface GET /api/v1/apps/{name}/group
@@ -293,6 +303,14 @@ type RegistryStore interface {
 	UpdateRegistrySettings(ctx context.Context, s store.RegistrySettings) error
 }
 
+// VaultSettingsStore is the store surface GET/PUT/DELETE
+// /api/v1/settings/vault need: the single platform-wide row, always
+// present, the same shape CloudflareTunnelStore has for its own row.
+type VaultSettingsStore interface {
+	GetVaultSettings(ctx context.Context) (store.VaultSettings, error)
+	UpdateVaultSettings(ctx context.Context, s store.VaultSettings) error
+}
+
 // PasswordResetTokenStore is the store surface the forgot-password flow
 // needs: always set, part of the core Store interface.
 type PasswordResetTokenStore interface {
@@ -396,6 +414,7 @@ type Store interface {
 	CloudflareTunnelStore
 	RegistryStore
 	CloudflareDNSStore
+	VaultSettingsStore
 	PasswordResetTokenStore
 	InviteStore
 	RecoveryCodeStore

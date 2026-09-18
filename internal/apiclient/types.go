@@ -63,9 +63,14 @@ type AppResource struct {
 	// values to encrypt and store for SecretEnv-named vars at create
 	// time. Write-only, like SetSecretRequest's own Value: never
 	// populated on a response.
-	Secrets   map[string]string `json:"secrets,omitempty"`
-	Resources *ServiceResources `json:"resources,omitempty"`
-	Health    *ServiceHealth    `json:"health,omitempty"`
+	Secrets map[string]string `json:"secrets,omitempty"`
+	// VaultEnv mirrors internal/api's appResource.VaultEnv: env vars
+	// whose values resolve live from an external HashiCorp Vault
+	// instance, never a value this platform stores. Settable at create
+	// time, response-mirrors the store otherwise.
+	VaultEnv  map[string]AppVaultEnvRef `json:"vault_env,omitempty"`
+	Resources *ServiceResources         `json:"resources,omitempty"`
+	Health    *ServiceHealth            `json:"health,omitempty"`
 	// Hooks mirrors internal/api's appResource.Hooks: settable on create
 	// and update, like Resources/Health above.
 	Hooks *ServiceHooks `json:"hooks,omitempty"`
@@ -105,6 +110,13 @@ type AppResource struct {
 	// image's own default CMD, response-only (declared through app.yaml's
 	// command: or a compose import, not settable here).
 	Command []string `json:"command,omitempty"`
+}
+
+// AppVaultEnvRef mirrors internal/api's appVaultEnvRef: one env var's
+// { path, key } reference into an external Vault instance.
+type AppVaultEnvRef struct {
+	Path string `json:"path"`
+	Key  string `json:"key"`
 }
 
 // AppVolumeResource mirrors internal/api's appVolumeResource
@@ -310,6 +322,34 @@ type CloudflareTunnelResource struct {
 type UpdateCloudflareTunnelRequest struct {
 	Enabled bool   `json:"enabled"`
 	Token   string `json:"token,omitempty"`
+}
+
+// VaultSettingsResource mirrors internal/api's vaultSettingsResource
+// (internal/api/vault_settings.go): GET/PUT/DELETE
+// /api/v1/settings/vault's wire shape. The credential (a Vault token or
+// AppRole secret ID, depending on AuthMethod) never appears here in
+// either direction.
+type VaultSettingsResource struct {
+	Enabled       bool   `json:"enabled"`
+	Address       string `json:"address"`
+	AuthMethod    string `json:"auth_method"`
+	Namespace     string `json:"namespace,omitempty"`
+	RoleID        string `json:"role_id,omitempty"`
+	MountPath     string `json:"mount_path"`
+	HasCredential bool   `json:"has_credential"`
+}
+
+// UpdateVaultSettingsRequest mirrors internal/api's
+// updateVaultSettingsRequest. Credential empty on an update means "leave
+// the currently stored credential unchanged".
+type UpdateVaultSettingsRequest struct {
+	Enabled    bool   `json:"enabled"`
+	Address    string `json:"address"`
+	AuthMethod string `json:"auth_method"`
+	Namespace  string `json:"namespace,omitempty"`
+	RoleID     string `json:"role_id,omitempty"`
+	MountPath  string `json:"mount_path,omitempty"`
+	Credential string `json:"credential,omitempty"`
 }
 
 // RegistrySettingsResource mirrors internal/api's registrySettingsResource

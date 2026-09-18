@@ -120,6 +120,47 @@ All four accept inline secret values (`--secret KEY=VALUE` on the CLI,
 create/deploy call, so a `{ secret: true }` env var declared in the spec
 doesn't need a separate follow-up call to set its value.
 
+## External secrets: HashiCorp Vault
+
+`{ secret: true }` above stores the value itself, encrypted at rest,
+inside Levelrail. As an alternative, an env var can instead resolve its
+value live from an external HashiCorp Vault instance, never storing the
+value at all:
+
+```yaml
+env:
+  API_KEY: { vault: { path: myapp/config, key: api_key } }
+```
+
+`path` is a secret's path in Vault's KV v2 engine; `key` is the field
+name inside that secret's data. See [`EnvVar`/`VaultRef` in the app.yaml
+reference](app-spec-reference.md#envvar-an-entry-under-env) for the full
+field table. `vault` is mutually exclusive with both `from` and `secret`
+on the same env var.
+
+**Setup.** Configure the connection once, instance-wide, under
+Settings → Vault (dashboard), `levelrail-cli vault set`, or `PUT
+/api/v1/settings/vault`: a Vault address, an auth method (`token` or
+`approle`), and a credential (a Vault token, or an AppRole role ID plus
+secret ID). The credential is stored the same way every other
+platform-wide credential is (envelope-encrypted, write-only over the
+API), never logged, never written to disk in plaintext.
+
+**Resolution.** A vault-backed env var's value is read fresh from Vault
+by the reconciler immediately before the container is created, the same
+"resolved at container-create time, never persisted" trust model
+`{ secret: true }` already follows. If Vault is unreachable, not
+configured, disabled, or the secret/field doesn't exist, the deploy
+fails loudly with a clear error rather than starting the container with
+the variable silently empty or omitted.
+
+**Declaring one on an existing app.** Beyond `app.yaml`'s own `vault:`
+syntax, an app created directly (not from `app.yaml`) can declare or
+remove a Vault-sourced env var at any time: the dashboard's app
+Environment tab, `levelrail-cli apps vault-env set|clear <name> <key>`,
+or `PUT`/`DELETE /api/v1/apps/{name}/vault-env/{key}`. This never
+touches any other field on the app, unlike the general update endpoint.
+
 ## Lifecycle actions
 
 | Action | What it does | Not to confuse with |

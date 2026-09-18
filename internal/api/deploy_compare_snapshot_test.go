@@ -85,6 +85,20 @@ func TestHandleCompareDeploys_ConfigSnapshotDiff(t *testing.T) {
 			wantEnvChanges: nil,
 		},
 		{
+			name: "vault-backed env key added, value never present",
+			from: store.DeployAttemptSnapshot{},
+			to:   store.DeployAttemptSnapshot{Env: []store.DeployAttemptEnvKey{{Key: "API_KEY", Kind: store.DeployAttemptEnvKindVault}}},
+			wantEnvChanges: []deployCompareEnvChange{
+				{Key: "API_KEY", Kind: store.DeployAttemptEnvKindVault, Status: deployCompareEnvAdded},
+			},
+		},
+		{
+			name:           "vault-backed env key present on both sides is not reported: value is resolved live, never snapshotted",
+			from:           store.DeployAttemptSnapshot{Env: []store.DeployAttemptEnvKey{{Key: "API_KEY", Kind: store.DeployAttemptEnvKindVault}}},
+			to:             store.DeployAttemptSnapshot{Env: []store.DeployAttemptEnvKey{{Key: "API_KEY", Kind: store.DeployAttemptEnvKindVault}}},
+			wantEnvChanges: nil,
+		},
+		{
 			name:           "port changed",
 			from:           store.DeployAttemptSnapshot{Port: 3000},
 			to:             store.DeployAttemptSnapshot{Port: 4000},

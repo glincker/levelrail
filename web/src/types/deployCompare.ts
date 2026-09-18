@@ -44,7 +44,7 @@ export interface DeployCompareVolume {
 // internal/store/deploy_attempt.go's DeployAttemptEnvKey doc comment.
 export interface DeployCompareEnvKey {
   key: string
-  kind: 'literal' | 'secret' | 'database'
+  kind: 'literal' | 'secret' | 'database' | 'vault'
   value?: string
 }
 
@@ -93,7 +93,7 @@ export interface DeployCompareField {
 // plane in the first place.
 export interface DeployCompareEnvChange {
   key: string
-  kind: 'literal' | 'secret' | 'database'
+  kind: 'literal' | 'secret' | 'database' | 'vault'
   status: 'added' | 'removed' | 'changed'
   from?: string
   to?: string

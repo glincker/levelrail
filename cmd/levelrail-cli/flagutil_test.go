@@ -157,3 +157,45 @@ func TestStringMapFlag_Var(t *testing.T) {
 		t.Errorf("map = %+v, want %+v", map[string]string(m), want)
 	}
 }
+
+func TestVaultEnvFlag_Set(t *testing.T) {
+	tests := []struct {
+		name    string
+		sets    []string
+		want    map[string]appVaultEnvRef
+		wantErr bool
+	}{
+		{name: "single entry", sets: []string{"API_KEY=myapp/config#api_key"}, want: map[string]appVaultEnvRef{"API_KEY": {Path: "myapp/config", Key: "api_key"}}},
+		{name: "path contains a hash", sets: []string{"API_KEY=secret/data/my#app#api_key"}, want: map[string]appVaultEnvRef{"API_KEY": {Path: "secret/data/my#app", Key: "api_key"}}},
+		{name: "multiple entries accumulate", sets: []string{"A=p1#k1", "B=p2#k2"}, want: map[string]appVaultEnvRef{"A": {Path: "p1", Key: "k1"}, "B": {Path: "p2", Key: "k2"}}},
+		{name: "no equals sign rejected", sets: []string{"API_KEY"}, wantErr: true},
+		{name: "empty key rejected", sets: []string{"=p#k"}, wantErr: true},
+		{name: "no hash separator rejected", sets: []string{"API_KEY=myapp/config"}, wantErr: true},
+		{name: "empty path rejected", sets: []string{"API_KEY=#api_key"}, wantErr: true},
+		{name: "empty field rejected", sets: []string{"API_KEY=myapp/config#"}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := make(vaultEnvFlag)
+			var err error
+			for _, s := range tt.sets {
+				if err = m.Set(s); err != nil {
+					break
+				}
+			}
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("Set() error = nil, want error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Set() error = %v", err)
+			}
+			if !reflect.DeepEqual(map[string]appVaultEnvRef(m), tt.want) {
+				t.Errorf("map = %+v, want %+v", map[string]appVaultEnvRef(m), tt.want)
+			}
+		})
+	}
+}

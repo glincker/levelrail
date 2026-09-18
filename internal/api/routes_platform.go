@@ -371,6 +371,13 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudflareDNSSettings))
 	mux.HandleFunc("DELETE /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectCloudflareDNS))
 
+	// External HashiCorp Vault (instance-level, one connection per
+	// control plane): same GET AbilityRead / PUT+DELETE AbilityRoot tier
+	// as Cloudflare Tunnel above.
+	mux.HandleFunc("GET /api/v1/settings/vault", rt.requireAbility(AbilityRead, rt.handleGetVaultSettings))
+	mux.HandleFunc("PUT /api/v1/settings/vault", rt.requireAbility(AbilityRoot, rt.handleUpdateVaultSettings))
+	mux.HandleFunc("DELETE /api/v1/settings/vault", rt.requireAbility(AbilityRoot, rt.handleDisconnectVault))
+
 	// Built-in container registry (instance-level, one registry per
 	// control plane): GET is AbilityRead; PUT/DELETE are AbilityRoot,
 	// matching PUT /api/v1/settings/cloudflare-tunnel's own tier for
@@ -655,6 +662,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// later" shape PUT .../storage/.../node/.../project already have).
 	mux.HandleFunc("PUT /api/v1/apps/{name}/database", rt.requireAbility(AbilityWrite, rt.handleSetAppDatabase))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/database", rt.requireAbility(AbilityWrite, rt.handleClearAppDatabase))
+	// One Vault-sourced env var declaration at a time (apps_vault_env.go):
+	// same AbilityWrite tier and "config write, not a deploy trigger"
+	// reasoning as PUT/DELETE .../database just above.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/vault-env/{key}", rt.requireAbility(AbilityWrite, rt.handleSetAppVaultEnv))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/vault-env/{key}", rt.requireAbility(AbilityWrite, rt.handleClearAppVaultEnv))
 	// Read-only, not scoped to any one app: the static list of env var
 	// names attaching storage can inject, backed by
 	// application.StorageEnvKeys rather than a hardcoded list, see

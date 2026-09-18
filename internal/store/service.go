@@ -63,6 +63,18 @@ type DatabaseEnvRef struct {
 	Field    string `json:"field"`
 }
 
+// VaultEnvRef is one env var's parsed { vault: { path, key } } reference
+// (internal/spec.EnvVar.Vault), stored on DesiredService.VaultEnv. Path
+// is a KV v2 secret path in the operator's own Vault instance (see
+// VaultSettings); Key is the field name inside that secret's data.
+// Resolved fresh from a live Vault read by the application controller
+// immediately before container creation, the same "declaration only,
+// resolved later" split DatabaseEnvRef already makes.
+type VaultEnvRef struct {
+	Path string `json:"path"`
+	Key  string `json:"key"`
+}
+
 // DatabaseAttachment is which managed database (desired_databases.name)
 // an app resolves one connection env var from, set through PUT/DELETE
 // /api/v1/apps/{name}/database rather than app.yaml: the UI/CLI-facing
@@ -168,6 +180,14 @@ type DesiredService struct {
 	// "ordinary desired state, written on every save" treatment SecretEnv
 	// gets: derived fresh from app.yaml on every deploy.
 	DatabaseEnv map[string]DatabaseEnvRef
+
+	// VaultEnv names env vars whose values resolve from an external
+	// HashiCorp Vault instance (internal/spec's { vault: { path, key } }
+	// env var syntax), resolved by the application controller
+	// immediately before container creation the same way DatabaseEnv is:
+	// derived fresh from app.yaml on every deploy, never persisted with
+	// a value.
+	VaultEnv map[string]VaultEnvRef
 
 	Resources *ServiceResources
 	Health    *ServiceHealth
@@ -398,6 +418,14 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	if err != nil {
 		return fmt.Errorf("store: marshal database_env for service %q: %w", svc.Name, err)
 	}
+	vaultEnv := svc.VaultEnv
+	if vaultEnv == nil {
+		vaultEnv = map[string]VaultEnvRef{}
+	}
+	vaultEnvJSON, err := json.Marshal(vaultEnv)
+	if err != nil {
+		return fmt.Errorf("store: marshal vault_env for service %q: %w", svc.Name, err)
+	}
 	resourcesJSON, err := json.Marshal(svc.Resources)
 	if err != nil {
 		return fmt.Errorf("store: marshal resources for service %q: %w", svc.Name, err)
@@ -449,8 +477,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, host_port, domains, env, command, entrypoint, secret_env, env_dirty, database_env, resources, health, hooks, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, host_port, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -462,6 +490,7 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			secret_env = excluded.secret_env,
 			env_dirty = excluded.env_dirty,
 			database_env = excluded.database_env,
+			vault_env = excluded.vault_env,
 			resources = excluded.resources,
 			health = excluded.health,
 			hooks = excluded.hooks,
@@ -472,7 +501,7 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			bind_mounts = excluded.bind_mounts,
 			registry_credential_id = excluded.registry_credential_id,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
+	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""})
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -637,6 +666,62 @@ func (db *DB) UpdateServiceDatabaseAttachment(ctx context.Context, name string, 
 	}
 	if n == 0 {
 		return ErrServiceNotFound
+	}
+	return nil
+}
+
+// SetServiceVaultEnvVar adds or replaces (ref non-nil) or removes (ref
+// nil) exactly one entry in name's VaultEnv map, the narrow single-key
+// mutation PUT/DELETE /api/v1/apps/{name}/vault-env/{key} needs. Unlike
+// SaveDesiredService's own full-record-replace semantics, this never
+// touches any other field: VaultEnv is a JSON blob (like SecretEnv,
+// DatabaseEnv), not one column per key, so adding or removing a single
+// entry needs a read-modify-write, done here inside one transaction so a
+// concurrent call for a different key on the same service can never
+// silently lose the other's write.
+func (db *DB) SetServiceVaultEnvVar(ctx context.Context, name, envVar string, ref *VaultEnvRef) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: set vault env var for service %q: begin transaction: %w", name, err)
+	}
+	defer func() {
+		_ = tx.Rollback() // no-op if Commit already succeeded
+	}()
+
+	var vaultEnvJSON string
+	err = tx.QueryRowContext(ctx, `SELECT vault_env FROM desired_services WHERE name = ?`, name).Scan(&vaultEnvJSON)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrServiceNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("store: set vault env var for service %q: read existing: %w", name, err)
+	}
+
+	vaultEnv := map[string]VaultEnvRef{}
+	if vaultEnvJSON != "" {
+		if err := json.Unmarshal([]byte(vaultEnvJSON), &vaultEnv); err != nil {
+			return fmt.Errorf("store: set vault env var for service %q: decode existing: %w", name, err)
+		}
+	}
+	if ref == nil {
+		delete(vaultEnv, envVar)
+	} else {
+		vaultEnv[envVar] = *ref
+	}
+
+	updated, err := json.Marshal(vaultEnv)
+	if err != nil {
+		return fmt.Errorf("store: set vault env var for service %q: encode: %w", name, err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE desired_services SET vault_env = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, string(updated), name); err != nil {
+		return fmt.Errorf("store: set vault env var for service %q: %w", name, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: set vault env var for service %q: commit: %w", name, err)
 	}
 	return nil
 }
@@ -923,20 +1008,20 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint"
+const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
 // signature), so the decode-JSON-columns logic exists exactly once.
 func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
-		svc                                                                                                                                  DesiredService
-		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, resourcesJSON, health, hooks, labels, volumes, command, bindMounts, entrypoint string
-		projectID, storageTargetID, appID, logDrainJSON, environmentID                                                                       sql.NullString
-		hostPort                                                                                                                             sql.NullInt64
-		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                              string
+		svc                                                                                                                                                DesiredService
+		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, vaultEnvJSON, resourcesJSON, health, hooks, labels, volumes, command, bindMounts, entrypoint string
+		projectID, storageTargetID, appID, logDrainJSON, environmentID                                                                                     sql.NullString
+		hostPort                                                                                                                                           sql.NullInt64
+		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                            string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
@@ -962,6 +1047,9 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	}
 	if err := json.Unmarshal([]byte(databaseEnvJSON), &svc.DatabaseEnv); err != nil {
 		return nil, fmt.Errorf("unmarshal database_env: %w", err)
+	}
+	if err := json.Unmarshal([]byte(vaultEnvJSON), &svc.VaultEnv); err != nil {
+		return nil, fmt.Errorf("unmarshal vault_env: %w", err)
 	}
 	if resourcesJSON != "null" {
 		if err := json.Unmarshal([]byte(resourcesJSON), &svc.Resources); err != nil {

@@ -77,6 +77,11 @@ const (
 	// live connection details at container-create time, so there is no
 	// stable value to snapshot even though it isn't secret-backed.
 	DeployAttemptEnvKindDatabase DeployAttemptEnvKind = "database"
+	// DeployAttemptEnvKindVault is a { vault: ... } env var
+	// (DesiredService.VaultEnv): resolved live from an external Vault
+	// instance at container-create time, the same "no stable value to
+	// snapshot" reasoning DeployAttemptEnvKindDatabase already gives.
+	DeployAttemptEnvKindVault DeployAttemptEnvKind = "vault"
 )
 
 // DeployAttemptEnvKey is one env var key captured in a
@@ -115,11 +120,14 @@ type DeployAttemptSnapshot struct {
 // deploy attempt is triggered. Env keys are sorted for a stable JSON
 // encoding, so two snapshots of an unchanged config marshal identically.
 func NewDeployAttemptSnapshot(svc DesiredService) DeployAttemptSnapshot {
-	envKeys := make([]string, 0, len(svc.Env)+len(svc.SecretEnv)+len(svc.DatabaseEnv))
+	envKeys := make([]string, 0, len(svc.Env)+len(svc.SecretEnv)+len(svc.DatabaseEnv)+len(svc.VaultEnv))
 	for k := range svc.Env {
 		envKeys = append(envKeys, k)
 	}
 	for k := range svc.DatabaseEnv {
+		envKeys = append(envKeys, k)
+	}
+	for k := range svc.VaultEnv {
 		envKeys = append(envKeys, k)
 	}
 	envKeys = append(envKeys, svc.SecretEnv...)
@@ -138,11 +146,14 @@ func NewDeployAttemptSnapshot(svc DesiredService) DeployAttemptSnapshot {
 		}
 		seen[k] = true
 		_, fromDatabase := svc.DatabaseEnv[k]
+		_, fromVault := svc.VaultEnv[k]
 		switch {
 		case secretSet[k]:
 			env = append(env, DeployAttemptEnvKey{Key: k, Kind: DeployAttemptEnvKindSecret})
 		case fromDatabase:
 			env = append(env, DeployAttemptEnvKey{Key: k, Kind: DeployAttemptEnvKindDatabase})
+		case fromVault:
+			env = append(env, DeployAttemptEnvKey{Key: k, Kind: DeployAttemptEnvKindVault})
 		default:
 			env = append(env, DeployAttemptEnvKey{Key: k, Kind: DeployAttemptEnvKindLiteral, Value: svc.Env[k]})
 		}

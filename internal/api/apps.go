@@ -51,8 +51,16 @@ type appResource struct {
 	// encryption PUT /api/v1/apps/{name}/secrets/{key} uses. Write-only:
 	// toAppResource never sets this, matching that endpoint's own
 	// "never echo a value back" rule.
-	Secrets   map[string]string       `json:"secrets,omitempty"`
-	Resources *store.ServiceResources `json:"resources,omitempty"`
+	Secrets map[string]string `json:"secrets,omitempty"`
+	// VaultEnv names env vars whose values resolve live from an external
+	// HashiCorp Vault instance (store.DesiredService.VaultEnv), the
+	// alternative to SecretEnv above: never a value stored by this
+	// platform, only a { path, key } reference resolved fresh by the
+	// application controller immediately before container creation.
+	// Settable at create time, the same "declare it, no value round-
+	// trips" shape SecretEnv/Secrets establish for local secrets.
+	VaultEnv  map[string]appVaultEnvRef `json:"vault_env,omitempty"`
+	Resources *store.ServiceResources   `json:"resources,omitempty"`
 	Health    *store.ServiceHealth    `json:"health,omitempty"`
 	// Hooks are this service's pre/post-deploy commands
 	// (store.DesiredService.Hooks), settable on create and update like
@@ -185,12 +193,27 @@ type appResource struct {
 	Command []string `json:"command,omitempty"`
 }
 
+// appVaultEnvRef is store.VaultEnvRef's wire shape, used both inside
+// appResource.VaultEnv (a map) and nowhere else, the same "no name of
+// its own" shape appDatabaseEnvRef already establishes.
+type appVaultEnvRef struct {
+	Path string `json:"path"`
+	Key  string `json:"key"`
+}
+
 func toAppResource(svc store.DesiredService) appResource {
 	var databaseEnv map[string]appDatabaseEnvRef
 	if len(svc.DatabaseEnv) > 0 {
 		databaseEnv = make(map[string]appDatabaseEnvRef, len(svc.DatabaseEnv))
 		for k, v := range svc.DatabaseEnv {
 			databaseEnv[k] = appDatabaseEnvRef{Database: v.Database, Field: v.Field}
+		}
+	}
+	var vaultEnv map[string]appVaultEnvRef
+	if len(svc.VaultEnv) > 0 {
+		vaultEnv = make(map[string]appVaultEnvRef, len(svc.VaultEnv))
+		for k, v := range svc.VaultEnv {
+			vaultEnv[k] = appVaultEnvRef{Path: v.Path, Key: v.Key}
 		}
 	}
 	var attachment *appDatabaseResource
@@ -211,6 +234,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		Domains:            svc.Domains,
 		Env:                svc.Env,
 		SecretEnv:          svc.SecretEnv,
+		VaultEnv:           vaultEnv,
 		Resources:          svc.Resources,
 		Health:             svc.Health,
 		Hooks:              svc.Hooks,
@@ -320,6 +344,24 @@ func validateAppResource(a appResource) error {
 		}
 		if value == "" {
 			return fmt.Errorf("secrets[%q]: value is required", key)
+		}
+	}
+	if len(a.VaultEnv) > 0 {
+		secretBacked := unionSecretEnvNames(a.SecretEnv, a.Secrets)
+		secretBackedSet := make(map[string]bool, len(secretBacked))
+		for _, k := range secretBacked {
+			secretBackedSet[k] = true
+		}
+		for key, ref := range a.VaultEnv {
+			if key == "" {
+				return errors.New("vault_env: key must not be empty")
+			}
+			if ref.Path == "" || ref.Key == "" {
+				return fmt.Errorf("vault_env[%q]: path and key are both required", key)
+			}
+			if secretBackedSet[key] {
+				return fmt.Errorf("env var %q cannot be both vault-backed and secret-backed", key)
+			}
 		}
 	}
 	// Mirrors the app.yaml schema's own minProperties: 1 on hooks: (this
@@ -464,6 +506,12 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 
 	desired := req.toDesiredService()
 	desired.SecretEnv = unionSecretEnvNames(req.SecretEnv, req.Secrets)
+	if len(req.VaultEnv) > 0 {
+		desired.VaultEnv = make(map[string]store.VaultEnvRef, len(req.VaultEnv))
+		for k, v := range req.VaultEnv {
+			desired.VaultEnv[k] = store.VaultEnvRef{Path: v.Path, Key: v.Key}
+		}
+	}
 	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
@@ -524,6 +572,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// rule.
 	req.SecretEnv = desired.SecretEnv
 	req.Secrets = nil
+	// VaultEnv echoes back exactly what was stored: unlike Secrets, this
+	// never carried a value in the first place, so there is nothing to
+	// scrub before echoing it.
+	req.VaultEnv = toAppResource(desired).VaultEnv
 
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)

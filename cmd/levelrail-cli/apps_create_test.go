@@ -745,6 +745,68 @@ func TestRun_AppsCreate_SecretFlag(t *testing.T) {
 	}
 }
 
+func TestParseCreateFlags_VaultSecret(t *testing.T) {
+	var token, apiURL, profile string
+	f, err := parseCreateFlags("levelrail", []string{
+		"--name", "web", "--port", "3000", "--image", "web:v1",
+		"--vault-secret", "API_KEY=myapp/config#api_key",
+	}, &strings.Builder{}, &token, &apiURL, &profile)
+	if err != nil {
+		t.Fatalf("parseCreateFlags() error = %v", err)
+	}
+	want := map[string]appVaultEnvRef{"API_KEY": {Path: "myapp/config", Key: "api_key"}}
+	if !reflect.DeepEqual(f.vaultSecrets, want) {
+		t.Errorf("vaultSecrets = %+v, want %+v", f.vaultSecrets, want)
+	}
+}
+
+func TestParseCreateFlags_VaultSecret_Invalid(t *testing.T) {
+	var token, apiURL, profile string
+	_, err := parseCreateFlags("levelrail", []string{
+		"--name", "web", "--port", "3000", "--image", "web:v1",
+		"--vault-secret", "API_KEY=no-hash-separator",
+	}, &strings.Builder{}, &token, &apiURL, &profile)
+	if err == nil {
+		t.Fatal("parseCreateFlags() error = nil, want an error for a value missing \"#field\"")
+	}
+}
+
+// TestRun_AppsCreate_VaultSecretFlag covers the full
+// "apps create --vault-secret" path end to end: the reference reaches
+// POST /api/v1/apps's request body (CreateBody.VaultEnv), never a value
+// since there is none to send.
+func TestRun_AppsCreate_VaultSecretFlag(t *testing.T) {
+	var gotMethod string
+	var gotBody appResource
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			gotMethod = r.Method
+			_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(appResource{
+			Name: "web", Image: "web:v1", Port: 8080,
+			VaultEnv: map[string]appVaultEnvRef{"API_KEY": {Path: "myapp/config", Key: "api_key"}},
+		})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{
+		"apps", "create", "--name", "web", "--image", "web:v1", "--port", "8080",
+		"--vault-secret", "API_KEY=myapp/config#api_key", "--api-url", srv.URL, "--json",
+	}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if gotMethod != http.MethodPost {
+		t.Fatalf("POST /api/v1/apps was not observed")
+	}
+	if gotBody.VaultEnv["API_KEY"] != (appVaultEnvRef{Path: "myapp/config", Key: "api_key"}) {
+		t.Errorf("request body VaultEnv = %v, want API_KEY={myapp/config api_key}", gotBody.VaultEnv)
+	}
+}
+
 func TestParseCreateFlags_AttachDatabase_DefaultsEmpty(t *testing.T) {
 	var token, apiURL, profile string
 	f, err := parseCreateFlags("levelrail", []string{"--name", "web", "--image", "img:v1", "--port", "3000"}, &strings.Builder{}, &token, &apiURL, &profile)

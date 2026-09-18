@@ -52,6 +52,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/version"
+	"github.com/GLINCKER/levelrail/internal/vault"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 	"github.com/GLINCKER/levelrail/web"
 )
@@ -1427,6 +1428,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithStaticSiteStore(db),
 		deploy.WithStaticRootDir(staticSitesDir),
 		deploy.WithAppStore(db),
+		deploy.WithVaultConfigChecker(db),
 	}
 	if secretsManager != nil {
 		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager))
@@ -1784,6 +1786,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// generated password server-side to authenticate its own upstream
 		// query, same nil-interface hazard.
 		opts = append(opts, api.WithRegistryCatalogSecrets(secretsManager))
+		// The external Vault integration's own token/AppRole secret ID
+		// goes through the same secretsManager, same nil-interface hazard.
+		opts = append(opts, api.WithVaultSecrets(secretsManager))
 		// Per-domain HTTP Basic Auth passwords go through the same
 		// secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithDomainBasicAuthSecrets(secretsManager))
@@ -2579,6 +2584,8 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithHookRunRecorder(deps.db),
 		application.WithStorageTargets(deps.db),
 		application.WithDatabaseAttachments(deps.db),
+		application.WithVaultSettings(deps.db),
+		application.WithVaultResolver(vault.NewResolver()),
 		application.WithRegistryCredentials(deps.db),
 		application.WithProjectEnv(deps.db),
 		application.WithOrganizationEnv(deps.db),
