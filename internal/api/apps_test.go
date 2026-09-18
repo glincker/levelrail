@@ -285,11 +285,7 @@ func TestHandleCreateApp_WithVaultEnv_Success(t *testing.T) {
 	cookie := loginTestSession(t, rt, db)
 
 	body := `{"name":"web","image":"levelrail/web:1","port":3000,"vault_env":{"API_KEY":{"path":"myapp/config","key":"api_key"}}}`
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
-	}
+	resp := createResourceViaAPI[appResource](t, rt, cookie, "/api/v1/apps", body, http.StatusCreated)
 	if setter.calls != 0 {
 		t.Errorf("setter.calls = %d, want 0: a vault-backed var has no local value to store", setter.calls)
 	}
@@ -301,11 +297,6 @@ func TestHandleCreateApp_WithVaultEnv_Success(t *testing.T) {
 	want := store.VaultEnvRef{Path: "myapp/config", Key: "api_key"}
 	if svc.VaultEnv["API_KEY"] != want {
 		t.Errorf("VaultEnv[%q] = %+v, want %+v", "API_KEY", svc.VaultEnv["API_KEY"], want)
-	}
-
-	var resp appResource
-	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("unmarshal response: %v", err)
 	}
 	if resp.VaultEnv["API_KEY"] != (appVaultEnvRef{Path: "myapp/config", Key: "api_key"}) {
 		t.Errorf("response VaultEnv[%q] = %+v, want %+v", "API_KEY", resp.VaultEnv["API_KEY"], want)

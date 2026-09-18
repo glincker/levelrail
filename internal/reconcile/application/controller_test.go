@@ -437,6 +437,23 @@ func conditionOf(t *testing.T, result reconcile.Result) reconcile.Condition {
 	return result.Conditions[0]
 }
 
+// mustReconcileSuccessfully runs c.Reconcile, requiring both no error and
+// a True condition, the shared shape every "...Resolved_MergedIntoContainerEnv"
+// success-path test in this package repeats before going on to inspect
+// its own resolved env vars.
+func mustReconcileSuccessfully(t *testing.T, c *Controller) reconcile.Result {
+	t.Helper()
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue {
+		t.Errorf("condition = %+v, want Status=True", cond)
+	}
+	return result
+}
+
 func TestController_Reconcile_NoDesiredState(t *testing.T) {
 	rt := newFakeRuntime(0)
 	c := New("web", &fakeStore{err: store.ErrServiceNotFound}, rt)
@@ -1295,15 +1312,7 @@ func TestController_Reconcile_SecretEnv_Resolved_MergedIntoContainerEnv(t *testi
 	}
 	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(resolver))
 
-	result, err := c.Reconcile(context.Background())
-	if err != nil {
-		t.Fatalf("Reconcile() error = %v", err)
-	}
-	cond := conditionOf(t, result)
-	if cond.Status != reconcile.ConditionTrue {
-		t.Errorf("condition = %+v, want Status=True", cond)
-	}
-
+	mustReconcileSuccessfully(t, c)
 	if got := rt.lastCreateEnv["API_KEY"]; got != "sk-real-value" {
 		t.Errorf("container env API_KEY = %q, want the resolved secret value", got)
 	}

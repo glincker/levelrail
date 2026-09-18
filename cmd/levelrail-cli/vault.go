@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 )
@@ -56,6 +57,18 @@ Run "%[1]s vault <subcommand> -h" for a subcommand's own flags.
 `, prog)
 }
 
+// parseVaultAPIFlags parses the API flags and builds a client in one
+// step, the exact sequence "vault get", "vault set", and "vault
+// disconnect" otherwise each repeat verbatim since none of the three
+// take positional arguments.
+func parseVaultAPIFlags(fs *flag.FlagSet, args []string, ptrs apiFlagPtrs, prog string, lookupEnv func(string) (string, bool), stderr io.Writer) (client *Client, jsonOut bool, of outputFlags, exitCode int, ok bool) {
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, ptrs, prog, stderr)
+	if !ok {
+		return nil, jsonOut, of, exitCode, false
+	}
+	return apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), jsonOut, of, exitCode, true
+}
+
 func runVaultGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "vault get", vaultJSONUsage, stderr)
 	fs.Usage = func() {
@@ -63,12 +76,10 @@ func runVaultGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	client, jsonOut, of, exitCode, ok := parseVaultAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, lookupEnv, stderr)
 	if !ok {
 		return exitCode
 	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	settings, err := client.GetVault(context.Background())
 	if err != nil {
@@ -107,7 +118,7 @@ func runVaultSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	client, jsonOut, of, exitCode, ok := parseVaultAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, lookupEnv, stderr)
 	if !ok {
 		return exitCode
 	}
@@ -116,8 +127,6 @@ func runVaultSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	if authMethodFlag == "approle" {
 		credential = secretIDFlag
 	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	settings, err := client.SetVault(context.Background(), updateVaultSettingsRequest{
 		Enabled:    enabledFlag,
@@ -146,12 +155,10 @@ func runVaultDisconnect(prog string, args []string, stdout, stderr io.Writer, lo
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	client, jsonOut, of, exitCode, ok := parseVaultAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, lookupEnv, stderr)
 	if !ok {
 		return exitCode
 	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	settings, err := client.DisconnectVault(context.Background())
 	if err != nil {

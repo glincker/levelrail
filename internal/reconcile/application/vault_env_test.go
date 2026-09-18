@@ -99,14 +99,7 @@ func TestController_Reconcile_VaultEnv_Resolved_MergedIntoContainerEnv(t *testin
 	c := New("web", &fakeStore{svc: desired}, rt,
 		WithVaultSettings(settings), WithVaultResolver(resolver), WithSecretResolver(secrets))
 
-	result, err := c.Reconcile(context.Background())
-	if err != nil {
-		t.Fatalf("Reconcile() error = %v", err)
-	}
-	cond := conditionOf(t, result)
-	if cond.Status != reconcile.ConditionTrue {
-		t.Errorf("condition = %+v, want Status=True", cond)
-	}
+	mustReconcileSuccessfully(t, c)
 	if got := rt.lastCreateEnv["API_KEY"]; got != "live-secret" {
 		t.Errorf("container env API_KEY = %q, want the resolved vault value", got)
 	}

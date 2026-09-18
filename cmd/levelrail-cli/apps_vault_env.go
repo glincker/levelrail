@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 )
@@ -51,6 +52,21 @@ Run "%[1]s apps vault-env <subcommand> -h" for a subcommand's own flags.
 `, prog)
 }
 
+// parseAppsVaultEnvArgs parses the API flags plus the <name> <key>
+// positional pair shared by "apps vault-env set" and "apps vault-env
+// clear", which otherwise differ only in cmdLabel and usage text.
+func parseAppsVaultEnvArgs(fs *flag.FlagSet, args []string, ptrs apiFlagPtrs, prog, cmdLabel string, stderr io.Writer) (tokenFlag, apiURLFlag, profileFlag, name, key string, jsonOut bool, of outputFlags, exitCode int, ok bool) {
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok = parseAPIFlags(fs, args, ptrs, prog, stderr)
+	if !ok {
+		return
+	}
+	positional, argsOK := requireArgs(fs, stderr, prog, cmdLabel, "an app name and an env var key", 2)
+	if !argsOK {
+		return tokenFlag, apiURLFlag, profileFlag, "", "", jsonOut, of, exitUsage, false
+	}
+	return tokenFlag, apiURLFlag, profileFlag, positional[0], positional[1], jsonOut, of, exitCode, true
+}
+
 func runAppsVaultEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps vault-env set", "print the resulting {path,key} as JSON to stdout and nothing else", stderr)
 	var path, field string
@@ -61,16 +77,10 @@ func runAppsVaultEnvSet(prog string, args []string, stdout, stderr io.Writer, lo
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	tokenFlag, apiURLFlag, profileFlag, name, key, jsonOut, of, exitCode, ok := parseAppsVaultEnvArgs(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, "apps vault-env set", stderr)
 	if !ok {
 		return exitCode
 	}
-
-	positional, ok := requireArgs(fs, stderr, prog, "apps vault-env set", "an app name and an env var key", 2)
-	if !ok {
-		return exitUsage
-	}
-	name, key := positional[0], positional[1]
 	if path == "" || field == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: apps vault-env set requires --path and --key\n\n", prog)
 		fs.Usage()
@@ -96,16 +106,10 @@ func runAppsVaultEnvClear(prog string, args []string, stdout, stderr io.Writer, 
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	tokenFlag, apiURLFlag, profileFlag, name, key, jsonOut, of, exitCode, ok := parseAppsVaultEnvArgs(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, "apps vault-env clear", stderr)
 	if !ok {
 		return exitCode
 	}
-
-	positional, ok := requireArgs(fs, stderr, prog, "apps vault-env clear", "an app name and an env var key", 2)
-	if !ok {
-		return exitUsage
-	}
-	name, key := positional[0], positional[1]
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 

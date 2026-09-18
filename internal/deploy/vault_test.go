@@ -26,14 +26,20 @@ func (f *fakeVaultConfigChecker) VaultConfigured(context.Context) (bool, error) 
 	return f.configured, nil
 }
 
+// deployVaultBackedApp deploys a service whose only env var, API_KEY, is
+// vault-backed via {myapp/config, api_key}, the setup every
+// TestPipeline_Deploy_VaultEnv_* test in this file shares.
+func deployVaultBackedApp(p *Pipeline) (string, error) {
+	svc := dockerfileService()
+	svc.Env = map[string]spec.EnvVar{"API_KEY": {Vault: &spec.VaultRef{Path: "myapp/config", Key: "api_key"}}}
+	return p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil)
+}
+
 func TestPipeline_Deploy_VaultEnv_NoCheckerConfigured_Rejected(t *testing.T) {
 	builder := &fakeBuilder{result: &build.Result{Tag: "x:y"}}
 	p := New(builder, &fakeServiceStore{}) // no WithVaultConfigChecker
 
-	svc := dockerfileService()
-	svc.Env = map[string]spec.EnvVar{"API_KEY": {Vault: &spec.VaultRef{Path: "myapp/config", Key: "api_key"}}}
-
-	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil)
+	_, err := deployVaultBackedApp(p)
 	if err == nil {
 		t.Fatal("Deploy() error = nil, want a vault-backed env var with no checker configured to be rejected")
 	}
@@ -47,10 +53,7 @@ func TestPipeline_Deploy_VaultEnv_NotConfiguredOnControlPlane_Rejected(t *testin
 	checker := &fakeVaultConfigChecker{configured: false}
 	p := New(builder, &fakeServiceStore{}, WithVaultConfigChecker(checker))
 
-	svc := dockerfileService()
-	svc.Env = map[string]spec.EnvVar{"API_KEY": {Vault: &spec.VaultRef{Path: "myapp/config", Key: "api_key"}}}
-
-	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil)
+	_, err := deployVaultBackedApp(p)
 	if err == nil {
 		t.Fatal("Deploy() error = nil, want a vault-backed env var to be rejected when vault integration isn't enabled")
 	}
@@ -68,10 +71,7 @@ func TestPipeline_Deploy_VaultEnv_Configured_PassesThrough(t *testing.T) {
 	checker := &fakeVaultConfigChecker{configured: true}
 	p := New(builder, svcStore, WithVaultConfigChecker(checker))
 
-	svc := dockerfileService()
-	svc.Env = map[string]spec.EnvVar{"API_KEY": {Vault: &spec.VaultRef{Path: "myapp/config", Key: "api_key"}}}
-
-	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil)
+	_, err := deployVaultBackedApp(p)
 	if err != nil {
 		t.Fatalf("Deploy() error = %v, want it to pass once vault is configured", err)
 	}
@@ -95,10 +95,7 @@ func TestPipeline_Deploy_VaultEnv_CheckerErrorPropagates(t *testing.T) {
 	checker := &fakeVaultConfigChecker{err: errors.New("database unavailable")}
 	p := New(builder, &fakeServiceStore{}, WithVaultConfigChecker(checker))
 
-	svc := dockerfileService()
-	svc.Env = map[string]spec.EnvVar{"API_KEY": {Vault: &spec.VaultRef{Path: "myapp/config", Key: "api_key"}}}
-
-	_, err := p.Deploy(context.Background(), Request{ServiceName: "web", Service: svc, SourceDir: "/repo", CommitSHA: "abc1234", ImageRepo: "levelrail/web"}, nil)
+	_, err := deployVaultBackedApp(p)
 	if err == nil {
 		t.Fatal("Deploy() error = nil, want the checker's error to propagate")
 	}

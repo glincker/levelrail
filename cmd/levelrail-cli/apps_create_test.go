@@ -710,6 +710,26 @@ func TestParseCreateFlags_Secret(t *testing.T) {
 	}
 }
 
+// mustRunAppsCreatePost runs "apps create --name web --image web:v1
+// --port 8080 <extraArgs...>" against srv, failing the test immediately
+// on a non-exitOK exit or if the POST was never observed. Factored out
+// of TestRun_AppsCreate_SecretFlag and TestRun_AppsCreate_VaultSecretFlag,
+// which otherwise repeat this exact invoke-and-check shape.
+func mustRunAppsCreatePost(t *testing.T, srv *httptest.Server, gotMethod *string, extraArgs ...string) bytes.Buffer {
+	t.Helper()
+	var stdout, stderr bytes.Buffer
+	args := append([]string{"apps", "create", "--name", "web", "--image", "web:v1", "--port", "8080"}, extraArgs...)
+	args = append(args, "--api-url", srv.URL, "--json")
+	got := run("levelrail-cli-test", args, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if *gotMethod != http.MethodPost {
+		t.Fatalf("POST /api/v1/apps was not observed")
+	}
+	return stdout
+}
+
 // TestRun_AppsCreate_SecretFlag covers the full "apps create --secret"
 // path end to end: the value reaches POST /api/v1/apps's request body
 // (CreateBody.Secrets) and is never echoed back on stdout.
@@ -726,17 +746,7 @@ func TestRun_AppsCreate_SecretFlag(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"apps", "create", "--name", "web", "--image", "web:v1", "--port", "8080",
-		"--secret", "API_KEY=sk-abc", "--api-url", srv.URL, "--json",
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotMethod != http.MethodPost {
-		t.Fatalf("POST /api/v1/apps was not observed")
-	}
+	stdout := mustRunAppsCreatePost(t, srv, &gotMethod, "--secret", "API_KEY=sk-abc")
 	if gotBody.Secrets["API_KEY"] != "sk-abc" {
 		t.Errorf("request body Secrets = %v, want API_KEY=sk-abc", gotBody.Secrets)
 	}
@@ -791,17 +801,7 @@ func TestRun_AppsCreate_VaultSecretFlag(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"apps", "create", "--name", "web", "--image", "web:v1", "--port", "8080",
-		"--vault-secret", "API_KEY=myapp/config#api_key", "--api-url", srv.URL, "--json",
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotMethod != http.MethodPost {
-		t.Fatalf("POST /api/v1/apps was not observed")
-	}
+	mustRunAppsCreatePost(t, srv, &gotMethod, "--vault-secret", "API_KEY=myapp/config#api_key")
 	if gotBody.VaultEnv["API_KEY"] != (appVaultEnvRef{Path: "myapp/config", Key: "api_key"}) {
 		t.Errorf("request body VaultEnv = %v, want API_KEY={myapp/config api_key}", gotBody.VaultEnv)
 	}

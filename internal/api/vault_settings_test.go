@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -61,16 +60,7 @@ func TestHandleGetVaultSettings_SeededDefault(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/vault", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
-
-	var got vaultSettingsResource
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	got, _ := getResourceViaAPI[vaultSettingsResource](t, rt, cookie, "/api/v1/settings/vault", http.StatusOK)
 	if got.Enabled {
 		t.Errorf("Enabled = true, want false")
 	}
@@ -90,19 +80,9 @@ func TestHandleGetVaultSettings_NeverReturnsCredentialValue(t *testing.T) {
 	body := `{"enabled":true,"address":"https://vault:8200","auth_method":"token","credential":"super-secret-vault-token"}`
 	rt.Handler().ServeHTTP(httptest.NewRecorder(), authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/vault", body))
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/vault", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
-	bodyStr := rec.Body.String()
-	if strings.Contains(bodyStr, "super-secret-vault-token") {
-		t.Errorf("GET response contains the raw credential: %s", bodyStr)
-	}
-
-	var got vaultSettingsResource
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
+	got, raw := getResourceViaAPI[vaultSettingsResource](t, rt, cookie, "/api/v1/settings/vault", http.StatusOK)
+	if strings.Contains(raw, "super-secret-vault-token") {
+		t.Errorf("GET response contains the raw credential: %s", raw)
 	}
 	if !got.HasCredential {
 		t.Error("HasCredential = false, want true after a save with a credential")

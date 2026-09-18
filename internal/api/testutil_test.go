@@ -365,6 +365,26 @@ func createResourceViaAPI[T any](t *testing.T, rt *Router, cookie *http.Cookie, 
 	return out
 }
 
+// getResourceViaAPI GETs path, requires the response status to be
+// wantStatus, and decodes the JSON response into a T, returning the raw
+// body alongside it so a caller can additionally scan it for a value
+// that must never round-trip (e.g. a stored credential). The read-side
+// counterpart to createResourceViaAPI above.
+func getResourceViaAPI[T any](t *testing.T, rt *Router, cookie *http.Cookie, path string, wantStatus int) (T, string) {
+	t.Helper()
+	var out T
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, path, ""))
+	if rec.Code != wantStatus {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, wantStatus, rec.Body.String())
+	}
+	raw := rec.Body.String()
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	return out, raw
+}
+
 // assertUnreadableBodyRejected proves a POST to path whose body errors on
 // Read is a 400, not a panic or a 500: handleCreateApp/handleCreateDatabase
 // both read the raw body first to probe for an explicit node_id key
