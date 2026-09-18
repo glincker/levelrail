@@ -33,7 +33,7 @@ BASE_REF="${1:-origin/main}"
 UNSCOPABLE_PATTERN='^(go\.mod|go\.sum|internal/store/migrations/.*\.sql|scripts/affected-go-packages\.sh)$'
 
 mapfile -t CHANGED_FILES < <(
-	git diff --name-only --diff-filter=ACDMR "${BASE_REF}...HEAD" -- '*.go' go.mod go.sum 'internal/store/migrations/*.sql' 2>/dev/null || true
+	git diff --name-only --diff-filter=ACDMR "${BASE_REF}...HEAD" -- '*.go' go.mod go.sum 'internal/store/migrations/*.sql' scripts/affected-go-packages.sh 2>/dev/null || true
 )
 
 if [ "${#CHANGED_FILES[@]}" -eq 0 ]; then
