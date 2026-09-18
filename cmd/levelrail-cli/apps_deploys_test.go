@@ -7,7 +7,59 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestRun_AppsDeploysList(t *testing.T) {
+	var gotPath string
+	finishedAt, err := time.Parse(time.RFC3339, "2026-01-01T00:00:05Z")
+	if err != nil {
+		t.Fatalf("parse time: %v", err)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.RequestURI()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode([]deployAttemptResource{
+			{ID: "dep_2", ServiceName: "web", Image: "levelrail/web:2", Source: "image", Status: "succeeded", StartedAt: finishedAt, FinishedAt: &finishedAt},
+			{ID: "dep_1", ServiceName: "web", Image: "levelrail/web:1", Source: "image", Status: "failed", StartedAt: finishedAt, Error: "build failed"},
+		})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "deploys", "list", "web", "--api-url", srv.URL})
+	if gotPath != "/api/v1/apps/web/deploy-attempts" {
+		t.Errorf("path = %q, want the deploy-attempts endpoint", gotPath)
+	}
+	if !strings.Contains(stdout, "dep_2") || !strings.Contains(stdout, "dep_1") {
+		t.Errorf("stdout = %q, want both attempt ids listed", stdout)
+	}
+	if !strings.Contains(stdout, "build failed") {
+		t.Errorf("stdout = %q, want the failed attempt's error shown", stdout)
+	}
+}
+
+func TestRun_AppsDeploysList_Empty(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode([]deployAttemptResource{})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "deploys", "list", "web", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "no deploy attempts recorded yet") {
+		t.Errorf("stdout = %q, want the empty-state message", stdout)
+	}
+}
+
+func TestRun_AppsDeploysList_NoName(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "deploys", "list"}, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d", got, exitUsage)
+	}
+}
 
 func TestRun_AppsDeploysCompare(t *testing.T) {
 	var gotPath string
