@@ -57,18 +57,8 @@ Run "%[1]s domains route53-dns <subcommand> -h" for a subcommand's own flags.
 }
 
 func runDomainsRoute53DNSGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains route53-dns get", domainsRoute53DNSJSONUsage, stderr)
-	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains route53-dns get [flags]\n\nShows the current Route53 DNS-01 settings.\n\nFlags:\n", prog)
-		fs.PrintDefaults()
-	}
-
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-
-	return runRoute53DNSAction(prog, stdout, stderr, lookupEnv, apiURLFlag, tokenFlag, profileFlag, jsonOut, of, "get", func(client *Client) (route53DNSResource, error) {
+	usage := fmt.Sprintf("Usage:\n  %s domains route53-dns get [flags]\n\nShows the current Route53 DNS-01 settings.\n\nFlags:\n", prog)
+	return runRoute53DNSSimple(prog, args, stdout, stderr, lookupEnv, "get", usage, func(client *Client) (route53DNSResource, error) {
 		return client.GetRoute53DNS(context.Background())
 	})
 }
@@ -108,9 +98,24 @@ func runDomainsRoute53DNSSet(prog string, args []string, stdout, stderr io.Write
 }
 
 func runDomainsRoute53DNSClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains route53-dns clear", domainsRoute53DNSJSONUsage, stderr)
+	usage := fmt.Sprintf("Usage:\n  %s domains route53-dns clear [flags]\n\nDisables Route53 DNS-01 and forgets the stored credentials.\n\nFlags:\n", prog)
+	return runRoute53DNSSimple(prog, args, stdout, stderr, lookupEnv, "clear", usage, func(client *Client) (route53DNSResource, error) {
+		return client.DisconnectRoute53DNS(context.Background())
+	})
+}
+
+// runRoute53DNSSimple runs the parseAPIFlags-through-render tail shared
+// by "get" and "clear": neither registers flags beyond the common set
+// or needs validation before calling its single client action ("set"
+// needs both, so it stays separate and calls runRoute53DNSAction
+// directly). Factored out because get and clear were otherwise
+// byte-identical apart from which client method action calls, which
+// this repo's own duplication gate (unlike domains_cloudflare_dns.go,
+// which predates that gate) flags within a single file.
+func runRoute53DNSSimple(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), verb, usage string, action func(*Client) (route53DNSResource, error)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains route53-dns "+verb, domainsRoute53DNSJSONUsage, stderr)
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains route53-dns clear [flags]\n\nDisables Route53 DNS-01 and forgets the stored credentials.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprint(stderr, usage)
 		fs.PrintDefaults()
 	}
 
@@ -119,18 +124,13 @@ func runDomainsRoute53DNSClear(prog string, args []string, stdout, stderr io.Wri
 		return exitCode
 	}
 
-	return runRoute53DNSAction(prog, stdout, stderr, lookupEnv, apiURLFlag, tokenFlag, profileFlag, jsonOut, of, "clear", func(client *Client) (route53DNSResource, error) {
-		return client.DisconnectRoute53DNS(context.Background())
-	})
+	return runRoute53DNSAction(prog, stdout, stderr, lookupEnv, apiURLFlag, tokenFlag, profileFlag, jsonOut, of, verb, action)
 }
 
 // runRoute53DNSAction runs the client-build/call/render tail every
 // domains route53-dns subcommand shares once its own flags are parsed:
 // build the API client, invoke action, then report or render the
-// result. Factored out because get/set/clear's own tails were
-// byte-identical apart from which client method action calls, which
-// this repo's own duplication gate (unlike domains_cloudflare_dns.go,
-// which predates that gate) flags within a single file.
+// result.
 func runRoute53DNSAction(prog string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), apiURLFlag, tokenFlag, profileFlag string, jsonOut bool, of outputFlags, verb string, action func(*Client) (route53DNSResource, error)) int {
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
