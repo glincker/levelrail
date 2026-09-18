@@ -49,6 +49,49 @@ describe('computeDeployStages rollout stage', () => {
       transitionTime: '2026-01-01T00:00:10Z',
       want: 'failed',
     },
+    // Every one of these previously fell through to the 'running'
+    // default (a permanently stuck spinner for an already-failed
+    // deploy) because ROLLOUT_FAILURE_REASONS didn't list them, either
+    // from day one (InspectFailed/EnsureNetworkFailed/
+    // VanishedAfterStart/PreDeployHookFailed) or because it wasn't
+    // updated when the reconciler learned these two new reasons
+    // (OOMKilledDuringReadiness/ExitedDuringReadiness).
+    {
+      name: 'marks rollout failed on InspectFailed',
+      reason: 'InspectFailed',
+      transitionTime: '2026-01-01T00:00:10Z',
+      want: 'failed',
+    },
+    {
+      name: 'marks rollout failed on EnsureNetworkFailed',
+      reason: 'EnsureNetworkFailed',
+      transitionTime: '2026-01-01T00:00:10Z',
+      want: 'failed',
+    },
+    {
+      name: 'marks rollout failed on VanishedAfterStart',
+      reason: 'VanishedAfterStart',
+      transitionTime: '2026-01-01T00:00:10Z',
+      want: 'failed',
+    },
+    {
+      name: 'marks rollout failed on PreDeployHookFailed',
+      reason: 'PreDeployHookFailed',
+      transitionTime: '2026-01-01T00:00:10Z',
+      want: 'failed',
+    },
+    {
+      name: 'marks rollout failed on OOMKilledDuringReadiness',
+      reason: 'OOMKilledDuringReadiness',
+      transitionTime: '2026-01-01T00:00:10Z',
+      want: 'failed',
+    },
+    {
+      name: 'marks rollout failed on ExitedDuringReadiness',
+      reason: 'ExitedDuringReadiness',
+      transitionTime: '2026-01-01T00:00:10Z',
+      want: 'failed',
+    },
   ]
 
   it.each(cases)('$name', ({ reason, transitionTime, want }) => {

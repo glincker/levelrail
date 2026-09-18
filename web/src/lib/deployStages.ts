@@ -32,7 +32,27 @@ export interface DeployStage {
   finishedAt?: string
 }
 
-const ROLLOUT_FAILURE_REASONS = ['CreateFailed', 'StartFailed', 'ReadinessFailed']
+// Every failure reason ensureReplicaRunning (internal/reconcile/
+// application/controller.go) can actually report, not just the three
+// original ones: InspectFailed, EnsureNetworkFailed, VanishedAfterStart,
+// and PreDeployHookFailed were always missing here too, and
+// OOMKilledDuringReadiness/ExitedDuringReadiness (added once the
+// reconciler learned to fail fast on a crash during the readiness wait)
+// were never added when that shipped. Missing any of these means this
+// function falls through to its own "running" default below for a
+// deploy that has actually already failed, showing a permanently stuck
+// spinner instead of the real outcome.
+const ROLLOUT_FAILURE_REASONS = [
+  'CreateFailed',
+  'StartFailed',
+  'ReadinessFailed',
+  'InspectFailed',
+  'EnsureNetworkFailed',
+  'VanishedAfterStart',
+  'PreDeployHookFailed',
+  'OOMKilledDuringReadiness',
+  'ExitedDuringReadiness',
+]
 
 // Both are the application controller's own terminal-success Ready
 // reasons (internal/reconcile/application/controller.go's "Deployed",
