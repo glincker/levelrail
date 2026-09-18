@@ -129,6 +129,23 @@ func lastMoveStepName(move appVolumeMoveResource) string {
 	return move.Steps[len(move.Steps)-1].Name
 }
 
+// moveNodeFlagsUsage is the "Flags:" block appsSetNodeUsage and
+// appsClearNodeUsage otherwise both spell out verbatim: dest is the only
+// thing that differs between them ("the destination node" vs "the local
+// node").
+func moveNodeFlagsUsage(dest string) string {
+	return fmt.Sprintf(`Flags:
+  --with-volumes            archive and restore every named volume onto %s too (app briefly stopped)
+  --token string          API token (default: %s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %s env var, then %s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                    print the result as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, dest, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
 func appsSetNodeUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps set-node <name> <node-id> [flags]
@@ -140,16 +157,7 @@ empty volumes (Dokploy calls this "transfer a service"; see
 docs/multi-node.md's own "Moving an app with its volumes" section for
 exactly what does and doesn't survive a partial failure).
 
-Flags:
-  --with-volumes            archive and restore every named volume onto the destination node too (app briefly stopped)
-  --token string          API token (default: %[2]s env var, then the credentials file)
-  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
-  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
-  --json                    print the result as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
-  --query string           JMESPath expression to filter the result before printing
-  -h, --help               show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog) + moveNodeFlagsUsage("the destination node")
 }
 
 func appsClearNodeUsage(prog string) string {
@@ -162,14 +170,5 @@ Docker volumes onto the local node; see "%[1]s apps set-node -h" for the
 full explanation, this is the identical mechanism with an empty
 destination.
 
-Flags:
-  --with-volumes            archive and restore every named volume onto the local node too (app briefly stopped)
-  --token string          API token (default: %[2]s env var, then the credentials file)
-  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
-  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
-  --json                    print the result as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
-  --query string           JMESPath expression to filter the result before printing
-  -h, --help               show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog) + moveNodeFlagsUsage("the local node")
 }

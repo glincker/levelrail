@@ -213,24 +213,19 @@ func (s *appVolumeMoveSteps) persist() {
 func (rt *Router) runAppVolumeMove(ctx context.Context, moveID, serviceName, fromNodeID, toNodeID string, volumeNames []string) {
 	steps := &appVolumeMoveSteps{rt: rt, ctx: ctx, moveID: moveID}
 
-	finish := steps.start("stop_app")
 	srcRuntime, err := rt.execRuntime(fromNodeID)
 	if err != nil {
-		finish(fmt.Errorf("resolve source node runtime: %w", err))
-		rt.finishAppVolumeMove(ctx, moveID, err)
+		rt.finishAppVolumeMove(ctx, moveID, fmt.Errorf("resolve source node runtime: %w", err))
 		return
 	}
-	if err := rt.apps.UpdateServiceSuspended(ctx, serviceName, true); err != nil {
-		finish(err)
-		rt.finishAppVolumeMove(ctx, moveID, err)
+	if rt.runMoveStep(ctx, steps, moveID, "stop_app", func() error {
+		if err := rt.apps.UpdateServiceSuspended(ctx, serviceName, true); err != nil {
+			return err
+		}
+		return application.New(serviceName, rt.apps, srcRuntime).Teardown(ctx)
+	}) {
 		return
 	}
-	if err := application.New(serviceName, rt.apps, srcRuntime).Teardown(ctx); err != nil {
-		finish(err)
-		rt.finishAppVolumeMove(ctx, moveID, err)
-		return
-	}
-	finish(nil)
 
 	dstRuntime, err := rt.execRuntime(toNodeID)
 	if err != nil {
@@ -241,33 +236,47 @@ func (rt *Router) runAppVolumeMove(ctx context.Context, moveID, serviceName, fro
 	restorer := &backup.ContainerVolumeRestorer{Runtime: dstRuntime}
 
 	for _, volumeName := range volumeNames {
-		finish := steps.start("move_volume:" + volumeName)
-		if err := backup.MoveVolume(ctx, archiver, restorer, volumeName); err != nil {
-			finish(err)
-			rt.finishAppVolumeMove(ctx, moveID, err)
+		volumeName := volumeName
+		if rt.runMoveStep(ctx, steps, moveID, "move_volume:"+volumeName, func() error {
+			return backup.MoveVolume(ctx, archiver, restorer, volumeName)
+		}) {
 			return
 		}
-		finish(nil)
 	}
 
-	finish = steps.start("update_placement")
-	if err := rt.apps.UpdateServiceNode(ctx, serviceName, toNodeID); err != nil {
-		finish(err)
-		rt.finishAppVolumeMove(ctx, moveID, err)
+	if rt.runMoveStep(ctx, steps, moveID, "update_placement", func() error {
+		return rt.apps.UpdateServiceNode(ctx, serviceName, toNodeID)
+	}) {
 		return
 	}
-	finish(nil)
 
-	finish = steps.start("resume_app")
-	if err := rt.apps.UpdateServiceSuspended(ctx, serviceName, false); err != nil {
-		finish(err)
-		rt.finishAppVolumeMove(ctx, moveID, err)
+	if rt.runMoveStep(ctx, steps, moveID, "resume_app", func() error {
+		if err := rt.apps.UpdateServiceSuspended(ctx, serviceName, false); err != nil {
+			return err
+		}
+		rt.nudgeReconciler()
+		return nil
+	}) {
 		return
 	}
-	rt.nudgeReconciler()
-	finish(nil)
 
 	rt.finishAppVolumeMove(ctx, moveID, nil)
+}
+
+// runMoveStep runs one step of runAppVolumeMove: starts it, runs op, records
+// success or failure. On failure it also finishes the whole move (the
+// caller's own signal to stop) and returns true. Collapses the repeated
+// "start, run, record, maybe abort" shape every step in runAppVolumeMove
+// otherwise needs on its own.
+func (rt *Router) runMoveStep(ctx context.Context, steps *appVolumeMoveSteps, moveID, name string, op func() error) (aborted bool) {
+	finish := steps.start(name)
+	if err := op(); err != nil {
+		finish(err)
+		rt.finishAppVolumeMove(ctx, moveID, err)
+		return true
+	}
+	finish(nil)
+	return false
 }
 
 func (rt *Router) finishAppVolumeMove(ctx context.Context, moveID string, runErr error) {
