@@ -135,6 +135,28 @@ func (db *DB) GetBackupHistory(ctx context.Context, id string) (BackupHistory, e
 	return h, nil
 }
 
+// DeleteBackupHistory removes id's backup_history row outright, whatever
+// its status: the on-demand counterpart of PruneBackupHistory's bulk,
+// retention-driven deletion, for an operator who wants to delete one
+// archived backup right now rather than wait for retention to age it
+// out. Callers are responsible for deleting the row's underlying stored
+// object first (internal/backup.DeleteRunner does this); this only ever
+// touches the store row.
+func (db *DB) DeleteBackupHistory(ctx context.Context, id string) error {
+	res, err := db.ExecContext(ctx, `DELETE FROM backup_history WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("store: delete backup history %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: delete backup history %q: %w", id, err)
+	}
+	if n == 0 {
+		return ErrBackupHistoryNotFound
+	}
+	return nil
+}
+
 // PrunedBackup is one backup_history row PruneBackupHistory removed:
 // its TargetID and ObjectKey, enough for a caller (internal/backup.
 // Scheduler) to also delete the object those pointed to in the target

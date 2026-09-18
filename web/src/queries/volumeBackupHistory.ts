@@ -152,3 +152,42 @@ export function useTriggerVolumeBackup(appName: string, volumeName: string) {
     },
   })
 }
+
+// DELETE /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}
+// (handleDeleteVolumeBackup), the app service volume counterpart of
+// deleteBackup (queries/backupHistory.ts).
+export async function deleteVolumeBackup(
+  appName: string,
+  volumeName: string,
+  historyId: string,
+): Promise<void> {
+  const res = await fetch(
+    `${volumeBackupsPath(appName, volumeName)}/${encodeURIComponent(historyId)}`,
+    { method: 'DELETE' },
+  )
+  if (res.status === 204) {
+    return
+  }
+  throw new ApiError(
+    res.status,
+    await readErrorMessage(res, `delete volume backup failed: ${res.status}`),
+  )
+}
+
+export function useDeleteVolumeBackup(appName: string, volumeName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<void, ApiError, string>({
+    mutationFn: (historyId: string) =>
+      deleteVolumeBackup(appName, volumeName, historyId),
+    onSuccess: (_data, historyId) => {
+      queryClient.setQueryData(
+        volumeBackupHistoryKeys.list(appName, volumeName),
+        (existing: BackupHistoryRecord[] | undefined) =>
+          existing?.filter((record) => record.id !== historyId),
+      )
+      void queryClient.invalidateQueries({
+        queryKey: volumeBackupHistoryKeys.list(appName, volumeName),
+      })
+    },
+  })
+}

@@ -1885,6 +1885,18 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 				Secrets:    secretsManager,
 				Downloader: backup.S3Downloader{},
 			}),
+			// Deletes one specific archived backup on demand: same
+			// secretsManager dependency to resolve a target's credentials
+			// before removing its object, plus the identical backup.S3Deleter
+			// the retention scheduler below already uses to prune old
+			// archives, so a manual delete and a retention-driven one clean
+			// up storage the exact same way.
+			api.WithBackupDeleter(&backup.DeleteRunner{
+				Store:   db,
+				Secrets: secretsManager,
+				Deleter: backup.S3Deleter{},
+				Logger:  logger,
+			}),
 			// Re-downloads and re-checks a succeeded backup's own stored
 			// object for corruption, never attempting a live restore: the
 			// same instance scheduler.Verifier below uses automatically.

@@ -534,6 +534,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// See handleDownloadBackup's own doc comment for the full reasoning.
 	mux.HandleFunc("GET /api/v1/databases/{name}/backups/{historyId}/download", rt.requireAbility(AbilityReadSensitive, rt.handleDownloadBackup))
 
+	// Delete one specific archived backup on demand, rather than waiting
+	// for retention (BackupRetain/BackupRetainDays above) to age it out.
+	// AbilityWriteSensitive, matching the manual trigger route above: this
+	// destroys a real stored artifact, the same sensitivity class as
+	// triggering a backup or deleting the backup target itself, not the
+	// AbilityRoot tier restore below uses, since nothing here touches a
+	// live database's own data. See handleDeleteBackup's own doc comment.
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/backups/{historyId}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteBackup))
+
 	// Backup verification: re-download a succeeded backup and confirm it
 	// is still intact (checksum, size, and a lightweight structural
 	// check), without ever attempting a live restore. AbilityWriteSensitive
@@ -597,6 +606,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backups", rt.requireAbility(AbilityWriteSensitive, rt.handleTriggerVolumeBackup))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups", rt.requireAbility(AbilityRead, rt.handleListVolumeBackupHistory))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/download", rt.requireAbility(AbilityReadSensitive, rt.handleDownloadVolumeBackup))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteVolumeBackup))
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verify", rt.requireAbility(AbilityWriteSensitive, rt.handleVerifyVolumeBackup))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications", rt.requireAbility(AbilityRead, rt.handleListVolumeBackupVerifications))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbility(AbilityRead, rt.handleGetVolumeBackupSchedule))

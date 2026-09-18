@@ -30,6 +30,8 @@ func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runBackupsList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "trigger":
 		return runBackupsTrigger(prog, args[1:], stdout, stderr, lookupEnv)
+	case "delete":
+		return runBackupsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restore":
 		return runBackupsRestore(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "restore-as-new":
@@ -51,6 +53,7 @@ func backupsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s backups list <database> [flags]                                    list backup history for a database
   %[1]s backups trigger <database> --target ID [flags]                 trigger a manual backup
+  %[1]s backups delete <database> <backup-id> [flags]                  delete one archived backup on demand (destructive)
   %[1]s backups restore <database> --backup ID --confirm NAME [flags]   restore a database from a backup (destructive)
   %[1]s backups restore-as-new <database> --backup ID --new-name NAME [flags] restore a backup into a brand-new database (non-destructive)
   %[1]s backups schedule set <database> --target ID --cron EXPR [flags] configure a recurring backup

@@ -90,6 +90,47 @@ func TestFinishBackupHistory_NotFound(t *testing.T) {
 	}
 }
 
+func TestDeleteBackupHistory_RemovesRowRegardlessOfStatus(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+
+	for _, status := range []string{BackupStatusRunning, BackupStatusSucceeded, BackupStatusFailed} {
+		t.Run(status, func(t *testing.T) {
+			id := "bkh_" + status
+			if err := db.StartBackupHistory(ctx, BackupHistory{
+				ID: id, DatabaseName: "mydb", TargetID: target.ID,
+				ObjectKey: "mydb/mydb-1.dump", StartedAt: "2026-08-14T00:00:00Z",
+			}); err != nil {
+				t.Fatalf("StartBackupHistory() error = %v", err)
+			}
+			if status != BackupStatusRunning {
+				if err := db.FinishBackupHistory(ctx, id, status, 0, "", "", "2026-08-14T00:01:00Z"); err != nil {
+					t.Fatalf("FinishBackupHistory() error = %v", err)
+				}
+			}
+
+			if err := db.DeleteBackupHistory(ctx, id); err != nil {
+				t.Fatalf("DeleteBackupHistory() error = %v", err)
+			}
+
+			if _, err := db.GetBackupHistory(ctx, id); !errors.Is(err, ErrBackupHistoryNotFound) {
+				t.Fatalf("GetBackupHistory() after delete error = %v, want ErrBackupHistoryNotFound", err)
+			}
+		})
+	}
+}
+
+func TestDeleteBackupHistory_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	err := db.DeleteBackupHistory(ctx, "bkh_missing")
+	if !errors.Is(err, ErrBackupHistoryNotFound) {
+		t.Fatalf("DeleteBackupHistory() error = %v, want ErrBackupHistoryNotFound", err)
+	}
+}
+
 func TestListBackupHistory_NewestFirst_ScopedToDatabase(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

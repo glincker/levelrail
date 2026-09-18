@@ -177,6 +177,17 @@ func WithBackupDownloader(d BackupDownloader) Option {
 	return func(rt *Router) { rt.backupDownloader = d }
 }
 
+// WithBackupDeleter enables
+// DELETE /api/v1/databases/{name}/backups/{historyId} and its app volume
+// counterpart. Without one configured (the default), both routes return
+// 501, the same "not configured" shape WithBackupDownloader's absence
+// produces: deleting the stored object behind a backup needs the same
+// live secretsManager to resolve a target's credentials that downloading
+// or uploading one does.
+func WithBackupDeleter(d BackupDeleter) Option {
+	return func(rt *Router) { rt.backupDeleter = d }
+}
+
 // WithBackupVerifier enables
 // POST /api/v1/databases/{name}/backups/{historyId}/verify. Without one
 // configured (the default), that route returns 501, the same

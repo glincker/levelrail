@@ -786,6 +786,15 @@ func (c *Client) ListBackupVerifications(ctx context.Context, name, historyID st
 	return out, err
 }
 
+// DeleteBackup calls DELETE /api/v1/databases/{name}/backups/{historyId}:
+// permanently deletes one specific archived backup attempt, both its
+// stored object and its history row, rather than waiting for retention
+// to age it out. Irreversible; callers must gate this behind their own
+// explicit confirmation before ever reaching it.
+func (c *Client) DeleteBackup(ctx context.Context, name, historyID string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/backups/"+PathEscape(historyID), nil, nil)
+}
+
 // TriggerRestore calls POST /api/v1/databases/{name}/restore: overwrites
 // name's live data in place from a previously succeeded backup attempt.
 // The single most destructive call this Client makes; callers must gate
@@ -882,6 +891,13 @@ func (c *Client) ListVolumeBackupVerifications(ctx context.Context, name, volume
 	var out []BackupVerificationResource
 	err := c.do(ctx, http.MethodGet, volumeBackupsPath(name, volume)+"/"+PathEscape(historyID)+"/verifications", nil, &out)
 	return out, err
+}
+
+// DeleteVolumeBackup calls
+// DELETE /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}: the
+// app service volume counterpart of DeleteBackup.
+func (c *Client) DeleteVolumeBackup(ctx context.Context, name, volume, historyID string) error {
+	return c.do(ctx, http.MethodDelete, volumeBackupsPath(name, volume)+"/"+PathEscape(historyID), nil, nil)
 }
 
 // TriggerVolumeRestore calls

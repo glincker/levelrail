@@ -19,6 +19,7 @@ import {
 } from '../queries/volumeBackupHistory'
 import { useVolumeRestoreHistory } from '../queries/volumeRestoreHistory'
 import { RestoreVolumeBackupDialog } from './RestoreVolumeBackupDialog'
+import { DeleteVolumeBackupDialog } from './DeleteBackupDialog'
 import { VolumeCloneRestoreDialog } from './VolumeCloneRestoreDialog'
 import { VolumeCloneRestoreHistoryTable } from './VolumeCloneRestoreHistoryTable'
 import { VolumeBackupScheduleForm } from './VolumeBackupScheduleForm'
@@ -127,6 +128,13 @@ function VolumeBackupHistoryTable({
             backup={record}
           />
         </>
+      )}
+      renderDeleteAction={(record) => (
+        <DeleteVolumeBackupDialog
+          appName={appName}
+          volumeName={volumeName}
+          backup={record}
+        />
       )}
     />
   )
