@@ -30,7 +30,7 @@ require (
 	github.com/mholt/caddy-ratelimit v0.1.0
 	github.com/miekg/dns v1.1.73
 	github.com/moby/buildkit v0.33.0
-	github.com/modelcontextprotocol/go-sdk v1.7.0
+	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/railwayapp/railpack v0.39.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
