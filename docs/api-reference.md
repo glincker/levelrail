@@ -276,6 +276,9 @@ TLS certificate lifecycle, ACME configuration, domain routing, basic auth, maint
 | GET | /api/v1/settings/cloudflare-dns | AbilityRead | handleGetCloudflareDNSSettings |
 | PUT | /api/v1/settings/cloudflare-dns | AbilityRoot | handleUpdateCloudflareDNSSettings |
 | DELETE | /api/v1/settings/cloudflare-dns | AbilityRoot | handleDisconnectCloudflareDNS |
+| GET | /api/v1/settings/route53-dns | AbilityRead | handleGetRoute53DNSSettings |
+| PUT | /api/v1/settings/route53-dns | AbilityRoot | handleUpdateRoute53DNSSettings |
+| DELETE | /api/v1/settings/route53-dns | AbilityRoot | handleDisconnectRoute53DNS |
 | GET | /api/v1/settings/vault | AbilityRead | handleGetVaultSettings |
 | PUT | /api/v1/settings/vault | AbilityRoot | handleUpdateVaultSettings |
 | DELETE | /api/v1/settings/vault | AbilityRoot | handleDisconnectVault |

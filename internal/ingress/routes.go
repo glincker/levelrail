@@ -286,17 +286,17 @@ type RoutesOptions struct {
 	// package never silently substitutes Let's Encrypt's staging
 	// directory on an operator's behalf.
 	ACMEDirectoryURL string
-	// CloudflareDNSAPIToken, if non-empty (and ACMEEnabled is true and
-	// at least one route's host is a wildcard, see IsWildcardDomain),
-	// scopes every wildcard subject to a separate automation policy
-	// using DNS-01 via Cloudflare (NewCloudflareDNSACMEIssuer) instead
-	// of the plain ACME policy every non-wildcard host still gets:
-	// HTTP-01 cannot solve a wildcard identifier. Empty reproduces this
-	// package's prior behavior exactly, wildcard hosts included, byte-
-	// identical to before this field existed; internal/store.
-	// CloudflareDNSSettings.Enabled plus internal/secrets' stored token
-	// is what an operator-facing settings flow resolves this from.
-	CloudflareDNSAPIToken string
+	// DNSProvider, if non-nil (and ACMEEnabled is true and at least one
+	// route's host is a wildcard, see IsWildcardDomain), scopes every
+	// wildcard subject to a separate automation policy using DNS-01 via
+	// this provider (NewDNSACMEIssuer) instead of the plain ACME policy
+	// every non-wildcard host still gets: HTTP-01 cannot solve a
+	// wildcard identifier. Nil reproduces this package's prior behavior
+	// exactly, wildcard hosts included, byte-identical to before this
+	// field existed. Exactly one provider is ever active per reconcile
+	// pass; internal/reconcile/ingress resolves which one (and its
+	// credentials) from the operator-facing settings and internal/secrets.
+	DNSProvider DNS01Provider
 	// AdminListen overrides Caddy's admin API bind address. Empty keeps
 	// Caddy's own default (localhost:2019).
 	AdminListen string
@@ -439,10 +439,10 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
 		wildcardHosts, regularHosts := splitWildcardHosts(allHosts)
 		switch {
-		case opts.ACMEEnabled && opts.CloudflareDNSAPIToken != "" && len(wildcardHosts) > 0:
+		case opts.ACMEEnabled && opts.DNSProvider != nil && len(wildcardHosts) > 0:
 			policies := []AutomationPolicy{{
 				Subjects: wildcardHosts,
-				Issuers:  []any{NewCloudflareDNSACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.CloudflareDNSAPIToken)},
+				Issuers:  []any{NewDNSACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.DNSProvider)},
 			}}
 			if len(regularHosts) > 0 {
 				policies = append(policies, AutomationPolicy{

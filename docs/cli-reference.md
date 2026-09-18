@@ -449,6 +449,11 @@ levelrail domains cloudflare-dns get [flags]
 show the current settings
 
 ```
+levelrail domains route53-dns get [flags]
+```
+show the current settings
+
+```
 levelrail domains list [flags]
 ```
 

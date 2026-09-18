@@ -111,8 +111,8 @@ Key subcommand groups:
 - **backups** / **app-volume-backups**: list, trigger, restore,
   restore-as-new, schedule, verify, verifications
 - **migrate**: coolify, dokploy, caprover
-- **domains**: list, cloudflare-dns, basic-auth, maintenance, tls-cert,
-  certificates
+- **domains**: list, cloudflare-dns, route53-dns, basic-auth,
+  maintenance, tls-cert, certificates
 - **settings**: oauth (list/set), email (get/set), ingress (get/set):
   instance-wide OAuth sign-in, outbound email, and ingress/ACME config,
   for headless first-run setup with no browser

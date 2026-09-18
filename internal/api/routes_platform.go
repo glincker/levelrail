@@ -370,6 +370,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRead, rt.handleGetCloudflareDNSSettings))
 	mux.HandleFunc("PUT /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudflareDNSSettings))
 	mux.HandleFunc("DELETE /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectCloudflareDNS))
+	// Route53 DNS-01: a second, independent ACME DNS-01 provider, same
+	// tier as cloudflare-dns above.
+	mux.HandleFunc("GET /api/v1/settings/route53-dns", rt.requireAbility(AbilityRead, rt.handleGetRoute53DNSSettings))
+	mux.HandleFunc("PUT /api/v1/settings/route53-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateRoute53DNSSettings))
+	mux.HandleFunc("DELETE /api/v1/settings/route53-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectRoute53DNS))
 
 	// External HashiCorp Vault (instance-level, one connection per
 	// control plane): same GET AbilityRead / PUT+DELETE AbilityRoot tier

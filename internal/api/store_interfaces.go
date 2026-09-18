@@ -295,6 +295,15 @@ type CloudflareDNSStore interface {
 	UpdateCloudflareDNSSettings(ctx context.Context, s store.CloudflareDNSSettings) error
 }
 
+// Route53DNSStore is the store surface GET/PUT
+// /api/v1/settings/route53-dns need, the same "single platform-wide
+// row" shape CloudflareDNSStore already establishes for a distinct ACME
+// DNS-01 provider.
+type Route53DNSStore interface {
+	GetRoute53DNSSettings(ctx context.Context) (store.Route53DNSSettings, error)
+	UpdateRoute53DNSSettings(ctx context.Context, s store.Route53DNSSettings) error
+}
+
 // RegistryStore is the store surface GET/PUT/DELETE
 // /api/v1/settings/registry need: the single platform-wide row, always
 // present, the same shape CloudflareTunnelStore has for its own row.
@@ -414,6 +423,7 @@ type Store interface {
 	CloudflareTunnelStore
 	RegistryStore
 	CloudflareDNSStore
+	Route53DNSStore
 	VaultSettingsStore
 	PasswordResetTokenStore
 	InviteStore

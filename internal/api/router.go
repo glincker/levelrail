@@ -272,6 +272,8 @@ type Router struct {
 	cloudflareTunnelSecrets        CloudflareTunnelSecrets          // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-tunnel return 501, same shape as emailSecrets above
 	cloudflareDNS                  CloudflareDNSStore               // always set, same shape as cloudflareTunnel above
 	cloudflareDNSSecrets           CloudflareDNSSecrets             // nil is valid: PUT/DELETE /api/v1/settings/cloudflare-dns return 501, same shape as cloudflareTunnelSecrets above
+	route53DNS                     Route53DNSStore                  // always set, same shape as cloudflareDNS above: a second, independent ACME DNS-01 provider, not a replacement
+	route53DNSSecrets              Route53DNSSecrets                // nil is valid: PUT/DELETE /api/v1/settings/route53-dns return 501, same shape as cloudflareDNSSecrets above
 	registry                       RegistryStore                    // always set, same shape as cloudflareTunnel above
 	registrySecrets                RegistrySecrets                  // nil is valid: PUT/DELETE /api/v1/settings/registry return 501, same shape as cloudflareTunnelSecrets above
 	vault                          VaultSettingsStore               // always set, same shape as cloudflareTunnel above
@@ -371,6 +373,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		emailSettings:               s,
 		cloudflareTunnel:            s,
 		cloudflareDNS:               s,
+		route53DNS:                  s,
 		registry:                    s,
 		vault:                       s,
 		registryCatalog:             registrycatalog.NewClient(),

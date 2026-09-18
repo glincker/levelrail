@@ -496,6 +496,29 @@ func (c *Client) DisconnectCloudflareDNS(ctx context.Context) (CloudflareDNSReso
 	return out, err
 }
 
+// GetRoute53DNS calls GET /api/v1/settings/route53-dns: a second,
+// independent ACME DNS-01 provider's enabled/credential-presence state,
+// mirroring GetCloudflareDNS's own shape.
+func (c *Client) GetRoute53DNS(ctx context.Context) (Route53DNSResource, error) {
+	var out Route53DNSResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/route53-dns", nil, &out)
+	return out, err
+}
+
+// SetRoute53DNS calls PUT /api/v1/settings/route53-dns.
+func (c *Client) SetRoute53DNS(ctx context.Context, req UpdateRoute53DNSRequest) (Route53DNSResource, error) {
+	var out Route53DNSResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/route53-dns", req, &out)
+	return out, err
+}
+
+// DisconnectRoute53DNS calls DELETE /api/v1/settings/route53-dns.
+func (c *Client) DisconnectRoute53DNS(ctx context.Context) (Route53DNSResource, error) {
+	var out Route53DNSResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/route53-dns", nil, &out)
+	return out, err
+}
+
 // GetCloudflareTunnel calls GET /api/v1/settings/cloudflare-tunnel: the
 // cloudflared container's configured/observed state, exposing the
 // control plane through a Cloudflare Tunnel instead of an inbound port.

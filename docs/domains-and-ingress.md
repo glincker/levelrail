@@ -156,6 +156,41 @@ Be clear-eyed about where this stands, because it's easy to overstate:
   control). Caddy loads it directly and skips automatic issuance for that
   host.
 
+## Wildcard domains: DNS-01 providers
+
+A wildcard domain (e.g. `*.example.com`, marked wildcard-eligible just by
+the leading `*.` label, no separate flag) needs the ACME DNS-01
+challenge to prove control: HTTP-01, the default challenge, cannot solve
+a wildcard identifier at all. DNS-01 works by having Caddy create a
+short-lived TXT record at your DNS provider, so it needs API access to
+that provider, on top of `ACMEEnabled` from the section above.
+
+Two DNS-01 providers are supported today, both configured the same way:
+platform-wide settings under **Domains** in the dashboard, or
+`levelrail-cli domains <provider> get|set|clear`. Only one provider is
+ever active per reconcile pass; if both are enabled at once, Cloudflare
+takes precedence over Route53, not an error.
+
+- **Cloudflare.** A single API token scoped to `Zone:DNS:Edit` for the
+  zone your wildcard domains live under, never the global API key.
+  `GET/PUT/DELETE /api/v1/settings/cloudflare-dns`,
+  `levelrail-cli domains cloudflare-dns get|set|clear`.
+
+- **Route53.** An AWS IAM access key pair scoped to
+  `route53:ChangeResourceRecordSets`, `route53:ListResourceRecordSets`,
+  and `route53:GetChange` on the target hosted zone. Region and hosted
+  zone ID are both optional: left empty, the AWS SDK resolves the region
+  from its own default chain and the zone by matching the domain against
+  the account's own zones. `GET/PUT/DELETE /api/v1/settings/route53-dns`,
+  `levelrail-cli domains route53-dns get|set|clear`.
+
+Both credentials are envelope-encrypted at rest (`internal/secrets`) and
+never returned in plaintext by a GET; a settings response only reports
+whether a credential is currently present. The provider abstraction
+(`internal/ingress.DNS01Provider`) is designed to take more providers
+beyond these two; Cloudflare and Route53 are this platform's first two,
+not a hardcoded pair.
+
 ## Opt-in WAF and rate limiting
 
 Since Caddy already ships embedded in the control plane binary, adding a
