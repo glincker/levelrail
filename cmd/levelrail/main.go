@@ -638,10 +638,14 @@ func run(logger *slog.Logger) error {
 	// rule reads the same app's configured domains GET /api/v1/apps/
 	// {name} does; apiRouter satisfies alerting.DomainCheckSource via its
 	// own CheckDomainStatus, the same DNS check GET .../domains/
-	// {domain}/check runs.
+	// {domain}/check runs. db also satisfies alerting.BackupSource, so a
+	// kind=backup_missing rule reads the same schedule and history
+	// internal/backup.Scheduler and GET /api/v1/databases/{name}/backups
+	// already read.
 	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db, db,
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
-		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger), alertingNewNotifier, logger)
+		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
+		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
@@ -2241,6 +2245,28 @@ func domainHealthCheckInterval(logger *slog.Logger) time.Duration {
 	d, err := time.ParseDuration(raw)
 	if err != nil {
 		logger.Warn("invalid APP_ALERT_DOMAIN_HEALTH_CHECK_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// backupMissingGracePeriod reads APP_ALERT_BACKUP_MISSING_GRACE_PERIOD as
+// a Go duration string, the same env-var-with-default shape
+// certExpiryWarningWindow above already uses, applied here to
+// alerting.NewEngine: how long a kind=backup_missing rule's watched
+// database or service volume can trail its own schedule's expected
+// interval before counting as overdue (EvaluateBackupMissing's own doc
+// comment). Returns 0 (alerting's own signal to fall back to
+// alerting.DefaultBackupMissingGracePeriod) when unset or unparseable,
+// logging a warning in the latter case.
+func backupMissingGracePeriod(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_ALERT_BACKUP_MISSING_GRACE_PERIOD")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_ALERT_BACKUP_MISSING_GRACE_PERIOD, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
 	}
 	return d

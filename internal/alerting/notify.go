@@ -61,6 +61,11 @@ type Event struct {
 	// own app, from EvaluateDomainHealth. Nil for every other rule kind
 	// and for resolved events.
 	DomainHealthNotices []string
+	// BackupMissingNotice is populated only for a firing (not resolved)
+	// backup_missing event: the watched database's or service volume's
+	// overdue summary, from EvaluateBackupMissing. Empty for every other
+	// rule kind and for resolved events.
+	BackupMissingNotice string
 }
 
 // Notifier sends one Event somewhere. Every notify* function below
@@ -154,6 +159,7 @@ type genericPayload struct {
 	ResourceUsageNotices []string   `json:"resource_usage_notices,omitempty"`
 	TaskFailureNotice    string     `json:"task_failure_notice,omitempty"`
 	DomainHealthNotices  []string   `json:"domain_health_notices,omitempty"`
+	BackupMissingNotice  string     `json:"backup_missing_notice,omitempty"`
 }
 
 func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Event) error {
@@ -165,6 +171,7 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		ResourceUsageNotices: ev.ResourceUsageNotices,
 		TaskFailureNotice:    ev.TaskFailureNotice,
 		DomainHealthNotices:  ev.DomainHealthNotices,
+		BackupMissingNotice:  ev.BackupMissingNotice,
 	}
 	return postJSON(ctx, client, url, payload)
 }
@@ -630,6 +637,9 @@ func summaryText(ev Event) string {
 	}
 	if len(ev.DomainHealthNotices) > 0 {
 		fmt.Fprintf(&b, "\nDomains:\n- %s", strings.Join(ev.DomainHealthNotices, "\n- "))
+	}
+	if ev.BackupMissingNotice != "" {
+		fmt.Fprintf(&b, "\nBackup: %s", ev.BackupMissingNotice)
 	}
 	return b.String()
 }

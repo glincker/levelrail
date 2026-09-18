@@ -12,6 +12,7 @@ import {
   HardDriveIcon,
   CpuIcon,
   GlobeIcon,
+  ArchiveIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -38,14 +39,17 @@ import { toast } from '@/components/ui/toast'
 import { useUpdateAlertRule } from '../queries/alerts'
 import { useNotificationChannelsOptional } from '../queries/notificationChannels'
 import { useScheduledTasks } from '../queries/scheduledTasks'
+import { useDatabases } from '../queries/databases'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
 import { METRIC_NAME_LABEL, METRIC_NAME_OPTIONS } from './metricName'
 import type {
   AlertRule,
   AlertRuleKind,
+  BackupResourceKind,
   Comparator,
   CreateAlertRuleRequest,
 } from '../types/alerts'
+import type { AppVolume } from '../types/appDetail'
 
 // Same sanity-check regex CreateAlertRuleDialog uses: not a real
 // time.Duration parser, just catches an obviously wrong value before a
@@ -65,6 +69,12 @@ const KIND_OPTIONS: {
   { value: 'node_disk_space', label: 'Node disk space', Icon: HardDriveIcon },
   { value: 'node_resource_usage', label: 'Node CPU/memory usage', Icon: CpuIcon },
   { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
+  { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
+]
+
+const BACKUP_RESOURCE_KIND_OPTIONS: { value: BackupResourceKind; label: string }[] = [
+  { value: 'database', label: 'Database' },
+  { value: 'volume', label: 'App volume' },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -90,6 +100,7 @@ const editAlertRuleSchema = z
       'node_disk_space',
       'node_resource_usage',
       'domain_health',
+      'backup_missing',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -98,6 +109,9 @@ const editAlertRuleSchema = z
     restartCountThreshold: z.coerce.number({ error: 'Must be a number' }),
     restartWindow: z.string().trim(),
     scheduledTaskId: z.string(),
+    backupResourceKind: z.enum(['database', 'volume', '']),
+    backupDatabaseName: z.string(),
+    backupVolumeName: z.string(),
     channelId: z.string(),
     enabled: z.boolean(),
   })
@@ -161,6 +175,36 @@ const editAlertRuleSchema = z
       return
     }
 
+    if (data.kind === 'backup_missing') {
+      if (!data.backupResourceKind) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose what this rule watches',
+          path: ['backupResourceKind'],
+        })
+      } else if (data.backupResourceKind === 'database' && !data.backupDatabaseName) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose which database to watch',
+          path: ['backupDatabaseName'],
+        })
+      } else if (data.backupResourceKind === 'volume' && !data.backupVolumeName) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose which volume to watch',
+          path: ['backupVolumeName'],
+        })
+      }
+      if (data.forDuration && !GO_DURATION_REGEX.test(data.forDuration)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must look like a duration, e.g. "6h"',
+          path: ['forDuration'],
+        })
+      }
+      return
+    }
+
     if (
       !Number.isInteger(data.restartCountThreshold) ||
       data.restartCountThreshold <= 0
@@ -204,6 +248,9 @@ function defaultsFromRule(rule: AlertRule): EditAlertRuleFormInput {
     restartCountThreshold: rule.restart_count_threshold,
     restartWindow: rule.restart_window ?? '',
     scheduledTaskId: rule.scheduled_task_id ?? '',
+    backupResourceKind: rule.backup_resource_kind ?? '',
+    backupDatabaseName: rule.backup_database_name ?? '',
+    backupVolumeName: rule.backup_volume_name ?? '',
     channelId: rule.channel_id ?? '',
     enabled: rule.enabled,
   }
@@ -220,9 +267,11 @@ function defaultsFromRule(rule: AlertRule): EditAlertRuleFormInput {
 export function EditAlertRuleDialog({
   appName,
   rule,
+  volumes,
 }: {
   appName: string
   rule: AlertRule
+  volumes?: AppVolume[]
 }) {
   const [open, setOpen] = useState(false)
   const updateRule = useUpdateAlertRule(appName)
@@ -230,6 +279,8 @@ export function EditAlertRuleDialog({
   const channels = channelsQuery.data ?? []
   const scheduledTasksQuery = useScheduledTasks(appName)
   const scheduledTasks = scheduledTasksQuery.data ?? []
+  const databasesQuery = useDatabases()
+  const databases = databasesQuery.data ?? []
   const defaultValues = defaultsFromRule(rule)
   const { control, register, handleSubmit, formState, reset, watch } = useForm<
     EditAlertRuleFormInput,
@@ -240,6 +291,7 @@ export function EditAlertRuleDialog({
     defaultValues,
   })
   const kind = watch('kind')
+  const backupResourceKind = watch('backupResourceKind')
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -269,6 +321,15 @@ export function EditAlertRuleDialog({
       req.restart_count_threshold = values.restartCountThreshold
     } else if (values.kind === 'domain_health') {
       req.for_duration = values.forDuration.trim() || undefined
+    } else if (values.kind === 'backup_missing') {
+      req.backup_resource_kind = values.backupResourceKind || undefined
+      req.for_duration = values.forDuration.trim() || undefined
+      if (values.backupResourceKind === 'database') {
+        req.backup_database_name = values.backupDatabaseName
+      } else if (values.backupResourceKind === 'volume') {
+        req.backup_service_name = appName
+        req.backup_volume_name = values.backupVolumeName
+      }
     }
     updateRule.mutate(
       { id: rule.id, req },
@@ -504,6 +565,122 @@ export function EditAlertRuleDialog({
                   {...register('restartCountThreshold')}
                 />
                 <FieldError errors={[formState.errors.restartCountThreshold]} />
+              </Field>
+            </>
+          ) : kind === 'backup_missing' ? (
+            <>
+              <Field>
+                <FieldLabel htmlFor="edit-rule-backup-resource-kind">
+                  Watches
+                </FieldLabel>
+                <Controller
+                  control={control}
+                  name="backupResourceKind"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="edit-rule-backup-resource-kind" className="w-full">
+                        <SelectValue placeholder="Choose what to watch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BACKUP_RESOURCE_KIND_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <FieldError errors={[formState.errors.backupResourceKind]} />
+              </Field>
+
+              {backupResourceKind === 'database' ? (
+                <Field>
+                  <FieldLabel htmlFor="edit-rule-backup-database">
+                    Database
+                  </FieldLabel>
+                  {databases.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No databases yet. Create one from the Databases page
+                      first.
+                    </p>
+                  ) : (
+                    <Controller
+                      control={control}
+                      name="backupDatabaseName"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger id="edit-rule-backup-database" className="w-full">
+                            <SelectValue placeholder="Choose a database" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {databases.map((db) => (
+                              <SelectItem key={db.name} value={db.name}>
+                                {db.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  )}
+                  <FieldError errors={[formState.errors.backupDatabaseName]} />
+                </Field>
+              ) : backupResourceKind === 'volume' ? (
+                <Field>
+                  <FieldLabel htmlFor="edit-rule-backup-volume">
+                    Volume
+                  </FieldLabel>
+                  {!volumes || volumes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      This app has no named volumes declared in app.yaml.
+                    </p>
+                  ) : (
+                    <Controller
+                      control={control}
+                      name="backupVolumeName"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger id="edit-rule-backup-volume" className="w-full">
+                            <SelectValue placeholder="Choose a volume" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {volumes.map((v) => (
+                              <SelectItem key={v.name} value={v.name}>
+                                {v.name} ({v.container_path})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  )}
+                  <FieldError errors={[formState.errors.backupVolumeName]} />
+                </Field>
+              ) : null}
+
+              <Field>
+                <FieldLabel htmlFor="edit-rule-backup-missing-for-duration">
+                  Overdue grace period (optional)
+                </FieldLabel>
+                <Controller
+                  control={control}
+                  name="forDuration"
+                  render={({ field }) => (
+                    <DurationInput
+                      id="edit-rule-backup-missing-for-duration"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+                <FieldDescription>
+                  How long the last successful backup can trail its own
+                  schedule before this fires. Leave blank to use the
+                  control plane&apos;s default (6h).
+                </FieldDescription>
+                <FieldError errors={[formState.errors.forDuration]} />
               </Field>
             </>
           ) : (
