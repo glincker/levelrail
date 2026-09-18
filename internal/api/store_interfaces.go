@@ -375,6 +375,7 @@ type Store interface {
 	ServiceVolumeRestoreHistoryStore
 	CloneRestoreHistoryStore
 	VolumeCloneRestoreHistoryStore
+	AppVolumeMoveStore
 	ProjectStore
 	OrganizationStore
 	EnvironmentStore

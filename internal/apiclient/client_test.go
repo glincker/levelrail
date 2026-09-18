@@ -1410,3 +1410,98 @@ func TestClient_PruneSystem(t *testing.T) {
 		t.Errorf("PruneSystem() = %+v, want ContainersRemoved=[c1] ImagesReclaimedBytes=1024", got)
 	}
 }
+
+func TestClient_SetAppNode(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody SetAppNodeRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(AppResource{Name: "web", NodeID: gotBody.NodeID})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.SetAppNode(context.Background(), "web", "node_1")
+	if err != nil {
+		t.Fatalf("SetAppNode() error = %v", err)
+	}
+	if gotMethod != http.MethodPut || gotPath != "/api/v1/apps/web/node" {
+		t.Errorf("method/path = %s %s, want PUT /api/v1/apps/web/node", gotMethod, gotPath)
+	}
+	if got.NodeID != "node_1" {
+		t.Errorf("NodeID = %q, want node_1", got.NodeID)
+	}
+}
+
+func TestClient_MoveAppWithVolumes(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody MoveAppWithVolumesRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.WriteHeader(http.StatusAccepted)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(AppVolumeMoveResource{
+			ID: "avm_1", ServiceName: "web", ToNodeID: gotBody.NodeID, Status: "running", Steps: []AppVolumeMoveStepResource{},
+		})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.MoveAppWithVolumes(context.Background(), "web", "node_1")
+	if err != nil {
+		t.Fatalf("MoveAppWithVolumes() error = %v", err)
+	}
+	if gotMethod != http.MethodPost || gotPath != "/api/v1/apps/web/move-with-volumes" {
+		t.Errorf("method/path = %s %s, want POST /api/v1/apps/web/move-with-volumes", gotMethod, gotPath)
+	}
+	if got.ID != "avm_1" || got.ToNodeID != "node_1" || got.Status != "running" {
+		t.Errorf("MoveAppWithVolumes() = %+v, want ID=avm_1 ToNodeID=node_1 Status=running", got)
+	}
+}
+
+func TestClient_ListAppVolumeMoves(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]AppVolumeMoveResource{{ID: "avm_1", ServiceName: "web", Status: "succeeded"}})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.ListAppVolumeMoves(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("ListAppVolumeMoves() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/apps/web/moves" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/apps/web/moves", gotMethod, gotPath)
+	}
+	if len(got) != 1 || got[0].ID != "avm_1" {
+		t.Errorf("ListAppVolumeMoves() = %+v, want exactly avm_1", got)
+	}
+}
+
+func TestClient_GetAppVolumeMove(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(AppVolumeMoveResource{ID: "avm_1", ServiceName: "web", Status: "succeeded"})
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "test-token")
+	got, err := client.GetAppVolumeMove(context.Background(), "web", "avm_1")
+	if err != nil {
+		t.Fatalf("GetAppVolumeMove() error = %v", err)
+	}
+	if gotMethod != http.MethodGet || gotPath != "/api/v1/apps/web/moves/avm_1" {
+		t.Errorf("method/path = %s %s, want GET /api/v1/apps/web/moves/avm_1", gotMethod, gotPath)
+	}
+	if got.Status != "succeeded" {
+		t.Errorf("Status = %q, want succeeded", got.Status)
+	}
+}

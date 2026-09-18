@@ -97,6 +97,7 @@ export function AppOverview({ app }: { app: AppDetail }) {
                 kind="app"
                 name={app.name}
                 currentNodeId={app.node_id}
+                volumeCount={app.volumes?.length ?? 0}
               />
             </dd>
           </div>

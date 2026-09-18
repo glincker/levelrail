@@ -67,6 +67,8 @@ type (
 	setBackupScheduleRequest         = apiclient.SetBackupScheduleRequest
 	triggerRestoreRequest            = apiclient.TriggerRestoreRequest
 	appVolumeResource                = apiclient.AppVolumeResource
+	appVolumeMoveResource            = apiclient.AppVolumeMoveResource
+	appVolumeMoveStepResource        = apiclient.AppVolumeMoveStepResource
 	appBindMountResource             = apiclient.AppBindMountResource
 	volumeBackupScheduleResource     = apiclient.VolumeBackupScheduleResource
 	setVolumeBackupScheduleRequest   = apiclient.SetVolumeBackupScheduleRequest
@@ -142,6 +144,8 @@ type (
 	projectLifecycleResult           = apiclient.ProjectLifecycleResult
 	setProjectOrganizationRequest    = apiclient.SetProjectOrganizationRequest
 	setAppProjectRequest             = apiclient.SetAppProjectRequest
+	setAppNodeRequest                = apiclient.SetAppNodeRequest
+	moveAppWithVolumesRequest        = apiclient.MoveAppWithVolumesRequest
 	setDatabaseProjectRequest        = apiclient.SetDatabaseProjectRequest
 	environmentResource              = apiclient.EnvironmentResource
 	createEnvironmentRequest         = apiclient.CreateEnvironmentRequest
