@@ -9,6 +9,13 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// route53DNSInternalError is the fixed body every 500 response in this
+// file uses: this repo's own errors-wrapped-with-context rule already
+// puts the real cause in the server log line right above each call
+// (rt.logger.Error), so the response body deliberately stays generic
+// rather than leaking internals to the client.
+const route53DNSInternalError = "internal error"
+
 // Route53DNSSecrets is the surface the Route53 DNS-01 settings handlers
 // need from internal/secrets.Manager, the same shape CloudflareDNSSecrets
 // already establishes for a distinct credential shape: an AWS IAM access
@@ -55,7 +62,7 @@ func (rt *Router) handleGetRoute53DNSSettings(w http.ResponseWriter, r *http.Req
 	settings, err := rt.route53DNS.GetRoute53DNSSettings(r.Context())
 	if err != nil {
 		rt.logger.Error("api: get route53 dns settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, route53DNSInternalError)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toRoute53DNSResource(r.Context(), settings))
@@ -101,7 +108,7 @@ func (rt *Router) handleUpdateRoute53DNSSettings(w http.ResponseWriter, r *http.
 		existingAccessKeyID, err := rt.route53DNSSecrets.Exists(r.Context(), key, store.Route53DNSAccessKeyIDEnvKey)
 		if err != nil {
 			rt.logger.Error("api: check route53 dns credentials failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			writeError(w, http.StatusInternalServerError, route53DNSInternalError)
 			return
 		}
 		hasCreds = existingAccessKeyID
@@ -114,12 +121,12 @@ func (rt *Router) handleUpdateRoute53DNSSettings(w http.ResponseWriter, r *http.
 	if req.AccessKeyID != "" {
 		if err := rt.route53DNSSecrets.SetValue(r.Context(), key, store.Route53DNSAccessKeyIDEnvKey, req.AccessKeyID); err != nil {
 			rt.logger.Error("api: save route53 dns access key id failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			writeError(w, http.StatusInternalServerError, route53DNSInternalError)
 			return
 		}
 		if err := rt.route53DNSSecrets.SetValue(r.Context(), key, store.Route53DNSSecretAccessKeyEnvKey, req.SecretAccessKey); err != nil {
 			rt.logger.Error("api: save route53 dns secret access key failed", slog.String("error", err.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			writeError(w, http.StatusInternalServerError, route53DNSInternalError)
 			return
 		}
 	}
@@ -127,7 +134,7 @@ func (rt *Router) handleUpdateRoute53DNSSettings(w http.ResponseWriter, r *http.
 	settings := store.Route53DNSSettings{Enabled: req.Enabled, Region: req.Region, HostedZoneID: req.HostedZoneID}
 	if err := rt.route53DNS.UpdateRoute53DNSSettings(r.Context(), settings); err != nil {
 		rt.logger.Error("api: update route53 dns settings failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, route53DNSInternalError)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toRoute53DNSResource(r.Context(), settings))
@@ -144,13 +151,13 @@ func (rt *Router) handleDisconnectRoute53DNS(w http.ResponseWriter, r *http.Requ
 
 	if err := rt.route53DNSSecrets.DeleteAll(r.Context(), store.Route53DNSSecretsKey()); err != nil {
 		rt.logger.Error("api: clear route53 dns credentials failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, route53DNSInternalError)
 		return
 	}
 	settings := store.Route53DNSSettings{Enabled: false}
 	if err := rt.route53DNS.UpdateRoute53DNSSettings(r.Context(), settings); err != nil {
 		rt.logger.Error("api: disconnect route53 dns failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, route53DNSInternalError)
 		return
 	}
 	writeJSON(w, http.StatusOK, rt.toRoute53DNSResource(r.Context(), settings))

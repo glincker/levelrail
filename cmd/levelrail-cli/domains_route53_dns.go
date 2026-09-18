@@ -68,18 +68,9 @@ func runDomainsRoute53DNSGet(prog string, args []string, stdout, stderr io.Write
 		return exitCode
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	settings, err := client.GetRoute53DNS(context.Background())
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get route53 dns settings: %w", err))
-	}
-
-	if err := renderResult(stdout, of.Format, of.Query, settings, func() { printRoute53DNSSettings(stdout, settings) }); err != nil {
-		_, _ = fmt.Fprintln(stderr, err)
-		return exitCodeForError(err)
-	}
-	return exitOK
+	return runRoute53DNSAction(prog, stdout, stderr, lookupEnv, apiURLFlag, tokenFlag, profileFlag, jsonOut, of, "get", func(client *Client) (route53DNSResource, error) {
+		return client.GetRoute53DNS(context.Background())
+	})
 }
 
 func runDomainsRoute53DNSSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -105,24 +96,15 @@ func runDomainsRoute53DNSSet(prog string, args []string, stdout, stderr io.Write
 		return exitUsage
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
-	settings, err := client.SetRoute53DNS(context.Background(), updateRoute53DNSRequest{
-		Enabled:         true,
-		Region:          regionFlag,
-		HostedZoneID:    hostedZoneIDFlag,
-		AccessKeyID:     accessKeyIDFlag,
-		SecretAccessKey: secretAccessKeyFlag,
+	return runRoute53DNSAction(prog, stdout, stderr, lookupEnv, apiURLFlag, tokenFlag, profileFlag, jsonOut, of, "set", func(client *Client) (route53DNSResource, error) {
+		return client.SetRoute53DNS(context.Background(), updateRoute53DNSRequest{
+			Enabled:         true,
+			Region:          regionFlag,
+			HostedZoneID:    hostedZoneIDFlag,
+			AccessKeyID:     accessKeyIDFlag,
+			SecretAccessKey: secretAccessKeyFlag,
+		})
 	})
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set route53 dns settings: %w", err))
-	}
-
-	if err := renderResult(stdout, of.Format, of.Query, settings, func() { printRoute53DNSSettings(stdout, settings) }); err != nil {
-		_, _ = fmt.Fprintln(stderr, err)
-		return exitCodeForError(err)
-	}
-	return exitOK
 }
 
 func runDomainsRoute53DNSClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -137,11 +119,24 @@ func runDomainsRoute53DNSClear(prog string, args []string, stdout, stderr io.Wri
 		return exitCode
 	}
 
+	return runRoute53DNSAction(prog, stdout, stderr, lookupEnv, apiURLFlag, tokenFlag, profileFlag, jsonOut, of, "clear", func(client *Client) (route53DNSResource, error) {
+		return client.DisconnectRoute53DNS(context.Background())
+	})
+}
+
+// runRoute53DNSAction runs the client-build/call/render tail every
+// domains route53-dns subcommand shares once its own flags are parsed:
+// build the API client, invoke action, then report or render the
+// result. Factored out because get/set/clear's own tails were
+// byte-identical apart from which client method action calls, which
+// this repo's own duplication gate (unlike domains_cloudflare_dns.go,
+// which predates that gate) flags within a single file.
+func runRoute53DNSAction(prog string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), apiURLFlag, tokenFlag, profileFlag string, jsonOut bool, of outputFlags, verb string, action func(*Client) (route53DNSResource, error)) int {
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
-	settings, err := client.DisconnectRoute53DNS(context.Background())
+	settings, err := action(client)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear route53 dns settings: %w", err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s route53 dns settings: %w", verb, err))
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, settings, func() { printRoute53DNSSettings(stdout, settings) }); err != nil {

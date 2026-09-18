@@ -133,15 +133,7 @@ func TestNewDNSACMEIssuer_JSONShape(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			iss := NewDNSACMEIssuer("ops@example.com", "", tt.provider)
-
-			raw, err := json.Marshal(iss)
-			if err != nil {
-				t.Fatalf("json.Marshal() error: %v", err)
-			}
-			var decoded map[string]any
-			if err := json.Unmarshal(raw, &decoded); err != nil {
-				t.Fatalf("json.Unmarshal() error: %v", err)
-			}
+			decoded := decodeIssuerJSON(t, iss)
 
 			if decoded["module"] != "acme" {
 				t.Errorf("module = %v, want \"acme\"", decoded["module"])
@@ -149,18 +141,7 @@ func TestNewDNSACMEIssuer_JSONShape(t *testing.T) {
 			if decoded["email"] != "ops@example.com" {
 				t.Errorf("email = %v, want \"ops@example.com\"", decoded["email"])
 			}
-			challenges, ok := decoded["challenges"].(map[string]any)
-			if !ok {
-				t.Fatalf("challenges missing or wrong shape: %v", decoded["challenges"])
-			}
-			dns, ok := challenges["dns"].(map[string]any)
-			if !ok {
-				t.Fatalf("challenges.dns missing or wrong shape: %v", challenges["dns"])
-			}
-			provider, ok := dns["provider"].(map[string]any)
-			if !ok {
-				t.Fatalf("challenges.dns.provider missing or wrong shape: %v", dns["provider"])
-			}
+			provider := decodeDNSProvider(t, decoded)
 			for field, want := range tt.want {
 				if provider[field] != want {
 					t.Errorf("provider[%q] = %v, want %q", field, provider[field], want)
@@ -168,4 +149,41 @@ func TestNewDNSACMEIssuer_JSONShape(t *testing.T) {
 			}
 		})
 	}
+}
+
+// decodeIssuerJSON marshals then unmarshals iss into a plain map,
+// failing the test immediately on either error. Shared by every test in
+// this file that asserts on an issuer's JSON field paths rather than its
+// Go struct fields directly (the wire shape is the actual contract).
+func decodeIssuerJSON(t *testing.T, iss ACMEIssuer) map[string]any {
+	t.Helper()
+	raw, err := json.Marshal(iss)
+	if err != nil {
+		t.Fatalf("json.Marshal() error: %v", err)
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		t.Fatalf("json.Unmarshal() error: %v", err)
+	}
+	return decoded
+}
+
+// decodeDNSProvider descends decoded's challenges.dns.provider path,
+// failing the test immediately if any level is missing or the wrong
+// shape.
+func decodeDNSProvider(t *testing.T, decoded map[string]any) map[string]any {
+	t.Helper()
+	challenges, ok := decoded["challenges"].(map[string]any)
+	if !ok {
+		t.Fatalf("challenges missing or wrong shape: %v", decoded["challenges"])
+	}
+	dns, ok := challenges["dns"].(map[string]any)
+	if !ok {
+		t.Fatalf("challenges.dns missing or wrong shape: %v", challenges["dns"])
+	}
+	provider, ok := dns["provider"].(map[string]any)
+	if !ok {
+		t.Fatalf("challenges.dns.provider missing or wrong shape: %v", dns["provider"])
+	}
+	return provider
 }

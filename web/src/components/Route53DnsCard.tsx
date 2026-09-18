@@ -29,7 +29,9 @@ import {
 // useTokenToggleForm (SettingsCard.tsx): that hook is shaped for a
 // single token, and this provider needs an access key pair plus two
 // optional non-secret fields (region, hosted zone id).
-export function Route53DnsCard({ settings }: { settings: Route53DnsSettings }) {
+export function Route53DnsCard({
+  settings,
+}: Readonly<{ settings: Route53DnsSettings }>) {
   const updateSettings = useUpdateRoute53DnsSettings()
   const disconnect = useDisconnectRoute53Dns()
 
