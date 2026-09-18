@@ -64,6 +64,7 @@ export default defineConfig({
             text: 'Migrating from Coolify, Dokploy, or CapRover',
             link: '/migrating-from-coolify-dokploy-and-caprover',
           },
+          { text: 'Deploying from GitHub Actions', link: '/github-actions' },
           { text: 'Screenshots', link: '/screenshots' },
           { text: 'Deploying apps', link: '/deploying-apps' },
           { text: 'Managing databases', link: '/managing-databases' },
