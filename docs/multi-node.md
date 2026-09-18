@@ -271,6 +271,71 @@ The response for a create call that auto-placed carries
 dashboard surfaces that as a toast ("Auto-placed on node ... (simple
 spread scheduling)") so it's never a silent decision.
 
+## Moving an app with its volumes
+
+Manual placement (the "Move" dialog above, `PUT /apps/{name}/node`) only
+ever changes `node_id`: the reconciler then creates a fresh, empty
+Docker volume on the new node for anything the app declares under
+`app.yaml`'s `volumes:`, and the old node's volume is simply left
+behind, still holding the app's actual data. That's fine when the app
+is stateless, and silently wrong otherwise.
+
+`POST /api/v1/apps/{name}/move-with-volumes` (dashboard: the "Take its
+volumes with it" checkbox in the same Move dialog; CLI:
+`levelrail-cli apps set-node <name> <node-id> --with-volumes`) does the
+same placement change, but archives and restores every one of the
+app's named volumes onto the destination node first, in this order:
+
+1. **Stop.** The app is marked suspended and its containers on the
+   current node are torn down synchronously (the same mechanism
+   `PUT /apps/{name}/node` already dispatches, just waited on here
+   instead of fired in the background) so nothing is writing to a
+   volume while it's archived.
+2. **Move each volume.** For every named volume, its entire contents
+   are tarred from the source node and untarred onto the destination
+   node, one volume at a time, over the same agent transport a plain
+   volume backup/restore already uses (`internal/backup.MoveVolume`).
+   No S3-compatible backup target is involved and none needs to be
+   configured: the two nodes' Docker daemons are already reachable
+   from the control plane, so the archive stream is piped directly
+   from one to the other.
+3. **Update placement.** Only once every volume has copied
+   successfully does `node_id` actually change.
+4. **Resume.** Suspended clears and the reconciler is nudged, which
+   creates the app's container on the new node, mounting the
+   already-populated volumes it finds waiting there.
+
+Every step's outcome is recorded on a `store.AppVolumeMove` row as it
+happens (`GET /apps/{name}/moves/{id}` to poll one in flight,
+`GET /apps/{name}/moves` for history), not written once at the end:
+if step 2 fails on the second of three volumes, that row shows
+`stop_app: succeeded`, `move_volume:app-<name>-cache: succeeded`,
+`move_volume:app-<name>-uploads: failed`, and nothing past that,
+exactly the "which step, why" a partially-failed operation on real
+data needs to be diagnosable rather than a black box.
+
+**This is not atomic, and does not pretend to be.** If any step fails,
+the app is left suspended (stopped) rather than guessed back into a
+running state, and `node_id` never changes until every volume has
+already copied. That said, it's always safe to just retry the same
+call: archiving never mutates the source volume (it's a read-only tar),
+and restoring a volume is always a full overwrite, so a retry after a
+partial failure re-copies from the untouched source and never
+compounds a half-applied move. There is no automatic rollback of a
+volume already copied to the destination before a later volume failed;
+it's simply left there, unreferenced, until the app either finishes
+moving (and starts using it) or an operator cleans it up by hand.
+
+An app with no named volumes, or already on the destination node, has
+nothing for this endpoint to do beyond the plain move, so it takes that
+synchronous path instead: the response comes back already
+`status: "succeeded"`, no polling needed. Bind mounts
+(`app.yaml`'s host-path mounts, not Docker-managed named volumes) are
+never moved by this or any other path today: a bind mount is a real
+path on whichever node's disk it happens to be declared against, and
+there is no archive/restore primitive for an arbitrary host path yet,
+only for a named Docker volume.
+
 ## WireGuard mesh and internal DNS
 
 This is the one piece on this page that is genuinely incomplete, not
@@ -339,13 +404,20 @@ operator to act on until `ConfigSink`'s gRPC arm lands.
 | `POST` | `/api/v1/nodes/{id}/drain?target_node_id=` | `root` |
 | `GET` | `/api/v1/nodes/{id}/metrics?metric=&from=&to=&step=` | `root` |
 | `GET` | `/api/v1/nodes/{id}/patch-status` | `root` |
+| `PUT` | `/api/v1/apps/{name}/node` | `root` |
+| `POST` | `/api/v1/apps/{name}/move-with-volumes` | `root` |
+| `GET` | `/api/v1/apps/{name}/moves` | `read` |
+| `GET` | `/api/v1/apps/{name}/moves/{id}` | `read` |
 
 Every node route requires the `root` ability specifically, not `read`
 or `write`: node management is treated as control-plane-level
 administration, not per-resource access. `GET /api/v1/nodes/{id}` also
 carries an `alert_status` field when telemetry is configured, a live
 re-evaluation of that node's patch-status/disk-space/resource-usage
-alert standing, not a stored value.
+alert standing, not a stored value. The two app-scoped placement routes
+sit at the same `root` tier for the identical reason:
+`move-with-volumes` is both a placement change and an in-place,
+full-overwrite restore of every named volume.
 
 ## CLI
 
@@ -361,7 +433,17 @@ levelrail-cli nodes workloads <id> --accepts-app=BOOL --accepts-build=BOOL [flag
 levelrail-cli nodes health <id> [flags]
 levelrail-cli nodes patch-status <id> [flags]
 levelrail-cli nodes metrics <id> --metric NAME [--since DURATION | --from TIME --to TIME] [--step DURATION] [flags]
+levelrail-cli apps set-node <name> <node-id> [--with-volumes] [flags]
+levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 ```
+
+`apps set-node`/`apps clear-node` are the CLI counterpart of the
+dashboard's Move dialog: without `--with-volumes` they're the plain,
+instant `PUT /apps/{name}/node`; with it, they call
+`POST /apps/{name}/move-with-volumes` and poll
+`GET /apps/{name}/moves/{id}` until it stops running, printing the
+finished move record (or the failure reason and which step it got to)
+before exiting.
 
 `nodes workloads` is a full replace of both flags, not a per-field
 patch: both `--accepts-app` and `--accepts-build` are required on every

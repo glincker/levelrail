@@ -228,6 +228,16 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// app-scoped URL.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/node", rt.requireAbility(AbilityRoot, rt.handleSetAppNode))
 
+	// move-with-volumes: the same AbilityRoot tier as the plain node move
+	// above, since this both changes placement and does an in-place,
+	// full-overwrite restore of every named volume onto the destination
+	// node (the same risk class POST .../volumes/{volume}/restore already
+	// sits behind). The two GETs are AbilityRead, matching every other
+	// history listing in this file.
+	mux.HandleFunc("POST /api/v1/apps/{name}/move-with-volumes", rt.requireAbility(AbilityRoot, rt.handleMoveAppWithVolumes))
+	mux.HandleFunc("GET /api/v1/apps/{name}/moves", rt.requireAbility(AbilityRead, rt.handleListAppVolumeMoves))
+	mux.HandleFunc("GET /api/v1/apps/{name}/moves/{id}", rt.requireAbility(AbilityRead, rt.handleGetAppVolumeMove))
+
 	// Deploys.
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityDeploy, rt.handleTriggerDeploy))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityRead, rt.handleDeployHistory))

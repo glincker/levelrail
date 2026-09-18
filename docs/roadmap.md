@@ -402,7 +402,15 @@ still open. This page describes what's actually true today.
   and closing the stream early actually stops the remote process.
 - Node registry, join-token issuance, and node CRUD.
 - mTLS between control plane and agents via a minimal self-signed CA.
-- Manual placement: assign or move a service to a specific node.
+- Manual placement: assign or move a service to a specific node. An app
+  with named Docker volumes can take them along: `POST /apps/{name}/
+  move-with-volumes` stops the app, archives and restores each volume
+  onto the destination node directly (no S3 target involved), then
+  updates placement and resumes, with per-step status recorded so a
+  partial failure is diagnosable rather than a black box. See
+  `docs/multi-node.md`'s own "Moving an app with its volumes" section
+  for the exact sequence and what a partial failure actually leaves
+  behind.
 - WireGuard mesh with internal DNS resolving service names across
   nodes.
 - Dedicated build nodes, with registry-backed remote BuildKit cache and
