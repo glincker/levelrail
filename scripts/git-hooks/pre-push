@@ -2,6 +2,17 @@
 # The heavier gate pre-commit skips: a full -race test run plus the
 # coverage threshold. Runs the thorough check CI's PR lane no longer
 # does, once per push rather than once per commit.
+#
+# Scoped to scripts/affected-go-packages.sh's affected set rather than
+# always testing ./... : a push that only touched, say,
+# internal/vault/cli-docs no longer pays for internal/api's own
+# multi-minute suite. nightly.yml's full, no-short `go test ./...`
+# stays the exhaustive net for whatever this under-selects, so this is
+# a real speedup, not a coverage regression. Falls back to the full
+# ./... run (today's original behavior) whenever the affected-set
+# script says "ALL" or can't be trusted (no jq, detached HEAD with no
+# upstream, etc.): never silently narrows scope on a tool that isn't
+# actually available.
 set -uo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -20,19 +31,56 @@ if ! go build ./... 2>&1; then
 	fail=1
 fi
 
-if [ "$fail" -eq 0 ]; then
+scope="ALL"
+if [ "$fail" -eq 0 ] && command -v jq >/dev/null 2>&1; then
+	# Best-effort: a fetch failure (offline, no network) just means the
+	# affected-set is computed against whatever origin/main is already
+	# known locally, which only risks over-selecting, never under.
+	git fetch origin main --quiet 2>/dev/null || true
+	if git rev-parse --verify --quiet origin/main >/dev/null; then
+		affected_out="$(scripts/affected-go-packages.sh origin/main 2>/dev/null || echo ALL)"
+		if [ -z "$affected_out" ]; then
+			scope="NONE"
+		elif [ "$affected_out" != "ALL" ]; then
+			scope="$affected_out"
+		fi
+	fi
+fi
+
+if [ "$fail" -eq 0 ] && [ "$scope" = "NONE" ]; then
+	echo "pre-push: go test skipped, no Go-affecting changes vs origin/main"
+elif [ "$fail" -eq 0 ]; then
 	# -short skips the tests marked testing.Short() (flaky under load,
 	# covered by nightly.yml instead); -race stays on.
-	echo "pre-push: go test -race -short (with coverage)"
-	if ! go test ./... -race -short -coverprofile="$coverage_out" 2>&1; then
+	if [ "$scope" = "ALL" ]; then
+		echo "pre-push: go test ./... -race -short (with coverage)"
+		test_targets="./..."
+	else
+		pkg_count="$(printf '%s\n' "$scope" | wc -l | tr -d ' ')"
+		echo "pre-push: go test -race -short (with coverage), scoped to $pkg_count affected package(s)"
+		test_targets="$scope"
+	fi
+	# shellcheck disable=SC2086 # test_targets is intentionally word-split: either "./..." or a newline-joined package list
+	if ! go test $test_targets -race -short -coverprofile="$coverage_out" 2>&1; then
 		fail=1
 	fi
 fi
 
-if [ "$fail" -eq 0 ] && [ -f "$coverage_out" ]; then
-	echo "pre-push: coverage gate (internal/, 70%)"
-	if ! scripts/check-coverage.sh "$coverage_out" internal/ 70; then
-		fail=1
+if [ "$fail" -eq 0 ] && [ -f "$coverage_out" ] && [ -s "$coverage_out" ]; then
+	if [ "$scope" = "ALL" ] || [ "$scope" = "NONE" ]; then
+		echo "pre-push: coverage gate (internal/, 70% aggregate)"
+		if ! scripts/check-coverage.sh "$coverage_out" internal/ 70; then
+			fail=1
+		fi
+	else
+		# A partial coverage profile (only the affected packages ran)
+		# makes the aggregate gate meaningless, so this uses the same
+		# changed-line gate CI's own coverage-gate job runs on PRs
+		# instead, keeping local and CI semantics identical.
+		echo "pre-push: coverage gate (changed lines under internal/, 70%)"
+		if ! scripts/check-changed-file-coverage.sh "$coverage_out" origin/main internal/ 70; then
+			fail=1
+		fi
 	fi
 fi
 
