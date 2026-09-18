@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -233,17 +234,50 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 	return nil
 }
 
+// registerBackupMissingFlags wires up the three --backup-* flags shared,
+// flag for flag, by "apps alerts create" and "apps alerts update".
+func registerBackupMissingFlags(fs *flag.FlagSet) (resourceKind, databaseName, volumeName *string) {
+	var rk, db, vol string
+	fs.StringVar(&rk, "backup-resource-kind", "", "\"database\" or \"volume\" (--kind backup_missing only, required for that kind)")
+	fs.StringVar(&db, "backup-database-name", "", "which database to watch (--kind backup_missing --backup-resource-kind database only, required for that combination; see \"databases list\")")
+	fs.StringVar(&vol, "backup-volume-name", "", "which of this app's own volumes to watch (--kind backup_missing --backup-resource-kind volume only, required for that combination)")
+	return &rk, &db, &vol
+}
+
+// backupMissingRequestFields computes the four backup_missing-specific
+// request fields shared by createAlertRuleRequest and
+// updateAlertRuleRequest, so "apps alerts create" and "apps alerts
+// update" don't each carry their own copy of the same "resolve the
+// volume's owning service to appName" logic.
+type backupMissingRequestFields struct {
+	ResourceKind, DatabaseName, ServiceName, VolumeName string
+}
+
+func resolveBackupMissingRequestFields(kind, appName, backupResourceKind, backupDatabaseName, backupVolumeName string) backupMissingRequestFields {
+	if kind != "backup_missing" {
+		return backupMissingRequestFields{}
+	}
+	fields := backupMissingRequestFields{ResourceKind: backupResourceKind, DatabaseName: backupDatabaseName}
+	if backupResourceKind == "volume" {
+		// A volume's owning service is always this same app in this
+		// codebase's single-service-per-app model, so there is no
+		// separate --backup-service-name flag to set.
+		fields.ServiceName = appName
+		fields.VolumeName = backupVolumeName
+	}
+	return fields
+}
+
 func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps alerts create", "print the created rule as JSON to stdout and nothing else", stderr)
 	var (
-		name, kind, metric, comparator, forDuration              string
-		threshold                                                float64
-		restartCountThreshold                                    int
-		restartWindow                                            string
-		scheduledTaskID                                          string
-		backupResourceKind, backupDatabaseName, backupVolumeName string
-		channelID, notifyURL, notifyKind                         string
-		disabled                                                 bool
+		name, kind, metric, comparator, forDuration string
+		threshold                                   float64
+		restartCountThreshold                       int
+		restartWindow                               string
+		scheduledTaskID                             string
+		channelID, notifyURL, notifyKind            string
+		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
 	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing (required)")
@@ -254,9 +288,7 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 	fs.IntVar(&restartCountThreshold, "restart-count-threshold", 0, "restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing, required for both kinds")
 	fs.StringVar(&restartWindow, "restart-window", "", "time window restarts are counted in, e.g. \"5m\" (--kind crashloop only, required for that kind)")
 	fs.StringVar(&scheduledTaskID, "scheduled-task-id", "", "which of this app's scheduled tasks to watch (--kind scheduled_task_failure only, required for that kind; see \"apps scheduled-tasks list\")")
-	fs.StringVar(&backupResourceKind, "backup-resource-kind", "", "\"database\" or \"volume\" (--kind backup_missing only, required for that kind)")
-	fs.StringVar(&backupDatabaseName, "backup-database-name", "", "which database to watch (--kind backup_missing --backup-resource-kind database only, required for that combination; see \"databases list\")")
-	fs.StringVar(&backupVolumeName, "backup-volume-name", "", "which of this app's own volumes to watch (--kind backup_missing --backup-resource-kind volume only, required for that combination)")
+	backupResourceKindP, backupDatabaseNameP, backupVolumeNameP := registerBackupMissingFlags(fs)
 	fs.StringVar(&channelID, "channel-id", "", "attach an already-connected notification channel (see \"channels list\")")
 	fs.StringVar(&notifyURL, "notify-url", "", "legacy alternative to --channel-id: a raw webhook URL/destination")
 	fs.StringVar(&notifyKind, "notify-kind", "", "legacy alternative to --channel-id: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat")
@@ -276,26 +308,18 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
 	}
-	if err := validateAppsAlertsCreateKind(kind, metric, comparator, restartCountThreshold, restartWindow, scheduledTaskID, backupResourceKind, backupDatabaseName, backupVolumeName); err != nil {
+	if err := validateAppsAlertsCreateKind(kind, metric, comparator, restartCountThreshold, restartWindow, scheduledTaskID, *backupResourceKindP, *backupDatabaseNameP, *backupVolumeNameP); err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
+	backupFields := resolveBackupMissingRequestFields(kind, appName, *backupResourceKindP, *backupDatabaseNameP, *backupVolumeNameP)
 	req := createAlertRuleRequest{
 		Name: name, Kind: kind, Metric: metric, Comparator: comparator, Threshold: threshold, ForDuration: forDuration,
 		RestartCountThreshold: restartCountThreshold, RestartWindow: restartWindow, ScheduledTaskID: scheduledTaskID,
 		ChannelID: channelID, NotifyURL: notifyURL, NotifyKind: notifyKind,
-		Enabled: !disabled,
-	}
-	if kind == "backup_missing" {
-		req.BackupResourceKind = backupResourceKind
-		req.BackupDatabaseName = backupDatabaseName
-		if backupResourceKind == "volume" {
-			// A volume's owning service is always this same app in this
-			// codebase's single-service-per-app model, so there is no
-			// separate --backup-service-name flag to set.
-			req.BackupServiceName = appName
-			req.BackupVolumeName = backupVolumeName
-		}
+		Enabled:            !disabled,
+		BackupResourceKind: backupFields.ResourceKind, BackupDatabaseName: backupFields.DatabaseName,
+		BackupServiceName: backupFields.ServiceName, BackupVolumeName: backupFields.VolumeName,
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
@@ -383,14 +407,13 @@ Flags:
 func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps alerts update", "print the updated rule as JSON to stdout and nothing else", stderr)
 	var (
-		name, kind, metric, comparator, forDuration              string
-		threshold                                                float64
-		restartCountThreshold                                    int
-		restartWindow                                            string
-		scheduledTaskID                                          string
-		backupResourceKind, backupDatabaseName, backupVolumeName string
-		channelID, notifyURL, notifyKind                         string
-		disabled                                                 bool
+		name, kind, metric, comparator, forDuration string
+		threshold                                   float64
+		restartCountThreshold                       int
+		restartWindow                               string
+		scheduledTaskID                             string
+		channelID, notifyURL, notifyKind            string
+		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
 	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing (required)")
@@ -401,9 +424,7 @@ func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, l
 	fs.IntVar(&restartCountThreshold, "restart-count-threshold", 0, "restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing, required for both kinds")
 	fs.StringVar(&restartWindow, "restart-window", "", "time window restarts are counted in, e.g. \"5m\" (--kind crashloop only, required for that kind)")
 	fs.StringVar(&scheduledTaskID, "scheduled-task-id", "", "which of this app's scheduled tasks to watch (--kind scheduled_task_failure only, required for that kind; see \"apps scheduled-tasks list\")")
-	fs.StringVar(&backupResourceKind, "backup-resource-kind", "", "\"database\" or \"volume\" (--kind backup_missing only, required for that kind)")
-	fs.StringVar(&backupDatabaseName, "backup-database-name", "", "which database to watch (--kind backup_missing --backup-resource-kind database only, required for that combination)")
-	fs.StringVar(&backupVolumeName, "backup-volume-name", "", "which of this app's own volumes to watch (--kind backup_missing --backup-resource-kind volume only, required for that combination)")
+	backupResourceKindP, backupDatabaseNameP, backupVolumeNameP := registerBackupMissingFlags(fs)
 	fs.StringVar(&channelID, "channel-id", "", "attach an already-connected notification channel (see \"channels list\")")
 	fs.StringVar(&notifyURL, "notify-url", "", "legacy alternative to --channel-id: a raw webhook URL/destination")
 	fs.StringVar(&notifyKind, "notify-kind", "", "legacy alternative to --channel-id: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat")
@@ -424,23 +445,18 @@ func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, l
 	if name == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
 	}
-	if err := validateAppsAlertsCreateKind(kind, metric, comparator, restartCountThreshold, restartWindow, scheduledTaskID, backupResourceKind, backupDatabaseName, backupVolumeName); err != nil {
+	if err := validateAppsAlertsCreateKind(kind, metric, comparator, restartCountThreshold, restartWindow, scheduledTaskID, *backupResourceKindP, *backupDatabaseNameP, *backupVolumeNameP); err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
+	backupFields := resolveBackupMissingRequestFields(kind, appName, *backupResourceKindP, *backupDatabaseNameP, *backupVolumeNameP)
 	req := updateAlertRuleRequest{
 		Name: name, Kind: kind, Metric: metric, Comparator: comparator, Threshold: threshold, ForDuration: forDuration,
 		RestartCountThreshold: restartCountThreshold, RestartWindow: restartWindow, ScheduledTaskID: scheduledTaskID,
 		ChannelID: channelID, NotifyURL: notifyURL, NotifyKind: notifyKind,
-		Enabled: !disabled,
-	}
-	if kind == "backup_missing" {
-		req.BackupResourceKind = backupResourceKind
-		req.BackupDatabaseName = backupDatabaseName
-		if backupResourceKind == "volume" {
-			req.BackupServiceName = appName
-			req.BackupVolumeName = backupVolumeName
-		}
+		Enabled:            !disabled,
+		BackupResourceKind: backupFields.ResourceKind, BackupDatabaseName: backupFields.DatabaseName,
+		BackupServiceName: backupFields.ServiceName, BackupVolumeName: backupFields.VolumeName,
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)

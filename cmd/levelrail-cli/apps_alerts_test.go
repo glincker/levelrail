@@ -140,6 +140,22 @@ func TestRun_AppsAlertsCreate_ScheduledTaskFailureMissingTaskID(t *testing.T) {
 	}
 }
 
+// mustRunAppsAlertsCreate runs "apps alerts create web ..." against srv
+// and fails the test immediately on a non-exitOK result, factored out of
+// the backup_missing tests below since they otherwise repeat this exact
+// invoke-and-check shape.
+func mustRunAppsAlertsCreate(t *testing.T, apiURL string, args ...string) (stdout bytes.Buffer) {
+	t.Helper()
+	var stderr bytes.Buffer
+	fullArgs := append([]string{"apps", "alerts", "create", "web"}, args...)
+	fullArgs = append(fullArgs, "--api-url", apiURL, "--json")
+	got := run("levelrail-cli-test", fullArgs, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	return stdout
+}
+
 func TestRun_AppsAlertsCreate_BackupMissingDatabase(t *testing.T) {
 	var gotBody createAlertRuleRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -153,15 +169,9 @@ func TestRun_AppsAlertsCreate_BackupMissingDatabase(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"apps", "alerts", "create", "web",
+	stdout := mustRunAppsAlertsCreate(t, srv.URL,
 		"--name", "main-backup-missing", "--kind", "backup_missing", "--backup-resource-kind", "database", "--backup-database-name", "main",
-		"--api-url", srv.URL, "--json",
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
+	)
 	if gotBody.Kind != "backup_missing" || gotBody.BackupResourceKind != "database" || gotBody.BackupDatabaseName != "main" {
 		t.Errorf("request body = %+v, want a backup_missing rule on database main", gotBody)
 	}
@@ -185,15 +195,9 @@ func TestRun_AppsAlertsCreate_BackupMissingVolume(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"apps", "alerts", "create", "web",
+	mustRunAppsAlertsCreate(t, srv.URL,
 		"--name", "uploads-backup-missing", "--kind", "backup_missing", "--backup-resource-kind", "volume", "--backup-volume-name", "uploads",
-		"--api-url", srv.URL, "--json",
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
+	)
 	if gotBody.BackupResourceKind != "volume" || gotBody.BackupServiceName != "web" || gotBody.BackupVolumeName != "uploads" {
 		t.Errorf("request body = %+v, want BackupServiceName=web (from app name) BackupVolumeName=uploads", gotBody)
 	}
