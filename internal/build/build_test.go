@@ -52,6 +52,16 @@ func TestSlogProgress(_ *testing.T) {
 func liveClient(t *testing.T, opts ...Option) (*dockerclient.Client, *Client) {
 	t.Helper()
 
+	if testing.Short() {
+		// A real Solve + image-load round trip, not just a docker ping:
+		// on a slow or resource-constrained Docker backend this can run
+		// for minutes rather than seconds, the exact "flaky/slow under
+		// load" class -short exists to skip elsewhere in this repo.
+		// nightly.yml runs without -short, so this still gets exercised
+		// daily against a real daemon.
+		t.Skip("skipping live BuildKit test in -short mode")
+	}
+
 	docker, err := dockerclient.NewClientWithOpts(
 		dockerclient.FromEnv,
 		dockerclient.WithAPIVersionNegotiation(),
