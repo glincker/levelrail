@@ -626,6 +626,85 @@ func TestSaveDesiredService_DatabaseEnvRoundTrip(t *testing.T) {
 	}
 }
 
+func TestSaveDesiredService_VaultEnvRoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	svc := DesiredService{
+		Name: "web", Image: "img:v1", Port: 8080,
+		VaultEnv: map[string]VaultEnvRef{
+			"API_KEY": {Path: "myapp/config", Key: "api_key"},
+		},
+	}
+	if err := db.SaveDesiredService(ctx, svc); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	want := VaultEnvRef{Path: "myapp/config", Key: "api_key"}
+	if got.VaultEnv["API_KEY"] != want {
+		t.Errorf("VaultEnv[%q] = %+v, want %+v", "API_KEY", got.VaultEnv["API_KEY"], want)
+	}
+}
+
+func TestSetServiceVaultEnvVar(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	svc := DesiredService{Name: "web", Image: "img:v1", Port: 8080}
+	if err := db.SaveDesiredService(ctx, svc); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SetServiceVaultEnvVar(ctx, "web", "API_KEY", &VaultEnvRef{Path: "myapp/config", Key: "api_key"}); err != nil {
+		t.Fatalf("SetServiceVaultEnvVar() error = %v", err)
+	}
+	if err := db.SetServiceVaultEnvVar(ctx, "web", "DB_TOKEN", &VaultEnvRef{Path: "myapp/db", Key: "token"}); err != nil {
+		t.Fatalf("SetServiceVaultEnvVar() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.VaultEnv) != 2 {
+		t.Fatalf("VaultEnv = %+v, want 2 entries", got.VaultEnv)
+	}
+	if got.VaultEnv["API_KEY"] != (VaultEnvRef{Path: "myapp/config", Key: "api_key"}) {
+		t.Errorf("VaultEnv[API_KEY] = %+v", got.VaultEnv["API_KEY"])
+	}
+
+	// Removing one key leaves the other untouched: this is a narrow,
+	// single-key mutation, not a full-record replace.
+	if err := db.SetServiceVaultEnvVar(ctx, "web", "API_KEY", nil); err != nil {
+		t.Fatalf("SetServiceVaultEnvVar(nil) error = %v", err)
+	}
+	got, err = db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.VaultEnv) != 1 {
+		t.Fatalf("VaultEnv = %+v, want 1 entry after removal", got.VaultEnv)
+	}
+	if _, ok := got.VaultEnv["DB_TOKEN"]; !ok {
+		t.Errorf("VaultEnv = %+v, want DB_TOKEN to remain", got.VaultEnv)
+	}
+	if got.Image != "img:v1" || got.Port != 8080 {
+		t.Errorf("SetServiceVaultEnvVar must not touch other fields: got Image=%q Port=%d", got.Image, got.Port)
+	}
+}
+
+func TestSetServiceVaultEnvVar_UnknownService(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetServiceVaultEnvVar(context.Background(), "missing", "API_KEY", &VaultEnvRef{Path: "p", Key: "k"})
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("error = %v, want ErrServiceNotFound", err)
+	}
+}
+
 func TestUpdateServiceDatabaseAttachment(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

@@ -71,6 +71,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"clone":              nil,
 		"images":             nil,
 		"storage":            {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
+		"vault-env":          {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
 	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "set-project": nil, "clear-project": nil}},
 	"auth": {subs: map[string]*cmdNode{"login": nil, "whoami": nil, "2fa": {subs: map[string]*cmdNode{
@@ -97,6 +98,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
 	"cloudflare-tunnel":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},
+	"vault":                {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},
 	"channels":             {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil}},
 	"backup-targets":       {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
 	"registry-credentials": {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},

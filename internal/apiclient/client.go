@@ -235,6 +235,20 @@ func (c *Client) ClearAppDatabaseAttachment(ctx context.Context, name string) er
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/database", nil, nil)
 }
 
+// SetAppVaultEnv calls PUT /api/v1/apps/{name}/vault-env/{key}: declares
+// (or replaces) one env var as resolving live from the platform's
+// configured external Vault instance, for an app that already exists.
+func (c *Client) SetAppVaultEnv(ctx context.Context, name, key string, req AppVaultEnvRef) (AppVaultEnvRef, error) {
+	var out AppVaultEnvRef
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/vault-env/"+PathEscape(key), req, &out)
+	return out, err
+}
+
+// ClearAppVaultEnv calls DELETE /api/v1/apps/{name}/vault-env/{key}.
+func (c *Client) ClearAppVaultEnv(ctx context.Context, name, key string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/vault-env/"+PathEscape(key), nil, nil)
+}
+
 // DeployCompose calls POST /api/v1/apps/{name}/compose with composeYAML
 // as the raw request body. Unlike every other Client method, this
 // doesn't go through do(): handleDeployCompose (internal/api/apps_compose.go)
@@ -504,6 +518,30 @@ func (c *Client) SetCloudflareTunnel(ctx context.Context, req UpdateCloudflareTu
 func (c *Client) DisconnectCloudflareTunnel(ctx context.Context) (CloudflareTunnelResource, error) {
 	var out CloudflareTunnelResource
 	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/cloudflare-tunnel", nil, &out)
+	return out, err
+}
+
+// GetVault calls GET /api/v1/settings/vault: the external Vault
+// integration's configured state, for resolving { vault: { path, key } }
+// app.yaml env vars.
+func (c *Client) GetVault(ctx context.Context) (VaultSettingsResource, error) {
+	var out VaultSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/vault", nil, &out)
+	return out, err
+}
+
+// SetVault calls PUT /api/v1/settings/vault.
+func (c *Client) SetVault(ctx context.Context, req UpdateVaultSettingsRequest) (VaultSettingsResource, error) {
+	var out VaultSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/vault", req, &out)
+	return out, err
+}
+
+// DisconnectVault calls DELETE /api/v1/settings/vault: disables vault
+// and clears the stored credential in one step.
+func (c *Client) DisconnectVault(ctx context.Context) (VaultSettingsResource, error) {
+	var out VaultSettingsResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/vault", nil, &out)
 	return out, err
 }
 

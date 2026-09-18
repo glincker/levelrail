@@ -59,6 +59,21 @@ type SecretChecker interface {
 	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
 }
 
+// VaultConfigChecker is the narrow surface this package needs to check,
+// at deploy validation time, whether an operator has actually turned on
+// Vault integration before accepting a { vault: { path, key } } env var.
+// Deliberately not the resolver itself (internal/vault.Manager's
+// Resolve): reaching out to a live Vault server on every deploy
+// validation would make an unrelated deploy's success depend on Vault's
+// own uptime, so this only checks configuration, the same "confirm
+// existence, never fetch the value" boundary SecretChecker draws above.
+// Real Vault reachability is still checked, just later: the application
+// controller's own resolveEnv step fails the deploy loudly at
+// container-create time if the configured Vault is unreachable.
+type VaultConfigChecker interface {
+	VaultConfigured(ctx context.Context) (bool, error)
+}
+
 // BuildMetricsRecorder is the narrow surface this package needs to
 // record the build-duration metric. *telemetry.DB satisfies
 // this structurally; not imported directly to avoid a dependency this
@@ -91,6 +106,16 @@ type Option func(*Pipeline)
 // silently missing a variable it declared as required.
 func WithSecretChecker(checker SecretChecker) Option {
 	return func(p *Pipeline) { p.secrets = checker }
+}
+
+// WithVaultConfigChecker enables { vault: { path, key } } env vars to
+// pass through deployment instead of being rejected outright. Without
+// one configured (the default), a service declaring any vault-backed
+// env var fails to deploy with an explicit error, the same "fail
+// loudly without config" shape WithSecretChecker's own absence already
+// produces for { secret: true }.
+func WithVaultConfigChecker(checker VaultConfigChecker) Option {
+	return func(p *Pipeline) { p.vault = checker }
 }
 
 // WithBuildMetricsRecorder enables recording build.Result.Duration as
@@ -141,6 +166,7 @@ type Pipeline struct {
 	builder ImageBuilder
 	store   ServiceStore
 	secrets SecretChecker        // nil is valid: secret-backed env vars are rejected without one
+	vault   VaultConfigChecker   // nil is valid: vault-backed env vars are rejected without one
 	metrics BuildMetricsRecorder // nil is valid: build duration just isn't recorded
 	logger  *slog.Logger
 
@@ -396,6 +422,19 @@ func (p *Pipeline) validateEnv(ctx context.Context, serviceName string, env map[
 			}
 			if !database.SupportsField(desiredDB.Engine, field) {
 				return fmt.Errorf("env var %q: field %q is not supported for %s databases", name, field, desiredDB.Engine)
+			}
+			continue
+		}
+		if v.Vault != nil {
+			if p.vault == nil {
+				return fmt.Errorf("env var %q is vault-backed but no vault checker is configured for this deploy pipeline", name)
+			}
+			configured, err := p.vault.VaultConfigured(ctx)
+			if err != nil {
+				return fmt.Errorf("env var %q: check vault configuration: %w", name, err)
+			}
+			if !configured {
+				return fmt.Errorf("env var %q references a vault secret, but vault integration is not enabled on this control plane", name)
 			}
 			continue
 		}

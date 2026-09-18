@@ -50,6 +50,10 @@ func TestValidateAppResource(t *testing.T) {
 		{name: "host_port zero rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(0)}, wantErr: true},
 		{name: "host_port out of range rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(99999)}, wantErr: true},
 		{name: "host_port negative rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(-1)}, wantErr: true},
+		{name: "vault env valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, VaultEnv: map[string]appVaultEnvRef{"API_KEY": {Path: "myapp/config", Key: "api_key"}}}, wantErr: false},
+		{name: "vault env missing path rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, VaultEnv: map[string]appVaultEnvRef{"API_KEY": {Key: "api_key"}}}, wantErr: true},
+		{name: "vault env missing key rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, VaultEnv: map[string]appVaultEnvRef{"API_KEY": {Path: "myapp/config"}}}, wantErr: true},
+		{name: "vault env and secret env on same key rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, SecretEnv: []string{"API_KEY"}, VaultEnv: map[string]appVaultEnvRef{"API_KEY": {Path: "myapp/config", Key: "api_key"}}}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -267,6 +271,44 @@ func TestHandleCreateApp_WithSecrets_Success(t *testing.T) {
 		if !wantSecretEnv[k] {
 			t.Errorf("SecretEnv = %v, want only %v", svc.SecretEnv, wantSecretEnv)
 		}
+	}
+}
+
+// TestHandleCreateApp_WithVaultEnv_Success covers creating an app with a
+// vault-backed env var declared in the same POST /api/v1/apps request:
+// unlike Secrets, this never touches the SecretSetter (no value to
+// store, only a { path, key } reference), and round-trips through
+// GetDesiredService intact.
+func TestHandleCreateApp_WithVaultEnv_Success(t *testing.T) {
+	setter := &fakeSecretSetter{}
+	rt, db := newTestRouterWithSecrets(t, setter)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"vault_env":{"API_KEY":{"path":"myapp/config","key":"api_key"}}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if setter.calls != 0 {
+		t.Errorf("setter.calls = %d, want 0: a vault-backed var has no local value to store", setter.calls)
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after create: %v", err)
+	}
+	want := store.VaultEnvRef{Path: "myapp/config", Key: "api_key"}
+	if svc.VaultEnv["API_KEY"] != want {
+		t.Errorf("VaultEnv[%q] = %+v, want %+v", "API_KEY", svc.VaultEnv["API_KEY"], want)
+	}
+
+	var resp appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if resp.VaultEnv["API_KEY"] != (appVaultEnvRef{Path: "myapp/config", Key: "api_key"}) {
+		t.Errorf("response VaultEnv[%q] = %+v, want %+v", "API_KEY", resp.VaultEnv["API_KEY"], want)
 	}
 }
 

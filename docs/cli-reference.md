@@ -305,6 +305,16 @@ levelrail apps storage set <name> --storage-target-id ID [flags]
  attach a connected bucket as object storage
 
 ```
+levelrail apps vault-env set <name> <key> --path PATH --key FIELD [flags]
+```
+ declare (or replace) a Vault-sourced env var
+
+```
+levelrail apps vault-env clear <name> <key> [flags]
+```
+ remove a Vault-sourced env var declaration
+
+```
 levelrail apps webhook-deliveries list <app-name> [flags]
 ```
 
@@ -540,6 +550,23 @@ levelrail app-volume-backups verify <app> <volume> --backup ID [flags]
 levelrail cloudflare-tunnel get [flags]
 ```
 show the current settings and connection status
+
+## Vault
+
+```
+levelrail vault get [flags]
+```
+show the current external Vault integration settings
+
+```
+levelrail vault set --address URL --auth-method token|approle [flags]
+```
+configure and enable resolving app secrets from an external HashiCorp Vault instance
+
+```
+levelrail vault disconnect [flags]
+```
+disable and forget the stored credential
 
 ## Channels
 

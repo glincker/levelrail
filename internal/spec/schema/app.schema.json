@@ -134,7 +134,16 @@
           "properties": {
             "from": { "type": "string", "minLength": 1 },
             "secret": { "type": "boolean" },
-            "required": { "type": "boolean" }
+            "required": { "type": "boolean" },
+            "vault": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "key"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "key": { "type": "string", "minLength": 1 }
+              }
+            }
           }
         }
       ]

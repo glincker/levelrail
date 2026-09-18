@@ -137,6 +137,14 @@ export interface AppDetail {
   // pipeline, not this endpoint. See database_attachment below for the
   // settable, single-attachment counterpart.
   database_env?: Record<string, { database: string; field: string }>
+  // vault_env carries `omitempty` on the Go side: every env var this app
+  // resolves live from an external HashiCorp Vault instance
+  // (internal/spec's own { vault: { path, key } } syntax), keyed by env
+  // var name. Unlike database_env, this IS settable here: PUT/DELETE
+  // /api/v1/apps/{name}/vault-env/{key} (queries/appVaultEnv.ts) declares
+  // or removes one entry without touching any other field, since there
+  // is no value to round-trip, only a reference.
+  vault_env?: Record<string, { path: string; key: string }>
   // database_attachment carries `omitempty` on the Go side and is
   // response-only, the same node_id/project_id/storage_target_id shape
   // above: which managed database this app resolves one connection env

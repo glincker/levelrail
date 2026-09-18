@@ -158,6 +158,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'Cloudflare Tunnel',
         description: 'Expose this control plane without opening an inbound port.',
       },
+      {
+        to: '/settings/vault',
+        icon: LockKeyIcon,
+        title: 'Vault',
+        description: 'Resolve app secrets live from an external HashiCorp Vault instance.',
+      },
     ],
   },
   {

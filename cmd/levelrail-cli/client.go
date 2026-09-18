@@ -36,6 +36,9 @@ type (
 	updateCloudflareDNSRequest       = apiclient.UpdateCloudflareDNSRequest
 	cloudflareTunnelResource         = apiclient.CloudflareTunnelResource
 	updateCloudflareTunnelRequest    = apiclient.UpdateCloudflareTunnelRequest
+	vaultSettingsResource            = apiclient.VaultSettingsResource
+	updateVaultSettingsRequest       = apiclient.UpdateVaultSettingsRequest
+	appVaultEnvRef                   = apiclient.AppVaultEnvRef
 	registrySettingsResource         = apiclient.RegistrySettingsResource
 	updateRegistrySettingsRequest    = apiclient.UpdateRegistrySettingsRequest
 	registryRepositoriesResource     = apiclient.RegistryRepositoriesResource

@@ -225,6 +225,9 @@ func (f *fakeProjectLifecycleAppStore) UpdateServiceLogDrain(context.Context, st
 func (f *fakeProjectLifecycleAppStore) UpdateServiceDatabaseAttachment(context.Context, string, *store.DatabaseAttachment) error {
 	return nil
 }
+func (f *fakeProjectLifecycleAppStore) SetServiceVaultEnvVar(context.Context, string, string, *store.VaultEnvRef) error {
+	return nil
+}
 
 type fakeProjectLifecycleDatabaseStore struct {
 	databases   []store.DesiredDatabase

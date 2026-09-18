@@ -22,16 +22,35 @@ type EnvVar struct {
 	// string scalar rather than a mapping.
 	Value string
 	// From references another resource's computed value, e.g.
-	// "postgres.main.url". Mutually exclusive with Value and Secret.
+	// "postgres.main.url". Mutually exclusive with Value, Secret, and
+	// Vault.
 	From string
 	// Secret means the operator provides this at deploy time via
 	// the platform's own envelope-encrypted secret storage, never
-	// written to app.yaml or the git repo.
+	// written to app.yaml or the git repo. Mutually exclusive with
+	// Vault: a given env var resolves its value from exactly one of
+	// the two secret sources, never both.
 	Secret bool
 	// Required, only meaningful alongside Secret: fail the deploy if no
 	// value has been provided, rather than starting the container with
 	// the variable unset.
 	Required bool
+	// Vault means this value is resolved live from an external
+	// HashiCorp Vault instance at container-create time
+	// (internal/reconcile/application's resolveEnv), never stored by
+	// this platform at all: the alternative to Secret above, not a
+	// variant of it. nil means not vault-backed.
+	Vault *VaultRef
+}
+
+// VaultRef is app.yaml's { vault: { path, key } } env var shape: Path is
+// the Vault KV secret's path, Key is the field name within that
+// secret's data. Both required together, mirroring internal/store's own
+// VaultEnvRef which this parses into (see internal/deploy's
+// vaultEnvRefs).
+type VaultRef struct {
+	Path string `yaml:"path"`
+	Key  string `yaml:"key"`
 }
 
 // UnmarshalYAML implements the string-or-object union described on
@@ -49,18 +68,29 @@ func (e *EnvVar) UnmarshalYAML(node *yaml.Node) error {
 	}
 
 	var asObject struct {
-		From     string `yaml:"from"`
-		Secret   bool   `yaml:"secret"`
-		Required bool   `yaml:"required"`
+		From     string    `yaml:"from"`
+		Secret   bool      `yaml:"secret"`
+		Required bool      `yaml:"required"`
+		Vault    *VaultRef `yaml:"vault"`
 	}
 	if err := node.Decode(&asObject); err != nil {
-		return fmt.Errorf("env value must be a string or an object with from/secret/required: %w", err)
+		return fmt.Errorf("env value must be a string or an object with from/secret/required/vault: %w", err)
+	}
+	if asObject.Vault != nil && asObject.Secret {
+		return fmt.Errorf("env value: vault and secret are mutually exclusive")
+	}
+	if asObject.Vault != nil && asObject.From != "" {
+		return fmt.Errorf("env value: vault and from are mutually exclusive")
+	}
+	if asObject.Vault != nil && (asObject.Vault.Path == "" || asObject.Vault.Key == "") {
+		return fmt.Errorf("env value: vault.path and vault.key are both required")
 	}
 
 	*e = EnvVar{
 		From:     asObject.From,
 		Secret:   asObject.Secret,
 		Required: asObject.Required,
+		Vault:    asObject.Vault,
 	}
 	return nil
 }

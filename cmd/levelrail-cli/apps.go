@@ -101,6 +101,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsImages(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "storage":
 		return runAppsStorage(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "vault-env":
+		return runAppsVaultEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n\n", prog, args[0]) //nolint:gosec // same guard as above
 		_, _ = fmt.Fprint(stderr, appsUsage(prog))
@@ -153,6 +155,7 @@ func appsUsage(prog string) string {
   %[1]s apps clone <name> <new-name> [flags]   duplicate an app's desired state under a new name
   %[1]s apps images <name> [flags]   list locally-present image tags under an app's current image repo
   %[1]s apps storage <verb> [flags]   attach/detach a connected bucket as this app's object storage
+  %[1]s apps vault-env <verb> [flags]   declare/remove an env var resolved live from an external Vault instance
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.
 `, prog)

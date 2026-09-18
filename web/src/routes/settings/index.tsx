@@ -18,6 +18,7 @@ import {
   ArrowCircleUpIcon,
   ClockCounterClockwiseIcon,
   PackageIcon,
+  VaultIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardHeader, CardTitle, CardDescription } from '../../components/ui/card'
 
@@ -128,6 +129,12 @@ const sections: SettingsSection[] = [
         icon: CloudCheckIcon,
         title: 'Cloudflare Tunnel',
         description: 'Expose this control plane without opening an inbound port.',
+      },
+      {
+        to: '/settings/vault',
+        icon: VaultIcon,
+        title: 'Vault',
+        description: 'Resolve app secrets live from an external HashiCorp Vault instance.',
       },
     ],
   },

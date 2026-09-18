@@ -311,16 +311,18 @@ func TestNewDeployAttemptSnapshot(t *testing.T) {
 		want DeployAttemptSnapshot
 	}{
 		{
-			name: "literal, secret, and database env keys classify correctly",
+			name: "literal, secret, database, and vault env keys classify correctly",
 			svc: DesiredService{
 				Env:         map[string]string{"PLAIN": "value"},
 				SecretEnv:   []string{"API_KEY"},
 				DatabaseEnv: map[string]DatabaseEnvRef{"DB_URL": {Database: "main", Field: "url"}},
+				VaultEnv:    map[string]VaultEnvRef{"VAULT_KEY": {Path: "myapp/config", Key: "api_key"}},
 			},
 			want: DeployAttemptSnapshot{Env: []DeployAttemptEnvKey{
 				{Key: "API_KEY", Kind: DeployAttemptEnvKindSecret},
 				{Key: "DB_URL", Kind: DeployAttemptEnvKindDatabase},
 				{Key: "PLAIN", Kind: DeployAttemptEnvKindLiteral, Value: "value"},
+				{Key: "VAULT_KEY", Kind: DeployAttemptEnvKindVault},
 			}},
 		},
 		{
@@ -425,9 +427,10 @@ func TestNewDeployAttemptSnapshot(t *testing.T) {
 
 func TestNewDeployAttemptSnapshot_NeverCarriesASecretOrDatabaseValue(t *testing.T) {
 	svc := DesiredService{
-		Env:         map[string]string{"API_KEY": "this-must-never-appear", "DB_URL": "this-must-never-appear-either"},
+		Env:         map[string]string{"API_KEY": "this-must-never-appear", "DB_URL": "this-must-never-appear-either", "VAULT_KEY": "this-must-never-appear-either"},
 		SecretEnv:   []string{"API_KEY"},
 		DatabaseEnv: map[string]DatabaseEnvRef{"DB_URL": {Database: "main", Field: "url"}},
+		VaultEnv:    map[string]VaultEnvRef{"VAULT_KEY": {Path: "myapp/config", Key: "api_key"}},
 	}
 	// A secret/database env key never has a real literal value in
 	// DesiredService.Env in practice (see internal/deploy/translate.go's

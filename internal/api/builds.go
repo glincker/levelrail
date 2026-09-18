@@ -433,13 +433,19 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 		Port:    svc.Port,
 		Labels:  svc.Labels,
 	}
-	if len(svc.Env) > 0 || len(svc.SecretEnv) > 0 {
-		out.Env = make(map[string]spec.EnvVar, len(svc.Env)+len(svc.SecretEnv))
+	if len(svc.Env) > 0 || len(svc.SecretEnv) > 0 || len(svc.VaultEnv) > 0 {
+		out.Env = make(map[string]spec.EnvVar, len(svc.Env)+len(svc.SecretEnv)+len(svc.VaultEnv))
 		for k, v := range svc.Env {
 			out.Env[k] = spec.EnvVar{Value: v}
 		}
 		for _, k := range svc.SecretEnv {
 			out.Env[k] = spec.EnvVar{Secret: true}
+		}
+		// VaultEnv reconstructs exactly, unlike SecretEnv above: it stores
+		// the full { path, key } reference, not just a name, so there is
+		// no fidelity loss to call out here.
+		for k, ref := range svc.VaultEnv {
+			out.Env[k] = spec.EnvVar{Vault: &spec.VaultRef{Path: ref.Path, Key: ref.Key}}
 		}
 	}
 	if svc.Resources != nil {

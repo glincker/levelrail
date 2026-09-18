@@ -6,6 +6,7 @@ import { useSecretKeys } from '../../../queries/secrets'
 import { EnvEditor } from '../../../components/EnvEditor'
 import { EnvDevView } from '../../../components/EnvDevView'
 import { SecretsEditor } from '../../../components/SecretsEditor'
+import { VaultEnvEditor } from '../../../components/VaultEnvEditor'
 import { Button } from '@/components/ui/button'
 
 // Former "environment" tab, now a real deep-linkable route. Reads app
@@ -51,6 +52,7 @@ function EnvironmentSection() {
         <EnvEditor app={app} />
       )}
       <SecretsEditor appName={app.name} />
+      <VaultEnvEditor appName={app.name} vaultEnv={app.vault_env} />
     </div>
   )
 }

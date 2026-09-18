@@ -115,6 +115,12 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		Port:      source.Port,
 		Env:       source.Env,
 		SecretEnv: source.SecretEnv,
+		// VaultEnv carries over in full, unlike SecretEnv above: it is a
+		// declaration only (a Vault path/key pair), never a value, so
+		// there is no decrypted-plaintext blast-radius concern to avoid
+		// here. The clone reads from the same external Vault path the
+		// source does the moment it deploys.
+		VaultEnv:  source.VaultEnv,
 		Resources: source.Resources,
 		Health:    source.Health,
 		Strategy:  source.Strategy,
