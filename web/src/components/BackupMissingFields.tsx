@@ -11,18 +11,12 @@ import { DurationInput } from '@/components/ui/duration-input'
 import type { BackupResourceKind } from '../types/alerts'
 import type { AppVolume } from '../types/appDetail'
 import type { DatabaseResource } from '../types/databaseDetail'
+import type { BackupMissingFormShape } from './backupMissingAlertRule'
 
 const BACKUP_RESOURCE_KIND_OPTIONS: { value: BackupResourceKind; label: string }[] = [
   { value: 'database', label: 'Database' },
   { value: 'volume', label: 'App volume' },
 ]
-
-export interface BackupMissingFormShape {
-  backupResourceKind: BackupResourceKind | ''
-  backupDatabaseName: string
-  backupVolumeName: string
-  forDuration: string
-}
 
 interface BackupMissingFieldsProps {
   idPrefix: string
