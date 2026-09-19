@@ -2174,6 +2174,42 @@ func (c *Client) ListDeployAttempts(ctx context.Context, name string) ([]DeployA
 	return out, err
 }
 
+// DownloadDeployLog calls GET /api/v1/apps/{name}/deploys/{deployId}/logs/download:
+// one deploy attempt's full log as raw text, the download counterpart
+// to the dashboard's own SSE view. Built as its own request rather than
+// through do(), the same reasoning DownloadAuditLogCSV above already
+// gives: the response body is a text file to pass through unmodified,
+// not a JSON value to decode.
+func (c *Client) DownloadDeployLog(ctx context.Context, name, deployID string) ([]byte, error) {
+	path := "/api/v1/apps/" + PathEscape(name) + "/deploys/" + PathEscape(deployID) + "/logs/download"
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+
+	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
+	if err != nil {
+		return nil, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response body: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
+	}
+	return data, nil
+}
+
 // ListCertificates calls GET /api/v1/certificates: every certificate
 // currently in this control plane's certmagic storage, healthy or not.
 // An empty slice means no certificate has ever been issued, not an

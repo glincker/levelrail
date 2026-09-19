@@ -19,3 +19,15 @@ export function buildDeployLogStreamUrl(
   )
   return url.toString()
 }
+
+// GET /api/v1/apps/{name}/deploys/{deployId}/logs/download
+// (internal/api/deploy_log_download.go), the same attempt's full log as
+// a plain-text attachment instead of an SSE stream. Not a TanStack
+// Query fetcher for the same reason logDownloadURL (queries/logs.ts)
+// isn't: the response is a raw file stream, consumed as a plain
+// browser navigation target (an <a href download>), auth riding along
+// on the same httpOnly session cookie every other same-origin request
+// already relies on.
+export function deployLogDownloadURL(name: string, deployId: string): string {
+  return `/api/v1/apps/${encodeURIComponent(name)}/deploys/${encodeURIComponent(deployId)}/logs/download`
+}

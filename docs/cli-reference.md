@@ -89,6 +89,11 @@ levelrail apps deploys compare <name> --from ID [--to ID] [flags]
  diff two deploy attempts, or one against the current live state
 
 ```
+levelrail apps deploys logs <name> <deploy-id> [flags]
+```
+one deploy attempt's full build/log output, printed to stdout (redirect to a file to save it)
+
+```
 levelrail apps environments create <project-id> --name NAME [--protected] [flags]
 ```
 

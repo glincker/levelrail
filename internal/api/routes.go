@@ -303,6 +303,11 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// as the deploy-attempts list above.
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/logs", rt.requireAbility(AbilityRead, rt.handleDeployLogStream))
 
+	// Deploy-attempt log download (deploy_log_download.go): the same
+	// attempt's full log as a plain-text attachment instead of an SSE
+	// stream, mirroring /apps/{name}/logs/download for runtime logs.
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/logs/download", rt.requireAbility(AbilityRead, rt.handleDownloadDeployLog))
+
 	// Read-only failure diagnosis (diagnose.go): synthesizes the app's
 	// newest (or ?deploy_id=-pinned) deploy attempt, current reconcile
 	// conditions, and crashloop state into a deterministic explanation.

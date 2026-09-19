@@ -102,6 +102,7 @@ Application creation, retrieval, update, deletion, deployment triggers, restarts
 | GET | /api/v1/apps/{name}/promote/preview | AbilityRead | handlePromotePreview |
 | POST | /api/v1/apps/{name}/promote | AbilityDeploy | handlePromoteApp |
 | GET | /api/v1/apps/{name}/deploys/{deployId}/logs | AbilityRead | handleDeployLogStream |
+| GET | /api/v1/apps/{name}/deploys/{deployId}/logs/download | AbilityRead | handleDownloadDeployLog |
 | GET | /api/v1/apps/{name}/diagnose | AbilityRead | handleDiagnoseApp |
 | GET | /api/v1/apps/{name}/resource-recommendation | AbilityRead | handleAppResourceRecommendation |
 | POST | /api/v1/apps/{name}/builds | AbilityDeploy | handleTriggerBuild |
