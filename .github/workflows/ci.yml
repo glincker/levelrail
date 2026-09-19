@@ -297,6 +297,10 @@ jobs:
             echo "no changed web/*.ts(x) files"
           fi
 
+      - name: vitest
+        working-directory: web
+        run: npm test
+
   # The one check branch protection requires: a skipped job can't be
   # required directly (blocks forever), so this always runs and passes
   # only if every job that was supposed to run for this PR did.
