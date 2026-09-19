@@ -355,6 +355,17 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbility(AbilityDeploy, rt.handleSetDomainWAF))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbility(AbilityDeploy, rt.handleClearDomainWAF))
 
+	// Domain redirect (domain_redirect.go): points one app-owned domain
+	// at an arbitrary target URL, enforced by Caddy's static_response
+	// handler on the next ingress reconcile pass. GET is AbilityRead,
+	// matching the auth/maintenance/waf routes' own passive-visibility
+	// tier. PUT/DELETE are AbilityDeploy, the same "app lifecycle,
+	// runtime routing behavior, not a credential" tier PUT/DELETE
+	// .../maintenance and .../waf already use.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/redirect", rt.requireAbility(AbilityRead, rt.handleGetDomainRedirect))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/redirect", rt.requireAbility(AbilityDeploy, rt.handleSetDomainRedirect))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/redirect", rt.requireAbility(AbilityDeploy, rt.handleClearDomainRedirect))
+
 	// Email settings: same precedent as ingress settings just above.
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))

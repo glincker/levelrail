@@ -248,7 +248,7 @@ Physical infrastructure management, health monitoring, workload assignment, cord
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-TLS certificate lifecycle, ACME configuration, domain routing, basic auth, maintenance mode, WAF/rate limiting, email configuration, and Cloudflare integration.
+TLS certificate lifecycle, ACME configuration, domain routing, basic auth, maintenance mode, redirects, WAF/rate limiting, email configuration, and Cloudflare integration.
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -263,6 +263,9 @@ TLS certificate lifecycle, ACME configuration, domain routing, basic auth, maint
 | GET | /api/v1/apps/{name}/domains/{domain}/maintenance | AbilityRead | handleGetDomainMaintenance |
 | PUT | /api/v1/apps/{name}/domains/{domain}/maintenance | AbilityDeploy | handleSetDomainMaintenance |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/maintenance | AbilityDeploy | handleClearDomainMaintenance |
+| GET | /api/v1/apps/{name}/domains/{domain}/redirect | AbilityRead | handleGetDomainRedirect |
+| PUT | /api/v1/apps/{name}/domains/{domain}/redirect | AbilityDeploy | handleSetDomainRedirect |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/redirect | AbilityDeploy | handleClearDomainRedirect |
 | GET | /api/v1/apps/{name}/domains/{domain}/tls-cert | AbilityRead | handleGetDomainTLSCert |
 | PUT | /api/v1/apps/{name}/domains/{domain}/tls-cert | AbilityRoot | handleSetDomainTLSCert |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/tls-cert | AbilityRoot | handleClearDomainTLSCert |

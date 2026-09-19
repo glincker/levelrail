@@ -791,6 +791,41 @@ func (c *Client) ClearDomainWAF(ctx context.Context, name, domain string) (Domai
 	return out, err
 }
 
+// domainRedirectPath builds /api/v1/apps/{name}/domains/{domain}/redirect,
+// shared by all three domain redirect methods below, mirroring
+// domainWAFPath's identical shape for a different per-domain toggle.
+func domainRedirectPath(name, domain string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/domains/" + PathEscape(domain) + "/redirect"
+}
+
+// GetDomainRedirect calls GET
+// /api/v1/apps/{name}/domains/{domain}/redirect: domain's current
+// redirect configuration.
+func (c *Client) GetDomainRedirect(ctx context.Context, name, domain string) (DomainRedirectResource, error) {
+	var out DomainRedirectResource
+	err := c.do(ctx, http.MethodGet, domainRedirectPath(name, domain), nil, &out)
+	return out, err
+}
+
+// SetDomainRedirect calls PUT
+// /api/v1/apps/{name}/domains/{domain}/redirect: configures domain to
+// redirect to a target URL, enforced by Caddy on the next ingress
+// reconcile pass.
+func (c *Client) SetDomainRedirect(ctx context.Context, name, domain string, req SetDomainRedirectRequest) (DomainRedirectResource, error) {
+	var out DomainRedirectResource
+	err := c.do(ctx, http.MethodPut, domainRedirectPath(name, domain), req, &out)
+	return out, err
+}
+
+// ClearDomainRedirect calls DELETE
+// /api/v1/apps/{name}/domains/{domain}/redirect: removes domain's
+// redirect.
+func (c *Client) ClearDomainRedirect(ctx context.Context, name, domain string) (DomainRedirectResource, error) {
+	var out DomainRedirectResource
+	err := c.do(ctx, http.MethodDelete, domainRedirectPath(name, domain), nil, &out)
+	return out, err
+}
+
 // CheckDomain calls GET /api/v1/apps/{name}/domains/{domain}/check: a
 // real DNS lookup reporting whether domain currently resolves to this
 // control plane's own advertised address.

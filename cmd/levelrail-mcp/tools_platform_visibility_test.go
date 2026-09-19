@@ -246,6 +246,29 @@ func TestGetDomainMaintenanceStatus(t *testing.T) {
 	}
 }
 
+func TestGetDomainRedirect(t *testing.T) {
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/apps/web/domains/www.example.com/redirect" {
+			t.Errorf("path = %q, want /api/v1/apps/web/domains/www.example.com/redirect", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.DomainRedirectResource{Domain: "www.example.com", Enabled: true, TargetURL: "https://example.com", StatusCode: 301})
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "get_domain_redirect",
+		Arguments: map[string]any{"name": "web", "domain": "www.example.com"},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(get_domain_redirect) error = %v", err)
+	}
+	var status apiclient.DomainRedirectResource
+	decodeStructured(t, result, &status)
+	if !status.Enabled || status.TargetURL != "https://example.com" {
+		t.Errorf("status = %+v, want Enabled=true TargetURL=https://example.com", status)
+	}
+}
+
 func TestGetCloudflareTunnelStatus(t *testing.T) {
 	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/settings/cloudflare-tunnel" {
@@ -305,6 +328,7 @@ func TestPlatformVisibilityTools_Surface403(t *testing.T) {
 		{"list_domains", map[string]any{}},
 		{"get_app_network", map[string]any{"name": "web"}},
 		{"get_domain_maintenance_status", map[string]any{"name": "web", "domain": "app.example.com"}},
+		{"get_domain_redirect", map[string]any{"name": "web", "domain": "app.example.com"}},
 		{"get_cloudflare_tunnel_status", map[string]any{}},
 		{"list_certificates", map[string]any{}},
 	}

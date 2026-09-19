@@ -483,6 +483,11 @@ levelrail domains maintenance get <app> <domain> [flags]
  show a domain's maintenance state
 
 ```
+levelrail domains redirect get <app> <domain> [flags]
+```
+ show a domain's redirect state
+
+```
 levelrail domains tls-cert get <app> <domain> [flags]
 ```
  show a domain's BYO certificate state

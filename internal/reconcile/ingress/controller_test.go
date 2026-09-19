@@ -40,6 +40,8 @@ type fakeStore struct {
 	registryErr        error
 	waf                []store.DomainWAF
 	wafErr             error
+	redirects          []store.DomainRedirect
+	redirectsErr       error
 }
 
 func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredService, error) {
@@ -141,6 +143,17 @@ func (f *fakeStore) ListDomainWAF(_ context.Context) ([]store.DomainWAF, error) 
 		return nil, f.wafErr
 	}
 	return f.waf, nil
+}
+
+// ListDomainRedirects mirrors ListDomainMaintenance's own "empty unless
+// a test opts in" convention: no domains with a redirect configured
+// unless f.redirects is set, so tests written before this method
+// existed are unaffected.
+func (f *fakeStore) ListDomainRedirects(_ context.Context) ([]store.DomainRedirect, error) {
+	if f.redirectsErr != nil {
+		return nil, f.redirectsErr
+	}
+	return f.redirects, nil
 }
 
 // fakeRuntime implements docker.Runtime with an in-memory container set,

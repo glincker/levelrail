@@ -239,6 +239,42 @@ default for every domain and are configured per domain, not platform-wide.
   default; it may get filled in a later phase, but the on/off-plus-
   threshold surface here is deliberately the whole v1 scope.
 
+## Domain redirects
+
+A domain can point straight at a target URL instead of proxying to its
+container: `www.example.com` to `example.com`, or an old domain to a
+brand new app during a migration (e.g. `old-domain.com` to
+`https://newapp.example.com/promo`). This is a fixed
+`static_response` handler carrying a `Location` header and a redirect
+status code, the same Caddy module maintenance mode already uses, just
+with a different header and status instead of a fixed body: no new
+container, no new infra dependency.
+
+- **Status code: `301` permanent (default) or `302` temporary.** `301`
+  matches Caddy's own default and the more common real case (a rename
+  or www-to-apex normalization is rarely reverted); pick `302` for a
+  redirect you expect to undo, since browsers and search engines don't
+  cache a temporary redirect the way they do a permanent one.
+- **The target must be a real absolute URL**, e.g.
+  `https://example.com` or `https://newapp.example.com/promo`. A bare
+  hostname, a relative path, or a non-http(s) scheme is rejected.
+- **Maintenance mode takes precedence.** If a domain has both
+  maintenance mode and a redirect configured, maintenance mode wins:
+  the domain serves the fixed maintenance response, not the redirect.
+  "Temporarily unavailable" is a stronger, more deliberate signal than
+  "permanently moved": maintenance mode is something an operator
+  actively flips on to take a domain out of rotation right now, while a
+  redirect can easily be a stale leftover from an earlier migration
+  nobody removed. Clear maintenance mode to let a configured redirect
+  take effect again.
+- **Where to configure it:**
+  - Dashboard: each domain's row in an app's **Domains** tab has an "Add
+    redirect" control with the target URL field and a permanent/
+    temporary selector.
+  - API: `GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/redirect`.
+  - CLI: `levelrail-cli domains redirect get|set|clear <app> <domain>`,
+    e.g. `levelrail-cli domains redirect set my-app www.example.com --target https://example.com`.
+
 ## Firewall: ports 80 and 443
 
 For real public traffic and ACME's HTTP-01 challenge to work, your server
