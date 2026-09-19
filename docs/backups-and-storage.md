@@ -110,6 +110,36 @@ once, account-wide, at Settings -> Backup targets
 (`routes/settings/backup-targets.tsx`), never from a database or app
 page directly.
 
+## Instance-wide backup visibility
+
+Every other section above is scoped to one resource at a time: a
+database's own overview page, an app's own volumes page. `GET
+/api/v1/backups` (`read`) is the aggregated counterpart, merging every
+database's and every app volume's `backup_history` rows into one
+newest-first list, cursor-paginated the same `?limit=&before=` way the
+per-resource endpoints already are. Each entry carries `resource_kind`
+(`database` or `volume`) plus whichever identity fields that kind uses
+(`database_name`, or `service_name`/`volume_name`), enough for a caller
+to route back to that resource's own trigger/download/verify/delete
+endpoints.
+
+On the dashboard, this is the top-level Backups page (not nested under
+Settings: it's an operational view, not configuration), listing every
+backup with its resource, status, size, and timestamps, newest first,
+with the same download/verify/delete actions the per-resource pages
+already have. Triggering a new backup and restoring stay resource-scoped
+actions on their own pages: both need context (which target, which
+confirmation flow) this page deliberately doesn't try to generalize.
+On the CLI, `levelrail-cli backups list-all` (a separate subcommand from
+`backups list <database>`, which stays scoped to one database).
+
+This closes a real, previously-open gap: without it, an operator running
+more than a couple of databases or apps had no single place to check
+whether everything backed up successfully last night, short of visiting
+every resource's page in turn. The same gap is the subject of a widely
+requested, still-open feature request against a competitor (Coolify
+issue #7528, "Backup Manager in the UI").
+
 ## Retention: by count and by age, independently
 
 Both dimensions are optional and combine as an OR, not an AND: a
@@ -353,6 +383,7 @@ built-in registry's loopback address.
 | `DELETE` | `/api/v1/settings/registry` | `root` |
 | `GET` | `/api/v1/registry/repositories` | `read` |
 | `GET` | `/api/v1/registry/tags?repository=...` | `read` |
+| `GET` | `/api/v1/backups?limit=&before=` | `read` |
 | `POST` | `/api/v1/databases/{name}/backups` | `write:sensitive` |
 | `GET` | `/api/v1/databases/{name}/backups?limit=&before=` | `read` |
 | `DELETE` | `/api/v1/databases/{name}/backups/{historyId}` | `write:sensitive` |
@@ -397,6 +428,7 @@ levelrail-cli registry tags --repository NAME [flags]
 levelrail-cli backups schedule set <database> --target ID --cron EXPR [--retain N] [--retain-days N]
 levelrail-cli backups schedule clear <database> [flags]
 levelrail-cli backups delete <database> <backup-id> [flags]
+levelrail-cli backups list-all [--limit N] [--before RFC3339] [flags]
 
 levelrail-cli app-volume-backups schedule set <app> <volume> --target ID --cron EXPR [--retain N] [--retain-days N]
 levelrail-cli app-volume-backups schedule clear <app> <volume> [flags]

@@ -10,6 +10,7 @@ import {
   GearIcon,
   FolderIcon,
   GlobeIcon,
+  CloudArrowUpIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -180,6 +181,16 @@ export function AppSidebar() {
                     >
                       <GlobeIcon />
                       <span>Domains</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/backups" />}
+                      isActive={pathname.startsWith('/backups')}
+                      tooltip="Backups"
+                    >
+                      <CloudArrowUpIcon />
+                      <span>Backups</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>

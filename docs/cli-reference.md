@@ -484,6 +484,11 @@ levelrail backups list <database> [flags]
 list backup history for a database
 
 ```
+levelrail backups list-all [flags]
+```
+list backup history across every database and app volume instance-wide
+
+```
 levelrail backups restore <database> --backup ID [--confirm NAME] [flags]
 ```
 

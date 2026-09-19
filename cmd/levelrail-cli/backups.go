@@ -28,6 +28,8 @@ func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return exitOK
 	case "list":
 		return runBackupsList(prog, args[1:], stdout, stderr, lookupEnv)
+	case "list-all":
+		return runBackupsListAll(prog, args[1:], stdout, stderr, lookupEnv)
 	case "trigger":
 		return runBackupsTrigger(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
@@ -52,6 +54,7 @@ func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 func backupsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s backups list <database> [flags]                                    list backup history for a database
+  %[1]s backups list-all [flags]                                           list backup history across every database and app volume
   %[1]s backups trigger <database> --target ID [flags]                 trigger a manual backup
   %[1]s backups delete <database> <backup-id> [flags]                  delete one archived backup on demand (destructive)
   %[1]s backups restore <database> --backup ID --confirm NAME [flags]   restore a database from a backup (destructive)
