@@ -250,6 +250,20 @@ func NewMaintenanceResponseHandler() StaticResponseHandler {
 	}
 }
 
+// NewRedirectResponseHandler builds a fixed HTTP redirect: the same
+// StaticResponseHandler shape NewMaintenanceResponseHandler uses, with a
+// Location header and a 3xx status code instead of a fixed body.
+// statusCode is the caller's responsibility to validate (store.
+// DomainRedirectPermanent or store.DomainRedirectTemporary); this
+// function does not itself enforce it is a redirect code.
+func NewRedirectResponseHandler(targetURL string, statusCode int) StaticResponseHandler {
+	return StaticResponseHandler{
+		Handler:    "static_response",
+		StatusCode: statusCode,
+		Headers:    map[string][]string{"Location": {targetURL}},
+	}
+}
+
 // TLSApp is Caddy's "tls" app: certificate automation policy plus any
 // manually loaded certificates.
 type TLSApp struct {

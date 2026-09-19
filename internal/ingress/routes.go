@@ -211,6 +211,30 @@ type MaintenanceRoute struct {
 	Hosts []string
 }
 
+// RedirectRoute is one domain currently configured to redirect to an
+// arbitrary target URL: every request gets NewRedirectResponseHandler's
+// fixed response instead of ever reaching a backend, container or
+// otherwise. Mirrors MaintenanceRoute's shape exactly (no backend
+// address needed to have ever existed) for a different per-domain
+// behavior: "this domain has moved" rather than "this domain is
+// intentionally unavailable right now".
+type RedirectRoute struct {
+	// Hosts are the Host header values that get redirected to TargetURL.
+	// Also contributes to the Subjects list used for TLS automation when
+	// RoutesOptions.TLS is true, the same as MaintenanceRoute.Hosts: a
+	// redirected domain still needs a valid certificate to redirect a
+	// browser that arrives over HTTPS in the first place.
+	Hosts []string
+	// TargetURL is the absolute URL every matched request is redirected
+	// to, e.g. "https://example.com" or "https://newapp.example.com/promo".
+	// Validated by the caller (internal/api); this package performs no
+	// validation of its own.
+	TargetURL string
+	// StatusCode is the redirect's HTTP status: store.DomainRedirectPermanent
+	// (301, the default) or store.DomainRedirectTemporary (302).
+	StatusCode int
+}
+
 // RoutesOptions is the input to BuildRoutesConfig: everything needed to
 // stand up one Caddy server carrying many independently host-routed
 // backends on a single shared listener. This is the shape a real ingress
@@ -247,6 +271,17 @@ type RoutesOptions struct {
 	// (the ingress reconciler's job, splitting a service's hosts before
 	// ever calling this function).
 	MaintenanceRoutes []MaintenanceRoute
+	// RedirectRoutes is every domain currently configured to redirect to
+	// a target URL, sharing this same listener the same way
+	// MaintenanceRoutes does. A caller must never put the same host in
+	// both another route kind and RedirectRoutes in one call, the same
+	// caller-resolves-conflicts contract MaintenanceRoutes documents:
+	// internal/reconcile/ingress resolves maintenance mode ahead of a
+	// redirect for any host with both configured (a domain deliberately
+	// taken down for maintenance stays down, even if it also has a
+	// stale redirect configured from an earlier migration), so a host
+	// never reaches this field and MaintenanceRoutes at once.
+	RedirectRoutes []RedirectRoute
 	// TLS, if true, adds a tls app automation policy scoped to every
 	// route's Hosts, both Routes and StaticRoutes (skipped if both are
 	// empty, since automatic HTTPS needs at least one subject to issue a
@@ -330,16 +365,17 @@ type RoutesOptions struct {
 
 // BuildRoutesConfig builds a Config with one server carrying one route
 // per entry in opts.Routes (reverse_proxy), opts.StaticRoutes
-// (file_server), and opts.MaintenanceRoutes (static_response), each
-// matched by its own Hosts. All three kinds share the same listener and
-// the same TLS automation policy; nothing about a static or maintenance
-// route requires a different Server or a second Caddy config document.
-// All three being empty is valid and produces a Config with a listener
-// but no routes and no TLS app: this is the normal shape for a
-// reconcile pass over zero currently-routable resources (every known
-// service or static site either declares no domains or, for a
-// container service, has no running container yet, and no domain is in
-// maintenance mode), not an error.
+// (file_server), opts.MaintenanceRoutes (static_response), and
+// opts.RedirectRoutes (static_response with a Location header), each
+// matched by its own Hosts. All four kinds share the same listener and
+// the same TLS automation policy; nothing about a static, maintenance,
+// or redirect route requires a different Server or a second Caddy
+// config document. All four being empty is valid and produces a Config
+// with a listener but no routes and no TLS app: this is the normal
+// shape for a reconcile pass over zero currently-routable resources
+// (every known service or static site either declares no domains or,
+// for a container service, has no running container yet, and no domain
+// is in maintenance mode or redirected), not an error.
 func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 	if opts.ServerName == "" {
 		return nil, fmt.Errorf("ingress: build routes config: server name is required")
@@ -350,6 +386,19 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 
 	var allHosts []string
 	routes := make([]Route, 0, len(opts.Routes)+len(opts.StaticRoutes))
+	for i, r := range opts.RedirectRoutes {
+		if len(r.Hosts) == 0 {
+			return nil, fmt.Errorf("ingress: build routes config: redirect route %d has no hosts", i)
+		}
+		if r.TargetURL == "" {
+			return nil, fmt.Errorf("ingress: build routes config: redirect route %d has no target url", i)
+		}
+		routes = append(routes, Route{
+			Match:  []Matcher{{Host: r.Hosts}},
+			Handle: []any{NewRedirectResponseHandler(r.TargetURL, r.StatusCode)},
+		})
+		allHosts = append(allHosts, r.Hosts...)
+	}
 	for i, r := range opts.Routes {
 		if len(r.Hosts) == 0 {
 			return nil, fmt.Errorf("ingress: build routes config: route %d has no hosts", i)

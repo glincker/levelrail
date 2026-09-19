@@ -34,7 +34,7 @@ const (
 )
 
 // Scheduled task concurrency policies (migrations/
-// 0098_scheduled_task_concurrency_policy.sql's concurrency_policy
+// 0102_scheduled_task_concurrency_policy.sql's concurrency_policy
 // column): what internal/scheduledtask.Runner does when a task's next
 // due run finds a previous invocation of itself still executing.
 const (

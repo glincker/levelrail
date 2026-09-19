@@ -43,6 +43,17 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 	})
 
 	mcp.AddTool(server, &mcp.Tool{
+		Name:        "get_domain_redirect",
+		Description: "Get whether one of an app's domains currently redirects to a target URL instead of proxying to the app's container, and if so, the target URL and status code (301 permanent or 302 temporary). Read-only; does not configure or clear the redirect. Note: if the same domain also has maintenance mode enabled, maintenance mode takes precedence and the redirect does not actually apply.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainRedirectResource, error) {
+		status, err := client.GetDomainRedirect(ctx, in.Name, in.Domain)
+		if err != nil {
+			return nil, apiclient.DomainRedirectResource{}, fmt.Errorf("get redirect status for app %q domain %q: %w", in.Name, in.Domain, err)
+		}
+		return nil, status, nil
+	})
+
+	mcp.AddTool(server, &mcp.Tool{
 		Name:        "check_domain_dns",
 		Description: "Run a real DNS lookup for one of an app's domains and report whether it currently resolves to this control plane's own advertised address: status is one of connected, not_resolving, resolves_elsewhere, or unconfigured (no APP_PUBLIC_HOST and no usable request host to infer one from). The concrete diagnose-why-this-isn't-working tool for a domain that isn't reaching its app. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainCheckResource, error) {

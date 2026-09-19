@@ -423,6 +423,7 @@ type Store interface {
 	DomainMaintenanceStore
 	DomainTLSCertStore
 	DomainWAFStore
+	DomainRedirectStore
 	GitSourceStore
 	PreviewEnvironmentStore
 	GitHubAppStore

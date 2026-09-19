@@ -11,6 +11,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { DomainDnsCheck } from './DomainDnsCheck'
 import { DomainBasicAuthControl } from './DomainBasicAuthControl'
 import { DomainMaintenanceControl } from './DomainMaintenanceControl'
+import { DomainRedirectControl } from './DomainRedirectControl'
 import { DomainTLSCertControl } from './DomainTLSCertControl'
 import { DomainWafControl } from './DomainWafControl'
 import { certStatusMeta } from '../lib/certStatus'
@@ -24,12 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldHint,
-} from '@/components/ui/field'
+import { Field, FieldError, FieldGroup, FieldHint } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 
@@ -125,8 +121,8 @@ export function DomainEditor({ app }: { app: AppDetail }) {
             linkText="DNS record types explained"
           >
             Point an A record at this server&apos;s IP address (or a CNAME at
-            its hostname), then a TLS certificate is issued automatically
-            once it resolves.
+            its hostname), then a TLS certificate is issued automatically once
+            it resolves.
           </FieldHint>
           {fields.length === 0 ? (
             <p className="text-sm text-muted-foreground">
@@ -179,17 +175,35 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <span>TLS certificate:</span>
                               {cert ? (
-                                <Badge variant={certStatusMeta[cert.status].variant}>
+                                <Badge
+                                  variant={certStatusMeta[cert.status].variant}
+                                >
                                   {certStatusMeta[cert.status].label}
                                 </Badge>
                               ) : (
                                 <Badge variant="muted">Provisioning</Badge>
                               )}
                             </div>
-                            <DomainBasicAuthControl appName={app.name} domain={domain} />
-                            <DomainMaintenanceControl appName={app.name} domain={domain} />
-                            <DomainTLSCertControl appName={app.name} domain={domain} />
-                            <DomainWafControl appName={app.name} domain={domain} />
+                            <DomainBasicAuthControl
+                              appName={app.name}
+                              domain={domain}
+                            />
+                            <DomainMaintenanceControl
+                              appName={app.name}
+                              domain={domain}
+                            />
+                            <DomainRedirectControl
+                              appName={app.name}
+                              domain={domain}
+                            />
+                            <DomainTLSCertControl
+                              appName={app.name}
+                              domain={domain}
+                            />
+                            <DomainWafControl
+                              appName={app.name}
+                              domain={domain}
+                            />
                           </>
                         ) : null}
                       </div>

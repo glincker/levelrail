@@ -144,6 +144,13 @@ type ServiceStore interface {
 	// BYO TLS certs, there is no secret material here, so no resolver
 	// option is needed to actually enforce it.
 	ListDomainWAF(ctx context.Context) ([]store.DomainWAF, error)
+	// ListDomainRedirects returns every domain currently configured to
+	// redirect to a target URL (migrations/0101), read fresh every
+	// Reconcile for the same reason ListDomainMaintenance is: an
+	// operator setting or clearing a domain's redirect through PUT/
+	// DELETE /api/v1/apps/{name}/domains/{domain}/redirect (internal/api)
+	// must take effect on this controller's very next pass.
+	ListDomainRedirects(ctx context.Context) ([]store.DomainRedirect, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -526,9 +533,14 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain waf: %w", err)
 	}
+	redirectByDomain, err := c.domainRedirectByDomain(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain redirects: %w", err)
+	}
 
 	var routes []ingress.ProxyRoute
 	var maintenanceRoutes []ingress.MaintenanceRoute
+	var redirectRoutes []ingress.RedirectRoute
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
 	for _, svc := range services {
 		hosts := svc.Domains
@@ -572,13 +584,36 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// containers, unlike every other route kind here, which needs a
 		// real backend to dial. Only the remaining, non-maintenance
 		// hosts still go through the ordinary dial-required path below.
-		maintenanceHosts, activeHosts := splitMaintenanceHosts(hosts, maintenanceByDomain)
+		maintenanceHosts, remainingHosts := splitMaintenanceHosts(hosts, maintenanceByDomain)
 		if len(maintenanceHosts) > 0 {
 			for _, host := range maintenanceHosts {
 				claimedHosts[host] = svc.Name
 			}
 			maintenanceRoutes = append(maintenanceRoutes, ingress.MaintenanceRoute{Hosts: maintenanceHosts})
 		}
+
+		// A redirect, like maintenance mode, needs no running backend:
+		// checked second, after maintenance, so a domain with both
+		// configured stays down for maintenance rather than also
+		// redirecting. This is a deliberate precedence choice, not an
+		// arbitrary one: "temporarily unavailable" is a stronger,
+		// more urgent signal than "permanently moved" (maintenance mode
+		// is something an operator actively flips on to take a domain
+		// out of rotation right now, while a redirect can easily be a
+		// stale leftover from an earlier migration that nobody removed).
+		for _, host := range remainingHosts {
+			redirect, redirected := redirectByDomain[host]
+			if !redirected {
+				continue
+			}
+			claimedHosts[host] = svc.Name
+			redirectRoutes = append(redirectRoutes, ingress.RedirectRoute{
+				Hosts:      []string{host},
+				TargetURL:  redirect.TargetURL,
+				StatusCode: redirect.StatusCode,
+			})
+		}
+		activeHosts := excludeRedirectedHosts(remainingHosts, redirectByDomain)
 		if len(activeHosts) == 0 {
 			continue
 		}
@@ -670,6 +705,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		Routes:            routes,
 		StaticRoutes:      staticRoutes,
 		MaintenanceRoutes: maintenanceRoutes,
+		RedirectRoutes:    redirectRoutes,
 		TLS:               true,
 		AdminListen:       c.adminListen,
 		StorageDir:        c.storageDir,
@@ -688,13 +724,13 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return notReady("ApplyFailed", err), fmt.Errorf("ingress: apply config: %w", err)
 	}
 
-	total := len(routes) + len(staticRoutes) + len(maintenanceRoutes)
+	total := len(routes) + len(staticRoutes) + len(maintenanceRoutes) + len(redirectRoutes)
 	reason := fmt.Sprintf("Routed%dServices", total)
 	return reconcile.Result{Conditions: []reconcile.Condition{{
 		Type:    "Ready",
 		Status:  reconcile.ConditionTrue,
 		Reason:  reason,
-		Message: fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly, %d in maintenance mode)", total, len(routes), len(staticRoutes), len(maintenanceRoutes)),
+		Message: fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly, %d in maintenance mode, %d redirected)", total, len(routes), len(staticRoutes), len(maintenanceRoutes), len(redirectRoutes)),
 	}}}, nil
 }
 
@@ -898,6 +934,34 @@ func splitMaintenanceHosts(domains []string, maintenanceByDomain map[string]bool
 		}
 	}
 	return maintenance, active
+}
+
+// domainRedirectByDomain returns every store.DomainRedirect row keyed by
+// domain, mirroring domainBasicAuthByDomain's identical shape for a
+// different per-domain toggle.
+func (c *Controller) domainRedirectByDomain(ctx context.Context) (map[string]store.DomainRedirect, error) {
+	rows, err := c.store.ListDomainRedirects(ctx)
+	if err != nil {
+		return nil, err
+	}
+	byDomain := make(map[string]store.DomainRedirect, len(rows))
+	for _, row := range rows {
+		byDomain[row.Domain] = row
+	}
+	return byDomain, nil
+}
+
+// excludeRedirectedHosts returns the subset of hosts with no entry in
+// redirectByDomain: the hosts that still need a real backend dialed,
+// after maintenance and redirect hosts have both been carved out.
+func excludeRedirectedHosts(hosts []string, redirectByDomain map[string]store.DomainRedirect) []string {
+	var out []string
+	for _, host := range hosts {
+		if _, redirected := redirectByDomain[host]; !redirected {
+			out = append(out, host)
+		}
+	}
+	return out
 }
 
 // routesForService builds one ProxyRoute per entry in hosts that has

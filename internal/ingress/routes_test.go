@@ -103,6 +103,30 @@ func TestBuildRoutesConfig_Validation(t *testing.T) {
 			},
 			wantErr: "",
 		},
+		{
+			name: "redirect route with no hosts",
+			opts: RoutesOptions{
+				ServerName: "ingress", ListenAddr: ":8443",
+				RedirectRoutes: []RedirectRoute{{TargetURL: "https://example.com"}},
+			},
+			wantErr: "redirect route 0 has no hosts",
+		},
+		{
+			name: "redirect route with no target url",
+			opts: RoutesOptions{
+				ServerName: "ingress", ListenAddr: ":8443",
+				RedirectRoutes: []RedirectRoute{{Hosts: []string{"www.example.internal"}}},
+			},
+			wantErr: "redirect route 0 has no target url",
+		},
+		{
+			name: "one valid redirect route, no proxy or static routes at all",
+			opts: RoutesOptions{
+				ServerName: "ingress", ListenAddr: ":8443",
+				RedirectRoutes: []RedirectRoute{{Hosts: []string{"www.example.internal"}, TargetURL: "https://example.internal", StatusCode: 301}},
+			},
+			wantErr: "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -696,6 +720,44 @@ func TestBuildRoutesConfig_JSONShape(t *testing.T) {
 			t.Errorf("tls.certificates present with no TLSCertificates configured, want it omitted")
 		}
 	})
+}
+
+// TestBuildRoutesConfig_RedirectRoute_JSONShape asserts a redirect route
+// produces a single static_response handler carrying the target URL as
+// a Location header and the configured status code, no reverse_proxy
+// handler at all, mirroring the maintenance route's own
+// no-backend-required shape.
+func TestBuildRoutesConfig_RedirectRoute_JSONShape(t *testing.T) {
+	cfg, err := BuildRoutesConfig(RoutesOptions{
+		ServerName: "ingress", ListenAddr: ":443", TLS: true,
+		RedirectRoutes: []RedirectRoute{
+			{Hosts: []string{"www.example.internal"}, TargetURL: "https://example.internal", StatusCode: 301},
+		},
+	})
+	if err != nil {
+		t.Fatalf("BuildRoutesConfig() error: %v", err)
+	}
+
+	byHost := decodeRoutesByHost(t, cfg)
+	handle, ok := byHost["www.example.internal"]
+	if !ok || len(handle) != 1 {
+		t.Fatalf("routes = %+v, want exactly one handler for www.example.internal", byHost)
+	}
+	handler := handle[0].(map[string]any)
+	if handler["handler"] != "static_response" {
+		t.Errorf("handler = %v, want static_response", handler["handler"])
+	}
+	if got := handler["status_code"]; got != float64(301) {
+		t.Errorf("status_code = %v, want 301", got)
+	}
+	headers, ok := handler["headers"].(map[string]any)
+	if !ok {
+		t.Fatalf("headers missing from redirect handler: %+v", handler)
+	}
+	location, ok := headers["Location"].([]any)
+	if !ok || len(location) != 1 || location[0] != "https://example.internal" {
+		t.Errorf("Location header = %v, want [\"https://example.internal\"]", headers["Location"])
+	}
 }
 
 // decodeRoutesByHost marshals cfg to JSON and back, returning each

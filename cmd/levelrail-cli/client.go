@@ -53,6 +53,8 @@ type (
 	setDomainTLSCertRequest          = apiclient.SetDomainTLSCertRequest
 	domainWAFResource                = apiclient.DomainWAFResource
 	setDomainWAFRequest              = apiclient.SetDomainWAFRequest
+	domainRedirectResource           = apiclient.DomainRedirectResource
+	setDomainRedirectRequest         = apiclient.SetDomainRedirectRequest
 	domainCheckResource              = apiclient.DomainCheckResource
 	cloneAppRequest                  = apiclient.CloneAppRequest
 	imageResource                    = apiclient.ImageResource

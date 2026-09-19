@@ -522,6 +522,24 @@ type SetDomainWAFRequest struct {
 	RateLimitBurst int    `json:"rate_limit_burst"`
 }
 
+// DomainRedirectResource mirrors internal/api's domainRedirectResource
+// (internal/api/domain_redirect.go): GET/PUT/DELETE
+// /api/v1/apps/{name}/domains/{domain}/redirect's wire shape.
+type DomainRedirectResource struct {
+	Domain     string `json:"domain"`
+	Enabled    bool   `json:"enabled"`
+	TargetURL  string `json:"target_url,omitempty"`
+	StatusCode int    `json:"status_code"`
+}
+
+// SetDomainRedirectRequest mirrors internal/api's
+// setDomainRedirectRequest. StatusCode 0 defaults server-side to 301
+// (permanent).
+type SetDomainRedirectRequest struct {
+	TargetURL  string `json:"target_url"`
+	StatusCode int    `json:"status_code,omitempty"`
+}
+
 // DomainCheckResource mirrors internal/api's domainCheckResponse
 // (internal/api/domain_check.go): GET
 // /api/v1/apps/{name}/domains/{domain}/check's wire shape.
