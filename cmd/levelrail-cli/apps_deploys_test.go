@@ -193,3 +193,59 @@ func TestRun_AppsDeploys_UnknownSubcommand(t *testing.T) {
 		t.Errorf("stderr = %q, want an unknown-subcommand error", stderr.String())
 	}
 }
+
+func TestRun_AppsDeploysLogs(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.RequestURI()
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("stdout line one\nstderr line two\n"))
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "deploys", "logs", "web", "dep_1", "--api-url", srv.URL})
+	if gotPath != "/api/v1/apps/web/deploys/dep_1/logs/download" {
+		t.Errorf("path = %q, want the deploy log download endpoint", gotPath)
+	}
+	if !strings.Contains(stdout, "stdout line one") || !strings.Contains(stdout, "stderr line two") {
+		t.Errorf("stdout = %q, want the raw log body written through unmodified", stdout)
+	}
+}
+
+func TestRun_AppsDeploysLogs_MissingArgs(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "deploys", "logs", "web"}, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitUsage, stderr.String())
+	}
+}
+
+func TestRun_AppsDeploysLogs_APIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"deploy attempt not found"}`))
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "deploys", "logs", "web", "dep_ghost", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitAPIError {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitAPIError, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "deploy attempt not found") {
+		t.Errorf("stderr = %q, want the server's error message", stderr.String())
+	}
+}
+
+func TestRun_AppsDeploysLogs_Help(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "deploys", "logs", "-h"}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d", got, exitOK)
+	}
+	if !strings.Contains(stderr.String(), "apps deploys logs") {
+		t.Errorf("stderr = %q, want usage text", stderr.String())
+	}
+}
