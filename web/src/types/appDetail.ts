@@ -76,6 +76,12 @@ export interface AppDetail {
   // "let Docker assign one", the ordinary case. Settable on create and
   // update, like `port` itself, not response-only.
   host_port?: number | null
+  // bind_address picks which network interface `port` (and `host_port`,
+  // if pinned) binds to on the host (internal/api/apps.go's
+  // appResource.BindAddress): "private" (loopback only, the default),
+  // "public" (every interface), or a literal IP. No `omitempty` on the
+  // Go side, same always-resolved reasoning as strategy/replicas below.
+  bind_address: string
   domains?: string[]
   env?: Record<string, string>
   resources?: ServiceResources | null

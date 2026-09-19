@@ -915,7 +915,7 @@ func (fakeDrainDatabaseStore) UpdateDatabaseProject(context.Context, string, str
 func (fakeDrainDatabaseStore) SetDatabaseBackupSchedule(context.Context, string, string, string, int, int) error {
 	return nil
 }
-func (fakeDrainDatabaseStore) SetDatabasePublicAccess(context.Context, string, bool, int) (int, error) {
+func (fakeDrainDatabaseStore) SetDatabasePublicAccess(context.Context, string, bool, int, string) (int, error) {
 	return 0, nil
 }
 

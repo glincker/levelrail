@@ -33,6 +33,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -849,7 +850,10 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		}
 	}
 
-	spec := toContainerSpec(name, desired)
+	spec, err := toContainerSpec(name, desired)
+	if err != nil {
+		return fmt.Errorf("container spec: %w", err)
+	}
 	spec.Env = env
 	if desired.RegistryCredentialID != "" {
 		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID)
@@ -1808,7 +1812,7 @@ func serviceAlias(desired *store.DesiredService) string {
 	return desired.Name
 }
 
-func toContainerSpec(name string, desired *store.DesiredService) docker.ContainerSpec {
+func toContainerSpec(name string, desired *store.DesiredService) (docker.ContainerSpec, error) {
 	spec := docker.ContainerSpec{
 		Name:      name,
 		Image:     desired.Image,
@@ -1823,7 +1827,18 @@ func toContainerSpec(name string, desired *store.DesiredService) docker.Containe
 		spec.Entrypoint = desired.Entrypoint
 	}
 	if desired.Port != 0 {
-		binding := docker.PortBinding{ContainerPort: desired.Port}
+		// BindAddress (migrations/0103_service_bind_address.sql): which
+		// interface Port (and HostPort, if pinned) binds to. Every
+		// published port defaulted to 0.0.0.0 unconditionally before this
+		// field existed, a real security gap; store.SaveDesiredService
+		// already resolves BindAddress to a concrete value on every save,
+		// so a Resolve error here would mean stored state got corrupted
+		// some other way.
+		hostIP, err := bindaddr.Resolve(desired.BindAddress)
+		if err != nil {
+			return docker.ContainerSpec{}, fmt.Errorf("bind address: %w", err)
+		}
+		binding := docker.PortBinding{ContainerPort: desired.Port, HostIP: hostIP}
 		if desired.HostPort != nil {
 			binding.HostPort = *desired.HostPort
 		}
@@ -1843,7 +1858,7 @@ func toContainerSpec(name string, desired *store.DesiredService) docker.Containe
 	for _, m := range desired.BindMounts {
 		spec.BindMounts = append(spec.BindMounts, docker.BindMount{HostPath: m.HostPath, ContainerPath: m.ContainerPath, ReadOnly: m.ReadOnly})
 	}
-	return spec
+	return spec, nil
 }
 
 func ready(reason string) reconcile.Result {

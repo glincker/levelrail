@@ -111,6 +111,12 @@ func TestHandleCompareDeploys_ConfigSnapshotDiff(t *testing.T) {
 			wantChangeKeys: []string{"host_port"},
 		},
 		{
+			name:           "bind address changed",
+			from:           store.DeployAttemptSnapshot{BindAddress: "private"},
+			to:             store.DeployAttemptSnapshot{BindAddress: "public"},
+			wantChangeKeys: []string{"bind_address"},
+		},
+		{
 			name:           "domains changed",
 			from:           store.DeployAttemptSnapshot{Domains: []string{"a.example.com"}},
 			to:             store.DeployAttemptSnapshot{Domains: []string{"a.example.com", "b.example.com"}},

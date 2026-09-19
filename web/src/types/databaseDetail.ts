@@ -43,6 +43,11 @@ export interface DatabaseResource {
   // entirely, not 0, whenever publicly_accessible is false.
   publicly_accessible?: boolean
   public_port?: number
+  // public_bind_address: response-only, the identical boundary
+  // publicly_accessible/public_port already establish, absent whenever
+  // publicly_accessible is false. "private" (loopback only), "public"
+  // (every interface), or a literal IP; see internal/bindaddr.Resolve.
+  public_bind_address?: string
   // resources: internal/store.ServiceResources reused verbatim by
   // DesiredDatabase (same as DesiredService), so this imports
   // appDetail.ts's ServiceResources rather than redeclaring an identical

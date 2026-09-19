@@ -16,7 +16,10 @@ import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { ScheduledTaskDialog } from './ScheduledTaskDialog'
 import { DeleteScheduledTaskDialog } from './DeleteScheduledTaskDialog'
 import { RunScheduledTaskButton } from './RunScheduledTaskButton'
-import { useScheduledTasks, useUpdateScheduledTask } from '../queries/scheduledTasks'
+import {
+  useScheduledTasks,
+  useUpdateScheduledTask,
+} from '../queries/scheduledTasks'
 import type {
   ScheduledTask,
   ScheduledTaskConcurrencyPolicy,
@@ -54,11 +57,12 @@ const STATUS_BADGE_VARIANT: Record<
   replaced: 'muted',
 }
 
-const CONCURRENCY_POLICY_LABEL: Record<ScheduledTaskConcurrencyPolicy, string> = {
-  allow: 'Allow overlap',
-  forbid: 'Skip if running',
-  replace: 'Cancel and replace',
-}
+const CONCURRENCY_POLICY_LABEL: Record<ScheduledTaskConcurrencyPolicy, string> =
+  {
+    allow: 'Allow overlap',
+    forbid: 'Skip if running',
+    replace: 'Cancel and replace',
+  }
 
 function LastRunCell({ task }: { task: ScheduledTask }) {
   if (!task.last_run_at || !task.last_run_status) {
@@ -97,7 +101,13 @@ function LastRunCell({ task }: { task: ScheduledTask }) {
 // enabled route, matching UpdateScheduledTask's own "Command, Schedule,
 // and Enabled are updated together" shape (internal/store/
 // scheduled_task.go).
-function EnabledToggle({ appName, task }: { appName: string; task: ScheduledTask }) {
+function EnabledToggle({
+  appName,
+  task,
+}: {
+  appName: string
+  task: ScheduledTask
+}) {
   const updateTask = useUpdateScheduledTask(appName)
 
   return (
@@ -171,8 +181,8 @@ export function ScheduledTasksPanel({ appName }: { appName: string }) {
             Scheduled tasks
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Runs a command inside this app&apos;s currently running container
-            on a cron schedule, e.g. a nightly cleanup script or a periodic
+            Runs a command inside this app&apos;s currently running container on
+            a cron schedule, e.g. a nightly cleanup script or a periodic
             cache-warm job.
           </p>
         </div>

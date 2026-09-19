@@ -44,6 +44,9 @@ func TestParse_ValidFull(t *testing.T) {
 	if web.HostPort != 30001 {
 		t.Errorf("HostPort = %d, want 30001", web.HostPort)
 	}
+	if web.BindAddress != "public" {
+		t.Errorf("BindAddress = %q, want \"public\"", web.BindAddress)
+	}
 	if web.Health == nil || web.Health.Readiness == nil || web.Health.Readiness.Path != "/healthz" {
 		t.Errorf("Health.Readiness = %+v, want Path=/healthz", web.Health)
 	}
@@ -372,6 +375,9 @@ func TestParse_ValidMinimal_Defaults(t *testing.T) {
 	if got := web.EffectiveStrategy(); got != StrategyBlueGreen {
 		t.Errorf("EffectiveStrategy() = %q, want %q (documented default)", got, StrategyBlueGreen)
 	}
+	if got := web.EffectiveBindAddress(); got != "private" {
+		t.Errorf("EffectiveBindAddress() = %q, want %q (documented default)", got, "private")
+	}
 }
 
 func TestParse_ValidStatic_NoPortRequired(t *testing.T) {
@@ -502,6 +508,24 @@ services:
   docs: { build: { type: static }, host_port: 8080 }
 `,
 			wantErrSubstr: "host_port must not be set when build.type is",
+		},
+		{
+			name: "bind_address invalid value",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, bind_address: publik }
+`,
+			wantErrSubstr: "bind_address",
+		},
+		{
+			name: "bind_address set for a static build",
+			yaml: `
+version: 1
+services:
+  docs: { build: { type: static }, bind_address: private }
+`,
+			wantErrSubstr: "bind_address must not be set when build.type is",
 		},
 		{
 			name: "bad memory pattern",

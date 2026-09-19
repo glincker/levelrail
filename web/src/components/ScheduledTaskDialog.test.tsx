@@ -50,15 +50,15 @@ describe('ScheduledTaskDialog cron builder', () => {
 
   it('switching frequency to weekly changes the submitted cron value', async () => {
     const user = userEvent.setup()
-    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
-      (input) => {
-        const url = requestUrlOf(input)
-        if (url === '/api/v1/apps/demo-app/scheduled-tasks') {
-          return Promise.resolve(fakeJsonResponse(BASE_TASK, 201))
-        }
-        throw new Error(`unexpected fetch: ${url}`)
-      },
-    )
+    const fetchMock = vi.fn<
+      (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+    >((input) => {
+      const url = requestUrlOf(input)
+      if (url === '/api/v1/apps/demo-app/scheduled-tasks') {
+        return Promise.resolve(fakeJsonResponse(BASE_TASK, 201))
+      }
+      throw new Error(`unexpected fetch: ${url}`)
+    })
     vi.stubGlobal('fetch', fetchMock)
 
     renderDialog()

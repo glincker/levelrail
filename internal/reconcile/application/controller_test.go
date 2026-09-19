@@ -3095,7 +3095,7 @@ func TestController_Reconcile_PinnedHostPort_PassedToContainerSpec(t *testing.T)
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
-	want := []docker.PortBinding{{ContainerPort: 80, HostPort: 8080}}
+	want := []docker.PortBinding{{ContainerPort: 80, HostPort: 8080, HostIP: "127.0.0.1"}}
 	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
 		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
 	}
@@ -3114,8 +3114,79 @@ func TestController_Reconcile_UnpinnedHostPort_LeavesZero(t *testing.T) {
 	if _, err := c.Reconcile(context.Background()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
-	want := []docker.PortBinding{{ContainerPort: 80, HostPort: 0}}
+	want := []docker.PortBinding{{ContainerPort: 80, HostPort: 0, HostIP: "127.0.0.1"}}
 	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
 		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_BindAddress_DefaultsToPrivate proves an
+// empty DesiredService.BindAddress (the state every service persisted
+// before this field existed) resolves to loopback-only, not Docker's own
+// 0.0.0.0 default: the security gap this feature closes.
+func TestController_Reconcile_BindAddress_DefaultsToPrivate(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := []docker.PortBinding{{ContainerPort: 80, HostIP: "127.0.0.1"}}
+	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_BindAddress_PublicIsExplicitOptIn proves an
+// explicit "public" BindAddress resolves to 0.0.0.0, the opt-in every
+// interface exposure requires.
+func TestController_Reconcile_BindAddress_PublicIsExplicitOptIn(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, BindAddress: "public"}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := []docker.PortBinding{{ContainerPort: 80, HostIP: "0.0.0.0"}}
+	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_BindAddress_LiteralIPPassedThrough proves a
+// literal IP (a specific host interface, or a future WireGuard mesh peer
+// address) is passed straight through to Docker, not shorthand-only.
+func TestController_Reconcile_BindAddress_LiteralIPPassedThrough(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, BindAddress: "10.0.0.5"}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := []docker.PortBinding{{ContainerPort: 80, HostIP: "10.0.0.5"}}
+	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_BindAddress_InvalidFailsReconcile proves a
+// malformed BindAddress (stored state corrupted some other way than
+// through SaveDesiredService/the API, which both reject it before it
+// ever reaches here) fails the reconcile with a NotReady condition
+// rather than silently falling back to any particular interface.
+func TestController_Reconcile_BindAddress_InvalidFailsReconcile(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, BindAddress: "not-a-value"}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want an error for an invalid bind address")
+	}
+	if len(result.Conditions) != 1 || result.Conditions[0].Status != reconcile.ConditionFalse {
+		t.Errorf("Conditions = %+v, want a single NotReady condition", result.Conditions)
 	}
 }

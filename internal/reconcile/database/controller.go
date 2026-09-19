@@ -45,6 +45,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -463,9 +464,16 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	// database GUI tool can reach it directly. Nil/empty otherwise,
 	// byte-identical to every database before this field existed:
 	// internal-network-only, the same as an application container that
-	// declares no port.
+	// declares no port. PublicBindAddress (migrations/0099) picks which
+	// interface that host port binds to; store.SetDatabasePublicAccess
+	// already validated and resolved it to a concrete value, so a Resolve
+	// error here would mean stored state got corrupted some other way.
 	if desired.PubliclyAccessible && desired.PublicPort != 0 {
-		spec.Ports = []docker.PortBinding{{ContainerPort: containerPort, HostPort: desired.PublicPort}}
+		hostIP, err := bindaddr.Resolve(desired.PublicBindAddress)
+		if err != nil {
+			return notReady("BindAddressInvalid", err), fmt.Errorf("database/%s: public bind address: %w", c.dbName, err)
+		}
+		spec.Ports = []docker.PortBinding{{ContainerPort: containerPort, HostPort: desired.PublicPort, HostIP: hostIP}}
 	}
 	if desired.Resources != nil {
 		spec.Resources = &docker.Resources{
@@ -593,10 +601,18 @@ func (c *Controller) replaceContainer(ctx context.Context, old *docker.Container
 // published ports, docker.ContainerState.Ports) and desired (the
 // ContainerSpec.Ports this controller would create) describe the same
 // set of bindings, so reconcileEngine knows whether a public-access
-// toggle or port change needs a replace. Protocol is normalized ("" and
-// "tcp" are the same binding): spec.Ports built by this package never
-// sets Protocol explicitly, while Docker's own observed ports always
-// report a concrete one.
+// toggle, a port change, or a bind-address change needs a replace.
+// Protocol is normalized ("" and "tcp" are the same binding): spec.Ports
+// built by this package never sets Protocol explicitly, while Docker's
+// own observed ports always report a concrete one. HostIP is compared
+// as-is, not normalized: a container created before
+// migrations/0104_database_public_bind_address.sql (no explicit HostIP,
+// Docker's own implicit dual-stack bind) observes as two bindings, one
+// per address family, which never equals desired's single explicit one,
+// so the first reconcile pass after upgrade replaces it onto the new,
+// narrower explicit bind. Intentional, not a bug: see that migration's
+// own doc comment for why existing exposure is preserved (as "public"),
+// just no longer implicit.
 func portsMatch(observed, desired []docker.PortBinding) bool {
 	return reflect.DeepEqual(normalizedPortSet(observed), normalizedPortSet(desired))
 }
@@ -608,7 +624,7 @@ func normalizedPortSet(ports []docker.PortBinding) map[docker.PortBinding]bool {
 		if proto == "" {
 			proto = "tcp"
 		}
-		set[docker.PortBinding{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: proto}] = true
+		set[docker.PortBinding{ContainerPort: p.ContainerPort, HostPort: p.HostPort, HostIP: p.HostIP, Protocol: proto}] = true
 	}
 	return set
 }

@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { PencilSimpleIcon, PlusCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  PencilSimpleIcon,
+  PlusCircleIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -15,7 +18,12 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -24,7 +32,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
-import { useCreateScheduledTask, useUpdateScheduledTask } from '../queries/scheduledTasks'
+import {
+  useCreateScheduledTask,
+  useUpdateScheduledTask,
+} from '../queries/scheduledTasks'
 import type {
   ScheduledTask,
   ScheduledTaskConcurrencyPolicy,
@@ -33,15 +44,20 @@ import type {
 import { fromCron, refineCronFields, toCron } from '../lib/cronSchedule'
 import { CronScheduleFields } from './CronScheduleFields'
 
-const CONCURRENCY_POLICY_LABEL: Record<ScheduledTaskConcurrencyPolicy, string> = {
-  allow: 'Allow overlap',
-  forbid: 'Skip if still running',
-  replace: 'Cancel and replace',
-}
+const CONCURRENCY_POLICY_LABEL: Record<ScheduledTaskConcurrencyPolicy, string> =
+  {
+    allow: 'Allow overlap',
+    forbid: 'Skip if still running',
+    replace: 'Cancel and replace',
+  }
 
-const CONCURRENCY_POLICY_DESCRIPTION: Record<ScheduledTaskConcurrencyPolicy, string> = {
+const CONCURRENCY_POLICY_DESCRIPTION: Record<
+  ScheduledTaskConcurrencyPolicy,
+  string
+> = {
   allow: "Start the new run even if the previous one hasn't finished yet.",
-  forbid: 'Skip this run if a previous one is still in flight, recorded as "Skipped".',
+  forbid:
+    'Skip this run if a previous one is still in flight, recorded as "Skipped".',
   replace: 'Cancel the still-running previous run, then start this one.',
 }
 
@@ -169,9 +185,15 @@ export function ScheduledTaskDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5">
             {isEdit ? (
-              <PencilSimpleIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+              <PencilSimpleIcon
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
             ) : (
-              <PlusCircleIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+              <PlusCircleIcon
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
             )}
             {isEdit ? 'Edit scheduled task' : 'Create scheduled task'}
           </DialogTitle>
@@ -223,13 +245,22 @@ export function ScheduledTaskDialog({
                     field.onChange(value ?? 'allow')
                   }}
                 >
-                  <SelectTrigger id="task-concurrency-policy" className="w-full">
+                  <SelectTrigger
+                    id="task-concurrency-policy"
+                    className="w-full"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="allow">{CONCURRENCY_POLICY_LABEL.allow}</SelectItem>
-                    <SelectItem value="forbid">{CONCURRENCY_POLICY_LABEL.forbid}</SelectItem>
-                    <SelectItem value="replace">{CONCURRENCY_POLICY_LABEL.replace}</SelectItem>
+                    <SelectItem value="allow">
+                      {CONCURRENCY_POLICY_LABEL.allow}
+                    </SelectItem>
+                    <SelectItem value="forbid">
+                      {CONCURRENCY_POLICY_LABEL.forbid}
+                    </SelectItem>
+                    <SelectItem value="replace">
+                      {CONCURRENCY_POLICY_LABEL.replace}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               )}

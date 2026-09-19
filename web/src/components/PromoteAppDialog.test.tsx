@@ -123,6 +123,7 @@ function fakeApp(overrides: Partial<AppListEntry>): AppListEntry {
     port: 3000,
     strategy: 'rolling',
     replicas: 1,
+    bind_address: 'private',
     suspended: false,
     env_dirty: false,
     status: { label: 'Running', variant: 'success' },

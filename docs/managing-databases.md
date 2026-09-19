@@ -123,6 +123,17 @@ Requesting a different port while already public is a real state change,
 not an edit-in-place: the dashboard's port field is accordingly only
 editable before you enable access, not after.
 
+`bind_address` picks which network interface that port binds to:
+`private` (loopback only, the default when omitted), `public` (every
+interface, an explicit opt-in), or a literal IP. Same shorthand and
+resolution rules as an app service's own `bind_address`
+(`internal/bindaddr.Resolve`); see
+[app-spec-reference.md's Bind addresses and exposure](app-spec-reference.md#bind-addresses-and-exposure)
+for the full table. A database already publicly accessible before this
+field existed keeps that exposure (backfilled to `public`); re-enabling
+public access afterward without an explicit `bind_address` picks up the
+new `private` default instead.
+
 `DELETE /api/v1/databases/{name}/public-access` reverts to internal-only;
 the reconciler replaces the running container without the host port
 binding on its next pass (a replace, not a plain restart).
@@ -136,10 +147,12 @@ engine family; Postgres/MySQL/MongoDB/MariaDB/ClickHouse get a plain,
 non-blocking warning instead.
 
 Dashboard: **Public access** card on the database's Overview tab
-(`web/src/components/DatabasePublicAccessCard.tsx`). CLI: there is no
-standalone `databases` subcommand for this today; it's reachable through
+(`web/src/components/DatabasePublicAccessCard.tsx`). CLI:
+`levelrail-cli databases public-access set <name> [--port N] [--bind-address ADDR]`
+and `levelrail-cli databases public-access clear <name>`
+(`cmd/levelrail-cli/databases_public_access.go`); also reachable through
 `databases create --interactive`'s wizard (which calls the same PUT
-endpoint as a create-time follow-up) or directly against the API.
+endpoint as a create-time follow-up, always at the default bind address).
 
 ## Attaching a database to an app
 
@@ -399,6 +412,8 @@ levelrail-cli databases resource-recommendation <name>
 levelrail-cli databases metrics <name> --metric NAME [flags]
 levelrail-cli databases set-project <name> <project-id>
 levelrail-cli databases clear-project <name>
+levelrail-cli databases public-access set <name> [--port N] [--bind-address ADDR]
+levelrail-cli databases public-access clear <name>
 
 levelrail-cli backups list <database> [--limit N] [--before TIMESTAMP]
 levelrail-cli backups trigger <database> --target ID
@@ -416,10 +431,13 @@ levelrail-cli backup-targets delete <id>
 levelrail-cli backup-targets test <id>
 ```
 
-Resource limits, public access, and backup scheduling have no standalone
-`databases` subcommand: they're reachable through `databases create
---interactive`'s wizard at creation time, or by calling their dedicated
-API routes directly. The dashboard's own creation dialog is deliberately
+Resource limits and backup scheduling have no standalone `databases`
+subcommand: they're reachable through `databases create --interactive`'s
+wizard at creation time, or by calling their dedicated API routes
+directly. Public access does have its own subcommand
+(`databases public-access set`/`clear`, above), the same shape
+`set-project`/`clear-project` already establish for a different
+per-database setting. The dashboard's own creation dialog is deliberately
 narrower than the CLI's interactive wizard too: it collects only
 name/engine/version/node up front (`CreateDatabaseFields.tsx`), the same
 fields `databases create` takes without `--interactive`; resource limits,
@@ -428,11 +446,11 @@ database's own Overview and Resources tabs once it exists.
 
 ## Not built yet (deliberate follow-ups)
 
-- **No CLI subcommands for resource limits or public access outside the
-  creation wizard.** Both have real, working API routes
-  (`PUT .../resources`, `PUT .../public-access`) and dashboard controls;
-  there's no `databases set-resources` or `databases set-public-access`
-  for scripting an existing database after the fact today.
+- **No CLI subcommand for resource limits outside the creation wizard.**
+  It has a real, working API route (`PUT .../resources`) and a dashboard
+  control; there's no `databases set-resources` for scripting an existing
+  database after the fact today. (Public access got its own subcommand,
+  `databases public-access set`/`clear`, above.)
 - **No CLI download command.** `GET .../backups/{historyId}/download`
   works from the dashboard (a plain authenticated browser navigation) and
   from any HTTP client with a bearer token; there's no `backups download`

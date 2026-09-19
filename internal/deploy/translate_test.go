@@ -256,6 +256,34 @@ func TestToDesiredService_NoHostPort_LeavesNil(t *testing.T) {
 	}
 }
 
+// TestToDesiredService_BindAddress_PassesThrough proves an explicit
+// bind_address round-trips as-is.
+func TestToDesiredService_BindAddress_PassesThrough(t *testing.T) {
+	svc := spec.Service{Port: 8080, BindAddress: "public"}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.BindAddress != "public" {
+		t.Errorf("BindAddress = %q, want %q", got.BindAddress, "public")
+	}
+}
+
+// TestToDesiredService_NoBindAddress_DefaultsToPrivate is the
+// regression-safety counterpart: an app.yaml with no bind_address: must
+// resolve to the documented default, not an empty string that some
+// downstream layer might resolve differently.
+func TestToDesiredService_NoBindAddress_DefaultsToPrivate(t *testing.T) {
+	svc := spec.Service{Port: 8080}
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.BindAddress != "private" {
+		t.Errorf("BindAddress = %q, want %q", got.BindAddress, "private")
+	}
+}
+
 func TestToDesiredService_LabelsPassThrough(t *testing.T) {
 	svc := spec.Service{Port: 8080, Labels: map[string]string{"team": "platform"}}
 	got, err := toDesiredService("web", "img:sha", svc)

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -19,6 +20,9 @@ type databasePublicAccessResource struct {
 	DatabaseName       string `json:"database_name"`
 	PubliclyAccessible bool   `json:"publicly_accessible"`
 	PublicPort         int    `json:"public_port,omitempty"`
+	// BindAddress: see setDatabasePublicAccessRequest's own field doc
+	// comment for what this holds and its default.
+	BindAddress string `json:"bind_address,omitempty"`
 }
 
 // setDatabasePublicAccessRequest is handleSetDatabasePublicAccess's
@@ -26,9 +30,14 @@ type databasePublicAccessResource struct {
 // from "omitted" in this handler, the same convention
 // setBackupScheduleRequest's own Retain field already uses) means "auto-
 // assign the next free port", store.SetDatabasePublicAccess's own
-// default when requestedPort is 0.
+// default when requestedPort is 0. BindAddress is optional too: empty
+// resolves to internal/bindaddr.Default ("private", loopback only); an
+// explicit "public" opts into every interface, the same "private" and
+// "public" vocabulary internal/spec's own bind_address field uses for
+// app services.
 type setDatabasePublicAccessRequest struct {
-	Port int `json:"port,omitempty"`
+	Port        int    `json:"port,omitempty"`
+	BindAddress string `json:"bind_address,omitempty"`
 }
 
 // reservedControlPlanePorts are ports this control plane's own listeners
@@ -87,8 +96,19 @@ func (rt *Router) handleSetDatabasePublicAccess(w http.ResponseWriter, r *http.R
 			return
 		}
 	}
+	if req.BindAddress != "" {
+		if err := bindaddr.Validate(req.BindAddress); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
 
-	port, err := rt.databases.SetDatabasePublicAccess(r.Context(), name, true, req.Port)
+	bindAddress := req.BindAddress
+	if bindAddress == "" {
+		bindAddress = bindaddr.Default
+	}
+
+	port, err := rt.databases.SetDatabasePublicAccess(r.Context(), name, true, req.Port, bindAddress)
 	switch {
 	case errors.Is(err, store.ErrDatabaseNotFound):
 		writeError(w, http.StatusNotFound, "database not found")
@@ -109,6 +129,7 @@ func (rt *Router) handleSetDatabasePublicAccess(w http.ResponseWriter, r *http.R
 		DatabaseName:       name,
 		PubliclyAccessible: true,
 		PublicPort:         port,
+		BindAddress:        bindAddress,
 	})
 }
 
@@ -132,7 +153,7 @@ func (rt *Router) handleClearDatabasePublicAccess(w http.ResponseWriter, r *http
 		return
 	}
 
-	if _, err := rt.databases.SetDatabasePublicAccess(r.Context(), name, false, 0); errors.Is(err, store.ErrDatabaseNotFound) {
+	if _, err := rt.databases.SetDatabasePublicAccess(r.Context(), name, false, 0, ""); errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {

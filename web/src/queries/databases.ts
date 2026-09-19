@@ -352,23 +352,32 @@ export interface DatabasePublicAccessResource {
   database_name: string
   publicly_accessible: boolean
   public_port?: number
+  // bind_address: see internal/api's databasePublicAccessResource's own
+  // BindAddress field doc comment for what this holds ("private",
+  // "public", or a literal IP).
+  bind_address?: string
 }
 
 // PUT /api/v1/databases/{name}/public-access. port omitted or 0 means
 // "auto-assign the next free port" (store.SetDatabasePublicAccess's own
 // default); a specific port is validated server-side against the
 // 1024-65535 range and the control plane's own reserved ports before
-// being persisted.
+// being persisted. bindAddress omitted means the control plane's own
+// default ("private", loopback only); "public" is an explicit opt-in.
 export async function setDatabasePublicAccess(
   name: string,
   port?: number,
+  bindAddress?: string,
 ): Promise<DatabasePublicAccessResource> {
   const res = await fetch(
     `/api/v1/databases/${encodeURIComponent(name)}/public-access`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(port ? { port } : {}),
+      body: JSON.stringify({
+        ...(port ? { port } : {}),
+        ...(bindAddress ? { bind_address: bindAddress } : {}),
+      }),
     },
   )
   if (!res.ok) {
@@ -386,12 +395,19 @@ export async function setDatabasePublicAccess(
 // On success, patches the cached DatabaseResource directly (the same
 // "don't wait on a refetch" reasoning useSetDatabaseNode already
 // follows) rather than replacing it wholesale: the PUT response only
-// carries the three public-access fields, not the full resource shape.
+// carries the four public-access fields, not the full resource shape.
 export function useSetDatabasePublicAccess() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ name, port }: { name: string; port?: number }) =>
-      setDatabasePublicAccess(name, port),
+    mutationFn: ({
+      name,
+      port,
+      bindAddress,
+    }: {
+      name: string
+      port?: number
+      bindAddress?: string
+    }) => setDatabasePublicAccess(name, port, bindAddress),
     onSuccess: (result) => {
       queryClient.setQueryData(
         databaseKeys.detail(result.database_name),
@@ -400,6 +416,7 @@ export function useSetDatabasePublicAccess() {
             ...existing,
             publicly_accessible: result.publicly_accessible,
             public_port: result.public_port,
+            public_bind_address: result.bind_address,
           },
       )
       void queryClient.invalidateQueries({
@@ -442,6 +459,7 @@ export function useClearDatabasePublicAccess() {
             ...existing,
             publicly_accessible: false,
             public_port: undefined,
+            public_bind_address: undefined,
           },
       )
       void queryClient.invalidateQueries({

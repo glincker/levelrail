@@ -91,6 +91,38 @@ func TestToDockerPorts_HostPortZeroMeansAutoAssign(t *testing.T) {
 	}
 }
 
+func TestToDockerPorts_HostIPPassedThrough(t *testing.T) {
+	_, bindings, err := toDockerPorts([]PortBinding{{ContainerPort: 3000, HostPort: 8080, HostIP: "127.0.0.1"}})
+	if err != nil {
+		t.Fatalf("toDockerPorts() error = %v", err)
+	}
+	found := false
+	for _, bs := range bindings {
+		for _, b := range bs {
+			if b.HostIP == "127.0.0.1" {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Error("expected a binding with HostIP 127.0.0.1")
+	}
+}
+
+func TestToDockerPorts_HostIPEmptyMeansEveryInterface(t *testing.T) {
+	_, bindings, err := toDockerPorts([]PortBinding{{ContainerPort: 3000}})
+	if err != nil {
+		t.Fatalf("toDockerPorts() error = %v", err)
+	}
+	for _, bs := range bindings {
+		for _, b := range bs {
+			if b.HostIP != "" {
+				t.Errorf("HostIP = %q, want empty (Docker defaults to every interface)", b.HostIP)
+			}
+		}
+	}
+}
+
 func TestToDockerPorts_HostPortSetIsPassedThrough(t *testing.T) {
 	_, bindings, err := toDockerPorts([]PortBinding{{ContainerPort: 3000, HostPort: 8080}})
 	if err != nil {
@@ -490,6 +522,26 @@ func TestObservedPorts(t *testing.T) {
 			},
 			want: []PortBinding{
 				{ContainerPort: 3000, HostPort: 32768, Protocol: "tcp"},
+			},
+		},
+		{
+			name: "bind IP carried through",
+			ports: []container.Port{
+				{PrivatePort: 3000, PublicPort: 32768, Type: "tcp", IP: "127.0.0.1"},
+			},
+			want: []PortBinding{
+				{ContainerPort: 3000, HostPort: 32768, Protocol: "tcp", HostIP: "127.0.0.1"},
+			},
+		},
+		{
+			name: "dual-stack wildcard kept as two distinct bindings, not deduped away",
+			ports: []container.Port{
+				{PrivatePort: 3000, PublicPort: 32768, Type: "tcp", IP: "0.0.0.0"},
+				{PrivatePort: 3000, PublicPort: 32768, Type: "tcp", IP: "::"},
+			},
+			want: []PortBinding{
+				{ContainerPort: 3000, HostPort: 32768, Protocol: "tcp", HostIP: "0.0.0.0"},
+				{ContainerPort: 3000, HostPort: 32768, Protocol: "tcp", HostIP: "::"},
 			},
 		},
 	}

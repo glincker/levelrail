@@ -50,6 +50,11 @@ func TestValidateAppResource(t *testing.T) {
 		{name: "host_port zero rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(0)}, wantErr: true},
 		{name: "host_port out of range rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(99999)}, wantErr: true},
 		{name: "host_port negative rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, HostPort: intPtr(-1)}, wantErr: true},
+		{name: "empty bind_address valid (falls through to store default)", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000}, wantErr: false},
+		{name: "private bind_address valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, BindAddress: "private"}, wantErr: false},
+		{name: "public bind_address valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, BindAddress: "public"}, wantErr: false},
+		{name: "literal IP bind_address valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, BindAddress: "10.0.0.5"}, wantErr: false},
+		{name: "typo'd bind_address rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, BindAddress: "publik"}, wantErr: true},
 		{name: "vault env valid", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, VaultEnv: map[string]appVaultEnvRef{"API_KEY": {Path: "myapp/config", Key: "api_key"}}}, wantErr: false},
 		{name: "vault env missing path rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, VaultEnv: map[string]appVaultEnvRef{"API_KEY": {Key: "api_key"}}}, wantErr: true},
 		{name: "vault env missing key rejected", app: appResource{Name: "web", Image: "levelrail/web:abc123", Port: 3000, VaultEnv: map[string]appVaultEnvRef{"API_KEY": {Path: "myapp/config"}}}, wantErr: true},
@@ -879,6 +884,72 @@ func TestHandleUpdateApp_HostPort(t *testing.T) {
 	}
 	if svc.HostPort != nil {
 		t.Errorf("HostPort after clearing update = %v, want nil", *svc.HostPort)
+	}
+}
+
+// TestHandleGetApp_BindAddressDefaultsToPrivate proves a service created
+// with no bind_address comes back with the resolved default, never an
+// empty string: appResource.BindAddress has no omitempty, the same
+// always-resolved contract Strategy/Replicas already have.
+func TestHandleGetApp_BindAddressDefaultsToPrivate(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web", ""))
+	var got appResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.BindAddress != "private" {
+		t.Errorf("BindAddress = %q, want %q", got.BindAddress, "private")
+	}
+}
+
+// TestHandleUpdateApp_BindAddress proves an update through the general
+// PUT endpoint sets an explicit bind_address, and that omitting it again
+// falls back to the default, the same full-record-replace semantics
+// TestHandleUpdateApp_HostPort already establishes for host_port.
+func TestHandleUpdateApp_BindAddress(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web",
+		`{"name":"web","image":"levelrail/web:1","port":3000,"bind_address":"public"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after update: %v", err)
+	}
+	if svc.BindAddress != "public" {
+		t.Errorf("BindAddress after update = %q, want %q", svc.BindAddress, "public")
+	}
+
+	recClear := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recClear, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web",
+		`{"name":"web","image":"levelrail/web:1","port":3000}`))
+	if recClear.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, body = %s", recClear.Code, recClear.Body.String())
+	}
+
+	svc, err = db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after clearing update: %v", err)
+	}
+	if svc.BindAddress != "private" {
+		t.Errorf("BindAddress after clearing update = %q, want default %q", svc.BindAddress, "private")
 	}
 }
 

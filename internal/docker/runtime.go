@@ -26,6 +26,13 @@ import (
 type PortBinding struct {
 	ContainerPort int
 	HostPort      int
+	// HostIP is the interface a published port binds to. Empty is
+	// treated as 0.0.0.0 (every interface) by Create, matching Docker's
+	// own default: resolving the "private"/"public"/literal-IP shorthand
+	// this maps from (internal/bindaddr) into a concrete IP is the
+	// caller's job, the same "translation is the caller's job, keep this
+	// package spec-agnostic" reasoning Resources' own doc comment gives.
+	HostIP string
 	// Protocol is "tcp" or "udp". Empty is treated as "tcp" by Create.
 	Protocol string
 }

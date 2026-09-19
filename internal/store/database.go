@@ -68,6 +68,12 @@ type DesiredDatabase struct {
 	// PubliclyAccessible is false (SQL NULL).
 	PubliclyAccessible bool
 	PublicPort         int
+	// PublicBindAddress picks which network interface PublicPort binds to
+	// (migrations/0104_database_public_bind_address.sql): "private",
+	// "public", or a literal IP, see internal/bindaddr.Resolve. Same
+	// SetDatabasePublicAccess-only-writer exception as PublicPort; "" when
+	// PubliclyAccessible is false (SQL NULL).
+	PublicBindAddress string
 
 	// Resources caps this database's memory and CPU, the same
 	// *ServiceResources type and JSON-column storage
@@ -368,11 +374,15 @@ var ErrPublicPortRangeExhausted = errors.New("store: no free public port availab
 // SetDatabaseBackupSchedule: its own endpoint
 // (PUT/DELETE /api/v1/databases/{name}/public-access), its own store
 // method, same separation-from-ordinary-update reasoning. Disabling
-// (enabled=false) always clears public_port back to NULL regardless of
-// requestedPort. Enabling with requestedPort 0 auto-assigns the lowest
-// free port in [PublicPortRangeStart, PublicPortRangeEnd]; a non-zero
-// requestedPort is used as-is if no other database already claims it.
-// Returns the port actually assigned (0 when disabling).
+// (enabled=false) always clears public_port and public_bind_address
+// back to NULL regardless of requestedPort/requestedBindAddress.
+// Enabling with requestedPort 0 auto-assigns the lowest free port in
+// [PublicPortRangeStart, PublicPortRangeEnd]; a non-zero requestedPort is
+// used as-is if no other database already claims it. requestedBindAddress
+// empty resolves to DefaultBindAddress ("private"), the same "resolve
+// and always persist a concrete value" treatment SaveDesiredService
+// gives BindAddress. Returns the port actually assigned (0 when
+// disabling).
 //
 // Runs inside a transaction so "is this port free" and "claim it" are
 // atomic: db.SetMaxOpenConns(1) (store.go) already serializes every
@@ -380,7 +390,7 @@ var ErrPublicPortRangeExhausted = errors.New("store: no free public port availab
 // against nothing racing it today, not a fix for an observed bug, the
 // same reasoning claimServiceDomains (service.go) already applies to
 // domain claims.
-func (db *DB) SetDatabasePublicAccess(ctx context.Context, name string, enabled bool, requestedPort int) (int, error) {
+func (db *DB) SetDatabasePublicAccess(ctx context.Context, name string, enabled bool, requestedPort int, requestedBindAddress string) (int, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, fmt.Errorf("store: set public access for database %q: begin transaction: %w", name, err)
@@ -390,18 +400,23 @@ func (db *DB) SetDatabasePublicAccess(ctx context.Context, name string, enabled 
 	}()
 
 	port := 0
+	bindAddress := ""
 	if enabled {
 		port, err = claimPublicPort(ctx, tx, name, requestedPort)
 		if err != nil {
 			return 0, fmt.Errorf("store: set public access for database %q: %w", name, err)
 		}
+		bindAddress = requestedBindAddress
+		if bindAddress == "" {
+			bindAddress = DefaultBindAddress
+		}
 	}
 
 	res, err := tx.ExecContext(ctx, `
 		UPDATE desired_databases
-		SET publicly_accessible = ?, public_port = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		SET publicly_accessible = ?, public_port = ?, public_bind_address = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 		WHERE name = ?
-	`, enabled, sql.NullInt64{Int64: int64(port), Valid: enabled}, name)
+	`, enabled, sql.NullInt64{Int64: int64(port), Valid: enabled}, sql.NullString{String: bindAddress, Valid: enabled}, name)
 	if err != nil {
 		return 0, fmt.Errorf("store: set public access for database %q: %w", name, err)
 	}
@@ -506,7 +521,7 @@ func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, er
 // ListDesiredDatabasesByNode, ListDesiredDatabasesByProject,
 // ListScheduledDatabases), the database-kind counterpart to
 // desiredServiceColumns in service.go.
-const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, resources, suspended"
+const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended"
 
 // scanDesiredDatabase reads the column shape desiredDatabaseColumns
 // selects, via either row.Scan or rows.Scan (same signature), so the
@@ -519,10 +534,11 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 		projectID, backupTargetID sql.NullString
 		publiclyAccessible        bool
 		publicPort                sql.NullInt64
+		publicBindAddress         sql.NullString
 		resourcesJSON             string
 		suspended                 bool
 	)
-	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &resourcesJSON, &suspended); err != nil {
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended); err != nil {
 		return nil, err
 	}
 	d.Suspended = suspended
@@ -530,6 +546,7 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 	d.BackupTargetID = backupTargetID.String
 	d.PubliclyAccessible = publiclyAccessible
 	d.PublicPort = int(publicPort.Int64)
+	d.PublicBindAddress = publicBindAddress.String
 	if resourcesJSON != "null" {
 		if err := json.Unmarshal([]byte(resourcesJSON), &d.Resources); err != nil {
 			return nil, fmt.Errorf("unmarshal resources: %w", err)

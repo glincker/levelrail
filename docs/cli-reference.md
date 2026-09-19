@@ -366,6 +366,15 @@ levelrail databases metrics <name> --metric NAME [flags]
 ```
 
 ```
+levelrail databases public-access set <name> [--port N] [--bind-address ADDR] [flags]
+```
+expose a database on a host port; --bind-address is "private" (default), "public", or a literal IP
+
+```
+levelrail databases public-access clear <name> [flags]
+```
+
+```
 levelrail databases set-project <name> <project-id> [flags]
 ```
 
