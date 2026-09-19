@@ -331,6 +331,16 @@ type DesiredService struct {
 	// SaveDesiredService never writes this field: only
 	// UpdateServiceLogDrain does.
 	LogDrain *LogDrain
+
+	// PreviewEnvOverrides names, for a subset of this service's own env
+	// vars, a preview-specific value that replaces the parent's own value
+	// only when a preview environment is created from it
+	// (migrations/0098_service_preview_env_overrides.sql,
+	// internal/api/preview_environments.go's deployPreviewSingle); never
+	// applied to this service's own deploy. Like LogDrain,
+	// SaveDesiredService never writes this field: only
+	// SetServicePreviewEnvOverride does.
+	PreviewEnvOverrides map[string]string
 }
 
 // DefaultDeployStrategy and DefaultReplicas mirror internal/spec's
@@ -1008,20 +1018,20 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint"
+const desiredServiceColumns = "name, image, port, host_port, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, preview_env_overrides"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
 // signature), so the decode-JSON-columns logic exists exactly once.
 func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
-		svc                                                                                                                                                DesiredService
-		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, vaultEnvJSON, resourcesJSON, health, hooks, labels, volumes, command, bindMounts, entrypoint string
-		projectID, storageTargetID, appID, logDrainJSON, environmentID                                                                                     sql.NullString
-		hostPort                                                                                                                                           sql.NullInt64
-		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                            string
+		svc                                                                                                                                                                         DesiredService
+		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, vaultEnvJSON, resourcesJSON, health, hooks, labels, volumes, command, bindMounts, entrypoint, previewEnvOverridesJSON string
+		projectID, storageTargetID, appID, logDrainJSON, environmentID                                                                                                              sql.NullString
+		hostPort                                                                                                                                                                    sql.NullInt64
+		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                                                     string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &previewEnvOverridesJSON); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
@@ -1080,6 +1090,9 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	}
 	if err := json.Unmarshal([]byte(entrypoint), &svc.Entrypoint); err != nil {
 		return nil, fmt.Errorf("unmarshal entrypoint: %w", err)
+	}
+	if err := json.Unmarshal([]byte(previewEnvOverridesJSON), &svc.PreviewEnvOverrides); err != nil {
+		return nil, fmt.Errorf("unmarshal preview_env_overrides: %w", err)
 	}
 	if logDrainJSON.Valid {
 		if err := json.Unmarshal([]byte(logDrainJSON.String), &svc.LogDrain); err != nil {

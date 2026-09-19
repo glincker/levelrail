@@ -61,23 +61,16 @@ func runAppsVaultEnvSet(prog string, args []string, stdout, stderr io.Writer, lo
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	cmd := twoArgCmd{prog: prog, cmdLabel: "apps vault-env set", argsLabel: "an app name and an env var key"}
+	client, name, key, jsonOut, of, exitCode, ok := parseTwoArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, cmd, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-
-	positional, ok := requireArgs(fs, stderr, prog, "apps vault-env set", "an app name and an env var key", 2)
-	if !ok {
-		return exitUsage
-	}
-	name, key := positional[0], positional[1]
 	if path == "" || field == "" {
 		_, _ = fmt.Fprintf(stderr, "%s: apps vault-env set requires --path and --key\n\n", prog)
 		fs.Usage()
 		return exitUsage
 	}
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	result, err := client.SetAppVaultEnv(context.Background(), name, key, appVaultEnvRef{Path: path, Key: field})
 	if err != nil {
@@ -96,18 +89,11 @@ func runAppsVaultEnvClear(prog string, args []string, stdout, stderr io.Writer, 
 		fs.PrintDefaults()
 	}
 
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	cmd := twoArgCmd{prog: prog, cmdLabel: "apps vault-env clear", argsLabel: "an app name and an env var key"}
+	client, name, key, jsonOut, of, exitCode, ok := parseTwoArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, cmd, lookupEnv)
 	if !ok {
 		return exitCode
 	}
-
-	positional, ok := requireArgs(fs, stderr, prog, "apps vault-env clear", "an app name and an env var key", 2)
-	if !ok {
-		return exitUsage
-	}
-	name, key := positional[0], positional[1]
-
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
 	if err := client.ClearAppVaultEnv(context.Background(), name, key); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("clear vault-env %q for app %q: %w", key, name, err))

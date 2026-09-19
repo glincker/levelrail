@@ -284,6 +284,8 @@ TLS certificate lifecycle, ACME configuration, domain routing, basic auth, maint
 | DELETE | /api/v1/settings/vault | AbilityRoot | handleDisconnectVault |
 | PUT | /api/v1/apps/{name}/vault-env/{key} | AbilityWrite | handleSetAppVaultEnv |
 | DELETE | /api/v1/apps/{name}/vault-env/{key} | AbilityWrite | handleClearAppVaultEnv |
+| PUT | /api/v1/apps/{name}/preview-env/{key} | AbilityWrite | handleSetAppPreviewEnvOverride |
+| DELETE | /api/v1/apps/{name}/preview-env/{key} | AbilityWrite | handleClearAppPreviewEnvOverride |
 
 ## Static Sites / Backup Targets / Registry Credentials
 

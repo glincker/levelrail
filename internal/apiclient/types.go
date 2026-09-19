@@ -110,6 +110,11 @@ type AppResource struct {
 	// image's own default CMD, response-only (declared through app.yaml's
 	// command: or a compose import, not settable here).
 	Command []string `json:"command,omitempty"`
+	// PreviewEnvOverrides mirrors internal/api's
+	// appResource.PreviewEnvOverrides: response-only, set via PUT/DELETE
+	// /api/v1/apps/{name}/preview-env/{key} (SetAppPreviewEnvOverride/
+	// ClearAppPreviewEnvOverride).
+	PreviewEnvOverrides map[string]string `json:"preview_env_overrides,omitempty"`
 }
 
 // AppVaultEnvRef mirrors internal/api's appVaultEnvRef: one env var's
@@ -117,6 +122,21 @@ type AppResource struct {
 type AppVaultEnvRef struct {
 	Path string `json:"path"`
 	Key  string `json:"key"`
+}
+
+// setAppPreviewEnvOverrideRequest mirrors internal/api's own
+// setAppPreviewEnvOverrideRequest, the PUT .../preview-env/{key} request
+// body.
+type setAppPreviewEnvOverrideRequest struct {
+	Value string `json:"value"`
+}
+
+// AppPreviewEnvOverride mirrors handleSetAppPreviewEnvOverride's own
+// response shape: the env var key plus the preview-specific value just
+// saved.
+type AppPreviewEnvOverride struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 // AppVolumeResource mirrors internal/api's appVolumeResource

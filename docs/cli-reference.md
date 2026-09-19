@@ -181,6 +181,16 @@ levelrail apps organizations set-project <project-id> <org-id> [flags]
 ```
 
 ```
+levelrail apps preview-env set <name> <key> --value VALUE [flags]
+```
+declare (or replace) a preview-specific env var override
+
+```
+levelrail apps preview-env clear <name> <key> [flags]
+```
+remove a preview-specific env var override
+
+```
 levelrail apps previews list <app-name> [flags]
 ```
 

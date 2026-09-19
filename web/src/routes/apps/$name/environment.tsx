@@ -7,6 +7,7 @@ import { EnvEditor } from '../../../components/EnvEditor'
 import { EnvDevView } from '../../../components/EnvDevView'
 import { SecretsEditor } from '../../../components/SecretsEditor'
 import { VaultEnvEditor } from '../../../components/VaultEnvEditor'
+import { PreviewEnvOverridesEditor } from '../../../components/PreviewEnvOverridesEditor'
 import { Button } from '@/components/ui/button'
 
 // Former "environment" tab, now a real deep-linkable route. Reads app
@@ -53,6 +54,10 @@ function EnvironmentSection() {
       )}
       <SecretsEditor appName={app.name} />
       <VaultEnvEditor appName={app.name} vaultEnv={app.vault_env} />
+      <PreviewEnvOverridesEditor
+        appName={app.name}
+        overrides={app.preview_env_overrides}
+      />
     </div>
   )
 }

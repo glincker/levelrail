@@ -222,6 +222,9 @@ func (f *fakeProjectLifecycleAppStore) UpdateServiceApp(context.Context, string,
 func (f *fakeProjectLifecycleAppStore) UpdateServiceLogDrain(context.Context, string, *store.LogDrain) error {
 	return nil
 }
+func (f *fakeProjectLifecycleAppStore) SetServicePreviewEnvOverride(context.Context, string, string, *string) error {
+	return nil
+}
 func (f *fakeProjectLifecycleAppStore) UpdateServiceDatabaseAttachment(context.Context, string, *store.DatabaseAttachment) error {
 	return nil
 }
