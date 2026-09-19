@@ -846,6 +846,26 @@ func (c *Client) ListBackups(ctx context.Context, name string, opts ListBackupsO
 	return out, err
 }
 
+// ListAllBackups calls GET /api/v1/backups: the instance-wide backup
+// attempt history across every database and app volume, the aggregated
+// counterpart of ListBackups/ListVolumeBackups.
+func (c *Client) ListAllBackups(ctx context.Context, opts ListBackupsOptions) ([]BackupHistoryResource, error) {
+	path := "/api/v1/backups"
+	q := url.Values{}
+	if opts.Limit > 0 {
+		q.Set("limit", strconv.Itoa(opts.Limit))
+	}
+	if opts.Before != "" {
+		q.Set("before", opts.Before)
+	}
+	if enc := q.Encode(); enc != "" {
+		path += "?" + enc
+	}
+	var out []BackupHistoryResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
 // VerifyBackup calls POST /api/v1/databases/{name}/backups/{historyId}/verify:
 // re-downloads a previously succeeded backup and checks it for corruption,
 // returning as soon as the attempt is recorded and under way, not once the

@@ -1,6 +1,6 @@
 # REST API Reference
 
-Exhaustive route inventory (272 routes total) for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.
+Exhaustive route inventory (296 routes total) for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.
 
 ## System
 
@@ -362,6 +362,7 @@ Database backup history, manual triggers, verification, scheduled retention, pub
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
+| GET | /api/v1/backups | AbilityRead | handleListAllBackups |
 | POST | /api/v1/databases/{name}/backups | AbilityWriteSensitive | handleTriggerBackup |
 | GET | /api/v1/databases/{name}/backups | AbilityRead | handleListBackupHistory |
 | GET | /api/v1/databases/{name}/backups/{historyId}/download | AbilityReadSensitive | handleDownloadBackup |

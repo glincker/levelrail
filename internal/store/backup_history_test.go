@@ -469,6 +469,60 @@ func TestListBackupHistory_Pagination(t *testing.T) {
 	}
 }
 
+// TestListAllBackupHistory_AcrossResourceKindsAndPagination seeds one
+// database-kind and one volume-kind row and confirms ListAllBackupHistory
+// returns both, newest first, correctly discriminated by ResourceKind,
+// with the same cursor pagination ListBackupHistory itself already has.
+func TestListAllBackupHistory_AcrossResourceKindsAndPagination(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+
+	if err := db.StartBackupHistory(ctx, BackupHistory{
+		ID: "bkh_db", DatabaseName: "mydb", TargetID: target.ID,
+		ObjectKey: "mydb/k1", StartedAt: "2026-08-14T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("StartBackupHistory(bkh_db) error = %v", err)
+	}
+	if err := db.StartBackupHistory(ctx, BackupHistory{
+		ID: "bkh_vol", ResourceKind: BackupResourceKindVolume, ServiceName: "web", VolumeName: "data",
+		TargetID: target.ID, ObjectKey: "web/data/k1", StartedAt: "2026-08-14T00:01:00Z",
+	}); err != nil {
+		t.Fatalf("StartBackupHistory(bkh_vol) error = %v", err)
+	}
+
+	got, err := db.ListAllBackupHistory(ctx, 50, nil)
+	if err != nil {
+		t.Fatalf("ListAllBackupHistory() error = %v", err)
+	}
+	if len(got) != 2 || got[0].ID != "bkh_vol" || got[1].ID != "bkh_db" {
+		t.Fatalf("ListAllBackupHistory() = %+v, want [bkh_vol, bkh_db] newest first", got)
+	}
+	if got[0].ResourceKind != BackupResourceKindVolume || got[0].ServiceName != "web" || got[0].VolumeName != "data" {
+		t.Errorf("volume row = %+v, want ResourceKind=volume ServiceName=web VolumeName=data", got[0])
+	}
+	if got[1].ResourceKind != BackupResourceKindDatabase || got[1].DatabaseName != "mydb" {
+		t.Errorf("database row = %+v, want ResourceKind=database DatabaseName=mydb", got[1])
+	}
+
+	before := time.Date(2026, 8, 14, 0, 1, 0, 0, time.UTC)
+	got, err = db.ListAllBackupHistory(ctx, 50, &before)
+	if err != nil {
+		t.Fatalf("ListAllBackupHistory() with before error = %v", err)
+	}
+	if len(got) != 1 || got[0].ID != "bkh_db" {
+		t.Fatalf("ListAllBackupHistory() with before = %+v, want [bkh_db]", got)
+	}
+
+	got, err = db.ListAllBackupHistory(ctx, 1, nil)
+	if err != nil {
+		t.Fatalf("ListAllBackupHistory() with limit error = %v", err)
+	}
+	if len(got) != 1 || got[0].ID != "bkh_vol" {
+		t.Fatalf("ListAllBackupHistory() with limit=1 = %+v, want [bkh_vol]", got)
+	}
+}
+
 func mustListOne(t *testing.T, db *DB, databaseName string) BackupHistory {
 	t.Helper()
 	got, err := db.ListBackupHistory(context.Background(), databaseName, 50, nil)

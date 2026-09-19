@@ -529,6 +529,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/backups", rt.requireAbility(AbilityWriteSensitive, rt.handleTriggerBackup))
 	mux.HandleFunc("GET /api/v1/databases/{name}/backups", rt.requireAbility(AbilityRead, rt.handleListBackupHistory))
 
+	// Instance-wide backup history across every database and app volume,
+	// the aggregated counterpart of the per-resource routes above and
+	// below: ordinary AbilityRead, same tier as those, since this is only
+	// ever a merged read of history metadata already visible per-resource.
+	mux.HandleFunc("GET /api/v1/backups", rt.requireAbility(AbilityRead, rt.handleListAllBackups))
+
 	// Download one succeeded backup's own object, streamed straight to
 	// the browser. AbilityReadSensitive, not AbilityRead: this returns
 	// the actual dump bytes, a full database's worth of content, not

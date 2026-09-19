@@ -77,6 +77,7 @@ func TestBackupRoutes_RequireAuth(t *testing.T) {
 	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodPost, "/api/v1/databases/main/backups"},
 		{http.MethodGet, "/api/v1/databases/main/backups"},
+		{http.MethodGet, "/api/v1/backups"},
 	})
 }
 
@@ -423,6 +424,62 @@ func TestHandleListBackupHistory_Pagination(t *testing.T) {
 	}
 	if len(page2) != 1 || page2[0].ID != "bkh_seed_1" {
 		t.Fatalf("page2 = %+v, want exactly [bkh_seed_1]", page2)
+	}
+}
+
+// TestHandleListAllBackups_AcrossResourceKinds seeds a database backup and
+// an app volume backup and confirms GET /api/v1/backups returns both,
+// newest first, each carrying enough (resource_kind plus its own identity
+// fields) to route back to the per-resource action endpoints.
+func TestHandleListAllBackups_AcrossResourceKinds(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	seedRedisDatabaseForTest(t, db)
+	target := seedBackupTargetForAPI(t, db)
+
+	if err := db.StartBackupHistory(ctx, store.BackupHistory{
+		ID: "bkh_db", DatabaseName: "main", TargetID: target.ID,
+		ObjectKey: "main/k1", StartedAt: "2026-08-14T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("seed database backup: %v", err)
+	}
+	if err := db.StartBackupHistory(ctx, store.BackupHistory{
+		ID: "bkh_vol", ResourceKind: store.BackupResourceKindVolume, ServiceName: "web", VolumeName: "data",
+		TargetID: target.ID, ObjectKey: "web/data/k1", StartedAt: "2026-08-14T00:01:00Z",
+	}); err != nil {
+		t.Fatalf("seed volume backup: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/backups", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got []backupHistoryResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(got) != 2 || got[0].ID != "bkh_vol" || got[1].ID != "bkh_db" {
+		t.Fatalf("history = %+v, want [bkh_vol, bkh_db] newest first", got)
+	}
+	if got[0].ResourceKind != store.BackupResourceKindVolume || got[0].ServiceName != "web" || got[0].VolumeName != "data" {
+		t.Errorf("volume entry = %+v, want ResourceKind=volume ServiceName=web VolumeName=data", got[0])
+	}
+	if got[1].ResourceKind != store.BackupResourceKindDatabase || got[1].DatabaseName != "main" {
+		t.Errorf("database entry = %+v, want ResourceKind=database DatabaseName=main", got[1])
+	}
+}
+
+func TestHandleListAllBackups_InvalidLimit(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/backups?limit=not-a-number", ""))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
 	}
 }
 

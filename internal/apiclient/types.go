@@ -551,6 +551,7 @@ type ImageResource struct {
 // DatabaseName for an app service volume backup, never alongside it.
 type BackupHistoryResource struct {
 	ID             string `json:"id"`
+	ResourceKind   string `json:"resource_kind"`
 	DatabaseName   string `json:"database_name,omitempty"`
 	ServiceName    string `json:"service_name,omitempty"`
 	VolumeName     string `json:"volume_name,omitempty"`
