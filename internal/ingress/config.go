@@ -384,6 +384,21 @@ type DNSChallengeConfig struct {
 	Provider any `json:"provider"`
 }
 
+// DNS01Provider is implemented by every ACME DNS-01 challenge provider's
+// wire-shape type (CloudflareDNSProvider, Route53DNSProvider), letting
+// NewDNSACMEIssuer build a wildcard automation policy from whichever
+// provider an operator has configured without a provider-specific issuer
+// constructor per provider. Cloudflare is this interface's first
+// implementation, not a hardcoded special case: adding another provider
+// is exactly what Route53DNSProvider below does.
+type DNS01Provider interface {
+	// dnsProviderModule returns this provider's own struct value, which
+	// already marshals to the dns.providers.* wire shape
+	// DNSChallengeConfig.Provider expects. Unexported so this interface
+	// can only be satisfied by provider types defined in this package.
+	dnsProviderModule() any
+}
+
 // CloudflareDNSProvider is the wire shape for Caddy's Cloudflare DNS
 // provider module (dns.providers.cloudflare,
 // github.com/caddy-dns/cloudflare wrapping github.com/libdns/cloudflare),
@@ -394,18 +409,37 @@ type CloudflareDNSProvider struct {
 	APIToken string `json:"api_token"`
 }
 
-// NewCloudflareDNSACMEIssuer returns the JSON shape for Caddy's real
-// ACME issuer configured to solve the DNS-01 challenge via Cloudflare
-// instead of Caddy's default HTTP-01, for wildcard subjects. email and
+func (p CloudflareDNSProvider) dnsProviderModule() any { return p }
+
+// Route53DNSProvider is the wire shape for Caddy's Route53 DNS provider
+// module (dns.providers.route53, github.com/caddy-dns/route53 wrapping
+// github.com/libdns/route53), used as a DNSChallengeConfig's Provider.
+// AccessKeyID and SecretAccessKey must be an IAM credential scoped to
+// route53:ChangeResourceRecordSets/route53:ListResourceRecordSets/
+// route53:GetChange on the target hosted zone. Region and HostedZoneID
+// are optional: empty lets libdns/route53 resolve them itself (region
+// from the AWS SDK's own default chain, hosted zone by matching the
+// domain against the account's own zones).
+type Route53DNSProvider struct {
+	Name            string `json:"name"`
+	AccessKeyID     string `json:"access_key_id,omitempty"`
+	SecretAccessKey string `json:"secret_access_key,omitempty"`
+	Region          string `json:"region,omitempty"`
+	HostedZoneID    string `json:"hosted_zone_id,omitempty"`
+}
+
+func (p Route53DNSProvider) dnsProviderModule() any { return p }
+
+// NewDNSACMEIssuer returns the JSON shape for Caddy's real ACME issuer
+// configured to solve the DNS-01 challenge via provider instead of
+// Caddy's default HTTP-01, for wildcard subjects. email and
 // directoryURL pass straight through to the same fields NewACMEIssuer
-// sets; apiToken populates the Cloudflare provider. This package
-// performs no validation on apiToken; internal/api owns that.
-func NewCloudflareDNSACMEIssuer(email, directoryURL, apiToken string) ACMEIssuer {
+// sets. This package performs no validation on provider's credentials;
+// internal/api owns that.
+func NewDNSACMEIssuer(email, directoryURL string, provider DNS01Provider) ACMEIssuer {
 	iss := NewACMEIssuer(email, directoryURL)
 	iss.Challenges = &ChallengesConfig{
-		DNS: &DNSChallengeConfig{
-			Provider: CloudflareDNSProvider{Name: "cloudflare", APIToken: apiToken},
-		},
+		DNS: &DNSChallengeConfig{Provider: provider.dnsProviderModule()},
 	}
 	return iss
 }

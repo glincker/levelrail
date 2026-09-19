@@ -303,6 +303,31 @@ type UpdateCloudflareDNSRequest struct {
 	Token   string `json:"token,omitempty"`
 }
 
+// Route53DNSResource mirrors internal/api's route53DNSResource
+// (internal/api/route53_dns.go): GET/PUT/DELETE
+// /api/v1/settings/route53-dns's wire shape. Neither credential half
+// ever appears here in either direction. A second, independent ACME
+// DNS-01 provider from CloudflareDNSResource, not a replacement.
+type Route53DNSResource struct {
+	Enabled            bool   `json:"enabled"`
+	Region             string `json:"region,omitempty"`
+	HostedZoneID       string `json:"hosted_zone_id,omitempty"`
+	HasAccessKeyID     bool   `json:"has_access_key_id"`
+	HasSecretAccessKey bool   `json:"has_secret_access_key"`
+}
+
+// UpdateRoute53DNSRequest mirrors internal/api's
+// updateRoute53DNSRequest. AccessKeyID/SecretAccessKey empty on an
+// update means "leave the currently stored credential unchanged"; the
+// two are set together or not at all.
+type UpdateRoute53DNSRequest struct {
+	Enabled         bool   `json:"enabled"`
+	Region          string `json:"region,omitempty"`
+	HostedZoneID    string `json:"hosted_zone_id,omitempty"`
+	AccessKeyID     string `json:"access_key_id,omitempty"`
+	SecretAccessKey string `json:"secret_access_key,omitempty"`
+}
+
 // CloudflareTunnelResource mirrors internal/api's cloudflareTunnelResource
 // (internal/api/cloudflare_tunnel.go): GET/PUT/DELETE
 // /api/v1/settings/cloudflare-tunnel's wire shape. The token itself
