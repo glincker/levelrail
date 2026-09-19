@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-// Domain redirect status codes (domain_redirect.status_code, migrations/0101).
+// Domain redirect status codes (domain_redirect.status_code, migrations/0102).
 // DomainRedirectPermanent is the default, matching Caddy's own default
 // redirect status.
 const (

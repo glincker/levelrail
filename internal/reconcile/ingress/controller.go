@@ -145,7 +145,7 @@ type ServiceStore interface {
 	// option is needed to actually enforce it.
 	ListDomainWAF(ctx context.Context) ([]store.DomainWAF, error)
 	// ListDomainRedirects returns every domain currently configured to
-	// redirect to a target URL (migrations/0101), read fresh every
+	// redirect to a target URL (migrations/0102), read fresh every
 	// Reconcile for the same reason ListDomainMaintenance is: an
 	// operator setting or clearing a domain's redirect through PUT/
 	// DELETE /api/v1/apps/{name}/domains/{domain}/redirect (internal/api)
