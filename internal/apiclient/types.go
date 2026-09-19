@@ -1061,6 +1061,11 @@ type ScheduledTaskResource struct {
 	Command     []string `json:"command"`
 	Schedule    string   `json:"schedule"`
 	Enabled     bool     `json:"enabled"`
+	// ConcurrencyPolicy is one of "allow", "forbid", "replace": what
+	// happens when this task's next due run finds a previous invocation
+	// of itself still executing. Empty on a request defaults to "allow"
+	// server-side.
+	ConcurrencyPolicy string `json:"concurrency_policy"`
 
 	LastRunAt     *time.Time `json:"last_run_at,omitempty"`
 	LastRunStatus string     `json:"last_run_status,omitempty"`
@@ -1081,6 +1086,9 @@ type ScheduledTaskRequest struct {
 	Command  []string `json:"command"`
 	Schedule string   `json:"schedule"`
 	Enabled  bool     `json:"enabled"`
+	// ConcurrencyPolicy is one of "allow", "forbid", "replace", or empty
+	// (server-side default "allow").
+	ConcurrencyPolicy string `json:"concurrency_policy,omitempty"`
 }
 
 // FeatureFlagResource mirrors internal/api's featureFlagResource

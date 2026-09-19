@@ -287,10 +287,24 @@ executes the identical code path a real cron tick uses
 "exec this task's command and record the outcome," dispatched from a
 detached background goroutine and answered with `202 Accepted`
 immediately, not once the command finishes. Updates are a full replace,
-like everything else in this doc: `command` and `schedule` must be
-resupplied on every `PUT`, not just the field you're changing. Dashboard:
-the Scheduled tasks tab (`ScheduledTasksPanel.tsx`). CLI: `apps
+like everything else in this doc: `command`, `schedule`, and
+`concurrency_policy` must be resupplied on every `PUT`, not just the
+field you're changing. Dashboard: the Scheduled tasks tab
+(`ScheduledTasksPanel.tsx`). CLI: `apps
 scheduled-tasks create|list|get|update|delete|run`.
+
+`concurrency_policy` (`allow` | `forbid` | `replace`, default `allow`)
+governs what happens when a task's next due run finds a previous
+invocation of itself still executing, tracked in-memory per task ID
+(`internal/scheduledtask.Runner`), the same overlap guard Dokku calls
+`concurrency_policy`. `allow` starts the new run unconditionally, today's
+behavior if you never set this field. `forbid` skips the new run and
+records a distinct `skipped_concurrency` history status instead of
+silently doing nothing. `replace` cancels the in-flight run (recorded as
+`replaced`) before starting the new one; cancellation is the same
+best-effort signal Runner's own timeout handling already relies on
+(closing the exec stream), not a hard kill, since the Docker Engine API
+has no "kill this exec" call.
 
 ## API reference
 
@@ -343,10 +357,10 @@ levelrail-cli apps deploy-spec <name> --file app.yaml --repo-url <url> --ref <re
 levelrail-cli apps resource-recommendation <name> [flags]
 levelrail-cli apps exec <name> -- <command> [args...] [--timeout N] [flags]
 levelrail-cli apps exec <name> --interactive [-- <shell> [args...]]
-levelrail-cli apps scheduled-tasks create <app> --schedule CRON [--disabled] -- <command> [args...]
+levelrail-cli apps scheduled-tasks create <app> --schedule CRON [--disabled] [--concurrency-policy allow|forbid|replace] -- <command> [args...]
 levelrail-cli apps scheduled-tasks list <app> [flags]
 levelrail-cli apps scheduled-tasks get <app> <id> [flags]
-levelrail-cli apps scheduled-tasks update <app> <id> --schedule CRON [--disabled] -- <command> [args...]
+levelrail-cli apps scheduled-tasks update <app> <id> --schedule CRON [--disabled] [--concurrency-policy allow|forbid|replace] -- <command> [args...]
 levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 levelrail-cli apps scheduled-tasks run <app> <id> [flags]
 ```
@@ -383,3 +397,10 @@ under `apps git-source` (separate doc).
 - **Scheduled task history is last-run-only.** There's no run log beyond
   the current `last_run_at`/`last_run_status`/`last_run_output` and a
   consecutive-failure counter, no historical list of every past run.
+- **`concurrency_policy: replace`'s cancellation is best effort, not a
+  guaranteed kill.** It closes the previous run's exec stream, the same
+  lever the run's own timeout already uses; a command that ignores its
+  stream closing (blocked on a container-side read) keeps running inside
+  the container even though Runner itself has moved on and recorded
+  `replaced`. A real kill would need a mechanism the Docker Engine API
+  doesn't expose for `docker exec` sessions.

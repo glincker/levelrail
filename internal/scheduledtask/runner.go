@@ -16,6 +16,7 @@ import (
 	"io"
 	"log/slog"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -87,6 +88,15 @@ type Runner struct {
 	// exercise the timeout branch in milliseconds instead of actually
 	// waiting defaultRunTimeout out.
 	Timeout time.Duration
+
+	// mu guards inFlight, the in-memory "which task IDs currently have a
+	// Run call in progress" tracker beginRun (concurrency.go) uses to
+	// apply ConcurrencyPolicy. A single control-plane process per
+	// CLAUDE.md's architecture makes an in-memory map sufficient: there is
+	// exactly one process that ever calls Run for a given task, whether
+	// from Scheduler's cron loop or the "run now" HTTP trigger.
+	mu       sync.Mutex
+	inFlight map[string]*inFlightRun
 }
 
 func (r *Runner) now() time.Time {
@@ -112,18 +122,39 @@ func (r *Runner) log() *slog.Logger {
 
 // Run execs task.Command inside task.ServiceName's currently running
 // container and records the outcome (RecordScheduledTaskRun): success,
-// a nonzero exit ("failed"), a timeout, or the container simply not
-// being up right now ("container_not_running"). The returned error is
-// only ever a genuine infrastructure failure this call itself hit
-// (loading the app, or recording the result once a command has already
-// run): a command that ran but failed, or a container that wasn't
-// running, are both normal, expected outcomes recorded on the task's
-// own row, never returned as an error, the same "a nonzero exit is a
-// 200, not a failure" distinction execResponse's own doc comment draws
-// for the one-off HTTP exec path.
+// a nonzero exit ("failed"), a timeout, the container simply not being
+// up right now ("container_not_running"), or a concurrency-policy
+// outcome (see below). The returned error is only ever a genuine
+// infrastructure failure this call itself hit (loading the app, or
+// recording the result once a command has already run): a command that
+// ran but failed, or a container that wasn't running, are both normal,
+// expected outcomes recorded on the task's own row, never returned as an
+// error, the same "a nonzero exit is a 200, not a failure" distinction
+// execResponse's own doc comment draws for the one-off HTTP exec path.
+//
+// task.ConcurrencyPolicy governs what happens when a previous Run call
+// for this same task.ID is still in flight (beginRun, concurrency.go),
+// tracked for the full lifetime of this call, not just its exec phase:
+// allow proceeds unconditionally (today's behavior); forbid records
+// ScheduledTaskStatusSkippedConcurrency and does nothing else; replace
+// cancels the in-flight call (it records ScheduledTaskStatusReplaced
+// itself once its own select loop observes the cancellation) and waits
+// for it to finish before this call proceeds.
 func (r *Runner) Run(ctx context.Context, task store.ScheduledTask) error {
-	svc, err := r.Apps.GetDesiredService(ctx, task.ServiceName)
+	policy := normalizeConcurrencyPolicy(task.ConcurrencyPolicy)
+
+	runCtx, cleanup, skip := r.beginRun(ctx, task.ID, policy)
+	if skip {
+		return r.record(ctx, task.ID, store.ScheduledTaskStatusSkippedConcurrency,
+			"skipped: a previous run of this task is still in flight and concurrency_policy is \"forbid\"")
+	}
+	defer cleanup()
+
+	svc, err := r.Apps.GetDesiredService(runCtx, task.ServiceName)
 	if err != nil {
+		if isReplaced(runCtx) {
+			return r.record(ctx, task.ID, store.ScheduledTaskStatusReplaced, replacedOutputMessage)
+		}
 		return fmt.Errorf("scheduledtask: run %q: load service %q: %w", task.ID, task.ServiceName, err)
 	}
 
@@ -135,19 +166,25 @@ func (r *Runner) Run(ctx context.Context, task store.ScheduledTask) error {
 	}
 
 	target := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
-	state, err := rt.InspectByName(ctx, target)
+	state, err := rt.InspectByName(runCtx, target)
 	if err != nil {
+		if isReplaced(runCtx) {
+			return r.record(ctx, task.ID, store.ScheduledTaskStatusReplaced, replacedOutputMessage)
+		}
 		return fmt.Errorf("scheduledtask: run %q: inspect container %q: %w", task.ID, target, err)
 	}
 	if state == nil || !state.Running {
 		return r.record(ctx, task.ID, store.ScheduledTaskStatusContainerNotRunning, "container not running")
 	}
 
-	execCtx, cancel := context.WithTimeout(ctx, r.timeout())
+	execCtx, cancel := context.WithTimeout(runCtx, r.timeout())
 	defer cancel()
 
 	rc, err := rt.Exec(execCtx, state.ID, task.Command)
 	if err != nil {
+		if isReplaced(execCtx) {
+			return r.record(ctx, task.ID, store.ScheduledTaskStatusReplaced, replacedOutputMessage)
+		}
 		return r.record(ctx, task.ID, store.ScheduledTaskStatusFailed, "exec failed: "+err.Error())
 	}
 
@@ -173,11 +210,18 @@ func (r *Runner) Run(ctx context.Context, task store.ScheduledTask) error {
 		// command (blocked on its own container-side read) stops
 		// immediately. What this guarantees is narrower and still the
 		// thing that matters here: this goroutine never blocks past
-		// defaultRunTimeout.
+		// defaultRunTimeout, or past a replace takeover.
 		_ = rc.Close()
+		if isReplaced(execCtx) {
+			return r.record(ctx, task.ID, store.ScheduledTaskStatusReplaced, replacedOutputMessage)
+		}
 		return r.record(ctx, task.ID, store.ScheduledTaskStatusTimeout, fmt.Sprintf("command timed out after %s", r.timeout()))
 	}
 }
+
+// replacedOutputMessage is the LastRunOutput recorded on a run that
+// concurrency_policy "replace" cancelled in favor of a newer invocation.
+const replacedOutputMessage = "run cancelled: replaced by a newer invocation (concurrency_policy: replace)"
 
 func (r *Runner) recordExecOutcome(ctx context.Context, taskID string, out *tailCappedWriter, err error) error {
 	if err == nil {

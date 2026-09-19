@@ -7,6 +7,14 @@ export type ScheduledTaskRunStatus =
   | 'failed'
   | 'timeout'
   | 'container_not_running'
+  | 'skipped_concurrency'
+  | 'replaced'
+
+// What internal/scheduledtask.Runner does when a task's next due run
+// finds a previous invocation of itself still executing: allow (default)
+// proceeds unconditionally, forbid skips the new run, replace cancels
+// the in-flight one first.
+export type ScheduledTaskConcurrencyPolicy = 'allow' | 'forbid' | 'replace'
 
 // GET/POST/PUT /api/v1/apps/{name}/scheduled-tasks response shape.
 // last_run_* fields are absent until the task has run at least once
@@ -18,12 +26,14 @@ export interface ScheduledTask {
   command: string[]
   schedule: string
   enabled: boolean
+  concurrency_policy: ScheduledTaskConcurrencyPolicy
   last_run_at?: string
   last_run_status?: ScheduledTaskRunStatus
   last_run_output?: string
   // consecutive_failures is what a kind=scheduled_task_failure alert
   // rule (see types/alerts.ts) watches: runs in a row that were not
-  // "success", reset to 0 on the next success.
+  // "success", reset to 0 on the next success. skipped_concurrency and
+  // replaced outcomes leave it unchanged (neither is a command failure).
   consecutive_failures: number
   created_at: string
   updated_at: string
@@ -32,9 +42,12 @@ export interface ScheduledTask {
 // POST/PUT /api/v1/apps/{name}/scheduled-tasks request body. No `id` or
 // `service_name`: the server mints the former and derives the latter
 // from the app name in the URL, discarding anything a caller puts in
-// those fields on the wire type above.
+// those fields on the wire type above. A full replace: concurrency_policy
+// must be resupplied on every PUT like every other field, an omitted
+// value resets it to "allow" server-side.
 export interface ScheduledTaskRequest {
   command: string[]
   schedule: string
   enabled: boolean
+  concurrency_policy?: ScheduledTaskConcurrencyPolicy
 }

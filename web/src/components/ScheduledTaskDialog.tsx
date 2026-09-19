@@ -16,11 +16,34 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
 import { useCreateScheduledTask, useUpdateScheduledTask } from '../queries/scheduledTasks'
-import type { ScheduledTask, ScheduledTaskRequest } from '../types/scheduledTasks'
+import type {
+  ScheduledTask,
+  ScheduledTaskConcurrencyPolicy,
+  ScheduledTaskRequest,
+} from '../types/scheduledTasks'
 import { fromCron, refineCronFields, toCron } from '../lib/cronSchedule'
 import { CronScheduleFields } from './CronScheduleFields'
+
+const CONCURRENCY_POLICY_LABEL: Record<ScheduledTaskConcurrencyPolicy, string> = {
+  allow: 'Allow overlap',
+  forbid: 'Skip if still running',
+  replace: 'Cancel and replace',
+}
+
+const CONCURRENCY_POLICY_DESCRIPTION: Record<ScheduledTaskConcurrencyPolicy, string> = {
+  allow: "Start the new run even if the previous one hasn't finished yet.",
+  forbid: 'Skip this run if a previous one is still in flight, recorded as "Skipped".',
+  replace: 'Cancel the still-running previous run, then start this one.',
+}
 
 const scheduledTaskSchema = z
   .object({
@@ -30,6 +53,7 @@ const scheduledTaskSchema = z
     weekday: z.string().trim(),
     customCron: z.string().trim(),
     enabled: z.boolean(),
+    concurrencyPolicy: z.enum(['allow', 'forbid', 'replace']),
   })
   .superRefine(refineCronFields)
 
@@ -38,6 +62,7 @@ type ScheduledTaskFormValues = z.infer<typeof scheduledTaskSchema>
 const DEFAULT_VALUES: ScheduledTaskFormValues = {
   command: '',
   enabled: true,
+  concurrencyPolicy: 'allow',
   ...fromCron('0 3 * * *'),
 }
 
@@ -81,6 +106,7 @@ export function ScheduledTaskDialog({
     ? {
         command: commandToDisplay(task.command),
         enabled: task.enabled,
+        concurrencyPolicy: task.concurrency_policy,
         ...fromCron(task.schedule),
       }
     : DEFAULT_VALUES
@@ -106,6 +132,7 @@ export function ScheduledTaskDialog({
       command: displayToCommand(values.command),
       schedule: toCron(values),
       enabled: values.enabled,
+      concurrency_policy: values.concurrencyPolicy,
     }
     const onSuccess = () => {
       handleOpenChange(false)
@@ -181,6 +208,36 @@ export function ScheduledTaskDialog({
             formState={formState}
             frequency={frequency}
           />
+
+          <Field>
+            <FieldLabel htmlFor="task-concurrency-policy">
+              If a previous run is still going
+            </FieldLabel>
+            <Controller
+              control={control}
+              name="concurrencyPolicy"
+              render={({ field }) => (
+                <Select<ScheduledTaskConcurrencyPolicy>
+                  value={field.value}
+                  onValueChange={(value) => {
+                    field.onChange(value ?? 'allow')
+                  }}
+                >
+                  <SelectTrigger id="task-concurrency-policy" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="allow">{CONCURRENCY_POLICY_LABEL.allow}</SelectItem>
+                    <SelectItem value="forbid">{CONCURRENCY_POLICY_LABEL.forbid}</SelectItem>
+                    <SelectItem value="replace">{CONCURRENCY_POLICY_LABEL.replace}</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <FieldDescription>
+              {CONCURRENCY_POLICY_DESCRIPTION[watch('concurrencyPolicy')]}
+            </FieldDescription>
+          </Field>
 
           <Field orientation="horizontal">
             <Controller
