@@ -269,6 +269,29 @@ func TestGetDomainRedirect(t *testing.T) {
 	}
 }
 
+func TestGetDomainErrorPages(t *testing.T) {
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/apps/web/domains/app.example.com/error-pages" {
+			t.Errorf("path = %q, want /api/v1/apps/web/domains/app.example.com/error-pages", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.DomainErrorPagesResource{Domain: "app.example.com", Pages: []apiclient.DomainErrorPageEntry{{StatusCode: 404, Body: "<h1>not found</h1>"}}})
+	})
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "get_domain_error_pages",
+		Arguments: map[string]any{"name": "web", "domain": "app.example.com"},
+	})
+	if err != nil {
+		t.Fatalf("CallTool(get_domain_error_pages) error = %v", err)
+	}
+	var pages apiclient.DomainErrorPagesResource
+	decodeStructured(t, result, &pages)
+	if len(pages.Pages) != 1 || pages.Pages[0].StatusCode != 404 {
+		t.Errorf("pages = %+v, want one 404 entry", pages)
+	}
+}
+
 func TestGetCloudflareTunnelStatus(t *testing.T) {
 	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/settings/cloudflare-tunnel" {
@@ -329,6 +352,7 @@ func TestPlatformVisibilityTools_Surface403(t *testing.T) {
 		{"get_app_network", map[string]any{"name": "web"}},
 		{"get_domain_maintenance_status", map[string]any{"name": "web", "domain": "app.example.com"}},
 		{"get_domain_redirect", map[string]any{"name": "web", "domain": "app.example.com"}},
+		{"get_domain_error_pages", map[string]any{"name": "web", "domain": "app.example.com"}},
 		{"get_cloudflare_tunnel_status", map[string]any{}},
 		{"list_certificates", map[string]any{}},
 	}

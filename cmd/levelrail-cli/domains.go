@@ -45,6 +45,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsCertificates(prog, args[1:], stdout, stderr, lookupEnv)
 	case "waf":
 		return runDomainsWAF(prog, args[1:], stdout, stderr, lookupEnv)
+	case "error-pages":
+		return runDomainsErrorPages(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown domains subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, domainsUsage(prog))
@@ -64,6 +66,7 @@ func domainsUsage(prog string) string {
   %[1]s domains check <app> <domain> [flags]    run a real DNS lookup and report whether the domain reaches this control plane
   %[1]s domains certificates [flags]            list every certificate in certmagic storage, healthy or not
   %[1]s domains waf <verb> [flags]              configure a domain's opt-in WAF and rate limiting
+  %[1]s domains error-pages <verb> [flags]      configure a domain's custom error pages (404, 500, 502, 503)
 
 Run "%[1]s domains <subcommand> -h" for a subcommand's own flags.
 `, prog)

@@ -462,6 +462,11 @@ levelrail domains waf get <app> <domain> [flags]
 ```
 show a domain's WAF and rate-limit state
 
+```
+levelrail domains error-pages get <app> <domain> [--code N] [flags]
+```
+ show a domain's custom error pages
+
 ## Backups
 
 ```

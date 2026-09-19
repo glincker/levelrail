@@ -62,6 +62,21 @@ type ProxyRoute struct {
 	// reproduces this package's prior behavior exactly: no such handler
 	// at all.
 	WAF *WAFConfig
+	// ErrorPages, if non-empty, replaces the response for each listed
+	// status code with the operator's own HTML, covering both a status
+	// the backend itself returns (via ReverseProxyHandler.HandleResponse)
+	// and a real proxy failure Caddy generates on this route's behalf
+	// (via a wrapping SubrouteHandler.Errors). Empty (the default)
+	// reproduces this package's prior behavior exactly.
+	ErrorPages []ErrorPage
+}
+
+// ErrorPage is one status-code-to-body mapping for a domain
+// (store.DomainErrorPage), threaded through from
+// internal/reconcile/ingress into a route's Handle chain.
+type ErrorPage struct {
+	StatusCode int
+	Body       string
 }
 
 // WAFConfig is one domain's opt-in Web Application Firewall and rate
@@ -175,6 +190,36 @@ func NewRateLimitHandler(zonePrefix string, rps, burst int) RateLimitHandler {
 		zones[zonePrefix+"-burst"] = RateLimitZone{Key: rateLimitKey, MaxEvents: burst, Window: "1s"}
 	}
 	return RateLimitHandler{Handler: "rate_limit", RateLimits: zones}
+}
+
+// errorPageResponseHandlers builds one ResponseHandler per page,
+// matching the backend's own returned status code: covers an
+// application that returns e.g. its own 404 or 500 directly.
+func errorPageResponseHandlers(pages []ErrorPage) []ResponseHandler {
+	handlers := make([]ResponseHandler, 0, len(pages))
+	for _, p := range pages {
+		handlers = append(handlers, ResponseHandler{
+			Match:  &ResponseMatcher{StatusCode: []int{p.StatusCode}},
+			Routes: []Route{{Handle: []any{NewErrorPageResponse(p.StatusCode, p.Body)}}},
+		})
+	}
+	return handlers
+}
+
+// errorPageErrorRoutes builds one error-subroute Route per page,
+// matching {http.error.status_code}: covers a real proxy failure (the
+// container is unreachable), which Caddy turns into an error rather
+// than a normal response, so errorPageResponseHandlers alone can't see
+// it.
+func errorPageErrorRoutes(pages []ErrorPage) []Route {
+	routes := make([]Route, 0, len(pages))
+	for _, p := range pages {
+		routes = append(routes, Route{
+			Match:  []Matcher{{Expression: &ExpressionMatcher{Expr: fmt.Sprintf("{http.error.status_code} == %d", p.StatusCode)}}},
+			Handle: []any{NewErrorPageResponse(p.StatusCode, p.Body)},
+		})
+	}
+	return routes
 }
 
 // StaticRoute is one static site routed by hostname within a Server
@@ -428,6 +473,20 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 				wafHandle = append(wafHandle, NewCorazaWAFHandler(r.WAF.Blocking))
 			}
 			handle = append(wafHandle, handle...)
+		}
+		if len(r.ErrorPages) > 0 {
+			// The reverse_proxy handler is always handle's last element
+			// (BasicAuth/WAF are only ever prepended ahead of it above),
+			// so it's addressed directly here to attach HandleResponse.
+			if rp, ok := handle[len(handle)-1].(ReverseProxyHandler); ok {
+				rp.HandleResponse = errorPageResponseHandlers(r.ErrorPages)
+				handle[len(handle)-1] = rp
+			}
+			handle = []any{SubrouteHandler{
+				Handler: "subroute",
+				Routes:  []Route{{Handle: handle}},
+				Errors:  &ErrorsConfig{Routes: errorPageErrorRoutes(r.ErrorPages)},
+			}}
 		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},

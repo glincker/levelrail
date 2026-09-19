@@ -426,6 +426,7 @@ type Store interface {
 	DomainTLSCertStore
 	DomainWAFStore
 	DomainRedirectStore
+	DomainErrorPagesStore
 	GitSourceStore
 	PreviewEnvironmentStore
 	GitHubAppStore

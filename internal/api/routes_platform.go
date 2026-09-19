@@ -366,6 +366,16 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/redirect", rt.requireAbility(AbilityDeploy, rt.handleSetDomainRedirect))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/redirect", rt.requireAbility(AbilityDeploy, rt.handleClearDomainRedirect))
 
+	// Custom error pages (domain_error_pages.go): replaces Caddy's bare
+	// default error text, or whatever the backend itself returned, with
+	// the operator's own HTML for a fixed set of status codes (404, 500,
+	// 502, 503), enforced on the next ingress reconcile pass. GET is
+	// AbilityRead; PUT/DELETE are AbilityDeploy, the same tier
+	// PUT/DELETE .../waf already uses.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/error-pages", rt.requireAbility(AbilityRead, rt.handleGetDomainErrorPages))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/error-pages", rt.requireAbility(AbilityDeploy, rt.handleSetDomainErrorPage))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/error-pages", rt.requireAbility(AbilityDeploy, rt.handleClearDomainErrorPages))
+
 	// Email settings: same precedent as ingress settings just above.
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
