@@ -881,6 +881,9 @@ func (f *fakeDrainAppStore) UpdateServiceApp(context.Context, string, string) er
 func (f *fakeDrainAppStore) UpdateServiceLogDrain(context.Context, string, *store.LogDrain) error {
 	return nil
 }
+func (f *fakeDrainAppStore) SetServicePreviewEnvOverride(context.Context, string, string, *string) error {
+	return nil
+}
 
 type fakeDrainDatabaseStore struct{}
 

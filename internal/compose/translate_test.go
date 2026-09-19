@@ -294,3 +294,69 @@ services:
 		t.Fatal("ToDesiredServices() error = nil, want an error for a reserved label prefix")
 	}
 }
+
+func TestToDesiredServices_PullPolicyPropagates(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  web:
+    image: nginx:latest
+    pull_policy: always
+  redis:
+    image: redis:7
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	got, _, err := ToDesiredServices("myapp", f)
+	if err != nil {
+		t.Fatalf("ToDesiredServices() error = %v", err)
+	}
+	sort.Slice(got, func(i, j int) bool { return got[i].Name < got[j].Name })
+
+	redis, web := got[0], got[1]
+	if web.PullPolicy != "always" {
+		t.Errorf("web.PullPolicy = %q, want %q", web.PullPolicy, "always")
+	}
+	if redis.PullPolicy != "" {
+		t.Errorf("redis.PullPolicy = %q, want empty (no pull_policy: declared)", redis.PullPolicy)
+	}
+}
+
+// TestToDesiredServices_PullPolicyNormalizes checks that Compose's other
+// recognized "default" spellings normalize to the same empty value an
+// unset field produces, not their own literal string.
+func TestToDesiredServices_PullPolicyNormalizes(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  web:
+    image: nginx:1.27
+    pull_policy: if_not_present
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	got, _, err := ToDesiredServices("myapp", f)
+	if err != nil {
+		t.Fatalf("ToDesiredServices() error = %v", err)
+	}
+	if got[0].PullPolicy != "" {
+		t.Errorf("PullPolicy = %q, want empty (if_not_present normalizes to the default)", got[0].PullPolicy)
+	}
+}
+
+func TestToDesiredServices_InvalidPullPolicyFails(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  web:
+    image: nginx:1.27
+    pull_policy: never
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if _, _, err := ToDesiredServices("myapp", f); err == nil {
+		t.Fatal("ToDesiredServices() error = nil, want an error for an unsupported pull_policy")
+	}
+}

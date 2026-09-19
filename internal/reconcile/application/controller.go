@@ -1814,10 +1814,11 @@ func serviceAlias(desired *store.DesiredService) string {
 
 func toContainerSpec(name string, desired *store.DesiredService) (docker.ContainerSpec, error) {
 	spec := docker.ContainerSpec{
-		Name:   name,
-		Image:  desired.Image,
-		Env:    desired.Env,
-		Labels: desired.Labels,
+		Name:      name,
+		Image:     desired.Image,
+		Env:       desired.Env,
+		Labels:    desired.Labels,
+		ForcePull: desired.PullPolicy == store.PullPolicyAlways,
 	}
 	if len(desired.Command) > 0 {
 		spec.Command = desired.Command
@@ -1826,7 +1827,7 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 		spec.Entrypoint = desired.Entrypoint
 	}
 	if desired.Port != 0 {
-		// BindAddress (migrations/0098_service_bind_address.sql): which
+		// BindAddress (migrations/0103_service_bind_address.sql): which
 		// interface Port (and HostPort, if pinned) binds to. Every
 		// published port defaulted to 0.0.0.0 unconditionally before this
 		// field existed, a real security gap; store.SaveDesiredService

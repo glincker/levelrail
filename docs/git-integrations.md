@@ -254,6 +254,26 @@ no-op for a GitLab or Bitbucket source, or for a GitHub repo that predates
 the App having a usable installation, silently skipped and logged, never
 failing the preview deploy it would have annotated.
 
+### Per-preview env overrides
+
+By default a preview inherits the parent app's env vars wholesale
+(`Env`, `SecretEnv`, and `VaultEnv` all copy across unchanged). Declare a
+preview-specific value for one key on the parent app, and every preview
+created from it afterward gets that value instead, while every other env
+var still inherits normally:
+
+```bash
+levelrail-cli apps preview-env set storefront DATABASE_URL --value postgres://preview-only/db
+levelrail-cli apps preview-env clear storefront DATABASE_URL
+```
+
+or the **Preview env overrides** card on the app's Environment tab.
+Overrides only take effect the next time a preview is created (a new PR
+opened, or an existing one's commits pushed) from the parent; they never
+touch the parent app's own running deploy, and a redeploy of the parent
+never wipes them. Only the single-service preview path applies overrides
+today; a multi-service (`services:` fan-out) preview does not yet.
+
 ### Manual teardown and the TTL sweep
 
 ```bash
@@ -320,6 +340,8 @@ from the same TTL, so you can see it coming before it happens.
 | `GET` | `/api/v1/apps/{name}/previews` | `read` |
 | `POST` | `/api/v1/apps/{name}/previews/{number}/teardown` | `deploy` |
 | `POST` | `/api/v1/previews/sweep` | `deploy` |
+| `PUT` | `/api/v1/apps/{name}/preview-env/{key}` | `write` |
+| `DELETE` | `/api/v1/apps/{name}/preview-env/{key}` | `write` |
 
 `register/start`, `register/preview`, `callback` (both providers), and
 `installed` sit at `root` because they read or write the credential
@@ -354,6 +376,9 @@ levelrail-cli apps previews pr-status enable <app-name>
 levelrail-cli apps previews pr-status disable <app-name>
 levelrail-cli apps previews teardown <app-name> <pr-number>
 levelrail-cli apps previews sweep
+
+levelrail-cli apps preview-env set <app-name> <key> --value VALUE
+levelrail-cli apps preview-env clear <app-name> <key>
 ```
 
 There is no CLI command to connect a provider itself (`github-app`/

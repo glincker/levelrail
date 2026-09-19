@@ -34,11 +34,14 @@ type (
 	domainResource                   = apiclient.DomainResource
 	cloudflareDNSResource            = apiclient.CloudflareDNSResource
 	updateCloudflareDNSRequest       = apiclient.UpdateCloudflareDNSRequest
+	route53DNSResource               = apiclient.Route53DNSResource
+	updateRoute53DNSRequest          = apiclient.UpdateRoute53DNSRequest
 	cloudflareTunnelResource         = apiclient.CloudflareTunnelResource
 	updateCloudflareTunnelRequest    = apiclient.UpdateCloudflareTunnelRequest
 	vaultSettingsResource            = apiclient.VaultSettingsResource
 	updateVaultSettingsRequest       = apiclient.UpdateVaultSettingsRequest
 	appVaultEnvRef                   = apiclient.AppVaultEnvRef
+	appPreviewEnvOverride            = apiclient.AppPreviewEnvOverride
 	registrySettingsResource         = apiclient.RegistrySettingsResource
 	updateRegistrySettingsRequest    = apiclient.UpdateRegistrySettingsRequest
 	registryRepositoriesResource     = apiclient.RegistryRepositoriesResource

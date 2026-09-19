@@ -588,6 +588,44 @@ func TestController_Reconcile_NoEntrypoint_ContainerSpecEntrypointStaysNil(t *te
 	}
 }
 
+// TestController_Reconcile_PullPolicyAlways_ForcesContainerSpecForcePull
+// checks that desired.PullPolicy == store.PullPolicyAlways (compose's
+// pull_policy: always, internal/compose.ToDesiredServices) reaches
+// ContainerSpec.ForcePull, the signal docker.Client.ensureImage uses to
+// skip its local-presence check and re-pull even an already-present tag.
+func TestController_Reconcile_PullPolicyAlways_ForcesContainerSpecForcePull(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "nginx:latest", PullPolicy: store.PullPolicyAlways}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	if !rt.lastCreateSpec.ForcePull {
+		t.Error("created ContainerSpec.ForcePull = false, want true (PullPolicy == store.PullPolicyAlways)")
+	}
+}
+
+// TestController_Reconcile_NoPullPolicy_ContainerSpecForcePullStaysFalse
+// is the regression-safety counterpart: a service with no pull_policy:
+// declared (the state every service had before this field existed) must
+// keep producing ForcePull false, today's existing pull-if-absent
+// behavior.
+func TestController_Reconcile_NoPullPolicy_ContainerSpecForcePullStaysFalse(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1"}
+	c := New("web", &fakeStore{svc: desired}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	if rt.lastCreateSpec.ForcePull {
+		t.Error("created ContainerSpec.ForcePull = true, want false (no pull_policy: declared)")
+	}
+}
+
 func TestController_Reconcile_FreshDeploy_ReadinessSucceeds(t *testing.T) {
 	srv := alwaysHealthy()
 	defer srv.Close()

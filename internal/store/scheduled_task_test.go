@@ -58,6 +58,32 @@ func TestSaveAndGetScheduledTask(t *testing.T) {
 	if got.LastRunStatus != "" || got.LastRunOutput != "" {
 		t.Errorf("GetScheduledTask() last run fields not empty: status=%q output=%q", got.LastRunStatus, got.LastRunOutput)
 	}
+	if got.ConcurrencyPolicy != ScheduledTaskConcurrencyAllow {
+		t.Errorf("GetScheduledTask() ConcurrencyPolicy = %q, want %q (empty defaults to allow)", got.ConcurrencyPolicy, ScheduledTaskConcurrencyAllow)
+	}
+}
+
+// TestSaveScheduledTask_ExplicitConcurrencyPolicy proves a non-empty
+// ConcurrencyPolicy round-trips unchanged, the counterpart to
+// TestSaveAndGetScheduledTask's own "empty defaults to allow" check.
+func TestSaveScheduledTask_ExplicitConcurrencyPolicy(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	seedScheduledTaskService(t, db, "web")
+
+	want := newTestScheduledTask("st_1", "web")
+	want.ConcurrencyPolicy = ScheduledTaskConcurrencyReplace
+	if err := db.SaveScheduledTask(ctx, want); err != nil {
+		t.Fatalf("SaveScheduledTask() error = %v", err)
+	}
+
+	got, err := db.GetScheduledTask(ctx, want.ID)
+	if err != nil {
+		t.Fatalf("GetScheduledTask() error = %v", err)
+	}
+	if got.ConcurrencyPolicy != ScheduledTaskConcurrencyReplace {
+		t.Errorf("GetScheduledTask() ConcurrencyPolicy = %q, want %q", got.ConcurrencyPolicy, ScheduledTaskConcurrencyReplace)
+	}
 }
 
 func TestGetScheduledTask_NotFound(t *testing.T) {
@@ -134,7 +160,7 @@ func TestUpdateScheduledTask(t *testing.T) {
 
 	newCommand := []string{"sh", "-c", "echo bye"}
 	updatedAt := task.UpdatedAt.Add(time.Hour)
-	if err := db.UpdateScheduledTask(ctx, task.ID, newCommand, "*/5 * * * *", false, updatedAt); err != nil {
+	if err := db.UpdateScheduledTask(ctx, task.ID, newCommand, "*/5 * * * *", false, ScheduledTaskConcurrencyForbid, updatedAt); err != nil {
 		t.Fatalf("UpdateScheduledTask() error = %v", err)
 	}
 
@@ -148,15 +174,46 @@ func TestUpdateScheduledTask(t *testing.T) {
 	if len(got.Command) != 3 || got.Command[2] != "echo bye" {
 		t.Errorf("GetScheduledTask() Command after update = %v, want %v", got.Command, newCommand)
 	}
+	if got.ConcurrencyPolicy != ScheduledTaskConcurrencyForbid {
+		t.Errorf("GetScheduledTask() ConcurrencyPolicy after update = %q, want %q", got.ConcurrencyPolicy, ScheduledTaskConcurrencyForbid)
+	}
 }
 
 func TestUpdateScheduledTask_NotFound(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 
-	err := db.UpdateScheduledTask(ctx, "st_missing", []string{"echo"}, "* * * * *", true, time.Now())
+	err := db.UpdateScheduledTask(ctx, "st_missing", []string{"echo"}, "* * * * *", true, "", time.Now())
 	if !errors.Is(err, ErrScheduledTaskNotFound) {
 		t.Fatalf("UpdateScheduledTask() error = %v, want ErrScheduledTaskNotFound", err)
+	}
+}
+
+// TestUpdateScheduledTask_EmptyConcurrencyPolicyDefaultsToAllow proves
+// UpdateScheduledTask normalizes an empty concurrencyPolicy the same way
+// SaveScheduledTask does, so an existing caller that doesn't yet know
+// about this field keeps today's behavior.
+func TestUpdateScheduledTask_EmptyConcurrencyPolicyDefaultsToAllow(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	seedScheduledTaskService(t, db, "web")
+
+	task := newTestScheduledTask("st_1", "web")
+	task.ConcurrencyPolicy = ScheduledTaskConcurrencyForbid
+	if err := db.SaveScheduledTask(ctx, task); err != nil {
+		t.Fatalf("SaveScheduledTask() error = %v", err)
+	}
+
+	if err := db.UpdateScheduledTask(ctx, task.ID, task.Command, task.Schedule, task.Enabled, "", task.UpdatedAt); err != nil {
+		t.Fatalf("UpdateScheduledTask() error = %v", err)
+	}
+
+	got, err := db.GetScheduledTask(ctx, task.ID)
+	if err != nil {
+		t.Fatalf("GetScheduledTask() error = %v", err)
+	}
+	if got.ConcurrencyPolicy != ScheduledTaskConcurrencyAllow {
+		t.Errorf("GetScheduledTask() ConcurrencyPolicy = %q, want %q (empty normalizes to allow)", got.ConcurrencyPolicy, ScheduledTaskConcurrencyAllow)
 	}
 }
 
@@ -223,6 +280,50 @@ func TestRecordScheduledTaskRun_ConsecutiveFailuresCountsAndResets(t *testing.T)
 	}
 	if got.ConsecutiveFailures != 0 {
 		t.Errorf("ConsecutiveFailures = %d, want 0 reset after a success", got.ConsecutiveFailures)
+	}
+}
+
+// TestRecordScheduledTaskRun_SkippedAndReplacedDontCountAsFailures proves
+// skipped_concurrency and replaced outcomes leave consecutive_failures
+// unchanged: neither is a failure of the command itself, just a
+// concurrency-policy side effect, so counting them would falsely inflate
+// (or falsely reset) a kind=scheduled_task_failure alert rule.
+func TestRecordScheduledTaskRun_SkippedAndReplacedDontCountAsFailures(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	seedScheduledTaskService(t, db, "web")
+
+	task := newTestScheduledTask("st_1", "web")
+	if err := db.SaveScheduledTask(ctx, task); err != nil {
+		t.Fatalf("SaveScheduledTask() error = %v", err)
+	}
+
+	now := time.Date(2026, 8, 15, 3, 0, 0, 0, time.UTC)
+	if err := db.RecordScheduledTaskRun(ctx, task.ID, now, ScheduledTaskStatusFailed, ""); err != nil {
+		t.Fatalf("RecordScheduledTaskRun(failed) error = %v", err)
+	}
+	got, err := db.GetScheduledTask(ctx, task.ID)
+	if err != nil {
+		t.Fatalf("GetScheduledTask() error = %v", err)
+	}
+	if got.ConsecutiveFailures != 1 {
+		t.Fatalf("ConsecutiveFailures after one failure = %d, want 1", got.ConsecutiveFailures)
+	}
+
+	for _, status := range []string{ScheduledTaskStatusSkippedConcurrency, ScheduledTaskStatusReplaced} {
+		if err := db.RecordScheduledTaskRun(ctx, task.ID, now.Add(time.Minute), status, ""); err != nil {
+			t.Fatalf("RecordScheduledTaskRun(%s) error = %v", status, err)
+		}
+		got, err = db.GetScheduledTask(ctx, task.ID)
+		if err != nil {
+			t.Fatalf("GetScheduledTask() error = %v", err)
+		}
+		if got.ConsecutiveFailures != 1 {
+			t.Errorf("ConsecutiveFailures after status %q = %d, want unchanged at 1", status, got.ConsecutiveFailures)
+		}
+		if got.LastRunStatus != status {
+			t.Errorf("LastRunStatus = %q, want %q", got.LastRunStatus, status)
+		}
 	}
 }
 

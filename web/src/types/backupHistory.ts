@@ -12,8 +12,16 @@
 
 export type BackupStatus = 'running' | 'succeeded' | 'failed'
 
+export type BackupResourceKind = 'database' | 'volume'
+
 export interface BackupHistoryRecord {
   id: string
+  // resource_kind is always present: which of database_name or
+  // service_name/volume_name below actually identifies this row. Read by
+  // routes/backups/index.tsx (the instance-wide list, which aggregates
+  // both kinds); a per-resource page already knows its own kind from
+  // context and can ignore this field.
+  resource_kind: BackupResourceKind
   // database_name is set for a database backup, service_name/volume_name
   // for an app service volume backup (internal/api/app_volume_backups.go)
   // instead, never both: the two identity shapes are mutually exclusive.

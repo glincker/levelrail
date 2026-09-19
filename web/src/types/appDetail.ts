@@ -151,6 +151,16 @@ export interface AppDetail {
   // or removes one entry without touching any other field, since there
   // is no value to round-trip, only a reference.
   vault_env?: Record<string, { path: string; key: string }>
+  // preview_env_overrides carries `omitempty` on the Go side: for a
+  // subset of this app's own env vars, a preview-specific value that
+  // replaces this app's own value only when a preview environment is
+  // next created from it (internal/spec's own preview-env-override
+  // concept has no app.yaml syntax; this is API/CLI/UI-only), keyed by
+  // env var name. Settable here: PUT/DELETE
+  // /api/v1/apps/{name}/preview-env/{key} (queries/appPreviewEnv.ts)
+  // declares or removes one entry without touching any other field or
+  // this app's own running deploy.
+  preview_env_overrides?: Record<string, string>
   // database_attachment carries `omitempty` on the Go side and is
   // response-only, the same node_id/project_id/storage_target_id shape
   // above: which managed database this app resolves one connection env
@@ -194,6 +204,12 @@ export interface AppDetail {
   // (POST /apps/{name}/compose, root-ability-gated when the file
   // carries one), undefined meaning none declared.
   bind_mounts?: AppBindMount[]
+  // pull_policy is response-only (internal/api/apps.go's appResource own
+  // doc comment): "always" forces a fresh image pull on every deploy,
+  // undefined/empty means the default pull-if-absent behavior. Only ever
+  // set via the compose-import path's pull_policy: (POST
+  // /apps/{name}/compose).
+  pull_policy?: string
 }
 
 // Matches internal/api/apps.go's appVolumeResource exactly: one of an

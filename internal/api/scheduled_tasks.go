@@ -23,7 +23,7 @@ type ScheduledTaskStore interface {
 	SaveScheduledTask(ctx context.Context, t store.ScheduledTask) error
 	GetScheduledTask(ctx context.Context, id string) (store.ScheduledTask, error)
 	ListScheduledTasksForService(ctx context.Context, serviceName string) ([]store.ScheduledTask, error)
-	UpdateScheduledTask(ctx context.Context, id string, command []string, schedule string, enabled bool, updatedAt time.Time) error
+	UpdateScheduledTask(ctx context.Context, id string, command []string, schedule string, enabled bool, concurrencyPolicy string, updatedAt time.Time) error
 	DeleteScheduledTask(ctx context.Context, id string) error
 }
 
@@ -52,6 +52,12 @@ type scheduledTaskResource struct {
 	Command     []string `json:"command"`
 	Schedule    string   `json:"schedule"`
 	Enabled     bool     `json:"enabled"`
+	// ConcurrencyPolicy is one of allow/forbid/replace
+	// (store.ScheduledTaskConcurrency*): what internal/scheduledtask.Runner
+	// does when this task's next due run finds a previous invocation of
+	// itself still executing. An empty value on a create/update request
+	// defaults to allow, today's existing behavior.
+	ConcurrencyPolicy string `json:"concurrency_policy"`
 
 	LastRunAt     *time.Time `json:"last_run_at,omitempty"`
 	LastRunStatus string     `json:"last_run_status,omitempty"`
@@ -71,6 +77,7 @@ func toScheduledTaskResource(t store.ScheduledTask) scheduledTaskResource {
 		Command:             t.Command,
 		Schedule:            t.Schedule,
 		Enabled:             t.Enabled,
+		ConcurrencyPolicy:   t.ConcurrencyPolicy,
 		LastRunAt:           t.LastRunAt,
 		LastRunStatus:       t.LastRunStatus,
 		LastRunOutput:       t.LastRunOutput,
@@ -104,6 +111,22 @@ func validateScheduledTaskInput(command []string, schedule string) error {
 	return nil
 }
 
+// normalizeScheduledTaskConcurrencyPolicy validates policy against the
+// three values store.ScheduledTask.ConcurrencyPolicy accepts, defaulting
+// an empty policy to store.ScheduledTaskConcurrencyAllow so an existing
+// client that doesn't yet send this field keeps today's behavior.
+func normalizeScheduledTaskConcurrencyPolicy(policy string) (string, error) {
+	switch policy {
+	case "":
+		return store.ScheduledTaskConcurrencyAllow, nil
+	case store.ScheduledTaskConcurrencyAllow, store.ScheduledTaskConcurrencyForbid, store.ScheduledTaskConcurrencyReplace:
+		return policy, nil
+	default:
+		return "", fmt.Errorf("concurrency_policy: must be one of %q, %q, %q (or empty for %q)",
+			store.ScheduledTaskConcurrencyAllow, store.ScheduledTaskConcurrencyForbid, store.ScheduledTaskConcurrencyReplace, store.ScheduledTaskConcurrencyAllow)
+	}
+}
+
 // handleCreateScheduledTask handles POST
 // /api/v1/apps/{name}/scheduled-tasks.
 func (rt *Router) handleCreateScheduledTask(w http.ResponseWriter, r *http.Request) {
@@ -127,6 +150,11 @@ func (rt *Router) handleCreateScheduledTask(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	concurrencyPolicy, err := normalizeScheduledTaskConcurrencyPolicy(req.ConcurrencyPolicy)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	id, err := randomScheduledTaskID()
 	if err != nil {
@@ -137,13 +165,14 @@ func (rt *Router) handleCreateScheduledTask(w http.ResponseWriter, r *http.Reque
 
 	now := time.Now().UTC()
 	task := store.ScheduledTask{
-		ID:          id,
-		ServiceName: name,
-		Command:     req.Command,
-		Schedule:    req.Schedule,
-		Enabled:     req.Enabled,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		ID:                id,
+		ServiceName:       name,
+		Command:           req.Command,
+		Schedule:          req.Schedule,
+		Enabled:           req.Enabled,
+		ConcurrencyPolicy: concurrencyPolicy,
+		CreatedAt:         now,
+		UpdatedAt:         now,
 	}
 	if err := rt.scheduledTasks.SaveScheduledTask(r.Context(), task); err != nil {
 		rt.logger.Error("api: create scheduled task failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -240,8 +269,13 @@ func (rt *Router) handleUpdateScheduledTask(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	concurrencyPolicy, err := normalizeScheduledTaskConcurrencyPolicy(req.ConcurrencyPolicy)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
-	if err := rt.scheduledTasks.UpdateScheduledTask(r.Context(), id, req.Command, req.Schedule, req.Enabled, time.Now().UTC()); err != nil {
+	if err := rt.scheduledTasks.UpdateScheduledTask(r.Context(), id, req.Command, req.Schedule, req.Enabled, concurrencyPolicy, time.Now().UTC()); err != nil {
 		if errors.Is(err, store.ErrScheduledTaskNotFound) {
 			writeError(w, http.StatusNotFound, "scheduled task not found")
 			return

@@ -1,6 +1,6 @@
 # REST API Reference
 
-Exhaustive route inventory (272 routes total) for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.
+Exhaustive route inventory (296 routes total) for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.
 
 ## System
 
@@ -102,6 +102,7 @@ Application creation, retrieval, update, deletion, deployment triggers, restarts
 | GET | /api/v1/apps/{name}/promote/preview | AbilityRead | handlePromotePreview |
 | POST | /api/v1/apps/{name}/promote | AbilityDeploy | handlePromoteApp |
 | GET | /api/v1/apps/{name}/deploys/{deployId}/logs | AbilityRead | handleDeployLogStream |
+| GET | /api/v1/apps/{name}/deploys/{deployId}/logs/download | AbilityRead | handleDownloadDeployLog |
 | GET | /api/v1/apps/{name}/diagnose | AbilityRead | handleDiagnoseApp |
 | GET | /api/v1/apps/{name}/resource-recommendation | AbilityRead | handleAppResourceRecommendation |
 | POST | /api/v1/apps/{name}/builds | AbilityDeploy | handleTriggerBuild |
@@ -276,11 +277,16 @@ TLS certificate lifecycle, ACME configuration, domain routing, basic auth, maint
 | GET | /api/v1/settings/cloudflare-dns | AbilityRead | handleGetCloudflareDNSSettings |
 | PUT | /api/v1/settings/cloudflare-dns | AbilityRoot | handleUpdateCloudflareDNSSettings |
 | DELETE | /api/v1/settings/cloudflare-dns | AbilityRoot | handleDisconnectCloudflareDNS |
+| GET | /api/v1/settings/route53-dns | AbilityRead | handleGetRoute53DNSSettings |
+| PUT | /api/v1/settings/route53-dns | AbilityRoot | handleUpdateRoute53DNSSettings |
+| DELETE | /api/v1/settings/route53-dns | AbilityRoot | handleDisconnectRoute53DNS |
 | GET | /api/v1/settings/vault | AbilityRead | handleGetVaultSettings |
 | PUT | /api/v1/settings/vault | AbilityRoot | handleUpdateVaultSettings |
 | DELETE | /api/v1/settings/vault | AbilityRoot | handleDisconnectVault |
 | PUT | /api/v1/apps/{name}/vault-env/{key} | AbilityWrite | handleSetAppVaultEnv |
 | DELETE | /api/v1/apps/{name}/vault-env/{key} | AbilityWrite | handleClearAppVaultEnv |
+| PUT | /api/v1/apps/{name}/preview-env/{key} | AbilityWrite | handleSetAppPreviewEnvOverride |
+| DELETE | /api/v1/apps/{name}/preview-env/{key} | AbilityWrite | handleClearAppPreviewEnvOverride |
 
 ## Static Sites / Backup Targets / Registry Credentials
 
@@ -357,6 +363,7 @@ Database backup history, manual triggers, verification, scheduled retention, pub
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
+| GET | /api/v1/backups | AbilityRead | handleListAllBackups |
 | POST | /api/v1/databases/{name}/backups | AbilityWriteSensitive | handleTriggerBackup |
 | GET | /api/v1/databases/{name}/backups | AbilityRead | handleListBackupHistory |
 | GET | /api/v1/databases/{name}/backups/{historyId}/download | AbilityReadSensitive | handleDownloadBackup |

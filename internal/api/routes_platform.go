@@ -370,6 +370,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRead, rt.handleGetCloudflareDNSSettings))
 	mux.HandleFunc("PUT /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateCloudflareDNSSettings))
 	mux.HandleFunc("DELETE /api/v1/settings/cloudflare-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectCloudflareDNS))
+	// Route53 DNS-01: a second, independent ACME DNS-01 provider, same
+	// tier as cloudflare-dns above.
+	mux.HandleFunc("GET /api/v1/settings/route53-dns", rt.requireAbility(AbilityRead, rt.handleGetRoute53DNSSettings))
+	mux.HandleFunc("PUT /api/v1/settings/route53-dns", rt.requireAbility(AbilityRoot, rt.handleUpdateRoute53DNSSettings))
+	mux.HandleFunc("DELETE /api/v1/settings/route53-dns", rt.requireAbility(AbilityRoot, rt.handleDisconnectRoute53DNS))
 
 	// External HashiCorp Vault (instance-level, one connection per
 	// control plane): same GET AbilityRead / PUT+DELETE AbilityRoot tier
@@ -524,6 +529,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/backups", rt.requireAbility(AbilityWriteSensitive, rt.handleTriggerBackup))
 	mux.HandleFunc("GET /api/v1/databases/{name}/backups", rt.requireAbility(AbilityRead, rt.handleListBackupHistory))
 
+	// Instance-wide backup history across every database and app volume,
+	// the aggregated counterpart of the per-resource routes above and
+	// below: ordinary AbilityRead, same tier as those, since this is only
+	// ever a merged read of history metadata already visible per-resource.
+	mux.HandleFunc("GET /api/v1/backups", rt.requireAbility(AbilityRead, rt.handleListAllBackups))
+
 	// Download one succeeded backup's own object, streamed straight to
 	// the browser. AbilityReadSensitive, not AbilityRead: this returns
 	// the actual dump bytes, a full database's worth of content, not
@@ -667,6 +678,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// reasoning as PUT/DELETE .../database just above.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/vault-env/{key}", rt.requireAbility(AbilityWrite, rt.handleSetAppVaultEnv))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/vault-env/{key}", rt.requireAbility(AbilityWrite, rt.handleClearAppVaultEnv))
+	// One preview-specific env var override at a time (apps_preview_env.go):
+	// same AbilityWrite tier and "config write, not a deploy trigger"
+	// reasoning as PUT/DELETE .../vault-env just above; only takes effect
+	// the next time a preview environment is created from this app.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-env/{key}", rt.requireAbility(AbilityWrite, rt.handleSetAppPreviewEnvOverride))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/preview-env/{key}", rt.requireAbility(AbilityWrite, rt.handleClearAppPreviewEnvOverride))
 	// Read-only, not scoped to any one app: the static list of env var
 	// names attaching storage can inject, backed by
 	// application.StorageEnvKeys rather than a hardcoded list, see

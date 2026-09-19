@@ -178,6 +178,15 @@ type ContainerSpec struct {
 	// from injected env before handing off to the registry image's real
 	// entrypoint.
 	Entrypoint []string
+	// ForcePull skips ensureImage's local-presence check and always pulls
+	// Image fresh, even when a tag by that name already exists locally:
+	// the only way a caller can be sure a mutable tag (":latest" and
+	// similar) actually reflects a real upstream update rather than
+	// whatever Docker's own tag-based caching happened to keep around.
+	// False is unchanged from every container this codebase created
+	// before this field existed. Populated from
+	// store.DesiredService.PullPolicy == store.PullPolicyAlways.
+	ForcePull bool
 }
 
 // RegistryAuth is a plaintext username/password pair for pulling a

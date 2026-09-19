@@ -55,7 +55,7 @@ func TestClient_Create_Live_PortsEnvAndNoRestartPolicy(t *testing.T) {
 	t.Cleanup(func() { removeIfExists(ctx, t, c, name) })
 
 	id, err := c.Create(ctx, ContainerSpec{
-		Name: name,
+		Name:  name,
 		Image: "nginx:alpine",
 		// HostPort 0: let Docker assign one. HostIP explicit (every real
 		// caller resolves internal/bindaddr before building a
@@ -304,7 +304,7 @@ func TestClient_ListImages_Live(t *testing.T) {
 	c := liveClient(t)
 	ctx := context.Background()
 
-	if err := c.ensureImage(ctx, "nginx:alpine", nil); err != nil {
+	if err := c.ensureImage(ctx, "nginx:alpine", nil, false); err != nil {
 		t.Fatalf("ensureImage() error = %v", err)
 	}
 
@@ -324,6 +324,23 @@ func TestClient_ListImages_Live(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("expected nginx:alpine in ListImages() result, got %+v", images)
+	}
+}
+
+// TestClient_EnsureImage_Live_ForcePull proves forcePull actually skips
+// ensureImage's local-presence check rather than short-circuiting on it:
+// nginx:alpine is pulled normally first, so ensureImage would otherwise
+// find it already present and return early without ever calling
+// ImagePull again.
+func TestClient_EnsureImage_Live_ForcePull(t *testing.T) {
+	c := liveClient(t)
+	ctx := context.Background()
+
+	if err := c.ensureImage(ctx, "nginx:alpine", nil, false); err != nil {
+		t.Fatalf("ensureImage() error = %v", err)
+	}
+	if err := c.ensureImage(ctx, "nginx:alpine", nil, true); err != nil {
+		t.Fatalf("ensureImage(forcePull=true) error = %v", err)
 	}
 }
 
@@ -352,7 +369,7 @@ func TestClient_Events_Live(t *testing.T) {
 		}
 	}()
 
-	if err := c.ensureImage(ctx, "nginx:alpine", nil); err != nil {
+	if err := c.ensureImage(ctx, "nginx:alpine", nil, false); err != nil {
 		t.Fatalf("ensureImage() error = %v", err)
 	}
 	id, err := c.Create(ctx, ContainerSpec{Name: name, Image: "nginx:alpine"})
@@ -472,7 +489,7 @@ func TestClient_ListByPrefix_Stop_Remove_Live(t *testing.T) {
 		}
 	})
 
-	if err := c.ensureImage(ctx, "nginx:alpine", nil); err != nil {
+	if err := c.ensureImage(ctx, "nginx:alpine", nil, false); err != nil {
 		t.Fatalf("ensureImage() error = %v", err)
 	}
 
@@ -541,7 +558,7 @@ func TestClient_InspectExitState_Live(t *testing.T) {
 	removeIfExists(ctx, t, c, name)
 	t.Cleanup(func() { removeIfExists(context.Background(), t, c, name) })
 
-	if err := c.ensureImage(ctx, "alpine:latest", nil); err != nil {
+	if err := c.ensureImage(ctx, "alpine:latest", nil, false); err != nil {
 		t.Fatalf("ensureImage() error = %v", err)
 	}
 	id, err := c.Create(ctx, ContainerSpec{Name: name, Image: "alpine:latest"})
@@ -615,7 +632,7 @@ func TestClient_Exec_Live(t *testing.T) {
 	removeIfExists(ctx, t, c, name)
 	t.Cleanup(func() { removeIfExists(context.Background(), t, c, name) })
 
-	if err := c.ensureImage(ctx, "nginx:alpine", nil); err != nil {
+	if err := c.ensureImage(ctx, "nginx:alpine", nil, false); err != nil {
 		t.Fatalf("ensureImage() error = %v", err)
 	}
 	id, err := c.Create(ctx, ContainerSpec{

@@ -245,6 +245,43 @@ func TestHandlePullRequestWebhook_Opened_CreatesPreview(t *testing.T) {
 	}
 }
 
+// TestHandlePullRequestWebhook_Opened_AppliesPreviewEnvOverride proves
+// deployPreviewSingle's own applyPreviewEnvOverrides call end to end: a
+// preview created after PUT /api/v1/apps/{name}/preview-env/{key} on the
+// parent gets the overridden value for that one key, while a sibling env
+// var with no override still inherits from the parent exactly as before.
+func TestHandlePullRequestWebhook_Opened_AppliesPreviewEnvOverride(t *testing.T) {
+	rt, db, secret, builder := setUpPreviewApp(t)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 3000,
+		Env: map[string]string{"FOO": "bar", "SHARED": "prod-value"},
+	}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	overridden := "preview-value"
+	if err := db.SetServicePreviewEnvOverride(context.Background(), "web", "SHARED", &overridden); err != nil {
+		t.Fatalf("SetServicePreviewEnvOverride() error = %v", err)
+	}
+
+	body := githubPullRequestBody("opened", 42, "sha1", "main")
+	rec := sendPullRequestWebhook(rt, secret, body)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	if len(builder.calls) != 1 {
+		t.Fatalf("Deploy called %d times, want 1", len(builder.calls))
+	}
+	env := builder.calls[0].Service.Env
+	if env["SHARED"].Value != "preview-value" {
+		t.Errorf("Env[SHARED] = %+v, want Value = %q", env["SHARED"], "preview-value")
+	}
+	if env["FOO"].Value != "bar" {
+		t.Errorf("Env[FOO] = %+v, want Value = %q (no override, must still inherit from parent)", env["FOO"], "bar")
+	}
+}
+
 func TestHandlePullRequestWebhook_Synchronize_RedeploysExistingPreview(t *testing.T) {
 	rt, db, secret, builder := setUpPreviewApp(t)
 

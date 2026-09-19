@@ -1,7 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { TerminalIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  DownloadSimpleIcon,
+  TerminalIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { useLogStream, type LogLine } from '../../../../../hooks/useLogStream'
-import { buildDeployLogStreamUrl } from '../../../../../queries/deployLogs'
+import {
+  buildDeployLogStreamUrl,
+  deployLogDownloadURL,
+} from '../../../../../queries/deployLogs'
+import { buttonVariants } from '../../../../../components/ui/button'
 import { deployAttemptsQueryOptions } from '../../../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../../../hooks/useDeployProgress'
 import { useApp } from '../../../../../queries/apps'
@@ -113,11 +120,29 @@ function DeployLogsPage() {
                   <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Build output
                   </h3>
-                  <p className="text-xs text-muted-foreground">
-                    {lines.length > 0
-                      ? `${lines.length.toLocaleString()} lines`
-                      : ''}
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      {lines.length > 0
+                        ? `${lines.length.toLocaleString()} lines`
+                        : ''}
+                    </p>
+                    {!noBuildStep && (
+                      <a
+                        href={deployLogDownloadURL(name, deployId)}
+                        download
+                        className={buttonVariants({
+                          variant: 'outline',
+                          size: 'sm',
+                        })}
+                      >
+                        <DownloadSimpleIcon
+                          className="size-3.5"
+                          aria-hidden="true"
+                        />
+                        Download
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <BuildLogHints lines={lines} />
                 <LogTerminal
@@ -197,7 +222,9 @@ function rolloutStageSummary(
     return stage.detail || 'Roll out failed.'
   }
   if (stage.status === 'done') {
-    const deployed = conditions.find((c) => c.Reason === 'Deployed' || c.Reason === 'AlreadyRunning')
+    const deployed = conditions.find(
+      (c) => c.Reason === 'Deployed' || c.Reason === 'AlreadyRunning',
+    )
     return deployed?.Message || 'Deployed successfully.'
   }
   const latest = [...conditions].sort(

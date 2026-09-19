@@ -20,12 +20,13 @@ import (
 	_ "github.com/caddyserver/caddy/v2/modules/standard"
 
 	// Blank-imported for the same registration-side-effect reason:
-	// dns.providers.cloudflare is a separate Go module from Caddy's own
-	// standard set (third-party DNS providers always are), so it needs
-	// its own blank import to be resolvable from a wildcard domain's
-	// DNS-01 automation policy (see config.go's
-	// NewCloudflareDNSACMEIssuer).
+	// dns.providers.cloudflare and dns.providers.route53 are separate Go
+	// modules from Caddy's own standard set (third-party DNS providers
+	// always are), so each needs its own blank import to be resolvable
+	// from a wildcard domain's DNS-01 automation policy (see config.go's
+	// NewDNSACMEIssuer and its two DNS01Provider implementations).
 	_ "github.com/caddy-dns/cloudflare"
+	_ "github.com/caddy-dns/route53"
 
 	// Registers http.handlers.waf (OWASP Coraza, module ID "waf" despite
 	// the import path's own "coraza-caddy" name): opt-in per-domain WAF,

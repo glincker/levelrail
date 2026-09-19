@@ -21,6 +21,7 @@ import type {
   TriggerBackupRequest,
 } from '../types/backupHistory'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { allBackupHistoryKeys } from './allBackupHistory'
 
 export const volumeBackupHistoryKeys = {
   all: (appName: string, volumeName: string) =>
@@ -174,6 +175,8 @@ export async function deleteVolumeBackup(
   )
 }
 
+// See useDeleteBackup's own doc comment (queries/backupHistory.ts) for why
+// the instance-wide list is also invalidated here.
 export function useDeleteVolumeBackup(appName: string, volumeName: string) {
   const queryClient = useQueryClient()
   return useMutation<void, ApiError, string>({
@@ -187,6 +190,9 @@ export function useDeleteVolumeBackup(appName: string, volumeName: string) {
       )
       void queryClient.invalidateQueries({
         queryKey: volumeBackupHistoryKeys.list(appName, volumeName),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: allBackupHistoryKeys.list(),
       })
     },
   })

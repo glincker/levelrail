@@ -606,7 +606,7 @@ func (c *Controller) replaceContainer(ctx context.Context, old *docker.Container
 // built by this package never sets Protocol explicitly, while Docker's
 // own observed ports always report a concrete one. HostIP is compared
 // as-is, not normalized: a container created before
-// migrations/0099_database_public_bind_address.sql (no explicit HostIP,
+// migrations/0104_database_public_bind_address.sql (no explicit HostIP,
 // Docker's own implicit dual-stack bind) observes as two bindings, one
 // per address family, which never equals desired's single explicit one,
 // so the first reconcile pass after upgrade replaces it onto the new,

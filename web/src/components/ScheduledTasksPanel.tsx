@@ -16,14 +16,23 @@ import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { ScheduledTaskDialog } from './ScheduledTaskDialog'
 import { DeleteScheduledTaskDialog } from './DeleteScheduledTaskDialog'
 import { RunScheduledTaskButton } from './RunScheduledTaskButton'
-import { useScheduledTasks, useUpdateScheduledTask } from '../queries/scheduledTasks'
-import type { ScheduledTask, ScheduledTaskRunStatus } from '../types/scheduledTasks'
+import {
+  useScheduledTasks,
+  useUpdateScheduledTask,
+} from '../queries/scheduledTasks'
+import type {
+  ScheduledTask,
+  ScheduledTaskConcurrencyPolicy,
+  ScheduledTaskRunStatus,
+} from '../types/scheduledTasks'
 
 const STATUS_LABEL: Record<ScheduledTaskRunStatus, string> = {
   success: 'Success',
   failed: 'Failed',
   timeout: 'Timed out',
   container_not_running: 'Container not running',
+  skipped_concurrency: 'Skipped (already running)',
+  replaced: 'Replaced by newer run',
 }
 
 // success -> the green "everything's fine" badge every other status
@@ -33,7 +42,9 @@ const STATUS_LABEL: Record<ScheduledTaskRunStatus, string> = {
 // rather than one flat "bad" bucket; container_not_running is neither a
 // command failure nor a platform bug, just "there was nothing to run
 // against", so it gets a neutral muted badge instead of implying
-// something broke.
+// something broke. skipped_concurrency and replaced are both expected
+// concurrency-policy side effects, not failures either, so they share
+// that same neutral muted treatment.
 const STATUS_BADGE_VARIANT: Record<
   ScheduledTaskRunStatus,
   VariantProps<typeof badgeVariants>['variant']
@@ -42,7 +53,16 @@ const STATUS_BADGE_VARIANT: Record<
   failed: 'destructive',
   timeout: 'warning',
   container_not_running: 'muted',
+  skipped_concurrency: 'muted',
+  replaced: 'muted',
 }
+
+const CONCURRENCY_POLICY_LABEL: Record<ScheduledTaskConcurrencyPolicy, string> =
+  {
+    allow: 'Allow overlap',
+    forbid: 'Skip if running',
+    replace: 'Cancel and replace',
+  }
 
 function LastRunCell({ task }: { task: ScheduledTask }) {
   if (!task.last_run_at || !task.last_run_status) {
@@ -81,7 +101,13 @@ function LastRunCell({ task }: { task: ScheduledTask }) {
 // enabled route, matching UpdateScheduledTask's own "Command, Schedule,
 // and Enabled are updated together" shape (internal/store/
 // scheduled_task.go).
-function EnabledToggle({ appName, task }: { appName: string; task: ScheduledTask }) {
+function EnabledToggle({
+  appName,
+  task,
+}: {
+  appName: string
+  task: ScheduledTask
+}) {
   const updateTask = useUpdateScheduledTask(appName)
 
   return (
@@ -92,7 +118,12 @@ function EnabledToggle({ appName, task }: { appName: string; task: ScheduledTask
         updateTask.mutate(
           {
             id: task.id,
-            req: { command: task.command, schedule: task.schedule, enabled: checked },
+            req: {
+              command: task.command,
+              schedule: task.schedule,
+              enabled: checked,
+              concurrency_policy: task.concurrency_policy,
+            },
           },
           {
             onError: (error) => {
@@ -113,6 +144,9 @@ function TaskRow({ appName, task }: { appName: string; task: ScheduledTask }) {
       </TableCell>
       <TableCell className="font-mono text-xs text-muted-foreground">
         {task.schedule}
+      </TableCell>
+      <TableCell className="text-xs text-muted-foreground">
+        {CONCURRENCY_POLICY_LABEL[task.concurrency_policy]}
       </TableCell>
       <TableCell>
         <LastRunCell task={task} />
@@ -147,8 +181,8 @@ export function ScheduledTasksPanel({ appName }: { appName: string }) {
             Scheduled tasks
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Runs a command inside this app&apos;s currently running container
-            on a cron schedule, e.g. a nightly cleanup script or a periodic
+            Runs a command inside this app&apos;s currently running container on
+            a cron schedule, e.g. a nightly cleanup script or a periodic
             cache-warm job.
           </p>
         </div>
@@ -157,7 +191,7 @@ export function ScheduledTasksPanel({ appName }: { appName: string }) {
 
       <div className="mt-3">
         {isLoading ? (
-          <TableSkeleton columnCount={5} rowCount={3} />
+          <TableSkeleton columnCount={6} rowCount={3} />
         ) : error ? (
           <p className="text-sm text-destructive">{error.message}</p>
         ) : tasks.length === 0 ? (
@@ -174,6 +208,7 @@ export function ScheduledTasksPanel({ appName }: { appName: string }) {
                 <TableRow>
                   <TableHead>Command</TableHead>
                   <TableHead>Schedule</TableHead>
+                  <TableHead>Concurrency</TableHead>
                   <TableHead>Last run</TableHead>
                   <TableHead>Enabled</TableHead>
                   <TableHead className="text-right">Actions</TableHead>

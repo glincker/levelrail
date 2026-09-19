@@ -63,7 +63,7 @@ updates.
 
 ## API resource groups (`internal/api/routes.go`, `routes_platform.go`)
 
-295 registered routes total (see [api-reference.md](api-reference.md) for
+296 registered routes total (see [api-reference.md](api-reference.md) for
 the exact method/path/ability of every one), grouped by resource:
 
 | Resource | Routes | Representative paths |
@@ -81,7 +81,7 @@ the exact method/path/ability of every one), grouped by resource:
 | Static sites / backup targets / registry credentials | 15 | `/static-sites`, `/backup-targets*`, `/registry-credentials*` |
 | Built-in container registry | 5 | `/settings/registry`, `/registry/repositories`, `/registry/tags` |
 | Git provider apps (GitHub/GitLab/Bitbucket) | 27 | `/github-app*`, `/gitlab-app*`, `/bitbucket-app*` |
-| DB backups/restore/clone-restore | 16 | `/databases/{name}/backups*`, `/restore-as-new`, `/backup-schedule` |
+| DB backups/restore/clone-restore | 17 | `/databases/{name}/backups*`, `/restore-as-new`, `/backup-schedule`, `/backups` |
 | App volume backups/restore | 11 | `/apps/{name}/volumes/{volume}/backups*` |
 | App storage/database attach | 5 | `/apps/{name}/storage`, `/apps/{name}/database` |
 | Audit log / log-drain | 5 | `/audit-log`, `/audit-log/purge` |
@@ -108,11 +108,12 @@ Key subcommand groups:
 - **nodes**: list, get, delete, join-token, cordon, uncordon, drain,
   workloads, health, patch-status, metrics
 - **iam**: policies create/list/get/update/delete/attach/detach
-- **backups** / **app-volume-backups**: list, trigger, restore,
+- **backups** / **app-volume-backups**: list, list-all (backups only,
+  instance-wide across every database and app volume), trigger, restore,
   restore-as-new, schedule, verify, verifications
 - **migrate**: coolify, dokploy, caprover
-- **domains**: list, cloudflare-dns, basic-auth, maintenance, tls-cert,
-  certificates
+- **domains**: list, cloudflare-dns, route53-dns, basic-auth,
+  maintenance, tls-cert, certificates
 - **settings**: oauth (list/set), email (get/set), ingress (get/set):
   instance-wide OAuth sign-in, outbound email, and ingress/ACME config,
   for headless first-run setup with no browser

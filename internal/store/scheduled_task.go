@@ -22,6 +22,25 @@ const (
 	ScheduledTaskStatusFailed              = "failed"
 	ScheduledTaskStatusTimeout             = "timeout"
 	ScheduledTaskStatusContainerNotRunning = "container_not_running"
+	// ScheduledTaskStatusSkippedConcurrency is recorded when
+	// ConcurrencyPolicy is "forbid" and a previous run of the same task
+	// was still in flight, so a skipped tick stays visible in run
+	// history instead of silently vanishing.
+	ScheduledTaskStatusSkippedConcurrency = "skipped_concurrency"
+	// ScheduledTaskStatusReplaced is recorded on the run that
+	// ConcurrencyPolicy "replace" cancelled to make room for a newer
+	// invocation of the same task.
+	ScheduledTaskStatusReplaced = "replaced"
+)
+
+// Scheduled task concurrency policies (migrations/
+// 0101_scheduled_task_concurrency_policy.sql's concurrency_policy
+// column): what internal/scheduledtask.Runner does when a task's next
+// due run finds a previous invocation of itself still executing.
+const (
+	ScheduledTaskConcurrencyAllow   = "allow"
+	ScheduledTaskConcurrencyForbid  = "forbid"
+	ScheduledTaskConcurrencyReplace = "replace"
 )
 
 // ErrScheduledTaskNotFound is returned by GetScheduledTask,
@@ -38,6 +57,12 @@ type ScheduledTask struct {
 	Command     []string
 	Schedule    string
 	Enabled     bool
+	// ConcurrencyPolicy governs what happens when this task's next due
+	// run finds a previous invocation still executing (internal/
+	// scheduledtask.Runner): allow, forbid, or replace. Always one of
+	// those three once loaded from the store; SaveScheduledTask and
+	// UpdateScheduledTask both default an empty value to allow.
+	ConcurrencyPolicy string
 
 	// LastRunAt is nil until this task has run at least once (scheduled
 	// or manual "run now"), the same "zero value means never happened
@@ -71,20 +96,30 @@ func (db *DB) SaveScheduledTask(ctx context.Context, t ScheduledTask) error {
 	}
 
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO scheduled_tasks (id, service_name, command, schedule, enabled, last_run_at, last_run_status, last_run_output, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, NULL, '', '', ?, ?)
-	`, t.ID, t.ServiceName, string(cmdJSON), t.Schedule, t.Enabled, formatTime(t.CreatedAt), formatTime(t.UpdatedAt))
+		INSERT INTO scheduled_tasks (id, service_name, command, schedule, enabled, concurrency_policy, last_run_at, last_run_status, last_run_output, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, NULL, '', '', ?, ?)
+	`, t.ID, t.ServiceName, string(cmdJSON), t.Schedule, t.Enabled, normalizeConcurrencyPolicy(t.ConcurrencyPolicy), formatTime(t.CreatedAt), formatTime(t.UpdatedAt))
 	if err != nil {
 		return fmt.Errorf("store: save scheduled task %q: %w", t.ID, err)
 	}
 	return nil
 }
 
+// normalizeConcurrencyPolicy defaults an empty ConcurrencyPolicy to
+// ScheduledTaskConcurrencyAllow, the same "empty means today's existing
+// behavior" convention this field was added under.
+func normalizeConcurrencyPolicy(policy string) string {
+	if policy == "" {
+		return ScheduledTaskConcurrencyAllow
+	}
+	return policy
+}
+
 // GetScheduledTask returns the scheduled task with this ID, or
 // ErrScheduledTaskNotFound.
 func (db *DB) GetScheduledTask(ctx context.Context, id string) (ScheduledTask, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, service_name, command, schedule, enabled, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at
+		SELECT id, service_name, command, schedule, enabled, concurrency_policy, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at
 		FROM scheduled_tasks
 		WHERE id = ?
 	`, id)
@@ -103,7 +138,7 @@ func (db *DB) GetScheduledTask(ctx context.Context, id string) (ScheduledTask, e
 // ListBackupTargets already uses.
 func (db *DB) ListScheduledTasksForService(ctx context.Context, serviceName string) ([]ScheduledTask, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, service_name, command, schedule, enabled, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at
+		SELECT id, service_name, command, schedule, enabled, concurrency_policy, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at
 		FROM scheduled_tasks
 		WHERE service_name = ?
 		ORDER BY created_at
@@ -120,7 +155,7 @@ func (db *DB) ListScheduledTasksForService(ctx context.Context, serviceName stri
 // 0048_scheduled_tasks.sql, supports exactly this filter).
 func (db *DB) ListEnabledScheduledTasks(ctx context.Context) ([]ScheduledTask, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, service_name, command, schedule, enabled, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at
+		SELECT id, service_name, command, schedule, enabled, concurrency_policy, last_run_at, last_run_status, last_run_output, consecutive_failures, created_at, updated_at
 		FROM scheduled_tasks
 		WHERE enabled = 1
 		ORDER BY created_at
@@ -132,11 +167,13 @@ func (db *DB) ListEnabledScheduledTasks(ctx context.Context) ([]ScheduledTask, e
 }
 
 // UpdateScheduledTask updates a task's own editable fields (Command,
-// Schedule, Enabled): it never touches ServiceName (an existing task
-// cannot be reassigned to a different app; delete and recreate instead)
-// or the last-run fields (RecordScheduledTaskRun's job, not this
-// method's). Returns ErrScheduledTaskNotFound if id doesn't exist.
-func (db *DB) UpdateScheduledTask(ctx context.Context, id string, command []string, schedule string, enabled bool, updatedAt time.Time) error {
+// Schedule, Enabled, ConcurrencyPolicy): it never touches ServiceName (an
+// existing task cannot be reassigned to a different app; delete and
+// recreate instead) or the last-run fields (RecordScheduledTaskRun's job,
+// not this method's). An empty concurrencyPolicy defaults to
+// ScheduledTaskConcurrencyAllow, the same as SaveScheduledTask. Returns
+// ErrScheduledTaskNotFound if id doesn't exist.
+func (db *DB) UpdateScheduledTask(ctx context.Context, id string, command []string, schedule string, enabled bool, concurrencyPolicy string, updatedAt time.Time) error {
 	cmdJSON, err := json.Marshal(command)
 	if err != nil {
 		return fmt.Errorf("store: update scheduled task %q: encode command: %w", id, err)
@@ -144,9 +181,9 @@ func (db *DB) UpdateScheduledTask(ctx context.Context, id string, command []stri
 
 	res, err := db.ExecContext(ctx, `
 		UPDATE scheduled_tasks
-		SET command = ?, schedule = ?, enabled = ?, updated_at = ?
+		SET command = ?, schedule = ?, enabled = ?, concurrency_policy = ?, updated_at = ?
 		WHERE id = ?
-	`, string(cmdJSON), schedule, enabled, formatTime(updatedAt), id)
+	`, string(cmdJSON), schedule, enabled, normalizeConcurrencyPolicy(concurrencyPolicy), formatTime(updatedAt), id)
 	if err != nil {
 		return fmt.Errorf("store: update scheduled task %q: %w", id, err)
 	}
@@ -157,17 +194,26 @@ func (db *DB) UpdateScheduledTask(ctx context.Context, id string, command []stri
 // manual "run now") back onto a task's own row: the same in-place
 // "latest attempt" shape this table's own migration comment explains,
 // not an append-only history. consecutive_failures resets to 0 on a
-// success and increments otherwise, computed in SQL rather than
-// read-then-write so a concurrent run can't race it. Returns
+// success, stays unchanged on a skipped_concurrency or replaced outcome
+// (neither one is a failure of the command itself, just a concurrency-
+// policy side effect), and increments otherwise, computed in SQL rather
+// than read-then-write so a concurrent run can't race it. Returns
 // ErrScheduledTaskNotFound if id doesn't exist, e.g. the task was
 // deleted between being picked up by a tick and this call.
 func (db *DB) RecordScheduledTaskRun(ctx context.Context, id string, ranAt time.Time, status, output string) error {
 	res, err := db.ExecContext(ctx, `
 		UPDATE scheduled_tasks
 		SET last_run_at = ?, last_run_status = ?, last_run_output = ?, updated_at = ?,
-			consecutive_failures = CASE WHEN ? = ? THEN 0 ELSE consecutive_failures + 1 END
+			consecutive_failures = CASE
+				WHEN ? = ? THEN 0
+				WHEN ? IN (?, ?) THEN consecutive_failures
+				ELSE consecutive_failures + 1
+			END
 		WHERE id = ?
-	`, formatTime(ranAt), status, output, formatTime(ranAt), status, ScheduledTaskStatusSuccess, id)
+	`, formatTime(ranAt), status, output, formatTime(ranAt),
+		status, ScheduledTaskStatusSuccess,
+		status, ScheduledTaskStatusSkippedConcurrency, ScheduledTaskStatusReplaced,
+		id)
 	if err != nil {
 		return fmt.Errorf("store: record scheduled task run %q: %w", id, err)
 	}
@@ -211,7 +257,7 @@ func scanScheduledTask(scan func(dest ...any) error) (*ScheduledTask, error) {
 		lastRunAt            sql.NullString
 		createdAt, updatedAt string
 	)
-	if err := scan(&t.ID, &t.ServiceName, &cmdJSON, &t.Schedule, &enabled, &lastRunAt, &t.LastRunStatus, &t.LastRunOutput, &t.ConsecutiveFailures, &createdAt, &updatedAt); err != nil {
+	if err := scan(&t.ID, &t.ServiceName, &cmdJSON, &t.Schedule, &enabled, &t.ConcurrencyPolicy, &lastRunAt, &t.LastRunStatus, &t.LastRunOutput, &t.ConsecutiveFailures, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
 

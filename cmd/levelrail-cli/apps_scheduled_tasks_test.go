@@ -67,6 +67,26 @@ func TestRun_AppsScheduledTasksCreate_Disabled(t *testing.T) {
 	}
 }
 
+func TestRun_AppsScheduledTasksCreate_ConcurrencyPolicy(t *testing.T) {
+	var gotBody scheduledTaskRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(scheduledTaskResource{ID: "sct_1", ServiceName: "web", Command: gotBody.Command, Schedule: gotBody.Schedule, Enabled: gotBody.Enabled, ConcurrencyPolicy: gotBody.ConcurrencyPolicy})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"apps", "scheduled-tasks", "create", "web", "--schedule", "0 3 * * *", "--concurrency-policy", "forbid", "--api-url", srv.URL, "--", "echo", "hi"}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
+	}
+	if gotBody.ConcurrencyPolicy != "forbid" {
+		t.Errorf("request body ConcurrencyPolicy = %q, want %q", gotBody.ConcurrencyPolicy, "forbid")
+	}
+}
+
 func TestRun_AppsScheduledTasksCreate_MissingSchedule(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"apps", "scheduled-tasks", "create", "web", "--", "echo", "hi"}, &stdout, &stderr, envMap())

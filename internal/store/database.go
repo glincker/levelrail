@@ -69,7 +69,7 @@ type DesiredDatabase struct {
 	PubliclyAccessible bool
 	PublicPort         int
 	// PublicBindAddress picks which network interface PublicPort binds to
-	// (migrations/0099_database_public_bind_address.sql): "private",
+	// (migrations/0104_database_public_bind_address.sql): "private",
 	// "public", or a literal IP, see internal/bindaddr.Resolve. Same
 	// SetDatabasePublicAccess-only-writer exception as PublicPort; "" when
 	// PubliclyAccessible is false (SQL NULL).

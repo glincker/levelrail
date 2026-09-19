@@ -23,6 +23,8 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsDeploysList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compare":
 		return runAppsDeploysCompare(prog, args[1:], stdout, stderr, lookupEnv)
+	case "logs":
+		return runAppsDeploysLogs(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps deploys subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsDeploysUsage(prog))
@@ -34,6 +36,7 @@ func appsDeploysUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
+  %[1]s apps deploys logs <name> <deploy-id> [flags]              one deploy attempt's full build/log output
 
 Run "%[1]s apps deploys <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -189,6 +192,58 @@ Flags:
   --json                    print the comparison as JSON to stdout, nothing else
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+// runAppsDeploysLogs implements "apps deploys logs <name> <deploy-id>":
+// GET /api/v1/apps/{name}/deploys/{deployId}/logs/download
+// (internal/api/deploy_log_download.go's handleDownloadDeployLog),
+// writing the attempt's raw build/log output straight to stdout. No
+// --json/--output/--query here: unlike this command group's other two
+// subcommands, there is no structured alternative to a deploy's own log
+// text, so shell redirection ("> file.txt") is the intended way to
+// save it, the same convention "apps logs" already leaves to the shell
+// rather than adding its own --download-to flag.
+func runAppsDeploysLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps deploys logs", "not applicable: this command always writes raw log text, never JSON", stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysLogsUsage(prog)) }
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, _, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	rest, ok := requireArgs(fs, stderr, prog, "apps deploys logs", "an app name and a deploy attempt id", 2)
+	if !ok {
+		return exitUsage
+	}
+	name, deployID := rest[0], rest[1]
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	data, err := client.DownloadDeployLog(context.Background(), name, deployID)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("download deploy log for %s/%s: %w", name, deployID, err))
+	}
+	_, _ = stdout.Write(data)
+	return exitOK
+}
+
+func appsDeploysLogsUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s apps deploys logs <name> <deploy-id> [flags]
+
+Prints deploy-id's full build/log output to stdout: live-buffered lines
+so far if the attempt is still running, the full persisted log
+otherwise. Find a deploy-id with "apps deploys list <name>". Redirect
+to a file to save it ("%[1]s apps deploys logs <name> <deploy-id> >
+build.log").
+
+Flags:
+  --token string          API token (default: %[2]s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

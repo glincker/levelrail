@@ -386,3 +386,70 @@ func TestParse_Entrypoint(t *testing.T) {
 		})
 	}
 }
+
+// TestParse_PullPolicy checks Parse's own raw, pre-normalization field:
+// Parse never normalizes pull_policy:'s value, only normalizePullPolicy
+// (exercised by TestNormalizePullPolicy below) and, in turn,
+// ToDesiredServices (TestToDesiredServices_PullPolicy) do.
+func TestParse_PullPolicy(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		want string
+	}{
+		{name: "absent stays empty", yaml: "", want: ""},
+		{name: "always", yaml: "pull_policy: always", want: "always"},
+		{name: "missing stays raw", yaml: "pull_policy: missing", want: "missing"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc := "services:\n  web:\n    image: nginx:1.27\n"
+			if tt.yaml != "" {
+				doc += "    " + tt.yaml + "\n"
+			}
+			f, err := Parse([]byte(doc))
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			if got := f.Services["web"].PullPolicy; got != tt.want {
+				t.Errorf("PullPolicy = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNormalizePullPolicy(t *testing.T) {
+	tests := []struct {
+		name    string
+		raw     string
+		want    string
+		wantErr bool
+	}{
+		{name: "empty defaults", raw: "", want: ""},
+		{name: "missing normalizes to empty", raw: "missing", want: ""},
+		{name: "if_not_present normalizes to empty", raw: "if_not_present", want: ""},
+		{name: "always", raw: "always", want: "always"},
+		{name: "never is rejected", raw: "never", wantErr: true},
+		{name: "build is rejected", raw: "build", wantErr: true},
+		{name: "typo is rejected", raw: "Always", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := normalizePullPolicy(tt.raw)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("normalizePullPolicy(%q) error = nil, want an error", tt.raw)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("normalizePullPolicy(%q) error = %v", tt.raw, err)
+			}
+			if got != tt.want {
+				t.Errorf("normalizePullPolicy(%q) = %q, want %q", tt.raw, got, tt.want)
+			}
+		})
+	}
+}

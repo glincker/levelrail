@@ -76,8 +76,8 @@ function BindMountHelper({ onInsert }: { onInsert: (line: string) => void }) {
     return (
       <FieldHint>
         Bind-mounting a real host directory (unlike a Docker-managed named
-        volume above) requires the root ability. Ask an admin for access if
-        this service needs one.
+        volume above) requires the root ability. Ask an admin for access if this
+        service needs one.
       </FieldHint>
     )
   }
@@ -99,18 +99,16 @@ function BindMountHelper({ onInsert }: { onInsert: (line: string) => void }) {
           className="size-4 text-amber-600 dark:text-amber-400"
           aria-hidden="true"
         />
-        <p className="text-sm font-medium text-foreground">
-          Add a bind mount
-        </p>
+        <p className="text-sm font-medium text-foreground">Add a bind mount</p>
       </div>
       <Alert variant="destructive">
         <WarningIcon />
         <AlertDescription>
-          This gives the container direct access to a real directory on the
-          host machine it runs on, not a Docker-managed volume. Never point
-          this at a system directory: paths like /, /etc, /root, /boot,
-          /sys, /proc, /var/lib/docker, and /var/run (including the Docker
-          socket) are always rejected, even for a root caller.
+          This gives the container direct access to a real directory on the host
+          machine it runs on, not a Docker-managed volume. Never point this at a
+          system directory: paths like /, /etc, /root, /boot, /sys, /proc,
+          /var/lib/docker, and /var/run (including the Docker socket) are always
+          rejected, even for a root caller.
         </AlertDescription>
       </Alert>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -166,6 +164,30 @@ function BindMountHelper({ onInsert }: { onInsert: (line: string) => void }) {
         ) : null}
       </div>
     </div>
+  )
+}
+
+// PullPolicyHelper generates a "pull_policy: always" line for whichever
+// service the operator names, the same "generate a line, don't parse or
+// rewrite the YAML" shape BindMountHelper above uses: compose.yaml stays
+// a single raw-text field (CreateComposeFields' own doc comment), so
+// this is a paste helper, not structured per-service editing.
+function PullPolicyHelper({ onInsert }: { onInsert: (line: string) => void }) {
+  return (
+    <FieldHint>
+      To force a fresh image pull on every deploy for a service (useful for a
+      mutable tag like :latest), add{' '}
+      <button
+        type="button"
+        className="font-mono text-primary underline underline-offset-2"
+        onClick={() => {
+          onInsert('    pull_policy: always')
+        }}
+      >
+        pull_policy: always
+      </button>{' '}
+      under that service in the compose.yaml below.
+    </FieldHint>
   )
 }
 
@@ -240,11 +262,11 @@ export function CreateComposeFields({
     )
   })
 
-  // handleInsertBindMountLine appends a generated volumes: line
-  // (BindMountHelper's own doc comment) to the end of whatever compose
+  // handleInsertLine appends a generated line (BindMountHelper's or
+  // PullPolicyHelper's own doc comment) to the end of whatever compose
   // YAML is already there, the same "no cursor-position tracking, just
   // append" approach handleFileChange takes for an uploaded file.
-  function handleInsertBindMountLine(line: string) {
+  function handleInsertLine(line: string) {
     const current = getValues('compose')
     const separator = current && !current.endsWith('\n') ? '\n' : ''
     setValue('compose', current + separator + line + '\n', {
@@ -298,6 +320,9 @@ export function CreateComposeFields({
                     {service.name}
                   </span>
                   <Badge variant="success">Created</Badge>
+                  {service.pull_policy === 'always' ? (
+                    <Badge variant="outline">always pulls latest</Badge>
+                  ) : null}
                 </div>
                 <p className="truncate text-xs text-muted-foreground">
                   {service.image}
@@ -386,7 +411,8 @@ export function CreateComposeFields({
         {fileError ? <FieldHint>{fileError}</FieldHint> : null}
       </Field>
 
-      <BindMountHelper onInsert={handleInsertBindMountLine} />
+      <BindMountHelper onInsert={handleInsertLine} />
+      <PullPolicyHelper onInsert={handleInsertLine} />
 
       {deployCompose.isError ? (
         <Alert variant="destructive">

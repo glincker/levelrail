@@ -62,9 +62,10 @@ flags.
 `, prog)
 }
 
-func scheduledTaskFlags(fs *flag.FlagSet, schedule *string, disabled *bool) {
+func scheduledTaskFlags(fs *flag.FlagSet, schedule *string, disabled *bool, concurrencyPolicy *string) {
 	fs.StringVar(schedule, "schedule", "", "standard 5-field cron expression, e.g. \"*/5 * * * *\" (required)")
 	fs.BoolVar(disabled, "disabled", false, "create/save the task disabled (default: enabled)")
+	fs.StringVar(concurrencyPolicy, "concurrency-policy", "", "what happens if a previous run is still in flight when this task's next run is due: allow, forbid, or replace (default: allow)")
 }
 
 // parseScheduledTaskArgs splits fs's positional tokens into nArgs
@@ -96,7 +97,8 @@ func runAppsScheduledTasksCreate(prog string, args []string, stdout, stderr io.W
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps scheduled-tasks create", "print the created task as JSON to stdout and nothing else", stderr)
 	var schedule string
 	var disabled bool
-	scheduledTaskFlags(fs, &schedule, &disabled)
+	var concurrencyPolicy string
+	scheduledTaskFlags(fs, &schedule, &disabled, &concurrencyPolicy)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksCreateUsage(prog)) }
 
 	leading, command, code, ok := parseScheduledTaskArgs(fs, args, stderr, prog, "apps scheduled-tasks create", 1)
@@ -118,7 +120,7 @@ func runAppsScheduledTasksCreate(prog string, args []string, stdout, stderr io.W
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	created, err := client.CreateScheduledTask(context.Background(), appName, scheduledTaskRequest{
-		Command: command, Schedule: schedule, Enabled: !disabled,
+		Command: command, Schedule: schedule, Enabled: !disabled, ConcurrencyPolicy: concurrencyPolicy,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create scheduled task for app %q: %w", appName, err))
@@ -139,6 +141,7 @@ as argv inside the app's container, no shell involved.
 Flags:
   --schedule string       standard 5-field cron expression (required)
   --disabled                 create the task disabled (default: enabled)
+  --concurrency-policy string  allow, forbid, or replace: what happens if a previous run is still in flight when this task's next run is due (default: allow)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
@@ -178,9 +181,9 @@ func printScheduledTasksTable(out io.Writer, tasks []scheduledTaskResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tCOMMAND\tSCHEDULE\tENABLED\tLAST RUN\tCONSECUTIVE FAILURES")
+	_, _ = fmt.Fprintln(tw, "ID\tCOMMAND\tSCHEDULE\tENABLED\tCONCURRENCY\tLAST RUN\tCONSECUTIVE FAILURES")
 	for _, t := range tasks {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%t\t%s\t%d\n", t.ID, strings.Join(t.Command, " "), t.Schedule, t.Enabled, lastRunSummary(t), t.ConsecutiveFailures)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%t\t%s\t%s\t%d\n", t.ID, strings.Join(t.Command, " "), t.Schedule, t.Enabled, t.ConcurrencyPolicy, lastRunSummary(t), t.ConsecutiveFailures)
 	}
 	_ = tw.Flush()
 }
@@ -254,6 +257,7 @@ func printScheduledTaskHuman(out io.Writer, t scheduledTaskResource) {
 	_, _ = fmt.Fprintf(out, "command:   %s\n", strings.Join(t.Command, " "))
 	_, _ = fmt.Fprintf(out, "schedule:  %s\n", t.Schedule)
 	_, _ = fmt.Fprintf(out, "enabled:   %t\n", t.Enabled)
+	_, _ = fmt.Fprintf(out, "concurrency policy: %s\n", t.ConcurrencyPolicy)
 	_, _ = fmt.Fprintf(out, "last run:  %s\n", lastRunSummary(t))
 	if t.ConsecutiveFailures > 0 {
 		_, _ = fmt.Fprintf(out, "consecutive failures: %d\n", t.ConsecutiveFailures)
@@ -292,7 +296,8 @@ func runAppsScheduledTasksUpdate(prog string, args []string, stdout, stderr io.W
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps scheduled-tasks update", "print the updated task as JSON to stdout and nothing else", stderr)
 	var schedule string
 	var disabled bool
-	scheduledTaskFlags(fs, &schedule, &disabled)
+	var concurrencyPolicy string
+	scheduledTaskFlags(fs, &schedule, &disabled, &concurrencyPolicy)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScheduledTasksUpdateUsage(prog)) }
 
 	leading, command, code, ok := parseScheduledTaskArgs(fs, args, stderr, prog, "apps scheduled-tasks update", 2)
@@ -314,7 +319,7 @@ func runAppsScheduledTasksUpdate(prog string, args []string, stdout, stderr io.W
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	updated, err := client.UpdateScheduledTask(context.Background(), appName, id, scheduledTaskRequest{
-		Command: command, Schedule: schedule, Enabled: !disabled,
+		Command: command, Schedule: schedule, Enabled: !disabled, ConcurrencyPolicy: concurrencyPolicy,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update scheduled task %q: %w", id, err))
@@ -331,11 +336,13 @@ func appsScheduledTasksUpdateUsage(prog string) string {
 
 Replaces every editable field of an existing scheduled task (a full
 replace, not a partial patch): --schedule and the command must be
-supplied on every call, the same as the value already saved.
+supplied on every call, the same as the value already saved. Omitting
+--concurrency-policy resets it to allow, the same full-replace rule.
 
 Flags:
   --schedule string       standard 5-field cron expression (required)
   --disabled                 save the task disabled (default: enabled)
+  --concurrency-policy string  allow, forbid, or replace: what happens if a previous run is still in flight when this task's next run is due (default: allow; resupply the current value to keep it)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")

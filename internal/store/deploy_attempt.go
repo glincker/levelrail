@@ -105,7 +105,7 @@ type DeployAttemptSnapshot struct {
 	Port     int                   `json:"port,omitempty"`
 	HostPort *int                  `json:"host_port,omitempty"`
 	// BindAddress mirrors DesiredService.BindAddress
-	// (migrations/0098_service_bind_address.sql).
+	// (migrations/0103_service_bind_address.sql).
 	BindAddress string            `json:"bind_address,omitempty"`
 	Domains     []string          `json:"domains,omitempty"`
 	Resources   *ServiceResources `json:"resources,omitempty"`

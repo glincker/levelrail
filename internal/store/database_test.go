@@ -668,7 +668,7 @@ func TestSetDatabasePublicAccess_AutoAssignsFromRange(t *testing.T) {
 // TestDatabasePublicBindAddressMigration_BackfillsExistingPublicRows
 // mirrors TestServiceBindAddressMigration_BackfillsExistingRowsToPublic's
 // own technique (service_test.go): applies every migration up to, but
-// not including, 0099_database_public_bind_address by hand, inserts a
+// not including, 0104_database_public_bind_address by hand, inserts a
 // desired_databases row already publicly_accessible the way a pre-0099
 // database would have one, then applies 0099 and checks the backfill.
 // A database that was never publicly accessible must stay NULL, not

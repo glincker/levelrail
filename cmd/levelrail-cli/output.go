@@ -344,6 +344,9 @@ func printAppHuman(out io.Writer, a appResource) {
 	if len(a.Command) > 0 {
 		_, _ = fmt.Fprintf(out, "command:  %v\n", a.Command)
 	}
+	if a.PullPolicy != "" {
+		_, _ = fmt.Fprintf(out, "pull policy: %s\n", a.PullPolicy)
+	}
 	for _, v := range a.Volumes {
 		_, _ = fmt.Fprintf(out, "volume:   %s -> %s\n", v.Name, v.ContainerPath)
 	}
