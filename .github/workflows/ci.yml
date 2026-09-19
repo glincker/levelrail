@@ -233,7 +233,7 @@ jobs:
           version: v2.12
 
   web-check:
-    name: Web (tsc, eslint, test)
+    name: Web (tsc, eslint)
     runs-on: ubuntu-latest
     permissions:
       contents: read

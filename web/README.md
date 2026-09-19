@@ -25,7 +25,7 @@ npm test           # vitest run, component and hook tests under src/
 npm run test:watch   # vitest in watch mode
 ```
 
-`npm test` runs in CI as part of the "Web (tsc, eslint, test)" job whenever
+`npm test` runs in CI as part of the "Web (tsc, eslint)" job whenever
 `web/` changes.
 
 `npm run build` also writes `dist/stats.html`, a treemap of final chunk
