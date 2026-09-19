@@ -181,6 +181,16 @@ levelrail apps organizations set-project <project-id> <org-id> [flags]
 ```
 
 ```
+levelrail apps preview-env set <name> <key> --value VALUE [flags]
+```
+declare (or replace) a preview-specific env var override
+
+```
+levelrail apps preview-env clear <name> <key> [flags]
+```
+remove a preview-specific env var override
+
+```
 levelrail apps previews list <app-name> [flags]
 ```
 
@@ -449,6 +459,11 @@ levelrail domains cloudflare-dns get [flags]
 show the current settings
 
 ```
+levelrail domains route53-dns get [flags]
+```
+show the current settings
+
+```
 levelrail domains list [flags]
 ```
 
@@ -482,6 +497,11 @@ levelrail backups list <database> [flags]
 levelrail backups list <database> [flags]
 ```
 list backup history for a database
+
+```
+levelrail backups list-all [flags]
+```
+list backup history across every database and app volume instance-wide
 
 ```
 levelrail backups restore <database> --backup ID [--confirm NAME] [flags]

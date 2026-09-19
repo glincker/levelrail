@@ -61,6 +61,14 @@ func WithCloudflareDNSSecrets(s CloudflareDNSSecrets) Option {
 	return func(rt *Router) { rt.cloudflareDNSSecrets = s }
 }
 
+// WithRoute53DNSSecrets enables PUT/DELETE /api/v1/settings/route53-dns.
+// Without one configured (the default), both return 501; GET works
+// regardless, the same shape WithCloudflareDNSSecrets establishes for
+// its own, independent ACME DNS-01 provider.
+func WithRoute53DNSSecrets(s Route53DNSSecrets) Option {
+	return func(rt *Router) { rt.route53DNSSecrets = s }
+}
+
 // WithRegistrySecrets enables PUT/DELETE /api/v1/settings/registry.
 // Without one configured (the default), both return 501; GET works
 // regardless, the same shape WithCloudflareTunnelSecrets establishes.

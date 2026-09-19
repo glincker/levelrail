@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, type Control } from 'react-hook-form'
 import { z } from 'zod'
 import {
   GaugeIcon,
@@ -33,7 +33,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field'
 import { DurationInput } from '@/components/ui/duration-input'
 import { toast } from '@/components/ui/toast'
 import { useCreateAlertRule } from '../queries/alerts'
@@ -42,7 +47,10 @@ import { useScheduledTasks } from '../queries/scheduledTasks'
 import { useDatabases } from '../queries/databases'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
 import { METRIC_NAME_LABEL, METRIC_NAME_OPTIONS } from './metricName'
-import { BackupMissingFields } from './BackupMissingFields'
+import {
+  BackupMissingFields,
+  type BackupMissingFormShape,
+} from './BackupMissingFields'
 import type {
   AlertRuleKind,
   Comparator,
@@ -90,11 +98,23 @@ const KIND_OPTIONS: {
 }[] = [
   { value: 'threshold', label: 'Threshold', Icon: GaugeIcon },
   { value: 'crashloop', label: 'Crashloop', Icon: ArrowCounterClockwiseIcon },
-  { value: 'cert_expiry', label: 'Certificate expiry', Icon: ShieldWarningIcon },
+  {
+    value: 'cert_expiry',
+    label: 'Certificate expiry',
+    Icon: ShieldWarningIcon,
+  },
   { value: 'patch_status', label: 'Node patch status', Icon: WrenchIcon },
-  { value: 'scheduled_task_failure', label: 'Scheduled task failure', Icon: ClockCountdownIcon },
+  {
+    value: 'scheduled_task_failure',
+    label: 'Scheduled task failure',
+    Icon: ClockCountdownIcon,
+  },
   { value: 'node_disk_space', label: 'Node disk space', Icon: HardDriveIcon },
-  { value: 'node_resource_usage', label: 'Node CPU/memory usage', Icon: CpuIcon },
+  {
+    value: 'node_resource_usage',
+    label: 'Node CPU/memory usage',
+    Icon: CpuIcon,
+  },
   { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
   { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
 ]
@@ -214,13 +234,19 @@ const createAlertRuleSchema = z
           message: 'Choose what this rule watches',
           path: ['backupResourceKind'],
         })
-      } else if (data.backupResourceKind === 'database' && !data.backupDatabaseName) {
+      } else if (
+        data.backupResourceKind === 'database' &&
+        !data.backupDatabaseName
+      ) {
         ctx.addIssue({
           code: 'custom',
           message: 'Choose which database to watch',
           path: ['backupDatabaseName'],
         })
-      } else if (data.backupResourceKind === 'volume' && !data.backupVolumeName) {
+      } else if (
+        data.backupResourceKind === 'volume' &&
+        !data.backupVolumeName
+      ) {
         ctx.addIssue({
           code: 'custom',
           message: 'Choose which volume to watch',
@@ -392,16 +418,15 @@ export function CreateAlertRuleDialog({
           <DialogDescription>
             A threshold rule watches a metric; a crashloop rule watches
             container restarts; a certificate expiry rule watches every
-            certificate on the control plane; a node patch status rule
-            watches every node&apos;s pending OS security patches; a node
-            disk space rule watches every node&apos;s disk usage
-            percentage; a node CPU/memory usage rule watches every
-            node&apos;s summed CPU and memory usage; a scheduled task
-            failure rule watches one of this app&apos;s scheduled tasks; a
-            domain health rule watches every domain configured on this
-            app; a backup missing rule watches a database or one of this
-            app&apos;s volumes for a scheduled backup that stopped
-            running. All nine notify the same way once they fire.
+            certificate on the control plane; a node patch status rule watches
+            every node&apos;s pending OS security patches; a node disk space
+            rule watches every node&apos;s disk usage percentage; a node
+            CPU/memory usage rule watches every node&apos;s summed CPU and
+            memory usage; a scheduled task failure rule watches one of this
+            app&apos;s scheduled tasks; a domain health rule watches every
+            domain configured on this app; a backup missing rule watches a
+            database or one of this app&apos;s volumes for a scheduled backup
+            that stopped running. All nine notify the same way once they fire.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -449,47 +474,46 @@ export function CreateAlertRuleDialog({
           {kind === 'cert_expiry' ? (
             <p className="text-sm text-muted-foreground">
               Watches every certificate on the whole control plane, not just
-              this app&apos;s own domains, and fires as soon as any of them
-              is expiring soon or already expired.
+              this app&apos;s own domains, and fires as soon as any of them is
+              expiring soon or already expired.
             </p>
           ) : kind === 'patch_status' ? (
             <p className="text-sm text-muted-foreground">
-              Watches every node on the whole control plane, not just the
-              ones this app happens to run on, and fires as soon as any
-              node has at least {DEFAULT_PATCH_STATUS_THRESHOLD} pending OS
-              security patch (the control plane&apos;s configured
-              threshold, overridable via APP_ALERT_PATCH_STATUS_THRESHOLD).
+              Watches every node on the whole control plane, not just the ones
+              this app happens to run on, and fires as soon as any node has at
+              least {DEFAULT_PATCH_STATUS_THRESHOLD} pending OS security patch
+              (the control plane&apos;s configured threshold, overridable via
+              APP_ALERT_PATCH_STATUS_THRESHOLD).
             </p>
           ) : kind === 'node_disk_space' ? (
             <p className="text-sm text-muted-foreground">
-              Watches every node&apos;s disk usage on the whole control
-              plane, not just the ones this app happens to run on, and
-              fires as soon as any node&apos;s disk is at least{' '}
-              {DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT}% used (the
-              control plane&apos;s configured threshold, overridable via
+              Watches every node&apos;s disk usage on the whole control plane,
+              not just the ones this app happens to run on, and fires as soon as
+              any node&apos;s disk is at least{' '}
+              {DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT}% used (the control
+              plane&apos;s configured threshold, overridable via
               APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
             </p>
           ) : kind === 'node_resource_usage' ? (
             <p className="text-sm text-muted-foreground">
-              Watches every node&apos;s summed CPU and memory usage across
-              its placed containers, on the whole control plane, and
-              fires as soon as either crosses its threshold: CPU at{' '}
+              Watches every node&apos;s summed CPU and memory usage across its
+              placed containers, on the whole control plane, and fires as soon
+              as either crosses its threshold: CPU at{' '}
               {DEFAULT_NODE_CPU_THRESHOLD_PERCENT}% (overridable via
               APP_ALERT_NODE_CPU_THRESHOLD_PERCENT), memory at{' '}
               {DEFAULT_NODE_MEMORY_THRESHOLD_GIB} GiB (overridable via
-              APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES). Memory has no
-              honest node-capacity percentage to compare against today,
-              so unlike CPU it&apos;s an absolute floor, not a
-              proportion.
+              APP_ALERT_NODE_MEMORY_THRESHOLD_BYTES). Memory has no honest
+              node-capacity percentage to compare against today, so unlike CPU
+              it&apos;s an absolute floor, not a proportion.
             </p>
           ) : kind === 'domain_health' ? (
             <>
               <p className="text-sm text-muted-foreground">
-                Watches every domain currently configured on this app
-                (unlike cert_expiry above, scoped to this app&apos;s own
-                domains, not the whole control plane) and fires if any of
-                them stops resolving to this control plane or starts
-                pointing elsewhere, e.g. a CNAME silently repointed away.
+                Watches every domain currently configured on this app (unlike
+                cert_expiry above, scoped to this app&apos;s own domains, not
+                the whole control plane) and fires if any of them stops
+                resolving to this control plane or starts pointing elsewhere,
+                e.g. a CNAME silently repointed away.
               </p>
               <Field>
                 <FieldLabel htmlFor="rule-domain-health-for-duration">
@@ -508,9 +532,9 @@ export function CreateAlertRuleDialog({
                   )}
                 />
                 <FieldDescription>
-                  Require a bad DNS check to persist this long before
-                  firing, so one transient lookup blip doesn&apos;t page
-                  anyone. Leave blank to fire on the first bad check.
+                  Require a bad DNS check to persist this long before firing, so
+                  one transient lookup blip doesn&apos;t page anyone. Leave
+                  blank to fire on the first bad check.
                 </FieldDescription>
                 <FieldError errors={[formState.errors.forDuration]} />
               </Field>
@@ -612,8 +636,14 @@ export function CreateAlertRuleDialog({
                     control={control}
                     name="scheduledTaskId"
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger id="rule-scheduled-task" className="w-full">
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger
+                          id="rule-scheduled-task"
+                          className="w-full"
+                        >
                           <SelectValue placeholder="Choose a scheduled task" />
                         </SelectTrigger>
                         <SelectContent>
@@ -646,7 +676,7 @@ export function CreateAlertRuleDialog({
           ) : kind === 'backup_missing' ? (
             <BackupMissingFields
               idPrefix="rule"
-              control={control}
+              control={control as unknown as Control<BackupMissingFormShape>}
               errors={formState.errors}
               backupResourceKind={backupResourceKind}
               databases={databases}
@@ -718,9 +748,9 @@ export function CreateAlertRuleDialog({
                   )}
                 />
                 <FieldDescription>
-                  Reuses a channel connection from Settings &rarr;
-                  Notification channels; leave unset to create the rule
-                  without a notify destination.
+                  Reuses a channel connection from Settings &rarr; Notification
+                  channels; leave unset to create the rule without a notify
+                  destination.
                 </FieldDescription>
               </>
             )}

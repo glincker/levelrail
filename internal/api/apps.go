@@ -162,6 +162,14 @@ type appResource struct {
 	// StorageTargetID already establish above: set it via PUT/DELETE
 	// /api/v1/apps/{name}/log-drain (apps_log_drain.go) instead.
 	LogDrain *store.LogDrain `json:"log_drain,omitempty"`
+	// PreviewEnvOverrides names, for a subset of this app's own env vars,
+	// a preview-specific value applied on top of this app's own env only
+	// when a preview environment is next created from it
+	// (store.DesiredService.PreviewEnvOverrides). Response-only, the same
+	// boundary NodeID/ProjectID/StorageTargetID/LogDrain already establish
+	// above: set it via PUT/DELETE /api/v1/apps/{name}/preview-env/{key}
+	// (apps_preview_env.go) instead.
+	PreviewEnvOverrides map[string]string `json:"preview_env_overrides,omitempty"`
 	// ResourcesAppliedLive is response-only, set by handleUpdateApp:
 	// whether the new Resources value was already pushed onto a
 	// currently running container via the Engine API's live
@@ -232,34 +240,35 @@ func toAppResource(svc store.DesiredService) appResource {
 	}
 
 	return appResource{
-		Name:               svc.Name,
-		Image:              svc.Image,
-		Port:               svc.Port,
-		HostPort:           svc.HostPort,
-		Domains:            svc.Domains,
-		Env:                svc.Env,
-		SecretEnv:          svc.SecretEnv,
-		VaultEnv:           vaultEnv,
-		Resources:          svc.Resources,
-		Health:             svc.Health,
-		Hooks:              svc.Hooks,
-		Strategy:           svc.Strategy,
-		Replicas:           svc.Replicas,
-		Labels:             svc.Labels,
-		NodeID:             svc.NodeID,
-		ProjectID:          svc.ProjectID,
-		EnvironmentID:      svc.EnvironmentID,
-		StorageTargetID:    svc.StorageTargetID,
-		DatabaseEnv:        databaseEnv,
-		DatabaseAttachment: attachment,
-		Suspended:          svc.Suspended,
-		AppID:              svc.AppID,
-		LogDrain:           svc.LogDrain,
-		EnvDirty:           svc.EnvDirty,
-		Volumes:            toAppVolumeResources(svc),
-		BindMounts:         toAppBindMountResources(svc),
-		Command:            svc.Command,
-		PullPolicy:         svc.PullPolicy,
+		Name:                svc.Name,
+		Image:               svc.Image,
+		Port:                svc.Port,
+		HostPort:            svc.HostPort,
+		Domains:             svc.Domains,
+		Env:                 svc.Env,
+		SecretEnv:           svc.SecretEnv,
+		VaultEnv:            vaultEnv,
+		Resources:           svc.Resources,
+		Health:              svc.Health,
+		Hooks:               svc.Hooks,
+		Strategy:            svc.Strategy,
+		Replicas:            svc.Replicas,
+		Labels:              svc.Labels,
+		NodeID:              svc.NodeID,
+		ProjectID:           svc.ProjectID,
+		EnvironmentID:       svc.EnvironmentID,
+		StorageTargetID:     svc.StorageTargetID,
+		DatabaseEnv:         databaseEnv,
+		DatabaseAttachment:  attachment,
+		Suspended:           svc.Suspended,
+		AppID:               svc.AppID,
+		LogDrain:            svc.LogDrain,
+		PreviewEnvOverrides: svc.PreviewEnvOverrides,
+		EnvDirty:            svc.EnvDirty,
+		Volumes:             toAppVolumeResources(svc),
+		BindMounts:          toAppBindMountResources(svc),
+		Command:             svc.Command,
+		PullPolicy:          svc.PullPolicy,
 	}
 }
 

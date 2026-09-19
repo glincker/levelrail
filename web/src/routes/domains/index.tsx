@@ -5,6 +5,7 @@ import { useMemo, useRef } from 'react'
 import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import { certificatesQueryOptions } from '../../queries/certificates'
 import { cloudflareDnsSettingsQueryOptions } from '../../queries/cloudflareDns'
+import { route53DnsSettingsQueryOptions } from '../../queries/route53Dns'
 import {
   domainsQueryOptions,
   ingressSettingsQueryOptions,
@@ -15,6 +16,7 @@ import {
   RowSkeleton,
 } from '../../components/DomainRow'
 import { CloudflareDnsCard } from '../../components/CloudflareDnsCard'
+import { Route53DnsCard } from '../../components/Route53DnsCard'
 import { IngressSettingsCard } from '../../components/IngressSettingsCard'
 import { EmptyState } from '../../components/ui/empty-state'
 
@@ -34,6 +36,7 @@ export const Route = createFileRoute('/domains/')({
       queryClient.ensureQueryData(certificatesQueryOptions()),
       queryClient.ensureQueryData(ingressSettingsQueryOptions()),
       queryClient.ensureQueryData(cloudflareDnsSettingsQueryOptions()),
+      queryClient.ensureQueryData(route53DnsSettingsQueryOptions()),
     ]),
   component: DomainsPage,
   pendingComponent: DomainsPending,
@@ -59,6 +62,9 @@ function DomainsPage() {
   const { data: settings } = useSuspenseQuery(ingressSettingsQueryOptions())
   const { data: cloudflareDns } = useSuspenseQuery(
     cloudflareDnsSettingsQueryOptions(),
+  )
+  const { data: route53Dns } = useSuspenseQuery(
+    route53DnsSettingsQueryOptions(),
   )
   const parentRef = useRef<HTMLDivElement>(null)
 
@@ -87,8 +93,8 @@ function DomainsPage() {
       <div>
         <h1 className="text-lg font-semibold text-foreground">Domains</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Every domain routed through this platform, and the ingress
-          settings that decide how their certificates are issued.
+          Every domain routed through this platform, and the ingress settings
+          that decide how their certificates are issued.
         </p>
       </div>
 
@@ -103,12 +109,12 @@ function DomainsPage() {
 
       <CloudflareDnsCard settings={cloudflareDns} />
 
+      <Route53DnsCard settings={route53Dns} />
+
       <div>
         <div className="mb-3 flex items-center gap-2">
           <GlobeIcon className="size-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold text-foreground">
-            App domains
-          </h2>
+          <h2 className="text-sm font-semibold text-foreground">App domains</h2>
           {domains.length > 0 ? (
             <span className="text-xs text-muted-foreground">
               {domains.length} {domains.length === 1 ? 'domain' : 'domains'}
@@ -182,9 +188,7 @@ function DomainsPending() {
       <div>
         <div className="mb-3 flex items-center gap-2">
           <GlobeIcon className="size-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold text-foreground">
-            App domains
-          </h2>
+          <h2 className="text-sm font-semibold text-foreground">App domains</h2>
         </div>
         <div className="overflow-hidden rounded-lg border border-border bg-card">
           <ListHeader />

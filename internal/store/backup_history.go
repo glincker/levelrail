@@ -305,6 +305,47 @@ func (db *DB) ListBackupHistory(ctx context.Context, databaseName string, limit 
 	return out, nil
 }
 
+// ListAllBackupHistory returns up to limit backup attempts across every
+// resource, database and volume alike, newest first: the instance-wide
+// counterpart of ListBackupHistory/ListServiceVolumeBackupHistory, for a
+// caller that wants one merged view rather than per-resource lists.
+// before paginates identically to those two (cursor on started_at, no
+// OFFSET query).
+func (db *DB) ListAllBackupHistory(ctx context.Context, limit int, before *time.Time) ([]BackupHistory, error) {
+	var (
+		rows *sql.Rows
+		err  error
+	)
+	if before != nil {
+		rows, err = db.QueryContext(ctx, `
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256
+			FROM backup_history
+			WHERE started_at < ?
+			ORDER BY started_at DESC
+			LIMIT ?
+		`, before.UTC().Format(time.RFC3339), limit)
+	} else {
+		rows, err = db.QueryContext(ctx, `
+			SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256
+			FROM backup_history
+			ORDER BY started_at DESC
+			LIMIT ?
+		`, limit)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("store: list all backup history: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	out, err := scanBackupHistoryRows(rows)
+	if err != nil {
+		return nil, fmt.Errorf("store: list all backup history: %w", err)
+	}
+	return out, nil
+}
+
 // scanBackupHistoryRows reads every row of an already-executed
 // backup_history query into BackupHistory, the shared scan logic
 // ListBackupHistory and ListServiceVolumeBackupHistory both need so the

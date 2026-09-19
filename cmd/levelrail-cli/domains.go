@@ -9,10 +9,12 @@ import (
 // aggregation of every app's own service_domains rows,
 // internal/api/ingress_settings.go's own handleListDomains doc comment;
 // domain assignment itself happens through "apps create"/an app's own
-// domains: field, not through this command) and "cloudflare-dns" (the
-// DNS-01 credential a wildcard domain, e.g. "*.example.com", needs:
-// internal/ingress.IsWildcardDomain is the only thing that marks a
-// domain wildcard-eligible, there is no separate flag for it).
+// domains: field, not through this command) and "cloudflare-dns"/
+// "route53-dns" (the two supported ACME DNS-01 providers a wildcard
+// domain, e.g. "*.example.com", needs: internal/ingress.IsWildcardDomain
+// is the only thing that marks a domain wildcard-eligible, there is no
+// separate flag for it. Only one provider is ever active at once;
+// Cloudflare takes precedence if both are configured).
 func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, domainsUsage(prog))
@@ -27,6 +29,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cloudflare-dns":
 		return runDomainsCloudflareDNS(prog, args[1:], stdout, stderr, lookupEnv)
+	case "route53-dns":
+		return runDomainsRoute53DNS(prog, args[1:], stdout, stderr, lookupEnv)
 	case "basic-auth":
 		return runDomainsBasicAuth(prog, args[1:], stdout, stderr, lookupEnv)
 	case "maintenance":
@@ -50,6 +54,7 @@ func domainsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s domains list [flags]                    list every app's domains in one call
   %[1]s domains cloudflare-dns <verb> [flags]   configure wildcard-domain ACME DNS-01 via Cloudflare
+  %[1]s domains route53-dns <verb> [flags]      configure wildcard-domain ACME DNS-01 via Route53
   %[1]s domains basic-auth <verb> [flags]       protect an app's domain with HTTP Basic Auth
   %[1]s domains maintenance <verb> [flags]      take one of an app's domains in or out of maintenance mode
   %[1]s domains tls-cert <verb> [flags]         upload or clear a domain's own (BYO) TLS certificate

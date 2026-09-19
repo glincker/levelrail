@@ -20,24 +20,26 @@ import (
 // internal/reconcile/application's tests already established: stateful
 // enough for realistic multi-service scenarios, not just a call counter.
 type fakeStore struct {
-	services       []store.DesiredService
-	err            error
-	staticSites    []store.StaticSite
-	staticSitesErr error
-	settings       store.IngressSettings
-	settingsErr    error
-	dnsSettings    store.CloudflareDNSSettings
-	dnsSettingsErr error
-	basicAuth      []store.DomainBasicAuth
-	basicAuthErr   error
-	maintenance    []string
-	maintenanceErr error
-	tlsCerts       []store.DomainTLSCert
-	tlsCertsErr    error
-	registry       store.RegistrySettings
-	registryErr    error
-	waf            []store.DomainWAF
-	wafErr         error
+	services           []store.DesiredService
+	err                error
+	staticSites        []store.StaticSite
+	staticSitesErr     error
+	settings           store.IngressSettings
+	settingsErr        error
+	dnsSettings        store.CloudflareDNSSettings
+	dnsSettingsErr     error
+	route53Settings    store.Route53DNSSettings
+	route53SettingsErr error
+	basicAuth          []store.DomainBasicAuth
+	basicAuthErr       error
+	maintenance        []string
+	maintenanceErr     error
+	tlsCerts           []store.DomainTLSCert
+	tlsCertsErr        error
+	registry           store.RegistrySettings
+	registryErr        error
+	waf                []store.DomainWAF
+	wafErr             error
 }
 
 func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredService, error) {
@@ -76,6 +78,16 @@ func (f *fakeStore) GetCloudflareDNSSettings(_ context.Context) (store.Cloudflar
 		return store.CloudflareDNSSettings{}, f.dnsSettingsErr
 	}
 	return f.dnsSettings, nil
+}
+
+// GetRoute53DNSSettings mirrors GetCloudflareDNSSettings' own "zero
+// value unless a test opts in" convention: Enabled defaults to false,
+// matching a fresh migration's seeded row.
+func (f *fakeStore) GetRoute53DNSSettings(_ context.Context) (store.Route53DNSSettings, error) {
+	if f.route53SettingsErr != nil {
+		return store.Route53DNSSettings{}, f.route53SettingsErr
+	}
+	return f.route53Settings, nil
 }
 
 // ListDomainBasicAuth mirrors GetCloudflareDNSSettings' own "empty

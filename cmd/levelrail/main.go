@@ -51,8 +51,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/internal/vault"
+	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 	"github.com/GLINCKER/levelrail/web"
 )
@@ -1783,6 +1783,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// Tunnel connector token above) goes through the same
 		// secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithCloudflareDNSSecrets(secretsManager))
+		// Route53 DNS-01's access key pair (a second, independent ACME
+		// DNS-01 provider from Cloudflare DNS-01 above) goes through the
+		// same secretsManager, same nil-interface hazard.
+		opts = append(opts, api.WithRoute53DNSSecrets(secretsManager))
 		// The built-in registry's generated password goes through the
 		// same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithRegistrySecrets(secretsManager))
@@ -2538,6 +2542,12 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// entirely without a master key" fallback.
 		if deps.secretsManager != nil {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithCloudflareDNSTokens(deps.secretsManager))
+			// Route53 DNS-01: a second, independent ACME DNS-01
+			// provider, same nil-secretsManager hazard and "skipped
+			// entirely without a master key" fallback as Cloudflare
+			// DNS-01 above. If both are enabled, the controller prefers
+			// Cloudflare (see ingressreconcile's own doc comment).
+			ingressOpts = append(ingressOpts, ingressreconcile.WithRoute53DNSCredentials(deps.secretsManager))
 			// Per-domain HTTP Basic Auth passwords: same nil-secretsManager
 			// hazard as Cloudflare DNS-01 above, same "no domain gets a
 			// basic_auth handler" fallback when absent.

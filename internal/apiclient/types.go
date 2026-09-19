@@ -115,6 +115,11 @@ type AppResource struct {
 	// pull-if-absent behavior. Response-only (declared through a compose
 	// import's pull_policy:, not settable here).
 	PullPolicy string `json:"pull_policy,omitempty"`
+	// PreviewEnvOverrides mirrors internal/api's
+	// appResource.PreviewEnvOverrides: response-only, set via PUT/DELETE
+	// /api/v1/apps/{name}/preview-env/{key} (SetAppPreviewEnvOverride/
+	// ClearAppPreviewEnvOverride).
+	PreviewEnvOverrides map[string]string `json:"preview_env_overrides,omitempty"`
 }
 
 // AppVaultEnvRef mirrors internal/api's appVaultEnvRef: one env var's
@@ -122,6 +127,21 @@ type AppResource struct {
 type AppVaultEnvRef struct {
 	Path string `json:"path"`
 	Key  string `json:"key"`
+}
+
+// setAppPreviewEnvOverrideRequest mirrors internal/api's own
+// setAppPreviewEnvOverrideRequest, the PUT .../preview-env/{key} request
+// body.
+type setAppPreviewEnvOverrideRequest struct {
+	Value string `json:"value"`
+}
+
+// AppPreviewEnvOverride mirrors handleSetAppPreviewEnvOverride's own
+// response shape: the env var key plus the preview-specific value just
+// saved.
+type AppPreviewEnvOverride struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 // AppVolumeResource mirrors internal/api's appVolumeResource
@@ -306,6 +326,31 @@ type CloudflareDNSResource struct {
 type UpdateCloudflareDNSRequest struct {
 	Enabled bool   `json:"enabled"`
 	Token   string `json:"token,omitempty"`
+}
+
+// Route53DNSResource mirrors internal/api's route53DNSResource
+// (internal/api/route53_dns.go): GET/PUT/DELETE
+// /api/v1/settings/route53-dns's wire shape. Neither credential half
+// ever appears here in either direction. A second, independent ACME
+// DNS-01 provider from CloudflareDNSResource, not a replacement.
+type Route53DNSResource struct {
+	Enabled            bool   `json:"enabled"`
+	Region             string `json:"region,omitempty"`
+	HostedZoneID       string `json:"hosted_zone_id,omitempty"`
+	HasAccessKeyID     bool   `json:"has_access_key_id"`
+	HasSecretAccessKey bool   `json:"has_secret_access_key"`
+}
+
+// UpdateRoute53DNSRequest mirrors internal/api's
+// updateRoute53DNSRequest. AccessKeyID/SecretAccessKey empty on an
+// update means "leave the currently stored credential unchanged"; the
+// two are set together or not at all.
+type UpdateRoute53DNSRequest struct {
+	Enabled         bool   `json:"enabled"`
+	Region          string `json:"region,omitempty"`
+	HostedZoneID    string `json:"hosted_zone_id,omitempty"`
+	AccessKeyID     string `json:"access_key_id,omitempty"`
+	SecretAccessKey string `json:"secret_access_key,omitempty"`
 }
 
 // CloudflareTunnelResource mirrors internal/api's cloudflareTunnelResource
@@ -511,6 +556,7 @@ type ImageResource struct {
 // DatabaseName for an app service volume backup, never alongside it.
 type BackupHistoryResource struct {
 	ID             string `json:"id"`
+	ResourceKind   string `json:"resource_kind"`
 	DatabaseName   string `json:"database_name,omitempty"`
 	ServiceName    string `json:"service_name,omitempty"`
 	VolumeName     string `json:"volume_name,omitempty"`

@@ -74,6 +74,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"images":             nil,
 		"storage":            {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 		"vault-env":          {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
+		"preview-env":        {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
 	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "set-project": nil, "clear-project": nil}},
 	"auth": {subs: map[string]*cmdNode{"login": nil, "whoami": nil, "2fa": {subs: map[string]*cmdNode{
@@ -84,6 +85,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"domains": {subs: map[string]*cmdNode{
 		"list":           nil,
 		"cloudflare-dns": {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
+		"route53-dns":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"basic-auth":     {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"maintenance":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"tls-cert":       {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
@@ -92,7 +94,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"waf":            {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 	}},
 	"backups": {subs: map[string]*cmdNode{
-		"list": nil, "trigger": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
+		"list": nil, "list-all": nil, "trigger": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
 	"app-volume-backups": {subs: map[string]*cmdNode{

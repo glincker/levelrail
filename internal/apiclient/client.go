@@ -249,6 +249,21 @@ func (c *Client) ClearAppVaultEnv(ctx context.Context, name, key string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/vault-env/"+PathEscape(key), nil, nil)
 }
 
+// SetAppPreviewEnvOverride calls PUT /api/v1/apps/{name}/preview-env/{key}:
+// declares (or replaces) one env var's preview-specific value on an app
+// that already exists, applied only the next time a preview environment
+// is created from it.
+func (c *Client) SetAppPreviewEnvOverride(ctx context.Context, name, key, value string) (AppPreviewEnvOverride, error) {
+	var out AppPreviewEnvOverride
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/preview-env/"+PathEscape(key), setAppPreviewEnvOverrideRequest{Value: value}, &out)
+	return out, err
+}
+
+// ClearAppPreviewEnvOverride calls DELETE /api/v1/apps/{name}/preview-env/{key}.
+func (c *Client) ClearAppPreviewEnvOverride(ctx context.Context, name, key string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/preview-env/"+PathEscape(key), nil, nil)
+}
+
 // DeployCompose calls POST /api/v1/apps/{name}/compose with composeYAML
 // as the raw request body. Unlike every other Client method, this
 // doesn't go through do(): handleDeployCompose (internal/api/apps_compose.go)
@@ -493,6 +508,33 @@ func (c *Client) SetCloudflareDNS(ctx context.Context, req UpdateCloudflareDNSRe
 func (c *Client) DisconnectCloudflareDNS(ctx context.Context) (CloudflareDNSResource, error) {
 	var out CloudflareDNSResource
 	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/cloudflare-dns", nil, &out)
+	return out, err
+}
+
+// route53DNSSettingsPath is /api/v1/settings/route53-dns, shared by all
+// three Route53DNS methods below rather than repeated as a literal.
+const route53DNSSettingsPath = "/api/v1/settings/route53-dns"
+
+// GetRoute53DNS calls GET /api/v1/settings/route53-dns: a second,
+// independent ACME DNS-01 provider's enabled/credential-presence state,
+// mirroring GetCloudflareDNS's own shape.
+func (c *Client) GetRoute53DNS(ctx context.Context) (Route53DNSResource, error) {
+	var out Route53DNSResource
+	err := c.do(ctx, http.MethodGet, route53DNSSettingsPath, nil, &out)
+	return out, err
+}
+
+// SetRoute53DNS calls PUT /api/v1/settings/route53-dns.
+func (c *Client) SetRoute53DNS(ctx context.Context, req UpdateRoute53DNSRequest) (Route53DNSResource, error) {
+	var out Route53DNSResource
+	err := c.do(ctx, http.MethodPut, route53DNSSettingsPath, req, &out)
+	return out, err
+}
+
+// DisconnectRoute53DNS calls DELETE /api/v1/settings/route53-dns.
+func (c *Client) DisconnectRoute53DNS(ctx context.Context) (Route53DNSResource, error) {
+	var out Route53DNSResource
+	err := c.do(ctx, http.MethodDelete, route53DNSSettingsPath, nil, &out)
 	return out, err
 }
 
@@ -789,6 +831,26 @@ func (c *Client) ClearBackupSchedule(ctx context.Context, name string) error {
 // backup attempt history for one database.
 func (c *Client) ListBackups(ctx context.Context, name string, opts ListBackupsOptions) ([]BackupHistoryResource, error) {
 	path := "/api/v1/databases/" + PathEscape(name) + "/backups"
+	q := url.Values{}
+	if opts.Limit > 0 {
+		q.Set("limit", strconv.Itoa(opts.Limit))
+	}
+	if opts.Before != "" {
+		q.Set("before", opts.Before)
+	}
+	if enc := q.Encode(); enc != "" {
+		path += "?" + enc
+	}
+	var out []BackupHistoryResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// ListAllBackups calls GET /api/v1/backups: the instance-wide backup
+// attempt history across every database and app volume, the aggregated
+// counterpart of ListBackups/ListVolumeBackups.
+func (c *Client) ListAllBackups(ctx context.Context, opts ListBackupsOptions) ([]BackupHistoryResource, error) {
+	path := "/api/v1/backups"
 	q := url.Values{}
 	if opts.Limit > 0 {
 		q.Set("limit", strconv.Itoa(opts.Limit))

@@ -20,6 +20,7 @@ import type {
   TriggerBackupRequest,
 } from '../types/backupHistory'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { allBackupHistoryKeys } from './allBackupHistory'
 
 export const backupHistoryKeys = {
   all: (databaseName: string) =>
@@ -194,7 +195,10 @@ export async function deleteBackup(
 // On success, the deleted row is removed straight from the history list's
 // cache (the mirror image of useTriggerBackup's optimistic insert above),
 // then the query is invalidated so a follow-up refetch confirms it against
-// real server state.
+// real server state. The instance-wide list (queries/allBackupHistory.ts)
+// is also invalidated: it merges this same row in from GET /api/v1/backups,
+// so a delete made from this database's own page must not leave a stale
+// row behind there.
 export function useDeleteBackup(databaseName: string) {
   const queryClient = useQueryClient()
   return useMutation<void, ApiError, string>({
@@ -207,6 +211,9 @@ export function useDeleteBackup(databaseName: string) {
       )
       void queryClient.invalidateQueries({
         queryKey: backupHistoryKeys.list(databaseName),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: allBackupHistoryKeys.list(),
       })
     },
   })

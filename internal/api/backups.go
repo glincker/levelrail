@@ -146,6 +146,7 @@ func parseBackupHistoryListParams(w http.ResponseWriter, r *http.Request) (limit
 // by ID" need GetBackupTarget already serves for backup targets.
 type BackupHistoryStore interface {
 	ListBackupHistory(ctx context.Context, databaseName string, limit int, before *time.Time) ([]store.BackupHistory, error)
+	ListAllBackupHistory(ctx context.Context, limit int, before *time.Time) ([]store.BackupHistory, error)
 	GetBackupHistory(ctx context.Context, id string) (store.BackupHistory, error)
 }
 
@@ -161,8 +162,14 @@ type BackupRunner interface {
 }
 
 // backupHistoryResource is the wire shape for one backup attempt.
+// ResourceKind is always populated (store.BackupResourceKindDatabase or
+// store.BackupResourceKindVolume): a per-resource caller already knows
+// which kind it asked for, but GET /api/v1/backups (handleListAllBackups)
+// aggregates both kinds in one list and needs it to tell rows apart and
+// route each one back to its own per-resource action endpoints.
 type backupHistoryResource struct {
 	ID           string `json:"id"`
+	ResourceKind string `json:"resource_kind"`
 	DatabaseName string `json:"database_name,omitempty"`
 	// ServiceName/VolumeName are set instead of DatabaseName when this
 	// attempt is an app service volume backup
@@ -182,8 +189,13 @@ type backupHistoryResource struct {
 }
 
 func toBackupHistoryResource(h store.BackupHistory) backupHistoryResource {
+	kind := h.ResourceKind
+	if kind == "" {
+		kind = store.BackupResourceKindDatabase
+	}
 	return backupHistoryResource{
 		ID:             h.ID,
+		ResourceKind:   kind,
 		DatabaseName:   h.DatabaseName,
 		ServiceName:    h.ServiceName,
 		VolumeName:     h.VolumeName,
@@ -288,6 +300,30 @@ func (rt *Router) handleListBackupHistory(w http.ResponseWriter, r *http.Request
 	history, err := rt.backupHistory.ListBackupHistory(r.Context(), name, limit, before)
 	if err != nil {
 		rt.logger.Error("api: list backup history failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	out := make([]backupHistoryResource, 0, len(history))
+	for _, h := range history {
+		out = append(out, toBackupHistoryResource(h))
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// handleListAllBackups handles GET /api/v1/backups: the instance-wide
+// counterpart of handleListBackupHistory/handleListVolumeBackupHistory,
+// merging database and volume backups into one newest-first list rather
+// than requiring a caller to already know every resource name to check.
+// Cursor-paginated by the same ?before/?limit contract those two use.
+func (rt *Router) handleListAllBackups(w http.ResponseWriter, r *http.Request) {
+	limit, before, ok := parseBackupHistoryListParams(w, r)
+	if !ok {
+		return
+	}
+
+	history, err := rt.backupHistory.ListAllBackupHistory(r.Context(), limit, before)
+	if err != nil {
+		rt.logger.Error("api: list all backup history failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

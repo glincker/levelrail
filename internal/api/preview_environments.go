@@ -216,6 +216,26 @@ func domainSlice(domain string) []string {
 	return []string{domain}
 }
 
+// applyPreviewEnvOverrides replaces svcSpec.Env, for every key present in
+// overrides, with a plain literal value: a preview-specific override
+// (PUT /api/v1/apps/{name}/preview-env/{key} on the parent app) always
+// wins over whatever the parent's own Env/SecretEnv/VaultEnv held for
+// that key, since the whole point is a preview-only value the parent
+// itself never sees. Every other env var not named in overrides still
+// inherits from the parent exactly as specServiceFromDesired already
+// copied it.
+func applyPreviewEnvOverrides(svcSpec *spec.Service, overrides map[string]string) {
+	if len(overrides) == 0 {
+		return
+	}
+	if svcSpec.Env == nil {
+		svcSpec.Env = make(map[string]spec.EnvVar, len(overrides))
+	}
+	for k, v := range overrides {
+		svcSpec.Env[k] = spec.EnvVar{Value: v}
+	}
+}
+
 // deployPreviewSingle rebuilds appName's own production build config
 // (specServiceFromDesired, the same reconstruction handleGitPushWebhook
 // already uses) against the PR's checkout, under previewName. A domain
@@ -231,6 +251,7 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 	}
 
 	svcSpec := specServiceFromDesired(*prod, spec.Build{Type: gs.BuildType, Path: gs.BuildPath})
+	applyPreviewEnvOverrides(&svcSpec, prod.PreviewEnvOverrides)
 	svcSpec.Domains = domainSlice(wantDomain)
 	req := deploy.Request{ServiceName: previewName, Service: svcSpec, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepo: previewName}
 

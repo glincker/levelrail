@@ -330,6 +330,37 @@ func parseSingleArgClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, st
 	return apiClientFromFlags(cmd.prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), name, jsonOut, of, exitOK, true
 }
 
+// twoArgCmd is singleArgCmd's two-positional-argument counterpart:
+// bundles a command's own identity plus what its two arguments are
+// called together in a usage message (e.g. "an app name and an env var
+// key"), keeping parseTwoArgClient under golangci-lint's parameter-count
+// limit.
+type twoArgCmd struct {
+	prog, cmdLabel, argsLabel string
+}
+
+// parseTwoArgClient is parseSingleArgClient's two-positional-argument
+// counterpart: the parse-flags-then-require-two-args-then-build-client
+// sequence every "<group> set|clear <name> <key> [flags]" subcommand
+// needs before its own request logic diverges (apps vault-env set/clear,
+// apps preview-env set/clear, the identical shape both share). ok is
+// false once fs.Parse, --help, or the missing-args check has already
+// written its own message to stderr; the caller should return exitCode
+// unchanged in that case.
+func parseTwoArgClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, stderr io.Writer, cmd twoArgCmd, lookupEnv func(string) (string, bool)) (client *Client, first, second string, jsonOut bool, of outputFlags, exitCode int, ok bool) {
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, flags, cmd.prog, stderr)
+	if !ok {
+		return nil, "", "", false, outputFlags{}, exitCode, false
+	}
+
+	positional, ok := requireArgs(fs, stderr, cmd.prog, cmd.cmdLabel, cmd.argsLabel, 2)
+	if !ok {
+		return nil, "", "", false, outputFlags{}, exitUsage, false
+	}
+
+	return apiClientFromFlags(cmd.prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), positional[0], positional[1], jsonOut, of, exitOK, true
+}
+
 // parseListClient is parseSingleArgClient's zero-positional-argument
 // counterpart: the parse-flags-then-build-client sequence every "list"
 // subcommand needs before its own request logic diverges. ok is false

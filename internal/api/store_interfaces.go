@@ -94,6 +94,17 @@ type AppStore interface {
 	// UpdateServiceDatabaseAttachment, see store.DB.SetServiceVaultEnvVar's
 	// own doc comment.
 	SetServiceVaultEnvVar(ctx context.Context, name, envVar string, ref *store.VaultEnvRef) error
+	// SetServicePreviewEnvOverride backs PUT/DELETE
+	// /api/v1/apps/{name}/preview-env/{key} (apps_preview_env.go): the
+	// UI/CLI-facing way to declare (or remove), on an app that already
+	// exists, a preview-specific value for one env var that replaces
+	// whatever this app's own Env/SecretEnv/VaultEnv holds for that key,
+	// applied only when a preview environment is next created from this
+	// app (deployPreviewSingle, preview_environments.go), never to this
+	// app's own deploy. Same separation-from-ordinary-update reasoning as
+	// SetServiceVaultEnvVar, see store.DB.SetServicePreviewEnvOverride's
+	// own doc comment.
+	SetServicePreviewEnvOverride(ctx context.Context, name, envVar string, value *string) error
 }
 
 // AppGroupLister is the store surface GET /api/v1/apps/{name}/group
@@ -295,6 +306,15 @@ type CloudflareDNSStore interface {
 	UpdateCloudflareDNSSettings(ctx context.Context, s store.CloudflareDNSSettings) error
 }
 
+// Route53DNSStore is the store surface GET/PUT
+// /api/v1/settings/route53-dns need, the same "single platform-wide
+// row" shape CloudflareDNSStore already establishes for a distinct ACME
+// DNS-01 provider.
+type Route53DNSStore interface {
+	GetRoute53DNSSettings(ctx context.Context) (store.Route53DNSSettings, error)
+	UpdateRoute53DNSSettings(ctx context.Context, s store.Route53DNSSettings) error
+}
+
 // RegistryStore is the store surface GET/PUT/DELETE
 // /api/v1/settings/registry need: the single platform-wide row, always
 // present, the same shape CloudflareTunnelStore has for its own row.
@@ -414,6 +434,7 @@ type Store interface {
 	CloudflareTunnelStore
 	RegistryStore
 	CloudflareDNSStore
+	Route53DNSStore
 	VaultSettingsStore
 	PasswordResetTokenStore
 	InviteStore

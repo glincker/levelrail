@@ -101,6 +101,12 @@ type ServiceStore interface {
 	ListStaticSites(ctx context.Context) ([]store.StaticSite, error)
 	GetIngressSettings(ctx context.Context) (store.IngressSettings, error)
 	GetCloudflareDNSSettings(ctx context.Context) (store.CloudflareDNSSettings, error)
+	// GetRoute53DNSSettings returns the Route53 DNS-01 platform-wide
+	// row (migrations/0098), read fresh every Reconcile for the same
+	// reason GetCloudflareDNSSettings is: a second, independent ACME
+	// DNS-01 provider an operator can enable through PUT
+	// /api/v1/settings/route53-dns (internal/api).
+	GetRoute53DNSSettings(ctx context.Context) (store.Route53DNSSettings, error)
 	// ListDomainBasicAuth returns every domain currently protected by
 	// HTTP Basic Auth (store.DomainBasicAuth, migrations/0052), read
 	// fresh every Reconcile like everything else on this interface: an
@@ -152,6 +158,16 @@ type Applier interface {
 // token, mirroring cloudflaretunnel.TokenResolver's exact shape.
 // *secrets.Manager satisfies this structurally.
 type CloudflareDNSTokenResolver interface {
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
+// Route53DNSCredentialResolver is the narrow surface this controller
+// needs from internal/secrets.Manager to resolve the Route53 DNS-01
+// access key pair, structurally identical to CloudflareDNSTokenResolver
+// but named separately since the two resolve unrelated credentials
+// under different serviceName namespaces. *secrets.Manager satisfies
+// this structurally.
+type Route53DNSCredentialResolver interface {
 	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
 }
 
@@ -246,6 +262,16 @@ type Controller struct {
 	// means no wildcard domain ever gets Cloudflare DNS-01, unchanged
 	// from this controller's behavior before this field existed.
 	dnsTokens CloudflareDNSTokenResolver
+
+	// route53Creds, if set via WithRoute53DNSCredentials, is resolved
+	// fresh every Reconcile pass whenever store.Route53DNSSettings.
+	// Enabled is true, the same shape dnsTokens has for Cloudflare's own
+	// credential. Nil (the default) means no wildcard domain ever gets
+	// Route53 DNS-01. If both Cloudflare and Route53 are enabled at
+	// once, resolveDNSProvider prefers Cloudflare: exactly one DNS-01
+	// provider is active per reconcile pass, there is no per-domain
+	// provider selection yet.
+	route53Creds Route53DNSCredentialResolver
 
 	// basicAuthSecrets, if set via WithDomainBasicAuthSecrets, is
 	// resolved fresh every Reconcile pass for every domain returned by
@@ -361,6 +387,17 @@ func WithRegistryDial(dial string) Option {
 // existed.
 func WithCloudflareDNSTokens(resolver CloudflareDNSTokenResolver) Option {
 	return func(c *Controller) { c.dnsTokens = resolver }
+}
+
+// WithRoute53DNSCredentials enables Route53 DNS-01 for wildcard domains
+// by resolving the access key pair internal/secrets stores under
+// store.Route53DNSSecretsKey(), whenever store.Route53DNSSettings.
+// Enabled is true. Without this option (the default), Route53 is never
+// used, unchanged from this controller's behavior before this feature
+// existed. See dnsTokens/route53Creds's own doc comment for the
+// precedence rule when both providers are enabled at once.
+func WithRoute53DNSCredentials(resolver Route53DNSCredentialResolver) Option {
+	return func(c *Controller) { c.route53Creds = resolver }
 }
 
 // WithDomainBasicAuthSecrets enables HTTP Basic Auth on any domain
@@ -628,20 +665,20 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 
 	cfg, err := ingress.BuildRoutesConfig(ingress.RoutesOptions{
-		ServerName:            c.serverName,
-		ListenAddr:            c.listenAddr,
-		Routes:                routes,
-		StaticRoutes:          staticRoutes,
-		MaintenanceRoutes:     maintenanceRoutes,
-		TLS:                   true,
-		AdminListen:           c.adminListen,
-		StorageDir:            c.storageDir,
-		CertStorage:           c.certStorage,
-		ACMEEnabled:           settings.ACMEEnabled,
-		ACMEEmail:             settings.ACMEEmail,
-		ACMEDirectoryURL:      settings.ACMEDirectoryURL,
-		CloudflareDNSAPIToken: c.resolveCloudflareDNSAPIToken(ctx),
-		TLSCertificates:       tlsCertOverrides,
+		ServerName:        c.serverName,
+		ListenAddr:        c.listenAddr,
+		Routes:            routes,
+		StaticRoutes:      staticRoutes,
+		MaintenanceRoutes: maintenanceRoutes,
+		TLS:               true,
+		AdminListen:       c.adminListen,
+		StorageDir:        c.storageDir,
+		CertStorage:       c.certStorage,
+		ACMEEnabled:       settings.ACMEEnabled,
+		ACMEEmail:         settings.ACMEEmail,
+		ACMEDirectoryURL:  settings.ACMEDirectoryURL,
+		DNSProvider:       c.resolveDNSProvider(ctx),
+		TLSCertificates:   tlsCertOverrides,
 	})
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
@@ -680,32 +717,87 @@ func firstDuplicateHost(name string, domains []string, claimed map[string]string
 	return "", "", false
 }
 
-// resolveCloudflareDNSAPIToken returns the Cloudflare DNS-01 API token
-// for this reconcile pass, or "" if WithCloudflareDNSTokens was never
-// set, the operator hasn't enabled it (store.CloudflareDNSSettings.
-// Enabled), or resolving it fails. Failing to "" rather than returning
-// an error keeps a token problem from blocking the whole ingress
-// reconcile: it only means wildcard hosts fall back to whatever the
-// non-wildcard policy already does with them this pass, exactly as if
-// this feature were never configured.
-func (c *Controller) resolveCloudflareDNSAPIToken(ctx context.Context) string {
+// resolveDNSProvider returns the ACME DNS-01 provider wildcard domains
+// should use this reconcile pass, or nil if no provider is both
+// configured and enabled. Cloudflare takes precedence when both are
+// enabled at once: see route53Creds's own doc comment.
+func (c *Controller) resolveDNSProvider(ctx context.Context) ingress.DNS01Provider {
+	if p := c.resolveCloudflareDNSProvider(ctx); p != nil {
+		return p
+	}
+	return c.resolveRoute53DNSProvider(ctx)
+}
+
+// resolveCloudflareDNSProvider returns the Cloudflare DNS-01 provider for
+// this reconcile pass, or nil if WithCloudflareDNSTokens was never set,
+// the operator hasn't enabled it (store.CloudflareDNSSettings.Enabled),
+// or resolving the token fails. Failing to nil rather than returning an
+// error keeps a token problem from blocking the whole ingress reconcile:
+// it only means wildcard hosts fall back to whatever the non-wildcard
+// policy already does with them this pass, exactly as if this feature
+// were never configured.
+func (c *Controller) resolveCloudflareDNSProvider(ctx context.Context) ingress.DNS01Provider {
 	if c.dnsTokens == nil {
-		return ""
+		return nil
 	}
 	dnsSettings, err := c.store.GetCloudflareDNSSettings(ctx)
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: get cloudflare dns settings failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
-		return ""
+		return nil
 	}
 	if !dnsSettings.Enabled {
-		return ""
+		return nil
 	}
 	token, err := c.dnsTokens.Resolve(ctx, store.CloudflareDNSSecretsKey(), store.CloudflareDNSTokenEnvKey)
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: resolve cloudflare dns token failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
-		return ""
+		return nil
 	}
-	return token
+	if token == "" {
+		return nil
+	}
+	return ingress.CloudflareDNSProvider{Name: "cloudflare", APIToken: token}
+}
+
+// resolveRoute53DNSProvider returns the Route53 DNS-01 provider for this
+// reconcile pass, or nil if WithRoute53DNSCredentials was never set, the
+// operator hasn't enabled it (store.Route53DNSSettings.Enabled), or
+// resolving either half of the credential pair fails. Mirrors
+// resolveCloudflareDNSProvider's own "fail to nil, never block the whole
+// reconcile" shape.
+func (c *Controller) resolveRoute53DNSProvider(ctx context.Context) ingress.DNS01Provider {
+	if c.route53Creds == nil {
+		return nil
+	}
+	settings, err := c.store.GetRoute53DNSSettings(ctx)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: get route53 dns settings failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return nil
+	}
+	if !settings.Enabled {
+		return nil
+	}
+	key := store.Route53DNSSecretsKey()
+	accessKeyID, err := c.route53Creds.Resolve(ctx, key, store.Route53DNSAccessKeyIDEnvKey)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: resolve route53 dns access key id failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return nil
+	}
+	secretAccessKey, err := c.route53Creds.Resolve(ctx, key, store.Route53DNSSecretAccessKeyEnvKey)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: resolve route53 dns secret access key failed, wildcard domains will not get DNS-01 this pass", slog.String("error", err.Error()))
+		return nil
+	}
+	if accessKeyID == "" || secretAccessKey == "" {
+		return nil
+	}
+	return ingress.Route53DNSProvider{
+		Name:            "route53",
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+		Region:          settings.Region,
+		HostedZoneID:    settings.HostedZoneID,
+	}
 }
 
 // dialForService derives svc's currently active container the same way
