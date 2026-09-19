@@ -1810,10 +1810,11 @@ func serviceAlias(desired *store.DesiredService) string {
 
 func toContainerSpec(name string, desired *store.DesiredService) docker.ContainerSpec {
 	spec := docker.ContainerSpec{
-		Name:   name,
-		Image:  desired.Image,
-		Env:    desired.Env,
-		Labels: desired.Labels,
+		Name:      name,
+		Image:     desired.Image,
+		Env:       desired.Env,
+		Labels:    desired.Labels,
+		ForcePull: desired.PullPolicy == store.PullPolicyAlways,
 	}
 	if len(desired.Command) > 0 {
 		spec.Command = desired.Command

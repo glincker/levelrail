@@ -198,6 +198,12 @@ export interface AppDetail {
   // (POST /apps/{name}/compose, root-ability-gated when the file
   // carries one), undefined meaning none declared.
   bind_mounts?: AppBindMount[]
+  // pull_policy is response-only (internal/api/apps.go's appResource own
+  // doc comment): "always" forces a fresh image pull on every deploy,
+  // undefined/empty means the default pull-if-absent behavior. Only ever
+  // set via the compose-import path's pull_policy: (POST
+  // /apps/{name}/compose).
+  pull_policy?: string
 }
 
 // Matches internal/api/apps.go's appVolumeResource exactly: one of an

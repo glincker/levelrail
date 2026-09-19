@@ -71,6 +71,34 @@ type Service struct {
 	// (store.DesiredService.Entrypoint), parsed with the same
 	// string-or-list union as Command.
 	Entrypoint Command
+	// PullPolicy is pull_policy:, normalized by normalizePullPolicy into
+	// exactly the two states store.DesiredService.PullPolicy
+	// distinguishes: PullPolicyAlways forces a fresh pull even when the
+	// image is already present locally, empty means today's existing
+	// pull-if-absent behavior. Real Compose's other recognized spellings
+	// ("missing", "if_not_present", an unset field) all normalize to
+	// empty too; "never" and "build" are rejected, see
+	// normalizePullPolicy.
+	PullPolicy string
+}
+
+// PullPolicyAlways is pull_policy: always, the only non-default value
+// this package supports.
+const PullPolicyAlways = "always"
+
+// normalizePullPolicy maps pull_policy:'s recognized spellings onto the
+// two states store.DesiredService.PullPolicy actually distinguishes.
+// "never" and "build" are rejected outright: neither has a real
+// translation onto docker.Client's own pull-if-absent/force-pull model.
+func normalizePullPolicy(raw string) (string, error) {
+	switch raw {
+	case "", "missing", "if_not_present":
+		return "", nil
+	case PullPolicyAlways:
+		return PullPolicyAlways, nil
+	default:
+		return "", fmt.Errorf("pull_policy: %q is not supported, use %q or leave it unset", raw, PullPolicyAlways)
+	}
 }
 
 // Volume is one short-form "name:/container/path" entry, either a named

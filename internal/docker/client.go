@@ -183,7 +183,7 @@ func observedPorts(ports []container.Port) []PortBinding {
 
 // Create implements Runtime.
 func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error) {
-	if err := c.ensureImage(ctx, spec.Image, spec.RegistryAuth); err != nil {
+	if err := c.ensureImage(ctx, spec.Image, spec.RegistryAuth, spec.ForcePull); err != nil {
 		return "", err
 	}
 
@@ -660,14 +660,19 @@ func (c *Client) streamExecOutput(ctx context.Context, containerID, execID strin
 // calls happen often (event-driven plus periodic resync); pulling
 // unconditionally on every call would be slow and noisy, so this checks
 // first and only pulls on a genuine local miss. auth is nil for an
-// unauthenticated (public) pull.
-func (c *Client) ensureImage(ctx context.Context, ref string, auth *RegistryAuth) error {
-	_, err := c.cli.ImageInspect(ctx, ref)
-	if err == nil {
-		return nil
-	}
-	if !cerrdefs.IsNotFound(err) {
-		return fmt.Errorf("docker: inspect image %q: %w", ref, err)
+// unauthenticated (public) pull. forcePull (ContainerSpec.ForcePull)
+// skips the local-presence check entirely: the only way a mutable tag
+// like ":latest" gets re-pulled when it hasn't changed on Docker's own
+// terms.
+func (c *Client) ensureImage(ctx context.Context, ref string, auth *RegistryAuth, forcePull bool) error {
+	if !forcePull {
+		_, err := c.cli.ImageInspect(ctx, ref)
+		if err == nil {
+			return nil
+		}
+		if !cerrdefs.IsNotFound(err) {
+			return fmt.Errorf("docker: inspect image %q: %w", ref, err)
+		}
 	}
 
 	var pullOpts image.PullOptions

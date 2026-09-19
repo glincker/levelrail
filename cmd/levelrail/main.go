@@ -51,8 +51,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
-	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/internal/vault"
+	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 	"github.com/GLINCKER/levelrail/web"
 )

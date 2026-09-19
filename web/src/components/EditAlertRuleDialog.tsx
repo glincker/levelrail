@@ -33,7 +33,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '@/components/ui/field'
 import { DurationInput } from '@/components/ui/duration-input'
 import { toast } from '@/components/ui/toast'
 import { useUpdateAlertRule } from '../queries/alerts'
@@ -42,7 +47,10 @@ import { useScheduledTasks } from '../queries/scheduledTasks'
 import { useDatabases } from '../queries/databases'
 import { CHANNEL_KIND_LABEL } from './notificationChannelKind'
 import { METRIC_NAME_LABEL, METRIC_NAME_OPTIONS } from './metricName'
-import { BackupMissingFields, type BackupMissingFormShape } from './BackupMissingFields'
+import {
+  BackupMissingFields,
+  type BackupMissingFormShape,
+} from './BackupMissingFields'
 import type {
   AlertRule,
   AlertRuleKind,
@@ -63,11 +71,23 @@ const KIND_OPTIONS: {
 }[] = [
   { value: 'threshold', label: 'Threshold', Icon: GaugeIcon },
   { value: 'crashloop', label: 'Crashloop', Icon: ArrowCounterClockwiseIcon },
-  { value: 'cert_expiry', label: 'Certificate expiry', Icon: ShieldWarningIcon },
+  {
+    value: 'cert_expiry',
+    label: 'Certificate expiry',
+    Icon: ShieldWarningIcon,
+  },
   { value: 'patch_status', label: 'Node patch status', Icon: WrenchIcon },
-  { value: 'scheduled_task_failure', label: 'Scheduled task failure', Icon: ClockCountdownIcon },
+  {
+    value: 'scheduled_task_failure',
+    label: 'Scheduled task failure',
+    Icon: ClockCountdownIcon,
+  },
   { value: 'node_disk_space', label: 'Node disk space', Icon: HardDriveIcon },
-  { value: 'node_resource_usage', label: 'Node CPU/memory usage', Icon: CpuIcon },
+  {
+    value: 'node_resource_usage',
+    label: 'Node CPU/memory usage',
+    Icon: CpuIcon,
+  },
   { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
   { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
 ]
@@ -177,13 +197,19 @@ const editAlertRuleSchema = z
           message: 'Choose what this rule watches',
           path: ['backupResourceKind'],
         })
-      } else if (data.backupResourceKind === 'database' && !data.backupDatabaseName) {
+      } else if (
+        data.backupResourceKind === 'database' &&
+        !data.backupDatabaseName
+      ) {
         ctx.addIssue({
           code: 'custom',
           message: 'Choose which database to watch',
           path: ['backupDatabaseName'],
         })
-      } else if (data.backupResourceKind === 'volume' && !data.backupVolumeName) {
+      } else if (
+        data.backupResourceKind === 'volume' &&
+        !data.backupVolumeName
+      ) {
         ctx.addIssue({
           code: 'custom',
           message: 'Choose which volume to watch',
@@ -407,9 +433,8 @@ export function EditAlertRuleDialog({
           kind === 'node_disk_space' ||
           kind === 'node_resource_usage' ? (
             <p className="text-sm text-muted-foreground">
-              This kind watches every certificate or node on the whole
-              control plane platform-wide, needing no metric or threshold
-              of its own.
+              This kind watches every certificate or node on the whole control
+              plane platform-wide, needing no metric or threshold of its own.
             </p>
           ) : kind === 'domain_health' ? (
             <Field>
@@ -468,7 +493,10 @@ export function EditAlertRuleDialog({
                         value={field.value}
                         onValueChange={field.onChange}
                       >
-                        <SelectTrigger id="edit-rule-comparator" className="w-full">
+                        <SelectTrigger
+                          id="edit-rule-comparator"
+                          className="w-full"
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -531,8 +559,14 @@ export function EditAlertRuleDialog({
                     control={control}
                     name="scheduledTaskId"
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger id="edit-rule-scheduled-task" className="w-full">
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger
+                          id="edit-rule-scheduled-task"
+                          className="w-full"
+                        >
                           <SelectValue placeholder="Choose a scheduled task" />
                         </SelectTrigger>
                         <SelectContent>
@@ -637,9 +671,9 @@ export function EditAlertRuleDialog({
                   )}
                 />
                 <FieldDescription>
-                  Reuses a channel connection from Settings &rarr;
-                  Notification channels; leave unset to remove the rule&apos;s
-                  notify destination.
+                  Reuses a channel connection from Settings &rarr; Notification
+                  channels; leave unset to remove the rule&apos;s notify
+                  destination.
                 </FieldDescription>
               </>
             )}

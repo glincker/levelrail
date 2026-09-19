@@ -1215,6 +1215,45 @@ func TestSaveDesiredService_NilEntrypoint_RoundTripsToEmptyNonNilSlice(t *testin
 	}
 }
 
+func TestSaveDesiredService_PullPolicy_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	want := DesiredService{Name: "web", Image: "nginx:latest", Port: 80, PullPolicy: PullPolicyAlways}
+	if err := db.SaveDesiredService(ctx, want); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.PullPolicy != PullPolicyAlways {
+		t.Errorf("PullPolicy = %q, want %q", got.PullPolicy, PullPolicyAlways)
+	}
+}
+
+// TestSaveDesiredService_EmptyPullPolicy_RoundTripsToEmpty mirrors
+// TestSaveDesiredService_NilCommand_RoundTripsToEmptyNonNilSlice's
+// "unset stays the documented zero value" check, for PullPolicy's own
+// plain-string (not JSON) storage shape.
+func TestSaveDesiredService_EmptyPullPolicy_RoundTripsToEmpty(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.PullPolicy != "" {
+		t.Errorf("PullPolicy = %q, want empty", got.PullPolicy)
+	}
+}
+
 func TestSaveDesiredService_EmptyStrategyAndZeroReplicas_DefaultsPersisted(t *testing.T) {
 	// A caller that never sets these two fields (every caller before
 	// this migration existed, and internal/api's direct-image-registration
