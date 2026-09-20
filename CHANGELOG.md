@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.0-beta.4](https://github.com/glincker/levelrail/compare/v0.2.0-beta.3...v0.2.0-beta.4) (2026-09-20)
+
+
+### Features
+
+* add curated local AI model templates to the service catalog ([#514](https://github.com/glincker/levelrail/issues/514)) ([1c10f8d](https://github.com/glincker/levelrail/commit/1c10f8d7d1ee7a0a575fa7c5fa7d762d7512663f))
+* add domain-level custom error pages ([#511](https://github.com/glincker/levelrail/issues/511)) ([68bc1dd](https://github.com/glincker/levelrail/commit/68bc1dd383f066a94dd09d56abfd87063d22aef9))
+* collect real host memory for the control plane's own node ([#515](https://github.com/glincker/levelrail/issues/515)) ([fc28260](https://github.com/glincker/levelrail/commit/fc282602bbb2df1ffd22302a1fca21e72117957f))
+* live RAM-fit check in the AI template wizard ([#516](https://github.com/glincker/levelrail/issues/516)) ([1b2c086](https://github.com/glincker/levelrail/commit/1b2c086ca59e9ec0cc9d38bf139632755eb14acc))
+
 ## [0.2.0-beta.3](https://github.com/glincker/levelrail/compare/v0.2.0-beta.2...v0.2.0-beta.3) (2026-09-19)
 
 
