@@ -1,8 +1,11 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { EnvVarsForm } from './EnvVarsForm'
 
-function renderForm(overrides: Partial<Parameters<typeof EnvVarsForm>[0]> = {}) {
+function renderForm(
+  overrides: Partial<Parameters<typeof EnvVarsForm>[0]> = {},
+) {
   render(
     <EnvVarsForm
       title="Environment variables"
@@ -33,7 +36,11 @@ describe('EnvVarsForm', () => {
   it('renders inheritedRows as read-only entries separate from the editable list', () => {
     renderForm({
       inheritedRows: [
-        { key: 'SHARED', value: 'inherited-value', badge: <span>from project</span> },
+        {
+          key: 'SHARED',
+          value: 'inherited-value',
+          badge: <span>from project</span>,
+        },
       ],
     })
     expect(screen.getByText('SHARED')).toBeInTheDocument()
@@ -48,5 +55,53 @@ describe('EnvVarsForm', () => {
     expect(
       screen.queryByText(/inherited from a shared tier/i),
     ).not.toBeInTheDocument()
+  })
+
+  it('imports a browsed .env file into the field list via the paste dialog', async () => {
+    const user = userEvent.setup()
+    renderForm({ values: {} })
+
+    await user.click(screen.getByRole('button', { name: 'Paste .env' }))
+    const fileInput = screen.getByLabelText('Upload .env file')
+    const file = new File(
+      ['UPLOADED_KEY=uploaded-value\n# comment\n'],
+      'app.env',
+      {
+        type: 'text/plain',
+      },
+    )
+
+    await user.upload(fileInput, file)
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('UPLOADED_KEY')).toBeInTheDocument()
+    })
+    expect(screen.getByDisplayValue('uploaded-value')).toBeInTheDocument()
+    // The dialog closes itself once a file import stages rows successfully.
+    expect(
+      screen.queryByRole('heading', { name: 'Paste .env' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows an error and keeps the dialog open when the uploaded file has no key=value pairs', async () => {
+    const user = userEvent.setup()
+    renderForm({ values: {} })
+
+    await user.click(screen.getByRole('button', { name: 'Paste .env' }))
+    const fileInput = screen.getByLabelText('Upload .env file')
+    const file = new File(['# only a comment\n'], 'empty.env', {
+      type: 'text/plain',
+    })
+
+    await user.upload(fileInput, file)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('No key=value pairs found in empty.env.'),
+      ).toBeInTheDocument()
+    })
+    expect(
+      screen.getByRole('heading', { name: 'Paste .env' }),
+    ).toBeInTheDocument()
   })
 })
