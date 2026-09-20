@@ -17,6 +17,7 @@ import { Breadcrumbs } from '../../../../components/Breadcrumbs'
 import { DeleteEnvironmentDialog } from '../../../../components/DeleteEnvironmentDialog'
 import { ProtectedEnvironmentToggle } from '../../../../components/ProtectedEnvironmentToggle'
 import { EnvironmentEnvEditor } from '../../../../components/EnvironmentEnvEditor'
+import { SharedEnvSecretsCard } from '../../../../components/SharedEnvSecretsCard'
 import { AppRow, RowSkeleton } from '../../../../components/AppRow'
 import { routeErrorMessage } from '../../../../lib/apiError'
 import { Badge } from '@/components/ui/badge'
@@ -42,7 +43,9 @@ export const Route = createFileRoute('/projects/$id/environments/$envId')({
       // already passed, and that path should get the friendlier
       // "Environment not found" message below, not this route's generic
       // error page.
-      queryClient.ensureQueryData(environmentEnvQueryOptions(envId)).catch(() => undefined),
+      queryClient
+        .ensureQueryData(environmentEnvQueryOptions(envId))
+        .catch(() => undefined),
     ]),
   component: EnvironmentDetailPage,
   pendingComponent: EnvironmentDetailPending,
@@ -113,6 +116,7 @@ function EnvironmentDetailPage() {
       </div>
 
       <EnvironmentEnvEditor environmentId={envId} />
+      <SharedEnvSecretsCard scope="environment" id={envId} />
 
       {siblingEnvironments.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2">
@@ -143,8 +147,8 @@ function EnvironmentDetailPage() {
               No apps tagged with &ldquo;{environment.name}&rdquo; yet
             </p>
             <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-              Tag an app with this environment from the app&apos;s own
-              Overview page.
+              Tag an app with this environment from the app&apos;s own Overview
+              page.
             </p>
           </div>
         </div>

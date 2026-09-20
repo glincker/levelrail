@@ -109,6 +109,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsVaultEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "preview-env":
 		return runAppsPreviewEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "tag":
+		return runAppsTag(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "untag":
+		return runAppsUntag(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n\n", prog, args[0]) //nolint:gosec // same guard as above
 		_, _ = fmt.Fprint(stderr, appsUsage(prog))
@@ -165,6 +169,8 @@ func appsUsage(prog string) string {
   %[1]s apps storage <verb> [flags]   attach/detach a connected bucket as this app's object storage
   %[1]s apps vault-env <verb> [flags]   declare/remove an env var resolved live from an external Vault instance
   %[1]s apps preview-env <verb> [flags]   declare/remove a preview-specific env var override, applied only when a preview is created
+  %[1]s apps tag <name> <tag> [flags]     attach a tag (by name) to an app, creating it first if new
+  %[1]s apps untag <name> <tag-id> [flags]   detach a tag (by id) from an app
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.
 `, prog)

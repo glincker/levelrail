@@ -29,6 +29,13 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldError, FieldGroup } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 
 const envSchema = z
@@ -63,6 +70,18 @@ function toFieldValues(
   return Object.entries(env ?? {}).map(([key, value]) => ({ key, value }))
 }
 
+// SharedEnvVarOption is one project/organization/environment shared env
+// var this app can reference, offered by EnvEditor's own "Reference
+// shared variable" picker below. Value is present only for a non-secret
+// var (a secret one's value is never sent to the browser, see
+// internal/api/shared_env_secrets.go's sharedEnvVarResource).
+export interface SharedEnvVarOption {
+  key: string
+  tier: 'organization' | 'project' | 'environment'
+  secret: boolean
+  value?: string
+}
+
 export interface EnvVarsFormProps {
   title: string
   description: React.ReactNode
@@ -80,6 +99,14 @@ export interface EnvVarsFormProps {
   // tier that this editor's own values map doesn't set, so they're
   // visible without being part of the editable/save-able field array.
   inheritedRows?: { key: string; value: string; badge: React.ReactNode }[]
+  // Shared vars visible to this app (its project's, its project's
+  // organization's, and its environment's), offered as a pick-to-
+  // override shortcut next to "Add variable": every one of them is
+  // already part of this app's effective env automatically, with no
+  // action needed here (internal/reconcile/application's resolveEnv),
+  // so this exists purely so a user overriding one for just this app
+  // doesn't have to retype its key name from memory.
+  availableSharedVars?: SharedEnvVarOption[]
 }
 
 // Wraps a single row's key badge in its own component so only that
@@ -114,6 +141,7 @@ export function EnvVarsForm({
   onSave,
   renderKeyBadge,
   inheritedRows,
+  availableSharedVars,
 }: EnvVarsFormProps) {
   const { control, register, handleSubmit, formState, getValues } =
     useForm<EnvFormValues>({
@@ -164,6 +192,28 @@ export function EnvVarsForm({
     }
     setPasteText('')
     setPasteOpen(false)
+  }
+
+  // Picking a shared var appends (or, if already present, updates) a
+  // row for it: a secret's value is always left blank (never sent to
+  // the browser to prefill), a plain var's current value is prefilled
+  // so overriding it here is a one-click edit rather than a retype.
+  const handlePickSharedVar = (key: string | null) => {
+    const option = availableSharedVars?.find((v) => v.key === key)
+    if (!option) {
+      return
+    }
+    const newRow = {
+      key: option.key,
+      value: option.secret ? '' : (option.value ?? ''),
+    }
+    const currentVars = getValues('vars')
+    const existingIndex = currentVars.findIndex((v) => v.key === option.key)
+    if (existingIndex === -1) {
+      append(newRow)
+    } else {
+      update(existingIndex, newRow)
+    }
   }
 
   return (
@@ -247,9 +297,7 @@ export function EnvVarsForm({
                     key={row.key}
                     className="flex flex-wrap items-center gap-2 text-sm"
                   >
-                    <span className="font-mono text-foreground">
-                      {row.key}
-                    </span>
+                    <span className="font-mono text-foreground">{row.key}</span>
                     <span className="max-w-[16rem] truncate font-mono text-muted-foreground">
                       {row.value}
                     </span>
@@ -271,6 +319,29 @@ export function EnvVarsForm({
               <PlusIcon />
               Add variable
             </Button>
+            {availableSharedVars && availableSharedVars.length > 0 ? (
+              <Select value="" onValueChange={handlePickSharedVar}>
+                <SelectTrigger
+                  id="shared-env-var-picker"
+                  size="sm"
+                  className="w-auto"
+                  aria-label="Reference a shared variable"
+                >
+                  <SelectValue placeholder="Reference shared variable..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSharedVars.map((v) => (
+                    <SelectItem key={v.key} value={v.key}>
+                      <span className="font-mono">{v.key}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {v.tier}
+                        {v.secret ? ', secret' : ''}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
             <Dialog open={pasteOpen} onOpenChange={setPasteOpen}>
               <DialogTrigger
                 render={<Button type="button" variant="outline" size="sm" />}

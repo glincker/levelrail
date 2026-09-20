@@ -1,8 +1,37 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import type { UserEvent } from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { EnvVarsForm } from './EnvVarsForm'
 
-function renderForm(overrides: Partial<Parameters<typeof EnvVarsForm>[0]> = {}) {
+// Same open+pick shape PromoteAppDialog.test.tsx's own pickOption
+// documents: fireEvent opens the trigger (unaffected by base-ui's
+// pointer-events:none guard during popup positioning), userEvent
+// commits the pick (a bare fireEvent.click on the item is a no-op for
+// base-ui's Select.Item in jsdom). Retried since base-ui can
+// occasionally drop the interaction under concurrent test-file load.
+async function pickSharedVarOption(user: UserEvent, optionText: string) {
+  const maxAttempts = 5
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    fireEvent.click(document.getElementById('shared-env-var-picker')!)
+    try {
+      const items = Array.from(
+        document.body.querySelectorAll('[data-slot="select-item"]'),
+      )
+      const match = items.find((el) => el.textContent?.includes(optionText))
+      if (!match) throw new Error(`no select option containing "${optionText}"`)
+      await user.click(match)
+      return
+    } catch (err) {
+      if (attempt === maxAttempts) throw err
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    }
+  }
+}
+
+function renderForm(
+  overrides: Partial<Parameters<typeof EnvVarsForm>[0]> = {},
+) {
   render(
     <EnvVarsForm
       title="Environment variables"
@@ -33,7 +62,11 @@ describe('EnvVarsForm', () => {
   it('renders inheritedRows as read-only entries separate from the editable list', () => {
     renderForm({
       inheritedRows: [
-        { key: 'SHARED', value: 'inherited-value', badge: <span>from project</span> },
+        {
+          key: 'SHARED',
+          value: 'inherited-value',
+          badge: <span>from project</span>,
+        },
       ],
     })
     expect(screen.getByText('SHARED')).toBeInTheDocument()
@@ -48,5 +81,67 @@ describe('EnvVarsForm', () => {
     expect(
       screen.queryByText(/inherited from a shared tier/i),
     ).not.toBeInTheDocument()
+  })
+
+  it('does not render the shared variable picker when none are available', () => {
+    renderForm()
+    expect(
+      screen.queryByLabelText('Reference a shared variable'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders the shared variable picker when availableSharedVars is set', () => {
+    renderForm({
+      availableSharedVars: [
+        {
+          key: 'API_URL',
+          tier: 'project',
+          secret: false,
+          value: 'https://api.example.com',
+        },
+      ],
+    })
+    expect(
+      screen.getByLabelText('Reference a shared variable'),
+    ).toBeInTheDocument()
+  })
+
+  it('picking a plain shared variable appends a row prefilled with its current value', async () => {
+    const user = userEvent.setup()
+    renderForm({
+      availableSharedVars: [
+        {
+          key: 'API_URL',
+          tier: 'project',
+          secret: false,
+          value: 'https://api.example.com',
+        },
+      ],
+    })
+
+    await pickSharedVarOption(user, 'API_URL')
+
+    const keys = screen.getAllByLabelText('Variable name')
+    const values = screen.getAllByLabelText('Variable value')
+    const index = keys.findIndex((el) => el.value === 'API_URL')
+    expect(index).toBeGreaterThanOrEqual(0)
+    expect(values[index].value).toBe('https://api.example.com')
+  })
+
+  it('picking a secret shared variable appends a row with an empty value', async () => {
+    const user = userEvent.setup()
+    renderForm({
+      availableSharedVars: [
+        { key: 'DB_PASSWORD', tier: 'environment', secret: true },
+      ],
+    })
+
+    await pickSharedVarOption(user, 'DB_PASSWORD')
+
+    const keys = screen.getAllByLabelText('Variable name')
+    const values = screen.getAllByLabelText('Variable value')
+    const index = keys.findIndex((el) => el.value === 'DB_PASSWORD')
+    expect(index).toBeGreaterThanOrEqual(0)
+    expect(values[index].value).toBe('')
   })
 })

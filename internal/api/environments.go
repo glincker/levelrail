@@ -240,4 +240,13 @@ type EnvironmentStore interface {
 	// on write, mirroring SetOrganizationEnvVars/ListOrganizationEnvVars.
 	SetEnvironmentEnvVars(ctx context.Context, environmentID string, vars map[string]string) error
 	ListEnvironmentEnvVars(ctx context.Context, environmentID string) (map[string]string, error)
+	// ListEnvironmentEnvVarsDetailed/SetEnvironmentSecretEnvVar/
+	// DeleteEnvironmentSecretEnvVar/ListEnvironmentSecretEnvKeys back GET
+	// /api/v1/environments/{id}/env/all and the secret-var sub-resource
+	// routes (environment_env.go), mirroring ProjectStore/
+	// OrganizationStore's own secret-capable extension.
+	ListEnvironmentEnvVarsDetailed(ctx context.Context, environmentID string) ([]store.SharedEnvVar, error)
+	SetEnvironmentSecretEnvVar(ctx context.Context, environmentID, key string) error
+	DeleteEnvironmentSecretEnvVar(ctx context.Context, environmentID, key string) error
+	ListEnvironmentSecretEnvKeys(ctx context.Context, environmentID string) ([]string, error)
 }

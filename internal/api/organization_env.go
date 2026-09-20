@@ -93,3 +93,44 @@ func (rt *Router) organizationEnvScope() sharedEnvScope {
 		set:  rt.organizations.SetOrganizationEnvVars,
 	}
 }
+
+func (rt *Router) organizationEnvSecretScope() sharedEnvSecretScope {
+	return sharedEnvSecretScope{
+		label:       "organization",
+		notFoundMsg: "organization not found",
+		notFound:    store.ErrOrganizationNotFound,
+		load: func(ctx context.Context, id string) error {
+			_, err := rt.organizations.GetOrganization(ctx, id)
+			return err
+		},
+		listAll:    rt.organizations.ListOrganizationEnvVarsDetailed,
+		listKeys:   rt.organizations.ListOrganizationSecretEnvKeys,
+		markSecret: rt.organizations.SetOrganizationSecretEnvVar,
+		unmark:     rt.organizations.DeleteOrganizationSecretEnvVar,
+		namespace:  store.OrganizationEnvSecretsKey,
+	}
+}
+
+// handleListOrganizationEnvAll handles GET
+// /api/v1/organizations/{id}/env/all.
+func (rt *Router) handleListOrganizationEnvAll(w http.ResponseWriter, r *http.Request) {
+	rt.handleListSharedEnvAll(w, r, rt.organizationEnvSecretScope())
+}
+
+// handleListOrganizationEnvSecretKeys handles GET
+// /api/v1/organizations/{id}/env/secrets.
+func (rt *Router) handleListOrganizationEnvSecretKeys(w http.ResponseWriter, r *http.Request) {
+	rt.handleListSharedEnvSecretKeys(w, r, rt.organizationEnvSecretScope())
+}
+
+// handleSetOrganizationEnvSecret handles PUT
+// /api/v1/organizations/{id}/env/secrets/{key}.
+func (rt *Router) handleSetOrganizationEnvSecret(w http.ResponseWriter, r *http.Request) {
+	rt.handleSetSharedEnvSecret(w, r, rt.organizationEnvSecretScope())
+}
+
+// handleDeleteOrganizationEnvSecret handles DELETE
+// /api/v1/organizations/{id}/env/secrets/{key}.
+func (rt *Router) handleDeleteOrganizationEnvSecret(w http.ResponseWriter, r *http.Request) {
+	rt.handleDeleteSharedEnvSecret(w, r, rt.organizationEnvSecretScope())
+}

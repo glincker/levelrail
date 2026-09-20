@@ -50,3 +50,43 @@ func (rt *Router) projectEnvScope() sharedEnvScope {
 		set:  rt.projects.SetProjectEnvVars,
 	}
 }
+
+func (rt *Router) projectEnvSecretScope() sharedEnvSecretScope {
+	return sharedEnvSecretScope{
+		label:       "project",
+		notFoundMsg: "project not found",
+		notFound:    store.ErrProjectNotFound,
+		load: func(ctx context.Context, id string) error {
+			_, err := rt.projects.GetProject(ctx, id)
+			return err
+		},
+		listAll:    rt.projects.ListProjectEnvVarsDetailed,
+		listKeys:   rt.projects.ListProjectSecretEnvKeys,
+		markSecret: rt.projects.SetProjectSecretEnvVar,
+		unmark:     rt.projects.DeleteProjectSecretEnvVar,
+		namespace:  store.ProjectEnvSecretsKey,
+	}
+}
+
+// handleListProjectEnvAll handles GET /api/v1/projects/{id}/env/all.
+func (rt *Router) handleListProjectEnvAll(w http.ResponseWriter, r *http.Request) {
+	rt.handleListSharedEnvAll(w, r, rt.projectEnvSecretScope())
+}
+
+// handleListProjectEnvSecretKeys handles GET
+// /api/v1/projects/{id}/env/secrets.
+func (rt *Router) handleListProjectEnvSecretKeys(w http.ResponseWriter, r *http.Request) {
+	rt.handleListSharedEnvSecretKeys(w, r, rt.projectEnvSecretScope())
+}
+
+// handleSetProjectEnvSecret handles PUT
+// /api/v1/projects/{id}/env/secrets/{key}.
+func (rt *Router) handleSetProjectEnvSecret(w http.ResponseWriter, r *http.Request) {
+	rt.handleSetSharedEnvSecret(w, r, rt.projectEnvSecretScope())
+}
+
+// handleDeleteProjectEnvSecret handles DELETE
+// /api/v1/projects/{id}/env/secrets/{key}.
+func (rt *Router) handleDeleteProjectEnvSecret(w http.ResponseWriter, r *http.Request) {
+	rt.handleDeleteSharedEnvSecret(w, r, rt.projectEnvSecretScope())
+}

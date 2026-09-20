@@ -300,6 +300,18 @@ func (f *fakeProjectLifecycleProjectStore) SetProjectEnvVars(context.Context, st
 func (f *fakeProjectLifecycleProjectStore) ListProjectEnvVars(context.Context, string) (map[string]string, error) {
 	return nil, nil
 }
+func (f *fakeProjectLifecycleProjectStore) ListProjectEnvVarsDetailed(context.Context, string) ([]store.SharedEnvVar, error) {
+	return nil, nil
+}
+func (f *fakeProjectLifecycleProjectStore) SetProjectSecretEnvVar(context.Context, string, string) error {
+	return nil
+}
+func (f *fakeProjectLifecycleProjectStore) DeleteProjectSecretEnvVar(context.Context, string, string) error {
+	return nil
+}
+func (f *fakeProjectLifecycleProjectStore) ListProjectSecretEnvKeys(context.Context, string) ([]string, error) {
+	return nil, nil
+}
 
 // TestHandleStopProject_PartialFailure: one app and one database out of
 // several fail to suspend. The handler must keep going, still attempt
