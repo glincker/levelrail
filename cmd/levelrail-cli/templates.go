@@ -76,11 +76,23 @@ func printTemplatesTable(out io.Writer, templates []serviceTemplateListItem) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tSLOGAN")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tRAM\tSLOGAN")
 	for _, t := range templates {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", t.ID, t.Name, t.Category, t.Slogan)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name, t.Category, formatRecommendedMemory(t.RecommendedMemoryBytes), t.Slogan)
 	}
 	_ = tw.Flush()
+}
+
+// formatRecommendedMemory renders a Template.RecommendedMemoryBytes value
+// (internal/catalog.Template's own doc comment: a static, pre-deploy
+// advisory, not checked against any node's real available memory) as a
+// human-readable GiB figure, or "-" when a template has none.
+func formatRecommendedMemory(bytes int64) string {
+	if bytes <= 0 {
+		return "-"
+	}
+	const gib = 1024 * 1024 * 1024
+	return fmt.Sprintf("~%.0f GiB", float64(bytes)/gib)
 }
 
 func runTemplatesGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -109,6 +121,9 @@ func printTemplateDetailHuman(out io.Writer, t serviceTemplateDetail) {
 	_, _ = fmt.Fprintf(out, "category:          %s\n", t.Category)
 	_, _ = fmt.Fprintf(out, "slogan:            %s\n", t.Slogan)
 	_, _ = fmt.Fprintf(out, "documentation_url: %s\n", t.DocumentationURL)
+	if t.RecommendedMemoryBytes > 0 {
+		_, _ = fmt.Fprintf(out, "recommended_ram:   %s\n", formatRecommendedMemory(t.RecommendedMemoryBytes))
+	}
 	_, _ = fmt.Fprintln(out, "compose:")
 	_, _ = fmt.Fprintln(out, t.Compose)
 }

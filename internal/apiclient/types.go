@@ -986,23 +986,25 @@ type SetDatabasePublicAccessRequest struct {
 // (internal/api/service_templates.go): one catalog entry from
 // GET /api/v1/service-templates, without the full Compose body.
 type ServiceTemplateListItem struct {
-	ID               string `json:"id"`
-	Name             string `json:"name"`
-	Slogan           string `json:"slogan"`
-	Category         string `json:"category"`
-	DocumentationURL string `json:"documentation_url"`
+	ID                     string `json:"id"`
+	Name                   string `json:"name"`
+	Slogan                 string `json:"slogan"`
+	Category               string `json:"category"`
+	DocumentationURL       string `json:"documentation_url"`
+	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
 }
 
 // ServiceTemplateDetail mirrors internal/api's serviceTemplateDetail:
 // GET /api/v1/service-templates/{id}'s response, including the full
 // compose.yaml body.
 type ServiceTemplateDetail struct {
-	ID               string `json:"id"`
-	Name             string `json:"name"`
-	Slogan           string `json:"slogan"`
-	Category         string `json:"category"`
-	DocumentationURL string `json:"documentation_url"`
-	Compose          string `json:"compose"`
+	ID                     string `json:"id"`
+	Name                   string `json:"name"`
+	Slogan                 string `json:"slogan"`
+	Category               string `json:"category"`
+	DocumentationURL       string `json:"documentation_url"`
+	Compose                string `json:"compose"`
+	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
 }
 
 // SetSecretRequest mirrors internal/api's setSecretRequest

@@ -21,6 +21,7 @@ import {
   PackageIcon,
   PlayCircleIcon,
   ShieldCheckIcon,
+  SparkleIcon,
   SquaresFourIcon,
   StackIcon,
   WarningIcon,
@@ -35,6 +36,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
+import { formatBytes } from '../lib/format'
 import { useDeployCompose } from '../queries/compose'
 import {
   useServiceTemplate,
@@ -66,6 +68,7 @@ const DEFAULT_VALUES: FormInput = { name: '', compose: '' }
 // internal/catalog/catalog.go's current Category values. Unlisted or
 // future categories fall back to PackageIcon.
 const CATEGORY_ICONS: Record<string, Icon> = {
+  AI: SparkleIcon,
   Analytics: ChartBarIcon,
   Applications: AppWindowIcon,
   Automation: LightningIcon,
@@ -122,6 +125,11 @@ function TemplateCard({
         {template.name}
       </span>
       <span className="text-xs text-muted-foreground">{template.slogan}</span>
+      {!!template.recommended_memory_bytes && (
+        <Badge variant="muted" className="text-xs">
+          ~{formatBytes(template.recommended_memory_bytes)} RAM recommended
+        </Badge>
+      )}
     </button>
   )
 }
@@ -285,6 +293,12 @@ export function BrowseTemplatesFields({
                   {templateDetail.data.name}
                 </span>
                 <Badge variant="outline">{templateDetail.data.category}</Badge>
+                {!!templateDetail.data.recommended_memory_bytes && (
+                  <Badge variant="muted">
+                    ~{formatBytes(templateDetail.data.recommended_memory_bytes)}{' '}
+                    RAM recommended
+                  </Badge>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
                 {templateDetail.data.slogan}

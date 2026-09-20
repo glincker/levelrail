@@ -46,6 +46,48 @@ func TestRun_Templates_List(t *testing.T) {
 	}
 }
 
+func TestRun_Templates_List_RecommendedMemory(t *testing.T) {
+	srv := newListEchoServer(t, nil, []serviceTemplateListItem{
+		{ID: "ollama-mistral", Name: "Ollama: Mistral 7B", Category: "AI", Slogan: "Mistral locally", RecommendedMemoryBytes: 6 * 1024 * 1024 * 1024},
+		{ID: "n8n", Name: "n8n", Category: "Automation", Slogan: "Automations"},
+	})
+
+	stdout, _ := runCLIExpectOK(t, []string{"templates", "list", "--api-url", srv.URL})
+
+	if !strings.Contains(stdout, "~6 GiB") {
+		t.Errorf("stdout = %q, want the ollama-mistral row to show ~6 GiB", stdout)
+	}
+	var n8nLine string
+	for _, line := range strings.Split(stdout, "\n") {
+		if strings.HasPrefix(line, "n8n") {
+			n8nLine = line
+		}
+	}
+	if n8nLine == "" {
+		t.Fatalf("stdout = %q, want an n8n row", stdout)
+	}
+	if strings.Contains(n8nLine, "GiB") {
+		t.Errorf("n8n row = %q, want no RAM figure since it declares none", n8nLine)
+	}
+}
+
+func TestRun_Templates_Get_RecommendedMemory(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(serviceTemplateDetail{
+			ID: "ollama-mistral", Name: "Ollama: Mistral 7B", RecommendedMemoryBytes: 6 * 1024 * 1024 * 1024,
+			Compose: "services:\n  ollama:\n    image: ollama/ollama:0.33.3\n",
+		})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"templates", "get", "ollama-mistral", "--api-url", srv.URL})
+
+	if !strings.Contains(stdout, "recommended_ram:   ~6 GiB") {
+		t.Errorf("stdout = %q, want a recommended_ram line", stdout)
+	}
+}
+
 func TestRun_Templates_List_Empty(t *testing.T) {
 	srv := newListEchoServer(t, nil, []serviceTemplateListItem{})
 	defer srv.Close()

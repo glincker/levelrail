@@ -73,6 +73,55 @@ func TestHandleGetServiceTemplate(t *testing.T) {
 	}
 }
 
+func TestHandleGetServiceTemplate_RecommendedMemoryBytes(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	var want catalog.Template
+	for _, tpl := range catalog.Templates {
+		if tpl.RecommendedMemoryBytes > 0 {
+			want = tpl
+			break
+		}
+	}
+	if want.ID == "" {
+		t.Fatal("no catalog template declares a RecommendedMemoryBytes to test against")
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/service-templates/"+want.ID, ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got serviceTemplateDetail
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.RecommendedMemoryBytes != want.RecommendedMemoryBytes {
+		t.Errorf("RecommendedMemoryBytes = %d, want %d", got.RecommendedMemoryBytes, want.RecommendedMemoryBytes)
+	}
+
+	listRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(listRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/service-templates", ""))
+	var list []serviceTemplateListItem
+	if err := json.Unmarshal(listRec.Body.Bytes(), &list); err != nil {
+		t.Fatalf("decode list: %v", err)
+	}
+	found := false
+	for _, item := range list {
+		if item.ID == want.ID {
+			found = true
+			if item.RecommendedMemoryBytes != want.RecommendedMemoryBytes {
+				t.Errorf("list item RecommendedMemoryBytes = %d, want %d", item.RecommendedMemoryBytes, want.RecommendedMemoryBytes)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("template %q not present in list response", want.ID)
+	}
+}
+
 func TestHandleGetServiceTemplate_NotFound(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

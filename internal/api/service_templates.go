@@ -10,11 +10,12 @@ import (
 // deliberately without Compose, so the picker grid's initial load stays
 // small; the full body is fetched per-template on selection.
 type serviceTemplateListItem struct {
-	ID               string `json:"id"`
-	Name             string `json:"name"`
-	Slogan           string `json:"slogan"`
-	Category         string `json:"category"`
-	DocumentationURL string `json:"documentation_url"`
+	ID                     string `json:"id"`
+	Name                   string `json:"name"`
+	Slogan                 string `json:"slogan"`
+	Category               string `json:"category"`
+	DocumentationURL       string `json:"documentation_url"`
+	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
 }
 
 // serviceTemplateDetail is GET /api/v1/service-templates/{id}'s response
@@ -22,12 +23,13 @@ type serviceTemplateListItem struct {
 // to pre-fill a deploy form or send straight to
 // POST /api/v1/apps/{name}/compose.
 type serviceTemplateDetail struct {
-	ID               string `json:"id"`
-	Name             string `json:"name"`
-	Slogan           string `json:"slogan"`
-	Category         string `json:"category"`
-	DocumentationURL string `json:"documentation_url"`
-	Compose          string `json:"compose"`
+	ID                     string `json:"id"`
+	Name                   string `json:"name"`
+	Slogan                 string `json:"slogan"`
+	Category               string `json:"category"`
+	DocumentationURL       string `json:"documentation_url"`
+	Compose                string `json:"compose"`
+	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
 }
 
 // handleListServiceTemplates handles GET /api/v1/service-templates: the
@@ -37,11 +39,12 @@ func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Requ
 	out := make([]serviceTemplateListItem, 0, len(catalog.Templates))
 	for _, tpl := range catalog.Templates {
 		out = append(out, serviceTemplateListItem{
-			ID:               tpl.ID,
-			Name:             tpl.Name,
-			Slogan:           tpl.Slogan,
-			Category:         tpl.Category,
-			DocumentationURL: tpl.DocumentationURL,
+			ID:                     tpl.ID,
+			Name:                   tpl.Name,
+			Slogan:                 tpl.Slogan,
+			Category:               tpl.Category,
+			DocumentationURL:       tpl.DocumentationURL,
+			RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
 		})
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -54,12 +57,13 @@ func (rt *Router) handleGetServiceTemplate(w http.ResponseWriter, r *http.Reques
 	for _, tpl := range catalog.Templates {
 		if tpl.ID == id {
 			writeJSON(w, http.StatusOK, serviceTemplateDetail{
-				ID:               tpl.ID,
-				Name:             tpl.Name,
-				Slogan:           tpl.Slogan,
-				Category:         tpl.Category,
-				DocumentationURL: tpl.DocumentationURL,
-				Compose:          tpl.Compose,
+				ID:                     tpl.ID,
+				Name:                   tpl.Name,
+				Slogan:                 tpl.Slogan,
+				Category:               tpl.Category,
+				DocumentationURL:       tpl.DocumentationURL,
+				Compose:                tpl.Compose,
+				RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
 			})
 			return
 		}
