@@ -2,9 +2,7 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -26,33 +24,10 @@ func TestRun_TagsList(t *testing.T) {
 }
 
 func TestRun_TagsCreate(t *testing.T) {
-	var gotPath, gotMethod string
-	var gotBody createTagRequest
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath, gotMethod = r.URL.Path, r.Method
-		_ = json.NewDecoder(r.Body).Decode(&gotBody)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(tagResource{ID: "tag_1", Name: gotBody.Name, CreatedAt: "2026-09-20T00:00:00Z"})
-	}))
-	defer srv.Close()
-
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"tags", "create", "--name", "production", "--api-url", srv.URL,
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotMethod != http.MethodPost {
-		t.Errorf("method = %q, want POST", gotMethod)
-	}
-	if gotPath != "/api/v1/tags" {
-		t.Errorf("path = %q, want /api/v1/tags", gotPath)
-	}
-	if gotBody.Name != "production" {
-		t.Errorf("request body = %+v, want name production", gotBody)
-	}
+	runCreateTagLikeSuccess(t,
+		[]string{"tags", "create", "--name", "production"},
+		"/api/v1/tags", "production",
+	)
 }
 
 func TestRun_TagsCreate_MissingName(t *testing.T) {
@@ -91,33 +66,10 @@ func TestRun_TagsApps(t *testing.T) {
 }
 
 func TestRun_AppsTag(t *testing.T) {
-	var gotPath, gotMethod string
-	var gotBody attachAppTagRequest
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath, gotMethod = r.URL.Path, r.Method
-		_ = json.NewDecoder(r.Body).Decode(&gotBody)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(tagResource{ID: "tag_1", Name: gotBody.Name, CreatedAt: "2026-09-20T00:00:00Z"})
-	}))
-	defer srv.Close()
-
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{
-		"apps", "tag", "web", "production", "--api-url", srv.URL,
-	}, &stdout, &stderr, envMap())
-	if got != exitOK {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
-	}
-	if gotMethod != http.MethodPost {
-		t.Errorf("method = %q, want POST", gotMethod)
-	}
-	if gotPath != "/api/v1/apps/web/tags" {
-		t.Errorf("path = %q, want /api/v1/apps/web/tags", gotPath)
-	}
-	if gotBody.Name != "production" {
-		t.Errorf("request body = %+v, want name production", gotBody)
-	}
+	runCreateTagLikeSuccess(t,
+		[]string{"apps", "tag", "web", "production"},
+		"/api/v1/apps/web/tags", "production",
+	)
 }
 
 func TestRun_AppsTag_RequiresTwoArgs(t *testing.T) {

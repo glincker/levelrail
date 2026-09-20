@@ -168,29 +168,10 @@ func runSharedEnvSet(prog string, args []string, stdout, stderr io.Writer, looku
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
-	if secret {
-		if err := client.SetSharedEnvSecret(ctx, *scopeP, *idP, key, value); err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("set secret shared var %q for %s %q: %w", key, *scopeP, *idP, err))
-		}
-		_, _ = fmt.Fprintf(stdout, "secret shared var %q set for %s %q\n", key, *scopeP, *idP)
-		return exitOK
-	}
-
-	// Plain vars have no single-key upsert route (store.DB.
-	// Set{Project,Organization,Environment}EnvVars is a full replace by
-	// design): read the current set, merge this key in, write the whole
-	// map back, the same read-merge-write shape those store functions'
-	// own doc comments already document for exactly this case.
-	current, err := getPlainSharedEnv(ctx, client, *scopeP, *idP)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("read current shared vars for %s %q: %w", *scopeP, *idP, err))
-	}
-	current[key] = value
-	if err := setPlainSharedEnv(ctx, client, *scopeP, *idP, current); err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set shared var %q for %s %q: %w", key, *scopeP, *idP, err))
-	}
-	_, _ = fmt.Fprintf(stdout, "shared var %q set for %s %q\n", key, *scopeP, *idP)
-	return exitOK
+	return applySharedEnvKey(ctx, stdout, stderr, jsonOut, client, *scopeP, *idP, key, "set", "set", secret,
+		func() error { return client.SetSharedEnvSecret(ctx, *scopeP, *idP, key, value) },
+		func(current map[string]string) { current[key] = value },
+	)
 }
 
 func runSharedEnvDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -222,23 +203,37 @@ func runSharedEnvDelete(prog string, args []string, stdout, stderr io.Writer, lo
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
+	return applySharedEnvKey(ctx, stdout, stderr, jsonOut, client, *scopeP, *idP, key, "delete", "removed", secret,
+		func() error { return client.DeleteSharedEnvSecret(ctx, *scopeP, *idP, key) },
+		func(current map[string]string) { delete(current, key) },
+	)
+}
+
+// applySharedEnvKey runs the secret-or-plain shared var write shared by
+// runSharedEnvSet and runSharedEnvDelete: dispatches to the encrypted
+// single-key route when secret is set, otherwise performs the plain
+// read-merge-write documented on setPlainSharedEnv above, applying mutate
+// to the current map before writing it back. errVerb names the operation
+// for wrapped error text (e.g. "set", "delete"), resultVerb for the
+// success message (e.g. "set", "removed").
+func applySharedEnvKey(ctx context.Context, stdout, stderr io.Writer, jsonOut bool, client *Client, scope, id, key, errVerb, resultVerb string, secret bool, secretOp func() error, mutate func(map[string]string)) int {
 	if secret {
-		if err := client.DeleteSharedEnvSecret(ctx, *scopeP, *idP, key); err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete secret shared var %q for %s %q: %w", key, *scopeP, *idP, err))
+		if err := secretOp(); err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s secret shared var %q for %s %q: %w", errVerb, key, scope, id, err))
 		}
-		_, _ = fmt.Fprintf(stdout, "secret shared var %q removed for %s %q\n", key, *scopeP, *idP)
+		_, _ = fmt.Fprintf(stdout, "secret shared var %q %s for %s %q\n", key, resultVerb, scope, id)
 		return exitOK
 	}
 
-	current, err := getPlainSharedEnv(ctx, client, *scopeP, *idP)
+	current, err := getPlainSharedEnv(ctx, client, scope, id)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("read current shared vars for %s %q: %w", *scopeP, *idP, err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("read current shared vars for %s %q: %w", scope, id, err))
 	}
-	delete(current, key)
-	if err := setPlainSharedEnv(ctx, client, *scopeP, *idP, current); err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete shared var %q for %s %q: %w", key, *scopeP, *idP, err))
+	mutate(current)
+	if err := setPlainSharedEnv(ctx, client, scope, id, current); err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s shared var %q for %s %q: %w", errVerb, key, scope, id, err))
 	}
-	_, _ = fmt.Fprintf(stdout, "shared var %q removed for %s %q\n", key, *scopeP, *idP)
+	_, _ = fmt.Fprintf(stdout, "shared var %q %s for %s %q\n", key, resultVerb, scope, id)
 	return exitOK
 }
 

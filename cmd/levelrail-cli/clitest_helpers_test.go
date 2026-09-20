@@ -99,6 +99,48 @@ func runStartStopSuccess(t *testing.T, args []string, wantPath string, respond f
 	return stdout
 }
 
+// newCreatedNameEchoServer starts a test server that decodes a JSON
+// request body's "name" field into gotName, records the path and method,
+// and responds 201 Created with a tagResource built from that name and id
+// "tag_1". Shared by runCreateTagLikeSuccess's two callers, whose
+// POST-a-tag-name response shape is identical.
+func newCreatedNameEchoServer(t *testing.T, gotPath, gotMethod, gotName *string) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		*gotPath, *gotMethod = r.URL.Path, r.Method
+		var body struct {
+			Name string `json:"name"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		*gotName = body.Name
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(tagResource{ID: "tag_1", Name: body.Name, CreatedAt: "2026-09-20T00:00:00Z"})
+	}))
+}
+
+// runCreateTagLikeSuccess runs a POST-a-tag-name CLI command (tags create,
+// apps tag) against a fake server and asserts the request was a POST to
+// wantPath carrying wantName in its body. Shared by TestRun_TagsCreate and
+// TestRun_AppsTag, whose success path is otherwise identical.
+func runCreateTagLikeSuccess(t *testing.T, args []string, wantPath, wantName string) {
+	t.Helper()
+	var gotPath, gotMethod, gotName string
+	srv := newCreatedNameEchoServer(t, &gotPath, &gotMethod, &gotName)
+	defer srv.Close()
+
+	runCLIExpectOK(t, append(append([]string{}, args...), "--api-url", srv.URL))
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != wantPath {
+		t.Errorf("path = %q, want %q", gotPath, wantPath)
+	}
+	if gotName != wantName {
+		t.Errorf("request body name = %q, want %q", gotName, wantName)
+	}
+}
+
 // newJSONErrorServer starts a test server that always responds with status
 // and body, closed automatically when the test ends.
 func newJSONErrorServer(t *testing.T, status int, body string) *httptest.Server {
