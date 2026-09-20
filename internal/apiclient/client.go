@@ -446,6 +446,22 @@ func (c *Client) QueryLogs(ctx context.Context, name string, from, to time.Time,
 	return out.Entries, err
 }
 
+// QueryDatabaseLogs calls GET /api/v1/databases/{name}/logs?from=&to=&q=
+// (internal/api/database_logs.go's handleQueryDatabaseLogs), the database
+// counterpart to QueryLogs above: same request/response shape, same
+// shared queryResourceLogs implementation server-side.
+func (c *Client) QueryDatabaseLogs(ctx context.Context, name string, from, to time.Time, q string) ([]LogEntryResource, error) {
+	query := url.Values{}
+	query.Set("from", from.UTC().Format(time.RFC3339))
+	query.Set("to", to.UTC().Format(time.RFC3339))
+	if q != "" {
+		query.Set("q", q)
+	}
+	var out logsResponse
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/logs?"+query.Encode(), nil, &out)
+	return out.Entries, err
+}
+
 // CreateDatabase calls POST /api/v1/databases.
 func (c *Client) CreateDatabase(ctx context.Context, req DatabaseResource) (DatabaseResource, error) {
 	var out DatabaseResource
@@ -2034,6 +2050,17 @@ func (c *Client) SetDatabaseProject(ctx context.Context, name, projectID string)
 	return out, err
 }
 
+// SetDatabaseNode calls PUT /api/v1/databases/{name}/node
+// (internal/api/databases.go's handleSetDatabaseNode), the database
+// counterpart to SetAppNode: an empty nodeID moves the database back to
+// this control plane's own local node. Reuses SetAppNodeRequest, an
+// identical {node_id} body shape on both routes.
+func (c *Client) SetDatabaseNode(ctx context.Context, name, nodeID string) (DatabaseResource, error) {
+	var out DatabaseResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/node", SetAppNodeRequest{NodeID: nodeID}, &out)
+	return out, err
+}
+
 func nodesCollectionPath() string {
 	return "/api/v1/nodes"
 }
@@ -2315,6 +2342,13 @@ func (c *Client) StreamLogs(ctx context.Context, name string, onEntry func(LogSt
 	return c.streamLogEvents(ctx, "/api/v1/apps/"+PathEscape(name)+"/logs/stream", onEntry)
 }
 
+// StreamDatabaseLogs calls GET /api/v1/databases/{name}/logs/stream
+// (internal/api/database_logs.go's handleLiveDatabaseLogStream), the
+// database counterpart to StreamLogs above.
+func (c *Client) StreamDatabaseLogs(ctx context.Context, name string, onEntry func(LogStreamEntry) error) error {
+	return c.streamLogEvents(ctx, "/api/v1/databases/"+PathEscape(name)+"/logs/stream", onEntry)
+}
+
 // StreamDeployLog calls GET /api/v1/apps/{name}/deploys/{deployId}/logs
 // (internal/api/deploy_attempts.go's handleDeployLogStream): the same SSE
 // connection the dashboard's deploy log page opens, replaying the
@@ -2510,6 +2544,55 @@ func (c *Client) DownloadDeployLog(ctx context.Context, name, deployID string) (
 		return nil, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
 	}
 	return data, nil
+}
+
+// downloadRaw is DownloadBackup/DownloadVolumeBackup's shared "GET path,
+// return the raw response body" implementation, the same shape
+// DownloadDeployLog above hand-rolls for a single caller; factored out
+// here since a backup's own object stream has two callers (database and
+// app-volume backups) rather than one.
+func (c *Client) downloadRaw(ctx context.Context, path string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+
+	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
+	if err != nil {
+		return nil, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response body: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
+	}
+	return data, nil
+}
+
+// DownloadBackup calls GET /api/v1/databases/{name}/backups/{historyId}/download:
+// one succeeded database backup's own object, streamed straight through
+// as raw bytes so a caller can write it to a local file.
+func (c *Client) DownloadBackup(ctx context.Context, name, historyID string) ([]byte, error) {
+	path := "/api/v1/databases/" + PathEscape(name) + "/backups/" + PathEscape(historyID) + "/download"
+	return c.downloadRaw(ctx, path)
+}
+
+// DownloadVolumeBackup calls
+// GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/download:
+// the app service volume counterpart of DownloadBackup above.
+func (c *Client) DownloadVolumeBackup(ctx context.Context, name, volume, historyID string) ([]byte, error) {
+	path := "/api/v1/apps/" + PathEscape(name) + "/volumes/" + PathEscape(volume) + "/backups/" + PathEscape(historyID) + "/download"
+	return c.downloadRaw(ctx, path)
 }
 
 // ListCertificates calls GET /api/v1/certificates: every certificate
