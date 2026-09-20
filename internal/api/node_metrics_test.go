@@ -182,6 +182,31 @@ func TestHandleQueryNodeMetrics_DiskUsage_ReadsHostSampleDirectly(t *testing.T) 
 	}
 }
 
+func TestHandleQueryNodeMetrics_MemoryAvailable_ReadsHostSampleDirectly(t *testing.T) {
+	rt, db, tdb := newTestRouterWithTelemetry(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+
+	now := time.Now().UTC().Truncate(time.Second)
+	err := tdb.WriteSamples(context.Background(), []telemetry.Sample{
+		{ResourceID: "node:node_a", Metric: telemetry.MetricMemoryTotalBytes, Timestamp: now.Add(-10 * time.Minute), Value: 16_000_000_000},
+		{ResourceID: "node:node_a", Metric: telemetry.MetricMemoryAvailableBytes, Timestamp: now.Add(-10 * time.Minute), Value: 8_000_000_000},
+		{ResourceID: "node:node_b", Metric: telemetry.MetricMemoryAvailableBytes, Timestamp: now.Add(-10 * time.Minute), Value: 1},
+	})
+	if err != nil {
+		t.Fatalf("seed samples: %v", err)
+	}
+
+	url := "/api/v1/nodes/node_a/metrics?metric=" + telemetry.MetricMemoryAvailableBytes + "&from=" + now.Add(-time.Hour).Format(time.RFC3339) + "&to=" + now.Format(time.RFC3339)
+	got := queryNodeMetrics(t, rt, cookie, url)
+	if len(got.Points) != 1 || got.Points[0].Value != 8_000_000_000 {
+		t.Errorf("points = %+v, want one point with value 8_000_000_000 (node_a's own sample, not node_b's)", got.Points)
+	}
+	if got.ResourceCount != 1 {
+		t.Errorf("resource_count = %d, want 1", got.ResourceCount)
+	}
+}
+
 func TestHandleQueryNodeMetrics_DiskUsage_NoSamples_ReturnsEmptyNotError(t *testing.T) {
 	rt, db, _ := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)

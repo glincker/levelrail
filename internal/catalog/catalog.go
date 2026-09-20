@@ -18,13 +18,9 @@ type Template struct {
 	Category         string
 	DocumentationURL string
 	Compose          string
-	// RecommendedMemoryBytes is a static, pre-deploy advisory of how
-	// much RAM this template needs to run comfortably (e.g. an LLM
-	// runtime sized for one specific model). Zero means no advisory
-	// applies. This is not checked against any node's real available
-	// memory: no host memory monitoring exists anywhere in this
-	// codebase yet (see internal/alerting/node_resource_usage.go's own
-	// doc comment on why), so it is informational only.
+	// RecommendedMemoryBytes is a static, pre-deploy RAM advisory (zero
+	// means none). Informational only, not checked against any node's
+	// real available memory.
 	RecommendedMemoryBytes int64
 }
 
@@ -2849,24 +2845,12 @@ var Templates = []Template{
       - ollama_data:/root/.ollama
 `,
 	},
-	// The five ollama-* entries below pin an explicit parameter-size tag
-	// rather than a bare model alias (e.g. "mistral:7b-instruct-v0.3",
-	// not "mistral"): Ollama's own library docs warn a bare alias's
-	// default can change when the publisher updates it, which would
-	// silently change both the download and the RAM figure below out
-	// from under an existing deployment.
-	//
-	// RecommendedMemoryBytes is computed, not guessed: Q4 quantization
-	// costs roughly 0.6 GB per billion parameters, plus ~1.5 GB of
-	// overhead for the OS, the Ollama runtime itself, and the model's
-	// context/KV-cache, rounded up to the next whole GiB. This matches
-	// the commonly published rule of thumb for Q4 GGUF-style models
-	// (e.g. a Q4 7B model's own weights are ~4.1-4.7 GB on disk).
-	//
-	// The auto-pull command polls "ollama list" until the server
-	// actually answers instead of guessing a fixed startup delay,
-	// since Ollama's own startup time varies by disk speed and image
-	// cache state.
+	// The five ollama-* entries pin an explicit parameter-size tag, not
+	// a bare alias (Ollama's default can change under a bare alias).
+	// RecommendedMemoryBytes is Q4 quantization's rule of thumb: ~0.6 GB
+	// per billion parameters plus ~1.5 GB overhead, rounded up to a
+	// whole GiB. The auto-pull command polls "ollama list" for
+	// readiness instead of a fixed sleep.
 	{
 		ID:                     "ollama-mistral",
 		Name:                   "Ollama: Mistral 7B",

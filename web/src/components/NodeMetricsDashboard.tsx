@@ -20,11 +20,10 @@ import {
 // node's already-collected per-container samples
 // (internal/telemetry/collector.go) for every app service currently
 // placed on it, not a read of the host machine's real free/total memory
-// or CPU. The Disk space group is the one exception, a genuine host
-// filesystem reading (internal/telemetry/hostdisk.go's
-// HostDiskCollector), which is why it carries no "summed across N
-// containers" subtitle below (isHostLevel) and the alert at the bottom
-// still calls out CPU/memory/network as the remaining sum-only gap.
+// or CPU. Disk space and Memory (host) are the exceptions, genuine host
+// readings (hostdisk.go/hostmemory.go), which is why they carry their
+// own percentage subtitle (hostLevelSubtitle) instead of the "summed
+// across N containers" one.
 //
 // Deliberately its own component, not MetricsDashboard reused wholesale:
 // the two differ enough in what they fetch (a different endpoint and
@@ -50,12 +49,14 @@ interface NodeChartGroupConfig {
   unit: ChartUnit
   primary: NodeSeriesConfig
   secondary?: NodeSeriesConfig
-  // True for the one group that reads a real host filesystem sample
-  // (HostDiskCollector) rather than a sum of per-container samples:
-  // suppresses the "summed across N containers" subtitle, which would
-  // be misleading for a reading that was never a sum in the first
-  // place.
-  isHostLevel?: boolean
+  // Set for a group that reads a real host sample (HostDiskCollector/
+  // HostMemoryCollector) rather than a sum of per-container samples:
+  // replaces the "summed across N containers" subtitle with this
+  // group's own percentage caption, since the two metrics' arithmetic
+  // differs (disk: used/total, memory: (total-available)/total).
+  hostLevelSubtitle?: (
+    rows: { primary?: number; secondary?: number }[],
+  ) => string | undefined
 }
 
 // No memory_limit_bytes group here (unlike MetricsDashboard.tsx's own
@@ -99,10 +100,25 @@ const NODE_CHART_GROUPS: NodeChartGroupConfig[] = [
   {
     title: 'Disk space',
     unit: 'bytes',
-    isHostLevel: true,
+    hostLevelSubtitle: diskPercentSubtitle,
     primary: { metric: 'disk_used_bytes', label: 'Used', color: '#f97316' },
     secondary: {
       metric: 'disk_total_bytes',
+      label: 'Total',
+      color: '#64748b',
+    },
+  },
+  {
+    title: 'Memory (host)',
+    unit: 'bytes',
+    hostLevelSubtitle: memoryPercentSubtitle,
+    primary: {
+      metric: 'memory_available_bytes',
+      label: 'Available',
+      color: '#f97316',
+    },
+    secondary: {
+      metric: 'memory_total_bytes',
       label: 'Total',
       color: '#64748b',
     },
@@ -130,6 +146,22 @@ function diskPercentSubtitle(
     const total = rows[i]?.secondary
     if (used !== undefined && total !== undefined && total > 0) {
       return `${((used / total) * 100).toFixed(1)}% used`
+    }
+  }
+  return undefined
+}
+
+// Memory's primary series is "available" (free), not "used" like disk's,
+// so this reports "% available" rather than reusing diskPercentSubtitle's
+// used/total framing.
+function memoryPercentSubtitle(
+  rows: { primary?: number; secondary?: number }[],
+): string | undefined {
+  for (let i = rows.length - 1; i >= 0; i -= 1) {
+    const available = rows[i]?.primary
+    const total = rows[i]?.secondary
+    if (available !== undefined && total !== undefined && total > 0) {
+      return `${((available / total) * 100).toFixed(1)}% available`
     }
   }
   return undefined
@@ -165,8 +197,8 @@ function NodeChartCard({
   const subtitle =
     isLoading || error
       ? undefined
-      : group.isHostLevel
-        ? diskPercentSubtitle(rows)
+      : group.hostLevelSubtitle
+        ? group.hostLevelSubtitle(rows)
         : subtitleFor(primaryQuery.data?.resource_count)
 
   return (
@@ -211,8 +243,8 @@ export function NodeMetricsDashboard({ nodeId }: { nodeId: string }) {
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
             As of {range.to.toLocaleTimeString()}. CPU, memory, and network/disk
-            I/O are summed across every app container placed here; disk space is
-            a real host filesystem reading.
+            I/O are summed across every app container placed here; disk space
+            and host memory are real host readings.
           </p>
         </div>
         <TimeRangeControls
@@ -244,9 +276,11 @@ export function NodeMetricsDashboard({ nodeId }: { nodeId: string }) {
             container's own collected stats for everything placed on this node.
             They are not a read of the host machine's actual free or total
             memory and CPU, so there is no real capacity ceiling to compare
-            against there. Disk space is the exception: a real reading of the
-            host filesystem the data directory lives on, not a per-container
-            sum.
+            against there. Disk space and Memory (host) are the exceptions: real
+            readings of the host filesystem and host memory, not a per-container
+            sum. Both are only real for this node when it's the one running the
+            control plane process itself, not a remote node in a multi-node
+            fleet.
           </p>
           <p className="mt-2">
             Databases placed on this node aren&apos;t included in this sum: they
