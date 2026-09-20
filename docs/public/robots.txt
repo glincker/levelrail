@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://levelrail.glinr.com/sitemap.xml
