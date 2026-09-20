@@ -1346,12 +1346,21 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 	}
 	keyPath = filepath.Join(dataDir, masterKeyFilename)
 
-	if serialized, err := os.ReadFile(keyPath); err == nil { //nolint:gosec // operator-controlled data directory path, not user input
+	serialized, readErr := os.ReadFile(keyPath) //nolint:gosec // operator-controlled data directory path, not user input
+	switch {
+	case readErr == nil:
 		mk, err := secrets.LoadMasterKey(string(serialized))
 		if err != nil {
 			return nil, "", fmt.Errorf("load persisted master key: %w", err)
 		}
 		return mk, keyPath, nil
+	case !os.IsNotExist(readErr):
+		// A permission error, I/O failure, or a partially written file
+		// (e.g. after a prior disk-full write) must never be treated the
+		// same as "no key yet": falling through to generate a fresh key
+		// below would silently overwrite the file, permanently
+		// orphaning every secret already wrapped under the real one.
+		return nil, "", fmt.Errorf("read persisted master key at %s: %w", keyPath, readErr)
 	}
 
 	mk, err = secrets.GenerateMasterKey()
