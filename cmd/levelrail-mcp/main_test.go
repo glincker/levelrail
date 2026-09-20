@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/mcptools"
 )
 
 // parseFlagsTestCase is TestParseFlags' table type, named (rather than
@@ -69,9 +71,9 @@ func assertParseFlagsCase(t *testing.T, tt parseFlagsTestCase) {
 }
 
 func TestNewServer_RegistersEveryTool(t *testing.T) {
-	server := newServer(nil)
+	server := mcptools.NewServer(nil)
 	if server == nil {
-		t.Fatal("newServer() = nil")
+		t.Fatal("mcptools.NewServer() = nil")
 	}
 	// Full tool-call behavior (schema, dispatch, error mapping) is
 	// covered end-to-end in tools_test.go via the in-memory transport;

@@ -57,6 +57,7 @@ import (
 	"syscall"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/mcptools"
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -85,7 +86,7 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
 	client := apiclient.NewClient(apiURL, token, apiclient.WithUserAgent("levelrail-mcp/"+version.Version))
 
-	server := newServer(client)
+	server := mcptools.NewServer(client)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -137,45 +138,4 @@ func parseFlags(prog string, args []string) (token, apiURL, profile, transport, 
 		return "", "", "", "", "", parseErr
 	}
 	return token, apiURL, profile, transport, listen, nil
-}
-
-// newServer builds the MCP server and registers every tool against
-// client. Split out from run so tests can connect to it directly over
-// an in-memory transport (mcp.NewInMemoryTransports), without spawning a
-// real process or touching stdio.
-func newServer(client *apiclient.Client) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: "levelrail-mcp", Version: version.Version}, nil)
-
-	registerAppTools(server, client)
-	registerDatabaseTools(server, client)
-	registerServiceTemplateTools(server, client)
-	registerNodeTools(server, client)
-	registerPreviewTools(server, client)
-	registerAlertTools(server, client)
-	registerAppMetricsTools(server, client)
-	registerDiagnosticTools(server, client)
-	registerResourceRecommendationTools(server, client)
-	registerFeatureFlagTools(server, client)
-	registerSystemTools(server, client)
-	registerWebhookTools(server, client)
-	registerBackupVerificationTools(server, client)
-	registerDeployCompareTools(server, client)
-	registerPromoteTools(server, client)
-	registerNotificationTools(server, client)
-	registerAuditTools(server, client)
-	registerIAMTools(server, client)
-	registerOrganizationTools(server, client)
-	registerRegistryCredentialTools(server, client)
-	registerAppConfigTools(server, client)
-	registerBackupTargetTools(server, client)
-	registerVolumeBackupTools(server, client)
-	registerScheduledTaskTools(server, client)
-	registerEnvironmentTools(server, client)
-	registerDomainTools(server, client)
-	registerCloudflareTools(server, client)
-	registerCertificateTools(server, client)
-	registerLogDrainTools(server, client)
-	registerSettingsTools(server, client)
-
-	return server
 }

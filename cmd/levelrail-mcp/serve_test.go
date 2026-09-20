@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/mcptools"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -34,7 +35,7 @@ func (rt bearerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 func newAuthedTestServer(t *testing.T, token string) *httptest.Server {
 	t.Helper()
 	client := apiclient.NewClient("http://unused.invalid", "test-token")
-	server := newServer(client)
+	server := mcptools.NewServer(client)
 	srv := httptest.NewServer(newAuthedHandler(server, token))
 	t.Cleanup(srv.Close)
 	return srv
