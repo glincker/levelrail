@@ -911,6 +911,9 @@ func (f *fakeDrainAppStore) UpdateServiceStorageTarget(context.Context, string, 
 func (f *fakeDrainAppStore) UpdateServiceDatabaseAttachment(context.Context, string, *store.DatabaseAttachment) error {
 	return nil
 }
+func (f *fakeDrainAppStore) SetServiceAutoRollbackOnCrashloop(context.Context, string, bool) error {
+	return nil
+}
 func (f *fakeDrainAppStore) SetServiceVaultEnvVar(context.Context, string, string, *store.VaultEnvRef) error {
 	return nil
 }

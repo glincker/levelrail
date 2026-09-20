@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -214,4 +215,69 @@ func EvaluateCrashloop(tracker *RestartTracker, r Rule, now time.Time) Rule {
 	next.LastValue = &v
 
 	return advanceState(next, r, count >= r.RestartCountThreshold, 0, now)
+}
+
+// AutoRollbackStore is the narrow store surface MaybeAutoRollback needs:
+// read a service's current desired state (to check the opt-in flag and
+// current image) and its deploy history (to find a prior known-good
+// tag), plus deploy.ImageDeployStore's write surface to actually trigger
+// the rollback through the same path a manual one uses. *store.DB
+// satisfies this structurally.
+type AutoRollbackStore interface {
+	deploy.ImageDeployStore
+	GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
+	ListDeployAttempts(ctx context.Context, serviceName string) ([]store.DeployAttempt, error)
+}
+
+// MaybeAutoRollback checks whether resourceID's app has opted into
+// automatic crashloop rollback (store.DesiredService.
+// AutoRollbackOnCrashloop) and, if so, triggers a deploy back to the
+// most recent different successful image via deploy.TriggerImageDeploy,
+// the identical path a manual "Rollback to this build" action already
+// uses (see that function's own doc comment). Intended to be called only
+// on a KindCrashloop rule's pending-to-firing transition (Engine.Tick's
+// becameFiring), which is itself this feature's once-per-bad-deploy
+// debounce: a rule that's already firing does not transition again until
+// it resolves, so this never fires twice for the same crashloop.
+//
+// Failures and "nothing to do" cases are logged, never returned: a
+// crashloop rule's own notification already fired regardless of what
+// happens here, and an automatic safety net that panics or blocks
+// evaluation of the next rule would be worse than one that occasionally
+// leaves a crashloop to alert-only.
+func MaybeAutoRollback(ctx context.Context, st AutoRollbackStore, nudger deploy.ReconcileNudger, resourceID string, logger *slog.Logger) {
+	if logger == nil {
+		logger = slog.Default()
+	}
+
+	name, ok := strings.CutPrefix(resourceID, "service:")
+	if !ok || name == "" {
+		return
+	}
+
+	svc, err := st.GetDesiredService(ctx, name)
+	if err != nil {
+		logger.Error("alerting: crashloop auto-rollback: load app failed", slog.String("name", name), slog.String("error", err.Error()))
+		return
+	}
+	if !svc.AutoRollbackOnCrashloop {
+		return
+	}
+
+	attempts, err := st.ListDeployAttempts(ctx, name)
+	if err != nil {
+		logger.Error("alerting: crashloop auto-rollback: list deploy attempts failed", slog.String("name", name), slog.String("error", err.Error()))
+		return
+	}
+	image, ok := deploy.PreviousKnownGoodImage(attempts, svc.Image)
+	if !ok {
+		logger.Warn("alerting: crashloop auto-rollback: no older known-good image to fall back to, leaving crashloop to alert only", slog.String("name", name), slog.String("image", svc.Image))
+		return
+	}
+
+	if _, err := deploy.TriggerImageDeploy(ctx, st, nudger, *svc, image, store.DeployAttemptSourceAutoRollback, logger); err != nil {
+		logger.Error("alerting: crashloop auto-rollback: trigger deploy failed", slog.String("name", name), slog.String("image", image), slog.String("error", err.Error()))
+		return
+	}
+	logger.Warn("alerting: crashloop auto-rollback: rolled back to prior image", slog.String("name", name), slog.String("from_image", svc.Image), slog.String("to_image", image))
 }

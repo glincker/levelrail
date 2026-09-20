@@ -1,5 +1,5 @@
 ---
-description: Get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
+description: Requirements, then every supported way to get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
 ---
 
 # Installing Levelrail
@@ -9,6 +9,26 @@ plane, and `levelrail-agent`, the node agent) plus a CLI
 (`levelrail-cli`). This page covers every supported way to get the
 control plane running on a real Linux host, how to verify it worked,
 and how to upgrade or remove it afterward.
+
+## Requirements
+
+Confirm these before you provision a server.
+
+**Supported OS**
+
+Linux, `amd64` or `arm64`. `install.sh` checks `uname -s` and exits on anything else, and requires `systemctl` since it writes a systemd unit. No specific distro is enforced beyond that, and Docker itself is installed automatically via `get.docker.com` if it's missing. Windows and non-Linux nodes aren't supported, by design (see the root `CLAUDE.md`'s non-goals).
+
+**RAM, CPU, and disk**
+
+Nothing in `install.sh` or the control plane checks a minimum. `levelrail-cli doctor` (`GET /api/v1/system/doctor`) checks Docker reachability, free disk space (warns below 1 GiB by default), and data-directory writability, not a memory or CPU floor, and no official minimum has been benchmarked or published either; that measurement is Phase 5 work per the [roadmap](roadmap.md).
+
+As a practical starting point, not a hard requirement: 1 vCPU / 1 GB RAM / 10 GB disk is enough to boot Docker and the control plane on a small single-node instance. BuildKit builds and whatever apps you deploy need headroom of their own on top of that, so 2 vCPU / 2 GB RAM / 20 GB disk is more comfortable in practice. Scale up from there based on what you actually run.
+
+**Ports**
+
+- **Control-plane node:** `80/tcp` and `443/tcp`, inbound, reachable from the internet. Port 80 specifically is required for Let's Encrypt's HTTP-01 challenge during ACME issuance; both are what embedded Caddy binds for ingress, and `GET /api/v1/system/doctor` checks both are free to bind. See [Domains and ingress: firewall](domains-and-ingress.md#firewall-ports-80-and-443) if one is blocked.
+- **Agent-only nodes** (additional servers added later via [Multi-node](multi-node.md)): none. The agent dials *out* to the control plane and the control plane never initiates a connection, so a managed node needs no inbound ports open at all.
+- `install.sh` can configure `ufw` for you with `LEVELRAIL_CONFIGURE_UFW=1` (see the table below), or open `80/tcp` and `443/tcp` yourself via your cloud provider's firewall, `ufw`, or `iptables`.
 
 ## Option 1: install.sh (recommended)
 
@@ -85,8 +105,8 @@ Both are published for `linux/amd64` and `linux/arm64` on every tagged release.
 
 ## Option 3: build from source
 
-See [docs/getting-started.md](getting-started.md#build-and-run) for
-the `go build` commands. This is the path for contributors and anyone
+See [Getting started: building from source](getting-started.md#build-the-binaries)
+for the `go build` commands. This is the path for contributors and anyone
 who wants to run an unreleased commit rather than a tagged version.
 
 ## Verifying the install
@@ -180,6 +200,11 @@ This does not touch Docker itself or any containers, images, or volumes Levelrai
 docker rm -f levelrail levelrail-agent
 docker volume rm levelrail-data
 ```
+
+## Getting help
+
+- Ran into a specific error? Check [Troubleshooting](troubleshooting.md) first.
+- Everything else (bugs, questions, feature requests): open an issue on [GitHub](https://github.com/glincker/levelrail/issues).
 
 ## See also
 

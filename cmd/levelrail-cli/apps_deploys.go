@@ -2,8 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 // runAppsDeploys dispatches "apps deploys <verb> [flags]", the same
@@ -205,8 +209,18 @@ Flags:
 // text, so shell redirection ("> file.txt") is the intended way to
 // save it, the same convention "apps logs" already leaves to the shell
 // rather than adding its own --download-to flag.
+//
+// --follow switches to a live tail instead: GET
+// /api/v1/apps/{name}/deploys/{deployId}/logs
+// (internal/api/deploy_attempts.go's handleDeployLogStream), the same SSE
+// connection the dashboard's deploy log page opens, the exact live-tail
+// shape "apps logs --follow" already establishes for the app-log
+// equivalent.
 func runAppsDeploysLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps deploys logs", "not applicable: this command always writes raw log text, never JSON", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps deploys logs", "with --follow, print one JSON object per line instead of raw log text; not applicable otherwise", stderr)
+	var follow bool
+	fs.BoolVar(&follow, "follow", false, "stream the deploy's log live, like \"docker logs -f\"; runs until Ctrl+C or the attempt finishes")
+	fs.BoolVar(&follow, "f", false, "shorthand for --follow")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysLogsUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, _, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -222,6 +236,10 @@ func runAppsDeploysLogs(prog string, args []string, stdout, stderr io.Writer, lo
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
+	if follow {
+		return runAppsDeploysLogsFollow(client, name, deployID, stdout, stderr, jsonOut)
+	}
+
 	data, err := client.DownloadDeployLog(context.Background(), name, deployID)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("download deploy log for %s/%s: %w", name, deployID, err))
@@ -230,9 +248,34 @@ func runAppsDeploysLogs(prog string, args []string, stdout, stderr io.Writer, lo
 	return exitOK
 }
 
+// runAppsDeploysLogsFollow implements "apps deploys logs <name>
+// <deploy-id> --follow", mirroring runAppsLogsFollow (apps_logs.go): opens
+// client.StreamDeployLog and prints each line as it arrives until ctx is
+// canceled (Ctrl+C or SIGTERM) or the server closes the connection
+// (the attempt finished and this was a live tail, or it was already
+// finished and this was just a one-shot replay of the persisted log; see
+// handleDeployLogStream's own doc comment for which).
+func runAppsDeploysLogsFollow(client *Client, name, deployID string, stdout, stderr io.Writer, jsonOut bool) int {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	err := client.StreamDeployLog(ctx, name, deployID, func(e logStreamEntry) error {
+		if jsonOut {
+			return writeJSONLine(stdout, e)
+		}
+		_, err := fmt.Fprintf(stdout, "%s %s\n", e.Stream, e.Line)
+		return err
+	})
+	if err != nil && !errors.Is(err, context.Canceled) {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("stream deploy log for %s/%s: %w", name, deployID, err))
+	}
+	return exitOK
+}
+
 func appsDeploysLogsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps deploys logs <name> <deploy-id> [flags]
+  %[1]s apps deploys logs <name> <deploy-id> --follow [flags]
 
 Prints deploy-id's full build/log output to stdout: live-buffered lines
 so far if the attempt is still running, the full persisted log
@@ -240,10 +283,16 @@ otherwise. Find a deploy-id with "apps deploys list <name>". Redirect
 to a file to save it ("%[1]s apps deploys logs <name> <deploy-id> >
 build.log").
 
+Add --follow (or -f) to stream the log live instead, the same SSE
+connection the dashboard's deploy log page uses; it runs until Ctrl+C
+or the attempt finishes.
+
 Flags:
+  --follow, -f              stream the deploy's log live until Ctrl+C or the attempt finishes
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                    with --follow, print one JSON object per line instead of "stream line" text
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }

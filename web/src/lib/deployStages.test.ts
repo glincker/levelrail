@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeDeployStages } from './deployStages'
+import { computeDeployStages, computeRolloutSubStages } from './deployStages'
 import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
 
@@ -13,7 +13,10 @@ const baseAttempt: DeployAttempt = {
   finished_at: '2026-01-01T00:00:05Z',
 }
 
-function condition(reason: string, lastTransitionTime: string): ReconcileCondition {
+function condition(
+  reason: string,
+  lastTransitionTime: string,
+): ReconcileCondition {
   return {
     Type: 'Ready',
     Status: 'True',
@@ -24,7 +27,12 @@ function condition(reason: string, lastTransitionTime: string): ReconcileConditi
 }
 
 describe('computeDeployStages rollout stage', () => {
-  const cases: { name: string; reason: string; transitionTime: string; want: string }[] = [
+  const cases: {
+    name: string
+    reason: string
+    transitionTime: string
+    want: string
+  }[] = [
     {
       name: 'marks rollout done on a Deployed condition after the attempt finished',
       reason: 'Deployed',
@@ -101,5 +109,144 @@ describe('computeDeployStages rollout stage', () => {
       true,
     )
     expect(rollout.status).toBe(want)
+  })
+})
+
+describe('computeRolloutSubStages', () => {
+  it('marks all three sub-stages pending while the build is still running', () => {
+    const [health, cutover, cleanup] = computeRolloutSubStages(
+      { ...baseAttempt, status: 'running', finished_at: undefined },
+      [],
+      true,
+    )
+    expect([health.status, cutover.status, cleanup.status]).toEqual([
+      'pending',
+      'pending',
+      'pending',
+    ])
+  })
+
+  it('skips all three sub-stages when the build itself failed', () => {
+    const [health, cutover, cleanup] = computeRolloutSubStages(
+      { ...baseAttempt, status: 'failed' },
+      [],
+      true,
+    )
+    expect([health.status, cutover.status, cleanup.status]).toEqual([
+      'skipped',
+      'skipped',
+      'skipped',
+    ])
+    expect(health.detail).toBe(
+      'The build failed before a roll out could start.',
+    )
+  })
+
+  it('marks unknown for a non-latest attempt', () => {
+    const [health, cutover, cleanup] = computeRolloutSubStages(
+      baseAttempt,
+      [],
+      false,
+    )
+    expect([health.status, cutover.status, cleanup.status]).toEqual([
+      'unknown',
+      'unknown',
+      'unknown',
+    ])
+  })
+
+  it('reports health check running and the rest pending while no terminal condition has landed', () => {
+    const [health, cutover, cleanup] = computeRolloutSubStages(
+      baseAttempt,
+      [],
+      true,
+    )
+    expect(health.status).toBe('running')
+    expect(cutover.status).toBe('pending')
+    expect(cleanup.status).toBe('pending')
+  })
+
+  it('marks health check failed and skips cutover/cleanup on a health-check failure reason', () => {
+    const [health, cutover, cleanup] = computeRolloutSubStages(
+      baseAttempt,
+      [condition('ReadinessFailed', '2026-01-01T00:00:10Z')],
+      true,
+    )
+    expect(health.status).toBe('failed')
+    expect(cutover.status).toBe('skipped')
+    expect(cleanup.status).toBe('skipped')
+  })
+
+  it('marks every reachable health-check failure reason as a health-check failure', () => {
+    const reasons = [
+      'StoreError',
+      'SuspendFailed',
+      'StrategyUnrecognized',
+      'InspectFailed',
+      'CleanupFailed',
+      'CreateFailed',
+      'EnsureNetworkFailed',
+      'StartFailed',
+      'VanishedAfterStart',
+      'PreDeployHookFailed',
+      'ReadinessFailed',
+      'OOMKilledDuringReadiness',
+      'ExitedDuringReadiness',
+    ]
+    for (const reason of reasons) {
+      const [health] = computeRolloutSubStages(
+        baseAttempt,
+        [condition(reason, '2026-01-01T00:00:10Z')],
+        true,
+      )
+      expect(health.status).toBe('failed')
+    }
+  })
+
+  const allDoneCases: { name: string; reason: string }[] = [
+    { name: 'a clean Deployed condition', reason: 'Deployed' },
+    {
+      name: 'AlreadyRunning, e.g. redeploying the already-running image',
+      reason: 'AlreadyRunning',
+    },
+    {
+      name: 'PostDeployHookFailed: cutover and cleanup already succeeded by then',
+      reason: 'PostDeployHookFailed',
+    },
+  ]
+
+  it.each(allDoneCases)('marks all three done on $name', ({ reason }) => {
+    const [health, cutover, cleanup] = computeRolloutSubStages(
+      baseAttempt,
+      [condition(reason, '2026-01-01T00:00:10Z')],
+      true,
+    )
+    expect([health.status, cutover.status, cleanup.status]).toEqual([
+      'done',
+      'done',
+      'done',
+    ])
+  })
+
+  it('marks health check and cutover done but cleanup failed on RunningStaleCleanupFailed', () => {
+    const [health, cutover, cleanup] = computeRolloutSubStages(
+      baseAttempt,
+      [condition('RunningStaleCleanupFailed', '2026-01-01T00:00:10Z')],
+      true,
+    )
+    expect(health.status).toBe('done')
+    expect(cutover.status).toBe('done')
+    expect(cleanup.status).toBe('failed')
+  })
+
+  it('ignores a matching condition that predates the attempt finishing', () => {
+    const [health, cutover, cleanup] = computeRolloutSubStages(
+      baseAttempt,
+      [condition('Deployed', '2025-12-31T00:00:00Z')],
+      true,
+    )
+    expect(health.status).toBe('running')
+    expect(cutover.status).toBe('pending')
+    expect(cleanup.status).toBe('pending')
   })
 })

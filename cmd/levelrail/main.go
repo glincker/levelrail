@@ -655,6 +655,15 @@ func run(logger *slog.Logger) error {
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
 		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
+	// db satisfies alerting.AutoRollbackStore structurally (it already
+	// satisfies deploy.ImageDeployStore, plus GetDesiredService/
+	// ListDeployAttempts); engine (the reconcile engine, already passed
+	// to api.WithReconcileNudger below) satisfies deploy.ReconcileNudger
+	// via the same Nudge() method. Opt-in per app
+	// (store.DesiredService.AutoRollbackOnCrashloop, off by default), so
+	// wiring this unconditionally does not change behavior for any app
+	// that hasn't turned it on.
+	alertingEngine.SetAutoRollback(db, engine)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))

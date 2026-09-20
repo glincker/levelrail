@@ -580,6 +580,96 @@ func TestNormalizeGitSourceBuildType(t *testing.T) {
 	}
 }
 
+func TestNormalizeGitSourceTriggerMode(t *testing.T) {
+	tests := []struct {
+		name    string
+		in      string
+		want    string
+		wantErr bool
+	}{
+		{name: "empty defaults to push", in: "", want: "push"},
+		{name: "push", in: "push", want: "push"},
+		{name: "release", in: "release", want: "release"},
+		{name: "unrecognized rejected", in: "tag", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := normalizeGitSourceTriggerMode(tt.in)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("normalizeGitSourceTriggerMode(%q) error = %v, wantErr %v", tt.in, err, tt.wantErr)
+			}
+			if err == nil && got != tt.want {
+				t.Errorf("normalizeGitSourceTriggerMode(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHandleSetGitSource_TriggerMode_RoundTrip(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.TriggerMode != "release" {
+		t.Errorf("TriggerMode = %q, want release", got.TriggerMode)
+	}
+
+	stored, err := db.GetGitSource(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetGitSource() error = %v", err)
+	}
+	if stored.TriggerMode != "release" {
+		t.Errorf("stored.TriggerMode = %q, want release", stored.TriggerMode)
+	}
+}
+
+func TestHandleSetGitSource_TriggerMode_DefaultsToPush(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","branch":"main"}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.TriggerMode != "push" {
+		t.Errorf("TriggerMode = %q, want push (the pre-trigger-mode default)", got.TriggerMode)
+	}
+}
+
+func TestHandleSetGitSource_RejectsUnrecognizedTriggerMode(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","trigger_mode":"nightly"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
 func TestRequireHTTPOrHTTPSScheme(t *testing.T) {
 	tests := []struct {
 		name    string

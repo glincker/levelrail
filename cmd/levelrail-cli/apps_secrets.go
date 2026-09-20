@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 	"text/tabwriter"
 )
 
@@ -41,6 +43,7 @@ func appsSecretsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps secrets list <name> [flags]                          list an app's secret keys and their locked state
   %[1]s apps secrets set <name> <key> <value> [flags]              set (or rotate) one secret's value
+  %[1]s apps secrets set <name> --env-file <path> [flags]           bulk-set every key in a .env-format file as a secret
   %[1]s apps secrets lock <name> <key> --locked=true|false [flags]  toggle a secret's overwrite guard
 
 Values are never returned: list shows key names and locked state only,
@@ -77,9 +80,11 @@ func runAppsSecretsList(prog string, args []string, stdout, stderr io.Writer, lo
 func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, _, _, _ := apiFlagSet(prog, "apps secrets set", "unused for this subcommand", stderr)
 	var overwriteLocked bool
+	var envFile string
 	fs.BoolVar(&overwriteLocked, "force", false, "overwrite the value even if the key is locked")
+	fs.StringVar(&envFile, "env-file", "", "bulk-set every key in this .env-format file as a secret, instead of a single key/value pair")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps secrets set <name> <key> <value> [flags]\n\nSets (or rotates) one secret's encrypted value.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps secrets set <name> <key> <value> [flags]\n  %s apps secrets set <name> --env-file <path> [flags]\n\nSets (or rotates) one secret's encrypted value, or every key in a\n.env-format file as its own secret. Values are never printed back.\n\nFlags:\n", prog, prog)
 		fs.PrintDefaults()
 	}
 
@@ -90,6 +95,15 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 		return exitUsage
 	}
 	tokenFlag, apiURLFlag, profileFlag := *tokenFlagP, *apiURLFlagP, *profileFlagP
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	if envFile != "" {
+		rest, ok := requireArgs(fs, stderr, prog, "apps secrets set", "an app name", 1)
+		if !ok {
+			return exitUsage
+		}
+		return runAppsSecretsSetEnvFile(client, rest[0], envFile, overwriteLocked, stdout, stderr)
+	}
 
 	rest, ok := requireArgs(fs, stderr, prog, "apps secrets set", "an app name, a key, and a value", 3)
 	if !ok {
@@ -97,13 +111,88 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 	}
 	name, key, value := rest[0], rest[1], rest[2]
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
 	if err := client.SetSecret(context.Background(), name, key, value, overwriteLocked); err != nil {
 		return reportError(stdout, stderr, false, fmt.Errorf("set secret %q for app %q: %w", key, name, err))
 	}
 	_, _ = fmt.Fprintf(stdout, "secret %q set for app %q\n", key, name)
 	return exitOK
+}
+
+// runAppsSecretsSetEnvFile reads path as a .env-format file and sets each
+// key it contains as its own secret via client.SetSecret, one API call per
+// key. Values from the file are never printed: only key names appear in
+// stdout/stderr output, matching the rest of this subcommand's "never echo
+// a value back" rule.
+func runAppsSecretsSetEnvFile(client *Client, name, path string, overwriteLocked bool, stdout, stderr io.Writer) int {
+	data, err := os.ReadFile(path) //nolint:gosec // operator-supplied local path, same trust boundary as every other --file flag in this CLI
+	if err != nil {
+		return reportError(stdout, stderr, false, newValidationError("read env file %q: %v", path, err))
+	}
+
+	entries := parseEnvFileBytes(data)
+	if len(entries) == 0 {
+		_, _ = fmt.Fprintf(stdout, "no keys found in %q, nothing set\n", path)
+		return exitOK
+	}
+
+	var failedKeys []string
+	for _, entry := range entries {
+		if err := client.SetSecret(context.Background(), name, entry.Key, entry.Value, overwriteLocked); err != nil {
+			_, _ = fmt.Fprintf(stderr, "secret %q for app %q: %v\n", entry.Key, name, err)
+			failedKeys = append(failedKeys, entry.Key)
+			continue
+		}
+		_, _ = fmt.Fprintf(stdout, "secret %q set for app %q\n", entry.Key, name)
+	}
+	if len(failedKeys) > 0 {
+		_, _ = fmt.Fprintf(stderr, "%d of %d secret(s) failed: %s\n", len(failedKeys), len(entries), strings.Join(failedKeys, ", "))
+		return exitAPIError
+	}
+	return exitOK
+}
+
+// envFileEntry is one parsed key/value pair from a .env-format file.
+type envFileEntry struct {
+	Key   string
+	Value string
+}
+
+// parseEnvFileBytes parses .env-format text into ordered key/value entries,
+// mirroring web/src/lib/envParse.ts's parseEnvBlock semantics: blank lines
+// and #-comments are skipped, a leading "export " is stripped, and a value
+// wrapped in matching quotes has them removed. Lines without "=" are
+// skipped rather than erroring, and a later duplicate key wins by simply
+// being applied after the earlier one, matching real .env semantics.
+func parseEnvFileBytes(data []byte) []envFileEntry {
+	var entries []envFileEntry
+	for _, rawLine := range strings.Split(string(data), "\n") {
+		line := strings.TrimSpace(rawLine)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		withoutExport := strings.TrimPrefix(line, "export ")
+
+		eqIdx := strings.Index(withoutExport, "=")
+		if eqIdx == -1 {
+			continue
+		}
+
+		key := strings.TrimSpace(withoutExport[:eqIdx])
+		if key == "" {
+			continue
+		}
+
+		value := strings.TrimSpace(withoutExport[eqIdx+1:])
+		isDoubleQuoted := strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`)
+		isSingleQuoted := strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")
+		if len(value) >= 2 && (isDoubleQuoted || isSingleQuoted) {
+			value = value[1 : len(value)-1]
+		}
+
+		entries = append(entries, envFileEntry{Key: key, Value: value})
+	}
+	return entries
 }
 
 func runAppsSecretsLock(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

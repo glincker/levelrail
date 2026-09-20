@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -60,6 +61,14 @@ type Engine struct {
 	backups        BackupSource
 	newNotifier    func(Rule) Notifier
 	logger         *slog.Logger
+
+	// autoRollback/autoRollbackNudger back MaybeAutoRollback
+	// (crashloop.go), set via SetAutoRollback. Both nil (the default)
+	// means the feature is off platform-wide regardless of any
+	// individual app's own opt-in, the same "absence degrades, never
+	// errors" shape every other optional Engine dependency above follows.
+	autoRollback       AutoRollbackStore
+	autoRollbackNudger deploy.ReconcileNudger
 
 	certExpiryWarningWindow     time.Duration
 	certRenewalStalledThreshold time.Duration
@@ -135,6 +144,19 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 		domainHealthCheckInterval: domainHealthCheckInterval, domainHealthThrottle: newDomainHealthThrottle(),
 		backupMissingGracePeriod: backupMissingGracePeriod,
 	}
+}
+
+// SetAutoRollback wires crashloop auto-rollback into e: once set, a
+// KindCrashloop rule that transitions to firing checks its app's own
+// AutoRollbackOnCrashloop opt-in and, if set, rolls back automatically
+// (MaybeAutoRollback, crashloop.go). A setter rather than a NewEngine
+// parameter deliberately: this keeps every existing call site and test
+// unaffected by an optional dependency most callers don't need, the same
+// "nil until explicitly wired" shape st/nudger already have inside
+// MaybeAutoRollback itself.
+func (e *Engine) SetAutoRollback(st AutoRollbackStore, nudger deploy.ReconcileNudger) {
+	e.autoRollback = st
+	e.autoRollbackNudger = nudger
 }
 
 // Tick evaluates every enabled rule once. Errors from individual rules
@@ -254,6 +276,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 		switch {
 		case becameFiring:
 			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, taskFailureNotice, backupMissingNoticeText)
+			if r.Kind == KindCrashloop && e.autoRollback != nil {
+				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, next.ResourceID, e.logger)
+			}
 		case becameResolved:
 			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, "", "")
 		}

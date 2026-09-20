@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -67,17 +68,100 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := rt.setDesiredImage(r.Context(), *existing, req.Image)
+	// deploy.TriggerImageDeploy is the same shared save+record+nudge path
+	// internal/alerting's crashloop auto-rollback (MaybeAutoRollback)
+	// drives too: a manual rollback and an automatic one converge through
+	// identical code, not two divergent ones. rt.reconcileNudger already
+	// satisfies deploy.ReconcileNudger (both declare exactly Nudge()).
+	updated, err := deploy.TriggerImageDeploy(r.Context(), deployTriggerImageStore{rt}, rt.reconcileNudger, *existing, req.Image, store.DeployAttemptSourceImage, rt.logger)
 	if err != nil {
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	if rt.deployNotifier != nil {
+		rt.deployNotifier.Dispatch(r.Context(), resourceIDForApp(name), alerting.DeployOutcome{
+			AppName: name, Image: req.Image, Succeeded: true,
+		})
+	}
 
-	rt.recordPlainDeployAttempt(r.Context(), updated, req.Image)
-
-	rt.nudgeReconciler()
 	writeJSON(w, http.StatusAccepted, toAppResource(updated))
+}
+
+// deployTriggerImageStore adapts rt.apps and rt.deployAttempts, two
+// separately-typed Router fields, to the single deploy.ImageDeployStore
+// surface deploy.TriggerImageDeploy needs: Go interfaces don't compose
+// across two independent fields without an adapter like this one.
+type deployTriggerImageStore struct{ rt *Router }
+
+func (s deployTriggerImageStore) SaveDesiredService(ctx context.Context, svc store.DesiredService) error {
+	return s.rt.apps.SaveDesiredService(ctx, svc)
+}
+
+func (s deployTriggerImageStore) SaveDeployAttempt(ctx context.Context, a store.DeployAttempt) error {
+	return s.rt.deployAttempts.SaveDeployAttempt(ctx, a)
+}
+
+func (s deployTriggerImageStore) FinishDeployAttempt(ctx context.Context, id, status string, finishedAt time.Time, errMsg string) error {
+	return s.rt.deployAttempts.FinishDeployAttempt(ctx, id, status, finishedAt, errMsg)
+}
+
+// setAutoRollbackRequest is PUT /api/v1/apps/{name}/auto-rollback's body.
+type setAutoRollbackRequest struct {
+	Enabled bool `json:"enabled"`
+}
+
+// autoRollbackSettingResource is both GET and PUT
+// /api/v1/apps/{name}/auto-rollback's response.
+type autoRollbackSettingResource struct {
+	Enabled bool `json:"enabled"`
+}
+
+// handleGetAutoRollback handles GET /api/v1/apps/{name}/auto-rollback:
+// the current value of store.DesiredService.AutoRollbackOnCrashloop, so
+// the dashboard toggle (and "apps auto-rollback status") has something to
+// read on load without waiting for a PUT.
+func (rt *Router) handleGetAutoRollback(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	}
+	if err != nil {
+		rt.logger.Error("api: get auto-rollback: load app failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, autoRollbackSettingResource{Enabled: svc.AutoRollbackOnCrashloop})
+}
+
+// handleSetAutoRollback handles PUT /api/v1/apps/{name}/auto-rollback:
+// opts name into (or out of) automatic rollback on a crashloop, the
+// per-app switch internal/alerting.MaybeAutoRollback checks before
+// rolling back a firing KindCrashloop rule's app. Off by default
+// (migrations/0106_service_auto_rollback_on_crashloop.sql), matching
+// every other opt-in feature toggle in this codebase.
+func (rt *Router) handleSetAutoRollback(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	var req setAutoRollbackRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := rt.apps.SetServiceAutoRollbackOnCrashloop(r.Context(), name, req.Enabled); err != nil {
+		if errors.Is(err, store.ErrServiceNotFound) {
+			writeError(w, http.StatusNotFound, "app not found")
+			return
+		}
+		rt.logger.Error("api: set auto-rollback failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, autoRollbackSettingResource(req))
 }
 
 // setDesiredImage points existing's image at image and saves it: the

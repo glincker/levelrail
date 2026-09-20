@@ -96,10 +96,14 @@ type gitSourceResource struct {
 	// own doc comment): a pull request deploy reads it to decide which
 	// databases get a disposable, preview-scoped instance of their own
 	// (spec.Database.EphemeralInPreviews), independent of Services.
-	Databases     map[string]spec.Database `json:"databases,omitempty"`
-	HasToken      bool                     `json:"has_token"`
-	WebhookURL    string                   `json:"webhook_url"`
-	WebhookSecret string                   `json:"webhook_secret,omitempty"`
+	Databases map[string]spec.Database `json:"databases,omitempty"`
+	// TriggerMode mirrors store.GitSource.TriggerMode: spec.TriggerModePush
+	// (default) or spec.TriggerModeRelease, see
+	// normalizeGitSourceTriggerMode.
+	TriggerMode   string `json:"trigger_mode"`
+	HasToken      bool   `json:"has_token"`
+	WebhookURL    string `json:"webhook_url"`
+	WebhookSecret string `json:"webhook_secret,omitempty"`
 	// PreviewEnabled mirrors store.GitSource.PreviewEnabled: read-only
 	// here, set via PUT /api/v1/apps/{name}/preview-settings
 	// (preview_environments_handlers.go), not this resource's own PUT.
@@ -134,6 +138,7 @@ func toGitSourceResource(g store.GitSource, hasToken bool) gitSourceResource {
 		AdditionalServices: g.AdditionalServices,
 		Services:           g.Services,
 		Databases:          g.Databases,
+		TriggerMode:        effectiveGitSourceTriggerMode(g.TriggerMode),
 		HasToken:           hasToken,
 		WebhookURL:         gitSourceWebhookPath(g.ServiceName),
 		PreviewEnabled:     g.PreviewEnabled,
@@ -190,6 +195,10 @@ type setGitSourceRequest struct {
 	// so a pull request deploy can act on EphemeralInPreviews without
 	// re-parsing app.yaml.
 	Databases map[string]spec.Database `json:"databases,omitempty"`
+	// TriggerMode picks which pushes trigger a deploy: spec.TriggerModePush
+	// (default when empty) or spec.TriggerModeRelease, see
+	// normalizeGitSourceTriggerMode.
+	TriggerMode string `json:"trigger_mode,omitempty"`
 }
 
 // validateGitSourceDatabases rejects a database key that doesn't match
@@ -285,6 +294,34 @@ func normalizeGitSourceBuildType(buildType string) (string, error) {
 	}
 }
 
+// normalizeGitSourceTriggerMode defaults empty to spec.TriggerModePush
+// (every git source created before this field existed) and rejects
+// anything but the two recognized modes.
+func normalizeGitSourceTriggerMode(triggerMode string) (string, error) {
+	if triggerMode == "" {
+		return spec.TriggerModePush, nil
+	}
+	switch triggerMode {
+	case spec.TriggerModePush, spec.TriggerModeRelease:
+		return triggerMode, nil
+	default:
+		return "", fmt.Errorf("trigger_mode %q is not recognized", triggerMode)
+	}
+}
+
+// effectiveGitSourceTriggerMode defaults an empty (pre-migration, or
+// written by a caller that skipped normalizeGitSourceTriggerMode) trigger
+// mode to spec.TriggerModePush, the same default
+// normalizeGitSourceTriggerMode applies at write time. Used at read time
+// (git_webhook.go's gating logic, toGitSourceResource) so a git source
+// row from before this field existed behaves exactly as it always has.
+func effectiveGitSourceTriggerMode(triggerMode string) string {
+	if triggerMode == "" {
+		return spec.TriggerModePush
+	}
+	return triggerMode
+}
+
 // useRepoAsSourceRequest is the request body every provider's own
 // use-as-source handler decodes (GitHub, GitLab, Bitbucket): which app
 // the picked repo becomes the connected git source for, plus the same
@@ -294,10 +331,11 @@ func normalizeGitSourceBuildType(buildType string) (string, error) {
 // (owner/repo, project id, workspace/repoSlug) identify which repo,
 // never this body, so the body shape has never actually differed.
 type useRepoAsSourceRequest struct {
-	AppName   string `json:"app_name"`
-	Branch    string `json:"branch,omitempty"`
-	BuildType string `json:"build_type,omitempty"`
-	BuildPath string `json:"build_path,omitempty"`
+	AppName     string `json:"app_name"`
+	Branch      string `json:"branch,omitempty"`
+	BuildType   string `json:"build_type,omitempty"`
+	BuildPath   string `json:"build_path,omitempty"`
+	TriggerMode string `json:"trigger_mode,omitempty"`
 }
 
 // decodeUseAsSourceRequest is the common preamble every provider's own
@@ -306,35 +344,40 @@ type useRepoAsSourceRequest struct {
 // and confirm the target app exists. ok is false once this has already
 // written an HTTP error response, in which case the caller must return
 // immediately without writing anything else.
-func (rt *Router) decodeUseAsSourceRequest(w http.ResponseWriter, r *http.Request, logPrefix string) (req useRepoAsSourceRequest, buildType string, ok bool) {
+func (rt *Router) decodeUseAsSourceRequest(w http.ResponseWriter, r *http.Request, logPrefix string) (req useRepoAsSourceRequest, buildType, triggerMode string, ok bool) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
-		return req, "", false
+		return req, "", "", false
 	}
 	if req.AppName == "" {
 		writeError(w, http.StatusBadRequest, "app_name is required")
-		return req, "", false
+		return req, "", "", false
 	}
 	buildType, err := normalizeGitSourceBuildType(req.BuildType)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
-		return req, "", false
+		return req, "", "", false
 	}
 	if buildType == "railpack" && req.BuildPath != "" {
 		writeError(w, http.StatusBadRequest, "build_path is not meaningful for build_type \"railpack\"")
-		return req, "", false
+		return req, "", "", false
+	}
+	triggerMode, err = normalizeGitSourceTriggerMode(req.TriggerMode)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return req, "", "", false
 	}
 
 	if _, err := rt.apps.GetDesiredService(r.Context(), req.AppName); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
-		return req, "", false
+		return req, "", "", false
 	} else if err != nil {
 		rt.logger.Error(logPrefix+": load app failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))
 		writeError(w, http.StatusInternalServerError, "internal error")
-		return req, "", false
+		return req, "", "", false
 	}
 
-	return req, buildType, true
+	return req, buildType, triggerMode, true
 }
 
 // requireHTTPOrHTTPSScheme rejects any repoURL scheme go-git's client
@@ -468,10 +511,16 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	triggerMode, err := normalizeGitSourceTriggerMode(req.TriggerMode)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	result, err := rt.connectGitSource(r.Context(), name, connectGitSourceParams{
 		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath, Token: req.Token,
 		AdditionalServices: additionalServices, Services: req.Services, Databases: req.Databases,
+		TriggerMode: triggerMode,
 	})
 	if err != nil {
 		rt.logger.Error("api: set git source failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -503,6 +552,9 @@ type connectGitSourceParams struct {
 	AdditionalServices map[string]store.GitSourceBuild
 	Services           map[string]spec.Service
 	Databases          map[string]spec.Database
+	// TriggerMode is always already-normalized (normalizeGitSourceTriggerMode)
+	// by the time a caller builds this struct.
+	TriggerMode string
 }
 
 // connectGitSourceResult is connectGitSource's return: the resource to
@@ -548,9 +600,14 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 		}
 	}
 
+	triggerMode := p.TriggerMode
+	if triggerMode == "" {
+		triggerMode = spec.TriggerModePush
+	}
 	if err := rt.gitSources.SaveGitSource(ctx, store.GitSource{
 		ServiceName: name, RepoURL: p.RepoURL, Branch: p.Branch, BuildType: p.BuildType, BuildPath: p.BuildPath,
 		AdditionalServices: p.AdditionalServices, Services: p.Services, Databases: p.Databases,
+		TriggerMode: triggerMode,
 	}); err != nil {
 		return connectGitSourceResult{}, fmt.Errorf("save git source: %w", err)
 	}

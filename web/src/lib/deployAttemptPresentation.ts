@@ -42,4 +42,5 @@ export const DEPLOY_ATTEMPT_SOURCE_LABEL: Record<DeployAttemptSource, string> =
     webhook: 'Webhook',
     manual: 'Manual build',
     image: 'Image',
+    auto_rollback: 'Auto-rollback',
   }

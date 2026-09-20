@@ -22,6 +22,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 // fakeAttemptStore is a hand-written fake for AttemptStore, the same
@@ -348,7 +349,7 @@ func doPush(t *testing.T, h *Handler, secret, body []byte, sigHeader string) *ht
 func TestServeHTTP_MissingSignature_Rejected(t *testing.T) {
 	cfg := testConfig()
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
-	h := newTestHandler(cfg, deployer, func(context.Context, string, string) (string, func(), error) {
+	h := newTestHandler(cfg, deployer, func(context.Context, string, string, func(build.ProgressEvent)) (string, func(), error) {
 		t.Fatal("fetch should not be called when signature verification fails")
 		return "", nil, nil
 	})
@@ -367,7 +368,7 @@ func TestServeHTTP_MissingSignature_Rejected(t *testing.T) {
 func TestServeHTTP_TamperedPayload_Rejected(t *testing.T) {
 	cfg := testConfig()
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
-	h := newTestHandler(cfg, deployer, func(context.Context, string, string) (string, func(), error) {
+	h := newTestHandler(cfg, deployer, func(context.Context, string, string, func(build.ProgressEvent)) (string, func(), error) {
 		t.Fatal("fetch should not be called when signature verification fails")
 		return "", nil, nil
 	})
@@ -390,7 +391,7 @@ func TestServeHTTP_TamperedPayload_Rejected(t *testing.T) {
 func TestServeHTTP_MalformedPayload_Rejected(t *testing.T) {
 	cfg := testConfig()
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
-	h := newTestHandler(cfg, deployer, func(context.Context, string, string) (string, func(), error) {
+	h := newTestHandler(cfg, deployer, func(context.Context, string, string, func(build.ProgressEvent)) (string, func(), error) {
 		t.Fatal("fetch should not be called for a malformed payload")
 		return "", nil, nil
 	})
@@ -409,7 +410,7 @@ func TestServeHTTP_MalformedPayload_Rejected(t *testing.T) {
 func TestServeHTTP_MissingAfterField_Rejected(t *testing.T) {
 	cfg := testConfig()
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
-	h := newTestHandler(cfg, deployer, func(context.Context, string, string) (string, func(), error) {
+	h := newTestHandler(cfg, deployer, func(context.Context, string, string, func(build.ProgressEvent)) (string, func(), error) {
 		t.Fatal("fetch should not be called for a payload missing 'after'")
 		return "", nil, nil
 	})
@@ -430,7 +431,7 @@ func TestServeHTTP_WrongBranch_AcceptedButNotTriggered(t *testing.T) {
 	cfg := testConfig() // Branch: "main"
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
 	fetchCalled := false
-	h := newTestHandler(cfg, deployer, func(context.Context, string, string) (string, func(), error) {
+	h := newTestHandler(cfg, deployer, func(context.Context, string, string, func(build.ProgressEvent)) (string, func(), error) {
 		fetchCalled = true
 		return "", func() {}, nil
 	})
@@ -458,7 +459,7 @@ func TestServeHTTP_WrongBranch_AcceptedButNotTriggered(t *testing.T) {
 // served without an explicit non-HTML content type.
 func TestServeHTTP_WrongBranch_ResponseIsPlainText(t *testing.T) {
 	cfg := testConfig() // Branch: "main"
-	h := newTestHandler(cfg, &fakeDeployer{tag: "levelrail/web:sha1"}, func(context.Context, string, string) (string, func(), error) {
+	h := newTestHandler(cfg, &fakeDeployer{tag: "levelrail/web:sha1"}, func(context.Context, string, string, func(build.ProgressEvent)) (string, func(), error) {
 		return "", func() {}, nil
 	})
 
@@ -474,7 +475,7 @@ func TestServeHTTP_DefaultBranch_WhenConfigBranchEmpty(t *testing.T) {
 	cfg := testConfig()
 	cfg.Branch = ""
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
-	h := newTestHandler(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+	h := newTestHandler(cfg, deployer, func(_ context.Context, _, _ string, _ func(build.ProgressEvent)) (string, func(), error) {
 		return "/tmp/whatever", func() {}, nil
 	})
 
@@ -498,7 +499,7 @@ func TestServeHTTP_TargetBranch_TriggersDeploy(t *testing.T) {
 		sha     string
 	}
 	cleanupCalled := false
-	h := newTestHandler(cfg, deployer, func(_ context.Context, repoURL, sha string) (string, func(), error) {
+	h := newTestHandler(cfg, deployer, func(_ context.Context, repoURL, sha string, _ func(build.ProgressEvent)) (string, func(), error) {
 		fetchCalledWith.repoURL = repoURL
 		fetchCalledWith.sha = sha
 		return "/tmp/checkout-dir", func() { cleanupCalled = true }, nil
@@ -539,7 +540,7 @@ func TestServeHTTP_TargetBranch_TriggersDeploy(t *testing.T) {
 func TestServeHTTP_FetchFailure_ReturnsServerErrorAndDoesNotDeploy(t *testing.T) {
 	cfg := testConfig()
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
-	h := newTestHandler(cfg, deployer, func(context.Context, string, string) (string, func(), error) {
+	h := newTestHandler(cfg, deployer, func(context.Context, string, string, func(build.ProgressEvent)) (string, func(), error) {
 		return "", nil, errors.New("clone failed: some internal detail about disk paths")
 	})
 
@@ -561,7 +562,7 @@ func TestServeHTTP_DeployFailure_ReturnsServerErrorNotLeaky(t *testing.T) {
 	cfg := testConfig()
 	deployer := &fakeDeployer{err: errors.New("buildkit: internal socket path /var/run/secret-thing failed")}
 	cleanupCalled := false
-	h := newTestHandler(cfg, deployer, func(context.Context, string, string) (string, func(), error) {
+	h := newTestHandler(cfg, deployer, func(context.Context, string, string, func(build.ProgressEvent)) (string, func(), error) {
 		return "/tmp/checkout-dir", func() { cleanupCalled = true }, nil
 	})
 
@@ -595,7 +596,7 @@ func TestNew_NilLoggerDefaultsToSlogDefault(t *testing.T) {
 func TestServeHTTP_BodyTooLarge_Rejected(t *testing.T) {
 	cfg := testConfig()
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
-	h := newTestHandler(cfg, deployer, func(context.Context, string, string) (string, func(), error) {
+	h := newTestHandler(cfg, deployer, func(context.Context, string, string, func(build.ProgressEvent)) (string, func(), error) {
 		t.Fatal("fetch should not be called for an oversized body")
 		return "", nil, nil
 	})
@@ -645,7 +646,7 @@ func TestServeHTTP_TargetBranch_RecordsDeployAttempt_Succeeded(t *testing.T) {
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
 	attempts := &fakeAttemptStore{}
 	recorder := deploylog.NewRecorder(nil, discardLogger())
-	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string, _ func(build.ProgressEvent)) (string, func(), error) {
 		return "/tmp/checkout-dir", func() {}, nil
 	}, attempts, recorder)
 
@@ -691,7 +692,7 @@ func TestServeHTTP_DeployFailure_RecordsDeployAttempt_Failed(t *testing.T) {
 	deployer := &fakeDeployer{err: errors.New("buildkit: boom")}
 	attempts := &fakeAttemptStore{}
 	recorder := deploylog.NewRecorder(nil, discardLogger())
-	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string, _ func(build.ProgressEvent)) (string, func(), error) {
 		return "/tmp/checkout-dir", func() {}, nil
 	}, attempts, recorder)
 
@@ -721,7 +722,7 @@ func TestBeginDeployAttempt_StartRunsBeforeAttemptIsSaveable(t *testing.T) {
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
 	recorder := deploylog.NewRecorder(nil, discardLogger())
 	attempts := &fakeAttemptStore{recorder: recorder}
-	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string, _ func(build.ProgressEvent)) (string, func(), error) {
 		return "/tmp/checkout-dir", func() {}, nil
 	}, attempts, recorder)
 
@@ -745,7 +746,7 @@ func TestBeginDeployAttempt_SaveFails_RecorderDoesNotLeak(t *testing.T) {
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
 	recorder := deploylog.NewRecorder(nil, discardLogger())
 	attempts := &fakeAttemptStore{recorder: recorder, saveErr: errors.New("db write failed")}
-	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string, _ func(build.ProgressEvent)) (string, func(), error) {
 		return "/tmp/checkout-dir", func() {}, nil
 	}, attempts, recorder)
 
@@ -774,7 +775,7 @@ func TestServeHTTP_WrongBranch_DoesNotRecordDeployAttempt(t *testing.T) {
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
 	attempts := &fakeAttemptStore{}
 	recorder := deploylog.NewRecorder(nil, discardLogger())
-	h := newTestHandlerWithAttempts(cfg, deployer, func(context.Context, string, string) (string, func(), error) {
+	h := newTestHandlerWithAttempts(cfg, deployer, func(context.Context, string, string, func(build.ProgressEvent)) (string, func(), error) {
 		t.Fatal("fetch should not be called for a non-target branch")
 		return "", nil, nil
 	}, attempts, recorder)
@@ -798,7 +799,7 @@ func TestServeHTTP_TargetBranch_DispatchesSucceededNotification(t *testing.T) {
 	attempts := &fakeAttemptStore{}
 	recorder := deploylog.NewRecorder(nil, discardLogger())
 	notifier := &fakeDeployNotifier{}
-	h := newTestHandlerWithNotifier(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+	h := newTestHandlerWithNotifier(cfg, deployer, func(_ context.Context, _, _ string, _ func(build.ProgressEvent)) (string, func(), error) {
 		return "/tmp/checkout-dir", func() {}, nil
 	}, attempts, recorder, notifier)
 
@@ -837,7 +838,7 @@ func TestServeHTTP_DeployFailure_DispatchesFailedNotification(t *testing.T) {
 	attempts := &fakeAttemptStore{}
 	recorder := deploylog.NewRecorder(nil, discardLogger())
 	notifier := &fakeDeployNotifier{}
-	h := newTestHandlerWithNotifier(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+	h := newTestHandlerWithNotifier(cfg, deployer, func(_ context.Context, _, _ string, _ func(build.ProgressEvent)) (string, func(), error) {
 		return "/tmp/checkout-dir", func() {}, nil
 	}, attempts, recorder, notifier)
 
@@ -862,11 +863,109 @@ func TestServeHTTP_DeployFailure_DispatchesFailedNotification(t *testing.T) {
 // deploy_attempts row is ever recorded, and per Handler.notifier's own
 // doc comment this closure is the only place Dispatch is ever called,
 // so it must not fire either.
+// fakeLogStore is a hand-written fake for deploylog.LogStore, the same
+// pattern internal/deploylog's own fakeStore uses: recording every
+// persisted batch lets a test see what Recorder.Finish flushed after the
+// attempt is evicted from memory (Snapshot is false-ok by then, see
+// Recorder.Finish's own doc comment).
+type fakeLogStore struct {
+	mu      sync.Mutex
+	written []telemetry.DeployLogEntry
+}
+
+func (f *fakeLogStore) WriteDeployLogBatch(_ context.Context, entries []telemetry.DeployLogEntry) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.written = append(f.written, entries...)
+	return nil
+}
+
+func (f *fakeLogStore) snapshot() []telemetry.DeployLogEntry {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]telemetry.DeployLogEntry, len(f.written))
+	copy(out, f.written)
+	return out
+}
+
+// TestServeHTTP_CloneProgress_RecordedInDeployLog proves cloneAndCheckout's
+// progress events reach the same persisted deploy log a build's own
+// output does, not just slog: before this, a push-triggered deploy's
+// clone stage produced no visible output in the deploy log at all.
+func TestServeHTTP_CloneProgress_RecordedInDeployLog(t *testing.T) {
+	cfg := testConfig()
+	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
+	attempts := &fakeAttemptStore{}
+	logStore := &fakeLogStore{}
+	recorder := deploylog.NewRecorder(logStore, discardLogger())
+	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string, progress func(build.ProgressEvent)) (string, func(), error) {
+		progress(build.ProgressEvent{Log: "Cloning https://example.invalid/repo.git...", Stream: "stdout"})
+		progress(build.ProgressEvent{Log: "Checked out sha1", Stream: "stdout"})
+		return "/tmp/checkout-dir", func() {}, nil
+	}, attempts, recorder)
+
+	body := pushBody(t, "refs/heads/main", "sha1")
+	rec := doPush(t, h, cfg.Secret, body, sign(cfg.Secret, body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body=%s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	written := logStore.snapshot()
+	if len(written) != 2 {
+		t.Fatalf("persisted log entries = %d, want 2 (the two clone progress lines)", len(written))
+	}
+	if written[0].Message != "Cloning https://example.invalid/repo.git..." {
+		t.Errorf("entry[0].Message = %q, want the clone-start line", written[0].Message)
+	}
+	if written[1].Message != "Checked out sha1" {
+		t.Errorf("entry[1].Message = %q, want the checkout-complete line", written[1].Message)
+	}
+}
+
+// TestServeHTTP_FetchFailure_FinishesAttemptAsFailed proves a clone
+// failure is now attributed to the deploy attempt it belongs to (finished
+// as failed with the clone error) rather than never creating one, now
+// that beginDeployAttempt runs before the fetch instead of after it.
+func TestServeHTTP_FetchFailure_FinishesAttemptAsFailed(t *testing.T) {
+	cfg := testConfig()
+	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
+	attempts := &fakeAttemptStore{}
+	recorder := deploylog.NewRecorder(nil, discardLogger())
+	cloneErr := errors.New("clone failed: some internal detail about disk paths")
+	h := newTestHandlerWithAttempts(cfg, deployer, func(_ context.Context, _, _ string, _ func(build.ProgressEvent)) (string, func(), error) {
+		return "", nil, cloneErr
+	}, attempts, recorder)
+
+	body := pushBody(t, "refs/heads/main", "sha1")
+	rec := doPush(t, h, cfg.Secret, body, sign(cfg.Secret, body))
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
+	}
+	if deployer.calls != 0 {
+		t.Errorf("deployer called %d times, want 0 when fetch fails", deployer.calls)
+	}
+
+	saved, finishedID, finishedStatus, finishedErrMsg := attempts.snapshot()
+	if len(saved) != 1 {
+		t.Fatalf("SaveDeployAttempt called %d times, want 1 (the clone is now part of the attempt)", len(saved))
+	}
+	if finishedID != saved[0].ID {
+		t.Errorf("FinishDeployAttempt id = %q, want %q", finishedID, saved[0].ID)
+	}
+	if finishedStatus != store.DeployAttemptStatusFailed {
+		t.Errorf("finished Status = %q, want %q", finishedStatus, store.DeployAttemptStatusFailed)
+	}
+	if finishedErrMsg != cloneErr.Error() {
+		t.Errorf("finished error = %q, want %q", finishedErrMsg, cloneErr.Error())
+	}
+}
+
 func TestServeHTTP_AttemptTrackingDisabled_NeverDispatches(t *testing.T) {
 	cfg := testConfig()
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
 	notifier := &fakeDeployNotifier{}
-	h := newTestHandlerWithNotifier(cfg, deployer, func(_ context.Context, _, _ string) (string, func(), error) {
+	h := newTestHandlerWithNotifier(cfg, deployer, func(_ context.Context, _, _ string, _ func(build.ProgressEvent)) (string, func(), error) {
 		return "/tmp/checkout-dir", func() {}, nil
 	}, nil, nil, notifier)
 

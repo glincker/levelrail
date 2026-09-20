@@ -31,13 +31,13 @@ Four main types, plus two Levelrail-specific categories:
 
 | Doc | Covers |
 | --- | --- |
-| [getting-started.md](getting-started.md) | Build and run the control plane and agent locally, deploy a first app |
+| [getting-started.md](getting-started.md) | Start self-hosted with `install.sh` or build from source, then deploy a first app |
 
 ### How-to guides
 
 | Doc | Covers |
 | --- | --- |
-| [installing.md](installing.md) | Every install path (`install.sh`, Docker, source), verifying, upgrading, and uninstalling |
+| [installing.md](installing.md) | Pre-flight requirements, every install path (`install.sh`, Docker, source), verifying, upgrading, and uninstalling |
 | [docker.md](docker.md) | Run the control plane and node agent as containers instead of `install.sh` |
 | [feature-flags.md](feature-flags.md) | Toggle app behavior at runtime without a redeploy |
 | [screenshots.md](screenshots.md) | Regenerate the dashboard screenshots used in the README |
@@ -88,6 +88,12 @@ noted per-document since these move between draft, proposed, accepted
 | Doc | Covers |
 | --- | --- |
 | [roadmap.md](roadmap.md) | What's Done, In progress, and explicitly out of scope, kept current against `main` |
+
+## Support and contributing
+
+- **Bug or question?** Open an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+- **Security vulnerability?** Don't open a public issue; see [Security overview](security.md#reporting-a-vulnerability) or the repository's [SECURITY.md](../SECURITY.md).
+- **Want to contribute code?** See the repository's [CONTRIBUTING.md](../CONTRIBUTING.md) for branch naming, commit conventions, and how to run tests and the linter before opening a PR.
 
 ## Adding a new doc
 
