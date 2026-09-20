@@ -45,6 +45,22 @@ func WithEmailSecrets(s EmailSecretsStore) Option {
 	return func(rt *Router) { rt.emailSecrets = s }
 }
 
+// WithAIAssistantSecrets enables PUT/DELETE
+// /api/v1/settings/ai-assistant. Without one configured (the default),
+// both return 501; GET works regardless, the same shape WithEmailSecrets
+// establishes.
+func WithAIAssistantSecrets(s AIAssistantSecrets) Option {
+	return func(rt *Router) { rt.aiSecrets = s }
+}
+
+// WithAIEngine enables every /api/v1/ai/... chat session route. Without
+// one configured (the default), they all return 501, the same
+// "not configured" shape WithBuilder's absence produces for the build
+// trigger route.
+func WithAIEngine(e AIEngine) Option {
+	return func(rt *Router) { rt.aiEngine = e }
+}
+
 // WithCloudflareTunnelSecrets enables PUT/DELETE
 // /api/v1/settings/cloudflare-tunnel. Without one configured (the
 // default), both return 501; GET works regardless, the same shape

@@ -1962,7 +1962,26 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// nil-interface hazard, the OAuth-Application counterpart of
 			// the GitHub App connection just above.
 			api.WithGitLabAppSecrets(secretsManager),
+			// BYOK LLM API key for the embedded AI assistant: same
+			// secretsManager, same nil-interface hazard as everything
+			// else in this block.
+			api.WithAIAssistantSecrets(secretsManager),
 		)
+		// The AI assistant's own tool-calling engine, distinct from the
+		// BYOK key above: it needs a self-call API token to reach this
+		// instance's own REST API (see setupAIAssistantEngine's doc
+		// comment). Skipped, not fatal, if the dial address can't be
+		// determined or minting fails, matching every other optional
+		// feature in this block's own resilience posture: an operator
+		// loses the AI assistant, not the whole control plane.
+		if dial := dashboardDialAddr(httpAddr()); dial != "" {
+			engine, err := setupAIAssistantEngine(context.Background(), db, secretsManager, dial, b.Name, logger)
+			if err != nil {
+				logger.Error("ai assistant: setup failed, chat routes stay disabled", slog.String("error", err.Error()))
+			} else {
+				opts = append(opts, api.WithAIEngine(engine))
+			}
+		}
 	}
 	if builder != nil {
 		opts = append(opts, api.WithBuilder(builder))

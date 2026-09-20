@@ -23,6 +23,7 @@ import {
   HeartbeatIcon,
   StackIcon,
   HardDrivesIcon,
+  RobotIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
 export interface SettingsNavItem {
@@ -67,7 +68,8 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/settings/cli-access',
         icon: TerminalWindowIcon,
         title: 'CLI access',
-        description: 'Approve or deny logins started with levelrail-cli auth login.',
+        description:
+          'Approve or deny logins started with levelrail-cli auth login.',
       },
       {
         to: '/settings/iam-policies',
@@ -114,7 +116,8 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/settings/gitlab-app',
         icon: GitlabLogoIcon,
         title: 'GitLab App',
-        description: 'gitlab.com or self-hosted project access for git-based deploys.',
+        description:
+          'gitlab.com or self-hosted project access for git-based deploys.',
       },
       {
         to: '/settings/bitbucket-app',
@@ -156,13 +159,22 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/settings/cloudflare-tunnel',
         icon: CloudCheckIcon,
         title: 'Cloudflare Tunnel',
-        description: 'Expose this control plane without opening an inbound port.',
+        description:
+          'Expose this control plane without opening an inbound port.',
       },
       {
         to: '/settings/vault',
         icon: LockKeyIcon,
         title: 'Vault',
-        description: 'Resolve app secrets live from an external HashiCorp Vault instance.',
+        description:
+          'Resolve app secrets live from an external HashiCorp Vault instance.',
+      },
+      {
+        to: '/settings/ai-assistant',
+        icon: RobotIcon,
+        title: 'AI Assistant',
+        description:
+          'Bring your own LLM API key for the platform chat assistant.',
       },
     ],
   },
@@ -193,7 +205,8 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/domains',
         icon: GlobeIcon,
         title: 'Domains',
-        description: 'Platform ingress: dashboard domain and ACME certificates.',
+        description:
+          'Platform ingress: dashboard domain and ACME certificates.',
       },
       {
         to: '/settings/updates',

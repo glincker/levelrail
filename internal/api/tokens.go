@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -78,34 +79,15 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	plaintext, err := randomToken()
-	if err != nil {
-		rt.logger.Error("api: create token: generate token failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	id, err := randomTokenID()
-	if err != nil {
-		rt.logger.Error("api: create token: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	rec := store.APIToken{
-		ID:        id,
-		Name:      req.Name,
-		TokenHash: hashToken(plaintext),
-		Abilities: req.Abilities,
-		CreatedAt: time.Now(),
-	}
+	var expiresAt *time.Time
 	if req.ExpiresInDays > 0 {
-		expires := rec.CreatedAt.Add(time.Duration(req.ExpiresInDays) * 24 * time.Hour)
-		rec.ExpiresAt = &expires
+		expires := time.Now().Add(time.Duration(req.ExpiresInDays) * 24 * time.Hour)
+		expiresAt = &expires
 	}
 
-	if err := rt.tokens.SaveAPIToken(r.Context(), rec); err != nil {
-		rt.logger.Error("api: create token: save failed", slog.String("error", err.Error()))
+	plaintext, rec, err := MintAPIToken(r.Context(), rt.tokens, req.Name, req.Abilities, expiresAt)
+	if err != nil {
+		rt.logger.Error("api: create token failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -149,6 +131,35 @@ func (rt *Router) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// MintAPIToken generates, hashes, and persists a new API token,
+// returning its plaintext exactly once, same as handleCreateToken's own
+// response. Exported so a non-HTTP caller (cmd/levelrail's own internal
+// AI assistant self-call token, minted once at startup rather than by a
+// human through this handler) can mint through the identical path
+// instead of duplicating it.
+func MintAPIToken(ctx context.Context, tokens TokenStore, name string, abilities []string, expiresAt *time.Time) (string, store.APIToken, error) {
+	plaintext, err := randomToken()
+	if err != nil {
+		return "", store.APIToken{}, fmt.Errorf("api: mint token: generate token: %w", err)
+	}
+	id, err := randomTokenID()
+	if err != nil {
+		return "", store.APIToken{}, fmt.Errorf("api: mint token: generate id: %w", err)
+	}
+	rec := store.APIToken{
+		ID:        id,
+		Name:      name,
+		TokenHash: hashToken(plaintext),
+		Abilities: abilities,
+		CreatedAt: time.Now(),
+		ExpiresAt: expiresAt,
+	}
+	if err := tokens.SaveAPIToken(ctx, rec); err != nil {
+		return "", store.APIToken{}, fmt.Errorf("api: mint token: save: %w", err)
+	}
+	return plaintext, rec, nil
 }
 
 // randomTokenID generates a short, URL-safe, non-secret identifier for

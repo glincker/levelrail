@@ -733,4 +733,21 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/log-drain", rt.requireAbility(AbilityRead, rt.handleGetAppLogDrain))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/log-drain", rt.requireAbility(AbilityWriteSensitive, rt.handleSetAppLogDrain))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/log-drain", rt.requireAbility(AbilityWriteSensitive, rt.handleClearAppLogDrain))
+
+	// BYOK AI assistant settings (ai_settings.go): GET is AbilityRead;
+	// PUT/DELETE are AbilityRoot, the same tier PUT /api/v1/settings/
+	// email uses for any other platform-wide credential-bearing config.
+	mux.HandleFunc("GET /api/v1/settings/ai-assistant", rt.requireAbility(AbilityRead, rt.handleGetAIAssistantSettings))
+	mux.HandleFunc("PUT /api/v1/settings/ai-assistant", rt.requireAbility(AbilityRoot, rt.handleUpdateAIAssistantSettings))
+	mux.HandleFunc("DELETE /api/v1/settings/ai-assistant", rt.requireAbility(AbilityRoot, rt.handleDeleteAIAssistantSettings))
+
+	// AI assistant chat sessions (ai_chat.go): AbilityRoot throughout,
+	// not a lower tier, because a confirmed message can execute any
+	// mutating tool the platform exposes (deploy, rollback, restart, and
+	// so on) once a human approves it, the same blast radius as the
+	// scoped token itself would need to reach those actions directly.
+	mux.HandleFunc("POST /api/v1/ai/sessions", rt.requireAbility(AbilityRoot, rt.handleCreateAIChatSession))
+	mux.HandleFunc("GET /api/v1/ai/sessions/{id}", rt.requireAbility(AbilityRoot, rt.handleGetAIChatSession))
+	mux.HandleFunc("POST /api/v1/ai/sessions/{id}/messages", rt.requireAbility(AbilityRoot, rt.handleCreateAIChatMessage))
+	mux.HandleFunc("POST /api/v1/ai/sessions/{id}/confirmations/{confirmation_id}", rt.requireAbility(AbilityRoot, rt.handleResolveAIChatConfirmation))
 }

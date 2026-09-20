@@ -458,6 +458,8 @@ type Store interface {
 	PolicyStore
 	DeviceAuthStore
 	HookRunStore
+	AIAssistantSettingsStore
+	AIChatStore
 }
 
 // SecretSetter is the surface the secrets handlers need from
