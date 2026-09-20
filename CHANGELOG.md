@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.2.0-beta.3](https://github.com/glincker/levelrail/compare/v0.2.0-beta.2...v0.2.0-beta.3) (2026-09-19)
+
+
+### Features
+
+* add concurrency_policy to scheduled tasks ([#495](https://github.com/glincker/levelrail/issues/495)) ([d4bd011](https://github.com/glincker/levelrail/commit/d4bd01106483595bb6937c0b9edd55ad1c2ea497))
+* add deploy log download endpoint, CLI command, and UI button ([#504](https://github.com/glincker/levelrail/issues/504)) ([251d3ab](https://github.com/glincker/levelrail/commit/251d3ab5f47419ff69931e4d2c0274d5eef325f5))
+* add DNS-01 provider abstraction with Route53 as a second provider ([#492](https://github.com/glincker/levelrail/issues/492)) ([dc9776f](https://github.com/glincker/levelrail/commit/dc9776fdeec73ac3e07976d03ca4101d52d7affb))
+* add domain-level redirects ([#507](https://github.com/glincker/levelrail/issues/507)) ([424eef4](https://github.com/glincker/levelrail/commit/424eef44955fb31225a3b7b452d7a0712fa411f2))
+* add instance-wide backup history view ([#503](https://github.com/glincker/levelrail/issues/503)) ([d026fc1](https://github.com/glincker/levelrail/commit/d026fc1a384a28c0e92ff3a6deaf25ded01d6c60))
+* default published ports to a private bind address ([#496](https://github.com/glincker/levelrail/issues/496)) ([b2a0d1d](https://github.com/glincker/levelrail/commit/b2a0d1d9dc0ba14cd56c1e2729f7397905defd09))
+* per-preview env var overrides on parent app ([#493](https://github.com/glincker/levelrail/issues/493)) ([6db8be5](https://github.com/glincker/levelrail/commit/6db8be524b78ec986cd473678aa604357ddf9ba2))
+* per-service pull_policy support for Docker Compose imports ([#494](https://github.com/glincker/levelrail/issues/494)) ([fe40e6d](https://github.com/glincker/levelrail/commit/fe40e6d8131db9ad416600f1c09fb2fae35f0c6d))
+
+
+### Bug Fixes
+
+* lazy-load scoped sidebars, align react-dom to react 19.3.0 ([#499](https://github.com/glincker/levelrail/issues/499)) ([a3aff5f](https://github.com/glincker/levelrail/commit/a3aff5fca4ccabb97cbdebee0b4240bffc7be0a2))
+* renumber colliding scheduled-task migration to 0101 ([#506](https://github.com/glincker/levelrail/issues/506)) ([cf204d2](https://github.com/glincker/levelrail/commit/cf204d2104f8a3859dcf1d0d2d6770e25e51d36b))
+* resolve migration number collision at 0098 ([#505](https://github.com/glincker/levelrail/issues/505)) ([c2cf2a9](https://github.com/glincker/levelrail/commit/c2cf2a9866b8288402fc39b8bced0659fbfcf14e))
+* restore explicit Control cast for BackupMissingFields props ([#500](https://github.com/glincker/levelrail/issues/500)) ([b2c1ad3](https://github.com/glincker/levelrail/commit/b2c1ad3f651a957abffc0a9c1ba13dbadc88901f))
+
 ## [0.2.0-beta.2](https://github.com/glincker/levelrail/compare/v0.2.0-beta.1...v0.2.0-beta.2) (2026-09-18)
 
 
