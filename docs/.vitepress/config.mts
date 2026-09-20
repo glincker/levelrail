@@ -8,10 +8,10 @@ export default defineConfig({
   title: 'Levelrail',
   description,
 
-  // TODO: replace with the real subdomain once chosen, then again with
-  // glinr.com/levelrail once that move happens.
+  // TODO: revisit once glinr.com/levelrail (a path, not this subdomain)
+  // becomes possible, per the root CLAUDE.md's stated long-term target.
   sitemap: {
-    hostname: 'https://levelrail.example.com',
+    hostname: 'https://levelrail.glinr.com',
   },
 
   head: [
@@ -19,11 +19,22 @@ export default defineConfig({
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'Levelrail' }],
     ['meta', { property: 'og:description', content: description }],
+    ['meta', { property: 'og:url', content: 'https://levelrail.glinr.com/' }],
     [
       'meta',
       {
         property: 'og:image',
-        content: '/assets/screenshots/app-overview.png',
+        content: 'https://levelrail.glinr.com/assets/screenshots/app-overview.png',
+      },
+    ],
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:title', content: 'Levelrail' }],
+    ['meta', { name: 'twitter:description', content: description }],
+    [
+      'meta',
+      {
+        name: 'twitter:image',
+        content: 'https://levelrail.glinr.com/assets/screenshots/app-overview.png',
       },
     ],
   ],
