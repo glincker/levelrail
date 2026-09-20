@@ -1,5 +1,6 @@
 ---
-description: Architectural and feature differences between Levelrail, Coolify, Dokploy, CapRover, Dokku, and Kamal.
+title: vs Coolify, Dokploy, CapRover, Dokku, and Kamal
+description: How Levelrail's agent-based, event-driven architecture compares to Coolify, Dokploy, CapRover, Dokku, and Kamal, feature by feature.
 ---
 
 # Comparison
