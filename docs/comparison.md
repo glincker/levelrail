@@ -19,73 +19,102 @@ own research already produced).
 
 ## Levelrail vs Coolify
 
-Coolify drives every managed node over SSH, shelling `docker`/`docker compose` commands and parsing text output, and its per-deploy health check is off by default, so a broken deploy can be marked successful while the previously-working container is deleted underneath it. Levelrail never shells a CLI command against a node, and the reconciler only reports a cutover complete once the new container's readiness probe has actually passed. An earlier pass of this page noted an in-progress `v5.x` rewrite (a Rust per-node agent talking gRPC to a hub, Caddy replacing Traefik) as a caveat to the "SSHes and shells out `docker`" contrast; re-verified 2026-09-17 directly against upstream, that's no longer accurate. The branch literally named `v5.x` has been stale for six months and never merged; what was tracked as `v4.x` was folded into `main` (a naming consolidation, not a fork, confirmed by ancestry), and a separate, more substantial rewrite effort that did live alongside `main` for a while was fully archived in August. There is no live rearchitecture in flight today: the SSH-and-shell-out architecture described above is Coolify's current and only shipping design, not a v4-specific snapshot.
+**Control path:** Coolify drives every managed node over SSH, shelling out `docker` and `docker compose` commands, then parsing the text output. Levelrail never shells a CLI command against a node; instead, it wraps the Docker Engine API directly.
+
+**Deploy health checks:** Coolify's per-deploy health check is off by default, so a broken deploy can be marked successful while the previously-working container is deleted underneath it. Levelrail only reports a cutover complete once the new container's readiness probe has actually passed.
+
+**Current architecture:** An earlier pass of this page noted an in-progress `v5.x` rewrite (a Rust per-node agent talking gRPC, Caddy replacing Traefik). This was re-verified directly against upstream on 2026-09-17 and is no longer accurate. The `v5.x` branch has been stale for six months and never merged. What was tracked as `v4.x` was folded into `main` (a naming consolidation, not a fork). There is no live rearchitecture in flight today: the SSH-and-shell-out architecture is Coolify's current and only shipping design.
 
 ## Levelrail vs Dokploy
 
-Dokploy is a thin control surface over Docker Swarm: its rolling update, rollback, and cross-node routing are all Swarm's own mechanisms, and a deployment is marked "done" the instant the Swarm API call returns, before there's any evidence the new task is actually healthy. Levelrail's reconciler owns cutover, rollback, and node placement directly rather than delegating to a cluster orchestrator, and a status condition is only written once the new container's readiness probe passes. Dokploy's own most-discussed GitHub issues cluster around networking and ingress fragility on Swarm's routing mesh plus a separately-configured Traefik container (Traefik breaking on restart, gateway timeouts on worker-node replicas). That is the exact failure class Levelrail's embedded, in-process Caddy plus its own WireGuard mesh are built to avoid.
+**Orchestration model:** Dokploy is a thin control surface over Docker Swarm. Its rolling update, rollback, and cross-node routing are all Swarm's own mechanisms. A deployment is marked "done" the instant the Swarm API call returns, before there's any evidence the new task is actually healthy.
+
+Levelrail's reconciler owns cutover, rollback, and node placement directly. A status condition is only written once the new container's readiness probe passes.
+
+**Common pain points:** Dokploy's most-discussed GitHub issues cluster around networking and ingress fragility on Swarm's routing mesh, plus a separately-configured Traefik container. Issues include Traefik breaking on restart and gateway timeouts on worker-node replicas.
+
+Levelrail's embedded, in-process Caddy plus its own WireGuard mesh are built to avoid this exact failure class.
 
 ## Levelrail vs CapRover
 
-CapRover also standardizes on Docker Swarm, even for a single-node install, and has no per-app deployment health check at all: a deploy is considered successful once the image builds and the Swarm API call resolves, so a crashlooping app after deploy gets reported as a success and the operator finds out from a 502. There is also no rollback feature in CapRover's backend; the only way back is manually re-tagging and re-deploying an old image by hand. Levelrail gates cutover on the app spec's readiness and liveness probes, and ships rollback with pinned prior images as a first-class, always-available action rather than something an operator has to reconstruct.
+**Swarm dependency:** CapRover standardizes on Docker Swarm even for single-node installs.
+
+**Deploy health checks:** CapRover has no per-app deployment health check. A deploy is considered successful once the image builds and the Swarm API call resolves. A crashlooping app after deploy gets reported as success, and the operator finds out from a 502 error.
+
+**Rollback:** CapRover has no rollback feature in its backend. The only path back is manually re-tagging and re-deploying an old image by hand.
+
+Levelrail gates cutover on the app spec's readiness and liveness probes, and ships rollback with pinned prior images as a first-class, always-available action.
 
 ## Levelrail vs Dokku
 
-Dokku actually gets the deploy ordering right: new container up, health checks pass, proxy config regenerated and validated, then the old container is stopped. It also has genuinely zero idle cost since there is no persistent daemon at all; every command is a fresh SSH/git-triggered bash invocation. The tradeoff is that Dokku cannot do anything proactive between commands: no event-stream consumption, no background reconciliation, and its boot-time container recovery script is an admitted "temporary hack" the maintainers have carried since a years-old issue. Its default scheduler also has no rollback command whatsoever (rollback only exists on the newer, opt-in Kubernetes-backed scheduler). Levelrail's agent streams Docker events continuously rather than triggering only on command, and rollback with pinned images is available from Phase 1, not deferred to an alternate scheduler.
+**Deploy ordering:** Dokku gets the deploy ordering right: new container up, health checks pass, proxy config regenerated and validated, then the old container is stopped.
+
+**Idle cost:** Dokku has zero idle cost since there is no persistent daemon. Every command is a fresh SSH or git-triggered bash invocation.
+
+**Tradeoffs:** The cost of no daemon is that Dokku cannot do anything proactive between commands. No event-stream consumption, no background reconciliation. Its boot-time container recovery script is an admitted "temporary hack" the maintainers have carried since a years-old issue.
+
+**Rollback:** Dokku's default scheduler has no rollback command. Rollback only exists on the newer, opt-in Kubernetes-backed scheduler.
+
+Levelrail's agent streams Docker events continuously rather than triggering only on command, and rollback with pinned images is available from Phase 1, not deferred to an alternate scheduler.
 
 ## Levelrail vs Kamal
 
-Kamal is the deliberate outlier in this set: no daemon, no agent, no database, just a one-shot SSH CLI plus a standalone Go reverse-proxy container (`kamal-proxy`) that performs an in-memory atomic target swap once its own HTTP health probe passes. It is the lightest-weight design here and its two-stage health gate (container state, then an HTTP probe) is a pattern worth keeping, not simplifying away. But it is not a control plane: there is no persistent agent, no event-driven observed state, and no queryable metrics store (`kamal-proxy` exposes a bare Prometheus port to scrape yourself, nothing federated). Its single most-commented issue in the whole tracker (76 comments) is the SSH transport itself disconnecting mid-command, a failure category that doesn't exist without a reachable SSH session driving every deploy. Levelrail keeps Kamal's health-gate discipline but replaces the SSH transport with a persistent, reverse-dialed gRPC agent and adds the federated, node-local observability Kamal has no path to.
+**Design philosophy:** Kamal is the deliberate outlier: no daemon, no agent, no database. Just a one-shot SSH CLI plus a standalone Go reverse-proxy container (`kamal-proxy`) that performs an in-memory atomic target swap once its own HTTP health probe passes.
+
+**Strengths:** It is the lightest-weight design here. Its two-stage health gate (container state, then an HTTP probe) is a pattern worth keeping.
+
+**Limitations:** Kamal is not a control plane. There is no persistent agent, no event-driven observed state, and no queryable metrics store. (`kamal-proxy` exposes a bare Prometheus port to scrape yourself, nothing federated.)
+
+**Critical issue:** Its single most-commented issue in the whole tracker (76 comments) is the SSH transport itself disconnecting mid-command. This failure category doesn't exist without a reachable SSH session driving every deploy.
+
+**Levelrail's approach:** We keep Kamal's health-gate discipline but replace the SSH transport with a persistent, reverse-dialed gRPC agent. We add the federated, node-local observability Kamal has no path to.
 
 ## Beyond the reconciler: operational surface
 
-The sections above are about how each project talks to a node and cuts
-over a deploy. That's the architectural core, but an operator running
-this in production day to day also needs access control, alerting, and
-managed data stores that don't fall over. This section is deliberately
-scoped to describing what Levelrail itself has shipped, not a
-line-by-line claim about what each competitor above does or doesn't
-have in this area: that would need the same level of sourced research
-the architecture table above got, and this project hasn't done that
-research yet.
+The sections above cover how each project talks to a node and cuts over a deploy. That's the architectural core, but an operator running this in production day to day also needs access control, alerting, and managed data stores that don't fall over.
 
-- **Access control.** An IAM-style policy engine
-  (`internal/api/iam.go`) with AWS-IAM-shaped Allow/Deny statements,
-  attachable to a user or an API token and scoped to a specific
-  resource (`app:myapp`, `database:mydb`, or `*`), additive on top of a
-  flat abilities list rather than replacing it. Three curated role
-  presets (admin, operator, viewer) apply a full ability set in one
-  action instead of hand-picking abilities. Every request, from the
-  CLI, dashboard, MCP server, or raw API, runs through the same
-  ability-check hook and lands in a queryable audit log with CSV
-  export and configurable retention.
-- **Feature flags.** A boolean plus an optional gradual rollout
-  percentage, scoped to an app, read live at runtime via
-  `GET /api/v1/flags/evaluate/{key}` and a read-scoped API token. No
-  redeploy or restart, since the value is never baked into a
-  container image.
-- **Alerting.** Nine rule kinds (threshold, crashloop, certificate
-  expiry, OS patch status, scheduled-task failure, node disk space,
-  node resource usage, domain health, and missing backup) and seventeen
-  notification channel kinds (webhook, Slack, Discord, email, Telegram,
-  Pushover, PagerDuty, Microsoft Teams, Resend, ntfy, Gotify, Mattermost,
-  Lark, Rocket.Chat, Opsgenie, Webex, Google Chat), each independently
-  queryable for delivery history, with retry-with-backoff on every
-  HTTP-based kind.
-- **Managed databases.** Eight engines (Postgres, Redis, MySQL,
-  MongoDB, MariaDB, KeyDB, Dragonfly, ClickHouse) through one dynamic
-  engine registry, not eight separate implementations: scheduled
-  backups with retention, restore, restore-into-a-new-resource, and
-  automatic post-backup verification (re-download, re-hash, compare
-  against what was recorded at backup time) apply generically across
-  all eight.
+This section describes what Levelrail itself has shipped. It is deliberately scoped to Levelrail only, not a line-by-line claim about competitors. That would need the same level of sourced research the architecture table above got, which this project hasn't done yet.
 
-None of this changes the answer to "why build a new one instead of
-using an existing platform" above, that answer is still the
-architecture. It's here because a reconciler that never SSHes into a
-box is not, by itself, a reason to trust a tool with production
-secrets and access control, and this is the evidence for the second
-half of that trust.
+### Access control
+
+An IAM-style policy engine (`internal/api/iam.go`) with AWS-IAM-shaped Allow/Deny statements:
+- Attachable to a user or an API token
+- Scoped to a specific resource (`app:myapp`, `database:mydb`, or `*`)
+- Additive on top of a flat abilities list
+- Three curated role presets (admin, operator, viewer) apply a full ability set in one action instead of hand-picking abilities
+- Every request (CLI, dashboard, MCP server, or raw API) runs through the same ability-check hook and lands in a queryable audit log
+- CSV export and configurable retention included
+
+### Feature flags
+
+Boolean flags plus an optional gradual rollout percentage:
+- Scoped to an app
+- Read live at runtime via `GET /api/v1/flags/evaluate/{key}` with a read-scoped API token
+- No redeploy or restart required, since the value is never baked into a container image
+
+### Alerting
+
+Nine rule kinds:
+`threshold`, `crashloop`, `certificate expiry`, `OS patch status`, `scheduled-task failure`, `node disk space`, `node resource usage`, `domain health`, `missing backup`.
+
+Seventeen notification channel kinds:
+`webhook`, `Slack`, `Discord`, `email`, `Telegram`, `Pushover`, `PagerDuty`, `Microsoft Teams`, `Resend`, `ntfy`, `Gotify`, `Mattermost`, `Lark`, `Rocket.Chat`, `Opsgenie`, `Webex`, `Google Chat`.
+
+Each channel is independently queryable for delivery history, with retry-with-backoff on every HTTP-based kind.
+
+### Managed databases
+
+Eight engines:
+`Postgres`, `Redis`, `MySQL`, `MongoDB`, `MariaDB`, `KeyDB`, `Dragonfly`, `ClickHouse`.
+
+All accessed through one dynamic engine registry, not eight separate implementations. Features apply generically across all eight:
+- Scheduled backups with retention
+- Restore and restore-into-a-new-resource
+- Automatic post-backup verification (re-download, re-hash, compare against what was recorded at backup time)
+
+### Trust beyond the reconciler
+
+None of this changes the answer to "why build a new one instead of using an existing platform." That answer is still the architecture. A reconciler that never SSHes into a box is not, by itself, a reason to trust a tool with production secrets and access control. This section is the evidence for the second half of that trust.
 
 ## What Levelrail doesn't do (yet)
 
@@ -95,19 +124,20 @@ Grounded in this project's own current feature and build status, not the origina
 
 ## Feature matrix
 
-The "Beyond the reconciler" section above named its own gap: everything
-in it described Levelrail, not a line-by-line claim about the five
-competitors. This table closes that gap, using the same method as the
-architecture table at the top of this page: every competitor claim comes
-from reading the cloned source directly, a Laravel/Livewire app for
-Coolify, a TypeScript monorepo for Dokploy, a Node.js/TypeScript app for
-CapRover, a Bash plugin tree for Dokku, and a Ruby gem for Kamal, from
-this project's own private competitor research, not from general
-knowledge of these products. Where a clone didn't contain enough
-evidence to answer confidently, the cell says "not stated in research"
-rather than guessing. Levelrail's own column is sourced from
-`docs/roadmap.md` (current as of 2026-09-01), cross-checked against the
-file paths cited on `main`.
+The "Beyond the reconciler" section above described only Levelrail, not a line-by-line comparison of competitors. This table closes that gap using the same sourcing method as the architecture table at the top of this page.
+
+**Sourcing methodology:**
+
+Every competitor claim comes from reading the cloned source directly:
+- Coolify: Laravel/Livewire app
+- Dokploy: TypeScript monorepo
+- CapRover: Node.js/TypeScript app
+- Dokku: Bash plugin tree
+- Kamal: Ruby gem
+
+This is from the project's own private competitor research, not general knowledge. Where a clone didn't contain enough evidence to answer confidently, the cell says "not stated in research" rather than guessing.
+
+Levelrail's column is sourced from `docs/roadmap.md` (current as of 2026-09-01), cross-checked against the file paths cited on `main`.
 
 | Feature | Levelrail | Coolify | Dokploy | CapRover | Dokku | Kamal |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -125,25 +155,20 @@ file paths cited on `main`.
 | Audit logging with per-request attribution | Yes: every request through the single ability-check hook lands in a queryable audit log, attributed to a client kind (cli/dashboard/mcp/api) via the User-Agent header, CSV export, configurable retention with a periodic sweeper | No general audit trail; only narrower activity/deployment command-output logs (`spatie/laravel-activitylog`), no actor-attribution for arbitrary mutations | Yes, but narrower and paid: an `auditLog` table records user/action/resource (`packages/server/src/db/schema/audit-log.ts`), no IP/user-agent/client-kind, and the whole feature is gated behind an enterprise license | No; only anonymous usage telemetry sent to CapRover's own servers, explicitly excluding sensitive events | Partial, opt-in, unstructured: an events log attributes each plugin-trigger call to the SSH key's name/fingerprint, but it's off by default and unqueryable (`dokku events:on`) | Partial but decentralized: a per-host, per-service log file via `auditor.rb`, attributed to a git-email or shell username, not a central request-attributed log |
 | API token scoping | Fine-grained abilities (`read`, `read:sensitive`, `write`, `write:sensitive`, `deploy`, `root`) plus resource-scoped IAM policies attachable to a token | Named ability strings (`read`, `read:sensitive`, `write`, `write:sensitive`, `deploy`) via Sanctum, no resource scoping beyond that | All-or-nothing in practice: an `apikey.permissions` column exists in the schema but token-creation code never sets it, so a key just inherits its user's full role | No scoping; purpose-tagged JWTs (cookie vs webhook vs download) but no capability distinction within the admin session | Not applicable, no REST API or token concept | Not applicable, no REST API or token concept; SSH-key access only |
 
-One row in this table is still a genuine, current gap for Levelrail, not
-an architectural difference it can shrug off: the template catalog (123
-curated entries against Coolify's 371, an intentional curation-over-count
-bet per ADR 015, but a real breadth gap all the same). The MCP tool
-count and notification channel breadth, both named as gaps in an
-earlier pass of this table, have since closed and moved ahead: Levelrail
-now ships 68 MCP tools against Coolify's roughly 45, and 17 notification
-channel kinds against Dokploy's 12. The invite-model gap has closed too:
-invites are now self-service for any `write`-ability caller, capped
-server-side so nobody can invite someone more privileged than
-themselves, the same shape Dokploy's own self-service invites take.
-Dokploy's fine-grained RBAC and per-request audit log remain real,
-working functionality worth naming plainly rather than waving off,
-though both sit behind a paid enterprise license upstream rather than
-Dokploy's free tier, which matters for an apples-to-apples read.
+### What this table shows
 
-Everywhere else in this table, Levelrail matches or leads, and the
-backup-verification row is the sharpest example: none of the other five
-projects researched here run any automated check on a backup after
-taking it. Coolify checks only that the dump file is non-empty, Dokploy
-and CapRover do no check at all, and Dokku and Kamal have no built-in
-backup feature in the first place.
+**Current gap:** The template catalog. Levelrail ships 123 curated entries versus Coolify's 371, an intentional curation-over-count bet per ADR 015. This is a real breadth gap.
+
+**Gaps that have closed:**
+- **MCP tool count** - Levelrail now ships 68 tools against Coolify's roughly 45
+- **Notification channel breadth** - Levelrail ships 17 channel kinds against Dokploy's 12
+- **Invite model** - Invites are now self-service for any `write`-ability caller, capped server-side so nobody can invite someone more privileged than themselves, the same shape as Dokploy's
+
+**Worth naming plainly:** Dokploy's fine-grained RBAC and per-request audit log are real, working functionality. Both sit behind a paid enterprise license upstream rather than Dokploy's free tier, which matters for an apples-to-apples read.
+
+**Backup verification:** This row is the sharpest example of Levelrail's differentiation. None of the other five projects researched here run any automated check on a backup after taking it:
+- Coolify checks only that the dump file is non-empty
+- Dokploy and CapRover do no check at all
+- Dokku and Kamal have no built-in backup feature at all
+
+Everywhere else in this table, Levelrail matches or leads.

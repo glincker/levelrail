@@ -4,7 +4,10 @@ Exhaustive route inventory (296 routes total) for Levelrail's control plane HTTP
 
 ## System
 
-System status checks, admin operations, and configuration endpoints.
+System endpoints for:
+- Status checks and diagnostics
+- Admin operations
+- Configuration retrieval and management
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -22,7 +25,13 @@ System status checks, admin operations, and configuration endpoints.
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-Authentication, multi-factor setup, user management, roles, IAM policies, device login flows, and OAuth provider configuration.
+Endpoints for:
+- Authentication and session management
+- Two-factor authentication setup and verification
+- User and role management
+- IAM policies and attachment
+- Device login flows
+- OAuth provider configuration
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -74,7 +83,13 @@ Authentication, multi-factor setup, user management, roles, IAM policies, device
 
 ## Apps CRUD / Lifecycle / Deploy
 
-Application creation, retrieval, update, deletion, deployment triggers, restarts, stop/start, logs, metrics, and diagnostics.
+Endpoints for:
+- Application creation, retrieval, update, and deletion
+- Deployment triggers and history
+- Application control (restart, stop, start)
+- Logs, metrics, and diagnostics
+- Build operations and deployment comparisons
+- Image and network information
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -113,7 +128,11 @@ Application creation, retrieval, update, deletion, deployment triggers, restarts
 
 ## Secrets / Git Source / Webhooks / Preview Environments
 
-Encrypted secrets, git repository connections, webhook deliveries, and preview environment management.
+Endpoints for:
+- Encrypted secrets management and locking
+- Git repository connections and configuration
+- Webhook delivery history and replay
+- Preview environment configuration and lifecycle
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -133,7 +152,10 @@ Encrypted secrets, git repository connections, webhook deliveries, and preview e
 
 ## Telemetry
 
-Metrics and logs retrieval for apps, with filtering, search, and live streaming.
+Endpoints for:
+- Metrics queries with filtering and aggregation
+- Log retrieval, search, and live streaming
+- Resource usage ranking and monitoring
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -145,7 +167,11 @@ Metrics and logs retrieval for apps, with filtering, search, and live streaming.
 
 ## Alerts / Scheduled Tasks / Feature Flags / Notification Channels
 
-Threshold-based alerting rules, cron-scheduled tasks, feature flag configuration and evaluation, and multi-channel notifications.
+Endpoints for:
+- Alert rule creation and management
+- Scheduled task configuration and execution
+- Feature flag configuration and evaluation
+- Notification channel management and delivery tracking
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -179,7 +205,10 @@ Threshold-based alerting rules, cron-scheduled tasks, feature flag configuration
 
 ## Databases CRUD / Engines / Resources
 
-Database creation, retrieval, deletion, engine registry, telemetry, resource recommendations, and node placement.
+Endpoints for:
+- Database creation, retrieval, and deletion
+- Engine registry and telemetry
+- Resource recommendations and node placement
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -197,7 +226,11 @@ Database creation, retrieval, deletion, engine registry, telemetry, resource rec
 
 ## Projects / Organizations / Environments
 
-Organizational hierarchies, environment definitions, shared layer configuration, and bulk lifecycle operations.
+Endpoints for:
+- Project and organization management
+- Environment definitions and configuration
+- Environment variable and configuration inheritance
+- Bulk lifecycle operations (restart, stop, start)
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -230,7 +263,12 @@ Organizational hierarchies, environment definitions, shared layer configuration,
 
 ## Nodes
 
-Physical infrastructure management, health monitoring, workload assignment, cordon/drain lifecycle, and node-level metrics.
+Endpoints for:
+- Physical infrastructure management and monitoring
+- Node health and status
+- Workload assignment and placement
+- Cordon, drain, and lifecycle operations
+- Node-level metrics and patch status
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -248,7 +286,14 @@ Physical infrastructure management, health monitoring, workload assignment, cord
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-TLS certificate lifecycle, ACME configuration, domain routing, basic auth, maintenance mode, redirects, WAF/rate limiting, email configuration, and Cloudflare integration.
+Endpoints for:
+- TLS certificate lifecycle and management
+- ACME configuration and certificate validation
+- Domain routing and DNS configuration
+- Domain-level controls (basic auth, maintenance mode, redirects, WAF)
+- Email configuration for notifications
+- Cloudflare, Route 53, and Vault integrations
+- External secret management
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -293,7 +338,11 @@ TLS certificate lifecycle, ACME configuration, domain routing, basic auth, maint
 
 ## Static Sites / Backup Targets / Registry Credentials
 
-Static site visibility, S3-compatible backup target management, and external registry credentials for image pull.
+Endpoints for:
+- Static site configuration and visibility
+- S3-compatible backup target management and testing
+- External registry credentials for image pull authentication
+- Domain enumeration
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -316,7 +365,9 @@ Static site visibility, S3-compatible backup target management, and external reg
 
 ## Built-in Container Registry
 
-Embedded registry configuration and image catalog browsing.
+Endpoints for:
+- Registry configuration and management
+- Image repository and tag browsing
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -328,7 +379,11 @@ Embedded registry configuration and image catalog browsing.
 
 ## Git Provider Apps
 
-GitHub App, GitLab App, and Bitbucket App OAuth integrations and repository browsing.
+Endpoints for:
+- GitHub App integration and repository browsing
+- GitLab App integration and project browsing
+- Bitbucket App integration and repository browsing
+- OAuth flow management and provider status
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -362,7 +417,11 @@ GitHub App, GitLab App, and Bitbucket App OAuth integrations and repository brow
 
 ## Database Backups / Restore / Clone Restore
 
-Database backup history, manual triggers, verification, scheduled retention, public access toggle, stop/start, and restore operations.
+Endpoints for:
+- Backup history and manual triggers
+- Backup verification and scheduled retention
+- Database control (stop, start, public access)
+- Restore and clone-restore operations
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -385,7 +444,10 @@ Database backup history, manual triggers, verification, scheduled retention, pub
 
 ## App Volume Backups / Restore
 
-Application named volume backup history, verification, scheduled retention, and restore operations (in-place and non-destructive clone).
+Endpoints for:
+- Named volume backup history and scheduling
+- Backup verification and retention management
+- Volume restore operations (in-place and non-destructive clone)
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -404,7 +466,9 @@ Application named volume backup history, verification, scheduled retention, and 
 
 ## App Storage / Database Attach
 
-Object storage bucket attachment and database connectivity for applications.
+Endpoints for:
+- Object storage bucket attachment and configuration
+- Database connectivity for applications
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -416,7 +480,9 @@ Object storage bucket attachment and database connectivity for applications.
 
 ## Audit Log / Log Drain
 
-Fleet-wide audit trail and external log sink configuration per application.
+Endpoints for:
+- Fleet-wide audit trail and log management
+- External log sink configuration per application
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |

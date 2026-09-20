@@ -6,7 +6,7 @@ short_name: Levelrail
 binary_name: levelrail
 domain: glinr.com/levelrail
 support_url: https://github.com/GLINCKER/levelrail/issues
-docs_url: https://glinr.com/levelrail/docs
+docs_url: https://levelrail.glinr.com
 # primary_color and logo_svg are intentionally unset pending visual identity
 # work. Leave blank rather than guessing a palette.
 primary_color: ""

@@ -37,9 +37,31 @@ export default defineConfig({
         content: 'https://levelrail.glinr.com/assets/screenshots/app-overview.png',
       },
     ],
+    ['link', { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }],
+    [
+      'script',
+      { type: 'application/ld+json' },
+      JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'Levelrail',
+        description,
+        applicationCategory: 'DeveloperApplication',
+        operatingSystem: 'Linux',
+        offers: {
+          '@type': 'Offer',
+          price: '0',
+          priceCurrency: 'USD',
+        },
+        license: 'https://www.apache.org/licenses/LICENSE-2.0',
+        url: 'https://levelrail.glinr.com/',
+        codeRepository: 'https://github.com/glincker/levelrail',
+      }),
+    ],
   ],
 
   cleanUrls: true,
+  appearance: 'dark',
 
   // A handful of docs link up to files outside docs/ (root README.md,
   // CHANGELOG.md, /adr) that exist in the repo but sit outside this

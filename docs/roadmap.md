@@ -1,12 +1,8 @@
 # Roadmap
 
-Status as of 2026-09-17 (refreshed against current `main`), not the
-aspirational plan. See `/adr` for the phase-by-phase architectural
-decisions behind this build order.
-The build has moved further and less linearly than that phase plan
-implies: parts of Phase 3 (multi-node, the WireGuard mesh) are shipped
-while some Phase 1 items (real public ACME against a live domain) are
-still open. This page describes what's actually true today.
+Status as of 2026-09-17 (refreshed against current `main`), not the aspirational plan. See `/adr` for the phase-by-phase architectural decisions behind this build order.
+
+The build has moved further and less linearly than the phase plan implies: parts of Phase 3 (multi-node, the WireGuard mesh) ship while some Phase 1 items (real public ACME against a live domain) remain open. This page describes what is actually true today.
 
 ## Done
 
@@ -16,51 +12,53 @@ still open. This page describes what's actually true today.
   embedded JSON Schema.
 - Docker Engine API wrapper. No shelling out to the `docker` CLI
   anywhere.
-- Application reconciler: desired state to running containers, with
-  readiness probes gating every deploy's cutover and liveness probes
-  run on each reconcile pass afterward, restarting a container that
-  fails its configured threshold of consecutive checks (the case where
-  a process is still running but wedged) and reporting it as a
-  `LivenessFailedRestarting` condition. A container that gets OOM-killed
-  or otherwise exits while a deploy is still waiting on its readiness
-  probe fails immediately with a specific reason
-  (`OOMKilledDuringReadiness`/`ExitedDuringReadiness`) instead of
-  retrying against a dead address for the full readiness budget.
-- BuildKit-based Dockerfile builds with local cache and live build-log
+- Application reconciler: keeps desired state running in containers with
+  readiness probes gating every deploy's cutover and liveness probes run
+  on each reconcile pass. Restarts containers that fail consecutive liveness
+  checks (processes still running but wedged), reported as
+  `LivenessFailedRestarting` condition.
+  
+  A container that OOM-kills or exits during readiness probe wait fails
+  immediately with a specific reason (`OOMKilledDuringReadiness` or
+  `ExitedDuringReadiness`) instead of retrying against a dead address.
+- BuildKit-based Dockerfile builds with local cache, live build-log
   streaming over SSE.
 - Railpack auto-detection for Node.js and Go.
 - Static-site builds (`build.type: static`), with a frontend surface to
   configure them (a static tab in the git build-source picker) and a
   dashboard card listing existing static sites.
 - Docker Compose as a deploy target: `internal/compose` parses a
-  supported subset of `compose.yaml`, including per-service `build:`
-  directives, and expands it into per-service builds/deploys via the
-  same multi-service fan-out `DeploySpec` uses, with a frontend Compose
-  creation flow. HTTP-based `healthcheck:` stanzas translate into real
-  readiness/liveness probes; `restart:` and `networks:` are parsed and
-  surfaced as informational notices rather than enforced, since the
-  reconciler always keeps containers running and every service in an
-  app already shares one network.
-- Multi-service apps: an `apps` table links N desired services under
-  one app, and `POST /api/v1/apps/{name}/deploy-spec` fans a
-  `services:` map out into independent per-service builds and deploys,
-  each tracked separately, with a real frontend (a services tab plus
-  `DeploySpecForm`) and CLI (`apps deploy-spec`) driving it.
-  Webhook-triggered auto-deploy is unified with the same path: a git
-  source can persist a `services:` map (`GitSource.Services`), and a
-  push fans out through the identical `DeploySpec` logic instead of the
-  older, simpler `GitSource.AdditionalServices` flat list; a git source
-  with no `services:` map still falls back to `AdditionalServices`
-  unchanged, so existing single-service webhook setups are unaffected.
-  `apps create --interactive` supports it too: an "add another
-  service?" loop after the first service's answers, writing every
-  service into one `app.yaml` in file mode or fanning out through
-  `deploy-spec` (instead of `CreateApp`) in API mode. The live
-  end-to-end suite covers the fan-out itself
-  (`test/e2e/multi_service_test.go`): two services built from one
-  shared checkout, each scoped to its own `build.baseDirectory`, linked
-  under one `store.App`, and independently reachable over HTTPS through
-  one ingress pass.
+  supported subset of `compose.yaml` including per-service `build:`
+  directives and expands into per-service builds/deploys via the same
+  multi-service fan-out as `DeploySpec`. Frontend Compose creation flow
+  included.
+  
+  HTTP-based `healthcheck:` stanzas translate into real readiness/liveness
+  probes. `restart:` and `networks:` are parsed and surfaced as informational
+  notices, not enforced, since the reconciler always keeps containers running
+  and every service in an app already shares one network.
+- Multi-service apps: an `apps` table links N services under one app.
+  `POST /api/v1/apps/{name}/deploy-spec` fans a `services:` map into
+  independent per-service builds and deploys, each tracked separately,
+  with frontend (services tab + `DeploySpecForm`) and CLI (`apps
+  deploy-spec`) support.
+  
+  Webhook-triggered auto-deploy unifies with this path: a git source
+  persists a `services:` map (`GitSource.Services`), and a push fans out
+  through the identical `DeploySpec` logic, replacing the older
+  `GitSource.AdditionalServices` flat list. A git source with no
+  `services:` map falls back to `AdditionalServices` unchanged, so
+  existing single-service webhook setups are unaffected.
+  
+  `apps create --interactive` supports it too, with an "add another
+  service?" loop after the first service answers, writing every service
+  into one `app.yaml` (file mode) or fanning out through `deploy-spec`
+  (API mode).
+  
+  Live end-to-end coverage (`test/e2e/multi_service_test.go`): two
+  services built from one shared checkout, each scoped to its own
+  `build.baseDirectory`, linked under one `store.App`, and
+  independently reachable over HTTPS.
 - A curated 123-entry service template catalog (ADR 015: reverses the
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
@@ -122,147 +120,154 @@ still open. This page describes what's actually true today.
 - Ephemeral databases per preview: opt-in per database, one level below
   the preview toggle itself. A `databases:` entry in the connected git
   source (`ephemeralInPreviews: true`) gets a full, disposable
-  `database.Controller`-managed container of its own for every open pull
-  request (its own volume, its own generated credentials), named
-  `<preview-app>-db-<key>`, provisioned the moment the preview deploys
-  and destroyed the moment the preview is, whichever teardown path fires
-  (pull-request-closed webhook, manual teardown, or the TTL sweep). For a
-  single-service preview with exactly one such database, its connection
-  string is also wired in automatically as `DATABASE_URL`, the same
-  attachment mechanism `PUT /api/v1/apps/{name}/database` already
-  exposes for any app; a multi-service preview, or more than one
-  ephemeral database on the same preview, leaves that wiring to be done
-  by hand since there is no single service to attach it to
-  unambiguously. **Destroyed with no recovery path**: there is no backup,
-  no restore, and no snapshot for an ephemeral preview database, by
-  design, since the entire point is a schema an operator never has to
-  worry about leaking into or diverging from anything real. Never point
-  a production dependency, a shared secret, or real user data at one.
+  `database.Controller`-managed container for every open pull request
+  (its own volume, its own generated credentials), named
+  `<preview-app>-db-<key>`, provisioned when the preview deploys and
+  destroyed when the preview is, regardless of teardown path (webhook, manual,
+  or TTL sweep).
+  
+  For a single-service preview with exactly one such database, its
+  connection string wires in automatically as `DATABASE_URL`, the same
+  attachment mechanism `PUT /api/v1/apps/{name}/database` already exposes
+  for any app. Multi-service previews or multiple ephemeral databases on
+  the same preview require manual wiring, since there is no single service
+  to attach to unambiguously.
+
+  ::: warning Destroyed with no recovery path
+  No backup, restore, or snapshot exists for ephemeral preview databases
+  by design. Never point a production dependency, shared secret, or real
+  user data at one.
+  :::
+
   Visible in the same dashboard card as the rest of a preview's status,
   and in `apps previews list`'s own output.
 - Embedded Caddy ingress with automatic TLS and domain routing. TLS
-  today defaults to an internal, self-signed issuer; a public ACME
-  issuer exists and is toggleable but is still unverified against a
-  live domain (see In progress). A service with no domain configured at
-  all gets a zero-config, real, publicly resolvable fallback URL
-  (`<app>.<public-ip-dash-encoded>.sslip.io`, real HTTPS via the same
-  Caddy issuer path, no DNS setup) whenever `APP_PUBLIC_HOST` is a
-  genuine public IP, surfaced in the dashboard's Network tab and
-  `apps network` in the CLI. A per-domain BYO (bring your own)
-  certificate upload (`PUT/GET/DELETE
+  defaults to an internal, self-signed issuer. A public ACME issuer exists
+  and is toggleable but unverified against a live domain (see In progress).
+  
+  A service with no configured domain gets a zero-config, publicly
+  resolvable fallback URL (`<app>.<public-ip-dash-encoded>.sslip.io`,
+  real HTTPS via Caddy, no DNS setup) whenever `APP_PUBLIC_HOST` is a
+  genuine public IP. Surfaced in the dashboard's Network tab and `apps
+  network` in the CLI.
+  
+  Per-domain BYO (bring your own) certificate upload lets an operator
+  supply certificate/key pairs for domains ACME cannot reach (internal-only
+  hosts, externally issued wildcards, pre-provisioned certs). Via `PUT/GET/DELETE
   /api/v1/apps/{name}/domains/{domain}/tls-cert`, `levelrail-cli domains
-  tls-cert get/set/clear`, a `DomainEditor` control) lets an operator
-  supply their own certificate/key pair for a domain ACME can't reach
-  (internal-only hosts, externally issued wildcards, a cert already
-  provisioned before DNS cuts over): Caddy loads it via
-  `tls.certificates.load_pem` and skips automatic issuance for that host
-  on its own. The private key and certificate both go through
-  `internal/secrets` envelope encryption, the same split
-  `domain_basic_auth` uses for its own password.
+  tls-cert get/set/clear`, or a `DomainEditor` control. Caddy loads via
+  `tls.certificates.load_pem` and skips automatic issuance.
+  
+  Private key and certificate both pass through `internal/secrets` envelope
+  encryption, the same method `domain_basic_auth` uses.
 - Envelope encryption for secrets, with env injection at
-  container-create time. Master-key rotation
-  (`POST /api/v1/system/master-key/rotate`, `levelrail-cli secrets
-  rotate-master-key`) re-wraps every stored per-service data-encryption
-  key under the new master key in one transaction; rotation age is
-  also checked by the doctor command below.
-- Managed Redis as a first-class, volume-backed resource.
+  container-create time. Master-key rotation (`POST
+  /api/v1/system/master-key/rotate`, `levelrail-cli secrets rotate-master-key`)
+  re-wraps every per-service data-encryption key in one transaction.
+  Rotation age is checked by the doctor command.
+- Managed Redis as a first-class volume-backed resource.
 - Eight managed database engines via a dynamic engine registry
   (`internal/store/database_engines.yaml`): Postgres, Redis, MySQL,
-  MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse. Every engine gets
-  resource limits, public-access toggle with host port exposure,
-  scheduled/cron backups with retention, backup and restore, log search
-  and live SSE log tail, metrics, generated credentials via envelope
-  encryption, volume persistence across container replacement, node
-  placement, and the dashboard/CLI surfaces for all of the above,
-  generically across the registry rather than per-engine. Backup and
-  restore is now live-Docker-tested for every engine, including
-  MariaDB, ClickHouse, KeyDB, and Dragonfly's own restore paths and a
+  MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse. Every engine gets:
+  
+  - Resource limits and public-access toggle with host port exposure
+  - Scheduled/cron backups with retention, backup/restore, and verification
+  - Log search and live SSE log tail
+  - Metrics
+  - Generated credentials via envelope encryption
+  - Volume persistence across container replacement
+  - Node placement
+  - Dashboard/CLI surfaces across all engines (not per-engine duplication)
+  
+  Backup and restore are live-Docker-tested for every engine, including
+  MariaDB, ClickHouse, KeyDB, and Dragonfly's own restore paths, plus a
   fix scoping MongoDB restore to drop only non-system databases first.
-- TLS for managed database connections, on by default for newly created
-  Postgres and Redis databases, no operator action required: the
-  reconciler generates a self-signed certificate at container-creation
-  time (`internal/reconcile/database`'s `WithTLS`), stores it through
-  the same envelope-encrypted secrets path credentials already use, and
-  mounts it into the container via a short-lived helper container (the
-  same create-helper-then-exec pattern app volume backups already use
-  to write into a named volume with no tool of its own). Postgres
-  negotiates TLS on its existing port with `ssl=on` and the connection
-  string gets `?sslmode=require`; Redis disables its plaintext port
-  entirely (`--port 0`) and the connection string switches to
-  `rediss://` on the TLS-only port. Scoped to these two engines only:
-  both have a "encrypt without verifying the certificate" mode expressible
-  entirely in the connection URI that mainstream client libraries already
-  honor with zero app-side changes, which the other six managed engines
-  don't yet have verified. An already-running database (created before
-  this feature, or before a master key was configured) is never
-  retroactively switched to TLS: the reconciler only ever diffs a
-  container's image and published ports, never its env/command, so an
-  existing container simply keeps running as it always has. Surfaced as
-  a "TLS enabled" / "Plaintext" badge on a database's Overview page and
-  a `tls` column/field in `databases list`/`databases get`.
-- Restore into a brand-new, standalone resource rather than only
-  in-place: `POST /api/v1/databases/{name}/restore-as-new` for managed
-  databases and `POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new`
-  for an app's own named volume, both non-destructive to the original,
-  with CLI (`restore-as-new`) and dashboard wiring.
-- App volume backups: an app service's own named Docker volume gets the
-  same scheduled/cron backup, restore, and verification feature set
-  managed databases already had, via API, CLI
-  (`app-volume-backups list/trigger/restore/restore-as-new/schedule/
-  verify/verifications`), and a web UI section on the app's Volumes tab.
-- Backup targets get a "test connection" action
-  (`POST /api/v1/backup-targets/{id}/test`) that probes the target's
-  bucket over its stored credentials without uploading or deleting
-  anything, via CLI (`backup-targets test`) and a dashboard button.
+- TLS for managed database connections, enabled by default for newly
+  created Postgres and Redis databases with no operator action required.
+  The reconciler generates a self-signed certificate at container-creation
+  time (`internal/reconcile/database`'s `WithTLS`), stores it via
+  envelope-encrypted secrets, and mounts it via a short-lived helper
+  container (the same pattern app volume backups use).
+  
+  Connection handling differs per engine: Postgres negotiates TLS on its
+  existing port with `ssl=on` and the connection string gets
+  `?sslmode=require`. Redis disables its plaintext port entirely
+  (`--port 0`) and switches to `rediss://` on the TLS-only port.
+  
+  Scoped to these two engines only, since both support "encrypt without
+  verifying the certificate" modes expressible entirely in the connection
+  URI, which mainstream client libraries already honor with zero
+  app-side changes. The other six managed engines lack this capability
+  so far.
+  
+  Already-running databases (created before this feature or a master key)
+  are never retroactively switched to TLS. The reconciler only diffs a
+  container's image and published ports, never its env/command, so
+  existing containers keep running unchanged.
+  
+  Surfaced as a "TLS enabled" / "Plaintext" badge on the Overview page
+  and a `tls` column/field in `databases list`/`databases get`.
+- Restore into a brand-new, standalone resource, not just in-place:
+  `POST /api/v1/databases/{name}/restore-as-new` for managed databases
+  and `POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new` for app
+  volumes. Both are non-destructive to the original. CLI (`restore-as-new`)
+  and dashboard wiring included.
+- App volume backups: app services' named Docker volumes get the same
+  scheduled/cron backup, restore, and verification feature set as managed
+  databases. Available via API, CLI (`app-volume-backups
+  list/trigger/restore/restore-as-new/schedule/verify/verifications`),
+  and a web UI section on the app's Volumes tab.
+- Backup target "test connection" action (`POST /api/v1/backup-targets/{id}/test`)
+  probes the bucket with stored credentials without uploading or deleting.
+  Via CLI (`backup-targets test`) and dashboard button.
 - HTTP API for app CRUD and deploy trigger/history, with real
   multi-user session auth (see Dashboard and auth, below).
 - Frontend app list and detail views, with a live build-log viewer and
   route-level code splitting.
-- Rollback: previous images are retained, with deploy history and full
+- Rollback: previous images retained with deploy history and full
   build-log persistence. CLI `rollback` and `restart` subcommands.
 - Deploy comparison: `GET /api/v1/apps/{name}/deploys/compare` diffs two
-  deploy attempts' image tag, commit, trigger source, env var keys,
-  ports, domains, resource limits, health check config, replica count,
-  deploy strategy, volumes, and labels, with a frontend view. Env values
-  are snapshotted per attempt for ordinary vars only: a secret- or
-  database-backed key reports only its key and whether it was added or
-  removed, never a value, since this control plane has no way to detect
-  a value change for either without decrypting a secret or re-resolving
-  a live database reference. Every other DesiredService field is now
-  captured per attempt; the CLI and MCP wire types
-  (`internal/apiclient`, `cmd/levelrail-cli`, `cmd/levelrail-mcp`) still
-  only surface the pre-snapshot field set and are a known follow-up.
-- Build-failure diagnosis: a deterministic pattern matcher over a
-  failed build or container's actual log text (Docker daemon down,
-  image pull/auth failure, missing Dockerfile, npm/pnpm errors, port
-  conflicts, readiness-probe timeout, OOM-kill), returning a matched
-  signature with an excerpt and suggestion instead of just raw logs.
-  Surfaced in the app overview page and as an MCP tool.
-- Deploy strategies: rolling, recreate, and blue-green, plus replica
-  support.
-- One-shot container `exec`, gated to root-level API tokens.
+  deploy attempts across image tag, commit, trigger source, env var
+  keys, ports, domains, resource limits, health check config, replica
+  count, deploy strategy, volumes, and labels. Frontend view included.
+  
+  Env values are snapshotted per attempt for ordinary vars only.
+  Secret- or database-backed keys report only the key and whether it was
+  added/removed, never the value, since the control plane cannot detect
+  value changes without decrypting or re-resolving. Every other
+  DesiredService field is now captured per attempt.
+  
+  CLI and MCP wire types (`internal/apiclient`, `cmd/levelrail-cli`,
+  `cmd/levelrail-mcp`) still only surface the pre-snapshot field set,
+  a known follow-up.
+- Build-failure diagnosis: deterministic pattern matching over failed
+  build or container logs (Docker daemon down, image pull/auth failure,
+  missing Dockerfile, npm/pnpm errors, port conflicts, readiness-probe
+  timeout, OOM-kill). Returns a matched signature with excerpt and
+  suggestion instead of raw logs. Surfaced in the app overview page and
+  as an MCP tool.
+- Deploy strategies: rolling, recreate, blue-green, plus replica support.
+- One-shot container exec, gated to root-level API tokens.
 - Interactive terminal: a real PTY shell on a running container, from
-  the dashboard (xterm.js over a WebSocket) or from
-  `levelrail-cli apps exec --interactive`. Resize crosses both legs, so
-  a terminal on a remote node behaves identically to one on the control
-  plane's own node, and closing the tab ends the shell rather than
-  leaking it. Same root-level gating as one-shot exec.
-- Explicit Stop/Start actions for apps, distinct from Delete/Restart:
-  the reconciler tears down containers on stop and brings them back on
-  start without touching desired state.
+  the dashboard (xterm.js over WebSocket) or from `levelrail-cli apps exec
+  --interactive`. Resize propagates to both legs, so remote terminals
+  behave identically to local ones. Closing the tab ends the shell rather
+  than leaking it. Same root-level gating as one-shot exec.
+- Explicit Stop/Start actions for apps, distinct from Delete/Restart.
+  The reconciler tears down containers on stop and restarts them on start
+  without touching desired state.
 - `install.sh` (curl-pipe-sh): downloads the binary, installs Docker if
-  missing, sets up a systemd unit, and verifies the control plane
-  actually comes up healthy via a bounded retry loop (never an infinite
-  wait) before declaring success. Safe to re-run as an upgrade path.
-  Opt-in `LEVELRAIL_CONFIGURE_UFW=1` configures the host firewall
-  (allow SSH before enabling, Dokku's own proven ordering), off by
-  default.
-- `levelrail-cli doctor`: a local preflight check (Docker daemon
-  reachability, disk space, and more). The same checks also run
-  server-side as a system doctor API endpoint, including a
-  master-key-rotation-age check and a firewall/ufw status check, now
-  with a dashboard "System status" settings page surfacing the same
-  bundle, not just the CLI.
+  missing, sets up a systemd unit, and verifies the control plane comes
+  up healthy via bounded retry (never infinite wait). Safe to re-run as
+  an upgrade path.
+  
+  Opt-in `LEVELRAIL_CONFIGURE_UFW=1` configures the host firewall (allow
+  SSH before enabling, following Dokku's proven ordering), off by default.
+- `levelrail-cli doctor`: local preflight check (Docker daemon
+  reachability, disk space, and more). The same checks run server-side as
+  a system doctor API endpoint, including master-key-rotation-age and
+  firewall/ufw status. Dashboard "System status" settings page surfaces
+  the same bundle, not just the CLI.
 - `GET /api/v1/system/containers` and `levelrail-cli containers`: a
   read-only list of every container on the node (not just ones the
   reconciler manages), name, image, state, and ports. Deliberately no
@@ -274,204 +279,195 @@ still open. This page describes what's actually true today.
 - `levelrail-cli completion bash|zsh|fish`: shell completion covering
   every command and subcommand plus the global flags.
 - `levelrail-cli version` and a maintained `CHANGELOG.md`.
-- Named CLI credential profiles (`--profile`/`APP_PROFILE`, AWS-CLI
-  style): multiple named sections in the credentials file so one
-  operator can manage several control planes without one login
-  overwriting another's saved token.
-- `--output json|table|text` and `--query` (JMESPath, via
-  `jmespath/go-jmespath`) across the entire CLI, replacing the old
-  boolean `--json` flag, which is kept as a backward-compatible alias
-  for `--output json`.
-- A CLI device-login flow (`levelrail-cli auth login --device`),
-  RFC-8628-shaped: prints a short code and URL, an operator approves it
-  from a "CLI access" dashboard settings page, and the CLI polls until
-  a real API token is minted. Works over plain HTTP, since no password
-  crosses the wire.
-- `levelrail migrate coolify`, `levelrail migrate dokploy`, and
-  `levelrail migrate caprover` CLI commands: pull every app off a live
-  source instance and either write app.yaml files or apply them
-  directly to a target Levelrail instance.
-- `levelrail apps create --interactive` (`-i`): a step-by-step wizard
-  for creating an app without hand-writing app.yaml or knowing every
-  flag up front, ending in either a written app.yaml or a direct API
-  call, operator's choice.
+- Named CLI credential profiles (`--profile`/`APP_PROFILE`, AWS-CLI style):
+  multiple credential sections so one operator can manage several control
+  planes without one login overwriting another's token.
+- `--output json|table|text` and `--query` (JMESPath via
+  `jmespath/go-jmespath`) across the entire CLI. Old boolean `--json`
+  kept as backward-compatible alias for `--output json`.
+- CLI device-login flow (`levelrail-cli auth login --device`,
+  RFC-8628-shaped): prints a short code and URL, operator approves from
+  "CLI access" settings page, CLI polls until a token is minted. Works over
+  plain HTTP since no password crosses the wire.
+- Migration CLI: `levelrail migrate coolify`, `dokploy`, `caprover`
+  pulls every app off a live source and either writes app.yaml files or
+  applies them directly to a target Levelrail instance.
+- `levelrail apps create --interactive` (`-i`): step-by-step wizard for
+  creating an app without hand-writing app.yaml or knowing every flag,
+  ends in either written app.yaml or direct API call, operator's choice.
 - An MCP server (`cmd/levelrail-mcp`), wrapping the same versioned REST
-  API and bearer-token model the CLI already uses, so a token scoped to
-  fewer abilities than a tool needs gets the same 403 the REST API
-  itself would return. Fifty-six tools today, across apps (list,
-  get, deploy, deploy-compose, rollback, restart, status,
-  deploy-history, real deploy-attempt history, logs, metrics, network,
-  git source, pre/post-deploy hook run outcomes, BYO TLS certificate
-  status per domain, scheduled tasks list/get), databases (list/get,
-  engine registry), nodes (list/get/health), service templates
-  (list/get), feature flags (list/get), resource recommendations (app
-  and database), preview environments (list, plus a sweep tool), alert
-  rules (list), IAM policies (list/get), notification channels and
-  their delivery history (list), organizations, projects, and
-  environments (list), registry credentials (list), backup targets
-  (list, plus a connection test), app service volume backup history
-  (list), the audit log (list), deploy comparison, build-failure
-  diagnosis, delivery history for webhooks and backup verifications
-  (list), domains (list, plus per-domain maintenance-mode status),
-  certificates (list, expiry status), Cloudflare Tunnel status, and
-  control-plane system status. Fifty of the fifty-six are
-  read-and-suggest; the other six perform a real action: deploy,
-  deploy-compose, rollback, and restart for apps (as documented
-  before), the preview sweep, which tears down stale preview
-  environments on demand, the same action the scheduled TTL sweep
-  above (see Preview environments) performs automatically, and a
-  backup-target connection test, which probes a bucket's stored
-  credentials against the target on demand without uploading,
-  downloading, or deleting anything. Nothing here reaches into the
-  reconciler directly, and no tool deletes a resource or touches
-  secrets/resource limits.
-- Live end-to-end test suite: whole-chain push-to-HTTPS, rollback in
-  both directions, the real git webhook path, database reconciliation,
-  non-default port routing, node placement, protected-environment
-  confirm-to-deploy gating, Compose healthcheck-derived readiness
-  gating, master-key rotation, and multi-service fan-out (see Multi-service
-  apps, above). Doesn't yet exercise a full multi-node mesh or real ACME
-  against a live domain.
+  API and bearer-token model the CLI uses. A token scoped to fewer
+  abilities than a tool needs gets the same 403 the REST API itself
+  returns.
+  
+  Fifty-six tools today, covering:
+  
+  - **Apps**: list, get, deploy, deploy-compose, rollback, restart,
+    status, deploy-history, deploy-attempt history, logs, metrics, network,
+    git source, pre/post-deploy hook run outcomes, BYO TLS certificate
+    status per domain, scheduled tasks
+  - **Databases**: list, get, engine registry
+  - **Nodes**: list, get, health
+  - **Infrastructure**: service templates, feature flags, resource
+    recommendations (app and database), preview environments, alert rules,
+    IAM policies, notification channels and delivery history
+  - **Organization**: organizations, projects, environments, registry
+    credentials, backup targets, app service volume backup history, audit log
+  - **Diagnostics**: deploy comparison, build-failure diagnosis, webhook
+    and backup verification delivery history, domains (plus per-domain
+    maintenance-mode status), certificates (expiry status), Cloudflare
+    Tunnel status, control-plane system status
+  
+  Fifty of the fifty-six are read-and-suggest. The other six perform
+  real actions: deploy, deploy-compose, rollback, and restart for apps;
+  preview sweep (tears down stale preview environments on demand, same as
+  scheduled TTL sweep); and backup-target connection test (probes stored
+  credentials against the target on demand without uploading, downloading,
+  or deleting).
+  
+  No tool reaches into the reconciler directly, deletes a resource, or
+  touches secrets/resource limits.
+- Live end-to-end test suite: whole-chain push-to-HTTPS, bidirectional
+  rollback, real git webhook path, database reconciliation, non-default
+  port routing, node placement, protected-environment confirm-to-deploy,
+  Compose healthcheck-derived readiness, master-key rotation, and
+  multi-service fan-out (see Multi-service apps, above).
+  
+  Does not yet exercise a full multi-node mesh or real ACME against a live
+  domain.
 
 **Observability**
 
-- Node-local metrics store at 15s resolution (CPU, memory, disk IO,
-  network IO, deploy count, build duration), with configurable
-  retention.
+- Node-local metrics store at 15s resolution: CPU, memory, disk IO,
+  network IO, deploy count, build duration. Configurable retention.
 - Node-local log store with full-text search and structured (JSON) log
   parsing. Container logs are also downloadable as a file, separate
   from the live/search views.
-- Federated query API across nodes, with time range, filtering, and
-  aggregation.
-- Frontend metrics dashboard with a range selector, historical log
-  search, and deploy markers overlaid on metric charts.
-- Alerting over nine rule kinds: the original threshold and crashloop
-  detection, plus certificate-expiry, OS-patch-status,
-  scheduled-task-failure, node-disk-space, node-resource-usage
-  (per-node CPU/memory), domain-health (a periodic DNS check
-  against every domain configured on an app, catching a silently
-  repointed CNAME), and backup-missing (a database's or app volume's
-  last successful scheduled backup trailing its own cron schedule by
-  more than a grace period, catching a backup that silently stopped
-  running or has been failing on every attempt), each with its own
-  evaluator. Seventeen notification
-  channel kinds: webhook, Slack, Discord, email, Telegram, Pushover,
-  PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark,
-  Rocket.Chat, Opsgenie, Webex, and Google Chat, plus separate
-  deploy-outcome notifications. Every HTTP-based channel kind retries a
-  transient failure (a transport error or a 5xx/429 response) up to 3
-  times with a short backoff before giving up, rather than dropping a
-  real alert to a one-off receiver hiccup; email isn't covered yet
-  (different transport, different failure semantics). Delivery history
-  for every notification channel is
-  independently queryable via API/CLI/MCP. A dismissible dashboard
-  nudge prompts enabling the platform-wide alert rules (patch-status,
-  node-disk-space, node-resource-usage) when none are configured yet.
+- Federated query API across nodes with time range, filtering, and aggregation.
+- Frontend metrics dashboard: range selector, historical log search, and
+  deploy markers overlaid on metric charts.
+- Alerting over nine rule kinds:
+  
+  - Threshold and crashloop detection (original)
+  - Certificate expiry
+  - OS patch status
+  - Scheduled task failure
+  - Node disk space
+  - Node resource usage (per-node CPU/memory)
+  - Domain health (periodic DNS check against every domain, catches silently repointed CNAMEs)
+  - Backup missing (when scheduled backup trails its cron schedule, catches silently stopped backups)
+  
+  Each evaluator is independent. Seventeen notification channel kinds supported: webhook, Slack, Discord, email, Telegram, Pushover, PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark, Rocket.Chat, Opsgenie, Webex, and Google Chat, plus separate deploy-outcome notifications.
+  
+  HTTP-based channels retry transient failures (transport errors or 5xx/429 responses) up to 3 times with short backoff, rather than dropping alerts on one-off hiccups. Email is not yet covered (different transport and semantics).
+  
+  Delivery history for every notification channel is independently queryable via API/CLI/MCP. A dismissible dashboard nudge prompts enabling platform-wide alert rules (patch-status, node-disk-space, node-resource-usage) when none are configured yet.
 - Prometheus remote-read endpoint.
-- Crashloop detection, with the last 200 lines of the failing
-  container's logs surfaced automatically in the UI.
+- Crashloop detection with the last 200 lines of the failing container's
+  logs surfaced automatically in the UI.
 - Live app log streaming over SSE, separate from historical search.
-- Node-level metrics dashboard.
-- Per-node OS package-update status (a periodic collector, surfaced as
-  a single current fact on the node detail page and via
-  `levelrail nodes patch-status`), not an automatic patcher.
-- TLS certificate renewal visibility.
-- Docker disk, image, and volume pruning from the dashboard.
-- Control-plane data-directory disk usage (total/free bytes) surfaced
-  in Settings > General, alongside Docker's own image/volume/build-cache
-  accounting.
+- Per-node metrics dashboard.
+- Per-node OS package-update status via a periodic collector, surfaced
+  on the node detail page and via `levelrail nodes patch-status`. Not an
+  automatic patcher.
+- TLS certificate renewal visibility in the UI.
+- Docker image and volume pruning from the dashboard.
+- Control-plane data-directory disk usage (total/free bytes) in Settings
+  > General, alongside Docker's image/volume/build-cache accounting.
 - Managed database observability: log search, live SSE log tail, and
-  metrics for every database engine, not just apps. Shares the actual
-  query implementation with the app-scoped equivalents rather than a
-  parallel implementation.
+  metrics for every database engine, not just apps. Shares the query
+  implementation with app-scoped equivalents instead of duplicating code.
 - Resource right-sizing: P95-based memory/CPU suggestions for apps and
-  databases from observed usage over a lookback window, with a
-  confidence level. A suggestion only, surfaced on the resources page;
-  it never auto-applies a limit change.
+  databases from observed usage over a lookback window, with confidence
+  level. A suggestion only, surfaced on the resources page; never
+  auto-applied.
 - Webhook delivery history: list and manually replay past deliveries
   per git source, via API/CLI/dashboard.
 
 **Multi-node**
 
-- Agent transport abstraction: in-process for single-node, real gRPC
-  for multi-node, with reconnection and version negotiation.
+- Agent transport abstraction: in-process for single-node, real gRPC for
+  multi-node, with reconnection and version negotiation.
 - Full Docker surface over the agent transport, not just container
-  lifecycle: per-app networks and container exec (including streamed
-  stdin) now work on a remote node exactly as they do locally, so
-  database backup and restore, volume archive and restore, app
-  networking, hook commands, and `apps exec` are no longer limited to
-  resources placed on the control plane's own node. Exec is streamed and
-  flow-controlled in both directions, so a slow reader throttles the
-  remote command instead of dropping bytes or buffering a whole dump,
-  and closing the stream early actually stops the remote process.
-- Node registry, join-token issuance, and node CRUD.
-- mTLS between control plane and agents via a minimal self-signed CA.
-- Manual placement: assign or move a service to a specific node. An app
-  with named Docker volumes can take them along: `POST /apps/{name}/
-  move-with-volumes` stops the app, archives and restores each volume
-  onto the destination node directly (no S3 target involved), then
-  updates placement and resumes, with per-step status recorded so a
-  partial failure is diagnosable rather than a black box. See
-  `docs/multi-node.md`'s own "Moving an app with its volumes" section
-  for the exact sequence and what a partial failure actually leaves
-  behind.
-- WireGuard mesh with internal DNS resolving service names across
-  nodes.
+  lifecycle. Per-app networks and container exec (including streamed stdin)
+  work on remote nodes exactly as locally. Database backup/restore, volume
+  archive/restore, app networking, hook commands, and `apps exec` are no
+  longer limited to the control plane's node.
+  
+  Exec is streamed and flow-controlled bidirectionally, so a slow reader
+  throttles the remote command instead of dropping bytes, and closing the
+  stream early stops the remote process.
+- Node registry, join-token issuance, node CRUD.
+- mTLS between control plane and agents via minimal self-signed CA.
+- Manual placement: assign or move a service to a specific node. Apps with
+  named Docker volumes can move them via `POST /apps/{name}/move-with-volumes`:
+  stops the app, archives and restores each volume to the destination node
+  (no S3 target), updates placement, and resumes. Per-step status is recorded
+  so partial failures are diagnosable.
+  
+  See `docs/multi-node.md`'s "Moving an app with its volumes" section for
+  the exact sequence and what partial failure leaves behind.
+- WireGuard mesh with internal DNS resolving service names across nodes.
 - Dedicated build nodes, with registry-backed remote BuildKit cache and
-  per-node capability flags. Marking a node build-capable actually moves
-  builds there: the control plane picks a build-capable, currently
-  reachable node per build, streams the build context up over the same
-  mTLS agent transport everything else uses, runs the solve against that
-  node's own BuildKit, and streams progress and the finished image back,
-  so build logs and the resulting image land exactly where a local build
-  would have put them while the CPU work happens off the control plane.
+  per-node capability flags. Marking a node build-capable moves builds
+  there: the control plane picks a build-capable, reachable node per
+  build, streams the build context over mTLS, runs the solve against
+  that node's BuildKit, and streams back progress and the finished image.
+  Build logs and the resulting image land exactly where a local build
+  would, while CPU work happens off the control plane.
+  
   A build node that goes offline mid-build fails that build with the
-  reason rather than silently falling back. The registry backend no
-  longer requires an external service: a built-in registry (`registry:2`, generated
-  htpasswd-style credentials via the same envelope encryption as managed
-  database passwords, TLS-fronted through the embedded Caddy ingress) can
-  be enabled from Settings > Container registry, the CLI's `registry`
-  command group, or `PUT /api/v1/settings/registry`, and the build cache
-  wires to it automatically once enabled with no separate cache
-  configuration step. An operator's own external registry, set via
-  `APP_BUILD_CACHE_REGISTRY`, still always takes precedence.
-- Distributed certificate storage shared across ingress instances.
-- Node health (heartbeat), cordon, and drain, plus a per-node live alert
-  status (ok/firing/unknown) for the patch-status, node-disk-space, and
-  node-resource-usage rule kinds, evaluated on demand for a single node
-  fetch and surfaced in `nodes get`/`nodes health` and a node detail
-  page card.
-- Frontend node management: add-node flow, node list with health
-  status, per-service node assignment, cordon and drain controls.
+  reason rather than silently falling back. 
+  
+  The registry backend no longer requires an external service. A
+  built-in registry (`registry:2` with htpasswd-style credentials via
+  envelope encryption, TLS-fronted through embedded Caddy) can be
+  enabled from Settings > Container registry, the CLI's `registry`
+  command group, or `PUT /api/v1/settings/registry`. The build cache
+  wires to it automatically with no separate cache configuration.
+  
+  An operator's own external registry (via `APP_BUILD_CACHE_REGISTRY`)
+  still always takes precedence.
+- Distributed certificate storage across ingress instances.
+- Node health (heartbeat), cordon, and drain. Per-node live alert status
+  (ok/firing/unknown) for patch-status, node-disk-space, and
+  node-resource-usage rules, evaluated on demand per fetch. Surfaced in
+  `nodes get`/`nodes health` and the node detail page.
+- Frontend node management: add-node flow, node list with health status,
+  per-service node assignment, cordon, and drain controls.
 
 **Dashboard and auth**
 
 - API tokens with scoped abilities, first-run registration, login rate
-  limiting, session TTL, and an admin recovery CLI subcommand. A
-  general token-bucket rate limit also applies across every
-  ability-gated route beyond login, stricter for writes than reads,
-  keyed per token, per session user, or per client IP if
-  unauthenticated, configurable via env vars.
+  limiting, session TTL, and an admin recovery CLI subcommand.
+  
+  A general token-bucket rate limit applies across every ability-gated
+  route beyond login, stricter for writes than reads, keyed per token,
+  per session user, or per client IP if unauthenticated. Configurable via
+  env vars.
 - Baseline security headers on every response (nosniff, frame-deny,
-  referrer policy, a same-origin Content-Security-Policy with no
-  inline script or eval) plus request-ID tagging and panic recovery
-  that turns an unhandled handler panic into a logged, diagnosable
-  entry instead of a raw stack dump. Strict-Transport-Security is
-  opt-in (`APP_ENABLE_HSTS`, default off): this control plane can't
-  tell from a request alone whether the certificate a browser saw was
-  ACME-trusted or the self-signed internal-issuer default, and HSTS on
-  a self-signed deployment turns a certificate warning into a hard
-  lockout.
+  referrer policy, same-origin Content-Security-Policy with no inline
+  script or eval) plus request-ID tagging and panic recovery that turns
+  an unhandled handler panic into a logged, diagnosable entry instead of
+  a raw stack dump.
+
+  ::: tip Strict-Transport-Security is opt-in
+  Set `APP_ENABLE_HSTS` (default off) to enable. The control plane
+  cannot distinguish ACME-trusted certificates from self-signed
+  internal-issuer ones by request alone, and HSTS on a self-signed
+  deployment turns a certificate warning into a hard lockout.
+  :::
 - Real multi-user accounts, not a single shared admin: per-user email
   sign-in or OAuth, TOTP two-factor with recovery codes, and per-user
-  scoped abilities (the same ability model API tokens already had,
-  now on human accounts too, so a session is no longer implicitly
-  root). A full audit log records every request through the same
-  ability-check hook, queryable from Settings, with CSV export. Each
-  entry is attributed to a client kind (cli/dashboard/mcp/api), derived
-  from the request's User-Agent header. Retention is configurable, with
-  a periodic sweeper purging entries past the window plus a manual
-  purge (`levelrail-cli audit-purge`, a dashboard purge button).
+  scoped abilities. (The same ability model API tokens already had now
+  applies to human accounts, so a session is no longer implicitly root.)
+  
+  A full audit log records every request through the same ability-check
+  hook. Each entry is attributed to a client kind (cli/dashboard/mcp/api)
+  via User-Agent. Retention is configurable, with periodic sweeping to
+  purge entries past the window or manual purge via `levelrail-cli
+  audit-purge` or a dashboard button. Queryable from Settings with CSV
+  export.
 - Full sidebar shell with dark mode and a settings area split into
   Account, Security, General, and Tokens.
 - Create App and Create Database dialogs, with health-check and
@@ -481,44 +477,40 @@ still open. This page describes what's actually true today.
   apps and databases.
 - A settings hub with global command-palette search and a sub-sidebar
   grouping settings pages by category.
-- Lightweight, non-RBAC project grouping, plus an organization tier
-  above projects and an environment tier (staging/production-style
-  labels) between a project and an individual app, each with its own
-  shared env-var layer: organization env vars, then project env vars,
-  then environment env vars, then the app's own env, in that
-  override order. An environment can be marked protected, which turns
-  a deploy or promotion into a 409 requiring explicit confirmation
-  (a dialog in the dashboard, a confirmation prompt in the CLI).
-  Environment promotion moves an app's image tag from a source
-  environment to a target one; env vars, ports, domains, and resource
-  limits are resolved live per environment rather than promoted, by
-  design.
-- Custom Docker labels escape hatch.
-- App clone.
+- Lightweight, non-RBAC project grouping. An organization tier sits
+  above projects, and an environment tier (staging/production-style
+  labels) sits between project and app. Each has its own shared env-var
+  layer, applied in order: organization, project, environment, app.
+  
+  An environment can be marked protected, turning deploy or promotion into
+  a 409 requiring explicit confirmation (dialog in dashboard, prompt in
+  CLI). Environment promotion moves an app's image tag from source to
+  target; env vars, ports, domains, and resource limits are resolved live
+  per environment rather than promoted, by design.
+- Custom Docker labels.
+- App duplication/cloning.
 - Database public-accessibility toggle with host port exposure.
-- Scheduled/cron backups to S3-compatible storage, with backup history
-  and browser download of backup files (see the eight-engine backup/
-  restore bullet under Core deploy path, above, including Redis's
-  stop-write-start RDB reload path). Backup verification runs
-  automatically right after every scheduled backup (re-download,
-  re-hash, compare checksum/size/format against what was recorded at
-  backup time) and can also be triggered manually; neither does a live
-  restore, so verification itself is non-destructive.
-- Accessibility fixes: ARIA labels on row inputs, a dialog focus-restore
-  fix on the log viewer's fullscreen toggle, `aria-current` on active
-  sidebar navigation, an accessible text summary for the metrics
-  chart's SVG, and a primary navigation landmark.
-- Dashboard "rich interactions" phase complete: the settings hub's
-  command-palette search and sub-nav (above), empty states across every
-  list view (apps, databases, deploy history, log search, and more)
-  replaced with an icon+message+CTA pattern instead of bare "no items"
-  text, keyboard navigation audited with no fixes needed (Base UI
-  primitives already handle it correctly), and loading states audited
-  across every route and data-fetching component: skeleton placeholders
-  shaped like the eventual list/table/card content, a centered spinner
-  for single-form or single-detail pages, and a progressive-rendering
-  fix on the database overview page so its already-loaded header and
-  status no longer wait on the Backups card's own secondary fetch.
+- Scheduled/cron backups to S3-compatible storage with history and
+  browser download of backup files (see eight-engine backup/restore under
+  Core deploy path, including Redis's stop-write-start RDB reload).
+  
+  Backup verification runs automatically after every scheduled backup
+  (re-download, re-hash, compare checksum/size/format against recorded) and
+  can be triggered manually. Neither does a live restore, so verification
+  is non-destructive.
+- Accessibility fixes: ARIA labels on row inputs, dialog focus-restore fix on the log viewer's fullscreen toggle, `aria-current` on active sidebar navigation, accessible text summary for the metrics chart SVG, and a primary navigation landmark.
+- Dashboard "rich interactions" phase complete with: command-palette
+  search and sub-nav in the settings hub, empty states across every list
+  view (apps, databases, deploy history, log search, and more) replaced
+  with icon+message+CTA patterns instead of bare "no items" text, and
+  proper loading states.
+  
+  Keyboard navigation audited with no fixes needed (Base UI primitives
+  already handle it correctly). Loading states include skeleton
+  placeholders shaped like eventual content, centered spinners for
+  single-form or single-detail pages, and a progressive-rendering fix on
+  the database overview page so already-loaded header and status no
+  longer wait on the Backups card's secondary fetch.
 - Environment variable editing: a row-by-row table and a raw
   paste/format "developer view" for plain vars, both listing secret
   keys inline as write-only and lockable for visibility, with actual
@@ -559,75 +551,80 @@ still open. This page describes what's actually true today.
   group. See `docs/feature-flags.md`.
 - Pre/post-deploy hook commands (`app.yaml`'s `hooks.preDeploy`/
   `hooks.postDeploy`): a shell command the reconciler runs inside the
-  newly created container via the Docker Engine API's real exec
-  facility (no CLI shelling), once per deploy regardless of replica
-  count. A failing pre-deploy hook blocks cutover: the new container is
-  rolled back and the old one keeps serving. A failing post-deploy hook
-  never undoes an already-successful cutover, it only surfaces loudly
-  (`PostDeployHookFailed` reconcile condition, a real reconcile error in
-  logs), matching this project's bias toward failing visibly rather than
-  swallowing a problem. The most recent outcome of each hook (exit code,
-  output) is persisted and readable via `GET
-  /api/v1/apps/{name}/hook-runs`, the `apps hook-runs` CLI command, and
-  a `HooksEditor` panel on the app's Deploy settings page. See
-  `internal/reconcile/application/controller.go`'s own doc comments for
-  the full timing and failure-handling contract.
+  newly created container via the Docker Engine API (no CLI shelling),
+  once per deploy regardless of replica count.
+  
+  A failing pre-deploy hook blocks cutover: the new container is rolled
+  back and the old one keeps serving. A failing post-deploy hook never
+  undoes a successful cutover, it only surfaces loudly
+  (`PostDeployHookFailed` reconcile condition), matching this project's
+  bias toward failing visibly rather than swallowing problems.
+  
+  The most recent outcome of each hook (exit code, output) is persisted
+  and readable via `GET /api/v1/apps/{name}/hook-runs`, the `apps
+  hook-runs` CLI command, and a `HooksEditor` panel on the app's Deploy
+  settings page.
+  
+  See `internal/reconcile/application/controller.go` for the full timing
+  and failure-handling contract.
 - Team invites (`internal/api/invites.go`, `internal/store/invite.go`):
-  an email/role invite layered on top of `POST /api/v1/auth/users`
-  rather than open self-registration. Only a root caller can create one;
-  the platform mints a random token, persists only its SHA-256 hash
-  (same convention as API tokens and password-reset tokens), and
-  best-effort emails an accept link, always returning the link in the
-  response too so a control plane with no SMTP configured stays fully
-  usable by copy/paste. Accepting is public, gated purely by possession
-  of the token, and creates exactly the one user the invite named
-  through the same insertion path direct user creation uses, nothing
-  open-ended. Dashboard: an "Invite member" dialog and pending-invites
-  list (with copy-link and revoke) on the Users settings page, plus a
-  public `/accept-invite` page. CLI: `levelrail-cli invites
-  create/list/revoke`.
+  email/role invites layered on top of `POST /api/v1/auth/users` rather
+  than open self-registration. Only a root caller can create one.
+  
+  The platform mints a random token and persists only its SHA-256 hash
+  (same as API tokens and password-reset tokens). It best-effort emails
+  an accept link and always returns it in the response, so a control
+  plane with no SMTP stays fully usable by copy/paste. Accepting is
+  public, gated purely by token possession, and creates exactly the one
+  named user through the standard insertion path, nothing open-ended.
+  
+  Dashboard: "Invite member" dialog and pending-invites list (with
+  copy-link and revoke) on the Users settings page, plus a public
+  `/accept-invite` page. CLI: `levelrail-cli invites create/list/revoke`.
 
-- Deleting an app or a preview environment now stops and removes its
-  running container, not just its desired-state row: previously a
-  delete left the container orphaned since the reconciler treats a
-  missing desired service as "not deployed yet," never "tear down."
-  `Controller.Teardown` (`internal/reconcile/application`) is called
-  from both delete paths in a background goroutine, since stopping a
-  container can outlast an HTTP request's own timeout budget.
-- Docker Compose `entrypoint:` support, alongside the existing
-  `command:` support, translated straight through to the container's
-  own entrypoint at create time.
-- app.yaml gains command-override and bind-mount support, the same two
-  capabilities Compose import already had, so a directly-authored
-  service spec is no longer a strict subset of what a compose file can
-  express. Both are wired into the CLI (`apps get`) and the `get_app`
-  MCP tool, and bind mounts on this path carry the same `root`-ability
-  gate the compose-import path already enforces.
-- Browsing repositories and tags for a stored *external* registry
-  credential (`GET /api/v1/registry-credentials/{id}/repositories`,
-  `.../tags`), reusing the same generic registry-catalog client this
-  platform already used for its own built-in registry. Wired into the
-  UI (a browse dialog on the registry-credentials settings page), the
-  CLI (`registry-credentials repositories`/`tags`), and two MCP tools.
+- Deleting an app or preview environment now stops and removes its
+  running container, not just the desired-state row. Previously, a delete
+  left containers orphaned since the reconciler treats missing desired
+  services as "not deployed yet," never "tear down."
+  
+  `Controller.Teardown` (`internal/reconcile/application`) is called from
+  both delete paths in a background goroutine, since stopping a container
+  can outlast an HTTP request's timeout budget.
+- Docker Compose `entrypoint:` support alongside existing `command:`
+  support, translated straight through to the container's entrypoint at
+  create time.
+- app.yaml gains command-override and bind-mount support, the same
+  capabilities Compose import has. Directly-authored service specs are no
+  longer a strict subset of what compose files can express. Both wired into
+  CLI (`apps get`) and `get_app` MCP tool. Bind mounts carry the same
+  `root`-ability gate as the compose-import path.
+- Browse repositories and tags for stored *external* registry credentials
+  (`GET /api/v1/registry-credentials/{id}/repositories`, `.../tags`),
+  reusing the same generic registry-catalog client as the built-in registry.
+  Wired into UI (browse dialog on registry-credentials settings), CLI
+  (`registry-credentials repositories`/`tags`), and two MCP tools.
 - Docker Compose `pull_policy:` support: `always` forces a fresh image
-  pull at deploy time even when the tag already exists locally (the
-  case a mutable tag like `:latest` needs, since Docker's own
-  tag-based caching otherwise skips a real upstream update), anything
-  else (including an unset field) keeps the existing pull-if-absent
-  behavior. Response-only in the API/CLI, the same boundary
-  `command:`/`entrypoint:` already established: set through a compose
-  import, surfaced read-only in `apps get` and the app detail page.
+  pull at deploy time even when the tag exists locally (needed for mutable
+  tags like `:latest` since Docker's tag-based caching skips real upstream
+  updates). Anything else keeps the existing pull-if-absent behavior.
+  
+  Response-only in the API/CLI, the same boundary as `command:`/`entrypoint:`.
+  Set through compose import, surfaced read-only in `apps get` and app
+  detail page.
 
 ## In progress
 
 - **Database backup-schedule UI.** Shipped (`BackupScheduleForm`,
-  see Done); this line is kept only as a pointer in case a gap
-  surfaces on real use.
-- **Real public ACME.** The Caddy ACME issuer type, a settings toggle,
-  and form validation are all built and wired end to end (Settings >
-  Domains). Only unit-tested against the config shape so far, not
-  spot-checked against a real domain issuing a real cert, the exact
-  gap ADR 005 named at Phase 0.
+  see Done); kept as a pointer in case a gap surfaces on real use.
+- **Real public ACME.** The Caddy ACME issuer type, settings toggle,
+  and form validation are built and wired end to end (Settings >
+  Domains).
+
+  ::: warning Not yet verified against a live domain
+  Unit-tested against the config shape only, not spot-checked against
+  a real domain issuing a real certificate. This is the exact gap
+  ADR 005 named at Phase 0.
+  :::
 
 ## Not started
 
@@ -639,14 +636,10 @@ were the last two items here, and both have since shipped.
 
 Pulled directly from the project's own non-goals:
 
-- Not building a container runtime. Docker Engine API only.
-- Not building a scheduler with bin-packing, affinity rules, or
-  autoscaling in v1.
-- Not building a service mesh. WireGuard plus DNS is enough.
-- Not supporting Windows or non-Linux nodes.
-- Not building a managed cloud offering until the self-hosted version
-  has real users.
-- No AI in the reconciliation path. AI is a read-and-suggest layer on
-  top of the API, nothing more.
-- No Kubernetes compatibility layer, no CRDs, no custom orchestration
-  standard. Borrow the patterns, skip the ecosystem.
+- **Container runtime**: Docker Engine API only, not building one.
+- **Scheduler**: No bin-packing, affinity rules, or autoscaling in v1.
+- **Service mesh**: WireGuard plus DNS is enough.
+- **Windows support**: Linux nodes only.
+- **Managed offering**: Not building a cloud version until self-hosted has real users.
+- **AI in reconciliation**: AI is a read-and-suggest layer on top of the API, nothing more.
+- **Kubernetes compatibility**: No CRDs, no custom orchestration standard. Borrow the patterns, skip the ecosystem.

@@ -1,0 +1,85 @@
+/**
+ * "Rail signal" theme: amber accent on a cool slate/zinc base, dark-first.
+ * Chosen to sit apart from the two nearest competitors' own brand colors
+ * (Railway: violet #6C3FE7, Coolify: teal/blue), while the amber itself
+ * nods at an actual rail signal light rather than a generic dev-tool hue.
+ */
+
+:root {
+  --vp-c-brand-1: #d97706;
+  --vp-c-brand-2: #b45309;
+  --vp-c-brand-3: #f59e0b;
+  --vp-c-brand-soft: rgba(245, 158, 11, 0.14);
+
+  --vp-c-bg-alt: #f8f7f5;
+  --vp-c-bg-soft: #f3f1ee;
+
+  --vp-button-brand-bg: var(--vp-c-brand-1);
+  --vp-button-brand-hover-bg: var(--vp-c-brand-2);
+  --vp-button-brand-active-bg: var(--vp-c-brand-2);
+  --vp-button-brand-text: #fff;
+}
+
+.dark {
+  --vp-c-bg: #0b0e14;
+  --vp-c-bg-alt: #10141c;
+  --vp-c-bg-elv: #161b24;
+  --vp-c-bg-soft: #131720;
+
+  --vp-c-text-1: #e4e4e7;
+  --vp-c-text-2: #a1a1aa;
+  --vp-c-text-3: #71717a;
+
+  --vp-c-divider: #23262e;
+  --vp-c-border: #262a33;
+  --vp-c-gutter: #23262e;
+
+  --vp-c-brand-1: #fbbf24;
+  --vp-c-brand-2: #f59e0b;
+  --vp-c-brand-3: #fcd34d;
+  --vp-c-brand-soft: rgba(251, 191, 36, 0.16);
+
+  --vp-button-brand-bg: var(--vp-c-brand-2);
+  --vp-button-brand-hover-bg: var(--vp-c-brand-1);
+  --vp-button-brand-active-bg: var(--vp-c-brand-1);
+  --vp-button-brand-text: #0b0e14;
+
+  --vp-code-block-bg: #10141c;
+}
+
+/* Hero: gradient name text + a soft amber mesh-glow behind the hero,
+   instead of the flat default background, on the home layout only. */
+.VPHome .VPHero .name .clip {
+  background: linear-gradient(135deg, var(--vp-c-brand-3) 0%, var(--vp-c-brand-1) 60%);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+.VPHome .VPHero {
+  position: relative;
+}
+
+.VPHome .VPHero::before {
+  content: '';
+  position: absolute;
+  inset: -10% -10% auto -10%;
+  height: 480px;
+  background: radial-gradient(
+      circle at 20% 20%,
+      rgba(245, 158, 11, 0.16) 0%,
+      transparent 45%
+    ),
+    radial-gradient(circle at 80% 10%, rgba(217, 119, 6, 0.12) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.VPFeature {
+  border-radius: 12px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.VPFeature:hover {
+  border-color: var(--vp-c-brand-1);
+  transform: translateY(-2px);
+}

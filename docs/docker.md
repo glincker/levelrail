@@ -1,16 +1,11 @@
 # Running Levelrail in Docker
 
-Levelrail publishes two images to GitHub Container Registry, built for
-`linux/amd64` and `linux/arm64` on every tagged release:
+Levelrail publishes two images to GitHub Container Registry for every tagged release, built for `linux/amd64` and `linux/arm64`:
 
-- `ghcr.io/glincker/levelrail`: the control plane.
-- `ghcr.io/glincker/levelrail-agent`: the node agent.
+- `ghcr.io/glincker/levelrail`: the control plane
+- `ghcr.io/glincker/levelrail-agent`: the node agent
 
-`install.sh` (the one-liner in the root [README](../README.md)) remains
-the default path for a real deployment, since it also sets up Docker
-itself and a systemd unit. These images are for operators who already
-run everything else as a container and want Levelrail to fit the same
-pattern.
+The `install.sh` one-liner (in the root [README](../README.md)) remains the default for real deployments, as it also sets up Docker and a systemd unit. Use these images if you already run everything as containers and want Levelrail to follow the same pattern.
 
 ## Control plane
 
@@ -27,20 +22,11 @@ docker run -d \
   ghcr.io/glincker/levelrail:latest
 ```
 
-Both images run as a non-root user (distroless's `nonroot`, uid/gid
-65532), not root. `--group-add $(stat -c '%g' /var/run/docker.sock)`
-adds that user to the socket's host-side group at container start,
-since the group's actual GID varies per install and can't be baked
-into the image at build time.
+Both images run as a non-root user (distroless's `nonroot`, uid/gid 65532). The `--group-add $(stat -c '%g' /var/run/docker.sock)` flag adds that user to the socket's host-side group at runtime, since the GID varies per system and cannot be baked into the image.
 
-**Security note:** granting access to `/var/run/docker.sock` gives this
-container the ability to control every other container on the host,
-including starting privileged ones. This is not a new risk specific to
-Docker: it's the same trust level `install.sh`'s systemd-based install
-already runs the control plane binary with, since that's exactly what
-letting Levelrail manage containers on your behalf requires (see
-[architecture.md](architecture.md)). Only run this image on a host you
-already trust with that level of access.
+::: warning
+Granting access to `/var/run/docker.sock` allows this container to control every other container on the host, including starting privileged ones. This is not a new risk specific to Docker: it's the same trust level that `install.sh`'s systemd install already uses, because that's what's required to manage containers on your behalf (see [architecture.md](architecture.md)). Only run this image on a host you already trust with that level of access.
+:::
 
 ### docker-compose.yml
 
@@ -67,10 +53,7 @@ volumes:
 
 ## Node agent
 
-The agent dials out to the control plane; it never accepts an inbound
-connection (see [architecture.md](architecture.md)). It needs its own
-access to the local Docker socket, and a one-time join token to enroll
-on first run.
+The agent dials out to the control plane (it does not accept inbound connections, see [architecture.md](architecture.md)). You need to provide Docker socket access and a one-time join token for enrollment on first run.
 
 ```
 docker run -d \
@@ -83,11 +66,6 @@ docker run -d \
   ghcr.io/glincker/levelrail-agent:latest
 ```
 
-`APP_JOIN_TOKEN` is only needed for the first run: once enrolled, the
-agent persists its mTLS identity to `APP_AGENT_IDENTITY_FILE` and reads
-it back on every restart, so mount that path on a named volume or it
-will have to re-enroll every time the container restarts.
-`APP_NODE_NAME` is optional and defaults to the container's hostname,
-which Docker randomizes per container unless you set `--hostname`
-explicitly, so setting `APP_NODE_NAME` yourself is worth doing for a
-name you can actually recognize in the dashboard.
+**`APP_JOIN_TOKEN`** is only needed for first enrollment. After that, the agent saves its mTLS identity to `APP_AGENT_IDENTITY_FILE`. Mount that path on a named volume, or the agent will have to re-enroll on every container restart.
+
+**`APP_NODE_NAME`** is optional and defaults to the container's hostname (which Docker randomizes). Set it explicitly for a recognizable name in the dashboard.

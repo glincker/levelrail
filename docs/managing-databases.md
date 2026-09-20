@@ -35,150 +35,118 @@ The eight engines today: `postgres`, `redis`, `mysql`, `mongodb`,
 
 ## How it actually works
 
-Creating a database always succeeds at the store layer, even for engines
-that need a generated credential. `POST /api/v1/databases` writes the
-desired state (name, engine, version) and returns immediately; the
-reconciler is what actually starts the container on its next pass, and it
-refuses to start a database whose credentials don't exist yet, reporting
-that refusal as a real condition rather than pretending the engine isn't
-supported. `GET /api/v1/databases/{name}/status` (or `databases get`,
-which shows status inline) is how you find out whether it's actually
-running, not just declared.
+**Creating a database**
 
-Placement follows the same rule as apps: omit `node_id` at creation and
-simple spread scheduling picks a node (or the local node if only one
-exists); pass one explicitly to override it. Moving an already-created
-database to a different node is a separate call,
-`PUT /api/v1/databases/{name}/node`, gated at the root ability tier because
-node placement is fleet-level infrastructure, not ordinary config.
+`POST /api/v1/databases` writes the desired state (name, engine, version) and returns immediately. The reconciler actually starts the container on its next pass. If credentials are needed but don't exist yet, the reconciler refuses to start and reports this as a real condition.
 
-Stop and start don't touch desired state or the data volume at all: they
-flip a `suspended` flag, and the reconciler removes or recreates the
-container on its next pass against the exact same volume. Delete is
-different and has a known gap worth knowing about: `DELETE
-/api/v1/databases/{name}` removes the desired-state row but does not
-itself stop or remove the running container, the same gap `DELETE
-/api/v1/apps/{name}` has.
+Check status with `GET /api/v1/databases/{name}/status` or `databases get` to see if the database is actually running.
+
+**Placement**
+
+Omit `node_id` at creation to let simple spread scheduling pick a node. Pass `node_id` explicitly to override it. To move an already-created database to a different node, call `PUT /api/v1/databases/{name}/node` (gated at the root ability tier, since node placement is fleet-level infrastructure).
+
+**Stop, start, and delete**
+
+- **Stop and start**: Flip a `suspended` flag without touching desired state or the data volume. The reconciler removes or recreates the container on its next pass against the exact same volume.
+- **Delete**: `DELETE /api/v1/databases/{name}` removes the desired-state row but does not stop or remove the running container (same gap as `DELETE /api/v1/apps/{name}`).
 
 ## TLS: on by default, for two engines, with no toggle
 
-Postgres and Redis get TLS enabled automatically at creation time
-(`internal/reconcile/database`'s `WithTLS`), with a self-signed
-certificate generated once and persisted through the same secrets
-mechanism a generated password uses. There is no operator switch for this,
-on the dashboard or the CLI: `databaseResource.TLSEnabled` is a read-only,
-computed field, true exactly when a TLS certificate has actually been
-generated for that database.
+Postgres and Redis get TLS enabled automatically at creation time with a self-signed certificate generated once and persisted through the secrets mechanism. There is no operator toggle: `databaseResource.TLSEnabled` is read-only, true when a TLS certificate has been generated.
 
-The reason it's scoped to just those two engines: both expose an
-"encrypt without verifying" mode entirely inside a standard connection
-URI (`sslmode=require` for Postgres, `rediss://` for Redis) that mainstream
-client libraries already honor with zero app-side code changes. MySQL and
-MariaDB have no driver-agnostic URI knob for that; MongoDB's equivalent
-option exists but isn't wired up yet; KeyDB and Dragonfly fork Redis's TLS
-flags under names this codebase hasn't verified. The certificate is
-self-signed and never distributed to a party that verifies its issuer (no
-app ever checks it), so it's valid for ten years and rotation is a
-deliberate future operator action, not something a short expiry forces.
+**Why only Postgres and Redis**
 
-An app that attaches to a TLS-enabled database (see below) automatically
-gets the TLS-flavored connection string: `resolveDatabaseURL` in
-`internal/reconcile/application` appends `?sslmode=require` for Postgres or
-switches to `rediss://` (and the TLS-only port) for Redis. Nothing in
-`app.yaml` or the attach request opts into this; it just reflects the
-database's own state.
+Both engines expose an "encrypt without verifying" mode in their standard connection URI:
+
+- **Postgres**: `sslmode=require`
+- **Redis**: `rediss://`
+
+Mainstream client libraries honor these with zero app-side code changes.
+
+MySQL/MariaDB lack a driver-agnostic URI knob for this. MongoDB's equivalent exists but isn't wired up yet. KeyDB/Dragonfly fork Redis's TLS flags under unverified names.
+
+The certificate is self-signed and never distributed to a party that verifies its issuer. It is valid for ten years. Rotation is a deliberate future operator action, not forced by expiry.
+
+**In apps**
+
+When an app attaches to a TLS-enabled database, it automatically gets the TLS-flavored connection string. `resolveDatabaseURL` in `internal/reconcile/application` appends `?sslmode=require` for Postgres or switches to `rediss://` (and the TLS-only port) for Redis. Nothing in `app.yaml` opts into this; it reflects the database's state.
 
 ## Resource limits
 
-Memory, CPU, swap, and a CPU pin (`cpuset`) are ordinary desired state, the
-same `ServiceResources` shape an app's resources use, but there is no
-general `PUT /databases/{name}` to fold them into (unlike apps), so they
-get their own route: `PUT /api/v1/databases/{name}/resources`. Set to
-`null`/omitted, limits clear. When the database has a container already
-running, the new limits get pushed onto it live; if that's not possible
-(no container yet, node unreachable), they apply the next time the
-container restarts, and the response's `resources_applied_live` field
-tells you which happened, exactly the pattern `resource_recommendation`
-pairs with: `GET /api/v1/databases/{name}/resource-recommendation`
-suggests memory/CPU numbers from the database's own historical usage, the
-same recommendation feature apps have.
+Set memory, CPU, swap, and CPU pin (`cpuset`) using `PUT /api/v1/databases/{name}/resources`. Set to `null` or omit to clear limits.
 
-Dashboard: the database's own **Resources** tab
-(`web/src/routes/databases/$name/resources.tsx`), with a recommendation
-card above the limits editor.
+When the database has a running container, new limits apply live. If the container does not exist yet or the node is unreachable, limits apply on the next restart. The response's `resources_applied_live` field tells you which happened.
+
+**Resource recommendations**
+
+Call `GET /api/v1/databases/{name}/resource-recommendation` to get memory/CPU suggestions based on the database's historical usage (same feature as apps).
+
+**Dashboard**
+
+Use the **Resources** tab (`web/src/routes/databases/$name/resources.tsx`), which includes a recommendation card above the limits editor.
 
 ## Public access: exposing a database port directly
 
-By default every managed database is reachable only from inside the
-platform's own Docker network, the same as any other backing service.
-`PUT /api/v1/databases/{name}/public-access` binds it to a host port too,
-which is the actual missing link for pointing pgAdmin, TablePlus, or
-RedisInsight at a managed database from your own machine.
+By default, managed databases are reachable only from the platform's Docker network. Use `PUT /api/v1/databases/{name}/public-access` to bind to a host port so you can access it with pgAdmin, TablePlus, RedisInsight, or other tools from your machine.
 
-Leave `port` at `0` (or omit it) to auto-assign the next free port, or
-request a specific one in the `1024-65535` range; ports the control plane's
-own listeners already use (`80`, `443`, `8080`, `9443`) are rejected
-outright rather than left to fail as an opaque Docker bind error later.
-Requesting a different port while already public is a real state change,
-not an edit-in-place: the dashboard's port field is accordingly only
-editable before you enable access, not after.
+**Port selection**
 
-`bind_address` picks which network interface that port binds to:
-`private` (loopback only, the default when omitted), `public` (every
-interface, an explicit opt-in), or a literal IP. Same shorthand and
-resolution rules as an app service's own `bind_address`
-(`internal/bindaddr.Resolve`); see
-[app-spec-reference.md's Bind addresses and exposure](app-spec-reference.md#bind-addresses-and-exposure)
-for the full table. A database already publicly accessible before this
-field existed keeps that exposure (backfilled to `public`); re-enabling
-public access afterward without an explicit `bind_address` picks up the
-new `private` default instead.
+- Leave `port` at `0` or omit it to auto-assign the next free port.
+- Request a specific port in the `1024-65535` range.
+- Reserved ports (`80`, `443`, `8080`, `9443`) are rejected outright.
+- Changing the port while already public is a state change. The dashboard port field is only editable before you enable access.
 
-`DELETE /api/v1/databases/{name}/public-access` reverts to internal-only;
-the reconciler replaces the running container without the host port
-binding on its next pass (a replace, not a plain restart).
+**Bind address**
 
-Redis, KeyDB, and Dragonfly run passwordless by default in this platform,
-so publishing their port means unauthenticated read/write access to the
-whole dataset, a materially different risk than Postgres/MySQL's generated
-passwords. The dashboard's public-access card gates the toggle behind an
-explicit "I understand this database has no password" checkbox for that
-engine family; Postgres/MySQL/MongoDB/MariaDB/ClickHouse get a plain,
-non-blocking warning instead.
+Use `bind_address` to choose which network interface the port binds to:
 
-Dashboard: **Public access** card on the database's Overview tab
-(`web/src/components/DatabasePublicAccessCard.tsx`). CLI:
-`levelrail-cli databases public-access set <name> [--port N] [--bind-address ADDR]`
-and `levelrail-cli databases public-access clear <name>`
-(`cmd/levelrail-cli/databases_public_access.go`); also reachable through
-`databases create --interactive`'s wizard (which calls the same PUT
-endpoint as a create-time follow-up, always at the default bind address).
+- `private`: Loopback only (default when omitted)
+- `public`: Every interface (explicit opt-in)
+- A literal IP address
+
+See [app-spec-reference.md's Bind addresses and exposure](app-spec-reference.md#bind-addresses-and-exposure) for the full table of rules (`internal/bindaddr.Resolve`).
+
+A database already publicly accessible before this field existed keeps that exposure (backfilled to `public`). Re-enabling access later without an explicit `bind_address` picks up the new `private` default.
+
+**Clearing public access**
+
+`DELETE /api/v1/databases/{name}/public-access` reverts to internal-only. The reconciler replaces the running container without the host port binding on its next pass.
+
+**Passwordless engines warning**
+
+Redis, KeyDB, and Dragonfly run passwordless by default. Publishing their port means unauthenticated read/write access to the whole dataset. This is a materially different risk than Postgres/MySQL's generated passwords.
+
+The dashboard gates the toggle behind an explicit "I understand this database has no password" checkbox for these engine families. Postgres/MySQL/MongoDB/MariaDB/ClickHouse get a plain, non-blocking warning instead.
+
+**Dashboard and CLI**
+
+- Dashboard: **Public access** card on the database's Overview tab (`web/src/components/DatabasePublicAccessCard.tsx`)
+- CLI: `levelrail-cli databases public-access set <name> [--port N] [--bind-address ADDR]` and `levelrail-cli databases public-access clear <name>` (`cmd/levelrail-cli/databases_public_access.go`)
+- Also reachable through `databases create --interactive`'s wizard (called as a create-time follow-up, always at the default bind address)
 
 ## Attaching a database to an app
 
-An app that wants a database's connection value doesn't have to be
-deployed from an `app.yaml` with a `{ from: "<database>.<field>" }` env
-var: `PUT /api/v1/apps/{name}/database` attaches an already-created
-database directly, and the reconciler injects the resolved value as a real
-env var the next time that app's container is (re)created.
+Attach an already-created database to an app using `PUT /api/v1/apps/{name}/database`. The reconciler injects the resolved value as an env var the next time the app's container is created.
 
-`database_name` is the only required field. `env_var` defaults to
-`DATABASE_URL` and `field` defaults to `url` (a full connection string),
-covering the common case with one call; the other resolvable fields are
-`host`, `port`, `username`, `password`, and `database`, validated against
-`database.SupportsField`'s engine-aware rules before anything is saved (a
-400, not a later reconcile failure). `username`/`database` aren't
-resolvable for Redis, KeyDB, or Dragonfly, since none of the three model a
-username or a named database. `DELETE /api/v1/apps/{name}/database`
-detaches; the next reconcile pass stops injecting the env var into freshly
-created containers, it does not retroactively touch a container already
-running.
+You don't need to deploy from an `app.yaml` with a `{ from: "<database>.<field>" }` env var to do this.
 
-Dashboard: the **Database** card on an app's own Overview page
-(`web/src/components/DatabaseAttachmentCard.tsx`), with an "Env var / field
-options" disclosure for anything past the URL default. This lives on the
-app's page, not the database's, since the attachment is really the app's
-own env var source.
+**Fields**
+
+- `database_name`: Required
+- `env_var`: Defaults to `DATABASE_URL`
+- `field`: Defaults to `url` (full connection string)
+
+The common case needs only one call. Other resolvable fields are `host`, `port`, `username`, `password`, and `database`.
+
+All fields are validated against `database.SupportsField`'s engine-aware rules before saving. Redis, KeyDB, and Dragonfly don't support `username` or `database` fields (they don't model these concepts).
+
+**Detaching**
+
+`DELETE /api/v1/apps/{name}/database` stops injecting the env var into newly created containers. It does not retroactively touch containers already running.
+
+**Dashboard**
+
+The **Database** card on an app's Overview page (`web/src/components/DatabaseAttachmentCard.tsx`) includes an "Env var / field options" disclosure for anything past the URL default. This lives on the app's page, not the database's, since the attachment is the app's env var source.
 
 ## Stop, start, and delete: dashboard and CLI
 
@@ -239,26 +207,24 @@ levelrail-cli backups schedule set <database> --target <id> --cron "0 3 * * *" [
 levelrail-cli backups schedule clear <database>
 ```
 
-`PUT /api/v1/databases/{name}/backup-schedule` persists a target, a
-standard 5-field cron expression, and two independent retention knobs:
-`retain` (keep the last N successful backups) and `retain_days` (delete
-anything older than N days), both `0` meaning no limit on that dimension.
-The cron expression is validated synchronously against `cronexpr.Parse`,
-so a typo is a `400` at set-time, not a silently skipped tick later.
-`internal/backup.Scheduler` evaluates every configured schedule on its own
-tick and runs the backup for you; nothing else needs to be running for
-this to fire.
+`PUT /api/v1/databases/{name}/backup-schedule` persists a target, a standard 5-field cron expression, and retention settings.
 
-One behavior worth knowing that has no toggle anywhere: every scheduled
-backup that succeeds is automatically re-verified right after
-(`internal/backup.Scheduler`'s `Verifier`, wired in by default in
-`cmd/levelrail/main.go`). Its verification badge shows "Auto-verified" (or
-"Failed auto-verification") with `checked_by: "scheduler"`, distinguishing
-it from one you triggered by hand. Manual backups get no such automatic
-follow-up; verify those yourself (below).
+**Retention knobs** (both independent, `0` means no limit)
 
-Dashboard: the schedule form at the top of the same **Backups** card
-(`web/src/components/BackupScheduleForm.tsx`).
+- `retain`: Keep the last N successful backups
+- `retain_days`: Delete anything older than N days
+
+**Validation and execution**
+
+The cron expression is validated synchronously against `cronexpr.Parse`. A typo is a `400` at set-time, not a silently skipped tick. `internal/backup.Scheduler` evaluates every configured schedule on its own tick and runs the backup. Nothing else needs to be running for this to fire.
+
+**Auto-verification**
+
+Every scheduled backup that succeeds is automatically re-verified right after (`internal/backup.Scheduler`'s `Verifier`, wired in by default in `cmd/levelrail/main.go`). The verification badge shows "Auto-verified" or "Failed auto-verification" with `checked_by: "scheduler"`, distinguishing it from manual backups. Manual backups get no automatic follow-up; verify those yourself.
+
+**Dashboard**
+
+Use the schedule form at the top of the **Backups** card (`web/src/components/BackupScheduleForm.tsx`).
 
 ### Restore (destructive, in place)
 
@@ -266,21 +232,16 @@ Dashboard: the schedule form at the top of the same **Backups** card
 levelrail-cli backups restore <database> --backup <backup-history-id> [--confirm <database-name>]
 ```
 
-`POST /api/v1/databases/{name}/restore` is, by this codebase's own
-assessment, the single most destructive endpoint in the whole API: it
-overwrites the target database's live data in place, with no undo short of
-restoring again from a different backup. It's gated at the `root` ability
-tier, one step above `write:sensitive`, the same tier as node management.
+::: warning
+`POST /api/v1/databases/{name}/restore` is the single most destructive endpoint in the API. It overwrites the target database's live data in place with no undo short of restoring from a different backup. It is gated at the `root` ability tier.
+:::
 
-Both the CLI and the dashboard require typing the database's exact name to
-confirm before the request is ever sent. On the CLI, pass `--confirm <name>`
-to skip the interactive prompt (a script with neither `--confirm`
-nor a terminal attached is refused, not silently let through); the
-dashboard's restore dialog (`RestoreBackupDialog.tsx`) keeps its button
-disabled until the typed text matches character for character. Only a
-succeeded backup can be named as the restore source; the server checks
-this before starting anything, returning `409` if you point it at a
-running or failed attempt.
+Both the CLI and the dashboard require typing the database's exact name to confirm before the request is sent.
+
+- **CLI**: Pass `--confirm <name>` to skip the interactive prompt. A script without both `--confirm` and a terminal attached is refused.
+- **Dashboard**: The restore dialog (`RestoreBackupDialog.tsx`) keeps its button disabled until the text matches exactly.
+
+Only a succeeded backup can be named as the restore source. The server returns `409` if you point it at a running or failed attempt.
 
 ```bash
 $ levelrail-cli backups restore main --backup bkh_p93kd7z1q --confirm main
@@ -293,31 +254,26 @@ restore "rsh_k2n8fq31z" of database "main" from backup "bkh_p93kd7z1q" started; 
 levelrail-cli backups restore-as-new <database> --backup <id> --new-name <name> [--version V] [--project ID]
 ```
 
-`POST /api/v1/databases/{name}/restore-as-new` creates a brand-new
-database (through the identical creation path `databases create` uses)
-and restores the named backup into it, never touching the source
-database's own live data. This is the standard way to test a migration
-against real data or stand up a staging copy without any of the risk
-`backups restore` carries, which is also why it's gated at
-`write:sensitive`, not `root`: the worst case is an extra database you can
-delete like any other. The new database inherits the source's engine
-always, and its version unless you override `--version`.
+`POST /api/v1/databases/{name}/restore-as-new` creates a brand-new database and restores the backup into it, never touching the source database's live data. This is the safe way to test a migration or stand up a staging copy.
+
+The new database inherits the source's engine always, and its version unless you override `--version`.
+
+This endpoint is gated at `write:sensitive`, not `root`, because the worst case is an extra database you can delete like any other (unlike destructive in-place restore).
 
 ```bash
 $ levelrail-cli backups restore-as-new main --backup bkh_p93kd7z1q --new-name main-staging
 clone-restore "clr_h4t9wpq2m" of database "main" from backup "bkh_p93kd7z1q" into new database "main-staging" started; check "levelrail-cli databases get main-staging" for status
 ```
 
-Dashboard: "Restore" and "Restore as new" buttons sit side by side on
-every succeeded row in the backup history table
-(`RestoreBackupDialog.tsx`, `CloneRestoreDialog.tsx`), deliberately kept as
-two separate buttons rather than a mode toggle on one, so the safe action
-never looks as dangerous as the destructive one or vice versa. Past
-attempts of both kinds show in their own history tables on the same card
-(`RestoreHistoryTable.tsx`, `CloneRestoreHistoryTable.tsx`); the CLI has no
-`clone-restores` list subcommand today, only the trigger, though `GET
-/api/v1/databases/{name}/clone-restores` exists for scripting against
-directly.
+**Dashboard**
+
+"Restore" and "Restore as new" buttons sit side by side on every succeeded row in the backup history table (`RestoreBackupDialog.tsx`, `CloneRestoreDialog.tsx`). These are separate buttons, not a mode toggle, so the safe action never looks as dangerous as the destructive one.
+
+Past attempts show in their own history tables on the same card (`RestoreHistoryTable.tsx`, `CloneRestoreHistoryTable.tsx`).
+
+**CLI**
+
+The CLI has no `clone-restores` list subcommand today, only the trigger. However, `GET /api/v1/databases/{name}/clone-restores` exists for scripting.
 
 ### Backup verification: re-download and re-hash
 
@@ -326,15 +282,19 @@ levelrail-cli backups verify <database> --backup <backup-history-id>
 levelrail-cli backups verifications <database> --backup <backup-history-id>
 ```
 
-`POST /api/v1/databases/{name}/backups/{historyId}/verify` re-downloads
-the backup's stored object from the bucket and checks it for corruption:
-checksum match, size match, and a lightweight structural check
-(`internal/backup.VerifyRunner`). It deliberately never attempts a live
-restore against a running database, that risk is out of scope for an
-automated check by design. Like trigger and restore, it returns `202`
-immediately and the real work happens in the background; `backups
-verifications` (or the badge on the dashboard) is how you see whether it
-passed.
+`POST /api/v1/databases/{name}/backups/{historyId}/verify` re-downloads the backup's stored object from the bucket and checks it for corruption.
+
+**Checks performed**
+
+- Checksum match
+- Size match
+- Lightweight structural check (`internal/backup.VerifyRunner`)
+
+The verification deliberately never attempts a live restore against a running database. That risk is out of scope for an automated check by design.
+
+**Status**
+
+Like trigger and restore, the endpoint returns `202` immediately. The real work happens in the background. Use `backups verifications` (or the badge on the dashboard) to see results.
 
 ```bash
 $ levelrail-cli backups verify main --backup bkh_p93kd7z1q
@@ -350,17 +310,14 @@ column of the backup history table
 
 ### Downloading a raw backup
 
-`GET /api/v1/databases/{name}/backups/{historyId}/download` streams the
-backup's own object straight through, unbuffered (a large dump is never
-held whole in memory), so you can keep a copy outside the platform
-entirely. Gated at `read:sensitive`, one tier above the metadata-only
-`read` that lists history, since the response body here is potentially an
-entire production database's contents, not just a size and a timestamp.
-Dashboard: the **Download** button next to Restore in the backup history
-table. There is no CLI subcommand for this today; it's a plain
-browser-navigated download on the dashboard (auth rides the same session
-cookie every same-origin request already uses), reachable by scripting
-against the endpoint directly with your own bearer token otherwise.
+`GET /api/v1/databases/{name}/backups/{historyId}/download` streams the backup's stored object straight through, unbuffered. Large dumps are never held whole in memory, so you can keep a copy outside the platform entirely.
+
+This endpoint is gated at `read:sensitive` (one tier above the metadata-only `read` tier that lists history) because the response body is potentially an entire production database's contents.
+
+**Dashboard and CLI**
+
+- Dashboard: Click the **Download** button next to Restore in the backup history table (auth rides the session cookie).
+- CLI: No `backups download` subcommand exists today. Use `GET /api/v1/databases/{name}/backups/{historyId}/download` directly with your own bearer token for scripting.
 
 ## API reference
 
@@ -446,36 +403,23 @@ database's own Overview and Resources tabs once it exists.
 
 ## Not built yet (deliberate follow-ups)
 
-- **No CLI subcommand for resource limits outside the creation wizard.**
-  It has a real, working API route (`PUT .../resources`) and a dashboard
-  control; there's no `databases set-resources` for scripting an existing
-  database after the fact today. (Public access got its own subcommand,
-  `databases public-access set`/`clear`, above.)
-- **No CLI download command.** `GET .../backups/{historyId}/download`
-  works from the dashboard (a plain authenticated browser navigation) and
-  from any HTTP client with a bearer token; there's no `backups download`
-  subcommand.
-- **No CLI list command for clone-restore history.** `backups
-  restore-as-new` triggers one; `GET .../clone-restores` exists to list
-  past attempts, but only the dashboard's `CloneRestoreHistoryTable`
-  reads it today.
-- **Delete does not stop the running container.** `DELETE
-  /api/v1/databases/{name}` removes desired state only, the same known gap
-  `DELETE /api/v1/apps/{name}` carries; a container can outlive its own
-  desired-state row until something else tears it down.
-- **No secret deletion on a deleted backup target.** `internal/secrets`
-  has no revoke operation, so a backup target's stored access key and
-  secret remain in the secrets store after `DELETE
-  /api/v1/backup-targets/{id}`, unreferenced but not erased at rest.
-- **TLS is Postgres and Redis only, with no operator toggle at all.**
-  MySQL/MariaDB have no driver-agnostic "encrypt without verifying" URI
-  option to standardize on; MongoDB's equivalent exists but isn't wired
-  up; KeyDB/Dragonfly's Redis-derived TLS flags haven't been verified
-  against this codebase's assumptions. There's also no way to opt out of
-  TLS for Postgres/Redis if you wanted to.
-- **No scheduler catch-up after downtime.** If the control plane is down
-  when a scheduled backup should have fired, that run is simply missed,
-  not queued or caught up on restart. Deliberately deferred: getting
-  catch-up right needs its own design (how many missed runs to replay, how
-  to avoid a thundering herd after a long outage) that this feature's
-  scope didn't ask for.
+- **No CLI subcommand for resource limits outside the creation wizard**
+  The API route exists (`PUT .../resources`) and the dashboard control works. There is no `databases set-resources` for scripting an existing database after the fact. (Compare: public access has its own subcommand.)
+
+- **No CLI download command**
+  `GET .../backups/{historyId}/download` works from the dashboard and from any HTTP client with a bearer token. There is no `backups download` subcommand.
+
+- **No CLI list command for clone-restore history**
+  `backups restore-as-new` triggers a clone-restore. `GET .../clone-restores` exists to list past attempts, but only the dashboard's `CloneRestoreHistoryTable` reads it today.
+
+- **Delete does not stop the running container**
+  `DELETE /api/v1/databases/{name}` removes desired state only, the same gap as `DELETE /api/v1/apps/{name}`. A container can outlive its desired-state row until something else tears it down.
+
+- **No secret deletion on a deleted backup target**
+  `internal/secrets` has no revoke operation. A backup target's stored access key and secret remain in the secrets store after `DELETE /api/v1/backup-targets/{id}`, unreferenced but not erased at rest.
+
+- **TLS is Postgres and Redis only, with no operator toggle**
+  MySQL/MariaDB lack a driver-agnostic "encrypt without verifying" URI option. MongoDB's equivalent exists but isn't wired up. KeyDB/Dragonfly's TLS flags haven't been verified. There is also no way to opt out of TLS for Postgres/Redis if you wanted to.
+
+- **No scheduler catch-up after downtime**
+  If the control plane is down when a scheduled backup should fire, that run is missed, not queued or caught up on restart. Deliberately deferred because catch-up needs design work (how many missed runs to replay, how to avoid a thundering herd after a long outage).
