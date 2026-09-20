@@ -9,6 +9,8 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
+
+	"github.com/GLINCKER/levelrail/internal/build"
 )
 
 // TestCloneAndCheckout_Live exercises the real go-git clone-and-checkout
@@ -61,9 +63,15 @@ func TestCloneAndCheckout_Live(t *testing.T) {
 		t.Fatalf("commit second: %v", err)
 	}
 
-	dir, cleanup, err := cloneAndCheckout(context.Background(), srcDir, firstHash.String())
+	var progressed []build.ProgressEvent
+	dir, cleanup, err := cloneAndCheckout(context.Background(), srcDir, firstHash.String(), func(ev build.ProgressEvent) {
+		progressed = append(progressed, ev)
+	})
 	if err != nil {
 		t.Fatalf("cloneAndCheckout() error = %v", err)
+	}
+	if len(progressed) < 2 {
+		t.Errorf("progress called %d times, want at least 2 (clone start and checkout complete)", len(progressed))
 	}
 	if dir == "" {
 		t.Fatal("cloneAndCheckout() returned an empty dir")
@@ -114,7 +122,7 @@ func TestCloneAndCheckout_Live_BadSHA(t *testing.T) {
 	// special case go-git treats as "no hash given" rather than "look
 	// this commit up"), but not a commit that exists in the repo.
 	nonexistentSHA := "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-	dir, cleanup, err := cloneAndCheckout(context.Background(), srcDir, nonexistentSHA)
+	dir, cleanup, err := cloneAndCheckout(context.Background(), srcDir, nonexistentSHA, nil)
 	if err == nil {
 		cleanup()
 		t.Fatal("cloneAndCheckout() error = nil, want an error for a nonexistent SHA")

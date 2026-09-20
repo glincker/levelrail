@@ -15,6 +15,7 @@ import { useApp } from '../../../../../queries/apps'
 import { useGitSource } from '../../../../../queries/gitSources'
 import {
   computeDeployStages,
+  computeRolloutSubStages,
   type DeployStage,
 } from '../../../../../lib/deployStages'
 import type { ReconcileCondition } from '../../../../../types/deploy'
@@ -26,6 +27,7 @@ import { BuildLogHints } from '../../../../../components/BuildLogHints'
 import { DeploySection } from '../../../../../components/DeploySection'
 import { DeployMetaCard } from '../../../../../components/DeployMetaCard'
 import { DeployQuickLinks } from '../../../../../components/DeployQuickLinks'
+import { DeployStageTimeline } from '../../../../../components/DeployStageTimeline'
 import { ConditionsPanel } from '../../../../../components/ConditionsPanel'
 import { PageSpinner } from '@/components/ui/page-spinner'
 
@@ -70,6 +72,9 @@ function DeployLogsPage() {
   const isLatestAttempt = attempts[0]?.id === deployId
   const stages = attempt
     ? computeDeployStages(attempt, conditions, isLatestAttempt)
+    : null
+  const rolloutSubStages = attempt
+    ? computeRolloutSubStages(attempt, conditions, isLatestAttempt)
     : null
 
   return (
@@ -165,7 +170,12 @@ function DeployLogsPage() {
               summary={rolloutStageSummary(stages[1], conditions)}
               defaultOpen={stages[1].status === 'failed'}
             >
-              <ConditionsPanel conditions={conditions} />
+              <div className="space-y-3">
+                {rolloutSubStages ? (
+                  <DeployStageTimeline stages={rolloutSubStages} />
+                ) : null}
+                <ConditionsPanel conditions={conditions} />
+              </div>
             </DeploySection>
           </div>
 
