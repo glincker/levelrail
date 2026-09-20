@@ -13,6 +13,8 @@ type parseFlagsTestCase struct {
 	wantToken     string
 	wantAPIURL    string
 	wantProfile   string
+	wantTransport string
+	wantListen    string
 	wantErr       bool
 	wantErrIsHelp bool
 }
@@ -22,6 +24,7 @@ func TestParseFlags(t *testing.T) {
 		{name: "no flags", args: nil, wantToken: "", wantAPIURL: ""},
 		{name: "token and api-url", args: []string{"--token", "t", "--api-url", "http://x:1"}, wantToken: "t", wantAPIURL: "http://x:1"},
 		{name: "profile", args: []string{"--profile", "work"}, wantProfile: "work"},
+		{name: "transport and listen", args: []string{"--transport", "http", "--listen", "0.0.0.0:9000"}, wantTransport: "http", wantListen: "0.0.0.0:9000"},
 		{name: "unknown flag", args: []string{"--nope"}, wantErr: true},
 		{name: "help", args: []string{"-h"}, wantErr: true, wantErrIsHelp: true},
 	}
@@ -35,7 +38,7 @@ func TestParseFlags(t *testing.T) {
 // nesting doesn't stack on top of this assertion logic's own branching.
 func assertParseFlagsCase(t *testing.T, tt parseFlagsTestCase) {
 	t.Helper()
-	token, apiURL, profile, err := parseFlags("levelrail-mcp", tt.args)
+	token, apiURL, profile, transport, listen, err := parseFlags("levelrail-mcp", tt.args)
 	if tt.wantErr {
 		if err == nil {
 			t.Fatalf("parseFlags() error = nil, want an error")
@@ -56,6 +59,12 @@ func assertParseFlagsCase(t *testing.T, tt parseFlagsTestCase) {
 	}
 	if profile != tt.wantProfile {
 		t.Errorf("profile = %q, want %q", profile, tt.wantProfile)
+	}
+	if transport != tt.wantTransport {
+		t.Errorf("transport = %q, want %q", transport, tt.wantTransport)
+	}
+	if listen != tt.wantListen {
+		t.Errorf("listen = %q, want %q", listen, tt.wantListen)
 	}
 }
 
