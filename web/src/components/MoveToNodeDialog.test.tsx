@@ -51,6 +51,7 @@ const nodeOne: NodeResource = {
   accepts_app_workloads: true,
   accepts_build_workloads: true,
   created_at: '2026-01-01T00:00:00Z',
+  is_local: false,
 }
 
 function renderDialog(volumeCount: number) {
@@ -154,10 +155,11 @@ describe('MoveToNodeDialog', () => {
 
     await screen.findByText('Done')
     expect(
-      fetchMock.mock.calls.some(([input, init]) =>
-        requestUrlOf(input as RequestInfo | URL).endsWith(
-          '/api/v1/apps/web/move-with-volumes',
-        ) && (init as RequestInit | undefined)?.method === 'POST',
+      fetchMock.mock.calls.some(
+        ([input, init]) =>
+          requestUrlOf(input as RequestInfo | URL).endsWith(
+            '/api/v1/apps/web/move-with-volumes',
+          ) && (init as RequestInit | undefined)?.method === 'POST',
       ),
     ).toBe(true)
     expect(
@@ -190,7 +192,8 @@ describe('MoveToNodeDialog', () => {
             from_node_id: '',
             to_node_id: 'node-1',
             status,
-            error: status === 'failed' ? 'docker daemon unreachable' : undefined,
+            error:
+              status === 'failed' ? 'docker daemon unreachable' : undefined,
             steps: [
               {
                 name: 'move_volume:app-web-data',

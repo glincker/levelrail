@@ -27,6 +27,7 @@ function fakeNode(overrides: Partial<NodeResource> = {}): NodeResource {
     accepts_app_workloads: true,
     accepts_build_workloads: true,
     created_at: '2026-01-01T00:00:00Z',
+    is_local: false,
     ...overrides,
   }
 }
@@ -47,7 +48,9 @@ function renderHint(
 }
 
 function metricFetchMock({
-  memoryPoints = [{ timestamp: '2026-01-01T00:00:00Z', value: 536_870_912, count: 1 }],
+  memoryPoints = [
+    { timestamp: '2026-01-01T00:00:00Z', value: 536_870_912, count: 1 },
+  ],
   cpuPoints = [{ timestamp: '2026-01-01T00:00:00Z', value: 42.5, count: 1 }],
   nodeStatus = 200,
   metricStatus = 200,
@@ -68,7 +71,9 @@ function metricFetchMock({
     }
     if (url.startsWith('/api/v1/nodes/node-1/metrics')) {
       if (metricStatus !== 200) {
-        return Promise.resolve(fakeJsonResponse({ error: 'nope' }, metricStatus))
+        return Promise.resolve(
+          fakeJsonResponse({ error: 'nope' }, metricStatus),
+        )
       }
       const isMemory = url.includes('metric=memory_usage_bytes')
       return Promise.resolve(

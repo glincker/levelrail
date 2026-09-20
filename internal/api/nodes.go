@@ -61,6 +61,12 @@ type nodeResource struct {
 	// but would multiply into a real N+1 if run for every row in the node
 	// list. nil when telemetry isn't configured on this control plane.
 	AlertStatus *nodeAlertStatusResource `json:"alert_status,omitempty"`
+	// IsLocal is true for the one node running the control plane process
+	// itself: the only node HostDiskCollector/HostMemoryCollector's
+	// disk/memory readings are real for (see nodeHostMetrics in
+	// node_metrics.go), stamped by the caller since toNodeResource is a
+	// plain store.Node -> wire mapper with no Router access.
+	IsLocal bool `json:"is_local"`
 }
 
 // nodeAlertStatusResource is alerting.NodeAlertStatus's wire shape: each
@@ -158,7 +164,9 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]nodeResource, 0, len(nodes))
 	for _, n := range nodes {
-		out = append(out, toNodeResource(n))
+		res := toNodeResource(n)
+		res.IsLocal = n.ID == rt.localNodeID
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -183,6 +191,7 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := toNodeResource(*n)
+	res.IsLocal = n.ID == rt.localNodeID
 	if rt.telemetry != nil {
 		th := rt.nodeAlertThresholds
 		status := alerting.CheckNodeAlertStatus(r.Context(), *n, rt.apps, rt.telemetry,

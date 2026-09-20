@@ -404,6 +404,16 @@ func WithDataDir(path string) Option {
 	return func(rt *Router) { rt.dataDir = path }
 }
 
+// SetLocalNodeID marks which node's row in GET /api/v1/nodes is the one
+// HostDiskCollector/HostMemoryCollector's readings are real for: the
+// node running the control plane process itself. A late setter, not a
+// construction Option, because cmd/levelrail's mesh setup (the only
+// source of this ID) runs after NewRouter is called; safe to call any
+// time before the HTTP server starts accepting requests.
+func (rt *Router) SetLocalNodeID(id string) {
+	rt.localNodeID = id
+}
+
 // WithMasterKeyRotation enables POST
 // /api/v1/system/master-key/rotate and the doctor's rotation-age check.
 // masterKeyFilePath should be the on-disk path the running control plane

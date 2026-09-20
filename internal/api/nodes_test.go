@@ -71,6 +71,28 @@ func TestHandleListNodes(t *testing.T) {
 	}
 }
 
+func TestHandleListNodes_IsLocal(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+	seedNode(t, db, "node_b", "beta")
+	rt.SetLocalNodeID("node_b")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes", ""))
+	var got []nodeResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+
+	for _, n := range got {
+		want := n.ID == "node_b"
+		if n.IsLocal != want {
+			t.Errorf("node %q: IsLocal = %v, want %v", n.ID, n.IsLocal, want)
+		}
+	}
+}
+
 func TestHandleGetNode(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -88,6 +110,26 @@ func TestHandleGetNode(t *testing.T) {
 	}
 	if got.ID != "node_a" || got.Name != "alpha" {
 		t.Errorf("got = %+v, want ID=node_a Name=alpha", got)
+	}
+	if got.IsLocal {
+		t.Error("IsLocal = true, want false: no local node ID was set")
+	}
+}
+
+func TestHandleGetNode_IsLocal(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+	rt.SetLocalNodeID("node_a")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes/node_a", ""))
+	var got nodeResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.IsLocal {
+		t.Error("IsLocal = false, want true: SetLocalNodeID was set to this node's ID")
 	}
 }
 
