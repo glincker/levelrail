@@ -37,6 +37,19 @@ func TestRun_NodesGet(t *testing.T) {
 	}
 }
 
+func TestRun_NodesGet_IsLocal(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(nodeResource{ID: "nd_1", Name: "web-1", Status: "ready", IsLocal: true})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"nodes", "get", "nd_1", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "local:") {
+		t.Errorf("stdout = %q, want a local: line for an IsLocal node", stdout)
+	}
+}
+
 func TestRun_NodesGet_JSON(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

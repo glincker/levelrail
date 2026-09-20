@@ -1499,6 +1499,9 @@ type NodeResource struct {
 	// fetch), never the list endpoint; nil when telemetry isn't
 	// configured on the control plane.
 	AlertStatus *NodeAlertStatusResource `json:"alert_status,omitempty"`
+	// IsLocal is true for the one node running the control plane process
+	// itself, the only node with real disk/memory host metrics.
+	IsLocal bool `json:"is_local"`
 }
 
 // NodeAlertStatusResource mirrors internal/api's nodeAlertStatusResource

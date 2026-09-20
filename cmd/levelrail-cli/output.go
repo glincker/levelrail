@@ -721,6 +721,9 @@ func printNodeHuman(out io.Writer, n nodeResource) {
 		_, _ = fmt.Fprintf(out, "address:                 %s\n", n.Address)
 	}
 	_, _ = fmt.Fprintf(out, "status:                  %s\n", n.Status)
+	if n.IsLocal {
+		_, _ = fmt.Fprintf(out, "local:                   true (disk/memory host metrics are real for this node)\n")
+	}
 	if n.CertFingerprint != "" {
 		_, _ = fmt.Fprintf(out, "cert fingerprint:        %s\n", n.CertFingerprint)
 	}

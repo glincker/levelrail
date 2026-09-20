@@ -1,12 +1,12 @@
 // Shared by ResourceLimitsEditor and DatabaseResourceLimitsEditor: a
 // small, non-blocking read of how much memory/CPU the node an app or
 // database currently runs on already has in use, so an operator typing a
-// limit isn't guessing blind. There is no total host memory or CPU core
-// count anywhere in the API (internal/api/node_metrics.go's
-// nodeSummableMetrics/nodeHostMetrics deliberately excludes it, see that
-// file's own doc comments: no host-level stats collection exists yet),
-// so this only ever reports current in-use totals across services placed
-// on the node, never a capacity figure that isn't real.
+// limit isn't guessing blind. This only ever reports current in-use
+// totals across services placed on the node, never a real capacity
+// figure: there's still no total CPU core count anywhere in the API, and
+// while real host memory now exists (memory_total_bytes/
+// memory_available_bytes, RamFitBadge.tsx), it's only real for the
+// local node, not whichever node this hint's own nodeId happens to be.
 //
 // Resolves to undefined whenever nodeId is missing, the node can't be
 // loaded, or neither metric query produced a value: callers render
@@ -19,7 +19,7 @@ import type { MetricPoint } from '../types/metrics'
 
 const RANGE_MS = 5 * 60 * 1000
 
-function latestValue(points?: MetricPoint[]): number | null {
+export function latestValue(points?: MetricPoint[]): number | null {
   if (!points || points.length === 0) return null
   const last = points[points.length - 1]
   return last ? last.value : null

@@ -37,6 +37,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import { formatBytes } from '../lib/format'
+import { RamFitBadge } from './RamFitBadge'
 import { useDeployCompose } from '../queries/compose'
 import {
   useServiceTemplate,
@@ -294,10 +295,20 @@ export function BrowseTemplatesFields({
                 </span>
                 <Badge variant="outline">{templateDetail.data.category}</Badge>
                 {!!templateDetail.data.recommended_memory_bytes && (
-                  <Badge variant="muted">
-                    ~{formatBytes(templateDetail.data.recommended_memory_bytes)}{' '}
-                    RAM recommended
-                  </Badge>
+                  <>
+                    <Badge variant="muted">
+                      ~
+                      {formatBytes(
+                        templateDetail.data.recommended_memory_bytes,
+                      )}{' '}
+                      RAM recommended
+                    </Badge>
+                    <RamFitBadge
+                      recommendedMemoryBytes={
+                        templateDetail.data.recommended_memory_bytes
+                      }
+                    />
+                  </>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">

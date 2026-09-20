@@ -45,6 +45,10 @@ export interface NodeResource {
   // kind, not a rule's stored aggregate value (which only ever names the
   // worst node across the whole fleet, never which one).
   alert_status?: NodeAlertStatusResource
+  // IsLocal is true for the one node running the control plane process
+  // itself, the only node with real disk_used_bytes/disk_total_bytes/
+  // memory_total_bytes/memory_available_bytes host metrics.
+  is_local: boolean
 }
 
 // Each field is 'ok' (no recent breach), 'firing' (this node is over
