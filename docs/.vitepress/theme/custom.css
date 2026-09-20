@@ -6,6 +6,11 @@
  */
 
 :root {
+  --vp-font-family-base:
+    'Inter Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --vp-font-family-mono:
+    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
   --vp-c-brand-1: #d97706;
   --vp-c-brand-2: #b45309;
   --vp-c-brand-3: #f59e0b;
@@ -82,4 +87,133 @@
 .VPFeature:hover {
   border-color: var(--vp-c-brand-1);
   transform: translateY(-2px);
+}
+
+.screenshot-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+@media (min-width: 640px) {
+  .screenshot-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.screenshot-grid img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--vp-c-divider);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.screenshot-grid img:hover {
+  border-color: var(--vp-c-brand-1);
+  transform: translateY(-2px);
+}
+
+/* Comparison-table polish: sticky header and first column so a wide
+   research table (e.g. comparison.md's "At a glance") stays readable
+   while scrolling horizontally on a small screen, plus a row hover to
+   help track a long row across many columns. */
+.vp-doc table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.vp-doc table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--vp-c-bg-soft);
+  z-index: 1;
+}
+
+.vp-doc table td:first-child,
+.vp-doc table th:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--vp-c-bg-soft);
+  z-index: 2;
+  font-weight: 600;
+}
+
+.vp-doc table thead th:first-child {
+  z-index: 3;
+}
+
+.vp-doc table tbody tr:hover td {
+  background: var(--vp-c-brand-soft);
+}
+
+.vp-doc table tbody tr:hover td:first-child {
+  background: var(--vp-c-brand-soft);
+}
+
+/* Extra footer band (Layout.vue's layout-bottom slot): link columns
+   below VitePress's own simple license/copyright footer. */
+.site-footer-extra {
+  border-top: 1px solid var(--vp-c-divider);
+  padding: 40px 24px;
+}
+
+.site-footer-extra__inner {
+  max-width: 1152px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+}
+
+@media (min-width: 768px) {
+  .site-footer-extra__inner {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.site-footer-extra__col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.site-footer-extra__heading {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-3);
+  margin: 0 0 2px;
+}
+
+.site-footer-extra__col a {
+  font-size: 13px;
+  color: var(--vp-c-text-2);
+  text-decoration: none;
+}
+
+.site-footer-extra__col a:hover {
+  color: var(--vp-c-brand-1);
+}
+
+.site-footer-extra__blurb {
+  font-size: 13px;
+  color: var(--vp-c-text-3);
+  margin: 0;
+}
+
+.site-footer-extra__badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--vp-c-brand-1) !important;
 }
