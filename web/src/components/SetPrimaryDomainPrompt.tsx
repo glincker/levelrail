@@ -4,7 +4,10 @@ import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
-import { useIngressSettings, useUpdateIngressSettings } from '../queries/domains'
+import {
+  useIngressSettings,
+  useUpdateIngressSettings,
+} from '../queries/domains'
 
 // Shown in place of a provider connect action (GitHubAppConnectionCard,
 // GitLabAppConnectionCard, BitbucketAppConnectionCard) whenever
@@ -50,9 +53,9 @@ export function SetPrimaryDomainPrompt() {
       <p className="flex items-start gap-1.5 text-sm text-amber-800 dark:text-amber-300">
         <WarningIcon className="mt-0.5 size-3.5 shrink-0" />
         <span>
-          This instance needs a primary domain before connecting a git
-          provider: it&apos;s what OAuth callbacks and manifest URLs point at.
-          Set it here, or in{' '}
+          This instance needs a primary domain before connecting a git provider:
+          it&apos;s what OAuth callbacks and manifest URLs point at. Set it
+          here, or in{' '}
           <Link to="/domains" className="underline">
             domain settings
           </Link>{' '}
@@ -65,6 +68,7 @@ export function SetPrimaryDomainPrompt() {
           autoComplete="off"
           spellCheck={false}
           placeholder="deploy.example.com"
+          aria-label="Primary domain"
           value={domain}
           onChange={(e) => {
             setDomain(e.target.value)
