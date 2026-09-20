@@ -15,7 +15,7 @@ function newLocalMessage(
   content: string,
 ): AiChatMessage {
   return {
-    id: `local-${role}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    id: `local-${role}-${crypto.randomUUID()}`,
     role,
     content,
     tool_calls: role === 'assistant' ? [] : null,

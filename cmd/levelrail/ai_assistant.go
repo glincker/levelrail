@@ -48,7 +48,7 @@ func setupAIAssistantEngine(ctx context.Context, db *store.DB, secretsManager *s
 		logger.Info("ai assistant: minted internal self-call token")
 	}
 
-	client := apiclient.NewClient("http://"+dialAddr, plaintext)
+	client := apiclient.NewClient("http://"+dialAddr, plaintext) // NOSONAR: dialAddr is always loopback, this control plane calling its own local REST API in-process, never a real network HTTPS gap
 	toolCaller, err := ai.NewToolCaller(ctx, client)
 	if err != nil {
 		return nil, fmt.Errorf("build ai assistant tool caller: %w", err)

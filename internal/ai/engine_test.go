@@ -31,6 +31,20 @@ func configureTestDB(t *testing.T, db *store.DB) {
 	}
 }
 
+// newTestSession creates a chat session row under ctx, for tests that
+// need a valid session id but don't exercise session creation itself.
+func newTestSession(ctx context.Context, t *testing.T, db *store.DB) string {
+	t.Helper()
+	sessionID, err := store.NewAIChatSessionID()
+	if err != nil {
+		t.Fatalf("NewAIChatSessionID() error = %v", err)
+	}
+	if _, err := db.CreateAIChatSession(ctx, sessionID, time.Now()); err != nil {
+		t.Fatalf("CreateAIChatSession() error = %v", err)
+	}
+	return sessionID
+}
+
 // fakeProvider replays a fixed script of turns, one per Complete call, so
 // tests can exercise the engine's propose -> pause -> confirm -> continue
 // loop without a real network call.
@@ -127,14 +141,7 @@ func TestEngine_RunTurn_NoToolCalls(t *testing.T) {
 	db := openTestDB(t)
 	configureTestDB(t, db)
 	ctx := context.Background()
-
-	sessionID, err := store.NewAIChatSessionID()
-	if err != nil {
-		t.Fatalf("NewAIChatSessionID() error = %v", err)
-	}
-	if _, err := db.CreateAIChatSession(ctx, sessionID, time.Now()); err != nil {
-		t.Fatalf("CreateAIChatSession() error = %v", err)
-	}
+	sessionID := newTestSession(ctx, t, db)
 
 	fp := &fakeProvider{turns: []TurnResult{{Text: "hello there", StopReason: StopReasonEndTurn}}}
 	engine := NewEngine(db, &fakeSecrets{key: "sk-test", exists: true}, &fakeToolExecutor{}, fakeProviderFactory(fp), "")
@@ -171,8 +178,7 @@ func TestEngine_RunTurn_AutoExecutesReadOnlyTool(t *testing.T) {
 	configureTestDB(t, db)
 	ctx := context.Background()
 
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
+	sessionID := newTestSession(ctx, t, db)
 
 	fp := &fakeProvider{turns: []TurnResult{
 		{ToolCalls: []ToolUseCall{{ID: "t1", Name: "list_apps", Input: json.RawMessage(`{}`)}}, StopReason: StopReasonToolUse},
@@ -219,8 +225,7 @@ func TestEngine_RunTurn_ProposesMutatingTool_PausesForConfirmation(t *testing.T)
 	configureTestDB(t, db)
 	ctx := context.Background()
 
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
+	sessionID := newTestSession(ctx, t, db)
 
 	fp := &fakeProvider{turns: []TurnResult{
 		{ToolCalls: []ToolUseCall{{ID: "t1", Name: "deploy_app", Input: json.RawMessage(`{"name":"web","image":"web:2"}`)}}, StopReason: StopReasonToolUse},
@@ -265,8 +270,7 @@ func TestEngine_ResolveConfirmation_ApproveContinuesTurn(t *testing.T) {
 	configureTestDB(t, db)
 	ctx := context.Background()
 
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
+	sessionID := newTestSession(ctx, t, db)
 
 	fp := &fakeProvider{turns: []TurnResult{
 		{ToolCalls: []ToolUseCall{{ID: "t1", Name: "deploy_app", Input: json.RawMessage(`{}`)}}, StopReason: StopReasonToolUse},
@@ -324,8 +328,7 @@ func TestEngine_ResolveConfirmation_Reject(t *testing.T) {
 	configureTestDB(t, db)
 	ctx := context.Background()
 
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
+	sessionID := newTestSession(ctx, t, db)
 
 	fp := &fakeProvider{turns: []TurnResult{
 		{ToolCalls: []ToolUseCall{{ID: "t1", Name: "restart_app", Input: json.RawMessage(`{}`)}}, StopReason: StopReasonToolUse},
@@ -366,8 +369,7 @@ func TestEngine_ResolveConfirmation_AlreadyResolved(t *testing.T) {
 	configureTestDB(t, db)
 	ctx := context.Background()
 
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
+	sessionID := newTestSession(ctx, t, db)
 
 	fp := &fakeProvider{turns: []TurnResult{
 		{ToolCalls: []ToolUseCall{{ID: "t1", Name: "restart_app", Input: json.RawMessage(`{}`)}}, StopReason: StopReasonToolUse},
@@ -393,10 +395,8 @@ func TestEngine_ResolveConfirmation_WrongSession(t *testing.T) {
 	configureTestDB(t, db)
 	ctx := context.Background()
 
-	sessionA, _ := store.NewAIChatSessionID()
-	sessionB, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionA, time.Now())
-	_, _ = db.CreateAIChatSession(ctx, sessionB, time.Now())
+	sessionA := newTestSession(ctx, t, db)
+	sessionB := newTestSession(ctx, t, db)
 
 	fp := &fakeProvider{turns: []TurnResult{
 		{ToolCalls: []ToolUseCall{{ID: "t1", Name: "restart_app", Input: json.RawMessage(`{}`)}}, StopReason: StopReasonToolUse},

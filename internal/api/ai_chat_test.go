@@ -48,6 +48,54 @@ func newTestRouterWithAIEngine(t *testing.T, engine AIEngine) (*Router, *store.D
 	return NewRouter(logger, testBrand(), db, WithAIEngine(engine)), db
 }
 
+// newAIChatSession creates a chat session row under a background
+// context, for tests that need a valid session id but don't exercise
+// session creation itself.
+func newAIChatSession(t *testing.T, db *store.DB) (context.Context, string) {
+	t.Helper()
+	ctx := context.Background()
+	return ctx, mustCreateAIChatSession(ctx, t, db)
+}
+
+func mustCreateAIChatSession(ctx context.Context, t *testing.T, db *store.DB) string {
+	t.Helper()
+	sessionID, err := store.NewAIChatSessionID()
+	if err != nil {
+		t.Fatalf("NewAIChatSessionID() error = %v", err)
+	}
+	if _, err := db.CreateAIChatSession(ctx, sessionID, time.Now()); err != nil {
+		t.Fatalf("CreateAIChatSession() error = %v", err)
+	}
+	return sessionID
+}
+
+// seedPendingConfirmation saves an assistant message plus one tool
+// confirmation under it, at the given status, for tests exercising the
+// resolve-confirmation route against an already-persisted call.
+func seedPendingConfirmation(ctx context.Context, t *testing.T, db *store.DB, sessionID, status string) string {
+	t.Helper()
+	msgID, err := store.NewAIChatMessageID()
+	if err != nil {
+		t.Fatalf("NewAIChatMessageID() error = %v", err)
+	}
+	if err := db.SaveAIChatMessage(ctx, store.AIChatMessage{
+		ID: msgID, SessionID: sessionID, Role: store.AIChatRoleAssistant, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("SaveAIChatMessage() error = %v", err)
+	}
+	confID, err := store.NewAIChatConfirmationID()
+	if err != nil {
+		t.Fatalf("NewAIChatConfirmationID() error = %v", err)
+	}
+	if err := db.SaveAIChatConfirmation(ctx, store.AIChatConfirmation{
+		ID: confID, SessionID: sessionID, MessageID: msgID, ToolUseID: "t1", ToolName: "restart_app",
+		ToolInput: json.RawMessage(`{}`), Status: status, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("SaveAIChatConfirmation() error = %v", err)
+	}
+	return confID
+}
+
 // sseDataLines extracts every "data: <json>" payload from an SSE
 // response body, in order, skipping the leading ": connected" priming
 // comment line.
@@ -114,11 +162,7 @@ func TestHandleGetAIChatSession_ReturnsHistory(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
-
-	sessionID, _ := store.NewAIChatSessionID()
-	if _, err := db.CreateAIChatSession(ctx, sessionID, time.Now()); err != nil {
-		t.Fatalf("CreateAIChatSession() error = %v", err)
-	}
+	sessionID := mustCreateAIChatSession(ctx, t, db)
 	msgID, _ := store.NewAIChatMessageID()
 	if err := db.SaveAIChatMessage(ctx, store.AIChatMessage{
 		ID: msgID, SessionID: sessionID, Role: store.AIChatRoleUser, Content: "hello", CreatedAt: time.Now(),
@@ -144,10 +188,7 @@ func TestHandleGetAIChatSession_ReturnsHistory(t *testing.T) {
 func TestHandleCreateAIChatMessage_NoEngineConfigured(t *testing.T) {
 	rt, db := newTestRouter(t) // no WithAIEngine
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
+	_, sessionID := newAIChatSession(t, db)
 
 	rec := httptest.NewRecorder()
 	body := `{"content":"hi"}`
@@ -172,10 +213,7 @@ func TestHandleCreateAIChatMessage_SessionNotFound(t *testing.T) {
 func TestHandleCreateAIChatMessage_NotConfigured(t *testing.T) {
 	rt, db := newTestRouterWithAIEngine(t, &fakeAIEngine{configured: false})
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
+	_, sessionID := newAIChatSession(t, db)
 
 	rec := httptest.NewRecorder()
 	body := `{"content":"hi"}`
@@ -188,10 +226,7 @@ func TestHandleCreateAIChatMessage_NotConfigured(t *testing.T) {
 func TestHandleCreateAIChatMessage_RequiresContent(t *testing.T) {
 	rt, db := newTestRouterWithAIEngine(t, &fakeAIEngine{configured: true})
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
+	_, sessionID := newAIChatSession(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/ai/sessions/"+sessionID+"/messages", `{"content":""}`))
@@ -214,10 +249,7 @@ func TestHandleCreateAIChatMessage_StreamsTextThenDone(t *testing.T) {
 	}
 	rt, db := newTestRouterWithAIEngine(t, engine)
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
+	_, sessionID := newAIChatSession(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/ai/sessions/"+sessionID+"/messages", `{"content":"hi"}`))
@@ -250,10 +282,7 @@ func TestHandleCreateAIChatMessage_StreamsToolCallProposed(t *testing.T) {
 	}
 	rt, db := newTestRouterWithAIEngine(t, engine)
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
+	_, sessionID := newAIChatSession(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/ai/sessions/"+sessionID+"/messages", `{"content":"deploy web"}`))
@@ -289,10 +318,7 @@ func TestHandleCreateAIChatMessage_EngineErrorStillSendsDone(t *testing.T) {
 	}
 	rt, db := newTestRouterWithAIEngine(t, engine)
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
+	_, sessionID := newAIChatSession(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/ai/sessions/"+sessionID+"/messages", `{"content":"hi"}`))
@@ -308,10 +334,7 @@ func TestHandleCreateAIChatMessage_EngineErrorStillSendsDone(t *testing.T) {
 func TestHandleResolveAIChatConfirmation_NotFound(t *testing.T) {
 	rt, db := newTestRouterWithAIEngine(t, &fakeAIEngine{configured: true})
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
+	_, sessionID := newAIChatSession(t, db)
 
 	rec := httptest.NewRecorder()
 	target := "/api/v1/ai/sessions/" + sessionID + "/confirmations/does-not-exist"
@@ -325,21 +348,9 @@ func TestHandleResolveAIChatConfirmation_WrongSession(t *testing.T) {
 	rt, db := newTestRouterWithAIEngine(t, &fakeAIEngine{configured: true})
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
-
-	sessionA, _ := store.NewAIChatSessionID()
-	sessionB, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionA, time.Now())
-	_, _ = db.CreateAIChatSession(ctx, sessionB, time.Now())
-
-	msgID, _ := store.NewAIChatMessageID()
-	_ = db.SaveAIChatMessage(ctx, store.AIChatMessage{ID: msgID, SessionID: sessionA, Role: store.AIChatRoleAssistant, CreatedAt: time.Now()})
-	confID, _ := store.NewAIChatConfirmationID()
-	if err := db.SaveAIChatConfirmation(ctx, store.AIChatConfirmation{
-		ID: confID, SessionID: sessionA, MessageID: msgID, ToolUseID: "t1", ToolName: "restart_app",
-		ToolInput: json.RawMessage(`{}`), Status: store.AIChatConfirmationPending, CreatedAt: time.Now(),
-	}); err != nil {
-		t.Fatalf("SaveAIChatConfirmation() error = %v", err)
-	}
+	sessionA := mustCreateAIChatSession(ctx, t, db)
+	sessionB := mustCreateAIChatSession(ctx, t, db)
+	confID := seedPendingConfirmation(ctx, t, db, sessionA, store.AIChatConfirmationPending)
 
 	rec := httptest.NewRecorder()
 	target := "/api/v1/ai/sessions/" + sessionB + "/confirmations/" + confID
@@ -352,19 +363,8 @@ func TestHandleResolveAIChatConfirmation_WrongSession(t *testing.T) {
 func TestHandleResolveAIChatConfirmation_AlreadyResolved(t *testing.T) {
 	rt, db := newTestRouterWithAIEngine(t, &fakeAIEngine{configured: true})
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
-	msgID, _ := store.NewAIChatMessageID()
-	_ = db.SaveAIChatMessage(ctx, store.AIChatMessage{ID: msgID, SessionID: sessionID, Role: store.AIChatRoleAssistant, CreatedAt: time.Now()})
-	confID, _ := store.NewAIChatConfirmationID()
-	if err := db.SaveAIChatConfirmation(ctx, store.AIChatConfirmation{
-		ID: confID, SessionID: sessionID, MessageID: msgID, ToolUseID: "t1", ToolName: "restart_app",
-		ToolInput: json.RawMessage(`{}`), Status: store.AIChatConfirmationApproved, CreatedAt: time.Now(),
-	}); err != nil {
-		t.Fatalf("SaveAIChatConfirmation() error = %v", err)
-	}
+	ctx, sessionID := newAIChatSession(t, db)
+	confID := seedPendingConfirmation(ctx, t, db, sessionID, store.AIChatConfirmationApproved)
 
 	rec := httptest.NewRecorder()
 	target := "/api/v1/ai/sessions/" + sessionID + "/confirmations/" + confID
@@ -387,19 +387,8 @@ func TestHandleResolveAIChatConfirmation_Success(t *testing.T) {
 	}
 	rt, db := newTestRouterWithAIEngine(t, engine)
 	cookie := loginTestSession(t, rt, db)
-	ctx := context.Background()
-
-	sessionID, _ := store.NewAIChatSessionID()
-	_, _ = db.CreateAIChatSession(ctx, sessionID, time.Now())
-	msgID, _ := store.NewAIChatMessageID()
-	_ = db.SaveAIChatMessage(ctx, store.AIChatMessage{ID: msgID, SessionID: sessionID, Role: store.AIChatRoleAssistant, CreatedAt: time.Now()})
-	confID, _ := store.NewAIChatConfirmationID()
-	if err := db.SaveAIChatConfirmation(ctx, store.AIChatConfirmation{
-		ID: confID, SessionID: sessionID, MessageID: msgID, ToolUseID: "t1", ToolName: "restart_app",
-		ToolInput: json.RawMessage(`{}`), Status: store.AIChatConfirmationPending, CreatedAt: time.Now(),
-	}); err != nil {
-		t.Fatalf("SaveAIChatConfirmation() error = %v", err)
-	}
+	ctx, sessionID := newAIChatSession(t, db)
+	confID := seedPendingConfirmation(ctx, t, db, sessionID, store.AIChatConfirmationPending)
 
 	rec := httptest.NewRecorder()
 	target := "/api/v1/ai/sessions/" + sessionID + "/confirmations/" + confID
