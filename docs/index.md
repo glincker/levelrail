@@ -30,3 +30,17 @@ features:
   - title: AI-ready API
     details: 56 MCP tools backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a crashloop directly.
 ---
+
+<div class="vp-doc" style="max-width: 1152px; margin: 0 auto; padding: 0 24px 64px;">
+
+## See it running
+
+<div class="screenshot-grid">
+  <img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list showing all services across nodes at a glance" loading="lazy">
+  <img src="/assets/screenshots/deploy-history.png" alt="Levelrail deploy history view with one-click rollback" loading="lazy">
+  <img src="/assets/screenshots/logs.png" alt="Levelrail live log viewer with full-text search" loading="lazy">
+  <img src="/assets/screenshots/nodes.png" alt="Levelrail nodes list showing node health and placement" loading="lazy">
+</div>
+
+</div>
+
