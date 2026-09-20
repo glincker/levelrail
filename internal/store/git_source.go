@@ -58,6 +58,13 @@ type GitSource struct {
 	// single-service preview (no Services map at all) can still declare
 	// databases.
 	Databases map[string]spec.Database
+	// TriggerMode picks which pushes actually deploy
+	// (migrations/0106_git_source_trigger_mode.sql): spec.TriggerModePush
+	// (the default, empty-string-safe zero value predating this field)
+	// deploys on every push to Branch; spec.TriggerModeRelease deploys
+	// only on a tag ref push or a GitHub "release" event, see
+	// internal/api/git_webhook.go's gating logic.
+	TriggerMode string
 	// PreviewEnabled opts an app into preview environments per pull
 	// request (migrations/0064_preview_environments.sql): off by
 	// default, like every other opt-in feature toggle in this codebase.
@@ -127,9 +134,13 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 	if err != nil {
 		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
 	}
+	triggerMode := g.TriggerMode
+	if triggerMode == "" {
+		triggerMode = spec.TriggerModePush
+	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, databases_spec, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, databases_spec, trigger_mode, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (service_name) DO UPDATE SET
 			repo_url = excluded.repo_url,
 			branch = excluded.branch,
@@ -138,8 +149,9 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 			additional_services = excluded.additional_services,
 			services_spec = excluded.services_spec,
 			databases_spec = excluded.databases_spec,
+			trigger_mode = excluded.trigger_mode,
 			updated_at = excluded.updated_at
-	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, additionalJSON, servicesJSON, databasesJSON)
+	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, additionalJSON, servicesJSON, databasesJSON, triggerMode)
 	if err != nil {
 		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
 	}
@@ -150,7 +162,7 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 // ErrGitSourceNotFound if none is.
 func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, databases_spec, preview_enabled, post_pr_comments, created_at, updated_at
+		SELECT service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, created_at, updated_at
 		FROM service_git_sources WHERE service_name = ?
 	`, serviceName)
 	g, err := scanGitSource(row.Scan)
@@ -280,7 +292,7 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 		previewEnabled, postPRComment int
 		createdAt, updatedAt          string
 	)
-	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &additionalJSON, &svcJSON, &dbJSON, &previewEnabled, &postPRComment, &createdAt, &updatedAt); err != nil {
+	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
 	g.PreviewEnabled = previewEnabled != 0

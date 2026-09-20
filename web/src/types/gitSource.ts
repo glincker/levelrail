@@ -13,6 +13,12 @@
 
 export type GitSourceBuildType = 'dockerfile' | 'railpack' | 'static'
 
+// GitSourceTriggerMode mirrors internal/spec's TriggerModePush/
+// TriggerModeRelease: 'push' (default) deploys on every push to branch,
+// 'release' deploys only on a tag ref push, or (GitHub only) a
+// "release" webhook event with action "published".
+export type GitSourceTriggerMode = 'push' | 'release'
+
 export interface GitSourceBuild {
   build_type: GitSourceBuildType
   build_path?: string
@@ -52,6 +58,10 @@ export interface GitSourceResource {
   // deploy.Pipeline.DeploySpec logic POST .../deploy-spec uses, instead
   // of additional_services's own flat rebuild list.
   services?: Record<string, GitSourceService>
+  // trigger_mode mirrors store.GitSource.TriggerMode: always populated by
+  // the server (empty-string-safe zero value normalized to 'push'), see
+  // GitSourceTriggerMode's own doc comment.
+  trigger_mode: GitSourceTriggerMode
   has_token: boolean
   webhook_url: string
   webhook_secret?: string
@@ -81,4 +91,5 @@ export interface SetGitSourceRequest {
   token?: string
   additional_services?: Record<string, GitSourceBuild>
   services?: Record<string, GitSourceService>
+  trigger_mode?: GitSourceTriggerMode
 }

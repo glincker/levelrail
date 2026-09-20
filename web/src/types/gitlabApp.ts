@@ -46,4 +46,5 @@ export interface GitLabAppUseProjectAsSourceRequest {
   branch?: string
   build_type?: 'dockerfile' | 'railpack' | 'static'
   build_path?: string
+  trigger_mode?: 'push' | 'release'
 }

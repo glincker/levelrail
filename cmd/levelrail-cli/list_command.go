@@ -147,15 +147,16 @@ func runTwoArgUseAsSource[T any](prog string, args []string, stdout, stderr io.W
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() { p.print(stdout, result) })
 }
 
-// bindUseAsSourceFlags registers the four flags every provider's own
-// use-as-source subcommand shares (app-name/branch/build-type/build-path),
-// the same request shape internal/api's useRepoAsSourceRequest defines
-// for all three providers.
+// bindUseAsSourceFlags registers the five flags every provider's own
+// use-as-source subcommand shares (app-name/branch/build-type/build-path/
+// trigger-mode), the same request shape internal/api's
+// useRepoAsSourceRequest defines for all three providers.
 func bindUseAsSourceFlags(fs *flag.FlagSet) *useRepoAsSourceRequest {
 	req := &useRepoAsSourceRequest{}
 	fs.StringVar(&req.AppName, "app-name", "", "app to connect this repo to (required)")
 	fs.StringVar(&req.Branch, "branch", "", "branch to deploy on push (default: the repo's default branch)")
 	fs.StringVar(&req.BuildType, "build-type", "", "dockerfile, railpack, or static (default: dockerfile)")
 	fs.StringVar(&req.BuildPath, "build-path", "", "path within the repo to build from")
+	fs.StringVar(&req.TriggerMode, "trigger-mode", "", "push or release (default: push); release deploys only on a tag push or a published github release")
 	return req
 }

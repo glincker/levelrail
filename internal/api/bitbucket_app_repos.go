@@ -131,7 +131,7 @@ func (rt *Router) handleUseBitbucketRepoAsSource(w http.ResponseWriter, r *http.
 	}
 	fullName := workspace + "/" + repoSlug
 
-	req, buildType, ok := rt.decodeUseAsSourceRequest(w, r, "api: use bitbucket repo as source")
+	req, buildType, triggerMode, ok := rt.decodeUseAsSourceRequest(w, r, "api: use bitbucket repo as source")
 	if !ok {
 		return
 	}
@@ -160,6 +160,7 @@ func (rt *Router) handleUseBitbucketRepoAsSource(w http.ResponseWriter, r *http.
 
 	result, err := rt.connectGitSource(ctx, req.AppName, connectGitSourceParams{
 		RepoURL: repo.CloneURL, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath,
+		TriggerMode: triggerMode,
 	})
 	if err != nil {
 		rt.logger.Error("api: use bitbucket repo as source: connect git source failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))

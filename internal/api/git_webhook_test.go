@@ -735,6 +735,316 @@ func TestHandleGitPushWebhook_ServicesSpec_PartialFailure_OneServiceFailing(t *t
 	}
 }
 
+// releaseBody builds a GitHub release event payload for action and
+// tagName, the same fixed-shape convention pushBody's own doc comment
+// establishes for push events.
+func releaseBody(action string) []byte {
+	b, _ := json.Marshal(map[string]any{
+		"action": action,
+		"release": map[string]any{
+			"tag_name": "v1.2.3",
+		},
+	})
+	return b
+}
+
+// TestGitSourceTriggerMatchesPush covers gitSourceTriggerMatchesPush's
+// full decision table: push mode only matches the configured branch
+// (unchanged pre-trigger-mode behavior), release mode only matches a
+// tag ref regardless of branch, and an empty (pre-migration) TriggerMode
+// behaves exactly like an explicit "push".
+func TestGitSourceTriggerMatchesPush(t *testing.T) {
+	tests := []struct {
+		name string
+		gs   store.GitSource
+		ref  string
+		want bool
+	}{
+		{name: "push mode matches configured branch", gs: store.GitSource{Branch: "main", TriggerMode: "push"}, ref: "refs/heads/main", want: true},
+		{name: "push mode ignores other branch", gs: store.GitSource{Branch: "main", TriggerMode: "push"}, ref: "refs/heads/feature-x", want: false},
+		{name: "push mode ignores a tag push", gs: store.GitSource{Branch: "main", TriggerMode: "push"}, ref: "refs/tags/v1.0.0", want: false},
+		{name: "empty trigger mode defaults to push behavior", gs: store.GitSource{Branch: "main", TriggerMode: ""}, ref: "refs/heads/main", want: true},
+		{name: "release mode matches a tag push", gs: store.GitSource{Branch: "main", TriggerMode: "release"}, ref: "refs/tags/v1.0.0", want: true},
+		{name: "release mode ignores the configured branch", gs: store.GitSource{Branch: "main", TriggerMode: "release"}, ref: "refs/heads/main", want: false},
+		{name: "release mode ignores any other branch", gs: store.GitSource{Branch: "main", TriggerMode: "release"}, ref: "refs/heads/feature-x", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, msg := gitSourceTriggerMatchesPush(tt.gs, tt.ref)
+			if got != tt.want {
+				t.Errorf("gitSourceTriggerMatchesPush(%+v, %q) = %v, want %v", tt.gs, tt.ref, got, tt.want)
+			}
+			if !got && msg == "" {
+				t.Errorf("gitSourceTriggerMatchesPush(%+v, %q) returned no ignored-response message", tt.gs, tt.ref)
+			}
+			if got && msg != "" {
+				t.Errorf("gitSourceTriggerMatchesPush(%+v, %q) returned a message %q for a triggering match", tt.gs, tt.ref, msg)
+			}
+		})
+	}
+}
+
+// TestParseGitHubReleaseEvent covers parseGitHubReleaseEvent's own
+// decode contract: a missing action is rejected, tag_name is optional
+// at parse time (processGitHubReleaseWebhookEvent only requires it once
+// action is actually "published").
+func TestParseGitHubReleaseEvent(t *testing.T) {
+	got, err := parseGitHubReleaseEvent(releaseBody("published"))
+	if err != nil {
+		t.Fatalf("parseGitHubReleaseEvent() error = %v", err)
+	}
+	if got.Action != "published" || got.TagName != "v1.2.3" {
+		t.Errorf("parseGitHubReleaseEvent() = %+v, want Action=published TagName=v1.2.3", got)
+	}
+
+	if _, err := parseGitHubReleaseEvent([]byte("not json")); err == nil {
+		t.Error("parseGitHubReleaseEvent(malformed) error = nil, want an error")
+	}
+	if _, err := parseGitHubReleaseEvent([]byte(`{"release":{"tag_name":"v1.0.0"}}`)); err == nil {
+		t.Error("parseGitHubReleaseEvent(missing action) error = nil, want an error")
+	}
+}
+
+func TestDockerSafeTag(t *testing.T) {
+	if got := dockerSafeTag("release/v1.2.3"); got != "release-v1.2.3" {
+		t.Errorf("dockerSafeTag(%q) = %q, want release-v1.2.3", "release/v1.2.3", got)
+	}
+	if got := dockerSafeTag("v1.2.3"); got != "v1.2.3" {
+		t.Errorf("dockerSafeTag(%q) = %q, want v1.2.3 unchanged", "v1.2.3", got)
+	}
+}
+
+// TestHandleGitPushWebhook_ReleaseMode_BranchPush_Ignored proves a git
+// source configured for trigger_mode "release" does not deploy on an
+// ordinary push to its own configured branch, the core behavior change
+// this trigger mode exists for.
+func TestHandleGitPushWebhook_ReleaseMode_BranchPush_Ignored(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
+
+	var fetchCalls []fakeGitSourceFetchCall
+	rt.gitSourceFetch = newFakeGitSourceFetch(&fetchCalls, t.TempDir(), new(bool), nil)
+	fb := &fakeBuilder{tag: "web:sha1"}
+	rt.builder = fb
+
+	body := pushBody("refs/heads/main")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if fb.calls != 0 {
+		t.Errorf("builder called %d times, want 0: release mode must ignore a branch push", fb.calls)
+	}
+	if len(fetchCalls) != 0 {
+		t.Errorf("fetch called %d times, want 0: release mode must ignore a branch push", len(fetchCalls))
+	}
+}
+
+// TestHandleGitPushWebhook_ReleaseMode_TagPush_TriggersDeploy proves a
+// git source configured for trigger_mode "release" deploys on a tag ref
+// push, using the tag push's own real commit SHA (ev.After) exactly as
+// an ordinary push would: no special checkout handling is needed here,
+// unlike the github release-event path.
+func TestHandleGitPushWebhook_ReleaseMode_TagPush_TriggersDeploy(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
+
+	var fetchCalls []fakeGitSourceFetchCall
+	rt.gitSourceFetch = newFakeGitSourceFetch(&fetchCalls, t.TempDir(), new(bool), nil)
+	fb := &fakeBuilder{tag: "web:sha1"}
+	rt.builder = fb
+
+	body := pushBody("refs/tags/v1.0.0")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if fb.calls != 1 {
+		t.Fatalf("builder called %d times, want 1", fb.calls)
+	}
+	if fb.lastReq.CommitSHA != "sha1" {
+		t.Errorf("CommitSHA = %q, want sha1: a tag push's own ev.After", fb.lastReq.CommitSHA)
+	}
+	if len(fetchCalls) != 1 || fetchCalls[0].sha != "sha1" {
+		t.Errorf("fetch calls = %+v, want one call checking out sha1", fetchCalls)
+	}
+}
+
+// TestHandleGitPushWebhook_PushMode_TagPush_Ignored proves the default
+// "push" trigger mode still ignores a tag push, the same shape
+// TestHandleGitPushWebhook_WrongBranch_AcceptedButNotTriggered already
+// proves for a wrong branch: a tag ref never equals
+// webhook.Config.TargetRef()'s "refs/heads/<branch>".
+func TestHandleGitPushWebhook_PushMode_TagPush_Ignored(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
+
+	fb := &fakeBuilder{tag: "web:sha1"}
+	rt.builder = fb
+
+	body := pushBody("refs/tags/v1.0.0")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if fb.calls != 0 {
+		t.Errorf("builder called %d times, want 0: default push mode must ignore a tag push", fb.calls)
+	}
+}
+
+// TestHandleGitPushWebhook_GitHubReleasePublished_TriggersDeploy proves
+// a github "release" event with action "published" deploys when trigger
+// mode is "release", checking out the tag's own ref (no commit SHA
+// exists in the release payload) and tagging the built image with the
+// (sanitized) release tag name.
+func TestHandleGitPushWebhook_GitHubReleasePublished_TriggersDeploy(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
+
+	var fetchCalls []fakeGitSourceFetchCall
+	rt.gitSourceFetch = newFakeGitSourceFetch(&fetchCalls, t.TempDir(), new(bool), nil)
+	fb := &fakeBuilder{tag: "web:v1.2.3"}
+	rt.builder = fb
+
+	body := releaseBody("published")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-GitHub-Event", "release")
+	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if fb.calls != 1 {
+		t.Fatalf("builder called %d times, want 1", fb.calls)
+	}
+	if fb.lastReq.CommitSHA != "v1.2.3" {
+		t.Errorf("CommitSHA = %q, want v1.2.3 (the release tag name)", fb.lastReq.CommitSHA)
+	}
+	if len(fetchCalls) != 1 || fetchCalls[0].sha != "refs/tags/v1.2.3" {
+		t.Errorf("fetch calls = %+v, want one call checking out refs/tags/v1.2.3", fetchCalls)
+	}
+}
+
+// TestHandleGitPushWebhook_GitHubReleaseNotPublished_Ignored proves a
+// release event action other than "published" (created, edited, a
+// draft being saved, etc.) never deploys, even with trigger_mode
+// "release".
+func TestHandleGitPushWebhook_GitHubReleaseNotPublished_Ignored(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
+
+	fb := &fakeBuilder{tag: "web:v1.2.3"}
+	rt.builder = fb
+
+	body := releaseBody("created")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-GitHub-Event", "release")
+	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if fb.calls != 0 {
+		t.Errorf("builder called %d times, want 0: only a \"published\" action deploys", fb.calls)
+	}
+}
+
+// TestHandleGitPushWebhook_GitHubReleaseEvent_PushModeIgnored proves a
+// github release event against a git source still on the default "push"
+// trigger mode is accepted (200) and ignored, not treated as a
+// malformed push payload (400): before trigger modes existed, this
+// event type fell through into webhook.ParsePushEventForProvider and
+// failed to parse.
+func TestHandleGitPushWebhook_GitHubReleaseEvent_PushModeIgnored(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
+
+	fb := &fakeBuilder{tag: "web:v1.2.3"}
+	rt.builder = fb
+
+	body := releaseBody("published")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-GitHub-Event", "release")
+	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if fb.calls != 0 {
+		t.Errorf("builder called %d times, want 0: default push mode must ignore a release event", fb.calls)
+	}
+}
+
+// TestHandleGitPushWebhook_ReleaseMode_BitbucketTagPush_KnownGap is a
+// regression/documentation test for the gap docs/git-integrations.md
+// spells out: ParseBitbucketPushEvent (internal/webhook/bitbucket_push.go)
+// always synthesizes "refs/heads/<name>" regardless of whether Bitbucket's
+// own payload marked the change as a tag ("type":"tag"), so a Bitbucket
+// tag push can never match gitSourceTriggerMatchesPush's "refs/tags/"
+// check today. This fails closed (never triggers), not open, so it's a
+// documented missing feature, not a security bug, but this test exists
+// so a future fix to Bitbucket tag support has to consciously update it
+// rather than silently leaving stale documentation behind.
+func TestHandleGitPushWebhook_ReleaseMode_BitbucketTagPush_KnownGap(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://bitbucket.org/org/web.git","branch":"main","trigger_mode":"release"}`)
+
+	fb := &fakeBuilder{tag: "web:bb-sha1"}
+	rt.builder = fb
+
+	body, _ := json.Marshal(map[string]any{
+		"push": map[string]any{
+			"changes": []map[string]any{
+				{"new": map[string]any{"type": "tag", "name": "v1.0.0", "target": map[string]any{"hash": "bb-sha1"}}},
+			},
+		},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Event-Key", "repo:push")
+	req.Header.Set("X-Hub-Signature", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if fb.calls != 0 {
+		t.Errorf("builder called %d times, want 0 (known gap): a bitbucket tag push is indistinguishable from a same-named branch push today", fb.calls)
+	}
+}
+
 // TestHandleGitPushWebhook_ServicesSpec_TakesPriorityOverAdditionalServices
 // cannot happen through the connect API (validateGitSourceServices
 // rejects setting both), but a git source created before that

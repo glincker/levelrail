@@ -72,12 +72,13 @@ func runAppsGitSourceGet(prog string, args []string, stdout, stderr io.Writer, l
 
 func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps git-source set", "print the git source as JSON to stdout and nothing else", stderr)
-	var repoURL, branch, buildType, buildPath, token string
+	var repoURL, branch, buildType, buildPath, token, triggerMode string
 	fs.StringVar(&repoURL, "repo-url", "", "repo URL to connect (required)")
 	fs.StringVar(&branch, "branch", "", "branch to deploy on push (default: the server's default branch)")
 	fs.StringVar(&buildType, "build-type", "", "dockerfile, railpack, or static (default: dockerfile)")
 	fs.StringVar(&buildPath, "build-path", "", "path within the repo to build from")
 	fs.StringVar(&token, "token-secret", "", "personal access token for a private repo; empty on an update leaves the stored token unchanged")
+	fs.StringVar(&triggerMode, "trigger-mode", "", "push or release (default: push); release deploys only on a tag push or a published github release")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source set <name> --repo-url URL [flags]\n\nConnects a repo for auto-deploy-on-push, or edits an existing\nconnection. Multi-service fan-out (an app.yaml services: map) is\ndashboard-only; use \"apps deploy-spec\" from the CLI for that case.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -94,11 +95,12 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 	}
 
 	gs, err := client.SetGitSource(context.Background(), name, setGitSourceRequest{
-		RepoURL:   repoURL,
-		Branch:    branch,
-		BuildType: buildType,
-		BuildPath: buildPath,
-		Token:     token,
+		RepoURL:     repoURL,
+		Branch:      branch,
+		BuildType:   buildType,
+		BuildPath:   buildPath,
+		Token:       token,
+		TriggerMode: triggerMode,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set git source for app %q: %w", name, err))
@@ -144,6 +146,7 @@ func printGitSourceHuman(out io.Writer, gs gitSourceResource) {
 	if gs.BuildPath != "" {
 		_, _ = fmt.Fprintf(out, "build_path:     %s\n", gs.BuildPath)
 	}
+	_, _ = fmt.Fprintf(out, "trigger_mode:   %s\n", gs.TriggerMode)
 	_, _ = fmt.Fprintf(out, "has_token:      %t\n", gs.HasToken)
 	_, _ = fmt.Fprintf(out, "webhook_url:    %s\n", gs.WebhookURL)
 	_, _ = fmt.Fprintf(out, "preview_enabled: %t\n", gs.PreviewEnabled)

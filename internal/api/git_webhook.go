@@ -3,12 +3,14 @@ package api
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -44,7 +46,15 @@ type gitSourceFetchFunc func(ctx context.Context, repoURL, sha, token string) (d
 // GitHub's (and GitLab's, and Bitbucket's) own documented scheme for a
 // personal access token: any non-empty username, the token itself as
 // the password.
-func gitCheckoutWithToken(ctx context.Context, repoURL, sha, token string) (dir string, cleanup func(), err error) {
+//
+// checkoutRef is a literal commit hash for every ordinary push (ev.After
+// out of webhook.PushEvent), or a "refs/tags/<name>" ref
+// (parseGitHubReleaseEvent's own tag_name) for a GitHub "release" event,
+// whose payload carries no commit SHA of its own: PlainCloneContext's
+// default CloneOptions already fetches every tag (go-git's own
+// AllTags default), so the tag ref resolves locally with no extra API
+// call.
+func gitCheckoutWithToken(ctx context.Context, repoURL, checkoutRef, token string) (dir string, cleanup func(), err error) {
 	dir, err = os.MkdirTemp("", "levelrail-git-source-*")
 	if err != nil {
 		return "", nil, fmt.Errorf("api: create temp checkout dir: %w", err)
@@ -71,9 +81,15 @@ func gitCheckoutWithToken(ctx context.Context, repoURL, sha, token string) (dir 
 		return "", nil, fmt.Errorf("api: get worktree for %q: %w", repoURL, err)
 	}
 
-	if err := wt.Checkout(&git.CheckoutOptions{Hash: plumbing.NewHash(sha)}); err != nil {
+	checkoutOpts := &git.CheckoutOptions{}
+	if strings.HasPrefix(checkoutRef, "refs/") {
+		checkoutOpts.Branch = plumbing.ReferenceName(checkoutRef)
+	} else {
+		checkoutOpts.Hash = plumbing.NewHash(checkoutRef)
+	}
+	if err := wt.Checkout(checkoutOpts); err != nil {
 		cleanup()
-		return "", nil, fmt.Errorf("api: checkout %q at %q: %w", repoURL, sha, err)
+		return "", nil, fmt.Errorf("api: checkout %q at %q: %w", repoURL, checkoutRef, err)
 	}
 
 	return dir, cleanup, nil
@@ -206,18 +222,132 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return rt.handlePullRequestWebhookEvent(ctx, name, gs, prEv)
 	}
 
+	if isGitHubReleaseEvent(header) {
+		return rt.processGitHubReleaseWebhookEvent(ctx, name, gs, body)
+	}
+
 	ev, err := webhook.ParsePushEventForProvider(body, header.Get("X-Event-Key"))
 	if err != nil {
 		rt.logger.Warn("api: git push webhook: malformed payload", slog.String("error", err.Error()), slog.String("name", name))
 		return http.StatusBadRequest, "malformed payload"
 	}
 
-	targetCfg := webhook.Config{Branch: gs.Branch}
-	if ev.Ref != targetCfg.TargetRef() {
-		rt.logger.Info("api: git push webhook: ignoring push to non-target branch", slog.String("name", name), slog.String("ref", ev.Ref), slog.String("want_ref", targetCfg.TargetRef()))
-		return http.StatusOK, fmt.Sprintf("ignored: push to %q, deploys trigger on %q only\n", ev.Ref, targetCfg.TargetRef())
+	triggered, ignoredMsg := gitSourceTriggerMatchesPush(gs, ev.Ref)
+	if !triggered {
+		rt.logger.Info("api: git push webhook: ignoring push", slog.String("name", name), slog.String("ref", ev.Ref), slog.String("trigger_mode", effectiveGitSourceTriggerMode(gs.TriggerMode)))
+		return http.StatusOK, ignoredMsg
 	}
 
+	return rt.deployFromGitSource(ctx, name, gs, ev.After, ev.After)
+}
+
+// isGitHubReleaseEvent reports whether header names GitHub's own
+// "release" webhook event: the one event type this route accepts that
+// carries neither a push (PushEvent) nor a pull_request payload shape,
+// so it must be routed before webhook.ParsePushEventForProvider ever
+// sees the body. GitLab and Bitbucket have no equivalent event wired up
+// today, see gitSourceTriggerMatchesPush's own doc comment for how a
+// tag push covers spec.TriggerModeRelease for them instead.
+func isGitHubReleaseEvent(header http.Header) bool {
+	return header.Get("X-GitHub-Event") == "release"
+}
+
+// gitSourceTriggerMatchesPush decides whether a push event's ref should
+// trigger a deploy under gs's configured trigger mode
+// (spec.TriggerModePush/spec.TriggerModeRelease): push mode (the
+// default) matches only the configured branch, unchanged from before
+// trigger modes existed; release mode matches only a tag ref push
+// ("refs/tags/..."), regardless of branch, and ignores every branch
+// push including the configured one. A GitHub "release" event is
+// handled separately (processGitHubReleaseWebhookEvent), since it never
+// reaches this function at all (isGitHubReleaseEvent routes it away
+// first). Returns the ignored-response message to send when it does not
+// trigger.
+func gitSourceTriggerMatchesPush(gs store.GitSource, ref string) (bool, string) {
+	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeRelease {
+		if strings.HasPrefix(ref, "refs/tags/") {
+			return true, ""
+		}
+		return false, fmt.Sprintf("ignored: push to %q, trigger mode is %q which only deploys on a tag push or a published github release\n", ref, spec.TriggerModeRelease)
+	}
+	targetCfg := webhook.Config{Branch: gs.Branch}
+	if ref == targetCfg.TargetRef() {
+		return true, ""
+	}
+	return false, fmt.Sprintf("ignored: push to %q, deploys trigger on %q only\n", ref, targetCfg.TargetRef())
+}
+
+// githubReleaseEvent is the subset of GitHub's release webhook payload
+// this package needs: https://docs.github.com/en/webhooks/webhook-events-and-payloads#release.
+type githubReleaseEvent struct {
+	Action  string
+	TagName string
+}
+
+// parseGitHubReleaseEvent decodes body as a GitHub release event
+// payload, requiring a non-empty action (tag_name is validated by the
+// caller, since it's only required once action is actually "published").
+func parseGitHubReleaseEvent(body []byte) (githubReleaseEvent, error) {
+	var payload struct {
+		Action  string `json:"action"`
+		Release struct {
+			TagName string `json:"tag_name"`
+		} `json:"release"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return githubReleaseEvent{}, fmt.Errorf("api: malformed github release payload: %w", err)
+	}
+	if payload.Action == "" {
+		return githubReleaseEvent{}, errors.New("api: github release payload missing action")
+	}
+	return githubReleaseEvent{Action: payload.Action, TagName: payload.Release.TagName}, nil
+}
+
+// processGitHubReleaseWebhookEvent handles a GitHub "release" webhook
+// event: only meaningful when gs's trigger mode is spec.TriggerModeRelease,
+// and only "published" (not "created", "edited", "deleted", etc.)
+// actually deploys, matching a real release announcement rather than a
+// draft being saved. checkoutRef is the tag's own ref name, since a
+// release payload carries no commit SHA of its own (see
+// gitCheckoutWithToken's own doc comment for how that resolves without
+// an extra GitHub API call); commitLabel sanitizes the tag name for use
+// as a Docker image tag (deploy.Request.CommitSHA), since a git tag may
+// contain "/", which Docker's own tag grammar rejects.
+func (rt *Router) processGitHubReleaseWebhookEvent(ctx context.Context, name string, gs store.GitSource, body []byte) (status int, message string) {
+	if effectiveGitSourceTriggerMode(gs.TriggerMode) != spec.TriggerModeRelease {
+		return http.StatusOK, "ignored: a github release event only deploys when this git source's trigger_mode is \"release\"\n"
+	}
+
+	rel, err := parseGitHubReleaseEvent(body)
+	if err != nil {
+		rt.logger.Warn("api: git push webhook: malformed release payload", slog.String("error", err.Error()), slog.String("name", name))
+		return http.StatusBadRequest, "malformed payload"
+	}
+	if rel.Action != "published" {
+		return http.StatusOK, fmt.Sprintf("ignored: release action %q, deploys trigger on \"published\" only\n", rel.Action)
+	}
+	if rel.TagName == "" {
+		return http.StatusBadRequest, "malformed payload"
+	}
+
+	return rt.deployFromGitSource(ctx, name, gs, "refs/tags/"+rel.TagName, dockerSafeTag(rel.TagName))
+}
+
+// dockerSafeTag makes tagName safe to use as a Docker image tag
+// (ImageRepo + ":" + tag, internal/deploy.Request.CommitSHA): a git tag
+// may contain "/", which Docker's own tag grammar rejects.
+func dockerSafeTag(tagName string) string {
+	return strings.ReplaceAll(tagName, "/", "-")
+}
+
+// deployFromGitSource fetches gs's repo at checkoutRef (a literal
+// commit hash for an ordinary push, or a "refs/..." ref name for a
+// GitHub release event) and deploys, tagging the built image with
+// commitLabel. Shared by the push and release event paths so both go
+// through the identical services:/AdditionalServices/single-service
+// routing decision handleGitPushWebhook's own doc comment already
+// establishes.
+func (rt *Router) deployFromGitSource(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string) (status int, message string) {
 	if rt.builder == nil {
 		return http.StatusNotImplemented, "git push deploys are not configured on this control plane"
 	}
@@ -237,9 +367,9 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return http.StatusInternalServerError, "internal error"
 	}
 
-	sourceDir, cleanup, err := rt.gitSourceFetch(ctx, gs.RepoURL, ev.After, token)
+	sourceDir, cleanup, err := rt.gitSourceFetch(ctx, gs.RepoURL, checkoutRef, token)
 	if err != nil {
-		rt.logger.Error("api: git push webhook: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("commit", ev.After))
+		rt.logger.Error("api: git push webhook: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("checkout_ref", checkoutRef))
 		return http.StatusInternalServerError, "deploy failed"
 	}
 	defer cleanup()
@@ -255,7 +385,7 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		if appName == "" {
 			appName = name
 		}
-		failed := rt.deployServicesSpecFanout(ctx, appName, gs, sourceDir, ev.After)
+		failed := rt.deployServicesSpecFanout(ctx, appName, gs, sourceDir, commitLabel)
 		status := http.StatusOK
 		if failed > 0 {
 			status = http.StatusMultiStatus
@@ -269,7 +399,7 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		ServiceName: name,
 		Service:     svcSpec,
 		SourceDir:   sourceDir,
-		CommitSHA:   ev.After,
+		CommitSHA:   commitLabel,
 		ImageRepo:   name,
 	}
 
@@ -277,12 +407,12 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 	tag, err := rt.builder.Deploy(ctx, buildReq, progress)
 	finishAttempt(err)
 	if err != nil {
-		rt.logger.Error("api: git push webhook: deploy failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("commit", ev.After))
+		rt.logger.Error("api: git push webhook: deploy failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("commit", commitLabel))
 		return http.StatusInternalServerError, "deploy failed"
 	}
-	rt.logger.Info("api: git push webhook: deploy triggered", slog.String("name", name), slog.String("commit", ev.After), slog.String("tag", tag))
+	rt.logger.Info("api: git push webhook: deploy triggered", slog.String("name", name), slog.String("commit", commitLabel), slog.String("tag", tag))
 
-	additionalFailed := rt.deployAdditionalServices(ctx, gs.AdditionalServices, sourceDir, ev.After)
+	additionalFailed := rt.deployAdditionalServices(ctx, gs.AdditionalServices, sourceDir, commitLabel)
 
 	status = http.StatusOK
 	if additionalFailed > 0 {
