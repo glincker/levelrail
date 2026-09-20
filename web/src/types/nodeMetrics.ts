@@ -27,6 +27,8 @@ export type NodeMetricName =
   | 'disk_write_bytes'
   | 'disk_used_bytes'
   | 'disk_total_bytes'
+  | 'memory_total_bytes'
+  | 'memory_available_bytes'
 
 export interface NodeMetricSeries {
   metric: string

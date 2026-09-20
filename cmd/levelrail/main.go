@@ -582,6 +582,13 @@ func run(logger *slog.Logger) error {
 			}
 		}()
 
+		memoryCollector := telemetry.NewHostMemoryCollector("node:"+meshCfg.localNodeID, telemetryDB, metricsCollectionInterval, logger)
+		go func() {
+			if err := memoryCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("telemetry host memory collector stopped", slog.String("error", err.Error()))
+			}
+		}()
+
 		patchCollector := telemetry.NewHostPatchCollector(nil, "node:"+meshCfg.localNodeID, telemetryDB, osPatchCheckInterval(), logger)
 		go func() {
 			if err := patchCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {

@@ -41,17 +41,18 @@ var nodeSummableMetrics = map[string]bool{
 	"disk_write_bytes":   true,
 }
 
-// nodeHostMetrics are real host-level readings (disk capacity, available
-// OS package updates: cmd/levelrail.HostDiskCollector/HostPatchCollector,
-// internal/telemetry/hostdisk.go/hostpatch.go), queried directly by this
-// node's own resource ID rather than summed across placed services like
-// nodeSummableMetrics above, because there is exactly one real reading
-// per node, not many containers to add together.
+// nodeHostMetrics are real host-level readings (disk capacity, OS
+// package updates, total/available memory), queried directly by this
+// node's own resource ID rather than summed across placed services.
+// All three collectors run on the control plane's own host only, not
+// every node in a multi-node fleet.
 var nodeHostMetrics = map[string]bool{
 	telemetry.MetricDiskUsedBytes:              true,
 	telemetry.MetricDiskTotalBytes:             true,
 	telemetry.MetricOSPatchesAvailable:         true,
 	telemetry.MetricOSSecurityPatchesAvailable: true,
+	telemetry.MetricMemoryTotalBytes:           true,
+	telemetry.MetricMemoryAvailableBytes:       true,
 }
 
 // nodeMetricsResponse mirrors metricsResponse (metrics.go) plus
@@ -73,17 +74,15 @@ type nodeMetricsResponse struct {
 // now-1h to now), step (a Go duration string, raw samples if omitted).
 //
 // What "node-level" means here, spelled out because it is genuinely
-// different from what a host monitoring agent would report: this is the
-// sum of internal/telemetry's already-collected per-container samples
-// (collector.go) for every service currently placed on this node
-// (store.DesiredService.NodeID == id, resolved via
-// ListDesiredServicesByNode), not a read of the host's real free/total
-// memory or CPU. internal/agent has no host-level stats collection
-// today, no /proc reads, no host-info gRPC message in
-// internal/agent/agentpb, and internal/docker.ContainerStats (stats.go)
-// is entirely per-container by design; adding true host-level
-// monitoring is real, separate agent-side work, out of scope here.
-// Databases are collected now (cmd/levelrail's telemetryTargets, see
+// different from what a host monitoring agent would report for most of
+// these metrics: nodeSummableMetrics is the sum of internal/telemetry's
+// already-collected per-container samples (collector.go) for every
+// service currently placed on this node (store.DesiredService.NodeID ==
+// id, resolved via ListDesiredServicesByNode), not a read of the host's
+// real free/total CPU. nodeHostMetrics' memory figures are a real
+// /proc/meminfo reading, but only for the control plane's own host, not
+// a remote node (see HostMemoryCollector). Databases are collected now
+// (cmd/levelrail's telemetryTargets, see
 // database_metrics.go for the per-database query endpoint) but are still
 // excluded from this sum: the loop below resolves placed resources via
 // ListDesiredServicesByNode, services only, so a database placed on this
@@ -115,7 +114,8 @@ func (rt *Router) handleQueryNodeMetrics(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest,
 			"metric must be one of cpu_percent, memory_usage_bytes, network_rx_bytes, network_tx_bytes, "+
 				"disk_read_bytes, disk_write_bytes, "+telemetry.MetricDiskUsedBytes+", "+telemetry.MetricDiskTotalBytes+", "+telemetry.MetricOSPatchesAvailable+
-				", "+telemetry.MetricOSSecurityPatchesAvailable+" (memory_limit_bytes cannot be "+
+				", "+telemetry.MetricOSSecurityPatchesAvailable+", "+telemetry.MetricMemoryTotalBytes+", "+telemetry.MetricMemoryAvailableBytes+
+				" (memory_limit_bytes cannot be "+
 				"honestly summed across containers on one node, see handleQueryNodeMetrics's doc comment)")
 		return
 	}
