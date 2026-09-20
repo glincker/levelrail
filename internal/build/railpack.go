@@ -340,6 +340,9 @@ func (c *Client) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 	if progress == nil {
 		progress = func(ProgressEvent) {}
 	}
+	if err := checkDiskSpace(req.SourceDir); err != nil {
+		return nil, err
+	}
 	return c.solveAndLoad(ctx, req.Tag, progress, func(solveCtx context.Context, out io.Writer) (*Result, error) {
 		return c.solveRailpack(solveCtx, req, out, progress)
 	})

@@ -53,6 +53,10 @@ type RestoreRunner struct {
 	// RunRestore. nil is valid, the same "optional capability" shape
 	// Runner.VolumeArchiver's own doc comment establishes.
 	VolumeRestorer VolumeRestorer
+	// WorkDir is RunRestore/RunVolumeRestore's disk-space preflight
+	// target, matching Runner.WorkDir's own fallback-to-APP_DATA_DIR,
+	// skip-if-still-empty behavior.
+	WorkDir string
 	// Now returns the current time, matching Runner.Now's own "field, not
 	// time.Now called directly" reasoning for deterministic tests.
 	Now func() time.Time
@@ -87,6 +91,10 @@ func (r *RestoreRunner) now() time.Time {
 // the ordinary API path never reaches this branch) somehow let it
 // through.
 func (r *RestoreRunner) RunRestore(ctx context.Context, historyID, databaseName, backupHistoryID, engine, containerName string) error {
+	if err := checkDiskSpace(resolveWorkDir(r.WorkDir)); err != nil {
+		return err
+	}
+
 	startedAt := r.now()
 
 	if err := r.Store.StartRestoreHistory(ctx, store.RestoreHistory{
@@ -191,6 +199,10 @@ func downloadAndRestore(ctx context.Context, resolver backupResolver, secrets Se
 // the full reasoning this mirrors, including the identical refusal to
 // proceed against a backup whose Status isn't store.BackupStatusSucceeded.
 func (r *RestoreRunner) RunVolumeRestore(ctx context.Context, historyID, serviceName, volumeName, dockerVolumeName, backupHistoryID string) error {
+	if err := checkDiskSpace(resolveWorkDir(r.WorkDir)); err != nil {
+		return err
+	}
+
 	startedAt := r.now()
 
 	if err := r.Store.StartRestoreHistory(ctx, store.RestoreHistory{

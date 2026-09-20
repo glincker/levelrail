@@ -90,6 +90,9 @@ func (c *Client) Build(ctx context.Context, req Request, progress func(ProgressE
 	if progress == nil {
 		progress = func(ProgressEvent) {}
 	}
+	if err := checkDiskSpace(req.ContextDir, c.cache.Dir); err != nil {
+		return nil, err
+	}
 	return c.solveAndLoad(ctx, req.Tag, progress, func(solveCtx context.Context, out io.Writer) (*Result, error) {
 		return c.solveDockerfile(solveCtx, req, c.cache, out, progress)
 	})
