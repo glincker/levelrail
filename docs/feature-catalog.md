@@ -43,23 +43,44 @@ stub, the substance lives in the imported component.
 
 ### Databases (`/databases/$name/*`)
 
-Overview (backups, public access, attachment, TLS status badge), logs,
-metrics, resources.
+| Page | Features |
+| --- | --- |
+| Overview | Backups, public access, attachment, TLS status badge |
+| Logs | Database activity logs |
+| Metrics | Performance and resource metrics |
+| Resources | Resource limits and recommendations |
 
 ### System / org structure
 
-Nodes (list + detail: health, cordon/drain, workloads toggle, metrics),
-cross-app domains, projects, environments, organizations.
+- **Nodes** - list view, detailed health, cordon/drain, workload management, metrics
+- **Cross-app domains** - shared domain configuration
+- **Projects** - grouping and organization
+- **Environments** - environment-scoped settings
+- **Organizations** - multi-tenant structure
 
 ### Settings (`/settings/*`)
 
-Account, security (2FA/TOTP), general (system status, Docker cleanup,
-certificates, master key rotation), tokens, CLI access, users,
-IAM policies, audit log (+ purge), backup targets, registry credentials,
-container registry (built-in), notification channels, organizations,
-OAuth sign-in, GitHub/GitLab/Bitbucket apps, Cloudflare Tunnel, Vault
-(external secrets), email, system status (doctor bundle), containers,
-updates.
+- Account
+- Security (2FA, TOTP)
+- General (system status, Docker cleanup, certificates, master key rotation)
+- Tokens
+- CLI access
+- Users
+- IAM policies
+- Audit log and purge
+- Backup targets
+- Registry credentials
+- Container registry (built-in)
+- Notification channels
+- Organizations
+- OAuth sign-in
+- GitHub/GitLab/Bitbucket apps
+- Cloudflare Tunnel
+- Vault (external secrets)
+- Email
+- System status (doctor bundle)
+- Containers
+- Updates
 
 ## API resource groups (`internal/api/routes.go`, `routes_platform.go`)
 
@@ -88,43 +109,58 @@ the exact method/path/ability of every one), grouped by resource:
 
 ## CLI command groups (`cmd/levelrail-cli/`)
 
-`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`,
-`app-volume-backups`, `cloudflare-tunnel`, `channels`,
-`backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`,
-`status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`,
-`firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`,
-`settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `templates`,
-`static-sites`.
+All command groups available:
 
-Key subcommand groups:
+`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `templates`, `static-sites`.
 
-- **apps**: create, list, get, deploy, deploy-compose, deploy-spec,
-  group, hook-runs, rollback, deploys, promote, restart, stop, start,
-  delete, status, diagnose, resource-recommendation, network, logs
-  (`--follow`/`-f` for a live tail), metrics, exec, log-drain,
-  scheduled-tasks, alerts, organizations, projects, environments,
-  previews, secrets, git-source, webhook-deliveries, storage
-- **databases**: create, list, get, delete, resource-recommendation, metrics
-- **nodes**: list, get, delete, join-token, cordon, uncordon, drain,
-  workloads, health, patch-status, metrics
-- **iam**: policies create/list/get/update/delete/attach/detach
-- **backups** / **app-volume-backups**: list, list-all (backups only,
-  instance-wide across every database and app volume), trigger, restore,
-  restore-as-new, schedule, verify, verifications
-- **migrate**: coolify, dokploy, caprover
-- **domains**: list, cloudflare-dns, route53-dns, basic-auth,
-  maintenance, tls-cert, certificates
-- **settings**: oauth (list/set), email (get/set), ingress (get/set):
-  instance-wide OAuth sign-in, outbound email, and ingress/ACME config,
-  for headless first-run setup with no browser
-- **github-app** / **gitlab-app** / **bitbucket-app**: repos (or
-  `projects` for gitlab-app), branches, use-as-source. Connecting the
-  App/OAuth integration itself stays dashboard-only (a real browser
-  redirect through the provider's own OAuth flow); these subcommands
-  browse and use an already-connected integration's repos from the CLI
-- **templates**: list, get, deploy (deploys a catalog entry's own
-  compose.yaml as an app, the same call `apps deploy-compose` makes)
-- **static-sites**: list
+### Key command groups
+
+**apps**
+
+`create`, `list`, `get`, `deploy`, `deploy-compose`, `deploy-spec`, `group`, `hook-runs`, `rollback`, `deploys`, `promote`, `restart`, `stop`, `start`, `delete`, `status`, `diagnose`, `resource-recommendation`, `network`, `logs` (with `--follow`/`-f` for live tail), `metrics`, `exec`, `log-drain`, `scheduled-tasks`, `alerts`, `organizations`, `projects`, `environments`, `previews`, `secrets`, `git-source`, `webhook-deliveries`, `storage`.
+
+**databases**
+
+`create`, `list`, `get`, `delete`, `resource-recommendation`, `metrics`.
+
+**nodes**
+
+`list`, `get`, `delete`, `join-token`, `cordon`, `uncordon`, `drain`, `workloads`, `health`, `patch-status`, `metrics`.
+
+**iam**
+
+`policies` with subcommands: `create`, `list`, `get`, `update`, `delete`, `attach`, `detach`.
+
+**backups** / **app-volume-backups**
+
+`list`, `list-all` (backups only; instance-wide across every database and app volume), `trigger`, `restore`, `restore-as-new`, `schedule`, `verify`, `verifications`.
+
+**migrate**
+
+Support for migrating from `coolify`, `dokploy`, or `caprover`.
+
+**domains**
+
+`list`, `cloudflare-dns`, `route53-dns`, `basic-auth`, `maintenance`, `tls-cert`, `certificates`.
+
+**settings**
+
+Headless first-run setup with no browser needed:
+- `oauth` (list/set) - instance-wide OAuth sign-in
+- `email` (get/set) - outbound email configuration
+- `ingress` (get/set) - ingress and ACME configuration
+
+**github-app** / **gitlab-app** / **bitbucket-app**
+
+`repos` (or `projects` for gitlab-app), `branches`, `use-as-source`. Connecting the App/OAuth integration itself stays dashboard-only (browser redirect through the provider's OAuth flow). These subcommands let you browse and use an already-connected integration's repos from the CLI.
+
+**templates**
+
+`list`, `get`, `deploy` (deploys a catalog entry's compose.yaml as an app, the same call `apps deploy-compose` makes).
+
+**static-sites**
+
+`list`.
 
 ## Known gaps (backend done, UI thin or missing)
 

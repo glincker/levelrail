@@ -39,7 +39,7 @@ levelrail apps create --name NAME --image IMAGE --port PORT [flags]
 ```
 levelrail apps create [flags]
 ```
- create an app (existing image, git build, --file, or --interactive)
+create an app (existing image, git build, --file, or --interactive)
 
 ```
 levelrail apps delete <name> [flags]
@@ -82,11 +82,7 @@ real, row-per-attempt deploy history, newest first
 ```
 levelrail apps deploys compare <name> --from ID [--to ID] [flags]
 ```
-
-```
-levelrail apps deploys compare <name> --from ID [--to ID] [flags]
-```
- diff two deploy attempts, or one against the current live state
+diff two deploy attempts, or one against the current live state
 
 ```
 levelrail apps deploys logs <name> <deploy-id> [flags]
@@ -96,11 +92,7 @@ one deploy attempt's full build/log output, printed to stdout (redirect to a fil
 ```
 levelrail apps environments create <project-id> --name NAME [--protected] [flags]
 ```
-
-```
-levelrail apps environments create <project-id> --name NAME [--protected] [flags]
-```
- create an environment under a project
+create an environment under a project
 
 ```
 levelrail apps environments delete <id> [flags]
@@ -138,7 +130,7 @@ levelrail apps images <name> [flags]
 ```
 levelrail apps log-drain get <name> [flags]
 ```
- show an app's configured log drain
+show an app's configured log drain
 
 ```
 levelrail apps logs <name> [flags]
@@ -150,10 +142,6 @@ levelrail apps metrics <name> --metric NAME [flags]
 
 ```
 levelrail apps organizations clear-project <project-id> [flags]
-```
-
-```
-levelrail apps organizations create --name NAME [flags]
 ```
 
 ```
@@ -198,10 +186,6 @@ remove a preview-specific env var override
 ```
 levelrail apps previews list <app-name> [flags]
 ```
-
-```
-levelrail apps previews list <app-name> [flags]
-```
 list active previews for an app
 
 ```
@@ -214,10 +198,6 @@ levelrail apps previews sweep [flags]
 
 ```
 levelrail apps previews teardown <app-name> <pr-number> [flags]
-```
-
-```
-levelrail apps projects create --name NAME [flags]
 ```
 
 ```
@@ -317,26 +297,22 @@ levelrail apps stop <name> [flags]
 ```
 levelrail apps storage set <name> --storage-target-id ID [flags]
 ```
- attach a connected bucket as object storage
+attach a connected bucket as object storage
 
 ```
 levelrail apps vault-env set <name> <key> --path PATH --key FIELD [flags]
 ```
- declare (or replace) a Vault-sourced env var
+declare (or replace) a Vault-sourced env var
 
 ```
 levelrail apps vault-env clear <name> <key> [flags]
 ```
- remove a Vault-sourced env var declaration
+remove a Vault-sourced env var declaration
 
 ```
 levelrail apps webhook-deliveries list <app-name> [flags]
 ```
-
-```
-levelrail apps webhook-deliveries list <app-name> [flags]
-```
- list recent inbound webhook requests
+list recent inbound webhook requests
 
 ```
 levelrail apps webhook-deliveries replay <app-name> <delivery-id> [flags]
@@ -355,7 +331,7 @@ levelrail databases create --name NAME --engine ENGINE --version VERSION [flags]
 ```
 levelrail databases create [flags]
 ```
- create a managed database
+create a managed database
 
 ```
 levelrail databases delete <name> [flags]
@@ -407,20 +383,12 @@ levelrail auth 2fa setup [flags]
 ```
 levelrail auth 2fa status [flags]
 ```
-
-```
-levelrail auth 2fa status [flags]
-```
 show whether two-factor auth is enabled
 
 ```
 levelrail auth login [flags]
 ```
-
-```
-levelrail auth login [flags]
-```
- authenticate and persist a new API token
+authenticate and persist a new API token
 
 ```
 levelrail auth whoami [flags]
@@ -431,22 +399,14 @@ levelrail auth whoami [flags]
 ```
 levelrail profile list [flags]
 ```
-
-```
-levelrail profile list [flags]
-```
- list configured credentials profiles
+list configured credentials profiles
 
 ## Tokens
 
 ```
 levelrail tokens create --name NAME --abilities LIST [flags]
 ```
-
-```
-levelrail tokens create --name NAME --abilities LIST [flags]
-```
- mint a new API token
+mint a new API token
 
 ```
 levelrail tokens list [flags]
@@ -480,37 +440,29 @@ show the current settings
 ```
 levelrail domains list [flags]
 ```
-
-```
-levelrail domains list [flags]
-```
 list every app's domains in one call
 
 ```
 levelrail domains maintenance get <app> <domain> [flags]
 ```
- show a domain's maintenance state
+show a domain's maintenance state
 
 ```
 levelrail domains redirect get <app> <domain> [flags]
 ```
- show a domain's redirect state
+show a domain's redirect state
 
 ```
 levelrail domains tls-cert get <app> <domain> [flags]
 ```
- show a domain's BYO certificate state
+show a domain's BYO certificate state
 
 ```
 levelrail domains waf get <app> <domain> [flags]
 ```
- show a domain's WAF and rate-limit state
+show a domain's WAF and rate-limit state
 
 ## Backups
-
-```
-levelrail backups list <database> [flags]
-```
 
 ```
 levelrail backups list <database> [flags]
@@ -548,10 +500,6 @@ levelrail backups verify <database> --backup ID [flags]
 ```
 
 ## App Volume Backups
-
-```
-levelrail app-volume-backups list <app> <volume> [flags]
-```
 
 ```
 levelrail app-volume-backups list <app> <volume> [flags]
@@ -624,11 +572,7 @@ levelrail channels deliveries <id> [flags]
 ```
 levelrail channels list [flags]
 ```
-
-```
-levelrail channels list [flags]
-```
- list connected notification channels
+list connected notification channels
 
 ```
 levelrail channels test <id> [flags]
@@ -650,10 +594,6 @@ levelrail backup-targets delete <id> [flags]
 
 ```
 levelrail backup-targets get <id> [flags]
-```
-
-```
-levelrail backup-targets list [flags]
 ```
 
 ```
@@ -681,10 +621,6 @@ levelrail registry-credentials delete <id> [flags]
 
 ```
 levelrail registry-credentials get <id> [flags]
-```
-
-```
-levelrail registry-credentials list [flags]
 ```
 
 ```
@@ -834,10 +770,6 @@ levelrail users delete <id> [flags]
 ```
 levelrail users list [flags]
 ```
-
-```
-levelrail users list [flags]
-```
 list every user
 
 ```
@@ -860,10 +792,6 @@ levelrail iam policies attach <id> --principal-type TYPE --principal-id ID [flag
 
 ```
 levelrail iam policies attachments <id> [flags]
-```
-
-```
-levelrail iam policies create --name NAME --document DOC [flags]
 ```
 
 ```
@@ -906,10 +834,6 @@ levelrail migrate caprover --url URL --token TOKEN [flags]
 ```
 levelrail migrate coolify --url URL --token TOKEN [flags]
 ```
-
-```
-levelrail migrate coolify --url URL --token TOKEN [flags]
-```
 migrate apps from a Coolify instance
 
 ```
@@ -936,11 +860,7 @@ levelrail settings ingress get [flags]
 ```
 levelrail settings oauth list [flags]
 ```
-
-```
-levelrail settings oauth list [flags]
-```
- show every OAuth sign-in provider's current settings
+show every OAuth sign-in provider's current settings
 
 ## Github App
 
@@ -954,7 +874,7 @@ list repos the connected installation can access
 ```
 levelrail gitlab-app projects [flags]
 ```
- list projects the connected account can access
+list projects the connected account can access
 
 ## Bitbucket App
 

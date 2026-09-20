@@ -1,15 +1,8 @@
 # Dashboard screenshots
 
-`docs/assets/screenshots/*.png` (used in the README and elsewhere in
-`/docs`) are captured from a real, running control plane: real deployed
-containers, real metrics data points, real log lines. Nothing in them is
-mocked or hand-edited.
+The PNG files in `docs/assets/screenshots/` are captured from a real, running control plane. They show real deployed containers, real metrics, and real log lines, with no mocking or hand-editing.
 
-They're produced by `scripts/screenshots/capture.sh`, a maintainer-run
-tool, not a CI job. Deploying real containers and letting metrics
-accumulate takes a couple of minutes, which is too slow and too heavy to
-run on every PR; re-run it by hand whenever the dashboard changes enough
-that the existing screenshots look stale.
+Screenshots are produced by `scripts/screenshots/capture.sh`, a manual maintainer tool (not a CI job). Deploying real containers and accumulating metrics takes a couple of minutes, too slow for every PR. Re-run it by hand whenever the dashboard changes significantly and existing screenshots look stale.
 
 ## Prerequisites
 
@@ -28,13 +21,16 @@ that the existing screenshots look stale.
 scripts/screenshots/capture.sh
 ```
 
-This builds fresh binaries into a scratch directory, starts a control
-plane against a scratch data directory (never the repo's own dev data),
-deploys two real apps from public images, triggers a couple of real
-redeploys on one of them so there's real deploy history, sends it some
-real HTTP traffic, waits about 75 seconds for metrics to accumulate at
-their normal 15-second resolution, then logs in through the actual
-`/login` form and drives `shot-scraper` against the real dashboard.
+The script performs these steps:
+
+1. Build fresh binaries into a scratch directory
+2. Start a control plane against a separate scratch data directory
+3. Deploy two real apps from public images
+4. Trigger real redeploys to build deploy history
+5. Send real HTTP traffic to the apps
+6. Wait about 75 seconds for metrics to accumulate at 15-second resolution
+7. Log in through the real `/login` form
+8. Capture screenshots with `shot-scraper`
 
 It cleans up after itself on exit (including on failure): the deployed
 apps are deleted, the control plane process is stopped, and the scratch
@@ -48,18 +44,16 @@ failed capture.
 
 ## Why not dev-mode's fixed tokens
 
-The control plane binary this script builds uses `-tags embedweb` so it
-serves the real built frontend, the same binary a user would run. That
-build tag also compiles out the `APP_DEV_MODE` bypass entirely (see
-`internal/api/devmode_release.go`), so `dev-fixtures.yml`'s fixed API
-tokens aren't available here. The script bootstraps a real `dev`/`dev`
-admin account instead (`APP_ADMIN_USERNAME`/`APP_ADMIN_PASSWORD`, which
-work regardless of build tags), logs into it for real through the
-browser, and authenticates the CLI via the real device-login flow
-(`levelrail-cli auth login --device`), approved through the real approval
-endpoint using that same browser session. Every credential involved is
-freshly minted for the run and only ever touches the scratch data
-directory.
+The control plane binary builds with `-tags embedweb` to serve the real built frontend (same as a user would run). This also compiles out the `APP_DEV_MODE` bypass, so dev-mode's fixed tokens aren't available.
+
+Instead, the script:
+
+1. Bootstraps a real admin account using `APP_ADMIN_USERNAME`/`APP_ADMIN_PASSWORD`
+2. Logs into the browser through the actual login form
+3. Authenticates the CLI using the real device-login flow (`levelrail-cli auth login --device`)
+4. Approves the login through the browser
+
+All credentials are freshly created for each run and never leave the scratch data directory.
 
 ## Files
 

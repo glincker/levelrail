@@ -1,139 +1,115 @@
 # Projects, organizations, and environments
 
-The grouping hierarchy for apps and databases. Package:
-`internal/api/projects.go`, `organizations.go`, `environments.go`,
-`project_env.go`, `organization_env.go`, `environment_env.go`,
-`project_stop_start.go`, `project_restart.go`.
+The optional grouping hierarchy for apps and databases.
+
+Implementation: `internal/api/projects.go`, `organizations.go`, `environments.go`, `project_env.go`, `organization_env.go`, `environment_env.go`, `project_stop_start.go`, `project_restart.go`.
 
 ## Why this exists
 
-An app or a database is a real, running thing with its own lifecycle.
-A project is not: it is purely an optional label an app or database can
-be filed under (`internal/api/projects.go`'s own package comment).
-There is no owner, no member list, no per-project permission of any
-kind. The single admin user sees every project and every app/database
-regardless of membership, exactly like it already sees everything else.
-This is deliberate: the repo plan's Phase 4 note about "teams, projects,
-environments, RBAC" is explicitly *not* what this is. Projects, and the
-organizations that group them, arrived early as organizational labels;
-RBAC is a separate, later concern.
+Apps and databases are real, running things with their own lifecycle.
 
-The hierarchy is:
+Projects, organizations, and environments are optional labels only. They have no owner, no member list, and no per-project permissions. The single admin user sees every project and app/database regardless of membership, exactly like everything else.
+
+This is deliberate. Projects and organizations are organizational labels arriving early; RBAC (Role-Based Access Control) is separate work coming later (Phase 4 in the repo plan).
+
+### The hierarchy
 
 ```
 organization (optional)
   └── project (optional)
         ├── environment (optional, e.g. staging / production)
-        └── app / database (filed under the project directly)
+        └── app / database
 ```
 
-An app or database can skip every level and belong to nothing. Nothing
-about how it runs changes based on where it's filed. Deleting a
-project, an organization, or an environment never deletes or disrupts
-what was filed under it: every foreign key involved
-(`desired_services.project_id`, `desired_databases.project_id`,
-`projects.org_id`, `desired_services.environment_id`) is `ON DELETE SET
-NULL`, so the member just becomes unlabeled again.
+An app or database can skip every level and belong to nothing. Nothing about how it runs changes based on where it's filed.
 
-Environments sit one level below a project, not below an organization:
-an environment is scoped to exactly one project
-(`GET/POST /api/v1/projects/{id}/environments`), and only an app can be
-tagged with one, not a database. That last asymmetry isn't an oversight,
-it falls out of what environments are actually for: the protected-
-environment confirmation gate (see below) exists to slow down a
-deploy/rollback/promote, and none of those three actions apply to a
-database.
+Deleting a project, organization, or environment never deletes or disrupts what's filed under it. All foreign keys use `ON DELETE SET NULL`:
+
+- `desired_services.project_id`
+- `desired_databases.project_id`
+- `projects.org_id`
+- `desired_services.environment_id`
+
+Members just become unlabeled again.
+
+### Environments: scoped to projects, apps only
+
+Environments sit one level below a project, not an organization. Each environment is scoped to exactly one project (`GET/POST /api/v1/projects/{id}/environments`). Only apps can be tagged with an environment, not databases.
+
+This asymmetry is deliberate. Environments guard deploy/rollback/promote actions via the protected-environment gate. Databases have no deploy action, so environment tagging doesn't apply to them.
 
 ## How the grouping actually works
 
-Both a project and an organization are addressed by ID, never by name:
-`internal/api/projects.go`'s own comment explains that project names
-are deliberately non-unique for this reason, so there is no
-duplicate-name rejection the way `POST /apps` rejects a duplicate app
-name. Moving an app or database into a project, or an app into an
-environment, is a separate PUT call against the app/database itself,
-not a field on its create/update body:
+Projects and organizations are addressed by ID, never by name. Project names are deliberately non-unique so there's no duplicate-name rejection (unlike `POST /apps`).
 
-- `PUT /api/v1/apps/{name}/project` and
-  `PUT /api/v1/databases/{name}/project` move a resource into (or with
-  `project_id: ""`, out of) a project.
-- `PUT /api/v1/apps/{name}/environment` tags (or, with
-  `environment_id: ""`, untags) an app with an environment.
-- `PUT /api/v1/projects/{id}/organization` files (or, with `org_id:
-  ""`, unfiles) a project under an organization.
+### Moving resources between groups
 
-Every one of these validates the target ID against the real registry
-first: a typo'd or already-deleted project/environment/org ID gets a
-400, not a silent write. This mirrors the exact shape
-`PUT /apps/{name}/node` already established for node placement,
-just one level up in the resource hierarchy, and it's gated by
-ordinary `AbilityWrite`, not `AbilityRoot`: filing something under a
-project is an organizational edit, not an infrastructure change.
+Moving an app or database to a project, or an app to an environment, is a separate PUT call against the resource, not a field on create/update:
 
-On the dashboard, this move happens from the resource's own Overview
-page, not from the project/environment page: `AppOverview.tsx` renders
-`MoveToProjectDialog` and `MoveToEnvironmentDialog`, and
-`routes/databases/$name/overview.tsx` renders `MoveToProjectDialog` for
-a database. The project and environment detail pages
-(`routes/projects/$id/index.tsx`, `routes/projects/$id/environments/$envId.tsx`)
-are read-only with respect to membership: they list what's already
-filed there and link back to each member's own Overview page to move
-it. An organization is filed onto a project the same way, in reverse:
-`MoveToOrganizationDialog` lives on the project detail page, not the
-organization's.
+| Endpoint | Action |
+| --- | --- |
+| `PUT /api/v1/apps/{name}/project` | Move app to (or out of) a project |
+| `PUT /api/v1/databases/{name}/project` | Move database to (or out of) a project |
+| `PUT /api/v1/apps/{name}/environment` | Tag app with (or remove from) an environment |
+| `PUT /api/v1/projects/{id}/organization` | File project under (or remove from) an organization |
 
-There is no server-side filtered listing endpoint like
-`GET /api/v1/projects/{id}/apps`. The project detail page filters the
-same full `GET /api/v1/apps` and `GET /api/v1/databases` responses the
-unfiltered list pages already fetch, by each row's own `project_id`
-field. The organization detail page does the identical thing to
-`GET /api/v1/projects` by `org_id`. This keeps the "additive
-organization, not a forced migration" principle honest: neither `/apps`
-nor `/databases` nor `/projects` changes shape because this grouping
-exists, and a page that already warmed the unfiltered list pays no
-second fetch.
+To remove a resource, pass an empty string: `"project_id": ""`.
+
+All endpoints validate the target ID first. A typo'd or deleted ID gets a 400, not a silent write. This mirrors `PUT /apps/{name}/node` for node placement and is gated by `AbilityWrite`, not `AbilityRoot` (organizational edit, not infrastructure change).
+
+### Dashboard UX for moving
+
+Moves happen from the resource's own Overview page, not from the project/environment page:
+
+- App: `AppOverview.tsx` renders `MoveToProjectDialog` and `MoveToEnvironmentDialog`
+- Database: `routes/databases/$name/overview.tsx` renders `MoveToProjectDialog`
+- Project: `routes/projects/$id/index.tsx` renders `MoveToOrganizationDialog`
+
+Project and environment detail pages are read-only for membership. They list what's filed there and link back to each member's Overview page to move it.
+
+### Server-side filtering: intentionally omitted
+
+There is no `GET /api/v1/projects/{id}/apps` endpoint. The project detail page filters the full `GET /api/v1/apps` and `GET /api/v1/databases` responses client-side by each row's `project_id`. The organization detail page does the same with `GET /api/v1/projects` by `org_id`.
+
+This keeps the "additive organization, not forced migration" principle honest. The `/apps`, `/databases`, and `/projects` endpoints don't change shape because grouping exists, and pages that already fetched the full list pay no second query.
 
 ## Shared env var layering
 
-A project, an organization, and an environment can each hold their own
-set of shared env vars (`GET`/`PUT .../env`, a plain
-`map[string]string`, full-replace on write, the same semantics
-`PUT /apps/{name}`'s own `env` field has). These sit *beneath* an app's
-own `env`/`secretEnv` in `resolveEnv`
-(`internal/reconcile/application/controller.go`), applied lowest tier
-first so anything above it can freely override a same-named key:
+Projects, organizations, and environments can each hold shared env vars. These are stored as `map[string]string` (full-replace on write) via `GET`/`PUT .../env`, same semantics as `PUT /apps/{name}`'s `env` field.
+
+They stack in a fixed order, lowest to highest:
 
 ```
-organization env   (lowest, applied first)
+organization env        (applied first)
   → project env
     → environment env
-      → this app's own literal env
-        → this app's own secret-backed env      (overrides a literal)
-          → attached storage target's S3_* env  (overrides all of the above)
-            → attached database's connection env (highest, applied last)
+      → app's literal env
+        → app's secret env     (overrides literal)
+          → storage S3_* env   (overrides above)
+            → database conn env (applied last)
 ```
 
-In practice, an app only ever sees the organization/project/environment
-tiers that actually apply to it: the organization tier only resolves
-when the app has a `project_id` *and* that project is filed under an
-organization; the environment tier only resolves when the app has an
-`environment_id`. An app with no project and no environment just gets
-its own `env`/`secretEnv` (and any storage/database env), unchanged
-from before this layering existed.
+Implemented in `internal/reconcile/application/controller.go` (`resolveEnv`).
 
-This is why environments hang off a project rather than an
-organization directly: an environment's shared vars need a project's
-own vars beneath them to override, and a project's vars need an
-organization's beneath those, so the layering only makes sense in that
-fixed order.
+### What an app actually sees
+
+An app only sees the tiers that apply to it:
+
+- **Organization tier**: only if app has `project_id` AND that project is filed under an organization.
+- **Environment tier**: only if app has `environment_id`.
+- **Project tier**: only if app has `project_id`.
+
+An app with no project and no environment gets its own `env`/`secretEnv` (plus any storage/database env), unchanged from before.
+
+### Why this structure
+
+Environments hang off a project, not directly off an organization. An environment's shared vars need the project's vars beneath them (to override), and the project's vars need the organization's beneath those. This hierarchy is the only order that makes sense.
 
 ## Moving a resource between projects
 
-There is no dedicated "move" endpoint distinct from the assignment
-endpoint: moving is the same `PUT .../project` call as assigning, just
-against a resource that already has one. The store write happens
-immediately; nothing about the resource's running container, image, or
-config changes. On the CLI:
+Moving is the same `PUT .../project` call as initial assignment, just against a resource that already has one. No separate "move" endpoint.
+
+The store write is immediate. Nothing about the container, image, or config changes.
 
 ```bash
 levelrail-cli apps set-project my-app proj_abc123
@@ -143,26 +119,24 @@ levelrail-cli apps clear-project my-app
 
 ## Project-wide pause, resume, and restart
 
-Stopping or starting a project acts on every app and every database
-filed under it in one call: `POST /api/v1/projects/{id}/stop` sets
-each member's `suspended` flag to `true`, `.../start` clears it, the
-identical effect `POST /apps/{name}/stop` (or the database equivalent)
-has on one resource, applied project-wide. Like a single stop/start,
-this only flips the desired-state flag; the application and database
-reconcilers are what actually stop or start containers on their next
-pass.
+### Stop and start
 
-Restart is app-only: `POST /api/v1/projects/{id}/restart` forces every
-app filed under the project to have its running container recreated
-with no image change (a fresh `restart_nonce`, the same mechanism
-`POST /apps/{name}/restart` uses on one app). Databases have no bulk
-restart route at this scope.
+`POST /api/v1/projects/{id}/stop` and `.../start` act on every app and database filed under the project:
 
-All three endpoints attempt every member independently and never abort
-on one failure. The response reports which resources succeeded and
-which failed, so an operator restarting or stopping a whole project's
-worth of apps sees a partial result instead of one bad app blocking
-every other one:
+- Stop sets each member's `suspended` flag to `true`
+- Start clears it
+
+Same effect as `POST /apps/{name}/stop` (or database equivalent) applied project-wide. Like single stop/start, this only flips the desired-state flag. Reconcilers actually stop/start containers on their next pass.
+
+### Restart (apps only)
+
+`POST /api/v1/projects/{id}/restart` forces every app under the project to recreate its running container with no image change (a fresh `restart_nonce`, the same mechanism as `POST /apps/{name}/restart` on one app).
+
+Databases have no bulk restart endpoint at this scope.
+
+### Partial success handling
+
+All three endpoints attempt every member independently and never abort on one failure. The response reports successes and failures:
 
 ```json
 {
@@ -172,27 +146,26 @@ every other one:
 }
 ```
 
-On the dashboard, the project detail page shows a "Stop project" /
-"Start project" pair (`PauseResumeProjectButton`, always both actions
-rather than one toggle, since a database's `suspended` state isn't in
-`GET /api/v1/databases`'s response yet, so there's no reliable
-"is everything already stopped" signal to key a single toggle off) and
-a "Restart all" button (`RestartProjectButton`, disabled when the
-project has no apps). Neither is behind a confirm dialog: stopping is
-not destructive, every desired-state row survives untouched, and a
-restart is the same non-destructive action `RestartAppButton` already
-performs without one.
+One bad resource doesn't block the rest.
+
+### Dashboard
+
+The project detail page shows:
+
+- "Stop project" / "Start project" pair (always both buttons, not a toggle)
+- "Restart all" button (disabled when the project has no apps)
+
+Neither requires a confirm dialog. Stopping is not destructive (desired state survives), and restart is non-destructive like `RestartAppButton`.
 
 ## Protected environments
 
-An environment created with `protected: true` requires an explicit
-`confirm: true` on any of the three actions that change what a tagged
-app runs: `POST /apps/{name}/deploys`, the promote endpoint
-(`POST /apps/{name}/promote`), and rollback (which is the identical
-deploy endpoint run with an older image tag, per
-`handleTriggerDeploy`'s own doc comment: there is no separate rollback
-mechanism). Without `confirm: true`, the server rejects the request
-with `409 Conflict` and a message naming the environment:
+An environment created with `protected: true` requires explicit `confirm: true` on actions that change what a tagged app runs:
+
+- `POST /apps/{name}/deploys` (deploy)
+- `POST /apps/{name}/promote` (promote to another environment)
+- `POST /apps/{name}/deploys` with an older image tag (rollback; no separate endpoint)
+
+Without `confirm: true`, the server rejects the request with a 409 and names the environment:
 
 ```json
 {
@@ -200,21 +173,11 @@ with `409 Conflict` and a message naming the environment:
 }
 ```
 
-The check (`requireEnvironmentConfirmation`,
-`environmentNeedsConfirmation` in `environments.go`) degrades safely on
-either side: an app with no environment, or one tagged with an
-unprotected environment, always passes with no friction at all; a
-stale or already-deleted `environment_id` reference is treated as "not
-protected" rather than blocking the caller with an error this endpoint
-isn't responsible for validating.
+The check degrades safely: apps with no environment, or tagged with unprotected environments, always pass. Stale or deleted `environment_id` references are treated as "not protected" rather than blocking.
 
-On the CLI, `apps deploy`, `apps rollback`, and `apps promote` all take
-a `--confirm` flag. Omitting it doesn't fail outright: the client
-catches the 409, prints the server's own message, and prompts
-interactively on stdin (`Type "yes" to proceed:`), the same
-fail-closed-on-EOF behavior a scripted destructive restore already
-uses. Typing anything other than `yes` (or hitting EOF, for a
-non-interactive script) leaves the original 409 as the final result.
+### CLI
+
+All three commands take a `--confirm` flag:
 
 ```bash
 levelrail-cli apps deploy my-app --image registry.example.com/org/app:v2 --confirm
@@ -222,36 +185,26 @@ levelrail-cli apps rollback my-app --image registry.example.com/org/app:v1 --con
 levelrail-cli apps promote my-app --to env_prod123 --confirm
 ```
 
-On the dashboard, the deploy/rollback/promote flow surfaces
-`ProtectedEnvironmentNotice`, an amber warning box with a checkbox
-("I understand and want to proceed.") that must be checked before the
-button enables, the same acknowledge-then-enable pattern used for
-Redis's no-auth public-access warning. Toggling `protected` itself is a
-`Switch` on the environment detail page (`ProtectedEnvironmentToggle`),
-backed by `PATCH /api/v1/environments/{id}`, the only field that route
-ever changes.
+Omitting `--confirm` doesn't fail. The client catches the 409, prints the server message, and prompts on stdin: `Type "yes" to proceed:`. Non-interactive scripts (EOF or anything but "yes") leave the original 409 as the result.
+
+### Dashboard
+
+The deploy/rollback/promote flow shows `ProtectedEnvironmentNotice`, an amber warning box. Check the checkbox "I understand and want to proceed." to enable the button (same pattern as Redis's no-auth warning).
+
+Toggle `protected` on the environment detail page (`ProtectedEnvironmentToggle`), backed by `PATCH /api/v1/environments/{id}`. That's the only field that endpoint changes.
 
 ## Dashboard pages
 
-- `/projects`: virtualized list of every project, with a "New project"
-  dialog.
-- `/projects/$id`: one project's name, its organization (with a "Move"
-  action), its environments (`ProjectEnvironmentsPanel`, create/delete
-  inline), stop/start/restart/delete actions, and its member apps and
-  databases (client-filtered, as above; move or remove a member from
-  its own Overview page).
-- `/projects/$id/environments/$envId`: one environment's protected
-  toggle, its own shared env var editor, links to sibling environments
-  in the same project, and every app currently tagged with it.
-- `/settings/organizations`: list of every organization, with a "New
-  organization" dialog. File a project into one from the project's own
-  detail page, not from here.
-- `/organizations/$id`: one organization's name, its shared env var
-  editor, and every project filed under it (client-filtered from
-  `GET /api/v1/projects`).
-- An app's or database's own Overview page: the "Move" (project) and,
-  for apps, "Change" (environment) actions that actually reassign
-  membership.
+| Page | What's there |
+| --- | --- |
+| `/projects` | Virtualized list of all projects with "New project" dialog |
+| `/projects/$id` | Project name, organization, environments (create/delete inline), stop/start/restart/delete actions, member apps and databases (client-filtered) |
+| `/projects/$id/environments/$envId` | Environment's protected toggle, shared env var editor, sibling environment links, apps tagged with it |
+| `/settings/organizations` | List of all organizations with "New organization" dialog |
+| `/organizations/$id` | Organization name, shared env var editor, projects filed under it (client-filtered from API) |
+| App/Database Overview | "Move" (project) and "Change" (environment for apps only) actions to reassign membership |
+
+File a project into an organization from the project detail page, not from the organizations list.
 
 ## API reference
 
@@ -334,27 +287,12 @@ levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--confirm
 
 ## Not built yet (deliberate follow-ups)
 
-- **No project-scoped or organization-scoped auth.** Filing something
-  under a project or organization is a label, not a permission
-  boundary; the single admin user sees and can act on everything
-  regardless of what it's filed under. Real membership/RBAC is a
-  separate, later piece of work (see the repo plan's Phase 4).
-- **No bulk move.** Moving apps/databases between projects, or between
-  environments, is one resource at a time; there is no "move every app
-  in project A to project B" endpoint.
-- **No database environment tagging.** Only an app can be tagged with
-  an environment (`PUT /api/v1/apps/{name}/environment`); there is no
-  equivalent route for a database, since the protected-environment gate
-  only guards deploy/rollback/promote, none of which apply to a
-  database.
-- **No project-scoped or organization-scoped deploy history, audit
-  view, or dashboard beyond the plain member list.** A create/update/
-  delete against any of these three resources lands in the platform's
-  existing generic audit log (`GET /api/v1/audit-log`) the same as any
-  other authenticated write, with no dedicated per-project or
-  per-organization view on top of it.
-- **No server-side filtered listing.** `GET /api/v1/projects/{id}/apps`
-  (or the organization/environment equivalents) doesn't exist; the
-  dashboard filters the full unfiltered list client-side, as described
-  above. Revisit only if that becomes a real scale problem for the
-  3-50-service target audience this platform is built for.
+- **No project-scoped or organization-scoped auth.** Grouping is a label, not a permission boundary. The single admin user sees and acts on everything regardless of grouping. Real membership and RBAC come later (Phase 4).
+
+- **No bulk move.** Move apps/databases between projects or environments one at a time. No "move every app in project A to project B" endpoint.
+
+- **No database environment tagging.** Only apps can be tagged with an environment. Databases have no equivalent because the protected-environment gate only guards deploy/rollback/promote, which don't apply to databases.
+
+- **No project or organization-scoped deploy history or audit view.** Grouping members appear in the generic audit log (`GET /api/v1/audit-log`) like any other authenticated write, but no dedicated per-project or per-organization view exists.
+
+- **No server-side filtered listing.** `GET /api/v1/projects/{id}/apps` doesn't exist. The dashboard filters the full unfiltered list client-side. Revisit only if this becomes a scale problem for the 3-50-service target audience.

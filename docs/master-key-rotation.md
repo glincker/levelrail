@@ -1,13 +1,6 @@
 # Master key rotation
 
-Every secret this control plane stores (app env vars marked `secret: true`,
-email SMTP credentials, Cloudflare tokens, git provider app secrets, backup
-target credentials, and more) is encrypted with envelope encryption: each
-service gets its own random data encryption key (DEK), and every DEK is
-itself encrypted ("wrapped") under one master key the control plane holds
-in memory. Rotating the master key means re-wrapping every stored DEK under
-a new master key, without ever exposing a plaintext secret value in the
-process.
+All secrets (app env vars marked `secret: true`, email credentials, tokens, etc.) are encrypted with envelope encryption. Each secret gets its own random data encryption key (DEK), and every DEK is wrapped under a master key held in memory. Rotating the master key means re-wrapping every DEK under a new key without ever exposing plaintext secrets.
 
 ## When to rotate
 
@@ -20,52 +13,25 @@ process.
 
 ## What this does and does not require
 
-Rotation runs **live**, against a running control plane, with no downtime:
-`levelrail-cli secrets rotate-master-key` calls an admin-only HTTP endpoint
-that re-wraps every stored DEK from the old key to the new one inside a
-single database transaction. If any row fails to unwrap (a corrupt DEK, or
-the control plane's own currently-held key not matching what you expected),
-the whole rotation aborts and nothing changes: there is no partially
-rotated state. While a rotation is in progress, any other secret read or
-write is blocked until it completes (not racing against it), so a deploy
-that reads a secret mid-rotation either sees the old key's results or waits
-briefly for the new one, never a mix of the two.
+Rotation runs live against the running control plane with zero downtime. The CLI calls an admin-only endpoint that re-wraps every DEK in a single database transaction. If any DEK fails to unwrap, the entire rotation aborts with no changes.
 
-This is *not* a fully unattended, zero-follow-up operation, because of one
-real constraint: the control plane loads its master key once at process
-startup and never reloads it. A successful rotation immediately updates the
-running process's in-memory key, so it keeps serving correctly right away.
-What happens on the *next restart* depends on where that key came from:
+While a rotation is in progress, all other secret reads and writes are blocked until it completes. This prevents mixing old and new keys.
 
-- **File-sourced** (the default: no `APP_MASTER_KEY` set, key persisted at
-  `<data dir>/master.key`): rotation automatically rewrites that file with
-  the new key, atomically (write-then-rename, so a crash mid-write can
-  never leave a truncated file). A restart picks up the new key with no
-  further action.
-- **Env-sourced** (`APP_MASTER_KEY` set): rotation cannot rewrite an
-  environment variable belonging to your process supervisor. The CLI's
-  output includes an explicit warning telling you to update
-  `APP_MASTER_KEY` to the new value in your systemd unit, Docker Compose
-  file, or wherever it's set, before the control plane is next restarted.
-  Restarting with the old value still set will make every stored secret
-  permanently undecryptable, since the database now holds every DEK
-  wrapped only under the new key.
+However, this is not a fully unattended operation due to one constraint: the control plane loads its master key at startup and never reloads it. A successful rotation immediately updates the running process's key, so it serves correctly right away. What happens on the next restart depends on where that key came from:
 
-Read the CLI's output (or the JSON response's `warning`/`persistedToFile`
-fields) every time you rotate. A silently-skipped warning here is exactly
-the kind of failure this project's own design principles call out as the
-most dangerous kind: one that surfaces at the next restart, not at the
-moment the mistake was made.
+**File-sourced** (default, no `APP_MASTER_KEY` set):
+Rotation automatically rewrites the file at `<data dir>/master.key` with the new key (atomically, so a crash never leaves a truncated file). On restart, the process picks up the new key with no further action.
+
+**Env-sourced** (`APP_MASTER_KEY` set):
+Rotation cannot rewrite an environment variable belonging to your process supervisor. The CLI output includes an explicit warning to update `APP_MASTER_KEY` in your systemd unit or Docker Compose file before the next restart. Restarting with the old value will make every secret permanently unreadable, since all DEKs are now wrapped only under the new key.
+
+Always read the CLI's output (or the JSON response's `warning`/`persistedToFile` fields). A silently-skipped warning can cause failure at the next restart, the worst kind of problem to discover.
 
 ## How to rotate
 
-1. Generate or otherwise obtain a new master key. Any valid
-   `filippo.io/age` identity string works; the simplest way to get one is
-   to let the control plane generate it for a throwaway data directory, or
-   use any tool that emits an age identity.
-2. Save the new key to a file you control, readable only by you
-   (`chmod 600`). Never paste it on the command line: it would leak into
-   shell history and process listings.
+1. Generate a new master key. Any valid `filippo.io/age` identity works. The simplest way: let the control plane generate one in a throwaway data directory, or use any tool that emits an age identity.
+
+2. Save the key to a file with mode `600`. Never paste it on the command line, as it will leak into shell history and process listings.
 3. Run:
 
    ```sh
@@ -78,32 +44,19 @@ moment the mistake was made.
    cat /path/to/new.key | levelrail-cli secrets rotate-master-key --new-key-file -
    ```
 
-4. Read the output. On success you'll see `rotated_at`,
-   `persisted_to_file`, and, if applicable, a `WARNING` line. Act on the
-   warning immediately if one appears: update `APP_MASTER_KEY` in whatever
-   manages your control plane's environment, before the next restart.
-5. Securely delete the temporary key file once you've confirmed the
-   rotation succeeded (or keep it somewhere safe if `APP_MASTER_KEY` still
-   needs updating out of band).
+4. Read the output carefully. You will see `rotated_at` and `persisted_to_file` fields. If a `WARNING` line appears, act on it immediately. Update `APP_MASTER_KEY` in your systemd unit or Docker config before the next restart.
 
-This command requires an API token or session with the `root` ability: the
-same tier gated on fleet-wide, no-undo actions like `system prune`, since a
-master key rotation is exactly the kind of action a narrower, per-app-scoped
-token should never be able to reach.
+5. Securely delete the temporary key file once you've confirmed the rotation succeeded (or keep it safe if you still need to update `APP_MASTER_KEY` manually).
+
+This command requires an API token or session with the `root` ability. It's gated the same way as other fleet-wide, irreversible actions like `system prune`, because narrower, per-app-scoped tokens should never reach such powerful operations.
 
 ## Failure modes and what they mean
 
-- **"rotate master key: ... unwrap DEK for ...: ..."**: a stored DEK could
-  not be unwrapped under the control plane's currently active master key.
-  This should not happen in normal operation; it indicates either data
-  corruption or that the running process is not actually holding the key
-  you think it is. Nothing was changed: safe to investigate and retry.
-- **`persistedToFile: false` with a warning about the key file**: the
-  rotation itself succeeded (every DEK is now wrapped under the new key,
-  and the running process is using it), but writing the new key to
-  `master.key` failed, most likely a permissions or disk-space problem on
-  the data directory. Fix that and copy the new key into place by hand
-  before the control plane restarts.
-- **`persistedToFile: false` with a warning about `APP_MASTER_KEY`**: not a
-  failure. This is the expected message whenever the master key is
-  env-sourced; it's the required follow-up described above, not an error.
+**"rotate master key: ... unwrap DEK for ...: ..."**
+A stored DEK could not be unwrapped with the control plane's current master key. This suggests data corruption or that the running process does not hold the key you expected. Nothing was changed, so it is safe to investigate and retry.
+
+**`persistedToFile: false` with a warning about the key file**
+The rotation itself succeeded (all DEKs are now wrapped under the new key and in use), but writing the new key to `master.key` failed. Usually a permissions or disk-space problem. Fix it and copy the new key into place manually before the control plane restarts.
+
+**`persistedToFile: false` with a warning about `APP_MASTER_KEY`**
+Not a failure. This is the expected message when the master key is env-sourced (see above). It is the required follow-up step, not an error.

@@ -9,51 +9,42 @@ security,tokens,oauth,cli-access,audit-log}.tsx`.
 
 ## Why two permission models instead of one
 
-Most self-hosted platforms pick one of two shapes and live with its
-downside. A flat role list (admin/member/viewer) is easy to reason about
-but can't express "this CI token may deploy exactly one app and nothing
-else." A full IAM-style policy engine can express that but is overkill
-for the 90% case of "give Priya everything, give the contractor
-read-only."
+Most self-hosted platforms pick one of two shapes and live with the downside.
+
+- **Flat roles** (admin/member/viewer): Easy to reason about but cannot express "this CI token may deploy exactly one app and nothing else."
+- **Full IAM policy engine**: Can express that but is overkill for "give Priya everything, give the contractor read-only."
 
 This platform keeps both, layered:
 
-- **Abilities** are a flat, six-string vocabulary (`read`,
-  `read:sensitive`, `write`, `write:sensitive`, `deploy`, `root`) that
-  every user and every API token carries directly. **Roles**
-  (`admin`/`operator`/`viewer`) are nothing more than named presets over
-  that same list, a convenience for the common case, never a second
-  storage location.
-- **IAM policies** are optional, additive documents of Allow/Deny
-  statements scoped to one resource (`app:web`, `database:main`, or
-  `*`), attachable to a user or a token. They exist for the narrow case
-  a flat ability can't express: granting (or explicitly revoking) access
-  to one specific app without touching the principal's own ability list.
+**Abilities**
 
-An explicit Deny in an attached policy always wins, even over `root`.
-Everything else falls back to the flat abilities exactly as if no policy
-existed.
+A flat, six-string vocabulary that every user and every API token carries directly: `read`, `read:sensitive`, `write`, `write:sensitive`, `deploy`, `root`.
+
+**Roles**
+
+Named presets over the same ability list: `admin`, `operator`, `viewer`. These are a convenience for the common case, never a second storage location.
+
+**IAM policies**
+
+Optional, additive documents of Allow/Deny statements scoped to one resource (`app:web`, `database:main`, or `*`). Attach them to a user or token to grant or revoke access to a specific app without changing the principal's ability list.
+
+**Evaluation**
+
+An explicit Deny in an attached policy always wins, even over `root`. Everything else falls back to the flat abilities exactly as if no policy existed.
 
 ## How it actually works
 
 ### Principals: a session, or a token
 
-Every gated route (`requireAbility`, `internal/api/auth.go`) resolves the
-request to exactly one principal before deciding anything: a session
-cookie mapped to a `store.User` row, or a bearer token's own stored
-`Abilities`. Session lookups are an in-memory map keyed by an opaque
-token (`sessionStore`), TTL 24h by default, overridable with
-`APP_SESSION_TTL` (a Go duration string). A restart clears every live
-session, the same accepted tradeoff a single-node control plane makes
-elsewhere.
+Every gated route resolves the request to exactly one principal before deciding anything: a session cookie (mapped to a `store.User` row) or a bearer token (with its own stored `Abilities`).
 
-The session cookie is set `Secure`, deliberately, even though the
-control plane's own HTTP listener speaks plain HTTP: embedded Caddy is
-expected to terminate TLS in front of it. Hitting the control plane
-directly over `http://` (the common local-dev case) means the cookie
-never round-trips back on a follow-up request, which is a real,
-load-bearing gap `levelrail-cli auth login` inherits (see "Not built
-yet" below).
+**Sessions**
+
+Sessions are an in-memory map keyed by an opaque token (`sessionStore`), with a TTL of 24h by default (overridable with `APP_SESSION_TTL`, a Go duration string). A restart clears every live session (an accepted tradeoff for a single-node control plane).
+
+**Session cookie security**
+
+The session cookie is set `Secure`, even though the control plane's HTTP listener speaks plain HTTP. Embedded Caddy is expected to terminate TLS in front of it. Hitting the control plane directly over `http://` (common in local dev) means the cookie never round-trips back on follow-up requests. This is a real gap that `levelrail-cli auth login` inherits (see "Not built yet" below).
 
 ### Abilities and roles
 
@@ -85,7 +76,7 @@ diffing a principal's abilities against the three presets
 
 ### IAM policies: Allow/Deny over a resource
 
-A policy document is AWS IAM's own shape, hand-typed or generated:
+A policy document uses AWS IAM's shape, hand-typed or generated:
 
 ```json
 {
@@ -96,155 +87,138 @@ A policy document is AWS IAM's own shape, hand-typed or generated:
 }
 ```
 
-`Action` entries are ability strings or `*`; `Resource` entries are
-`app:<name>`, `database:<name>`, or `*`, with a trailing `*` matching as
-a prefix (`app:*` matches every app). Evaluation order
-(`authorizeResource`, `internal/api/iam.go`), checked only on the two
-routes that are resource-scoped today (apps and databases):
+**Fields**
 
-1. An explicit **Deny** matching the ability and resource, in any
-   attached policy, always wins. Full stop, even for a `root` principal.
-2. Otherwise, the principal's own flat abilities decide, unchanged from
-   having no policies attached at all.
-3. Otherwise, an explicit **Allow** in an attached policy can still grant
-   access the principal's flat abilities don't, scoped to that one
-   resource.
+- `Action`: Ability strings or `*`
+- `Resource`: `app:<name>`, `database:<name>`, or `*`. A trailing `*` matches as a prefix (e.g., `app:*` matches every app).
 
-A policy attaches to a `user` or a `token` (`principal_type`), by that
-principal's own id. A malformed stored document can never grant or deny
-anything, it's treated as if it simply doesn't mention the pair being
-checked.
+**Evaluation order** (`authorizeResource`, `internal/api/iam.go`)
+
+Checked only on resource-scoped routes (apps and databases):
+
+1. An explicit **Deny** matching the ability and resource, in any attached policy, always wins. Full stop, even for a `root` principal.
+2. Otherwise, the principal's own flat abilities decide, unchanged from having no policies attached.
+3. Otherwise, an explicit **Allow** in an attached policy can still grant access the principal's flat abilities don't, scoped to that one resource.
+
+**Attachment**
+
+A policy attaches to a `user` or a `token` (`principal_type`), by that principal's id. A malformed stored document can never grant or deny anything; it's treated as if it simply doesn't mention the pair being checked.
 
 ### Bootstrap: exactly one path to the first admin
 
-On startup, `BootstrapAdmin` creates a user from `APP_ADMIN_USERNAME` /
-`APP_ADMIN_PASSWORD` only if zero users exist yet; it's a no-op on every
-later restart, so a password change doesn't get silently reverted.
-Without those env vars set and no user yet, the control plane still
-starts (it serves the public `/api/v1/brand` endpoint) but every
-auth-required route stays inaccessible until an operator sets them and
-restarts, or calls `POST /api/v1/auth/register` by hand.
-`POST /api/v1/auth/register` is gated at the database layer to succeed
-exactly once (a unique constraint, not just an application check), so a
-race between two concurrent first-registration attempts can't create two
-"first" admins. Either path grants `AbilityRoot`: there's no one else yet
-to grant anything narrower. (`APP_DEV_MODE=1` seeds a fixed `dev`/`dev`
-admin for local development instead; never use it in a real deployment.)
+On startup, `BootstrapAdmin` creates a user from `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` only if zero users exist. It is a no-op on later restarts, so a password change doesn't get silently reverted.
 
-Every user after the first is created by an existing root user, either
-directly (`POST /api/v1/auth/users`) or via an accepted invite.
+Without those env vars set and no user yet, the control plane still starts (it serves the public `/api/v1/brand` endpoint) but auth-required routes stay inaccessible until an operator sets them and restarts, or calls `POST /api/v1/auth/register` by hand.
 
-A root user cannot edit their own abilities or delete their own account
-(`handleUpdateUserAbilities`, `handleDeleteUser`), and the last remaining
-user can never be deleted. Both are hard 400s, not soft warnings: the
-one rule standing between the platform and a permanent lockout.
+`POST /api/v1/auth/register` is gated at the database layer to succeed exactly once (a unique constraint, not an application check). A race between concurrent first-registration attempts cannot create two "first" admins. Either path grants `AbilityRoot` because no one else exists yet.
+
+::: tip Development only
+`APP_DEV_MODE=1` seeds a fixed `dev`/`dev` admin for local development. Never use this in a real deployment.
+:::
+
+**Subsequent users**
+
+Every user after the first is created by an existing root user, either directly (`POST /api/v1/auth/users`) or via an accepted invite.
+
+**Lockout prevention**
+
+A root user cannot edit their own abilities or delete their own account. The last remaining user can never be deleted. Both are hard 400s, not soft warnings. This is the rule standing between the platform and a permanent lockout.
 
 ### Two-factor authentication (TOTP)
 
-Requires a master key configured on the control plane (`internal/secrets`);
-without one, every 2FA route returns `501`. The flow:
+Requires a master key configured on the control plane (`internal/secrets`). Without one, every 2FA route returns `501`.
 
-1. `POST /api/v1/auth/2fa/setup` mints a fresh TOTP secret and stores it
-   unconfirmed. Calling it again before confirming just overwrites the
-   pending secret.
-2. `POST /api/v1/auth/2fa/confirm` validates one live code against that
-   secret, flips `TOTPEnabled`, and returns 10 recovery codes in
-   plaintext, the one and only time they're ever shown.
-3. From then on, `POST /api/v1/auth/login` returns `mfa_required: true`
-   plus a short-lived `mfa_token` (5 minutes) instead of a session;
-   `POST /api/v1/auth/2fa/verify` exchanges that token plus a live code
-   (or a recovery code) for the real session cookie.
+**Setup flow**
 
-Disabling 2FA (`POST /api/v1/auth/2fa/disable`) re-verifies the second
-factor itself, not the account password: a password-only re-check would
-undermine the exact property 2FA exists to provide. Regenerating
-recovery codes invalidates the entire previous set. Both the login-time
-verify step and every setup/confirm/disable call are rate limited
-(exponential backoff, a handful of free failures before it bites),
-separately from the password rate limiter below.
+1. `POST /api/v1/auth/2fa/setup`: Mint a fresh TOTP secret and store it unconfirmed. Calling it again before confirming overwrites the pending secret.
+
+2. `POST /api/v1/auth/2fa/confirm`: Validate one live code against that secret, flip `TOTPEnabled`, and return 10 recovery codes in plaintext. This is the one and only time recovery codes are shown.
+
+3. On login: `POST /api/v1/auth/login` returns `mfa_required: true` plus a short-lived `mfa_token` (5 minutes) instead of a session. Exchange that token plus a live code (or a recovery code) via `POST /api/v1/auth/2fa/verify` for the real session cookie.
+
+**Disabling and recovery codes**
+
+`POST /api/v1/auth/2fa/disable` re-verifies the second factor itself, not the account password. A password-only re-check would undermine 2FA's purpose.
+
+Regenerating recovery codes invalidates the entire previous set.
+
+**Rate limiting**
+
+Both the login-time verify step and every setup/confirm/disable call are rate limited (exponential backoff with a handful of free failures). This is separate from the password rate limiter.
 
 ### OAuth sign-in
 
-Three providers, `google`, `github`, `oidc` (generic OpenID Connect,
-requires an issuer URL). Settings are per-provider rows
-(`GET`/`PUT /api/v1/settings/oauth[/{provider}]`), `AbilityRoot` to
-change, enabling one requires a client ID and a client secret (the OIDC
-provider also requires an issuer URL); the secret is write-only over the
-API, `has_client_secret` is all a `GET` ever reveals.
+Three providers are supported: `google`, `github`, `oidc` (generic OpenID Connect, requires an issuer URL).
 
-Sign-in behavior (`completeOAuthSignin`, `internal/api/oauth.go`):
+Settings are per-provider rows (`GET`/`PUT /api/v1/settings/oauth[/{provider}]`), gated at `AbilityRoot` to change. Enabling a provider requires a client ID and a client secret (OIDC also requires an issuer URL). The secret is write-only over the API; `GET` only reveals `has_client_secret`.
 
-- An already-linked external identity signs in as its existing owner.
-- A brand-new email auto-provisions a new user with `AbilityRead` only,
-  the least-privilege default (never `root`, since a fresh OAuth signup
-  is never the platform's first user). An existing root user grants more
-  afterward via `PUT /api/v1/users/{id}/abilities`.
-- An email that already belongs to a different, existing account is
-  refused outright: auto-linking here would let an anonymous sign-in
-  silently take over an unrelated account. Attaching a new provider to
-  an account you already control only happens through
-  `GET /api/v1/auth/oauth/{provider}/link/start`, which requires an
-  existing live session first.
-- If `AllowedEmailDomain` is set on a provider, a new signup outside that
-  domain is refused.
+**Sign-in behavior** (`completeOAuthSignin`, `internal/api/oauth.go`)
+
+- **Already-linked identity**: Signs in as its existing owner.
+- **Brand-new email**: Auto-provisions a new user with `AbilityRead` only (least-privilege default, never `root`, since a fresh OAuth signup is never the platform's first user). An existing root user can grant more later via `PUT /api/v1/users/{id}/abilities`.
+- **Email already belonging to another account**: Refused outright. Auto-linking here would let an anonymous sign-in silently take over an unrelated account.
+- **Linking a new provider to an existing account**: Requires an existing live session. Use `GET /api/v1/auth/oauth/{provider}/link/start` to do this.
+- **Allowed email domain**: If `AllowedEmailDomain` is set on a provider, a new signup outside that domain is refused.
 
 ### Team invites
 
-`POST /api/v1/invites` mints a token for one named email, either
-`--role` or `--abilities`, capped by a real privilege check: the caller
-cannot invite someone with an ability they don't hold themselves
-(`AbilityWrite` gates the route, but that per-ability cap is the actual
-boundary). The response always includes the plaintext accept link,
-whether or not SMTP is configured, so a control plane with no email
-capability is still fully usable by copy/pasting the link. Default TTL
-is 7 days (`APP_INVITE_TTL`). `POST /api/v1/invites/accept` creates a
-normal local-password user through the exact same insertion path
-`POST /api/v1/auth/users` uses, so an invited account is never
-distinguishable from an admin-created one. A non-root caller only ever
-sees invites they created themselves; a root caller sees every pending
-invite.
+`POST /api/v1/invites` mints a token for one named email, specifying either `--role` or `--abilities`.
+
+**Privilege check**
+
+The caller cannot invite someone with an ability they don't hold themselves. `AbilityWrite` gates the route, but that per-ability cap is the actual boundary.
+
+**Accept link**
+
+The response always includes the plaintext accept link, whether or not SMTP is configured. A control plane with no email capability is still fully usable by copy/pasting the link.
+
+**Invitation acceptance**
+
+Default TTL is 7 days (`APP_INVITE_TTL`). `POST /api/v1/invites/accept` creates a normal local-password user through the exact same path `POST /api/v1/auth/users` uses. An invited account is never distinguishable from an admin-created one.
+
+**Visibility**
+
+A non-root caller only sees invites they created themselves. A root caller sees every pending invite.
 
 ### API tokens
 
-Scoped, revocable bearer credentials for the CLI, CI, and MCP
-integrations, minted with the same six-string ability vocabulary users
-carry, plus an optional expiry (`expires_in_days`, 0 means never). The
-plaintext is returned exactly once, at creation; every later read
-(`GET /api/v1/auth/tokens`) shows only metadata.
+Scoped, revocable bearer credentials for the CLI, CI, and MCP integrations. Minted with the same six-string ability vocabulary users carry, plus an optional expiry (`expires_in_days`, 0 means never). The plaintext is returned exactly once at creation; every later read (`GET /api/v1/auth/tokens`) shows only metadata.
 
-Token management (`create`/`list`/`revoke`) is deliberately **session-
-only**, never bearer-token authenticated: a token can never mint or
-revoke another token on its own behalf. That's why the CLI's
-`tokens create`/`list`/`revoke` and `auth login` all prompt for a
-username and password rather than accepting `--token`, there is no
-bearer token that could ever call those routes, however broadly scoped.
+**Session-only token management**
 
-The device-code flow (`POST /api/v1/auth/device/start` and `/token`,
-`levelrail-cli auth login --device`) exists specifically to sidestep the
-plain-HTTP session-cookie gap above: the CLI polls with a random device
-code, an operator approves it from the dashboard's CLI Access page
-(`/settings/cli-access`) using their own already-established session,
-and the resulting token inherits exactly that approving operator's own
-abilities. The CLI never gets to pick.
+Token management (`create`/`list`/`revoke`) is deliberately session-only, never bearer-token authenticated. A token can never mint or revoke another token on its own behalf. This is why the CLI's `tokens create`/`list`/`revoke` and `auth login` prompt for username and password instead of accepting `--token`. No bearer token can ever call those routes, however broadly scoped.
+
+**Device-code flow**
+
+The device-code flow (`POST /api/v1/auth/device/start` and `/token`, `levelrail-cli auth login --device`) sidesteps the plain-HTTP session-cookie gap.
+
+- The CLI polls with a random device code.
+- An operator approves it from the dashboard's CLI Access page (`/settings/cli-access`) using their already-established session.
+- The resulting token inherits exactly that operator's abilities.
+- The CLI never picks the permissions.
 
 ### Audit log
 
-Every request gated above `AbilityRead` (write, deploy, root-tier, plus
-`read:sensitive` since reading a private credential isn't an ordinary
-read) gets one row: actor type and id, resolved display name, the
-ability checked, HTTP method and path, status code, remote address,
-timestamp, and which caller surface it came from (`cli`, `dashboard`,
-`mcp`, or `api`, sniffed from `User-Agent`). Recording is best-effort and
-runs after the real request has already completed: a failed audit write
-is logged and dropped, never turned into a failed request.
+Every request gated above `AbilityRead` (write, deploy, root-tier, and `read:sensitive`) gets one row:
 
-`GET /api/v1/audit-log` is cursor-paginated (`?before`, an RFC3339
-timestamp), filterable by `?path`, `?method`, and `?client_kind`, and
-`?format=csv` returns the identical rows as a downloadable attachment
-instead of JSON, for compliance export. Retention defaults to 90 days
-(`APP_AUDIT_LOG_RETENTION_DAYS`), swept automatically on an interval
-(`APP_AUDIT_LOG_SWEEP_INTERVAL`) and purgeable on demand via
-`POST /api/v1/audit-log/purge`.
+- Actor type and id
+- Resolved display name
+- Ability checked
+- HTTP method and path
+- Status code
+- Remote address
+- Timestamp
+- Caller surface (`cli`, `dashboard`, `mcp`, or `api`, sniffed from `User-Agent`)
+
+Recording is best-effort and runs after the real request completes. A failed audit write is logged and dropped, never turned into a failed request.
+
+**Query**
+
+`GET /api/v1/audit-log` is cursor-paginated (`?before`, an RFC3339 timestamp) and filterable by `?path`, `?method`, and `?client_kind`. Use `?format=csv` to return rows as a downloadable attachment instead of JSON, for compliance export.
+
+**Retention**
+
+Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automatically on an interval (`APP_AUDIT_LOG_SWEEP_INTERVAL`) and is purgeable on demand via `POST /api/v1/audit-log/purge`.
 
 ## Integration walkthrough
 
@@ -466,25 +440,17 @@ levelrail-cli audit-purge
 
 ## Not built yet (deliberate follow-ups)
 
-- **`auth whoami` cannot work against a bearer token.**
-  `GET /api/v1/auth/session` is session-cookie-only by design
-  (`handleGetSession`'s own doc comment: "a bearer token has no session
-  of its own to report on"), and the CLI only ever persists a bearer
-  token. Running `levelrail-cli auth whoami` the normal way returns a
-  real `401` every time; there's no bearer-token-compatible identity
-  endpoint yet.
-- **`auth login` (username/password) needs an HTTPS front.** The session
-  cookie `POST /api/v1/auth/login` sets is `Secure`, so it never round-
-  trips back to the token-minting step against a plain-HTTP target (the
-  common local-dev default with no TLS-terminating Caddy in front yet).
-  Use `--device` to avoid this entirely; it works over plain HTTP.
-- **No per-team or per-project access boundary.** IAM policies scope to
-  individual resources (`app:name`, `database:name`) or a wildcard;
-  there's no organization- or project-level grouping in the permission
-  model itself. The Organizations settings page groups projects for
-  display and navigation only, it's unrelated to who can access what.
-- **No SSO/SAML and no SCIM provisioning.** OAuth covers Google, GitHub,
-  and generic OIDC; nothing beyond that today.
-- **No policy dry-run or simulation.** A newly attached Deny statement
-  takes effect on the very next request; the only way to check its
-  effect is to make that request and see what happens.
+- **`auth whoami` cannot work against a bearer token**
+  `GET /api/v1/auth/session` is session-cookie-only by design. The CLI only persists a bearer token, so `levelrail-cli auth whoami` returns `401` every time. No bearer-token-compatible identity endpoint exists yet.
+
+- **`auth login` (username/password) needs an HTTPS front**
+  The session cookie `POST /api/v1/auth/login` sets is `Secure`, so it never round-trips back against a plain-HTTP target (common in local dev without TLS-terminating Caddy in front). Use `--device` to avoid this; it works over plain HTTP.
+
+- **No per-team or per-project access boundary**
+  IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. There is no organization- or project-level grouping in the permission model. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.
+
+- **No SSO/SAML and no SCIM provisioning**
+  OAuth covers Google, GitHub, and generic OIDC. Nothing beyond that today.
+
+- **No policy dry-run or simulation**
+  A newly attached Deny statement takes effect on the very next request. The only way to check its effect is to make that request and see what happens.

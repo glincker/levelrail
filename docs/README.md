@@ -1,29 +1,16 @@
 # Levelrail docs
 
-This directory is the source of truth for Levelrail's user-facing and
-contributor-facing documentation. Two things are true about it on purpose:
+This directory is the source of truth for Levelrail's user-facing and contributor-facing documentation.
 
-- **It ships with the repo, not the binary.** Nothing under `/docs` is
-  `embed.FS`'d into the control plane binary or the Docker image, unlike
-  `web/`'s built frontend assets. It's
-  read on GitHub today; if it ever moves to a hosted docs site
-  (`glinr.com` or elsewhere), that's a publishing step on top of these
-  files, not a rewrite of them.
-- **It's plain Markdown, deliberately.** No MDX, no build-tool-specific
-  syntax, no frontmatter tied to one platform's schema. Markdown "renders
-  anywhere" (GitHub, a future static site generator, a README preview, an
-  AI agent reading the repo raw) without conversion. When a specific
-  target platform is chosen, that platform's own frontmatter fields
-  (`sidebar_position`, `layout`, whatever it needs) get added on top of
-  this content then, not guessed at now.
+**It ships with the repo, not the binary.** Nothing under `/docs` is embedded into the control plane or Docker image. It lives on GitHub today; if it moves to a hosted site later, that is a publishing step on top of these files, not a rewrite of them.
+
+**It is plain Markdown, deliberately.** No MDX, no build-tool-specific syntax, no platform-specific frontmatter. Markdown renders anywhere (GitHub, static site generators, README previews, raw repo reads) without conversion. Platform-specific fields (`sidebar_position`, `layout`) get added later if needed, not guessed at now.
 
 ## How this index is organized
 
-Docs here follow the [Diátaxis](https://diataxis.fr) framework: organize
-by what the reader is trying to do, not by which package the content
-happens to describe. Four types, plus two Levelrail-specific categories
-that don't fit Diátaxis's four (a status page and pre-ADR design
-proposals):
+Docs follow the [Diátaxis](https://diataxis.fr) framework: organize by what the reader is trying to do, not which package the content describes.
+
+Four main types, plus two Levelrail-specific categories:
 
 | Type | Answers | Example |
 | --- | --- | --- |
@@ -100,12 +87,8 @@ noted per-document since these move between draft, proposed, accepted
 
 ## Adding a new doc
 
-1. Pick the Diátaxis type first (see the table above), not the package
-   it happens to describe: a reference page mixed with tutorial prose
-   is the most common way docs rot, because neither reader gets what
-   they came for.
-2. Add it to the Index section above, under the matching heading.
-3. Link it from `README.md`'s own docs section if it's something a new
-   user or contributor would hit early; leave more specialized how-tos
-   and reference pages reachable only from here, so the root README
-   doesn't grow into a second index.
+1. Pick the Diátaxis type first (see the table above), not the package. Mixed reference and tutorial prose is the most common way docs rot, because neither reader gets what they need.
+
+2. Add it to the matching heading in the Index section above.
+
+3. Link it from the root README only if it is something a new user or contributor would hit early. Leave specialized how-tos and reference pages reachable only from here, so the root README stays focused.

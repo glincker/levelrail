@@ -1,39 +1,29 @@
 # Domains and ingress: you don't set up a reverse proxy
 
-If you're coming from a platform that makes you install and wire up your
-own Traefik or nginx container, read this first: with Levelrail, you don't.
-There is nothing to install for ingress and nothing separate to keep
-running.
+If you're coming from a platform that requires you to install and wire up your own Traefik or nginx container, stop: Levelrail works differently. There is nothing to install for ingress and nothing separate to keep running.
 
 ## Why there's no proxy to install
 
-Levelrail's control plane binary embeds [Caddy](https://caddyserver.com/)
-directly as a Go library (`internal/ingress`) and drives it in-process
-through Caddy's admin API. Config goes in as a JSON document built from
-the app specs the reconciler already knows about, never a hand-written
-Caddyfile on disk. There is no `caddy` binary anywhere in the codebase and
-no separate ingress container to start, restart, or misconfigure.
+Levelrail's control plane embeds [Caddy](https://caddyserver.com/) directly as a Go library (`internal/ingress`). It drives Caddy through its admin API, not via a hand-written Caddyfile. Config comes from the app specs the reconciler already knows about.
 
-This is a deliberate architectural choice (see [ADR 005](../adr/005-caddy-embedded-ingress.md)
-and [docs/comparison.md](comparison.md)), and it's a real point of
-difference from Coolify and Dokploy, which both run ingress (Traefik) as
-its own long-lived container alongside the control plane. That separation
-is a second process with its own config surface, its own restart
-semantics, and its own way to drift out of sync with what the platform
-thinks is deployed. Levelrail's embedded approach removes that failure
-class structurally: there is one process and one source of desired state
-(the reconciler and its database), so ingress config can't fall out of
-sync with a separate proxy's own copy of it.
+There is no `caddy` binary and no separate ingress container to start, restart, or misconfigure.
 
-The practical upshot for you as an operator: you write `domains:` in your
-app's `app.yaml`, deploy, and the routing and certificate work happens
-automatically. There's no proxy config file to write, no container to add
-to your stack, and nothing extra to monitor for that specific piece.
+### How this differs from competitors
+
+Coolify and Dokploy both run Traefik as a separate, long-lived container alongside the control plane. That separation means:
+
+- A second process with its own config surface and restart semantics.
+- Risk that ingress config drifts out of sync with the platform's desired state.
+
+Levelrail removes that failure mode by design. One process, one source of desired state (the reconciler and database), and no way for ingress config to diverge from it. See [ADR 005](../adr/005-caddy-embedded-ingress.md) and [docs/comparison.md](comparison.md) for the full reasoning.
+
+### What you actually do
+
+Write `domains:` in your app's `app.yaml` and deploy. Routing and certificates happen automatically. No proxy config file, no extra container, nothing extra to monitor.
 
 ## How domain routing actually works
 
-Domain routing starts with the `domains` field on a service in
-`app.yaml`:
+Add the `domains` field to a service in `app.yaml`:
 
 ```yaml
 version: 1
@@ -46,268 +36,270 @@ services:
     port: 3000
 ```
 
-`domains` is a list of public hostnames routed to that service. A domain
-can only be claimed by one service across your whole spec (see
-[docs/app-spec-reference.md](app-spec-reference.md) for the full field
-reference). When you deploy, the control plane's ingress controller
-builds a Caddy route that matches incoming requests by `Host` header and
-reverse-proxies them to that service's running container. Static sites
-(`build.type: static`) skip the container hop entirely and are served
-directly by the embedded Caddy from disk.
+`domains` is a list of public hostnames routed to that service. Each domain can only be claimed by one service across your whole spec (see [docs/app-spec-reference.md](app-spec-reference.md)). When you deploy, the control plane builds a Caddy route that matches incoming requests by `Host` header and reverse-proxies them to the service's container. Static sites (`build.type: static`) skip the container entirely and are served by Caddy from disk.
 
-What you need to do on the DNS side is the same as with any other
-platform: create an **A record** (or AAAA for IPv6) for the domain,
-pointing at your server's public IP address. That's what tells the
-internet "requests for `app.example.com` go to this machine"; nothing
-about Caddy being embedded changes that requirement, since DNS resolution
-happens before a request ever reaches your server. Once that record has
-propagated (check with `dig +short app.example.com` from a machine
-outside your own network) and the app is deployed, Caddy starts routing
-and, depending on your TLS configuration below, issuing a certificate for
-it automatically. No manual reload or restart is needed on your end.
+### Setting up DNS
 
-You can add or change a domain after the first deploy too, either by
-editing `domains:` in `app.yaml` and redeploying, or from the dashboard's
-per-app **Domains** tab, which lets you add a domain, see its DNS record
-status inline, and see its certificate status once it's routed.
-`levelrail-cli domains list` shows every domain currently routed across
-your apps.
+Create an **A record** (or AAAA for IPv6) for the domain, pointing at your server's public IP address. This tells the internet where `app.example.com` should go. DNS resolution happens before any request reaches your server, so this is no different from any other platform.
+
+Check that DNS has propagated:
+
+```
+dig +short app.example.com
+```
+
+Run this from a machine outside your own network. Once it resolves and the app is deployed, Caddy automatically starts routing and issuing certificates (depending on your TLS configuration below). No manual reload needed.
+
+### Changing domains after deploy
+
+Add or change a domain either by:
+
+- Editing `domains:` in `app.yaml` and redeploying, or
+- Using the dashboard's per-app **Domains** tab to add a domain inline and view DNS and certificate status
+
+List all domains currently routed:
+
+```
+levelrail-cli domains list
+```
 
 ## Zero-config URL: no domain, no DNS record, still HTTPS
 
-Deploying an app with no `domains:` at all doesn't leave it reachable
-only at a raw `host:port`. When `APP_PUBLIC_HOST` is set to your
-server's real, publicly routable IP address (not a private/LAN address,
-not a hostname), every app with no domain configured is automatically
-routed under a [sslip.io](https://sslip.io) hostname instead:
-`<app-name>.<ip-with-dots-as-dashes>.sslip.io`. sslip.io is a public DNS
-service that resolves any hostname containing a dash-encoded IP address
-straight to that IP, so this "just works" with zero DNS setup on your
-end: no record to create, nothing to wait to propagate.
+Deploying an app without `domains:` doesn't leave it reachable only at `host:port`. When `APP_PUBLIC_HOST` is set to your server's real, publicly routable IP address (not a private/LAN address), every app with no domain gets an automatic [sslip.io](https://sslip.io) hostname:
 
-Because it's a real, publicly resolvable hostname, it goes through
-exactly the same TLS path any other domain does (see below): Caddy's
-internal issuer by default, or a real Let's Encrypt certificate once
-[`ACMEEnabled`](#tls-whats-actually-shipped-today) is turned on. There's
-no separate toggle for this feature and no extra security surface
-beyond what a bare `host:port` binding already had: the app was already
-reachable at that IP, this only adds a real hostname and TLS termination
-in front of it.
+```
+<app-name>.<ip-with-dots-as-dashes>.sslip.io
+```
 
-Find your app's zero-config URL on its **Network** tab (shown wherever
-"No domain configured" would otherwise appear) or via
-`levelrail-cli apps network <name>`, under `fallback url:`. It
-disappears the moment you add a real domain: a domain you actually
-configured is always the one true address, not a second, synthetic one
-shown alongside it.
+sslip.io is a public DNS service that resolves any dash-encoded IP straight to that IP. No DNS record to create, nothing to wait for.
 
-If `APP_PUBLIC_HOST` isn't set, or is a private IP or a hostname rather
-than a public IP literal, no fallback is ever synthesized: this feature
-degrades to exactly today's "no domain, no route" behavior, not an
-error.
+This gets the same TLS treatment as any other domain (see below): Caddy's internal issuer by default, or a real Let's Encrypt certificate once ACME is enabled. There's no separate toggle, and the security surface is no larger than `host:port` already exposed.
+
+### Finding and using the zero-config URL
+
+View your app's fallback URL on the **Network** tab or via:
+
+```
+levelrail-cli apps network <name>
+```
+
+It disappears the moment you add a real domain. A configured domain is always preferred over the synthetic one.
+
+If `APP_PUBLIC_HOST` is not set, is a private IP, or is a hostname rather than a public IP literal, this feature is skipped entirely.
 
 ## TLS: what's actually shipped today
 
-Be clear-eyed about where this stands, because it's easy to overstate:
+### Default: self-signed certificates
 
-- **Default: Caddy's internal issuer.** Out of the box, every routed
-  domain gets a certificate from Caddy's internal, fully offline,
-  self-signed issuer. This works immediately, requires no DNS
-  propagation, no outbound connectivity to a certificate authority, and
-  no configuration. The tradeoff is exactly what you'd expect from a
-  self-signed certificate: browsers and most HTTP clients will show a
-  trust warning until you either accept the certificate or switch to a
-  real issuer below. This is fine for internal tools, staging
-  environments, or a first local trial; it's not what you want for a
-  public-facing app.
+Out of the box, every routed domain gets a certificate from Caddy's internal, self-signed issuer. This works immediately:
 
-- **Real public ACME (Let's Encrypt or any RFC 8555 CA): built, not yet
-  spot-checked by this project on a live domain.** A real Caddy ACME
-  issuer, a settings toggle (`ACMEEnabled` under **Settings > Domains**,
-  backed by `GET/PUT /api/v1/settings/ingress`), and form validation for
-  the account email and an optional directory URL override are all built
-  and wired end to end. It's covered by config-shape unit tests and a
-  local-CA end-to-end issuance test, but as of this writing it has not
-  been verified issuing a real certificate against a real domain over the
-  public internet by this project's own team. If you want real public
-  certificates now, or you're in a position to be the first to verify
-  this against a live domain, follow
-  [docs/acme-verification-runbook.md](acme-verification-runbook.md) step
-  by step. Don't take "toggle exists" as "proven to work at internet
-  scale" until that runbook (or your own experience) confirms it.
+- No DNS propagation needed.
+- No outbound connectivity to a certificate authority.
+- No configuration required.
 
-- **HTTP Strict Transport Security (HSTS): opt-in, once you're on real
-  certificates.** Set `APP_ENABLE_HSTS=true` on the control plane to send
-  `Strict-Transport-Security` on every response. It defaults to off on
-  purpose: HSTS tells a browser to refuse plain HTTP and refuse to let a
-  visitor click through a certificate warning on this host for the next
-  180 days, so turning it on before `ACMEEnabled` is true (i.e. while
-  you're still on Caddy's self-signed internal issuer above) can lock
-  you out of your own dashboard the next time that self-signed cert
-  looks untrusted. Only enable it once real, browser-trusted certificates
-  are actually issuing.
+The tradeoff: browsers and HTTP clients show a trust warning until you accept the certificate or switch to a real issuer. Use self-signed for internal tools, staging environments, or first local trials, not for public-facing apps.
 
-- **Bring your own certificate.** If ACME can't reach a domain (an
-  internal-only host, an externally issued wildcard, a cert already
-  provisioned before DNS cuts over), you can upload your own
-  certificate and key for a specific domain
-  (`PUT /api/v1/apps/{name}/domains/{domain}/tls-cert`,
-  `levelrail-cli domains tls-cert set`, or the dashboard's per-domain TLS
-  control). Caddy loads it directly and skips automatic issuance for that
-  host.
+### Real public ACME (Let's Encrypt or RFC 8555 CA)
+
+A Caddy ACME issuer is built and wired end-to-end. Enable it under **Settings > Domains** (`ACMEEnabled`, backed by `GET/PUT /api/v1/settings/ingress`). Form validation for account email and optional directory URL are included.
+
+::: warning
+This feature is built and unit-tested, but NOT verified issuing a real certificate against a real domain over the public internet yet. If you want real public certificates now or are willing to be the first to verify this, follow [docs/acme-verification-runbook.md](acme-verification-runbook.md) step by step. Don't assume "toggle exists" means "proven at internet scale" until confirmed.
+:::
+
+### HSTS (HTTP Strict Transport Security)
+
+Set `APP_ENABLE_HSTS=true` on the control plane to send `Strict-Transport-Security` on every response. HSTS defaults to off on purpose.
+
+::: warning
+HSTS tells browsers to refuse plain HTTP and refuse certificate warnings on this host for 180 days. Enabling it before ACME is working (while still on self-signed certificates) can lock you out of your own dashboard. Only enable it once real, browser-trusted certificates are issuing.
+:::
+
+### Bring your own certificate
+
+For domains ACME can't reach (internal-only hosts, externally issued wildcards, or certs provisioned before DNS cuts over), upload your certificate and key:
+
+```
+PUT /api/v1/apps/{name}/domains/{domain}/tls-cert
+levelrail-cli domains tls-cert set
+# or via the dashboard's per-domain TLS control
+```
+
+Caddy loads it directly and skips automatic issuance for that host.
 
 ## Wildcard domains: DNS-01 providers
 
-A wildcard domain (e.g. `*.example.com`, marked wildcard-eligible just by
-the leading `*.` label, no separate flag) needs the ACME DNS-01
-challenge to prove control: HTTP-01, the default challenge, cannot solve
-a wildcard identifier at all. DNS-01 works by having Caddy create a
-short-lived TXT record at your DNS provider, so it needs API access to
-that provider, on top of `ACMEEnabled` from the section above.
+Wildcard domains like `*.example.com` need ACME's DNS-01 challenge (HTTP-01 cannot validate wildcards). DNS-01 works by creating a short-lived TXT record at your DNS provider, so you must grant API access.
 
-Two DNS-01 providers are supported today, both configured the same way:
-platform-wide settings under **Domains** in the dashboard, or
-`levelrail-cli domains <provider> get|set|clear`. Only one provider is
-ever active per reconcile pass; if both are enabled at once, Cloudflare
-takes precedence over Route53, not an error.
+Two providers are supported. Configure them platform-wide under **Domains** in the dashboard or via CLI. Only one can be active per reconcile pass; if both are enabled, Cloudflare takes precedence.
 
-- **Cloudflare.** A single API token scoped to `Zone:DNS:Edit` for the
-  zone your wildcard domains live under, never the global API key.
-  `GET/PUT/DELETE /api/v1/settings/cloudflare-dns`,
-  `levelrail-cli domains cloudflare-dns get|set|clear`.
+### Cloudflare
 
-- **Route53.** An AWS IAM access key pair scoped to
-  `route53:ChangeResourceRecordSets`, `route53:ListResourceRecordSets`,
-  and `route53:GetChange` on the target hosted zone. Region and hosted
-  zone ID are both optional: left empty, the AWS SDK resolves the region
-  from its own default chain and the zone by matching the domain against
-  the account's own zones. `GET/PUT/DELETE /api/v1/settings/route53-dns`,
-  `levelrail-cli domains route53-dns get|set|clear`.
+Use an API token scoped to `Zone:DNS:Edit` for the zone containing your wildcard domains. Never use the global API key.
 
-Both credentials are envelope-encrypted at rest (`internal/secrets`) and
-never returned in plaintext by a GET; a settings response only reports
-whether a credential is currently present. The provider abstraction
-(`internal/ingress.DNS01Provider`) is designed to take more providers
-beyond these two; Cloudflare and Route53 are this platform's first two,
-not a hardcoded pair.
+```
+GET/PUT/DELETE /api/v1/settings/cloudflare-dns
+levelrail-cli domains cloudflare-dns get|set|clear
+```
+
+### Route53
+
+Use an AWS IAM access key pair scoped to:
+
+- `route53:ChangeResourceRecordSets`
+- `route53:ListResourceRecordSets`
+- `route53:GetChange`
+
+Apply the scopes to the target hosted zone. Region and hosted zone ID are optional; the AWS SDK resolves these from its default chain and by matching the domain against your zones.
+
+```
+GET/PUT/DELETE /api/v1/settings/route53-dns
+levelrail-cli domains route53-dns get|set|clear
+```
+
+### Security and extensibility
+
+Credentials are envelope-encrypted at rest (`internal/secrets`) and never returned in plaintext by GET. Settings responses only report whether a credential is present, not its value. The provider abstraction (`internal/ingress.DNS01Provider`) supports additional providers beyond these two.
 
 ## Opt-in WAF and rate limiting
 
-Since Caddy already ships embedded in the control plane binary, adding a
-Web Application Firewall and rate limiting is two more Caddy modules
-registered at build time, not a new container or service: OWASP Coraza
-(`github.com/corazawaf/coraza-caddy/v2`, running the stock OWASP Core
-Rule Set) for the WAF, and Caddy's own `rate_limit` module
-(`github.com/mholt/caddy-ratelimit`) for rate limiting. Both are off by
-default for every domain and are configured per domain, not platform-wide.
+Both WAF and rate limiting are Caddy modules registered at build time, not separate containers. They are off by default and configured per domain.
 
-- **WAF modes: `detect` (default) or `block`.** `detect` runs the full
-  OWASP CRS rule set against every request and logs matches, but never
-  rejects anything. `block` actually rejects a request that matches a
-  CRS rule. **`detect` is the default for a newly enabled domain on
-  purpose:** OWASP's own CRS documentation is explicit that the rule set
-  can produce false positives against a given application's normal
-  traffic, and this project's central risk (see the root `CLAUDE.md`'s
-  "main risk" section) is exactly the class of failure where a new
-  safety control silently breaks something that used to work. Turning
-  the WAF on in `detect` mode first, watching logs for a while, and only
-  then switching to `block` once you're confident it isn't flagging your
-  own legitimate traffic is the safer rollout path. There's no
-  autopromote from detect to block; you flip it yourself once you trust
-  it.
+- WAF: OWASP Coraza with the stock OWASP Core Rule Set (`github.com/corazawaf/coraza-caddy/v2`)
+- Rate limiting: Caddy's `rate_limit` module (`github.com/mholt/caddy-ratelimit`)
 
-- **Rate limiting is independent of the WAF.** You can rate limit a
-  domain without enabling the WAF, or enable the WAF without rate
-  limiting, or both. Rate limiting is keyed per client IP and takes two
-  numbers: **requests/sec** (a sustained cap, averaged over a 10 second
-  window) and **burst** (a short, 1 second window allowance for values
-  above the sustained rate; set it equal to or below requests/sec for a
-  strict, non-bursting cap). A client that exceeds either gets a 429.
+### WAF modes: detect or block
 
-- **Where to configure it:**
-  - Dashboard: each domain's row in an app's **Domains** tab has an "Add
-    WAF / rate limit" control with the WAF toggle, mode selector, and the
-    two rate-limit fields.
-  - API: `GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/waf`.
-  - CLI: `levelrail-cli domains waf get|set|clear <app> <domain>`, e.g.
-    `levelrail-cli domains waf set my-app my-app.example.com --waf --mode detect --rps 20 --burst 50`.
+| Mode | Behavior | Default | Use case |
+| --- | --- | --- | --- |
+| `detect` | Logs OWASP CRS matches but never rejects | Yes, new domains | Monitor for false positives first |
+| `block` | Actually rejects requests matching CRS rules | No | Deploy after validating detect logs |
 
-- **What this doesn't do.** There's no UI for authoring custom CRS
-  exclusion or override rules, no per-path or per-route rate-limit
-  scoping (it's whole-domain), and no WAF/rate-limit event log separate
-  from Caddy's own access log. All of that is a real gap, not a hidden
-  default; it may get filled in a later phase, but the on/off-plus-
-  threshold surface here is deliberately the whole v1 scope.
+::: warning
+The OWASP CRS can produce false positives against normal app traffic. This platform's core design principle is avoiding silent failures. Enable WAF in `detect` mode first, watch logs for a while, then switch to `block` once you're confident it isn't flagging legitimate traffic. There is no auto-promote from detect to block; you flip it yourself.
+:::
+
+### Rate limiting parameters
+
+Rate limiting is independent of WAF. Configure per client IP with two numbers:
+
+| Parameter | What it does | Example |
+| --- | --- | --- |
+| `requests/sec` | Sustained cap, averaged over 10 seconds | 20 |
+| `burst` | 1-second window allowance above sustained rate | 50 |
+
+Clients exceeding either limit get a 429 response. Set burst equal to or below requests/sec for a strict, non-bursting cap.
+
+### Configuration
+
+**Dashboard:** Each domain's row in the **Domains** tab has an "Add WAF / rate limit" control.
+
+**API:**
+
+```
+GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/waf
+```
+
+**CLI:**
+
+```
+levelrail-cli domains waf get|set|clear <app> <domain>
+levelrail-cli domains waf set my-app my-app.example.com --waf --mode detect --rps 20 --burst 50
+```
+
+### Not included in v1
+
+- No UI for custom CRS exclusion or override rules.
+- No per-path or per-route rate-limit scoping (whole-domain only).
+- No separate WAF/rate-limit event log (use Caddy's access log).
 
 ## Domain redirects
 
-A domain can point straight at a target URL instead of proxying to its
-container: `www.example.com` to `example.com`, or an old domain to a
-brand new app during a migration (e.g. `old-domain.com` to
-`https://newapp.example.com/promo`). This is a fixed
-`static_response` handler carrying a `Location` header and a redirect
-status code, the same Caddy module maintenance mode already uses, just
-with a different header and status instead of a fixed body: no new
-container, no new infra dependency.
+Route a domain to a different URL instead of proxying to a container. Use cases:
 
-- **Status code: `301` permanent (default) or `302` temporary.** `301`
-  matches Caddy's own default and the more common real case (a rename
-  or www-to-apex normalization is rarely reverted); pick `302` for a
-  redirect you expect to undo, since browsers and search engines don't
-  cache a temporary redirect the way they do a permanent one.
-- **The target must be a real absolute URL**, e.g.
-  `https://example.com` or `https://newapp.example.com/promo`. A bare
-  hostname, a relative path, or a non-http(s) scheme is rejected.
-- **Maintenance mode takes precedence.** If a domain has both
-  maintenance mode and a redirect configured, maintenance mode wins:
-  the domain serves the fixed maintenance response, not the redirect.
-  "Temporarily unavailable" is a stronger, more deliberate signal than
-  "permanently moved": maintenance mode is something an operator
-  actively flips on to take a domain out of rotation right now, while a
-  redirect can easily be a stale leftover from an earlier migration
-  nobody removed. Clear maintenance mode to let a configured redirect
-  take effect again.
-- **Where to configure it:**
-  - Dashboard: each domain's row in an app's **Domains** tab has an "Add
-    redirect" control with the target URL field and a permanent/
-    temporary selector.
-  - API: `GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/redirect`.
-  - CLI: `levelrail-cli domains redirect get|set|clear <app> <domain>`,
-    e.g. `levelrail-cli domains redirect set my-app www.example.com --target https://example.com`.
+- `www.example.com` to `example.com`
+- `old-domain.com` to `https://newapp.example.com/promo` (during a migration)
+
+This uses Caddy's `static_response` handler with a `Location` header and redirect status code. No new container, no new infrastructure.
+
+### Redirect status codes
+
+| Code | Type | Use case |
+| --- | --- | --- |
+| `301` | Permanent (default) | Renames, www-to-apex normalization, or expected permanent moves |
+| `302` | Temporary | Redirects you plan to undo (browsers and search engines don't cache these) |
+
+### Requirements
+
+- Target must be an absolute URL, e.g. `https://example.com` or `https://newapp.example.com/promo`.
+- Bare hostnames, relative paths, and non-HTTP(S) schemes are rejected.
+
+### Interaction with maintenance mode
+
+If a domain has both a redirect and maintenance mode configured, maintenance mode takes precedence. The domain serves the maintenance response instead. Maintenance mode is an active operator decision; a redirect can be a stale leftover from an old migration. Clear maintenance mode to let a configured redirect take effect.
+
+### Configuration
+
+**Dashboard:** Each domain's row in an app's **Domains** tab has an "Add redirect" control.
+
+**API:**
+
+```
+GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/redirect
+```
+
+**CLI:**
+
+```
+levelrail-cli domains redirect get|set|clear <app> <domain>
+levelrail-cli domains redirect set my-app www.example.com --target https://example.com
+```
 
 ## Firewall: ports 80 and 443
 
-For real public traffic and ACME's HTTP-01 challenge to work, your server
-needs ports **80** and **443** reachable from the internet. Port 80 is
-also how Let's Encrypt validates domain ownership during ACME issuance;
-if it's blocked, issuance fails even though everything else is configured
-correctly. A cloud provider's firewall, a home router with no port
-forwarding, or `ufw` left in its default-deny state will all block this
-silently from the outside while looking fine from the server itself.
+For public traffic and ACME's HTTP-01 challenge to work, your server must reach the internet on **ports 80 and 443**. Port 80 is also how Let's Encrypt validates domain ownership during ACME issuance. If it's blocked, issuance fails silently even if everything else is configured correctly.
 
-`install.sh` has an opt-in flag for this: set `LEVELRAIL_CONFIGURE_UFW=1`
-before running it, and the script will allow SSH first, then open
-`80/tcp` and `443/tcp`, and only then enable `ufw` if it wasn't already
-active (if `ufw` was already active, it just adds the rules without
-re-enabling anything). If you don't set that flag, `install.sh` doesn't
-touch your firewall at all, and opening those ports is on you, whether
-that's your cloud provider's security group, `ufw`, or `iptables`
-directly.
+Common blockers:
+
+- Cloud provider firewall or security group
+- Home router with no port forwarding
+- `ufw` in default-deny state
+
+These block traffic from the outside while appearing fine from the server itself.
+
+### Automatic firewall setup
+
+`install.sh` has an opt-in flag to configure this for you:
+
+```bash
+LEVELRAIL_CONFIGURE_UFW=1 ./install.sh
+```
+
+This script will:
+
+1. Allow SSH
+2. Open `80/tcp` and `443/tcp`
+3. Enable `ufw` (if not already active)
+
+If `ufw` was already active, it just adds the rules without re-enabling it.
+
+If you don't set this flag, open these ports manually via your cloud provider's firewall, `ufw`, or `iptables`.
 
 ## Walkthrough: your first domain, from install to HTTPS
 
-This picks up right after [docs/getting-started.md](getting-started.md)'s
-"Deploy your first app" section, assuming you already have the control
-plane running and an app deployed.
+This assumes you already have the control plane running and an app deployed (see [docs/getting-started.md](getting-started.md)).
 
-1. **Point DNS at your server.** Create an A record for the domain you
-   want to use (e.g. `my-app.example.com`) pointing at your server's
-   public IP. Confirm it's resolving with `dig +short
-   my-app.example.com` from a machine outside your own network before
-   moving on.
+1. **Point DNS at your server.**
 
-2. **Add the domain to your app.** Either add it to `domains:` in
-   `app.yaml` and redeploy:
+   Create an A record for your domain pointing at your server's public IP. Verify it resolves from outside your network:
+
+   ```bash
+   dig +short my-app.example.com
+   ```
+
+2. **Add the domain to your app.**
+
+   Option A: Edit `app.yaml` and redeploy:
 
    ```yaml
    services:
@@ -317,28 +309,32 @@ plane running and an app deployed.
        port: 3000
    ```
 
-   ```
+   ```bash
    APP_API_TOKEN=dev-root-token ./levelrail-cli apps deploy your-app --file app.yaml
    ```
 
-   or open the app's **Domains** tab in the dashboard and add it there
-   directly, no redeploy needed.
+   Option B: Open the app's **Domains** tab in the dashboard and add it directly (no redeploy needed).
 
-3. **Open your firewall**, if you haven't already: either re-run
-   `install.sh` with `LEVELRAIL_CONFIGURE_UFW=1`, or manually confirm
-   ports 80 and 443 are reachable from the internet.
+3. **Open ports 80 and 443.**
 
-4. **Check certificate status.** By default your app is now reachable
-   over HTTPS with a self-signed certificate from Caddy's internal
-   issuer, browsers will warn until you trust it or switch to ACME. If
-   you want a real, browser-trusted certificate, go to **Settings >
-   Domains**, enable ACME, and follow
-   [docs/acme-verification-runbook.md](acme-verification-runbook.md) for
-   the full verification steps (DNS check panel, rate-limit
-   considerations, what to do if issuance fails).
+   Either re-run `install.sh` with `LEVELRAIL_CONFIGURE_UFW=1`:
 
-5. **Confirm it works.** Visit `https://my-app.example.com` in a browser,
-   or `curl -v https://my-app.example.com` from outside your network, and
-   confirm you're hitting your app.
+   ```bash
+   LEVELRAIL_CONFIGURE_UFW=1 ./install.sh
+   ```
 
-That's the whole flow. No proxy container to add anywhere in it.
+   Or manually open ports 80 and 443 via your cloud provider's firewall, `ufw`, or `iptables`.
+
+4. **Check certificate status.**
+
+   By default, your app is now reachable over HTTPS with a self-signed certificate. Browsers will warn until you trust it. For a real, browser-trusted certificate, go to **Settings > Domains**, enable ACME, and follow [docs/acme-verification-runbook.md](acme-verification-runbook.md).
+
+5. **Test the connection.**
+
+   ```bash
+   curl -v https://my-app.example.com
+   ```
+
+   Or visit it in a browser from outside your network.
+
+Done. No proxy container to configure anywhere.

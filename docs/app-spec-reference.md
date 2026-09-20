@@ -1,14 +1,18 @@
 # app.yaml reference
 
-The declarative spec Levelrail reads from your repo. Package: `internal/spec`
-(see `internal/spec/spec.go`, `internal/spec/validate.go`,
-`internal/spec/schema/app.schema.json`).
+The declarative spec Levelrail reads from your repo.
 
-Levelrail looks for this file under one of a few candidate names, in order:
-`app.yaml`, `app.yml`, `deploy.yaml`, `deploy.yml`, plus whatever the current
-brand's own filename resolves to (`internal/spec/discover.go`). The generic
-names are checked first specifically so a future product rename doesn't
-break a repo that already committed `app.yaml`.
+**Package**: `internal/spec` (see `internal/spec/spec.go`, `internal/spec/validate.go`, `internal/spec/schema/app.schema.json`).
+
+**Filenames**: Levelrail looks for this file under these candidate names, in order:
+
+- `app.yaml`
+- `app.yml`
+- `deploy.yaml`
+- `deploy.yml`
+- The current brand's own filename (see `internal/spec/discover.go`)
+
+Generic names are checked first so a future product rename doesn't break a repo that already committed `app.yaml`.
 
 ## Full example
 
@@ -58,15 +62,13 @@ databases:
     ephemeralInPreviews: true # opt in to a disposable per-pull-request instance, see below
 ```
 
-This matches what `internal/spec` actually parses and validates today
-(`internal/spec/testdata/valid_full.yaml` is the equivalent fixture exercised
-by the test suite, minus the plain-string env entry added here; the
-fixture already has its own `labels` block). Three additions beyond the
-example in the project's own planning doc, all real and implemented: the
-`labels` block on a service,
-`mysql` as a third supported database engine alongside `postgres` and
-`redis`, and the plain-string shorthand for a literal env value (shown here
-as `LOG_LEVEL`).
+This example matches what `internal/spec` actually parses and validates today. The test fixture is at `internal/spec/testdata/valid_full.yaml` (minus the plain-string env entry shown here; the fixture already has its own `labels` block).
+
+Three additions beyond the project's planning doc, all implemented:
+
+- `labels` block on a service
+- `mysql` as a third supported database engine (alongside `postgres` and `redis`)
+- Plain-string shorthand for a literal env value (shown here as `LOG_LEVEL`)
 
 ## Field reference
 
@@ -107,18 +109,19 @@ as `LOG_LEVEL`).
 
 ### `Volume` (an entry under `volumes`)
 
-Exactly one of `name` or `hostPath` must be set: `name` declares a named
-Docker volume, `hostPath` a bind mount of a real directory on whichever
-node the service runs on.
+Exactly one of `name` or `hostPath` must be set:
+
+- `name`: declares a named Docker volume (scoped to this service)
+- `hostPath`: a bind mount of a real directory on the node where the service runs
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `name` | string | conditional | none | A named Docker volume, scoped to this service (two services can each declare a volume named `data` without colliding). Must match `^[a-z][a-z0-9-]*$`. |
-| `hostPath` | string | conditional | none | An absolute path on the host to bind-mount. Rejected if relative, or if it falls under a protected system path (see Validation below). |
+| `hostPath` | string | conditional | none | An absolute path on the host to bind-mount. Rejected if relative or under a protected system path (see Validation below). |
 | `path` | string | yes | none | The container-side mount path. |
-| `readOnly` | boolean | no | `false` | Mounts read-only inside the container. Only meaningful alongside `hostPath`; rejected on a named volume. |
+| `readOnly` | boolean | no | `false` | Mounts read-only inside the container. Only meaningful with `hostPath`; rejected on a named volume. |
 
-Two volumes on the same service can never share a `path`.
+**Constraint**: Two volumes on the same service can never share a `path`.
 
 ### `Health`
 
@@ -147,23 +150,20 @@ Two volumes on the same service can never share a `path`.
 
 ### `Hooks`
 
-Shell commands the reconciler runs inside the service's own container via
-the Docker Engine API's exec facility ("sh", "-c", the command), not by
-shelling out. See `internal/reconcile/application/controller.go`'s own doc
-comments for the full timing and failure-handling contract; summary below.
+Shell commands the reconciler runs inside the service's own container via the Docker Engine API's exec facility (`sh -c <command>`), not by shelling out.
+
+See `internal/reconcile/application/controller.go`'s doc comments for the full timing and failure-handling contract.
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `preDeploy` | string | no | none | Runs once per deploy, before the new container's readiness probe and before any old container is removed. A nonzero exit blocks the deploy: the new container is rolled back and whatever was previously running keeps serving. |
-| `postDeploy` | string | no | none | Runs once per deploy, after the full replica set has cut over and any stale container has been removed. A nonzero exit is reported (a `PostDeployHookFailed` reconcile condition, a real error in logs) but never rolls back an already-successful cutover. |
+| `postDeploy` | string | no | none | Runs once per deploy, after the full replica set has cut over and any stale container has been removed. A nonzero exit is reported (`PostDeployHookFailed` reconcile condition) but never rolls back an already-successful cutover. |
 
-At least one of `preDeploy`/`postDeploy` must be set; an empty `hooks: {}`
-block is rejected. With more than one replica, each hook still runs exactly
-once per deploy (against the first replica), not once per replica: running
-a database migration N times per deploy would be wrong even though every
-replica gets a freshly built container from the same image. The most
-recent outcome of each hook (exit code, captured output) is queryable via
-`GET /api/v1/apps/{name}/hook-runs`.
+**Rules**
+
+- At least one of `preDeploy`/`postDeploy` must be set; an empty `hooks: {}` block is rejected.
+- With more than one replica, each hook runs exactly once per deploy (against the first replica), not once per replica. Running a database migration N times per deploy would be wrong even though every replica gets a freshly built container from the same image.
+- The most recent outcome of each hook (exit code, captured output) is queryable via `GET /api/v1/apps/{name}/hook-runs`.
 
 ### `EnvVar` (an entry under `env`)
 
@@ -186,7 +186,7 @@ var resolves its value from exactly one source.
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `path` | string | yes | none | The secret's path in Vault's KV v2 engine, for example `myapp/config`. Resolved against the mount path configured under Settings → Vault (default `secret`). |
+| `path` | string | yes | none | The secret's path in Vault's KV v2 engine, for example `myapp/config`. Resolved against the mount path configured under Settings > Vault (default `secret`). |
 | `key` | string | yes | none | The field name inside that secret's data, for example `api_key`. |
 
 ```yaml
@@ -194,10 +194,9 @@ env:
   API_KEY: { vault: { path: myapp/config, key: api_key } }
 ```
 
-The value is read fresh from Vault immediately before the container is
-created and is never persisted by Levelrail. If Vault is unreachable, not
-configured, or the secret/field doesn't exist, the deploy fails loudly
-rather than starting the container with the variable empty.
+The value is read fresh from Vault immediately before the container is created and is never persisted by Levelrail.
+
+If Vault is unreachable, not configured, or the secret/field doesn't exist, the deploy fails loudly rather than starting the container with the variable empty.
 
 ### `Database` (an entry under `databases`)
 
@@ -217,23 +216,24 @@ rather than starting the container with the variable empty.
 
 ## Bind addresses and exposure
 
-Every published port (a service's `port`/`host_port`, and a managed
-database's public-access port, see [managing databases](managing-databases.md))
-binds to `bind_address`, resolved by `internal/bindaddr.Resolve`:
+Every published port (a service's `port`/`host_port`, and a managed database's public-access port; see [managing databases](managing-databases.md)) binds to `bind_address`, resolved by `internal/bindaddr.Resolve`:
 
 | Value | Resolves to | Meaning |
 | --- | --- | --- |
 | `private` (default, or omitted) | `127.0.0.1` | Reachable only from this host. |
-| `public` | `0.0.0.0` | Reachable from any network that can route to this host. Requires the literal string `public`; a blank or malformed value never resolves here. |
-| any other value | itself | Treated as a literal IP: a specific host interface, or (once the WireGuard mesh is wired up) a mesh peer address. Must parse as a valid IP. |
+| `public` | `0.0.0.0` | Reachable from any network that can route to this host. Requires the literal string `public`; blank or malformed values never resolve here. |
+| any other value | itself | Treated as a literal IP (a specific host interface or, once the WireGuard mesh lands, a mesh peer address). Must parse as a valid IP. |
 
-`private` is the default for anything newly created after this field
-shipped. A service or database that was already publicly exposed before
-this field existed keeps that exposure across the upgrade (backfilled to
-`public` by `migrations/0098_service_bind_address.sql` and
-`migrations/0099_database_public_bind_address.sql`); it only picks up the
-new `private` default on its next explicit redeploy or public-access
-change that leaves `bind_address` unset.
+### Default behavior
+
+`private` is the default for anything created after this field shipped.
+
+A service or database already publicly exposed before this field existed keeps that exposure across the upgrade. Both are backfilled to `public` via:
+
+- `migrations/0098_service_bind_address.sql`
+- `migrations/0099_database_public_bind_address.sql`
+
+The new `private` default applies only on the next explicit redeploy or public-access change that leaves `bind_address` unset.
 
 ### Planned, not yet implemented
 
@@ -242,60 +242,73 @@ parsed and validated by `internal/spec` today.
 
 ## Validation
 
-`spec.Parse` (`internal/spec/spec.go`) runs two layers, and both must pass
-before a caller ever sees a `Spec`:
+`spec.Parse` (`internal/spec/spec.go`) runs two layers. Both must pass before a caller sees a `Spec`.
 
-1. **Structural shape**, checked against the embedded JSON Schema at
-   `internal/spec/schema/app.schema.json` (compiled once and cached by
-   `compiledAppSchema` in `internal/spec/schema.go`). This covers required
-   fields, enums, string patterns (durations, memory sizes), numeric ranges,
-   and rejecting unknown keys. YAML is decoded generically and round-tripped
-   through JSON so the schema validator sees the same shapes it would from
-   real JSON input.
-2. **Semantic rules**, checked by `(*Spec).Validate` in
-   `internal/spec/validate.go`, for anything the schema can't express because
-   it depends on more than one field's own shape:
-   - Service and database names must match `^[a-z][a-z0-9-]*$`.
-   - A domain can only be claimed by one service in the whole spec.
-   - `build.path` is required when `build.type` is `compose`.
-   - `build.args` is only meaningful when `build.type` is `dockerfile`; set
-     with any other build type, it is rejected rather than silently ignored.
-   - `port` is required unless `build.type` is `static`, and forbidden when
-     it is.
-   - `strategy`, if set, must be one of the three known values (a second,
-     redundant check behind the schema's own enum, since `Validate` is
-     documented as safe to call on a hand-built `Spec` that never went
-     through schema validation).
-   - Service labels are checked by `ValidateLabels`
-     (`internal/spec/labels.go`): at most 32 labels, keys up to 255
-     characters, values up to 4096 characters, no empty keys, and no key
-     starting with the reserved prefix `platform-reserved.` (kept open for
-     the platform's own bookkeeping labels).
-   - `resources.swapMemory` requires `resources.memory` to also be set, and
-     (checked later, during deploy translation in `internal/deploy`, not
-     here, since it needs both values converted to bytes first) must be at
-     least `resources.memory`: Docker's `MemorySwap` is the combined
-     memory+swap ceiling, not swap on top of memory.
-   - `hooks` is rejected when `build.type` is `static` (no container to run
-     a command in) or `compose` (a wrapper that expands into N real
-     services, none of which one `hooks` block could unambiguously target).
-     An empty `hooks: {}` block (the schema's own `minProperties: 1`) is
-     rejected at the schema layer.
-   - Each volume's `name` (if a named volume) must match
-     `^[a-z][a-z0-9-]*$`, and no two volumes on the same service may share
-     that name or the same `path`.
-   - Each volume's `hostPath` (if a bind mount) must be an absolute path,
-     and is rejected outright under a protected system path: `/`, `/etc`,
-     `/root`, `/boot`, `/sys`, `/proc`, `/var/lib/docker`,
-     `/var/run/docker.sock`, or `/var/run`. `/var/run/docker.sock`
-     specifically is excluded by design, not oversight: it's a full
-     container-escape-to-host-root vector, a categorically different
-     capability this feature doesn't grant.
-   - `readOnly: true` on a volume with `name` set (rather than `hostPath`)
-     is rejected: it has no meaning for a named Docker volume.
+### Layer 1: Structural shape
 
-`spec.Parse` also runs `yamlUnmarshalStrict`, a YAML decode with
-`KnownFields(true)`, as an independent second guard against the struct
-tags and the JSON Schema drifting apart: an unknown key becomes a decode
-error during development rather than a silently dropped field in
-production.
+Checked against the embedded JSON Schema at `internal/spec/schema/app.schema.json` (compiled and cached by `compiledAppSchema` in `internal/spec/schema.go`).
+
+Coverage:
+
+- Required fields
+- Enums
+- String patterns (durations, memory sizes)
+- Numeric ranges
+- Rejection of unknown keys
+
+YAML is decoded generically and round-tripped through JSON so the schema validator sees the same shapes as real JSON input.
+
+### Layer 2: Semantic rules
+
+Checked by `(*Spec).Validate` in `internal/spec/validate.go` for anything the schema can't express because it depends on multiple fields.
+
+**Names**
+
+- Service and database names must match `^[a-z][a-z0-9-]*$`.
+- A domain can only be claimed by one service in the whole spec.
+
+**Build configuration**
+
+- `build.path` is required when `build.type` is `compose`.
+- `build.args` is only meaningful when `build.type` is `dockerfile`. Set with any other build type, it is rejected rather than silently ignored.
+
+**Port configuration**
+
+- `port` is required unless `build.type` is `static`.
+- `port` is forbidden when `build.type` is `static`.
+
+**Strategy**
+
+- `strategy`, if set, must be one of the three known values (a redundant check behind the schema's enum; `Validate` is documented as safe to call on a hand-built `Spec` that never went through schema validation).
+
+**Service labels**
+
+Checked by `ValidateLabels` (`internal/spec/labels.go`):
+
+- At most 32 labels per service
+- Keys up to 255 characters
+- Values up to 4096 characters
+- No empty keys
+- No key starting with the reserved prefix `platform-reserved.` (kept open for the platform's own bookkeeping labels)
+
+**Resource limits**
+
+- `resources.swapMemory` requires `resources.memory` to also be set.
+- `resources.swapMemory` must be at least `resources.memory` (checked during deploy translation in `internal/deploy`, since both values need byte conversion). Docker's `MemorySwap` is the combined memory+swap ceiling, not swap on top of memory.
+
+**Hooks**
+
+- `hooks` is rejected when `build.type` is `static` (no container to run a command in) or `compose` (a wrapper that expands into N real services; one `hooks` block cannot unambiguously target any of them).
+- An empty `hooks: {}` block is rejected at the schema layer (the schema's own `minProperties: 1`).
+
+**Volumes**
+
+- Each volume's `name` (if a named volume) must match `^[a-z][a-z0-9-]*$`.
+- No two volumes on the same service may share a name or the same `path`.
+- Each volume's `hostPath` (if a bind mount) must be an absolute path.
+- `hostPath` is rejected under protected system paths: `/`, `/etc`, `/root`, `/boot`, `/sys`, `/proc`, `/var/lib/docker`, `/var/run/docker.sock`, or `/var/run`. `/var/run/docker.sock` is excluded by design (it's a full container-escape-to-host-root vector; this feature doesn't grant that capability).
+- `readOnly: true` on a volume with `name` set (not `hostPath`) is rejected (no meaning for a named Docker volume).
+
+### Additional guard: strict YAML parsing
+
+`spec.Parse` also runs `yamlUnmarshalStrict` (YAML decode with `KnownFields(true)`) as an independent guard against struct tags and JSON Schema drifting apart. An unknown key becomes a decode error during development rather than a silently dropped field in production.
