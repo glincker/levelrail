@@ -20,6 +20,7 @@ An **app's git source** (`GET/PUT/DELETE /api/v1/apps/{name}/git-source`) is a p
 - One branch
 - One build config
 - One webhook secret
+- One deploy trigger mode (see [Deploy triggers: push vs. release](#deploy-triggers-push-vs-release))
 
 A **provider connection** (GitHub App, GitLab OAuth Application, Bitbucket OAuth consumer) is a control-plane-wide credential that can see many repos across many orgs or workspaces.
 
@@ -175,6 +176,7 @@ webhook_registered:  true
 - `--branch`: defaults to the repo's default branch
 - `--build-type`: `dockerfile`, `railpack`, or `static` (default: `dockerfile`)
 - `--build-path`: path to the build file within the repo
+- `--trigger-mode`: `push` or `release` (default: `push`), see [Deploy triggers: push vs. release](#deploy-triggers-push-vs-release)
 
 GitLab uses numeric project IDs instead of owner/repo pairs. So `gitlab-app branches` and `use-as-source` take one positional argument instead of two.
 
@@ -199,7 +201,7 @@ flowchart LR
     A["Git Provider Push/PR Event"] -->|HTTP POST| B["Webhook Endpoint"]
     B -->|Extract signature header| C{"Signature Valid?"}
     C -->|No| D["Record: failed"]
-    C -->|Yes| E{"Branch Matches<br/>Git Source?"}
+    C -->|Yes| E{"Ref Matches<br/>Trigger Mode?"}
     E -->|No| F["Record: unmatched"]
     E -->|Yes| G{"Push or PR?"}
     G -->|Push| H["Trigger Build<br/>& Deploy"]
@@ -236,11 +238,44 @@ This route is deliberately unauthenticated in the `requireAbility` sense. No pro
 
 ### Event routing
 
-**Push events:** Accepted (`200`) but ignored if the branch is not the git source's configured target branch. Rejected branches return early, not processed.
+**Push events:** Accepted (`200`) but ignored if the ref doesn't match the git source's trigger mode (branch or tag, see below). Rejected refs return early, not processed.
 
 **Pull-request events:** Routed separately from pushes.
 - `opened` / `synchronize`: Deploys or redeploys a preview environment (gated on `PreviewEnabled`)
 - `closed`: Tears down the preview, regardless of merge status
+
+## Deploy triggers: push vs. release
+
+Every git source has a `trigger_mode`, independent of preview environments and unrelated to `app.yaml` (there is no trigger field in the app spec itself, see [app.yaml reference](app-spec-reference.md)).
+
+| Mode | Behavior |
+| --- | --- |
+| `push` (default) | Deploys on every push to the configured branch. Unchanged from before trigger modes existed. |
+| `release` | Deploys only on a tag ref push, or (GitHub only) a `release` webhook event with action `published`. Branch pushes, including to the configured branch, never deploy in this mode. |
+
+### Per-provider support
+
+| Provider | Tag push | GitHub-style `release` published event |
+| --- | --- | --- |
+| **GitHub** | Yes. A push to `refs/tags/<name>` deploys, using the tag's own commit. | Yes. A `release` event with `action: "published"` deploys, checked out by the tag's own ref (`refs/tags/<name>`), since a release payload carries no commit SHA of its own. The built image is tagged with the release's tag name (`/` replaced with `-` to stay a valid Docker tag). |
+| **GitLab** | Yes. GitLab's Tag Push Hook payload shares the same `ref`/`after` shape as a branch push, so it's recognized with no extra parsing. | Not wired up. GitLab has its own separate Releases API/webhook event this platform doesn't subscribe to. |
+| **Bitbucket** | **No, known gap.** Bitbucket's `repo:push` payload marks each change with its own `"type": "branch"` or `"type": "tag"`, but this platform's webhook parser (`internal/webhook.ParseBitbucketPushEvent`) currently discards that field and always synthesizes a `refs/heads/<name>` ref regardless. A Bitbucket tag push is therefore indistinguishable from a same-named branch push today, and never matches `release` mode's tag check. This fails closed (a tag push simply never deploys), not open. Fixing it means teaching that parser to preserve the change's real ref kind, a `internal/webhook` change tracked as a follow-up, not done here. | Not wired up. |
+
+Switching an existing app from `push` to `release` (or back) takes effect on the next incoming webhook; it never touches whatever is currently deployed.
+
+### Setting the trigger mode
+
+**Dashboard:** The **Deploy trigger** select on the git source card, next to branch and build pack.
+
+**CLI:**
+```bash
+levelrail-cli apps git-source set storefront --repo-url https://github.com/acme/storefront.git --trigger-mode release
+levelrail-cli github-app use-as-source acme storefront --app-name storefront --trigger-mode release
+levelrail-cli gitlab-app use-as-source <project-id> --app-name storefront --trigger-mode release
+levelrail-cli bitbucket-app use-as-source <workspace> <repo-slug> --app-name storefront --trigger-mode release
+```
+
+Omitting `--trigger-mode` (or leaving the dashboard select on its default) keeps `push`, exactly matching every git source connected before trigger modes existed.
 
 ### Delivery history and replay
 
@@ -427,21 +462,21 @@ These disclose real private-repo names but never the connection's own credential
 ```bash
 levelrail-cli github-app repos [flags]
 levelrail-cli github-app branches <owner> <repo> [flags]
-levelrail-cli github-app use-as-source <owner> <repo> --app-name NAME [--branch BRANCH] [--build-type TYPE] [--build-path PATH]
+levelrail-cli github-app use-as-source <owner> <repo> --app-name NAME [--branch BRANCH] [--build-type TYPE] [--build-path PATH] [--trigger-mode MODE]
 ```
 
 **GitLab:**
 ```bash
 levelrail-cli gitlab-app projects [flags]
 levelrail-cli gitlab-app branches <project-id> [flags]
-levelrail-cli gitlab-app use-as-source <project-id> --app-name NAME [--branch BRANCH] [--build-type TYPE] [--build-path PATH]
+levelrail-cli gitlab-app use-as-source <project-id> --app-name NAME [--branch BRANCH] [--build-type TYPE] [--build-path PATH] [--trigger-mode MODE]
 ```
 
 **Bitbucket:**
 ```bash
 levelrail-cli bitbucket-app repos [flags]
 levelrail-cli bitbucket-app branches <workspace> <repo-slug> [flags]
-levelrail-cli bitbucket-app use-as-source <workspace> <repo-slug> --app-name NAME [--branch BRANCH] [--build-type TYPE] [--build-path PATH]
+levelrail-cli bitbucket-app use-as-source <workspace> <repo-slug> --app-name NAME [--branch BRANCH] [--build-type TYPE] [--build-path PATH] [--trigger-mode MODE]
 ```
 
 ### Webhook deliveries
@@ -481,6 +516,11 @@ Connecting a provider is dashboard-only. `github-app`/`gitlab-app`/`bitbucket-ap
 - [app.yaml reference](app-spec-reference.md) - Deployment spec schema used by multi-service deploys and app.yaml files
 
 ## Not built yet (deliberate follow-ups)
+
+### Release trigger mode
+
+- **No Bitbucket tag push support.** See [Per-provider support](#per-provider-support): `internal/webhook.ParseBitbucketPushEvent` discards Bitbucket's own branch-vs-tag change type, so a Bitbucket tag push is never distinguished from a branch push of the same name. `release` trigger mode fails closed for Bitbucket (never deploys on a tag), rather than risking a false match.
+- **No GitLab-native release events.** GitLab has its own Releases API and a separate webhook event for it; this platform only recognizes a GitLab tag push (`Tag Push Hook`, parsed the same generic way as a branch push), not a GitLab "release created" event. A GitLab tag push still triggers `release` mode correctly, this is only about GitLab's separate, richer release object.
 
 ### PR comments and statuses
 

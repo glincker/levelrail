@@ -36,10 +36,10 @@ This endpoint:
 A rollback is the same call with an older tag, converging the same way.
 
 ::: tip
-The API has no automatic "previous tag" lookup. You must know which tag you're rolling back to, either from `GET /api/v1/apps/{name}/deploy-attempts` (the dashboard lists this with one-click "Rollback" per deploy) or from your own build records.
+There's no API endpoint for a human to ask "what's the previous tag?" You must know which tag you're rolling back to yourself, either from `GET /api/v1/apps/{name}/deploy-attempts` (the dashboard lists this with one-click "Rollback" per deploy) or from your own build records. The one exception is automatic: auto-rollback on crashloop (see [Observability](./observability.md), "Auto-rollback on crashloop") computes the previous known-good tag internally, but only to redeploy it itself, not as a lookup you can call.
 :::
 
-The CLI's `apps rollback` and the dashboard's rollback button exist for convenience. Both are thin wrappers over the one deploy mechanism, not a second code path that could drift.
+The CLI's `apps rollback` and the dashboard's rollback button exist for convenience. Both are thin wrappers over the one deploy mechanism, not a second code path that could drift. Auto-rollback on crashloop reuses that identical mechanism too, just triggered automatically instead of by you.
 
 ## How it actually works
 
@@ -487,6 +487,7 @@ levelrail-cli apps list [flags]
 levelrail-cli apps get <name> [flags]
 levelrail-cli apps deploy <name> --image IMAGE [--confirm] [flags]
 levelrail-cli apps rollback <name> --image IMAGE [--confirm] [flags]
+levelrail-cli apps auto-rollback enable|disable|status <name> [flags]   # opt-in automatic rollback on crashloop, see Observability
 levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [--confirm] [flags]
 levelrail-cli apps restart <name> [flags]
 levelrail-cli apps stop <name> [flags]
@@ -514,7 +515,7 @@ under `apps git-source` (separate doc).
 
 ### Image and deploy history
 
-- **No image-history lookup.** Neither the API nor the CLI can tell you "the previous tag" for a rollback. You supply the exact tag yourself, from the deploy-attempts list or your own records.
+- **No image-history lookup for a manual rollback.** Neither the API nor the CLI can tell you "the previous tag" on request. You supply the exact tag yourself, from the deploy-attempts list or your own records. (Auto-rollback on crashloop is the one automated exception: it computes the previous known-good tag internally to redeploy it, but doesn't expose that lookup for you to query.)
 
 - **No per-service deploy history for `deploy-spec`.** Unlike Compose, a multi-service `app.yaml` fan-out doesn't write a `deploy_attempts` row per service. Only the synchronous response tells you what happened. A real per-service attempt log is a known, deliberately deferred store-schema change.
 

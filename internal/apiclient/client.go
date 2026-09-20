@@ -1863,6 +1863,24 @@ func (c *Client) SetPreviewPostPRComments(ctx context.Context, appName string, e
 	return out, err
 }
 
+// GetAutoRollback calls GET /api/v1/apps/{name}/auto-rollback: whether
+// appName rolls itself back automatically the next time a crashloop
+// alert rule fires for it.
+func (c *Client) GetAutoRollback(ctx context.Context, appName string) (AutoRollbackSettingResource, error) {
+	var out AutoRollbackSettingResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/auto-rollback", nil, &out)
+	return out, err
+}
+
+// SetAutoRollback calls PUT /api/v1/apps/{name}/auto-rollback, opting
+// appName into (or out of) automatic rollback on a crashloop. Off by
+// default.
+func (c *Client) SetAutoRollback(ctx context.Context, appName string, enabled bool) (AutoRollbackSettingResource, error) {
+	var out AutoRollbackSettingResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/auto-rollback", SetAutoRollbackRequest{Enabled: enabled}, &out)
+	return out, err
+}
+
 // SweepPreviewEnvironments calls POST /api/v1/previews/sweep: the manual
 // trigger for the TTL fallback that tears down any preview environment
 // whose pull-request-closed webhook never arrived, cross-app.
@@ -2290,18 +2308,39 @@ func (c *Client) QueryNodeMetrics(ctx context.Context, id, metric string, from, 
 // StreamLogs calls GET /api/v1/apps/{name}/logs/stream
 // (internal/api/live_logs.go's handleLiveLogStream): an SSE connection
 // that replays a short recent backfill then tails live output until ctx
-// is canceled or the server closes the connection. onEntry is called
-// once per line in arrival order; a non-nil return stops the stream
-// early and is returned as-is (never wrapped), so a caller can tell "my
-// own callback chose to stop" apart from a real transport failure.
+// is canceled or the server closes the connection. See streamLogEvents
+// for the onEntry contract and transport details shared with
+// StreamDeployLog below.
+func (c *Client) StreamLogs(ctx context.Context, name string, onEntry func(LogStreamEntry) error) error {
+	return c.streamLogEvents(ctx, "/api/v1/apps/"+PathEscape(name)+"/logs/stream", onEntry)
+}
+
+// StreamDeployLog calls GET /api/v1/apps/{name}/deploys/{deployId}/logs
+// (internal/api/deploy_attempts.go's handleDeployLogStream): the same SSE
+// connection the dashboard's deploy log page opens, replaying the
+// attempt's log so far and then tailing live until the attempt finishes,
+// ctx is canceled, or the server closes the connection. Same wire shape
+// and same onEntry contract as StreamLogs above, just a different
+// endpoint.
+func (c *Client) StreamDeployLog(ctx context.Context, name, deployID string, onEntry func(LogStreamEntry) error) error {
+	path := "/api/v1/apps/" + PathEscape(name) + "/deploys/" + PathEscape(deployID) + "/logs"
+	return c.streamLogEvents(ctx, path, onEntry)
+}
+
+// streamLogEvents is StreamLogs and StreamDeployLog's shared SSE-scanning
+// implementation: connect, read "data: " lines as they arrive, decode each
+// as a LogStreamEntry (both endpoints emit the exact same
+// internal/api.sseLogEvent shape), and call onEntry in arrival order. A
+// non-nil onEntry return stops the stream early and is returned as-is
+// (never wrapped), so a caller can tell "my own callback chose to stop"
+// apart from a real transport failure.
 //
-// Unlike every other Client method, this builds its own *http.Client
-// with no timeout rather than reusing c.hc: c.hc's own 15-minute cap
+// Unlike every other Client method, this builds its own *http.Client with
+// no timeout rather than reusing c.hc: c.hc's own 15-minute cap
 // (NewClient's own doc comment) is sized for one-shot calls, not a tail
 // meant to run indefinitely until the caller's own context is canceled
 // (e.g. Ctrl+C).
-func (c *Client) StreamLogs(ctx context.Context, name string, onEntry func(LogStreamEntry) error) error {
-	path := "/api/v1/apps/" + PathEscape(name) + "/logs/stream"
+func (c *Client) streamLogEvents(ctx context.Context, path string, onEntry func(LogStreamEntry) error) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)

@@ -179,10 +179,13 @@ func (c Config) TargetRef() string {
 }
 
 // fetchFunc fetches repoURL at sha to a local directory, returning the
-// directory and a cleanup func that removes it. Overridable in tests so
+// directory and a cleanup func that removes it. progress, if non-nil,
+// receives clone-stage log lines the same shape build.ProgressEvent
+// already carries, so a caller can feed clone output into the same
+// recorder/SSE path build progress already uses. Overridable in tests so
 // dispatch-logic tests don't need real network or git I/O; see
 // cloneAndCheckout for the real implementation.
-type fetchFunc func(ctx context.Context, repoURL, sha string) (dir string, cleanup func(), err error)
+type fetchFunc func(ctx context.Context, repoURL, sha string, progress func(build.ProgressEvent)) (dir string, cleanup func(), err error)
 
 // Handler is an http.Handler that receives GitHub push event payloads,
 // verifies them, and triggers a deploy through Deployer when the push
@@ -411,28 +414,34 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	h.log.Info("webhook: push matched target branch, fetching source", "commit", ev.After, "ref", ev.Ref)
 
-	sourceDir, cleanup, err := h.fetch(r.Context(), h.cfg.RepoURL, ev.After)
-	if err != nil {
-		h.log.Error("webhook: fetching source failed", "commit", ev.After, "repo_url", h.cfg.RepoURL, "error", err)
-		http.Error(w, errDeployFailed, http.StatusInternalServerError)
-		return
-	}
-	defer cleanup()
-
 	if len(h.cfg.Services) > 0 {
-		h.deployMulti(w, r, ev, sourceDir)
+		h.deployMulti(w, r, ev)
 		return
 	}
 
 	req := deploy.Request{
 		ServiceName: h.cfg.ServiceName,
 		Service:     h.cfg.Service,
-		SourceDir:   sourceDir,
 		CommitSHA:   ev.After,
 		ImageRepo:   h.cfg.ImageRepo,
 	}
 
+	// beginDeployAttempt runs before the clone, not after it, so the clone
+	// itself is recorded under the same attempt: a fetch failure now
+	// finishes the attempt as failed instead of never being attributed to
+	// one at all.
 	progress, finishAttempt := h.beginDeployAttempt(r.Context(), req)
+
+	sourceDir, cleanup, err := h.fetch(r.Context(), h.cfg.RepoURL, ev.After, progress)
+	if err != nil {
+		h.log.Error("webhook: fetching source failed", "commit", ev.After, "repo_url", h.cfg.RepoURL, "error", err)
+		finishAttempt("", err)
+		http.Error(w, errDeployFailed, http.StatusInternalServerError)
+		return
+	}
+	defer cleanup()
+	req.SourceDir = sourceDir
+
 	tag, err := h.deployer.Deploy(r.Context(), req, progress)
 	finishAttempt(tag, err)
 	if err != nil {
@@ -454,10 +463,25 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // deploy_attempts history per service, the same documented gap
 // internal/api's handleDeploySpec doc comment already accepts for the
 // identical reason (a real per-service attempt log is a store-schema-
-// sized follow-up, not something to improvise here); build progress is
-// only logged via slog, matching this method's caller's own existing
+// sized follow-up, not something to improvise here); clone and build
+// progress are only logged via slog, matching this method's own existing
 // choice for a plain deploy failure.
-func (h *Handler) deployMulti(w http.ResponseWriter, r *http.Request, ev PushEvent, sourceDir string) {
+func (h *Handler) deployMulti(w http.ResponseWriter, r *http.Request, ev PushEvent) {
+	cloneProgress := func(e build.ProgressEvent) {
+		if e.Log == "" {
+			return
+		}
+		h.log.Info("webhook: multi-service clone progress", "log", e.Log, "stream", e.Stream)
+	}
+
+	sourceDir, cleanup, err := h.fetch(r.Context(), h.cfg.RepoURL, ev.After, cloneProgress)
+	if err != nil {
+		h.log.Error("webhook: multi-service fetching source failed", "commit", ev.After, "repo_url", h.cfg.RepoURL, "error", err)
+		http.Error(w, errDeployFailed, http.StatusInternalServerError)
+		return
+	}
+	defer cleanup()
+
 	progress := func(serviceKey string, e build.ProgressEvent) {
 		h.log.Info("webhook: multi-service build progress", "service_key", serviceKey, "step", e.Step, "completed", e.Completed)
 	}
@@ -538,6 +562,12 @@ func VerifySignature(secret, body []byte, header string) bool {
 // deploy attempt succeeded or failed, so repeated webhook calls don't
 // leak disk.
 //
+// progress, if non-nil, receives a log line when the clone starts and
+// when it finishes (success or failure): before this, a push-triggered
+// deploy produced no visible output at all until BuildKit started, which
+// on a large repo could be the majority of an operator's wait with
+// nothing on screen to show why.
+//
 // This does a full clone rather than a shallow (depth 1) one. A depth-1
 // clone only fetches the tip of history for whatever ref it targets, and
 // the pushed SHA is not guaranteed to still be that tip by the time this
@@ -550,7 +580,11 @@ func VerifySignature(secret, body []byte, header string) bool {
 // (not every remote allows fetching arbitrary SHAs) for a tradeoff that
 // doesn't matter yet at Phase 1's single-app, single-repo scale. Revisit
 // if a real repo's clone time becomes a measured problem.
-func cloneAndCheckout(ctx context.Context, repoURL, sha string) (dir string, cleanup func(), err error) {
+func cloneAndCheckout(ctx context.Context, repoURL, sha string, progress func(build.ProgressEvent)) (dir string, cleanup func(), err error) {
+	if progress == nil {
+		progress = func(build.ProgressEvent) {}
+	}
+
 	dir, err = os.MkdirTemp("", "levelrail-webhook-*")
 	if err != nil {
 		return "", nil, fmt.Errorf("webhook: create temp checkout dir: %w", err)
@@ -561,24 +595,30 @@ func cloneAndCheckout(ctx context.Context, repoURL, sha string) (dir string, cle
 		}
 	}
 
+	progress(build.ProgressEvent{Log: fmt.Sprintf("Cloning %s...", repoURL), Stream: "stdout"})
+
 	repo, err := git.PlainCloneContext(ctx, dir, false, &git.CloneOptions{
 		URL: repoURL,
 	})
 	if err != nil {
+		progress(build.ProgressEvent{Log: fmt.Sprintf("Clone failed: %s", err), Stream: "stderr"})
 		cleanup()
 		return "", nil, fmt.Errorf("webhook: clone %q: %w", repoURL, err)
 	}
 
 	wt, err := repo.Worktree()
 	if err != nil {
+		progress(build.ProgressEvent{Log: fmt.Sprintf("Clone failed: %s", err), Stream: "stderr"})
 		cleanup()
 		return "", nil, fmt.Errorf("webhook: get worktree for %q: %w", repoURL, err)
 	}
 
 	if err := wt.Checkout(&git.CheckoutOptions{Hash: plumbing.NewHash(sha)}); err != nil {
+		progress(build.ProgressEvent{Log: fmt.Sprintf("Checkout of %s failed: %s", sha, err), Stream: "stderr"})
 		cleanup()
 		return "", nil, fmt.Errorf("webhook: checkout %q at %q: %w", repoURL, sha, err)
 	}
 
+	progress(build.ProgressEvent{Log: fmt.Sprintf("Checked out %s", sha), Stream: "stdout"})
 	return dir, cleanup, nil
 }

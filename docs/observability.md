@@ -202,6 +202,27 @@ A firing `crashloop` rule attaches the last 200 lines of the crashlooping contai
 
 This is useful context for recipients, but there's no API endpoint that reconstructs those exact lines after the fact. `AlertRulesPanel` links to the app's live/historical log view instead of trying to retrieve them.
 
+**Auto-rollback on crashloop**
+
+Crashloop detection alerts you; it doesn't fix anything by default. A failed deploy keeps retrying the same bad image forever until you intervene, which is correct (level-triggered, never edge-triggered) but has no escape hatch on its own.
+
+Auto-rollback is the opt-in escape hatch, per app, off by default:
+
+```
+levelrail-cli apps auto-rollback enable <app>
+levelrail-cli apps auto-rollback status <app>
+levelrail-cli apps auto-rollback disable <app>
+```
+
+Or from the dashboard: the app's Deploys tab has an "Auto-rollback on crashloop" toggle above the deploy history list.
+
+Once enabled, the first time a `crashloop` rule for that app transitions to firing, the control plane automatically redeploys the most recent *successful* deploy attempt's image that differs from the current (crashlooping) one, through the exact same trigger path the dashboard's "Rollback to this build" button and `apps rollback`/`apps deploy` already use (`POST /api/v1/apps/{name}/deploys`). The resulting deploy attempt shows up in deploy history with source `auto_rollback`.
+
+Guardrails:
+- Fires at most once per crashloop episode: it only runs on the rule's pending-to-firing transition, the same transition the notification itself fires on, so a rule that stays firing across several evaluation ticks doesn't trigger a second rollback.
+- If there's no older successful image to fall back to (the app has never deployed before, or has already been rolled back to its oldest recorded image), auto-rollback does nothing and leaves the crashloop to the alert notification alone, rather than rolling back to nothing.
+- Independent of the `crashloop` alert rule's own notification, which still fires either way.
+
 ## Notification channels
 
 Channels are global, connect-once destinations (Settings -> Notification channels). Attach them to alert rules by `channel_id` instead of retyping webhook URLs per rule.

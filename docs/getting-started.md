@@ -1,16 +1,35 @@
 ---
-description: Install Levelrail, build the binaries, deploy your first app with app.yaml
+description: Start self-hosted with install.sh, or build Levelrail from source for local development, then deploy your first app with app.yaml
 ---
 
 # Getting started
 
-## Requirements
+There are two ways to get a Levelrail control plane running:
+
+- **Self-hosting on a real server** with `install.sh`, covered right below and in full in [Installing](installing.md).
+- **Building from source**, for contributing code, running an unreleased commit, or trying Levelrail out on your own machine without provisioning a server. Covered in [Building from source](#building-from-source).
+
+Whichever one gets you a running control plane, [Deploy your first app](#deploy-your-first-app) below works the same either way.
+
+## Start self-hosted
+
+```
+curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
+```
+
+This downloads the latest release binary, installs Docker if it's missing, and starts the control plane as a systemd service. Before running it on a real server, check the [requirements checklist](installing.md#requirements): supported OS, a practical RAM/CPU/disk starting point, and which ports need to be open. Every option (pinning a version, running as a Docker container instead, upgrading, uninstalling) is in [Installing](installing.md).
+
+## Building from source
+
+Building from source is the path for contributing code, running an unreleased commit, or trying Levelrail out locally without provisioning a server. See the repo's [CONTRIBUTING.md](../CONTRIBUTING.md) for branch and commit conventions and how to run the test suite before opening a PR.
+
+### Requirements
 
 - Go 1.26+
 - Docker (a running daemon is required; the control plane and agent talk to the Docker Engine API directly and never shell out to the `docker` CLI)
 - Node.js and npm (only if building the frontend from source; a recent LTS release works, no pinned version)
 
-## Build and run
+### Build the binaries
 
 The control plane and node agent are separate Go binaries:
 

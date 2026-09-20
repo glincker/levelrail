@@ -58,6 +58,45 @@ func TestLoadOrGenerateMasterKey_PersistedFilePath(t *testing.T) {
 	}
 }
 
+func TestLoadOrGenerateMasterKey_ReadErrorIsNotTreatedAsMissing(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("running as root bypasses the permission check this test relies on")
+	}
+	dataDir := t.TempDir()
+	keyPath := filepath.Join(dataDir, masterKeyFilename)
+
+	original, _, err := loadOrGenerateMasterKey(dataDir)
+	if err != nil {
+		t.Fatalf("seed a real persisted key: %v", err)
+	}
+
+	// Write-only, no read: os.ReadFile fails (not os.ErrNotExist), but
+	// os.WriteFile still succeeds, since it only needs write access to an
+	// already-existing file. This is exactly the shape of the real bug:
+	// the buggy code fell through to "no key yet" on ANY read error, then
+	// successfully generated and wrote a brand-new key over the real one
+	// without ever failing at all.
+	if err := os.Chmod(keyPath, 0o200); err != nil {
+		t.Fatalf("chmod key file write-only: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(keyPath, 0o600) })
+
+	if _, _, err := loadOrGenerateMasterKey(dataDir); err == nil {
+		t.Fatal("loadOrGenerateMasterKey() error = nil, want an error: a real read failure must never be treated as \"no key yet\" and silently regenerated, or every existing secret becomes permanently undecryptable")
+	}
+
+	if err := os.Chmod(keyPath, 0o600); err != nil {
+		t.Fatalf("restore read access to verify content: %v", err)
+	}
+	serialized, err := os.ReadFile(keyPath) //nolint:gosec // test-controlled temp path
+	if err != nil {
+		t.Fatalf("read key file after failed load: %v", err)
+	}
+	if string(serialized) != original.String() {
+		t.Error("key file content changed: loadOrGenerateMasterKey silently overwrote the real key with a freshly generated one")
+	}
+}
+
 func TestLoadSecretsManager_EnvVarTakesPriorityOverPersistedFile(t *testing.T) {
 	dataDir := t.TempDir()
 	// Write garbage to the persisted key file's path: if loadSecretsManager

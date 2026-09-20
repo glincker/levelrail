@@ -328,3 +328,4 @@ Checked by `ValidateLabels` (`internal/spec/labels.go`):
 - [getting-started.md](getting-started.md) - deploying your first app with app.yaml
 - [deploying-apps.md](deploying-apps.md) - secrets management and environment setup
 - [managing-databases.md](managing-databases.md) - database configuration reference
+- [git-integrations.md](git-integrations.md) - branch, deploy trigger mode (push vs. release), and webhook config for a connected git source; none of that lives in app.yaml itself

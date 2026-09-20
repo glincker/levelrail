@@ -33,6 +33,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"group":                   nil,
 		"hook-runs":               nil,
 		"rollback":                nil,
+		"auto-rollback":           {subs: map[string]*cmdNode{"enable": nil, "disable": nil, "status": nil}},
 		"restart":                 nil,
 		"stop":                    nil,
 		"start":                   nil,

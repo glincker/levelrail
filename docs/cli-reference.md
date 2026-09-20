@@ -31,6 +31,18 @@ levelrail apps alerts update <app> <id> --name NAME --kind threshold --metric ME
 ```
 
 ```
+levelrail apps auto-rollback enable <app-name> [flags]
+```
+
+```
+levelrail apps auto-rollback disable <app-name> [flags]
+```
+
+```
+levelrail apps auto-rollback status <app-name> [flags]
+```
+
+```
 levelrail apps clear-environment <name> [flags]
 ```
 

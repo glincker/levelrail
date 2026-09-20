@@ -2,8 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -137,6 +140,131 @@ func TestRun_AppsSecretsLock_Unlock(t *testing.T) {
 	}
 	if !strings.Contains(stdout, `unlocked`) {
 		t.Errorf("stdout = %q, want an unlocked confirmation", stdout)
+	}
+}
+
+func TestRun_AppsSecretsSet_EnvFile(t *testing.T) {
+	dir := t.TempDir()
+	envPath := filepath.Join(dir, "app.env")
+	content := "# a comment\n\nAPI_KEY=s3cr3t\nexport DB_PASSWORD='p@ss'\nQUOTED=\"has spaces\"\n"
+	if err := os.WriteFile(envPath, []byte(content), 0o600); err != nil {
+		t.Fatalf("write env file: %v", err)
+	}
+
+	type setCall struct {
+		path  string
+		value string
+	}
+	var calls []setCall
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		calls = append(calls, setCall{path: r.URL.Path, value: fmt.Sprint(body["value"])})
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "secrets", "set", "web", "--env-file", envPath, "--api-url", srv.URL})
+
+	want := map[string]string{
+		"/api/v1/apps/web/secrets/API_KEY":     "s3cr3t",
+		"/api/v1/apps/web/secrets/DB_PASSWORD": "p@ss",
+		"/api/v1/apps/web/secrets/QUOTED":      "has spaces",
+	}
+	if len(calls) != len(want) {
+		t.Fatalf("got %d PUT calls, want %d: %+v", len(calls), len(want), calls)
+	}
+	for _, c := range calls {
+		if want[c.path] != c.value {
+			t.Errorf("call %s value = %q, want %q", c.path, c.value, want[c.path])
+		}
+	}
+	if !strings.Contains(stdout, `secret "API_KEY" set for app "web"`) {
+		t.Errorf("stdout missing API_KEY confirmation: %q", stdout)
+	}
+	if strings.Contains(stdout, "s3cr3t") || strings.Contains(stdout, "p@ss") || strings.Contains(stdout, "has spaces") {
+		t.Errorf("stdout must never contain a secret value: %q", stdout)
+	}
+}
+
+func TestRun_AppsSecretsSet_EnvFile_MalformedLines(t *testing.T) {
+	dir := t.TempDir()
+	envPath := filepath.Join(dir, "app.env")
+	content := "GOOD=value\nno-equals-sign-here\n=no-key-here\nANOTHER=ok\n"
+	if err := os.WriteFile(envPath, []byte(content), 0o600); err != nil {
+		t.Fatalf("write env file: %v", err)
+	}
+
+	var gotKeys []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotKeys = append(gotKeys, strings.TrimPrefix(r.URL.Path, "/api/v1/apps/web/secrets/"))
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"apps", "secrets", "set", "web", "--env-file", envPath, "--api-url", srv.URL})
+
+	want := []string{"GOOD", "ANOTHER"}
+	if len(gotKeys) != len(want) {
+		t.Fatalf("got keys %v, want %v", gotKeys, want)
+	}
+	for i, k := range want {
+		if gotKeys[i] != k {
+			t.Errorf("key[%d] = %q, want %q", i, gotKeys[i], k)
+		}
+	}
+}
+
+func TestRun_AppsSecretsSet_EnvFile_MissingFile(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "does-not-exist.env")
+	stderr := runCLIExpectValidationError(t, []string{"apps", "secrets", "set", "web", "--env-file", missing})
+	if !strings.Contains(stderr, missing) {
+		t.Errorf("stderr = %q, want the missing file path", stderr)
+	}
+}
+
+func TestRun_AppsSecretsSet_EnvFile_EmptyFile(t *testing.T) {
+	dir := t.TempDir()
+	envPath := filepath.Join(dir, "empty.env")
+	if err := os.WriteFile(envPath, []byte("# only comments\n\n"), 0o600); err != nil {
+		t.Fatalf("write env file: %v", err)
+	}
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "secrets", "set", "web", "--env-file", envPath})
+	if !strings.Contains(stdout, "nothing set") {
+		t.Errorf("stdout = %q, want a nothing-set message", stdout)
+	}
+}
+
+func TestRun_AppsSecretsSet_EnvFile_MissingAppName(t *testing.T) {
+	var stdout, stderr strings.Builder
+	got := run("levelrail-cli-test", []string{"apps", "secrets", "set", "--env-file", "app.env"}, &stdout, &stderr, envMap())
+	if got != exitUsage {
+		t.Fatalf("exit = %d, want %d", got, exitUsage)
+	}
+	if !strings.Contains(stderr.String(), "requires") {
+		t.Errorf("stderr = %q, want a missing-args usage error", stderr.String())
+	}
+}
+
+func TestParseEnvFileBytes(t *testing.T) {
+	input := "# comment\n\nexport FOO=bar\nDOUBLE=\"quoted value\"\nSINGLE='quoted value'\nUNQUOTED=plain\nno-equals\n=no-key\nSPACED = trimmed \n"
+	got := parseEnvFileBytes([]byte(input))
+
+	want := []envFileEntry{
+		{Key: "FOO", Value: "bar"},
+		{Key: "DOUBLE", Value: "quoted value"},
+		{Key: "SINGLE", Value: "quoted value"},
+		{Key: "UNQUOTED", Value: "plain"},
+		{Key: "SPACED", Value: "trimmed"},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %d entries, want %d: %+v", len(got), len(want), got)
+	}
+	for i, e := range want {
+		if got[i] != e {
+			t.Errorf("entry[%d] = %+v, want %+v", i, got[i], e)
+		}
 	}
 }
 

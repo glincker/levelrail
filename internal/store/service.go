@@ -356,6 +356,15 @@ type DesiredService struct {
 	// SaveDesiredService never writes this field: only
 	// SetServicePreviewEnvOverride does.
 	PreviewEnvOverrides map[string]string
+
+	// AutoRollbackOnCrashloop opts this app into automatic rollback
+	// (migrations/0106_service_auto_rollback_on_crashloop.sql): once a
+	// KindCrashloop alert rule fires for this app, internal/alerting
+	// points Image back at the most recent successful deploy's image
+	// instead of only notifying. Off by default, like PreviewEnabled.
+	// Like LogDrain/PreviewEnvOverrides, SaveDesiredService never writes
+	// this field: only SetServiceAutoRollbackOnCrashloop does.
+	AutoRollbackOnCrashloop bool
 }
 
 // DefaultDeployStrategy and DefaultReplicas mirror internal/spec's
@@ -821,6 +830,28 @@ func (db *DB) UpdateServiceSuspended(ctx context.Context, name string, suspended
 	return nil
 }
 
+// SetServiceAutoRollbackOnCrashloop is the only way
+// auto_rollback_on_crashloop ever changes, the same "own single-purpose
+// setter, excluded from SaveDesiredService" reasoning UpdateServiceNode/
+// UpdateServiceProject/UpdateServiceStorageTarget/UpdateServiceSuspended
+// already establish.
+func (db *DB) SetServiceAutoRollbackOnCrashloop(ctx context.Context, name string, enabled bool) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_services SET auto_rollback_on_crashloop = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, enabled, name)
+	if err != nil {
+		return fmt.Errorf("store: update auto rollback on crashloop for service %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update auto rollback on crashloop for service %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
+
 // RestartService is the only way restart_nonce ever changes: SaveDesiredService's
 // own doc comment (and this field's own doc comment on DesiredService)
 // explains why it's deliberately excluded from that method's
@@ -1049,7 +1080,7 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides"
+const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
@@ -1062,7 +1093,7 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		hostPort                                                                                                                                                                    sql.NullInt64
 		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                                                     string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String

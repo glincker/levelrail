@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -143,5 +143,53 @@ describe('EnvVarsForm', () => {
     const index = keys.findIndex((el) => el.value === 'DB_PASSWORD')
     expect(index).toBeGreaterThanOrEqual(0)
     expect(values[index].value).toBe('')
+  })
+
+  it('imports a browsed .env file into the field list via the paste dialog', async () => {
+    const user = userEvent.setup()
+    renderForm({ values: {} })
+
+    await user.click(screen.getByRole('button', { name: 'Paste .env' }))
+    const fileInput = screen.getByLabelText('Upload .env file')
+    const file = new File(
+      ['UPLOADED_KEY=uploaded-value\n# comment\n'],
+      'app.env',
+      {
+        type: 'text/plain',
+      },
+    )
+
+    await user.upload(fileInput, file)
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('UPLOADED_KEY')).toBeInTheDocument()
+    })
+    expect(screen.getByDisplayValue('uploaded-value')).toBeInTheDocument()
+    // The dialog closes itself once a file import stages rows successfully.
+    expect(
+      screen.queryByRole('heading', { name: 'Paste .env' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows an error and keeps the dialog open when the uploaded file has no key=value pairs', async () => {
+    const user = userEvent.setup()
+    renderForm({ values: {} })
+
+    await user.click(screen.getByRole('button', { name: 'Paste .env' }))
+    const fileInput = screen.getByLabelText('Upload .env file')
+    const file = new File(['# only a comment\n'], 'empty.env', {
+      type: 'text/plain',
+    })
+
+    await user.upload(fileInput, file)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('No key=value pairs found in empty.env.'),
+      ).toBeInTheDocument()
+    })
+    expect(
+      screen.getByRole('heading', { name: 'Paste .env' }),
+    ).toBeInTheDocument()
   })
 })

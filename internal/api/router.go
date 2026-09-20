@@ -306,6 +306,10 @@ type Router struct {
 	hookRuns                       HookRunStore                     // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
 	invites                        InviteStore                      // always set, same "core Store interface" shape as passwordResetTokens above
 	inviteTTL                      time.Duration                    // 0 means "use defaultInviteTTL", set via WithInviteTTL
+	aiSettings                     AIAssistantSettingsStore         // always set, same shape as emailSettings above: the provider/model row always exists (migrations/0106's own seeded row)
+	aiSecrets                      AIAssistantSecrets               // nil is valid: PUT/DELETE /api/v1/settings/ai-assistant return 501, same shape as emailSecrets above
+	aiChat                         AIChatStore                      // always set, same "core Store interface" shape as backupTargets above
+	aiEngine                       AIEngine                         // nil is valid: every /api/v1/ai/... session route returns 501, same shape as builder above
 	// autoPlacementEnabled gates autoPlaceNode (scheduling.go): simple
 	// spread scheduling for a create request that omits node_id. Defaults
 	// to true (NewRouter's own struct literal below); cmd/levelrail/
@@ -404,6 +408,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		appVolumeMoves:              s,
 		policies:                    s,
 		invites:                     s,
+		aiSettings:                  s,
+		aiChat:                      s,
 		autoPlacementEnabled:        true,
 	}
 	for _, opt := range opts {

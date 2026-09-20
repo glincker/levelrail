@@ -1,11 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useMemo, useRef, useState, type DragEvent } from 'react'
 import { useFieldArray, useForm, useWatch, type Control } from 'react-hook-form'
 import { z } from 'zod'
 import {
   ClipboardTextIcon,
   PlusIcon,
   BracketsCurlyIcon,
+  UploadSimpleIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { parseEnvBlock } from '../lib/envParse'
@@ -37,6 +38,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
 
 const envSchema = z
   .object({
@@ -143,18 +145,31 @@ export function EnvVarsForm({
   inheritedRows,
   availableSharedVars,
 }: EnvVarsFormProps) {
+  // Memoized on the values prop itself, not recreated on every render:
+  // react-hook-form's own values-sync effect re-runs whenever this object's
+  // reference changes, and an unmemoized new-object-every-render here
+  // caused it to re-apply on every unrelated state change (e.g. closing
+  // the paste dialog right after a staged import), duplicating rows an
+  // append() had just added.
+  const syncedValues = useMemo(
+    () => ({ vars: toFieldValues(values) }),
+    [values],
+  )
   const { control, register, handleSubmit, formState, getValues } =
     useForm<EnvFormValues>({
       resolver: zodResolver(envSchema),
-      values: { vars: toFieldValues(values) },
+      values: syncedValues,
       resetOptions: { keepDirtyValues: true },
     })
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove, replace, update } = useFieldArray({
     control,
     name: 'vars',
   })
   const [pasteOpen, setPasteOpen] = useState(false)
   const [pasteText, setPasteText] = useState('')
+  const [isDragging, setIsDragging] = useState(false)
+  const [fileError, setFileError] = useState<string | undefined>()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const onSubmit = handleSubmit((formValues) => {
     const vars: Record<string, string> = {}
@@ -164,32 +179,33 @@ export function EnvVarsForm({
     onSave(vars)
   })
 
-  // Importing a pasted block never submits the form, it only stages rows
-  // into the same useFieldArray as manual entry so the existing "Save
-  // variables" click and duplicate-key validation are the only path to a
-  // real save.
+  // Shared by paste-import and file-import: stages parsed rows into the
+  // same useFieldArray as manual entry so the existing "Save variables"
+  // click and duplicate-key validation are the only path to a real save.
   //
-  // A pasted key that matches an existing row (from a prior manual entry
-  // or an earlier paste) overwrites that row's value in place instead of
-  // being appended as a second row for the duplicate-key validation to
-  // flag, matching how re-pasting an updated .env block should behave.
-  // The same last-one-wins rule also resolves duplicate keys within the
-  // pasted block itself, matching real .env semantics.
-  const handleImportPaste = () => {
-    const parsed = parseEnvBlock(pasteText)
-    if (parsed.length > 0) {
-      const currentVars = getValues('vars')
-      for (const entry of parsed) {
-        const existingIndex = currentVars.findIndex((v) => v.key === entry.key)
-        if (existingIndex === -1) {
-          currentVars.push(entry)
-          append(entry)
-        } else {
-          currentVars[existingIndex] = entry
-          update(existingIndex, entry)
-        }
+  // A parsed key that matches an existing row (from a prior manual entry,
+  // an earlier paste, or an earlier file import) overwrites that row's
+  // value in place instead of being appended as a second row for the
+  // duplicate-key validation to flag, matching how re-importing an
+  // updated .env block should behave. The same last-one-wins rule also
+  // resolves duplicate keys within the parsed block itself, matching real
+  // .env semantics.
+  const stageParsedEntries = (parsed: { key: string; value: string }[]) => {
+    if (parsed.length === 0) return
+    const currentVars = getValues('vars')
+    for (const entry of parsed) {
+      const existingIndex = currentVars.findIndex((v) => v.key === entry.key)
+      if (existingIndex === -1) {
+        currentVars.push(entry)
+      } else {
+        currentVars[existingIndex] = entry
       }
     }
+    replace(currentVars)
+  }
+
+  const handleImportPaste = () => {
+    stageParsedEntries(parseEnvBlock(pasteText))
     setPasteText('')
     setPasteOpen(false)
   }
@@ -214,6 +230,38 @@ export function EnvVarsForm({
     } else {
       update(existingIndex, newRow)
     }
+  }
+
+  const importEnvFile = (file: File) => {
+    setFileError(undefined)
+    const reader = new FileReader()
+    reader.onload = () => {
+      const text = typeof reader.result === 'string' ? reader.result : ''
+      const parsed = parseEnvBlock(text)
+      if (parsed.length === 0) {
+        setFileError(`No key=value pairs found in ${file.name}.`)
+        return
+      }
+      stageParsedEntries(parsed)
+      setPasteOpen(false)
+    }
+    reader.onerror = () => {
+      setFileError(`Could not read ${file.name}.`)
+    }
+    reader.readAsText(file)
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) importEnvFile(file)
+    e.target.value = ''
+  }
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) importEnvFile(file)
   }
 
   return (
@@ -342,7 +390,16 @@ export function EnvVarsForm({
                 </SelectContent>
               </Select>
             ) : null}
-            <Dialog open={pasteOpen} onOpenChange={setPasteOpen}>
+            <Dialog
+              open={pasteOpen}
+              onOpenChange={(open) => {
+                setPasteOpen(open)
+                if (!open) {
+                  setFileError(undefined)
+                  setIsDragging(false)
+                }
+              }}
+            >
               <DialogTrigger
                 render={<Button type="button" variant="outline" size="sm" />}
               >
@@ -353,11 +410,55 @@ export function EnvVarsForm({
                 <DialogHeader>
                   <DialogTitle>Paste .env</DialogTitle>
                   <DialogDescription>
-                    Paste raw .env-format text. Comments and blank lines are
-                    skipped, and quoted values are unwrapped. This only stages
-                    rows, click Save variables afterward to apply them.
+                    Paste raw .env-format text or import a .env file. Comments
+                    and blank lines are skipped, and quoted values are
+                    unwrapped. This only stages rows, click Save variables
+                    afterward to apply them.
                   </DialogDescription>
                 </DialogHeader>
+                <div
+                  data-testid="env-file-dropzone"
+                  className={cn(
+                    'flex flex-col items-center gap-2 rounded-md border border-dashed p-4 text-center transition-colors',
+                    isDragging ? 'border-primary bg-accent' : 'border-border',
+                  )}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    setIsDragging(true)
+                  }}
+                  onDragLeave={() => {
+                    setIsDragging(false)
+                  }}
+                  onDrop={handleDrop}
+                >
+                  <UploadSimpleIcon className="size-5 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Drag and drop a .env file here, or
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      fileInputRef.current?.click()
+                    }}
+                  >
+                    Browse file
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".env,text/plain"
+                    className="sr-only"
+                    aria-label="Upload .env file"
+                    onChange={handleFileInputChange}
+                  />
+                </div>
+                {fileError ? (
+                  <Alert variant="destructive">
+                    <AlertDescription>{fileError}</AlertDescription>
+                  </Alert>
+                ) : null}
                 <Textarea
                   value={pasteText}
                   onChange={(e) => {
@@ -373,6 +474,7 @@ export function EnvVarsForm({
                     variant="outline"
                     onClick={() => {
                       setPasteText('')
+                      setFileError(undefined)
                       setPasteOpen(false)
                     }}
                   >

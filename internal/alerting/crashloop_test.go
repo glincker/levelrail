@@ -200,3 +200,125 @@ func TestRestartTracker_Run_ResolvesAndTracksRealEvents(t *testing.T) {
 		t.Errorf("CountSince() = %d, want 1 (one real restart; the die event and the unrelated container's start must not count)", got)
 	}
 }
+
+// fakeAutoRollbackStore is an in-memory AutoRollbackStore for
+// MaybeAutoRollback's own tests: one service, its deploy attempt
+// history, and a record of every SaveDesiredService/SaveDeployAttempt
+// call so a test can assert whether a rollback was actually triggered.
+type fakeAutoRollbackStore struct {
+	svc           store.DesiredService
+	getErr        error
+	attempts      []store.DeployAttempt
+	listErr       error
+	savedServices []store.DesiredService
+	savedAttempts []store.DeployAttempt
+	finishedIDs   []string
+}
+
+func (f *fakeAutoRollbackStore) GetDesiredService(_ context.Context, _ string) (*store.DesiredService, error) {
+	if f.getErr != nil {
+		return nil, f.getErr
+	}
+	svc := f.svc
+	return &svc, nil
+}
+
+func (f *fakeAutoRollbackStore) ListDeployAttempts(_ context.Context, _ string) ([]store.DeployAttempt, error) {
+	if f.listErr != nil {
+		return nil, f.listErr
+	}
+	return f.attempts, nil
+}
+
+func (f *fakeAutoRollbackStore) SaveDesiredService(_ context.Context, svc store.DesiredService) error {
+	f.savedServices = append(f.savedServices, svc)
+	return nil
+}
+
+func (f *fakeAutoRollbackStore) SaveDeployAttempt(_ context.Context, a store.DeployAttempt) error {
+	f.savedAttempts = append(f.savedAttempts, a)
+	return nil
+}
+
+func (f *fakeAutoRollbackStore) FinishDeployAttempt(_ context.Context, id, _ string, _ time.Time, _ string) error {
+	f.finishedIDs = append(f.finishedIDs, id)
+	return nil
+}
+
+func TestMaybeAutoRollback_Enabled_RollsBackToPreviousImage(t *testing.T) {
+	st := &fakeAutoRollbackStore{
+		svc: store.DesiredService{Name: "web", Image: "web:v3", AutoRollbackOnCrashloop: true},
+		attempts: []store.DeployAttempt{
+			{Image: "web:v3", Status: store.DeployAttemptStatusSucceeded},
+			{Image: "web:v2", Status: store.DeployAttemptStatusSucceeded},
+			{Image: "web:v1", Status: store.DeployAttemptStatusSucceeded},
+		},
+	}
+	nudger := &fakeAutoRollbackNudger{}
+
+	MaybeAutoRollback(context.Background(), st, nudger, "service:web", nil)
+
+	if len(st.savedServices) != 1 || st.savedServices[0].Image != "web:v2" {
+		t.Fatalf("savedServices = %+v, want one save with image web:v2", st.savedServices)
+	}
+	if len(st.savedAttempts) != 1 || st.savedAttempts[0].Source != store.DeployAttemptSourceAutoRollback {
+		t.Fatalf("savedAttempts = %+v, want one with Source=%q", st.savedAttempts, store.DeployAttemptSourceAutoRollback)
+	}
+	if nudger.calls != 1 {
+		t.Errorf("nudger.calls = %d, want 1", nudger.calls)
+	}
+}
+
+func TestMaybeAutoRollback_Disabled_NeverFires(t *testing.T) {
+	st := &fakeAutoRollbackStore{
+		svc: store.DesiredService{Name: "web", Image: "web:v3", AutoRollbackOnCrashloop: false},
+		attempts: []store.DeployAttempt{
+			{Image: "web:v2", Status: store.DeployAttemptStatusSucceeded},
+		},
+	}
+	nudger := &fakeAutoRollbackNudger{}
+
+	MaybeAutoRollback(context.Background(), st, nudger, "service:web", nil)
+
+	if len(st.savedServices) != 0 {
+		t.Errorf("savedServices = %+v, want none: auto-rollback is off for this app", st.savedServices)
+	}
+	if nudger.calls != 0 {
+		t.Errorf("nudger.calls = %d, want 0", nudger.calls)
+	}
+}
+
+func TestMaybeAutoRollback_NoOlderImage_NoPanicNoRollback(t *testing.T) {
+	st := &fakeAutoRollbackStore{
+		svc: store.DesiredService{Name: "web", Image: "web:v1", AutoRollbackOnCrashloop: true},
+		attempts: []store.DeployAttempt{
+			{Image: "web:v1", Status: store.DeployAttemptStatusSucceeded},
+		},
+	}
+	nudger := &fakeAutoRollbackNudger{}
+
+	MaybeAutoRollback(context.Background(), st, nudger, "service:web", nil)
+
+	if len(st.savedServices) != 0 {
+		t.Errorf("savedServices = %+v, want none: already on the oldest known image", st.savedServices)
+	}
+	if nudger.calls != 0 {
+		t.Errorf("nudger.calls = %d, want 0", nudger.calls)
+	}
+}
+
+func TestMaybeAutoRollback_NotServiceScopedResourceID_NoOp(t *testing.T) {
+	st := &fakeAutoRollbackStore{svc: store.DesiredService{Name: "web", Image: "web:v1", AutoRollbackOnCrashloop: true}}
+
+	MaybeAutoRollback(context.Background(), st, nil, "node:some-node-id", nil)
+
+	if len(st.savedServices) != 0 {
+		t.Errorf("savedServices = %+v, want none for a non-service resourceID", st.savedServices)
+	}
+}
+
+// fakeAutoRollbackNudger counts Nudge calls for MaybeAutoRollback's own
+// tests.
+type fakeAutoRollbackNudger struct{ calls int }
+
+func (f *fakeAutoRollbackNudger) Nudge() { f.calls++ }

@@ -222,6 +222,59 @@ func TestHandleDeployHistory(t *testing.T) {
 	}
 }
 
+func TestHandleAutoRollback_GetDefaultOffAndSetToggles(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	recGet := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recGet, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/auto-rollback", ""))
+	if recGet.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recGet.Code, http.StatusOK)
+	}
+	var got autoRollbackSettingResource
+	if err := json.Unmarshal(recGet.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Enabled {
+		t.Error("Enabled = true, want false: off by default")
+	}
+
+	recSet := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recSet, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/auto-rollback", `{"enabled":true}`))
+	if recSet.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", recSet.Code, http.StatusOK, recSet.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService: %v", err)
+	}
+	if !svc.AutoRollbackOnCrashloop {
+		t.Error("AutoRollbackOnCrashloop = false after enabling, want true")
+	}
+
+	recGetAgain := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recGetAgain, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/auto-rollback", ""))
+	var gotAgain autoRollbackSettingResource
+	if err := json.Unmarshal(recGetAgain.Body.Bytes(), &gotAgain); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !gotAgain.Enabled {
+		t.Error("Enabled = false after enabling, want true")
+	}
+
+	recMissing := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(recMissing, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/ghost/auto-rollback", `{"enabled":true}`))
+	if recMissing.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", recMissing.Code, http.StatusNotFound)
+	}
+}
+
 func TestApplicationControllerName(t *testing.T) {
 	if got, want := applicationControllerName("web"), "application/web"; got != want {
 		t.Errorf("applicationControllerName(%q) = %q, want %q", "web", got, want)

@@ -84,6 +84,13 @@ type AppStore interface {
 	// UpdateServiceStorageTarget, see store.DB.UpdateServiceDatabaseAttachment's
 	// own doc comment.
 	UpdateServiceDatabaseAttachment(ctx context.Context, name string, att *store.DatabaseAttachment) error
+	// SetServiceAutoRollbackOnCrashloop backs PUT
+	// /api/v1/apps/{name}/auto-rollback (deploys.go): whether
+	// internal/alerting.MaybeAutoRollback rolls this app back
+	// automatically the next time a KindCrashloop rule fires for it. Same
+	// separation-from-ordinary-update reasoning as UpdateServiceStorageTarget,
+	// see store.DB.SetServiceAutoRollbackOnCrashloop's own doc comment.
+	SetServiceAutoRollbackOnCrashloop(ctx context.Context, name string, enabled bool) error
 	// SetServiceVaultEnvVar backs PUT/DELETE
 	// /api/v1/apps/{name}/vault-env/{key} (apps_vault_env.go): the
 	// UI/CLI-facing way to declare (or remove) one Vault-sourced env var
@@ -463,6 +470,8 @@ type Store interface {
 	PolicyStore
 	DeviceAuthStore
 	HookRunStore
+	AIAssistantSettingsStore
+	AIChatStore
 }
 
 // SecretSetter is the surface the secrets handlers need from

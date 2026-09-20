@@ -16,15 +16,10 @@ import type { ReconcileCondition } from '../types/deploy'
 // deliberately backend-free alternative: no new schema, no new SSE
 // fields, just an honest read of state that already exists.
 export type DeployStageStatus =
-  | 'pending'
-  | 'running'
-  | 'done'
-  | 'failed'
-  | 'skipped'
-  | 'unknown'
+  'pending' | 'running' | 'done' | 'failed' | 'skipped' | 'unknown'
 
 export interface DeployStage {
-  key: 'build' | 'rollout'
+  key: 'build' | 'rollout' | 'health-check' | 'cutover' | 'cleanup'
   label: string
   status: DeployStageStatus
   detail?: string
@@ -72,7 +67,10 @@ export function computeDeployStages(
   conditions: ReconcileCondition[],
   isLatestAttempt: boolean,
 ): [DeployStage, DeployStage] {
-  return [computeBuildStage(attempt), computeRolloutStage(attempt, conditions, isLatestAttempt)]
+  return [
+    computeBuildStage(attempt),
+    computeRolloutStage(attempt, conditions, isLatestAttempt),
+  ]
 }
 
 function computeBuildStage(attempt: DeployAttempt): DeployStage {
@@ -114,7 +112,12 @@ function computeRolloutStage(
   const label = 'Roll out'
 
   if (attempt.status === 'failed') {
-    return { key, label, status: 'skipped', detail: 'The build failed before a roll out could start.' }
+    return {
+      key,
+      label,
+      status: 'skipped',
+      detail: 'The build failed before a roll out could start.',
+    }
   }
   if (attempt.status === 'running') {
     return { key, label, status: 'pending' }
@@ -124,7 +127,8 @@ function computeRolloutStage(
       key,
       label,
       status: 'unknown',
-      detail: "Not tracked for past attempts: reconcile status only reflects the app's current state.",
+      detail:
+        "Not tracked for past attempts: reconcile status only reflects the app's current state.",
     }
   }
 
@@ -132,10 +136,14 @@ function computeRolloutStage(
   // build finished, so a condition transition at or after finished_at
   // reflects the reconciler reacting to this exact attempt's desired
   // state, not one left over from an earlier deploy.
-  const referenceMs = attempt.finished_at ? new Date(attempt.finished_at).getTime() : null
+  const referenceMs = attempt.finished_at
+    ? new Date(attempt.finished_at).getTime()
+    : null
 
   const failedCondition = conditions.find(
-    (c) => ROLLOUT_FAILURE_REASONS.includes(c.Reason) && isAtOrAfter(c.LastTransitionTime, referenceMs),
+    (c) =>
+      ROLLOUT_FAILURE_REASONS.includes(c.Reason) &&
+      isAtOrAfter(c.LastTransitionTime, referenceMs),
   )
   if (failedCondition) {
     return {
@@ -149,7 +157,9 @@ function computeRolloutStage(
   }
 
   const deployedCondition = conditions.find(
-    (c) => ROLLOUT_DONE_REASONS.includes(c.Reason) && isAtOrAfter(c.LastTransitionTime, referenceMs),
+    (c) =>
+      ROLLOUT_DONE_REASONS.includes(c.Reason) &&
+      isAtOrAfter(c.LastTransitionTime, referenceMs),
   )
   if (deployedCondition) {
     return {
@@ -168,4 +178,186 @@ function isAtOrAfter(timestamp: string, referenceMs: number | null): boolean {
   if (referenceMs === null) return false
   const t = new Date(timestamp).getTime()
   return Number.isFinite(t) && t >= referenceMs
+}
+
+// Every reason internal/reconcile/application/controller.go can report
+// before a new replica is confirmed running and passing its readiness
+// probe: everything ensureReplicaRunning itself can fail with, plus the
+// two failures that can occur before it (StoreError/SuspendFailed) or
+// reachable only via the recreate strategy's own pre-start teardown
+// (CleanupFailed, distinct from RunningStaleCleanupFailed below: that one
+// fires after a successful deploy, this one before any new container
+// exists at all).
+const HEALTH_CHECK_FAILURE_REASONS = [
+  'StoreError',
+  'SuspendFailed',
+  'StrategyUnrecognized',
+  'InspectFailed',
+  'CleanupFailed',
+  'CreateFailed',
+  'EnsureNetworkFailed',
+  'StartFailed',
+  'VanishedAfterStart',
+  'PreDeployHookFailed',
+  'ReadinessFailed',
+  'OOMKilledDuringReadiness',
+  'ExitedDuringReadiness',
+]
+
+// The reconciler removes an old container only after a new one is
+// confirmed running and ready (controller.go's removeStale, called from
+// each strategy's own reconcile method), so this Reason is only ever
+// reachable once the health-check and cutover work above has already
+// succeeded: Status stays True (the important fact, a healthy set is
+// serving, is still true), just with this Reason marking the cleanup
+// step specifically as incomplete.
+const CLEANUP_FAILURE_REASON = 'RunningStaleCleanupFailed'
+
+// Every Reason finishReconcile can report once a fresh replica set is
+// confirmed running, ready, and cleaned up: the fully clean case
+// (Deployed/AlreadyRunning) plus two reasons for a secondary, post-cutover
+// step (a configured post-deploy hook, recording the deploy metric)
+// failing without undoing the cutover that already succeeded. All of
+// these mean health check, cutover, and cleanup themselves all
+// succeeded; CLEANUP_FAILURE_REASON is included separately since it's the
+// one member of this set where cleanup specifically did not.
+const ROLLOUT_SUCCESS_REASONS = [
+  'Deployed',
+  'AlreadyRunning',
+  'PostDeployHookFailed',
+  'DeployedMetricRecordFailed',
+  CLEANUP_FAILURE_REASON,
+]
+
+const NOT_LATEST_ATTEMPT_DETAIL =
+  "Not tracked for past attempts: reconcile status only reflects the app's current state."
+
+type RolloutSubStage = [DeployStage, DeployStage, DeployStage]
+
+function rolloutSubStageShells(
+  status: DeployStageStatus,
+  detail?: string,
+): RolloutSubStage {
+  return [
+    { key: 'health-check', label: 'Health check', status, detail },
+    { key: 'cutover', label: 'Cutover', status, detail },
+    { key: 'cleanup', label: 'Cleanup', status, detail },
+  ]
+}
+
+// computeRolloutSubStages splits the single "Roll out" stage
+// computeDeployStages already returns into the three real steps a blue-
+// green/rolling reconcile pass actually takes (controller.go: get a new
+// replica running and passing its readiness probe, confirm it as the
+// container now serving, then remove the old one). This is additive,
+// not a replacement: computeDeployStages' own 2-tuple return shape is a
+// real, typed contract other callers (DeployMetaCard, DeployStageTimeline,
+// DeployAttemptsList, DeployInProgressBanner, useDeployProgress) already
+// depend on, so it stays exactly as-is; this is a second, separate view
+// over the same underlying conditions for callers that want the finer
+// breakdown (currently just the deploy log page).
+//
+// Real limitation, not a simplification: internal/reconcile's Engine
+// persists exactly one terminal condition per Reconcile pass (see
+// engine.go's reconcileOne), not one per sub-step, so which of the three
+// is currently in flight is not observable while a rollout is still
+// converging. All three report 'pending' until a terminal condition
+// lands, then are back-filled from its Reason in one step, the same
+// honest "derived from data that already exists, nothing new invented"
+// approach computeRolloutStage above already takes.
+export function computeRolloutSubStages(
+  attempt: DeployAttempt,
+  conditions: ReconcileCondition[],
+  isLatestAttempt: boolean,
+): RolloutSubStage {
+  if (attempt.status === 'failed') {
+    return rolloutSubStageShells(
+      'skipped',
+      'The build failed before a roll out could start.',
+    )
+  }
+  if (attempt.status === 'running') {
+    return rolloutSubStageShells('pending')
+  }
+  if (!isLatestAttempt) {
+    return rolloutSubStageShells('unknown', NOT_LATEST_ATTEMPT_DETAIL)
+  }
+
+  const referenceMs = attempt.finished_at
+    ? new Date(attempt.finished_at).getTime()
+    : null
+
+  const failedCondition = conditions.find(
+    (c) =>
+      HEALTH_CHECK_FAILURE_REASONS.includes(c.Reason) &&
+      isAtOrAfter(c.LastTransitionTime, referenceMs),
+  )
+  if (failedCondition) {
+    return [
+      {
+        key: 'health-check',
+        label: 'Health check',
+        status: 'failed',
+        detail: failedCondition.Message,
+        startedAt: attempt.finished_at,
+        finishedAt: failedCondition.LastTransitionTime,
+      },
+      {
+        key: 'cutover',
+        label: 'Cutover',
+        status: 'skipped',
+        detail: 'The new container never passed its health check.',
+      },
+      {
+        key: 'cleanup',
+        label: 'Cleanup',
+        status: 'skipped',
+        detail: 'The new container never passed its health check.',
+      },
+    ]
+  }
+
+  const successCondition = conditions.find(
+    (c) =>
+      ROLLOUT_SUCCESS_REASONS.includes(c.Reason) &&
+      isAtOrAfter(c.LastTransitionTime, referenceMs),
+  )
+  if (successCondition) {
+    const cleanupFailed = successCondition.Reason === CLEANUP_FAILURE_REASON
+    return [
+      {
+        key: 'health-check',
+        label: 'Health check',
+        status: 'done',
+        startedAt: attempt.finished_at,
+        finishedAt: successCondition.LastTransitionTime,
+      },
+      {
+        key: 'cutover',
+        label: 'Cutover',
+        status: 'done',
+        startedAt: attempt.finished_at,
+        finishedAt: successCondition.LastTransitionTime,
+      },
+      {
+        key: 'cleanup',
+        label: 'Cleanup',
+        status: cleanupFailed ? 'failed' : 'done',
+        detail: cleanupFailed ? successCondition.Message : undefined,
+        startedAt: attempt.finished_at,
+        finishedAt: successCondition.LastTransitionTime,
+      },
+    ]
+  }
+
+  return [
+    {
+      key: 'health-check',
+      label: 'Health check',
+      status: 'running',
+      startedAt: attempt.finished_at,
+    },
+    { key: 'cutover', label: 'Cutover', status: 'pending' },
+    { key: 'cleanup', label: 'Cleanup', status: 'pending' },
+  ]
 }

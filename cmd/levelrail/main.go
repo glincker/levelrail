@@ -656,6 +656,15 @@ func run(logger *slog.Logger) error {
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
 		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
+	// db satisfies alerting.AutoRollbackStore structurally (it already
+	// satisfies deploy.ImageDeployStore, plus GetDesiredService/
+	// ListDeployAttempts); engine (the reconcile engine, already passed
+	// to api.WithReconcileNudger below) satisfies deploy.ReconcileNudger
+	// via the same Nudge() method. Opt-in per app
+	// (store.DesiredService.AutoRollbackOnCrashloop, off by default), so
+	// wiring this unconditionally does not change behavior for any app
+	// that hasn't turned it on.
+	alertingEngine.SetAutoRollback(db, engine)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
@@ -1347,12 +1356,21 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 	}
 	keyPath = filepath.Join(dataDir, masterKeyFilename)
 
-	if serialized, err := os.ReadFile(keyPath); err == nil { //nolint:gosec // operator-controlled data directory path, not user input
+	serialized, readErr := os.ReadFile(keyPath) //nolint:gosec // operator-controlled data directory path, not user input
+	switch {
+	case readErr == nil:
 		mk, err := secrets.LoadMasterKey(string(serialized))
 		if err != nil {
 			return nil, "", fmt.Errorf("load persisted master key: %w", err)
 		}
 		return mk, keyPath, nil
+	case !os.IsNotExist(readErr):
+		// A permission error, I/O failure, or a partially written file
+		// (e.g. after a prior disk-full write) must never be treated the
+		// same as "no key yet": falling through to generate a fresh key
+		// below would silently overwrite the file, permanently
+		// orphaning every secret already wrapped under the real one.
+		return nil, "", fmt.Errorf("read persisted master key at %s: %w", keyPath, readErr)
 	}
 
 	mk, err = secrets.GenerateMasterKey()
@@ -1945,7 +1963,26 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// nil-interface hazard, the OAuth-Application counterpart of
 			// the GitHub App connection just above.
 			api.WithGitLabAppSecrets(secretsManager),
+			// BYOK LLM API key for the embedded AI assistant: same
+			// secretsManager, same nil-interface hazard as everything
+			// else in this block.
+			api.WithAIAssistantSecrets(secretsManager),
 		)
+		// The AI assistant's own tool-calling engine, distinct from the
+		// BYOK key above: it needs a self-call API token to reach this
+		// instance's own REST API (see setupAIAssistantEngine's doc
+		// comment). Skipped, not fatal, if the dial address can't be
+		// determined or minting fails, matching every other optional
+		// feature in this block's own resilience posture: an operator
+		// loses the AI assistant, not the whole control plane.
+		if dial := dashboardDialAddr(httpAddr()); dial != "" {
+			engine, err := setupAIAssistantEngine(context.Background(), db, secretsManager, dial, b.Name, logger)
+			if err != nil {
+				logger.Error("ai assistant: setup failed, chat routes stay disabled", slog.String("error", err.Error()))
+			} else {
+				opts = append(opts, api.WithAIEngine(engine))
+			}
+		}
 	}
 	if builder != nil {
 		opts = append(opts, api.WithBuilder(builder))

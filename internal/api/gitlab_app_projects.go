@@ -131,7 +131,7 @@ func (rt *Router) handleUseGitLabProjectAsSource(w http.ResponseWriter, r *http.
 		return
 	}
 
-	req, buildType, ok := rt.decodeUseAsSourceRequest(w, r, "api: use gitlab project as source")
+	req, buildType, triggerMode, ok := rt.decodeUseAsSourceRequest(w, r, "api: use gitlab project as source")
 	if !ok {
 		return
 	}
@@ -160,6 +160,7 @@ func (rt *Router) handleUseGitLabProjectAsSource(w http.ResponseWriter, r *http.
 
 	result, err := rt.connectGitSource(ctx, req.AppName, connectGitSourceParams{
 		RepoURL: project.HTTPURLToRepo, Branch: branch, BuildType: buildType, BuildPath: req.BuildPath,
+		TriggerMode: triggerMode,
 	})
 	if err != nil {
 		rt.logger.Error("api: use gitlab project as source: connect git source failed", slog.String("error", err.Error()), slog.String("app_name", req.AppName))

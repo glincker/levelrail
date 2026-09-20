@@ -37,7 +37,10 @@ import {
 import { connectGitHubRepoAsSource } from '../queries/githubApp'
 import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
 import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
-import { GitRepoSourcePicker, type GitRepoSourceValue } from './GitRepoSourcePicker'
+import {
+  GitRepoSourcePicker,
+  type GitRepoSourceValue,
+} from './GitRepoSourcePicker'
 import { ApiError } from '../lib/apiError'
 import type { AppDetail } from '../types/appDetail'
 import type {
@@ -45,6 +48,7 @@ import type {
   GitSourceBuildType,
   GitSourceResource,
   GitSourceService,
+  GitSourceTriggerMode,
 } from '../types/gitSource'
 
 // Git source connect/manage card, PUT/GET/DELETE
@@ -70,6 +74,24 @@ const BUILD_PACKS: { value: GitSourceBuildType; label: string }[] = [
   { value: 'railpack', label: 'Auto-detect (Railpack)' },
   { value: 'dockerfile', label: 'Dockerfile' },
   { value: 'static', label: 'Static site' },
+]
+
+const TRIGGER_MODES: {
+  value: GitSourceTriggerMode
+  label: string
+  description: string
+}[] = [
+  {
+    value: 'push',
+    label: 'Every push',
+    description: 'Deploy on every push to the target branch.',
+  },
+  {
+    value: 'release',
+    label: 'Tags & releases',
+    description:
+      'Deploy only on a tag push, or (GitHub only) a published release. Branch pushes never deploy.',
+  },
 ]
 
 // Frameworks/languages the auto-detect build pack actually supports,
@@ -122,6 +144,7 @@ interface FormState {
   branch: string
   buildType: GitSourceBuildType
   buildPath: string
+  triggerMode: GitSourceTriggerMode
   token: string
   // Set only by a fresh GitRepoSourcePicker pick from a connected
   // provider row, cleared on every startEdit/cancelEdit: see
@@ -142,6 +165,7 @@ function emptyForm(): FormState {
     branch: '',
     buildType: 'railpack',
     buildPath: '',
+    triggerMode: 'push',
     token: '',
     providerRef: undefined,
     fanoutMode: 'additional',
@@ -157,17 +181,22 @@ function formFromResource(g: GitSourceResource): FormState {
     branch: g.branch,
     buildType: g.build_type,
     buildPath: g.build_path ?? '',
+    triggerMode: g.trigger_mode,
     token: '',
     providerRef: undefined,
     fanoutMode: hasServices ? 'services' : 'additional',
-    additionalServices: Object.entries(g.additional_services ?? {}).map(([serviceName, build]) => ({
-      serviceName,
-      buildType: build.build_type,
-      buildPath: build.build_path ?? '',
-    })),
+    additionalServices: Object.entries(g.additional_services ?? {}).map(
+      ([serviceName, build]) => ({
+        serviceName,
+        buildType: build.build_type,
+        buildPath: build.build_path ?? '',
+      }),
+    ),
     services: Object.entries(g.services ?? {}).map(([serviceName, svc]) => ({
       serviceName,
-      buildType: isGitSourceBuildType(svc.build.type) ? svc.build.type : 'dockerfile',
+      buildType: isGitSourceBuildType(svc.build.type)
+        ? svc.build.type
+        : 'dockerfile',
       buildPath: svc.build.path ?? '',
       port: svc.port ? String(svc.port) : '',
     })),
@@ -190,16 +219,25 @@ function isGitSourceBuildType(value: string): value is GitSourceBuildType {
 function incompleteRowIndexes(rows: AdditionalServiceRow[]): number[] {
   return rows
     .map((row, index) => ({ row, index }))
-    .filter(({ row }) => !row.serviceName.trim() && (row.buildPath.trim() !== '' || row.buildType !== 'dockerfile'))
+    .filter(
+      ({ row }) =>
+        !row.serviceName.trim() &&
+        (row.buildPath.trim() !== '' || row.buildType !== 'dockerfile'),
+    )
     .map(({ index }) => index)
 }
 
-function additionalServicesPayload(rows: AdditionalServiceRow[]): Record<string, GitSourceBuild> | undefined {
+function additionalServicesPayload(
+  rows: AdditionalServiceRow[],
+): Record<string, GitSourceBuild> | undefined {
   const entries = rows
     .filter((row) => row.serviceName.trim())
     .map((row): [string, GitSourceBuild] => [
       row.serviceName.trim(),
-      { build_type: row.buildType, build_path: row.buildPath.trim() || undefined },
+      {
+        build_type: row.buildType,
+        build_path: row.buildPath.trim() || undefined,
+      },
     ])
   return entries.length > 0 ? Object.fromEntries(entries) : undefined
 }
@@ -209,7 +247,9 @@ function additionalServicesPayload(rows: AdditionalServiceRow[]): Record<string,
 // becomes a number (the wire shape's own field, like
 // DeploySpecServiceInput's build in appGroup.ts), an empty one is
 // omitted rather than sent as 0.
-function servicesPayload(rows: ServiceSpecRow[]): Record<string, GitSourceService> | undefined {
+function servicesPayload(
+  rows: ServiceSpecRow[],
+): Record<string, GitSourceService> | undefined {
   const entries = rows
     .filter((row) => row.serviceName.trim())
     .map((row): [string, GitSourceService] => [
@@ -245,33 +285,54 @@ async function connectGitSource(
   const branch = form.branch.trim() || undefined
   const buildPath = form.buildPath.trim() || undefined
   const additionalServices =
-    form.fanoutMode === 'additional' ? additionalServicesPayload(form.additionalServices) : undefined
-  const services = form.fanoutMode === 'services' ? servicesPayload(form.services) : undefined
+    form.fanoutMode === 'additional'
+      ? additionalServicesPayload(form.additionalServices)
+      : undefined
+  const services =
+    form.fanoutMode === 'services' ? servicesPayload(form.services) : undefined
 
   if (form.providerRef && !additionalServices && !services) {
     if (form.providerRef.kind === 'github') {
-      const { webhook_registered: autoRegistered, webhook_error: webhookError, ...resource } =
-        await connectGitHubRepoAsSource(form.providerRef.owner, form.providerRef.repo, {
+      const {
+        webhook_registered: autoRegistered,
+        webhook_error: webhookError,
+        ...resource
+      } = await connectGitHubRepoAsSource(
+        form.providerRef.owner,
+        form.providerRef.repo,
+        {
           app_name: appName,
           branch,
           build_type: form.buildType,
           build_path: buildPath,
-        })
+          trigger_mode: form.triggerMode,
+        },
+      )
       return { resource, autoRegistered, webhookError }
     }
     if (form.providerRef.kind === 'gitlab') {
-      const resource = await connectGitLabProjectAsSource(form.providerRef.projectId, {
-        app_name: appName,
-        branch,
-        build_type: form.buildType,
-        build_path: buildPath,
-      })
+      const resource = await connectGitLabProjectAsSource(
+        form.providerRef.projectId,
+        {
+          app_name: appName,
+          branch,
+          build_type: form.buildType,
+          build_path: buildPath,
+          trigger_mode: form.triggerMode,
+        },
+      )
       return { resource, autoRegistered: true }
     }
     const resource = await connectBitbucketRepoAsSource(
       form.providerRef.workspace,
       form.providerRef.repoSlug,
-      { app_name: appName, branch, build_type: form.buildType, build_path: buildPath },
+      {
+        app_name: appName,
+        branch,
+        build_type: form.buildType,
+        build_path: buildPath,
+        trigger_mode: form.triggerMode,
+      },
     )
     return { resource, autoRegistered: true }
   }
@@ -284,6 +345,7 @@ async function connectGitSource(
     token: form.token.trim() || undefined,
     additional_services: additionalServices,
     services,
+    trigger_mode: form.triggerMode,
   })
   return { resource, autoRegistered: false }
 }
@@ -307,14 +369,21 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
   // path, gitSourceResource's own doc comment), cleared the moment this
   // card unmounts a connect/edit form. Never re-derived from query.data,
   // which never carries it.
-  const [justConnected, setJustConnected] = useState<GitSourceResource | null>(null)
+  const [justConnected, setJustConnected] = useState<GitSourceResource | null>(
+    null,
+  )
   const [webhookAutoRegistered, setWebhookAutoRegistered] = useState(false)
-  const [webhookError, setWebhookError] = useState<string | undefined>(undefined)
+  const [webhookError, setWebhookError] = useState<string | undefined>(
+    undefined,
+  )
   const [secretCopied, setSecretCopied] = useState(false)
   const [urlCopied, setUrlCopied] = useState(false)
-  const [additionalServicesError, setAdditionalServicesError] = useState<string | null>(null)
+  const [additionalServicesError, setAdditionalServicesError] = useState<
+    string | null
+  >(null)
 
-  const notConnected = query.error instanceof ApiError && query.error.status === 404
+  const notConnected =
+    query.error instanceof ApiError && query.error.status === 404
   const otherError = query.error && !notConnected ? query.error : null
 
   function startEdit(prefill: FormState) {
@@ -332,12 +401,20 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
 
   function submit() {
     if (!form.repoUrl.trim()) {
-      toast.add({ title: 'Pick a repository or paste a URL first.', type: 'error' })
+      toast.add({
+        title: 'Pick a repository or paste a URL first.',
+        type: 'error',
+      })
       return
     }
     if (form.fanoutMode === 'services') {
-      if (form.services.length === 0 || !form.services.some((row) => row.serviceName.trim())) {
-        setAdditionalServicesError('Add at least one service, or switch back to single service.')
+      if (
+        form.services.length === 0 ||
+        !form.services.some((row) => row.serviceName.trim())
+      ) {
+        setAdditionalServicesError(
+          'Add at least one service, or switch back to single service.',
+        )
         return
       }
       const incomplete = incompleteRowIndexes(form.services)
@@ -378,7 +455,11 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
           }
         },
         onError: (error) => {
-          toast.add({ title: 'Could not save git source.', description: error.message, type: 'error' })
+          toast.add({
+            title: 'Could not save git source.',
+            description: error.message,
+            type: 'error',
+          })
         },
       },
     )
@@ -391,7 +472,11 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
         toast.add({ title: 'Git source disconnected.', type: 'success' })
       },
       onError: (error) => {
-        toast.add({ title: 'Could not disconnect git source.', description: error.message, type: 'error' })
+        toast.add({
+          title: 'Could not disconnect git source.',
+          description: error.message,
+          type: 'error',
+        })
       },
     })
   }
@@ -407,14 +492,22 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
   function addAdditionalServiceRow() {
     setForm({
       ...form,
-      additionalServices: [...form.additionalServices, { serviceName: '', buildType: 'dockerfile', buildPath: '' }],
+      additionalServices: [
+        ...form.additionalServices,
+        { serviceName: '', buildType: 'dockerfile', buildPath: '' },
+      ],
     })
   }
 
-  function updateAdditionalServiceRow(index: number, patch: Partial<AdditionalServiceRow>) {
+  function updateAdditionalServiceRow(
+    index: number,
+    patch: Partial<AdditionalServiceRow>,
+  ) {
     setForm({
       ...form,
-      additionalServices: form.additionalServices.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+      additionalServices: form.additionalServices.map((row, i) =>
+        i === index ? { ...row, ...patch } : row,
+      ),
     })
     setAdditionalServicesError(null)
   }
@@ -430,14 +523,19 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
   function addServiceRow() {
     setForm({
       ...form,
-      services: [...form.services, { serviceName: '', buildType: 'dockerfile', buildPath: '', port: '' }],
+      services: [
+        ...form.services,
+        { serviceName: '', buildType: 'dockerfile', buildPath: '', port: '' },
+      ],
     })
   }
 
   function updateServiceRow(index: number, patch: Partial<ServiceSpecRow>) {
     setForm({
       ...form,
-      services: form.services.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+      services: form.services.map((row, i) =>
+        i === index ? { ...row, ...patch } : row,
+      ),
     })
     setAdditionalServicesError(null)
   }
@@ -502,9 +600,14 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
             {!webhookAutoRegistered ? (
               <>
                 <Field>
-                  <FieldLabel htmlFor="git-source-webhook-url">Webhook URL</FieldLabel>
+                  <FieldLabel htmlFor="git-source-webhook-url">
+                    Webhook URL
+                  </FieldLabel>
                   <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
-                    <code id="git-source-webhook-url" className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
+                    <code
+                      id="git-source-webhook-url"
+                      className="min-w-0 flex-1 overflow-x-auto text-xs break-all"
+                    >
                       {webhookFullURL(justConnected.webhook_url)}
                     </code>
                     <Button
@@ -512,7 +615,10 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        copyText(webhookFullURL(justConnected.webhook_url), setUrlCopied)
+                        copyText(
+                          webhookFullURL(justConnected.webhook_url),
+                          setUrlCopied,
+                        )
                       }}
                     >
                       {urlCopied ? <CheckIcon /> : <CopyIcon />}
@@ -522,9 +628,14 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                 </Field>
 
                 <Field>
-                  <FieldLabel htmlFor="git-source-webhook-secret">Webhook secret</FieldLabel>
+                  <FieldLabel htmlFor="git-source-webhook-secret">
+                    Webhook secret
+                  </FieldLabel>
                   <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
-                    <code id="git-source-webhook-secret" className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
+                    <code
+                      id="git-source-webhook-secret"
+                      className="min-w-0 flex-1 overflow-x-auto text-xs break-all"
+                    >
                       {justConnected.webhook_secret}
                     </code>
                     <Button
@@ -533,7 +644,10 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                       variant="outline"
                       onClick={() => {
                         if (justConnected.webhook_secret) {
-                          copyText(justConnected.webhook_secret, setSecretCopied)
+                          copyText(
+                            justConnected.webhook_secret,
+                            setSecretCopied,
+                          )
                         }
                       }}
                     >
@@ -542,14 +656,20 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                     </Button>
                   </div>
                   <FieldDescription>
-                    Set this as the secret on a GitHub &quot;Push&quot; webhook pointed at
-                    the URL above, content type application/json.
+                    Set this as the secret on a GitHub &quot;Push&quot; webhook
+                    pointed at the URL above, content type application/json.
                   </FieldDescription>
                 </Field>
               </>
             ) : null}
 
-            <Button type="button" size="sm" onClick={() => { setJustConnected(null) }}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setJustConnected(null)
+              }}
+            >
               Done
             </Button>
           </div>
@@ -557,10 +677,11 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
           <div className="space-y-4">
             {!notConnected ? (
               <p className="text-sm text-muted-foreground">
-                Currently connected to <span className="font-mono">{form.repoUrl}</span>{' '}
-                @ <span className="font-mono">{form.branch}</span>. Pick a different
-                repository below to re-point it, or leave it as is to only update the
-                build settings.
+                Currently connected to{' '}
+                <span className="font-mono">{form.repoUrl}</span> @{' '}
+                <span className="font-mono">{form.branch}</span>. Pick a
+                different repository below to re-point it, or leave it as is to
+                only update the build settings.
               </p>
             ) : (
               <p className="text-sm text-muted-foreground">
@@ -583,23 +704,41 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
             />
 
             <Field>
-              <FieldLabel htmlFor="git-source-build-type">Build pack</FieldLabel>
+              <FieldLabel htmlFor="git-source-build-type">
+                Build pack
+              </FieldLabel>
               <Tabs
                 value={form.buildType}
                 onValueChange={(v: unknown) => {
-                  if (v === 'railpack' || v === 'dockerfile' || v === 'static') {
+                  if (
+                    v === 'railpack' ||
+                    v === 'dockerfile' ||
+                    v === 'static'
+                  ) {
                     setForm({ ...form, buildType: v })
                   }
                 }}
               >
-                <TabsList id="git-source-build-type" className="grid w-full grid-cols-3">
-                  <TabsTrigger value="railpack" disabled={connectMutation.isPending}>
+                <TabsList
+                  id="git-source-build-type"
+                  className="grid w-full grid-cols-3"
+                >
+                  <TabsTrigger
+                    value="railpack"
+                    disabled={connectMutation.isPending}
+                  >
                     Auto-detect
                   </TabsTrigger>
-                  <TabsTrigger value="dockerfile" disabled={connectMutation.isPending}>
+                  <TabsTrigger
+                    value="dockerfile"
+                    disabled={connectMutation.isPending}
+                  >
                     Dockerfile
                   </TabsTrigger>
-                  <TabsTrigger value="static" disabled={connectMutation.isPending}>
+                  <TabsTrigger
+                    value="static"
+                    disabled={connectMutation.isPending}
+                  >
                     Static site
                   </TabsTrigger>
                 </TabsList>
@@ -635,7 +774,9 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                       autoComplete="off"
                       spellCheck={false}
                       value={form.buildPath}
-                      onChange={(e) => { setForm({ ...form, buildPath: e.target.value }) }}
+                      onChange={(e) => {
+                        setForm({ ...form, buildPath: e.target.value })
+                      }}
                       disabled={connectMutation.isPending}
                     />
                   </Field>
@@ -643,15 +784,47 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
 
                 <TabsContent value="static" className="pt-2">
                   <FieldDescription>
-                    Served directly by the embedded Caddy ingress, no
-                    container.
+                    Served directly by the embedded Caddy ingress, no container.
                   </FieldDescription>
                 </TabsContent>
               </Tabs>
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="git-source-fanout-mode">Multi-service fan-out</FieldLabel>
+              <FieldLabel htmlFor="git-source-trigger-mode">
+                Deploy trigger
+              </FieldLabel>
+              <Select
+                value={form.triggerMode}
+                onValueChange={(v) => {
+                  if (v === 'push' || v === 'release') {
+                    setForm({ ...form, triggerMode: v })
+                  }
+                }}
+              >
+                <SelectTrigger id="git-source-trigger-mode" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRIGGER_MODES.map((mode) => (
+                    <SelectItem key={mode.value} value={mode.value}>
+                      {mode.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldDescription>
+                {
+                  TRIGGER_MODES.find((mode) => mode.value === form.triggerMode)
+                    ?.description
+                }
+              </FieldDescription>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="git-source-fanout-mode">
+                Multi-service fan-out
+              </FieldLabel>
               <Tabs
                 value={form.fanoutMode}
                 onValueChange={(v: unknown) => {
@@ -661,11 +834,20 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                   }
                 }}
               >
-                <TabsList id="git-source-fanout-mode" className="grid w-full grid-cols-2">
-                  <TabsTrigger value="additional" disabled={connectMutation.isPending}>
+                <TabsList
+                  id="git-source-fanout-mode"
+                  className="grid w-full grid-cols-2"
+                >
+                  <TabsTrigger
+                    value="additional"
+                    disabled={connectMutation.isPending}
+                  >
                     Additional services
                   </TabsTrigger>
-                  <TabsTrigger value="services" disabled={connectMutation.isPending}>
+                  <TabsTrigger
+                    value="services"
+                    disabled={connectMutation.isPending}
+                  >
                     Services map
                   </TabsTrigger>
                 </TabsList>
@@ -681,75 +863,97 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                   already-existing service name and build config. Saving with
                   any row filled in always uses the direct git-source
                   connection, even for a picked provider repo, since automatic
-                  webhook registration doesn&apos;t support monorepo fan-out yet.
+                  webhook registration doesn&apos;t support monorepo fan-out
+                  yet.
                 </FieldDescription>
                 <div className="space-y-2">
                   {form.additionalServices.map((row, index) => (
-                  <div key={index} className="flex items-start gap-2">
-                    <Input
-                      className="font-mono"
-                      placeholder="worker"
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={row.serviceName}
-                      onChange={(e) => { updateAdditionalServiceRow(index, { serviceName: e.target.value }) }}
-                      disabled={connectMutation.isPending}
-                    />
-                    <Select
-                      value={row.buildType}
-                      onValueChange={(v) => {
-                        if (v === 'railpack' || v === 'dockerfile' || v === 'static') {
-                          updateAdditionalServiceRow(index, { buildType: v })
+                    <div key={index} className="flex items-start gap-2">
+                      <Input
+                        className="font-mono"
+                        placeholder="worker"
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={row.serviceName}
+                        onChange={(e) => {
+                          updateAdditionalServiceRow(index, {
+                            serviceName: e.target.value,
+                          })
+                        }}
+                        disabled={connectMutation.isPending}
+                      />
+                      <Select
+                        value={row.buildType}
+                        onValueChange={(v) => {
+                          if (
+                            v === 'railpack' ||
+                            v === 'dockerfile' ||
+                            v === 'static'
+                          ) {
+                            updateAdditionalServiceRow(index, { buildType: v })
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-40 shrink-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {BUILD_PACKS.map((pack) => (
+                            <SelectItem key={pack.value} value={pack.value}>
+                              {pack.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        className="font-mono"
+                        placeholder="./worker/Dockerfile"
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={row.buildPath}
+                        onChange={(e) => {
+                          updateAdditionalServiceRow(index, {
+                            buildPath: e.target.value,
+                          })
+                        }}
+                        disabled={
+                          connectMutation.isPending ||
+                          row.buildType === 'railpack'
                         }
-                      }}
-                    >
-                      <SelectTrigger className="w-40 shrink-0">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {BUILD_PACKS.map((pack) => (
-                          <SelectItem key={pack.value} value={pack.value}>
-                            {pack.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      className="font-mono"
-                      placeholder="./worker/Dockerfile"
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={row.buildPath}
-                      onChange={(e) => { updateAdditionalServiceRow(index, { buildPath: e.target.value }) }}
-                      disabled={connectMutation.isPending || row.buildType === 'railpack'}
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={connectMutation.isPending}
-                      onClick={() => { removeAdditionalServiceRow(index) }}
-                      aria-label="Remove additional service"
-                    >
-                      <TrashIcon />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={connectMutation.isPending}
-                  onClick={addAdditionalServiceRow}
-                >
-                  <PlusIcon />
-                  Add service
-                </Button>
-              </div>
-              <FieldError
-                errors={additionalServicesError ? [{ message: additionalServicesError }] : undefined}
-              />
-            </Field>
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={connectMutation.isPending}
+                        onClick={() => {
+                          removeAdditionalServiceRow(index)
+                        }}
+                        aria-label="Remove additional service"
+                      >
+                        <TrashIcon />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={connectMutation.isPending}
+                    onClick={addAdditionalServiceRow}
+                  >
+                    <PlusIcon />
+                    Add service
+                  </Button>
+                </div>
+                <FieldError
+                  errors={
+                    additionalServicesError
+                      ? [{ message: additionalServicesError }]
+                      : undefined
+                  }
+                />
+              </Field>
             ) : (
               <Field>
                 <FieldLabel>Services (app.yaml-style)</FieldLabel>
@@ -759,7 +963,8 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                   multi-service deploy uses, under one app named{' '}
                   <span className="font-mono">{app.name}</span>. Replaces the
                   single-service build above; each service key becomes its own
-                  real service named <span className="font-mono">{app.name}-&lt;key&gt;</span>.
+                  real service named{' '}
+                  <span className="font-mono">{app.name}-&lt;key&gt;</span>.
                 </FieldDescription>
                 <div className="space-y-2">
                   {form.services.map((row, index) => (
@@ -770,13 +975,21 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                         autoComplete="off"
                         spellCheck={false}
                         value={row.serviceName}
-                        onChange={(e) => { updateServiceRow(index, { serviceName: e.target.value }) }}
+                        onChange={(e) => {
+                          updateServiceRow(index, {
+                            serviceName: e.target.value,
+                          })
+                        }}
                         disabled={connectMutation.isPending}
                       />
                       <Select
                         value={row.buildType}
                         onValueChange={(v) => {
-                          if (v === 'railpack' || v === 'dockerfile' || v === 'static') {
+                          if (
+                            v === 'railpack' ||
+                            v === 'dockerfile' ||
+                            v === 'static'
+                          ) {
                             updateServiceRow(index, { buildType: v })
                           }
                         }}
@@ -798,15 +1011,22 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                         autoComplete="off"
                         spellCheck={false}
                         value={row.buildPath}
-                        onChange={(e) => { updateServiceRow(index, { buildPath: e.target.value }) }}
-                        disabled={connectMutation.isPending || row.buildType === 'railpack'}
+                        onChange={(e) => {
+                          updateServiceRow(index, { buildPath: e.target.value })
+                        }}
+                        disabled={
+                          connectMutation.isPending ||
+                          row.buildType === 'railpack'
+                        }
                       />
                       <Input
                         className="w-24 shrink-0 font-mono"
                         type="number"
                         placeholder="3000"
                         value={row.port}
-                        onChange={(e) => { updateServiceRow(index, { port: e.target.value }) }}
+                        onChange={(e) => {
+                          updateServiceRow(index, { port: e.target.value })
+                        }}
                         disabled={connectMutation.isPending}
                       />
                       <Button
@@ -814,7 +1034,9 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                         size="sm"
                         variant="outline"
                         disabled={connectMutation.isPending}
-                        onClick={() => { removeServiceRow(index) }}
+                        onClick={() => {
+                          removeServiceRow(index)
+                        }}
                         aria-label="Remove service"
                       >
                         <TrashIcon />
@@ -833,18 +1055,35 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                   </Button>
                 </div>
                 <FieldError
-                  errors={additionalServicesError ? [{ message: additionalServicesError }] : undefined}
+                  errors={
+                    additionalServicesError
+                      ? [{ message: additionalServicesError }]
+                      : undefined
+                  }
                 />
               </Field>
             )}
 
             <div className="flex gap-2">
-              <Button type="button" size="sm" disabled={connectMutation.isPending} onClick={submit}>
-                {connectMutation.isPending ? <SpinnerIcon className="size-4 animate-spin" /> : null}
+              <Button
+                type="button"
+                size="sm"
+                disabled={connectMutation.isPending}
+                onClick={submit}
+              >
+                {connectMutation.isPending ? (
+                  <SpinnerIcon className="size-4 animate-spin" />
+                ) : null}
                 {notConnected ? 'Connect' : 'Save'}
               </Button>
               {!notConnected ? (
-                <Button type="button" size="sm" variant="outline" disabled={connectMutation.isPending} onClick={cancelEdit}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={connectMutation.isPending}
+                  onClick={cancelEdit}
+                >
                   Cancel
                 </Button>
               ) : null}
@@ -854,18 +1093,32 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
           <div className="space-y-3">
             <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-sm">
               <dt className="text-muted-foreground">Repository</dt>
-              <dd className="min-w-0 truncate font-mono">{query.data.repo_url}</dd>
+              <dd className="min-w-0 truncate font-mono">
+                {query.data.repo_url}
+              </dd>
               <dt className="text-muted-foreground">Branch</dt>
               <dd className="font-mono">{query.data.branch}</dd>
               <dt className="text-muted-foreground">Build pack</dt>
-              <dd>{BUILD_PACKS.find((p) => p.value === query.data.build_type)?.label ?? query.data.build_type}</dd>
+              <dd>
+                {BUILD_PACKS.find((p) => p.value === query.data.build_type)
+                  ?.label ?? query.data.build_type}
+              </dd>
+              <dt className="text-muted-foreground">Deploy trigger</dt>
+              <dd>
+                {TRIGGER_MODES.find((m) => m.value === query.data.trigger_mode)
+                  ?.label ?? query.data.trigger_mode}
+              </dd>
               <dt className="text-muted-foreground">Deploy token</dt>
-              <dd>{query.data.has_token ? 'Configured' : 'Not set (public repo)'}</dd>
+              <dd>
+                {query.data.has_token ? 'Configured' : 'Not set (public repo)'}
+              </dd>
               {Object.keys(query.data.additional_services ?? {}).length > 0 ? (
                 <>
                   <dt className="text-muted-foreground">Also deploys</dt>
                   <dd className="font-mono">
-                    {Object.keys(query.data.additional_services ?? {}).join(', ')}
+                    {Object.keys(query.data.additional_services ?? {}).join(
+                      ', ',
+                    )}
                   </dd>
                 </>
               ) : null}
@@ -880,9 +1133,14 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
             </dl>
 
             <Field>
-              <FieldLabel htmlFor="git-source-webhook-url-connected">Webhook URL</FieldLabel>
+              <FieldLabel htmlFor="git-source-webhook-url-connected">
+                Webhook URL
+              </FieldLabel>
               <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
-                <code id="git-source-webhook-url-connected" className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
+                <code
+                  id="git-source-webhook-url-connected"
+                  className="min-w-0 flex-1 overflow-x-auto text-xs break-all"
+                >
                   {webhookFullURL(query.data.webhook_url)}
                 </code>
                 <Button
@@ -891,7 +1149,10 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                   variant="outline"
                   onClick={() => {
                     if (query.data) {
-                      copyText(webhookFullURL(query.data.webhook_url), setUrlCopied)
+                      copyText(
+                        webhookFullURL(query.data.webhook_url),
+                        setUrlCopied,
+                      )
                     }
                   }}
                 >
@@ -910,7 +1171,9 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() => { startEdit(formFromResource(query.data)) }}
+                onClick={() => {
+                  startEdit(formFromResource(query.data))
+                }}
               >
                 Edit
               </Button>
@@ -921,7 +1184,9 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                 disabled={deleteGitSource.isPending}
                 onClick={disconnect}
               >
-                {deleteGitSource.isPending ? <SpinnerIcon className="size-4 animate-spin" /> : null}
+                {deleteGitSource.isPending ? (
+                  <SpinnerIcon className="size-4 animate-spin" />
+                ) : null}
                 Disconnect
               </Button>
             </div>

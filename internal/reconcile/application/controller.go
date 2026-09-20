@@ -584,46 +584,27 @@ func (c *Controller) reconcileRecreate(ctx context.Context, targets []string, de
 }
 
 // reconcileRolling replaces targets one at a time: ensure the next
-// target is running (and, if freshly started, ready), then immediately
-// retire exactly one stale (old-image) container before moving to the
-// next target. Unlike reconcileBlueGreen, which proves every new
-// replica healthy before removing any old one (so the old and new sets
-// briefly coexist in full), this normally bounds the overlap to at most
-// one extra container at a time: the property that makes it "rolling"
-// rather than blue-green with more steps. That bound is best-effort,
-// not absolute: several consecutive per-step retirement failures in a
-// row (see below) can let more than one extra container pile up
-// temporarily, caught by the final sweep. Never a safety problem
-// (nothing is under-provisioned, only occasionally over-provisioned),
-// just not a hard invariant a caller should rely on.
+// target is running and ready, then immediately retire exactly one
+// stale (old-image) container before moving to the next target, rather
+// than proving the whole new set healthy first the way
+// reconcileBlueGreen does.
 //
 // Pairing a retired container with the target that triggered its
-// retirement is by count, not identity: staleContainers has no way to
-// know which specific old container "belongs to" which replica index
-// (container names are derived from image+index, so an image change
-// renames every target at once), so this simply removes one arbitrary
-// stale container per freshly-deployed target. The safety property
-// rolling promises, never more than one replica short of the desired
-// count, holds regardless of which specific old container is removed
-// at each step.
+// retirement is by count, not identity: container names derive from
+// image plus index, so an image change renames every target at once and
+// there is no way to say which old container "belongs to" which replica.
+// The safety property rolling promises, never more than one replica
+// short of the desired count, holds regardless of which stale container
+// each step happens to remove.
 //
 // A failed per-step retirement is not fatal to the rollout: the
 // container just stays stale and is picked up again by the final
 // removeStale sweep below, the same "the important fact, a healthy set
 // is serving, is still true" tolerance reconcileBlueGreen's own cleanup
 // failure path already establishes. Only that final sweep's error (if
-// it still fails) is what gets reported.
-//
-// A known gap shared with reconcileBlueGreen, not introduced here:
-// ensureReplicaRunning only calls waitReady on a container it just
-// created or restarted (justDeployed), never on one InspectByName
-// already finds Running. A replica whose readiness probe timed out on
-// one reconcile pass, but whose container is otherwise still Running,
-// is treated as already-healthy on the next pass without ever being
-// re-probed, so "the replacement is proven healthy" is only checked
-// within a single pass, not re-verified across passes. Fixing this
-// belongs in ensureReplicaRunning itself, shared by all three
-// strategies, not scoped to this one.
+// it still fails) is what gets reported, which is also why the "at most
+// one extra container" overlap bound is best-effort rather than an
+// invariant a caller may rely on.
 func (c *Controller) reconcileRolling(ctx context.Context, targets []string, desired *store.DesiredService) (reconcile.Result, error) {
 	anyDeployed := false
 	for i, target := range targets {
@@ -712,11 +693,14 @@ type replicaOutcome struct {
 	reason       string
 }
 
-// ensureReplicaRunning is the original single-container "does the right
-// container exist, is it running, is it ready" sequence, unchanged in
-// behavior, extracted so both reconcileBlueGreen and reconcileRecreate
-// share exactly one implementation of it rather than two copies that
-// could drift.
+// ensureReplicaRunning converges one replica: the right container
+// exists, it is running, and it has passed its readiness probe.
+//
+// Readiness is re-derived on every pass, not only on the pass that
+// created or restarted the container, so a replica that never passed a
+// probe is never promoted to healthy (and so never permitted to retire
+// the old container still serving in its place) purely because Docker
+// reports it Running.
 func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, index int, desired *store.DesiredService) (replicaOutcome, error) {
 	state, err := c.runtime.InspectByName(ctx, target)
 	if err != nil {
@@ -771,6 +755,9 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	if !justDeployed {
+		if err := c.verifyRunningReady(ctx, state, desired); err != nil {
+			return replicaOutcome{reason: readinessReason(err, "RunningNotReady")}, err
+		}
 		return replicaOutcome{}, nil
 	}
 
@@ -810,16 +797,22 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	if err := c.waitReady(ctx, state, desired); err != nil {
-		var crash *readinessCrashError
-		if errors.As(err, &crash) {
-			if crash.oomKilled {
-				return replicaOutcome{reason: "OOMKilledDuringReadiness"}, err
-			}
-			return replicaOutcome{reason: "ExitedDuringReadiness"}, err
-		}
-		return replicaOutcome{reason: "ReadinessFailed"}, err
+		return replicaOutcome{reason: readinessReason(err, "ReadinessFailed")}, err
 	}
 	return replicaOutcome{justDeployed: true}, nil
+}
+
+// readinessReason maps a readiness failure to its condition reason,
+// falling back to fallback for anything that isn't a *readinessCrashError.
+func readinessReason(err error, fallback string) string {
+	var crash *readinessCrashError
+	if errors.As(err, &crash) {
+		if crash.oomKilled {
+			return "OOMKilledDuringReadiness"
+		}
+		return "ExitedDuringReadiness"
+	}
+	return fallback
 }
 
 // ensureAppNetwork makes sure desired.AppID's per-app Docker network
@@ -1566,6 +1559,55 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 	case err := <-crashErr:
 		return err
 	}
+}
+
+// verifyRunningReady re-checks the readiness of a replica Docker already
+// reports as Running, the level-triggered counterpart to waitReady's
+// once-per-(re)start wait.
+//
+// Single attempt, not waitReady's full readyBudget wait: the reconcile
+// loop is the retry loop, and controllers run sequentially, so budgeting
+// a minute here for one unready replica would stall every other
+// service's reconcile behind it.
+func (c *Controller) verifyRunningReady(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService) error {
+	if desired.Health == nil || desired.Health.Readiness == nil || desired.Port == 0 {
+		return nil
+	}
+
+	addr, err := primaryAddr(state)
+	if err != nil {
+		return fmt.Errorf("readiness recheck: %w", err)
+	}
+
+	probeErr := probe.Check(ctx, c.httpClient, addr, probe.Config{
+		Path:    desired.Health.Readiness.Path,
+		Timeout: desired.Health.Readiness.Timeout,
+	})
+	if probeErr == nil {
+		return nil
+	}
+	if crash := c.exitedCrash(ctx, state.Name); crash != nil {
+		return crash
+	}
+	return fmt.Errorf("readiness recheck for %q: %w", state.Name, probeErr)
+}
+
+// exitedCrash reports why name stopped running, or nil when it is still
+// running or the runtime can't tell (docker.ExitStateInspector is
+// optional). ContainerState.Running comes from Docker's container list,
+// which can still show a container that a real inspect already knows has
+// exited or been OOM-killed: that gap is exactly what makes an unready
+// replica look healthy.
+func (c *Controller) exitedCrash(ctx context.Context, name string) *readinessCrashError {
+	inspector, ok := c.runtime.(docker.ExitStateInspector)
+	if !ok {
+		return nil
+	}
+	state, err := inspector.InspectExitState(ctx, name)
+	if err != nil || state == nil || state.Running {
+		return nil
+	}
+	return &readinessCrashError{containerName: name, oomKilled: state.OOMKilled, exitCode: state.ExitCode}
 }
 
 // watchForCrash polls name's live exit state on interval (defaulted per

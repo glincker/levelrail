@@ -161,6 +161,16 @@ func (f *fakeRuntime) crashContainer(name string, oomKilled bool, exitCode int) 
 	f.exitStates[name] = &docker.ExitState{Running: false, OOMKilled: oomKilled, ExitCode: exitCode}
 }
 
+// setExitState records what InspectExitState reports for name without
+// touching the container's own Running flag, the divergence
+// crashContainer deliberately keeps in lockstep: Docker's container list
+// can still show a container a real inspect already knows has exited.
+func (f *fakeRuntime) setExitState(name string, es *docker.ExitState) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.exitStates[name] = es
+}
+
 // InspectExitState implements docker.ExitStateInspector, unconditionally
 // (not opt-in): every existing waitReady-driven test now also exercises
 // watchForCrash's "still running, keep waiting" path harmlessly, proving
@@ -2796,17 +2806,13 @@ func TestController_Reconcile_Rolling_PerStepRetirementFails_FinalSweepReportsIt
 	}
 }
 
-// TestController_Reconcile_Rolling_StaysRunningAfterReadinessTimeout_NotReProbed
-// documents a known, pre-existing gap shared with reconcileBlueGreen
-// (see reconcileRolling's own doc comment), not a regression introduced
-// by rolling: ensureReplicaRunning only calls waitReady on a container
-// it just created or restarted. A container whose readiness probe
-// timed out on one reconcile pass, but that Docker still reports as
-// Running, is treated as already-healthy on the very next pass without
-// ever being re-probed. This test locks in that current, documented
-// behavior so a future change to ensureReplicaRunning is a deliberate
-// decision, not an accidental one.
-func TestController_Reconcile_Rolling_StaysRunningAfterReadinessTimeout_NotReProbed(t *testing.T) {
+// TestController_Reconcile_Rolling_StaysRunningAfterReadinessTimeout_ReProbedNotPromoted
+// is the cross-pass half of rolling's safety property: a replacement
+// whose readiness probe timed out on one pass, but that Docker still
+// reports Running on the next, must be re-probed rather than trusted, so
+// the old replica still serving traffic is never retired in favor of a
+// container that never became ready.
+func TestController_Reconcile_Rolling_StaysRunningAfterReadinessTimeout_ReProbedNotPromoted(t *testing.T) {
 	srv := neverHealthy()
 	defer srv.Close()
 
@@ -2819,9 +2825,6 @@ func TestController_Reconcile_Rolling_StaysRunningAfterReadinessTimeout_NotRePro
 	}
 	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(150*time.Millisecond))
 
-	// First pass: the new replica is created and started (Running=true
-	// in the fake), but its readiness probe times out. Reconcile must
-	// fail and remove nothing.
 	if _, err := c.Reconcile(context.Background()); err == nil {
 		t.Fatal("first Reconcile() error = nil, want a readiness timeout error")
 	}
@@ -2829,21 +2832,208 @@ func TestController_Reconcile_Rolling_StaysRunningAfterReadinessTimeout_NotRePro
 		t.Fatalf("removeCalls after first pass = %d, want 0", rt.removeCalls)
 	}
 
-	// Second pass: InspectByName now finds the same new-image container
-	// already Running, so ensureReplicaRunning's justDeployed stays
-	// false and waitReady is never called again. This documents that
-	// the container's actual health is never re-verified, current
-	// behavior, not an endorsement of it (see doc comment above).
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("second Reconcile() error = nil, want the replacement's still-failing readiness surfaced")
+	}
+	assertConditionReasonFalse(t, result, "RunningNotReady")
+	if _, ok := rt.containers[old]; !ok {
+		t.Error("old replica was removed on the second pass, want it still serving: its replacement has never passed a readiness probe")
+	}
+	if rt.removeCalls != 0 {
+		t.Errorf("removeCalls after second pass = %d, want 0", rt.removeCalls)
+	}
+}
+
+// TestController_Reconcile_RunningButNeverReady_ReProbedEveryPass is the
+// cutover-safety property stated across passes rather than within one:
+// a replica that has never passed a readiness probe must be probed again
+// on every pass, and until it passes, the old container it is meant to
+// replace stays put.
+func TestController_Reconcile_RunningButNeverReady_ReProbedEveryPass(t *testing.T) {
+	tests := []struct {
+		name     string
+		strategy string
+	}{
+		{name: "blue-green", strategy: "blue-green"},
+		{name: "rolling", strategy: "rolling"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			backend := newLivenessBackend(t)
+			backend.setStatus(http.StatusServiceUnavailable)
+
+			rt := newFakeRuntime(backend.port(t))
+			old := ContainerName("web", "img:v1", "")
+			rt.seed(old, true)
+			desired := &store.DesiredService{
+				Name: "web", Image: "img:v2", Port: 80, Strategy: tt.strategy, Replicas: 1,
+				Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/ready", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+			}
+			c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(100*time.Millisecond))
+
+			if _, err := c.Reconcile(context.Background()); err == nil {
+				t.Fatal("first Reconcile() error = nil, want a readiness failure")
+			}
+			afterDeployPass := backend.callsFor("/ready")
+			if afterDeployPass == 0 {
+				t.Fatal("readiness requests on the deploy pass = 0, want at least one")
+			}
+
+			result, err := c.Reconcile(context.Background())
+			if err == nil {
+				t.Fatal("second Reconcile() error = nil, want the still-unready replica surfaced")
+			}
+			if got := backend.callsFor("/ready"); got <= afterDeployPass {
+				t.Errorf("readiness requests after the second pass = %d, want more than the %d from the first: a replica that never became ready must be re-probed, not trusted because Docker reports it Running", got, afterDeployPass)
+			}
+			assertConditionReasonFalse(t, result, "RunningNotReady")
+			if _, ok := rt.containers[old]; !ok {
+				t.Error("old container was removed, want it still serving until its replacement actually passes a probe")
+			}
+			if rt.removeCalls != 0 {
+				t.Errorf("removeCalls = %d, want 0", rt.removeCalls)
+			}
+		})
+	}
+}
+
+// TestController_Reconcile_RunningReplicaBecomesReadyOnLaterPass_CutsOver
+// is the other half: re-probing must let a slow starter through, not
+// wedge the deploy permanently once the first pass's probe has failed.
+func TestController_Reconcile_RunningReplicaBecomesReadyOnLaterPass_CutsOver(t *testing.T) {
+	backend := newLivenessBackend(t)
+	backend.setStatus(http.StatusServiceUnavailable)
+
+	rt := newFakeRuntime(backend.port(t))
+	old := ContainerName("web", "img:v1", "")
+	rt.seed(old, true)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v2", Port: 80,
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/ready", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(100*time.Millisecond))
+
+	if _, err := c.Reconcile(context.Background()); err == nil {
+		t.Fatal("first Reconcile() error = nil, want a readiness failure")
+	}
+	if _, ok := rt.containers[old]; !ok {
+		t.Fatal("old container removed on the failing pass, want it still serving")
+	}
+
+	backend.setStatus(http.StatusOK)
+
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
-		t.Fatalf("second Reconcile() error = %v, want nil (the container is trusted as already-healthy)", err)
+		t.Fatalf("second Reconcile() error = %v, want nil once the replacement passes its probe", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue {
+		t.Errorf("condition = %+v, want Status=True", cond)
+	}
+	want := ContainerName("web", "img:v2", "")
+	names := rt.names()
+	if len(names) != 1 || names[0] != want {
+		t.Errorf("containers after cutover = %v, want exactly [%s] (old retired only once the replacement is proven ready)", names, want)
+	}
+}
+
+// assertConditionReasonFalse asserts result's first condition is
+// Status=False with the given Reason, the shape every re-probe test in
+// this file that expects a failure checks.
+func assertConditionReasonFalse(t *testing.T, result reconcile.Result, reason string) {
+	t.Helper()
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != reason {
+		t.Errorf("condition = %+v, want Status=False Reason=%s", cond, reason)
+	}
+}
+
+// setupStalledReadinessReplacement deploys img:v2 over a running img:v1
+// behind a readiness probe that always fails, so the first Reconcile
+// leaves the replacement created but never ready: the shared starting
+// point the OOM-kill and plain-exit re-probe tests both need before they
+// set the replacement's own exit state and reconcile again.
+func setupStalledReadinessReplacement(t *testing.T) (rt *fakeRuntime, c *Controller, old, replacement string) {
+	t.Helper()
+	srv := neverHealthy()
+	t.Cleanup(srv.Close)
+
+	rt = newFakeRuntime(serverPort(t, srv))
+	old = ContainerName("web", "img:v1", "")
+	rt.seed(old, true)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v2", Port: 80,
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+	}
+	c = New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(100*time.Millisecond))
+
+	if _, err := c.Reconcile(context.Background()); err == nil {
+		t.Fatal("first Reconcile() error = nil, want a readiness timeout error")
+	}
+	return rt, c, old, ContainerName("web", "img:v2", "")
+}
+
+// TestController_Reconcile_RunningReplicaAlreadyOOMKilled_NotTreatedAsHealthy
+// is this project's stated main risk in miniature: a readiness check
+// that passes on a container which had already OOMed. InspectByName is
+// backed by Docker's container list, which lags a real inspect, so
+// "Running" alone is never evidence of health.
+func TestController_Reconcile_RunningReplicaAlreadyOOMKilled_NotTreatedAsHealthy(t *testing.T) {
+	rt, c, old, replacement := setupStalledReadinessReplacement(t)
+	rt.setExitState(replacement, &docker.ExitState{Running: false, OOMKilled: true, ExitCode: 137})
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("second Reconcile() error = nil, want the OOM kill surfaced")
+	}
+	assertConditionReasonFalse(t, result, "OOMKilledDuringReadiness")
+	if _, ok := rt.containers[old]; !ok {
+		t.Error("old container was removed, want it still serving: its replacement had already been OOM-killed")
+	}
+}
+
+// TestController_Reconcile_RunningReplicaExited_ReportsExitedDuringReadiness
+// is the non-OOM sibling of the case above, keeping the two exit reasons
+// distinguishable on a re-probe exactly as they already are on a fresh
+// deploy's wait.
+func TestController_Reconcile_RunningReplicaExited_ReportsExitedDuringReadiness(t *testing.T) {
+	rt, c, _, replacement := setupStalledReadinessReplacement(t)
+	rt.setExitState(replacement, &docker.ExitState{Running: false, OOMKilled: false, ExitCode: 1})
+
+	result, err := c.Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("second Reconcile() error = nil, want the crash surfaced")
+	}
+	assertConditionReasonFalse(t, result, "ExitedDuringReadiness")
+}
+
+// TestController_Reconcile_RunningReplicaReady_NoReadinessConfig_NotProbed
+// keeps the re-probe opt-in exactly like readiness itself: a service
+// that declares no readiness block (or no port) must reach steady state
+// without a single extra request, the same shape it had before the
+// cross-pass check existed.
+func TestController_Reconcile_RunningReplicaReady_NoReadinessConfig_NotProbed(t *testing.T) {
+	backend := newLivenessBackend(t)
+	backend.setStatus(http.StatusServiceUnavailable)
+
+	rt := newFakeRuntime(backend.port(t))
+	target := ContainerName("web", "img:v1", "")
+	rt.seed(target, true)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v, want nil (no readiness declared, nothing to verify)", err)
 	}
 	cond := conditionOf(t, result)
 	if cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
 		t.Errorf("condition = %+v, want Status=True Reason=AlreadyRunning", cond)
 	}
-	if _, ok := rt.containers[old]; ok {
-		t.Error("old replica is still present after the second pass, want it removed by the final sweep: the replacement's readiness is never re-confirmed on a pass where InspectByName already finds it Running (current, documented behavior)")
+	if got := backend.callsFor("/ready"); got != 0 {
+		t.Errorf("readiness requests = %d, want 0", got)
 	}
 }
 

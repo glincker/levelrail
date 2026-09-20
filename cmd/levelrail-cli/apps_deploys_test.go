@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -210,6 +211,86 @@ func TestRun_AppsDeploysLogs(t *testing.T) {
 	}
 	if !strings.Contains(stdout, "stdout line one") || !strings.Contains(stdout, "stderr line two") {
 		t.Errorf("stdout = %q, want the raw log body written through unmodified", stdout)
+	}
+}
+
+// TestRun_AppsDeploysLogs_Follow proves --follow hits the SSE deploy-log
+// route (not the download route TestRun_AppsDeploysLogs above exercises)
+// and prints each streamed line, the same "stream line" text format
+// apps_logs_follow_test.go's TestRun_AppsLogs_Follow already establishes
+// for the app-log equivalent.
+func TestRun_AppsDeploysLogs_Follow(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			t.Fatal("test ResponseWriter does not implement http.Flusher")
+		}
+		_, _ = fmt.Fprint(w, `data: {"line":"Cloning https://example.invalid/repo.git...","stream":"stdout"}`+"\n\n"+
+			`data: {"line":"buildkit: boom","stream":"stderr"}`+"\n\n")
+		flusher.Flush()
+	}))
+	t.Cleanup(srv.Close)
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "deploys", "logs", "web", "dep_1", "--follow", "--api-url", srv.URL})
+	if gotPath != "/api/v1/apps/web/deploys/dep_1/logs" {
+		t.Errorf("path = %q, want /api/v1/apps/web/deploys/dep_1/logs", gotPath)
+	}
+	if !strings.Contains(stdout, "stdout Cloning https://example.invalid/repo.git...") {
+		t.Errorf("stdout = %q, want the clone progress line", stdout)
+	}
+	if !strings.Contains(stdout, "stderr buildkit: boom") {
+		t.Errorf("stdout = %q, want the stderr line", stdout)
+	}
+}
+
+func TestRun_AppsDeploysLogs_Follow_Short(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			t.Fatal("test ResponseWriter does not implement http.Flusher")
+		}
+		_, _ = fmt.Fprint(w, `data: {"line":"hi","stream":"stdout"}`+"\n\n")
+		flusher.Flush()
+	}))
+	t.Cleanup(srv.Close)
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "deploys", "logs", "web", "dep_1", "-f", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "stdout hi") {
+		t.Errorf("stdout = %q, want the streamed line", stdout)
+	}
+}
+
+func TestRun_AppsDeploysLogs_Follow_JSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			t.Fatal("test ResponseWriter does not implement http.Flusher")
+		}
+		_, _ = fmt.Fprint(w, `data: {"line":"hi","stream":"stdout"}`+"\n\n")
+		flusher.Flush()
+	}))
+	t.Cleanup(srv.Close)
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "deploys", "logs", "web", "dep_1", "--follow", "--json", "--api-url", srv.URL})
+	if !strings.Contains(stdout, `"line":"hi"`) || !strings.Contains(stdout, `"stream":"stdout"`) {
+		t.Errorf("stdout = %q, want one JSON-Lines object per entry", stdout)
+	}
+}
+
+func TestRun_AppsDeploysLogs_Follow_NotFound(t *testing.T) {
+	srv := newJSONErrorServer(t, http.StatusNotFound, `{"error":"deploy attempt not found"}`)
+
+	stderr := runCLIExpectAPIError(t, []string{"apps", "deploys", "logs", "web", "missing", "--follow", "--api-url", srv.URL})
+	if !strings.Contains(stderr, "deploy attempt not found") {
+		t.Errorf("stderr = %q, want the server's error message", stderr)
 	}
 }
 

@@ -1082,11 +1082,14 @@ type SetSharedEnvSecretRequest struct {
 // client's SetGitSourceRequest only covers the single-service connect
 // flow "apps deploy-spec" already handles for the multi-service case.
 type GitSourceResource struct {
-	ServiceName    string `json:"service_name"`
-	RepoURL        string `json:"repo_url"`
-	Branch         string `json:"branch"`
-	BuildType      string `json:"build_type"`
-	BuildPath      string `json:"build_path,omitempty"`
+	ServiceName string `json:"service_name"`
+	RepoURL     string `json:"repo_url"`
+	Branch      string `json:"branch"`
+	BuildType   string `json:"build_type"`
+	BuildPath   string `json:"build_path,omitempty"`
+	// TriggerMode mirrors store.GitSource.TriggerMode: "push" (default)
+	// or "release", see internal/api's normalizeGitSourceTriggerMode.
+	TriggerMode    string `json:"trigger_mode,omitempty"`
 	HasToken       bool   `json:"has_token"`
 	WebhookURL     string `json:"webhook_url"`
 	WebhookSecret  string `json:"webhook_secret,omitempty"`
@@ -1104,11 +1107,12 @@ type GitSourceResource struct {
 // (internal/api/git_sources.go), minus the multi-service Services/
 // AdditionalServices fields (see GitSourceResource's own doc comment).
 type SetGitSourceRequest struct {
-	RepoURL   string `json:"repo_url"`
-	Branch    string `json:"branch,omitempty"`
-	BuildType string `json:"build_type,omitempty"`
-	BuildPath string `json:"build_path,omitempty"`
-	Token     string `json:"token,omitempty"`
+	RepoURL     string `json:"repo_url"`
+	Branch      string `json:"branch,omitempty"`
+	BuildType   string `json:"build_type,omitempty"`
+	BuildPath   string `json:"build_path,omitempty"`
+	Token       string `json:"token,omitempty"`
+	TriggerMode string `json:"trigger_mode,omitempty"`
 }
 
 // NotificationChannelResource mirrors internal/api's
@@ -1508,6 +1512,20 @@ type PreviewSettingsResource struct {
 // sweepPreviewEnvironmentsResponse (preview_environments_sweep.go).
 type SweepPreviewEnvironmentsResult struct {
 	Swept int `json:"swept"`
+}
+
+// SetAutoRollbackRequest mirrors internal/api's setAutoRollbackRequest
+// (deploys.go): PUT /api/v1/apps/{name}/auto-rollback's body.
+type SetAutoRollbackRequest struct {
+	Enabled bool `json:"enabled"`
+}
+
+// AutoRollbackSettingResource mirrors internal/api's
+// autoRollbackSettingResource: both GET and PUT
+// /api/v1/apps/{name}/auto-rollback's response, whether this app rolls
+// itself back automatically the next time a crashloop alert rule fires.
+type AutoRollbackSettingResource struct {
+	Enabled bool `json:"enabled"`
 }
 
 // SetAppDatabaseRequest mirrors internal/api's setAppDatabaseRequest
@@ -2018,10 +2036,11 @@ type GitAppBranchResource struct {
 // the request body every provider's own use-as-source route shares
 // (github-app, gitlab-app, bitbucket-app).
 type UseRepoAsSourceRequest struct {
-	AppName   string `json:"app_name"`
-	Branch    string `json:"branch,omitempty"`
-	BuildType string `json:"build_type,omitempty"`
-	BuildPath string `json:"build_path,omitempty"`
+	AppName     string `json:"app_name"`
+	Branch      string `json:"branch,omitempty"`
+	BuildType   string `json:"build_type,omitempty"`
+	BuildPath   string `json:"build_path,omitempty"`
+	TriggerMode string `json:"trigger_mode,omitempty"`
 }
 
 // UseGitHubRepoAsSourceResponse mirrors internal/api's
