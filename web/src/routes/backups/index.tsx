@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import { formatBytes, formatDate } from '../../lib/format'
 import { useBackupTargetsOptional } from '../../queries/backupTargets'
 import {
@@ -156,14 +157,11 @@ function AllBackupsPage() {
       </div>
 
       {history.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
-          <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <CloudArrowUpIcon className="size-5" aria-hidden="true" />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            No backups have been taken yet.
-          </p>
-        </div>
+        <EmptyState
+          icon={<CloudArrowUpIcon className="size-5" />}
+          title="No backups yet"
+          description="No backups have been taken yet."
+        />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">
           <Table>

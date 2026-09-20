@@ -138,6 +138,8 @@ levelrail-cli apps create --name NAME --port PORT --repo URL --image-repo REPO
 levelrail-cli apps create --file app.yaml --service KEY
 ```
 
+**Disk-space preflight:** before BuildKit starts solving, the control plane checks free space on the build's context directory (and its local cache directory, when `WithCacheDir` is configured) and fails fast with a clear "N bytes free, need at least M bytes" error rather than letting the build run until it hits a raw out-of-space error mid-solve. The minimum is configurable via `APP_MIN_BUILD_DISK_MB` (default `1024`, i.e. 1GiB). An unreadable path (for example a filesystem that doesn't support the check) is treated as unknown, not a failure, and the build proceeds.
+
 ### 3. Docker Compose
 
 Deploy from a `compose.yaml` file. Each compose service becomes its own `DesiredService` under one app in one synchronous call.
@@ -237,6 +239,58 @@ Apps created directly (not from `app.yaml`) can add or remove a Vault-sourced en
 - API: `PUT`/`DELETE /api/v1/apps/{name}/vault-env/{key}`
 
 This never touches any other field on the app, unlike the general update endpoint.
+
+## Managing encrypted secrets
+
+Apps with `{ secret: true }` env vars store encrypted values locally. After an app is created, update secrets individually or in bulk.
+
+### Single secret
+
+Set or rotate one secret at a time:
+
+```bash
+levelrail-cli apps secrets set <name> DATABASE_PASSWORD --value "new-password"
+```
+
+- Dashboard: app Environment tab, edit the secret field
+- API: `PUT /api/v1/apps/{name}/secrets/<key>` with JSON `{ value: "..." }`
+
+Secrets are never returned in plaintext, even from the API. The dashboard and CLI confirm receipt but don't echo the value back.
+
+### Bulk import from .env file
+
+Load a batch of secrets from a `.env`-format file:
+
+```bash
+levelrail-cli apps secrets set <name> --env-file local.env
+```
+
+Each line in the file becomes its own encrypted secret:
+
+```
+DATABASE_PASSWORD=secret-value
+API_TOKEN=token-value
+```
+
+This parses the same format as Docker and shell `.env` files: `KEY=value` pairs, one per line, with lines starting in `#` ignored as comments. This is useful for migrating from another deployment platform or bulk-updating multiple credentials at once.
+
+- Dashboard: app Environment tab, "Import .env file" button opens a file picker and drag-drop zone
+- CLI: `--env-file <path>` flag accepts both absolute and relative paths
+- API: Use individual `PUT /api/v1/apps/{name}/secrets/<key>` calls per secret (no batch endpoint yet)
+
+### Secret locks
+
+Prevent accidental overwrites of sensitive secrets by locking them:
+
+```bash
+levelrail-cli apps secrets lock <name> DATABASE_PASSWORD --locked=true
+```
+
+A locked secret cannot be changed by the dashboard or CLI without unlocking it first. This does not encrypt or protect the value differently; it only prevents accidental modifications.
+
+- Dashboard: app Environment tab, lock icon per secret
+- CLI: `levelrail-cli apps secrets lock <name> <key> --locked=true|false`
+- API: `POST /api/v1/apps/{name}/secrets/<key>/lock` with JSON `{ locked: true }`
 
 ## Lifecycle actions
 

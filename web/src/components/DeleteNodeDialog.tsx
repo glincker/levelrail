@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useDeleteNode } from '../queries/nodes'
@@ -56,7 +57,10 @@ export function DeleteNodeDialog({ id, name }: { id: string; name: string }) {
           </DialogDescription>
         </DialogHeader>
         {deleteNode.isError ? (
-          <p className="text-sm text-destructive">{deleteNode.error.message}</p>
+          <Alert variant="destructive">
+            <WarningIcon />
+            <AlertDescription>{deleteNode.error.message}</AlertDescription>
+          </Alert>
         ) : null}
         <DialogFooter>
           <Button

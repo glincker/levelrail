@@ -11,6 +11,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -52,6 +53,22 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		resp.Result = &agentpb.AgentResponse_InspectByName{InspectByName: &agentpb.InspectByNameResponse{
 			Found: state != nil,
 			State: containerStateToPB(state),
+		}}
+
+	case *agentpb.AgentRequest_InspectExitState:
+		inspector, ok := rt.(docker.ExitStateInspector)
+		if !ok {
+			resp.Error = ErrExitStateUnsupported.Error()
+			return resp
+		}
+		state, err := inspector.InspectExitState(ctx, op.InspectExitState.GetName())
+		if err != nil {
+			resp.Error = err.Error()
+			return resp
+		}
+		resp.Result = &agentpb.AgentResponse_InspectExitState{InspectExitState: &agentpb.InspectExitStateResponse{
+			Found: state != nil,
+			State: exitStateToPB(state),
 		}}
 
 	case *agentpb.AgentRequest_Create:
@@ -169,6 +186,12 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 
 	return resp
 }
+
+// ErrExitStateUnsupported is what an InspectExitState request gets when
+// this node's runtime cannot inspect a container's exit state. Callers
+// treat any error here as "can't tell" and fall back to waiting out the
+// full readiness budget.
+var ErrExitStateUnsupported = errors.New("agent: this node's container runtime cannot inspect container exit state")
 
 func emptyResult() *agentpb.AgentResponse_Empty {
 	return &agentpb.AgentResponse_Empty{Empty: &agentpb.Empty{}}

@@ -102,7 +102,7 @@ jobs:
       contents: read
     needs: [changes, build-vet]
     if: needs.changes.outputs.backend == 'true'
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -119,8 +119,12 @@ jobs:
           echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
           sudo systemctl restart docker
 
+      # 13m, up from 10m: this package's test suite runs in ~3m locally
+      # but has been clearing 10m on shared CI runners as it's grown, two
+      # consecutive timeouts on the same commit with no slow/hanging test
+      # found on inspection (github.com/GLINCKER/levelrail#520).
       - name: go test (short, coverage profile)
-        run: go test ./internal/api/... -short -timeout=10m -coverprofile=coverage-api.out
+        run: go test ./internal/api/... -short -timeout=13m -coverprofile=coverage-api.out
 
       - name: Upload coverage profile
         uses: actions/upload-artifact@v7

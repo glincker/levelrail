@@ -47,6 +47,13 @@ type Runner struct {
 	// calls RunVolumeBackup, the same "optional capability" shape this
 	// codebase already uses for Scheduler.Deleter/Verifier.
 	VolumeArchiver VolumeArchiver
+	// WorkDir is the directory RunBackup/RunVolumeBackup's disk-space
+	// preflight checks (checkDiskSpace) before starting. Empty falls back
+	// to APP_DATA_DIR (resolveWorkDir), and empty even then skips the
+	// check entirely: see checkDiskSpace's own doc comment for why a
+	// backup, which streams straight from its source to its destination
+	// bucket, still has a real local directory worth guarding.
+	WorkDir string
 	// Now returns the current time. A field, not time.Now called
 	// directly, so tests get deterministic timestamps without a real
 	// clock dependency; production code leaves it nil and RunBackup
@@ -81,6 +88,10 @@ func (r *Runner) now() time.Time {
 // honestly rather than mask it" the reconcilers elsewhere in this
 // codebase already follow when their own condition-write fails.
 func (r *Runner) RunBackup(ctx context.Context, historyID, databaseName, engine, containerName, targetID string) error {
+	if err := checkDiskSpace(resolveWorkDir(r.WorkDir)); err != nil {
+		return err
+	}
+
 	startedAt := r.now()
 	objectKey := fmt.Sprintf("%s/%s-%s.dump", databaseName, databaseName, startedAt.UTC().Format("20060102T150405Z"))
 
@@ -149,6 +160,10 @@ func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, con
 // instead of Dumper.Dump) and what identifies the row
 // (ServiceName/VolumeName/ResourceKind instead of DatabaseName).
 func (r *Runner) RunVolumeBackup(ctx context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID string) error {
+	if err := checkDiskSpace(resolveWorkDir(r.WorkDir)); err != nil {
+		return err
+	}
+
 	startedAt := r.now()
 	objectKey := fmt.Sprintf("volumes/%s/%s/%s.tar", serviceName, volumeName, startedAt.UTC().Format("20060102T150405Z"))
 
