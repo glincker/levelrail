@@ -106,3 +106,189 @@ func TestSetProjectEnvVars_ProjectDeletedCascades(t *testing.T) {
 		t.Errorf("ListProjectEnvVars() after project delete = %+v, want empty (cascade deleted)", got)
 	}
 }
+
+func TestProjectEnvSecretsKey(t *testing.T) {
+	got := ProjectEnvSecretsKey("proj_test1")
+	want := "project-env/proj_test1"
+	if got != want {
+		t.Errorf("ProjectEnvSecretsKey() = %q, want %q", got, want)
+	}
+}
+
+// TestSetProjectSecretEnvVar covers the upsert path: the first call
+// inserts a placeholder row, the second re-marks the same key, and
+// neither ever surfaces through the plain env var list.
+func TestSetProjectSecretEnvVar(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveProject(ctx, newTestProject()); err != nil {
+		t.Fatalf("SaveProject() error = %v", err)
+	}
+
+	if err := db.SetProjectSecretEnvVar(ctx, "proj_test1", "API_KEY"); err != nil {
+		t.Fatalf("SetProjectSecretEnvVar() error = %v", err)
+	}
+	// upsert again to exercise the ON CONFLICT branch
+	if err := db.SetProjectSecretEnvVar(ctx, "proj_test1", "API_KEY"); err != nil {
+		t.Fatalf("SetProjectSecretEnvVar() second call error = %v", err)
+	}
+
+	keys, err := db.ListProjectSecretEnvKeys(ctx, "proj_test1")
+	if err != nil {
+		t.Fatalf("ListProjectSecretEnvKeys() error = %v", err)
+	}
+	if len(keys) != 1 || keys[0] != "API_KEY" {
+		t.Fatalf("ListProjectSecretEnvKeys() = %v, want [API_KEY]", keys)
+	}
+
+	plain, err := db.ListProjectEnvVars(ctx, "proj_test1")
+	if err != nil {
+		t.Fatalf("ListProjectEnvVars() error = %v", err)
+	}
+	if _, ok := plain["API_KEY"]; ok {
+		t.Errorf("ListProjectEnvVars() leaked secret key API_KEY = %+v", plain)
+	}
+}
+
+func TestDeleteProjectSecretEnvVar(t *testing.T) {
+	tests := []struct {
+		name      string
+		seedFirst bool
+	}{
+		{name: "deletes an existing secret", seedFirst: true},
+		{name: "no-op when key was never set", seedFirst: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := openTestDB(t)
+			ctx := context.Background()
+			if err := db.SaveProject(ctx, newTestProject()); err != nil {
+				t.Fatalf("SaveProject() error = %v", err)
+			}
+			if tt.seedFirst {
+				if err := db.SetProjectSecretEnvVar(ctx, "proj_test1", "API_KEY"); err != nil {
+					t.Fatalf("SetProjectSecretEnvVar() error = %v", err)
+				}
+			}
+
+			if err := db.DeleteProjectSecretEnvVar(ctx, "proj_test1", "API_KEY"); err != nil {
+				t.Fatalf("DeleteProjectSecretEnvVar() error = %v", err)
+			}
+
+			keys, err := db.ListProjectSecretEnvKeys(ctx, "proj_test1")
+			if err != nil {
+				t.Fatalf("ListProjectSecretEnvKeys() error = %v", err)
+			}
+			if len(keys) != 0 {
+				t.Errorf("ListProjectSecretEnvKeys() = %v, want empty", keys)
+			}
+		})
+	}
+}
+
+// TestListProjectEnvVarsDetailed proves the combined shape used by the
+// settings-page table: plain rows carry their value, secret rows never
+// do, and results come back key-ordered.
+func TestListProjectEnvVarsDetailed(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveProject(ctx, newTestProject()); err != nil {
+		t.Fatalf("SaveProject() error = %v", err)
+	}
+	if err := db.SetProjectEnvVars(ctx, "proj_test1", map[string]string{"NODE_ENV": "production"}); err != nil {
+		t.Fatalf("SetProjectEnvVars() error = %v", err)
+	}
+	if err := db.SetProjectSecretEnvVar(ctx, "proj_test1", "API_KEY"); err != nil {
+		t.Fatalf("SetProjectSecretEnvVar() error = %v", err)
+	}
+
+	got, err := db.ListProjectEnvVarsDetailed(ctx, "proj_test1")
+	if err != nil {
+		t.Fatalf("ListProjectEnvVarsDetailed() error = %v", err)
+	}
+	want := []SharedEnvVar{
+		{Key: "API_KEY", Value: "", Secret: true},
+		{Key: "NODE_ENV", Value: "production", Secret: false},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("ListProjectEnvVarsDetailed() = %+v, want %+v", got, want)
+	}
+	for i, w := range want {
+		if got[i] != w {
+			t.Errorf("ListProjectEnvVarsDetailed()[%d] = %+v, want %+v", i, got[i], w)
+		}
+	}
+}
+
+// TestSetProjectEnvVars_LeavesUnrelatedSecretRowIntact proves the
+// full-replace PUT (SetProjectEnvVars) never touches a secret-marked row
+// for a key it wasn't given: its DELETE is scoped to is_secret = 0, so an
+// existing secret survives a plain env var update that doesn't mention it.
+func TestSetProjectEnvVars_LeavesUnrelatedSecretRowIntact(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveProject(ctx, newTestProject()); err != nil {
+		t.Fatalf("SaveProject() error = %v", err)
+	}
+	if err := db.SetProjectSecretEnvVar(ctx, "proj_test1", "API_KEY"); err != nil {
+		t.Fatalf("SetProjectSecretEnvVar() error = %v", err)
+	}
+
+	if err := db.SetProjectEnvVars(ctx, "proj_test1", map[string]string{"NODE_ENV": "production"}); err != nil {
+		t.Fatalf("SetProjectEnvVars() error = %v", err)
+	}
+
+	keys, err := db.ListProjectSecretEnvKeys(ctx, "proj_test1")
+	if err != nil {
+		t.Fatalf("ListProjectSecretEnvKeys() error = %v", err)
+	}
+	if len(keys) != 1 || keys[0] != "API_KEY" {
+		t.Fatalf("ListProjectSecretEnvKeys() = %v, want [API_KEY] to survive", keys)
+	}
+
+	plain, err := db.ListProjectEnvVars(ctx, "proj_test1")
+	if err != nil {
+		t.Fatalf("ListProjectEnvVars() error = %v", err)
+	}
+	if _, ok := plain["API_KEY"]; ok {
+		t.Errorf("ListProjectEnvVars() leaked secret key API_KEY = %+v", plain)
+	}
+	if plain["NODE_ENV"] != "production" {
+		t.Errorf("ListProjectEnvVars()[NODE_ENV] = %q, want production", plain["NODE_ENV"])
+	}
+}
+
+// TestSetProjectEnvVars_SameKeyAsSecret_ConvertsToPlain documents the
+// intentional "last write wins" behavior called out in SetProjectEnvVars'
+// own comment: reusing a secret-marked key through the plain full-replace
+// path converts that row back to plain rather than erroring or duplicating it.
+func TestSetProjectEnvVars_SameKeyAsSecret_ConvertsToPlain(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveProject(ctx, newTestProject()); err != nil {
+		t.Fatalf("SaveProject() error = %v", err)
+	}
+	if err := db.SetProjectSecretEnvVar(ctx, "proj_test1", "API_KEY"); err != nil {
+		t.Fatalf("SetProjectSecretEnvVar() error = %v", err)
+	}
+
+	if err := db.SetProjectEnvVars(ctx, "proj_test1", map[string]string{"API_KEY": "plain-value"}); err != nil {
+		t.Fatalf("SetProjectEnvVars() error = %v", err)
+	}
+
+	keys, err := db.ListProjectSecretEnvKeys(ctx, "proj_test1")
+	if err != nil {
+		t.Fatalf("ListProjectSecretEnvKeys() error = %v", err)
+	}
+	if len(keys) != 0 {
+		t.Errorf("ListProjectSecretEnvKeys() = %v, want empty (converted to plain)", keys)
+	}
+
+	plain, err := db.ListProjectEnvVars(ctx, "proj_test1")
+	if err != nil {
+		t.Fatalf("ListProjectEnvVars() error = %v", err)
+	}
+	if plain["API_KEY"] != "plain-value" {
+		t.Errorf("ListProjectEnvVars()[API_KEY] = %q, want plain-value", plain["API_KEY"])
+	}
+}
