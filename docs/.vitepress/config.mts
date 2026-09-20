@@ -5,6 +5,98 @@ const description =
   'A self-hosted deployment platform whose agent talks to Docker’s own Engine API directly, ' +
   'no SSH or CLI shelling, with metrics and log storage built into the core.'
 
+const siteUrl = 'https://levelrail.glinr.com'
+
+// Defined once and reused for both the sidebar itself and
+// pageToSection below (canonicalUrl/BreadcrumbList in transformHead),
+// so the two never drift out of sync.
+const sidebarGroups = [
+  {
+    text: 'Tutorials',
+    items: [{ text: 'Getting started', link: '/getting-started' }],
+  },
+  {
+    text: 'How-to guides',
+    collapsed: true,
+    items: [
+      { text: 'Installing', link: '/installing' },
+      { text: 'Troubleshooting', link: '/troubleshooting' },
+      { text: 'Docker', link: '/docker' },
+      { text: 'Domains and ingress', link: '/domains-and-ingress' },
+      { text: 'ACME verification runbook', link: '/acme-verification-runbook' },
+      { text: 'Feature flags', link: '/feature-flags' },
+      { text: 'Master key rotation', link: '/master-key-rotation' },
+      {
+        text: 'Migrating from Coolify, Dokploy, or CapRover',
+        link: '/migrating-from-coolify-dokploy-and-caprover',
+      },
+      { text: 'Deploying from GitHub Actions', link: '/github-actions' },
+      { text: 'Screenshots', link: '/screenshots' },
+      { text: 'Deploying apps', link: '/deploying-apps' },
+      { text: 'Managing databases', link: '/managing-databases' },
+      { text: 'Observability', link: '/observability' },
+      { text: 'Multi-node', link: '/multi-node' },
+      {
+        text: 'Projects and organizations',
+        link: '/projects-and-organizations',
+      },
+      { text: 'Identity and access', link: '/identity-and-access' },
+      { text: 'Git integrations', link: '/git-integrations' },
+      { text: 'Backups and storage', link: '/backups-and-storage' },
+      { text: 'Templates and registry', link: '/templates-and-registry' },
+    ],
+  },
+  {
+    text: 'Reference',
+    collapsed: true,
+    items: [
+      { text: 'App spec reference', link: '/app-spec-reference' },
+      { text: 'Feature catalog', link: '/feature-catalog' },
+      { text: 'CLI reference', link: '/cli-reference' },
+      { text: 'API reference', link: '/api-reference' },
+    ],
+  },
+  {
+    text: 'Explanation',
+    collapsed: true,
+    items: [
+      { text: 'Architecture', link: '/architecture' },
+      { text: 'Security overview', link: '/security' },
+      { text: 'Comparison', link: '/comparison' },
+    ],
+  },
+  {
+    text: 'Design proposals',
+    collapsed: true,
+    items: [
+      {
+        text: 'Git provider integrations',
+        link: '/design/git-provider-integrations',
+      },
+    ],
+  },
+  {
+    text: 'Status',
+    items: [{ text: 'Roadmap', link: '/roadmap' }],
+  },
+  {
+    text: 'Docs index',
+    collapsed: true,
+    items: [{ text: 'Overview', link: '/README' }],
+  },
+]
+
+// Maps a sidebar link's path (no leading slash) to its group's title,
+// for transformHead's BreadcrumbList below. Built from sidebarGroups
+// itself so the breadcrumb's middle segment can never list a section a
+// page doesn't actually appear under in the real sidebar.
+const pageToSection = new Map<string, string>()
+for (const group of sidebarGroups) {
+  for (const item of group.items) {
+    pageToSection.set(item.link.replace(/^\//, ''), group.text)
+  }
+}
+
 export default withMermaid({
   title: 'Levelrail',
   description,
@@ -12,7 +104,7 @@ export default withMermaid({
   // TODO: revisit once glinr.com/levelrail (a path, not this subdomain)
   // becomes possible, per the root CLAUDE.md's stated long-term target.
   sitemap: {
-    hostname: 'https://levelrail.glinr.com',
+    hostname: siteUrl,
   },
 
   head: [
@@ -20,12 +112,12 @@ export default withMermaid({
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'Levelrail' }],
     ['meta', { property: 'og:description', content: description }],
-    ['meta', { property: 'og:url', content: 'https://levelrail.glinr.com/' }],
+    ['meta', { property: 'og:url', content: `${siteUrl}/` }],
     [
       'meta',
       {
         property: 'og:image',
-        content: 'https://levelrail.glinr.com/assets/screenshots/app-overview.png',
+        content: `${siteUrl}/assets/screenshots/app-overview.png`,
       },
     ],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
@@ -35,7 +127,7 @@ export default withMermaid({
       'meta',
       {
         name: 'twitter:image',
-        content: 'https://levelrail.glinr.com/assets/screenshots/app-overview.png',
+        content: `${siteUrl}/assets/screenshots/app-overview.png`,
       },
     ],
     ['link', { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }],
@@ -55,7 +147,7 @@ export default withMermaid({
           priceCurrency: 'USD',
         },
         license: 'https://www.apache.org/licenses/LICENSE-2.0',
-        url: 'https://levelrail.glinr.com/',
+        url: `${siteUrl}/`,
         codeRepository: 'https://github.com/glincker/levelrail',
       }),
     ],
@@ -81,76 +173,7 @@ export default withMermaid({
       { text: 'Roadmap', link: '/roadmap' },
     ],
 
-    sidebar: [
-      {
-        text: 'Tutorials',
-        items: [{ text: 'Getting started', link: '/getting-started' }],
-      },
-      {
-        text: 'How-to guides',
-        items: [
-          { text: 'Installing', link: '/installing' },
-          { text: 'Troubleshooting', link: '/troubleshooting' },
-          { text: 'Docker', link: '/docker' },
-          { text: 'Domains and ingress', link: '/domains-and-ingress' },
-          { text: 'ACME verification runbook', link: '/acme-verification-runbook' },
-          { text: 'Feature flags', link: '/feature-flags' },
-          { text: 'Master key rotation', link: '/master-key-rotation' },
-          {
-            text: 'Migrating from Coolify, Dokploy, or CapRover',
-            link: '/migrating-from-coolify-dokploy-and-caprover',
-          },
-          { text: 'Deploying from GitHub Actions', link: '/github-actions' },
-          { text: 'Screenshots', link: '/screenshots' },
-          { text: 'Deploying apps', link: '/deploying-apps' },
-          { text: 'Managing databases', link: '/managing-databases' },
-          { text: 'Observability', link: '/observability' },
-          { text: 'Multi-node', link: '/multi-node' },
-          {
-            text: 'Projects and organizations',
-            link: '/projects-and-organizations',
-          },
-          { text: 'Identity and access', link: '/identity-and-access' },
-          { text: 'Git integrations', link: '/git-integrations' },
-          { text: 'Backups and storage', link: '/backups-and-storage' },
-          { text: 'Templates and registry', link: '/templates-and-registry' },
-        ],
-      },
-      {
-        text: 'Reference',
-        items: [
-          { text: 'App spec reference', link: '/app-spec-reference' },
-          { text: 'Feature catalog', link: '/feature-catalog' },
-          { text: 'CLI reference', link: '/cli-reference' },
-          { text: 'API reference', link: '/api-reference' },
-        ],
-      },
-      {
-        text: 'Explanation',
-        items: [
-          { text: 'Architecture', link: '/architecture' },
-          { text: 'Security overview', link: '/security' },
-          { text: 'Comparison', link: '/comparison' },
-        ],
-      },
-      {
-        text: 'Design proposals',
-        items: [
-          {
-            text: 'Git provider integrations',
-            link: '/design/git-provider-integrations',
-          },
-        ],
-      },
-      {
-        text: 'Status',
-        items: [{ text: 'Roadmap', link: '/roadmap' }],
-      },
-      {
-        text: 'Docs index',
-        items: [{ text: 'Overview', link: '/README' }],
-      },
-    ],
+    sidebar: sidebarGroups,
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/glincker/levelrail' },
@@ -169,6 +192,37 @@ export default withMermaid({
       message: 'Released under the Apache 2.0 License.',
       copyright: 'Copyright © GLINCKER',
     },
+  },
+
+  // Per-page canonical link and BreadcrumbList: VitePress doesn't add
+  // either by default. Skips index.md (the home layout has no
+  // meaningful breadcrumb) and any page pageToSection doesn't
+  // recognize (docs/README.md, ADRs reached via ../adr, etc.).
+  transformHead({ pageData }) {
+    const path = pageData.relativePath.replace(/\.md$/, '').replace(/^index$/, '')
+    const canonicalUrl = `${siteUrl}/${path}`
+    const head: [string, Record<string, string>, string?][] = [
+      ['link', { rel: 'canonical', href: canonicalUrl }],
+    ]
+
+    const section = pageToSection.get(path)
+    if (section) {
+      head.push([
+        'script',
+        { type: 'application/ld+json' },
+        JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Levelrail', item: `${siteUrl}/` },
+            { '@type': 'ListItem', position: 2, name: section, item: canonicalUrl },
+            { '@type': 'ListItem', position: 3, name: pageData.title, item: canonicalUrl },
+          ],
+        }),
+      ])
+    }
+
+    return head
   },
 
   mermaid: {
