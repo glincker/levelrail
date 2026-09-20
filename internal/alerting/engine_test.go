@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -225,6 +226,63 @@ func TestEngine_Tick_CrashloopFires_AttachesLogLines(t *testing.T) {
 	}
 	if len(calls[0].LogLines) != 2 || calls[0].LogLines[0] != "panic: out of memory" {
 		t.Errorf("LogLines = %v, want the two fake log entries' messages", calls[0].LogLines)
+	}
+}
+
+func TestEngine_Tick_CrashloopFires_AutoRollback_FiresOncePerBadDeploy(t *testing.T) {
+	r := Rule{ID: "cl1", Kind: KindCrashloop, ResourceID: "service:web",
+		RestartCountThreshold: 1, RestartWindow: time.Hour, Enabled: true}
+	rules := newFakeRuleStore(r)
+	tracker := NewRestartTracker()
+	tracker.Observe("service:web", "web-h1", time.Now())
+	tracker.Observe("service:web", "web-h1", time.Now()) // meets threshold: rule fires on this tick
+
+	spy := &spyNotifier{}
+	engine := newTestEngine(rules, nil, &fakeLogsSource{}, tracker, spy)
+	rollbackStore := &fakeAutoRollbackStore{
+		svc: store.DesiredService{Name: "web", Image: "web:v2", AutoRollbackOnCrashloop: true},
+		attempts: []store.DeployAttempt{
+			{Image: "web:v2", Status: store.DeployAttemptStatusSucceeded},
+			{Image: "web:v1", Status: store.DeployAttemptStatusSucceeded},
+		},
+	}
+	nudger := &fakeAutoRollbackNudger{}
+	engine.SetAutoRollback(rollbackStore, nudger)
+
+	if err := engine.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+	// Still firing on a second tick (no new restarts, count still meets
+	// threshold): a pending/not-firing -> firing transition happened only
+	// once, so auto-rollback must only have fired once too.
+	if err := engine.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+
+	if len(rollbackStore.savedServices) != 1 {
+		t.Fatalf("savedServices = %+v, want exactly one rollback across two ticks of the same firing episode", rollbackStore.savedServices)
+	}
+	if rollbackStore.savedServices[0].Image != "web:v1" {
+		t.Errorf("rolled back to image %q, want web:v1", rollbackStore.savedServices[0].Image)
+	}
+}
+
+func TestEngine_Tick_CrashloopFires_AutoRollbackNotConfigured_NoOp(t *testing.T) {
+	r := Rule{ID: "cl1", Kind: KindCrashloop, ResourceID: "service:web",
+		RestartCountThreshold: 1, RestartWindow: time.Hour, Enabled: true}
+	rules := newFakeRuleStore(r)
+	tracker := NewRestartTracker()
+	tracker.Observe("service:web", "web-h1", time.Now())
+	tracker.Observe("service:web", "web-h1", time.Now())
+
+	spy := &spyNotifier{}
+	engine := newTestEngine(rules, nil, &fakeLogsSource{}, tracker, spy) // SetAutoRollback never called
+
+	if err := engine.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() error = %v", err)
+	}
+	if calls := spy.calls(); len(calls) != 1 {
+		t.Fatalf("Notify called %d times, want 1 (crashloop notification still fires independent of auto-rollback)", len(calls))
 	}
 }
 

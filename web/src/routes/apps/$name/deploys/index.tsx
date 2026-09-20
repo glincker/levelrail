@@ -1,7 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { deployAttemptsQueryOptions } from '../../../../queries/deployAttempts'
+import { autoRollbackQueryOptions } from '../../../../queries/autoRollback'
 import { useDeployProgress } from '../../../../hooks/useDeployProgress'
 import { DeployAttemptsList } from '../../../../components/DeployAttemptsList'
+import { AutoRollbackCard } from '../../../../components/AutoRollbackCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -18,8 +20,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 // yet: the backend has no deploy-history/attempt-listing endpoint to
 // source a deployId from"): this page is exactly that source.
 export const Route = createFileRoute('/apps/$name/deploys/')({
-  loader: ({ context: { queryClient }, params: { name } }) =>
-    queryClient.ensureQueryData(deployAttemptsQueryOptions(name)),
+  loader: async ({ context: { queryClient }, params: { name } }) => {
+    await Promise.all([
+      queryClient.ensureQueryData(deployAttemptsQueryOptions(name)),
+      queryClient.ensureQueryData(autoRollbackQueryOptions(name)),
+    ])
+  },
   component: DeploysSection,
   pendingComponent: DeploysSectionPending,
 })
@@ -29,7 +35,14 @@ function DeploysSection() {
   const { attempts, conditions } = useDeployProgress(name)
 
   return (
-    <DeployAttemptsList appName={name} attempts={attempts} conditions={conditions} />
+    <div className="space-y-4">
+      <AutoRollbackCard appName={name} />
+      <DeployAttemptsList
+        appName={name}
+        attempts={attempts}
+        conditions={conditions}
+      />
+    </div>
   )
 }
 

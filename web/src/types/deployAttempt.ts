@@ -10,8 +10,12 @@ export type DeployAttemptStatus = 'running' | 'succeeded' | 'failed'
 // Mirrors internal/store.DeployAttemptSource* on the wire: 'webhook' for
 // an unattended git-push build, 'manual' for a dashboard-triggered
 // git-source build, 'image' for a bare image-tag redeploy/rollback with
-// no build step (and so no commit_sha).
-export type DeployAttemptSource = 'webhook' | 'manual' | 'image'
+// no build step (and so no commit_sha), 'auto_rollback' for an
+// unattended rollback triggered by internal/alerting.MaybeAutoRollback
+// once a crashloop alert fires (also no commit_sha: it's the same
+// image-tag path as 'image', just driven automatically).
+export type DeployAttemptSource =
+  'webhook' | 'manual' | 'image' | 'auto_rollback'
 
 export interface DeployAttempt {
   id: string

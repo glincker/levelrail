@@ -202,15 +202,20 @@ const (
 // rollback with no build step (internal/api/deploys.go's
 // recordPlainDeployAttempt), a Docker Compose file or service template
 // fanning out into one or more services under one app
-// (internal/api/apps_compose.go's handleDeployCompose), and promoting
+// (internal/api/apps_compose.go's handleDeployCompose), promoting
 // another app's image across environments within the same project
-// (internal/api/promote.go's handlePromoteApp).
+// (internal/api/promote.go's handlePromoteApp), and an unattended
+// crashloop auto-rollback (internal/alerting.MaybeAutoRollback, gated on
+// DesiredService.AutoRollbackOnCrashloop) driving internal/deploy.
+// TriggerImageDeploy, the same shared path DeployAttemptSourceImage's
+// own manual rollback already goes through.
 const (
-	DeployAttemptSourceWebhook = "webhook"
-	DeployAttemptSourceManual  = "manual"
-	DeployAttemptSourceImage   = "image"
-	DeployAttemptSourceCompose = "compose"
-	DeployAttemptSourcePromote = "promote"
+	DeployAttemptSourceWebhook      = "webhook"
+	DeployAttemptSourceManual       = "manual"
+	DeployAttemptSourceImage        = "image"
+	DeployAttemptSourceCompose      = "compose"
+	DeployAttemptSourcePromote      = "promote"
+	DeployAttemptSourceAutoRollback = "auto_rollback"
 )
 
 // deployAttemptIDPrefix mirrors internal/api/tokens.go's "tok_" prefix

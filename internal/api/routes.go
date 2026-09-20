@@ -241,6 +241,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// Deploys.
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityDeploy, rt.handleTriggerDeploy))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityRead, rt.handleDeployHistory))
+	mux.HandleFunc("GET /api/v1/apps/{name}/auto-rollback", rt.requireAbility(AbilityRead, rt.handleGetAutoRollback))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/auto-rollback", rt.requireAbility(AbilityDeploy, rt.handleSetAutoRollback))
 
 	// Restart (handleRestartApp's own doc comment): AbilityDeploy, the
 	// same boundary as the deploy trigger above, since forcing a
