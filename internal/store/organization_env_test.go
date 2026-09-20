@@ -5,12 +5,21 @@ import (
 	"testing"
 )
 
-func TestSetAndListOrganizationEnvVars(t *testing.T) {
+// newSeededOrganizationDB opens a test DB with "org_test1" already
+// saved, the fixed preamble most tests in this file need before they
+// can touch organization-scoped env vars.
+func newSeededOrganizationDB(t *testing.T) (*DB, context.Context) {
+	t.Helper()
 	db := openTestDB(t)
 	ctx := context.Background()
 	if err := db.SaveOrganization(ctx, newTestOrganization()); err != nil {
 		t.Fatalf("SaveOrganization() error = %v", err)
 	}
+	return db, ctx
+}
+
+func TestSetAndListOrganizationEnvVars(t *testing.T) {
+	db, ctx := newSeededOrganizationDB(t)
 
 	want := map[string]string{"LOG_LEVEL": "info", "NODE_ENV": "production"}
 	if err := db.SetOrganizationEnvVars(ctx, "org_test1", want); err != nil {
@@ -32,11 +41,7 @@ func TestSetAndListOrganizationEnvVars(t *testing.T) {
 }
 
 func TestListOrganizationEnvVars_NoneSet_ReturnsEmptyNotNil(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveOrganization(ctx, newTestOrganization()); err != nil {
-		t.Fatalf("SaveOrganization() error = %v", err)
-	}
+	db, ctx := newSeededOrganizationDB(t)
 
 	got, err := db.ListOrganizationEnvVars(ctx, "org_test1")
 	if err != nil {
@@ -53,11 +58,7 @@ func TestListOrganizationEnvVars_NoneSet_ReturnsEmptyNotNil(t *testing.T) {
 // TestSetOrganizationEnvVars_FullReplace proves the second call removes a
 // key the first call set but the second omits, not a merge.
 func TestSetOrganizationEnvVars_FullReplace(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveOrganization(ctx, newTestOrganization()); err != nil {
-		t.Fatalf("SaveOrganization() error = %v", err)
-	}
+	db, ctx := newSeededOrganizationDB(t)
 
 	if err := db.SetOrganizationEnvVars(ctx, "org_test1", map[string]string{"A": "1", "B": "2"}); err != nil {
 		t.Fatalf("first SetOrganizationEnvVars() error = %v", err)
@@ -86,11 +87,7 @@ func TestSetOrganizationEnvVars_FullReplace(t *testing.T) {
 // claims: a deleted organization's shared env vars don't linger as
 // orphaned rows.
 func TestSetOrganizationEnvVars_OrganizationDeletedCascades(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveOrganization(ctx, newTestOrganization()); err != nil {
-		t.Fatalf("SaveOrganization() error = %v", err)
-	}
+	db, ctx := newSeededOrganizationDB(t)
 	if err := db.SetOrganizationEnvVars(ctx, "org_test1", map[string]string{"A": "1"}); err != nil {
 		t.Fatalf("SetOrganizationEnvVars() error = %v", err)
 	}
@@ -229,11 +226,7 @@ func TestOrganizationEnvSecretsKey(t *testing.T) {
 // inserts a placeholder row, the second re-marks the same key, and
 // neither ever surfaces through the plain env var list.
 func TestSetOrganizationSecretEnvVar(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveOrganization(ctx, newTestOrganization()); err != nil {
-		t.Fatalf("SaveOrganization() error = %v", err)
-	}
+	db, ctx := newSeededOrganizationDB(t)
 
 	if err := db.SetOrganizationSecretEnvVar(ctx, "org_test1", "API_KEY"); err != nil {
 		t.Fatalf("SetOrganizationSecretEnvVar() error = %v", err)
@@ -270,11 +263,7 @@ func TestDeleteOrganizationSecretEnvVar(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := openTestDB(t)
-			ctx := context.Background()
-			if err := db.SaveOrganization(ctx, newTestOrganization()); err != nil {
-				t.Fatalf("SaveOrganization() error = %v", err)
-			}
+			db, ctx := newSeededOrganizationDB(t)
 			if tt.seedFirst {
 				if err := db.SetOrganizationSecretEnvVar(ctx, "org_test1", "API_KEY"); err != nil {
 					t.Fatalf("SetOrganizationSecretEnvVar() error = %v", err)
@@ -300,11 +289,7 @@ func TestDeleteOrganizationSecretEnvVar(t *testing.T) {
 // the settings-page table: plain rows carry their value, secret rows
 // never do, and results come back key-ordered.
 func TestListOrganizationEnvVarsDetailed(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveOrganization(ctx, newTestOrganization()); err != nil {
-		t.Fatalf("SaveOrganization() error = %v", err)
-	}
+	db, ctx := newSeededOrganizationDB(t)
 	if err := db.SetOrganizationEnvVars(ctx, "org_test1", map[string]string{"NODE_ENV": "production"}); err != nil {
 		t.Fatalf("SetOrganizationEnvVars() error = %v", err)
 	}
@@ -334,11 +319,7 @@ func TestListOrganizationEnvVarsDetailed(t *testing.T) {
 // full-replace PUT (SetOrganizationEnvVars) never touches a
 // secret-marked row for a key it wasn't given.
 func TestSetOrganizationEnvVars_LeavesUnrelatedSecretRowIntact(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveOrganization(ctx, newTestOrganization()); err != nil {
-		t.Fatalf("SaveOrganization() error = %v", err)
-	}
+	db, ctx := newSeededOrganizationDB(t)
 	if err := db.SetOrganizationSecretEnvVar(ctx, "org_test1", "API_KEY"); err != nil {
 		t.Fatalf("SetOrganizationSecretEnvVar() error = %v", err)
 	}
@@ -372,11 +353,7 @@ func TestSetOrganizationEnvVars_LeavesUnrelatedSecretRowIntact(t *testing.T) {
 // key through the plain full-replace path converts that row back to
 // plain rather than erroring or duplicating it.
 func TestSetOrganizationEnvVars_SameKeyAsSecret_ConvertsToPlain(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveOrganization(ctx, newTestOrganization()); err != nil {
-		t.Fatalf("SaveOrganization() error = %v", err)
-	}
+	db, ctx := newSeededOrganizationDB(t)
 	if err := db.SetOrganizationSecretEnvVar(ctx, "org_test1", "API_KEY"); err != nil {
 		t.Fatalf("SetOrganizationSecretEnvVar() error = %v", err)
 	}

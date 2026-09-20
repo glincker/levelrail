@@ -5,12 +5,21 @@ import (
 	"testing"
 )
 
-func TestSetAndListProjectEnvVars(t *testing.T) {
+// newSeededProjectDB opens a test DB with "proj_test1" already saved,
+// the fixed preamble every test in this file needs before it can touch
+// project-scoped env vars.
+func newSeededProjectDB(t *testing.T) (*DB, context.Context) {
+	t.Helper()
 	db := openTestDB(t)
 	ctx := context.Background()
 	if err := db.SaveProject(ctx, newTestProject()); err != nil {
 		t.Fatalf("SaveProject() error = %v", err)
 	}
+	return db, ctx
+}
+
+func TestSetAndListProjectEnvVars(t *testing.T) {
+	db, ctx := newSeededProjectDB(t)
 
 	want := map[string]string{"LOG_LEVEL": "info", "NODE_ENV": "production"}
 	if err := db.SetProjectEnvVars(ctx, "proj_test1", want); err != nil {
@@ -32,11 +41,7 @@ func TestSetAndListProjectEnvVars(t *testing.T) {
 }
 
 func TestListProjectEnvVars_NoneSet_ReturnsEmptyNotNil(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveProject(ctx, newTestProject()); err != nil {
-		t.Fatalf("SaveProject() error = %v", err)
-	}
+	db, ctx := newSeededProjectDB(t)
 
 	got, err := db.ListProjectEnvVars(ctx, "proj_test1")
 	if err != nil {
@@ -53,11 +58,7 @@ func TestListProjectEnvVars_NoneSet_ReturnsEmptyNotNil(t *testing.T) {
 // TestSetProjectEnvVars_FullReplace proves the second call removes a key
 // the first call set but the second omits, not a merge.
 func TestSetProjectEnvVars_FullReplace(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveProject(ctx, newTestProject()); err != nil {
-		t.Fatalf("SaveProject() error = %v", err)
-	}
+	db, ctx := newSeededProjectDB(t)
 
 	if err := db.SetProjectEnvVars(ctx, "proj_test1", map[string]string{"A": "1", "B": "2"}); err != nil {
 		t.Fatalf("first SetProjectEnvVars() error = %v", err)
@@ -85,11 +86,7 @@ func TestSetProjectEnvVars_FullReplace(t *testing.T) {
 // CASCADE actually behaves the way the migration's own comment claims: a
 // deleted project's shared env vars don't linger as orphaned rows.
 func TestSetProjectEnvVars_ProjectDeletedCascades(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveProject(ctx, newTestProject()); err != nil {
-		t.Fatalf("SaveProject() error = %v", err)
-	}
+	db, ctx := newSeededProjectDB(t)
 	if err := db.SetProjectEnvVars(ctx, "proj_test1", map[string]string{"A": "1"}); err != nil {
 		t.Fatalf("SetProjectEnvVars() error = %v", err)
 	}
@@ -119,11 +116,7 @@ func TestProjectEnvSecretsKey(t *testing.T) {
 // inserts a placeholder row, the second re-marks the same key, and
 // neither ever surfaces through the plain env var list.
 func TestSetProjectSecretEnvVar(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveProject(ctx, newTestProject()); err != nil {
-		t.Fatalf("SaveProject() error = %v", err)
-	}
+	db, ctx := newSeededProjectDB(t)
 
 	if err := db.SetProjectSecretEnvVar(ctx, "proj_test1", "API_KEY"); err != nil {
 		t.Fatalf("SetProjectSecretEnvVar() error = %v", err)
@@ -160,11 +153,7 @@ func TestDeleteProjectSecretEnvVar(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := openTestDB(t)
-			ctx := context.Background()
-			if err := db.SaveProject(ctx, newTestProject()); err != nil {
-				t.Fatalf("SaveProject() error = %v", err)
-			}
+			db, ctx := newSeededProjectDB(t)
 			if tt.seedFirst {
 				if err := db.SetProjectSecretEnvVar(ctx, "proj_test1", "API_KEY"); err != nil {
 					t.Fatalf("SetProjectSecretEnvVar() error = %v", err)
@@ -190,11 +179,7 @@ func TestDeleteProjectSecretEnvVar(t *testing.T) {
 // settings-page table: plain rows carry their value, secret rows never
 // do, and results come back key-ordered.
 func TestListProjectEnvVarsDetailed(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveProject(ctx, newTestProject()); err != nil {
-		t.Fatalf("SaveProject() error = %v", err)
-	}
+	db, ctx := newSeededProjectDB(t)
 	if err := db.SetProjectEnvVars(ctx, "proj_test1", map[string]string{"NODE_ENV": "production"}); err != nil {
 		t.Fatalf("SetProjectEnvVars() error = %v", err)
 	}
@@ -225,11 +210,7 @@ func TestListProjectEnvVarsDetailed(t *testing.T) {
 // for a key it wasn't given: its DELETE is scoped to is_secret = 0, so an
 // existing secret survives a plain env var update that doesn't mention it.
 func TestSetProjectEnvVars_LeavesUnrelatedSecretRowIntact(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveProject(ctx, newTestProject()); err != nil {
-		t.Fatalf("SaveProject() error = %v", err)
-	}
+	db, ctx := newSeededProjectDB(t)
 	if err := db.SetProjectSecretEnvVar(ctx, "proj_test1", "API_KEY"); err != nil {
 		t.Fatalf("SetProjectSecretEnvVar() error = %v", err)
 	}
@@ -263,11 +244,7 @@ func TestSetProjectEnvVars_LeavesUnrelatedSecretRowIntact(t *testing.T) {
 // own comment: reusing a secret-marked key through the plain full-replace
 // path converts that row back to plain rather than erroring or duplicating it.
 func TestSetProjectEnvVars_SameKeyAsSecret_ConvertsToPlain(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if err := db.SaveProject(ctx, newTestProject()); err != nil {
-		t.Fatalf("SaveProject() error = %v", err)
-	}
+	db, ctx := newSeededProjectDB(t)
 	if err := db.SetProjectSecretEnvVar(ctx, "proj_test1", "API_KEY"); err != nil {
 		t.Fatalf("SetProjectSecretEnvVar() error = %v", err)
 	}
