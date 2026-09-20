@@ -11,6 +11,7 @@ import {
   FolderIcon,
   GlobeIcon,
   CloudArrowUpIcon,
+  RobotIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -191,6 +192,16 @@ export function AppSidebar() {
                     >
                       <CloudArrowUpIcon />
                       <span>Backups</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/ai-assistant" />}
+                      isActive={pathname.startsWith('/ai-assistant')}
+                      tooltip="AI Assistant"
+                    >
+                      <RobotIcon />
+                      <span>AI Assistant</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>

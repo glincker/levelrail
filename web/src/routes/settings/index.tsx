@@ -19,8 +19,14 @@ import {
   ClockCounterClockwiseIcon,
   PackageIcon,
   VaultIcon,
+  RobotIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { Card, CardHeader, CardTitle, CardDescription } from '../../components/ui/card'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '../../components/ui/card'
 
 export const Route = createFileRoute('/settings/')({
   component: SettingsHubPage,
@@ -92,7 +98,8 @@ const sections: SettingsSection[] = [
         to: '/settings/gitlab-app',
         icon: GitlabLogoIcon,
         title: 'GitLab App',
-        description: 'gitlab.com or self-hosted project access for git-based deploys.',
+        description:
+          'gitlab.com or self-hosted project access for git-based deploys.',
       },
       {
         to: '/settings/bitbucket-app',
@@ -128,13 +135,22 @@ const sections: SettingsSection[] = [
         to: '/settings/cloudflare-tunnel',
         icon: CloudCheckIcon,
         title: 'Cloudflare Tunnel',
-        description: 'Expose this control plane without opening an inbound port.',
+        description:
+          'Expose this control plane without opening an inbound port.',
       },
       {
         to: '/settings/vault',
         icon: VaultIcon,
         title: 'Vault',
-        description: 'Resolve app secrets live from an external HashiCorp Vault instance.',
+        description:
+          'Resolve app secrets live from an external HashiCorp Vault instance.',
+      },
+      {
+        to: '/settings/ai-assistant',
+        icon: RobotIcon,
+        title: 'AI Assistant',
+        description:
+          'Bring your own LLM API key for the platform chat assistant.',
       },
     ],
   },
@@ -151,7 +167,8 @@ const sections: SettingsSection[] = [
         to: '/domains',
         icon: GlobeIcon,
         title: 'Domains',
-        description: 'Platform ingress: dashboard domain and ACME certificates.',
+        description:
+          'Platform ingress: dashboard domain and ACME certificates.',
       },
       {
         to: '/settings/updates',
