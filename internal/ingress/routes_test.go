@@ -640,6 +640,102 @@ func TestBuildRoutesConfig_JSONShape(t *testing.T) {
 		}
 	})
 
+	t.Run("route with error pages gets handle_response on reverse_proxy and a wrapping subroute with errors", func(t *testing.T) {
+		cfg, err := BuildRoutesConfig(RoutesOptions{
+			ServerName: "ingress",
+			ListenAddr: ":443",
+			Routes: []ProxyRoute{
+				{
+					Hosts:       []string{"errpages.example.internal"},
+					BackendDial: "127.0.0.1:9001",
+					ErrorPages: []ErrorPage{
+						{StatusCode: 404, Body: "<h1>not found</h1>"},
+						{StatusCode: 502, Body: "<h1>down</h1>"},
+					},
+				},
+				{Hosts: []string{"open.example.internal"}, BackendDial: "127.0.0.1:9002"},
+			},
+		})
+		if err != nil {
+			t.Fatalf("BuildRoutesConfig() error: %v", err)
+		}
+
+		handle := decodeRoutesByHost(t, cfg)["errpages.example.internal"]
+		if len(handle) != 1 {
+			t.Fatalf("errpages handle = %v, want exactly [subroute]", handle)
+		}
+		sub := handle[0].(map[string]any)
+		if sub["handler"] != "subroute" {
+			t.Fatalf("handle[0].handler = %v, want subroute", sub["handler"])
+		}
+
+		innerRoutes := sub["routes"].([]any)
+		if len(innerRoutes) != 1 {
+			t.Fatalf("subroute.routes = %v, want exactly one wrapped route", innerRoutes)
+		}
+		innerHandle := innerRoutes[0].(map[string]any)["handle"].([]any)
+		if len(innerHandle) != 1 || innerHandle[0].(map[string]any)["handler"] != "reverse_proxy" {
+			t.Fatalf("subroute.routes[0].handle = %v, want exactly [reverse_proxy]", innerHandle)
+		}
+		handleResponse := innerHandle[0].(map[string]any)["handle_response"].([]any)
+		if len(handleResponse) != 2 {
+			t.Fatalf("reverse_proxy.handle_response = %v, want 2 entries (404, 502)", handleResponse)
+		}
+		firstMatch := handleResponse[0].(map[string]any)["match"].(map[string]any)
+		firstStatus := firstMatch["status_code"].([]any)
+		if len(firstStatus) != 1 || firstStatus[0] != float64(404) {
+			t.Errorf("handle_response[0].match.status_code = %v, want [404]", firstStatus)
+		}
+		firstBody := handleResponse[0].(map[string]any)["routes"].([]any)[0].(map[string]any)["handle"].([]any)[0].(map[string]any)
+		if firstBody["body"] != "<h1>not found</h1>" || firstBody["status_code"] != float64(404) {
+			t.Errorf("handle_response[0] static_response = %v, want body/status_code for 404", firstBody)
+		}
+
+		errRoutes := sub["errors"].(map[string]any)["routes"].([]any)
+		if len(errRoutes) != 2 {
+			t.Fatalf("errors.routes = %v, want 2 entries (404, 502)", errRoutes)
+		}
+		errMatch := errRoutes[0].(map[string]any)["match"].([]any)[0].(map[string]any)["expression"].(map[string]any)
+		if errMatch["expr"] != "{http.error.status_code} == 404" {
+			t.Errorf("errors.routes[0] expression = %v, want status_code == 404", errMatch)
+		}
+
+		openHandle := decodeRoutesByHost(t, cfg)["open.example.internal"]
+		if len(openHandle) != 1 || openHandle[0].(map[string]any)["handler"] != "reverse_proxy" {
+			t.Errorf("open route handle = %v, want exactly [reverse_proxy], error pages must never affect an opted-out domain", openHandle)
+		}
+	})
+
+	t.Run("error pages combined with WAF: subroute wraps the whole existing handle chain", func(t *testing.T) {
+		cfg, err := BuildRoutesConfig(RoutesOptions{
+			ServerName: "ingress",
+			ListenAddr: ":443",
+			Routes: []ProxyRoute{
+				{
+					Hosts:       []string{"both.example.internal"},
+					BackendDial: "127.0.0.1:9001",
+					WAF:         &WAFConfig{Enabled: true, Blocking: true},
+					ErrorPages:  []ErrorPage{{StatusCode: 503, Body: "<h1>down</h1>"}},
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("BuildRoutesConfig() error: %v", err)
+		}
+		handle := decodeRoutesByHost(t, cfg)["both.example.internal"]
+		sub := handle[0].(map[string]any)
+		innerHandle := sub["routes"].([]any)[0].(map[string]any)["handle"].([]any)
+		if len(innerHandle) != 2 {
+			t.Fatalf("wrapped handle = %v, want [waf, reverse_proxy]", innerHandle)
+		}
+		if innerHandle[0].(map[string]any)["handler"] != "waf" {
+			t.Errorf("wrapped handle[0].handler = %v, want waf", innerHandle[0])
+		}
+		if innerHandle[1].(map[string]any)["handler"] != "reverse_proxy" {
+			t.Errorf("wrapped handle[1].handler = %v, want reverse_proxy", innerHandle[1])
+		}
+	})
+
 	t.Run("domain with a BYO TLS certificate gets a load_pem entry alongside automation", func(t *testing.T) {
 		cfg, err := BuildRoutesConfig(RoutesOptions{
 			ServerName: "ingress",

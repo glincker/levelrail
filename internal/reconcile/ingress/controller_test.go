@@ -42,6 +42,8 @@ type fakeStore struct {
 	wafErr             error
 	redirects          []store.DomainRedirect
 	redirectsErr       error
+	errorPages         []store.DomainErrorPage
+	errorPagesErr      error
 }
 
 func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredService, error) {
@@ -154,6 +156,13 @@ func (f *fakeStore) ListDomainRedirects(_ context.Context) ([]store.DomainRedire
 		return nil, f.redirectsErr
 	}
 	return f.redirects, nil
+}
+
+func (f *fakeStore) ListAllDomainErrorPages(_ context.Context) ([]store.DomainErrorPage, error) {
+	if f.errorPagesErr != nil {
+		return nil, f.errorPagesErr
+	}
+	return f.errorPages, nil
 }
 
 // fakeRuntime implements docker.Runtime with an in-memory container set,

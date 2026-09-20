@@ -151,6 +151,13 @@ type ServiceStore interface {
 	// DELETE /api/v1/apps/{name}/domains/{domain}/redirect (internal/api)
 	// must take effect on this controller's very next pass.
 	ListDomainRedirects(ctx context.Context) ([]store.DomainRedirect, error)
+	// ListAllDomainErrorPages returns every custom error page configured
+	// across every domain (migrations/0105), read fresh every Reconcile
+	// for the same reason ListDomainWAF is: an operator setting or
+	// clearing a domain's error pages through PUT/DELETE
+	// /api/v1/apps/{name}/domains/{domain}/error-pages (internal/api)
+	// must take effect on this controller's very next pass.
+	ListAllDomainErrorPages(ctx context.Context) ([]store.DomainErrorPage, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -537,6 +544,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain redirects: %w", err)
 	}
+	errorPagesByDomain, err := c.domainErrorPagesByDomain(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain error pages: %w", err)
+	}
 
 	var routes []ingress.ProxyRoute
 	var maintenanceRoutes []ingress.MaintenanceRoute
@@ -625,7 +636,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		for _, host := range activeHosts {
 			claimedHosts[host] = svc.Name
 		}
-		routes = append(routes, c.routesForService(ctx, activeHosts, dial, authByDomain, wafByDomain)...)
+		routes = append(routes, c.routesForService(ctx, activeHosts, dial, authByDomain, wafByDomain, errorPagesByDomain)...)
 	}
 
 	var staticRoutes []ingress.StaticRoute
@@ -974,7 +985,7 @@ func excludeRedirectedHosts(hosts []string, redirectByDomain map[string]store.Do
 // of the service's own domains (Reconcile excludes any domain in
 // maintenance mode before calling this), not necessarily svc.Domains
 // verbatim.
-func (c *Controller) routesForService(ctx context.Context, hosts []string, dial string, authByDomain map[string]store.DomainBasicAuth, wafByDomain map[string]store.DomainWAF) []ingress.ProxyRoute {
+func (c *Controller) routesForService(ctx context.Context, hosts []string, dial string, authByDomain map[string]store.DomainBasicAuth, wafByDomain map[string]store.DomainWAF, errorPagesByDomain map[string][]store.DomainErrorPage) []ingress.ProxyRoute {
 	var open []string
 	var routes []ingress.ProxyRoute
 	for _, host := range hosts {
@@ -996,11 +1007,12 @@ func (c *Controller) routesForService(ctx context.Context, hosts []string, dial 
 		}
 
 		waf := domainWAFConfig(wafByDomain[host])
-		if account == nil && waf == nil {
+		errorPages := domainErrorPagesConfig(errorPagesByDomain[host])
+		if account == nil && waf == nil && len(errorPages) == 0 {
 			open = append(open, host)
 			continue
 		}
-		routes = append(routes, ingress.ProxyRoute{Hosts: []string{host}, BackendDial: dial, BasicAuth: account, WAF: waf})
+		routes = append(routes, ingress.ProxyRoute{Hosts: []string{host}, BackendDial: dial, BasicAuth: account, WAF: waf, ErrorPages: errorPages})
 	}
 	if len(open) > 0 {
 		routes = append(routes, ingress.ProxyRoute{Hosts: open, BackendDial: dial})
@@ -1036,6 +1048,37 @@ func (c *Controller) domainWAFByDomain(ctx context.Context) (map[string]store.Do
 	byDomain := make(map[string]store.DomainWAF, len(rows))
 	for _, row := range rows {
 		byDomain[row.Domain] = row
+	}
+	return byDomain, nil
+}
+
+// domainErrorPagesConfig converts rows into []ingress.ErrorPage, or nil
+// when rows is empty: the zero value of errorPagesByDomain[host] (what
+// any host with no configured error pages gets) always takes this nil
+// branch, reproducing this controller's behavior before this feature
+// existed exactly.
+func domainErrorPagesConfig(rows []store.DomainErrorPage) []ingress.ErrorPage {
+	if len(rows) == 0 {
+		return nil
+	}
+	pages := make([]ingress.ErrorPage, len(rows))
+	for i, row := range rows {
+		pages[i] = ingress.ErrorPage{StatusCode: row.StatusCode, Body: row.Body}
+	}
+	return pages
+}
+
+// domainErrorPagesByDomain returns every store.DomainErrorPage row
+// grouped by domain, mirroring domainWAFByDomain's shape for a
+// per-domain collection instead of a single row.
+func (c *Controller) domainErrorPagesByDomain(ctx context.Context) (map[string][]store.DomainErrorPage, error) {
+	rows, err := c.store.ListAllDomainErrorPages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	byDomain := make(map[string][]store.DomainErrorPage, len(rows))
+	for _, row := range rows {
+		byDomain[row.Domain] = append(byDomain[row.Domain], row)
 	}
 	return byDomain, nil
 }

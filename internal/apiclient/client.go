@@ -834,6 +834,53 @@ func (c *Client) ClearDomainRedirect(ctx context.Context, name, domain string) (
 	return out, err
 }
 
+// domainErrorPagesPath builds
+// /api/v1/apps/{name}/domains/{domain}/error-pages, shared by every
+// domain error-pages method below, mirroring domainWAFPath's identical
+// shape for a different per-domain toggle.
+func domainErrorPagesPath(name, domain string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/domains/" + PathEscape(domain) + "/error-pages"
+}
+
+// GetDomainErrorPages calls GET
+// /api/v1/apps/{name}/domains/{domain}/error-pages: every custom error
+// page currently configured for domain.
+func (c *Client) GetDomainErrorPages(ctx context.Context, name, domain string) (DomainErrorPagesResource, error) {
+	var out DomainErrorPagesResource
+	err := c.do(ctx, http.MethodGet, domainErrorPagesPath(name, domain), nil, &out)
+	return out, err
+}
+
+// SetDomainErrorPage calls PUT
+// /api/v1/apps/{name}/domains/{domain}/error-pages: upserts one
+// status-code-to-body mapping for domain, enforced by Caddy on the next
+// ingress reconcile pass.
+func (c *Client) SetDomainErrorPage(ctx context.Context, name, domain string, req SetDomainErrorPageRequest) (DomainErrorPagesResource, error) {
+	var out DomainErrorPagesResource
+	err := c.do(ctx, http.MethodPut, domainErrorPagesPath(name, domain), req, &out)
+	return out, err
+}
+
+// ClearDomainErrorPage calls DELETE
+// /api/v1/apps/{name}/domains/{domain}/error-pages?status_code=<code>:
+// removes domain's mapping for one status code.
+func (c *Client) ClearDomainErrorPage(ctx context.Context, name, domain string, statusCode int) (DomainErrorPagesResource, error) {
+	q := url.Values{}
+	q.Set("status_code", strconv.Itoa(statusCode))
+	var out DomainErrorPagesResource
+	err := c.do(ctx, http.MethodDelete, domainErrorPagesPath(name, domain)+"?"+q.Encode(), nil, &out)
+	return out, err
+}
+
+// ClearDomainErrorPages calls DELETE
+// /api/v1/apps/{name}/domains/{domain}/error-pages: removes every custom
+// error page configured for domain.
+func (c *Client) ClearDomainErrorPages(ctx context.Context, name, domain string) (DomainErrorPagesResource, error) {
+	var out DomainErrorPagesResource
+	err := c.do(ctx, http.MethodDelete, domainErrorPagesPath(name, domain), nil, &out)
+	return out, err
+}
+
 // CheckDomain calls GET /api/v1/apps/{name}/domains/{domain}/check: a
 // real DNS lookup reporting whether domain currently resolves to this
 // control plane's own advertised address.

@@ -115,11 +115,20 @@ type Route struct {
 	Handle []any     `json:"handle"`
 }
 
-// Matcher is a single Caddy request matcher set. Only the host matcher is
-// needed for this spike; more (path, header, etc.) would be added the same
-// way once Phase 1 needs them.
+// Matcher is a single Caddy request matcher set. Host is used by every
+// route this package builds; Expression (a CEL matcher,
+// http.matchers.expression) is used only by error-page routes to match
+// on the {http.error.status_code} placeholder, which no other matcher
+// kind here can express.
 type Matcher struct {
-	Host []string `json:"host,omitempty"`
+	Host       []string           `json:"host,omitempty"`
+	Expression *ExpressionMatcher `json:"expression,omitempty"`
+}
+
+// ExpressionMatcher mirrors Caddy's http.matchers.expression module: a
+// CEL expression evaluated with Caddy's placeholders expanded first.
+type ExpressionMatcher struct {
+	Expr string `json:"expr"`
 }
 
 // ReverseProxyHandler is Caddy's "reverse_proxy" handler
@@ -129,6 +138,46 @@ type Matcher struct {
 type ReverseProxyHandler struct {
 	Handler   string     `json:"handler"`
 	Upstreams []Upstream `json:"upstreams"`
+	// HandleResponse mirrors reverse_proxy's own handle_response field:
+	// routes evaluated against the backend's actual response, ahead of
+	// it being written to the client. Used by error-page routes to
+	// replace a backend-returned status like 404 or 500 with a custom
+	// body while keeping the same status code.
+	HandleResponse []ResponseHandler `json:"handle_response,omitempty"`
+}
+
+// ResponseMatcher mirrors Caddy's reverse_proxy response matcher: a
+// backend response matches when its status code is in StatusCode.
+type ResponseMatcher struct {
+	StatusCode []int `json:"status_code,omitempty"`
+}
+
+// ResponseHandler mirrors Caddy's http.ResponseHandler: when Match
+// matches the backend's response, Routes runs instead of passing the
+// original response through.
+type ResponseHandler struct {
+	Match  *ResponseMatcher `json:"match,omitempty"`
+	Routes []Route          `json:"routes,omitempty"`
+}
+
+// SubrouteHandler is Caddy's "subroute" handler (http.handlers.subroute):
+// runs Routes, then Errors.Routes if Routes returns an error. Error-page
+// routes use this to catch a real proxy failure (e.g. the container is
+// unreachable, which Caddy itself turns into a 502/504) in addition to
+// ReverseProxyHandler.HandleResponse's own coverage of a status the
+// backend actually returned.
+type SubrouteHandler struct {
+	Handler string        `json:"handler"`
+	Routes  []Route       `json:"routes,omitempty"`
+	Errors  *ErrorsConfig `json:"errors,omitempty"`
+}
+
+// ErrorsConfig mirrors Caddy's per-subroute "errors" field (the JSON
+// shape behind the Caddyfile's handle_errors directive): Routes runs
+// after the primary routes return an error, each matched by its own
+// Matcher against {http.error.status_code}.
+type ErrorsConfig struct {
+	Routes []Route `json:"routes,omitempty"`
 }
 
 // Upstream is a single reverse-proxy backend target.
@@ -261,6 +310,18 @@ func NewRedirectResponseHandler(targetURL string, statusCode int) StaticResponse
 		Handler:    "static_response",
 		StatusCode: statusCode,
 		Headers:    map[string][]string{"Location": {targetURL}},
+	}
+}
+
+// NewErrorPageResponse builds the fixed response for one custom error
+// page: statusCode preserved verbatim (so a custom 404 page still reads
+// as a 404, not a 200), body replaced with the operator's own HTML.
+func NewErrorPageResponse(statusCode int, body string) StaticResponseHandler {
+	return StaticResponseHandler{
+		Handler:    "static_response",
+		StatusCode: statusCode,
+		Body:       body,
+		Headers:    map[string][]string{"Content-Type": {"text/html; charset=utf-8"}},
 	}
 }
 

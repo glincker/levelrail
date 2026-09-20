@@ -545,6 +545,29 @@ type SetDomainRedirectRequest struct {
 	StatusCode int    `json:"status_code,omitempty"`
 }
 
+// DomainErrorPageEntry mirrors internal/api's domainErrorPageEntry: one
+// status-code-to-body mapping.
+type DomainErrorPageEntry struct {
+	StatusCode int    `json:"status_code"`
+	Body       string `json:"body"`
+}
+
+// DomainErrorPagesResource mirrors internal/api's
+// domainErrorPagesResource (internal/api/domain_error_pages.go):
+// GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/error-pages's wire
+// shape.
+type DomainErrorPagesResource struct {
+	Domain string                 `json:"domain"`
+	Pages  []DomainErrorPageEntry `json:"pages"`
+}
+
+// SetDomainErrorPageRequest mirrors internal/api's
+// setDomainErrorPageRequest: one status-code-to-body upsert at a time.
+type SetDomainErrorPageRequest struct {
+	StatusCode int    `json:"status_code"`
+	Body       string `json:"body"`
+}
+
 // DomainCheckResource mirrors internal/api's domainCheckResponse
 // (internal/api/domain_check.go): GET
 // /api/v1/apps/{name}/domains/{domain}/check's wire shape.

@@ -255,6 +255,43 @@ levelrail-cli domains redirect get|set|clear <app> <domain>
 levelrail-cli domains redirect set my-app www.example.com --target https://example.com
 ```
 
+## Custom error pages
+
+Replace Caddy's bare default error text, or whatever the backend itself
+returned, with your own HTML for a domain, for a fixed set of status
+codes: `404`, `500`, `502`, and `503`. No new container, no new infra
+dependency: this is `reverse_proxy`'s own `handle_response` mechanism
+(catches a status the backend actually returns) plus a wrapping
+`subroute`'s error handling (catches a real proxy failure, e.g. the
+container being unreachable, which Caddy turns into its own 502/504
+before a response from the backend ever exists to match against).
+Either way the original status code is preserved; only the body changes.
+
+- **A domain can have more than one mapping at once**: e.g. a custom
+  `404` and a separate custom `503` "this app is temporarily down" page,
+  configured independently.
+- **Only these four codes are supported.** This is deliberately not a
+  generic arbitrary-status-code system: 404, 500, 502, and 503 cover the
+  cases an operator actually wants a custom page for (a real not-found,
+  an application error, and the container being unreachable).
+- **Where to configure it:**
+  - Dashboard: each domain's row in an app's **Domains** tab has an "Add
+    error page" control, letting you pick a status code and paste in
+    HTML.
+  - API: `GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/error-pages`.
+    PUT upserts one status-code-to-body mapping per call; DELETE takes an
+    optional `?status_code=` to remove a single mapping, or removes every
+    mapping for the domain when omitted.
+  - CLI: `levelrail-cli domains error-pages get|set|clear <app> <domain>`,
+    e.g. `levelrail-cli domains error-pages set my-app my-app.example.com --code 404 --body-file 404.html`.
+
+- **What this doesn't do.** There's no live preview in the dashboard, no
+  templating or variable interpolation inside the HTML you provide (it's
+  served byte-for-byte), and no per-app default separate from the
+  per-domain mapping. All of that is a real gap, not a hidden default;
+  the small, fixed-status-code surface here is deliberately the whole v1
+  scope.
+
 ## Firewall: ports 80 and 443
 
 For public traffic and ACME's HTTP-01 challenge to work, your server must reach the internet on **ports 80 and 443**. Port 80 is also how Let's Encrypt validates domain ownership during ACME issuance. If it's blocked, issuance fails silently even if everything else is configured correctly.

@@ -55,6 +55,9 @@ type (
 	setDomainWAFRequest              = apiclient.SetDomainWAFRequest
 	domainRedirectResource           = apiclient.DomainRedirectResource
 	setDomainRedirectRequest         = apiclient.SetDomainRedirectRequest
+	domainErrorPagesResource         = apiclient.DomainErrorPagesResource
+	domainErrorPageEntry             = apiclient.DomainErrorPageEntry
+	setDomainErrorPageRequest        = apiclient.SetDomainErrorPageRequest
 	domainCheckResource              = apiclient.DomainCheckResource
 	cloneAppRequest                  = apiclient.CloneAppRequest
 	imageResource                    = apiclient.ImageResource

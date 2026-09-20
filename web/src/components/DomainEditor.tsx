@@ -10,6 +10,7 @@ import { useCertificates } from '../queries/certificates'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { DomainDnsCheck } from './DomainDnsCheck'
 import { DomainBasicAuthControl } from './DomainBasicAuthControl'
+import { DomainErrorPagesControl } from './DomainErrorPagesControl'
 import { DomainMaintenanceControl } from './DomainMaintenanceControl'
 import { DomainRedirectControl } from './DomainRedirectControl'
 import { DomainTLSCertControl } from './DomainTLSCertControl'
@@ -201,6 +202,10 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                               domain={domain}
                             />
                             <DomainWafControl
+                              appName={app.name}
+                              domain={domain}
+                            />
+                            <DomainErrorPagesControl
                               appName={app.name}
                               domain={domain}
                             />

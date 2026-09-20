@@ -290,7 +290,7 @@ Endpoints for:
 - TLS certificate lifecycle and management
 - ACME configuration and certificate validation
 - Domain routing and DNS configuration
-- Domain-level controls (basic auth, maintenance mode, redirects, WAF)
+- Domain-level controls (basic auth, maintenance mode, redirects, custom error pages, WAF)
 - Email configuration for notifications
 - Cloudflare, Route 53, and Vault integrations
 - External secret management
@@ -317,6 +317,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/domains/{domain}/waf | AbilityRead | handleGetDomainWAF |
 | PUT | /api/v1/apps/{name}/domains/{domain}/waf | AbilityDeploy | handleSetDomainWAF |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/waf | AbilityDeploy | handleClearDomainWAF |
+| GET | /api/v1/apps/{name}/domains/{domain}/error-pages | AbilityRead | handleGetDomainErrorPages |
+| PUT | /api/v1/apps/{name}/domains/{domain}/error-pages | AbilityDeploy | handleSetDomainErrorPage |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/error-pages | AbilityDeploy | handleClearDomainErrorPages |
 | GET | /api/v1/settings/email | AbilityRead | handleGetEmailSettings |
 | PUT | /api/v1/settings/email | AbilityRoot | handleUpdateEmailSettings |
 | GET | /api/v1/settings/cloudflare-tunnel | AbilityRead | handleGetCloudflareTunnelSettings |

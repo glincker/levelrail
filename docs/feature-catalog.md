@@ -141,7 +141,7 @@ Support for migrating from `coolify`, `dokploy`, or `caprover`.
 
 **domains**
 
-`list`, `cloudflare-dns`, `route53-dns`, `basic-auth`, `maintenance`, `tls-cert`, `certificates`.
+`list`, `cloudflare-dns`, `route53-dns`, `basic-auth`, `maintenance`, `tls-cert`, `certificates`, `error-pages`.
 
 **settings**
 
