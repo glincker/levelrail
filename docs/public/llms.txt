@@ -18,6 +18,7 @@ Apache 2.0 licensed. Source at https://github.com/glincker/levelrail.
 ## How-to guides
 
 - [Installing](https://levelrail.glinr.com/installing): install the control plane and node agent on a Linux server.
+- [Troubleshooting](https://levelrail.glinr.com/troubleshooting): fixes for the most common deploy, login, and node problems.
 - [Docker](https://levelrail.glinr.com/docker): how Levelrail talks to the Docker Engine API directly.
 - [Domains and ingress](https://levelrail.glinr.com/domains-and-ingress): custom domains, TLS, maintenance mode, redirects, WAF, and the embedded Caddy ingress.
 - [ACME verification runbook](https://levelrail.glinr.com/acme-verification-runbook): diagnose and fix failed TLS certificate issuance.
@@ -46,6 +47,7 @@ Apache 2.0 licensed. Source at https://github.com/glincker/levelrail.
 ## Explanation
 
 - [Architecture](https://levelrail.glinr.com/architecture): the reconciler pattern, agent transport, and why each major dependency was chosen.
+- [Security overview](https://levelrail.glinr.com/security): secrets, sessions, TLS, and access control, with links to the detailed page for each.
 - [Comparison](https://levelrail.glinr.com/comparison): how Levelrail differs from Coolify, Dokploy, CapRover, and Dokku.
 
 ## Optional

@@ -1,3 +1,7 @@
+---
+description: Connecting GitHub, GitLab, and Bitbucket for automatic git-triggered deploys, preview environments per pull request, and webhook history.
+---
+
 # Git integrations: GitHub, GitLab, Bitbucket, and preview environments
 
 Connect a git provider once at the control-plane level, then point any number of apps at repos it can see.
@@ -57,41 +61,55 @@ Every provider's connect flow ends with a real browser redirect to github.com, y
 - GitHub's manifest flow requires an actual browser form POST
 - GitLab's and Bitbucket's OAuth2 flows require operator approval in their own browser session
 
-### GitHub App
+::: code-group
+
+```
+[GitHub App]
 
 Navigate to `/settings/github-app`.
 
-**Automated (manifest flow):**
-1. Start: `GET /api/v1/github-app/register/start`
-2. Preview: `GET /api/v1/github-app/register/preview` (see App name, permissions, webhook URL before your browser leaves)
+Automated (manifest flow):
+1. Start: GET /api/v1/github-app/register/start
+2. Preview: GET /api/v1/github-app/register/preview
+   (see App name, permissions, webhook URL before your browser leaves)
 3. Your browser redirects to github.com to create the App
 4. Credentials returned automatically
 
-**Manual (hand-created App on github.com):**
+Manual (hand-created App on github.com):
+1. Create the App at github.com/settings/apps yourself
+2. Connect via PUT /api/v1/github-app/manual
+   Paste: app_id, client_id, client_secret, webhook_secret, private key PEM
 
-Create the App at `github.com/settings/apps` yourself, then connect via `PUT /api/v1/github-app/manual`:
-- Paste: `app_id`, `client_id`, `client_secret`, `webhook_secret`, private key PEM
+Manual exists for control planes with no publicly reachable primary domain
+yet (manifest flow needs a real callback URL).
+```
 
-Manual exists for control planes with no publicly reachable primary domain yet (manifest flow needs a real callback URL).
-
-### GitLab App
+```
+[GitLab App]
 
 Navigate to `/settings/gitlab-app`.
 
-1. Paste your OAuth Application's credentials via `PUT /api/v1/gitlab-app`:
-   - `instance_url`
-   - `client_id`
-   - `client_secret`
-2. Authorize via `GET /api/v1/gitlab-app/connect` (redirects to your instance's `/oauth/authorize`)
+1. Paste your OAuth Application's credentials via PUT /api/v1/gitlab-app:
+   - instance_url
+   - client_id
+   - client_secret
+2. Authorize via GET /api/v1/gitlab-app/connect
+   (redirects to your instance's /oauth/authorize)
+```
 
-### Bitbucket
+```
+[Bitbucket]
 
 Navigate to `/settings/bitbucket-app`.
 
-1. Paste your OAuth consumer's credentials via `PUT /api/v1/bitbucket-app`:
-   - `key`
-   - `secret`
-2. Authorize the same way (`GET /api/v1/bitbucket-app/connect`)
+1. Paste your OAuth consumer's credentials via PUT /api/v1/bitbucket-app:
+   - key
+   - secret
+2. Authorize via GET /api/v1/bitbucket-app/connect
+```
+
+:::
+
 
 ### Prerequisites (all three)
 
@@ -111,26 +129,27 @@ Once a provider is connected (dashboard only), the CLI drives direct HTTP for ev
 
 ### Quick reference
 
-**GitHub:**
-```bash
+::: code-group
+
+```bash [GitHub]
 levelrail-cli github-app repos
 levelrail-cli github-app branches <owner> <repo>
 levelrail-cli github-app use-as-source <owner> <repo> --app-name my-app --branch main
 ```
 
-**GitLab:**
-```bash
+```bash [GitLab]
 levelrail-cli gitlab-app projects
 levelrail-cli gitlab-app branches <project-id>
 levelrail-cli gitlab-app use-as-source <project-id> --app-name my-app
 ```
 
-**Bitbucket:**
-```bash
+```bash [Bitbucket]
 levelrail-cli bitbucket-app repos
 levelrail-cli bitbucket-app branches <workspace> <repo-slug>
 levelrail-cli bitbucket-app use-as-source <workspace> <repo-slug> --app-name my-app
 ```
+
+:::
 
 ### Example: connecting a GitHub repo end to end
 
@@ -170,6 +189,30 @@ GitLab uses numeric project IDs instead of owner/repo pairs. So `gitlab-app bran
 There is no `git-providers` CLI command. `GET /api/v1/git-providers` exists to feed the dashboard's aggregated repo-picker UI in one call. The CLI covers all operator use cases via the three provider-specific commands above.
 
 ## The webhook receiver and delivery history
+
+### Webhook processing flow
+
+All webhooks from GitHub, GitLab, and Bitbucket follow the same processing path:
+
+```mermaid
+flowchart LR
+    A["Git Provider Push/PR Event"] -->|HTTP POST| B["Webhook Endpoint"]
+    B -->|Extract signature header| C{"Signature Valid?"}
+    C -->|No| D["Record: failed"]
+    C -->|Yes| E{"Branch Matches<br/>Git Source?"}
+    E -->|No| F["Record: unmatched"]
+    E -->|Yes| G{"Push or PR?"}
+    G -->|Push| H["Trigger Build<br/>& Deploy"]
+    G -->|PR Opened/Sync| I["Deploy Preview<br/>Environment"]
+    G -->|PR Closed| J["Teardown<br/>Preview"]
+    H -->|Recorded| K["Delivery History"]
+    I -->|Recorded| K
+    J -->|Recorded| K
+    D -->|Recorded| K
+    F -->|Recorded| K
+```
+
+Every webhook, whether it succeeds, fails, or mismatches, creates a delivery history entry. This visibility is deliberate: you can see and replay failed deliveries without guessing what happened.
 
 ### Single webhook endpoint for all providers
 
@@ -430,6 +473,12 @@ levelrail-cli apps preview-env clear <app-name> <key>
 ::: warning
 Connecting a provider is dashboard-only. `github-app`/`gitlab-app`/`bitbucket-app` with no subcommand only prints usage. This is intentional: it requires a real browser redirect through the provider's manifest or OAuth flow, not something a scriptable client can drive.
 :::
+
+## See also
+
+- [Deploying and managing apps](deploying-apps.md) - Core app lifecycle: deploy, rollback, resources, health checks, and exec
+- [Domains and ingress](domains-and-ingress.md) - Configuring domains for preview environments and production apps
+- [app.yaml reference](app-spec-reference.md) - Deployment spec schema used by multi-service deploys and app.yaml files
 
 ## Not built yet (deliberate follow-ups)
 

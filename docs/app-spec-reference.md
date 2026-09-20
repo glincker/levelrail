@@ -1,8 +1,14 @@
+---
+description: Complete reference for app.yaml - the declarative app spec for Levelrail
+---
+
 # app.yaml reference
 
 The declarative spec Levelrail reads from your repo.
 
+::: details Implementation details
 **Package**: `internal/spec` (see `internal/spec/spec.go`, `internal/spec/validate.go`, `internal/spec/schema/app.schema.json`).
+:::
 
 **Filenames**: Levelrail looks for this file under these candidate names, in order:
 
@@ -182,8 +188,9 @@ The object form must set at least one of `from`, `secret`, or `vault`.
 `vault` is mutually exclusive with both `from` and `secret`: a given env
 var resolves its value from exactly one source.
 
-### `VaultRef` (the value of `vault` on an `EnvVar`)
+### `VaultRef` (external secrets integration)
 
+::: details VaultRef field reference
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `path` | string | yes | none | The secret's path in Vault's KV v2 engine, for example `myapp/config`. Resolved against the mount path configured under Settings > Vault (default `secret`). |
@@ -197,6 +204,7 @@ env:
 The value is read fresh from Vault immediately before the container is created and is never persisted by Levelrail.
 
 If Vault is unreachable, not configured, or the secret/field doesn't exist, the deploy fails loudly rather than starting the container with the variable empty.
+:::
 
 ### `Database` (an entry under `databases`)
 
@@ -242,6 +250,7 @@ parsed and validated by `internal/spec` today.
 
 ## Validation
 
+::: details Validation rules and implementation
 `spec.Parse` (`internal/spec/spec.go`) runs two layers. Both must pass before a caller sees a `Spec`.
 
 ### Layer 1: Structural shape
@@ -312,3 +321,10 @@ Checked by `ValidateLabels` (`internal/spec/labels.go`):
 ### Additional guard: strict YAML parsing
 
 `spec.Parse` also runs `yamlUnmarshalStrict` (YAML decode with `KnownFields(true)`) as an independent guard against struct tags and JSON Schema drifting apart. An unknown key becomes a decode error during development rather than a silently dropped field in production.
+:::
+
+## See also
+
+- [getting-started.md](getting-started.md) - deploying your first app with app.yaml
+- [deploying-apps.md](deploying-apps.md) - secrets management and environment setup
+- [managing-databases.md](managing-databases.md) - database configuration reference

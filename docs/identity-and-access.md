@@ -1,3 +1,7 @@
+---
+description: Authentication, authorization, roles, IAM policies, and audit logging for users and API tokens.
+---
+
 # Identity and access: users, roles, and IAM policies
 
 Who can sign in, what they can do once they're in, and a record of what
@@ -96,6 +100,19 @@ A policy document uses AWS IAM's shape, hand-typed or generated:
 
 Checked only on resource-scoped routes (apps and databases):
 
+```mermaid
+flowchart TD
+  A[Request arrives] --> B{Explicit Deny<br/>matching action + resource?}
+  B -->|Yes| C[403 Forbidden]
+  B -->|No| D{Principal's flat<br/>ability allows?}
+  D -->|Yes| E[200 Allowed]
+  D -->|No| F{Explicit Allow<br/>in policy?}
+  F -->|Yes| G[200 Allowed<br/>scoped to resource]
+  F -->|No| H[403 Forbidden]
+```
+
+Details:
+
 1. An explicit **Deny** matching the ability and resource, in any attached policy, always wins. Full stop, even for a `root` principal.
 2. Otherwise, the principal's own flat abilities decide, unchanged from having no policies attached.
 3. Otherwise, an explicit **Allow** in an attached policy can still grant access the principal's flat abilities don't, scoped to that one resource.
@@ -130,6 +147,23 @@ Requires a master key configured on the control plane (`internal/secrets`). With
 
 **Setup flow**
 
+```mermaid
+flowchart TD
+  A[POST /2fa/setup] -->|Mint secret| B[TOTP secret unconfirmed]
+  B -->|Can call setup again<br/>overwrites pending| B
+  B -->|User scans provisioning URI<br/>into authenticator app| C[GET /2fa or app shows secret]
+  C -->|User enters live code| D[POST /2fa/confirm]
+  D -->|Validate code| E{Code valid?}
+  E -->|Yes| F[TOTPEnabled = true<br/>Return 10 recovery codes<br/>shown once only]
+  E -->|No| G[Confirm fails]
+  F --> H[2FA active]
+  H -->|On next login| I[POST /auth/login returns<br/>mfa_required true + mfa_token]
+  I -->|Exchange token + live code<br/>or recovery code| J[POST /2fa/verify]
+  J -->|Valid| K[Session cookie granted]
+```
+
+Details:
+
 1. `POST /api/v1/auth/2fa/setup`: Mint a fresh TOTP secret and store it unconfirmed. Calling it again before confirming overwrites the pending secret.
 
 2. `POST /api/v1/auth/2fa/confirm`: Validate one live code against that secret, flip `TOTPEnabled`, and return 10 recovery codes in plaintext. This is the one and only time recovery codes are shown.
@@ -153,6 +187,25 @@ Three providers are supported: `google`, `github`, `oidc` (generic OpenID Connec
 Settings are per-provider rows (`GET`/`PUT /api/v1/settings/oauth[/{provider}]`), gated at `AbilityRoot` to change. Enabling a provider requires a client ID and a client secret (OIDC also requires an issuer URL). The secret is write-only over the API; `GET` only reveals `has_client_secret`.
 
 **Sign-in behavior** (`completeOAuthSignin`, `internal/api/oauth.go`)
+
+```mermaid
+flowchart TD
+  A[User initiates OAuth<br/>with provider] --> B[GET /oauth/provider/start]
+  B -->|Redirect to provider| C[User authenticates]
+  C -->|Callback with code| D[GET /oauth/provider/callback]
+  D -->|Exchange code for identity| E{Identity lookup}
+  E -->|Already linked| F[Sign in as existing user]
+  E -->|Brand-new email| G{Domain allowed?}
+  G -->|Yes| H[Auto-provision new user<br/>AbilityRead only]
+  G -->|No| I[403 Forbidden]
+  E -->|Email belongs to<br/>different user| J[403 Forbidden]
+  F --> K[Session cookie granted]
+  H --> K
+  L[During session:<br/>GET /oauth/provider/link/start] -->|Link new provider| M[Add provider to<br/>existing account]
+  M --> K
+```
+
+Details:
 
 - **Already-linked identity**: Signs in as its existing owner.
 - **Brand-new email**: Auto-provisions a new user with `AbilityRead` only (least-privilege default, never `root`, since a fresh OAuth signup is never the platform's first user). An existing root user can grant more later via `PUT /api/v1/users/{id}/abilities`.
@@ -224,14 +277,18 @@ Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automati
 
 1. **Bootstrap the first admin** (once, before anyone can sign in):
 
-   ```bash
+   ::: code-group
+   ```bash [Environment]
    export APP_ADMIN_USERNAME=admin@example.com
    export APP_ADMIN_PASSWORD='a-real-password'
-   # restart the control plane, then:
+   # restart the control plane
+   ```
+   ```bash [Verify with curl]
    curl -s -c cookies.txt -X POST https://your-control-plane/api/v1/auth/login \
      -H 'Content-Type: application/json' \
      -d '{"username":"admin@example.com","password":"a-real-password"}'
    ```
+   :::
 
 2. **Create a teammate with a curated role**, no hand-picked abilities
    needed:
@@ -247,16 +304,20 @@ Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automati
 3. **Scope a CI token down to one app** with an IAM policy, tighter than
    any flat role could express:
 
-   ```bash
+   ::: code-group
+   ```bash [Create token]
    levelrail-cli tokens create --name "ci-checkout" --abilities deploy
    # → token tok_xyz, plaintext shown once
-
+   ```
+   ```bash [Create policy]
    levelrail-cli iam policies create --name "checkout-only" \
      --document '{"Statement":[{"Effect":"Allow","Action":["deploy"],"Resource":["app:checkout"]}]}'
    # → policy pol_abc
-
+   ```
+   ```bash [Attach policy to token]
    levelrail-cli iam policies attach pol_abc --principal-type token --principal-id tok_xyz
    ```
+   :::
 
    That token can now deploy `checkout` even without a global `deploy`
    ability, or be explicitly denied a resource a broader role would
@@ -264,12 +325,16 @@ Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automati
 
 4. **Turn on two-factor auth** for the signed-in account:
 
-   ```bash
+   ::: code-group
+   ```bash [Setup]
    levelrail-cli auth 2fa setup
    # → secret + otpauth:// provisioning URI, scan it into an authenticator app
+   ```
+   ```bash [Confirm with TOTP code]
    levelrail-cli auth 2fa enable --code 123456
    # → 10 recovery codes, shown once, store them somewhere safe
    ```
+   :::
 
 5. **Invite a teammate by email** instead of creating their password
    yourself:
@@ -438,7 +503,7 @@ levelrail-cli audit-log [--limit N] [--before TIME] [--path PATH] [--method METH
 levelrail-cli audit-purge
 ```
 
-## Not built yet (deliberate follow-ups)
+::: details Not built yet (deliberate follow-ups)
 
 - **`auth whoami` cannot work against a bearer token**
   `GET /api/v1/auth/session` is session-cookie-only by design. The CLI only persists a bearer token, so `levelrail-cli auth whoami` returns `401` every time. No bearer-token-compatible identity endpoint exists yet.
@@ -454,3 +519,11 @@ levelrail-cli audit-purge
 
 - **No policy dry-run or simulation**
   A newly attached Deny statement takes effect on the very next request. The only way to check its effect is to make that request and see what happens.
+
+:::
+
+## See also
+
+- [Managing databases](managing-databases.md): Backup target credentials use envelope encryption, gated at ability tier `write:sensitive`.
+- [Deploying apps](deploying-apps.md): App deployment uses the `deploy` ability tier.
+- [CLI reference](cli-reference.md): API tokens and device-code authentication workflows.

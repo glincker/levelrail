@@ -1,3 +1,7 @@
+---
+description: Design for unified post-auth git provider abstraction supporting GitHub, GitLab, Bitbucket, and GitHub Enterprise Server
+---
+
 # Git provider integrations: shared abstraction, GHE, Bitbucket, connect-flow UX
 
 **Status:** Proposed. Feeds implementation for Bitbucket support, GitHub Enterprise Server, and connect-flow preview.
@@ -32,7 +36,11 @@ These are structural differences, not cosmetic. Hiding them in an interface woul
 
 ### What is genuinely uniform, and is worth the interface
 
-Everything after a token exists: list repos, list branches, create a push webhook.
+Everything after a token exists: list repos, list branches, create a push webhook. Expand the accordion below to see the interface definition.
+
+`ID string` is the cost: GitHub takes `owner, repo`, GitLab takes `int64`, each adapter parses its own format. That is acceptable because alternatives (`any` ID, three-armed union) violate the no-`any`-in-exported-signatures rule.
+
+::: details gitprovider.Source interface definition
 
 ```go
 // Package gitprovider holds the provider-agnostic surface that only
@@ -91,7 +99,7 @@ type Source interface {
 }
 ```
 
-`ID string` is the cost: GitHub takes `owner, repo`, GitLab takes `int64`, each adapter parses its own format. That is acceptable because alternatives (`any` ID, three-armed union) violate the no-`any`-in-exported-signatures rule.
+:::
 
 **The interface only pays for itself if the HTTP surface unifies.** Collapse repo-facing routes:
 
@@ -336,3 +344,9 @@ This is a design note, not an ADR. Two decisions here are ADR-shaped and should 
 
 1. `web/src/components/GitLabAppConnectionCard.tsx` tells the operator to register redirect URI `${window.location.origin}/api/v1/gitlab-app/callback`, but the backend builds its redirect URI from `IngressSettings.PrimaryDomain`. Viewing the dashboard over an IP, tunnel, or secondary hostname yields a mismatched redirect URI and OAuth fails.
 2. `internal/api/github_app.go`'s `githubAppRegistrationState` and `internal/api/pending_state.go`'s `pendingState` are the same type implemented twice.
+
+## See also
+
+- [Git integrations user guide](../git-integrations.md) - operator documentation for connecting providers
+- [Identity and access guide](../identity-and-access.md) - user management and permissions context
+- [ADR 010: Extend own auth](../adr/010-extend-own-auth-not-theauth-go.md) - why Levelrail uses its own auth system

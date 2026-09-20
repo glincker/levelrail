@@ -1,3 +1,7 @@
+---
+description: Complete inventory of Levelrail's dashboard routes, API endpoints, CLI commands, and known implementation gaps.
+---
+
 # Feature catalog
 
 What's actually built, as of this page's own last update, so new work
@@ -177,3 +181,9 @@ otherwise for that feature.
 
 When closing a gap here, move its row into the relevant section above
 instead of leaving it listed as both done and gapped.
+
+## See also
+
+- [API reference](api-reference.md) - Detailed method/path/ability for all 296 routes
+- [Roadmap](roadmap.md) - Current status and what's in progress
+- [Getting started](getting-started.md) - Your first deploy walkthrough

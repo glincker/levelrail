@@ -1,10 +1,11 @@
 import { defineConfig } from 'vitepress'
+import { withMermaid } from 'vitepress-plugin-mermaid'
 
 const description =
   'A self-hosted deployment platform whose agent talks to Docker’s own Engine API directly, ' +
   'no SSH or CLI shelling, with metrics and log storage built into the core.'
 
-export default defineConfig({
+export default withMermaid({
   title: 'Levelrail',
   description,
 
@@ -76,6 +77,7 @@ export default defineConfig({
       { text: 'Guide', link: '/getting-started' },
       { text: 'Reference', link: '/app-spec-reference' },
       { text: 'Compare', link: '/comparison' },
+      { text: 'Troubleshooting', link: '/troubleshooting' },
       { text: 'Roadmap', link: '/roadmap' },
     ],
 
@@ -88,6 +90,7 @@ export default defineConfig({
         text: 'How-to guides',
         items: [
           { text: 'Installing', link: '/installing' },
+          { text: 'Troubleshooting', link: '/troubleshooting' },
           { text: 'Docker', link: '/docker' },
           { text: 'Domains and ingress', link: '/domains-and-ingress' },
           { text: 'ACME verification runbook', link: '/acme-verification-runbook' },
@@ -126,6 +129,7 @@ export default defineConfig({
         text: 'Explanation',
         items: [
           { text: 'Architecture', link: '/architecture' },
+          { text: 'Security overview', link: '/security' },
           { text: 'Comparison', link: '/comparison' },
         ],
       },
@@ -164,6 +168,18 @@ export default defineConfig({
     footer: {
       message: 'Released under the Apache 2.0 License.',
       copyright: 'Copyright © GLINCKER',
+    },
+  },
+
+  mermaid: {
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#161b24',
+      primaryTextColor: '#e4e4e7',
+      primaryBorderColor: '#f59e0b',
+      lineColor: '#a1a1aa',
+      secondaryColor: '#10141c',
+      tertiaryColor: '#0b0e14',
     },
   },
 })

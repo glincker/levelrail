@@ -1,3 +1,7 @@
+---
+description: Complete index and guide to Levelrail's documentation organized by task and information type.
+---
+
 # Levelrail docs
 
 This directory is the source of truth for Levelrail's user-facing and contributor-facing documentation.

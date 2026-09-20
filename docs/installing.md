@@ -1,3 +1,7 @@
+---
+description: Get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
+---
+
 # Installing Levelrail
 
 Levelrail ships as two static Go binaries (`levelrail`, the control
@@ -23,7 +27,9 @@ This is the same script linked from the root [README](../README.md). It handles 
 
 Requires `curl`, `systemd`, and root access.
 
-`install.sh` reads these environment variables, all optional:
+::: details Optional environment variables
+
+The `install.sh` script reads these environment variables, all optional:
 
 | Variable | Default | What it does |
 | --- | --- | --- |
@@ -32,31 +38,36 @@ Requires `curl`, `systemd`, and root access.
 | `LEVELRAIL_DATA_DIR` | `/var/lib/levelrail-data` | Control plane data directory (SQLite database, generated `brand.yaml`) |
 | `LEVELRAIL_CONFIGURE_UFW` | unset (off) | Set to `1` to have the script configure `ufw`: allow SSH, then 80/443, then enable it if it wasn't already active. Off by default, the script never touches your firewall otherwise. |
 
-Examples:
+:::
 
-```
-# Pin a specific release
+Common scenarios:
+
+::: code-group
+```bash [Pin a specific release]
 curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
   | sudo LEVELRAIL_VERSION=v0.1.0 sh
+```
 
-# Install the binary somewhere other than /usr/local/bin
+```bash [Custom install directory]
 curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
   | sudo LEVELRAIL_INSTALL_DIR=/opt/levelrail/bin sh
+```
 
-# Use a custom data directory
+```bash [Custom data directory]
 curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
   | sudo LEVELRAIL_DATA_DIR=/data/levelrail sh
+```
 
-# Let the script open 80/443 (and SSH, if not already allowed) via ufw
+```bash [Configure UFW automatically]
 curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
   | sudo LEVELRAIL_CONFIGURE_UFW=1 sh
 ```
 
-Multiple overrides combine normally:
-
-```
+```bash [Multiple overrides]
 sudo LEVELRAIL_VERSION=v0.1.0 LEVELRAIL_DATA_DIR=/data/levelrail sh
 ```
+:::
+
 
 ## Option 2: Docker
 
@@ -169,3 +180,9 @@ This does not touch Docker itself or any containers, images, or volumes Levelrai
 docker rm -f levelrail levelrail-agent
 docker volume rm levelrail-data
 ```
+
+## See also
+
+- [Docker installation](docker.md) - Running Levelrail as containers
+- [Getting started](getting-started.md) - Deploy your first app after installation
+- [Upgrading](installing.md#upgrading) - How to keep Levelrail up to date

@@ -1,3 +1,7 @@
+---
+description: Deploy from a GitHub Actions workflow using the bundled composite Action without requiring a Go toolchain.
+---
+
 # Deploying from GitHub Actions
 
 `.github/actions/deploy` is a composite GitHub Action that deploys an already-built image to a Levelrail app and waits for the rollout to converge before the job finishes.
@@ -35,3 +39,10 @@ Set two secrets in your GitHub repository or environment:
 **`api-url`**: your control plane's base URL. Either a domain fronted by the embedded Caddy ingress or `https://host:8080`.
 
 **`api-token`**: create a token with at least the `deploy` ability using Settings -> Tokens or `levelrail-cli tokens create --abilities deploy`. Store it as a repository or environment secret so it never appears in workflow logs.
+
+## See also
+
+- [Deploying apps](deploying-apps.md) for the full app lifecycle
+- [CLI reference](cli-reference.md) for `apps deploy` and `apps wait` commands
+- [Identity and access](identity-and-access.md) for token creation and abilities
+- [Git integrations](git-integrations.md) for webhook-based deploys as an alternative

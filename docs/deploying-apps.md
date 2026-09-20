@@ -1,3 +1,7 @@
+---
+description: Creating, deploying, rolling back, and managing app lifecycle, health checks, resources, and scheduled tasks.
+---
+
 # Deploying and managing apps
 
 An app is one `store.DesiredService` row: an image, a port, and everything the application controller needs to converge a running container to it.
@@ -38,6 +42,32 @@ The API has no automatic "previous tag" lookup. You must know which tag you're r
 The CLI's `apps rollback` and the dashboard's rollback button exist for convenience. Both are thin wrappers over the one deploy mechanism, not a second code path that could drift.
 
 ## How it actually works
+
+### Deploy flow (rolling and blue-green)
+
+Both strategies follow the same core sequence: start the new container, wait for readiness, cut ingress traffic to the old one, then drain and stop it.
+
+```mermaid
+sequenceDiagram
+    participant Control Plane
+    participant Old Container
+    participant New Container
+    participant Application
+    
+    Control Plane->>New Container: start container
+    New Container->>New Container: initializing
+    Control Plane->>New Container: poll /healthz (readiness probe)
+    New Container-->>Control Plane: 503 Service Unavailable
+    New Container->>Application: ready
+    New Container-->>Control Plane: 200 OK
+    Control Plane->>Control Plane: readiness passed
+    Control Plane->>Old Container: remove from ingress routing
+    Control Plane->>Old Container: drain connections (grace period)
+    Control Plane->>Old Container: stop container
+    Control Plane->>Control Plane: deploy complete
+```
+
+The reconciler tracks both containers until the old one exits. If the new container fails readiness, the old one keeps serving and the deploy fails with a specific reason (`OOMKilledDuringReadiness`, `ExitedDuringReadiness`, or `ReadinessFailed`).
 
 ### Full replace semantics
 
@@ -503,3 +533,10 @@ under `apps git-source` (separate doc).
 - **Scheduled task history is last-run-only.** There's no run log beyond `last_run_at`/`last_run_status`/`last_run_output` and a consecutive-failure counter. No historical list of every past run.
 
 - **`concurrency_policy: replace`'s cancellation is best effort.** It closes the previous run's exec stream (the same signal the run's timeout uses), not a guaranteed kill. A command that ignores stream closing (blocked on a container-side read) keeps running inside the container even though Runner moved on and recorded `replaced`. Docker Engine API doesn't expose a "kill this exec" call.
+
+## See also
+
+- [Git integrations](git-integrations.md) - Connecting GitHub, GitLab, or Bitbucket to trigger deploys automatically from git push and pull requests
+- [Domains and ingress](domains-and-ingress.md) - Configuring custom domains and HTTPS certificates for apps
+- [Managing databases](managing-databases.md) - Attaching PostgreSQL, MySQL, Redis, and other services to your apps
+- [app.yaml reference](app-spec-reference.md) - Full schema and field documentation for the deployment spec file

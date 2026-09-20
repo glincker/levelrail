@@ -1,3 +1,7 @@
+---
+description: Create, manage, back up, and restore managed databases across multiple engines (Postgres, Redis, MySQL, MongoDB, and more).
+---
+
 # Managing databases
 
 A managed database is a Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB,
@@ -150,11 +154,18 @@ The **Database** card on an app's Overview page (`web/src/components/DatabaseAtt
 
 ## Stop, start, and delete: dashboard and CLI
 
-```bash
+::: code-group
+```bash [CLI]
 levelrail-cli databases stop <name>
 levelrail-cli databases start <name>
 levelrail-cli databases delete <name>
 ```
+```bash [API]
+POST /api/v1/databases/{name}/stop
+POST /api/v1/databases/{name}/start
+DELETE /api/v1/databases/{name}
+```
+:::
 
 Stop and start are one-click actions on the database detail page's header
 (no confirmation, since neither is destructive: the data volume and
@@ -172,6 +183,24 @@ envelope-encrypted secrets path as any other credential. Create one from
 before any of what follows will work. Every backup/restore/verify
 endpoint returns `501` if the control plane has no master key configured
 at all (`internal/secrets`'s envelope encryption needs one to exist).
+
+```mermaid
+flowchart TD
+  A[Backup target configured] --> B{Backup type}
+  B -->|Manual trigger| C[Trigger immediately]
+  B -->|Scheduled| D[Cron evaluates schedule]
+  C --> E[Dump and upload]
+  D --> E
+  E --> F[Auto-verify scheduled only]
+  F --> G{Verification passed?}
+  G -->|Yes| H[Backup succeeded]
+  G -->|No| I[Failed auto-verification]
+  H --> J{Restore needed?}
+  J -->|Destructive| K[Restore in place<br/>overwrites live data]
+  J -->|Non-destructive| L[Restore as new<br/>creates fresh database]
+  K --> M[Done]
+  L --> M
+```
 
 ### Manual trigger
 
@@ -209,10 +238,10 @@ levelrail-cli backups schedule clear <database>
 
 `PUT /api/v1/databases/{name}/backup-schedule` persists a target, a standard 5-field cron expression, and retention settings.
 
-**Retention knobs** (both independent, `0` means no limit)
-
+::: details Retention knobs (both independent, `0` means no limit)
 - `retain`: Keep the last N successful backups
 - `retain_days`: Delete anything older than N days
+:::
 
 **Validation and execution**
 
@@ -284,13 +313,13 @@ levelrail-cli backups verifications <database> --backup <backup-history-id>
 
 `POST /api/v1/databases/{name}/backups/{historyId}/verify` re-downloads the backup's stored object from the bucket and checks it for corruption.
 
-**Checks performed**
-
+::: details Checks performed
 - Checksum match
 - Size match
 - Lightweight structural check (`internal/backup.VerifyRunner`)
 
 The verification deliberately never attempts a live restore against a running database. That risk is out of scope for an automated check by design.
+:::
 
 **Status**
 
@@ -401,7 +430,7 @@ fields `databases create` takes without `--interactive`; resource limits,
 public access, and a backup schedule are all configured afterward from the
 database's own Overview and Resources tabs once it exists.
 
-## Not built yet (deliberate follow-ups)
+::: details Not built yet (deliberate follow-ups)
 
 - **No CLI subcommand for resource limits outside the creation wizard**
   The API route exists (`PUT .../resources`) and the dashboard control works. There is no `databases set-resources` for scripting an existing database after the fact. (Compare: public access has its own subcommand.)
@@ -423,3 +452,11 @@ database's own Overview and Resources tabs once it exists.
 
 - **No scheduler catch-up after downtime**
   If the control plane is down when a scheduled backup should fire, that run is missed, not queued or caught up on restart. Deliberately deferred because catch-up needs design work (how many missed runs to replay, how to avoid a thundering herd after a long outage).
+
+:::
+
+## See also
+
+- [Identity and access](identity-and-access.md): Backup target credentials are stored through envelope encryption, gated at `write:sensitive` ability tier.
+- [App spec reference](app-spec-reference.md): Bind addresses and exposure rules for database public access.
+- [Deploying apps](deploying-apps.md): How to attach managed databases to applications.
