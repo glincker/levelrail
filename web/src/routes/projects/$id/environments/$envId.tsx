@@ -21,6 +21,7 @@ import { AppRow, RowSkeleton } from '../../../../components/AppRow'
 import { routeErrorMessage } from '../../../../lib/apiError'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { EmptyState } from '@/components/ui/empty-state'
 
 // Environment detail route: the one place an operator can see every app
 // tagged with a specific staging/production-style label, plus jump to a
@@ -42,7 +43,9 @@ export const Route = createFileRoute('/projects/$id/environments/$envId')({
       // already passed, and that path should get the friendlier
       // "Environment not found" message below, not this route's generic
       // error page.
-      queryClient.ensureQueryData(environmentEnvQueryOptions(envId)).catch(() => undefined),
+      queryClient
+        .ensureQueryData(environmentEnvQueryOptions(envId))
+        .catch(() => undefined),
     ]),
   component: EnvironmentDetailPage,
   pendingComponent: EnvironmentDetailPending,
@@ -134,20 +137,11 @@ function EnvironmentDetailPage() {
       ) : null}
 
       {envApps.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
-          <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <PackageIcon className="size-5" aria-hidden="true" />
-          </span>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">
-              No apps tagged with &ldquo;{environment.name}&rdquo; yet
-            </p>
-            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-              Tag an app with this environment from the app&apos;s own
-              Overview page.
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          icon={<PackageIcon className="size-5" />}
+          title={`No apps tagged with "${environment.name}" yet`}
+          description="Tag an app with this environment from the app's own Overview page."
+        />
       ) : (
         <div
           ref={parentRef}
