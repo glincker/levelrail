@@ -8,6 +8,7 @@ import {
 import { appListQueryOptions } from '../../../queries/apps'
 import { databaseListQueryOptions } from '../../../queries/databases'
 import { environmentListQueryOptions } from '../../../queries/environments'
+import { projectEnvQueryOptions } from '../../../queries/projectEnv'
 import { useOrganizationListOptional } from '../../../queries/organizations'
 import {
   AppRow,
@@ -24,6 +25,8 @@ import { MoveToOrganizationDialog } from '../../../components/MoveToOrganization
 import { RestartProjectButton } from '../../../components/RestartProjectButton'
 import { routeErrorMessage } from '../../../lib/apiError'
 import { ProjectEnvironmentsPanel } from '../../../components/ProjectEnvironmentsPanel'
+import { ProjectEnvEditor } from '../../../components/ProjectEnvEditor'
+import { SharedEnvSecretsCard } from '../../../components/SharedEnvSecretsCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -51,6 +54,7 @@ export const Route = createFileRoute('/projects/$id/')({
       queryClient.ensureQueryData(appListQueryOptions()),
       queryClient.ensureQueryData(databaseListQueryOptions()),
       queryClient.ensureQueryData(environmentListQueryOptions(id)),
+      queryClient.ensureQueryData(projectEnvQueryOptions(id)),
     ]),
   component: ProjectDetailPage,
   pendingComponent: ProjectDetailPending,
@@ -122,6 +126,8 @@ function ProjectDetailPage() {
       </div>
 
       <ProjectEnvironmentsPanel projectId={project.id} />
+      <ProjectEnvEditor projectId={project.id} />
+      <SharedEnvSecretsCard scope="project" id={project.id} />
 
       {isEmpty ? (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">

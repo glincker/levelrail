@@ -171,4 +171,13 @@ type OrganizationStore interface {
 	// one level up.
 	SetOrganizationEnvVars(ctx context.Context, orgID string, vars map[string]string) error
 	ListOrganizationEnvVars(ctx context.Context, orgID string) (map[string]string, error)
+	// ListOrganizationEnvVarsDetailed/SetOrganizationSecretEnvVar/
+	// DeleteOrganizationSecretEnvVar/ListOrganizationSecretEnvKeys back
+	// GET /api/v1/organizations/{id}/env/all and the secret-var
+	// sub-resource routes (organization_env.go), mirroring ProjectStore's
+	// own secret-capable extension one tier down.
+	ListOrganizationEnvVarsDetailed(ctx context.Context, orgID string) ([]store.SharedEnvVar, error)
+	SetOrganizationSecretEnvVar(ctx context.Context, orgID, key string) error
+	DeleteOrganizationSecretEnvVar(ctx context.Context, orgID, key string) error
+	ListOrganizationSecretEnvKeys(ctx context.Context, orgID string) ([]string, error)
 }

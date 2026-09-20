@@ -17,6 +17,7 @@ import { Breadcrumbs } from '../../../../components/Breadcrumbs'
 import { DeleteEnvironmentDialog } from '../../../../components/DeleteEnvironmentDialog'
 import { ProtectedEnvironmentToggle } from '../../../../components/ProtectedEnvironmentToggle'
 import { EnvironmentEnvEditor } from '../../../../components/EnvironmentEnvEditor'
+import { SharedEnvSecretsCard } from '../../../../components/SharedEnvSecretsCard'
 import { AppRow, RowSkeleton } from '../../../../components/AppRow'
 import { routeErrorMessage } from '../../../../lib/apiError'
 import { Badge } from '@/components/ui/badge'
@@ -116,6 +117,7 @@ function EnvironmentDetailPage() {
       </div>
 
       <EnvironmentEnvEditor environmentId={envId} />
+      <SharedEnvSecretsCard scope="environment" id={envId} />
 
       {siblingEnvironments.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2">

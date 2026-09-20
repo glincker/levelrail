@@ -16,6 +16,7 @@ import {
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { DeleteOrganizationDialog } from '../../components/DeleteOrganizationDialog'
 import { OrganizationEnvEditor } from '../../components/OrganizationEnvEditor'
+import { SharedEnvSecretsCard } from '../../components/SharedEnvSecretsCard'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
@@ -71,6 +72,7 @@ function OrganizationDetailPage() {
       </div>
 
       <OrganizationEnvEditor organizationId={id} />
+      <SharedEnvSecretsCard scope="organization" id={id} />
 
       {orgProjects.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
@@ -171,7 +173,10 @@ function OrganizationDetailError({ error }: { error: unknown }) {
     <Alert variant="destructive">
       <AlertDescription>
         <p>{routeErrorMessage(error)}</p>
-        <Link to="/settings/organizations" className="mt-2 inline-block underline">
+        <Link
+          to="/settings/organizations"
+          className="mt-2 inline-block underline"
+        >
           Back to organizations
         </Link>
       </AlertDescription>

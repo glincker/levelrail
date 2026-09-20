@@ -262,6 +262,17 @@ type ProjectStore interface {
 	// same shape PUT /api/v1/apps/{name}'s own env field already has.
 	SetProjectEnvVars(ctx context.Context, projectID string, vars map[string]string) error
 	ListProjectEnvVars(ctx context.Context, projectID string) (map[string]string, error)
+	// ListProjectEnvVarsDetailed/SetProjectSecretEnvVar/
+	// DeleteProjectSecretEnvVar/ListProjectSecretEnvKeys back GET
+	// /api/v1/projects/{id}/env/all and the secret-var sub-resource
+	// routes (project_env.go): the secret-capable extension of the
+	// plain-only pair above, reusing internal/secrets.Manager (via
+	// Router.secrets) for the actual encryption rather than a second
+	// path.
+	ListProjectEnvVarsDetailed(ctx context.Context, projectID string) ([]store.SharedEnvVar, error)
+	SetProjectSecretEnvVar(ctx context.Context, projectID, key string) error
+	DeleteProjectSecretEnvVar(ctx context.Context, projectID, key string) error
+	ListProjectSecretEnvKeys(ctx context.Context, projectID string) ([]string, error)
 }
 
 // AuthStore is the store surface the auth handlers need.
@@ -453,6 +464,7 @@ type Store interface {
 	AuditStore
 	ScheduledTaskStore
 	FeatureFlagStore
+	TagStore
 	OnboardingStore
 	WebhookDeliveryStore
 	PolicyStore

@@ -190,6 +190,8 @@ type (
 	gitSourceResource   = apiclient.GitSourceResource
 	setGitSourceRequest = apiclient.SetGitSourceRequest
 
+	sharedEnvVarResource = apiclient.SharedEnvVarResource
+
 	webhookDeliveryResource     = apiclient.WebhookDeliveryResource
 	replayWebhookDeliveryResult = apiclient.ReplayWebhookDeliveryResult
 
@@ -224,6 +226,11 @@ type (
 	serviceTemplateListItem            = apiclient.ServiceTemplateListItem
 	serviceTemplateDetail              = apiclient.ServiceTemplateDetail
 	staticSiteResource                 = apiclient.StaticSiteResource
+
+	tagResource         = apiclient.TagResource
+	createTagRequest    = apiclient.CreateTagRequest
+	attachAppTagRequest = apiclient.AttachAppTagRequest
+	tagAppResource      = apiclient.TagAppResource
 )
 
 // NewClient builds a Client, identifying every request as this CLI's own

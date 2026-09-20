@@ -214,6 +214,13 @@ type appResource struct {
 	// Response-only, same reason Command above is: set through a compose
 	// import's pull_policy:, never through this endpoint.
 	PullPolicy string `json:"pull_policy,omitempty"`
+	// Tags names every store.Tag (internal/store/tags.go) attached to
+	// this app, response-only like NodeID/ProjectID above: toAppResource
+	// never sets this (tags live in their own join table, not
+	// store.DesiredService), only handleGetApp and handleListApps
+	// populate it, via a dedicated attach/detach endpoint
+	// (tags.go's handleAttachAppTag/handleDetachAppTag).
+	Tags []string `json:"tags,omitempty"`
 }
 
 // appVaultEnvRef is store.VaultEnvRef's wire shape, used both inside
@@ -427,8 +434,10 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	}
 
 	controllerNames := make([]string, len(svcs))
+	appNames := make([]string, len(svcs))
 	for i, s := range svcs {
 		controllerNames[i] = applicationControllerName(s.Name)
+		appNames[i] = s.Name
 	}
 	conditionsByController, err := rt.deploys.GetConditionsForControllers(r.Context(), controllerNames)
 	if err != nil {
@@ -436,11 +445,19 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	tagsByApp, err := rt.tags.ListTagsForApps(r.Context(), appNames)
+	if err != nil {
+		rt.logger.Error("api: list apps: batch load tags failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
 
 	out := make([]appListResource, 0, len(svcs))
 	for _, s := range svcs {
+		resource := toAppResource(s)
+		resource.Tags = tagNamesFromStoreTags(tagsByApp[s.Name])
 		out = append(out, appListResource{
-			appResource: toAppResource(s),
+			appResource: resource,
 			Status:      summarizeAppConditions(conditionsByController[applicationControllerName(s.Name)]),
 		})
 	}
@@ -629,7 +646,15 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, toAppResource(*svc))
+	resource := toAppResource(*svc)
+	tagNames, err := rt.appTagNames(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: get app: load tags failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	resource.Tags = tagNames
+	writeJSON(w, http.StatusOK, resource)
 }
 
 // handleUpdateApp handles PUT /api/v1/apps/{name}. Full replace, same as

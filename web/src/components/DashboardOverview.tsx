@@ -15,6 +15,7 @@ import { STATUS_DOT_COLOR } from '../lib/appStatus'
 import { CreateResourceWizard } from './CreateResourceWizard'
 import { OnboardingFlow } from './OnboardingFlow'
 import { AlertingQuickSetupPrompt } from './AlertingQuickSetupPrompt'
+import { FleetResourceChart } from './FleetResourceChart'
 import { TopResourceConsumers } from './TopResourceConsumers'
 import { useCompleteOnboarding } from '../queries/onboarding'
 import { Card, CardContent } from '@/components/ui/card'
@@ -79,7 +80,11 @@ export function DashboardOverview({
       <AlertingQuickSetupPrompt carrierAppName={firstApp.name} />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Total apps" value={apps.length} icon={<PackageIcon />} />
+        <StatCard
+          label="Total apps"
+          value={apps.length}
+          icon={<PackageIcon />}
+        />
         <StatCard
           label="Healthy"
           value={healthy.length}
@@ -99,6 +104,8 @@ export function DashboardOverview({
           tone="muted"
         />
       </div>
+
+      <FleetResourceChart />
 
       <TopResourceConsumers apps={apps} />
 
@@ -140,9 +147,13 @@ export function DashboardOverview({
   )
 }
 
-const STAT_TONE_CLASS: Record<'default' | 'success' | 'destructive' | 'muted', string> = {
+const STAT_TONE_CLASS: Record<
+  'default' | 'success' | 'destructive' | 'muted',
+  string
+> = {
   default: 'bg-muted text-muted-foreground',
-  success: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+  success:
+    'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
   destructive: 'bg-destructive/10 text-destructive dark:bg-destructive/20',
   muted: 'bg-muted text-muted-foreground',
 }
@@ -218,8 +229,8 @@ function WelcomeEmptyState() {
           Welcome to {brand.Name}
         </h1>
         <p className="mx-auto max-w-md text-sm text-muted-foreground">
-          Deploy your first app to get started: push to a connected git repo,
-          or create one directly if you already have a built image.
+          Deploy your first app to get started: push to a connected git repo, or
+          create one directly if you already have a built image.
         </p>
       </div>
       <CreateResourceWizard

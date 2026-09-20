@@ -8,7 +8,8 @@ import { organizationEnvQueryOptions } from '../queries/organizationEnv'
 import { projectEnvQueryOptions } from '../queries/projectEnv'
 import { environmentEnvQueryOptions } from '../queries/environmentEnv'
 import { computeInheritedEnv, inheritedOnlyEnv } from '../lib/envProvenance'
-import { EnvVarsForm } from './EnvVarsForm'
+import { useSharedEnvAll } from '../queries/sharedEnv'
+import { EnvVarsForm, type SharedEnvVarOption } from './EnvVarsForm'
 import { EnvActivityPanel } from './EnvActivityPanel'
 import { Badge } from '@/components/ui/badge'
 
@@ -42,6 +43,35 @@ export function EnvEditor({ app }: { app: AppDetail }) {
     ...environmentEnvQueryOptions(environmentId ?? ''),
     enabled: Boolean(environmentId),
   })
+
+  // Every one of these is already part of this app's effective env
+  // automatically (the queries above, merged by computeInheritedEnv):
+  // this is only for the "reference a shared variable" picker below, so
+  // overriding one for just this app doesn't require retyping its key
+  // name from memory.
+  const orgSharedQuery = useSharedEnvAll('organization', orgId ?? '')
+  const projectSharedQuery = useSharedEnvAll('project', projectId ?? '')
+  const environmentSharedQuery = useSharedEnvAll(
+    'environment',
+    environmentId ?? '',
+  )
+  const availableSharedVars = useMemo<SharedEnvVarOption[]>(
+    () => [
+      ...(orgSharedQuery.data ?? []).map((v) => ({
+        ...v,
+        tier: 'organization' as const,
+      })),
+      ...(projectSharedQuery.data ?? []).map((v) => ({
+        ...v,
+        tier: 'project' as const,
+      })),
+      ...(environmentSharedQuery.data ?? []).map((v) => ({
+        ...v,
+        tier: 'environment' as const,
+      })),
+    ],
+    [orgSharedQuery.data, projectSharedQuery.data, environmentSharedQuery.data],
+  )
 
   const layers = useMemo(
     () => ({
@@ -84,6 +114,7 @@ export function EnvEditor({ app }: { app: AppDetail }) {
           )
         }}
         inheritedRows={inheritedRows}
+        availableSharedVars={availableSharedVars}
         onSave={(env) => {
           updateApp.mutate(
             { ...app, env },

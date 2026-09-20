@@ -48,6 +48,7 @@ import (
 	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/GLINCKER/levelrail/internal/sharedenv"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -2660,6 +2661,12 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 	// database's password) do. A service with a StorageTargetID/
 	// DatabaseEnv but no secretsManager still fails Reconcile loudly
 	// rather than starting half-configured.
+	// sharedEnvResolver decrypts secret-marked project/organization/
+	// environment shared env vars (internal/sharedenv) on top of
+	// deps.db's plain values; deps.secretsManager may be nil (no master
+	// key configured), which sharedenv.NewResolver handles the same way
+	// every other secretsManager-gated feature here does.
+	sharedEnvResolver := sharedenv.NewResolver(deps.db, deps.secretsManager)
 	appOpts := []application.Option{
 		application.WithDeployRecorder(deps.telemetryDB),
 		application.WithHookRunRecorder(deps.db),
@@ -2668,9 +2675,9 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithVaultSettings(deps.db),
 		application.WithVaultResolver(vault.NewResolver()),
 		application.WithRegistryCredentials(deps.db),
-		application.WithProjectEnv(deps.db),
-		application.WithOrganizationEnv(deps.db),
-		application.WithEnvironmentEnv(deps.db),
+		application.WithProjectEnv(sharedEnvResolver),
+		application.WithOrganizationEnv(sharedEnvResolver),
+		application.WithEnvironmentEnv(sharedEnvResolver),
 		application.WithNetworkPrefix(deps.networkPrefix),
 		application.WithLivenessTracker(deps.livenessTracker),
 	}

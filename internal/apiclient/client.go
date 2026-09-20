@@ -249,6 +249,54 @@ func (c *Client) ClearAppVaultEnv(ctx context.Context, name, key string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/vault-env/"+PathEscape(key), nil, nil)
 }
 
+// CreateTag calls POST /api/v1/tags.
+func (c *Client) CreateTag(ctx context.Context, name string) (TagResource, error) {
+	var out TagResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/tags", CreateTagRequest{Name: name}, &out)
+	return out, err
+}
+
+// ListTags calls GET /api/v1/tags.
+func (c *Client) ListTags(ctx context.Context) ([]TagResource, error) {
+	var out []TagResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/tags", nil, &out)
+	return out, err
+}
+
+// DeleteTag calls DELETE /api/v1/tags/{id}.
+func (c *Client) DeleteTag(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/tags/"+PathEscape(id), nil, nil)
+}
+
+// ListAppsByTag calls GET /api/v1/tags/{id}/apps: every app tagged with
+// id, the "list resources filtered by tag" primitive.
+func (c *Client) ListAppsByTag(ctx context.Context, id string) ([]TagAppResource, error) {
+	var out []TagAppResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/tags/"+PathEscape(id)+"/apps", nil, &out)
+	return out, err
+}
+
+// ListAppTags calls GET /api/v1/apps/{name}/tags.
+func (c *Client) ListAppTags(ctx context.Context, name string) ([]TagResource, error) {
+	var out []TagResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/tags", nil, &out)
+	return out, err
+}
+
+// AttachAppTag calls POST /api/v1/apps/{name}/tags: attaches tagName,
+// creating it first if this is the first time it's been used.
+func (c *Client) AttachAppTag(ctx context.Context, name, tagName string) (TagResource, error) {
+	var out TagResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/tags", AttachAppTagRequest{Name: tagName}, &out)
+	return out, err
+}
+
+// DetachAppTag calls DELETE /api/v1/apps/{name}/tags/{id}: id is the
+// tag's ID (from ListAppTags or ListTags above), not its name.
+func (c *Client) DetachAppTag(ctx context.Context, name, tagID string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/tags/"+PathEscape(tagID), nil, nil)
+}
+
 // SetAppPreviewEnvOverride calls PUT /api/v1/apps/{name}/preview-env/{key}:
 // declares (or replaces) one env var's preview-specific value on an app
 // that already exists, applied only the next time a preview environment
@@ -1848,6 +1896,69 @@ func (c *Client) SetEnvironmentEnv(ctx context.Context, id string, vars map[stri
 	var out map[string]string
 	err := c.do(ctx, http.MethodPut, environmentPath(id)+"/env", vars, &out)
 	return out, err
+}
+
+// sharedEnvBasePath maps scope ("project", "organization", or
+// "environment") to that resource's own path helper, so
+// ListSharedEnvAll/ListSharedEnvSecretKeys/SetSharedEnvSecret/
+// DeleteSharedEnvSecret below can stay generic over all three tiers
+// instead of three near-identical copies each.
+func sharedEnvBasePath(scope, id string) (string, error) {
+	switch scope {
+	case "project":
+		return projectPath(id), nil
+	case "organization":
+		return organizationPath(id), nil
+	case "environment":
+		return environmentPath(id), nil
+	default:
+		return "", fmt.Errorf("apiclient: unknown shared env scope %q, want project, organization, or environment", scope)
+	}
+}
+
+// ListSharedEnvAll calls GET /api/v1/{scope}s/{id}/env/all: every shared
+// env var at that tier, plain and secret-marked alike.
+func (c *Client) ListSharedEnvAll(ctx context.Context, scope, id string) ([]SharedEnvVarResource, error) {
+	path, err := sharedEnvBasePath(scope, id)
+	if err != nil {
+		return nil, err
+	}
+	var out []SharedEnvVarResource
+	err = c.do(ctx, http.MethodGet, path+"/env/all", nil, &out)
+	return out, err
+}
+
+// ListSharedEnvSecretKeys calls GET /api/v1/{scope}s/{id}/env/secrets:
+// every secret-marked shared env var key at that tier, never a value.
+func (c *Client) ListSharedEnvSecretKeys(ctx context.Context, scope, id string) ([]string, error) {
+	path, err := sharedEnvBasePath(scope, id)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	err = c.do(ctx, http.MethodGet, path+"/env/secrets", nil, &out)
+	return out, err
+}
+
+// SetSharedEnvSecret calls PUT /api/v1/{scope}s/{id}/env/secrets/{key}:
+// encrypts value and marks key secret. No response body beyond the
+// status, matching SetSecret's own "never echo a value back" rule.
+func (c *Client) SetSharedEnvSecret(ctx context.Context, scope, id, key, value string) error {
+	path, err := sharedEnvBasePath(scope, id)
+	if err != nil {
+		return err
+	}
+	return c.do(ctx, http.MethodPut, path+"/env/secrets/"+PathEscape(key), SetSharedEnvSecretRequest{Value: value}, nil)
+}
+
+// DeleteSharedEnvSecret calls DELETE
+// /api/v1/{scope}s/{id}/env/secrets/{key}.
+func (c *Client) DeleteSharedEnvSecret(ctx context.Context, scope, id, key string) error {
+	path, err := sharedEnvBasePath(scope, id)
+	if err != nil {
+		return err
+	}
+	return c.do(ctx, http.MethodDelete, path+"/env/secrets/"+PathEscape(key), nil, nil)
 }
 
 // SetAppEnvironment calls PUT /api/v1/apps/{name}/environment. An empty

@@ -210,6 +210,11 @@ export interface AppDetail {
   // set via the compose-import path's pull_policy: (POST
   // /apps/{name}/compose).
   pull_policy?: string
+  // tags names every store.Tag attached to this app
+  // (internal/api/apps.go's appResource.Tags), response-only: set via
+  // POST/DELETE /api/v1/apps/{name}/tags (queries/tags.ts's
+  // useAttachAppTag/useDetachAppTag), never through this endpoint's PUT.
+  tags?: string[]
 }
 
 // Matches internal/api/apps.go's appVolumeResource exactly: one of an
