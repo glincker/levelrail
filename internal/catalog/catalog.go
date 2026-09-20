@@ -18,6 +18,14 @@ type Template struct {
 	Category         string
 	DocumentationURL string
 	Compose          string
+	// RecommendedMemoryBytes is a static, pre-deploy advisory of how
+	// much RAM this template needs to run comfortably (e.g. an LLM
+	// runtime sized for one specific model). Zero means no advisory
+	// applies. This is not checked against any node's real available
+	// memory: no host memory monitoring exists anywhere in this
+	// codebase yet (see internal/alerting/node_resource_usage.go's own
+	// doc comment on why), so it is informational only.
+	RecommendedMemoryBytes int64
 }
 
 // Templates is the full catalog, served by GET /api/v1/service-templates
@@ -2825,6 +2833,118 @@ var Templates = []Template{
   redlib:
     image: quay.io/redlib/redlib:sha-a4d36e9
     ports: ["8080:8080"]
+`,
+	},
+	{
+		ID:               "ollama",
+		Name:             "Ollama",
+		Slogan:           "A local LLM runtime with an HTTP API. Pull any model yourself once it's running.",
+		Category:         "AI",
+		DocumentationURL: "https://github.com/ollama/ollama",
+		Compose: `services:
+  ollama:
+    image: ollama/ollama:0.33.3
+    ports: ["11434:11434"]
+    volumes:
+      - ollama_data:/root/.ollama
+`,
+	},
+	// The five ollama-* entries below pin an explicit parameter-size tag
+	// rather than a bare model alias (e.g. "mistral:7b-instruct-v0.3",
+	// not "mistral"): Ollama's own library docs warn a bare alias's
+	// default can change when the publisher updates it, which would
+	// silently change both the download and the RAM figure below out
+	// from under an existing deployment.
+	//
+	// RecommendedMemoryBytes is computed, not guessed: Q4 quantization
+	// costs roughly 0.6 GB per billion parameters, plus ~1.5 GB of
+	// overhead for the OS, the Ollama runtime itself, and the model's
+	// context/KV-cache, rounded up to the next whole GiB. This matches
+	// the commonly published rule of thumb for Q4 GGUF-style models
+	// (e.g. a Q4 7B model's own weights are ~4.1-4.7 GB on disk).
+	//
+	// The auto-pull command polls "ollama list" until the server
+	// actually answers instead of guessing a fixed startup delay,
+	// since Ollama's own startup time varies by disk speed and image
+	// cache state.
+	{
+		ID:                     "ollama-mistral",
+		Name:                   "Ollama: Mistral 7B",
+		Slogan:                 "Mistral's 7B instruct model, served locally through Ollama's HTTP API.",
+		Category:               "AI",
+		DocumentationURL:       "https://ollama.com/library/mistral",
+		RecommendedMemoryBytes: 6 * 1024 * 1024 * 1024, // 7B * 0.6 GB/B + 1.5 GB overhead ~= 5.7 GB
+		Compose: `services:
+  ollama:
+    image: ollama/ollama:0.33.3
+    ports: ["11434:11434"]
+    volumes:
+      - ollama_data:/root/.ollama
+    command: "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull mistral:7b-instruct-v0.3; wait"
+`,
+	},
+	{
+		ID:                     "ollama-llama3",
+		Name:                   "Ollama: Llama 3 8B",
+		Slogan:                 "Meta's Llama 3 8B model, served locally through Ollama's HTTP API.",
+		Category:               "AI",
+		DocumentationURL:       "https://ollama.com/library/llama3",
+		RecommendedMemoryBytes: 7 * 1024 * 1024 * 1024, // 8B * 0.6 GB/B + 1.5 GB overhead ~= 6.3 GB
+		Compose: `services:
+  ollama:
+    image: ollama/ollama:0.33.3
+    ports: ["11434:11434"]
+    volumes:
+      - ollama_data:/root/.ollama
+    command: "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull llama3:8b; wait"
+`,
+	},
+	{
+		ID:                     "ollama-qwen",
+		Name:                   "Ollama: Qwen 2.5 7B",
+		Slogan:                 "Alibaba's Qwen 2.5 7B model, served locally through Ollama's HTTP API.",
+		Category:               "AI",
+		DocumentationURL:       "https://ollama.com/library/qwen2.5",
+		RecommendedMemoryBytes: 6 * 1024 * 1024 * 1024, // 7B * 0.6 GB/B + 1.5 GB overhead ~= 5.7 GB
+		Compose: `services:
+  ollama:
+    image: ollama/ollama:0.33.3
+    ports: ["11434:11434"]
+    volumes:
+      - ollama_data:/root/.ollama
+    command: "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull qwen2.5:7b; wait"
+`,
+	},
+	{
+		ID:                     "ollama-phi",
+		Name:                   "Ollama: Phi-3 Mini",
+		Slogan:                 "Microsoft's Phi-3 Mini (3.8B), the smallest model in this catalog, good for constrained nodes.",
+		Category:               "AI",
+		DocumentationURL:       "https://ollama.com/library/phi3",
+		RecommendedMemoryBytes: 4 * 1024 * 1024 * 1024, // 3.8B * 0.6 GB/B + 1.5 GB overhead ~= 3.8 GB
+		Compose: `services:
+  ollama:
+    image: ollama/ollama:0.33.3
+    ports: ["11434:11434"]
+    volumes:
+      - ollama_data:/root/.ollama
+    command: "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull phi3:3.8b; wait"
+`,
+	},
+	{
+		ID:                     "ollama-deepseek",
+		Name:                   "Ollama: DeepSeek-R1 7B",
+		Slogan:                 "DeepSeek's R1 distilled 7B reasoning model, served locally through Ollama's HTTP API.",
+		Category:               "AI",
+		DocumentationURL:       "https://ollama.com/library/deepseek-r1",
+		RecommendedMemoryBytes: 6 * 1024 * 1024 * 1024, // 7B * 0.6 GB/B + 1.5 GB overhead ~= 5.7 GB
+		Compose: `services:
+  ollama:
+    image: ollama/ollama:0.33.3
+    ports: ["11434:11434"]
+    volumes:
+      - ollama_data:/root/.ollama
+    command: "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull deepseek-r1:7b; wait"
 `,
 	},
 }

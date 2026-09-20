@@ -21,6 +21,10 @@ export interface ServiceTemplateListItem {
   slogan: string
   category: string
   documentation_url: string
+  // Static pre-deploy advisory, not checked against any node's real
+  // available memory (internal/catalog.Template's own doc comment on
+  // why). Absent (omitempty) when a template has no advisory.
+  recommended_memory_bytes?: number
 }
 
 // Mirrors serviceTemplateDetail's wire shape: the list item's fields plus

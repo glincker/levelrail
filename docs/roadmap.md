@@ -82,7 +82,7 @@ flowchart LR
   services built from one shared checkout, each scoped to its own
   `build.baseDirectory`, linked under one `store.App`, and
   independently reachable over HTTPS.
-- A curated 123-entry service template catalog (ADR 015: reverses the
+- A curated 129-entry service template catalog (ADR 015: reverses the
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
   from the creation wizard, with a category-specific icon per card.
