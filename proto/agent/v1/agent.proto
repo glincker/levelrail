@@ -136,6 +136,7 @@ message AgentRequest {
     ListNetworksByPrefixRequest list_networks_by_prefix = 14;
     ExecRequest exec = 15;
     BuildRequest build = 16;
+    InspectExitStateRequest inspect_exit_state = 17;
   }
 }
 
@@ -159,6 +160,7 @@ message AgentResponse {
     Empty empty = 7;
     EnsureNetworkResponse ensure_network = 8;
     ListNetworksByPrefixResponse list_networks_by_prefix = 9;
+    InspectExitStateResponse inspect_exit_state = 10;
   }
 }
 
@@ -513,4 +515,26 @@ message BuildFailure {
 // the same lifetime Events(ctx) already ties to ctx cancellation.
 message WatchEventsRequest {
   string watch_id = 1;
+}
+
+// ExitState mirrors internal/docker.ExitState: the fields a real
+// container inspect carries but the container-list summary behind
+// InspectByName does not, so a remote node can tell "still starting"
+// apart from "already exited or OOM-killed" the same way a local one
+// can.
+message ExitState {
+  bool running = 1;
+  bool oom_killed = 2;
+  int32 exit_code = 3;
+}
+
+message InspectExitStateRequest {
+  string name = 1;
+}
+message InspectExitStateResponse {
+  // Found mirrors InspectByNameResponse.found: false carries
+  // internal/docker.ExitStateInspector's own (nil, nil) "no such
+  // container, not an error" contract.
+  bool found = 1;
+  ExitState state = 2;
 }

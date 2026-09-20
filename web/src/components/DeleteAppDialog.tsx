@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useDeleteApp } from '../queries/apps'
@@ -51,7 +52,10 @@ export function DeleteAppDialog({ name }: { name: string }) {
           </DialogDescription>
         </DialogHeader>
         {deleteApp.isError ? (
-          <p className="text-sm text-destructive">{deleteApp.error.message}</p>
+          <Alert variant="destructive">
+            <WarningIcon />
+            <AlertDescription>{deleteApp.error.message}</AlertDescription>
+          </Alert>
         ) : null}
         <DialogFooter>
           <Button

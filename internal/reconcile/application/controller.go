@@ -1536,9 +1536,8 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 
 	// inspector is present only for a Runtime that can tell "still
 	// starting" apart from "already exited/OOM-killed" (docker.Client
-	// today; the gRPC agent transport and most test fakes don't, and
-	// gracefully just don't get the fast-fail below, same as before this
-	// existed).
+	// locally, the gRPC agent transport for a remote node; most test
+	// fakes don't, and gracefully just don't get the fast-fail below).
 	inspector, ok := c.runtime.(docker.ExitStateInspector)
 	if !ok {
 		if err := <-readyErr; err != nil {

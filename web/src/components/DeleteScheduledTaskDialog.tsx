@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useDeleteScheduledTask } from '../queries/scheduledTasks'
@@ -47,12 +48,15 @@ export function DeleteScheduledTaskDialog({
             Delete this scheduled task?
           </DialogTitle>
           <DialogDescription>
-            &ldquo;{task.schedule}&rdquo; stops running immediately. This
-            cannot be undone.
+            &ldquo;{task.schedule}&rdquo; stops running immediately. This cannot
+            be undone.
           </DialogDescription>
         </DialogHeader>
         {deleteTask.isError ? (
-          <p className="text-sm text-destructive">{deleteTask.error.message}</p>
+          <Alert variant="destructive">
+            <WarningIcon />
+            <AlertDescription>{deleteTask.error.message}</AlertDescription>
+          </Alert>
         ) : null}
         <DialogFooter>
           <Button
@@ -72,7 +76,10 @@ export function DeleteScheduledTaskDialog({
               deleteTask.mutate(task.id, {
                 onSuccess: () => {
                   setOpen(false)
-                  toast.add({ title: 'Scheduled task deleted.', type: 'success' })
+                  toast.add({
+                    title: 'Scheduled task deleted.',
+                    type: 'success',
+                  })
                 },
               })
             }}

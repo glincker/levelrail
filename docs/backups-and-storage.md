@@ -103,6 +103,8 @@ Both trigger endpoints work the same way:
 
 Poll the history endpoint to check whether the backup finished (status starts at `running`).
 
+**Disk-space preflight:** a database dump and a volume archive both stream directly from their source (a container, via `docker exec`) to the destination bucket, never touching local disk. The one real local write either makes is its own backup/restore history row, in the control plane's own SQLite database (`APP_DATA_DIR`). Before starting, the control plane checks free space there and fails fast rather than let a disk-full control plane fail confusingly partway through recording the attempt. The minimum is configurable via `APP_MIN_BACKUP_DISK_MB` (default `256`, i.e. 256MB); an unconfigured or unreadable data directory skips the check entirely.
+
 ### How schedules are stored
 
 **Database schedules** are stored alongside the database resource itself (`backup_target_id`, `backup_schedule`, `backup_retain`, `backup_retain_days` columns on `desired_databases`).

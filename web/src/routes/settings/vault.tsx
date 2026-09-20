@@ -1,5 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { vaultSettingsQueryOptions, useVaultSettings } from '../../queries/vault'
+import { VaultIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  vaultSettingsQueryOptions,
+  useVaultSettings,
+} from '../../queries/vault'
 import { VaultSettingsCard } from '../../components/VaultSettingsCard'
 import { PageSpinner } from '../../components/ui/page-spinner'
 
@@ -23,11 +27,16 @@ function VaultSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Vault</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Resolve app secrets live from an external HashiCorp Vault instance.
-        </p>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <VaultIcon className="size-4" />
+        </div>
+        <div>
+          <h1 className="text-lg font-semibold text-foreground">Vault</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Resolve app secrets live from an external HashiCorp Vault instance.
+          </p>
+        </div>
       </div>
 
       <VaultSettingsCard settings={settings} />

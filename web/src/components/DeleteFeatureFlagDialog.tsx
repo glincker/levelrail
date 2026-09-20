@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useDeleteFeatureFlag } from '../queries/featureFlags'
@@ -53,7 +54,10 @@ export function DeleteFeatureFlagDialog({
           </DialogDescription>
         </DialogHeader>
         {deleteFlag.isError ? (
-          <p className="text-sm text-destructive">{deleteFlag.error.message}</p>
+          <Alert variant="destructive">
+            <WarningIcon />
+            <AlertDescription>{deleteFlag.error.message}</AlertDescription>
+          </Alert>
         ) : null}
         <DialogFooter>
           <Button

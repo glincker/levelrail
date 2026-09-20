@@ -301,6 +301,21 @@ levelrail apps secrets list <name> [flags]
 list an app's secret keys and their locked state
 
 ```
+levelrail apps secrets set <name> <key> <value> [flags]
+```
+set or rotate one secret's encrypted value
+
+```
+levelrail apps secrets set <name> --env-file <path> [flags]
+```
+bulk-import every key in a .env-format file as its own secret
+
+```
+levelrail apps secrets lock <name> <key> --locked=true|false [flags]
+```
+toggle a secret's overwrite guard
+
+```
 levelrail apps set-environment <name> <environment-id> [flags]
 ```
 

@@ -35,9 +35,10 @@ func newGRPCTransport(m *mux) *GRPCTransport {
 }
 
 var (
-	_ Transport          = (*GRPCTransport)(nil)
-	_ docker.TTYRuntime  = (*GRPCTransport)(nil)
-	_ docker.ExecSession = (*execTTYStream)(nil)
+	_ Transport                 = (*GRPCTransport)(nil)
+	_ docker.TTYRuntime         = (*GRPCTransport)(nil)
+	_ docker.ExitStateInspector = (*GRPCTransport)(nil)
+	_ docker.ExecSession        = (*execTTYStream)(nil)
 )
 
 // InspectByName implements Transport (docker.Runtime).
@@ -53,6 +54,29 @@ func (t *GRPCTransport) InspectByName(ctx context.Context, name string) (*docker
 		return nil, nil
 	}
 	return containerStateFromPB(got.GetState()), nil
+}
+
+// InspectExitState implements docker.ExitStateInspector over the wire,
+// so a service placed on a remote node gets the same fail-fast-on-crash
+// readiness behavior a locally placed one already had: without it, a
+// container that OOM-killed itself mid-readiness looked merely "not
+// ready yet" until the whole readiness budget expired.
+//
+// An agent too old to know this op answers with an error, which every
+// caller of docker.ExitStateInspector already treats as "can't tell"
+// and degrades to waiting out the full budget.
+func (t *GRPCTransport) InspectExitState(ctx context.Context, name string) (*docker.ExitState, error) {
+	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{
+		Op: &agentpb.AgentRequest_InspectExitState{InspectExitState: &agentpb.InspectExitStateRequest{Name: name}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	got := resp.GetInspectExitState()
+	if got == nil || !got.GetFound() {
+		return nil, nil
+	}
+	return exitStateFromPB(got.GetState()), nil
 }
 
 // Create implements Transport (docker.Runtime).
