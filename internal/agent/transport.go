@@ -77,6 +77,18 @@ func (l Local) ExecTTY(ctx context.Context, containerID string, opts docker.Exec
 	return tty.ExecTTY(ctx, containerID, opts)
 }
 
+// InspectExitState implements docker.ExitStateInspector by forwarding to
+// the wrapped runtime, which the embedded docker.Runtime interface would
+// otherwise hide even when the concrete value behind it can inspect exit
+// state.
+func (l Local) InspectExitState(ctx context.Context, name string) (*docker.ExitState, error) {
+	inspector, ok := l.Runtime.(docker.ExitStateInspector)
+	if !ok {
+		return nil, ErrExitStateUnsupported
+	}
+	return inspector.InspectExitState(ctx, name)
+}
+
 // ErrNodeNotRegistered is Registry.Get's failure mode for an unknown
 // node ID.
 var ErrNodeNotRegistered = errors.New("agent: node not registered in this transport registry")

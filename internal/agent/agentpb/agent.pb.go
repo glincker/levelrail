@@ -594,6 +594,7 @@ type AgentRequest struct {
 	//	*AgentRequest_ListNetworksByPrefix
 	//	*AgentRequest_Exec
 	//	*AgentRequest_Build
+	//	*AgentRequest_InspectExitState
 	Op            isAgentRequest_Op `protobuf_oneof:"op"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -778,6 +779,15 @@ func (x *AgentRequest) GetBuild() *BuildRequest {
 	return nil
 }
 
+func (x *AgentRequest) GetInspectExitState() *InspectExitStateRequest {
+	if x != nil {
+		if x, ok := x.Op.(*AgentRequest_InspectExitState); ok {
+			return x.InspectExitState
+		}
+	}
+	return nil
+}
+
 type isAgentRequest_Op interface {
 	isAgentRequest_Op()
 }
@@ -842,6 +852,10 @@ type AgentRequest_Build struct {
 	Build *BuildRequest `protobuf:"bytes,16,opt,name=build,proto3,oneof"`
 }
 
+type AgentRequest_InspectExitState struct {
+	InspectExitState *InspectExitStateRequest `protobuf:"bytes,17,opt,name=inspect_exit_state,json=inspectExitState,proto3,oneof"`
+}
+
 func (*AgentRequest_InspectByName) isAgentRequest_Op() {}
 
 func (*AgentRequest_Create) isAgentRequest_Op() {}
@@ -872,6 +886,8 @@ func (*AgentRequest_Exec) isAgentRequest_Op() {}
 
 func (*AgentRequest_Build) isAgentRequest_Op() {}
 
+func (*AgentRequest_InspectExitState) isAgentRequest_Op() {}
+
 // AgentResponse is the agent's answer to exactly one AgentRequest,
 // carrying the same request_id.
 type AgentResponse struct {
@@ -891,6 +907,7 @@ type AgentResponse struct {
 	//	*AgentResponse_Empty
 	//	*AgentResponse_EnsureNetwork
 	//	*AgentResponse_ListNetworksByPrefix
+	//	*AgentResponse_InspectExitState
 	Result        isAgentResponse_Result `protobuf_oneof:"result"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1010,6 +1027,15 @@ func (x *AgentResponse) GetListNetworksByPrefix() *ListNetworksByPrefixResponse 
 	return nil
 }
 
+func (x *AgentResponse) GetInspectExitState() *InspectExitStateResponse {
+	if x != nil {
+		if x, ok := x.Result.(*AgentResponse_InspectExitState); ok {
+			return x.InspectExitState
+		}
+	}
+	return nil
+}
+
 type isAgentResponse_Result interface {
 	isAgentResponse_Result()
 }
@@ -1045,6 +1071,10 @@ type AgentResponse_ListNetworksByPrefix struct {
 	ListNetworksByPrefix *ListNetworksByPrefixResponse `protobuf:"bytes,9,opt,name=list_networks_by_prefix,json=listNetworksByPrefix,proto3,oneof"`
 }
 
+type AgentResponse_InspectExitState struct {
+	InspectExitState *InspectExitStateResponse `protobuf:"bytes,10,opt,name=inspect_exit_state,json=inspectExitState,proto3,oneof"`
+}
+
 func (*AgentResponse_InspectByName) isAgentResponse_Result() {}
 
 func (*AgentResponse_Create) isAgentResponse_Result() {}
@@ -1058,6 +1088,8 @@ func (*AgentResponse_Empty) isAgentResponse_Result() {}
 func (*AgentResponse_EnsureNetwork) isAgentResponse_Result() {}
 
 func (*AgentResponse_ListNetworksByPrefix) isAgentResponse_Result() {}
+
+func (*AgentResponse_InspectExitState) isAgentResponse_Result() {}
 
 type Empty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -3759,6 +3791,170 @@ func (x *WatchEventsRequest) GetWatchId() string {
 	return ""
 }
 
+// ExitState mirrors internal/docker.ExitState: the fields a real
+// container inspect carries but the container-list summary behind
+// InspectByName does not, so a remote node can tell "still starting"
+// apart from "already exited or OOM-killed" the same way a local one
+// can.
+type ExitState struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Running       bool                   `protobuf:"varint,1,opt,name=running,proto3" json:"running,omitempty"`
+	OomKilled     bool                   `protobuf:"varint,2,opt,name=oom_killed,json=oomKilled,proto3" json:"oom_killed,omitempty"`
+	ExitCode      int32                  `protobuf:"varint,3,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExitState) Reset() {
+	*x = ExitState{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[52]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExitState) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExitState) ProtoMessage() {}
+
+func (x *ExitState) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[52]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExitState.ProtoReflect.Descriptor instead.
+func (*ExitState) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{52}
+}
+
+func (x *ExitState) GetRunning() bool {
+	if x != nil {
+		return x.Running
+	}
+	return false
+}
+
+func (x *ExitState) GetOomKilled() bool {
+	if x != nil {
+		return x.OomKilled
+	}
+	return false
+}
+
+func (x *ExitState) GetExitCode() int32 {
+	if x != nil {
+		return x.ExitCode
+	}
+	return 0
+}
+
+type InspectExitStateRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InspectExitStateRequest) Reset() {
+	*x = InspectExitStateRequest{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InspectExitStateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InspectExitStateRequest) ProtoMessage() {}
+
+func (x *InspectExitStateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InspectExitStateRequest.ProtoReflect.Descriptor instead.
+func (*InspectExitStateRequest) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{53}
+}
+
+func (x *InspectExitStateRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type InspectExitStateResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Found mirrors InspectByNameResponse.found: false carries
+	// internal/docker.ExitStateInspector's own (nil, nil) "no such
+	// container, not an error" contract.
+	Found         bool       `protobuf:"varint,1,opt,name=found,proto3" json:"found,omitempty"`
+	State         *ExitState `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InspectExitStateResponse) Reset() {
+	*x = InspectExitStateResponse{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InspectExitStateResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InspectExitStateResponse) ProtoMessage() {}
+
+func (x *InspectExitStateResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InspectExitStateResponse.ProtoReflect.Descriptor instead.
+func (*InspectExitStateResponse) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{54}
+}
+
+func (x *InspectExitStateResponse) GetFound() bool {
+	if x != nil {
+		return x.Found
+	}
+	return false
+}
+
+func (x *InspectExitStateResponse) GetState() *ExitState {
+	if x != nil {
+		return x.State
+	}
+	return nil
+}
+
 var File_proto_agent_v1_agent_proto protoreflect.FileDescriptor
 
 const file_proto_agent_v1_agent_proto_rawDesc = "" +
@@ -3797,7 +3993,7 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\fbuild_credit\x18\a \x01(\v2\x1f.levelrail.agent.v1.BuildCreditH\x00R\vbuildCredit\x12A\n" +
 	"\vexec_resize\x18\b \x01(\v2\x1e.levelrail.agent.v1.ExecResizeH\x00R\n" +
 	"execResizeB\t\n" +
-	"\apayload\"\x84\t\n" +
+	"\apayload\"\xe1\t\n" +
 	"\fAgentRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12R\n" +
@@ -3817,8 +4013,9 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x0eremove_network\x18\r \x01(\v2(.levelrail.agent.v1.RemoveNetworkRequestH\x00R\rremoveNetwork\x12h\n" +
 	"\x17list_networks_by_prefix\x18\x0e \x01(\v2/.levelrail.agent.v1.ListNetworksByPrefixRequestH\x00R\x14listNetworksByPrefix\x125\n" +
 	"\x04exec\x18\x0f \x01(\v2\x1f.levelrail.agent.v1.ExecRequestH\x00R\x04exec\x128\n" +
-	"\x05build\x18\x10 \x01(\v2 .levelrail.agent.v1.BuildRequestH\x00R\x05buildB\x04\n" +
-	"\x02op\"\xf0\x04\n" +
+	"\x05build\x18\x10 \x01(\v2 .levelrail.agent.v1.BuildRequestH\x00R\x05build\x12[\n" +
+	"\x12inspect_exit_state\x18\x11 \x01(\v2+.levelrail.agent.v1.InspectExitStateRequestH\x00R\x10inspectExitStateB\x04\n" +
+	"\x02op\"\xce\x05\n" +
 	"\rAgentResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12\x14\n" +
@@ -3830,7 +4027,9 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x0elist_by_prefix\x18\x06 \x01(\v2(.levelrail.agent.v1.ListByPrefixResponseH\x00R\flistByPrefix\x121\n" +
 	"\x05empty\x18\a \x01(\v2\x19.levelrail.agent.v1.EmptyH\x00R\x05empty\x12R\n" +
 	"\x0eensure_network\x18\b \x01(\v2).levelrail.agent.v1.EnsureNetworkResponseH\x00R\rensureNetwork\x12i\n" +
-	"\x17list_networks_by_prefix\x18\t \x01(\v20.levelrail.agent.v1.ListNetworksByPrefixResponseH\x00R\x14listNetworksByPrefixB\b\n" +
+	"\x17list_networks_by_prefix\x18\t \x01(\v20.levelrail.agent.v1.ListNetworksByPrefixResponseH\x00R\x14listNetworksByPrefix\x12\\\n" +
+	"\x12inspect_exit_state\x18\n" +
+	" \x01(\v2,.levelrail.agent.v1.InspectExitStateResponseH\x00R\x10inspectExitStateB\b\n" +
 	"\x06result\"\a\n" +
 	"\x05Empty\"m\n" +
 	"\vPortBinding\x12%\n" +
@@ -4013,7 +4212,17 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x14unsupported_provider\x18\x02 \x01(\bR\x13unsupportedProvider\x12\x1a\n" +
 	"\bprovider\x18\x03 \x01(\tR\bprovider\"/\n" +
 	"\x12WatchEventsRequest\x12\x19\n" +
-	"\bwatch_id\x18\x01 \x01(\tR\awatchId*[\n" +
+	"\bwatch_id\x18\x01 \x01(\tR\awatchId\"a\n" +
+	"\tExitState\x12\x18\n" +
+	"\arunning\x18\x01 \x01(\bR\arunning\x12\x1d\n" +
+	"\n" +
+	"oom_killed\x18\x02 \x01(\bR\toomKilled\x12\x1b\n" +
+	"\texit_code\x18\x03 \x01(\x05R\bexitCode\"-\n" +
+	"\x17InspectExitStateRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"e\n" +
+	"\x18InspectExitStateResponse\x12\x14\n" +
+	"\x05found\x18\x01 \x01(\bR\x05found\x123\n" +
+	"\x05state\x18\x02 \x01(\v2\x1d.levelrail.agent.v1.ExitStateR\x05state*[\n" +
 	"\tBuildKind\x12\x1a\n" +
 	"\x16BUILD_KIND_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15BUILD_KIND_DOCKERFILE\x10\x01\x12\x17\n" +
@@ -4035,7 +4244,7 @@ func file_proto_agent_v1_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_agent_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 55)
+var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 58)
 var file_proto_agent_v1_agent_proto_goTypes = []any{
 	(BuildKind)(0),                       // 0: levelrail.agent.v1.BuildKind
 	(*EnrollRequest)(nil),                // 1: levelrail.agent.v1.EnrollRequest
@@ -4090,10 +4299,13 @@ var file_proto_agent_v1_agent_proto_goTypes = []any{
 	(*BuildDone)(nil),                    // 50: levelrail.agent.v1.BuildDone
 	(*BuildFailure)(nil),                 // 51: levelrail.agent.v1.BuildFailure
 	(*WatchEventsRequest)(nil),           // 52: levelrail.agent.v1.WatchEventsRequest
-	nil,                                  // 53: levelrail.agent.v1.ContainerSpec.EnvEntry
-	nil,                                  // 54: levelrail.agent.v1.BuildRequest.BuildArgsEntry
-	nil,                                  // 55: levelrail.agent.v1.BuildDone.ExporterResponseEntry
-	(*timestamppb.Timestamp)(nil),        // 56: google.protobuf.Timestamp
+	(*ExitState)(nil),                    // 53: levelrail.agent.v1.ExitState
+	(*InspectExitStateRequest)(nil),      // 54: levelrail.agent.v1.InspectExitStateRequest
+	(*InspectExitStateResponse)(nil),     // 55: levelrail.agent.v1.InspectExitStateResponse
+	nil,                                  // 56: levelrail.agent.v1.ContainerSpec.EnvEntry
+	nil,                                  // 57: levelrail.agent.v1.BuildRequest.BuildArgsEntry
+	nil,                                  // 58: levelrail.agent.v1.BuildDone.ExporterResponseEntry
+	(*timestamppb.Timestamp)(nil),        // 59: google.protobuf.Timestamp
 }
 var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	6,  // 0: levelrail.agent.v1.AgentMessage.response:type_name -> levelrail.agent.v1.AgentResponse
@@ -4125,45 +4337,48 @@ var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	32, // 26: levelrail.agent.v1.AgentRequest.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixRequest
 	34, // 27: levelrail.agent.v1.AgentRequest.exec:type_name -> levelrail.agent.v1.ExecRequest
 	43, // 28: levelrail.agent.v1.AgentRequest.build:type_name -> levelrail.agent.v1.BuildRequest
-	16, // 29: levelrail.agent.v1.AgentResponse.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameResponse
-	18, // 30: levelrail.agent.v1.AgentResponse.create:type_name -> levelrail.agent.v1.CreateResponse
-	24, // 31: levelrail.agent.v1.AgentResponse.list_images:type_name -> levelrail.agent.v1.ListImagesResponse
-	26, // 32: levelrail.agent.v1.AgentResponse.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixResponse
-	7,  // 33: levelrail.agent.v1.AgentResponse.empty:type_name -> levelrail.agent.v1.Empty
-	30, // 34: levelrail.agent.v1.AgentResponse.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkResponse
-	33, // 35: levelrail.agent.v1.AgentResponse.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixResponse
-	8,  // 36: levelrail.agent.v1.ContainerSpec.ports:type_name -> levelrail.agent.v1.PortBinding
-	53, // 37: levelrail.agent.v1.ContainerSpec.env:type_name -> levelrail.agent.v1.ContainerSpec.EnvEntry
-	9,  // 38: levelrail.agent.v1.ContainerSpec.resources:type_name -> levelrail.agent.v1.Resources
-	10, // 39: levelrail.agent.v1.ContainerSpec.volumes:type_name -> levelrail.agent.v1.VolumeMount
-	8,  // 40: levelrail.agent.v1.ContainerState.ports:type_name -> levelrail.agent.v1.PortBinding
-	56, // 41: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
-	56, // 42: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
-	12, // 43: levelrail.agent.v1.InspectByNameResponse.state:type_name -> levelrail.agent.v1.ContainerState
-	11, // 44: levelrail.agent.v1.CreateRequest.spec:type_name -> levelrail.agent.v1.ContainerSpec
-	9,  // 45: levelrail.agent.v1.UpdateResourcesRequest.resources:type_name -> levelrail.agent.v1.Resources
-	13, // 46: levelrail.agent.v1.ListImagesResponse.images:type_name -> levelrail.agent.v1.ImageInfo
-	12, // 47: levelrail.agent.v1.ListByPrefixResponse.containers:type_name -> levelrail.agent.v1.ContainerState
-	28, // 48: levelrail.agent.v1.ListNetworksByPrefixResponse.networks:type_name -> levelrail.agent.v1.NetworkInfo
-	35, // 49: levelrail.agent.v1.ExecRequest.tty_size:type_name -> levelrail.agent.v1.ExecTTYSize
-	41, // 50: levelrail.agent.v1.ExecOutput.failure:type_name -> levelrail.agent.v1.ExecFailure
-	42, // 51: levelrail.agent.v1.ExecFailure.exit:type_name -> levelrail.agent.v1.ExecExit
-	0,  // 52: levelrail.agent.v1.BuildRequest.kind:type_name -> levelrail.agent.v1.BuildKind
-	54, // 53: levelrail.agent.v1.BuildRequest.build_args:type_name -> levelrail.agent.v1.BuildRequest.BuildArgsEntry
-	44, // 54: levelrail.agent.v1.BuildRequest.cache:type_name -> levelrail.agent.v1.BuildCache
-	49, // 55: levelrail.agent.v1.BuildOutput.progress:type_name -> levelrail.agent.v1.BuildProgress
-	50, // 56: levelrail.agent.v1.BuildOutput.done:type_name -> levelrail.agent.v1.BuildDone
-	51, // 57: levelrail.agent.v1.BuildOutput.failure:type_name -> levelrail.agent.v1.BuildFailure
-	55, // 58: levelrail.agent.v1.BuildDone.exporter_response:type_name -> levelrail.agent.v1.BuildDone.ExporterResponseEntry
-	1,  // 59: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
-	3,  // 60: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
-	2,  // 61: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
-	4,  // 62: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
-	61, // [61:63] is the sub-list for method output_type
-	59, // [59:61] is the sub-list for method input_type
-	59, // [59:59] is the sub-list for extension type_name
-	59, // [59:59] is the sub-list for extension extendee
-	0,  // [0:59] is the sub-list for field type_name
+	54, // 29: levelrail.agent.v1.AgentRequest.inspect_exit_state:type_name -> levelrail.agent.v1.InspectExitStateRequest
+	16, // 30: levelrail.agent.v1.AgentResponse.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameResponse
+	18, // 31: levelrail.agent.v1.AgentResponse.create:type_name -> levelrail.agent.v1.CreateResponse
+	24, // 32: levelrail.agent.v1.AgentResponse.list_images:type_name -> levelrail.agent.v1.ListImagesResponse
+	26, // 33: levelrail.agent.v1.AgentResponse.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixResponse
+	7,  // 34: levelrail.agent.v1.AgentResponse.empty:type_name -> levelrail.agent.v1.Empty
+	30, // 35: levelrail.agent.v1.AgentResponse.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkResponse
+	33, // 36: levelrail.agent.v1.AgentResponse.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixResponse
+	55, // 37: levelrail.agent.v1.AgentResponse.inspect_exit_state:type_name -> levelrail.agent.v1.InspectExitStateResponse
+	8,  // 38: levelrail.agent.v1.ContainerSpec.ports:type_name -> levelrail.agent.v1.PortBinding
+	56, // 39: levelrail.agent.v1.ContainerSpec.env:type_name -> levelrail.agent.v1.ContainerSpec.EnvEntry
+	9,  // 40: levelrail.agent.v1.ContainerSpec.resources:type_name -> levelrail.agent.v1.Resources
+	10, // 41: levelrail.agent.v1.ContainerSpec.volumes:type_name -> levelrail.agent.v1.VolumeMount
+	8,  // 42: levelrail.agent.v1.ContainerState.ports:type_name -> levelrail.agent.v1.PortBinding
+	59, // 43: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
+	59, // 44: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
+	12, // 45: levelrail.agent.v1.InspectByNameResponse.state:type_name -> levelrail.agent.v1.ContainerState
+	11, // 46: levelrail.agent.v1.CreateRequest.spec:type_name -> levelrail.agent.v1.ContainerSpec
+	9,  // 47: levelrail.agent.v1.UpdateResourcesRequest.resources:type_name -> levelrail.agent.v1.Resources
+	13, // 48: levelrail.agent.v1.ListImagesResponse.images:type_name -> levelrail.agent.v1.ImageInfo
+	12, // 49: levelrail.agent.v1.ListByPrefixResponse.containers:type_name -> levelrail.agent.v1.ContainerState
+	28, // 50: levelrail.agent.v1.ListNetworksByPrefixResponse.networks:type_name -> levelrail.agent.v1.NetworkInfo
+	35, // 51: levelrail.agent.v1.ExecRequest.tty_size:type_name -> levelrail.agent.v1.ExecTTYSize
+	41, // 52: levelrail.agent.v1.ExecOutput.failure:type_name -> levelrail.agent.v1.ExecFailure
+	42, // 53: levelrail.agent.v1.ExecFailure.exit:type_name -> levelrail.agent.v1.ExecExit
+	0,  // 54: levelrail.agent.v1.BuildRequest.kind:type_name -> levelrail.agent.v1.BuildKind
+	57, // 55: levelrail.agent.v1.BuildRequest.build_args:type_name -> levelrail.agent.v1.BuildRequest.BuildArgsEntry
+	44, // 56: levelrail.agent.v1.BuildRequest.cache:type_name -> levelrail.agent.v1.BuildCache
+	49, // 57: levelrail.agent.v1.BuildOutput.progress:type_name -> levelrail.agent.v1.BuildProgress
+	50, // 58: levelrail.agent.v1.BuildOutput.done:type_name -> levelrail.agent.v1.BuildDone
+	51, // 59: levelrail.agent.v1.BuildOutput.failure:type_name -> levelrail.agent.v1.BuildFailure
+	58, // 60: levelrail.agent.v1.BuildDone.exporter_response:type_name -> levelrail.agent.v1.BuildDone.ExporterResponseEntry
+	53, // 61: levelrail.agent.v1.InspectExitStateResponse.state:type_name -> levelrail.agent.v1.ExitState
+	1,  // 62: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
+	3,  // 63: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
+	2,  // 64: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
+	4,  // 65: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
+	64, // [64:66] is the sub-list for method output_type
+	62, // [62:64] is the sub-list for method input_type
+	62, // [62:62] is the sub-list for extension type_name
+	62, // [62:62] is the sub-list for extension extendee
+	0,  // [0:62] is the sub-list for field type_name
 }
 
 func init() { file_proto_agent_v1_agent_proto_init() }
@@ -4205,6 +4420,7 @@ func file_proto_agent_v1_agent_proto_init() {
 		(*AgentRequest_ListNetworksByPrefix)(nil),
 		(*AgentRequest_Exec)(nil),
 		(*AgentRequest_Build)(nil),
+		(*AgentRequest_InspectExitState)(nil),
 	}
 	file_proto_agent_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
 		(*AgentResponse_InspectByName)(nil),
@@ -4214,6 +4430,7 @@ func file_proto_agent_v1_agent_proto_init() {
 		(*AgentResponse_Empty)(nil),
 		(*AgentResponse_EnsureNetwork)(nil),
 		(*AgentResponse_ListNetworksByPrefix)(nil),
+		(*AgentResponse_InspectExitState)(nil),
 	}
 	file_proto_agent_v1_agent_proto_msgTypes[47].OneofWrappers = []any{
 		(*BuildOutput_Progress)(nil),
@@ -4227,7 +4444,7 @@ func file_proto_agent_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_agent_v1_agent_proto_rawDesc), len(file_proto_agent_v1_agent_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   55,
+			NumMessages:   58,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

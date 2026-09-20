@@ -256,16 +256,13 @@ type ExitState struct {
 }
 
 // ExitStateInspector is an optional Runtime capability, checked via a
-// type assertion (application.Controller.waitReady is the one caller
-// today) rather than added to the Runtime interface itself: doing the
-// latter would force every existing docker.Runtime implementation,
-// including the gRPC agent transport (internal/agent.Transport embeds
-// docker.Runtime) and every hand-written test fake across the
-// reconcile packages, to grow a method most of them have no use for.
-// Only *Client implements it; a caller lacking this capability (a
-// remote node's transport, most test fakes) just skips the
+// type assertion rather than added to the Runtime interface itself:
+// doing the latter would force every hand-written test fake across the
+// reconcile packages to grow a method most of them have no use for.
+// Both real transports implement it (*Client locally, internal/agent's
+// GRPCTransport over the wire); a runtime lacking it just skips the
 // fail-fast-on-crash check and falls back to waiting out the full
-// readiness budget, same as before this existed.
+// readiness budget.
 type ExitStateInspector interface {
 	// InspectExitState returns the container's exit state, or (nil, nil)
 	// if no such container exists, the same "not found is a valid

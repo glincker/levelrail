@@ -158,6 +158,28 @@ func containerStateFromPB(s *agentpb.ContainerState) *docker.ContainerState {
 	}
 }
 
+func exitStateToPB(s *docker.ExitState) *agentpb.ExitState {
+	if s == nil {
+		return nil
+	}
+	return &agentpb.ExitState{
+		Running:   s.Running,
+		OomKilled: s.OOMKilled,
+		ExitCode:  int32(s.ExitCode), //nolint:gosec // a container exit code is a uint8 on Linux, or a small negative sentinel
+	}
+}
+
+func exitStateFromPB(s *agentpb.ExitState) *docker.ExitState {
+	if s == nil {
+		return nil
+	}
+	return &docker.ExitState{
+		Running:   s.Running,
+		OOMKilled: s.OomKilled,
+		ExitCode:  int(s.ExitCode),
+	}
+}
+
 func containerStatesFromPB(ss []*agentpb.ContainerState) []docker.ContainerState {
 	if ss == nil {
 		return nil
