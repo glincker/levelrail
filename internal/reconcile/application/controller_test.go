@@ -2836,10 +2836,7 @@ func TestController_Reconcile_Rolling_StaysRunningAfterReadinessTimeout_ReProbed
 	if err == nil {
 		t.Fatal("second Reconcile() error = nil, want the replacement's still-failing readiness surfaced")
 	}
-	cond := conditionOf(t, result)
-	if cond.Status != reconcile.ConditionFalse || cond.Reason != "RunningNotReady" {
-		t.Errorf("condition = %+v, want Status=False Reason=RunningNotReady", cond)
-	}
+	assertConditionReasonFalse(t, result, "RunningNotReady")
 	if _, ok := rt.containers[old]; !ok {
 		t.Error("old replica was removed on the second pass, want it still serving: its replacement has never passed a readiness probe")
 	}
@@ -2891,10 +2888,7 @@ func TestController_Reconcile_RunningButNeverReady_ReProbedEveryPass(t *testing.
 			if got := backend.callsFor("/ready"); got <= afterDeployPass {
 				t.Errorf("readiness requests after the second pass = %d, want more than the %d from the first: a replica that never became ready must be re-probed, not trusted because Docker reports it Running", got, afterDeployPass)
 			}
-			cond := conditionOf(t, result)
-			if cond.Status != reconcile.ConditionFalse || cond.Reason != "RunningNotReady" {
-				t.Errorf("condition = %+v, want Status=False Reason=RunningNotReady", cond)
-			}
+			assertConditionReasonFalse(t, result, "RunningNotReady")
 			if _, ok := rt.containers[old]; !ok {
 				t.Error("old container was removed, want it still serving until its replacement actually passes a probe")
 			}
@@ -2945,39 +2939,56 @@ func TestController_Reconcile_RunningReplicaBecomesReadyOnLaterPass_CutsOver(t *
 	}
 }
 
+// assertConditionReasonFalse asserts result's first condition is
+// Status=False with the given Reason, the shape every re-probe test in
+// this file that expects a failure checks.
+func assertConditionReasonFalse(t *testing.T, result reconcile.Result, reason string) {
+	t.Helper()
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != reason {
+		t.Errorf("condition = %+v, want Status=False Reason=%s", cond, reason)
+	}
+}
+
+// setupStalledReadinessReplacement deploys img:v2 over a running img:v1
+// behind a readiness probe that always fails, so the first Reconcile
+// leaves the replacement created but never ready: the shared starting
+// point the OOM-kill and plain-exit re-probe tests both need before they
+// set the replacement's own exit state and reconcile again.
+func setupStalledReadinessReplacement(t *testing.T) (rt *fakeRuntime, c *Controller, old, replacement string) {
+	t.Helper()
+	srv := neverHealthy()
+	t.Cleanup(srv.Close)
+
+	rt = newFakeRuntime(serverPort(t, srv))
+	old = ContainerName("web", "img:v1", "")
+	rt.seed(old, true)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v2", Port: 80,
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+	}
+	c = New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(100*time.Millisecond))
+
+	if _, err := c.Reconcile(context.Background()); err == nil {
+		t.Fatal("first Reconcile() error = nil, want a readiness timeout error")
+	}
+	return rt, c, old, ContainerName("web", "img:v2", "")
+}
+
 // TestController_Reconcile_RunningReplicaAlreadyOOMKilled_NotTreatedAsHealthy
 // is this project's stated main risk in miniature: a readiness check
 // that passes on a container which had already OOMed. InspectByName is
 // backed by Docker's container list, which lags a real inspect, so
 // "Running" alone is never evidence of health.
 func TestController_Reconcile_RunningReplicaAlreadyOOMKilled_NotTreatedAsHealthy(t *testing.T) {
-	srv := neverHealthy()
-	defer srv.Close()
-
-	rt := newFakeRuntime(serverPort(t, srv))
-	old := ContainerName("web", "img:v1", "")
-	rt.seed(old, true)
-	desired := &store.DesiredService{
-		Name: "web", Image: "img:v2", Port: 80,
-		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
-	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(100*time.Millisecond))
-
-	if _, err := c.Reconcile(context.Background()); err == nil {
-		t.Fatal("first Reconcile() error = nil, want a readiness timeout error")
-	}
-
-	replacement := ContainerName("web", "img:v2", "")
+	rt, c, old, replacement := setupStalledReadinessReplacement(t)
 	rt.setExitState(replacement, &docker.ExitState{Running: false, OOMKilled: true, ExitCode: 137})
 
 	result, err := c.Reconcile(context.Background())
 	if err == nil {
 		t.Fatal("second Reconcile() error = nil, want the OOM kill surfaced")
 	}
-	cond := conditionOf(t, result)
-	if cond.Status != reconcile.ConditionFalse || cond.Reason != "OOMKilledDuringReadiness" {
-		t.Errorf("condition = %+v, want Status=False Reason=OOMKilledDuringReadiness", cond)
-	}
+	assertConditionReasonFalse(t, result, "OOMKilledDuringReadiness")
 	if _, ok := rt.containers[old]; !ok {
 		t.Error("old container was removed, want it still serving: its replacement had already been OOM-killed")
 	}
@@ -2988,33 +2999,14 @@ func TestController_Reconcile_RunningReplicaAlreadyOOMKilled_NotTreatedAsHealthy
 // distinguishable on a re-probe exactly as they already are on a fresh
 // deploy's wait.
 func TestController_Reconcile_RunningReplicaExited_ReportsExitedDuringReadiness(t *testing.T) {
-	srv := neverHealthy()
-	defer srv.Close()
-
-	rt := newFakeRuntime(serverPort(t, srv))
-	old := ContainerName("web", "img:v1", "")
-	rt.seed(old, true)
-	desired := &store.DesiredService{
-		Name: "web", Image: "img:v2", Port: 80,
-		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
-	}
-	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(100*time.Millisecond))
-
-	if _, err := c.Reconcile(context.Background()); err == nil {
-		t.Fatal("first Reconcile() error = nil, want a readiness timeout error")
-	}
-
-	replacement := ContainerName("web", "img:v2", "")
+	rt, c, _, replacement := setupStalledReadinessReplacement(t)
 	rt.setExitState(replacement, &docker.ExitState{Running: false, OOMKilled: false, ExitCode: 1})
 
 	result, err := c.Reconcile(context.Background())
 	if err == nil {
 		t.Fatal("second Reconcile() error = nil, want the crash surfaced")
 	}
-	cond := conditionOf(t, result)
-	if cond.Status != reconcile.ConditionFalse || cond.Reason != "ExitedDuringReadiness" {
-		t.Errorf("condition = %+v, want Status=False Reason=ExitedDuringReadiness", cond)
-	}
+	assertConditionReasonFalse(t, result, "ExitedDuringReadiness")
 }
 
 // TestController_Reconcile_RunningReplicaReady_NoReadinessConfig_NotProbed

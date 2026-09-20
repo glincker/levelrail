@@ -80,6 +80,41 @@ func connectGitSource(t *testing.T, rt *Router, cookie *http.Cookie, body string
 	return got
 }
 
+// newConnectedGitSourceRouter is the fixed router+seed+connect preamble
+// every trigger-mode test in this file repeats before it gets to what
+// it actually tests: a router, app "web" seeded, and its git source
+// connected via connectBody.
+func newConnectedGitSourceRouter(t *testing.T, connectBody string) (*Router, gitSourceResource) {
+	t.Helper()
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	return rt, connectGitSource(t, rt, cookie, connectBody)
+}
+
+// postGitWebhook POSTs body to app "web"'s webhook route with sigHeader
+// set to sig, plus any extraHeaders (the event-type headers the
+// receiver switches on), and returns the recorder rather than asserting
+// a status: this file's trigger-mode tests expect different codes.
+func postGitWebhook(t *testing.T, rt *Router, sigHeader, sig string, body []byte, extraHeaders map[string]string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	for k, v := range extraHeaders {
+		req.Header.Set(k, v)
+	}
+	req.Header.Set(sigHeader, sig)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	return rec
+}
+
+func requireStatusOK(t *testing.T, rec *httptest.ResponseRecorder) {
+	t.Helper()
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+}
+
 func TestHandleGitPushWebhook_NoGitSource(t *testing.T) {
 	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
 	seedApp(t, db, "web")
@@ -819,11 +854,7 @@ func TestDockerSafeTag(t *testing.T) {
 // ordinary push to its own configured branch, the core behavior change
 // this trigger mode exists for.
 func TestHandleGitPushWebhook_ReleaseMode_BranchPush_Ignored(t *testing.T) {
-	secrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
-	cookie := loginTestSession(t, rt, db)
-	seedApp(t, db, "web")
-	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
+	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
 
 	var fetchCalls []fakeGitSourceFetchCall
 	rt.gitSourceFetch = newFakeGitSourceFetch(&fetchCalls, t.TempDir(), new(bool), nil)
@@ -831,13 +862,8 @@ func TestHandleGitPushWebhook_ReleaseMode_BranchPush_Ignored(t *testing.T) {
 	rt.builder = fb
 
 	body := pushBody("refs/heads/main")
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
-	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
-	}
+	rec := postGitWebhook(t, rt, "X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body), body, nil)
+	requireStatusOK(t, rec)
 	if fb.calls != 0 {
 		t.Errorf("builder called %d times, want 0: release mode must ignore a branch push", fb.calls)
 	}
@@ -852,11 +878,7 @@ func TestHandleGitPushWebhook_ReleaseMode_BranchPush_Ignored(t *testing.T) {
 // an ordinary push would: no special checkout handling is needed here,
 // unlike the github release-event path.
 func TestHandleGitPushWebhook_ReleaseMode_TagPush_TriggersDeploy(t *testing.T) {
-	secrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
-	cookie := loginTestSession(t, rt, db)
-	seedApp(t, db, "web")
-	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
+	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
 
 	var fetchCalls []fakeGitSourceFetchCall
 	rt.gitSourceFetch = newFakeGitSourceFetch(&fetchCalls, t.TempDir(), new(bool), nil)
@@ -864,13 +886,8 @@ func TestHandleGitPushWebhook_ReleaseMode_TagPush_TriggersDeploy(t *testing.T) {
 	rt.builder = fb
 
 	body := pushBody("refs/tags/v1.0.0")
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
-	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+	rec := postGitWebhook(t, rt, "X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body), body, nil)
+	requireStatusOK(t, rec)
 	if fb.calls != 1 {
 		t.Fatalf("builder called %d times, want 1", fb.calls)
 	}
@@ -888,23 +905,14 @@ func TestHandleGitPushWebhook_ReleaseMode_TagPush_TriggersDeploy(t *testing.T) {
 // proves for a wrong branch: a tag ref never equals
 // webhook.Config.TargetRef()'s "refs/heads/<branch>".
 func TestHandleGitPushWebhook_PushMode_TagPush_Ignored(t *testing.T) {
-	secrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
-	cookie := loginTestSession(t, rt, db)
-	seedApp(t, db, "web")
-	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
+	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
 
 	fb := &fakeBuilder{tag: "web:sha1"}
 	rt.builder = fb
 
 	body := pushBody("refs/tags/v1.0.0")
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
-	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
-	}
+	rec := postGitWebhook(t, rt, "X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body), body, nil)
+	requireStatusOK(t, rec)
 	if fb.calls != 0 {
 		t.Errorf("builder called %d times, want 0: default push mode must ignore a tag push", fb.calls)
 	}
@@ -916,11 +924,7 @@ func TestHandleGitPushWebhook_PushMode_TagPush_Ignored(t *testing.T) {
 // exists in the release payload) and tagging the built image with the
 // (sanitized) release tag name.
 func TestHandleGitPushWebhook_GitHubReleasePublished_TriggersDeploy(t *testing.T) {
-	secrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
-	cookie := loginTestSession(t, rt, db)
-	seedApp(t, db, "web")
-	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
+	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
 
 	var fetchCalls []fakeGitSourceFetchCall
 	rt.gitSourceFetch = newFakeGitSourceFetch(&fetchCalls, t.TempDir(), new(bool), nil)
@@ -928,14 +932,8 @@ func TestHandleGitPushWebhook_GitHubReleasePublished_TriggersDeploy(t *testing.T
 	rt.builder = fb
 
 	body := releaseBody("published")
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
-	req.Header.Set("X-GitHub-Event", "release")
-	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+	rec := postGitWebhook(t, rt, "X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body), body, map[string]string{"X-GitHub-Event": "release"})
+	requireStatusOK(t, rec)
 	if fb.calls != 1 {
 		t.Fatalf("builder called %d times, want 1", fb.calls)
 	}
@@ -952,24 +950,14 @@ func TestHandleGitPushWebhook_GitHubReleasePublished_TriggersDeploy(t *testing.T
 // draft being saved, etc.) never deploys, even with trigger_mode
 // "release".
 func TestHandleGitPushWebhook_GitHubReleaseNotPublished_Ignored(t *testing.T) {
-	secrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
-	cookie := loginTestSession(t, rt, db)
-	seedApp(t, db, "web")
-	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
+	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
 
 	fb := &fakeBuilder{tag: "web:v1.2.3"}
 	rt.builder = fb
 
 	body := releaseBody("created")
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
-	req.Header.Set("X-GitHub-Event", "release")
-	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
-	}
+	rec := postGitWebhook(t, rt, "X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body), body, map[string]string{"X-GitHub-Event": "release"})
+	requireStatusOK(t, rec)
 	if fb.calls != 0 {
 		t.Errorf("builder called %d times, want 0: only a \"published\" action deploys", fb.calls)
 	}
@@ -982,24 +970,14 @@ func TestHandleGitPushWebhook_GitHubReleaseNotPublished_Ignored(t *testing.T) {
 // event type fell through into webhook.ParsePushEventForProvider and
 // failed to parse.
 func TestHandleGitPushWebhook_GitHubReleaseEvent_PushModeIgnored(t *testing.T) {
-	secrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
-	cookie := loginTestSession(t, rt, db)
-	seedApp(t, db, "web")
-	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
+	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
 
 	fb := &fakeBuilder{tag: "web:v1.2.3"}
 	rt.builder = fb
 
 	body := releaseBody("published")
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
-	req.Header.Set("X-GitHub-Event", "release")
-	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+	rec := postGitWebhook(t, rt, "X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body), body, map[string]string{"X-GitHub-Event": "release"})
+	requireStatusOK(t, rec)
 	if fb.calls != 0 {
 		t.Errorf("builder called %d times, want 0: default push mode must ignore a release event", fb.calls)
 	}
@@ -1016,11 +994,7 @@ func TestHandleGitPushWebhook_GitHubReleaseEvent_PushModeIgnored(t *testing.T) {
 // so a future fix to Bitbucket tag support has to consciously update it
 // rather than silently leaving stale documentation behind.
 func TestHandleGitPushWebhook_ReleaseMode_BitbucketTagPush_KnownGap(t *testing.T) {
-	secrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
-	cookie := loginTestSession(t, rt, db)
-	seedApp(t, db, "web")
-	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://bitbucket.org/org/web.git","branch":"main","trigger_mode":"release"}`)
+	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://bitbucket.org/org/web.git","branch":"main","trigger_mode":"release"}`)
 
 	fb := &fakeBuilder{tag: "web:bb-sha1"}
 	rt.builder = fb
@@ -1032,14 +1006,8 @@ func TestHandleGitPushWebhook_ReleaseMode_BitbucketTagPush_KnownGap(t *testing.T
 			},
 		},
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
-	req.Header.Set("X-Event-Key", "repo:push")
-	req.Header.Set("X-Hub-Signature", sign([]byte(created.WebhookSecret), body))
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
+	rec := postGitWebhook(t, rt, "X-Hub-Signature", sign([]byte(created.WebhookSecret), body), body, map[string]string{"X-Event-Key": "repo:push"})
+	requireStatusOK(t, rec)
 	if fb.calls != 0 {
 		t.Errorf("builder called %d times, want 0 (known gap): a bitbucket tag push is indistinguishable from a same-named branch push today", fb.calls)
 	}

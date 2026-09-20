@@ -203,23 +203,22 @@ describe('computeRolloutSubStages', () => {
     }
   })
 
-  it('marks all three done on a clean Deployed condition', () => {
-    const [health, cutover, cleanup] = computeRolloutSubStages(
-      baseAttempt,
-      [condition('Deployed', '2026-01-01T00:00:10Z')],
-      true,
-    )
-    expect([health.status, cutover.status, cleanup.status]).toEqual([
-      'done',
-      'done',
-      'done',
-    ])
-  })
+  const allDoneCases: { name: string; reason: string }[] = [
+    { name: 'a clean Deployed condition', reason: 'Deployed' },
+    {
+      name: 'AlreadyRunning, e.g. redeploying the already-running image',
+      reason: 'AlreadyRunning',
+    },
+    {
+      name: 'PostDeployHookFailed: cutover and cleanup already succeeded by then',
+      reason: 'PostDeployHookFailed',
+    },
+  ]
 
-  it('marks all three done on AlreadyRunning, e.g. redeploying the already-running image', () => {
+  it.each(allDoneCases)('marks all three done on $name', ({ reason }) => {
     const [health, cutover, cleanup] = computeRolloutSubStages(
       baseAttempt,
-      [condition('AlreadyRunning', '2026-01-01T00:00:10Z')],
+      [condition(reason, '2026-01-01T00:00:10Z')],
       true,
     )
     expect([health.status, cutover.status, cleanup.status]).toEqual([
@@ -238,19 +237,6 @@ describe('computeRolloutSubStages', () => {
     expect(health.status).toBe('done')
     expect(cutover.status).toBe('done')
     expect(cleanup.status).toBe('failed')
-  })
-
-  it('marks all three done on PostDeployHookFailed: cutover and cleanup already succeeded by then', () => {
-    const [health, cutover, cleanup] = computeRolloutSubStages(
-      baseAttempt,
-      [condition('PostDeployHookFailed', '2026-01-01T00:00:10Z')],
-      true,
-    )
-    expect([health.status, cutover.status, cleanup.status]).toEqual([
-      'done',
-      'done',
-      'done',
-    ])
   })
 
   it('ignores a matching condition that predates the attempt finishing', () => {
