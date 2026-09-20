@@ -19,6 +19,7 @@ import { PromoteAppDialog } from '../../components/PromoteAppDialog'
 import { RestartAppButton } from '../../components/RestartAppButton'
 import { StopStartAppButton } from '../../components/StopStartAppButton'
 import { ConvergenceIndicator } from '../../components/ConvergenceIndicator'
+import { TagsControl } from '../../components/TagsControl'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { PageSpinner } from '@/components/ui/page-spinner'
@@ -137,6 +138,8 @@ function AppDetailLayout() {
           <DeleteAppDialog name={app.name} />
         </div>
       </div>
+
+      <TagsControl appName={app.name} tags={app.tags} />
 
       {showDeployTrigger ? <DeployTriggerForm appName={app.name} /> : null}
 

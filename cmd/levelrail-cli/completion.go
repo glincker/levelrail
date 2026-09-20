@@ -75,6 +75,8 @@ var cliCommandTree = map[string]*cmdNode{
 		"storage":            {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 		"vault-env":          {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 		"preview-env":        {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
+		"tag":                nil,
+		"untag":              nil,
 	}},
 	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "set-project": nil, "clear-project": nil, "public-access": {subs: map[string]*cmdNode{"set": nil, "clear": nil}}}},
 	"auth": {subs: map[string]*cmdNode{"login": nil, "whoami": nil, "2fa": {subs: map[string]*cmdNode{
@@ -106,10 +108,12 @@ var cliCommandTree = map[string]*cmdNode{
 	"cloudflare-tunnel":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},
 	"vault":                {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},
 	"channels":             {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil}},
+	"shared-env":           {subs: map[string]*cmdNode{"list": nil, "set": nil, "delete": nil}},
 	"backup-targets":       {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
 	"registry-credentials": {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
 	"registry":             {subs: map[string]*cmdNode{"status": nil, "enable": nil, "disable": nil, "repositories": nil, "tags": nil}},
 	"flags":                {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "set": nil, "delete": nil}},
+	"tags":                 {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil, "apps": nil}},
 	"nodes": {subs: map[string]*cmdNode{
 		"list": nil, "get": nil, "delete": nil, "join-token": nil,
 		"cordon": nil, "uncordon": nil, "drain": nil, "workloads": nil,

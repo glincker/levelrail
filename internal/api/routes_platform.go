@@ -128,6 +128,20 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/flags/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteFeatureFlag))
 	mux.HandleFunc("GET /api/v1/flags/evaluate/{key}", rt.requireAbility(AbilityRead, rt.handleEvaluateFeatureFlag))
 
+	// Tags (tags.go): arbitrary operator-defined labels for organizing
+	// and filtering apps, independent of the project/environment
+	// hierarchy. The global collection lives flat under /api/v1/tags
+	// (create/list/delete, plus filter-by-tag); attach/detach is scoped
+	// under the app it applies to, the same nesting scheduled-tasks/flags
+	// above use for their own per-app child resources.
+	mux.HandleFunc("POST /api/v1/tags", rt.requireAbility(AbilityWrite, rt.handleCreateTag))
+	mux.HandleFunc("GET /api/v1/tags", rt.requireAbility(AbilityRead, rt.handleListTags))
+	mux.HandleFunc("DELETE /api/v1/tags/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteTag))
+	mux.HandleFunc("GET /api/v1/tags/{id}/apps", rt.requireAbility(AbilityRead, rt.handleListAppsByTag))
+	mux.HandleFunc("GET /api/v1/apps/{name}/tags", rt.requireAbility(AbilityRead, rt.handleListAppTags))
+	mux.HandleFunc("POST /api/v1/apps/{name}/tags", rt.requireAbility(AbilityWrite, rt.handleAttachAppTag))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/tags/{id}", rt.requireAbility(AbilityWrite, rt.handleDetachAppTag))
+
 	// Deploy-outcome notifications (wave-2 roadmap item #5): a Slack/
 	// Discord/Telegram/generic-webhook/email ping fired once per deploy
 	// attempt reaching a terminal state, distinct from the threshold/
@@ -197,6 +211,16 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/organizations/{id}/env", rt.requireAbility(AbilityRead, rt.handleGetOrganizationEnv))
 	mux.HandleFunc("PUT /api/v1/organizations/{id}/env", rt.requireAbility(AbilityWrite, rt.handleSetOrganizationEnv))
 
+	// Secret-backed shared env vars at the organization tier
+	// (shared_env_secrets.go/organization_env.go): the encrypted
+	// counterpart to the plain-value GET/PUT above, reusing
+	// internal/secrets.Manager (Router.secrets) for the actual
+	// encryption.
+	mux.HandleFunc("GET /api/v1/organizations/{id}/env/all", rt.requireAbility(AbilityRead, rt.handleListOrganizationEnvAll))
+	mux.HandleFunc("GET /api/v1/organizations/{id}/env/secrets", rt.requireAbility(AbilityRead, rt.handleListOrganizationEnvSecretKeys))
+	mux.HandleFunc("PUT /api/v1/organizations/{id}/env/secrets/{key}", rt.requireAbility(AbilityWrite, rt.handleSetOrganizationEnvSecret))
+	mux.HandleFunc("DELETE /api/v1/organizations/{id}/env/secrets/{key}", rt.requireAbility(AbilityWrite, rt.handleDeleteOrganizationEnvSecret))
+
 	// Environments (environments.go): staging/production-style labels
 	// scoped to a project, tagged onto a service via its own app route.
 	mux.HandleFunc("GET /api/v1/projects/{id}/environments", rt.requireAbility(AbilityRead, rt.handleListEnvironments))
@@ -211,11 +235,25 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/environments/{id}/env", rt.requireAbility(AbilityRead, rt.handleGetEnvironmentEnv))
 	mux.HandleFunc("PUT /api/v1/environments/{id}/env", rt.requireAbility(AbilityWrite, rt.handleSetEnvironmentEnv))
 
+	// Secret-backed shared env vars at the environment tier, mirroring
+	// the organization tier's own four routes above.
+	mux.HandleFunc("GET /api/v1/environments/{id}/env/all", rt.requireAbility(AbilityRead, rt.handleListEnvironmentEnvAll))
+	mux.HandleFunc("GET /api/v1/environments/{id}/env/secrets", rt.requireAbility(AbilityRead, rt.handleListEnvironmentEnvSecretKeys))
+	mux.HandleFunc("PUT /api/v1/environments/{id}/env/secrets/{key}", rt.requireAbility(AbilityWrite, rt.handleSetEnvironmentEnvSecret))
+	mux.HandleFunc("DELETE /api/v1/environments/{id}/env/secrets/{key}", rt.requireAbility(AbilityWrite, rt.handleDeleteEnvironmentEnvSecret))
+
 	// Shared env vars every app filed under this project inherits
 	// (project_env.go): same AbilityRead/AbilityWrite boundary as the
 	// project CRUD routes just above.
 	mux.HandleFunc("GET /api/v1/projects/{id}/env", rt.requireAbility(AbilityRead, rt.handleGetProjectEnv))
 	mux.HandleFunc("PUT /api/v1/projects/{id}/env", rt.requireAbility(AbilityWrite, rt.handleSetProjectEnv))
+
+	// Secret-backed shared env vars at the project tier, mirroring the
+	// organization/environment tiers' own four routes above.
+	mux.HandleFunc("GET /api/v1/projects/{id}/env/all", rt.requireAbility(AbilityRead, rt.handleListProjectEnvAll))
+	mux.HandleFunc("GET /api/v1/projects/{id}/env/secrets", rt.requireAbility(AbilityRead, rt.handleListProjectEnvSecretKeys))
+	mux.HandleFunc("PUT /api/v1/projects/{id}/env/secrets/{key}", rt.requireAbility(AbilityWrite, rt.handleSetProjectEnvSecret))
+	mux.HandleFunc("DELETE /api/v1/projects/{id}/env/secrets/{key}", rt.requireAbility(AbilityWrite, rt.handleDeleteProjectEnvSecret))
 
 	// Move an app/database into (or out of, with project_id: "") a
 	// project: the project-kind counterpart to PUT /apps/{name}/node

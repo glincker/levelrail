@@ -125,6 +125,37 @@ type AppResource struct {
 	// /api/v1/apps/{name}/preview-env/{key} (SetAppPreviewEnvOverride/
 	// ClearAppPreviewEnvOverride).
 	PreviewEnvOverrides map[string]string `json:"preview_env_overrides,omitempty"`
+	// Tags mirrors internal/api's appResource.Tags: names of every
+	// store.Tag attached to this app, response-only, set via POST/DELETE
+	// /api/v1/apps/{name}/tags (AttachAppTag/DetachAppTag).
+	Tags []string `json:"tags,omitempty"`
+}
+
+// TagResource mirrors internal/api's tagResource
+// (internal/api/tags.go).
+type TagResource struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at,omitempty"`
+}
+
+// CreateTagRequest mirrors internal/api's tagResource decode shape for
+// POST /api/v1/tags: only Name is read on create.
+type CreateTagRequest struct {
+	Name string `json:"name"`
+}
+
+// AttachAppTagRequest mirrors internal/api's attachAppTagRequest: POST
+// /api/v1/apps/{name}/tags' body, a tag name rather than an ID (see that
+// type's own doc comment for why).
+type AttachAppTagRequest struct {
+	Name string `json:"name"`
+}
+
+// TagAppResource mirrors internal/api's tagAppResource: GET
+// /api/v1/tags/{id}/apps' wire shape.
+type TagAppResource struct {
+	Name string `json:"name"`
 }
 
 // AppVaultEnvRef mirrors internal/api's appVaultEnvRef: one env var's
@@ -1026,6 +1057,23 @@ type SecretKeyResource struct {
 // (internal/api/secrets.go).
 type SetSecretLockRequest struct {
 	Locked bool `json:"locked"`
+}
+
+// SharedEnvVarResource mirrors internal/api's sharedEnvVarResource
+// (internal/api/shared_env_secrets.go): one shared env var at the
+// project/organization/environment tier. Value is always "" for a
+// secret-marked entry, matching SecretKeyResource's own "never a value"
+// rule above.
+type SharedEnvVarResource struct {
+	Key    string `json:"key"`
+	Value  string `json:"value"`
+	Secret bool   `json:"secret"`
+}
+
+// SetSharedEnvSecretRequest mirrors internal/api's
+// setSharedEnvSecretRequest (internal/api/shared_env_secrets.go).
+type SetSharedEnvSecretRequest struct {
+	Value string `json:"value"`
 }
 
 // GitSourceResource mirrors internal/api's gitSourceResource

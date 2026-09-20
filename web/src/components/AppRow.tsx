@@ -44,9 +44,29 @@ export function AppRow({ app }: { app: AppListEntry }) {
         <PackageIcon className="size-4" aria-hidden="true" />
       </span>
 
-      <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
-        <StatusDot status={app.status} />
-        <span className="truncate">{app.name}</span>
+      <span className="flex min-w-0 flex-col justify-center gap-0.5">
+        <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
+          <StatusDot status={app.status} />
+          <span className="truncate">{app.name}</span>
+        </span>
+        {app.tags && app.tags.length > 0 ? (
+          <span className="flex flex-wrap items-center gap-1 pl-4">
+            {app.tags.slice(0, 3).map((tag) => (
+              <Badge
+                key={tag}
+                variant="outline"
+                className="px-1.5 py-0 text-[10px] text-muted-foreground"
+              >
+                {tag}
+              </Badge>
+            ))}
+            {app.tags.length > 3 ? (
+              <Badge variant="muted" className="px-1.5 py-0 text-[10px]">
+                +{app.tags.length - 3}
+              </Badge>
+            ) : null}
+          </span>
+        ) : null}
       </span>
 
       <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">

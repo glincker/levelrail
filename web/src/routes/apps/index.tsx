@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   PackageIcon,
   DatabaseIcon,
@@ -12,6 +12,7 @@ import { staticSitesQueryOptions } from '../../queries/staticSites'
 import { APP_LIST_GRID, AppRow, RowSkeleton } from '../../components/AppRow'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { StaticSitesCard } from '../../components/StaticSitesCard'
+import { TagFilter } from '../../components/TagFilter'
 import { Button } from '../../components/ui/button'
 import { EmptyState } from '../../components/ui/empty-state'
 
@@ -58,9 +59,24 @@ function ListHeader() {
 function AppListPage() {
   const { data: apps } = useSuspenseQuery(appListQueryOptions())
   const parentRef = useRef<HTMLDivElement>(null)
+  const [tagFilter, setTagFilter] = useState<string[]>([])
+
+  // Client-side only, the same reasoning TagFilter's own doc comment
+  // gives: GET /api/v1/apps already returns everything in one response,
+  // so filtering the array already in memory needs no new request. OR
+  // semantics: an app matching any selected tag passes.
+  const filteredApps = useMemo(
+    () =>
+      tagFilter.length === 0
+        ? apps
+        : apps.filter((app) =>
+            (app.tags ?? []).some((tag) => tagFilter.includes(tag)),
+          ),
+    [apps, tagFilter],
+  )
 
   const virtualizer = useVirtualizer({
-    count: apps.length,
+    count: filteredApps.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 60,
     overscan: 8,
@@ -73,9 +89,12 @@ function AppListPage() {
         <div className="flex items-baseline gap-3">
           {apps.length > 0 ? (
             <span className="text-sm text-muted-foreground">
-              {apps.length} {apps.length === 1 ? 'app' : 'apps'}
+              {filteredApps.length}
+              {tagFilter.length > 0 ? ` of ${apps.length}` : ''}{' '}
+              {apps.length === 1 ? 'app' : 'apps'}
             </span>
           ) : null}
+          <TagFilter selected={tagFilter} onChange={setTagFilter} />
           {/* Secondary entry point for the databases resource kind,
               lower-emphasis (outline) than "New app" since the sidebar's
               Databases nav item is the primary way in: this is here
@@ -119,6 +138,21 @@ function AppListPage() {
             />
           }
         />
+      ) : filteredApps.length === 0 ? (
+        <EmptyState
+          icon={<PackageIcon className="size-5" />}
+          title="No apps match these tags"
+          description="Clear the tag filter to see every app again."
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setTagFilter([])}
+            >
+              Clear filter
+            </Button>
+          }
+        />
       ) : (
         <div
           ref={parentRef}
@@ -132,7 +166,7 @@ function AppListPage() {
             }}
           >
             {virtualizer.getVirtualItems().map((virtualRow) => {
-              const app = apps[virtualRow.index]
+              const app = filteredApps[virtualRow.index]
               if (!app) {
                 return null
               }
