@@ -1,3 +1,7 @@
+---
+description: Node-local metrics, logs, and alerts with federated queries, no central ingestion.
+---
+
 # Observability: metrics, logs, and alerts
 
 This platform keeps metrics and logs on each node's local store, with a federated query layer and alert engine on top.
@@ -21,6 +25,22 @@ Right now there is exactly one node (control plane and agent share a process, se
 
 
 ## How it actually works
+
+```mermaid
+graph LR
+    A["Container<br/>Docker Stats"] -->|15s samples| B["Agent<br/>Collector"]
+    B -->|compress| C["Node-Local<br/>SQLite Store"]
+    C -->|federated query| D["Control Plane<br/>Query Engine"]
+    D -->|merge results| E["Dashboard<br/>& API"]
+    F["Container<br/>Logs"] -->|stream| B
+    F -->|full-text<br/>index| C
+    G["SSE Subscribers"] -.->|live tail| B
+    style A fill:#f9f
+    style C fill:#bbf
+    style E fill:#9f9
+```
+
+This avoids write amplification to a central index. Each node keeps its own metrics and logs, answering queries on demand.
 
 **Metrics collection:**
 
@@ -137,6 +157,8 @@ There are nine rule kinds, all stored in one table (`alert_rules`). The evaluati
 
 Each rule tracks its own pending/firing state and notifies only on transitions (firing or resolved), never on every tick a rule stays in the same state. This prevents channels from being trained to ignore repeated alerts.
 
+::: details Nine rule kinds and their configuration
+
 | Kind | Scope | What it watches | Key fields |
 | --- | --- | --- | --- |
 | `threshold` | one app's own metric | latest value of `metric` vs `threshold`, debounced by `for_duration` | `metric`, `comparator` (`>`, `<`, `>=`, `<=`), `threshold`, `for_duration` |
@@ -148,6 +170,8 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 | `scheduled_task_failure` | one app's own scheduled task | consecutive failed runs of one task | `scheduled_task_id`, `restart_count_threshold` (reused as the failure-count threshold) |
 | `domain_health` | one app's own domains | a DNS check gone bad (not resolving, or resolving somewhere else) on any of the app's configured domains | `for_duration` (optional debounce) |
 | `backup_missing` | one database (platform-wide) or one app's own volume | last successful backup trailing its own cron schedule's expected interval by more than a grace period | `backup_resource_kind` (`database` or `volume`), `backup_database_name` or `backup_service_name`/`backup_volume_name`, `for_duration` (reused as the overdue grace period, default 6h) |
+
+:::
 
 **Platform-wide rule kinds** (`cert_expiry`, `patch_status`, `node_disk_space`, `node_resource_usage`)
 
@@ -217,13 +241,17 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 
 ## Integration walkthrough
 
-1. **Query one app's CPU over the last hour, bucketed into 5-minute
-   averages**:
+1. **Query one app's CPU over the last hour, bucketed into 5-minute averages**:
 
-   ```bash
+   ::: code-group
+   ```bash [curl]
    curl -s -H "Authorization: Bearer $TOKEN" \
      "https://your-control-plane/api/v1/apps/my-app/metrics?metric=cpu_percent&step=5m"
    ```
+   ```bash [CLI]
+   levelrail-cli apps metrics my-app --metric cpu_percent --since 1h --step 5m
+   ```
+   :::
 
    Response:
 
@@ -236,10 +264,15 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 
 2. **Search that app's logs for an error in the last day**:
 
-   ```bash
+   ::: code-group
+   ```bash [curl]
    curl -s -H "Authorization: Bearer $TOKEN" \
      "https://your-control-plane/api/v1/apps/my-app/logs?from=2026-09-11T00:00:00Z&q=panic"
    ```
+   ```bash [CLI]
+   levelrail-cli apps logs my-app --since 24h --q panic
+   ```
+   :::
 
 3. **Connect a Slack channel and test it**:
 
@@ -248,8 +281,7 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
    levelrail-cli channels test <id>
    ```
 
-4. **Create a threshold alert on that app, notifying through the new
-   channel**:
+4. **Create a threshold alert on that app, notifying through the new channel**:
 
    ```bash
    levelrail-cli apps alerts create my-app --name "high CPU" --kind threshold \
@@ -257,9 +289,7 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
      --channel-id <channel-id>
    ```
 
-5. **Watch it fire**: `levelrail-cli apps alerts list my-app` shows
-   `FIRING=true` once the condition holds for 5 minutes; a delivery row
-   shows up under `levelrail-cli channels deliveries <channel-id>`.
+5. **Watch it fire**: `levelrail-cli apps alerts list my-app` shows `FIRING=true` once the condition holds for 5 minutes; a delivery row shows up under `levelrail-cli channels deliveries <channel-id>`.
 
 ## API reference
 
@@ -346,3 +376,9 @@ levelrail-cli channels deliveries <id> [--limit N]
 **Fixed configurations:**
 - Alert evaluation interval (30s) is fixed, not env-configurable (unlike per-kind thresholds).
 - No alert-rule-specific change history (visible only in generic `GET /api/v1/audit-log`).
+
+## See also
+
+- [API Reference](./api-reference.md#telemetry) - full telemetry endpoint documentation
+- [Feature Catalog](./feature-catalog.md) - metrics and logs in the platform overview
+- [Architecture](./architecture.md) - telemetry design decisions and phase 2 rationale

@@ -1,8 +1,31 @@
+---
+title: Roadmap
+description: Status of Levelrail by phase - what is shipped, in progress, and planned.
+---
+
 # Roadmap
 
 Status as of 2026-09-17 (refreshed against current `main`), not the aspirational plan. See `/adr` for the phase-by-phase architectural decisions behind this build order.
 
 The build has moved further and less linearly than the phase plan implies: parts of Phase 3 (multi-node, the WireGuard mesh) ship while some Phase 1 items (real public ACME against a live domain) remain open. This page describes what is actually true today.
+
+## Phase progression
+
+```mermaid
+flowchart LR
+  P0["Phase 0: Foundation<br/>Done"] --> P1["Phase 1: Single Node<br/>Done"]
+  P1 --> P2["Phase 2: Observability<br/>Done"]
+  P2 --> P3["Phase 3: Multi-Node<br/>Done"]
+  P3 --> P4["Phase 4: Platform<br/>Done"]
+  P4 --> P5["Phase 5: Hardening<br/>Planned"]
+  
+  style P0 fill:#4CAF50,color:#fff,stroke:#333,stroke-width:2px
+  style P1 fill:#4CAF50,color:#fff,stroke:#333,stroke-width:2px
+  style P2 fill:#4CAF50,color:#fff,stroke:#333,stroke-width:2px
+  style P3 fill:#4CAF50,color:#fff,stroke:#333,stroke-width:2px
+  style P4 fill:#4CAF50,color:#fff,stroke:#333,stroke-width:2px
+  style P5 fill:#9E9E9E,color:#fff,stroke:#333,stroke-width:2px
+```
 
 ## Done
 
@@ -643,3 +666,9 @@ Pulled directly from the project's own non-goals:
 - **Managed offering**: Not building a cloud version until self-hosted has real users.
 - **AI in reconciliation**: AI is a read-and-suggest layer on top of the API, nothing more.
 - **Kubernetes compatibility**: No CRDs, no custom orchestration standard. Borrow the patterns, skip the ecosystem.
+
+## See also
+
+- [Architecture Decision Records](../adr) - decisions behind the build order and design trade-offs
+- [Multi-Node Deployment](/multi-node): guide to adding and managing multiple servers
+- [Feature Flags](/feature-flags): runtime feature control without redeployment

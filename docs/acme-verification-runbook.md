@@ -1,3 +1,7 @@
+---
+description: Verify real ACME certificate issuance against a live public domain using Let's Encrypt or custom CA
+---
+
 # Verifying real ACME issuance against a live domain
 
 The Caddy ACME issuer, settings toggle, and form validation are all built, wired end to end, and covered by automated tests. Specifically: config-shape unit tests in `internal/ingress/acme_test.go`, and a real, local-CA end-to-end test in `internal/ingress/acme_live_test.go`.
@@ -68,21 +72,37 @@ Run: `journalctl -u levelrail -n 200 --no-pager` (or your Docker image's log out
 
 Look for lines with `"logger":"tls.obtain"` and `"logger":"http.acme_client"`.
 
+::: details Expected log sequence for successful issuance
+
 A clean run looks like this sequence (from `internal/ingress/acme_live_test.go` against a local test CA, just with real Let's Encrypt account and identifier):
 
-  ```
-  "acquiring lock" -> "obtaining certificate" -> "registering account" (first
-  time only) -> "trying to solve challenge","challenge_type":"http-01" ->
-  "authorization finalized","authz_status":"valid" -> "finalizing order" ->
-  "successfully downloaded available certificate chains" ->
-  "certificate obtained successfully"
-  ```
+```
+"acquiring lock" -> "obtaining certificate" -> "registering account" (first
+time only) -> "trying to solve challenge","challenge_type":"http-01" ->
+"authorization finalized","authz_status":"valid" -> "finalizing order" ->
+"successfully downloaded available certificate chains" ->
+"certificate obtained successfully"
+```
 
-  Any error logged between "trying to solve challenge" and "authorization
-  finalized" is almost always the DNS or port-80 failure modes below, not
-  a bug in the issuer code itself.
+Any error logged between "trying to solve challenge" and "authorization finalized" is almost always the DNS or port-80 failure modes below, not a bug in the issuer code itself.
+
+:::
+
 
 ## Common failure modes and what they look like
+
+```mermaid
+flowchart TD
+  A[ACME issuance failed] --> B{Challenge type in logs?}
+  B -->|http-01 challenge error| C{DNS resolves correctly?}
+  C -->|No| D["Fix DNS, wait for propagation<br/>Run: dig +short your-domain.example.com"]
+  C -->|Yes| E{"Port 80/443 reachable<br/>from internet?"}
+  E -->|No| F["Open ports 80, 443<br/>Check firewall, ufw, port forwarding"]
+  E -->|Yes| G["Check logs for<br/>other errors"]
+  B -->|rate_limit error| H["Use staging directory first<br/>https://acme-staging-v02..."]
+  B -->|No challenge logged| I["Confirm domain is routed<br/>to an active service"]
+  B -->|No account/cert error| J["Verify email and directory URL<br/>Check form validation"]
+```
 
 **DNS not propagated or wrong record**
 
@@ -119,3 +139,10 @@ When you've confirmed a real, browser-trusted (production, not staging) certific
 Move the "Real public ACME" bullet from the "In progress" section to "Done", with a short note of what was verified and when. The domain itself doesn't need to be named if it's private or internal. What matters is that it was a real public domain with real DNS and real port reachability.
 
 This bullet is the only remaining item blocking Phase 1 completion.
+
+## See also
+
+- [Installing Levelrail](installing.md) - initial setup and prerequisites
+- [Troubleshooting guide](troubleshooting.md) - broader platform diagnostics
+- [Git integrations](git-integrations.md) - webhook and domain setup for deployments
+- [ADR 005: Caddy embedded ingress](../adr/005-caddy-embedded-ingress.md) - architecture and design decisions

@@ -1,3 +1,7 @@
+---
+description: Install Levelrail, build the binaries, deploy your first app with app.yaml
+---
+
 # Getting started
 
 ## Requirements
@@ -40,6 +44,18 @@ See `web/README.md` for lint, format, typecheck, preview, and other commands plu
 The control plane binary listens on `:8080` by default.
 
 ## Deploy your first app
+
+Here's the path from local setup to a live app:
+
+```mermaid
+flowchart LR
+  A["Build binaries<br/>control plane + agent"] --> B["Start control plane<br/>on :8080"]
+  B --> C["Create admin account<br/>register or dev mode"]
+  C --> D["Write app.yaml<br/>in your repo"]
+  D --> E["Deploy via CLI<br/>or dashboard"]
+  E --> F["Live app<br/>with HTTPS + logs"]
+  style F fill:#90EE90
+```
 
 The app spec is the one declarative file you write in your app's repo: `app.yaml` (also discovered as `app.yml`, `deploy.yaml`, or `deploy.yml`). A minimal one looks like this:
 
@@ -196,57 +212,38 @@ Run `levelrail-cli <command> -h` to see `--output` and `--query` flags for any c
 
 `levelrail-cli` can generate completion scripts for bash, zsh, or fish. Coverage includes every command and subcommand plus global flags (`--token`, `--api-url`, `--json`, `--output`, `--query`, `--help`). It does not complete flag values or positional arguments like app names.
 
-#### Bash
+To install completion for your shell:
 
-```
+::: code-group
+```bash [Bash]
 source <(levelrail-cli completion bash)
-```
 
-To install permanently:
-
-```
+# To install permanently:
 levelrail-cli completion bash | sudo tee /etc/bash_completion.d/levelrail-cli > /dev/null
 ```
 
-#### Zsh
-
-```
+```zsh [Zsh]
 source <(levelrail-cli completion zsh)
-```
 
-To install permanently, save as `_levelrail-cli` somewhere on `$fpath`:
-
-```
+# To install permanently, save as `_levelrail-cli` somewhere on $fpath:
 levelrail-cli completion zsh > "${fpath[1]}/_levelrail-cli"
 ```
 
-#### Fish
-
-```
+```fish [Fish]
 levelrail-cli completion fish | source
-```
 
-To install permanently:
-
-```
+# To install permanently:
 levelrail-cli completion fish > ~/.config/fish/completions/levelrail-cli.fish
 ```
+:::
 
 Run `levelrail-cli completion -h` for the same instructions from the CLI itself.
 
-## Where to go next
+## See also
 
-- [docs/architecture.md](architecture.md): how the control plane, the
-  node agent, and the reconciler fit together.
-- [docs/app-spec-reference.md](app-spec-reference.md): the full
-  `app.yaml` schema.
-- [docs/domains-and-ingress.md](domains-and-ingress.md): why there's no
-  reverse proxy to set up, and how to get your first domain live over
-  HTTPS.
-- [docs/comparison.md](comparison.md): how Levelrail's approach
-  differs from Coolify, Dokploy, CapRover, Dokku, and Kamal.
-- [docs/roadmap.md](roadmap.md): what's shipped, what's in progress,
-  and what's not started yet.
-- [docs/master-key-rotation.md](master-key-rotation.md): rotating the
-  envelope-encryption master key.
-- [CHANGELOG.md](../CHANGELOG.md): what changed between releases.
+- [app-spec-reference.md](app-spec-reference.md) - full `app.yaml` schema with all fields and options
+- [domains-and-ingress.md](domains-and-ingress.md) - setting up domains and HTTPS
+- [architecture.md](architecture.md) - how the control plane, agent, and reconciler work together
+- [comparison.md](comparison.md) - how Levelrail compares to Coolify, Dokploy, and CapRover
+- [roadmap.md](roadmap.md) - current status and what's planned
+- [master-key-rotation.md](master-key-rotation.md) - rotating encryption keys

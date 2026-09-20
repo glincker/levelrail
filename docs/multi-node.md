@@ -1,3 +1,7 @@
+---
+description: Enroll additional nodes, manage placement and health, migrate apps with their volumes, and configure the WireGuard mesh.
+---
+
 # Multi-node: adding and managing nodes
 
 Everything on this page is optional. A fresh install runs entirely on the control plane's own local node, and nothing here has to be touched to make it work.
@@ -18,13 +22,28 @@ This shows up in three ways:
 
 Enrollment uses a one-time join token exchanged for a client certificate (the agent dials out to the control plane; the control plane never initiates a connection).
 
+### Enrollment flow
+
+```mermaid
+graph LR
+    A["Mint join<br/>token"] --> B["Agent runs<br/>with token"]
+    B --> C["Agent exchanges<br/>token for cert"]
+    C --> D["Agent dials<br/>control plane"]
+    D --> E["Heartbeat<br/>established"]
+    E --> F["Node<br/>online"]
+```
+
 ### Step 1: Mint a join token
 
-Dashboard: "Add node" on the Nodes page, or use the CLI:
-
-```bash
+::: code-group
+```bash [CLI]
 levelrail-cli nodes join-token
 ```
+
+```text [Dashboard]
+Navigate to the Nodes page and click "Add node"
+```
+:::
 
 This calls `POST /api/v1/nodes/join-tokens`:
 - Token is valid for 15 minutes.
@@ -349,24 +368,35 @@ levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 - `accepts_build_workloads` opts a node into dedicated build placement.
 - New nodes accept app workloads by default but not build workloads (explicit enable required).
 
+## See also
+
+- [Backups and storage](backups-and-storage.md) - Move app volumes to another node using the volume migration API
+- [Observability](observability.md) - Monitor per-node metrics, resource usage, and OS patch status
+- [Deploying apps](deploying-apps.md) - Place apps on specific nodes or use auto-placement
+
 ## Not built yet (deliberate follow-ups)
 
-**The WireGuard mesh does not span nodes yet**
-- `ConfigSink`'s gRPC arm is scoped but not built (wire contract change plus agent-side `Mesh.Apply`).
-- Enabling `APP_MESH_ENABLED` today only wires up the control plane's own node.
+::: details The WireGuard mesh does not span nodes yet
+`ConfigSink`'s gRPC arm is scoped but not built (wire contract change plus agent-side `Mesh.Apply`).
+Enabling `APP_MESH_ENABLED` today only wires up the control plane's own node.
+:::
 
-**No dedicated "what's placed on this node" endpoint**
-- Closest alternatives: drain's resource enumeration, each resource's `node_id` field on its detail page.
-- No single list endpoint or dashboard panel that answers "show me everything running here" directly.
+::: details No dedicated "what's placed on this node" endpoint
+Closest alternatives: drain's resource enumeration, each resource's `node_id` field on its detail page.
+No single list endpoint or dashboard panel that answers "show me everything running here" directly.
+:::
 
-**No resource-aware scheduling**
-- Auto-placement and drain's auto-spread count placements only, never CPU, memory, or disk.
-- Real bin-packing or affinity rules are an explicit v1 non-goal.
+::: details No resource-aware scheduling
+Auto-placement and drain's auto-spread count placements only, never CPU, memory, or disk.
+Real bin-packing or affinity rules are an explicit v1 non-goal.
+:::
 
-**No per-build placement policy beyond the capability flag**
-- `accepts_build_workloads` marks a node eligible.
-- The dispatch logic in `internal/build.SelectBuildNode` is built, but no per-build policy exists yet.
+::: details No per-build placement policy beyond the capability flag
+`accepts_build_workloads` marks a node eligible.
+The dispatch logic in `internal/build.SelectBuildNode` is built, but no per-build policy exists yet.
+:::
 
-**No node-scoped change history**
-- Cordon, drain, or workload toggle are captured by the generic platform audit log (`GET /api/v1/audit-log`).
-- No node-specific history view beyond that.
+::: details No node-scoped change history
+Cordon, drain, or workload toggle are captured by the generic platform audit log (`GET /api/v1/audit-log`).
+No node-specific history view beyond that.
+:::

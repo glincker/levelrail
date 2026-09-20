@@ -1,3 +1,7 @@
+---
+description: Complete HTTP API reference for the control plane, organized by resource group with 296 endpoints.
+---
+
 # REST API Reference
 
 Exhaustive route inventory (296 routes total) for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.
@@ -24,6 +28,8 @@ System endpoints for:
 | GET | /api/v1/updates | AbilityRead | handleGetUpdates |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
+
+::: details 43 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -81,7 +87,11 @@ Endpoints for:
 | GET | /api/v1/auth/tokens | Session | handleListTokens |
 | DELETE | /api/v1/auth/tokens/{id} | Session | handleRevokeToken |
 
+:::
+
 ## Apps CRUD / Lifecycle / Deploy
+
+::: details 32 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -125,6 +135,8 @@ Endpoints for:
 | POST | /api/v1/git/branches | AbilityDeploy | handleListGitBranches |
 | GET | /api/v1/apps/{name}/images | AbilityRead | handleListImages |
 | GET | /api/v1/apps/{name}/network | AbilityRead | handleGetAppNetwork |
+
+:::
 
 ## Secrets / Git Source / Webhooks / Preview Environments
 
@@ -286,6 +298,8 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
+::: details 41 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+
 Endpoints for:
 - TLS certificate lifecycle and management
 - ACME configuration and certificate validation
@@ -338,6 +352,8 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/vault-env/{key} | AbilityWrite | handleClearAppVaultEnv |
 | PUT | /api/v1/apps/{name}/preview-env/{key} | AbilityWrite | handleSetAppPreviewEnvOverride |
 | DELETE | /api/v1/apps/{name}/preview-env/{key} | AbilityWrite | handleClearAppPreviewEnvOverride |
+
+:::
 
 ## Static Sites / Backup Targets / Registry Credentials
 
@@ -494,3 +510,10 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/log-drain | AbilityRead | handleGetAppLogDrain |
 | PUT | /api/v1/apps/{name}/log-drain | AbilityWriteSensitive | handleSetAppLogDrain |
 | DELETE | /api/v1/apps/{name}/log-drain | AbilityWriteSensitive | handleClearAppLogDrain |
+
+## See also
+
+- [Feature Catalog](./feature-catalog.md) - high-level overview of platform capabilities
+- [Observability](./observability.md) - metrics, logs, alerts, and telemetry APIs
+- [Architecture](./architecture.md) - control plane design and reconciliation patterns
+- [CLI Reference](cli-reference.md) - command-line tool for all API operations

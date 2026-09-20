@@ -1,3 +1,7 @@
+---
+description: Rotate the envelope-encryption master key without losing access to stored secrets or causing downtime.
+---
+
 # Master key rotation
 
 All secrets (app env vars marked `secret: true`, email credentials, tokens, etc.) are encrypted with envelope encryption. Each secret gets its own random data encryption key (DEK), and every DEK is wrapped under a master key held in memory. Rotating the master key means re-wrapping every DEK under a new key without ever exposing plaintext secrets.
@@ -11,7 +15,7 @@ All secrets (app env vars marked `secret: true`, email credentials, tokens, etc.
   nudge, not an error, and never fails the doctor's overall status.
 - Before moving to an external KMS-backed master key in a future release.
 
-## What this does and does not require
+::: details What this does and does not require
 
 Rotation runs live against the running control plane with zero downtime. The CLI calls an admin-only endpoint that re-wraps every DEK in a single database transaction. If any DEK fails to unwrap, the entire rotation aborts with no changes.
 
@@ -26,6 +30,7 @@ Rotation automatically rewrites the file at `<data dir>/master.key` with the new
 Rotation cannot rewrite an environment variable belonging to your process supervisor. The CLI output includes an explicit warning to update `APP_MASTER_KEY` in your systemd unit or Docker Compose file before the next restart. Restarting with the old value will make every secret permanently unreadable, since all DEKs are now wrapped only under the new key.
 
 Always read the CLI's output (or the JSON response's `warning`/`persistedToFile` fields). A silently-skipped warning can cause failure at the next restart, the worst kind of problem to discover.
+:::
 
 ## How to rotate
 
@@ -52,11 +57,21 @@ This command requires an API token or session with the `root` ability. It's gate
 
 ## Failure modes and what they mean
 
-**"rotate master key: ... unwrap DEK for ...: ..."**
+::: details "rotate master key: ... unwrap DEK for ...: ..."
 A stored DEK could not be unwrapped with the control plane's current master key. This suggests data corruption or that the running process does not hold the key you expected. Nothing was changed, so it is safe to investigate and retry.
+:::
 
-**`persistedToFile: false` with a warning about the key file**
+::: details `persistedToFile: false` with a warning about the key file
 The rotation itself succeeded (all DEKs are now wrapped under the new key and in use), but writing the new key to `master.key` failed. Usually a permissions or disk-space problem. Fix it and copy the new key into place manually before the control plane restarts.
+:::
 
-**`persistedToFile: false` with a warning about `APP_MASTER_KEY`**
+::: details `persistedToFile: false` with a warning about `APP_MASTER_KEY`
 Not a failure. This is the expected message when the master key is env-sourced (see above). It is the required follow-up step, not an error.
+:::
+
+## See also
+
+- [Identity and access](identity-and-access.md) for token abilities and admin access
+- [CLI reference](cli-reference.md) for the `secrets` command group
+- [Deploying apps](deploying-apps.md) for how app secrets work
+- [Installing](installing.md) for configuring `APP_MASTER_KEY` at install time

@@ -1,3 +1,7 @@
+---
+description: Toggle app behavior at runtime without a redeploy using consistent-hash rollout bucketing.
+---
+
 # Feature flags
 
 Toggle behavior in a running app without a redeploy. Package:
@@ -25,16 +29,23 @@ Pass a stable per-user or per-device value as the `identifier` query parameter f
 
 ## Integration model
 
-1. **Create a flag** (dashboard: an app's "Feature flags" tab, or the
-   CLI):
+1. **Create a flag** (dashboard: an app's "Feature flags" tab, or the CLI):
 
-   ```bash
+   :::code-group
+   ```bash [Create flag]
    levelrail-cli flags create my-app --key new-checkout --name "New checkout" --rollout 25
    ```
+   
+   ```bash [List flags]
+   levelrail-cli flags list my-app
+   ```
+   
+   ```bash [Update flag]
+   levelrail-cli flags set my-app <id> --rollout 50
+   ```
+   :::
 
-2. **Create a read-scoped API token** (Settings -> Tokens, or
-   `levelrail-cli tokens create --abilities read`), then inject it into
-   your app as a secret env var, e.g. `FLAGS_TOKEN`.
+2. **Create a read-scoped API token** (Settings -> Tokens, or `levelrail-cli tokens create --abilities read`), then inject it into your app as a secret env var, e.g. `FLAGS_TOKEN`.
 
 3. **Call the evaluate endpoint from your app's own code**:
 
@@ -81,10 +92,18 @@ levelrail-cli flags set <app> <id> --name NAME [--description DESC] [--disabled]
 levelrail-cli flags delete <app> <id>
 ```
 
-## Not built yet (deliberate follow-ups)
+::: details Planned features (not yet built)
 
 **No language-specific SDK.** The evaluate endpoint is plain HTTP. Wrapping it in language-specific clients (Go, Node, Python) is a separate piece of work.
 
 **No targeting rules beyond flat rollout percentage.** No user-attribute-based targeting (e.g. "50% of users on plan X"), only identifier-based consistent-hash bucketing.
 
 **No dedicated flag change history.** Flag create/update/delete operations are captured by the platform's existing generic audit log (`GET /api/v1/audit-log`). There is no flag-specific history view beyond that.
+:::
+
+## See also
+
+- [API reference](api-reference.md) for the full flag management endpoints
+- [CLI reference](cli-reference.md) for the `flags` command group
+- [Deploying apps](deploying-apps.md) for injecting tokens as secret env vars
+- [Identity and access](identity-and-access.md) for creating read-scoped tokens

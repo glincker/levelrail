@@ -1,3 +1,7 @@
+---
+description: Core architecture of Levelrail's reconciler, agent, builds, ingress, state, observability, and security layers.
+---
+
 # Architecture
 
 This is how Levelrail is actually built today, not just how the phase plan
@@ -16,6 +20,19 @@ Package: `internal/reconcile` (see `internal/reconcile/engine.go`, and the per-r
 
 **Observable failures:** Every reconcile also emits a status condition with a reason string, so a failed convergence shows up in the UI with an explanation, not just a spinner that never resolves.
 
+```mermaid
+flowchart TD
+  A["Desired state<br/>(database records)"] -->|Read| B["Reconcile loop"]
+  C["Observed state<br/>(Docker events)"] -->|Stream| B
+  B -->|Diff| D{Match?}
+  D -->|No| E["Converge<br/>(issue commands)"]
+  D -->|Yes| F["No-op"]
+  E -->|Emit| G["Status condition<br/>(reason + outcome)"]
+  F -->|Emit| G
+  G -->|Show in UI| H["Dashboard"]
+  E -.->|Watch| C
+```
+
 ## Node agent
 
 Packages: `internal/agent` (see `internal/agent/transport.go`, `internal/agent/grpc_transport.go`, `internal/agent/server.go`) and `internal/docker` (see `internal/docker/client.go`).
@@ -27,6 +44,23 @@ Packages: `internal/agent` (see `internal/agent/transport.go`, `internal/agent/g
 - `GRPCTransport` - dispatches the same calls over a real reverse-dialed gRPC connection with mTLS (multi-node)
 
 Both are shipped and in use today. Node enrollment (one-time join tokens exchanged for client certificates), a real `levelrail-agent` binary, and cross-node service placement all work today. Reconcilers and everything above the transport boundary don't know or care which implementation they're talking to, which keeps single-node and multi-node the same code path.
+
+```mermaid
+graph LR
+  R["Reconciler<br/>(reconcile/*)"]
+  T["Transport interface<br/>(agent.Transport)"]
+  L["Local<br/>(in-process)"]
+  G["gRPC<br/>(reverse-dialed)"]
+  D["Docker Engine API"]
+  A["Node agent"]
+  
+  R -->|calls| T
+  T -->|impl| L
+  T -->|impl| G
+  L -->|talks to| D
+  G -->|reverse dial| A
+  A -->|talks to| D
+```
 
 **Additional capabilities:**
 - **WireGuard mesh** - `internal/network` (built on `wireguard-go`) gives every node a peer and internal DNS names that resolve across machines
@@ -80,6 +114,26 @@ Nothing is centrally indexed by default, which keeps idle cost near zero as the 
 
 **Federated query:** Not aspirational, actually shipped. `internal/telemetry/federate.go` defines a `MetricsSource` interface that both the local, single-node store and a remote node's data satisfy identically. The query API (`internal/api`) fans a query out and merges results across nodes.
 
+```mermaid
+graph TD
+  N1["Node 1<br/>Metrics + Logs<br/>FTS5 index"]
+  N2["Node 2<br/>Metrics + Logs<br/>FTS5 index"]
+  N3["Node N<br/>Metrics + Logs<br/>FTS5 index"]
+  
+  Q["Query API<br/>(internal/api)"]
+  M["Merge results<br/>(federate.go)"]
+  
+  Q -->|fan out| N1
+  Q -->|fan out| N2
+  Q -->|fan out| N3
+  
+  N1 -->|results| M
+  N2 -->|results| M
+  N3 -->|results| M
+  
+  M -->|single result set| D["Dashboard<br/>+ Prometheus<br/>remote-read"]
+```
+
 **Prometheus compatibility:** A Prometheus remote-read endpoint exposes the same data for anyone who wants to point their own Grafana at it.
 
 **Alerting and detection:** Built on top of the metrics/log layer:
@@ -106,10 +160,18 @@ Directory: `web/` (React, Vite, TypeScript, Tailwind, TanStack Router and Query)
 
 **Live streaming:** Live build logs and app log tailing use server-sent events (SSE) rather than websockets, because SSE reconnects cleanly through proxies without extra client-side plumbing.
 
-## What's still ahead of the code
+::: details What's still ahead of the code
 
 A few pieces described in the platform's design aren't finished yet. Worth naming plainly rather than leaving implicit:
 
 **Public ACME certificate issuance (verified against a live domain)**
 
 Ingress defaults to an internal, self-signed issuer. A real Caddy ACME issuer, settings toggle, and form validation are all built and wired end to end. The missing piece: issuance has only been unit-tested at the config level so far, not spot-checked against a real domain issuing a real certificate.
+
+:::
+
+## See also
+
+- [Comparison](comparison.md) - How this architecture compares to Coolify, Dokploy, and others
+- [Security overview](security.md) - How secrets, tokens, and TLS fit into this design
+- [Feature catalog](feature-catalog.md) - What's currently shipped across all layers

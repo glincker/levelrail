@@ -1,3 +1,7 @@
+---
+description: Architectural and feature differences between Levelrail, Coolify, Dokploy, CapRover, Dokku, and Kamal.
+---
+
 # Comparison
 
 Positioning, not a ranking. All of these projects are worth using. This
@@ -172,3 +176,9 @@ Levelrail's column is sourced from `docs/roadmap.md` (current as of 2026-09-01),
 - Dokku and Kamal have no built-in backup feature at all
 
 Everywhere else in this table, Levelrail matches or leads.
+
+## See also
+
+- [Architecture](architecture.md) - How Levelrail is built internally
+- [Feature catalog](feature-catalog.md) - Complete inventory of routes, API, CLI
+- [Roadmap](roadmap.md) - Development status and what's coming next

@@ -1,6 +1,16 @@
+---
+description: Complete reference of all Levelrail CLI commands, organized by group with examples and typical use cases.
+---
+
 # Levelrail CLI Reference
 
 Exhaustive reference of all Levelrail CLI commands, organized by command group and extracted directly from the source code.
+
+## See also
+
+- [Getting Started](getting-started.md) - First steps with Levelrail
+- [Feature Catalog](feature-catalog.md) - Complete feature overview
+- [App Spec Reference](app-spec-reference.md) - YAML configuration syntax
 
 ## Apps
 
@@ -733,29 +743,41 @@ levelrail status [flags]
 levelrail version [flags]
 ```
 
-## Audit Log
+::: details Audit Log and Audit Purge (administrative)
+
+### Audit Log
 
 ```
 levelrail audit-log [flags]
 ```
 
-## Audit Purge
+### Audit Purge
 
 ```
 levelrail audit-purge [flags]
 ```
 
-## Doctor
+:::
+
+::: details Doctor (troubleshooting)
+
+### Doctor
 
 ```
 levelrail doctor [flags]
 ```
 
-## Containers
+:::
+
+::: details Containers (low-level)
+
+### Containers
 
 ```
 levelrail containers [flags]
 ```
+
+:::
 
 ## Users
 
@@ -830,7 +852,9 @@ levelrail iam policies update <id> --name NAME --document DOC [flags]
 levelrail secrets rotate-master-key --new-key-file PATH [flags]
 ```
 
-## Migrate
+::: details Migrate (one-time platform migration)
+
+### Migrate
 
 ```
 levelrail migrate caprover --url URL --token TOKEN [flags]
@@ -845,14 +869,20 @@ migrate apps from a Coolify instance
 levelrail migrate dokploy --url URL --token TOKEN [flags]
 ```
 
-## Completion
+:::
+
+::: details Completion (shell setup)
 
 ```
 levelrail completion bash
 ```
 print a bash completion script
 
-## Settings
+:::
+
+::: details Settings (system configuration)
+
+### Settings
 
 ```
 levelrail settings email get [flags]
@@ -867,26 +897,32 @@ levelrail settings oauth list [flags]
 ```
 show every OAuth sign-in provider's current settings
 
-## Github App
+:::
+
+::: details Git Integrations (Github, Gitlab, Bitbucket setup)
+
+### Github App
 
 ```
 levelrail github-app repos [flags]
 ```
 list repos the connected installation can access
 
-## Gitlab App
+### Gitlab App
 
 ```
 levelrail gitlab-app projects [flags]
 ```
 list projects the connected account can access
 
-## Bitbucket App
+### Bitbucket App
 
 ```
 levelrail bitbucket-app repos [flags]
 ```
 list repos the connected account can access
+
+:::
 
 ## Templates
 

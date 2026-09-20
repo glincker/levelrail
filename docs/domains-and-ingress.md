@@ -1,3 +1,7 @@
+---
+description: Automatic TLS, domain routing, WAF, rate limiting, and redirects, all embedded in the control plane, with no separate proxy to manage.
+---
+
 # Domains and ingress: you don't set up a reverse proxy
 
 If you're coming from a platform that requires you to install and wire up your own Traefik or nginx container, stop: Levelrail works differently. There is nothing to install for ingress and nothing separate to keep running.
@@ -22,6 +26,29 @@ Levelrail removes that failure mode by design. One process, one source of desire
 Write `domains:` in your app's `app.yaml` and deploy. Routing and certificates happen automatically. No proxy config file, no extra container, nothing extra to monitor.
 
 ## How domain routing actually works
+
+Requests to any configured domain flow through a decision chain:
+
+```mermaid
+flowchart TD
+  A["Request arrives<br/>with Host header"] --> B{"Maintenance<br/>mode on?"}
+  B -->|Yes| C["Serve maintenance<br/>page"]
+  B -->|No| D{"Redirect<br/>configured?"}
+  D -->|Yes| E["Issue redirect<br/>301/302"]
+  D -->|No| F{"WAF<br/>enabled?"}
+  F -->|Yes, match| G{"Mode =<br/>detect?"}
+  G -->|Yes| H["Log match,<br/>allow request"]
+  G -->|No| I["Block request<br/>with 403"]
+  F -->|No or skip| H
+  I --> J["Request ends"]
+  H --> K{"Rate limit<br/>exceeded?"}
+  K -->|Yes| L["Return 429"]
+  K -->|No| M["Proxy to<br/>backend<br/>container"]
+  C --> J
+  E --> J
+  L --> J
+  M --> J
+```
 
 Add the `domains` field to a service in `app.yaml`:
 
@@ -133,29 +160,35 @@ Wildcard domains like `*.example.com` need ACME's DNS-01 challenge (HTTP-01 cann
 
 Two providers are supported. Configure them platform-wide under **Domains** in the dashboard or via CLI. Only one can be active per reconcile pass; if both are enabled, Cloudflare takes precedence.
 
-### Cloudflare
+::: code-group
 
-Use an API token scoped to `Zone:DNS:Edit` for the zone containing your wildcard domains. Never use the global API key.
+```bash [Cloudflare]
+# Use an API token scoped to Zone:DNS:Edit for your zone
+# Never use the global API key
 
-```
+# Via API:
 GET/PUT/DELETE /api/v1/settings/cloudflare-dns
+
+# Via CLI:
 levelrail-cli domains cloudflare-dns get|set|clear
 ```
 
-### Route53
+```bash [Route53]
+# Use an AWS IAM access key pair with these permissions:
+# - route53:ChangeResourceRecordSets
+# - route53:ListResourceRecordSets
+# - route53:GetChange
+#
+# Region and hosted zone ID are optional (AWS SDK auto-resolves)
 
-Use an AWS IAM access key pair scoped to:
-
-- `route53:ChangeResourceRecordSets`
-- `route53:ListResourceRecordSets`
-- `route53:GetChange`
-
-Apply the scopes to the target hosted zone. Region and hosted zone ID are optional; the AWS SDK resolves these from its default chain and by matching the domain against your zones.
-
-```
+# Via API:
 GET/PUT/DELETE /api/v1/settings/route53-dns
+
+# Via CLI:
 levelrail-cli domains route53-dns get|set|clear
 ```
+
+:::
 
 ### Security and extensibility
 
@@ -207,11 +240,11 @@ levelrail-cli domains waf get|set|clear <app> <domain>
 levelrail-cli domains waf set my-app my-app.example.com --waf --mode detect --rps 20 --burst 50
 ```
 
-### Not included in v1
-
+::: details Not included in v1
 - No UI for custom CRS exclusion or override rules.
 - No per-path or per-route rate-limit scoping (whole-domain only).
 - No separate WAF/rate-limit event log (use Caddy's access log).
+:::
 
 ## Domain redirects
 
@@ -375,3 +408,11 @@ This assumes you already have the control plane running and an app deployed (see
    Or visit it in a browser from outside your network.
 
 Done. No proxy container to configure anywhere.
+
+## See also
+
+- [App spec reference](app-spec-reference.md) - how to configure domains in your app.yaml
+- [ACME verification runbook](acme-verification-runbook.md) - step-by-step guide for issuing real Let's Encrypt certificates
+- [Getting started](getting-started.md) - first deployment walkthrough
+- [ADR 005: Caddy embedded ingress](../adr/005-caddy-embedded-ingress.md) - architecture decision rationale
+- [Comparison to Coolify and Dokploy](comparison.md) - why Levelrail's ingress is different

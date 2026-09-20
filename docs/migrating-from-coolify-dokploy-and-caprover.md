@@ -1,3 +1,7 @@
+---
+description: Migrate apps from Coolify, Dokploy, or CapRover to Levelrail with automatic mapping and manual review
+---
+
 # Migrating from Coolify, Dokploy, or CapRover
 
 The `migrate` commands read every application from a live source instance and convert each one into a Levelrail service.
@@ -15,6 +19,23 @@ This is a one-way, read-only migration. Nothing on the source instance is touche
 ::: tip
 This page describes what the commands do today, not an aspirational version. If something below says an app is dropped or needs manual review, that's the actual behavior of the mapping code, not a gap in this documentation.
 :::
+
+## Migration decision flow
+
+```mermaid
+graph TD
+  A["App config from<br/>source instance"] --> B{Blocking issue?<br/>Nixpacks, Compose,<br/>etc.}
+  B -->|Yes| C["Not migrated<br/>manual review needed"]
+  B -->|No| D{"Have all data<br/>for mapping?<br/>repo, ports, etc."}
+  D -->|Partial| E["app.yaml created<br/>review issues logged"]
+  D -->|Yes| F["app.yaml created<br/>no issues"]
+  C --> G["Check punch list"]
+  E --> G
+  F --> G
+  style C fill:#FFB6C1
+  style E fill:#FFE4B5
+  style F fill:#90EE90
+```
 
 ## Before you run it
 
@@ -212,3 +233,10 @@ Both commands support the same global CLI flags for scriptable output:
 - `--query` for JMESPath filtering
 
 The migration report itself is scriptable, so you can pipe the "blocking" list into another tool when migrating a large number of apps.
+
+## See also
+
+- [getting-started.md](getting-started.md) - deploying your first app
+- [app-spec-reference.md](app-spec-reference.md) - full app.yaml schema for reference during migration
+- [comparison.md](comparison.md) - architectural differences between platforms
+- [roadmap.md](roadmap.md) - current capabilities and limitations

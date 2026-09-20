@@ -1,3 +1,7 @@
+---
+description: Deploy ready-made services from a curated catalog using Docker Compose with one-step configuration
+---
+
 # Service template catalog
 
 Deploy a curated set of ready-made services (n8n, Uptime Kuma, Postgres-backed apps, etc.) in one step, without hand-writing a Compose file.
@@ -166,7 +170,7 @@ levelrail-cli static-sites list [flags]
 exists as a quick filter over apps that are plain static sites, since `apps
 list` already shows every app including these.
 
-## Not built yet (deliberate follow-ups)
+::: details Not built yet (deliberate follow-ups)
 
 **No magic-var resolver**
 
@@ -187,3 +191,11 @@ ADR 015 leaves open whether a full third-party dataset gets imported verbatim. T
 **No template change history or versioning**
 
 A template's Compose body can change between control plane releases with nothing recording what an already-deployed app was created from.
+
+:::
+
+## See also
+
+- [Deploying apps user guide](deploying-apps.md) - using templates from the dashboard or CLI
+- [App spec reference](app-spec-reference.md) - YAML format and build type options
+- [ADR 015: Service template catalog reversal](../adr/015-service-template-catalog-reversal.md) - design decision and rationale

@@ -1,3 +1,7 @@
+---
+description: Organize apps and databases into optional projects, organizations, and environments with shared configuration and deployment gates.
+---
+
 # Projects, organizations, and environments
 
 The optional grouping hierarchy for apps and databases.
@@ -14,11 +18,30 @@ This is deliberate. Projects and organizations are organizational labels arrivin
 
 ### The hierarchy
 
-```
-organization (optional)
-  └── project (optional)
-        ├── environment (optional, e.g. staging / production)
-        └── app / database
+```mermaid
+graph TD
+  A["Organization<br/>(optional)"]
+  B["Project<br/>(optional)"]
+  C["Environment<br/>(optional)<br/>staging, production, etc."]
+  D["App / Database<br/>(required)"]
+  
+  A -->|contains| B
+  B -->|contains| C
+  B -->|contains| D
+  C -->|tags apps| D
+  
+  E["Unlabeled<br/>App / Database<br/>(valid)"]
+  F["Orphaned after<br/>delete<br/>(valid)"]
+  
+  E -.->|also valid| D
+  F -.->|FK is NULL| D
+  
+  style A fill:#e8f4f8
+  style B fill:#e8f4f8
+  style C fill:#e8f4f8
+  style D fill:#f0e8f8
+  style E fill:#f8f0e8
+  style F fill:#f8f0e8
 ```
 
 An app or database can skip every level and belong to nothing. Nothing about how it runs changes based on where it's filed.
@@ -79,14 +102,16 @@ Projects, organizations, and environments can each hold shared env vars. These a
 
 They stack in a fixed order, lowest to highest:
 
-```
-organization env        (applied first)
-  → project env
-    → environment env
-      → app's literal env
-        → app's secret env     (overrides literal)
-          → storage S3_* env   (overrides above)
-            → database conn env (applied last)
+```mermaid
+flowchart TD
+  A["1. Organization env"] -->|merged into| B["2. Project env"]
+  B -->|merged into| C["3. Environment env"]
+  C -->|merged into| D["4. App literal env"]
+  D -->|overridden by| E["5. App secret env"]
+  E -->|overridden by| F["6. Storage S3_* env"]
+  F -->|overridden by| G["7. Database connection env<br/>(final)"]
+  
+  style G fill:#f0e8f8,stroke:#333,stroke-width:2px
 ```
 
 Implemented in `internal/reconcile/application/controller.go` (`resolveEnv`).
@@ -285,7 +310,7 @@ levelrail-cli apps rollback <name> --image IMAGE [--confirm] [flags]
 levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--confirm] [--preview] [flags]
 ```
 
-## Not built yet (deliberate follow-ups)
+::: details Not built yet (deliberate follow-ups)
 
 - **No project-scoped or organization-scoped auth.** Grouping is a label, not a permission boundary. The single admin user sees and acts on everything regardless of grouping. Real membership and RBAC come later (Phase 4).
 
@@ -296,3 +321,12 @@ levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--confirm
 - **No project or organization-scoped deploy history or audit view.** Grouping members appear in the generic audit log (`GET /api/v1/audit-log`) like any other authenticated write, but no dedicated per-project or per-organization view exists.
 
 - **No server-side filtered listing.** `GET /api/v1/projects/{id}/apps` doesn't exist. The dashboard filters the full unfiltered list client-side. Revisit only if this becomes a scale problem for the 3-50-service target audience.
+
+:::
+
+## See also
+
+- [Deploying apps](deploying-apps.md) and [Managing databases](managing-databases.md) - the core resources being grouped
+- [Getting started](getting-started.md) - walkthrough for new deployments
+- [API reference](api-reference.md) - complete endpoint documentation
+- [Protected environments](projects-and-organizations.md#protected-environments) - deployment gates and protection rules

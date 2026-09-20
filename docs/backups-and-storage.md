@@ -1,3 +1,7 @@
+---
+description: Configure backup targets and registry credentials for S3-compatible storage, manage app volume and database backups, and enable the built-in container registry.
+---
+
 # Backup targets, registry credentials, and app volume backups
 
 This guide covers three related resources for storing backups and managing image registries:
@@ -7,6 +11,18 @@ This guide covers three related resources for storing backups and managing image
 3. **Built-in registry**: Levelrail's own `registry:2` container for managing and caching images locally.
 
 All three share the same pattern: an external system that requires a working credential, tested on demand rather than discovered as broken mid-deploy or mid-backup.
+
+## Backup lifecycle at a glance
+
+```mermaid
+graph LR
+    A["Create<br/>backup target"] --> B["Test<br/>connection"]
+    B --> C["Define<br/>schedule"]
+    C --> D["Backup runs<br/>on schedule"]
+    D --> E["Retention<br/>pruning"]
+    E --> F["Restore<br/>if needed"]
+    D -.->|manual trigger| F
+```
 
 ## Why a backup target is its own resource
 
@@ -410,6 +426,12 @@ levelrail-cli app-volume-backups delete <app> <volume> <backup-id> [flags]
 `--provider` accepts `aws`, `r2`, or `custom`. `--endpoint` is required
 for `r2` and `custom` (AWS S3 resolves its own default endpoint per
 region, so `aws` must omit it).
+
+## See also
+
+- [Observability](observability.md) - Configure backup failure alerts with `kind=backup_missing` rules
+- [Deploying apps](deploying-apps.md) - Deploy apps that can reference backup targets and registry credentials
+- [Managing databases](managing-databases.md) - Set backup schedules on individual PostgreSQL and Redis instances
 
 ## Not built yet (deliberate follow-ups)
 
