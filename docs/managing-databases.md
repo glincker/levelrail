@@ -395,6 +395,7 @@ levelrail-cli databases delete <name>
 levelrail-cli databases stop <name>
 levelrail-cli databases start <name>
 levelrail-cli databases resource-recommendation <name>
+levelrail-cli databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [--swap-memory SIZE] [--cpuset-cpus RANGE]
 levelrail-cli databases metrics <name> --metric NAME [flags]
 levelrail-cli databases set-project <name> <project-id>
 levelrail-cli databases clear-project <name>
@@ -417,11 +418,11 @@ levelrail-cli backup-targets delete <id>
 levelrail-cli backup-targets test <id>
 ```
 
-Resource limits and backup scheduling have no standalone `databases`
-subcommand: they're reachable through `databases create --interactive`'s
-wizard at creation time, or by calling their dedicated API routes
-directly. Public access does have its own subcommand
-(`databases public-access set`/`clear`, above), the same shape
+Backup scheduling has no standalone `databases` subcommand: it's reachable
+through `databases create --interactive`'s wizard at creation time, or by
+calling its dedicated API route directly. Resource limits and public
+access both have their own subcommand (`databases set-resources`,
+`databases public-access set`/`clear`, above), the same shape
 `set-project`/`clear-project` already establish for a different
 per-database setting. The dashboard's own creation dialog is deliberately
 narrower than the CLI's interactive wizard too: it collects only
@@ -431,9 +432,6 @@ public access, and a backup schedule are all configured afterward from the
 database's own Overview and Resources tabs once it exists.
 
 ::: details Not built yet (deliberate follow-ups)
-
-- **No CLI subcommand for resource limits outside the creation wizard**
-  The API route exists (`PUT .../resources`) and the dashboard control works. There is no `databases set-resources` for scripting an existing database after the fact. (Compare: public access has its own subcommand.)
 
 - **No CLI download command**
   `GET .../backups/{historyId}/download` works from the dashboard and from any HTTP client with a bearer token. There is no `backups download` subcommand.

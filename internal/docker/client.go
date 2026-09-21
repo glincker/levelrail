@@ -561,7 +561,7 @@ func (c *Client) UpdateResources(ctx context.Context, id string, resources Resou
 		Resources: container.Resources{
 			Memory:     resources.MemoryBytes,
 			NanoCPUs:   resources.NanoCPUs,
-			MemorySwap: resources.SwapMemoryBytes,
+			MemorySwap: updateMemorySwap(resources.MemoryBytes, resources.SwapMemoryBytes),
 			CpusetCpus: resources.CPUSetCPUs,
 		},
 	}
@@ -569,6 +569,21 @@ func (c *Client) UpdateResources(ctx context.Context, id string, resources Resou
 		return fmt.Errorf("docker: update resources for container %s: %w", id, err)
 	}
 	return nil
+}
+
+// updateMemorySwap resolves the MemorySwap value UpdateResources sends to
+// ContainerUpdate. ContainerCreate treats an omitted MemorySwap as
+// "default to 2x memory", but ContainerUpdate does not: it compares the
+// new memory limit against whatever MemorySwap is already active on the
+// container and rejects the call once memory exceeds it, which made
+// every live memory update fail on a container with no pre-existing swap
+// limit. Mirror ContainerCreate's own default here so a live update
+// converges to the same limits a recreate would produce.
+func updateMemorySwap(memoryBytes, swapMemoryBytes int64) int64 {
+	if memoryBytes > 0 && swapMemoryBytes == 0 {
+		return memoryBytes * 2
+	}
+	return swapMemoryBytes
 }
 
 // EnsureVolume implements Runtime. Docker's VolumeCreate is itself
