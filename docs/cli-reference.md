@@ -355,6 +355,36 @@ list recent inbound webhook requests
 levelrail apps webhook-deliveries replay <app-name> <delivery-id> [flags]
 ```
 
+```
+levelrail apps tag <name> <tag> [flags]
+```
+attach a tag (by name) to an app, creating the tag if it doesn't exist
+
+```
+levelrail apps untag <name> <tag> [flags]
+```
+detach a tag (by name) from an app
+
+## Tags
+
+```
+levelrail tags list [flags]
+```
+
+```
+levelrail tags create --name NAME [flags]
+```
+
+```
+levelrail tags delete <name> [flags]
+```
+delete a tag, identified by name (detaches from all apps)
+
+```
+levelrail tags apps <name> [flags]
+```
+list every app attached to a tag, identified by name
+
 ## Databases
 
 ```
