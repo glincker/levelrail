@@ -121,11 +121,11 @@ describe('EnvVarsForm', () => {
 
     await pickSharedVarOption(user, 'API_URL')
 
-    const keys = screen.getAllByLabelText('Variable name')
-    const values = screen.getAllByLabelText('Variable value')
+    const keys = screen.getAllByLabelText<HTMLInputElement>('Variable name')
+    const values = screen.getAllByLabelText<HTMLInputElement>('Variable value')
     const index = keys.findIndex((el) => el.value === 'API_URL')
     expect(index).toBeGreaterThanOrEqual(0)
-    expect(values[index].value).toBe('https://api.example.com')
+    expect(values[index]?.value).toBe('https://api.example.com')
   })
 
   it('picking a secret shared variable appends a row with an empty value', async () => {
@@ -138,11 +138,11 @@ describe('EnvVarsForm', () => {
 
     await pickSharedVarOption(user, 'DB_PASSWORD')
 
-    const keys = screen.getAllByLabelText('Variable name')
-    const values = screen.getAllByLabelText('Variable value')
+    const keys = screen.getAllByLabelText<HTMLInputElement>('Variable name')
+    const values = screen.getAllByLabelText<HTMLInputElement>('Variable value')
     const index = keys.findIndex((el) => el.value === 'DB_PASSWORD')
     expect(index).toBeGreaterThanOrEqual(0)
-    expect(values[index].value).toBe('')
+    expect(values[index]?.value).toBe('')
   })
 
   it('imports a browsed .env file into the field list via the paste dialog', async () => {
