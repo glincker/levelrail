@@ -515,7 +515,14 @@ func run(logger *slog.Logger) error {
 		logger.Warn("webhook not configured", slog.String("error", err.Error()))
 	}
 
-	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner, engine)
+	ingressDriver := ingressdriver.New(logger)
+	defer func() {
+		if cerr := ingressDriver.Stop(context.Background()); cerr != nil {
+			logger.Error("stopping ingress driver", slog.String("error", cerr.Error()))
+		}
+	}()
+
+	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner, engine, ingressDriver)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
 		Handler:           apiHandler,
@@ -533,13 +540,6 @@ func run(logger *slog.Logger) error {
 		ReadTimeout: 30 * time.Second,
 		IdleTimeout: 120 * time.Second,
 	}
-
-	ingressDriver := ingressdriver.New(logger)
-	defer func() {
-		if cerr := ingressDriver.Stop(context.Background()); cerr != nil {
-			logger.Error("stopping ingress driver", slog.String("error", cerr.Error()))
-		}
-	}()
 
 	meshCfg, err := setupMesh(ctx, db, b, agentDataDir, logger)
 	if err != nil {
@@ -1762,7 +1762,11 @@ func buildNodeSource(db *store.DB, agentRegistry *agent.Registry) build.NodeSour
 // internal/api importing internal/agent.Registry directly (see
 // api.NodeRuntimeResolver's own doc comment for why this stays a
 // closure over resolveNodeTransport instead of a new dependency edge).
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner, engine *reconcile.Engine) (http.Handler, *api.Router) {
+// ingressDriver is likewise always non-nil (run() constructs it before
+// calling rootHandler): api.WithIngressPortOwner wires it in
+// unconditionally so GET /system/doctor can tell this control plane's
+// own ingress apart from an unrelated process on ports 80/443.
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner, engine *reconcile.Engine, ingressDriver *ingressdriver.Driver) (http.Handler, *api.Router) {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1789,6 +1793,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithRegistryAuthTester(client),
 		api.WithDBPinger(db),
 		api.WithDoctorDiskWarningBytes(doctorDiskWarningBytes(logger)),
+		api.WithIngressPortOwner(ingressDriver),
 		api.WithExecRuntime(func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)
 		}),
