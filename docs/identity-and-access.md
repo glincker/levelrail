@@ -98,7 +98,7 @@ A policy document uses AWS IAM's shape, hand-typed or generated:
 
 **Evaluation order** (`authorizeResource`, `internal/api/iam.go`)
 
-Checked only on resource-scoped routes (apps and databases):
+Checked on every mutating or sensitive route scoped to a specific app or database (get, update, delete, deploy, rollback, restart, clone, exec, secrets, tags, domain config, backups, and so on):
 
 ```mermaid
 flowchart TD
