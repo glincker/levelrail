@@ -7,6 +7,35 @@ import (
 	"testing"
 )
 
+func TestRun_GitLabApp_Status(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, gitLabAppStatusResource{Connected: true, Authorized: true, InstanceURL: "https://gitlab.example.com"})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"gitlab-app", "status", "--api-url", srv.URL})
+
+	if gotPath != "/api/v1/gitlab-app" {
+		t.Errorf("path = %s, want /api/v1/gitlab-app", gotPath)
+	}
+	if !strings.Contains(stdout, "connected: true") || !strings.Contains(stdout, "authorized:   true") {
+		t.Errorf("stdout = %q, want connected/authorized lines", stdout)
+	}
+}
+
+func TestRun_GitLabApp_Disconnect(t *testing.T) {
+	srv, gotPath, gotMethod := newNoContentEchoServer(t)
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"gitlab-app", "disconnect", "--api-url", srv.URL})
+
+	if *gotMethod != http.MethodDelete || *gotPath != "/api/v1/gitlab-app" {
+		t.Errorf("method/path = %s %s, want DELETE /api/v1/gitlab-app", *gotMethod, *gotPath)
+	}
+	if !strings.Contains(stdout, `"disconnected": true`) && !strings.Contains(stdout, "gitlab app disconnected") {
+		t.Errorf("stdout = %q, want a disconnect confirmation", stdout)
+	}
+}
+
 func TestRun_GitLabApp_Projects(t *testing.T) {
 	var gotPath string
 	srv := newListEchoServer(t, &gotPath, []gitLabAppProjectResource{

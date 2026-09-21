@@ -243,11 +243,14 @@ type BuildTriggerRequestBuild struct {
 	Args map[string]string `json:"args,omitempty"`
 }
 
-// BuildTriggerResponse mirrors internal/api's triggerBuildResponse: the
-// real built image tag plus the app's full, now-updated resource.
+// BuildTriggerResponse mirrors internal/api's triggerBuildResponse:
+// handleTriggerBuild is asynchronous (202 Accepted, the fetch and build
+// run in a background goroutine), so this carries only the new deploy
+// attempt's id, not a finished image tag. Poll its outcome via
+// "apps deploys list"/"apps deploys logs", the same deploy_attempts row
+// a git-push-triggered deploy produces.
 type BuildTriggerResponse struct {
-	Image string      `json:"image"`
-	App   AppResource `json:"app"`
+	ID string `json:"id,omitempty"`
 }
 
 // DeployTriggerRequest mirrors internal/api's deployTriggerRequest
@@ -1998,6 +2001,26 @@ type IngressSettingsResource struct {
 	ACMEDirectoryURL string `json:"acme_directory_url,omitempty"`
 }
 
+// AIAssistantSettingsResource mirrors internal/api's
+// aiAssistantSettingsResource (internal/api/ai_settings.go): the shape
+// of GET/PUT/DELETE /api/v1/settings/ai-assistant. Configured reports
+// whether a key has actually been saved; the key itself never round-trips.
+type AIAssistantSettingsResource struct {
+	Configured bool   `json:"configured"`
+	Provider   string `json:"provider,omitempty"`
+	Model      string `json:"model,omitempty"`
+}
+
+// UpdateAIAssistantSettingsRequest mirrors internal/api's
+// updateAIAssistantSettingsRequest: PUT
+// /api/v1/settings/ai-assistant's request body. Provider must be
+// "anthropic" server-side; all three fields are required.
+type UpdateAIAssistantSettingsRequest struct {
+	Provider string `json:"provider"`
+	Model    string `json:"model"`
+	APIKey   string `json:"api_key"`
+}
+
 // AppStorageResource mirrors internal/api's appStorageResource
 // (internal/api/apps_storage.go): PUT/DELETE
 // /api/v1/apps/{name}/storage's response.
@@ -2073,6 +2096,52 @@ type BitbucketAppRepoResource struct {
 	DefaultBranch string `json:"default_branch"`
 	CloneURL      string `json:"clone_url"`
 	WebURL        string `json:"web_url"`
+}
+
+// GitProviderResource mirrors internal/api's gitProviderResource: one
+// entry of GET /api/v1/git-providers, a capability summary for one git
+// provider (github, gitlab, bitbucket).
+type GitProviderResource struct {
+	Provider           string `json:"provider"`
+	Connected          bool   `json:"connected"`
+	CanListBranches    bool   `json:"can_list_branches"`
+	CanRegisterWebhook bool   `json:"can_register_webhook"`
+	CanAuthClone       bool   `json:"can_auth_clone"`
+}
+
+// GitHubAppStatusResource mirrors internal/api's gitHubAppStatusResource:
+// GET /api/v1/github-app's response. No secret fields ever appear here.
+type GitHubAppStatusResource struct {
+	Connected          bool   `json:"connected"`
+	AppID              int64  `json:"app_id,omitempty"`
+	ClientID           string `json:"client_id,omitempty"`
+	InstanceURL        string `json:"instance_url,omitempty"`
+	Installed          bool   `json:"installed"`
+	InstallationStatus string `json:"installation_status,omitempty"`
+	AccountLogin       string `json:"account_login,omitempty"`
+	CreatedAt          string `json:"created_at,omitempty"`
+	BaseURL            string `json:"base_url,omitempty"`
+}
+
+// GitLabAppStatusResource mirrors internal/api's gitLabAppStatusResource:
+// GET /api/v1/gitlab-app's response.
+type GitLabAppStatusResource struct {
+	Connected   bool   `json:"connected"`
+	InstanceURL string `json:"instance_url,omitempty"`
+	ClientID    string `json:"client_id,omitempty"`
+	CreatedAt   string `json:"created_at,omitempty"`
+	Authorized  bool   `json:"authorized"`
+	BaseURL     string `json:"base_url,omitempty"`
+}
+
+// BitbucketAppStatusResource mirrors internal/api's
+// bitbucketAppStatusResource: GET /api/v1/bitbucket-app's response.
+type BitbucketAppStatusResource struct {
+	Connected  bool   `json:"connected"`
+	Key        string `json:"key,omitempty"`
+	CreatedAt  string `json:"created_at,omitempty"`
+	Authorized bool   `json:"authorized"`
+	BaseURL    string `json:"base_url,omitempty"`
 }
 
 // StaticSiteResource mirrors internal/api's staticSiteResource

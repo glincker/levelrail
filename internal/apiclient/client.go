@@ -2627,6 +2627,28 @@ func (c *Client) UpdateIngressSettings(ctx context.Context, req IngressSettingsR
 	return out, err
 }
 
+// GetAIAssistantSettings calls GET /api/v1/settings/ai-assistant.
+func (c *Client) GetAIAssistantSettings(ctx context.Context) (AIAssistantSettingsResource, error) {
+	var out AIAssistantSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ai-assistant", nil, &out)
+	return out, err
+}
+
+// UpdateAIAssistantSettings calls PUT /api/v1/settings/ai-assistant.
+func (c *Client) UpdateAIAssistantSettings(ctx context.Context, req UpdateAIAssistantSettingsRequest) (AIAssistantSettingsResource, error) {
+	var out AIAssistantSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/ai-assistant", req, &out)
+	return out, err
+}
+
+// DeleteAIAssistantSettings calls DELETE /api/v1/settings/ai-assistant:
+// clears the stored key and resets provider/model in one step.
+func (c *Client) DeleteAIAssistantSettings(ctx context.Context) (AIAssistantSettingsResource, error) {
+	var out AIAssistantSettingsResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/ai-assistant", nil, &out)
+	return out, err
+}
+
 // SetAppStorage calls PUT /api/v1/apps/{name}/storage: attaches an
 // already-connected backup target to name as its object-storage
 // credential source.
@@ -2640,6 +2662,31 @@ func (c *Client) SetAppStorage(ctx context.Context, name, storageTargetID string
 // name's object-storage credential source.
 func (c *Client) ClearAppStorage(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/storage", nil, nil)
+}
+
+// ListGitProviders calls GET /api/v1/git-providers: a capability
+// summary (connected, can list branches, can register a webhook, can
+// auth-clone) for every git provider this control plane knows about, in
+// one call rather than three separate per-provider status checks.
+func (c *Client) ListGitProviders(ctx context.Context) ([]GitProviderResource, error) {
+	var out []GitProviderResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/git-providers", nil, &out)
+	return out, err
+}
+
+// GetGitHubAppStatus calls GET /api/v1/github-app: the connection
+// status (not connected / connected / connected but not yet installed).
+func (c *Client) GetGitHubAppStatus(ctx context.Context) (GitHubAppStatusResource, error) {
+	var out GitHubAppStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/github-app", nil, &out)
+	return out, err
+}
+
+// DisconnectGitHubApp calls DELETE /api/v1/github-app: forgets the
+// stored connection locally. Does not uninstall or delete the App on
+// GitHub's own side.
+func (c *Client) DisconnectGitHubApp(ctx context.Context) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/github-app", nil, nil)
 }
 
 // ListGitHubAppRepos calls GET /api/v1/github-app/repos: every
@@ -2667,6 +2714,22 @@ func (c *Client) UseGitHubRepoAsSource(ctx context.Context, owner, repo string, 
 	return out, err
 }
 
+// GetGitLabAppStatus calls GET /api/v1/gitlab-app: the connection
+// status (configured, and whether the OAuth authorization-code flow has
+// completed).
+func (c *Client) GetGitLabAppStatus(ctx context.Context) (GitLabAppStatusResource, error) {
+	var out GitLabAppStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/gitlab-app", nil, &out)
+	return out, err
+}
+
+// DisconnectGitLabApp calls DELETE /api/v1/gitlab-app: forgets the
+// stored connection locally. Does not revoke the token or delete the
+// Application on GitLab's own side.
+func (c *Client) DisconnectGitLabApp(ctx context.Context) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/gitlab-app", nil, nil)
+}
+
 // ListGitLabAppProjects calls GET /api/v1/gitlab-app/projects: every
 // project the connected GitLab account can access.
 func (c *Client) ListGitLabAppProjects(ctx context.Context) ([]GitLabAppProjectResource, error) {
@@ -2689,6 +2752,22 @@ func (c *Client) UseGitLabProjectAsSource(ctx context.Context, projectID int64, 
 	var out GitSourceResource
 	err := c.do(ctx, http.MethodPost, "/api/v1/gitlab-app/projects/"+strconv.FormatInt(projectID, 10)+"/use-as-source", req, &out)
 	return out, err
+}
+
+// GetBitbucketAppStatus calls GET /api/v1/bitbucket-app: the connection
+// status (configured, and whether the OAuth consumer has been
+// authorized).
+func (c *Client) GetBitbucketAppStatus(ctx context.Context) (BitbucketAppStatusResource, error) {
+	var out BitbucketAppStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/bitbucket-app", nil, &out)
+	return out, err
+}
+
+// DisconnectBitbucketApp calls DELETE /api/v1/bitbucket-app: forgets
+// the stored connection locally. Does not revoke the token or delete
+// the consumer on Bitbucket's own side.
+func (c *Client) DisconnectBitbucketApp(ctx context.Context) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/bitbucket-app", nil, nil)
 }
 
 // ListBitbucketAppRepos calls GET /api/v1/bitbucket-app/repos: every

@@ -7,6 +7,35 @@ import (
 	"testing"
 )
 
+func TestRun_BitbucketApp_Status(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, bitbucketAppStatusResource{Connected: true, Authorized: true, Key: "consumer-key"})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"bitbucket-app", "status", "--api-url", srv.URL})
+
+	if gotPath != "/api/v1/bitbucket-app" {
+		t.Errorf("path = %s, want /api/v1/bitbucket-app", gotPath)
+	}
+	if !strings.Contains(stdout, "connected: true") || !strings.Contains(stdout, "authorized: true") {
+		t.Errorf("stdout = %q, want connected/authorized lines", stdout)
+	}
+}
+
+func TestRun_BitbucketApp_Disconnect(t *testing.T) {
+	srv, gotPath, gotMethod := newNoContentEchoServer(t)
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"bitbucket-app", "disconnect", "--api-url", srv.URL})
+
+	if *gotMethod != http.MethodDelete || *gotPath != "/api/v1/bitbucket-app" {
+		t.Errorf("method/path = %s %s, want DELETE /api/v1/bitbucket-app", *gotMethod, *gotPath)
+	}
+	if !strings.Contains(stdout, `"disconnected": true`) && !strings.Contains(stdout, "bitbucket app disconnected") {
+		t.Errorf("stdout = %q, want a disconnect confirmation", stdout)
+	}
+}
+
 func TestRun_BitbucketApp_Repos(t *testing.T) {
 	var gotPath string
 	srv := newListEchoServer(t, &gotPath, []bitbucketAppRepoResource{{FullName: "acme/widgets", DefaultBranch: "main"}})

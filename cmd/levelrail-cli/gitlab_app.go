@@ -26,6 +26,10 @@ func runGitLabApp(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, gitlabAppUsage(prog))
 		return exitOK
+	case "status":
+		return runGitLabAppStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "disconnect":
+		return runGitLabAppDisconnect(prog, args[1:], stdout, stderr, lookupEnv)
 	case "projects":
 		return runGitLabAppProjects(prog, args[1:], stdout, stderr, lookupEnv)
 	case "branches":
@@ -41,16 +45,65 @@ func runGitLabApp(prog string, args []string, stdout, stderr io.Writer, lookupEn
 
 func gitlabAppUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
+  %[1]s gitlab-app status [flags]                                       show the connection status
+  %[1]s gitlab-app disconnect [flags]                                   forget the stored connection (local only)
   %[1]s gitlab-app projects [flags]                                     list projects the connected account can access
   %[1]s gitlab-app branches <project-id> [flags]                        list a project's branches
   %[1]s gitlab-app use-as-source <project-id> --app-name NAME [flags]   connect a project as an app's git source
 
 Connecting the GitLab App itself is dashboard-only (a real browser
 redirect through GitLab's OAuth2 authorization endpoint); once connected,
-these subcommands browse and use its projects from the CLI.
+these subcommands browse and use its projects from the CLI, or check/
+forget the connection.
 
 Run "%[1]s gitlab-app <subcommand> -h" for a subcommand's own flags.
 `, prog)
+}
+
+func runGitLabAppStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[gitLabAppStatusResource]{
+		cmdLabel:  "gitlab-app status",
+		jsonUsage: "print the connection status as JSON to stdout and nothing else",
+		usageText: fmt.Sprintf("Usage:\n  %s gitlab-app status [flags]\n\nShows the GitLab App connection status.\n\nFlags:\n", prog),
+		fetch: func(c *Client, ctx context.Context) (gitLabAppStatusResource, error) {
+			return c.GetGitLabAppStatus(ctx)
+		},
+		errVerb: "get gitlab app status",
+		print:   printGitLabAppStatusHuman,
+	})
+}
+
+func printGitLabAppStatusHuman(out io.Writer, s gitLabAppStatusResource) {
+	_, _ = fmt.Fprintf(out, "connected: %v\n", s.Connected)
+	if !s.Connected {
+		return
+	}
+	_, _ = fmt.Fprintf(out, "authorized:   %v\n", s.Authorized)
+	_, _ = fmt.Fprintf(out, "instance_url: %s\n", s.InstanceURL)
+	_, _ = fmt.Fprintf(out, "client_id:    %s\n", s.ClientID)
+}
+
+func runGitLabAppDisconnect(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "gitlab-app disconnect", "print {\"disconnected\": true} as JSON to stdout on success and nothing else", stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s gitlab-app disconnect [flags]\n\nForgets the stored GitLab App connection. Does not revoke the token or\ndelete the Application on GitLab's own side.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	if err := client.DisconnectGitLabApp(context.Background()); err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("disconnect gitlab app: %w", err))
+	}
+
+	return writeScheduledTaskResult(stdout, stderr, of, map[string]bool{"disconnected": true}, func() {
+		_, _ = fmt.Fprintln(stdout, "gitlab app disconnected")
+	})
 }
 
 func runGitLabAppProjects(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

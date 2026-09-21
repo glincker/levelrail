@@ -126,6 +126,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runCompletion(prog, args[1:], stdout, stderr, lookupEnv)
 	case "settings":
 		return runSettings(prog, args[1:], stdout, stderr, lookupEnv)
+	case "git-providers":
+		return runGitProviders(prog, args[1:], stdout, stderr, lookupEnv)
 	case "github-app":
 		return runGitHubApp(prog, args[1:], stdout, stderr, lookupEnv)
 	case "gitlab-app":
@@ -196,10 +198,11 @@ Usage:
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
-  %[1]s settings oauth|email|ingress get|set [flags]      configure OAuth sign-in, outbound email, and ingress/ACME
-  %[1]s github-app repos|branches|use-as-source [flags]   browse and use a connected GitHub App's repos
-  %[1]s gitlab-app projects|branches|use-as-source [flags]   browse and use a connected GitLab App's projects
-  %[1]s bitbucket-app repos|branches|use-as-source [flags]   browse and use a connected Bitbucket App's repos
+  %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
+  %[1]s git-providers [flags]                             connection status and capabilities for every git provider in one call
+  %[1]s github-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a GitHub App connection, browse and use its repos
+  %[1]s gitlab-app status|disconnect|projects|branches|use-as-source [flags]   check/forget a GitLab App connection, browse and use its projects
+  %[1]s bitbucket-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a Bitbucket App connection, browse and use its repos
   %[1]s templates list|get|deploy [flags]                 browse and deploy from the curated service catalog
   %[1]s static-sites list [flags]                          list build.type: static apps
 
