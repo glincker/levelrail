@@ -666,3 +666,24 @@ func TestObservedPorts(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateMemorySwap(t *testing.T) {
+	tests := []struct {
+		name            string
+		memoryBytes     int64
+		swapMemoryBytes int64
+		wantMemorySwap  int64
+	}{
+		{name: "no memory limit: swap passed through unchanged", memoryBytes: 0, swapMemoryBytes: 0, wantMemorySwap: 0},
+		{name: "memory set, swap unset: defaults to 2x memory", memoryBytes: 512 << 20, swapMemoryBytes: 0, wantMemorySwap: 1024 << 20},
+		{name: "memory and swap both set: swap passed through unchanged", memoryBytes: 512 << 20, swapMemoryBytes: 768 << 20, wantMemorySwap: 768 << 20},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := updateMemorySwap(tt.memoryBytes, tt.swapMemoryBytes); got != tt.wantMemorySwap {
+				t.Errorf("updateMemorySwap(%d, %d) = %d, want %d", tt.memoryBytes, tt.swapMemoryBytes, got, tt.wantMemorySwap)
+			}
+		})
+	}
+}
