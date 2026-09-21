@@ -1537,7 +1537,7 @@ func TestController_Reconcile_SecretEnv_NoResolverConfigured_FailsLoudly(t *test
 	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
-		SecretEnv: []string{"API_KEY"},
+		SecretEnv: []store.SecretEnvRef{{Name: "API_KEY"}},
 	}
 	c := New("web", &fakeStore{svc: desired}, rt) // no WithSecretResolver
 
@@ -1560,7 +1560,7 @@ func TestController_Reconcile_SecretEnv_Resolved_MergedIntoContainerEnv(t *testi
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
 		Env:       map[string]string{"NODE_ENV": "production"},
-		SecretEnv: []string{"API_KEY"},
+		SecretEnv: []store.SecretEnvRef{{Name: "API_KEY"}},
 	}
 	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(resolver))
 
@@ -1586,7 +1586,7 @@ func TestController_Reconcile_SecretEnv_OptionalUnsetSecret_OmittedNotFailed(t *
 	resolver := newFakeSecretResolver(nil) // nothing set
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
-		SecretEnv: []string{"OPTIONAL_FLAG"},
+		SecretEnv: []store.SecretEnvRef{{Name: "OPTIONAL_FLAG"}},
 	}
 	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(resolver))
 
@@ -1609,7 +1609,7 @@ func TestController_Reconcile_SecretEnv_ResolverErrorPropagates(t *testing.T) {
 	resolver.resolveErr = errors.New("master key not configured")
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
-		SecretEnv: []string{"API_KEY"},
+		SecretEnv: []store.SecretEnvRef{{Name: "API_KEY"}},
 	}
 	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(resolver))
 
@@ -1678,7 +1678,7 @@ func TestController_ResolveEnv_SecretWinsOnKeyCollision(t *testing.T) {
 			desired := &store.DesiredService{
 				Name:      "web",
 				Env:       tt.env,
-				SecretEnv: tt.secretEnv,
+				SecretEnv: store.SecretEnvRefsFromNames(tt.secretEnv),
 			}
 			c := New("web", &fakeStore{}, newFakeRuntime(0), WithSecretResolver(resolver))
 
@@ -2043,7 +2043,7 @@ func TestController_ResolveEnv_StorageTargetWinsOnKeyCollision(t *testing.T) {
 	desired := &store.DesiredService{
 		Name:            "web",
 		Env:             map[string]string{"S3_BUCKET": "operator-typo-value"},
-		SecretEnv:       []string{"S3_BUCKET"},
+		SecretEnv:       []store.SecretEnvRef{{Name: "S3_BUCKET"}},
 		StorageTargetID: "bkt_1",
 	}
 	c := New("web", &fakeStore{}, newFakeRuntime(0), WithStorageTargets(storageStore), WithSecretResolver(secretResolver))

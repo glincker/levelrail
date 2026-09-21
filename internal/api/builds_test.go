@@ -23,6 +23,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -413,7 +414,7 @@ func TestHandleTriggerBuild_Success(t *testing.T) {
 		Port:      3000,
 		Domains:   []string{"web.example.com"},
 		Env:       map[string]string{"LOG_LEVEL": "info"},
-		SecretEnv: []string{"API_KEY"},
+		SecretEnv: []store.SecretEnvRef{{Name: "API_KEY"}},
 		Resources: &store.ServiceResources{MemoryBytes: 512 * 1024 * 1024, NanoCPUs: 500_000_000},
 		Health: &store.ServiceHealth{
 			Readiness: &store.ServiceProbe{Path: "/healthz"},
@@ -1340,4 +1341,126 @@ func TestAppStatus_WhileFirstBuildRuns_ReportsAwaitingBuildNotPullFailure(t *tes
 
 	close(fb.release)
 	awaitDeployAttemptFinished(t, db, resp.ID)
+}
+
+// noBuildImageBuilder is deploy.ImageBuilder's fake for the required-
+// secret tests below: build.type "image" never reaches ImageBuilder at
+// all (see deployImage's own doc comment in internal/deploy/deploy.go),
+// so Build/BuildRailpack failing loudly here would still catch it if
+// that ever stopped being true.
+type noBuildImageBuilder struct{}
+
+func (noBuildImageBuilder) Build(_ context.Context, _ build.Request, _ func(build.ProgressEvent)) (*build.Result, error) {
+	return nil, errors.New("noBuildImageBuilder: Build must not be reached for build.type \"image\"")
+}
+
+func (noBuildImageBuilder) BuildRailpack(_ context.Context, _ build.RailpackRequest, _ func(build.ProgressEvent)) (*build.Result, error) {
+	return nil, errors.New("noBuildImageBuilder: BuildRailpack must not be reached for build.type \"image\"")
+}
+
+// newTestRouterWithRealPipeline wires a real *deploy.Pipeline (not the
+// usual fakeBuilder) as the manual build trigger's Builder, backed by a
+// real secrets.Manager. This is the only way to actually exercise
+// internal/deploy.Pipeline.validateEnv's required-secret check through
+// POST /api/v1/apps/{name}/builds: fakeBuilder just records the request
+// it was handed and always "succeeds", so it can never prove the
+// rejection this bug fix is about. internal/webhook already gets this
+// check for free from a fresh app.yaml parse on every push; these tests
+// prove the build-triggered path (specServiceFromDesired reconstructing
+// store.DesiredService.SecretEnv) now enforces it identically.
+func newTestRouterWithRealPipeline(t *testing.T) (*Router, *store.DB, *secrets.Manager) {
+	t.Helper()
+	db := openTestDB(t)
+	mk, err := secrets.GenerateMasterKey()
+	if err != nil {
+		t.Fatalf("GenerateMasterKey() error = %v", err)
+	}
+	manager := secrets.NewManager(db, mk)
+	pipeline := deploy.New(noBuildImageBuilder{}, db, deploy.WithSecretChecker(manager))
+	rt := NewRouter(nil, testBrand(), db, WithBuilder(pipeline))
+	return rt, db, manager
+}
+
+// TestHandleTriggerBuild_RequiredSecretMissing_RejectedSameAsWebhookPath
+// is the core proof for this bug fix: a build-triggered deploy (POST
+// /api/v1/apps/{name}/builds, the same call cmd/levelrail-cli's `apps
+// create --repo` and a manual rebuild both go through) with a
+// { secret: true, required: true } env var that has no value set must
+// reject, exactly like a fresh app.yaml-driven webhook deploy already
+// does (internal/deploy/deploy_test.go's own
+// TestPipeline_Deploy_RequiredSecret_MissingValue_Rejected covers that
+// side). Before this fix, store.DesiredService.SecretEnv only ever
+// persisted the name, never Required, so specServiceFromDesired
+// (builds.go) silently reconstructed every secret as optional and this
+// deploy attempt would have shown "succeeded".
+func TestHandleTriggerBuild_RequiredSecretMissing_RejectedSameAsWebhookPath(t *testing.T) {
+	rt, db, _ := newTestRouterWithRealPipeline(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:old", Port: 3000,
+		SecretEnv: []store.SecretEnvRef{{Name: "API_KEY", Required: true}},
+	}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"build":{"type":"image","image":"levelrail/web:new"}}`)
+
+	attempt := awaitDeployAttemptFinished(t, db, resp.ID)
+	if attempt.Status != store.DeployAttemptStatusFailed {
+		t.Fatalf("attempt Status = %q, want %q: a required-but-unset secret must reject a build-triggered deploy the same way it already rejects a webhook-triggered one", attempt.Status, store.DeployAttemptStatusFailed)
+	}
+	if !strings.Contains(attempt.Error, "API_KEY") || !strings.Contains(attempt.Error, "required") {
+		t.Errorf("attempt.Error = %q, want it to mention the required, unset secret API_KEY", attempt.Error)
+	}
+}
+
+// TestHandleTriggerBuild_OptionalSecretMissing_StillDeploys is the no-
+// regression counterpart: an optional (Required: false) secret with no
+// value set must still deploy successfully via the build-triggered
+// path, matching spec.EnvVar.Required's documented meaning.
+func TestHandleTriggerBuild_OptionalSecretMissing_StillDeploys(t *testing.T) {
+	rt, db, _ := newTestRouterWithRealPipeline(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:old", Port: 3000,
+		SecretEnv: []store.SecretEnvRef{{Name: "OPTIONAL_FLAG", Required: false}},
+	}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"build":{"type":"image","image":"levelrail/web:new"}}`)
+
+	attempt := awaitDeployAttemptFinished(t, db, resp.ID)
+	if attempt.Status != store.DeployAttemptStatusSucceeded {
+		t.Fatalf("attempt Status = %q, want %q: an optional unset secret must not block a build-triggered deploy; attempt.Error = %q", attempt.Status, store.DeployAttemptStatusSucceeded, attempt.Error)
+	}
+}
+
+// TestHandleTriggerBuild_RequiredSecretAlreadySet_StillDeploys is the
+// other no-regression counterpart: a required secret that already has a
+// value set must still deploy successfully via the build-triggered
+// path, the same as a webhook-triggered redeploy of an already-
+// configured app already does.
+func TestHandleTriggerBuild_RequiredSecretAlreadySet_StillDeploys(t *testing.T) {
+	rt, db, manager := newTestRouterWithRealPipeline(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:old", Port: 3000,
+		SecretEnv: []store.SecretEnvRef{{Name: "API_KEY", Required: true}},
+	}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := manager.SetValue(context.Background(), "web", "API_KEY", "sk-real-value"); err != nil { //nolint:gosec // test fixture value, never a real credential
+		t.Fatalf("SetValue() error = %v", err)
+	}
+
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"build":{"type":"image","image":"levelrail/web:new"}}`)
+
+	attempt := awaitDeployAttemptFinished(t, db, resp.ID)
+	if attempt.Status != store.DeployAttemptStatusSucceeded {
+		t.Fatalf("attempt Status = %q, want %q: a required secret that already has a value must not block redeploy; attempt.Error = %q", attempt.Status, store.DeployAttemptStatusSucceeded, attempt.Error)
+	}
 }

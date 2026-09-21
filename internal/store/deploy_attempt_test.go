@@ -314,7 +314,7 @@ func TestNewDeployAttemptSnapshot(t *testing.T) {
 			name: "literal, secret, database, and vault env keys classify correctly",
 			svc: DesiredService{
 				Env:         map[string]string{"PLAIN": "value"},
-				SecretEnv:   []string{"API_KEY"},
+				SecretEnv:   []SecretEnvRef{{Name: "API_KEY"}},
 				DatabaseEnv: map[string]DatabaseEnvRef{"DB_URL": {Database: "main", Field: "url"}},
 				VaultEnv:    map[string]VaultEnvRef{"VAULT_KEY": {Path: "myapp/config", Key: "api_key"}},
 			},
@@ -428,7 +428,7 @@ func TestNewDeployAttemptSnapshot(t *testing.T) {
 func TestNewDeployAttemptSnapshot_NeverCarriesASecretOrDatabaseValue(t *testing.T) {
 	svc := DesiredService{
 		Env:         map[string]string{"API_KEY": "this-must-never-appear", "DB_URL": "this-must-never-appear-either", "VAULT_KEY": "this-must-never-appear-either"},
-		SecretEnv:   []string{"API_KEY"},
+		SecretEnv:   []SecretEnvRef{{Name: "API_KEY"}},
 		DatabaseEnv: map[string]DatabaseEnvRef{"DB_URL": {Database: "main", Field: "url"}},
 		VaultEnv:    map[string]VaultEnvRef{"VAULT_KEY": {Path: "myapp/config", Key: "api_key"}},
 	}

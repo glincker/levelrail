@@ -38,7 +38,7 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		Port:        svc.Port,
 		Domains:     svc.Domains,
 		Env:         literalEnv(svc.Env),
-		SecretEnv:   secretEnvNames(svc.Env),
+		SecretEnv:   secretEnvRefs(svc.Env),
 		DatabaseEnv: databaseEnv,
 		VaultEnv:    vaultEnvRefs(svc.Env),
 		// Effective*, not the raw field: svc.Strategy/svc.Replicas can be
@@ -177,18 +177,22 @@ func databaseEnvRefs(env map[string]spec.EnvVar) (map[string]store.DatabaseEnvRe
 	return out, nil
 }
 
-// secretEnvNames lists the env var names declared { secret: true },
-// carrying no value: store.DesiredService.SecretEnv is names only, the
-// application controller resolves each one's actual value from
-// internal/secrets immediately before container creation.
-func secretEnvNames(env map[string]spec.EnvVar) []string {
-	var names []string
+// secretEnvRefs lists the env vars declared { secret: true }, carrying
+// no value: store.DesiredService.SecretEnv is names (plus the Required
+// flag) only, the application controller resolves each one's actual
+// value from internal/secrets immediately before container creation.
+// Required carries straight through from app.yaml's own { required:
+// true } so a later build-triggered redeploy reconstructed from this
+// stored state (internal/api/builds.go's specServiceFromDesired) can
+// enforce it exactly as validateEnv already does here.
+func secretEnvRefs(env map[string]spec.EnvVar) []store.SecretEnvRef {
+	var refs []store.SecretEnvRef
 	for k, v := range env {
 		if v.Secret {
-			names = append(names, k)
+			refs = append(refs, store.SecretEnvRef{Name: k, Required: v.Required})
 		}
 	}
-	return names
+	return refs
 }
 
 func toServiceResources(r spec.Resources) (store.ServiceResources, error) {

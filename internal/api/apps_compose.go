@@ -97,7 +97,7 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 	}
 	for i := range services {
 		key := strings.TrimPrefix(services[i].Name, name+"-")
-		services[i].SecretEnv = append(services[i].SecretEnv, secretEnv[key]...)
+		services[i].SecretEnv = append(services[i].SecretEnv, store.SecretEnvRefsFromNames(secretEnv[key])...)
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)

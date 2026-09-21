@@ -272,9 +272,12 @@ func TestHandleCreateApp_WithSecrets_Success(t *testing.T) {
 	if len(svc.SecretEnv) != len(wantSecretEnv) {
 		t.Fatalf("SecretEnv = %v, want %v", svc.SecretEnv, wantSecretEnv)
 	}
-	for _, k := range svc.SecretEnv {
-		if !wantSecretEnv[k] {
+	for _, ref := range svc.SecretEnv {
+		if !wantSecretEnv[ref.Name] {
 			t.Errorf("SecretEnv = %v, want only %v", svc.SecretEnv, wantSecretEnv)
+		}
+		if ref.Required {
+			t.Errorf("SecretEnv[%q].Required = true, want false: this endpoint has no required flag to carry over", ref.Name)
 		}
 	}
 }
@@ -340,7 +343,7 @@ func TestHandleCreateApp_SecretEnvNoValue_StillCreates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetDesiredService after create: %v", err)
 	}
-	if len(svc.SecretEnv) != 1 || svc.SecretEnv[0] != "API_KEY" {
+	if len(svc.SecretEnv) != 1 || svc.SecretEnv[0].Name != "API_KEY" {
 		t.Errorf("SecretEnv = %v, want [API_KEY]", svc.SecretEnv)
 	}
 }

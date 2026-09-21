@@ -626,8 +626,8 @@ func TestPipeline_Deploy_RequiredSecret_ValueSet_PassesThrough(t *testing.T) {
 	if _, exists := svcStore.saved.Env["API_KEY"]; exists {
 		t.Error("saved.Env contains API_KEY, want secret-backed vars kept out of the plain Env map entirely")
 	}
-	if len(svcStore.saved.SecretEnv) != 1 || svcStore.saved.SecretEnv[0] != "API_KEY" {
-		t.Errorf("saved.SecretEnv = %v, want [API_KEY]", svcStore.saved.SecretEnv)
+	if len(svcStore.saved.SecretEnv) != 1 || svcStore.saved.SecretEnv[0].Name != "API_KEY" || !svcStore.saved.SecretEnv[0].Required {
+		t.Errorf("saved.SecretEnv = %v, want [{Name: API_KEY, Required: true}]", svcStore.saved.SecretEnv)
 	}
 }
 
@@ -647,8 +647,8 @@ func TestPipeline_Deploy_OptionalSecret_NoValueSet_StillPassesThrough(t *testing
 	if err != nil {
 		t.Fatalf("Deploy() error = %v, want an optional unset secret to pass through", err)
 	}
-	if len(svcStore.saved.SecretEnv) != 1 || svcStore.saved.SecretEnv[0] != "OPTIONAL_FLAG" {
-		t.Errorf("saved.SecretEnv = %v, want [OPTIONAL_FLAG]", svcStore.saved.SecretEnv)
+	if len(svcStore.saved.SecretEnv) != 1 || svcStore.saved.SecretEnv[0].Name != "OPTIONAL_FLAG" || svcStore.saved.SecretEnv[0].Required {
+		t.Errorf("saved.SecretEnv = %v, want [{Name: OPTIONAL_FLAG, Required: false}]", svcStore.saved.SecretEnv)
 	}
 }
 

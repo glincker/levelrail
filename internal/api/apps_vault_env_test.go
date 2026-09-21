@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func TestAppVaultEnvRoutes_RequireAuth(t *testing.T) {
@@ -77,7 +79,7 @@ func TestHandleSetAppVaultEnv_AlreadySecretBacked(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetDesiredService() error = %v", err)
 	}
-	svc.SecretEnv = []string{"API_KEY"}
+	svc.SecretEnv = []store.SecretEnvRef{{Name: "API_KEY"}}
 	if err := db.SaveDesiredService(context.Background(), *svc); err != nil {
 		t.Fatalf("SaveDesiredService() error = %v", err)
 	}
