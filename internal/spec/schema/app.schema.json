@@ -101,7 +101,8 @@
       "additionalProperties": false,
       "properties": {
         "readiness": { "$ref": "#/$defs/probe" },
-        "liveness": { "$ref": "#/$defs/probe" }
+        "liveness": { "$ref": "#/$defs/probe" },
+        "readyTimeout": { "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" }
       }
     },
     "probe": {

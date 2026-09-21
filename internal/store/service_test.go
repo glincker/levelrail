@@ -27,8 +27,9 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 			CPUSetCPUs:      "0-1",
 		},
 		Health: &ServiceHealth{
-			Readiness: &ServiceProbe{Path: "/healthz", Interval: 5 * time.Second, Timeout: 2 * time.Second},
-			Liveness:  &ServiceProbe{Path: "/healthz", Interval: 30 * time.Second, Failures: 3},
+			Readiness:    &ServiceProbe{Path: "/healthz", Interval: 5 * time.Second, Timeout: 2 * time.Second},
+			Liveness:     &ServiceProbe{Path: "/healthz", Interval: 30 * time.Second, Failures: 3},
+			ReadyTimeout: 90 * time.Second,
 		},
 		Volumes: []ServiceVolume{
 			{Name: "app-web-data", ContainerPath: "/var/lib/data"},
@@ -66,6 +67,9 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 	}
 	if got.Health.Liveness == nil || *got.Health.Liveness != *want.Health.Liveness {
 		t.Errorf("Health.Liveness = %+v, want %+v", got.Health.Liveness, want.Health.Liveness)
+	}
+	if got.Health.ReadyTimeout != want.Health.ReadyTimeout {
+		t.Errorf("Health.ReadyTimeout = %v, want %v", got.Health.ReadyTimeout, want.Health.ReadyTimeout)
 	}
 	if !reflect.DeepEqual(got.Volumes, want.Volumes) {
 		t.Errorf("Volumes = %+v, want %+v", got.Volumes, want.Volumes)

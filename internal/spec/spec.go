@@ -173,6 +173,12 @@ type Build struct {
 type Health struct {
 	Readiness *Probe `yaml:"readiness,omitempty"`
 	Liveness  *Probe `yaml:"liveness,omitempty"`
+	// ReadyTimeout overrides how long a fresh deploy waits for Readiness
+	// to pass before the deploy is marked ReadinessFailed (internal/
+	// reconcile/application.defaultReadyBudget, 60s, when unset). A slow
+	// cold start (a JVM app, a big migration, a slow external connection)
+	// can legitimately take longer than 60s without ever being unhealthy.
+	ReadyTimeout string `yaml:"readyTimeout,omitempty"`
 }
 
 // Probe is a single HTTP health check.

@@ -231,7 +231,9 @@ func WithHTTPClient(c *http.Client) Option {
 
 // WithReadyBudget overrides how long Reconcile waits for a freshly
 // started container to pass its readiness probe before giving up.
-// Defaults to 60s.
+// Defaults to 60s. A service's own store.ServiceHealth.ReadyTimeout, when
+// set, takes precedence over this construction-time value; see
+// effectiveReadyBudget.
 func WithReadyBudget(d time.Duration) Option {
 	return func(ctrl *Controller) { ctrl.readyBudget = d }
 }
@@ -1530,6 +1532,21 @@ func (e *readinessCrashError) Error() string {
 // than inventing a second, independently-tuned timing knob.
 const defaultCrashCheckInterval = 2 * time.Second
 
+// effectiveReadyBudget returns desired's own per-service override
+// (store.ServiceHealth.ReadyTimeout, app.yaml's health.readyTimeout)
+// when set, falling back to c.readyBudget (WithReadyBudget's
+// construction-time value, defaultReadyBudget if that option was never
+// applied) otherwise. Read fresh from desired on every call, the same
+// "no cached decision" shape Reconcile itself already has, so this stays
+// level-triggered: a redeploy that changes readyTimeout takes effect on
+// its own next wait, never a stale value from an earlier pass.
+func (c *Controller) effectiveReadyBudget(desired *store.DesiredService) time.Duration {
+	if desired.Health != nil && desired.Health.ReadyTimeout > 0 {
+		return desired.Health.ReadyTimeout
+	}
+	return c.readyBudget
+}
+
 // waitReady gates a freshly (re)started container on its readiness
 // probe, if the service declares one and has a port to probe at all. A
 // service with no port (a worker with nothing listening) or no
@@ -1557,7 +1574,7 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 		return fmt.Errorf("readiness probe: %w", err)
 	}
 
-	probeCtx, cancel := context.WithTimeout(ctx, c.readyBudget)
+	probeCtx, cancel := context.WithTimeout(ctx, c.effectiveReadyBudget(desired))
 	defer cancel()
 
 	cfg := probe.Config{

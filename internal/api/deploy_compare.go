@@ -302,6 +302,9 @@ func diffDeployCompareHealth(from, to *store.ServiceHealth) []deployCompareField
 	var changes []deployCompareField
 	changes = append(changes, diffDeployCompareProbe("health.readiness", f.Readiness, t.Readiness)...)
 	changes = append(changes, diffDeployCompareProbe("health.liveness", f.Liveness, t.Liveness)...)
+	if f.ReadyTimeout != t.ReadyTimeout {
+		changes = append(changes, deployCompareField{Field: "health.readyTimeout", From: f.ReadyTimeout.String(), To: t.ReadyTimeout.String()})
+	}
 	return changes
 }
 

@@ -521,6 +521,9 @@ func specHealthFromStore(h store.ServiceHealth) *spec.Health {
 		p := specProbeFromStore(*h.Liveness)
 		out.Liveness = &p
 	}
+	if h.ReadyTimeout > 0 {
+		out.ReadyTimeout = h.ReadyTimeout.String()
+	}
 	return out
 }
 
