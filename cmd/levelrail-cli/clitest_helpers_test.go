@@ -72,6 +72,27 @@ func newNoContentEchoServer(t *testing.T) (srv *httptest.Server, gotPath, gotMet
 	return srv, gotPath, gotMethod
 }
 
+// newTagResolveThenServer starts a test server that answers GET
+// /api/v1/tags with a single-tag list mapping tagName to tagID, and
+// delegates every other request to next while recording its path and
+// method. "tags delete", "tags apps", and "apps untag" all resolve a
+// tag name to its ID via one ListTags call before their own action
+// request, so their tests share this two-request shape.
+func newTagResolveThenServer(t *testing.T, tagName, tagID string, next func(w http.ResponseWriter, r *http.Request)) (srv *httptest.Server, gotPath, gotMethod *string) {
+	t.Helper()
+	gotPath, gotMethod = new(string), new(string)
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/tags" && r.Method == http.MethodGet {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode([]tagResource{{ID: tagID, Name: tagName, CreatedAt: "2026-09-20T00:00:00Z"}})
+			return
+		}
+		*gotPath, *gotMethod = r.URL.Path, r.Method
+		next(w, r)
+	}))
+	return srv, gotPath, gotMethod
+}
+
 // runStartStopSuccess runs a start/stop lifecycle CLI command against a
 // fake server whose response is built by respond, asserts the request was
 // a POST to wantPath, and returns stdout for the caller's own

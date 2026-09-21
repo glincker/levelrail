@@ -6,11 +6,12 @@ import (
 	"io"
 )
 
-// runTagsDelete implements "tags delete <id>": DELETE /api/v1/tags/{id}.
-// Every app currently attached to it just loses that one attachment
-// (migrations/0106_tags.sql's own ON DELETE CASCADE), so unlike a
-// database or backup target this needs no confirmation flag, the same
-// reasoning runChannelsDelete's own doc comment gives.
+// runTagsDelete implements "tags delete <name>": resolves name to its
+// tag ID, then DELETE /api/v1/tags/{id}. Every app currently attached
+// to it just loses that one attachment (migrations/0106_tags.sql's own
+// ON DELETE CASCADE), so unlike a database or backup target this needs
+// no confirmation flag, the same reasoning runChannelsDelete's own doc
+// comment gives.
 func runTagsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "tags delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tagsDeleteUsage(prog)) }
@@ -20,19 +21,24 @@ func runTagsDelete(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return exitCode
 	}
 
-	id, ok := requireOneArg(fs, stderr, prog, "tags delete", "tag id")
+	name, ok := requireOneArg(fs, stderr, prog, "tags delete", "tag name")
 	if !ok {
 		return exitUsage
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
+	id, err := resolveTagIDByName(context.Background(), client, name)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete tag %q: %w", name, err))
+	}
+
 	if err := client.DeleteTag(context.Background(), id); err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete tag %q: %w", id, err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete tag %q: %w", name, err))
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, map[string]bool{"deleted": true}, func() {
-		_, _ = fmt.Fprintf(stdout, "tag %q deleted\n", id)
+		_, _ = fmt.Fprintf(stdout, "tag %q deleted\n", name)
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
@@ -42,10 +48,10 @@ func runTagsDelete(prog string, args []string, stdout, stderr io.Writer, lookupE
 
 func tagsDeleteUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s tags delete <id> [flags]
+  %[1]s tags delete <name> [flags]
 
-Deletes a tag. Any app currently attached to it just loses that one
-attachment, the app itself is untouched.
+Deletes a tag, identified by name. Any app currently attached to it
+just loses that one attachment, the app itself is untouched.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

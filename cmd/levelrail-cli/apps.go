@@ -173,7 +173,7 @@ func appsUsage(prog string) string {
   %[1]s apps vault-env <verb> [flags]   declare/remove an env var resolved live from an external Vault instance
   %[1]s apps preview-env <verb> [flags]   declare/remove a preview-specific env var override, applied only when a preview is created
   %[1]s apps tag <name> <tag> [flags]     attach a tag (by name) to an app, creating it first if new
-  %[1]s apps untag <name> <tag-id> [flags]   detach a tag (by id) from an app
+  %[1]s apps untag <name> <tag> [flags]   detach a tag (by name) from an app
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.
 `, prog)
