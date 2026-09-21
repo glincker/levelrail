@@ -1,5 +1,6 @@
 import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { HelpLink } from '@/components/HelpLink'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { useAutoRollback, useSetAutoRollback } from '../queries/autoRollback'
@@ -41,6 +42,10 @@ export function AutoRollbackCard({ appName }: { appName: string }) {
         <CardTitle className="flex items-center gap-2">
           <ArrowCounterClockwiseIcon className="size-4 text-muted-foreground" />
           Auto-rollback on crashloop
+          <HelpLink
+            path="/observability#alert-rules"
+            label="Auto-rollback guide"
+          />
         </CardTitle>
       </CardHeader>
       <CardContent>

@@ -419,6 +419,30 @@ The endpoint is read-only. The operator decides whether to act on it. It never w
 - Dashboard: Resources tab (`ResourceRecommendationCard.tsx`), above the limits editor
 - CLI: `levelrail-cli apps resource-recommendation <name>`
 
+## Outbound network: egress allowlist
+
+By default every app has unrestricted outbound network access, unchanged from before this feature existed. Opting a service into an allowlist restricts its container to only reach the declared `host:port` pairs, enforced by a reconciled sidecar that re-resolves each host on an interval rather than pinning to an IP at deploy time.
+
+**Configure it either way:**
+
+- In `app.yaml`:
+  ```yaml
+  egress:
+    mode: allowlist
+    allow:
+      - host: api.example.com
+        port: 443
+  ```
+- Or without touching the spec file:
+  ```bash
+  levelrail-cli apps egress set <name> --allow api.example.com:443
+  levelrail-cli apps egress get <name>
+  levelrail-cli apps egress clear <name>   # back to unrestricted
+  ```
+- Dashboard: the app's Network tab (Outbound network card).
+
+DNS lookups and loopback traffic always stay open regardless of the list. After a deploy or restart there is a brief window before the egress sidecar finishes attaching where outbound traffic is temporarily unrestricted.
+
 ## One-off exec and the interactive terminal
 
 ### One-shot exec
