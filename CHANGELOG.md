@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.2.0-beta.5](https://github.com/glincker/levelrail/compare/v0.2.0-beta.4...v0.2.0-beta.5) (2026-09-21)
+
+
+### Features
+
+* CLI coverage for backup download, database logs, node placement ([#529](https://github.com/glincker/levelrail/issues/529)) ([b843d7c](https://github.com/glincker/levelrail/commit/b843d7c42ed18f9bf7d975a9f8320ab5a495c128))
+* CLI coverage for database attachment, manual build trigger, moves, resources, AI settings, git providers ([#536](https://github.com/glincker/levelrail/issues/536)) ([7ef06b0](https://github.com/glincker/levelrail/commit/7ef06b035f63c544662139ebe2c26de556270002))
+* per-service readyTimeout override for the reconciler's readiness budget ([#539](https://github.com/glincker/levelrail/issues/539)) ([547c939](https://github.com/glincker/levelrail/commit/547c9396efd101dda43218ed4c1fca604cb7cf45))
+
+
+### Bug Fixes
+
+* accessibility gaps in form labeling and muted-text contrast ([#528](https://github.com/glincker/levelrail/issues/528)) ([d67ccee](https://github.com/glincker/levelrail/commit/d67cceedf146978306cea37f530afa29bdb4055f))
+* classify a pre-port-bind crash as a crash reason, not generic ReadinessFailed ([#535](https://github.com/glincker/levelrail/issues/535)) ([570cf32](https://github.com/glincker/levelrail/commit/570cf326e11ffac55fd5f74244337ee1d4146542))
+* enforce required secrets on the build-triggered deploy path, not just webhook ([#541](https://github.com/glincker/levelrail/issues/541)) ([98e963a](https://github.com/glincker/levelrail/commit/98e963a7a210cdc928df9704371155631aa95862))
+* extend IAM resource scoping to 79 mutating app and database routes ([#532](https://github.com/glincker/levelrail/issues/532)) ([5775bf7](https://github.com/glincker/levelrail/commit/5775bf744351ada7285e8546f74f15a53aee0976))
+* make tag CLI commands consistently take a name, not a mix of name and ID ([#533](https://github.com/glincker/levelrail/issues/533)) ([5bc61e4](https://github.com/glincker/levelrail/commit/5bc61e4889747e9139f60d921863417beeef77e7))
+* manual builds tag by resolved commit, pending image never hits Docker ([#530](https://github.com/glincker/levelrail/issues/530)) ([15a9e0d](https://github.com/glincker/levelrail/commit/15a9e0d75c7816de6549819796f6c02c18788635))
+* never treat a master key read failure as no key yet ([#522](https://github.com/glincker/levelrail/issues/522)) ([fc5c432](https://github.com/glincker/levelrail/commit/fc5c432673b2f3ff6c275ada319b90f3dd83b830))
+* nudge reconciler after a build-triggered deploy completes ([#534](https://github.com/glincker/levelrail/issues/534)) ([74a70fb](https://github.com/glincker/levelrail/commit/74a70fbe78814d0010db36879beef60b586931fb))
+* rearm crashloop auto-rollback for a second, different bad deploy ([#540](https://github.com/glincker/levelrail/issues/540)) ([3110d37](https://github.com/glincker/levelrail/commit/3110d373e6f05fd0b54742de3bf0c86682215da6))
+* resolve migration number collision at 0106 ([#524](https://github.com/glincker/levelrail/issues/524)) ([5fdbeb3](https://github.com/glincker/levelrail/commit/5fdbeb34191a3d5d9b1fc6a69412620383406490))
+* respect prefers-reduced-motion and avoid layout-triggering progress transition ([#531](https://github.com/glincker/levelrail/issues/531)) ([ef93f47](https://github.com/glincker/levelrail/commit/ef93f479593f055f1d0a18c56cea48685ca49c5a))
+* scope container and network cleanup to this control plane's own instance ([#537](https://github.com/glincker/levelrail/issues/537)) ([fb289ea](https://github.com/glincker/levelrail/commit/fb289ea3ec6fed9d8beeae651f1f0b9c29c4c6c6))
+
 ## [0.2.0-beta.4](https://github.com/glincker/levelrail/compare/v0.2.0-beta.3...v0.2.0-beta.4) (2026-09-20)
 
 
