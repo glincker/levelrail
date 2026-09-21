@@ -138,7 +138,7 @@ describe('AppEgressPolicyCard', () => {
     await user.click(screen.getByRole('button', { name: 'Add rule' }))
     expect(screen.getAllByLabelText('Allowed host')).toHaveLength(2)
 
-    await user.click(screen.getAllByRole('button', { name: 'Remove rule' })[1])
+    await user.click(screen.getAllByRole('button', { name: 'Remove rule' })[1]!)
     expect(screen.getAllByLabelText('Allowed host')).toHaveLength(1)
   })
 
