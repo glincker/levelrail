@@ -82,6 +82,18 @@ const (
 	// defaultHTTPAddr is where the HTTP API listens.
 	defaultHTTPAddr = ":8080"
 
+	// defaultIngressHTTPSAddr matches ingressreconcile's own
+	// defaultListenAddr: the embedded Caddy ingress's HTTPS listener.
+	// Overridable via APP_INGRESS_HTTPS_ADDR so a second control-plane
+	// instance on the same host can run its ingress on a non-default
+	// port instead of failing to bind :443.
+	defaultIngressHTTPSAddr = ":443"
+	// defaultIngressHTTPAddr matches ingressreconcile's own
+	// defaultHTTPListenAddr: this instance's HTTP/port-80 equivalent
+	// (see that constant's own doc comment for what it's actually used
+	// for). Overridable via APP_INGRESS_HTTP_ADDR.
+	defaultIngressHTTPAddr = ":80"
+
 	// defaultAgentAddr is where the agent gRPC service
 	// (Enroll, Session) listens: a distinct port from defaultHTTPAddr,
 	// not multiplexed onto it, since the two have entirely different
@@ -578,6 +590,8 @@ func run(logger *slog.Logger) error {
 		instanceID:       instanceID,
 		livenessTracker:  application.NewLivenessTracker(),
 		publicHost:       publicHost(),
+		ingressHTTPSAddr: ingressHTTPSAddr(),
+		ingressHTTPAddr:  ingressHTTPAddr(),
 	}))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
@@ -1794,6 +1808,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDBPinger(db),
 		api.WithDoctorDiskWarningBytes(doctorDiskWarningBytes(logger)),
 		api.WithIngressPortOwner(ingressDriver),
+		api.WithDoctorIngressPorts(ingressPortFromAddr(ingressHTTPAddr()), ingressPortFromAddr(ingressHTTPSAddr())),
 		api.WithExecRuntime(func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)
 		}),
@@ -2093,6 +2108,45 @@ func httpAddr() string {
 		addr = defaultHTTPAddr
 	}
 	return addr
+}
+
+// ingressHTTPSAddr reads APP_INGRESS_HTTPS_ADDR, defaulting to
+// defaultIngressHTTPSAddr, and is passed to
+// ingressreconcile.WithListenAddr.
+func ingressHTTPSAddr() string {
+	addr := os.Getenv("APP_INGRESS_HTTPS_ADDR")
+	if addr == "" {
+		addr = defaultIngressHTTPSAddr
+	}
+	return addr
+}
+
+// ingressHTTPAddr reads APP_INGRESS_HTTP_ADDR, defaulting to
+// defaultIngressHTTPAddr, and is passed to
+// ingressreconcile.WithHTTPListenAddr.
+func ingressHTTPAddr() string {
+	addr := os.Getenv("APP_INGRESS_HTTP_ADDR")
+	if addr == "" {
+		addr = defaultIngressHTTPAddr
+	}
+	return addr
+}
+
+// ingressPortFromAddr extracts the numeric port from addr (ingressHTTPAddr
+// or ingressHTTPSAddr's own return shape, e.g. ":8443") for
+// api.WithDoctorIngressPorts, which needs a bare port number, not a full
+// network address. An unparseable addr degrades to 0 (that option's own
+// "keep the 80/443 default" zero value) rather than erroring.
+func ingressPortFromAddr(addr string) int {
+	_, portStr, err := net.SplitHostPort(addr)
+	if err != nil {
+		return 0
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return 0
+	}
+	return port
 }
 
 // dashboardDialAddr normalizes httpAddr's listen address (e.g. ":8080",
@@ -2587,6 +2641,12 @@ type dynamicSourceDeps struct {
 	// for the zero-config fallback domain feature; see
 	// ingressreconcile.WithPublicHost's own doc comment.
 	publicHost string
+	// ingressHTTPSAddr/ingressHTTPAddr are APP_INGRESS_HTTPS_ADDR/
+	// APP_INGRESS_HTTP_ADDR, threaded to ingressreconcile.WithListenAddr/
+	// WithHTTPListenAddr so a second control-plane instance on the same
+	// host can run its ingress on non-default ports.
+	ingressHTTPSAddr string
+	ingressHTTPAddr  string
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -2611,7 +2671,12 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			controllers = append(controllers, nodehealth.New(n.ID, deps.db, deps.heartbeatTimeout))
 		}
 
-		ingressOpts := []ingressreconcile.Option{ingressreconcile.WithLogger(deps.logger), ingressreconcile.WithPublicHost(deps.publicHost)}
+		ingressOpts := []ingressreconcile.Option{
+			ingressreconcile.WithLogger(deps.logger),
+			ingressreconcile.WithPublicHost(deps.publicHost),
+			ingressreconcile.WithListenAddr(deps.ingressHTTPSAddr),
+			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
+		}
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial))
 		}

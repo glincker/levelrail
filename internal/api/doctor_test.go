@@ -179,6 +179,63 @@ func TestWithIngressPortOwner(t *testing.T) {
 	}
 }
 
+// TestWithDoctorIngressPorts proves GET /api/v1/system/doctor's port
+// checks follow a configured non-default port instead of the hardcoded
+// 80/443, the shape an instance started with APP_INGRESS_HTTP_ADDR/
+// APP_INGRESS_HTTPS_ADDR set to something else needs to stay accurate.
+func TestWithDoctorIngressPorts(t *testing.T) {
+	db := openTestDB(t)
+	owner := &fakeIngressPortOwner{owned: map[int]bool{8080: true, 8443: true}}
+	rt := NewRouter(discardLogger(), testBrand(), db,
+		WithIngressPortOwner(owner),
+		WithDoctorIngressPorts(8080, 8443),
+	)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/doctor", ""))
+
+	var got systemDoctorResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if c := doctorCheckByCode(t, got.Checks, "port_8080"); c.Status != doctorStatusOK {
+		t.Errorf("port_8080 check = %+v, want status=ok", c)
+	}
+	if c := doctorCheckByCode(t, got.Checks, "port_8443"); c.Status != doctorStatusOK {
+		t.Errorf("port_8443 check = %+v, want status=ok", c)
+	}
+	for _, code := range []string{"port_80", "port_443"} {
+		for _, c := range got.Checks {
+			if c.Code == code {
+				t.Errorf("found stale %s check, want only the configured 8080/8443 codes: %+v", code, c)
+			}
+		}
+	}
+}
+
+// TestWithDoctorIngressPorts_ZeroKeepsDefaults proves an unset
+// doctorHTTPPort/doctorHTTPSPort (the default, WithDoctorIngressPorts
+// never called) still produces the original port_80/port_443 checks,
+// the same "0 means unset" shape WithDoctorDiskWarningBytes already has.
+func TestWithDoctorIngressPorts_ZeroKeepsDefaults(t *testing.T) {
+	rt, db := newTestRouter(t)
+	if rt.doctorHTTPPort != 0 || rt.doctorHTTPSPort != 0 {
+		t.Fatalf("doctorHTTPPort/doctorHTTPSPort = %d/%d, want 0/0 (unset)", rt.doctorHTTPPort, rt.doctorHTTPSPort)
+	}
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/doctor", ""))
+
+	var got systemDoctorResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	doctorCheckByCode(t, got.Checks, "port_80")
+	doctorCheckByCode(t, got.Checks, "port_443")
+}
+
 func TestDoctorCheckPort(t *testing.T) {
 	// listenOnPort starts a listener on an ephemeral port and returns it
 	// still bound, for a test case that needs the port genuinely in use.

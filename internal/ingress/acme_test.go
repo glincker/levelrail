@@ -3,6 +3,7 @@ package ingress
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -46,7 +47,7 @@ func TestNewACMEIssuer_ConfigShape(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewACMEIssuer(tt.email, tt.directoryURL)
+			got := NewACMEIssuer(tt.email, tt.directoryURL, 0)
 			if got != tt.want {
 				t.Fatalf("NewACMEIssuer(%q, %q) = %+v, want %+v", tt.email, tt.directoryURL, got, tt.want)
 			}
@@ -77,6 +78,84 @@ func TestNewACMEIssuer_ConfigShape(t *testing.T) {
 				t.Errorf(`decoded["ca"] = %v, want %q`, decoded["ca"], tt.directoryURL)
 			}
 		})
+	}
+}
+
+// TestNewACMEIssuer_AltHTTPPort proves altHTTPPort threads into
+// Challenges.HTTP.AlternatePort only when it's a real override (non-zero
+// and not Caddy's own default of 80): this is the one place real ACME's
+// HTTP-01 challenge would otherwise reach for a literal port 80,
+// independent of anything else this package makes configurable (see
+// HTTPChallengeConfig's own doc comment).
+func TestNewACMEIssuer_AltHTTPPort(t *testing.T) {
+	tests := []struct {
+		name        string
+		altHTTPPort int
+		wantNil     bool
+		wantPort    int
+	}{
+		{name: "zero (unset) leaves Challenges nil", altHTTPPort: 0, wantNil: true},
+		{name: "80 (Caddy's own default) leaves Challenges nil", altHTTPPort: 80, wantNil: true},
+		{name: "non-default port sets AlternatePort", altHTTPPort: 8080, wantPort: 8080},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			iss := NewACMEIssuer("ops@example.com", "", tt.altHTTPPort)
+			if tt.wantNil {
+				if iss.Challenges != nil {
+					t.Fatalf("Challenges = %+v, want nil", iss.Challenges)
+				}
+				return
+			}
+			if iss.Challenges == nil || iss.Challenges.HTTP == nil {
+				t.Fatalf("Challenges = %+v, want a non-nil HTTP challenge config", iss.Challenges)
+			}
+			if iss.Challenges.HTTP.AlternatePort != tt.wantPort {
+				t.Errorf("AlternatePort = %d, want %d", iss.Challenges.HTTP.AlternatePort, tt.wantPort)
+			}
+
+			raw, err := json.Marshal(iss)
+			if err != nil {
+				t.Fatalf("json.Marshal() error = %v", err)
+			}
+			if !strings.Contains(string(raw), `"alternate_port":8080`) {
+				t.Errorf("marshaled issuer = %s, want alternate_port:8080", raw)
+			}
+		})
+	}
+}
+
+// TestBuildRoutesConfig_HTTPPort proves opts.HTTPPort threads into both
+// Apps.HTTP.HTTPPort (the top-level Caddy setting) and, for a
+// non-wildcard host with real ACME enabled, the ACME issuer's own
+// Challenges.HTTP.AlternatePort: the two places a control-plane instance
+// configured off the default ports needs to stay off port 80 in.
+func TestBuildRoutesConfig_HTTPPort(t *testing.T) {
+	got, err := BuildRoutesConfig(RoutesOptions{
+		ServerName: "levelrail-ingress",
+		ListenAddr: ":8443",
+		HTTPPort:   8080,
+		Routes: []ProxyRoute{
+			{Hosts: []string{"app.example.com"}, BackendDial: "127.0.0.1:11111"},
+		},
+		TLS:              true,
+		ACMEEnabled:      true,
+		ACMEEmail:        "ops@example.com",
+		ACMEDirectoryURL: "https://acme-staging-v02.api.letsencrypt.org/directory",
+	})
+	if err != nil {
+		t.Fatalf("BuildRoutesConfig() error = %v", err)
+	}
+
+	if got.Apps.HTTP.HTTPPort != 8080 {
+		t.Errorf("Apps.HTTP.HTTPPort = %d, want 8080", got.Apps.HTTP.HTTPPort)
+	}
+	issuer, ok := got.Apps.TLS.Automation.Policies[0].Issuers[0].(ACMEIssuer)
+	if !ok {
+		t.Fatalf("Issuers[0] = %T, want ACMEIssuer", got.Apps.TLS.Automation.Policies[0].Issuers[0])
+	}
+	if issuer.Challenges == nil || issuer.Challenges.HTTP == nil || issuer.Challenges.HTTP.AlternatePort != 8080 {
+		t.Errorf("issuer.Challenges = %+v, want HTTP.AlternatePort=8080", issuer.Challenges)
 	}
 }
 
@@ -186,7 +265,7 @@ func TestBuildRoutesConfig_ACMEEnabled(t *testing.T) {
 	if !ok {
 		t.Fatalf("policy.Issuers[0] = %T, want ACMEIssuer", policy.Issuers[0])
 	}
-	want := NewACMEIssuer("ops@example.com", "https://acme-staging-v02.api.letsencrypt.org/directory")
+	want := NewACMEIssuer("ops@example.com", "https://acme-staging-v02.api.letsencrypt.org/directory", 0)
 	if issuer != want {
 		t.Errorf("issuer = %+v, want %+v", issuer, want)
 	}

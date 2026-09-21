@@ -11,6 +11,12 @@ export interface CheckCta {
 const inlineLinkClassName =
   'inline-flex items-center gap-1 text-sm text-primary underline underline-offset-4 hover:no-underline'
 
+// PORT_CHECK_CODE matches port_<n> for whatever ports this instance's
+// ingress is actually configured on (APP_INGRESS_HTTP_ADDR/
+// APP_INGRESS_HTTPS_ADDR), not just the literal port_80/port_443 codes
+// a default-port instance reports.
+const PORT_CHECK_CODE = /^port_\d+$/
+
 // One CTA per failure mode that actually has a useful next step, keyed by
 // doctorCheckResource.code (internal/api/doctor.go) and status. Checks
 // with no genuinely actionable next step beyond "fix your host" (the
@@ -18,6 +24,24 @@ const inlineLinkClassName =
 // privileges to probe) are deliberately left without a CTA rather than
 // padded out with a link to nothing.
 export function getCheckCta(check: DoctorCheck): CheckCta | null {
+  // Handle port checks generically for any configured port, not just 80/443
+  if (PORT_CHECK_CODE.test(check.code)) {
+    if (check.status === 'fail') {
+      return {
+        message:
+          'Something else on this host already has this port bound, commonly another web server (nginx, Apache, a previous Caddy) or a leftover process.',
+        action: (
+          <HelpLink
+            path="/troubleshooting"
+            label="Diagnose the port conflict"
+            variant="inline"
+          />
+        ),
+      }
+    }
+    return null
+  }
+
   switch (check.code) {
     case 'docker':
       if (check.status === 'fail') {
@@ -58,23 +82,6 @@ export function getCheckCta(check: DoctorCheck): CheckCta | null {
             <HelpLink
               path="/troubleshooting"
               label="Fix data directory permissions"
-              variant="inline"
-            />
-          ),
-        }
-      }
-      return null
-
-    case 'port_80':
-    case 'port_443':
-      if (check.status === 'fail') {
-        return {
-          message:
-            'Something else on this host already has this port bound, commonly another web server (nginx, Apache, a previous Caddy) or a leftover process.',
-          action: (
-            <HelpLink
-              path="/troubleshooting"
-              label="Diagnose the port conflict"
               variant="inline"
             />
           ),

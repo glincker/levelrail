@@ -683,6 +683,7 @@ func TestOptions(t *testing.T) {
 	c := New(&fakeStore{}, newFakeRuntime(), &fakeApplier{},
 		WithServerName("custom-server"),
 		WithListenAddr(":8443"),
+		WithHTTPListenAddr(":8080"),
 		WithAdminListen("localhost:9999"),
 		WithStorageDir("/data/caddy"),
 		WithLogger(custom),
@@ -692,6 +693,9 @@ func TestOptions(t *testing.T) {
 	}
 	if c.listenAddr != ":8443" {
 		t.Errorf("listenAddr = %q, want :8443", c.listenAddr)
+	}
+	if c.httpListenAddr != ":8080" {
+		t.Errorf("httpListenAddr = %q, want :8080", c.httpListenAddr)
 	}
 	if c.adminListen != "localhost:9999" {
 		t.Errorf("adminListen = %q, want localhost:9999", c.adminListen)
@@ -712,7 +716,49 @@ func TestNew_Defaults(t *testing.T) {
 	if c.listenAddr != defaultListenAddr {
 		t.Errorf("listenAddr = %q, want default %q", c.listenAddr, defaultListenAddr)
 	}
+	if c.httpListenAddr != defaultHTTPListenAddr {
+		t.Errorf("httpListenAddr = %q, want default %q", c.httpListenAddr, defaultHTTPListenAddr)
+	}
 	if c.adminListen != defaultAdminListen {
 		t.Errorf("adminListen = %q, want default %q", c.adminListen, defaultAdminListen)
+	}
+}
+
+// TestController_Reconcile_CustomListenAddrs_AppliedToConfig proves
+// WithListenAddr/WithHTTPListenAddr actually change what Reconcile
+// applies to Caddy, not just the Controller's own fields: the exact
+// scenario two control-plane instances sharing one host depend on to
+// avoid fighting over :443/:80. Listen is the real bound address
+// (WithListenAddr); Apps.HTTP.HTTPPort is only ever consulted by
+// Caddy's own automatic-HTTPS/ACME HTTP-01 machinery, never bound as a
+// listener itself here (see WithHTTPListenAddr's own doc comment).
+func TestController_Reconcile_CustomListenAddrs_AppliedToConfig(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"web.example.com"}}
+	target := application.ContainerName(desired.Name, desired.Image, "")
+
+	rt := newFakeRuntime()
+	rt.seedRunning(target, 34567)
+
+	st := &fakeStore{services: []store.DesiredService{desired}}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier,
+		WithLogger(discardLogger()),
+		WithListenAddr(":8443"),
+		WithHTTPListenAddr(":8080"),
+	)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	server, ok := applier.lastCfg.Apps.HTTP.Servers[defaultServerName]
+	if !ok {
+		t.Fatal("applied config has no default-named server")
+	}
+	if len(server.Listen) != 1 || server.Listen[0] != ":8443" {
+		t.Errorf("Listen = %v, want [:8443]", server.Listen)
+	}
+	if applier.lastCfg.Apps.HTTP.HTTPPort != 8080 {
+		t.Errorf("Apps.HTTP.HTTPPort = %d, want 8080", applier.lastCfg.Apps.HTTP.HTTPPort)
 	}
 }

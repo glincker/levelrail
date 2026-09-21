@@ -504,7 +504,7 @@ func WithDBPinger(p DBPinger) Option {
 	return func(rt *Router) { rt.dbPinger = p }
 }
 
-// WithIngressPortOwner lets GET /api/v1/system/doctor's port_80/port_443
+// WithIngressPortOwner lets GET /api/v1/system/doctor's port_<n>
 // checks recognize a bind failure caused by this control plane's own
 // embedded ingress (internal/ingress.Driver) as expected rather than a
 // real problem. Without one configured (the default), a bound port
@@ -512,6 +512,21 @@ func WithDBPinger(p DBPinger) Option {
 // ownership was distinguishable.
 func WithIngressPortOwner(o IngressPortOwner) Option {
 	return func(rt *Router) { rt.ingressPortOwner = o }
+}
+
+// WithDoctorIngressPorts overrides the two ports GET /api/v1/system/
+// doctor's port_<n> checks probe, in place of the literal 80/443
+// defaultDoctorHTTPPort/defaultDoctorHTTPSPort ports. cmd/levelrail/
+// main.go passes the same APP_INGRESS_HTTP_ADDR/APP_INGRESS_HTTPS_ADDR-
+// derived ports already threaded to ingressreconcile.WithHTTPListenAddr/
+// WithListenAddr, so doctor stays accurate for an instance running its
+// ingress on non-default ports. Either argument being 0 keeps that
+// port's own default.
+func WithDoctorIngressPorts(httpPort, httpsPort int) Option {
+	return func(rt *Router) {
+		rt.doctorHTTPPort = httpPort
+		rt.doctorHTTPSPort = httpsPort
+	}
 }
 
 // WithDoctorDiskWarningBytes overrides the free-space floor GET

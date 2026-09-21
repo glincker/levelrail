@@ -300,6 +300,8 @@ type Router struct {
 	dbPinger                       DBPinger                         // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
 	doctorDiskWarningBytes         int64                            // 0 means "use defaultDoctorDiskWarningBytes", set via WithDoctorDiskWarningBytes
 	ingressPortOwner               IngressPortOwner                 // nil is valid: GET /system/doctor's port checks can't tell this control plane's own ingress apart from another process, same "can't check further, don't guess" shape as dbPinger above
+	doctorHTTPPort                 int                              // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
+	doctorHTTPSPort                int                              // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
 	webhookDeliveries              WebhookDeliveryStore             // always set, same "core Store interface" shape as deployAttempts above
 	policies                       PolicyStore                      // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
 	deviceAuth                     DeviceAuthStore                  // always set, same "core Store interface" shape as policies above: device_auth_requests always exists

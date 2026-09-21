@@ -26,6 +26,16 @@ const (
 // APP_DOCTOR_DISK_WARNING_BYTES (WithDoctorDiskWarningBytes).
 const defaultDoctorDiskWarningBytes = 1 << 30 // 1GiB
 
+// defaultDoctorHTTPPort/defaultDoctorHTTPSPort are the ports GET
+// /api/v1/system/doctor's port checks probe when WithDoctorIngressPorts
+// hasn't overridden them: the embedded ingress's own compiled-in
+// defaults (internal/reconcile/ingress's defaultHTTPListenAddr/
+// defaultListenAddr).
+const (
+	defaultDoctorHTTPPort  = 80
+	defaultDoctorHTTPSPort = 443
+)
+
 // doctorPortCheckTimeout bounds the SQLite ping doctor.go issues: a
 // stuck check must never hang the whole doctor response.
 const doctorPingTimeout = 2 * time.Second
@@ -59,12 +69,20 @@ type systemDoctorResponse struct {
 // follows; OK reflects only whether any individual check is fail.
 func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	httpPort := rt.doctorHTTPPort
+	if httpPort == 0 {
+		httpPort = defaultDoctorHTTPPort
+	}
+	httpsPort := rt.doctorHTTPSPort
+	if httpsPort == 0 {
+		httpsPort = defaultDoctorHTTPSPort
+	}
 	checks := []doctorCheckResource{
 		rt.doctorCheckDocker(ctx),
 		rt.doctorCheckDiskSpace(),
 		rt.doctorCheckDataDirWritable(),
-		rt.doctorCheckPort(80),
-		rt.doctorCheckPort(443),
+		rt.doctorCheckPort(httpPort),
+		rt.doctorCheckPort(httpsPort),
 		rt.doctorCheckDatabase(ctx),
 		rt.doctorCheckMasterKeyRotation(ctx),
 		doctorCheckFirewallCtx(ctx),
