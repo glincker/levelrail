@@ -263,6 +263,27 @@ func (db *DB) SaveDeployAttempt(ctx context.Context, a DeployAttempt) error {
 	return nil
 }
 
+// SetDeployAttemptCommit re-points a still-running attempt at the commit
+// its checkout resolved to, for a trigger given a branch or tag rather
+// than a hash. Image must be the tag actually built, since a rollback
+// deploys this row's image by name.
+func (db *DB) SetDeployAttemptCommit(ctx context.Context, id, image, commitSHA string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE deploy_attempts SET image = ?, commit_sha = ? WHERE id = ?
+	`, image, commitSHA, id)
+	if err != nil {
+		return fmt.Errorf("store: set deploy attempt %q commit: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set deploy attempt %q commit: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrDeployAttemptNotFound
+	}
+	return nil
+}
+
 // ErrDeployAttemptNotFound is returned by GetDeployAttempt and
 // FinishDeployAttempt when no row has the given ID.
 var ErrDeployAttemptNotFound = errors.New("store: deploy attempt not found")

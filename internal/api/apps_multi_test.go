@@ -476,3 +476,25 @@ func TestHandleDeploySpec_BindMount_RootCaller_Succeeds(t *testing.T) {
 		t.Fatalf("builder.multiCalls = %d, want 1", builder.multiCalls)
 	}
 }
+
+// TestHandleDeploySpec_TagsByResolvedCommit is the deploy-spec twin of
+// TestHandleTriggerBuild_TagsByResolvedCommitNotRef: every service in
+// the fan-out has to be tagged with the commit the checkout resolved to,
+// or a second deploy of the same branch moves the tag off the images the
+// first one produced.
+func TestHandleDeploySpec_TagsByResolvedCommit(t *testing.T) {
+	const resolved = "3333333333333333333333333333333333333333"
+	builder := &fakeBuilder{tag: "img:sha"}
+	fetch := newFakeFetchWithCommits("/tmp/checkout", resolved)
+	rt, db := newTestRouterWithBuilder(t, builder, fetch)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", multiDeployBody()))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if builder.lastMultiReq.CommitSHA != resolved {
+		t.Errorf("CommitSHA = %q, want the resolved commit %q, not the ref", builder.lastMultiReq.CommitSHA, resolved)
+	}
+}

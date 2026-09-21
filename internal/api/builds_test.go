@@ -6,16 +6,23 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
+
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -151,7 +158,17 @@ type fakeFetch struct {
 	dir string
 	err error
 
-	calls    chan fakeFetchCall
+	// commits are the resolved commit hashes handed back, one per call in
+	// order (the last one repeats once exhausted): a real fetch resolves a
+	// branch name to a different hash on every push, which is exactly what
+	// the image tag has to follow. Empty means "resolution unavailable",
+	// the caller's own fall-back-to-ref path.
+	commits []string
+
+	mu    sync.Mutex
+	nth   int
+	calls chan fakeFetchCall
+
 	cleanups chan struct{}
 }
 
@@ -159,12 +176,32 @@ func newFakeFetch(dir string, err error) *fakeFetch {
 	return &fakeFetch{dir: dir, err: err, calls: make(chan fakeFetchCall, 4), cleanups: make(chan struct{}, 4)}
 }
 
-func (f *fakeFetch) fetch(_ context.Context, repoURL, ref, token string) (string, func(), error) {
+func newFakeFetchWithCommits(dir string, commits ...string) *fakeFetch {
+	f := newFakeFetch(dir, nil)
+	f.commits = commits
+	return f
+}
+
+func (f *fakeFetch) nextCommit() string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.commits) == 0 {
+		return ""
+	}
+	i := f.nth
+	if i >= len(f.commits) {
+		i = len(f.commits) - 1
+	}
+	f.nth++
+	return f.commits[i]
+}
+
+func (f *fakeFetch) fetch(_ context.Context, repoURL, ref, token string) (string, string, func(), error) {
 	f.calls <- fakeFetchCall{repoURL: repoURL, ref: ref, token: token}
 	if f.err != nil {
-		return "", nil, f.err
+		return "", "", nil, f.err
 	}
-	return f.dir, func() { f.cleanups <- struct{}{} }, nil
+	return f.dir, f.nextCommit(), func() { f.cleanups <- struct{}{} }, nil
 }
 
 func (f *fakeFetch) awaitCall(t *testing.T) fakeFetchCall {
@@ -1115,4 +1152,192 @@ func TestHandleTriggerBuild_PrivateRepoAuth_MintErrorFallsBackUnauthenticated(t 
 		t.Errorf("fetch token = %q, want empty after a minting error", fc.token)
 	}
 	fb.awaitCall(t)
+}
+
+// initTestGitRepo creates a real single-commit repo on disk and returns
+// its path, its current branch name, and that commit's hash.
+func initTestGitRepo(t *testing.T) (dir, branch, commit string) {
+	t.Helper()
+	dir = t.TempDir()
+	repo, err := git.PlainInit(dir, false)
+	if err != nil {
+		t.Fatalf("PlainInit: %v", err)
+	}
+	commit = commitTestFile(t, repo, dir, "first")
+	head, err := repo.Head()
+	if err != nil {
+		t.Fatalf("Head: %v", err)
+	}
+	return dir, head.Name().Short(), commit
+}
+
+func commitTestFile(t *testing.T, repo *git.Repository, dir, content string) string {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(dir, "app.txt"), []byte(content), 0o600); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	wt, err := repo.Worktree()
+	if err != nil {
+		t.Fatalf("Worktree: %v", err)
+	}
+	if _, err := wt.Add("app.txt"); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+	hash, err := wt.Commit(content, &git.CommitOptions{
+		Author: &object.Signature{Name: "test", Email: "test@example.invalid", When: time.Now()},
+	})
+	if err != nil {
+		t.Fatalf("Commit: %v", err)
+	}
+	return hash.String()
+}
+
+// TestGitCheckout_ResolvesBranchToCommit proves gitCheckout hands its
+// caller the commit hash the ref actually resolved to, and that the same
+// branch name resolves to a different hash after a new commit: the image
+// tag has to follow the content, not the branch name, or the second
+// build silently retags the first build's image away and orphans it as a
+// rollback target.
+func TestGitCheckout_ResolvesBranchToCommit(t *testing.T) {
+	dir, branch, first := initTestGitRepo(t)
+
+	_, commit, cleanup, err := gitCheckout(context.Background(), dir, branch, "")
+	if err != nil {
+		t.Fatalf("gitCheckout: %v", err)
+	}
+	cleanup()
+	if commit != first {
+		t.Fatalf("commit = %q, want the resolved hash %q", commit, first)
+	}
+
+	repo, err := git.PlainOpen(dir)
+	if err != nil {
+		t.Fatalf("PlainOpen: %v", err)
+	}
+	second := commitTestFile(t, repo, dir, "second")
+
+	_, commit2, cleanup2, err := gitCheckout(context.Background(), dir, branch, "")
+	if err != nil {
+		t.Fatalf("gitCheckout (second): %v", err)
+	}
+	cleanup2()
+	if commit2 != second {
+		t.Errorf("commit = %q, want the new head %q", commit2, second)
+	}
+	if commit2 == commit {
+		t.Errorf("both builds of branch %q resolved to %q: two different commits must never share an image tag", branch, commit)
+	}
+}
+
+// TestHandleTriggerBuild_TagsByResolvedCommitNotRef is the regression
+// test for a manual build tagging its image with the raw ref: with
+// ref "main", both builds produced "<repo>:main", so the second one
+// moved that tag onto new content and left the first build's image
+// untagged, gone as a rollback target.
+func TestHandleTriggerBuild_TagsByResolvedCommitNotRef(t *testing.T) {
+	const first, second = "1111111111111111111111111111111111111111", "2222222222222222222222222222222222222222"
+	fb := newFakeBuilder("local/web:built", nil)
+	fetch := newFakeFetchWithCommits(t.TempDir(), first, second)
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	body := `{"repo_url":"https://github.com/acme/widgets.git","ref":"main","image_repo":"local/web"}`
+	postTriggerBuildAccepted(t, rt, cookie, body)
+	firstReq := fb.awaitCall(t)
+	postTriggerBuildAccepted(t, rt, cookie, body)
+	secondReq := fb.awaitCall(t)
+
+	if firstReq.CommitSHA != first || secondReq.CommitSHA != second {
+		t.Fatalf("CommitSHA = %q then %q, want the resolved hashes %q then %q", firstReq.CommitSHA, secondReq.CommitSHA, first, second)
+	}
+	if firstReq.ImageRepo+":"+firstReq.CommitSHA == secondReq.ImageRepo+":"+secondReq.CommitSHA {
+		t.Fatal("both builds of ref \"main\" produced the same image tag: the second build retags the first build's image away")
+	}
+
+	attempts, err := db.ListDeployAttempts(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("ListDeployAttempts: %v", err)
+	}
+	if len(attempts) != 2 {
+		t.Fatalf("attempts = %d, want 2", len(attempts))
+	}
+	images := map[string]bool{}
+	for _, a := range attempts {
+		if strings.HasSuffix(a.Image, ":main") {
+			t.Errorf("attempt image = %q, want the resolved commit tag: a rollback deploys this image by name, and \"main\" is not a tag any build still owns", a.Image)
+		}
+		images[a.Image] = true
+	}
+	if !images["local/web:"+first] || !images["local/web:"+second] {
+		t.Errorf("attempt images = %v, want one per resolved commit", images)
+	}
+}
+
+// TestAppStatus_WhileFirstBuildRuns_ReportsAwaitingBuildNotPullFailure
+// covers the create-then-build window: "apps status" (GET
+// .../deploys) used to answer with a Docker "pull access denied ... may
+// require 'docker login'" for the placeholder tag while the real build
+// was still running and about to succeed.
+func TestAppStatus_WhileFirstBuildRuns_ReportsAwaitingBuildNotPullFailure(t *testing.T) {
+	ctx := context.Background()
+	fb := newFakeBuilder("local/web:abc", nil)
+	fb.release = make(chan struct{})
+	fetch := newFakeFetchWithCommits(t.TempDir(), "abc123")
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"local/web:pending","port":3000}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://github.com/acme/widgets.git","ref":"main","image_repo":"local/web"}`)
+	fb.awaitCall(t)
+
+	attempt, err := db.GetDeployAttempt(ctx, resp.ID)
+	if err != nil {
+		t.Fatalf("GetDeployAttempt: %v", err)
+	}
+	if attempt.Status != store.DeployAttemptStatusRunning {
+		t.Fatalf("attempt status = %q, want %q", attempt.Status, store.DeployAttemptStatusRunning)
+	}
+
+	// The real controller over the real store, with no docker runtime at
+	// all: any attempt to pull or create would nil-panic, so reaching a
+	// condition at all proves none was made.
+	result, err := application.New("web", db, nil).Reconcile(ctx)
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if err := db.UpsertConditions(ctx, applicationControllerName("web"), result.Conditions); err != nil {
+		t.Fatalf("UpsertConditions: %v", err)
+	}
+
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/deploys", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	body := rec.Body.String()
+	for _, bad := range []string{"pull access denied", "docker login", "CreateFailed"} {
+		if strings.Contains(body, bad) {
+			t.Errorf("app status body = %s, want nothing containing %q while the build is still running", body, bad)
+		}
+	}
+
+	var conditions []reconcile.Condition
+	if err := json.Unmarshal(rec.Body.Bytes(), &conditions); err != nil {
+		t.Fatalf("decode conditions: %v", err)
+	}
+	if len(conditions) != 1 || conditions[0].Status != reconcile.ConditionUnknown || conditions[0].Reason != "AwaitingFirstBuild" {
+		t.Fatalf("conditions = %+v, want one Unknown/AwaitingFirstBuild", conditions)
+	}
+	if got := summarizeAppConditions(conditions); got.Variant == "destructive" {
+		t.Errorf("status summary = %+v, want a non-destructive variant: an app whose first build is still running has not failed", got)
+	}
+
+	close(fb.release)
+	awaitDeployAttemptFinished(t, db, resp.ID)
 }
