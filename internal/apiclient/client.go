@@ -1897,6 +1897,24 @@ func (c *Client) SetAutoRollback(ctx context.Context, appName string, enabled bo
 	return out, err
 }
 
+// GetExecAccess calls GET /api/v1/apps/{name}/exec-access: whether
+// appName's shell/exec routes (POST .../exec, GET .../terminal) are even
+// attempted, regardless of the caller's own IAM abilities. On by
+// default.
+func (c *Client) GetExecAccess(ctx context.Context, appName string) (ExecAccessResource, error) {
+	var out ExecAccessResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/exec-access", nil, &out)
+	return out, err
+}
+
+// SetExecAccess calls PUT /api/v1/apps/{name}/exec-access, opting appName
+// into (or out of) shell/exec access.
+func (c *Client) SetExecAccess(ctx context.Context, appName string, enabled bool) (ExecAccessResource, error) {
+	var out ExecAccessResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/exec-access", SetExecAccessRequest{Enabled: enabled}, &out)
+	return out, err
+}
+
 // SweepPreviewEnvironments calls POST /api/v1/previews/sweep: the manual
 // trigger for the TTL fallback that tears down any preview environment
 // whose pull-request-closed webhook never arrived, cross-app.

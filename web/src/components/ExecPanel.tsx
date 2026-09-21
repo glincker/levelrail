@@ -1,7 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { TerminalIcon, PlayIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  LockKeyIcon,
+  TerminalIcon,
+  PlayIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { useExecApp, type ExecAppResult } from '../queries/exec'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -70,7 +74,19 @@ function splitCommandLine(line: string): { command: string; args: string[] } {
 // runs one command and hands back its whole output and real exit code,
 // which is what a scripted check wants and what a shell makes awkward.
 // AppTerminal, above it on the same page, is the interactive half.
-export function ExecPanel({ name }: { name: string }) {
+//
+// execEnabled mirrors GET /api/v1/apps/{name}/exec-access
+// (queries/execAccess.ts, ExecAccessCard on the same route): when false,
+// this renders an explanatory disabled state instead of the form, since
+// POST .../exec would just be refused server-side anyway
+// (internal/api/exec.go's requireExecAccess).
+export function ExecPanel({
+  name,
+  execEnabled = true,
+}: {
+  name: string
+  execEnabled?: boolean
+}) {
   const execApp = useExecApp(name)
   const { register, handleSubmit, formState, setValue, setFocus } =
     useForm<ExecFormValues>({
@@ -84,6 +100,34 @@ export function ExecPanel({ name }: { name: string }) {
   })
 
   const result: ExecAppResult | undefined = execApp.data
+
+  if (!execEnabled) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TerminalIcon className="size-4" />
+            Run a one-off command
+          </CardTitle>
+          <CardDescription>
+            Runs inside this app&apos;s currently running container and waits
+            for it to finish (up to 30 seconds), then shows its full output and
+            exit code.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3 rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+            <LockKeyIcon className="size-5 shrink-0" />
+            <p>
+              Shell/exec access is disabled for this app. Use the
+              &quot;Shell/exec access&quot; card above to turn it back on before
+              running a command.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>

@@ -91,6 +91,9 @@ func (rt *Router) handleAppTerminal(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if !rt.requireExecAccess(w, svc) {
+		return
+	}
 	nodeRuntime, state, ok := rt.resolveExecContainer(w, r, svc)
 	if !ok {
 		return

@@ -234,6 +234,9 @@ func (f *fakeProjectLifecycleAppStore) SetServiceVaultEnvVar(context.Context, st
 func (f *fakeProjectLifecycleAppStore) SetServiceAutoRollbackOnCrashloop(context.Context, string, bool) error {
 	return nil
 }
+func (f *fakeProjectLifecycleAppStore) SetServiceExecEnabled(context.Context, string, bool) error {
+	return nil
+}
 
 type fakeProjectLifecycleDatabaseStore struct {
 	databases   []store.DesiredDatabase

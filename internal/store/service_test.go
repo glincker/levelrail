@@ -1687,3 +1687,92 @@ func TestUpdateServiceSuspended_StopDoesNotClearEnvDirty(t *testing.T) {
 		t.Error("EnvDirty = false after stop, want true (stopping does not recreate a container)")
 	}
 }
+
+// TestSaveDesiredService_ExecEnabled_DefaultsToTrue is the one place
+// this feature deliberately differs from AutoRollbackOnCrashloop's own
+// default: a service that never touches exec_enabled must still behave
+// as if exec/terminal access is on, so a fresh install and every
+// pre-existing app see no regression.
+func TestSaveDesiredService_ExecEnabled_DefaultsToTrue(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.ExecEnabled {
+		t.Error("ExecEnabled = false for a row that never set it, want true")
+	}
+}
+
+func TestSetServiceExecEnabled(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SetServiceExecEnabled(ctx, "web", false); err != nil {
+		t.Fatalf("SetServiceExecEnabled(false) error = %v", err)
+	}
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.ExecEnabled {
+		t.Error("ExecEnabled = true, want false")
+	}
+
+	if err := db.SetServiceExecEnabled(ctx, "web", true); err != nil {
+		t.Fatalf("SetServiceExecEnabled(true) error = %v", err)
+	}
+	got, err = db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.ExecEnabled {
+		t.Error("ExecEnabled = false, want true")
+	}
+}
+
+func TestSetServiceExecEnabled_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetServiceExecEnabled(context.Background(), "nonexistent", false)
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("SetServiceExecEnabled() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetExecEnabled mirrors
+// TestSaveDesiredService_RedeployDoesNotResetSuspended: SaveDesiredService
+// never writes exec_enabled, so a plain redeploy must never silently
+// re-enable exec access an operator explicitly turned off.
+func TestSaveDesiredService_RedeployDoesNotResetExecEnabled(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.SetServiceExecEnabled(ctx, "web", false); err != nil {
+		t.Fatalf("SetServiceExecEnabled(false) error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() redeploy error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.ExecEnabled {
+		t.Error("ExecEnabled = true after redeploy, want false (redeploy must not silently re-enable exec)")
+	}
+}

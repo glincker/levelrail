@@ -3,6 +3,7 @@ import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
 import {
+  LockKeyIcon,
   PlugsConnectedIcon,
   PlugsIcon,
   TerminalWindowIcon,
@@ -63,8 +64,21 @@ function prefersDarkTerminal(): boolean {
  * A session opens on an explicit click, never on navigation: a shell can
  * read the plaintext secrets injected into the container, so opening one
  * should be something an operator did on purpose.
+ *
+ * execEnabled mirrors GET /api/v1/apps/{name}/exec-access
+ * (queries/execAccess.ts, ExecAccessCard above this on the same route):
+ * when false, this renders an explanatory disabled state instead of ever
+ * opening the WebSocket, since the server would refuse the upgrade
+ * anyway (internal/api/exec.go's requireExecAccess) and a failed
+ * WebSocket handshake carries no readable body to explain why.
  */
-export function AppTerminal({ name }: { name: string }) {
+export function AppTerminal({
+  name,
+  execEnabled = true,
+}: {
+  name: string
+  execEnabled?: boolean
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const terminalRef = useRef<Terminal | null>(null)
   const [sessionId, setSessionId] = useState(0)
@@ -193,6 +207,34 @@ export function AppTerminal({ name }: { name: string }) {
   }, [])
 
   const connected = state === 'open'
+
+  if (!execEnabled) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TerminalWindowIcon className="size-4" />
+            Interactive terminal
+          </CardTitle>
+          <CardDescription>
+            A real shell inside this app&apos;s running container, with a PTY,
+            working arrow keys and Ctrl-C, and a terminal that resizes with this
+            panel. Closing this page ends the shell on the node.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3 rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+            <LockKeyIcon className="size-5 shrink-0" />
+            <p>
+              Shell/exec access is disabled for this app. Use the
+              &quot;Shell/exec access&quot; card above to turn it back on before
+              starting a session.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>

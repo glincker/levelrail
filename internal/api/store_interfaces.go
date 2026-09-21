@@ -91,6 +91,13 @@ type AppStore interface {
 	// separation-from-ordinary-update reasoning as UpdateServiceStorageTarget,
 	// see store.DB.SetServiceAutoRollbackOnCrashloop's own doc comment.
 	SetServiceAutoRollbackOnCrashloop(ctx context.Context, name string, enabled bool) error
+	// SetServiceExecEnabled backs PUT /api/v1/apps/{name}/exec-access
+	// (exec.go): whether POST .../exec and GET .../terminal are even
+	// attempted for this app, independent of the caller's own IAM
+	// abilities. Same separation-from-ordinary-update reasoning as
+	// SetServiceAutoRollbackOnCrashloop, see
+	// store.DB.SetServiceExecEnabled's own doc comment.
+	SetServiceExecEnabled(ctx context.Context, name string, enabled bool) error
 	// SetServiceVaultEnvVar backs PUT/DELETE
 	// /api/v1/apps/{name}/vault-env/{key} (apps_vault_env.go): the
 	// UI/CLI-facing way to declare (or remove) one Vault-sourced env var
