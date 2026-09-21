@@ -133,12 +133,12 @@ func NewDeployAttemptSnapshot(svc DesiredService) DeployAttemptSnapshot {
 	for k := range svc.VaultEnv {
 		envKeys = append(envKeys, k)
 	}
-	envKeys = append(envKeys, svc.SecretEnv...)
+	envKeys = append(envKeys, SecretEnvNames(svc.SecretEnv)...)
 	sort.Strings(envKeys)
 
 	secretSet := make(map[string]bool, len(svc.SecretEnv))
-	for _, k := range svc.SecretEnv {
-		secretSet[k] = true
+	for _, ref := range svc.SecretEnv {
+		secretSet[ref.Name] = true
 	}
 
 	var env []DeployAttemptEnvKey
@@ -259,6 +259,27 @@ func (db *DB) SaveDeployAttempt(ctx context.Context, a DeployAttempt) error {
 	`, a.ID, a.ServiceName, a.Image, a.CommitSHA, a.Source, a.Status, a.StartedAt.UTC().Format(time.RFC3339Nano), string(snapshotJSON))
 	if err != nil {
 		return fmt.Errorf("store: save deploy attempt %q: %w", a.ID, err)
+	}
+	return nil
+}
+
+// SetDeployAttemptCommit re-points a still-running attempt at the commit
+// its checkout resolved to, for a trigger given a branch or tag rather
+// than a hash. Image must be the tag actually built, since a rollback
+// deploys this row's image by name.
+func (db *DB) SetDeployAttemptCommit(ctx context.Context, id, image, commitSHA string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE deploy_attempts SET image = ?, commit_sha = ? WHERE id = ?
+	`, image, commitSHA, id)
+	if err != nil {
+		return fmt.Errorf("store: set deploy attempt %q commit: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set deploy attempt %q commit: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrDeployAttemptNotFound
 	}
 	return nil
 }

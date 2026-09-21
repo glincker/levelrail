@@ -65,6 +65,17 @@ type ContainerState struct {
 	// container's published ports once it's running, so this is empty
 	// for a created-but-not-yet-started container, not an error.
 	Ports []PortBinding
+	// Labels are the container's own Docker labels, verbatim, including
+	// internal/spec.InstanceLabelKey when the creating control-plane
+	// instance set one. Callers doing cleanup/stale-detection across a
+	// name-prefix match (internal/reconcile/application's
+	// staleContainers) use this to additionally confirm a matching-name
+	// container was actually created by this same instance before
+	// treating it as this service's own leftover; see
+	// InstanceLabelKey's own doc comment for why a name/brand match
+	// alone isn't enough on a Docker daemon shared by more than one
+	// control-plane instance.
+	Labels map[string]string
 }
 
 // VolumeMount attaches one named Docker volume to a path inside a
@@ -149,7 +160,9 @@ type ContainerSpec struct {
 	// comment above): it trusts Labels arrived here already validated,
 	// the same way it already trusts Env and every other field. See
 	// internal/spec.ValidateLabels for what's rejected before a caller
-	// ever builds a ContainerSpec with this set.
+	// ever builds a ContainerSpec with this set. Client.Create merges in
+	// its own configured instance label (WithInstanceLabel) on top of
+	// whatever's here; that merge never mutates this map.
 	Labels map[string]string
 	// Network attaches the container to a non-default Docker network at
 	// create time, with Alias as the name sibling containers on that
@@ -240,6 +253,12 @@ type Event struct {
 type NetworkInfo struct {
 	ID   string
 	Name string
+	// Labels are the network's own Docker labels, verbatim. Same
+	// cross-instance-ownership purpose as ContainerState.Labels above:
+	// NetworkCleanupController checks internal/spec.InstanceLabelKey
+	// here before treating a matching-name network as an orphan of this
+	// instance's own apps.
+	Labels map[string]string
 }
 
 // ExitState is a container's exit-relevant state: whether it's still

@@ -67,8 +67,9 @@ type Engine struct {
 	// means the feature is off platform-wide regardless of any
 	// individual app's own opt-in, the same "absence degrades, never
 	// errors" shape every other optional Engine dependency above follows.
-	autoRollback       AutoRollbackStore
-	autoRollbackNudger deploy.ReconcileNudger
+	autoRollback        AutoRollbackStore
+	autoRollbackNudger  deploy.ReconcileNudger
+	autoRollbackTracker *AutoRollbackTracker
 
 	certExpiryWarningWindow     time.Duration
 	certRenewalStalledThreshold time.Duration
@@ -137,7 +138,8 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 	return &Engine{
 		rules: rules, metrics: metrics, logs: logs, tracker: tracker, certs: certs, nodes: nodes, nodeServices: nodeServices, scheduledTasks: scheduledTasks,
 		domainApps: domainApps, domainChecker: domainChecker, backups: backups,
-		newNotifier: newNotifier, logger: logger,
+		autoRollbackTracker: NewAutoRollbackTracker(),
+		newNotifier:         newNotifier, logger: logger,
 		certExpiryWarningWindow: certExpiryWarningWindow, certRenewalStalledThreshold: certRenewalStalledThreshold,
 		patchStatusThreshold: patchStatusThreshold, nodeDiskSpaceThreshold: nodeDiskSpaceThreshold,
 		nodeCPUThreshold: nodeCPUThreshold, nodeMemoryThreshold: nodeMemoryThreshold,
@@ -147,13 +149,13 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 }
 
 // SetAutoRollback wires crashloop auto-rollback into e: once set, a
-// KindCrashloop rule that transitions to firing checks its app's own
-// AutoRollbackOnCrashloop opt-in and, if set, rolls back automatically
-// (MaybeAutoRollback, crashloop.go). A setter rather than a NewEngine
-// parameter deliberately: this keeps every existing call site and test
-// unaffected by an optional dependency most callers don't need, the same
-// "nil until explicitly wired" shape st/nudger already have inside
-// MaybeAutoRollback itself.
+// KindCrashloop rule that transitions to firing, or stays firing across a
+// desired-image change, checks its app's own AutoRollbackOnCrashloop
+// opt-in and, if set, rolls back automatically (MaybeAutoRollback,
+// crashloop.go). A setter rather than a NewEngine parameter deliberately:
+// this keeps every existing call site and test unaffected by an optional
+// dependency most callers don't need, the same "nil until explicitly
+// wired" shape st/nudger already have inside MaybeAutoRollback itself.
 func (e *Engine) SetAutoRollback(st AutoRollbackStore, nudger deploy.ReconcileNudger) {
 	e.autoRollback = st
 	e.autoRollbackNudger = nudger
@@ -267,6 +269,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 		becameFiring := next.Firing && !r.Firing
 		becameResolved := !next.Firing && r.Firing
+		stillFiring := next.Firing && r.Firing
 
 		if err := e.rules.UpdateState(ctx, r.ID, next.PendingSince, next.FiringSince, next.Firing, now, next.LastValue); err != nil {
 			errs = append(errs, fmt.Errorf("rule %q: persist state: %w", r.ID, err))
@@ -277,10 +280,24 @@ func (e *Engine) Tick(ctx context.Context) error {
 		case becameFiring:
 			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, taskFailureNotice, backupMissingNoticeText)
 			if r.Kind == KindCrashloop && e.autoRollback != nil {
-				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, next.ResourceID, e.logger)
+				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
 			}
 		case becameResolved:
 			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, "", "")
+		case stillFiring:
+			// No dispatch here: a rule that's still firing sends no repeat
+			// notification (see dispatch's own doc comment on why). But a
+			// second, genuinely different bad deploy inside the same
+			// RestartWindow never produces its own becameFiring transition,
+			// so auto-rollback still needs a chance to re-examine this rule
+			// on every tick it stays firing. Gated on autoRollbackTracker
+			// already having an entry for this resourceID (armed): a
+			// service that has never auto-rolled-back has nothing new for
+			// MaybeAutoRollback to detect here, and skipping the check
+			// avoids a store round trip for every other still-firing rule.
+			if r.Kind == KindCrashloop && e.autoRollback != nil && e.autoRollbackTracker.armed(next.ResourceID) {
+				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
+			}
 		}
 	}
 

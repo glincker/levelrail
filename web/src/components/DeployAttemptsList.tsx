@@ -36,7 +36,9 @@ import { toast } from '@/components/ui/toast'
 function focusDeployTriggerForm() {
   const form = document.getElementById('deploy-trigger-form')
   form?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  const target = form?.querySelector<HTMLElement>('input') ?? form?.querySelector<HTMLElement>('button')
+  const target =
+    form?.querySelector<HTMLElement>('input') ??
+    form?.querySelector<HTMLElement>('button')
   target?.focus()
 }
 
@@ -95,7 +97,10 @@ export function DeployAttemptsList({
             description="Trigger your first deploy above, either from an existing image tag or by building from a git source."
             action={
               <Button size="sm" onClick={focusDeployTriggerForm}>
-                <RocketLaunchIcon className="size-3.5" data-icon="inline-start" />
+                <RocketLaunchIcon
+                  className="size-3.5"
+                  data-icon="inline-start"
+                />
                 Go to deploy form
               </Button>
             }
@@ -122,7 +127,10 @@ export function DeployAttemptsList({
     const [a, b] = selected
       .map((id) => attempts.find((x) => x.id === id))
       .filter((x): x is DeployAttempt => x !== undefined)
-      .sort((x, y) => new Date(x.started_at).getTime() - new Date(y.started_at).getTime())
+      .sort(
+        (x, y) =>
+          new Date(x.started_at).getTime() - new Date(y.started_at).getTime(),
+      )
     if (!a || !b) return null
     return { from: a.id, to: b.id }
   })()
@@ -257,7 +265,7 @@ function DeployAttemptRow({
             {attempt.image}
           </p>
           {attempt.commit_sha ? (
-            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
+            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-neutral-600 dark:text-muted-foreground">
               {attempt.commit_sha.slice(0, 7)}
             </span>
           ) : null}

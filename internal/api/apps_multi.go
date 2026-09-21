@@ -177,13 +177,19 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		token = rt.tokenForRepo(r.Context(), req.RepoURL)
 	}
 
-	sourceDir, cleanup, err := rt.fetch(r.Context(), req.RepoURL, req.Ref, token)
+	sourceDir, commit, cleanup, err := rt.fetch(r.Context(), req.RepoURL, req.Ref, token)
 	if err != nil {
 		rt.logger.Error("api: deploy spec: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", req.RepoURL), slog.String("ref", req.Ref))
 		writeError(w, http.StatusBadRequest, "fetching source failed: check repo_url and ref")
 		return
 	}
 	defer cleanup()
+
+	// Tag by the resolved commit, not req.Ref: see fetchFunc (builds.go).
+	commitLabel := req.Ref
+	if commit != "" {
+		commitLabel = commit
+	}
 
 	progress := func(serviceKey string, ev build.ProgressEvent) {
 		rt.logger.Info("api: deploy spec: build progress", slog.String("name", name), slog.String("service_key", serviceKey), slog.String("step", ev.Step), slog.Bool("completed", ev.Completed), slog.String("error", ev.Error))
@@ -193,7 +199,7 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		AppName:       name,
 		Services:      req.Services,
 		SourceDir:     sourceDir,
-		CommitSHA:     req.Ref,
+		CommitSHA:     commitLabel,
 		ImageRepoBase: imageRepoBase,
 	}, progress)
 	if err != nil {

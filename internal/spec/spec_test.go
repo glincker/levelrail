@@ -53,6 +53,9 @@ func TestParse_ValidFull(t *testing.T) {
 	if web.Health.Liveness == nil || web.Health.Liveness.Failures != 3 {
 		t.Errorf("Health.Liveness = %+v, want Failures=3", web.Health.Liveness)
 	}
+	if web.Health.ReadyTimeout != "90s" {
+		t.Errorf("Health.ReadyTimeout = %q, want \"90s\"", web.Health.ReadyTimeout)
+	}
 	if web.Resources == nil || web.Resources.Memory != "512Mi" || web.Resources.CPU != 0.5 {
 		t.Errorf("Resources = %+v, want Memory=512Mi CPU=0.5", web.Resources)
 	}
@@ -960,5 +963,23 @@ func TestValidateLabels_ReservedPrefixNeverOverridable(t *testing.T) {
 				t.Fatalf("ValidateLabels(%q) = nil error, want rejection of a reserved-namespace key", key)
 			}
 		})
+	}
+}
+
+func TestIsPendingImage(t *testing.T) {
+	tests := []struct {
+		image string
+		want  bool
+	}{
+		{"local/web" + PendingImageTag, true},
+		{"web:pending", true},
+		{"local/web:abc123", false},
+		{"local/pending:1", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		if got := IsPendingImage(tt.image); got != tt.want {
+			t.Errorf("IsPendingImage(%q) = %v, want %v", tt.image, got, tt.want)
+		}
 	}
 }

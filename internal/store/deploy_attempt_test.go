@@ -314,7 +314,7 @@ func TestNewDeployAttemptSnapshot(t *testing.T) {
 			name: "literal, secret, database, and vault env keys classify correctly",
 			svc: DesiredService{
 				Env:         map[string]string{"PLAIN": "value"},
-				SecretEnv:   []string{"API_KEY"},
+				SecretEnv:   []SecretEnvRef{{Name: "API_KEY"}},
 				DatabaseEnv: map[string]DatabaseEnvRef{"DB_URL": {Database: "main", Field: "url"}},
 				VaultEnv:    map[string]VaultEnvRef{"VAULT_KEY": {Path: "myapp/config", Key: "api_key"}},
 			},
@@ -428,7 +428,7 @@ func TestNewDeployAttemptSnapshot(t *testing.T) {
 func TestNewDeployAttemptSnapshot_NeverCarriesASecretOrDatabaseValue(t *testing.T) {
 	svc := DesiredService{
 		Env:         map[string]string{"API_KEY": "this-must-never-appear", "DB_URL": "this-must-never-appear-either", "VAULT_KEY": "this-must-never-appear-either"},
-		SecretEnv:   []string{"API_KEY"},
+		SecretEnv:   []SecretEnvRef{{Name: "API_KEY"}},
 		DatabaseEnv: map[string]DatabaseEnvRef{"DB_URL": {Database: "main", Field: "url"}},
 		VaultEnv:    map[string]VaultEnvRef{"VAULT_KEY": {Path: "myapp/config", Key: "api_key"}},
 	}
@@ -543,5 +543,40 @@ func TestGetDeployAttempt_PreMigrationRowHasZeroValueSnapshot(t *testing.T) {
 		got.Snapshot.Health != nil || got.Snapshot.Replicas != 0 || got.Snapshot.Strategy != "" ||
 		len(got.Snapshot.Volumes) != 0 || len(got.Snapshot.Labels) != 0 {
 		t.Errorf("Snapshot = %+v, want the zero value for a pre-migration row", got.Snapshot)
+	}
+}
+
+func TestSetDeployAttemptCommit(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDeployAttempt(ctx, DeployAttempt{
+		ID: "dep_retag", ServiceName: "web", Image: "levelrail/web:main", CommitSHA: "main",
+		Status: DeployAttemptStatusRunning, StartedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	if err := db.SetDeployAttemptCommit(ctx, "dep_retag", "levelrail/web:abc123", "abc123"); err != nil {
+		t.Fatalf("SetDeployAttemptCommit() error = %v", err)
+	}
+
+	got, err := db.GetDeployAttempt(ctx, "dep_retag")
+	if err != nil {
+		t.Fatalf("GetDeployAttempt() error = %v", err)
+	}
+	if got.Image != "levelrail/web:abc123" || got.CommitSHA != "abc123" {
+		t.Errorf("Image/CommitSHA = %q/%q, want the resolved commit's own tag", got.Image, got.CommitSHA)
+	}
+	if got.Status != DeployAttemptStatusRunning {
+		t.Errorf("Status = %q, want the attempt to stay running", got.Status)
+	}
+}
+
+func TestSetDeployAttemptCommit_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetDeployAttemptCommit(context.Background(), "dep_ghost", "web:abc", "abc")
+	if !errors.Is(err, ErrDeployAttemptNotFound) {
+		t.Errorf("error = %v, want ErrDeployAttemptNotFound", err)
 	}
 }

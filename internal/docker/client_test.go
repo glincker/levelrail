@@ -7,6 +7,7 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/events"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	dockernetwork "github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
@@ -425,6 +426,17 @@ func TestToContainerState(t *testing.T) {
 			summary: container.Summary{ID: "abc123", Names: nil, State: "exited"},
 			want:    ContainerState{ID: "abc123", Name: "", Running: false},
 		},
+		{
+			name: "labels carried through verbatim, for staleContainers' own instance-ownership check",
+			summary: container.Summary{
+				ID: "abc123", Names: []string{"/web-a1b2c3d4"}, State: "running",
+				Labels: map[string]string{"platform-reserved.instance": "inst_a"},
+			},
+			want: ContainerState{
+				ID: "abc123", Name: "web-a1b2c3d4", Running: true,
+				Labels: map[string]string{"platform-reserved.instance": "inst_a"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -433,7 +445,60 @@ func TestToContainerState(t *testing.T) {
 			if got.ID != tt.want.ID || got.Name != tt.want.Name || got.Image != tt.want.Image || got.Running != tt.want.Running {
 				t.Errorf("toContainerState() = %+v, want %+v", got, tt.want)
 			}
+			if !reflect.DeepEqual(got.Labels, tt.want.Labels) {
+				t.Errorf("toContainerState().Labels = %+v, want %+v", got.Labels, tt.want.Labels)
+			}
 		})
+	}
+}
+
+func TestClient_WithInstanceLabel_MergesIntoLabels(t *testing.T) {
+	unconfigured := &Client{}
+	if got := unconfigured.withInstanceLabel(map[string]string{"a": "b"}); !reflect.DeepEqual(got, map[string]string{"a": "b"}) {
+		t.Errorf("withInstanceLabel() on an unconfigured Client = %+v, want the input unchanged", got)
+	}
+	if got := unconfigured.withInstanceLabel(nil); got != nil {
+		t.Errorf("withInstanceLabel(nil) on an unconfigured Client = %+v, want nil", got)
+	}
+
+	c := &Client{}
+	WithInstanceLabel("platform-reserved.instance", "inst_a")(c)
+
+	got := c.withInstanceLabel(map[string]string{"custom": "operator-set"})
+	want := map[string]string{"custom": "operator-set", "platform-reserved.instance": "inst_a"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("withInstanceLabel() = %+v, want %+v", got, want)
+	}
+
+	// Original map must be left untouched: Create's spec.Labels is
+	// caller-owned data, not something this method should mutate.
+	original := map[string]string{"custom": "operator-set"}
+	_ = c.withInstanceLabel(original)
+	if _, ok := original["platform-reserved.instance"]; ok {
+		t.Error("withInstanceLabel() mutated the caller's own labels map")
+	}
+
+	if got := c.withInstanceLabel(nil); !reflect.DeepEqual(got, map[string]string{"platform-reserved.instance": "inst_a"}) {
+		t.Errorf("withInstanceLabel(nil) on a configured Client = %+v, want just the instance label", got)
+	}
+}
+
+func TestClient_InstanceLabelFilter(t *testing.T) {
+	unconfigured := &Client{}
+	f := filters.NewArgs()
+	unconfigured.instanceLabelFilter(f)
+	if f.Len() != 0 {
+		t.Errorf("instanceLabelFilter() on an unconfigured Client added a filter, want none: %+v", f)
+	}
+
+	c := &Client{}
+	WithInstanceLabel("platform-reserved.instance", "inst_a")(c)
+	f2 := filters.NewArgs()
+	c.instanceLabelFilter(f2)
+	got := f2.Get("label")
+	want := []string{"platform-reserved.instance=inst_a"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("instanceLabelFilter() label filter = %+v, want %+v", got, want)
 	}
 }
 

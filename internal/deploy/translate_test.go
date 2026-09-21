@@ -160,6 +160,32 @@ func TestToServiceHealth_BothProbesTranslated(t *testing.T) {
 	}
 }
 
+func TestToServiceHealth_ReadyTimeoutTranslated(t *testing.T) {
+	got, err := toServiceHealth(spec.Health{ReadyTimeout: "90s"})
+	if err != nil {
+		t.Fatalf("toServiceHealth() error = %v", err)
+	}
+	if got.ReadyTimeout != 90*time.Second {
+		t.Errorf("ReadyTimeout = %v, want 90s", got.ReadyTimeout)
+	}
+}
+
+func TestToServiceHealth_ReadyTimeoutUnset_StaysZero(t *testing.T) {
+	got, err := toServiceHealth(spec.Health{Readiness: &spec.Probe{Path: "/healthz"}})
+	if err != nil {
+		t.Fatalf("toServiceHealth() error = %v", err)
+	}
+	if got.ReadyTimeout != 0 {
+		t.Errorf("ReadyTimeout = %v, want 0 (unset)", got.ReadyTimeout)
+	}
+}
+
+func TestToServiceHealth_InvalidReadyTimeoutPropagatesError(t *testing.T) {
+	if _, err := toServiceHealth(spec.Health{ReadyTimeout: "not-a-duration"}); err == nil {
+		t.Fatal("toServiceHealth() error = nil, want an error for an invalid readyTimeout")
+	}
+}
+
 func TestLiteralEnv(t *testing.T) {
 	got := literalEnv(map[string]spec.EnvVar{
 		"A": {Value: "1"},

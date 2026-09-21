@@ -94,6 +94,16 @@ type Deployer interface {
 	DeploySpec(ctx context.Context, req deploy.MultiRequest, progress func(serviceKey string, ev build.ProgressEvent)) ([]deploy.ServiceOutcome, error)
 }
 
+// ReconcileNudger is *reconcile.Engine's own Nudge method, narrowed the
+// same way internal/api.ReconcileNudger is (that interface can't be
+// imported here: internal/api already imports internal/webhook). A push
+// that just deployed a new image calls it so the reconciler doesn't wait
+// up to a full resyncInterval to notice, the same gap that interface's
+// doc comment describes for create/stop/start/restart.
+type ReconcileNudger interface {
+	Nudge()
+}
+
 // AttemptStore is the narrow store surface Handler needs to record one
 // deploy_attempts row per triggering push: this package is the third,
 // and most important, of the three real deploy-trigger paths this
@@ -211,19 +221,32 @@ type Handler struct {
 	// other optional collaborator in this codebase has, never a panic or
 	// a swallowed error.
 	notifier DeployNotifier
-	log      *slog.Logger
-	fetch    fetchFunc
+	// nudger requests an immediate reconcile pass after a successful
+	// deploy; nil (e.g. this package's own dispatch-logic tests) just
+	// means the reconciler waits for its next resyncInterval tick
+	// instead, the same "optional signal, absence is not an error" shape
+	// notifier above has.
+	nudger ReconcileNudger
+	log    *slog.Logger
+	fetch  fetchFunc
 }
 
 // New builds a Handler. attempts and recorder may both be nil (see
-// Handler.attempts' own doc comment); notifier may be nil (see
-// Handler.notifier's own doc comment); log defaults to slog.Default() if
-// nil.
-func New(cfg Config, deployer Deployer, attempts AttemptStore, recorder *deploylog.Recorder, notifier DeployNotifier, log *slog.Logger) *Handler {
+// Handler.attempts' own doc comment); notifier and nudger may be nil
+// (see their own doc comments); log defaults to slog.Default() if nil.
+func New(cfg Config, deployer Deployer, attempts AttemptStore, recorder *deploylog.Recorder, notifier DeployNotifier, nudger ReconcileNudger, log *slog.Logger) *Handler {
 	if log == nil {
 		log = slog.Default()
 	}
-	return &Handler{cfg: cfg, deployer: deployer, attempts: attempts, recorder: recorder, notifier: notifier, log: log, fetch: cloneAndCheckout}
+	return &Handler{cfg: cfg, deployer: deployer, attempts: attempts, recorder: recorder, notifier: notifier, nudger: nudger, log: log, fetch: cloneAndCheckout}
+}
+
+// nudgeReconciler calls h.nudger.Nudge() if one is configured, mirroring
+// internal/api.Router's own nudgeReconciler helper.
+func (h *Handler) nudgeReconciler() {
+	if h.nudger != nil {
+		h.nudger.Nudge()
+	}
 }
 
 // deployAttemptEnabled reports whether this Handler should record
@@ -451,6 +474,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.log.Info("webhook: deploy triggered", "commit", ev.After, "service", h.cfg.ServiceName, "tag", tag)
+	h.nudgeReconciler()
 	w.WriteHeader(http.StatusOK)
 	if _, err := fmt.Fprintf(w, "deploy triggered: %s\n", tag); err != nil {
 		h.log.Warn(errWriteResponseBody, "error", err)
@@ -508,6 +532,7 @@ func (h *Handler) deployMulti(w http.ResponseWriter, r *http.Request, ev PushEve
 		}
 		h.log.Info("webhook: multi-service deploy: service triggered", "commit", ev.After, "service", o.ServiceName, "tag", o.Image)
 	}
+	h.nudgeReconciler()
 
 	status := http.StatusOK
 	if !allSucceeded {

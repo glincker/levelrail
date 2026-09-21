@@ -115,7 +115,7 @@ func TestEnv_Live_PlainAndSecretResolveInContainer(t *testing.T) {
 		Image:     res.Tag,
 		Port:      8080,
 		Env:       map[string]string{"PLAIN_VAR": plainValue},
-		SecretEnv: []string{"SECRET_VAR"},
+		SecretEnv: []store.SecretEnvRef{{Name: "SECRET_VAR"}},
 		Health: &store.ServiceHealth{
 			Readiness: &store.ServiceProbe{Path: "/"},
 		},

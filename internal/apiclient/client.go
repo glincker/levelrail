@@ -446,6 +446,22 @@ func (c *Client) QueryLogs(ctx context.Context, name string, from, to time.Time,
 	return out.Entries, err
 }
 
+// QueryDatabaseLogs calls GET /api/v1/databases/{name}/logs?from=&to=&q=
+// (internal/api/database_logs.go's handleQueryDatabaseLogs), the database
+// counterpart to QueryLogs above: same request/response shape, same
+// shared queryResourceLogs implementation server-side.
+func (c *Client) QueryDatabaseLogs(ctx context.Context, name string, from, to time.Time, q string) ([]LogEntryResource, error) {
+	query := url.Values{}
+	query.Set("from", from.UTC().Format(time.RFC3339))
+	query.Set("to", to.UTC().Format(time.RFC3339))
+	if q != "" {
+		query.Set("q", q)
+	}
+	var out logsResponse
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/logs?"+query.Encode(), nil, &out)
+	return out.Entries, err
+}
+
 // CreateDatabase calls POST /api/v1/databases.
 func (c *Client) CreateDatabase(ctx context.Context, req DatabaseResource) (DatabaseResource, error) {
 	var out DatabaseResource
@@ -2034,6 +2050,17 @@ func (c *Client) SetDatabaseProject(ctx context.Context, name, projectID string)
 	return out, err
 }
 
+// SetDatabaseNode calls PUT /api/v1/databases/{name}/node
+// (internal/api/databases.go's handleSetDatabaseNode), the database
+// counterpart to SetAppNode: an empty nodeID moves the database back to
+// this control plane's own local node. Reuses SetAppNodeRequest, an
+// identical {node_id} body shape on both routes.
+func (c *Client) SetDatabaseNode(ctx context.Context, name, nodeID string) (DatabaseResource, error) {
+	var out DatabaseResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/databases/"+PathEscape(name)+"/node", SetAppNodeRequest{NodeID: nodeID}, &out)
+	return out, err
+}
+
 func nodesCollectionPath() string {
 	return "/api/v1/nodes"
 }
@@ -2315,6 +2342,13 @@ func (c *Client) StreamLogs(ctx context.Context, name string, onEntry func(LogSt
 	return c.streamLogEvents(ctx, "/api/v1/apps/"+PathEscape(name)+"/logs/stream", onEntry)
 }
 
+// StreamDatabaseLogs calls GET /api/v1/databases/{name}/logs/stream
+// (internal/api/database_logs.go's handleLiveDatabaseLogStream), the
+// database counterpart to StreamLogs above.
+func (c *Client) StreamDatabaseLogs(ctx context.Context, name string, onEntry func(LogStreamEntry) error) error {
+	return c.streamLogEvents(ctx, "/api/v1/databases/"+PathEscape(name)+"/logs/stream", onEntry)
+}
+
 // StreamDeployLog calls GET /api/v1/apps/{name}/deploys/{deployId}/logs
 // (internal/api/deploy_attempts.go's handleDeployLogStream): the same SSE
 // connection the dashboard's deploy log page opens, replaying the
@@ -2512,6 +2546,55 @@ func (c *Client) DownloadDeployLog(ctx context.Context, name, deployID string) (
 	return data, nil
 }
 
+// downloadRaw is DownloadBackup/DownloadVolumeBackup's shared "GET path,
+// return the raw response body" implementation, the same shape
+// DownloadDeployLog above hand-rolls for a single caller; factored out
+// here since a backup's own object stream has two callers (database and
+// app-volume backups) rather than one.
+func (c *Client) downloadRaw(ctx context.Context, path string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+
+	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
+	if err != nil {
+		return nil, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response body: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
+	}
+	return data, nil
+}
+
+// DownloadBackup calls GET /api/v1/databases/{name}/backups/{historyId}/download:
+// one succeeded database backup's own object, streamed straight through
+// as raw bytes so a caller can write it to a local file.
+func (c *Client) DownloadBackup(ctx context.Context, name, historyID string) ([]byte, error) {
+	path := "/api/v1/databases/" + PathEscape(name) + "/backups/" + PathEscape(historyID) + "/download"
+	return c.downloadRaw(ctx, path)
+}
+
+// DownloadVolumeBackup calls
+// GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/download:
+// the app service volume counterpart of DownloadBackup above.
+func (c *Client) DownloadVolumeBackup(ctx context.Context, name, volume, historyID string) ([]byte, error) {
+	path := "/api/v1/apps/" + PathEscape(name) + "/volumes/" + PathEscape(volume) + "/backups/" + PathEscape(historyID) + "/download"
+	return c.downloadRaw(ctx, path)
+}
+
 // ListCertificates calls GET /api/v1/certificates: every certificate
 // currently in this control plane's certmagic storage, healthy or not.
 // An empty slice means no certificate has ever been issued, not an
@@ -2544,6 +2627,28 @@ func (c *Client) UpdateIngressSettings(ctx context.Context, req IngressSettingsR
 	return out, err
 }
 
+// GetAIAssistantSettings calls GET /api/v1/settings/ai-assistant.
+func (c *Client) GetAIAssistantSettings(ctx context.Context) (AIAssistantSettingsResource, error) {
+	var out AIAssistantSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ai-assistant", nil, &out)
+	return out, err
+}
+
+// UpdateAIAssistantSettings calls PUT /api/v1/settings/ai-assistant.
+func (c *Client) UpdateAIAssistantSettings(ctx context.Context, req UpdateAIAssistantSettingsRequest) (AIAssistantSettingsResource, error) {
+	var out AIAssistantSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/ai-assistant", req, &out)
+	return out, err
+}
+
+// DeleteAIAssistantSettings calls DELETE /api/v1/settings/ai-assistant:
+// clears the stored key and resets provider/model in one step.
+func (c *Client) DeleteAIAssistantSettings(ctx context.Context) (AIAssistantSettingsResource, error) {
+	var out AIAssistantSettingsResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/ai-assistant", nil, &out)
+	return out, err
+}
+
 // SetAppStorage calls PUT /api/v1/apps/{name}/storage: attaches an
 // already-connected backup target to name as its object-storage
 // credential source.
@@ -2557,6 +2662,31 @@ func (c *Client) SetAppStorage(ctx context.Context, name, storageTargetID string
 // name's object-storage credential source.
 func (c *Client) ClearAppStorage(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/storage", nil, nil)
+}
+
+// ListGitProviders calls GET /api/v1/git-providers: a capability
+// summary (connected, can list branches, can register a webhook, can
+// auth-clone) for every git provider this control plane knows about, in
+// one call rather than three separate per-provider status checks.
+func (c *Client) ListGitProviders(ctx context.Context) ([]GitProviderResource, error) {
+	var out []GitProviderResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/git-providers", nil, &out)
+	return out, err
+}
+
+// GetGitHubAppStatus calls GET /api/v1/github-app: the connection
+// status (not connected / connected / connected but not yet installed).
+func (c *Client) GetGitHubAppStatus(ctx context.Context) (GitHubAppStatusResource, error) {
+	var out GitHubAppStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/github-app", nil, &out)
+	return out, err
+}
+
+// DisconnectGitHubApp calls DELETE /api/v1/github-app: forgets the
+// stored connection locally. Does not uninstall or delete the App on
+// GitHub's own side.
+func (c *Client) DisconnectGitHubApp(ctx context.Context) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/github-app", nil, nil)
 }
 
 // ListGitHubAppRepos calls GET /api/v1/github-app/repos: every
@@ -2584,6 +2714,22 @@ func (c *Client) UseGitHubRepoAsSource(ctx context.Context, owner, repo string, 
 	return out, err
 }
 
+// GetGitLabAppStatus calls GET /api/v1/gitlab-app: the connection
+// status (configured, and whether the OAuth authorization-code flow has
+// completed).
+func (c *Client) GetGitLabAppStatus(ctx context.Context) (GitLabAppStatusResource, error) {
+	var out GitLabAppStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/gitlab-app", nil, &out)
+	return out, err
+}
+
+// DisconnectGitLabApp calls DELETE /api/v1/gitlab-app: forgets the
+// stored connection locally. Does not revoke the token or delete the
+// Application on GitLab's own side.
+func (c *Client) DisconnectGitLabApp(ctx context.Context) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/gitlab-app", nil, nil)
+}
+
 // ListGitLabAppProjects calls GET /api/v1/gitlab-app/projects: every
 // project the connected GitLab account can access.
 func (c *Client) ListGitLabAppProjects(ctx context.Context) ([]GitLabAppProjectResource, error) {
@@ -2606,6 +2752,22 @@ func (c *Client) UseGitLabProjectAsSource(ctx context.Context, projectID int64, 
 	var out GitSourceResource
 	err := c.do(ctx, http.MethodPost, "/api/v1/gitlab-app/projects/"+strconv.FormatInt(projectID, 10)+"/use-as-source", req, &out)
 	return out, err
+}
+
+// GetBitbucketAppStatus calls GET /api/v1/bitbucket-app: the connection
+// status (configured, and whether the OAuth consumer has been
+// authorized).
+func (c *Client) GetBitbucketAppStatus(ctx context.Context) (BitbucketAppStatusResource, error) {
+	var out BitbucketAppStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/bitbucket-app", nil, &out)
+	return out, err
+}
+
+// DisconnectBitbucketApp calls DELETE /api/v1/bitbucket-app: forgets
+// the stored connection locally. Does not revoke the token or delete
+// the consumer on Bitbucket's own side.
+func (c *Client) DisconnectBitbucketApp(ctx context.Context) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/bitbucket-app", nil, nil)
 }
 
 // ListBitbucketAppRepos calls GET /api/v1/bitbucket-app/repos: every

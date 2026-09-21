@@ -40,16 +40,24 @@ func TestFormatMemoryBytes(t *testing.T) {
 // TestSpecServiceFromDesired covers the reconstruction
 // specServiceFromDesired does for a manual build request: everything
 // store.DesiredService can represent (port, domains, literal env, secret
-// env names, resources, health) carried forward into a spec.Service the
-// existing internal/deploy.Pipeline already knows how to build from,
-// plus the caller-supplied Build block layered on top.
+// env names and their Required bit, resources, health) carried forward
+// into a spec.Service the existing internal/deploy.Pipeline already
+// knows how to build from, plus the caller-supplied Build block layered
+// on top. TOKEN (Required: true) and its optional sibling both prove
+// SecretEnvRef.Required survives the round trip: this used to be a known
+// fidelity loss (see git history), the exact gap that let a
+// build-triggered deploy silently skip app.yaml's own { required: true }
+// check that internal/webhook's fresh app.yaml parse never lost.
 func TestSpecServiceFromDesired(t *testing.T) {
 	svc := store.DesiredService{
-		Name:      "web",
-		Port:      8080,
-		Domains:   []string{"a.example.com", "b.example.com"},
-		Env:       map[string]string{"FOO": "bar"},
-		SecretEnv: []string{"TOKEN"},
+		Name:    "web",
+		Port:    8080,
+		Domains: []string{"a.example.com", "b.example.com"},
+		Env:     map[string]string{"FOO": "bar"},
+		SecretEnv: []store.SecretEnvRef{
+			{Name: "TOKEN", Required: true},
+			{Name: "OPTIONAL_TOKEN", Required: false},
+		},
 		Resources: &store.ServiceResources{
 			MemoryBytes:     256 * 1024 * 1024,
 			NanoCPUs:        250_000_000,
@@ -57,8 +65,9 @@ func TestSpecServiceFromDesired(t *testing.T) {
 			CPUSetCPUs:      "0-1",
 		},
 		Health: &store.ServiceHealth{
-			Readiness: &store.ServiceProbe{Path: "/ready", Interval: 5 * time.Second, Timeout: 2 * time.Second, Failures: 3},
-			Liveness:  &store.ServiceProbe{Path: "/live", Interval: 30 * time.Second},
+			Readiness:    &store.ServiceProbe{Path: "/ready", Interval: 5 * time.Second, Timeout: 2 * time.Second, Failures: 3},
+			Liveness:     &store.ServiceProbe{Path: "/live", Interval: 30 * time.Second},
+			ReadyTimeout: 90 * time.Second,
 		},
 	}
 	buildCfg := spec.Build{Type: spec.BuildDockerfile, Path: "./Dockerfile"}
@@ -77,8 +86,11 @@ func TestSpecServiceFromDesired(t *testing.T) {
 	if v := got.Env["FOO"]; v.Value != "bar" || v.Secret {
 		t.Errorf("Env[FOO] = %+v, want literal value bar", v)
 	}
-	if v := got.Env["TOKEN"]; !v.Secret || v.Value != "" || v.Required {
-		t.Errorf("Env[TOKEN] = %+v, want a non-required secret marker with no value", v)
+	if v := got.Env["TOKEN"]; !v.Secret || v.Value != "" || !v.Required {
+		t.Errorf("Env[TOKEN] = %+v, want a required secret marker with no value", v)
+	}
+	if v := got.Env["OPTIONAL_TOKEN"]; !v.Secret || v.Value != "" || v.Required {
+		t.Errorf("Env[OPTIONAL_TOKEN] = %+v, want a non-required secret marker with no value", v)
 	}
 	if got.Resources == nil || got.Resources.Memory != "256Mi" || got.Resources.CPU != 0.25 {
 		t.Errorf("Resources = %+v, want Memory=256Mi CPU=0.25", got.Resources)
@@ -94,6 +106,9 @@ func TestSpecServiceFromDesired(t *testing.T) {
 	}
 	if got.Health.Liveness == nil || got.Health.Liveness.Path != "/live" || got.Health.Liveness.Interval != "30s" {
 		t.Errorf("Health.Liveness = %+v, want path=/live interval=30s", got.Health.Liveness)
+	}
+	if got.Health.ReadyTimeout != "1m30s" {
+		t.Errorf("Health.ReadyTimeout = %q, want \"1m30s\" (time.Duration.String's own formatting of 90s)", got.Health.ReadyTimeout)
 	}
 }
 

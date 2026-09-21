@@ -29,6 +29,8 @@ func runAppVolumeBackups(prog string, args []string, stdout, stderr io.Writer, l
 		return runAppVolumeBackupsTrigger(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runAppVolumeBackupsDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "download":
+		return runAppVolumeBackupsDownload(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restore":
 		return runAppVolumeBackupsRestore(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "restore-as-new":
@@ -51,6 +53,7 @@ func appVolumeBackupsUsage(prog string) string {
   %[1]s app-volume-backups list <app> <volume> [flags]                                  list backup history for an app's named volume
   %[1]s app-volume-backups trigger <app> <volume> --target ID [flags]                 trigger a manual backup
   %[1]s app-volume-backups delete <app> <volume> <backup-id> [flags]                  delete one archived backup on demand (destructive)
+  %[1]s app-volume-backups download <app> <volume> <backup-id> [flags]                stream a succeeded backup's own object to stdout
   %[1]s app-volume-backups restore <app> <volume> --backup ID --confirm APP/VOLUME [flags]   restore a volume from a backup (destructive)
   %[1]s app-volume-backups restore-as-new <app> <volume> --backup ID [flags]           restore a backup into a brand-new, standalone volume (non-destructive)
   %[1]s app-volume-backups schedule set <app> <volume> --target ID --cron EXPR [flags]   configure a recurring backup

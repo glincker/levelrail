@@ -248,16 +248,6 @@ func run(logger *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	client, err := docker.NewClient()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if cerr := client.Close(); cerr != nil {
-			logger.Error("closing docker client", slog.String("error", cerr.Error()))
-		}
-	}()
-
 	db, err := openStore(ctx)
 	if err != nil {
 		return err
@@ -265,6 +255,34 @@ func run(logger *slog.Logger) error {
 	defer func() {
 		if cerr := db.Close(); cerr != nil {
 			logger.Error("closing store", slog.String("error", cerr.Error()))
+		}
+	}()
+
+	// instanceID must be resolved before the Docker client is
+	// constructed below, so every container/network/volume this process
+	// creates from its very first reconcile pass carries it. Not fatal
+	// on failure, the same "control plane still starts" choice this
+	// function already makes for secrets/webhook/mesh below: an empty
+	// instanceID just means every instance-ownership check
+	// (application.WithInstanceID and friends) stays a no-op, this
+	// codebase's behavior before cross-instance safety existed, not a
+	// crash.
+	instanceID, err := db.GetOrCreateInstanceID(ctx)
+	if err != nil {
+		logger.Warn("instance id not available: cross-instance Docker cleanup safety is disabled", slog.String("error", err.Error()))
+	}
+
+	clientOpts := []docker.ClientOption{}
+	if instanceID != "" {
+		clientOpts = append(clientOpts, docker.WithInstanceLabel(spec.InstanceLabelKey, instanceID))
+	}
+	client, err := docker.NewClient(clientOpts...)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := client.Close(); cerr != nil {
+			logger.Error("closing docker client", slog.String("error", cerr.Error()))
 		}
 	}()
 
@@ -480,7 +498,15 @@ func run(logger *slog.Logger) error {
 		}()
 	}
 
-	webhookHandler, err := loadWebhookHandler(logger, b, db, deployRecorder, deployDispatcher, builder)
+	// Created here, before loadWebhookHandler and the router, both of
+	// which need to hand it to mutating handlers (webhook.New,
+	// api.WithReconcileNudger), rather than down at its own
+	// SetStore/SetSource call below: both setters, and Nudge itself, are
+	// safe to call on an Engine before Run starts (Run doesn't begin
+	// until further down this same function).
+	engine := reconcile.NewEngine(logger)
+
+	webhookHandler, err := loadWebhookHandler(logger, b, db, deployRecorder, deployDispatcher, builder, engine)
 	if err != nil {
 		// Not fatal, the same choice as everything else optional above:
 		// the control plane still starts, serving apps deployed by
@@ -488,13 +514,6 @@ func run(logger *slog.Logger) error {
 		// unavailable, and specifically why is right here in the log.
 		logger.Warn("webhook not configured", slog.String("error", err.Error()))
 	}
-
-	// Created here, before the router that needs to hand it to mutating
-	// handlers (api.WithReconcileNudger), rather than down at its own
-	// SetStore/SetSource call below: both setters, and Nudge itself, are
-	// safe to call on an Engine before Run starts (Run doesn't begin
-	// until further down this same function).
-	engine := reconcile.NewEngine(logger)
 
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner, engine)
 	httpServer := &http.Server{
@@ -556,6 +575,7 @@ func run(logger *slog.Logger) error {
 		meshDNSAddr:      meshDNSAddr,
 		dashboardDial:    dashboardDialAddr(httpAddr()),
 		networkPrefix:    b.ShortName,
+		instanceID:       instanceID,
 		livenessTracker:  application.NewLivenessTracker(),
 		publicHost:       publicHost(),
 	}))
@@ -1490,7 +1510,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 // webhook handler this function builds always records real deploy
 // history for a triggering push, since an unattended webhook deploy
 // is exactly the case persistence matters most for.
-func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, recorder *deploylog.Recorder, notifier *alerting.DeployDispatcher, pipeline *deploy.Pipeline) (http.Handler, error) {
+func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, recorder *deploylog.Recorder, notifier *alerting.DeployDispatcher, pipeline *deploy.Pipeline, nudger *reconcile.Engine) (http.Handler, error) {
 	if pipeline == nil {
 		return nil, fmt.Errorf("no builder available (see the earlier \"builder not configured\" warning)")
 	}
@@ -1545,7 +1565,7 @@ func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, recor
 		Service:     svc,
 		ImageRepo:   imageRepo,
 	}
-	return webhook.New(cfg, pipeline, db, recorder, notifier, logger), nil
+	return webhook.New(cfg, pipeline, db, recorder, notifier, nudger, logger), nil
 }
 
 // buildCacheOptions reads the cache-backend env vars and
@@ -2548,6 +2568,13 @@ type dynamicSourceDeps struct {
 	meshDNSAddr      string
 	dashboardDial    string
 	networkPrefix    string
+	// instanceID is this control-plane instance's own persistent identity
+	// (store.GetOrCreateInstanceID), threaded to every controller doing
+	// name/prefix-based Docker cleanup so two instances sharing one
+	// Docker daemon can't mistake each other's resources for their own
+	// stale leftovers; see internal/spec.InstanceLabelKey's own doc
+	// comment.
+	instanceID string
 	// livenessTracker outlives the per-pass controllers below, which is
 	// the whole point: see application.WithLivenessTracker.
 	livenessTracker *application.LivenessTracker
@@ -2614,7 +2641,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// Local runtime unconditionally, same reasoning as the ingress
 		// controller above: per-app networks are single-node scope until
 		// the WireGuard mesh exists.
-		controllers = append(controllers, application.NewNetworkCleanupController(deps.db, deps.runtime, deps.networkPrefix))
+		controllers = append(controllers, application.NewNetworkCleanupController(deps.db, deps.runtime, deps.networkPrefix, deps.instanceID))
 
 		// Cloudflare Tunnel: also local-runtime-unconditional, the same
 		// "this control plane's own node, not per-app placement" shape as
@@ -2679,6 +2706,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithOrganizationEnv(sharedEnvResolver),
 		application.WithEnvironmentEnv(sharedEnvResolver),
 		application.WithNetworkPrefix(deps.networkPrefix),
+		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),
 	}
 	if deps.secretsManager != nil {

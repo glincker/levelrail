@@ -172,6 +172,7 @@ type DeployStore interface {
 // old one. *store.DB satisfies this structurally.
 type DeployAttemptStore interface {
 	SaveDeployAttempt(ctx context.Context, a store.DeployAttempt) error
+	SetDeployAttemptCommit(ctx context.Context, id, image, commitSHA string) error
 	FinishDeployAttempt(ctx context.Context, id, status string, finishedAt time.Time, errMsg string) error
 	GetDeployAttempt(ctx context.Context, id string) (*store.DeployAttempt, error)
 	ListDeployAttempts(ctx context.Context, serviceName string) ([]store.DeployAttempt, error)

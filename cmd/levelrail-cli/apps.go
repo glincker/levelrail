@@ -107,6 +107,12 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsImages(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "storage":
 		return runAppsStorage(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "database":
+		return runAppsDatabase(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "builds":
+		return runAppsBuilds(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "moves":
+		return runAppsMoves(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "vault-env":
 		return runAppsVaultEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "preview-env":
@@ -170,10 +176,13 @@ func appsUsage(prog string) string {
   %[1]s apps clone <name> <new-name> [flags]   duplicate an app's desired state under a new name
   %[1]s apps images <name> [flags]   list locally-present image tags under an app's current image repo
   %[1]s apps storage <verb> [flags]   attach/detach a connected bucket as this app's object storage
+  %[1]s apps database <verb> [flags]   attach/detach a managed database as this app's connection-env-var source
+  %[1]s apps builds trigger <name> --repo-url URL --ref REF [flags]   build and deploy an image from a git source
+  %[1]s apps moves <verb> [flags]      inspect "apps set-node --with-volumes" move-with-volumes history
   %[1]s apps vault-env <verb> [flags]   declare/remove an env var resolved live from an external Vault instance
   %[1]s apps preview-env <verb> [flags]   declare/remove a preview-specific env var override, applied only when a preview is created
   %[1]s apps tag <name> <tag> [flags]     attach a tag (by name) to an app, creating it first if new
-  %[1]s apps untag <name> <tag-id> [flags]   detach a tag (by id) from an app
+  %[1]s apps untag <name> <tag> [flags]   detach a tag (by name) from an app
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.
 `, prog)

@@ -12,6 +12,7 @@ package spec
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -115,6 +116,18 @@ const (
 	BuildImage      = "image"
 )
 
+// PendingImageTag is the tag an app is created with when its first image
+// has not been built yet (the CLI's own git-build path, which must send
+// some image for an app POST that requires one). It never names a real
+// registry image, so the application reconciler treats it as "not built
+// yet" rather than something to pull.
+const PendingImageTag = ":pending"
+
+// IsPendingImage reports whether image is a PendingImageTag placeholder.
+func IsPendingImage(image string) bool {
+	return strings.HasSuffix(image, PendingImageTag)
+}
+
 // Deploy strategies, part of the app spec. Blue-green is the effective
 // default, since it's easier to get right than rolling with a single
 // replica, applied by DefaultStrategy when Strategy is empty, not
@@ -160,6 +173,12 @@ type Build struct {
 type Health struct {
 	Readiness *Probe `yaml:"readiness,omitempty"`
 	Liveness  *Probe `yaml:"liveness,omitempty"`
+	// ReadyTimeout overrides how long a fresh deploy waits for Readiness
+	// to pass before the deploy is marked ReadinessFailed (internal/
+	// reconcile/application.defaultReadyBudget, 60s, when unset). A slow
+	// cold start (a JVM app, a big migration, a slow external connection)
+	// can legitimately take longer than 60s without ever being unhealthy.
+	ReadyTimeout string `yaml:"readyTimeout,omitempty"`
 }
 
 // Probe is a single HTTP health check.

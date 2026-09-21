@@ -83,7 +83,7 @@ func TestMasterKeyRotation_Live_SecretStillResolvesAfterRotation(t *testing.T) {
 		Name:      serviceName,
 		Image:     res.Tag,
 		Port:      8080,
-		SecretEnv: []string{"API_KEY"},
+		SecretEnv: []store.SecretEnvRef{{Name: "API_KEY"}},
 		Health: &store.ServiceHealth{
 			Readiness: &store.ServiceProbe{Path: "/"},
 		},

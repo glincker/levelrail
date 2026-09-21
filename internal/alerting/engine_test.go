@@ -267,6 +267,70 @@ func TestEngine_Tick_CrashloopFires_AutoRollback_FiresOncePerBadDeploy(t *testin
 	}
 }
 
+// TestEngine_Tick_CrashloopFires_AutoRollback_RearmsOnNewBadDeploy
+// reproduces the field-found gap end to end through Engine.Tick: a first
+// bad deploy gets auto-rolled-back, then a second, genuinely different
+// bad image lands while the crashloop rule is still continuously Firing
+// (its RestartWindow is generous enough that the first episode's restarts
+// never age out before the second episode's restarts start), so the rule
+// never produces a second becameFiring transition. Both episodes must
+// still get rolled back.
+func TestEngine_Tick_CrashloopFires_AutoRollback_RearmsOnNewBadDeploy(t *testing.T) {
+	r := Rule{ID: "cl1", Kind: KindCrashloop, ResourceID: "service:web",
+		RestartCountThreshold: 1, RestartWindow: time.Hour, Enabled: true}
+	rules := newFakeRuleStore(r)
+	tracker := NewRestartTracker()
+	tracker.Observe("service:web", "web-h1", time.Now())
+	tracker.Observe("service:web", "web-h1", time.Now()) // meets threshold: rule fires on tick 1
+
+	spy := &spyNotifier{}
+	engine := newTestEngine(rules, nil, &fakeLogsSource{}, tracker, spy)
+	rollbackStore := &fakeAutoRollbackStore{
+		svc: store.DesiredService{Name: "web", Image: "web:badA", AutoRollbackOnCrashloop: true},
+		attempts: []store.DeployAttempt{
+			{Image: "web:badA", Status: store.DeployAttemptStatusSucceeded},
+			{Image: "web:good", Status: store.DeployAttemptStatusSucceeded},
+		},
+	}
+	nudger := &fakeAutoRollbackNudger{}
+	engine.SetAutoRollback(rollbackStore, nudger)
+
+	// Tick 1: becameFiring, episode 1 (web:badA) rolls back to web:good.
+	if err := engine.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() 1 error = %v", err)
+	}
+	if len(rollbackStore.savedServices) != 1 || rollbackStore.savedServices[0].Image != "web:good" {
+		t.Fatalf("after tick 1: savedServices = %+v, want one save with image web:good", rollbackStore.savedServices)
+	}
+
+	// A genuinely new, different bad image is deployed. The rule's own
+	// restart-count window still covers episode 1's restarts (RestartWindow
+	// is 1h, no new observations even needed to stay above threshold), so
+	// without the fix this second bad deploy would never be seen at all.
+	rollbackStore.svc.Image = "web:badB"
+	rollbackStore.attempts = append([]store.DeployAttempt{{Image: "web:badB", Status: store.DeployAttemptStatusSucceeded}}, rollbackStore.attempts...)
+
+	// Tick 2: rule is stillFiring, not becameFiring (it never resolved).
+	if err := engine.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() 2 error = %v", err)
+	}
+
+	if len(rollbackStore.savedServices) != 2 {
+		t.Fatalf("after tick 2: savedServices = %+v, want two saves total, one per distinct bad deploy", rollbackStore.savedServices)
+	}
+	if got := rollbackStore.savedServices[1].Image; got != "web:good" {
+		t.Errorf("episode 2 rolled back to %q, want web:good (the last known good, not web:badB which just caused it)", got)
+	}
+
+	// Tick 3: nothing changed since episode 2's rollback, must not fire a third time.
+	if err := engine.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick() 3 error = %v", err)
+	}
+	if len(rollbackStore.savedServices) != 2 {
+		t.Errorf("after tick 3 (no new deploy): savedServices = %+v, want still exactly 2", rollbackStore.savedServices)
+	}
+}
+
 func TestEngine_Tick_CrashloopFires_AutoRollbackNotConfigured_NoOp(t *testing.T) {
 	r := Rule{ID: "cl1", Kind: KindCrashloop, ResourceID: "service:web",
 		RestartCountThreshold: 1, RestartWindow: time.Hour, Enabled: true}

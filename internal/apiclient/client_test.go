@@ -333,10 +333,7 @@ func TestClient_TriggerBuild(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusAccepted)
-		_ = json.NewEncoder(w).Encode(BuildTriggerResponse{
-			Image: "levelrail/web:abc123",
-			App:   AppResource{Name: "web", Image: "levelrail/web:abc123"},
-		})
+		_ = json.NewEncoder(w).Encode(BuildTriggerResponse{ID: "deploy_1"})
 	}))
 	defer srv.Close()
 
@@ -345,8 +342,8 @@ func TestClient_TriggerBuild(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TriggerBuild() error = %v", err)
 	}
-	if got.Image != "levelrail/web:abc123" {
-		t.Errorf("Image = %q, want %q", got.Image, "levelrail/web:abc123")
+	if got.ID != "deploy_1" {
+		t.Errorf("ID = %q, want %q", got.ID, "deploy_1")
 	}
 }
 

@@ -54,8 +54,9 @@ type DeploySpecServiceProbe struct {
 
 // DeploySpecServiceHealth mirrors internal/spec.Health.
 type DeploySpecServiceHealth struct {
-	Readiness *DeploySpecServiceProbe `json:"readiness,omitempty"`
-	Liveness  *DeploySpecServiceProbe `json:"liveness,omitempty"`
+	Readiness    *DeploySpecServiceProbe `json:"readiness,omitempty"`
+	Liveness     *DeploySpecServiceProbe `json:"liveness,omitempty"`
+	ReadyTimeout string                  `json:"readyTimeout,omitempty"`
 }
 
 // DeploySpecServiceResources mirrors internal/spec.Resources:

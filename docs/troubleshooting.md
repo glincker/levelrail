@@ -8,7 +8,7 @@ Start here for a fast fix. Each entry links to the full page if you need more de
 
 ::: details My deploy is stuck or failed
 1. Check the build log first: dashboard's deploy detail page, or `levelrail-cli apps deploys logs <name> <deploy-id>`.
-2. If the build succeeded but the app never came up, the readiness probe is the usual cause. Confirm the path in `app.yaml`'s `health.readiness` actually returns 2xx from inside the container, not just from your browser.
+2. If the build succeeded but the app never came up, the readiness probe is the usual cause. Confirm the path in `app.yaml`'s `health.readiness` actually returns 2xx from inside the container, not just from your browser. A slow cold start (JVM warm-up, a large migration) can also legitimately take longer than the default 60s readiness budget: raise it with `health.readyTimeout` instead of treating the false `ReadinessFailed` as a real bug.
 3. A crashlooping container gets its last 200 log lines surfaced automatically in the dashboard, no separate log search needed.
 4. If this keeps happening on every deploy of a given app, consider turning on "Auto-rollback on crashloop" (Deploys tab, off by default) so the next crashloop redeploys the previous known-good image automatically instead of retrying the same bad one. See [Observability](observability.md).
 5. Still stuck: [Deploying apps](deploying-apps.md#health-checks) covers the full health check contract.

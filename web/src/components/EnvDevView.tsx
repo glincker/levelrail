@@ -74,9 +74,9 @@ export function EnvDevView({
           Developer view
         </CardTitle>
         <CardDescription>
-          Raw KEY=value editing for plain env vars. Secret keys are listed
-          below for visibility only: change a secret&apos;s value through
-          the Secrets card, this view never reads or writes one.
+          Raw KEY=value editing for plain env vars. Secret keys are listed below
+          for visibility only: change a secret&apos;s value through the Secrets
+          card, this view never reads or writes one.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -87,6 +87,7 @@ export function EnvDevView({
           }}
           className="min-h-48 font-mono"
           spellCheck={false}
+          aria-label="Raw environment variables, one KEY=value per line"
         />
         {secretKeys.length > 0 ? (
           <div className="rounded-md border border-border p-2 text-sm text-muted-foreground">
@@ -98,7 +99,12 @@ export function EnvDevView({
           </div>
         ) : null}
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={handleFormat}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleFormat}
+          >
             <ArrowsClockwiseIcon />
             Format
           </Button>

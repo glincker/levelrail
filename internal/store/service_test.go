@@ -27,8 +27,9 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 			CPUSetCPUs:      "0-1",
 		},
 		Health: &ServiceHealth{
-			Readiness: &ServiceProbe{Path: "/healthz", Interval: 5 * time.Second, Timeout: 2 * time.Second},
-			Liveness:  &ServiceProbe{Path: "/healthz", Interval: 30 * time.Second, Failures: 3},
+			Readiness:    &ServiceProbe{Path: "/healthz", Interval: 5 * time.Second, Timeout: 2 * time.Second},
+			Liveness:     &ServiceProbe{Path: "/healthz", Interval: 30 * time.Second, Failures: 3},
+			ReadyTimeout: 90 * time.Second,
 		},
 		Volumes: []ServiceVolume{
 			{Name: "app-web-data", ContainerPath: "/var/lib/data"},
@@ -66,6 +67,9 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 	}
 	if got.Health.Liveness == nil || *got.Health.Liveness != *want.Health.Liveness {
 		t.Errorf("Health.Liveness = %+v, want %+v", got.Health.Liveness, want.Health.Liveness)
+	}
+	if got.Health.ReadyTimeout != want.Health.ReadyTimeout {
+		t.Errorf("Health.ReadyTimeout = %v, want %v", got.Health.ReadyTimeout, want.Health.ReadyTimeout)
 	}
 	if !reflect.DeepEqual(got.Volumes, want.Volumes) {
 		t.Errorf("Volumes = %+v, want %+v", got.Volumes, want.Volumes)
@@ -1304,6 +1308,82 @@ func TestSaveDesiredService_BindAddress_RoundTrip(t *testing.T) {
 	}
 	if got.BindAddress != "public" {
 		t.Errorf("BindAddress = %q, want %q", got.BindAddress, "public")
+	}
+}
+
+// TestSaveDesiredService_SecretEnvRequired_RoundTrip proves
+// SecretEnvRef.Required survives a save/load round trip, the field this
+// bug fix adds: before it existed, secret_env only ever persisted a
+// name, so a build-triggered redeploy reconstructed from stored desired
+// state (internal/api/builds.go's specServiceFromDesired) could never
+// tell a required secret apart from an optional one.
+func TestSaveDesiredService_SecretEnvRequired_RoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{
+		Name: "web", Image: "img:v1", Port: 3000,
+		SecretEnv: []SecretEnvRef{
+			{Name: "API_KEY", Required: true},
+			{Name: "OPTIONAL_FLAG", Required: false},
+		},
+	}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	want := map[string]bool{"API_KEY": true, "OPTIONAL_FLAG": false}
+	if len(got.SecretEnv) != len(want) {
+		t.Fatalf("SecretEnv = %+v, want %d entries", got.SecretEnv, len(want))
+	}
+	for _, ref := range got.SecretEnv {
+		required, known := want[ref.Name]
+		if !known {
+			t.Errorf("SecretEnv contains unexpected name %q", ref.Name)
+			continue
+		}
+		if ref.Required != required {
+			t.Errorf("SecretEnv[%q].Required = %v, want %v", ref.Name, ref.Required, required)
+		}
+	}
+}
+
+// TestGetDesiredService_SecretEnv_LegacyStringArrayShape_StillDecodes
+// proves an on-disk secret_env value written before Required existed
+// (a plain JSON string array of names, e.g. ["API_KEY"], the only shape
+// every row saved before this fix ever had) still decodes cleanly after
+// upgrade, with Required defaulting to false for each name: secret_env
+// is a JSON blob column (migrations/0006_service_secrets.sql), not a
+// structured one, so reshaping it is a decode-time compatibility concern
+// (unmarshalSecretEnv), not something a SQL migration needs to backfill.
+func TestGetDesiredService_SecretEnv_LegacyStringArrayShape_StillDecodes(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 3000}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if _, err := db.ExecContext(ctx, `UPDATE desired_services SET secret_env = ? WHERE name = ?`, `["API_KEY","LEGACY_VAR"]`, "web"); err != nil {
+		t.Fatalf("write legacy-shaped secret_env: %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.SecretEnv) != 2 {
+		t.Fatalf("SecretEnv = %+v, want 2 entries", got.SecretEnv)
+	}
+	for _, ref := range got.SecretEnv {
+		if ref.Name != "API_KEY" && ref.Name != "LEGACY_VAR" {
+			t.Errorf("SecretEnv contains unexpected name %q", ref.Name)
+		}
+		if ref.Required {
+			t.Errorf("SecretEnv[%q].Required = true, want false: a legacy row has no Required bit to recover, must default permissive", ref.Name)
+		}
 	}
 }
 

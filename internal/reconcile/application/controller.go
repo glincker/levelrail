@@ -38,6 +38,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -215,6 +216,7 @@ type Controller struct {
 	hookRuns       HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
 	hookTimeout    time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
 	liveness       *LivenessTracker        // per-container liveness failure counts, in memory only, see LivenessTracker
+	instanceID     string                  // empty means no instance-ownership check, see WithInstanceID
 }
 
 // Option configures optional Controller behavior.
@@ -229,7 +231,9 @@ func WithHTTPClient(c *http.Client) Option {
 
 // WithReadyBudget overrides how long Reconcile waits for a freshly
 // started container to pass its readiness probe before giving up.
-// Defaults to 60s.
+// Defaults to 60s. A service's own store.ServiceHealth.ReadyTimeout, when
+// set, takes precedence over this construction-time value; see
+// effectiveReadyBudget.
 func WithReadyBudget(d time.Duration) Option {
 	return func(ctrl *Controller) { ctrl.readyBudget = d }
 }
@@ -363,6 +367,19 @@ func WithNetworkPrefix(prefix string) Option {
 	return func(ctrl *Controller) { ctrl.networkPrefix = prefix }
 }
 
+// WithInstanceID enables staleContainers' instance-ownership check:
+// callers pass store.GetOrCreateInstanceID's result, the same "pass the
+// resolved value in, don't import internal/store here" convention
+// WithNetworkPrefix already establishes for brand.ShortName. Without one
+// configured (the default, empty string), every container matching this
+// service's own name pattern is treated as this service's own, exactly
+// this package's behavior before instance labeling existed: an empty
+// instanceID here isn't a degraded mode, it's what every caller that
+// hasn't been updated for cross-instance safety yet still gets.
+func WithInstanceID(id string) Option {
+	return func(ctrl *Controller) { ctrl.instanceID = id }
+}
+
 // WithHookRunRecorder enables persisting every pre/post-deploy hook run's
 // outcome. Without one configured (the default), configured hooks still
 // execute and still gate the deploy exactly the same way; only the
@@ -432,6 +449,14 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			return notReady("SuspendFailed", err), fmt.Errorf("application/%s: suspend: remove containers: %w", c.serviceName, err)
 		}
 		return unknownResult("Suspended"), nil
+	}
+
+	// An app created for a git build carries a placeholder tag until its
+	// first build lands a real image (appspec.PendingImageTag). Pulling it
+	// would fail with a registry "pull access denied" that reads as a
+	// broken deploy rather than one that has not happened yet.
+	if appspec.IsPendingImage(desired.Image) {
+		return unknownResult("AwaitingFirstBuild"), nil
 	}
 
 	// Defensive, not redundant: store.SaveDesiredService already
@@ -848,6 +873,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		return fmt.Errorf("container spec: %w", err)
 	}
 	spec.Env = env
+	if c.instanceID != "" {
+		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
+	}
 	if desired.RegistryCredentialID != "" {
 		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID)
 		if err != nil {
@@ -987,7 +1015,8 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 		if c.secretResolver == nil {
 			return nil, fmt.Errorf("service declares %d secret-backed env var(s) but no secret resolver is configured", len(desired.SecretEnv))
 		}
-		for _, key := range desired.SecretEnv {
+		for _, ref := range desired.SecretEnv {
+			key := ref.Name
 			exists, err := c.secretResolver.Exists(ctx, c.serviceName, key)
 			if err != nil {
 				return nil, fmt.Errorf("check secret %q: %w", key, err)
@@ -1504,6 +1533,21 @@ func (e *readinessCrashError) Error() string {
 // than inventing a second, independently-tuned timing knob.
 const defaultCrashCheckInterval = 2 * time.Second
 
+// effectiveReadyBudget returns desired's own per-service override
+// (store.ServiceHealth.ReadyTimeout, app.yaml's health.readyTimeout)
+// when set, falling back to c.readyBudget (WithReadyBudget's
+// construction-time value, defaultReadyBudget if that option was never
+// applied) otherwise. Read fresh from desired on every call, the same
+// "no cached decision" shape Reconcile itself already has, so this stays
+// level-triggered: a redeploy that changes readyTimeout takes effect on
+// its own next wait, never a stale value from an earlier pass.
+func (c *Controller) effectiveReadyBudget(desired *store.DesiredService) time.Duration {
+	if desired.Health != nil && desired.Health.ReadyTimeout > 0 {
+		return desired.Health.ReadyTimeout
+	}
+	return c.readyBudget
+}
+
 // waitReady gates a freshly (re)started container on its readiness
 // probe, if the service declares one and has a port to probe at all. A
 // service with no port (a worker with nothing listening) or no
@@ -1519,10 +1563,19 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 
 	addr, err := primaryAddr(state)
 	if err != nil {
+		// A container reporting no published port here has virtually
+		// always already died (Docker only clears port bindings once a
+		// container stops), most commonly a process that exits before
+		// the runtime ever starts it. Give that its own crash reason
+		// instead of leaking the low-level "no ports" message as a
+		// generic ReadinessFailed.
+		if crash := c.exitedCrash(ctx, state.Name); crash != nil {
+			return crash
+		}
 		return fmt.Errorf("readiness probe: %w", err)
 	}
 
-	probeCtx, cancel := context.WithTimeout(ctx, c.readyBudget)
+	probeCtx, cancel := context.WithTimeout(ctx, c.effectiveReadyBudget(desired))
 	defer cancel()
 
 	cfg := probe.Config{
@@ -1664,7 +1717,11 @@ func (c *Controller) removeStale(ctx context.Context, keep []string) error {
 // "web" also prefix-matches containers belonging to a differently-named
 // service like "web-worker"), so only a container whose name is exactly
 // one of this service's own replicaContainerName shapes is ever
-// considered, regardless of whether it's in keep.
+// considered, regardless of whether it's in keep. ownsInstance below
+// applies a second, independent boundary check on top: a name match
+// alone doesn't rule out another control-plane instance sharing this
+// same Docker daemon happening to run a service with the identical name
+// and image hash (see internal/spec.InstanceLabelKey's own doc comment).
 func (c *Controller) staleContainers(ctx context.Context, keep []string) ([]docker.ContainerState, error) {
 	all, err := c.runtime.ListByPrefix(ctx, c.serviceName+"-")
 	if err != nil {
@@ -1678,12 +1735,51 @@ func (c *Controller) staleContainers(ctx context.Context, keep []string) ([]dock
 
 	var stale []docker.ContainerState
 	for _, cs := range all {
-		if keepSet[cs.Name] || !ownsContainer(c.serviceName, cs.Name) {
+		if keepSet[cs.Name] || !ownsContainer(c.serviceName, cs.Name) || !c.ownsInstance(cs) {
 			continue
 		}
 		stale = append(stale, cs)
 	}
 	return stale, nil
+}
+
+// ownsInstance reports whether cs was created by this same control-plane
+// instance, and so is safe for this Controller's own cleanup to remove.
+// No instanceID configured (WithInstanceID never called, every caller
+// before this guard existed) means no check at all: every name-matching
+// container is treated as owned, exactly this package's behavior before
+// cross-instance safety existed.
+//
+// A container with no instance label at all is also treated as owned,
+// not rejected: this label only exists on containers created by a
+// control-plane binary built after internal/spec.InstanceLabelKey did,
+// so treating "no label" as "foreign" would stop a fresh upgrade from
+// ever cleaning up its own pre-upgrade containers (they can never
+// acquire the label retroactively, and each redeploy's new,
+// content-hashed name means they'd never get superseded by name reuse
+// either). Only an explicit, different instance ID is treated as
+// foreign: a container's own instance label is the one signal a name
+// collision with another control-plane instance's identically-named
+// service cannot produce by accident.
+func (c *Controller) ownsInstance(cs docker.ContainerState) bool {
+	if c.instanceID == "" {
+		return true
+	}
+	id, labeled := cs.Labels[appspec.InstanceLabelKey]
+	return !labeled || id == c.instanceID
+}
+
+// mergeLabel returns a copy of labels with key=value added, leaving the
+// caller's own map untouched. Used to stamp internal/spec.InstanceLabelKey
+// onto a container spec without createAndStart mutating desired.Labels,
+// which store.DesiredService owns.
+func mergeLabel(labels map[string]string, key, value string) map[string]string {
+	out := make(map[string]string, len(labels)+1)
+	for k, v := range labels {
+		out[k] = v
+	}
+	out[key] = value
+	return out
 }
 
 // removeContainers stops and removes every container in cs, continuing

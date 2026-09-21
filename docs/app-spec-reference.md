@@ -37,6 +37,7 @@ services:
     health:
       readiness: { path: /healthz, interval: 5s, timeout: 2s }
       liveness:  { path: /healthz, interval: 30s, failures: 3 }
+      readyTimeout: 90s     # how long a fresh deploy waits for readiness before failing; default 60s
     resources:
       memory: 512Mi
       cpu: 0.5
@@ -135,6 +136,7 @@ Exactly one of `name` or `hostPath` must be set:
 | --- | --- | --- | --- | --- |
 | `readiness` | `Probe` | no | none | Checked before cutting traffic to a new container. |
 | `liveness` | `Probe` | no | none | Checked on a running container to detect a crashloop. |
+| `readyTimeout` | string | no | `60s` | Duration string matching `^[0-9]+(ms\|s\|m\|h)$`. How long a fresh deploy waits for `readiness` to pass before the deploy is marked `ReadinessFailed`. Raise this for a service with a genuinely slow cold start (JVM warm-up, a large migration, a slow external connection) instead of it being falsely flagged as failed; the platform still self-heals on the next resync once the container is actually healthy, but this avoids the false signal in the meantime. |
 
 ### `Probe`
 

@@ -881,6 +881,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                           })
                         }}
                         disabled={connectMutation.isPending}
+                        aria-label="Service name"
                       />
                       <Select
                         value={row.buildType}
@@ -894,7 +895,10 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                           }
                         }}
                       >
-                        <SelectTrigger className="w-40 shrink-0">
+                        <SelectTrigger
+                          className="w-40 shrink-0"
+                          aria-label="Build type"
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -920,6 +924,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                           connectMutation.isPending ||
                           row.buildType === 'railpack'
                         }
+                        aria-label="Build path"
                       />
                       <Button
                         type="button"
@@ -981,6 +986,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                           })
                         }}
                         disabled={connectMutation.isPending}
+                        aria-label="Service name"
                       />
                       <Select
                         value={row.buildType}
@@ -994,7 +1000,10 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                           }
                         }}
                       >
-                        <SelectTrigger className="w-40 shrink-0">
+                        <SelectTrigger
+                          className="w-40 shrink-0"
+                          aria-label="Build type"
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1018,6 +1027,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                           connectMutation.isPending ||
                           row.buildType === 'railpack'
                         }
+                        aria-label="Build path"
                       />
                       <Input
                         className="w-24 shrink-0 font-mono"
@@ -1028,6 +1038,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                           updateServiceRow(index, { port: e.target.value })
                         }}
                         disabled={connectMutation.isPending}
+                        aria-label="Port"
                       />
                       <Button
                         type="button"

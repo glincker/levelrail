@@ -39,11 +39,14 @@ type Builder interface {
 
 // fetchFunc fetches repoURL at ref to a local directory, authenticating
 // with token when non-empty (see tokenForRepo), and returns the
-// directory and a cleanup func that removes it. ref is a general git
-// revision (branch, tag, or commit hash, resolved via gitCheckout's own
-// ResolveRevision call), unlike internal/webhook's own always-a-full-SHA
-// fetchFunc.
-type fetchFunc func(ctx context.Context, repoURL, ref, token string) (dir string, cleanup func(), err error)
+// directory, the full commit hash ref resolved to, and a cleanup func
+// that removes it. ref is a general git revision (branch, tag, or commit
+// hash, resolved via gitCheckout's own ResolveRevision call), unlike
+// internal/webhook's own always-a-full-SHA fetchFunc, so the resolved
+// hash is the only thing callers can safely tag a built image with: a
+// branch name moves, and reusing it as a tag silently retags it onto
+// newer content, orphaning the previous build as a rollback target.
+type fetchFunc func(ctx context.Context, repoURL, ref, token string) (dir string, commit string, cleanup func(), err error)
 
 // gitCheckout is the real fetchFunc implementation, the manual-build
 // counterpart to internal/webhook's own cloneAndCheckout (see that
@@ -51,10 +54,10 @@ type fetchFunc func(ctx context.Context, repoURL, ref, token string) (dir string
 // authenticates the same way gitCheckoutWithToken does (git_webhook.go):
 // GitHub's "any username, token as password" scheme, empty meaning an
 // unauthenticated clone.
-func gitCheckout(ctx context.Context, repoURL, ref, token string) (dir string, cleanup func(), err error) {
+func gitCheckout(ctx context.Context, repoURL, ref, token string) (dir string, commit string, cleanup func(), err error) {
 	dir, err = os.MkdirTemp("", "levelrail-build-*")
 	if err != nil {
-		return "", nil, fmt.Errorf("api: create temp checkout dir: %w", err)
+		return "", "", nil, fmt.Errorf("api: create temp checkout dir: %w", err)
 	}
 	cleanup = func() {
 		if rmErr := os.RemoveAll(dir); rmErr != nil {
@@ -69,7 +72,7 @@ func gitCheckout(ctx context.Context, repoURL, ref, token string) (dir string, c
 	repo, err := git.PlainCloneContext(ctx, dir, false, cloneOpts)
 	if err != nil {
 		cleanup()
-		return "", nil, fmt.Errorf("api: clone %q: %w", repoURL, err)
+		return "", "", nil, fmt.Errorf("api: clone %q: %w", repoURL, err)
 	}
 
 	// ResolveRevision (not plumbing.NewHash) so ref can be a branch name,
@@ -80,21 +83,21 @@ func gitCheckout(ctx context.Context, repoURL, ref, token string) (dir string, c
 	hash, err := repo.ResolveRevision(plumbing.Revision(ref))
 	if err != nil {
 		cleanup()
-		return "", nil, fmt.Errorf("api: resolve ref %q in %q: %w", ref, repoURL, err)
+		return "", "", nil, fmt.Errorf("api: resolve ref %q in %q: %w", ref, repoURL, err)
 	}
 
 	wt, err := repo.Worktree()
 	if err != nil {
 		cleanup()
-		return "", nil, fmt.Errorf("api: get worktree for %q: %w", repoURL, err)
+		return "", "", nil, fmt.Errorf("api: get worktree for %q: %w", repoURL, err)
 	}
 
 	if err := wt.Checkout(&git.CheckoutOptions{Hash: *hash}); err != nil {
 		cleanup()
-		return "", nil, fmt.Errorf("api: checkout %q at ref %q (resolved %s): %w", repoURL, ref, hash, err)
+		return "", "", nil, fmt.Errorf("api: checkout %q at ref %q (resolved %s): %w", repoURL, ref, hash, err)
 	}
 
-	return dir, cleanup, nil
+	return dir, hash.String(), cleanup, nil
 }
 
 // triggerBuildBuildInput is the build.* sub-object of
@@ -157,6 +160,8 @@ type triggerBuildRequest struct {
 	// Ref is the branch, tag, or commit hash to build, resolved via
 	// gitCheckout's ResolveRevision call. Required for every build.type
 	// except image, the same exception RepoURL's own doc comment gives.
+	// The built image is tagged with the resolved commit hash, not with
+	// this string (see fetchFunc).
 	Ref string `json:"ref"`
 	// ImageRepo is the image name without a tag, the same meaning
 	// deploy.Request.ImageRepo already documents. Defaults to the app's
@@ -339,7 +344,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		ImageRepo:   imageRepo,
 	}
 
-	id, progress, finishAttempt := rt.beginBuildDeployAttempt(r.Context(), buildReq, *existing, store.DeployAttemptSourceManual)
+	id, progress, finishAttempt, setCommit := rt.beginBuildDeployAttempt(r.Context(), buildReq, *existing, store.DeployAttemptSourceManual)
 
 	// AbilityDeploy alone (this route's own gate) is not enough to
 	// authorize minting a live GitHub App installation token: repoURL is
@@ -360,7 +365,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			if allowPrivateRepoAuth {
 				token = rt.tokenForRepo(ctx, repoURL)
 			}
-			sourceDir, cleanup, err := rt.fetch(ctx, repoURL, ref, token)
+			sourceDir, commit, cleanup, err := rt.fetch(ctx, repoURL, ref, token)
 			if err != nil {
 				rt.logger.Error("api: trigger build: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref))
 				finishAttempt(err)
@@ -368,6 +373,14 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			}
 			defer cleanup()
 			buildReq.SourceDir = sourceDir
+			// Tag by what was actually checked out, never by ref itself: a
+			// branch name reused as an image tag moves onto the newer image
+			// on the next build, orphaning the previous one as a rollback
+			// target.
+			if commit != "" {
+				buildReq.CommitSHA = commit
+				setCommit(ctx, commit)
+			}
 		}
 
 		tag, err := rt.builder.Deploy(ctx, buildReq, progress)
@@ -386,6 +399,12 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		rt.logger.Info("api: manual build triggered", slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref), slog.String("build_type", buildType), slog.String("tag", tag))
+		// The build just wrote a new image onto desired state
+		// (finishDeploy's SaveDesiredService); without this, the
+		// reconciler doesn't notice until its next resyncInterval tick
+		// (default 30s), the same gap api.ReconcileNudger's doc comment
+		// describes for create/stop/start/restart.
+		rt.nudgeReconciler()
 	}()
 
 	writeJSON(w, http.StatusAccepted, triggerBuildResponse{ID: id})
@@ -404,20 +423,8 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 // (internal/deploy/translate.go), field for field, wherever a reverse is
 // possible.
 //
-// Two known, deliberate fidelity losses versus the original app.yaml:
+// One known, deliberate fidelity loss versus the original app.yaml:
 //
-//   - Env vars marked { secret: true } lose their original
-//     { required: true } flag: store.DesiredService.SecretEnv only ever
-//     persists the name (see that field's own doc comment: "a name is
-//     not a secret, only the value is"), never whether it was required.
-//     Reconstructed here as Required: false, the permissive direction: a
-//     missing secret value will not block this manual build the way it
-//     would have blocked the original app.yaml-driven deploy.
-//     internal/reconcile/application's own container-create step still
-//     simply omits an unset optional secret var either way, so this
-//     never produces a container silently missing a value that WAS set,
-//     only a looser pre-build check than app.yaml's own `required: true`
-//     would have enforced.
 //   - { from: ... } cross-resource references can never be reconstructed:
 //     store.DesiredService.Env only ever holds already-resolved literal
 //     values (internal/deploy's own literalEnv), so a service that
@@ -438,8 +445,14 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 		for k, v := range svc.Env {
 			out.Env[k] = spec.EnvVar{Value: v}
 		}
-		for _, k := range svc.SecretEnv {
-			out.Env[k] = spec.EnvVar{Secret: true}
+		// Required carries through from store.DesiredService.SecretEnv
+		// (SecretEnvRef.Required), not just the name: a required-but-unset
+		// secret must reject this build the same way it already rejects a
+		// fresh app.yaml-driven deploy (internal/deploy.Pipeline.
+		// validateEnv), see SecretEnvRef's own doc comment for why this
+		// used to be lossy here.
+		for _, ref := range svc.SecretEnv {
+			out.Env[ref.Name] = spec.EnvVar{Secret: true, Required: ref.Required}
 		}
 		// VaultEnv reconstructs exactly, unlike SecretEnv above: it stores
 		// the full { path, key } reference, not just a name, so there is
@@ -501,6 +514,9 @@ func specHealthFromStore(h store.ServiceHealth) *spec.Health {
 	if h.Liveness != nil {
 		p := specProbeFromStore(*h.Liveness)
 		out.Liveness = &p
+	}
+	if h.ReadyTimeout > 0 {
+		out.ReadyTimeout = h.ReadyTimeout.String()
 	}
 	return out
 }

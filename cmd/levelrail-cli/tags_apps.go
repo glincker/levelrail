@@ -7,8 +7,9 @@ import (
 	"text/tabwriter"
 )
 
-// runTagsApps implements "tags apps <id>": GET /api/v1/tags/{id}/apps,
-// the "list resources filtered by tag" primitive.
+// runTagsApps implements "tags apps <name>": resolves name to its tag
+// ID, then GET /api/v1/tags/{id}/apps, the "list resources filtered by
+// tag" primitive.
 func runTagsApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "tags apps", "print apps as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tagsAppsUsage(prog)) }
@@ -18,16 +19,21 @@ func runTagsApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return exitCode
 	}
 
-	id, ok := requireOneArg(fs, stderr, prog, "tags apps", "tag id")
+	name, ok := requireOneArg(fs, stderr, prog, "tags apps", "tag name")
 	if !ok {
 		return exitUsage
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
+	id, err := resolveTagIDByName(context.Background(), client, name)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list apps for tag %q: %w", name, err))
+	}
+
 	apps, err := client.ListAppsByTag(context.Background(), id)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list apps for tag %q: %w", id, err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list apps for tag %q: %w", name, err))
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, apps, func() { printTagAppsTable(stdout, apps) }); err != nil {
@@ -52,9 +58,9 @@ func printTagAppsTable(out io.Writer, apps []tagAppResource) {
 
 func tagsAppsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s tags apps <id> [flags]
+  %[1]s tags apps <name> [flags]
 
-Lists every app attached to a tag.
+Lists every app attached to a tag, identified by name.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

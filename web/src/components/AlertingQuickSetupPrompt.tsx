@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { BellRingingIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
-import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -133,7 +138,10 @@ export function AlertingQuickSetupPrompt({
                 value={selectedChannelId}
                 onValueChange={(value) => setChannelId(value ?? '')}
               >
-                <SelectTrigger className="h-8 w-56 text-xs">
+                <SelectTrigger
+                  className="h-8 w-56 text-xs"
+                  aria-label="Notification channel"
+                >
                   <SelectValue placeholder="Choose a channel" />
                 </SelectTrigger>
                 <SelectContent>
