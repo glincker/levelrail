@@ -183,10 +183,11 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// Resource-scoped (iam.go): a policy can Deny or narrowly Allow
 	// write/delete on one specific app by name, e.g. a token whose flat
 	// abilities grant write everywhere except an app: prod-web Deny
-	// policy attached to it. Every other apps route stays on plain
-	// requireAbility for now; iam.go's own doc comment on
-	// requireAbilityForResource explains why extending coverage further
-	// is mechanical, not a rewrite.
+	// policy attached to it. Every other per-app and per-database
+	// mutating route in this file and routes_platform.go is now on the
+	// same requireAbilityForResource gate; only POST /apps (creation, no
+	// existing resource to scope to) and GET .../terminal (websocket
+	// upgrade, not touched in this pass) remain on plain requireAbility.
 	mux.HandleFunc("GET /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetApp))
 	mux.HandleFunc("PUT /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleUpdateApp))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteApp))
@@ -206,7 +207,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// services: out into one store.App plus its member services.
 	// AbilityDeploy, the same tier POST .../deploys uses: this creates
 	// and deploys, it's not ordinary config.
-	mux.HandleFunc("POST /api/v1/apps/{name}/compose", rt.requireAbility(AbilityDeploy, rt.handleDeployCompose))
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeployCompose))
 
 	// Service template catalog (service_templates.go, ADR 015):
 	// read-only, static, served straight from internal/catalog.Templates,
@@ -219,14 +220,14 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// clone is a creation shaped as "copy {name}" rather than "start
 	// from scratch": handleCloneApp's own doc comment covers what does
 	// and doesn't carry over.
-	mux.HandleFunc("POST /api/v1/apps/{name}/clone", rt.requireAbility(AbilityWrite, rt.handleCloneApp))
+	mux.HandleFunc("POST /api/v1/apps/{name}/clone", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCloneApp))
 
 	// Placement: AbilityRoot, not AbilityWrite, matching
 	// the sensitivity of the standalone node routes above: moving a
 	// service between physical machines is infrastructure placement,
 	// not ordinary app config, even though it's reached through this
 	// app-scoped URL.
-	mux.HandleFunc("PUT /api/v1/apps/{name}/node", rt.requireAbility(AbilityRoot, rt.handleSetAppNode))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/node", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetAppNode))
 
 	// move-with-volumes: the same AbilityRoot tier as the plain node move
 	// above, since this both changes placement and does an in-place,
@@ -234,27 +235,27 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// node (the same risk class POST .../volumes/{volume}/restore already
 	// sits behind). The two GETs are AbilityRead, matching every other
 	// history listing in this file.
-	mux.HandleFunc("POST /api/v1/apps/{name}/move-with-volumes", rt.requireAbility(AbilityRoot, rt.handleMoveAppWithVolumes))
+	mux.HandleFunc("POST /api/v1/apps/{name}/move-with-volumes", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleMoveAppWithVolumes))
 	mux.HandleFunc("GET /api/v1/apps/{name}/moves", rt.requireAbility(AbilityRead, rt.handleListAppVolumeMoves))
 	mux.HandleFunc("GET /api/v1/apps/{name}/moves/{id}", rt.requireAbility(AbilityRead, rt.handleGetAppVolumeMove))
 
 	// Deploys.
-	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityDeploy, rt.handleTriggerDeploy))
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleTriggerDeploy))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityRead, rt.handleDeployHistory))
 	mux.HandleFunc("GET /api/v1/apps/{name}/auto-rollback", rt.requireAbility(AbilityRead, rt.handleGetAutoRollback))
-	mux.HandleFunc("PUT /api/v1/apps/{name}/auto-rollback", rt.requireAbility(AbilityDeploy, rt.handleSetAutoRollback))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/auto-rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAutoRollback))
 
 	// Restart (handleRestartApp's own doc comment): AbilityDeploy, the
 	// same boundary as the deploy trigger above, since forcing a
 	// container recreation is the same class of action as triggering a
 	// deploy, just without a new image.
-	mux.HandleFunc("POST /api/v1/apps/{name}/restart", rt.requireAbility(AbilityDeploy, rt.handleRestartApp))
+	mux.HandleFunc("POST /api/v1/apps/{name}/restart", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRestartApp))
 
 	// Stop/start (handleStopApp/handleStartApp's own doc comments): same
 	// AbilityDeploy tier as restart above, the same class of lifecycle
 	// action.
-	mux.HandleFunc("POST /api/v1/apps/{name}/stop", rt.requireAbility(AbilityDeploy, rt.handleStopApp))
-	mux.HandleFunc("POST /api/v1/apps/{name}/start", rt.requireAbility(AbilityDeploy, rt.handleStartApp))
+	mux.HandleFunc("POST /api/v1/apps/{name}/stop", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleStopApp))
+	mux.HandleFunc("POST /api/v1/apps/{name}/start", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleStartApp))
 
 	// One-off exec (handleExecApp's own doc comment): AbilityRoot, not
 	// AbilityDeploy. Secrets are injected as plaintext env vars into a
@@ -266,7 +267,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// same tier that boundary already implies it needs, not the deploy
 	// tier. AbilityRoot is this project's existing "breaks an assumption
 	// other tiers rely on" boundary (see restore's own reasoning below).
-	mux.HandleFunc("POST /api/v1/apps/{name}/exec", rt.requireAbility(AbilityRoot, rt.handleExecApp))
+	mux.HandleFunc("POST /api/v1/apps/{name}/exec", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleExecApp))
 
 	// Interactive terminal (terminal.go): the same AbilityRoot tier as
 	// one-off exec above, since a shell can read the same secrets. A
@@ -295,7 +296,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// AbilityRead like the comparison view above; the trigger itself is
 	// AbilityDeploy, matching POST .../deploys.
 	mux.HandleFunc("GET /api/v1/apps/{name}/promote/preview", rt.requireAbility(AbilityRead, rt.handlePromotePreview))
-	mux.HandleFunc("POST /api/v1/apps/{name}/promote", rt.requireAbility(AbilityDeploy, rt.handlePromoteApp))
+	mux.HandleFunc("POST /api/v1/apps/{name}/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePromoteApp))
 
 	// Deploy-attempt build/log stream (deploy_attempts.go): SSE, serving
 	// either a live tail (attempt still running) or a full persisted
@@ -331,14 +332,14 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// receiver uses, for an operator with no working git webhook
 	// configured. AbilityDeploy, the same boundary as the image-tag
 	// trigger above: this also ultimately writes desired state.
-	mux.HandleFunc("POST /api/v1/apps/{name}/builds", rt.requireAbility(AbilityDeploy, rt.handleTriggerBuild))
+	mux.HandleFunc("POST /api/v1/apps/{name}/builds", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleTriggerBuild))
 
 	// Multi-service fan-out (handleDeploySpec's own doc comment,
 	// apps_multi.go): one app.yaml's services: map, built and deployed as
 	// N independent services under one store.App named {name}. Same
 	// AbilityDeploy boundary as the manual build trigger above: this also
 	// ultimately writes desired state.
-	mux.HandleFunc("POST /api/v1/apps/{name}/deploy-spec", rt.requireAbility(AbilityDeploy, rt.handleDeploySpec))
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploy-spec", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeploySpec))
 
 	// Branch listing for an arbitrary public git remote (handleListGitBranches's
 	// own doc comment): not scoped to an existing app, since the create-app-
@@ -398,5 +399,5 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 
 	// Placement, the database counterpart to
 	// PUT /apps/{name}/node above: same AbilityRoot gating.
-	mux.HandleFunc("PUT /api/v1/databases/{name}/node", rt.requireAbility(AbilityRoot, rt.handleSetDatabaseNode))
+	mux.HandleFunc("PUT /api/v1/databases/{name}/node", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleSetDatabaseNode))
 }
