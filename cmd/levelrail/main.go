@@ -248,16 +248,6 @@ func run(logger *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	client, err := docker.NewClient()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if cerr := client.Close(); cerr != nil {
-			logger.Error("closing docker client", slog.String("error", cerr.Error()))
-		}
-	}()
-
 	db, err := openStore(ctx)
 	if err != nil {
 		return err
@@ -265,6 +255,34 @@ func run(logger *slog.Logger) error {
 	defer func() {
 		if cerr := db.Close(); cerr != nil {
 			logger.Error("closing store", slog.String("error", cerr.Error()))
+		}
+	}()
+
+	// instanceID must be resolved before the Docker client is
+	// constructed below, so every container/network/volume this process
+	// creates from its very first reconcile pass carries it. Not fatal
+	// on failure, the same "control plane still starts" choice this
+	// function already makes for secrets/webhook/mesh below: an empty
+	// instanceID just means every instance-ownership check
+	// (application.WithInstanceID and friends) stays a no-op, this
+	// codebase's behavior before cross-instance safety existed, not a
+	// crash.
+	instanceID, err := db.GetOrCreateInstanceID(ctx)
+	if err != nil {
+		logger.Warn("instance id not available: cross-instance Docker cleanup safety is disabled", slog.String("error", err.Error()))
+	}
+
+	clientOpts := []docker.ClientOption{}
+	if instanceID != "" {
+		clientOpts = append(clientOpts, docker.WithInstanceLabel(spec.InstanceLabelKey, instanceID))
+	}
+	client, err := docker.NewClient(clientOpts...)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := client.Close(); cerr != nil {
+			logger.Error("closing docker client", slog.String("error", cerr.Error()))
 		}
 	}()
 
@@ -557,6 +575,7 @@ func run(logger *slog.Logger) error {
 		meshDNSAddr:      meshDNSAddr,
 		dashboardDial:    dashboardDialAddr(httpAddr()),
 		networkPrefix:    b.ShortName,
+		instanceID:       instanceID,
 		livenessTracker:  application.NewLivenessTracker(),
 		publicHost:       publicHost(),
 	}))
@@ -2549,6 +2568,13 @@ type dynamicSourceDeps struct {
 	meshDNSAddr      string
 	dashboardDial    string
 	networkPrefix    string
+	// instanceID is this control-plane instance's own persistent identity
+	// (store.GetOrCreateInstanceID), threaded to every controller doing
+	// name/prefix-based Docker cleanup so two instances sharing one
+	// Docker daemon can't mistake each other's resources for their own
+	// stale leftovers; see internal/spec.InstanceLabelKey's own doc
+	// comment.
+	instanceID string
 	// livenessTracker outlives the per-pass controllers below, which is
 	// the whole point: see application.WithLivenessTracker.
 	livenessTracker *application.LivenessTracker
@@ -2615,7 +2641,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// Local runtime unconditionally, same reasoning as the ingress
 		// controller above: per-app networks are single-node scope until
 		// the WireGuard mesh exists.
-		controllers = append(controllers, application.NewNetworkCleanupController(deps.db, deps.runtime, deps.networkPrefix))
+		controllers = append(controllers, application.NewNetworkCleanupController(deps.db, deps.runtime, deps.networkPrefix, deps.instanceID))
 
 		// Cloudflare Tunnel: also local-runtime-unconditional, the same
 		// "this control plane's own node, not per-app placement" shape as
@@ -2680,6 +2706,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithOrganizationEnv(sharedEnvResolver),
 		application.WithEnvironmentEnv(sharedEnvResolver),
 		application.WithNetworkPrefix(deps.networkPrefix),
+		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),
 	}
 	if deps.secretsManager != nil {

@@ -216,6 +216,7 @@ type Controller struct {
 	hookRuns       HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
 	hookTimeout    time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
 	liveness       *LivenessTracker        // per-container liveness failure counts, in memory only, see LivenessTracker
+	instanceID     string                  // empty means no instance-ownership check, see WithInstanceID
 }
 
 // Option configures optional Controller behavior.
@@ -362,6 +363,19 @@ func WithEnvironmentEnv(s EnvironmentEnvLister) Option {
 // (the default, empty string), defaultNetworkPrefix is used instead.
 func WithNetworkPrefix(prefix string) Option {
 	return func(ctrl *Controller) { ctrl.networkPrefix = prefix }
+}
+
+// WithInstanceID enables staleContainers' instance-ownership check:
+// callers pass store.GetOrCreateInstanceID's result, the same "pass the
+// resolved value in, don't import internal/store here" convention
+// WithNetworkPrefix already establishes for brand.ShortName. Without one
+// configured (the default, empty string), every container matching this
+// service's own name pattern is treated as this service's own, exactly
+// this package's behavior before instance labeling existed: an empty
+// instanceID here isn't a degraded mode, it's what every caller that
+// hasn't been updated for cross-instance safety yet still gets.
+func WithInstanceID(id string) Option {
+	return func(ctrl *Controller) { ctrl.instanceID = id }
 }
 
 // WithHookRunRecorder enables persisting every pre/post-deploy hook run's
@@ -857,6 +871,9 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		return fmt.Errorf("container spec: %w", err)
 	}
 	spec.Env = env
+	if c.instanceID != "" {
+		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
+	}
 	if desired.RegistryCredentialID != "" {
 		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID)
 		if err != nil {
@@ -1673,7 +1690,11 @@ func (c *Controller) removeStale(ctx context.Context, keep []string) error {
 // "web" also prefix-matches containers belonging to a differently-named
 // service like "web-worker"), so only a container whose name is exactly
 // one of this service's own replicaContainerName shapes is ever
-// considered, regardless of whether it's in keep.
+// considered, regardless of whether it's in keep. ownsInstance below
+// applies a second, independent boundary check on top: a name match
+// alone doesn't rule out another control-plane instance sharing this
+// same Docker daemon happening to run a service with the identical name
+// and image hash (see internal/spec.InstanceLabelKey's own doc comment).
 func (c *Controller) staleContainers(ctx context.Context, keep []string) ([]docker.ContainerState, error) {
 	all, err := c.runtime.ListByPrefix(ctx, c.serviceName+"-")
 	if err != nil {
@@ -1687,12 +1708,51 @@ func (c *Controller) staleContainers(ctx context.Context, keep []string) ([]dock
 
 	var stale []docker.ContainerState
 	for _, cs := range all {
-		if keepSet[cs.Name] || !ownsContainer(c.serviceName, cs.Name) {
+		if keepSet[cs.Name] || !ownsContainer(c.serviceName, cs.Name) || !c.ownsInstance(cs) {
 			continue
 		}
 		stale = append(stale, cs)
 	}
 	return stale, nil
+}
+
+// ownsInstance reports whether cs was created by this same control-plane
+// instance, and so is safe for this Controller's own cleanup to remove.
+// No instanceID configured (WithInstanceID never called, every caller
+// before this guard existed) means no check at all: every name-matching
+// container is treated as owned, exactly this package's behavior before
+// cross-instance safety existed.
+//
+// A container with no instance label at all is also treated as owned,
+// not rejected: this label only exists on containers created by a
+// control-plane binary built after internal/spec.InstanceLabelKey did,
+// so treating "no label" as "foreign" would stop a fresh upgrade from
+// ever cleaning up its own pre-upgrade containers (they can never
+// acquire the label retroactively, and each redeploy's new,
+// content-hashed name means they'd never get superseded by name reuse
+// either). Only an explicit, different instance ID is treated as
+// foreign: a container's own instance label is the one signal a name
+// collision with another control-plane instance's identically-named
+// service cannot produce by accident.
+func (c *Controller) ownsInstance(cs docker.ContainerState) bool {
+	if c.instanceID == "" {
+		return true
+	}
+	id, labeled := cs.Labels[appspec.InstanceLabelKey]
+	return !labeled || id == c.instanceID
+}
+
+// mergeLabel returns a copy of labels with key=value added, leaving the
+// caller's own map untouched. Used to stamp internal/spec.InstanceLabelKey
+// onto a container spec without createAndStart mutating desired.Labels,
+// which store.DesiredService owns.
+func mergeLabel(labels map[string]string, key, value string) map[string]string {
+	out := make(map[string]string, len(labels)+1)
+	for k, v := range labels {
+		out[k] = v
+	}
+	out[key] = value
+	return out
 }
 
 // removeContainers stops and removes every container in cs, continuing

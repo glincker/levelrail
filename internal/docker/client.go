@@ -30,12 +30,43 @@ import (
 // per the project's Docker Engine API only rule.
 type Client struct {
 	cli *dockerclient.Client
+	// instanceLabelKey/instanceLabelValue, when both set (WithInstanceLabel),
+	// are stamped onto every container and network this Client creates
+	// (Create, EnsureNetwork) and used to scope every by-name lookup this
+	// Client does (InspectByName, ListByPrefix) to resources this same
+	// value created. Empty (the zero value, e.g. every caller before this
+	// field existed and every test built with plain &Client{}) means no
+	// stamping and no scoping: byte-identical to this package's behavior
+	// before instance labeling existed.
+	instanceLabelKey   string
+	instanceLabelValue string
+}
+
+// ClientOption configures optional Client behavior at construction time.
+type ClientOption func(*Client)
+
+// WithInstanceLabel makes every resource this Client creates carry the
+// Docker label key=value, and scopes this Client's own by-name lookups
+// to resources carrying it. Callers pass internal/spec.InstanceLabelKey
+// as key and store.GetOrCreateInstanceID's result as value, following
+// the same "pass the resolved value in, don't import that package here"
+// convention internal/reconcile/application.WithNetworkPrefix already
+// establishes for brand.ShortName: this package stays spec- and store-
+// agnostic. See InstanceLabelKey's own doc comment for why this exists:
+// two control-plane instances can share one Docker daemon, and without
+// this, one's cleanup pass can't tell its own resources from the
+// other's.
+func WithInstanceLabel(key, value string) ClientOption {
+	return func(c *Client) {
+		c.instanceLabelKey = key
+		c.instanceLabelValue = value
+	}
 }
 
 // NewClient builds a Client from the standard Docker environment
 // (DOCKER_HOST, DOCKER_CERT_PATH, etc.), negotiating API version against
 // whatever daemon is actually running rather than pinning one.
-func NewClient() (*Client, error) {
+func NewClient(opts ...ClientOption) (*Client, error) {
 	cli, err := dockerclient.NewClientWithOpts(
 		dockerclient.FromEnv,
 		dockerclient.WithAPIVersionNegotiation(),
@@ -43,7 +74,44 @@ func NewClient() (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("docker: new client: %w", err)
 	}
-	return &Client{cli: cli}, nil
+	c := &Client{cli: cli}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c, nil
+}
+
+// hasInstanceLabel reports whether WithInstanceLabel configured this
+// Client, the guard every stamping/scoping call site below checks first.
+func (c *Client) hasInstanceLabel() bool {
+	return c.instanceLabelKey != "" && c.instanceLabelValue != ""
+}
+
+// instanceLabelFilter adds this Client's own instance label as a Docker
+// Engine API list filter, when configured, scoping f to only resources
+// this instance created. A no-op otherwise, so callers can always call
+// this unconditionally.
+func (c *Client) instanceLabelFilter(f filters.Args) {
+	if c.hasInstanceLabel() {
+		f.Add("label", c.instanceLabelKey+"="+c.instanceLabelValue)
+	}
+}
+
+// withInstanceLabel merges this Client's own instance label into labels,
+// when configured, returning labels unchanged (nil included) otherwise.
+// Used by Create and EnsureNetwork so every resource this Client creates
+// carries it, without every caller of ContainerSpec.Labels needing to
+// know this Client is instance-scoped at all.
+func (c *Client) withInstanceLabel(labels map[string]string) map[string]string {
+	if !c.hasInstanceLabel() {
+		return labels
+	}
+	out := make(map[string]string, len(labels)+1)
+	for k, v := range labels {
+		out[k] = v
+	}
+	out[c.instanceLabelKey] = c.instanceLabelValue
+	return out
 }
 
 // Close releases the underlying HTTP transport.
@@ -85,10 +153,20 @@ func (c *Client) TestRegistryAuth(ctx context.Context, host, username, password 
 	return nil
 }
 
-// InspectByName implements Runtime.
+// InspectByName implements Runtime. Scoped to this Client's own instance
+// label when WithInstanceLabel configured one (every real caller looks
+// up an exact, platform-derived name this same instance's own desired
+// state produced, e.g. application.ContainerName's result, so this never
+// hides a container a legitimate caller actually wants): a name-only
+// match on a Docker daemon shared by more than one control-plane
+// instance could otherwise resolve to another instance's container by
+// the same name and start operating on it (exec, live resource updates,
+// restart-in-place), see internal/spec.InstanceLabelKey's own doc
+// comment.
 func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerState, error) {
 	f := filters.NewArgs()
 	f.Add("name", "^/"+name+"$") // anchored: Docker's name filter is a substring match otherwise
+	c.instanceLabelFilter(f)
 	summaries, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Filters: f})
 	if err != nil {
 		return nil, fmt.Errorf("docker: list containers named %q: %w", name, err)
@@ -123,7 +201,17 @@ func (c *Client) InspectExitState(ctx context.Context, name string) (*ExitState,
 	}, nil
 }
 
-// ListByPrefix implements Runtime.
+// ListByPrefix implements Runtime. Deliberately NOT scoped to this
+// Client's own instance label, unlike InspectByName: GET
+// /api/v1/system/containers (internal/api's handleListContainers) calls
+// this with an empty prefix specifically to show every container on the
+// box "whether or not Levelrail manages it" (that handler's own doc
+// comment), a legitimate use this method must not break. Every
+// ownership-sensitive caller (internal/reconcile/application's
+// staleContainers) instead reads the returned ContainerState.Labels
+// itself and applies its own instance check on top of the name-prefix
+// match, the same "list broadly, filter narrowly at the call site"
+// split NetworkInfo.Labels/NetworkCleanupController use for networks.
 func (c *Client) ListByPrefix(ctx context.Context, prefix string) ([]ContainerState, error) {
 	f := filters.NewArgs()
 	f.Add("name", "^/"+prefix) // no trailing $: prefix match, not exact
@@ -152,6 +240,7 @@ func toContainerState(s container.Summary) *ContainerState {
 		Image:   s.Image,
 		Running: s.State == "running",
 		Ports:   observedPorts(s.Ports),
+		Labels:  s.Labels,
 	}
 }
 
@@ -205,7 +294,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 			Image:        spec.Image,
 			ExposedPorts: exposedPorts,
 			Env:          toDockerEnv(spec.Env),
-			Labels:       spec.Labels,
+			Labels:       c.withInstanceLabel(spec.Labels),
 			Cmd:          spec.Command,
 			Entrypoint:   spec.Entrypoint,
 		},
@@ -248,7 +337,10 @@ func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error)
 		return "", fmt.Errorf("docker: inspect network %q: %w", name, err)
 	}
 
-	resp, err := c.cli.NetworkCreate(ctx, name, dockernetwork.CreateOptions{Driver: "bridge"})
+	resp, err := c.cli.NetworkCreate(ctx, name, dockernetwork.CreateOptions{
+		Driver: "bridge",
+		Labels: c.withInstanceLabel(nil),
+	})
 	if err != nil {
 		return "", fmt.Errorf("docker: create network %q: %w", name, err)
 	}
@@ -266,7 +358,12 @@ func (c *Client) RemoveNetwork(ctx context.Context, name string) error {
 	return nil
 }
 
-// ListNetworksByPrefix implements Runtime.
+// ListNetworksByPrefix implements Runtime. Deliberately NOT scoped to
+// this Client's own instance label, same reasoning ListByPrefix's own
+// doc comment gives for containers: this returns every matching network
+// regardless of who created it, and NetworkCleanupController (the one
+// caller today) applies its own instance check against the returned
+// NetworkInfo.Labels before treating anything as orphaned.
 func (c *Client) ListNetworksByPrefix(ctx context.Context, prefix string) ([]NetworkInfo, error) {
 	f := filters.NewArgs()
 	f.Add("name", prefix) // Docker's network name filter is a substring match; narrowed by the prefix check below
@@ -280,7 +377,7 @@ func (c *Client) ListNetworksByPrefix(ctx context.Context, prefix string) ([]Net
 		if !strings.HasPrefix(n.Name, prefix) {
 			continue
 		}
-		out = append(out, NetworkInfo{ID: n.ID, Name: n.Name})
+		out = append(out, NetworkInfo{ID: n.ID, Name: n.Name, Labels: n.Labels})
 	}
 	return out, nil
 }
@@ -473,7 +570,10 @@ func (c *Client) UpdateResources(ctx context.Context, id string, resources Resou
 // existing volume, not an error), so this is a thin wrapper, not a
 // check-then-create with its own race window.
 func (c *Client) EnsureVolume(ctx context.Context, name string) error {
-	if _, err := c.cli.VolumeCreate(ctx, volume.CreateOptions{Name: name}); err != nil {
+	if _, err := c.cli.VolumeCreate(ctx, volume.CreateOptions{
+		Name:   name,
+		Labels: c.withInstanceLabel(nil),
+	}); err != nil {
 		return fmt.Errorf("docker: ensure volume %q: %w", name, err)
 	}
 	return nil
