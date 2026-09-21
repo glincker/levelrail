@@ -80,6 +80,22 @@ type VaultEnvRef struct {
 	Key  string `json:"key"`
 }
 
+// SecretEnvRef is one env var's { secret: true } declaration
+// (internal/spec.EnvVar), stored on DesiredService.SecretEnv. Name is
+// the secret storage key (internal/secrets), resolved and decrypted by
+// the application controller immediately before container creation, the
+// same "declaration only, resolved later" split DatabaseEnvRef/VaultEnvRef
+// already make. Required mirrors app.yaml's own { required: true } flag:
+// carrying it through here is what lets a build-triggered deploy
+// (internal/api/builds.go's specServiceFromDesired, feeding
+// internal/deploy.Pipeline's validateEnv) reject a still-unset required
+// secret the same way a fresh app.yaml parse already does on the
+// webhook path, instead of silently deploying without it.
+type SecretEnvRef struct {
+	Name     string `json:"name"`
+	Required bool   `json:"required,omitempty"`
+}
+
 // DatabaseAttachment is which managed database (desired_databases.name)
 // an app resolves one connection env var from, set through PUT/DELETE
 // /api/v1/apps/{name}/database rather than app.yaml: the UI/CLI-facing
@@ -185,13 +201,13 @@ type DesiredService struct {
 	// call, the same as Image itself, since it comes from the same
 	// app.yaml build.type: image block.
 	RegistryCredentialID string
-	// SecretEnv names env vars whose values live in secret storage
+	// SecretEnv lists env vars whose values live in secret storage
 	// (internal/secrets), resolved and decrypted by the
 	// application controller immediately before container creation.
-	// Never holds a value itself, only the key name, the same shape
-	// app.yaml's { secret: true } already has: a name is not a secret,
-	// only the value is.
-	SecretEnv []string
+	// Never holds a value itself, only the key name plus whether it was
+	// declared { required: true } (see SecretEnvRef's own doc comment):
+	// a name is not a secret, only the value is.
+	SecretEnv []SecretEnvRef
 
 	// DatabaseEnv names env vars whose values resolve from a managed
 	// database's own connection details (internal/spec's { from:
@@ -455,7 +471,7 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	if err != nil {
 		return fmt.Errorf("store: marshal entrypoint for service %q: %w", svc.Name, err)
 	}
-	secretEnvJSON, err := json.Marshal(nonNilSlice(svc.SecretEnv))
+	secretEnvJSON, err := json.Marshal(nonNilSecretEnv(svc.SecretEnv))
 	if err != nil {
 		return fmt.Errorf("store: marshal secret_env for service %q: %w", svc.Name, err)
 	}
@@ -1119,9 +1135,11 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	if err := json.Unmarshal([]byte(envJSON), &svc.Env); err != nil {
 		return nil, fmt.Errorf("unmarshal env: %w", err)
 	}
-	if err := json.Unmarshal([]byte(secretEnvJSON), &svc.SecretEnv); err != nil {
+	secretEnv, err := unmarshalSecretEnv(secretEnvJSON)
+	if err != nil {
 		return nil, fmt.Errorf("unmarshal secret_env: %w", err)
 	}
+	svc.SecretEnv = secretEnv
 	if err := json.Unmarshal([]byte(databaseEnvJSON), &svc.DatabaseEnv); err != nil {
 		return nil, fmt.Errorf("unmarshal database_env: %w", err)
 	}
@@ -1187,6 +1205,69 @@ func nonNilSlice(s []string) []string {
 		return []string{}
 	}
 	return s
+}
+
+// nonNilSecretEnv is nonNilSlice's counterpart for SecretEnv, which
+// can't share that generic-less helper since it holds SecretEnvRef, not
+// string.
+func nonNilSecretEnv(s []SecretEnvRef) []SecretEnvRef {
+	if s == nil {
+		return []SecretEnvRef{}
+	}
+	return s
+}
+
+// unmarshalSecretEnv decodes secret_env's JSON, accepting both the
+// current { name, required } object shape and the plain string-name
+// array shape every row written before Required existed still has on
+// disk (secret_env is a JSON blob column, migrations/0006: reshaping it
+// is a decode-time concern, not a SQL migration). An old row decodes
+// with Required defaulting to false for each name, the same permissive
+// direction a declared-but-unresolvable secret already falls back to
+// elsewhere in this codebase.
+func unmarshalSecretEnv(raw string) ([]SecretEnvRef, error) {
+	var refs []SecretEnvRef
+	if err := json.Unmarshal([]byte(raw), &refs); err == nil {
+		return refs, nil
+	}
+	var names []string
+	if err := json.Unmarshal([]byte(raw), &names); err != nil {
+		return nil, err
+	}
+	refs = make([]SecretEnvRef, len(names))
+	for i, n := range names {
+		refs[i] = SecretEnvRef{Name: n}
+	}
+	return refs, nil
+}
+
+// SecretEnvRefsFromNames builds []SecretEnvRef for names with Required
+// false for each: the shape a caller that only ever tracks secret-backed
+// env var names by name needs (e.g. the direct app API and Docker
+// Compose imports, neither of which has an app.yaml { required: true }
+// flag to carry over).
+func SecretEnvRefsFromNames(names []string) []SecretEnvRef {
+	if len(names) == 0 {
+		return nil
+	}
+	refs := make([]SecretEnvRef, len(names))
+	for i, n := range names {
+		refs[i] = SecretEnvRef{Name: n}
+	}
+	return refs
+}
+
+// SecretEnvNames extracts just the names from refs, the shape a wire
+// type like appResource.SecretEnv ([]string) still uses.
+func SecretEnvNames(refs []SecretEnvRef) []string {
+	if len(refs) == 0 {
+		return nil
+	}
+	names := make([]string, len(refs))
+	for i, r := range refs {
+		names[i] = r.Name
+	}
+	return names
 }
 
 // hostPortToNull converts DesiredService.HostPort to the database/sql

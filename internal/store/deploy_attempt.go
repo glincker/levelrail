@@ -133,12 +133,12 @@ func NewDeployAttemptSnapshot(svc DesiredService) DeployAttemptSnapshot {
 	for k := range svc.VaultEnv {
 		envKeys = append(envKeys, k)
 	}
-	envKeys = append(envKeys, svc.SecretEnv...)
+	envKeys = append(envKeys, SecretEnvNames(svc.SecretEnv)...)
 	sort.Strings(envKeys)
 
 	secretSet := make(map[string]bool, len(svc.SecretEnv))
-	for _, k := range svc.SecretEnv {
-		secretSet[k] = true
+	for _, ref := range svc.SecretEnv {
+		secretSet[ref.Name] = true
 	}
 
 	var env []DeployAttemptEnvKey

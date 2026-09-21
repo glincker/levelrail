@@ -1015,7 +1015,8 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 		if c.secretResolver == nil {
 			return nil, fmt.Errorf("service declares %d secret-backed env var(s) but no secret resolver is configured", len(desired.SecretEnv))
 		}
-		for _, key := range desired.SecretEnv {
+		for _, ref := range desired.SecretEnv {
+			key := ref.Name
 			exists, err := c.secretResolver.Exists(ctx, c.serviceName, key)
 			if err != nil {
 				return nil, fmt.Errorf("check secret %q: %w", key, err)

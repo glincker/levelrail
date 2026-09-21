@@ -423,20 +423,8 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 // (internal/deploy/translate.go), field for field, wherever a reverse is
 // possible.
 //
-// Two known, deliberate fidelity losses versus the original app.yaml:
+// One known, deliberate fidelity loss versus the original app.yaml:
 //
-//   - Env vars marked { secret: true } lose their original
-//     { required: true } flag: store.DesiredService.SecretEnv only ever
-//     persists the name (see that field's own doc comment: "a name is
-//     not a secret, only the value is"), never whether it was required.
-//     Reconstructed here as Required: false, the permissive direction: a
-//     missing secret value will not block this manual build the way it
-//     would have blocked the original app.yaml-driven deploy.
-//     internal/reconcile/application's own container-create step still
-//     simply omits an unset optional secret var either way, so this
-//     never produces a container silently missing a value that WAS set,
-//     only a looser pre-build check than app.yaml's own `required: true`
-//     would have enforced.
 //   - { from: ... } cross-resource references can never be reconstructed:
 //     store.DesiredService.Env only ever holds already-resolved literal
 //     values (internal/deploy's own literalEnv), so a service that
@@ -457,8 +445,14 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 		for k, v := range svc.Env {
 			out.Env[k] = spec.EnvVar{Value: v}
 		}
-		for _, k := range svc.SecretEnv {
-			out.Env[k] = spec.EnvVar{Secret: true}
+		// Required carries through from store.DesiredService.SecretEnv
+		// (SecretEnvRef.Required), not just the name: a required-but-unset
+		// secret must reject this build the same way it already rejects a
+		// fresh app.yaml-driven deploy (internal/deploy.Pipeline.
+		// validateEnv), see SecretEnvRef's own doc comment for why this
+		// used to be lossy here.
+		for _, ref := range svc.SecretEnv {
+			out.Env[ref.Name] = spec.EnvVar{Secret: true, Required: ref.Required}
 		}
 		// VaultEnv reconstructs exactly, unlike SecretEnv above: it stores
 		// the full { path, key } reference, not just a name, so there is

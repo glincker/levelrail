@@ -202,7 +202,7 @@ func TestHandleCloneApp_SecretEnvNamesCarryOverWithoutValues(t *testing.T) {
 
 	if err := db.SaveDesiredService(ctx, store.DesiredService{
 		Name: "web", Image: "levelrail/web:1", Port: 3000,
-		SecretEnv: []string{"API_KEY"},
+		SecretEnv: []store.SecretEnvRef{{Name: "API_KEY", Required: true}},
 	}); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
@@ -217,8 +217,8 @@ func TestHandleCloneApp_SecretEnvNamesCarryOverWithoutValues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetDesiredService after clone: %v", err)
 	}
-	if len(clone.SecretEnv) != 1 || clone.SecretEnv[0] != "API_KEY" {
-		t.Errorf("clone secret_env = %v, want [API_KEY] name carried over", clone.SecretEnv)
+	if len(clone.SecretEnv) != 1 || clone.SecretEnv[0].Name != "API_KEY" || !clone.SecretEnv[0].Required {
+		t.Errorf("clone secret_env = %v, want [{Name: API_KEY, Required: true}] carried over", clone.SecretEnv)
 	}
 
 	// No DEK or value should exist yet for the clone's own service name:

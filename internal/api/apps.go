@@ -263,7 +263,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		BindAddress:         svc.BindAddress,
 		Domains:             svc.Domains,
 		Env:                 svc.Env,
-		SecretEnv:           svc.SecretEnv,
+		SecretEnv:           store.SecretEnvNames(svc.SecretEnv),
 		VaultEnv:            vaultEnv,
 		Resources:           svc.Resources,
 		Health:              svc.Health,
@@ -555,7 +555,12 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	desired := req.toDesiredService()
-	desired.SecretEnv = unionSecretEnvNames(req.SecretEnv, req.Secrets)
+	// Required: false for every entry here, since this endpoint has no
+	// { required: true } concept of its own to carry over (that only
+	// ever comes from app.yaml, via internal/deploy's translate.go); the
+	// same permissive default specServiceFromDesired's own doc comment
+	// already documents for a plain manual build.
+	desired.SecretEnv = store.SecretEnvRefsFromNames(unionSecretEnvNames(req.SecretEnv, req.Secrets))
 	if len(req.VaultEnv) > 0 {
 		desired.VaultEnv = make(map[string]store.VaultEnvRef, len(req.VaultEnv))
 		for k, v := range req.VaultEnv {
@@ -620,7 +625,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// plus any inline value's own key); Secrets never round-trips a
 	// value, matching PUT .../secrets/{key}'s own "never echo it back"
 	// rule.
-	req.SecretEnv = desired.SecretEnv
+	req.SecretEnv = store.SecretEnvNames(desired.SecretEnv)
 	req.Secrets = nil
 	// VaultEnv echoes back exactly what was stored: unlike Secrets, this
 	// never carried a value in the first place, so there is nothing to
