@@ -6,6 +6,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -37,17 +38,23 @@ type AppLister interface {
 // deletes it once removing a service leaves the App with no other
 // members) or its cascade, means the network is actually orphaned.
 type NetworkCleanupController struct {
-	apps    AppLister
-	runtime docker.Runtime
-	prefix  string
+	apps       AppLister
+	runtime    docker.Runtime
+	prefix     string
+	instanceID string
 }
 
 // NewNetworkCleanupController builds a NetworkCleanupController. prefix
 // is the same value passed to every Controller's WithNetworkPrefix
 // (typically brand.Brand.ShortName): both must agree, or this will
 // never find the networks the per-service controllers actually create.
-func NewNetworkCleanupController(apps AppLister, runtime docker.Runtime, prefix string) *NetworkCleanupController {
-	return &NetworkCleanupController{apps: apps, runtime: runtime, prefix: prefix}
+// instanceID is store.GetOrCreateInstanceID's result, the same value
+// passed to every Controller's WithInstanceID; empty disables the
+// instance-ownership check below, treating every matching-name network
+// as this instance's own, this package's behavior before cross-instance
+// safety existed.
+func NewNetworkCleanupController(apps AppLister, runtime docker.Runtime, prefix, instanceID string) *NetworkCleanupController {
+	return &NetworkCleanupController{apps: apps, runtime: runtime, prefix: prefix, instanceID: instanceID}
 }
 
 // Name implements reconcile.Controller.
@@ -65,6 +72,7 @@ func (c *NetworkCleanupController) Reconcile(ctx context.Context) (reconcile.Res
 	if err != nil {
 		return notReady("ListNetworksFailed", err), fmt.Errorf("application/network-cleanup: list networks: %w", err)
 	}
+	observed = c.ownNetworks(observed)
 	if len(observed) == 0 {
 		return ready("NothingToClean"), nil
 	}
@@ -102,4 +110,30 @@ func (c *NetworkCleanupController) Reconcile(ctx context.Context) (reconcile.Res
 		return ready("OrphanedNetworksRemoved"), nil
 	}
 	return ready("Converged"), nil
+}
+
+// ownNetworks filters observed down to networks this same control-plane
+// instance created, the same "list broadly, filter narrowly at the call
+// site" split ListNetworksByPrefix's own doc comment describes. No
+// instanceID configured (the default) is a no-op: every observed network
+// is treated as this instance's own, this controller's behavior before
+// cross-instance safety existed. A network with no instance label at all
+// is also kept, not dropped, for the same pre-upgrade-leftover reasoning
+// application.Controller.ownsInstance documents: it can never acquire
+// the label retroactively, and treating it as foreign would leave it
+// permanently un-collectible instead of just un-collectible until this
+// instance's own next app deletion. Only a network explicitly labeled
+// with a different instance ID is excluded.
+func (c *NetworkCleanupController) ownNetworks(observed []docker.NetworkInfo) []docker.NetworkInfo {
+	if c.instanceID == "" {
+		return observed
+	}
+	out := make([]docker.NetworkInfo, 0, len(observed))
+	for _, n := range observed {
+		id, labeled := n.Labels[appspec.InstanceLabelKey]
+		if !labeled || id == c.instanceID {
+			out = append(out, n)
+		}
+	}
+	return out
 }

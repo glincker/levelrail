@@ -101,6 +101,12 @@ type fakeRuntime struct {
 	removeNetworkErr   error
 	removedNetworks    []string
 	callOrder          []string
+	// networkLabels, keyed the same as networks, backs
+	// ListNetworksByPrefix's own NetworkInfo.Labels: absent means no
+	// labels at all (a network this fake never explicitly labeled), the
+	// same "unlabeled, not foreign" default the real Client's own
+	// unconfigured case has.
+	networkLabels map[string]map[string]string
 
 	// execErr, when set, makes Exec itself fail (a transport-level
 	// failure, e.g. the exec session never started), distinct from
@@ -144,7 +150,10 @@ func (e *execExitReader) Read(p []byte) (int, error) {
 func (e *execExitReader) Close() error { return nil }
 
 func newFakeRuntime(hostPort int) *fakeRuntime {
-	return &fakeRuntime{containers: map[string]*docker.ContainerState{}, exitStates: map[string]*docker.ExitState{}, networks: map[string]string{}, hostPort: hostPort}
+	return &fakeRuntime{
+		containers: map[string]*docker.ContainerState{}, exitStates: map[string]*docker.ExitState{},
+		networks: map[string]string{}, networkLabels: map[string]map[string]string{}, hostPort: hostPort,
+	}
 }
 
 // crashContainer simulates a container dying mid readiness-wait: it
@@ -189,10 +198,17 @@ func (f *fakeRuntime) InspectExitState(_ context.Context, name string) (*docker.
 }
 
 func (f *fakeRuntime) seed(name string, running bool) {
+	f.seedLabeled(name, running, nil)
+}
+
+// seedLabeled is seed plus labels, for tests asserting the
+// instance-ownership check staleContainers/ownsInstance applies on top
+// of the existing name-based one.
+func (f *fakeRuntime) seedLabeled(name string, running bool, labels map[string]string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.nextID++
-	cs := &docker.ContainerState{ID: strconv.Itoa(f.nextID), Name: name, Running: running}
+	cs := &docker.ContainerState{ID: strconv.Itoa(f.nextID), Name: name, Running: running, Labels: labels}
 	if running && f.hostPort != 0 {
 		cs.Ports = []docker.PortBinding{{ContainerPort: 80, HostPort: f.hostPort}}
 	}
@@ -229,7 +245,7 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 	}
 	f.nextID++
 	id := strconv.Itoa(f.nextID)
-	f.containers[spec.Name] = &docker.ContainerState{ID: id, Name: spec.Name, Image: spec.Image}
+	f.containers[spec.Name] = &docker.ContainerState{ID: id, Name: spec.Name, Image: spec.Image, Labels: spec.Labels}
 	return id, nil
 }
 
@@ -360,7 +376,7 @@ func (f *fakeRuntime) ListNetworksByPrefix(_ context.Context, prefix string) ([]
 	var out []docker.NetworkInfo
 	for name, id := range f.networks {
 		if strings.HasPrefix(name, prefix) {
-			out = append(out, docker.NetworkInfo{ID: id, Name: name})
+			out = append(out, docker.NetworkInfo{ID: id, Name: name, Labels: f.networkLabels[name]})
 		}
 	}
 	return out, nil
@@ -522,6 +538,38 @@ func TestController_Reconcile_Resources_ReachesContainerSpec(t *testing.T) {
 	}
 	if got := rt.lastCreateSpec.Resources; !reflect.DeepEqual(got, want) {
 		t.Errorf("created ContainerSpec.Resources = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_InstanceLabel_ReachesContainerSpec confirms
+// WithInstanceID stamps internal/spec.InstanceLabelKey into every
+// created container's spec, alongside any operator-supplied custom
+// labels, without instanceID configured at all leaving Labels exactly
+// as the desired service declared it (backward compatible with every
+// caller that hasn't adopted cross-instance safety yet).
+func TestController_Reconcile_InstanceLabel_ReachesContainerSpec(t *testing.T) {
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Labels: map[string]string{"custom": "operator-set"},
+	}
+
+	rt := newFakeRuntime(0)
+	c := New("web", &fakeStore{svc: desired}, rt, WithInstanceID("inst-a"))
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := map[string]string{"custom": "operator-set", "platform-reserved.instance": "inst-a"}
+	if got := rt.lastCreateSpec.Labels; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Labels = %+v, want %+v", got, want)
+	}
+
+	rt2 := newFakeRuntime(0)
+	c2 := New("web", &fakeStore{svc: desired}, rt2)
+	if _, err := c2.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if got := rt2.lastCreateSpec.Labels; !reflect.DeepEqual(got, desired.Labels) {
+		t.Errorf("created ContainerSpec.Labels without WithInstanceID = %+v, want %+v unchanged", got, desired.Labels)
 	}
 }
 
@@ -1157,6 +1205,70 @@ func TestController_Teardown_NoContainers_NoOp(t *testing.T) {
 	c := New("web", &fakeStore{}, rt)
 	if err := c.Teardown(context.Background()); err != nil {
 		t.Fatalf("Teardown() error = %v", err)
+	}
+}
+
+// TestController_Teardown_DoesNotRemoveOtherInstanceContainers proves the
+// cross-instance-safety bug this guard exists for: two separate
+// control-plane instances (WithInstanceID "inst-a"/"inst-b") sharing one
+// Docker daemon, each with their own "web" service that happens to
+// resolve to the exact same content-hashed container name (identical
+// image, identical restart nonce, the same collision ownsContainer's own
+// doc comment already accepts as possible once a name matches). Without
+// the instance-ownership check, instance A's Teardown would see
+// instance B's identically-named container as its own leftover and
+// remove it.
+func TestController_Teardown_DoesNotRemoveOtherInstanceContainers(t *testing.T) {
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v1", "")
+	rt.seedLabeled(target, true, map[string]string{"platform-reserved.instance": "inst-b"})
+
+	c := New("web", &fakeStore{}, rt, WithInstanceID("inst-a"))
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+
+	if names := rt.names(); len(names) != 1 || names[0] != target {
+		t.Errorf("containers after teardown = %v, want %q untouched (belongs to a different control-plane instance)", names, target)
+	}
+}
+
+// TestController_Teardown_RemovesOwnInstanceContainers is the positive
+// counterpart: with WithInstanceID configured, this instance's own
+// correctly-labeled container is still torn down exactly as before.
+func TestController_Teardown_RemovesOwnInstanceContainers(t *testing.T) {
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v1", "")
+	rt.seedLabeled(target, true, map[string]string{"platform-reserved.instance": "inst-a"})
+
+	c := New("web", &fakeStore{}, rt, WithInstanceID("inst-a"))
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+
+	if names := rt.names(); len(names) != 0 {
+		t.Errorf("containers after teardown = %v, want none (this instance's own container)", names)
+	}
+}
+
+// TestController_Teardown_UnlabeledContainer_StillRemoved_UpgradeSafety
+// covers the deliberate backward-compatibility carve-out in ownsInstance:
+// a container created before instance labeling existed (or by a Runtime
+// that doesn't stamp it) carries no label at all, not a foreign one, and
+// must still be cleaned up by its own instance rather than becoming a
+// permanent zombie after an upgrade.
+func TestController_Teardown_UnlabeledContainer_StillRemoved_UpgradeSafety(t *testing.T) {
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v1", "")
+	rt.seed(target, true) // no labels at all
+
+	c := New("web", &fakeStore{}, rt, WithInstanceID("inst-a"))
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+
+	if names := rt.names(); len(names) != 0 {
+		t.Errorf("containers after teardown = %v, want none (unlabeled pre-upgrade container, still this instance's own)", names)
 	}
 }
 

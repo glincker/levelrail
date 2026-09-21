@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
@@ -303,7 +304,10 @@ func TestGRPCTransport_Networks(t *testing.T) {
 				t.Fatalf("networks = %+v, want %+v", got.nets, tc.wantNets)
 			}
 			for i := range tc.wantNets {
-				if got.nets[i] != tc.wantNets[i] {
+				// NetworkInfo carries a Labels map since instance-label
+				// scoping (internal/spec.InstanceLabelKey) was added, so
+				// it's no longer comparable with !=.
+				if !reflect.DeepEqual(got.nets[i], tc.wantNets[i]) {
 					t.Errorf("networks[%d] = %+v, want %+v", i, got.nets[i], tc.wantNets[i])
 				}
 			}
