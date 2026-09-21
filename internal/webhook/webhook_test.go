@@ -308,6 +308,16 @@ func testConfig() Config {
 	}
 }
 
+// fakeNudger is a hand-written fake, matching fakeDeployer's own
+// documented convention in this file.
+type fakeNudger struct {
+	calls int
+}
+
+func (f *fakeNudger) Nudge() {
+	f.calls++
+}
+
 // newTestHandler builds a Handler with attempt tracking disabled
 // (nil AttemptStore, nil Recorder): the majority of this file's tests
 // exercise signature verification and dispatch logic, orthogonal to
@@ -317,19 +327,19 @@ func testConfig() Config {
 // degraded one. Tests that specifically cover attempt tracking build
 // their own Handler via newTestHandlerWithAttempts below.
 func newTestHandler(cfg Config, deployer Deployer, fetch fetchFunc) *Handler {
-	h := New(cfg, deployer, nil, nil, nil, discardLogger())
+	h := New(cfg, deployer, nil, nil, nil, nil, discardLogger())
 	h.fetch = fetch
 	return h
 }
 
 func newTestHandlerWithAttempts(cfg Config, deployer Deployer, fetch fetchFunc, attempts AttemptStore, recorder *deploylog.Recorder) *Handler {
-	h := New(cfg, deployer, attempts, recorder, nil, discardLogger())
+	h := New(cfg, deployer, attempts, recorder, nil, nil, discardLogger())
 	h.fetch = fetch
 	return h
 }
 
 func newTestHandlerWithNotifier(cfg Config, deployer Deployer, fetch fetchFunc, attempts AttemptStore, recorder *deploylog.Recorder, notifier DeployNotifier) *Handler {
-	h := New(cfg, deployer, attempts, recorder, notifier, discardLogger())
+	h := New(cfg, deployer, attempts, recorder, notifier, nil, discardLogger())
 	h.fetch = fetch
 	return h
 }
@@ -537,6 +547,55 @@ func TestServeHTTP_TargetBranch_TriggersDeploy(t *testing.T) {
 	}
 }
 
+func TestServeHTTP_TargetBranch_NudgesReconciler(t *testing.T) {
+	cfg := testConfig()
+	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
+	nudger := &fakeNudger{}
+
+	h := New(cfg, deployer, nil, nil, nil, nudger, discardLogger())
+	h.fetch = func(_ context.Context, _, _ string, _ func(build.ProgressEvent)) (string, func(), error) {
+		return "/tmp/checkout-dir", func() {}, nil
+	}
+
+	body := pushBody(t, "refs/heads/main", "sha1")
+	rec := doPush(t, h, cfg.Secret, body, sign(cfg.Secret, body))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body=%s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if nudger.calls != 1 {
+		t.Errorf("nudger.Nudge() called %d times, want 1", nudger.calls)
+	}
+}
+
+func TestDeployMulti_NudgesReconcilerAfterSuccess(t *testing.T) {
+	cfg := testConfig()
+	cfg.Services = map[string]spec.Service{
+		"web": {Build: spec.Build{Type: spec.BuildDockerfile}, Port: 3000},
+		"api": {Build: spec.Build{Type: spec.BuildDockerfile}, Port: 4000},
+	}
+	deployer := &fakeDeployer{tag: "levelrail/multi:sha1"}
+	nudger := &fakeNudger{}
+
+	h := New(cfg, deployer, nil, nil, nil, nudger, discardLogger())
+	h.fetch = func(_ context.Context, _, _ string, _ func(build.ProgressEvent)) (string, func(), error) {
+		return "/tmp/checkout-dir", func() {}, nil
+	}
+
+	body := pushBody(t, "refs/heads/main", "sha1")
+	rec := doPush(t, h, cfg.Secret, body, sign(cfg.Secret, body))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body=%s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if deployer.multiCalls != 1 {
+		t.Fatalf("DeploySpec called %d times, want 1", deployer.multiCalls)
+	}
+	if nudger.calls != 1 {
+		t.Errorf("nudger.Nudge() called %d times, want 1", nudger.calls)
+	}
+}
+
 func TestServeHTTP_FetchFailure_ReturnsServerErrorAndDoesNotDeploy(t *testing.T) {
 	cfg := testConfig()
 	deployer := &fakeDeployer{tag: "levelrail/web:sha1"}
@@ -584,7 +643,7 @@ func TestServeHTTP_DeployFailure_ReturnsServerErrorNotLeaky(t *testing.T) {
 }
 
 func TestNew_NilLoggerDefaultsToSlogDefault(t *testing.T) {
-	h := New(testConfig(), &fakeDeployer{}, nil, nil, nil, nil)
+	h := New(testConfig(), &fakeDeployer{}, nil, nil, nil, nil, nil)
 	if h.log == nil {
 		t.Fatal("New() with a nil logger left h.log nil, want it defaulted")
 	}

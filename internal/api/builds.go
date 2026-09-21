@@ -399,6 +399,12 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		rt.logger.Info("api: manual build triggered", slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref), slog.String("build_type", buildType), slog.String("tag", tag))
+		// The build just wrote a new image onto desired state
+		// (finishDeploy's SaveDesiredService); without this, the
+		// reconciler doesn't notice until its next resyncInterval tick
+		// (default 30s), the same gap api.ReconcileNudger's doc comment
+		// describes for create/stop/start/restart.
+		rt.nudgeReconciler()
 	}()
 
 	writeJSON(w, http.StatusAccepted, triggerBuildResponse{ID: id})

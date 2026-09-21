@@ -480,7 +480,15 @@ func run(logger *slog.Logger) error {
 		}()
 	}
 
-	webhookHandler, err := loadWebhookHandler(logger, b, db, deployRecorder, deployDispatcher, builder)
+	// Created here, before loadWebhookHandler and the router, both of
+	// which need to hand it to mutating handlers (webhook.New,
+	// api.WithReconcileNudger), rather than down at its own
+	// SetStore/SetSource call below: both setters, and Nudge itself, are
+	// safe to call on an Engine before Run starts (Run doesn't begin
+	// until further down this same function).
+	engine := reconcile.NewEngine(logger)
+
+	webhookHandler, err := loadWebhookHandler(logger, b, db, deployRecorder, deployDispatcher, builder, engine)
 	if err != nil {
 		// Not fatal, the same choice as everything else optional above:
 		// the control plane still starts, serving apps deployed by
@@ -488,13 +496,6 @@ func run(logger *slog.Logger) error {
 		// unavailable, and specifically why is right here in the log.
 		logger.Warn("webhook not configured", slog.String("error", err.Error()))
 	}
-
-	// Created here, before the router that needs to hand it to mutating
-	// handlers (api.WithReconcileNudger), rather than down at its own
-	// SetStore/SetSource call below: both setters, and Nudge itself, are
-	// safe to call on an Engine before Run starts (Run doesn't begin
-	// until further down this same function).
-	engine := reconcile.NewEngine(logger)
 
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner, engine)
 	httpServer := &http.Server{
@@ -1490,7 +1491,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 // webhook handler this function builds always records real deploy
 // history for a triggering push, since an unattended webhook deploy
 // is exactly the case persistence matters most for.
-func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, recorder *deploylog.Recorder, notifier *alerting.DeployDispatcher, pipeline *deploy.Pipeline) (http.Handler, error) {
+func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, recorder *deploylog.Recorder, notifier *alerting.DeployDispatcher, pipeline *deploy.Pipeline, nudger *reconcile.Engine) (http.Handler, error) {
 	if pipeline == nil {
 		return nil, fmt.Errorf("no builder available (see the earlier \"builder not configured\" warning)")
 	}
@@ -1545,7 +1546,7 @@ func loadWebhookHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, recor
 		Service:     svc,
 		ImageRepo:   imageRepo,
 	}
-	return webhook.New(cfg, pipeline, db, recorder, notifier, logger), nil
+	return webhook.New(cfg, pipeline, db, recorder, notifier, nudger, logger), nil
 }
 
 // buildCacheOptions reads the cache-backend env vars and
