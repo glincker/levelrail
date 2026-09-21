@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
+import { DisconnectConnectionDialog } from './ConnectionCard'
 import { useSetAppStorage, useClearAppStorage } from '../queries/apps'
 import { useBackupTargetsOptional } from '../queries/backupTargets'
 import { useStorageEnvKeysOptional } from '../queries/storageEnvKeys'
@@ -39,6 +40,7 @@ import type { AppDetail } from '../types/appDetail'
 // is "already in use" elsewhere.
 export function StorageAttachmentCard({ app }: { app: AppDetail }) {
   const [selectedTargetId, setSelectedTargetId] = useState('')
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const targetsQuery = useBackupTargetsOptional()
   const targets = targetsQuery.data ?? []
   const setAppStorage = useSetAppStorage()
@@ -88,6 +90,14 @@ export function StorageAttachmentCard({ app }: { app: AppDetail }) {
 
   function handleDetach() {
     clearAppStorage.mutate(app.name, {
+      onSuccess: () => {
+        setConfirmOpen(false)
+        toast.add({
+          title: 'Storage detached.',
+          description: `${app.name} no longer gets bucket credentials as env vars.`,
+          type: 'success',
+        })
+      },
       onError: (error) => {
         toast.add({
           title: 'Could not detach storage.',
@@ -122,15 +132,22 @@ export function StorageAttachmentCard({ app }: { app: AppDetail }) {
                 </p>
               </div>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={pending}
-              onClick={handleDetach}
-            >
-              {clearAppStorage.isPending ? 'Detaching...' : 'Detach'}
-            </Button>
+            <DisconnectConnectionDialog
+              open={confirmOpen}
+              onOpenChange={setConfirmOpen}
+              title="Detach storage?"
+              description={
+                <>
+                  {app.name} stops getting S3_* env vars from{' '}
+                  {attachedTarget?.name ?? 'this bucket'} at its next container
+                  start. Nothing in the bucket itself is deleted.
+                </>
+              }
+              pending={clearAppStorage.isPending}
+              actionLabel="Detach"
+              pendingLabel="Detaching..."
+              onConfirm={handleDetach}
+            />
           </div>
         ) : (
           <div className="space-y-3">
@@ -145,9 +162,7 @@ export function StorageAttachmentCard({ app }: { app: AppDetail }) {
               </p>
             ) : (
               <Field>
-                <FieldLabel htmlFor="storage-attach-target">
-                  Bucket
-                </FieldLabel>
+                <FieldLabel htmlFor="storage-attach-target">Bucket</FieldLabel>
                 {collidingEnvKeys.length > 0 ? (
                   <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
                     <WarningIcon className="mt-0.5 size-4 shrink-0" />

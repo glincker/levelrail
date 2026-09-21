@@ -71,6 +71,11 @@ export function LogDrainCard({ app }: { app: AppDetail }) {
     clearLogDrain.mutate(app.name, {
       onSuccess: () => {
         setTarget('')
+        toast.add({
+          title: 'Log drain removed.',
+          description: `${app.name}'s logs are no longer forwarded externally.`,
+          type: 'success',
+        })
       },
       onError: (error) => {
         toast.add({
