@@ -130,6 +130,7 @@ function DeployExistingImageForm({ appName }: { appName: string }) {
             placeholder="registry.example.com/app:abc1234"
             autoComplete="off"
             spellCheck={false}
+            aria-label="Image tag"
           />
           <FieldError
             errors={

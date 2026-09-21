@@ -466,6 +466,7 @@ export function EnvVarsForm({
                   }}
                   className="min-h-40 font-mono"
                   placeholder={pastePlaceholder}
+                  aria-label="Paste .env content"
                   autoFocus
                 />
                 <DialogFooter>
