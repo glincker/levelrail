@@ -79,7 +79,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"tag":                nil,
 		"untag":              nil,
 	}},
-	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "set-project": nil, "clear-project": nil, "public-access": {subs: map[string]*cmdNode{"set": nil, "clear": nil}}}},
+	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "logs": nil, "set-project": nil, "clear-project": nil, "set-node": nil, "clear-node": nil, "public-access": {subs: map[string]*cmdNode{"set": nil, "clear": nil}}}},
 	"auth": {subs: map[string]*cmdNode{"login": nil, "whoami": nil, "2fa": {subs: map[string]*cmdNode{
 		"status": nil, "setup": nil, "enable": nil, "disable": nil, "recovery-codes": nil,
 	}}}},
@@ -99,11 +99,11 @@ var cliCommandTree = map[string]*cmdNode{
 		"error-pages":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 	}},
 	"backups": {subs: map[string]*cmdNode{
-		"list": nil, "list-all": nil, "trigger": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
+		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
 	"app-volume-backups": {subs: map[string]*cmdNode{
-		"list": nil, "trigger": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
+		"list": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
 	"cloudflare-tunnel":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},
@@ -111,7 +111,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"channels":             {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil}},
 	"shared-env":           {subs: map[string]*cmdNode{"list": nil, "set": nil, "delete": nil}},
 	"backup-targets":       {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
-	"registry-credentials": {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
+	"registry-credentials": {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "repositories": nil, "tags": nil}},
 	"registry":             {subs: map[string]*cmdNode{"status": nil, "enable": nil, "disable": nil, "repositories": nil, "tags": nil}},
 	"flags":                {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "set": nil, "delete": nil}},
 	"tags":                 {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil, "apps": nil}},
