@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react'
 import type { Icon } from '@phosphor-icons/react'
-import { CheckCircleIcon, WarningIcon, XCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  CheckCircleIcon,
+  WarningIcon,
+  XCircleIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -67,6 +71,11 @@ export function ConfiguredStatusHeading({
   )
 }
 
+// Generic consequential-action confirm dialog, not "connection"-specific
+// despite the name/file: StorageAttachmentCard and DatabaseAttachmentCard
+// reuse it for their own "Detach" action (same shape as a disconnect,
+// same live-impact-on-a-running-app severity), rather than each hand-
+// rolling a second confirm dialog.
 export function DisconnectConnectionDialog({
   open,
   onOpenChange,
@@ -74,6 +83,8 @@ export function DisconnectConnectionDialog({
   description,
   pending,
   onConfirm,
+  actionLabel = 'Disconnect',
+  pendingLabel = 'Disconnecting...',
 }: Readonly<{
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -81,11 +92,13 @@ export function DisconnectConnectionDialog({
   description: ReactNode
   pending: boolean
   onConfirm: () => void
+  actionLabel?: string
+  pendingLabel?: string
 }>) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-        Disconnect
+        {actionLabel}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
@@ -96,11 +109,20 @@ export function DisconnectConnectionDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
-          <Button type="button" variant="destructive" disabled={pending} onClick={onConfirm}>
-            {pending ? 'Disconnecting...' : 'Disconnect'}
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={pending}
+            onClick={onConfirm}
+          >
+            {pending ? pendingLabel : actionLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -178,7 +200,11 @@ export function mutationToastCallbacks(
       onSuccess?.()
     },
     onError: (error: Error) => {
-      toast.add({ title: errorTitle, description: error.message, type: 'error' })
+      toast.add({
+        title: errorTitle,
+        description: error.message,
+        type: 'error',
+      })
     },
   }
 }

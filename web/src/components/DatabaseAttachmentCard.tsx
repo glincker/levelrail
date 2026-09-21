@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
+import { DisconnectConnectionDialog } from './ConnectionCard'
 import { useSetAppDatabase, useClearAppDatabase } from '../queries/apps'
 import { useDatabases } from '../queries/databases'
 import type { AppDetail } from '../types/appDetail'
@@ -45,6 +46,7 @@ export function DatabaseAttachmentCard({ app }: { app: AppDetail }) {
   const [envVar, setEnvVar] = useState('DATABASE_URL')
   const [field, setField] = useState('url')
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const databasesQuery = useDatabases()
   const databases = databasesQuery.data ?? []
@@ -93,6 +95,14 @@ export function DatabaseAttachmentCard({ app }: { app: AppDetail }) {
 
   function handleDetach() {
     clearAppDatabase.mutate(app.name, {
+      onSuccess: () => {
+        setConfirmOpen(false)
+        toast.add({
+          title: 'Database detached.',
+          description: `${app.name} no longer gets a connection value injected.`,
+          type: 'success',
+        })
+      },
       onError: (error) => {
         toast.add({
           title: 'Could not detach database.',
@@ -127,15 +137,23 @@ export function DatabaseAttachmentCard({ app }: { app: AppDetail }) {
                 </p>
               </div>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={pending}
-              onClick={handleDetach}
-            >
-              {clearAppDatabase.isPending ? 'Detaching...' : 'Detach'}
-            </Button>
+            <DisconnectConnectionDialog
+              open={confirmOpen}
+              onOpenChange={setConfirmOpen}
+              title="Detach database?"
+              description={
+                <>
+                  {app.name} stops getting{' '}
+                  <code className="font-mono">{attachment.env_var}</code>{' '}
+                  injected at its next container start. The database itself is
+                  not affected.
+                </>
+              }
+              pending={clearAppDatabase.isPending}
+              actionLabel="Detach"
+              pendingLabel="Detaching..."
+              onConfirm={handleDetach}
+            />
           </div>
         ) : (
           <div className="space-y-3">
