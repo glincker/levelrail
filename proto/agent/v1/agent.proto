@@ -194,6 +194,14 @@ message ContainerSpec {
   // DNS mirrors internal/docker.ContainerSpec.DNS. Empty means Docker's
   // own embedded resolver, unchanged from before this field existed.
   repeated string dns = 7;
+  // CapAdd mirrors internal/docker.ContainerSpec.CapAdd. Empty means no
+  // added capabilities, unchanged from before this field existed.
+  repeated string cap_add = 8;
+  // NetworkMode mirrors internal/docker.ContainerSpec.NetworkMode. Empty
+  // means Docker's own default networking behavior (the Network field
+  // above, or the default bridge network), unchanged from before this
+  // field existed.
+  string network_mode = 9;
 }
 
 message ContainerState {

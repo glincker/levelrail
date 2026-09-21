@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -226,6 +227,31 @@ func TestHandleCreateApp(t *testing.T) {
 	rt.Handler().ServeHTTP(recMalformed, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{not json`))
 	if recMalformed.Code != http.StatusBadRequest {
 		t.Fatalf("malformed body status = %d, want %d", recMalformed.Code, http.StatusBadRequest)
+	}
+}
+
+// TestHandleCreateApp_Command proves command: (store.DesiredService.
+// Command) actually reaches the saved desired state through this
+// endpoint, not silently dropped by appResource.toDesiredService.
+func TestHandleCreateApp_Command(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"web","image":"levelrail/web:1","port":3000,"command":["node","server.js","--flag"]}`
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after create: %v", err)
+	}
+	want := []string{"node", "server.js", "--flag"}
+	if !reflect.DeepEqual(svc.Command, want) {
+		t.Errorf("saved Command = %v, want %v", svc.Command, want)
 	}
 }
 
@@ -1102,6 +1128,71 @@ func TestHandleUpdateApp(t *testing.T) {
 	rt.Handler().ServeHTTP(recInvalid, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", `{"port":0}`))
 	if recInvalid.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d", recInvalid.Code, http.StatusBadRequest)
+	}
+}
+
+// TestHandleUpdateApp_DoesNotClearEgressPolicy proves Egress is
+// deliberately excluded from appResource.toDesiredService() (apps.go's
+// own doc comment on that field): a general PUT whose body was built
+// before this feature existed (or simply doesn't mention egress) must
+// never silently wipe out a policy set via the dedicated
+// PUT /api/v1/apps/{name}/egress-policy endpoint or app.yaml's own
+// egress: block.
+func TestHandleUpdateApp_DoesNotClearEgressPolicy(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if err := db.UpdateServiceEgressPolicy(context.Background(), "web", &store.ServiceEgressPolicy{
+		Mode: store.EgressModeAllowlist, Allow: []store.ServiceEgressAllow{{Host: "api.example.com", Port: 443}},
+	}); err != nil {
+		t.Fatalf("seed egress policy: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web", `{"image":"levelrail/web:2","port":4000}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after update: %v", err)
+	}
+	if svc.Egress == nil || svc.Egress.Mode != store.EgressModeAllowlist || len(svc.Egress.Allow) != 1 {
+		t.Errorf("Egress = %+v, want the seeded policy to survive an unrelated general PUT", svc.Egress)
+	}
+}
+
+// TestHandleGetApp_SurfacesEgressPolicy proves toAppResource carries
+// Egress through for display, the read half of the
+// display-only/dedicated-write-endpoint split
+// TestHandleUpdateApp_DoesNotClearEgressPolicy proves for writes.
+func TestHandleGetApp_SurfacesEgressPolicy(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "web", Image: "levelrail/web:1", Port: 3000,
+		Egress: &store.ServiceEgressPolicy{Mode: store.EgressModeAllowlist, Allow: []store.ServiceEgressAllow{{Host: "api.example.com", Port: 443}}},
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got appResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.Egress == nil || got.Egress.Mode != store.EgressModeAllowlist || len(got.Egress.Allow) != 1 {
+		t.Errorf("Egress = %+v, want the seeded policy surfaced in GET", got.Egress)
 	}
 }
 

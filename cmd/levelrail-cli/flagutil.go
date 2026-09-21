@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"golang.org/x/term"
@@ -73,6 +74,45 @@ func (m vaultEnvFlag) Set(s string) error {
 		return fmt.Errorf("invalid vault reference %q, want \"path#field\"", ref)
 	}
 	m[key] = appVaultEnvRef{Path: path, Key: field}
+	return nil
+}
+
+// egressAllowFlag is a flag.Value for a repeatable "host:port" flag
+// (--allow), accumulating into a slice: an app's egress allowlist is an
+// ordered list of entries, not a map, so this mirrors stringMapFlag's
+// "repeatable flag, stdlib has no native support" shape rather than its
+// map storage.
+type egressAllowFlag []appEgressAllow
+
+func (f *egressAllowFlag) String() string {
+	if f == nil || len(*f) == 0 {
+		return ""
+	}
+	parts := make([]string, len(*f))
+	for i, a := range *f {
+		parts[i] = fmt.Sprintf("%s:%d", a.Host, a.Port)
+	}
+	return strings.Join(parts, ",")
+}
+
+// Set splits s on the last ":" into a host and a port: a bare hostname
+// never contains ":", so splitting from the right keeps this correct
+// without needing to special-case IPv6 literals, which app.yaml's own
+// egress.allow schema doesn't accept as a host either.
+func (f *egressAllowFlag) Set(s string) error {
+	sep := strings.LastIndex(s, ":")
+	if sep < 0 {
+		return fmt.Errorf("invalid host:port %q, want a host, a \":\", and a port", s)
+	}
+	host, portStr := s[:sep], s[sep+1:]
+	if host == "" {
+		return fmt.Errorf("invalid host:port %q, host must not be empty", s)
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil || port < 1 || port > 65535 {
+		return fmt.Errorf("invalid host:port %q, port must be a number between 1 and 65535", s)
+	}
+	*f = append(*f, appEgressAllow{Host: host, Port: port})
 	return nil
 }
 

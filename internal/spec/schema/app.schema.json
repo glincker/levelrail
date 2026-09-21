@@ -53,7 +53,29 @@
           "type": "array",
           "items": { "type": "string" },
           "minItems": 1
+        },
+        "egress": { "$ref": "#/$defs/egress" }
+      }
+    },
+    "egress": {
+      "type": "object",
+      "required": ["mode"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["allowlist"] },
+        "allow": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/egressAllow" }
         }
+      }
+    },
+    "egressAllow": {
+      "type": "object",
+      "required": ["host", "port"],
+      "additionalProperties": false,
+      "properties": {
+        "host": { "type": "string", "minLength": 1 },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
       }
     },
     "hooks": {

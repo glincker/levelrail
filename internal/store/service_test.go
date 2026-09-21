@@ -105,6 +105,78 @@ func TestSaveDesiredService_Hooks_NilByDefault(t *testing.T) {
 	}
 }
 
+func TestSaveDesiredService_Egress_NilByDefault(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Egress != nil {
+		t.Errorf("Egress = %+v, want nil (unrestricted egress, unchanged) when never set", got.Egress)
+	}
+}
+
+func TestSaveDesiredService_EgressRoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	policy := &ServiceEgressPolicy{
+		Mode: EgressModeAllowlist,
+		Allow: []ServiceEgressAllow{
+			{Host: "api.anthropic.com", Port: 443},
+			{Host: "github.com", Port: 443},
+		},
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, Egress: policy}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Egress == nil || got.Egress.Mode != policy.Mode || len(got.Egress.Allow) != len(policy.Allow) {
+		t.Fatalf("Egress = %+v, want %+v", got.Egress, policy)
+	}
+	for i, allow := range policy.Allow {
+		if got.Egress.Allow[i] != allow {
+			t.Errorf("Egress.Allow[%d] = %+v, want %+v", i, got.Egress.Allow[i], allow)
+		}
+	}
+}
+
+// TestSaveDesiredService_EgressClearedByRedeploy proves Egress follows
+// Health/Hooks's own full-record-replace semantics, not
+// StorageTargetID's: an app.yaml redeploy that drops the egress: block
+// must actually clear the policy, since (unlike storage attachment)
+// app.yaml is a real source of truth for this field.
+func TestSaveDesiredService_EgressClearedByRedeploy(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	policy := &ServiceEgressPolicy{Mode: EgressModeAllowlist, Allow: []ServiceEgressAllow{{Host: "api.example.com", Port: 443}}}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, Egress: policy}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() redeploy error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Egress != nil {
+		t.Errorf("Egress = %+v, want nil after a redeploy that omits egress:", got.Egress)
+	}
+}
+
 func TestSaveDesiredService_MinimalFieldsRoundTrip(t *testing.T) {
 	// No Env, no Resources, no Health: the common case for a service
 	// with nothing but an image and a port. Must round-trip cleanly,
@@ -551,6 +623,83 @@ func TestUpdateServiceStorageTarget_BackToNoStorage(t *testing.T) {
 	}
 	if got.StorageTargetID != "" {
 		t.Errorf("StorageTargetID = %q, want empty after detaching", got.StorageTargetID)
+	}
+}
+
+func TestUpdateServiceEgressPolicy(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	policy := &ServiceEgressPolicy{Mode: EgressModeAllowlist, Allow: []ServiceEgressAllow{{Host: "api.example.com", Port: 443}}}
+	if err := db.UpdateServiceEgressPolicy(ctx, "web", policy); err != nil {
+		t.Fatalf("UpdateServiceEgressPolicy() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Egress == nil || got.Egress.Mode != EgressModeAllowlist || len(got.Egress.Allow) != 1 || got.Egress.Allow[0] != policy.Allow[0] {
+		t.Errorf("Egress = %+v, want %+v", got.Egress, policy)
+	}
+}
+
+// TestUpdateServiceEgressPolicy_DoesNotTouchOtherFields proves this is
+// the narrow single-column write UpdateServiceStorageTarget's own doc
+// comment establishes, not a SaveDesiredService-shaped full replace: an
+// unrelated field (Image) written earlier must survive a later
+// UpdateServiceEgressPolicy call untouched.
+func TestUpdateServiceEgressPolicy_DoesNotTouchOtherFields(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, Env: map[string]string{"FOO": "bar"}}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.UpdateServiceEgressPolicy(ctx, "web", &ServiceEgressPolicy{Mode: EgressModeAllowlist, Allow: []ServiceEgressAllow{{Host: "api.example.com", Port: 443}}}); err != nil {
+		t.Fatalf("UpdateServiceEgressPolicy() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Image != "img:v1" || got.Env["FOO"] != "bar" {
+		t.Errorf("UpdateServiceEgressPolicy() clobbered unrelated fields: Image = %q, Env = %+v", got.Image, got.Env)
+	}
+}
+
+func TestUpdateServiceEgressPolicy_ClearBackToUnrestricted(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080, Egress: &ServiceEgressPolicy{Mode: EgressModeAllowlist, Allow: []ServiceEgressAllow{{Host: "api.example.com", Port: 443}}}}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.UpdateServiceEgressPolicy(ctx, "web", nil); err != nil {
+		t.Fatalf("UpdateServiceEgressPolicy(nil) error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Egress != nil {
+		t.Errorf("Egress = %+v, want nil after clearing", got.Egress)
+	}
+}
+
+func TestUpdateServiceEgressPolicy_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.UpdateServiceEgressPolicy(context.Background(), "nonexistent", &ServiceEgressPolicy{Mode: EgressModeAllowlist, Allow: []ServiceEgressAllow{{Host: "api.example.com", Port: 443}}})
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("UpdateServiceEgressPolicy() error = %v, want ErrServiceNotFound", err)
 	}
 }
 

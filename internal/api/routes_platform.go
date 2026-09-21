@@ -743,6 +743,18 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// the next time a preview environment is created from this app.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-env/{key}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppPreviewEnvOverride))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/preview-env/{key}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleClearAppPreviewEnvOverride))
+	// Outbound network allowlist, per app (apps_egress.go): AbilityWriteSensitive
+	// for PUT/DELETE, the same tier PUT/DELETE .../storage above uses,
+	// since this changes an app's own network-exfiltration surface, the
+	// identical sensitivity class as which live bucket credentials it
+	// receives. GET is a real route here (unlike storage's reuse of
+	// handleGetApp), since an unconfigured policy is common enough (every
+	// app before this feature existed) to be worth its own explicit,
+	// ordinary AbilityRead response rather than folding it into the
+	// general app resource.
+	mux.HandleFunc("GET /api/v1/apps/{name}/egress-policy", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppEgressPolicy))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/egress-policy", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppEgressPolicy))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/egress-policy", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleClearAppEgressPolicy))
 	// Read-only, not scoped to any one app: the static list of env var
 	// names attaching storage can inject, backed by
 	// application.StorageEnvKeys rather than a hardcoded list, see

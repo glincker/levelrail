@@ -1317,7 +1317,15 @@ type ContainerSpec struct {
 	Volumes   []*VolumeMount         `protobuf:"bytes,6,rep,name=volumes,proto3" json:"volumes,omitempty"`
 	// DNS mirrors internal/docker.ContainerSpec.DNS. Empty means Docker's
 	// own embedded resolver, unchanged from before this field existed.
-	Dns           []string `protobuf:"bytes,7,rep,name=dns,proto3" json:"dns,omitempty"`
+	Dns []string `protobuf:"bytes,7,rep,name=dns,proto3" json:"dns,omitempty"`
+	// CapAdd mirrors internal/docker.ContainerSpec.CapAdd. Empty means no
+	// added capabilities, unchanged from before this field existed.
+	CapAdd []string `protobuf:"bytes,8,rep,name=cap_add,json=capAdd,proto3" json:"cap_add,omitempty"`
+	// NetworkMode mirrors internal/docker.ContainerSpec.NetworkMode. Empty
+	// means Docker's own default networking behavior (the Network field
+	// above, or the default bridge network), unchanged from before this
+	// field existed.
+	NetworkMode   string `protobuf:"bytes,9,opt,name=network_mode,json=networkMode,proto3" json:"network_mode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1399,6 +1407,20 @@ func (x *ContainerSpec) GetDns() []string {
 		return x.Dns
 	}
 	return nil
+}
+
+func (x *ContainerSpec) GetCapAdd() []string {
+	if x != nil {
+		return x.CapAdd
+	}
+	return nil
+}
+
+func (x *ContainerSpec) GetNetworkMode() string {
+	if x != nil {
+		return x.NetworkMode
+	}
+	return ""
 }
 
 type ContainerState struct {
@@ -4044,7 +4066,7 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"cpusetCpus\"H\n" +
 	"\vVolumeMount\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12%\n" +
-	"\x0econtainer_path\x18\x02 \x01(\tR\rcontainerPath\"\xf0\x02\n" +
+	"\x0econtainer_path\x18\x02 \x01(\tR\rcontainerPath\"\xac\x03\n" +
 	"\rContainerSpec\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05image\x18\x02 \x01(\tR\x05image\x125\n" +
@@ -4052,7 +4074,9 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x03env\x18\x04 \x03(\v2*.levelrail.agent.v1.ContainerSpec.EnvEntryR\x03env\x12;\n" +
 	"\tresources\x18\x05 \x01(\v2\x1d.levelrail.agent.v1.ResourcesR\tresources\x129\n" +
 	"\avolumes\x18\x06 \x03(\v2\x1f.levelrail.agent.v1.VolumeMountR\avolumes\x12\x10\n" +
-	"\x03dns\x18\a \x03(\tR\x03dns\x1a6\n" +
+	"\x03dns\x18\a \x03(\tR\x03dns\x12\x17\n" +
+	"\acap_add\x18\b \x03(\tR\x06capAdd\x12!\n" +
+	"\fnetwork_mode\x18\t \x01(\tR\vnetworkMode\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9b\x01\n" +

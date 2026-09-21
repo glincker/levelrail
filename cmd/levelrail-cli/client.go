@@ -41,6 +41,9 @@ type (
 	vaultSettingsResource            = apiclient.VaultSettingsResource
 	updateVaultSettingsRequest       = apiclient.UpdateVaultSettingsRequest
 	appVaultEnvRef                   = apiclient.AppVaultEnvRef
+	appEgressAllow                   = apiclient.AppEgressAllow
+	appEgressPolicyResource          = apiclient.AppEgressPolicyResource
+	setAppEgressPolicyRequest        = apiclient.SetAppEgressPolicyRequest
 	appPreviewEnvOverride            = apiclient.AppPreviewEnvOverride
 	registrySettingsResource         = apiclient.RegistrySettingsResource
 	updateRegistrySettingsRequest    = apiclient.UpdateRegistrySettingsRequest

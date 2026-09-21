@@ -56,6 +56,32 @@ type ServiceHooks struct {
 	PostDeploy string `json:"post_deploy,omitempty"`
 }
 
+// ServiceEgressAllow is one host+port pair a service's outbound traffic
+// may reach when its ServiceEgressPolicy.Mode is EgressModeAllowlist.
+type ServiceEgressAllow struct {
+	Host string `json:"host"`
+	Port int    `json:"port"`
+}
+
+// EgressModeAllowlist is the only meaningful ServiceEgressPolicy.Mode
+// value today, matching internal/spec.EgressModeAllowlist exactly (this
+// package deliberately doesn't import internal/spec, the same "define
+// locally, don't import a higher-level package's vocabulary" convention
+// Strategy's own field doc comment already establishes).
+const EgressModeAllowlist = "allowlist"
+
+// ServiceEgressPolicy holds a service's outbound network allowlist
+// (internal/spec.Egress's storage home,
+// migrations/0112_service_egress_policy.sql). nil means egress is
+// unrestricted, today's behavior for every service before this field
+// existed and the permanent default for any service that never opts in:
+// see internal/spec.Egress's own doc comment for why this is opt-in
+// rather than deny-by-default.
+type ServiceEgressPolicy struct {
+	Mode  string               `json:"mode"`
+	Allow []ServiceEgressAllow `json:"allow,omitempty"`
+}
+
 // DatabaseEnvRef is one env var's parsed { from: "<database>.<field>" }
 // reference (internal/spec.EnvVar.From), stored on DesiredService.
 // DatabaseEnv. Database is a desired_databases.name; Field is one of
@@ -233,6 +259,18 @@ type DesiredService struct {
 	// SaveDesiredService call, the same shape Resources/Health already
 	// follow.
 	Hooks *ServiceHooks
+
+	// Egress is this service's outbound network allowlist
+	// (internal/spec.Service.Egress), nil meaning unrestricted egress,
+	// today's behavior. A normal deploy-time field written on every
+	// SaveDesiredService call, same shape Resources/Health/Hooks already
+	// follow: an app.yaml redeploy that drops the egress: block clears it
+	// here too, the same declarative "this call replaces the whole
+	// record" contract every other field in this group already has.
+	// UpdateServiceEgressPolicy additionally lets PUT/DELETE
+	// /api/v1/apps/{name}/egress-policy set this outside a redeploy,
+	// mirroring VaultEnv's own dual write path (SetServiceVaultEnvVar).
+	Egress *ServiceEgressPolicy
 
 	// Volumes are named Docker volumes this service's container mounts
 	// (migrations/0041_service_volumes.sql), previously a
@@ -516,6 +554,10 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	if err != nil {
 		return fmt.Errorf("store: marshal hooks for service %q: %w", svc.Name, err)
 	}
+	egressJSON, err := json.Marshal(svc.Egress)
+	if err != nil {
+		return fmt.Errorf("store: marshal egress_policy for service %q: %w", svc.Name, err)
+	}
 	labelsJSON, err := json.Marshal(nonNilMap(svc.Labels))
 	if err != nil {
 		return fmt.Errorf("store: marshal labels for service %q: %w", svc.Name, err)
@@ -559,8 +601,8 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 	}()
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, host_port, bind_address, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, pull_policy, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, host_port, bind_address, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, pull_policy, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -577,6 +619,7 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			resources = excluded.resources,
 			health = excluded.health,
 			hooks = excluded.hooks,
+			egress_policy = excluded.egress_policy,
 			strategy = excluded.strategy,
 			replicas = excluded.replicas,
 			labels = excluded.labels,
@@ -585,7 +628,7 @@ func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error 
 			registry_credential_id = excluded.registry_credential_id,
 			pull_policy = excluded.pull_policy,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), bindAddress, string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""}, svc.PullPolicy)
+	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), bindAddress, string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), string(egressJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""}, svc.PullPolicy)
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -720,6 +763,35 @@ func (db *DB) UpdateServiceStorageTarget(ctx context.Context, name, storageTarge
 	n, err := res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("store: update storage target for service %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
+
+// UpdateServiceEgressPolicy replaces svc's egress allowlist as a whole
+// (policy nil clears it, back to unrestricted egress), the narrow,
+// full-column write PUT/DELETE /api/v1/apps/{name}/egress-policy needs
+// without going through SaveDesiredService's full-record-replace, the
+// same "own endpoint, own narrow update" shape UpdateServiceStorageTarget
+// already establishes. Unlike UpdateServiceStorageTarget's single scalar,
+// egress_policy is a JSON blob (like health/hooks), so this marshals the
+// whole policy rather than passing a bare column value.
+func (db *DB) UpdateServiceEgressPolicy(ctx context.Context, name string, policy *ServiceEgressPolicy) error {
+	egressJSON, err := json.Marshal(policy)
+	if err != nil {
+		return fmt.Errorf("store: update egress policy for service %q: marshal: %w", name, err)
+	}
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_services SET egress_policy = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, string(egressJSON), name)
+	if err != nil {
+		return fmt.Errorf("store: update egress policy for service %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update egress policy for service %q: rows affected: %w", name, err)
 	}
 	if n == 0 {
 		return ErrServiceNotFound
@@ -1136,20 +1208,20 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled"
+const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
 // signature), so the decode-JSON-columns logic exists exactly once.
 func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	var (
-		svc                                                                                                                                                                         DesiredService
-		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, vaultEnvJSON, resourcesJSON, health, hooks, labels, volumes, command, bindMounts, entrypoint, previewEnvOverridesJSON string
-		projectID, storageTargetID, appID, logDrainJSON, environmentID                                                                                                              sql.NullString
-		hostPort                                                                                                                                                                    sql.NullInt64
-		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                                                     string
+		svc                                                                                                                                                                                 DesiredService
+		domainsJSON, envJSON, secretEnvJSON, databaseEnvJSON, vaultEnvJSON, resourcesJSON, health, hooks, egress, labels, volumes, command, bindMounts, entrypoint, previewEnvOverridesJSON string
+		projectID, storageTargetID, appID, logDrainJSON, environmentID                                                                                                                      sql.NullString
+		hostPort                                                                                                                                                                            sql.NullInt64
+		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                                                             string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
@@ -1194,6 +1266,11 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	if hooks != "null" {
 		if err := json.Unmarshal([]byte(hooks), &svc.Hooks); err != nil {
 			return nil, fmt.Errorf("unmarshal hooks: %w", err)
+		}
+	}
+	if egress != "null" {
+		if err := json.Unmarshal([]byte(egress), &svc.Egress); err != nil {
+			return nil, fmt.Errorf("unmarshal egress_policy: %w", err)
 		}
 	}
 	if err := json.Unmarshal([]byte(labels), &svc.Labels); err != nil {

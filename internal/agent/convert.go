@@ -107,13 +107,15 @@ func volumesFromPB(vs []*agentpb.VolumeMount) []docker.VolumeMount {
 
 func containerSpecToPB(s docker.ContainerSpec) *agentpb.ContainerSpec {
 	return &agentpb.ContainerSpec{
-		Name:      s.Name,
-		Image:     s.Image,
-		Ports:     portBindingsToPB(s.Ports),
-		Env:       s.Env,
-		Resources: resourcesToPB(s.Resources),
-		Volumes:   volumesToPB(s.Volumes),
-		Dns:       s.DNS,
+		Name:        s.Name,
+		Image:       s.Image,
+		Ports:       portBindingsToPB(s.Ports),
+		Env:         s.Env,
+		Resources:   resourcesToPB(s.Resources),
+		Volumes:     volumesToPB(s.Volumes),
+		Dns:         s.DNS,
+		CapAdd:      s.CapAdd,
+		NetworkMode: s.NetworkMode,
 	}
 }
 
@@ -122,13 +124,15 @@ func containerSpecFromPB(s *agentpb.ContainerSpec) docker.ContainerSpec {
 		return docker.ContainerSpec{}
 	}
 	return docker.ContainerSpec{
-		Name:      s.Name,
-		Image:     s.Image,
-		Ports:     portBindingsFromPB(s.Ports),
-		Env:       s.Env,
-		Resources: resourcesFromPB(s.Resources),
-		Volumes:   volumesFromPB(s.Volumes),
-		DNS:       s.Dns,
+		Name:        s.Name,
+		Image:       s.Image,
+		Ports:       portBindingsFromPB(s.Ports),
+		Env:         s.Env,
+		Resources:   resourcesFromPB(s.Resources),
+		Volumes:     volumesFromPB(s.Volumes),
+		DNS:         s.Dns,
+		CapAdd:      s.CapAdd,
+		NetworkMode: s.NetworkMode,
 	}
 }
 

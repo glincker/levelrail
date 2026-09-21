@@ -123,6 +123,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsTag(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "untag":
 		return runAppsUntag(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "egress":
+		return runAppsEgress(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps subcommand %q\n\n", prog, args[0]) //nolint:gosec // same guard as above
 		_, _ = fmt.Fprint(stderr, appsUsage(prog))
@@ -186,6 +188,7 @@ func appsUsage(prog string) string {
   %[1]s apps preview-env <verb> [flags]   declare/remove a preview-specific env var override, applied only when a preview is created
   %[1]s apps tag <name> <tag> [flags]     attach a tag (by name) to an app, creating it first if new
   %[1]s apps untag <name> <tag> [flags]   detach a tag (by name) from an app
+  %[1]s apps egress <verb> [flags]        get/set/clear an app's outbound network allowlist
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.
 `, prog)

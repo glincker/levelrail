@@ -257,6 +257,41 @@ func TestToDesiredService_NoHooks_LeavesNil(t *testing.T) {
 	}
 }
 
+func TestToDesiredService_EgressPassThrough(t *testing.T) {
+	svc := spec.Service{
+		Port: 3000,
+		Egress: &spec.Egress{
+			Mode: spec.EgressModeAllowlist,
+			Allow: []spec.EgressAllow{
+				{Host: "api.anthropic.com", Port: 443},
+				{Host: "github.com", Port: 443},
+			},
+		},
+	}
+
+	got, err := toDesiredService("web", "img:sha", svc)
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Egress == nil || got.Egress.Mode != store.EgressModeAllowlist {
+		t.Fatalf("Egress = %+v, want Mode=%q", got.Egress, store.EgressModeAllowlist)
+	}
+	want := []store.ServiceEgressAllow{{Host: "api.anthropic.com", Port: 443}, {Host: "github.com", Port: 443}}
+	if len(got.Egress.Allow) != len(want) || got.Egress.Allow[0] != want[0] || got.Egress.Allow[1] != want[1] {
+		t.Errorf("Egress.Allow = %+v, want %+v", got.Egress.Allow, want)
+	}
+}
+
+func TestToDesiredService_NoEgress_LeavesNil(t *testing.T) {
+	got, err := toDesiredService("web", "img:sha", spec.Service{Port: 3000})
+	if err != nil {
+		t.Fatalf("toDesiredService() error = %v", err)
+	}
+	if got.Egress != nil {
+		t.Errorf("Egress = %+v, want nil", got.Egress)
+	}
+}
+
 func TestToDesiredService_HostPort_PassesThroughAsPointer(t *testing.T) {
 	svc := spec.Service{Port: 8080, HostPort: 30001}
 	got, err := toDesiredService("web", "img:sha", svc)

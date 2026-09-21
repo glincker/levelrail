@@ -82,7 +82,44 @@ func (svc *Service) validate(name string) error {
 	if err := svc.validateHooks(name); err != nil {
 		return err
 	}
+	if err := svc.validateEgress(name); err != nil {
+		return err
+	}
 	return svc.validateVolumes(name)
+}
+
+// validateEgress checks the egress: block's shape (mode must be a
+// recognized value, allow must be non-empty when mode is allowlist,
+// since an allowlist with nothing allowed is almost certainly a mistake
+// rather than an intentional deny-all) and rejects it for a build.type
+// with no single container for the egress sidecar to attach to, the same
+// restriction validateHooks already applies for the same reason.
+func (svc *Service) validateEgress(name string) error {
+	if svc.Egress == nil {
+		return nil
+	}
+	if svc.Build.Type == BuildStatic || svc.Build.Type == BuildCompose {
+		return fmt.Errorf("spec: service %q: egress is not meaningful for build.type %q, there is no single container to attach the egress sidecar to", name, svc.Build.Type)
+	}
+	if svc.Egress.Mode != EgressModeAllowlist {
+		// Unreachable while the JSON Schema's enum stays in sync with
+		// EgressModeAllowlist, kept as a direct check anyway for the same
+		// "safe to call on a hand-built Spec" reasoning the strategy
+		// check above already gives.
+		return fmt.Errorf("spec: service %q: egress.mode %q is not one of %q", name, svc.Egress.Mode, EgressModeAllowlist)
+	}
+	if len(svc.Egress.Allow) == 0 {
+		return fmt.Errorf("spec: service %q: egress.mode: allowlist requires at least one entry in egress.allow", name)
+	}
+	for _, allow := range svc.Egress.Allow {
+		if allow.Host == "" {
+			return fmt.Errorf("spec: service %q: egress.allow entries require a non-empty host", name)
+		}
+		if allow.Port < 1 || allow.Port > 65535 {
+			return fmt.Errorf("spec: service %q: egress.allow host %q: port %d is not a valid port", name, allow.Host, allow.Port)
+		}
+	}
+	return nil
 }
 
 // validateHooks rejects a hooks: block on a build.type with no single
