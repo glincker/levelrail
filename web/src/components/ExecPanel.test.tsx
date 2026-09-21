@@ -4,13 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ExecPanel } from './ExecPanel'
 
-function renderPanel() {
+function renderPanel(execEnabled?: boolean) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   render(
     <QueryClientProvider client={queryClient}>
-      <ExecPanel name="demo-app" />
+      <ExecPanel name="demo-app" execEnabled={execEnabled} />
     </QueryClientProvider>,
   )
 }
@@ -30,7 +30,9 @@ describe('ExecPanel', () => {
     const user = userEvent.setup()
     renderPanel()
 
-    await user.click(screen.getByRole('button', { name: 'Environment variables' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Environment variables' }),
+    )
 
     expect(screen.getByDisplayValue('env')).toBeInTheDocument()
   })
@@ -44,5 +46,17 @@ describe('ExecPanel', () => {
 
     expect(screen.getByDisplayValue('df -h')).toBeInTheDocument()
     expect(screen.queryByDisplayValue('ps aux')).not.toBeInTheDocument()
+  })
+
+  it('shows a disabled explanation instead of the command form when exec access is off', () => {
+    renderPanel(false)
+
+    expect(
+      screen.getByText(/Shell\/exec access is disabled for this app/),
+    ).toBeInTheDocument()
+    expect(screen.queryByLabelText('Command')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Run' }),
+    ).not.toBeInTheDocument()
   })
 })

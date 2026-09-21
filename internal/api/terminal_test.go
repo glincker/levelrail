@@ -277,6 +277,38 @@ func TestHandleAppTerminal_NotSupportedOnNode(t *testing.T) {
 	}
 }
 
+// TestHandleAppTerminal_ExecDisabled_Forbidden proves the terminal
+// checks ExecEnabled before ever attempting the WebSocket upgrade, on
+// top of (not instead of) its own AbilityRoot check: the root session
+// from newTerminalTestRouter is still refused with a plain HTTP 403 once
+// exec_enabled is false for this app, the same second, independent gate
+// exec_test.go's own TestHandleExecApp_ExecDisabled_Forbidden proves for
+// POST .../exec.
+func TestHandleAppTerminal_ExecDisabled_Forbidden(t *testing.T) {
+	fake := newFakeTTYAppRuntime()
+	db := openTestDB(t)
+	resolver := func(string) (docker.Runtime, error) { return fake, nil }
+	rt := NewRouter(discardLogger(), testBrand(), db, WithExecRuntime(resolver))
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.SetServiceExecEnabled(context.Background(), "web", false); err != nil {
+		t.Fatalf("SetServiceExecEnabled(false): %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/terminal", ""))
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusForbidden, rec.Body.String())
+	}
+	select {
+	case <-fake.started:
+		t.Error("ExecTTY was started, want the exec-access check to reject before any container work happens")
+	default:
+	}
+}
+
 // TestTerminalRoute_RequiresRootAbility proves the terminal sits behind
 // the same AbilityRoot tier one-off exec does, not a lower one.
 func TestTerminalRoute_RequiresRootAbility(t *testing.T) {

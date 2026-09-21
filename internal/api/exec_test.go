@@ -243,6 +243,33 @@ func TestHandleExecApp_PlainDeployToken_Forbidden(t *testing.T) {
 	}
 }
 
+// TestHandleExecApp_ExecDisabled_Forbidden proves ExecEnabled is a
+// second, independent gate on top of the AbilityRoot IAM check:
+// loginTestSession is the root human session (implicitly AbilityRoot,
+// every ability there is), and it is still refused once exec_enabled is
+// false for this specific app.
+func TestHandleExecApp_ExecDisabled_Forbidden(t *testing.T) {
+	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "c1", Running: true}}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	seedExecApp(t, db)
+	if err := db.SetServiceExecEnabled(context.Background(), "web", false); err != nil {
+		t.Fatalf("SetServiceExecEnabled(false): %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/exec", `{"command":"echo"}`))
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want %d: a root session must still be refused once exec is disabled for this app, body = %s", rec.Code, http.StatusForbidden, rec.Body.String())
+	}
+	if fake.execCalls != 0 {
+		t.Errorf("Exec called %d times, want 0: the exec-access check must reject before any container work happens", fake.execCalls)
+	}
+	if !strings.Contains(rec.Body.String(), "exec-access") {
+		t.Errorf("body = %s, want a message pointing at PUT .../exec-access", rec.Body.String())
+	}
+}
+
 func TestHandleExecApp_UnknownApp_NotFound(t *testing.T) {
 	fake := &fakeExecAppRuntime{}
 	rt, db := newTestRouterWithExecRuntime(t, fake)

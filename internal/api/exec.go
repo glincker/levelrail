@@ -46,6 +46,61 @@ import (
 // inside the container), and must sit behind the tier that boundary
 // implies, not the deploy/restart tier.
 
+// setExecAccessRequest is PUT /api/v1/apps/{name}/exec-access's body.
+type setExecAccessRequest struct {
+	Enabled bool `json:"enabled"`
+}
+
+// execAccessResource is both GET and PUT
+// /api/v1/apps/{name}/exec-access's response.
+type execAccessResource struct {
+	Enabled bool `json:"enabled"`
+}
+
+// handleGetExecAccess handles GET /api/v1/apps/{name}/exec-access: the
+// current value of store.DesiredService.ExecEnabled, so the dashboard
+// toggle (and "apps exec-access status") has something to read on load
+// without waiting for a PUT.
+func (rt *Router) handleGetExecAccess(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	svc, ok := rt.loadExecApp(w, r, name)
+	if !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, execAccessResource{Enabled: svc.ExecEnabled})
+}
+
+// handleSetExecAccess handles PUT /api/v1/apps/{name}/exec-access: opts
+// name into (or out of) shell/exec access, the per-app switch
+// handleExecApp and handleAppTerminal both check before attempting to
+// reach the container, in addition to (not instead of) the AbilityRoot
+// IAM check both routes already sit behind. Default true
+// (migrations/0112_service_exec_enabled.sql), unlike every other opt-in
+// feature toggle in this codebase: exec is available today with no
+// equivalent gate, so this preserves existing behavior until an operator
+// explicitly disables it for a specific app.
+func (rt *Router) handleSetExecAccess(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+
+	var req setExecAccessRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := rt.apps.SetServiceExecEnabled(r.Context(), name, req.Enabled); err != nil {
+		if errors.Is(err, store.ErrServiceNotFound) {
+			writeError(w, http.StatusNotFound, "app not found")
+			return
+		}
+		rt.logger.Error("api: set exec access failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, execAccessResource(req))
+}
+
 // defaultExecTimeout bounds how long handleExecApp waits for a command
 // to finish before giving up on it, so a hung command can never hold
 // this handler's goroutine (or, transitively, an HTTP connection) open
@@ -154,6 +209,9 @@ func (rt *Router) handleExecApp(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if !rt.requireExecAccess(w, svc) {
+		return
+	}
 
 	var req execRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -243,6 +301,24 @@ func (rt *Router) loadExecApp(w http.ResponseWriter, r *http.Request, name strin
 		return nil, false
 	}
 	return svc, true
+}
+
+// requireExecAccess enforces svc.ExecEnabled, writing a 403 with a
+// specific, actionable message and reporting false when it's off. This
+// is a second, independent gate on top of the AbilityRoot IAM check
+// routes.go already applies to both POST .../exec and GET .../terminal:
+// a token can carry AbilityRoot and still be refused here, since this
+// checks a per-app opt-out rather than the caller's own permissions.
+// handleGetExecAccess/handleSetExecAccess deliberately do not call this:
+// reading or re-enabling the setting must work even while it's off.
+func (rt *Router) requireExecAccess(w http.ResponseWriter, svc *store.DesiredService) bool {
+	if svc.ExecEnabled {
+		return true
+	}
+	writeError(w, http.StatusForbidden, fmt.Sprintf(
+		"exec is disabled for app %q, enable it first: PUT /api/v1/apps/%s/exec-access", svc.Name, svc.Name,
+	))
+	return false
 }
 
 // resolveExecContainer resolves the node runtime an app is placed on and

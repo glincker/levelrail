@@ -1532,6 +1532,20 @@ type AutoRollbackSettingResource struct {
 	Enabled bool `json:"enabled"`
 }
 
+// SetExecAccessRequest mirrors internal/api's setExecAccessRequest
+// (exec.go): PUT /api/v1/apps/{name}/exec-access's body.
+type SetExecAccessRequest struct {
+	Enabled bool `json:"enabled"`
+}
+
+// ExecAccessResource mirrors internal/api's execAccessResource: both GET
+// and PUT /api/v1/apps/{name}/exec-access's response, whether shell/exec
+// access is even attempted for this app regardless of the caller's own
+// IAM abilities. Default true, unlike AutoRollbackSettingResource.
+type ExecAccessResource struct {
+	Enabled bool `json:"enabled"`
+}
+
 // SetAppDatabaseRequest mirrors internal/api's setAppDatabaseRequest
 // (apps_database.go). EnvVar and Field are both optional: the server
 // defaults them ("DATABASE_URL"/"url") when left blank.

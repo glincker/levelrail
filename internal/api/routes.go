@@ -275,6 +275,18 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// argues for at length.
 	mux.HandleFunc("GET /api/v1/apps/{name}/terminal", rt.requireAbility(AbilityRoot, rt.handleAppTerminal))
 
+	// Exec access opt-out (exec.go's requireExecAccess): a second,
+	// independent gate the two routes just above both check before
+	// attempting to reach a container, on top of (not instead of) their
+	// own AbilityRoot check. GET is AbilityRead, matching every other
+	// passive per-app setting view (e.g. GET .../auto-rollback above).
+	// PUT is AbilityRoot, the same tier exec/terminal themselves sit
+	// behind: flipping this back on hands back a root-tier capability,
+	// so re-enabling it needs the same tier as using it, an explicit,
+	// auditable, two-step action even for an already-root token.
+	mux.HandleFunc("GET /api/v1/apps/{name}/exec-access", rt.requireAbility(AbilityRead, rt.handleGetExecAccess))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/exec-access", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetExecAccess))
+
 	// Real deploy-attempt history (deploy_attempts.go): a row per
 	// trigger call across all three real trigger paths, additional to
 	// (not a replacement for) the reconcile-conditions route above. See
