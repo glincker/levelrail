@@ -43,6 +43,11 @@ levelrail apps auto-rollback status <app-name> [flags]
 ```
 
 ```
+levelrail apps builds trigger <name> --repo URL --ref REF [flags]
+```
+build an image from a git source and deploy it to an existing app
+
+```
 levelrail apps clear-environment <name> [flags]
 ```
 
@@ -62,6 +67,16 @@ levelrail apps create --name NAME --image IMAGE --port PORT [flags]
 levelrail apps create [flags]
 ```
 create an app (existing image, git build, --file, or --interactive)
+
+```
+levelrail apps database set <name> --database-name NAME [flags]
+```
+attach an already-created managed database to <name> as its connection-env-var source
+
+```
+levelrail apps database clear <name> [flags]
+```
+detach the database <name> currently resolves its connection env var from
 
 ```
 levelrail apps delete <name> [flags]
@@ -161,6 +176,16 @@ levelrail apps logs <name> [flags]
 ```
 levelrail apps metrics <name> --metric NAME [flags]
 ```
+
+```
+levelrail apps moves list <name> [flags]
+```
+list every node-to-node move attempt for <name>, newest first
+
+```
+levelrail apps moves get <name> <id> [flags]
+```
+show one move attempt's step-by-step progress
 
 ```
 levelrail apps organizations clear-project <project-id> [flags]
@@ -416,6 +441,11 @@ expose a database on a host port; --bind-address is "private" (default), "public
 ```
 levelrail databases public-access clear <name> [flags]
 ```
+
+```
+levelrail databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]
+```
+applies memory/CPU limits to an already-created database, replacing whatever was set before (full replace, not a patch)
 
 ```
 levelrail databases set-project <name> <project-id> [flags]
@@ -954,11 +984,40 @@ levelrail settings oauth list [flags]
 ```
 show every OAuth sign-in provider's current settings
 
+```
+levelrail settings ai-assistant get [flags]
+```
+shows the current AI assistant settings (the key itself is never returned, only whether one is stored)
+
+```
+levelrail settings ai-assistant set --model NAME --api-key KEY [flags]
+```
+configures the AI assistant
+
+```
+levelrail settings ai-assistant clear [flags]
+```
+clears the stored key and resets provider/model
+
 :::
 
 ::: details Git Integrations (Github, Gitlab, Bitbucket setup)
 
+```
+levelrail git-providers [flags]
+```
+connection status and capabilities (list branches, register a webhook, authenticated clone) for github, gitlab, and bitbucket in one call
+
 ### Github App
+
+```
+levelrail github-app status [flags]
+```
+
+```
+levelrail github-app disconnect [flags]
+```
+forgets the stored connection locally; does not uninstall or delete the App on GitHub's own side
 
 ```
 levelrail github-app repos [flags]
@@ -968,11 +1027,29 @@ list repos the connected installation can access
 ### Gitlab App
 
 ```
+levelrail gitlab-app status [flags]
+```
+
+```
+levelrail gitlab-app disconnect [flags]
+```
+forgets the stored connection locally; does not revoke the token or delete the Application on GitLab's own side
+
+```
 levelrail gitlab-app projects [flags]
 ```
 list projects the connected account can access
 
 ### Bitbucket App
+
+```
+levelrail bitbucket-app status [flags]
+```
+
+```
+levelrail bitbucket-app disconnect [flags]
+```
+forgets the stored connection locally; does not revoke the token or delete the consumer on Bitbucket's own side
 
 ```
 levelrail bitbucket-app repos [flags]
