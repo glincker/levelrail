@@ -1001,6 +1001,33 @@ func TestController_Reconcile_Redeploy_CleansUpOldContainer(t *testing.T) {
 	}
 }
 
+// An app created for a git build carries spec.PendingImageTag until its
+// first build finishes. Reconciling it as a real image produces a
+// registry "pull access denied ... may require docker login" that reads
+// as a broken deploy to an operator running "apps status", when nothing
+// is broken at all.
+func TestController_Reconcile_PendingImage_AwaitsFirstBuild(t *testing.T) {
+	rt := newFakeRuntime(0)
+	rt.createErr = errors.New("Error response from daemon: pull access denied for local/web, repository does not exist or may require 'docker login'")
+	desired := &store.DesiredService{Name: "web", Image: "local/web:pending", Port: 3000}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionUnknown || cond.Reason != "AwaitingFirstBuild" {
+		t.Errorf("condition = %+v, want Status=Unknown Reason=AwaitingFirstBuild", cond)
+	}
+	if strings.Contains(strings.ToLower(cond.Message), "pull") || strings.Contains(strings.ToLower(cond.Message), "docker login") {
+		t.Errorf("condition message = %q, want nothing docker-pull-shaped while the first build is still pending", cond.Message)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0 (a placeholder tag names no real image, so nothing should be pulled or created)", rt.createCalls)
+	}
+}
+
 func TestController_Reconcile_Suspended_RemovesRunningContainers(t *testing.T) {
 	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Suspended: true}

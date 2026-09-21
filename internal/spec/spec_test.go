@@ -962,3 +962,21 @@ func TestValidateLabels_ReservedPrefixNeverOverridable(t *testing.T) {
 		})
 	}
 }
+
+func TestIsPendingImage(t *testing.T) {
+	tests := []struct {
+		image string
+		want  bool
+	}{
+		{"local/web" + PendingImageTag, true},
+		{"web:pending", true},
+		{"local/web:abc123", false},
+		{"local/pending:1", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		if got := IsPendingImage(tt.image); got != tt.want {
+			t.Errorf("IsPendingImage(%q) = %v, want %v", tt.image, got, tt.want)
+		}
+	}
+}

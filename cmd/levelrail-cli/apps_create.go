@@ -109,7 +109,7 @@ type createPlan struct {
 // already documents, so this placeholder never lingers past a
 // successful first build.
 func pendingImageTag(imageRepo string) string {
-	return imageRepo + ":pending"
+	return imageRepo + spec.PendingImageTag
 }
 
 // planFromFlags decides which of the three creation paths f describes

@@ -44,14 +44,21 @@ import (
 // error, if deployRecorder is unconfigured or minting/saving the row
 // fails: a history-tracking failure must never block a build that would
 // otherwise succeed.
-func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Request, svc store.DesiredService, source string) (id string, progress func(build.ProgressEvent), finish func(deployErr error)) {
+//
+// setCommit re-points the row (and the deploy notification) at the
+// commit a caller only learns after its checkout resolves, so the row's
+// image always matches the tag actually built: a rollback deploys that
+// image by name. Callers that already hold a full SHA (the webhook
+// paths) never call it.
+func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Request, svc store.DesiredService, source string) (id string, progress func(build.ProgressEvent), finish func(deployErr error), setCommit func(ctx context.Context, commit string)) {
 	noop := func(error) {}
+	noopCommit := func(context.Context, string) {}
 	fallback := build.SlogProgress(rt.logger)
 
 	id, err := store.NewDeployAttemptID()
 	if err != nil {
 		rt.logger.Error("api: trigger build: mint deploy attempt id failed", slog.String("error", err.Error()))
-		return "", fallback, noop
+		return "", fallback, noop, noopCommit
 	}
 
 	// Start before SaveDeployAttempt: the row is queryable the instant
@@ -72,7 +79,17 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		if rt.deployRecorder != nil {
 			rt.deployRecorder.Finish(ctx, id)
 		}
-		return "", fallback, noop
+		return "", fallback, noop, noopCommit
+	}
+
+	setCommit = func(setCtx context.Context, commit string) {
+		if commit == "" || commit == req.CommitSHA {
+			return
+		}
+		image = req.ImageRepo + ":" + commit
+		if err := rt.deployAttempts.SetDeployAttemptCommit(setCtx, id, image, commit); err != nil {
+			rt.logger.Error("api: trigger build: update deploy attempt commit failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
+		}
 	}
 
 	finish = func(deployErr error) {
@@ -99,9 +116,9 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 	}
 
 	if rt.deployRecorder == nil {
-		return id, fallback, finish
+		return id, fallback, finish, setCommit
 	}
-	return id, rt.deployRecorder.Progress(id), finish
+	return id, rt.deployRecorder.Progress(id), finish, setCommit
 }
 
 // deployAttemptResource is the wire shape for one deploy attempt.

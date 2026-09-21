@@ -38,6 +38,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -432,6 +433,14 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			return notReady("SuspendFailed", err), fmt.Errorf("application/%s: suspend: remove containers: %w", c.serviceName, err)
 		}
 		return unknownResult("Suspended"), nil
+	}
+
+	// An app created for a git build carries a placeholder tag until its
+	// first build lands a real image (appspec.PendingImageTag). Pulling it
+	// would fail with a registry "pull access denied" that reads as a
+	// broken deploy rather than one that has not happened yet.
+	if appspec.IsPendingImage(desired.Image) {
+		return unknownResult("AwaitingFirstBuild"), nil
 	}
 
 	// Defensive, not redundant: store.SaveDesiredService already

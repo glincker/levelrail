@@ -39,11 +39,14 @@ type Builder interface {
 
 // fetchFunc fetches repoURL at ref to a local directory, authenticating
 // with token when non-empty (see tokenForRepo), and returns the
-// directory and a cleanup func that removes it. ref is a general git
-// revision (branch, tag, or commit hash, resolved via gitCheckout's own
-// ResolveRevision call), unlike internal/webhook's own always-a-full-SHA
-// fetchFunc.
-type fetchFunc func(ctx context.Context, repoURL, ref, token string) (dir string, cleanup func(), err error)
+// directory, the full commit hash ref resolved to, and a cleanup func
+// that removes it. ref is a general git revision (branch, tag, or commit
+// hash, resolved via gitCheckout's own ResolveRevision call), unlike
+// internal/webhook's own always-a-full-SHA fetchFunc, so the resolved
+// hash is the only thing callers can safely tag a built image with: a
+// branch name moves, and reusing it as a tag silently retags it onto
+// newer content, orphaning the previous build as a rollback target.
+type fetchFunc func(ctx context.Context, repoURL, ref, token string) (dir string, commit string, cleanup func(), err error)
 
 // gitCheckout is the real fetchFunc implementation, the manual-build
 // counterpart to internal/webhook's own cloneAndCheckout (see that
@@ -51,10 +54,10 @@ type fetchFunc func(ctx context.Context, repoURL, ref, token string) (dir string
 // authenticates the same way gitCheckoutWithToken does (git_webhook.go):
 // GitHub's "any username, token as password" scheme, empty meaning an
 // unauthenticated clone.
-func gitCheckout(ctx context.Context, repoURL, ref, token string) (dir string, cleanup func(), err error) {
+func gitCheckout(ctx context.Context, repoURL, ref, token string) (dir string, commit string, cleanup func(), err error) {
 	dir, err = os.MkdirTemp("", "levelrail-build-*")
 	if err != nil {
-		return "", nil, fmt.Errorf("api: create temp checkout dir: %w", err)
+		return "", "", nil, fmt.Errorf("api: create temp checkout dir: %w", err)
 	}
 	cleanup = func() {
 		if rmErr := os.RemoveAll(dir); rmErr != nil {
@@ -69,7 +72,7 @@ func gitCheckout(ctx context.Context, repoURL, ref, token string) (dir string, c
 	repo, err := git.PlainCloneContext(ctx, dir, false, cloneOpts)
 	if err != nil {
 		cleanup()
-		return "", nil, fmt.Errorf("api: clone %q: %w", repoURL, err)
+		return "", "", nil, fmt.Errorf("api: clone %q: %w", repoURL, err)
 	}
 
 	// ResolveRevision (not plumbing.NewHash) so ref can be a branch name,
@@ -80,21 +83,21 @@ func gitCheckout(ctx context.Context, repoURL, ref, token string) (dir string, c
 	hash, err := repo.ResolveRevision(plumbing.Revision(ref))
 	if err != nil {
 		cleanup()
-		return "", nil, fmt.Errorf("api: resolve ref %q in %q: %w", ref, repoURL, err)
+		return "", "", nil, fmt.Errorf("api: resolve ref %q in %q: %w", ref, repoURL, err)
 	}
 
 	wt, err := repo.Worktree()
 	if err != nil {
 		cleanup()
-		return "", nil, fmt.Errorf("api: get worktree for %q: %w", repoURL, err)
+		return "", "", nil, fmt.Errorf("api: get worktree for %q: %w", repoURL, err)
 	}
 
 	if err := wt.Checkout(&git.CheckoutOptions{Hash: *hash}); err != nil {
 		cleanup()
-		return "", nil, fmt.Errorf("api: checkout %q at ref %q (resolved %s): %w", repoURL, ref, hash, err)
+		return "", "", nil, fmt.Errorf("api: checkout %q at ref %q (resolved %s): %w", repoURL, ref, hash, err)
 	}
 
-	return dir, cleanup, nil
+	return dir, hash.String(), cleanup, nil
 }
 
 // triggerBuildBuildInput is the build.* sub-object of
@@ -157,6 +160,8 @@ type triggerBuildRequest struct {
 	// Ref is the branch, tag, or commit hash to build, resolved via
 	// gitCheckout's ResolveRevision call. Required for every build.type
 	// except image, the same exception RepoURL's own doc comment gives.
+	// The built image is tagged with the resolved commit hash, not with
+	// this string (see fetchFunc).
 	Ref string `json:"ref"`
 	// ImageRepo is the image name without a tag, the same meaning
 	// deploy.Request.ImageRepo already documents. Defaults to the app's
@@ -339,7 +344,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		ImageRepo:   imageRepo,
 	}
 
-	id, progress, finishAttempt := rt.beginBuildDeployAttempt(r.Context(), buildReq, *existing, store.DeployAttemptSourceManual)
+	id, progress, finishAttempt, setCommit := rt.beginBuildDeployAttempt(r.Context(), buildReq, *existing, store.DeployAttemptSourceManual)
 
 	// AbilityDeploy alone (this route's own gate) is not enough to
 	// authorize minting a live GitHub App installation token: repoURL is
@@ -360,7 +365,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			if allowPrivateRepoAuth {
 				token = rt.tokenForRepo(ctx, repoURL)
 			}
-			sourceDir, cleanup, err := rt.fetch(ctx, repoURL, ref, token)
+			sourceDir, commit, cleanup, err := rt.fetch(ctx, repoURL, ref, token)
 			if err != nil {
 				rt.logger.Error("api: trigger build: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref))
 				finishAttempt(err)
@@ -368,6 +373,14 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			}
 			defer cleanup()
 			buildReq.SourceDir = sourceDir
+			// Tag by what was actually checked out, never by ref itself: a
+			// branch name reused as an image tag moves onto the newer image
+			// on the next build, orphaning the previous one as a rollback
+			// target.
+			if commit != "" {
+				buildReq.CommitSHA = commit
+				setCommit(ctx, commit)
+			}
 		}
 
 		tag, err := rt.builder.Deploy(ctx, buildReq, progress)

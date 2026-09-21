@@ -12,6 +12,7 @@ package spec
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -114,6 +115,18 @@ const (
 	BuildStatic     = "static"
 	BuildImage      = "image"
 )
+
+// PendingImageTag is the tag an app is created with when its first image
+// has not been built yet (the CLI's own git-build path, which must send
+// some image for an app POST that requires one). It never names a real
+// registry image, so the application reconciler treats it as "not built
+// yet" rather than something to pull.
+const PendingImageTag = ":pending"
+
+// IsPendingImage reports whether image is a PendingImageTag placeholder.
+func IsPendingImage(image string) bool {
+	return strings.HasSuffix(image, PendingImageTag)
+}
 
 // Deploy strategies, part of the app spec. Blue-green is the effective
 // default, since it's easier to get right than rolling with a single

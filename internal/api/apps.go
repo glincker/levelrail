@@ -10,7 +10,6 @@ import (
 	"maps"
 	"net/http"
 	"sort"
-	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/ingress"
@@ -608,7 +607,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// Skip the git-build path's ":pending" placeholder (cmd/levelrail-cli's
 	// pendingImageTag): its own POST .../builds call records the real
 	// history entry once a build actually succeeds.
-	if !strings.HasSuffix(req.Image, ":pending") {
+	if !spec.IsPendingImage(req.Image) {
 		rt.recordPlainDeployAttempt(r.Context(), desired, req.Image)
 	}
 

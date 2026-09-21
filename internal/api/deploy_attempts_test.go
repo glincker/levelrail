@@ -474,7 +474,7 @@ func TestBeginBuildDeployAttempt_StartRunsBeforeAttemptIsSaveable(t *testing.T) 
 		t.Fatalf("seed app: %v", err)
 	}
 
-	_, _, finish := rt.beginBuildDeployAttempt(ctx, deploy.Request{ServiceName: "web", ImageRepo: "web", CommitSHA: "sha1"}, svc, store.DeployAttemptSourceManual)
+	_, _, finish, _ := rt.beginBuildDeployAttempt(ctx, deploy.Request{ServiceName: "web", ImageRepo: "web", CommitSHA: "sha1"}, svc, store.DeployAttemptSourceManual)
 	finish(nil)
 
 	if !fake.startedBeforeSave {
