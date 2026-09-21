@@ -575,7 +575,7 @@ func TestRunWizardCreateViaAPI(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			switch {
 			case strings.HasSuffix(r.URL.Path, "/builds"):
-				_ = json.NewEncoder(w).Encode(buildTriggerResponse{Image: "registry.example.com/org/web:pending"})
+				_ = json.NewEncoder(w).Encode(buildTriggerResponse{ID: "deploy_1"})
 			default:
 				_ = json.NewEncoder(w).Encode(appResource{Name: "web", Image: "registry.example.com/org/web:pending", Port: 3000})
 			}

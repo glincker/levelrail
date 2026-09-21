@@ -215,8 +215,14 @@ type (
 	updateOAuthProviderSettingsRequest = apiclient.UpdateOAuthProviderSettingsRequest
 	emailSettingsResource              = apiclient.EmailSettingsResource
 	ingressSettingsResource            = apiclient.IngressSettingsResource
+	aiAssistantSettingsResource        = apiclient.AIAssistantSettingsResource
+	updateAIAssistantSettingsRequest   = apiclient.UpdateAIAssistantSettingsRequest
 	appStorageResource                 = apiclient.AppStorageResource
 	certificateResource                = apiclient.CertificateResource
+	gitProviderResource                = apiclient.GitProviderResource
+	gitHubAppStatusResource            = apiclient.GitHubAppStatusResource
+	gitLabAppStatusResource            = apiclient.GitLabAppStatusResource
+	bitbucketAppStatusResource         = apiclient.BitbucketAppStatusResource
 	gitHubAppRepoResource              = apiclient.GitHubAppRepoResource
 	gitAppBranchResource               = apiclient.GitAppBranchResource
 	useRepoAsSourceRequest             = apiclient.UseRepoAsSourceRequest

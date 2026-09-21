@@ -48,6 +48,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesClearNode(prog, args[1:], stdout, stderr, lookupEnv)
 	case "public-access":
 		return runDatabasesPublicAccess(prog, args[1:], stdout, stderr, lookupEnv)
+	case "set-resources":
+		return runDatabasesSetResources(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown databases subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, databasesUsage(prog))
@@ -73,6 +75,7 @@ func databasesUsage(prog string) string {
   %[1]s databases clear-node <name> [flags]  move a database back to the local node
   %[1]s databases public-access set <name> [flags]    expose a database on a host port
   %[1]s databases public-access clear <name> [flags]  return a database to internal-network-only
+  %[1]s databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]  apply memory/CPU limits
 
 Run "%[1]s databases <subcommand> -h" for a subcommand's own flags.
 `, prog)

@@ -9,6 +9,57 @@ import (
 	"testing"
 )
 
+func TestRun_GitHubApp_Status(t *testing.T) {
+	var gotPath string
+	srv := newListEchoServer(t, &gotPath, gitHubAppStatusResource{Connected: true, Installed: true, AccountLogin: "acme"})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"github-app", "status", "--api-url", srv.URL})
+
+	if gotPath != "/api/v1/github-app" {
+		t.Errorf("path = %s, want /api/v1/github-app", gotPath)
+	}
+	if !strings.Contains(stdout, "connected: true") || !strings.Contains(stdout, "account_login:       acme") {
+		t.Errorf("stdout = %q, want connected/account_login lines", stdout)
+	}
+}
+
+func TestRun_GitHubApp_Status_NotConnected(t *testing.T) {
+	srv := newListEchoServer(t, nil, gitHubAppStatusResource{Connected: false})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"github-app", "status", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "connected: false") {
+		t.Errorf("stdout = %q, want connected: false", stdout)
+	}
+	if strings.Contains(stdout, "installed") {
+		t.Errorf("stdout = %q, want no installed line when not connected", stdout)
+	}
+}
+
+func TestRun_GitHubApp_Disconnect(t *testing.T) {
+	srv, gotPath, gotMethod := newNoContentEchoServer(t)
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"github-app", "disconnect", "--api-url", srv.URL})
+
+	if *gotMethod != http.MethodDelete || *gotPath != "/api/v1/github-app" {
+		t.Errorf("method/path = %s %s, want DELETE /api/v1/github-app", *gotMethod, *gotPath)
+	}
+	if !strings.Contains(stdout, `"disconnected": true`) && !strings.Contains(stdout, "github app disconnected") {
+		t.Errorf("stdout = %q, want a disconnect confirmation", stdout)
+	}
+}
+
+func TestRun_GitHubApp_Disconnect_APIError(t *testing.T) {
+	srv := newJSONErrorServer(t, http.StatusNotFound, `{"error":"no github app is connected"}`)
+
+	stderr := runCLIExpectAPIError(t, []string{"github-app", "disconnect", "--api-url", srv.URL})
+	if !strings.Contains(stderr, "no github app is connected") {
+		t.Errorf("stderr = %q, want the server's error", stderr)
+	}
+}
+
 func TestRun_GitHubApp_Repos(t *testing.T) {
 	var gotPath string
 	srv := newListEchoServer(t, &gotPath, []gitHubAppRepoResource{
