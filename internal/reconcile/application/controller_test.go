@@ -751,6 +751,45 @@ func TestController_Reconcile_FreshDeploy_ExitedDuringReadiness_FastFail(t *test
 	}
 }
 
+// TestController_Reconcile_FreshDeploy_CrashedBeforePortBind_ReportsExitedDuringReadiness
+// covers a narrower, more common crash shape than the two FastFail tests
+// above: a container that dies before Docker ever publishes a port at
+// all (e.g. a bad env var causing an immediate panic), so waitReady's
+// own primaryAddr call fails before the readiness probe or
+// watchForCrash race ever starts. Without the exitedCrash check on that
+// path, this used to leak primaryAddr's low-level "no published ports
+// to probe" message as a generic ReadinessFailed instead of the crash
+// reason an operator actually needs.
+func TestController_Reconcile_FreshDeploy_CrashedBeforePortBind_ReportsExitedDuringReadiness(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+	}
+	target := ContainerName("web", desired.Image, "")
+	rt.setExitState(target, &docker.ExitState{Running: false, ExitCode: 1})
+
+	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(2*time.Second))
+
+	start := time.Now()
+	result, err := c.Reconcile(context.Background())
+	elapsed := time.Since(start)
+
+	if err == nil {
+		t.Fatal("Reconcile() error = nil, want the pre-port-bind crash surfaced as an error")
+	}
+	if elapsed > 500*time.Millisecond {
+		t.Errorf("Reconcile() took %v, want a fast fail, well under the 2s readyBudget", elapsed)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionFalse || cond.Reason != "ExitedDuringReadiness" {
+		t.Errorf("condition = %+v, want Status=False Reason=ExitedDuringReadiness", cond)
+	}
+	if strings.Contains(cond.Message, "no published ports to probe") {
+		t.Errorf("condition message = %q, leaked the generic primaryAddr error instead of the crash reason", cond.Message)
+	}
+}
+
 // runtimeWithoutExitState wraps a docker.Runtime to deliberately hide
 // any docker.ExitStateInspector implementation the underlying concrete
 // type might have (Go only promotes docker.Runtime's own method set
