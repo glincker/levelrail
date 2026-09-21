@@ -98,14 +98,14 @@ This keeps the "additive organization, not forced migration" principle honest. T
 
 ## Shared env var layering
 
-Projects, organizations, and environments can each hold shared env vars. These are stored as `map[string]string` (full-replace on write) via `GET`/`PUT .../env`, same semantics as `PUT /apps/{name}`'s `env` field.
+Projects, organizations, and environments can each hold shared env vars. These layer automatically into every app's effective environment. Each scope can hold a mix of plain and encrypted (secret) variables.
 
 They stack in a fixed order, lowest to highest:
 
 ```mermaid
 flowchart TD
-  A["1. Organization env"] -->|merged into| B["2. Project env"]
-  B -->|merged into| C["3. Environment env"]
+  A["1. Organization env<br/>(plain + secret)"] -->|merged into| B["2. Project env<br/>(plain + secret)"]
+  B -->|merged into| C["3. Environment env<br/>(plain + secret)"]
   C -->|merged into| D["4. App literal env"]
   D -->|overridden by| E["5. App secret env"]
   E -->|overridden by| F["6. Storage S3_* env"]
@@ -125,6 +125,45 @@ An app only sees the tiers that apply to it:
 - **Project tier**: only if app has `project_id`.
 
 An app with no project and no environment gets its own `env`/`secretEnv` (plus any storage/database env), unchanged from before.
+
+### Secret-marked shared env vars
+
+Any shared env var can be marked as a secret. Secret-marked variables are encrypted at rest using the same envelope-encryption path as per-app secrets (see [Security overview](./security.md#secrets)). Their values are never returned in plaintext from API endpoints or the dashboard; only the key name is shown.
+
+**Creating a secret shared env var via CLI:**
+
+```bash
+# Set at project scope
+levelrail-cli shared-env set --scope project --id proj_abc123 DB_PASSWORD yourpassword --secret
+
+# Set at organization scope
+levelrail-cli shared-env set --scope organization --id org_xyz789 API_KEY secret-key --secret
+
+# Set at environment scope
+levelrail-cli shared-env set --scope environment --id env_prod123 SIGNING_KEY token --secret
+```
+
+**Via API:**
+
+```bash
+# Set a secret at project scope
+curl -X PUT https://control-plane/api/v1/projects/proj_abc123/env/secrets/DB_PASSWORD \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"value":"yourpassword"}'
+
+# List secret keys at project scope (values never returned)
+curl https://control-plane/api/v1/projects/proj_abc123/env/secrets \
+  -H "Authorization: Bearer $TOKEN"
+
+# Delete a secret-marked var
+curl -X DELETE https://control-plane/api/v1/projects/proj_abc123/env/secrets/DB_PASSWORD \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+The same pattern applies for organizations and environments: use `/organizations/{id}/env/secrets/*` and `/environments/{id}/env/secrets/*` respectively.
+
+When an app runs, secret-marked shared env vars are injected at container creation time the same way per-app secrets are (never persisted to container inspect or env listings). Changing a secret's value rolls apps forward the same way changing a per-app secret does: set the new value, and the app restarts on the next reconciliation pass or manual restart.
 
 ### Why this structure
 
@@ -253,6 +292,10 @@ File a project into an organization from the project detail page, not from the o
 | `PUT` | `/api/v1/projects/{id}/organization` | `write` |
 | `GET` | `/api/v1/organizations/{id}/env` | `read` |
 | `PUT` | `/api/v1/organizations/{id}/env` | `write` |
+| `GET` | `/api/v1/organizations/{id}/env/all` | `read` | Plain and secret-marked shared vars combined |
+| `GET` | `/api/v1/organizations/{id}/env/secrets` | `read` | Secret-marked var keys only (values never returned) |
+| `PUT` | `/api/v1/organizations/{id}/env/secrets/{key}` | `write` | Create or update a secret-marked shared var |
+| `DELETE` | `/api/v1/organizations/{id}/env/secrets/{key}` | `write` | Delete a secret-marked shared var |
 | `GET` | `/api/v1/projects/{id}/environments` | `read` |
 | `POST` | `/api/v1/projects/{id}/environments` | `write` |
 | `PATCH` | `/api/v1/environments/{id}` | `write` |
@@ -260,6 +303,16 @@ File a project into an organization from the project detail page, not from the o
 | `PUT` | `/api/v1/apps/{name}/environment` | `write` |
 | `GET` | `/api/v1/environments/{id}/env` | `read` |
 | `PUT` | `/api/v1/environments/{id}/env` | `write` |
+| `GET` | `/api/v1/environments/{id}/env/all` | `read` | Plain and secret-marked shared vars combined |
+| `GET` | `/api/v1/environments/{id}/env/secrets` | `read` | Secret-marked var keys only (values never returned) |
+| `PUT` | `/api/v1/environments/{id}/env/secrets/{key}` | `write` | Create or update a secret-marked shared var |
+| `DELETE` | `/api/v1/environments/{id}/env/secrets/{key}` | `write` | Delete a secret-marked shared var |
+| `GET` | `/api/v1/projects/{id}/env` | `read` |
+| `PUT` | `/api/v1/projects/{id}/env` | `write` |
+| `GET` | `/api/v1/projects/{id}/env/all` | `read` | Plain and secret-marked shared vars combined |
+| `GET` | `/api/v1/projects/{id}/env/secrets` | `read` | Secret-marked var keys only (values never returned) |
+| `PUT` | `/api/v1/projects/{id}/env/secrets/{key}` | `write` | Create or update a secret-marked shared var |
+| `DELETE` | `/api/v1/projects/{id}/env/secrets/{key}` | `write` | Delete a secret-marked shared var |
 | `POST` | `/api/v1/apps/{name}/deploys` (needs `confirm: true` if protected) | `deploy` |
 | `POST` | `/api/v1/apps/{name}/promote` (needs `confirm: true` if protected) | `deploy` |
 | `GET` | `/api/v1/apps/{name}/promote/preview` | `read` |
@@ -295,6 +348,11 @@ levelrail-cli apps environments update <id> --protected=true|false [flags]
 levelrail-cli apps environments delete <id> [flags]
 levelrail-cli apps environments env-get <id> [flags]
 levelrail-cli apps environments env-set <id> --var KEY=VALUE [--var KEY=VALUE ...] [flags]
+
+# Shared environment variables (projects, organizations, environments)
+levelrail-cli shared-env list --scope project|organization|environment --id ID [flags]
+levelrail-cli shared-env set --scope project|organization|environment --id ID <key> <value> [--secret] [flags]
+levelrail-cli shared-env delete --scope project|organization|environment --id ID <key> [--secret] [flags]
 
 # Moving apps/databases
 levelrail-cli apps set-project <name> <project-id> [flags]

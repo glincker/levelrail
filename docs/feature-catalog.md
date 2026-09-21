@@ -115,13 +115,13 @@ the exact method/path/ability of every one), grouped by resource:
 
 All command groups available:
 
-`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `templates`, `static-sites`.
+`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `templates`, `static-sites`, `tags`, `shared-env`.
 
 ### Key command groups
 
 **apps**
 
-`create`, `list`, `get`, `deploy`, `deploy-compose`, `deploy-spec`, `group`, `hook-runs`, `rollback`, `auto-rollback`, `deploys`, `promote`, `restart`, `stop`, `start`, `delete`, `status`, `diagnose`, `resource-recommendation`, `network`, `logs` (with `--follow`/`-f` for live tail), `metrics`, `exec`, `log-drain`, `scheduled-tasks`, `alerts`, `organizations`, `projects`, `environments`, `previews`, `secrets`, `git-source`, `webhook-deliveries`, `storage`.
+`create`, `list`, `get`, `deploy`, `deploy-compose`, `deploy-spec`, `group`, `hook-runs`, `rollback`, `auto-rollback`, `deploys`, `promote`, `restart`, `stop`, `start`, `delete`, `status`, `diagnose`, `resource-recommendation`, `network`, `logs` (with `--follow`/`-f` for live tail), `metrics`, `exec`, `log-drain`, `scheduled-tasks`, `alerts`, `organizations`, `projects`, `environments`, `previews`, `secrets`, `git-source`, `webhook-deliveries`, `storage`, `tag`, `untag`.
 
 **databases**
 
@@ -165,6 +165,14 @@ Headless first-run setup with no browser needed:
 **static-sites**
 
 `list`.
+
+**tags**
+
+`list`, `create`, `delete`, `apps` (list apps with a tag).
+
+**shared-env**
+
+`list`, `set`, `delete` (all scoped to `--scope project|organization|environment --id ID`).
 
 ## Known gaps (backend done, UI thin or missing)
 
