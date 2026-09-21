@@ -137,3 +137,36 @@ func TestHandleGetAppGroup_MultiServiceApp(t *testing.T) {
 		t.Errorf("Status = %+v, want Attention needed/destructive (worst-condition-wins across both services)", got.Status)
 	}
 }
+
+// TestHandleGetAppGroup_ByAppName covers the real gap that motivated
+// appGroupByName: every multi-service-creating endpoint
+// (handleDeployCompose, handleDeploySpec) hands a caller back the app's
+// own name, not any one member service's name, so a caller that
+// naturally reuses that same name here must not get a false 404.
+func TestHandleGetAppGroup_ByAppName(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	// ID == Name, the real invariant every multi-service-creating
+	// endpoint's own App row already follows (App.ID == App.Name):
+	// GetAppByName looks up by Name, so this is what makes "demo" a
+	// valid app_id for the deploy-compose/deploy-spec response shapes
+	// appGroupByName's own doc comment describes.
+	app := store.App{ID: "demo", Name: "demo", CreatedAt: "2026-08-14T00:00:00Z", UpdatedAt: "2026-08-14T00:00:00Z"}
+	if err := db.SaveApp(ctx, app); err != nil {
+		t.Fatalf("SaveApp: %v", err)
+	}
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "demo-web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed demo-web: %v", err)
+	}
+	linkServiceToApp(t, db, "demo-web", app.ID)
+
+	got := getAppGroup(t, rt, cookie, "/api/v1/apps/demo/group")
+	if got.AppID != app.ID {
+		t.Errorf("AppID = %q, want %q", got.AppID, app.ID)
+	}
+	if len(got.Services) != 1 || got.Services[0].Name != "demo-web" {
+		t.Fatalf("Services = %+v, want [demo-web]", got.Services)
+	}
+}

@@ -20,10 +20,28 @@ export function summarizeAppStatus(conditions: ReconcileCondition[]): {
   if (conditions.some((c) => c.Status === 'False')) {
     return { label: 'Attention needed', variant: 'destructive' }
   }
-  if (conditions.every((c) => c.Status === 'True')) {
+  if (
+    conditions.every(
+      (c) => c.Status === 'True' || isOptionalFeatureUnconfigured(c),
+    )
+  ) {
     return { label: 'Healthy', variant: 'success' }
   }
   return { label: 'Reconciling', variant: 'muted' }
+}
+
+// An Unknown condition reporting that an optional per-service feature
+// (egress policy today) was simply never turned on, the same
+// "Disabled"/Unknown idiom the cloudflare-tunnel and registry
+// controllers already use for an unconfigured optional integration.
+// Without this, a service with no egress policy configured (the common
+// case) carries a permanently-Unknown EgressPolicyReady condition that
+// never resolves, keeping the app stuck on "Reconciling" forever.
+function isOptionalFeatureUnconfigured(c: ReconcileCondition): boolean {
+  return (
+    c.Status === 'Unknown' &&
+    (c.Reason === 'NotConfigured' || c.Reason === 'Disabled')
+  )
 }
 
 // Solid-fill counterpart to badgeVariants' success/destructive/muted

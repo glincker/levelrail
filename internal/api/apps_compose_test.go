@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -21,6 +22,13 @@ services:
     ports: ["8080:80"]
   redis:
     image: redis:7
+`
+
+const webOnlyComposeYAML = `
+services:
+  web:
+    image: nginx:1.27
+    ports: ["8080:80"]
 `
 
 const bindMountComposeYAML = `
@@ -270,6 +278,39 @@ func TestHandleDeployCompose_Redeploy_ReusesSameApp(t *testing.T) {
 	}
 	if len(apps) != 1 {
 		t.Fatalf("got %d apps after redeploy, want 1 (must reuse, not duplicate)", len(apps))
+	}
+}
+
+// TestHandleDeployCompose_Redeploy_PrunesRemovedService covers the real
+// gap that motivated pruneStaleComposeServices: a redeploy dropping a
+// service (here "redis") from the compose file must delete that
+// service's own DesiredService row, not just leave it (and its
+// containers) running forever alongside the services the new file still
+// declares.
+func TestHandleDeployCompose_Redeploy_PrunesRemovedService(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", validComposeYAML))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("first deploy: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if _, err := db.GetDesiredService(context.Background(), "myapp-redis"); err != nil {
+		t.Fatalf("myapp-redis GetDesiredService() error = %v, want it to exist after the first deploy", err)
+	}
+
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", webOnlyComposeYAML))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("redeploy: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	if _, err := db.GetDesiredService(context.Background(), "myapp-redis"); !errors.Is(err, store.ErrServiceNotFound) {
+		t.Errorf("myapp-redis GetDesiredService() error = %v, want ErrServiceNotFound after redeploy dropped it", err)
+	}
+	if _, err := db.GetDesiredService(context.Background(), "myapp-web"); err != nil {
+		t.Errorf("myapp-web GetDesiredService() error = %v, want it to still exist", err)
 	}
 }
 

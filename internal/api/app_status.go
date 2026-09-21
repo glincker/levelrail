@@ -20,8 +20,9 @@ type appStatusSummary struct {
 // summarizeAppConditions mirrors web/src/lib/appStatus.ts's
 // summarizeAppStatus category-by-category, in the same order: a single
 // False condition means attention needed regardless of how many others
-// are True, all-True means healthy, anything else (some Unknown, none
-// False) means still reconciling.
+// are True, all-True (ignoring conditions for an optional feature that
+// was never turned on, see isOptionalFeatureUnconfigured) means healthy,
+// anything else (some Unknown, none False) means still reconciling.
 func summarizeAppConditions(conditions []reconcile.Condition) appStatusSummary {
 	if len(conditions) == 0 {
 		return appStatusSummary{Label: "No status yet", Variant: "muted"}
@@ -36,7 +37,7 @@ func summarizeAppConditions(conditions []reconcile.Condition) appStatusSummary {
 		if c.Status == reconcile.ConditionFalse {
 			return appStatusSummary{Label: "Attention needed", Variant: "destructive"}
 		}
-		if c.Status != reconcile.ConditionTrue {
+		if c.Status != reconcile.ConditionTrue && !isOptionalFeatureUnconfigured(c) {
 			allTrue = false
 		}
 	}
@@ -44,6 +45,19 @@ func summarizeAppConditions(conditions []reconcile.Condition) appStatusSummary {
 		return appStatusSummary{Label: "Healthy", Variant: "success"}
 	}
 	return appStatusSummary{Label: "Reconciling", Variant: "muted"}
+}
+
+// isOptionalFeatureUnconfigured reports whether c is an Unknown
+// condition reporting that an optional per-service feature (egress
+// policy today) was simply never turned on, the same "Disabled"/
+// ConditionUnknown idiom cloudflaretunnel and registry's own controllers
+// already use for an unconfigured optional integration. Without this, a
+// service with no egress policy configured (the common case) carries a
+// permanently-Unknown EgressPolicyReady condition that never resolves,
+// which previously kept every such app stuck on "Reconciling" forever
+// even once actually running.
+func isOptionalFeatureUnconfigured(c reconcile.Condition) bool {
+	return c.Status == reconcile.ConditionUnknown && (c.Reason == "NotConfigured" || c.Reason == "Disabled")
 }
 
 // appListResource is GET /api/v1/apps' wire shape (apps.go's
