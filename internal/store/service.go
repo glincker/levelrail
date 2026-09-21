@@ -40,6 +40,11 @@ type ServiceProbe struct {
 type ServiceHealth struct {
 	Readiness *ServiceProbe `json:"readiness,omitempty"`
 	Liveness  *ServiceProbe `json:"liveness,omitempty"`
+	// ReadyTimeout overrides internal/reconcile/application's own
+	// defaultReadyBudget (60s) for this service alone, zero meaning
+	// "use the default". See internal/spec.Health.ReadyTimeout, its
+	// app.yaml source.
+	ReadyTimeout time.Duration `json:"ready_timeout,omitempty"`
 }
 
 // ServiceHooks holds a service's pre/post-deploy hook commands

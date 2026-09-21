@@ -57,8 +57,9 @@ func TestSpecServiceFromDesired(t *testing.T) {
 			CPUSetCPUs:      "0-1",
 		},
 		Health: &store.ServiceHealth{
-			Readiness: &store.ServiceProbe{Path: "/ready", Interval: 5 * time.Second, Timeout: 2 * time.Second, Failures: 3},
-			Liveness:  &store.ServiceProbe{Path: "/live", Interval: 30 * time.Second},
+			Readiness:    &store.ServiceProbe{Path: "/ready", Interval: 5 * time.Second, Timeout: 2 * time.Second, Failures: 3},
+			Liveness:     &store.ServiceProbe{Path: "/live", Interval: 30 * time.Second},
+			ReadyTimeout: 90 * time.Second,
 		},
 	}
 	buildCfg := spec.Build{Type: spec.BuildDockerfile, Path: "./Dockerfile"}
@@ -94,6 +95,9 @@ func TestSpecServiceFromDesired(t *testing.T) {
 	}
 	if got.Health.Liveness == nil || got.Health.Liveness.Path != "/live" || got.Health.Liveness.Interval != "30s" {
 		t.Errorf("Health.Liveness = %+v, want path=/live interval=30s", got.Health.Liveness)
+	}
+	if got.Health.ReadyTimeout != "1m30s" {
+		t.Errorf("Health.ReadyTimeout = %q, want \"1m30s\" (time.Duration.String's own formatting of 90s)", got.Health.ReadyTimeout)
 	}
 }
 

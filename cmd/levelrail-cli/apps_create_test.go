@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
@@ -439,7 +440,7 @@ func TestPlanFromFlags(t *testing.T) {
 					Build:     spec.Build{Type: spec.BuildDockerfile},
 					Port:      3000,
 					Resources: &spec.Resources{Memory: "512Mi", CPU: 0.5, SwapMemory: "1Gi", CPUSet: "0-1"},
-					Health:    &spec.Health{Readiness: &spec.Probe{Path: "/healthz", Interval: "5s", Timeout: "2s", Failures: 3}},
+					Health:    &spec.Health{Readiness: &spec.Probe{Path: "/healthz", Interval: "5s", Timeout: "2s", Failures: 3}, ReadyTimeout: "90s"},
 				},
 			}},
 			wantPlan: func(t *testing.T, p createPlan) {
@@ -464,6 +465,9 @@ func TestPlanFromFlags(t *testing.T) {
 				r := p.CreateBody.Health.Readiness
 				if r.Path != "/healthz" || r.Interval != int64(5*1e9) || r.Timeout != int64(2*1e9) || r.Failures != 3 {
 					t.Errorf("Readiness probe = %+v, want path=/healthz interval=5s timeout=2s failures=3", r)
+				}
+				if p.CreateBody.Health.ReadyTimeout != int64(90*time.Second) {
+					t.Errorf("Health.ReadyTimeout = %d, want %d (90s)", p.CreateBody.Health.ReadyTimeout, int64(90*time.Second))
 				}
 			},
 		},

@@ -267,6 +267,11 @@ func toServiceHealth(h spec.Health) (store.ServiceHealth, error) {
 		}
 		out.Liveness = &p
 	}
+	readyTimeout, err := parseDurationOrZero(h.ReadyTimeout)
+	if err != nil {
+		return out, fmt.Errorf("readyTimeout: %w", err)
+	}
+	out.ReadyTimeout = readyTimeout
 	return out, nil
 }
 

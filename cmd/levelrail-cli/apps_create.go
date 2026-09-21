@@ -510,6 +510,11 @@ func toServiceHealth(h *spec.Health) (*serviceHealth, error) {
 		}
 		out.Liveness = &p
 	}
+	readyTimeout, err := parseDurationOrZero(h.ReadyTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("readyTimeout: %w", err)
+	}
+	out.ReadyTimeout = readyTimeout.Nanoseconds()
 	return &out, nil
 }
 

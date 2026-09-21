@@ -442,6 +442,19 @@ func neverHealthy() *httptest.Server {
 	}))
 }
 
+// healthyAfter simulates a slow cold start: unhealthy until d has elapsed
+// since the server started, healthy from then on.
+func healthyAfter(d time.Duration) *httptest.Server {
+	start := time.Now()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if time.Since(start) < d {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+}
+
 func serverPort(t *testing.T, srv *httptest.Server) int {
 	t.Helper()
 	_, portStr, err := net.SplitHostPort(strings.TrimPrefix(srv.URL, "http://"))
@@ -723,6 +736,36 @@ func TestController_Reconcile_FreshDeploy_ReadinessFails(t *testing.T) {
 	cond := conditionOf(t, result)
 	if cond.Status != reconcile.ConditionFalse || cond.Reason != "ReadinessFailed" {
 		t.Errorf("condition = %+v, want Status=False Reason=ReadinessFailed", cond)
+	}
+}
+
+// TestController_Reconcile_ServiceReadyTimeoutOverride_OutlastsControllerDefault
+// proves store.ServiceHealth.ReadyTimeout (app.yaml's health.readyTimeout)
+// actually overrides the controller-level readyBudget per deploy: the
+// controller is constructed with a 50ms default (too short for the
+// server's own 150ms cold start), but this service declares a 2s
+// override, so the deploy must still succeed rather than failing at 50ms.
+func TestController_Reconcile_ServiceReadyTimeoutOverride_OutlastsControllerDefault(t *testing.T) {
+	srv := healthyAfter(150 * time.Millisecond)
+	defer srv.Close()
+
+	rt := newFakeRuntime(serverPort(t, srv))
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Health: &store.ServiceHealth{
+			Readiness:    &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond},
+			ReadyTimeout: 2 * time.Second,
+		},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(50*time.Millisecond))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v, want success: the service's own 2s readyTimeout should have outlasted the controller's 50ms default", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
 	}
 }
 
@@ -2402,6 +2445,44 @@ func TestWithHTTPClient(t *testing.T) {
 	c := New("web", &fakeStore{}, newFakeRuntime(0), WithHTTPClient(custom))
 	if c.httpClient != custom {
 		t.Error("WithHTTPClient did not override the default client")
+	}
+}
+
+// TestEffectiveReadyBudget_NoHealthConfigured_UsesDefault is the
+// regression-safety proof that every service which never sets
+// health.readyTimeout keeps today's exact behavior: defaultReadyBudget
+// (60s) applies, not some accidentally-zeroed value. A direct check on
+// effectiveReadyBudget rather than a full Reconcile, since actually
+// waiting out 60s in a test would be its own problem.
+func TestEffectiveReadyBudget_NoHealthConfigured_UsesDefault(t *testing.T) {
+	c := New("web", &fakeStore{}, newFakeRuntime(0)) // no WithReadyBudget: defaultReadyBudget applies
+	desired := &store.DesiredService{Name: "web"}
+	if got := c.effectiveReadyBudget(desired); got != defaultReadyBudget {
+		t.Errorf("effectiveReadyBudget() = %v, want defaultReadyBudget (%v)", got, defaultReadyBudget)
+	}
+}
+
+// TestEffectiveReadyBudget_ReadyTimeoutUnset_UsesControllerBudget proves
+// an explicitly-configured store.ServiceHealth with ReadyTimeout left at
+// its zero value still falls back to the controller's own readyBudget
+// (WithReadyBudget's value here), the same "unset means default" contract
+// as the no-Health case above.
+func TestEffectiveReadyBudget_ReadyTimeoutUnset_UsesControllerBudget(t *testing.T) {
+	c := New("web", &fakeStore{}, newFakeRuntime(0), WithReadyBudget(42*time.Second))
+	desired := &store.DesiredService{Name: "web", Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz"}}}
+	if got := c.effectiveReadyBudget(desired); got != 42*time.Second {
+		t.Errorf("effectiveReadyBudget() = %v, want the controller's own readyBudget (42s)", got)
+	}
+}
+
+// TestEffectiveReadyBudget_ReadyTimeoutSet_TakesPrecedence proves the
+// per-service override wins over whatever readyBudget the controller was
+// constructed with, the core behavior this field exists for.
+func TestEffectiveReadyBudget_ReadyTimeoutSet_TakesPrecedence(t *testing.T) {
+	c := New("web", &fakeStore{}, newFakeRuntime(0), WithReadyBudget(2*time.Second))
+	desired := &store.DesiredService{Name: "web", Health: &store.ServiceHealth{ReadyTimeout: 90 * time.Second}}
+	if got := c.effectiveReadyBudget(desired); got != 90*time.Second {
+		t.Errorf("effectiveReadyBudget() = %v, want the per-service override (90s)", got)
 	}
 }
 
