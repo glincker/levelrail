@@ -165,6 +165,12 @@ func TestHandleCompareDeploys_ConfigSnapshotDiff(t *testing.T) {
 			}},
 			wantChangeKeys: []string{"health.readiness.path", "health.readiness.interval", "health.readiness.timeout", "health.readiness.failures"},
 		},
+		{
+			name:           "readyTimeout changed",
+			from:           store.DeployAttemptSnapshot{Health: &store.ServiceHealth{ReadyTimeout: 60 * time.Second}},
+			to:             store.DeployAttemptSnapshot{Health: &store.ServiceHealth{ReadyTimeout: 90 * time.Second}},
+			wantChangeKeys: []string{"health.readyTimeout"},
+		},
 	}
 
 	for _, tt := range tests {

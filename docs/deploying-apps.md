@@ -367,7 +367,7 @@ These appear in the deploy's reconcile condition, visible in:
 - Dashboard: deploy history
 - CLI: `apps deploys`
 
-Without this, the deploy would only fail generically (`ReadinessFailed`) after the full readiness budget (60s by default) was spent retrying a dead address.
+Without this, the deploy would only fail generically (`ReadinessFailed`) after the full readiness budget (60s by default, override per service with `health.readyTimeout` in `app.yaml`, see [app.yaml reference](app-spec-reference.md#health)) was spent retrying a dead address.
 
 ## Resource limits and auto-recommendation
 

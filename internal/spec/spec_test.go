@@ -53,6 +53,9 @@ func TestParse_ValidFull(t *testing.T) {
 	if web.Health.Liveness == nil || web.Health.Liveness.Failures != 3 {
 		t.Errorf("Health.Liveness = %+v, want Failures=3", web.Health.Liveness)
 	}
+	if web.Health.ReadyTimeout != "90s" {
+		t.Errorf("Health.ReadyTimeout = %q, want \"90s\"", web.Health.ReadyTimeout)
+	}
 	if web.Resources == nil || web.Resources.Memory != "512Mi" || web.Resources.CPU != 0.5 {
 		t.Errorf("Resources = %+v, want Memory=512Mi CPU=0.5", web.Resources)
 	}

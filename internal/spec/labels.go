@@ -21,6 +21,18 @@ import (
 // DiscoverPath (discover.go) does.
 const ReservedLabelPrefix = "platform-reserved."
 
+// InstanceLabelKey is the Docker label key every container, network, and
+// volume this control-plane instance creates gets stamped with, set to
+// its own persistent instance ID (store.GetOrCreateInstanceID). Two
+// separate control-plane instances (two installs, or a dev and a prod
+// instance) can end up sharing one Docker daemon; without this, a
+// brand-labeled or brand-namespaced resource alone doesn't say which
+// instance created it, so one instance's stale-resource cleanup could
+// mistake the other's live resource for its own garbage and remove it.
+// Under ReservedLabelPrefix so no operator-supplied label can collide
+// with or spoof it (ValidateLabels below already rejects that prefix).
+const InstanceLabelKey = ReservedLabelPrefix + "instance"
+
 // Sanity limits on custom labels: a genuine safety bound against
 // unbounded container metadata growth, not a business threshold, so a
 // fixed constant is appropriate here (the project's "no hardcoded

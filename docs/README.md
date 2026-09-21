@@ -48,6 +48,7 @@ Four main types, plus two Levelrail-specific categories:
 | [acme-verification-runbook.md](acme-verification-runbook.md) | Verify real ACME certificate issuance against a live domain, step by step |
 | [deploying-apps.md](deploying-apps.md) | An app's lifecycle: create, deploy, roll back, promote, health checks, resource limits, exec, and scheduled tasks |
 | [managing-databases.md](managing-databases.md) | Create and manage Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse resources |
+| [tags.md](tags.md) | Label and organize apps with arbitrary tags for filtering and grouping |
 | [observability.md](observability.md) | Node-local metrics and log storage, federated queries, and the alert engine |
 | [multi-node.md](multi-node.md) | Add and manage additional nodes, node health, and simple spread placement |
 | [projects-and-organizations.md](projects-and-organizations.md) | The optional organization/project/environment grouping hierarchy for apps and databases |

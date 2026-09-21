@@ -31,8 +31,9 @@ type ServiceProbe struct {
 
 // ServiceHealth mirrors internal/api's appResource.Health field.
 type ServiceHealth struct {
-	Readiness *ServiceProbe `json:"readiness,omitempty"`
-	Liveness  *ServiceProbe `json:"liveness,omitempty"`
+	Readiness    *ServiceProbe `json:"readiness,omitempty"`
+	Liveness     *ServiceProbe `json:"liveness,omitempty"`
+	ReadyTimeout int64         `json:"ready_timeout,omitempty"`
 }
 
 // ServiceHooks mirrors internal/api's appResource.Hooks field

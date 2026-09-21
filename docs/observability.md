@@ -105,7 +105,7 @@ Request rate, response time percentiles, error rate, container restart count, an
 - `/databases/$name/logs` - The same live/search pair (LiveDatabaseLogViewer, DatabaseLogSearchPanel) for managed databases.
 
 **Overview and alerts:**
-- **Dashboard overview** - `TopResourceConsumers` ranks every app by latest CPU/memory/network reading. Backed by `GET /api/v1/apps/resource-usage`. Renders nothing when telemetry is unconfigured or no samples exist, rather than showing a broken panel.
+- **Dashboard home** - Two cards: `TopResourceConsumers` ranks every app by latest CPU/memory/network reading (backed by `GET /api/v1/apps/resource-usage`). `FleetResourceChart` shows a 30-minute rolling history of total CPU and memory usage across all apps, polled every 30 seconds from the same resource-usage endpoint. Both cards render nothing when telemetry is unconfigured or no samples exist.
 - `/apps/$name/alerts` - `AlertRulesPanel` lists, creates, edits, and deletes alert rules. Shows each rule's current firing state.
 - **Settings -> Notification channels** - `NotificationChannelTable` to connect, edit, delete, test, and view delivery history for channels.
 

@@ -51,8 +51,8 @@ func (rt *Router) handleSetAppVaultEnv(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	for _, secretKey := range existing.SecretEnv {
-		if secretKey == key {
+	for _, ref := range existing.SecretEnv {
+		if ref.Name == key {
 			writeError(w, http.StatusBadRequest, "env var \""+key+"\" is already secret-backed, remove it from secret_env first")
 			return
 		}

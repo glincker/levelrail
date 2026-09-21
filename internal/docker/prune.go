@@ -313,10 +313,19 @@ func containerSummaryName(cs container.Summary) string {
 // (see internal/docker/client_live_test.go's waitForStopped), so this
 // is accepted rather than solved with, e.g., a lock this package has no
 // good way to hold across a caller-supplied keep computation anyway.
+// Scoped to this Client's own instance label (WithInstanceLabel), when
+// configured: without it, a stopped container from a different control-
+// plane instance sharing this same Docker daemon would look identical
+// to genuine cruft (this method has no name/brand filter of its own to
+// begin with, only a status filter), and "not in my own keep list" would
+// wrongly include literally every container the caller doesn't already
+// know about, this instance's or not. See internal/spec.InstanceLabelKey's
+// own doc comment.
 func (c *Client) PruneContainers(ctx context.Context, keep []string) (PruneContainersResult, error) {
 	f := filters.NewArgs()
 	f.Add("status", "exited")
 	f.Add("status", "created")
+	c.instanceLabelFilter(f)
 	summaries, err := c.cli.ContainerList(ctx, container.ListOptions{All: true, Size: true, Filters: f})
 	if err != nil {
 		return PruneContainersResult{}, fmt.Errorf("docker: list stopped containers: %w", err)
@@ -359,6 +368,14 @@ type PruneImagesResult struct {
 // right now is exactly what that design depends on staying in place.
 // The more aggressive "everything unused, tagged or not" cleanup
 // `docker image prune -a` offers has no equivalent here, on purpose.
+//
+// Deliberately not scoped by this Client's own instance label: a
+// dangling image, by Docker's own definition, has zero tags left, so an
+// instance label on it (even if one were set at build time) would say
+// nothing about who still needs it. What actually makes this safe on a
+// shared daemon is the Engine API's own ImagesPrune, which never removes
+// an image still referenced by any container regardless of which
+// control-plane instance owns that container.
 func (c *Client) PruneDanglingImages(ctx context.Context) (PruneImagesResult, error) {
 	f := filters.NewArgs()
 	f.Add("dangling", "true")
@@ -412,6 +429,17 @@ type PruneVolumesResult struct {
 // semantics (does it count a stopped container's mounts as
 // still-attached?) are not something this method's safety should depend
 // on being right.
+//
+// Deliberately not scoped by this Client's own instance label
+// (WithInstanceLabel), unlike PruneContainers: an anonymous volume is,
+// by definition, Docker-generated and never passes through EnsureVolume,
+// so it can never carry that label regardless of which instance's
+// container triggered its creation. A label filter here would just make
+// this method a permanent no-op. The "not attached to any container,
+// any instance's or not" check above is what already makes this safe on
+// a Docker daemon shared by more than one control-plane instance:
+// mountedVolumeNames considers every container on the daemon, not just
+// this instance's own.
 func (c *Client) PruneAnonymousVolumes(ctx context.Context) (PruneVolumesResult, error) {
 	inUse, err := c.mountedVolumeNames(ctx)
 	if err != nil {
@@ -482,6 +510,13 @@ type PruneBuildCacheResult struct {
 // InUse: a cache record still backing an in-flight build is left alone
 // rather than this call racing a build that happens to be running at the
 // same moment an operator clicks "clean up now."
+//
+// Deliberately not scoped by this Client's own instance label: BuildKit
+// cache records carry no container/image identity at all to key an
+// instance label off of, this project or any other's. The InUse check
+// above is what already makes this safe to share a daemon: a build any
+// control-plane instance has in flight keeps its cache records InUse
+// regardless of which instance started it.
 func (c *Client) PruneBuildCache(ctx context.Context) (PruneBuildCacheResult, error) {
 	report, err := c.cli.BuildCachePrune(ctx, build.CachePruneOptions{All: false})
 	if err != nil {

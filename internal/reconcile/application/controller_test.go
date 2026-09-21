@@ -101,6 +101,12 @@ type fakeRuntime struct {
 	removeNetworkErr   error
 	removedNetworks    []string
 	callOrder          []string
+	// networkLabels, keyed the same as networks, backs
+	// ListNetworksByPrefix's own NetworkInfo.Labels: absent means no
+	// labels at all (a network this fake never explicitly labeled), the
+	// same "unlabeled, not foreign" default the real Client's own
+	// unconfigured case has.
+	networkLabels map[string]map[string]string
 
 	// execErr, when set, makes Exec itself fail (a transport-level
 	// failure, e.g. the exec session never started), distinct from
@@ -144,7 +150,10 @@ func (e *execExitReader) Read(p []byte) (int, error) {
 func (e *execExitReader) Close() error { return nil }
 
 func newFakeRuntime(hostPort int) *fakeRuntime {
-	return &fakeRuntime{containers: map[string]*docker.ContainerState{}, exitStates: map[string]*docker.ExitState{}, networks: map[string]string{}, hostPort: hostPort}
+	return &fakeRuntime{
+		containers: map[string]*docker.ContainerState{}, exitStates: map[string]*docker.ExitState{},
+		networks: map[string]string{}, networkLabels: map[string]map[string]string{}, hostPort: hostPort,
+	}
 }
 
 // crashContainer simulates a container dying mid readiness-wait: it
@@ -189,10 +198,17 @@ func (f *fakeRuntime) InspectExitState(_ context.Context, name string) (*docker.
 }
 
 func (f *fakeRuntime) seed(name string, running bool) {
+	f.seedLabeled(name, running, nil)
+}
+
+// seedLabeled is seed plus labels, for tests asserting the
+// instance-ownership check staleContainers/ownsInstance applies on top
+// of the existing name-based one.
+func (f *fakeRuntime) seedLabeled(name string, running bool, labels map[string]string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.nextID++
-	cs := &docker.ContainerState{ID: strconv.Itoa(f.nextID), Name: name, Running: running}
+	cs := &docker.ContainerState{ID: strconv.Itoa(f.nextID), Name: name, Running: running, Labels: labels}
 	if running && f.hostPort != 0 {
 		cs.Ports = []docker.PortBinding{{ContainerPort: 80, HostPort: f.hostPort}}
 	}
@@ -229,7 +245,7 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 	}
 	f.nextID++
 	id := strconv.Itoa(f.nextID)
-	f.containers[spec.Name] = &docker.ContainerState{ID: id, Name: spec.Name, Image: spec.Image}
+	f.containers[spec.Name] = &docker.ContainerState{ID: id, Name: spec.Name, Image: spec.Image, Labels: spec.Labels}
 	return id, nil
 }
 
@@ -360,7 +376,7 @@ func (f *fakeRuntime) ListNetworksByPrefix(_ context.Context, prefix string) ([]
 	var out []docker.NetworkInfo
 	for name, id := range f.networks {
 		if strings.HasPrefix(name, prefix) {
-			out = append(out, docker.NetworkInfo{ID: id, Name: name})
+			out = append(out, docker.NetworkInfo{ID: id, Name: name, Labels: f.networkLabels[name]})
 		}
 	}
 	return out, nil
@@ -423,6 +439,19 @@ func alwaysHealthy() *httptest.Server {
 func neverHealthy() *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+}
+
+// healthyAfter simulates a slow cold start: unhealthy until d has elapsed
+// since the server started, healthy from then on.
+func healthyAfter(d time.Duration) *httptest.Server {
+	start := time.Now()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if time.Since(start) < d {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
 	}))
 }
 
@@ -522,6 +551,38 @@ func TestController_Reconcile_Resources_ReachesContainerSpec(t *testing.T) {
 	}
 	if got := rt.lastCreateSpec.Resources; !reflect.DeepEqual(got, want) {
 		t.Errorf("created ContainerSpec.Resources = %+v, want %+v", got, want)
+	}
+}
+
+// TestController_Reconcile_InstanceLabel_ReachesContainerSpec confirms
+// WithInstanceID stamps internal/spec.InstanceLabelKey into every
+// created container's spec, alongside any operator-supplied custom
+// labels, without instanceID configured at all leaving Labels exactly
+// as the desired service declared it (backward compatible with every
+// caller that hasn't adopted cross-instance safety yet).
+func TestController_Reconcile_InstanceLabel_ReachesContainerSpec(t *testing.T) {
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Labels: map[string]string{"custom": "operator-set"},
+	}
+
+	rt := newFakeRuntime(0)
+	c := New("web", &fakeStore{svc: desired}, rt, WithInstanceID("inst-a"))
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := map[string]string{"custom": "operator-set", "platform-reserved.instance": "inst-a"}
+	if got := rt.lastCreateSpec.Labels; !reflect.DeepEqual(got, want) {
+		t.Errorf("created ContainerSpec.Labels = %+v, want %+v", got, want)
+	}
+
+	rt2 := newFakeRuntime(0)
+	c2 := New("web", &fakeStore{svc: desired}, rt2)
+	if _, err := c2.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if got := rt2.lastCreateSpec.Labels; !reflect.DeepEqual(got, desired.Labels) {
+		t.Errorf("created ContainerSpec.Labels without WithInstanceID = %+v, want %+v unchanged", got, desired.Labels)
 	}
 }
 
@@ -675,6 +736,36 @@ func TestController_Reconcile_FreshDeploy_ReadinessFails(t *testing.T) {
 	cond := conditionOf(t, result)
 	if cond.Status != reconcile.ConditionFalse || cond.Reason != "ReadinessFailed" {
 		t.Errorf("condition = %+v, want Status=False Reason=ReadinessFailed", cond)
+	}
+}
+
+// TestController_Reconcile_ServiceReadyTimeoutOverride_OutlastsControllerDefault
+// proves store.ServiceHealth.ReadyTimeout (app.yaml's health.readyTimeout)
+// actually overrides the controller-level readyBudget per deploy: the
+// controller is constructed with a 50ms default (too short for the
+// server's own 150ms cold start), but this service declares a 2s
+// override, so the deploy must still succeed rather than failing at 50ms.
+func TestController_Reconcile_ServiceReadyTimeoutOverride_OutlastsControllerDefault(t *testing.T) {
+	srv := healthyAfter(150 * time.Millisecond)
+	defer srv.Close()
+
+	rt := newFakeRuntime(serverPort(t, srv))
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Health: &store.ServiceHealth{
+			Readiness:    &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond},
+			ReadyTimeout: 2 * time.Second,
+		},
+	}
+	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(50*time.Millisecond))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v, want success: the service's own 2s readyTimeout should have outlasted the controller's 50ms default", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Errorf("condition = %+v, want Status=True Reason=Deployed", cond)
 	}
 }
 
@@ -1160,6 +1251,70 @@ func TestController_Teardown_NoContainers_NoOp(t *testing.T) {
 	}
 }
 
+// TestController_Teardown_DoesNotRemoveOtherInstanceContainers proves the
+// cross-instance-safety bug this guard exists for: two separate
+// control-plane instances (WithInstanceID "inst-a"/"inst-b") sharing one
+// Docker daemon, each with their own "web" service that happens to
+// resolve to the exact same content-hashed container name (identical
+// image, identical restart nonce, the same collision ownsContainer's own
+// doc comment already accepts as possible once a name matches). Without
+// the instance-ownership check, instance A's Teardown would see
+// instance B's identically-named container as its own leftover and
+// remove it.
+func TestController_Teardown_DoesNotRemoveOtherInstanceContainers(t *testing.T) {
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v1", "")
+	rt.seedLabeled(target, true, map[string]string{"platform-reserved.instance": "inst-b"})
+
+	c := New("web", &fakeStore{}, rt, WithInstanceID("inst-a"))
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+
+	if names := rt.names(); len(names) != 1 || names[0] != target {
+		t.Errorf("containers after teardown = %v, want %q untouched (belongs to a different control-plane instance)", names, target)
+	}
+}
+
+// TestController_Teardown_RemovesOwnInstanceContainers is the positive
+// counterpart: with WithInstanceID configured, this instance's own
+// correctly-labeled container is still torn down exactly as before.
+func TestController_Teardown_RemovesOwnInstanceContainers(t *testing.T) {
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v1", "")
+	rt.seedLabeled(target, true, map[string]string{"platform-reserved.instance": "inst-a"})
+
+	c := New("web", &fakeStore{}, rt, WithInstanceID("inst-a"))
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+
+	if names := rt.names(); len(names) != 0 {
+		t.Errorf("containers after teardown = %v, want none (this instance's own container)", names)
+	}
+}
+
+// TestController_Teardown_UnlabeledContainer_StillRemoved_UpgradeSafety
+// covers the deliberate backward-compatibility carve-out in ownsInstance:
+// a container created before instance labeling existed (or by a Runtime
+// that doesn't stamp it) carries no label at all, not a foreign one, and
+// must still be cleaned up by its own instance rather than becoming a
+// permanent zombie after an upgrade.
+func TestController_Teardown_UnlabeledContainer_StillRemoved_UpgradeSafety(t *testing.T) {
+	rt := newFakeRuntime(0)
+	target := ContainerName("web", "img:v1", "")
+	rt.seed(target, true) // no labels at all
+
+	c := New("web", &fakeStore{}, rt, WithInstanceID("inst-a"))
+	if err := c.Teardown(context.Background()); err != nil {
+		t.Fatalf("Teardown() error = %v", err)
+	}
+
+	if names := rt.names(); len(names) != 0 {
+		t.Errorf("containers after teardown = %v, want none (unlabeled pre-upgrade container, still this instance's own)", names)
+	}
+}
+
 func TestController_Reconcile_CleanupFailure_StillReportsReadyButErrors(t *testing.T) {
 	rt := newFakeRuntime(0)
 	oldTarget := ContainerName("web", "img:v1", "")
@@ -1382,7 +1537,7 @@ func TestController_Reconcile_SecretEnv_NoResolverConfigured_FailsLoudly(t *test
 	rt := newFakeRuntime(0)
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
-		SecretEnv: []string{"API_KEY"},
+		SecretEnv: []store.SecretEnvRef{{Name: "API_KEY"}},
 	}
 	c := New("web", &fakeStore{svc: desired}, rt) // no WithSecretResolver
 
@@ -1405,7 +1560,7 @@ func TestController_Reconcile_SecretEnv_Resolved_MergedIntoContainerEnv(t *testi
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
 		Env:       map[string]string{"NODE_ENV": "production"},
-		SecretEnv: []string{"API_KEY"},
+		SecretEnv: []store.SecretEnvRef{{Name: "API_KEY"}},
 	}
 	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(resolver))
 
@@ -1431,7 +1586,7 @@ func TestController_Reconcile_SecretEnv_OptionalUnsetSecret_OmittedNotFailed(t *
 	resolver := newFakeSecretResolver(nil) // nothing set
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
-		SecretEnv: []string{"OPTIONAL_FLAG"},
+		SecretEnv: []store.SecretEnvRef{{Name: "OPTIONAL_FLAG"}},
 	}
 	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(resolver))
 
@@ -1454,7 +1609,7 @@ func TestController_Reconcile_SecretEnv_ResolverErrorPropagates(t *testing.T) {
 	resolver.resolveErr = errors.New("master key not configured")
 	desired := &store.DesiredService{
 		Name: "web", Image: "img:v1", Port: 80,
-		SecretEnv: []string{"API_KEY"},
+		SecretEnv: []store.SecretEnvRef{{Name: "API_KEY"}},
 	}
 	c := New("web", &fakeStore{svc: desired}, rt, WithSecretResolver(resolver))
 
@@ -1523,7 +1678,7 @@ func TestController_ResolveEnv_SecretWinsOnKeyCollision(t *testing.T) {
 			desired := &store.DesiredService{
 				Name:      "web",
 				Env:       tt.env,
-				SecretEnv: tt.secretEnv,
+				SecretEnv: store.SecretEnvRefsFromNames(tt.secretEnv),
 			}
 			c := New("web", &fakeStore{}, newFakeRuntime(0), WithSecretResolver(resolver))
 
@@ -1888,7 +2043,7 @@ func TestController_ResolveEnv_StorageTargetWinsOnKeyCollision(t *testing.T) {
 	desired := &store.DesiredService{
 		Name:            "web",
 		Env:             map[string]string{"S3_BUCKET": "operator-typo-value"},
-		SecretEnv:       []string{"S3_BUCKET"},
+		SecretEnv:       []store.SecretEnvRef{{Name: "S3_BUCKET"}},
 		StorageTargetID: "bkt_1",
 	}
 	c := New("web", &fakeStore{}, newFakeRuntime(0), WithStorageTargets(storageStore), WithSecretResolver(secretResolver))
@@ -2290,6 +2445,44 @@ func TestWithHTTPClient(t *testing.T) {
 	c := New("web", &fakeStore{}, newFakeRuntime(0), WithHTTPClient(custom))
 	if c.httpClient != custom {
 		t.Error("WithHTTPClient did not override the default client")
+	}
+}
+
+// TestEffectiveReadyBudget_NoHealthConfigured_UsesDefault is the
+// regression-safety proof that every service which never sets
+// health.readyTimeout keeps today's exact behavior: defaultReadyBudget
+// (60s) applies, not some accidentally-zeroed value. A direct check on
+// effectiveReadyBudget rather than a full Reconcile, since actually
+// waiting out 60s in a test would be its own problem.
+func TestEffectiveReadyBudget_NoHealthConfigured_UsesDefault(t *testing.T) {
+	c := New("web", &fakeStore{}, newFakeRuntime(0)) // no WithReadyBudget: defaultReadyBudget applies
+	desired := &store.DesiredService{Name: "web"}
+	if got := c.effectiveReadyBudget(desired); got != defaultReadyBudget {
+		t.Errorf("effectiveReadyBudget() = %v, want defaultReadyBudget (%v)", got, defaultReadyBudget)
+	}
+}
+
+// TestEffectiveReadyBudget_ReadyTimeoutUnset_UsesControllerBudget proves
+// an explicitly-configured store.ServiceHealth with ReadyTimeout left at
+// its zero value still falls back to the controller's own readyBudget
+// (WithReadyBudget's value here), the same "unset means default" contract
+// as the no-Health case above.
+func TestEffectiveReadyBudget_ReadyTimeoutUnset_UsesControllerBudget(t *testing.T) {
+	c := New("web", &fakeStore{}, newFakeRuntime(0), WithReadyBudget(42*time.Second))
+	desired := &store.DesiredService{Name: "web", Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz"}}}
+	if got := c.effectiveReadyBudget(desired); got != 42*time.Second {
+		t.Errorf("effectiveReadyBudget() = %v, want the controller's own readyBudget (42s)", got)
+	}
+}
+
+// TestEffectiveReadyBudget_ReadyTimeoutSet_TakesPrecedence proves the
+// per-service override wins over whatever readyBudget the controller was
+// constructed with, the core behavior this field exists for.
+func TestEffectiveReadyBudget_ReadyTimeoutSet_TakesPrecedence(t *testing.T) {
+	c := New("web", &fakeStore{}, newFakeRuntime(0), WithReadyBudget(2*time.Second))
+	desired := &store.DesiredService{Name: "web", Health: &store.ServiceHealth{ReadyTimeout: 90 * time.Second}}
+	if got := c.effectiveReadyBudget(desired); got != 90*time.Second {
+		t.Errorf("effectiveReadyBudget() = %v, want the per-service override (90s)", got)
 	}
 }
 

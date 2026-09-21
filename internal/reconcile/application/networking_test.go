@@ -258,7 +258,7 @@ func TestNetworkCleanupController_RemovesOrphanedNetworks(t *testing.T) {
 	rt.networks["unrelated-network"] = "net-3" // no matching prefix, never touched
 
 	apps := &fakeAppLister{apps: []store.App{{ID: "still-here", Name: "still-here"}}}
-	c := NewNetworkCleanupController(apps, rt, "acme")
+	c := NewNetworkCleanupController(apps, rt, "acme", "")
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -280,13 +280,48 @@ func TestNetworkCleanupController_RemovesOrphanedNetworks(t *testing.T) {
 	}
 }
 
+// TestNetworkCleanupController_DoesNotRemoveOtherInstanceNetworks proves
+// the same cross-instance-safety property TestController_Teardown_
+// DoesNotRemoveOtherInstanceContainers proves for containers, but for
+// this controller's own whole-fleet network sweep: instance A's
+// NetworkCleanupController must never remove a network another
+// control-plane instance created and still owns, even when that
+// network's app ID isn't one instance A's own store knows about (from
+// instance A's point of view, indistinguishable from a genuinely
+// orphaned network of its own, without the instance label).
+func TestNetworkCleanupController_DoesNotRemoveOtherInstanceNetworks(t *testing.T) {
+	rt := newFakeRuntime(0)
+	rt.networks["acme-app-mine-but-gone"] = "net-1"
+	rt.networks["acme-app-not-mine"] = "net-2"
+	rt.networkLabels["acme-app-not-mine"] = map[string]string{"platform-reserved.instance": "inst-b"}
+
+	apps := &fakeAppLister{} // instance A's own store has no apps at all
+	c := NewNetworkCleanupController(apps, rt, "acme", "inst-a")
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	cond := conditionOf(t, result)
+	if cond.Status != reconcile.ConditionTrue || cond.Reason != "OrphanedNetworksRemoved" {
+		t.Errorf("condition = %+v, want Status=True Reason=OrphanedNetworksRemoved", cond)
+	}
+
+	if _, ok := rt.networks["acme-app-mine-but-gone"]; ok {
+		t.Error("acme-app-mine-but-gone still present, want it removed (this instance's own orphan)")
+	}
+	if _, ok := rt.networks["acme-app-not-mine"]; !ok {
+		t.Error("acme-app-not-mine was removed, want it untouched (belongs to a different control-plane instance)")
+	}
+}
+
 // TestNetworkCleanupController_NothingToClean covers the common
 // steady-state pass: no networks under this prefix exist yet, so this
 // must be a cheap no-op, not an error.
 func TestNetworkCleanupController_NothingToClean(t *testing.T) {
 	rt := newFakeRuntime(0)
 	apps := &fakeAppLister{}
-	c := NewNetworkCleanupController(apps, rt, "acme")
+	c := NewNetworkCleanupController(apps, rt, "acme", "")
 
 	result, err := c.Reconcile(context.Background())
 	if err != nil {
@@ -309,7 +344,7 @@ func TestNetworkCleanupController_RemoveFails_HalfSucceeded(t *testing.T) {
 	rt.removeNetworkErr = errors.New("network has active endpoints")
 
 	apps := &fakeAppLister{}
-	c := NewNetworkCleanupController(apps, rt, "acme")
+	c := NewNetworkCleanupController(apps, rt, "acme", "")
 
 	result, err := c.Reconcile(context.Background())
 	if err == nil {

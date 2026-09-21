@@ -71,7 +71,7 @@ func TestController_Reconcile_Live_SecretEnv(t *testing.T) {
 	desired := store.DesiredService{
 		Name: serviceName, Image: image, Port: 80,
 		Env:       map[string]string{"NODE_ENV": "production"},
-		SecretEnv: []string{"API_KEY"},
+		SecretEnv: []store.SecretEnvRef{{Name: "API_KEY"}},
 	}
 	if err := db.SaveDesiredService(longCtx, desired); err != nil {
 		t.Fatalf("SaveDesiredService() error = %v", err)
