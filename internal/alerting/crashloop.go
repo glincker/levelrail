@@ -217,6 +217,78 @@ func EvaluateCrashloop(tracker *RestartTracker, r Rule, now time.Time) Rule {
 	return advanceState(next, r, count >= r.RestartCountThreshold, 0, now)
 }
 
+// AutoRollbackTracker records, per resourceID, the image MaybeAutoRollback
+// most recently rolled a service's desired state back to. A KindCrashloop
+// rule's own Firing bool is *not* enough of a debounce on its own: once a
+// rollback fixes one bad deploy, the rule can stay continuously Firing
+// (never re-transitioning through becameFiring) simply because the prior
+// episode's restarts are still inside RestartWindow, even after a second,
+// genuinely different bad image starts crash-looping. This tracker gives
+// MaybeAutoRollback a second, independent signal for that case: if the
+// service's current desired image no longer matches the image it was last
+// rolled back to, something changed the desired state since (a new
+// deploy), so it is safe, and necessary, to roll back again. If the
+// current image still matches, nothing has changed since the last
+// rollback, the ongoing Firing state is still the same incident, and
+// MaybeAutoRollback must not fire again.
+//
+// In-memory only, the same shape as RestartTracker above: a control-plane
+// restart already zeroes RestartTracker's own counts, which independently
+// forces every crashloop rule back through a fresh pending-to-firing
+// transition before it can fire at all, so losing this map's entries on
+// restart never produces a wrong rollback decision, at worst a rule
+// revisits becameFiring once more before this fast path resumes tracking
+// it.
+type AutoRollbackTracker struct {
+	mu     sync.Mutex
+	target map[string]string // resourceID -> image last auto-rolled-back to
+}
+
+// NewAutoRollbackTracker builds an empty AutoRollbackTracker.
+func NewAutoRollbackTracker() *AutoRollbackTracker {
+	return &AutoRollbackTracker{target: make(map[string]string)}
+}
+
+// alreadyHandled reports whether resourceID was already auto-rolled-back
+// to exactly currentImage, meaning nothing has changed since and
+// MaybeAutoRollback must not fire again. A nil tracker (never wired)
+// always reports false, the same "absence degrades, never errors" shape
+// MaybeAutoRollback's other optional dependencies already follow.
+func (t *AutoRollbackTracker) alreadyHandled(resourceID, currentImage string) bool {
+	if t == nil {
+		return false
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	last, ok := t.target[resourceID]
+	return ok && last == currentImage
+}
+
+// armed reports whether resourceID has ever had an auto-rollback recorded.
+// Engine.Tick uses this as a cheap in-memory check before deciding whether
+// a still-firing rule is even worth a store round trip to re-examine: a
+// service that has never auto-rolled-back has nothing new to detect here.
+func (t *AutoRollbackTracker) armed(resourceID string) bool {
+	if t == nil {
+		return false
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	_, ok := t.target[resourceID]
+	return ok
+}
+
+// record stores image as the one resourceID was most recently
+// auto-rolled-back to. Safe for concurrent use.
+func (t *AutoRollbackTracker) record(resourceID, image string) {
+	if t == nil {
+		return
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.target[resourceID] = image
+}
+
 // AutoRollbackStore is the narrow store surface MaybeAutoRollback needs:
 // read a service's current desired state (to check the opt-in flag and
 // current image) and its deploy history (to find a prior known-good
@@ -234,18 +306,23 @@ type AutoRollbackStore interface {
 // AutoRollbackOnCrashloop) and, if so, triggers a deploy back to the
 // most recent different successful image via deploy.TriggerImageDeploy,
 // the identical path a manual "Rollback to this build" action already
-// uses (see that function's own doc comment). Intended to be called only
-// on a KindCrashloop rule's pending-to-firing transition (Engine.Tick's
-// becameFiring), which is itself this feature's once-per-bad-deploy
-// debounce: a rule that's already firing does not transition again until
-// it resolves, so this never fires twice for the same crashloop.
+// uses (see that function's own doc comment). Called both on a
+// KindCrashloop rule's pending-to-firing transition (Engine.Tick's
+// becameFiring) and on every tick a rule stays continuously firing
+// (Engine.Tick's stillFiring, gated on tracker.armed so it only costs a
+// store round trip for a service that has already auto-rolled-back at
+// least once): tracker's alreadyHandled check below is what still
+// prevents firing twice for the same incident in both cases, a rule
+// staying Firing is no longer, by itself, proof that nothing new has
+// happened, since a second bad deploy inside the same RestartWindow never
+// produces a fresh transition.
 //
 // Failures and "nothing to do" cases are logged, never returned: a
 // crashloop rule's own notification already fired regardless of what
 // happens here, and an automatic safety net that panics or blocks
 // evaluation of the next rule would be worse than one that occasionally
 // leaves a crashloop to alert-only.
-func MaybeAutoRollback(ctx context.Context, st AutoRollbackStore, nudger deploy.ReconcileNudger, resourceID string, logger *slog.Logger) {
+func MaybeAutoRollback(ctx context.Context, st AutoRollbackStore, nudger deploy.ReconcileNudger, tracker *AutoRollbackTracker, resourceID string, logger *slog.Logger) {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -261,6 +338,9 @@ func MaybeAutoRollback(ctx context.Context, st AutoRollbackStore, nudger deploy.
 		return
 	}
 	if !svc.AutoRollbackOnCrashloop {
+		return
+	}
+	if tracker.alreadyHandled(resourceID, svc.Image) {
 		return
 	}
 
@@ -279,5 +359,6 @@ func MaybeAutoRollback(ctx context.Context, st AutoRollbackStore, nudger deploy.
 		logger.Error("alerting: crashloop auto-rollback: trigger deploy failed", slog.String("name", name), slog.String("image", image), slog.String("error", err.Error()))
 		return
 	}
+	tracker.record(resourceID, image)
 	logger.Warn("alerting: crashloop auto-rollback: rolled back to prior image", slog.String("name", name), slog.String("from_image", svc.Image), slog.String("to_image", image))
 }
