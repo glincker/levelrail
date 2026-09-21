@@ -77,6 +77,37 @@ type Service struct {
 	// internal/compose.Service.Command, which this mirrors. A plain argv
 	// list, never shell-interpreted.
 	Command []string `yaml:"command,omitempty"`
+
+	// Egress restricts this service's outbound network traffic to an
+	// explicit host+port allowlist, enforced by
+	// internal/reconcile/application's egress sidecar. Nil (the default,
+	// and the only state every service had before this field existed)
+	// means today's open-egress behavior, unchanged: this is deliberately
+	// opt-in, not deny-by-default, since Levelrail runs arbitrary
+	// third-party apps for existing users rather than AX's own
+	// tightly-scoped agent sandboxes, and defaulting every existing app
+	// to deny-all egress on upgrade would be a breaking change.
+	Egress *Egress `yaml:"egress,omitempty"`
+}
+
+// EgressModeAllowlist is the only meaningful Egress.Mode value today; see
+// Egress's own doc comment for why the block is opt-in rather than
+// defaulting to deny-all.
+const EgressModeAllowlist = "allowlist"
+
+// Egress is a service's outbound network policy.
+type Egress struct {
+	Mode  string        `yaml:"mode"`
+	Allow []EgressAllow `yaml:"allow,omitempty"`
+}
+
+// EgressAllow is one host+port pair a service's outbound traffic may
+// reach when Egress.Mode is allowlist. Host is a bare hostname, resolved
+// (and re-resolved on an interval, DNS records aren't static) by the
+// egress sidecar rather than pinned to an IP at deploy time.
+type EgressAllow struct {
+	Host string `yaml:"host"`
+	Port int    `yaml:"port"`
 }
 
 // Hooks are the two deploy-lifecycle commands a service can declare.

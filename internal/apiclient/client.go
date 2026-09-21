@@ -249,6 +249,29 @@ func (c *Client) ClearAppVaultEnv(ctx context.Context, name, key string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/vault-env/"+PathEscape(key), nil, nil)
 }
 
+// GetAppEgressPolicy calls GET /api/v1/apps/{name}/egress-policy: name's
+// current outbound network allowlist, unconfigured (Mode/Allow both
+// empty) meaning unrestricted egress.
+func (c *Client) GetAppEgressPolicy(ctx context.Context, name string) (AppEgressPolicyResource, error) {
+	var out AppEgressPolicyResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/egress-policy", nil, &out)
+	return out, err
+}
+
+// SetAppEgressPolicy calls PUT /api/v1/apps/{name}/egress-policy: sets
+// (or replaces) name's outbound network allowlist.
+func (c *Client) SetAppEgressPolicy(ctx context.Context, name string, req SetAppEgressPolicyRequest) (AppEgressPolicyResource, error) {
+	var out AppEgressPolicyResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/egress-policy", req, &out)
+	return out, err
+}
+
+// ClearAppEgressPolicy calls DELETE /api/v1/apps/{name}/egress-policy,
+// opting name back out to unrestricted egress.
+func (c *Client) ClearAppEgressPolicy(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/egress-policy", nil, nil)
+}
+
 // CreateTag calls POST /api/v1/tags.
 func (c *Client) CreateTag(ctx context.Context, name string) (TagResource, error) {
 	var out TagResource

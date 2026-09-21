@@ -314,6 +314,7 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 			SecretEnv:   secretEnv,
 			Resources:   resources,
 			Health:      health,
+			Command:     svc.Command,
 		},
 		Build: &buildTriggerRequest{
 			RepoURL:   repo,
@@ -375,6 +376,7 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 			SecretEnv:   secretEnv,
 			Resources:   resources,
 			Health:      health,
+			Command:     svc.Command,
 		},
 	}, nil
 }

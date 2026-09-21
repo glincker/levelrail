@@ -69,6 +69,10 @@ func TestSpecServiceFromDesired(t *testing.T) {
 			Liveness:     &store.ServiceProbe{Path: "/live", Interval: 30 * time.Second},
 			ReadyTimeout: 90 * time.Second,
 		},
+		Egress: &store.ServiceEgressPolicy{
+			Mode:  store.EgressModeAllowlist,
+			Allow: []store.ServiceEgressAllow{{Host: "api.anthropic.com", Port: 443}},
+		},
 	}
 	buildCfg := spec.Build{Type: spec.BuildDockerfile, Path: "./Dockerfile"}
 
@@ -110,6 +114,9 @@ func TestSpecServiceFromDesired(t *testing.T) {
 	if got.Health.ReadyTimeout != "1m30s" {
 		t.Errorf("Health.ReadyTimeout = %q, want \"1m30s\" (time.Duration.String's own formatting of 90s)", got.Health.ReadyTimeout)
 	}
+	if got.Egress == nil || got.Egress.Mode != spec.EgressModeAllowlist || len(got.Egress.Allow) != 1 || got.Egress.Allow[0] != (spec.EgressAllow{Host: "api.anthropic.com", Port: 443}) {
+		t.Errorf("Egress = %+v, want Mode=allowlist Allow=[api.anthropic.com:443]", got.Egress)
+	}
 }
 
 // TestSpecServiceFromDesired_NoOptionalFields covers the zero-value case:
@@ -128,5 +135,8 @@ func TestSpecServiceFromDesired_NoOptionalFields(t *testing.T) {
 	}
 	if got.Health != nil {
 		t.Errorf("Health = %+v, want nil", got.Health)
+	}
+	if got.Egress != nil {
+		t.Errorf("Egress = %+v, want nil", got.Egress)
 	}
 }

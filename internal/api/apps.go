@@ -78,6 +78,17 @@ type appResource struct {
 	// GET /api/v1/apps/{name}/hook-runs (apps_hooks.go) for the most
 	// recent outcome of each.
 	Hooks *store.ServiceHooks `json:"hooks,omitempty"`
+	// Egress is this app's outbound network allowlist
+	// (store.DesiredService.Egress). Display-only here, unlike
+	// Resources/Health/Hooks above: deliberately excluded from
+	// appResource.toDesiredService() so an ordinary PUT
+	// /api/v1/apps/{name} (whose request body a caller may not have
+	// updated to know about this field) can never silently clear an
+	// already-configured policy, the same safety StorageTargetID's own
+	// exclusion already gives that field. Set it via app.yaml's egress:
+	// block on deploy, or PUT/DELETE /api/v1/apps/{name}/egress-policy
+	// (apps_egress.go) directly.
+	Egress *store.ServiceEgressPolicy `json:"egress,omitempty"`
 	// Strategy and Replicas deliberately have no `omitempty`: a real
 	// store.DesiredService read back from the store is documented to
 	// always carry the *resolved* value (never "" / 0, see that
@@ -204,9 +215,9 @@ type appResource struct {
 	// comment for where these actually get set.
 	BindMounts []appBindMountResource `json:"bind_mounts,omitempty"`
 	// Command overrides the image's own default CMD
-	// (store.DesiredService.Command), response-only for the same reason
-	// Volumes above is: set through app.yaml's command: field or a
-	// compose import, never through this endpoint.
+	// (store.DesiredService.Command): settable here the same as Env or
+	// Image, in addition to app.yaml's command: field or a compose
+	// import (internal/deploy/translate.go, internal/compose/translate.go).
 	Command []string `json:"command,omitempty"`
 	// PullPolicy is store.PullPolicyAlways to force a fresh image pull on
 	// every deploy, or empty for the default pull-if-absent behavior.
@@ -268,6 +279,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		Resources:           svc.Resources,
 		Health:              svc.Health,
 		Hooks:               svc.Hooks,
+		Egress:              svc.Egress,
 		Strategy:            svc.Strategy,
 		Replicas:            svc.Replicas,
 		Labels:              svc.Labels,
@@ -304,6 +316,7 @@ func (a appResource) toDesiredService() store.DesiredService {
 		Strategy:    a.Strategy,
 		Replicas:    a.Replicas,
 		Labels:      a.Labels,
+		Command:     a.Command,
 	}
 }
 
@@ -697,6 +710,11 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// save (e.g. a health check edit sent via the same PUT).
 	imageChanged := req.Image != existing.Image
 	desired := req.toDesiredService()
+	// Egress isn't in appResource.toDesiredService() (that field's own
+	// doc comment), so without this it would silently reset to nil on
+	// every save: SaveDesiredService, unlike NodeID/StorageTargetID,
+	// always writes this column.
+	desired.Egress = existing.Egress
 	if imageChanged {
 		desired.EnvDirty = false
 	} else {

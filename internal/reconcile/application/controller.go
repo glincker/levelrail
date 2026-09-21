@@ -217,6 +217,14 @@ type Controller struct {
 	hookTimeout    time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
 	liveness       *LivenessTracker        // per-container liveness failure counts, in memory only, see LivenessTracker
 	instanceID     string                  // empty means no instance-ownership check, see WithInstanceID
+	// egressReadyBudget/egressReadyPollInterval override
+	// defaultEgressReadyBudget/defaultEgressReadyPollInterval (egress.go);
+	// zero means "use the default", see effectiveEgressReadyBudget and
+	// effectiveEgressReadyPollInterval. Tests are the only caller today,
+	// shrinking both so a stuck-sidecar test doesn't have to wait out the
+	// real 30s production budget.
+	egressReadyBudget       time.Duration
+	egressReadyPollInterval time.Duration
 }
 
 // Option configures optional Controller behavior.
@@ -408,6 +416,21 @@ func WithHookTimeout(d time.Duration) Option {
 	return func(ctrl *Controller) { ctrl.hookTimeout = d }
 }
 
+// WithEgressReadyBudget overrides how long waitEgressReady (egress.go)
+// waits for a freshly created egress sidecar to confirm its enforcement
+// rules are installed before giving up. Defaults to
+// defaultEgressReadyBudget.
+func WithEgressReadyBudget(d time.Duration) Option {
+	return func(ctrl *Controller) { ctrl.egressReadyBudget = d }
+}
+
+// WithEgressReadyPollInterval overrides how often waitEgressReady
+// rechecks a not-yet-ready egress sidecar. Defaults to
+// defaultEgressReadyPollInterval.
+func WithEgressReadyPollInterval(d time.Duration) Option {
+	return func(ctrl *Controller) { ctrl.egressReadyPollInterval = d }
+}
+
 // New builds a Controller for serviceName.
 func New(serviceName string, svcStore ServiceStore, runtime docker.Runtime, opts ...Option) *Controller {
 	ctrl := &Controller{
@@ -448,7 +471,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		if err := c.removeStale(ctx, nil); err != nil {
 			return notReady("SuspendFailed", err), fmt.Errorf("application/%s: suspend: remove containers: %w", c.serviceName, err)
 		}
-		return unknownResult("Suspended"), nil
+		result := unknownResult("Suspended")
+		result.Conditions = append(result.Conditions, c.reconcileEgress(ctx, nil, desired))
+		return result, nil
 	}
 
 	// An app created for a git build carries a placeholder tag until its
@@ -485,11 +510,14 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 	switch strategy {
 	case strategyBlueGreen:
-		return c.reconcileBlueGreen(ctx, targets, desired)
+		result, err := c.reconcileBlueGreen(ctx, targets, desired)
+		return c.appendEgressCondition(ctx, result, targets, desired), err
 	case strategyRecreate:
-		return c.reconcileRecreate(ctx, targets, desired)
+		result, err := c.reconcileRecreate(ctx, targets, desired)
+		return c.appendEgressCondition(ctx, result, targets, desired), err
 	case strategyRolling:
-		return c.reconcileRolling(ctx, targets, desired)
+		result, err := c.reconcileRolling(ctx, targets, desired)
+		return c.appendEgressCondition(ctx, result, targets, desired), err
 	default:
 		// Reachable only if something bypassed internal/spec's schema
 		// validation (a hand-built DesiredService, or the schema's own
@@ -501,12 +529,19 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 }
 
-// Teardown stops and removes every container this controller owns.
+// Teardown stops and removes every container this controller owns,
+// including any egress sidecar: removeStale's own ownsContainer-based
+// matching never sees a sidecar (egressSidecarSuffix's own doc comment
+// on why), so it needs its own explicit cleanup call here rather than
+// being swept up for free.
 // Callers must call it themselves right after deleting desired state:
 // Reconcile treats ErrServiceNotFound as "not deployed yet," not "stop
 // everything," so a deleted service is never reconciled again otherwise.
 func (c *Controller) Teardown(ctx context.Context) error {
-	return c.removeStale(ctx, nil)
+	if err := c.removeStale(ctx, nil); err != nil {
+		return err
+	}
+	return c.removeAllEgressSidecars(ctx)
 }
 
 // reconcileBlueGreen is today's original single-replica shape (this

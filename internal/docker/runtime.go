@@ -200,6 +200,24 @@ type ContainerSpec struct {
 	// before this field existed. Populated from
 	// store.DesiredService.PullPolicy == store.PullPolicyAlways.
 	ForcePull bool
+	// CapAdd lists Linux capabilities added beyond Docker's own default
+	// set (container.HostConfig.CapAdd), nil meaning none, unchanged from
+	// every container this codebase created before this field existed.
+	// First caller: internal/reconcile/application's egress sidecar,
+	// which needs NET_ADMIN to install iptables/ipset rules inside the
+	// network namespace it shares with the app container.
+	CapAdd []string
+	// NetworkMode sets container.HostConfig.NetworkMode directly, the
+	// Engine API's own string format (e.g. "container:<id>" to join
+	// another container's network namespace instead of getting one of
+	// its own). Empty leaves HostConfig.NetworkMode unset, Docker's
+	// default ("default", meaning the Network field above or the default
+	// bridge network), unchanged from every container this codebase
+	// created before this field existed. Mutually meaningful alongside
+	// Network only in the sense that Docker itself rejects combining a
+	// non-default NetworkMode with an EndpointsConfig attachment; callers
+	// that set NetworkMode leave Network nil.
+	NetworkMode string
 }
 
 // RegistryAuth is a plaintext username/password pair for pulling a

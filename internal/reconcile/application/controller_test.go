@@ -117,6 +117,14 @@ type fakeRuntime struct {
 	execOutput   string
 	execStderr   string
 	execCalls    []execCallRecord
+	// execFailCount, when > 0, makes exactly that many subsequent Exec
+	// calls return a nonzero exit (decrementing itself each time), then
+	// Exec reverts to its normal execExitCode/execOutput behavior: the
+	// "sidecar running but its boot script hasn't finished installing
+	// rules yet" case egress readiness polling is meant to tolerate and
+	// eventually clear, distinct from execExitCode's permanent-failure
+	// shape.
+	execFailCount int
 }
 
 // execCallRecord is one Exec call fakeRuntime observed, for assertions
@@ -399,6 +407,10 @@ func (f *fakeRuntime) Exec(_ context.Context, containerID string, cmd []string) 
 	f.execCalls = append(f.execCalls, execCallRecord{containerID: containerID, cmd: cmd})
 	if f.execErr != nil {
 		return nil, f.execErr
+	}
+	if f.execFailCount > 0 {
+		f.execFailCount--
+		return &execExitReader{r: strings.NewReader(""), err: &docker.ExecExitError{ExitCode: 1}}, nil
 	}
 	var trailing error
 	if f.execExitCode != 0 {
@@ -3635,7 +3647,10 @@ func TestController_Reconcile_BindAddress_InvalidFailsReconcile(t *testing.T) {
 	if err == nil {
 		t.Fatal("Reconcile() error = nil, want an error for an invalid bind address")
 	}
-	if len(result.Conditions) != 1 || result.Conditions[0].Status != reconcile.ConditionFalse {
-		t.Errorf("Conditions = %+v, want a single NotReady condition", result.Conditions)
+	// Ready plus the always-appended EgressPolicyReady condition
+	// (appendEgressCondition), not a single condition: only the first,
+	// the one this test actually cares about, needs to be NotReady.
+	if len(result.Conditions) == 0 || result.Conditions[0].Status != reconcile.ConditionFalse {
+		t.Errorf("Conditions = %+v, want a NotReady Ready condition first", result.Conditions)
 	}
 }

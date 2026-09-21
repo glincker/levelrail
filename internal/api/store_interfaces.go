@@ -119,6 +119,16 @@ type AppStore interface {
 	// SetServiceVaultEnvVar, see store.DB.SetServicePreviewEnvOverride's
 	// own doc comment.
 	SetServicePreviewEnvOverride(ctx context.Context, name, envVar string, value *string) error
+	// UpdateServiceEgressPolicy backs GET/PUT/DELETE
+	// /api/v1/apps/{name}/egress-policy (apps_egress.go): the UI/CLI-
+	// facing way to set (or clear) an app's outbound network allowlist
+	// outside a redeploy, mirroring SetServiceVaultEnvVar's own dual
+	// write path (app.yaml's egress: block also sets this, via the
+	// ordinary SaveDesiredService full-record-replace). Same
+	// separation-from-ordinary-update reasoning as
+	// UpdateServiceStorageTarget, see
+	// store.DB.UpdateServiceEgressPolicy's own doc comment.
+	UpdateServiceEgressPolicy(ctx context.Context, name string, policy *store.ServiceEgressPolicy) error
 }
 
 // AppGroupLister is the store surface GET /api/v1/apps/{name}/group

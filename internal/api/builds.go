@@ -467,7 +467,26 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 	if svc.Health != nil {
 		out.Health = specHealthFromStore(*svc.Health)
 	}
+	if svc.Egress != nil {
+		out.Egress = specEgressFromStore(*svc.Egress)
+	}
 	return out
+}
+
+// specEgressFromStore reverses internal/deploy's own toServiceEgressPolicy
+// exactly: unlike SecretEnv above, ServiceEgressPolicy stores every field
+// an app.yaml egress: block can express, so there's no fidelity loss to
+// call out here either. Without this, a build-triggered redeploy
+// (specServiceFromDesired's own caller) would silently wipe out an
+// already-configured egress policy the next time it runs
+// toDesiredService/SaveDesiredService, since that call replaces the
+// whole record.
+func specEgressFromStore(e store.ServiceEgressPolicy) *spec.Egress {
+	allow := make([]spec.EgressAllow, len(e.Allow))
+	for i, a := range e.Allow {
+		allow[i] = spec.EgressAllow{Host: a.Host, Port: a.Port}
+	}
+	return &spec.Egress{Mode: e.Mode, Allow: allow}
 }
 
 func specResourcesFromStore(r store.ServiceResources) *spec.Resources {

@@ -1564,6 +1564,31 @@ type AppDatabaseResource struct {
 	Field        string `json:"field"`
 }
 
+// AppEgressAllow mirrors internal/api's egressAllowResource: one host+port
+// pair in an app's outbound network allowlist.
+type AppEgressAllow struct {
+	Host string `json:"host"`
+	Port int    `json:"port"`
+}
+
+// SetAppEgressPolicyRequest mirrors internal/api's setEgressPolicyRequest
+// (apps_egress.go). Mode must be "allowlist" with at least one Allow
+// entry; the server rejects anything else.
+type SetAppEgressPolicyRequest struct {
+	Mode  string           `json:"mode"`
+	Allow []AppEgressAllow `json:"allow"`
+}
+
+// AppEgressPolicyResource mirrors internal/api's egressPolicyResource:
+// GET/PUT /api/v1/apps/{name}/egress-policy's response body. Mode/Allow
+// both empty means unconfigured, unrestricted egress, the default for
+// every app that has never opted in.
+type AppEgressPolicyResource struct {
+	AppName string           `json:"app_name"`
+	Mode    string           `json:"mode,omitempty"`
+	Allow   []AppEgressAllow `json:"allow,omitempty"`
+}
+
 // NodeResource mirrors internal/api's nodeResource (internal/api/nodes.go).
 type NodeResource struct {
 	ID              string     `json:"id"`

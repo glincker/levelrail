@@ -302,6 +302,52 @@ func TestBuildHostConfig_DNS(t *testing.T) {
 	}
 }
 
+func TestBuildHostConfig_CapAddAndNetworkMode(t *testing.T) {
+	tests := []struct {
+		name            string
+		spec            ContainerSpec
+		wantCapAdd      []string
+		wantNetworkMode container.NetworkMode
+	}{
+		{
+			name:            "neither set: omitted, byte-identical to before these fields existed",
+			spec:            ContainerSpec{Name: "web"},
+			wantCapAdd:      nil,
+			wantNetworkMode: "",
+		},
+		{
+			name:            "empty cap add slice: omitted",
+			spec:            ContainerSpec{Name: "web", CapAdd: []string{}},
+			wantCapAdd:      nil,
+			wantNetworkMode: "",
+		},
+		{
+			name:            "cap add set: passed straight through",
+			spec:            ContainerSpec{Name: "web", CapAdd: []string{"NET_ADMIN"}},
+			wantCapAdd:      []string{"NET_ADMIN"},
+			wantNetworkMode: "",
+		},
+		{
+			name:            "network mode set: joins another container's netns",
+			spec:            ContainerSpec{Name: "web", NetworkMode: "container:abc123"},
+			wantCapAdd:      nil,
+			wantNetworkMode: "container:abc123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hostConfig := buildHostConfig(tt.spec, nat.PortMap{})
+			if !reflect.DeepEqual([]string(hostConfig.CapAdd), tt.wantCapAdd) {
+				t.Errorf("buildHostConfig(%+v).CapAdd = %+v, want %+v", tt.spec, hostConfig.CapAdd, tt.wantCapAdd)
+			}
+			if hostConfig.NetworkMode != tt.wantNetworkMode {
+				t.Errorf("buildHostConfig(%+v).NetworkMode = %q, want %q", tt.spec, hostConfig.NetworkMode, tt.wantNetworkMode)
+			}
+		})
+	}
+}
+
 func TestBuildHostConfig_Resources(t *testing.T) {
 	tests := []struct {
 		name           string

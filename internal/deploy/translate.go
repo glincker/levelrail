@@ -86,7 +86,24 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		d.Hooks = &store.ServiceHooks{PreDeploy: svc.Hooks.PreDeploy, PostDeploy: svc.Hooks.PostDeploy}
 	}
 
+	if svc.Egress != nil {
+		d.Egress = toServiceEgressPolicy(*svc.Egress)
+	}
+
 	return d, nil
+}
+
+// toServiceEgressPolicy translates spec.Egress into its storage shape,
+// the same field-for-field mirror toServiceHealth/toServiceResources
+// already do for their own fields: internal/spec.Validate already
+// rejected an unrecognized mode or an empty allow list, so this never
+// needs to re-check either.
+func toServiceEgressPolicy(e spec.Egress) *store.ServiceEgressPolicy {
+	allow := make([]store.ServiceEgressAllow, len(e.Allow))
+	for i, a := range e.Allow {
+		allow[i] = store.ServiceEgressAllow{Host: a.Host, Port: a.Port}
+	}
+	return &store.ServiceEgressPolicy{Mode: e.Mode, Allow: allow}
 }
 
 // volumeName turns a service's own logical volume name (spec.Volume.Name,

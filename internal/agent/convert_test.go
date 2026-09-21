@@ -39,6 +39,41 @@ func TestContainerSpecDNSRoundTrip(t *testing.T) {
 	}
 }
 
+func TestContainerSpecCapAddNetworkModeRoundTrip(t *testing.T) {
+	tests := []struct {
+		name        string
+		capAdd      []string
+		networkMode string
+	}{
+		{name: "neither set", capAdd: nil, networkMode: ""},
+		{name: "net admin only", capAdd: []string{"NET_ADMIN"}, networkMode: ""},
+		{name: "network mode only", capAdd: nil, networkMode: "container:abc123"},
+		{name: "both set", capAdd: []string{"NET_ADMIN"}, networkMode: "container:abc123"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			original := docker.ContainerSpec{Name: "web", Image: "img:v1", CapAdd: tt.capAdd, NetworkMode: tt.networkMode}
+
+			pb := containerSpecToPB(original)
+			if !reflect.DeepEqual(pb.CapAdd, tt.capAdd) {
+				t.Errorf("containerSpecToPB().CapAdd = %+v, want %+v", pb.CapAdd, tt.capAdd)
+			}
+			if pb.NetworkMode != tt.networkMode {
+				t.Errorf("containerSpecToPB().NetworkMode = %q, want %q", pb.NetworkMode, tt.networkMode)
+			}
+
+			back := containerSpecFromPB(pb)
+			if !reflect.DeepEqual(back.CapAdd, tt.capAdd) {
+				t.Errorf("containerSpecFromPB(containerSpecToPB(spec)).CapAdd = %+v, want %+v", back.CapAdd, tt.capAdd)
+			}
+			if back.NetworkMode != tt.networkMode {
+				t.Errorf("containerSpecFromPB(containerSpecToPB(spec)).NetworkMode = %q, want %q", back.NetworkMode, tt.networkMode)
+			}
+		})
+	}
+}
+
 func TestResourcesRoundTrip(t *testing.T) {
 	tests := []struct {
 		name string

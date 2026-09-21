@@ -406,6 +406,12 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 	if len(spec.DNS) > 0 {
 		hostConfig.DNS = spec.DNS
 	}
+	if len(spec.CapAdd) > 0 {
+		hostConfig.CapAdd = spec.CapAdd
+	}
+	if spec.NetworkMode != "" {
+		hostConfig.NetworkMode = container.NetworkMode(spec.NetworkMode)
+	}
 	return hostConfig
 }
 

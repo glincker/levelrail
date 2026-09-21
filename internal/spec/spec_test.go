@@ -199,6 +199,54 @@ services:
 	}
 }
 
+func TestParse_ValidEgressAllowlist(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web:
+    build: { type: dockerfile }
+    port: 8080
+    egress:
+      mode: allowlist
+      allow:
+        - { host: api.anthropic.com, port: 443 }
+        - { host: github.com, port: 443 }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	web, ok := s.Services["web"]
+	if !ok {
+		t.Fatal("expected a \"web\" service")
+	}
+	if web.Egress == nil {
+		t.Fatal("expected Egress to be set")
+	}
+	if web.Egress.Mode != EgressModeAllowlist {
+		t.Errorf("Egress.Mode = %q, want %q", web.Egress.Mode, EgressModeAllowlist)
+	}
+	want := []EgressAllow{{Host: "api.anthropic.com", Port: 443}, {Host: "github.com", Port: 443}}
+	if len(web.Egress.Allow) != len(want) || web.Egress.Allow[0] != want[0] || web.Egress.Allow[1] != want[1] {
+		t.Errorf("Egress.Allow = %+v, want %+v", web.Egress.Allow, want)
+	}
+}
+
+func TestParse_NoEgressBlock_IsOpenEgressByDefault(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if s.Services["web"].Egress != nil {
+		t.Errorf("Egress = %+v, want nil (open egress, unchanged) when the block is omitted", s.Services["web"].Egress)
+	}
+}
+
 func TestParse_ValidBindMountVolume(t *testing.T) {
 	yaml := `
 version: 1
@@ -861,6 +909,56 @@ version: 1
 services:
   web: { build: { type: dockerfile }, port: 8080, hooks: {} }
 `,
+		},
+		{
+			name: "egress missing mode",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, egress: { allow: [{ host: api.example.com, port: 443 }] } }
+`,
+		},
+		{
+			name: "egress unrecognized mode",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, egress: { mode: deny-all, allow: [{ host: api.example.com, port: 443 }] } }
+`,
+		},
+		{
+			name: "egress allowlist with no allow entries",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, egress: { mode: allowlist } }
+`,
+			wantErrSubstr: "egress.mode: allowlist requires at least one entry in egress.allow",
+		},
+		{
+			name: "egress allow entry missing host",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, egress: { mode: allowlist, allow: [{ port: 443 }] } }
+`,
+		},
+		{
+			name: "egress allow entry port out of range",
+			yaml: `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080, egress: { mode: allowlist, allow: [{ host: api.example.com, port: 70000 }] } }
+`,
+		},
+		{
+			name: "egress not meaningful for static build",
+			yaml: `
+version: 1
+services:
+  site: { build: { type: static, path: ./dist }, egress: { mode: allowlist, allow: [{ host: api.example.com, port: 443 }] } }
+`,
+			wantErrSubstr: "egress is not meaningful for build.type \"static\"",
 		},
 	}
 

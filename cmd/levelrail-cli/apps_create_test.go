@@ -273,6 +273,19 @@ func TestPlanFromFlags(t *testing.T) {
 			},
 		},
 		{
+			name:  "file mode image build type forwards command",
+			flags: createFlags{file: "app.yaml", port: 3000},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {Build: spec.Build{Type: spec.BuildImage, Image: "registry.example.com/org/web:v1"}, Port: 3000, Command: []string{"web", "--flag"}},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				want := []string{"web", "--flag"}
+				if !reflect.DeepEqual(p.CreateBody.Command, want) {
+					t.Errorf("CreateBody.Command = %v, want %v: app.yaml's command: must not be silently dropped", p.CreateBody.Command, want)
+				}
+			},
+		},
+		{
 			name:  "file mode image build type missing build.image rejected",
 			flags: createFlags{file: "app.yaml"},
 			fileSpec: &spec.Spec{Services: map[string]spec.Service{
@@ -429,6 +442,23 @@ func TestPlanFromFlags(t *testing.T) {
 				}
 				if p.CreateBody.Env["FOO"] != "bar" {
 					t.Errorf("Env[FOO] = %q, want %q", p.CreateBody.Env["FOO"], "bar")
+				}
+			},
+		},
+		{
+			name:  "file mode dockerfile build type forwards command",
+			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"web": {
+					Build:   spec.Build{Type: spec.BuildDockerfile},
+					Port:    3000,
+					Command: []string{"node", "server.js"},
+				},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				want := []string{"node", "server.js"}
+				if !reflect.DeepEqual(p.CreateBody.Command, want) {
+					t.Errorf("CreateBody.Command = %v, want %v: app.yaml's command: must not be silently dropped", p.CreateBody.Command, want)
 				}
 			},
 		},
