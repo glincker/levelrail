@@ -230,18 +230,38 @@ func (f *fakeAutoRollbackStore) ListDeployAttempts(_ context.Context, _ string) 
 	return f.attempts, nil
 }
 
+// SaveDesiredService both records the call (for assertions) and applies
+// it to f.svc, mirroring a real store: GetDesiredService must reflect the
+// image a prior rollback just set, or a test can't exercise the rearm
+// path (a second MaybeAutoRollback call re-reading the same stale image).
 func (f *fakeAutoRollbackStore) SaveDesiredService(_ context.Context, svc store.DesiredService) error {
 	f.savedServices = append(f.savedServices, svc)
+	f.svc = svc
 	return nil
 }
 
+// SaveDeployAttempt both records the call and prepends a to f.attempts
+// (ListDeployAttempts' own newest-first order), so a rollback triggered
+// through TriggerImageDeploy is itself visible to a later
+// PreviousKnownGoodImage scan, the same as it would be against a real
+// store.
 func (f *fakeAutoRollbackStore) SaveDeployAttempt(_ context.Context, a store.DeployAttempt) error {
 	f.savedAttempts = append(f.savedAttempts, a)
+	f.attempts = append([]store.DeployAttempt{a}, f.attempts...)
 	return nil
 }
 
-func (f *fakeAutoRollbackStore) FinishDeployAttempt(_ context.Context, id, _ string, _ time.Time, _ string) error {
+// FinishDeployAttempt updates the matching attempt's status in place
+// (mirroring how recordImageDeployAttempt marks its own attempt succeeded
+// immediately), so a rollback's own attempt reads back as succeeded, not
+// its initial running status, for anything that lists attempts afterward.
+func (f *fakeAutoRollbackStore) FinishDeployAttempt(_ context.Context, id, status string, _ time.Time, _ string) error {
 	f.finishedIDs = append(f.finishedIDs, id)
+	for i := range f.attempts {
+		if f.attempts[i].ID == id {
+			f.attempts[i].Status = status
+		}
+	}
 	return nil
 }
 
@@ -256,7 +276,7 @@ func TestMaybeAutoRollback_Enabled_RollsBackToPreviousImage(t *testing.T) {
 	}
 	nudger := &fakeAutoRollbackNudger{}
 
-	MaybeAutoRollback(context.Background(), st, nudger, "service:web", nil)
+	MaybeAutoRollback(context.Background(), st, nudger, nil, "service:web", nil)
 
 	if len(st.savedServices) != 1 || st.savedServices[0].Image != "web:v2" {
 		t.Fatalf("savedServices = %+v, want one save with image web:v2", st.savedServices)
@@ -278,7 +298,7 @@ func TestMaybeAutoRollback_Disabled_NeverFires(t *testing.T) {
 	}
 	nudger := &fakeAutoRollbackNudger{}
 
-	MaybeAutoRollback(context.Background(), st, nudger, "service:web", nil)
+	MaybeAutoRollback(context.Background(), st, nudger, nil, "service:web", nil)
 
 	if len(st.savedServices) != 0 {
 		t.Errorf("savedServices = %+v, want none: auto-rollback is off for this app", st.savedServices)
@@ -297,7 +317,7 @@ func TestMaybeAutoRollback_NoOlderImage_NoPanicNoRollback(t *testing.T) {
 	}
 	nudger := &fakeAutoRollbackNudger{}
 
-	MaybeAutoRollback(context.Background(), st, nudger, "service:web", nil)
+	MaybeAutoRollback(context.Background(), st, nudger, nil, "service:web", nil)
 
 	if len(st.savedServices) != 0 {
 		t.Errorf("savedServices = %+v, want none: already on the oldest known image", st.savedServices)
@@ -310,10 +330,99 @@ func TestMaybeAutoRollback_NoOlderImage_NoPanicNoRollback(t *testing.T) {
 func TestMaybeAutoRollback_NotServiceScopedResourceID_NoOp(t *testing.T) {
 	st := &fakeAutoRollbackStore{svc: store.DesiredService{Name: "web", Image: "web:v1", AutoRollbackOnCrashloop: true}}
 
-	MaybeAutoRollback(context.Background(), st, nil, "node:some-node-id", nil)
+	MaybeAutoRollback(context.Background(), st, nil, nil, "node:some-node-id", nil)
 
 	if len(st.savedServices) != 0 {
 		t.Errorf("savedServices = %+v, want none for a non-service resourceID", st.savedServices)
+	}
+}
+
+func TestAutoRollbackTracker_NilReceiver_NeverPanicsAlwaysUnarmed(t *testing.T) {
+	var tr *AutoRollbackTracker
+	if tr.armed("service:web") {
+		t.Error("armed() on a nil tracker = true, want false")
+	}
+	if tr.alreadyHandled("service:web", "web:v1") {
+		t.Error("alreadyHandled() on a nil tracker = true, want false")
+	}
+	tr.record("service:web", "web:v1") // must not panic
+}
+
+func TestAutoRollbackTracker_RecordThenAlreadyHandled(t *testing.T) {
+	tr := NewAutoRollbackTracker()
+	if tr.armed("service:web") {
+		t.Error("armed() before any record = true, want false")
+	}
+
+	tr.record("service:web", "web:v1")
+
+	if !tr.armed("service:web") {
+		t.Error("armed() after a record = false, want true")
+	}
+	if !tr.alreadyHandled("service:web", "web:v1") {
+		t.Error("alreadyHandled(same image) = false, want true")
+	}
+	if tr.alreadyHandled("service:web", "web:v2") {
+		t.Error("alreadyHandled(different image) = true, want false: a changed desired image is a new incident")
+	}
+	if tr.alreadyHandled("service:other", "web:v1") {
+		t.Error("alreadyHandled() leaked across resourceIDs")
+	}
+}
+
+// TestMaybeAutoRollback_Rearm_NewDeployAfterRollback_FiresAgain reproduces
+// the field bug directly at MaybeAutoRollback's own level: a first
+// crashloop episode gets auto-rolled-back, then a second, genuinely
+// different bad image is deployed before anything re-reads the store in
+// between (mirroring the real gap: the crashloop rule stays continuously
+// Firing because the first episode's restarts are still inside its
+// RestartWindow, so Engine.Tick never sees a fresh becameFiring
+// transition). MaybeAutoRollback must still roll back the second episode
+// when called again with the same tracker, and must target an image that
+// is not the one that just caused it.
+func TestMaybeAutoRollback_Rearm_NewDeployAfterRollback_FiresAgain(t *testing.T) {
+	st := &fakeAutoRollbackStore{
+		svc: store.DesiredService{Name: "web", Image: "web:badA", AutoRollbackOnCrashloop: true},
+		attempts: []store.DeployAttempt{
+			{Image: "web:badA", Status: store.DeployAttemptStatusSucceeded},
+			{Image: "web:good", Status: store.DeployAttemptStatusSucceeded},
+		},
+	}
+	nudger := &fakeAutoRollbackNudger{}
+	tracker := NewAutoRollbackTracker()
+
+	// Episode 1: web:badA is crash-looping. Rolls back to web:good.
+	MaybeAutoRollback(context.Background(), st, nudger, tracker, "service:web", nil)
+	if len(st.savedServices) != 1 || st.savedServices[0].Image != "web:good" {
+		t.Fatalf("after episode 1: savedServices = %+v, want one save with image web:good", st.savedServices)
+	}
+
+	// Rule stays Firing without ever resolving (the real bug's exact
+	// condition), but a genuinely different bad image is deployed:
+	// something outside MaybeAutoRollback changes the desired image and
+	// records its own deploy attempt, the same as a real deploy would.
+	st.svc.Image = "web:badB"
+	st.attempts = append([]store.DeployAttempt{{Image: "web:badB", Status: store.DeployAttemptStatusSucceeded}}, st.attempts...)
+
+	// Episode 2, same tracker, called again exactly as Engine.Tick's new
+	// stillFiring branch would.
+	MaybeAutoRollback(context.Background(), st, nudger, tracker, "service:web", nil)
+
+	if len(st.savedServices) != 2 {
+		t.Fatalf("after episode 2: savedServices = %+v, want two saves total (one per distinct bad deploy)", st.savedServices)
+	}
+	if got := st.savedServices[1].Image; got != "web:good" {
+		t.Errorf("episode 2 rolled back to %q, want web:good (not web:badB, the image that just caused it)", got)
+	}
+	if nudger.calls != 2 {
+		t.Errorf("nudger.calls = %d, want 2", nudger.calls)
+	}
+
+	// Nothing else changes: a third call against the same still-unresolved
+	// image must not fire a third time.
+	MaybeAutoRollback(context.Background(), st, nudger, tracker, "service:web", nil)
+	if len(st.savedServices) != 2 {
+		t.Errorf("after a repeat call with no image change: savedServices = %+v, want still exactly 2", st.savedServices)
 	}
 }
 
