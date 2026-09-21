@@ -59,9 +59,9 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// runAppsUntag implements "apps untag <name> <tag-id>": DELETE
-// /api/v1/apps/{name}/tags/{id}. tagID is the tag's ID (from "tags
-// list" or "apps get <name>"'s own tags field), not its name.
+// runAppsUntag implements "apps untag <name> <tag>": resolves tag to
+// its ID, then DELETE /api/v1/apps/{name}/tags/{id}. tag is a tag
+// name, symmetric with "apps tag <name> <tag>" above.
 func runAppsUntag(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps untag", "print {\"detached\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsUntagUsage(prog)) }
@@ -71,20 +71,25 @@ func runAppsUntag(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitCode
 	}
 
-	rest, ok := requireArgs(fs, stderr, prog, "apps untag", "exactly two arguments: app name and tag id", 2)
+	rest, ok := requireArgs(fs, stderr, prog, "apps untag", "exactly two arguments: app name and tag name", 2)
 	if !ok {
 		return exitUsage
 	}
-	appName, tagID := rest[0], rest[1]
+	appName, tagName := rest[0], rest[1]
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
+	tagID, err := resolveTagIDByName(context.Background(), client, tagName)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("untag app %q of %q: %w", appName, tagName, err))
+	}
+
 	if err := client.DetachAppTag(context.Background(), appName, tagID); err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("untag app %q of %q: %w", appName, tagID, err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("untag app %q of %q: %w", appName, tagName, err))
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, map[string]bool{"detached": true}, func() {
-		_, _ = fmt.Fprintf(stdout, "app %q untagged (tag id %s)\n", appName, tagID)
+		_, _ = fmt.Fprintf(stdout, "app %q untagged (tag %q)\n", appName, tagName)
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
@@ -94,9 +99,9 @@ func runAppsUntag(prog string, args []string, stdout, stderr io.Writer, lookupEn
 
 func appsUntagUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s apps untag <name> <tag-id> [flags]
+  %[1]s apps untag <name> <tag> [flags]
 
-Detaches a tag (by ID) from an app. The tag itself still exists and
+Detaches a tag (by name) from an app. The tag itself still exists and
 stays attached to any other app it's on.
 
 Flags:

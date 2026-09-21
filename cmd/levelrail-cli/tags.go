@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"net/http"
 )
 
 // runTags dispatches "tags <verb> [flags]" to one of list/create/delete,
@@ -39,12 +41,33 @@ func tagsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s tags list [flags]              list every tag
   %[1]s tags create --name NAME [flags]   create a tag
-  %[1]s tags delete <id> [flags]          delete a tag (detaches it from every app it was on)
-  %[1]s tags apps <id> [flags]            list every app attached to a tag
+  %[1]s tags delete <name> [flags]        delete a tag by name (detaches it from every app it was on)
+  %[1]s tags apps <name> [flags]          list every app attached to a tag, by tag name
+
+Every tag identifier this CLI's flags/arguments take is the tag's name,
+never its numeric/opaque ID; commands that need the ID internally
+resolve it from the name for you.
 
 Tag/untag an individual app with "%[1]s apps tag <name> <tag>" and
-"%[1]s apps untag <name> <tag-id>".
+"%[1]s apps untag <name> <tag>".
 
 Run "%[1]s tags <subcommand> -h" for a subcommand's own flags.
 `, prog)
+}
+
+// resolveTagIDByName looks up name against the full tag list and
+// returns its ID. Every remaining ID-only tag endpoint (delete, apps,
+// untag) needs this one extra round trip so a user never has to look
+// up an ID by hand before typing a tag identifier.
+func resolveTagIDByName(ctx context.Context, client *Client, name string) (string, error) {
+	tags, err := client.ListTags(ctx)
+	if err != nil {
+		return "", err
+	}
+	for _, t := range tags {
+		if t.Name == name {
+			return t.ID, nil
+		}
+	}
+	return "", &apiError{StatusCode: http.StatusNotFound, Message: fmt.Sprintf("tag %q not found", name)}
 }

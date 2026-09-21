@@ -172,9 +172,9 @@ Usage:
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s registry status|enable|disable [flags]                 manage Levelrail's own built-in container registry
   %[1]s flags create|list|get|set|delete [flags]              manage feature flags, read live by a running app via GET /api/v1/flags/evaluate/{key}
-  %[1]s tags list|create|delete|apps [flags]                  manage tags, arbitrary labels for organizing and filtering apps
+  %[1]s tags list|create|delete|apps [flags]                  manage tags, always identified by name, arbitrary labels for organizing and filtering apps
   %[1]s apps tag <name> <tag> [flags]                          attach a tag (by name) to an app
-  %[1]s apps untag <name> <tag-id> [flags]                     detach a tag (by id) from an app
+  %[1]s apps untag <name> <tag> [flags]                        detach a tag (by name) from an app
   %[1]s nodes list|get|delete [flags]                        manage nodes
   %[1]s nodes join-token [flags]                             mint a one-time node enrollment token
   %[1]s nodes cordon|uncordon|drain|health|workloads <id> [flags]   node scheduling and maintenance
