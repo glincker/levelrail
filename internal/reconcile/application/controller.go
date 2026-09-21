@@ -1528,6 +1528,15 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 
 	addr, err := primaryAddr(state)
 	if err != nil {
+		// A container reporting no published port here has virtually
+		// always already died (Docker only clears port bindings once a
+		// container stops), most commonly a process that exits before
+		// the runtime ever starts it. Give that its own crash reason
+		// instead of leaking the low-level "no ports" message as a
+		// generic ReadinessFailed.
+		if crash := c.exitedCrash(ctx, state.Name); crash != nil {
+			return crash
+		}
 		return fmt.Errorf("readiness probe: %w", err)
 	}
 
