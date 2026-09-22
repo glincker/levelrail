@@ -33,6 +33,11 @@ type AppStore interface {
 	// (project_restart.go) use it to find every app in a project without
 	// listing every service.
 	ListDesiredServicesByProject(ctx context.Context, projectID string) ([]store.DesiredService, error)
+	// ListDesiredServicesByEnvironment is ListDesiredServicesByProject's
+	// environment-kind counterpart: environment_clone.go's own clone
+	// preview/execute handlers use it to find every app tagged with the
+	// environment being cloned.
+	ListDesiredServicesByEnvironment(ctx context.Context, environmentID string) ([]store.DesiredService, error)
 	// RestartService is the only way to force a running container to be
 	// recreated without an image change: a redeploy of the same image
 	// tag is otherwise a genuine reconciler no-op (see
@@ -506,6 +511,15 @@ type SecretSetter interface {
 	ListKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
 	SetLocked(ctx context.Context, serviceName, envKey string, locked bool) error
 	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
+	// Resolve decrypts and returns one secret's plaintext value, the same
+	// read internal/reconcile/application already does immediately before
+	// container creation. environment_clone.go's own explicit,
+	// opt-in-only CopySecretValues path is the one HTTP-reachable caller
+	// that ever moves a decrypted value between two secret namespaces
+	// (source app/environment -> cloned app/environment) rather than
+	// only ever writing a caller-supplied plaintext the way
+	// SetValueGuarded's other callers do.
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
 }
 
 // MasterKeyRotator is the surface POST /api/v1/system/master-key/rotate

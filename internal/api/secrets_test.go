@@ -49,6 +49,12 @@ type fakeSecretSetter struct {
 	// with multiple secrets at once). lastService/lastKey/lastValue above
 	// stay the older, single-call surface every pre-existing test uses.
 	sets []fakeSecretSetterCall
+	// resolveValues/resolveErr back Resolve: keyed by serviceName+"/"+envKey,
+	// the same shape existsValues above already uses. A missing key
+	// returns secrets.ErrValueNotFound, matching *secrets.Manager's own
+	// "no value set" behavior, not a generic error.
+	resolveValues map[string]string
+	resolveErr    error
 }
 
 func (f *fakeSecretSetter) Exists(_ context.Context, serviceName, envKey string) (bool, error) {
@@ -79,6 +85,17 @@ func (f *fakeSecretSetter) ListKeys(_ context.Context, _ string) ([]store.Secret
 		out[i] = store.SecretKeyInfo{Key: k.key, Locked: k.locked}
 	}
 	return out, nil
+}
+
+func (f *fakeSecretSetter) Resolve(_ context.Context, serviceName, envKey string) (string, error) {
+	if f.resolveErr != nil {
+		return "", f.resolveErr
+	}
+	v, ok := f.resolveValues[serviceName+"/"+envKey]
+	if !ok {
+		return "", secrets.ErrValueNotFound
+	}
+	return v, nil
 }
 
 func (f *fakeSecretSetter) SetLocked(_ context.Context, _, envKey string, locked bool) error {

@@ -257,13 +257,61 @@ The deploy/rollback/promote flow shows `ProtectedEnvironmentNotice`, an amber wa
 
 Toggle `protected` on the environment detail page (`ProtectedEnvironmentToggle`), backed by `PATCH /api/v1/environments/{id}`. That's the only field that endpoint changes.
 
+## Cloning an environment
+
+`POST /api/v1/environments/{id}/clone` (implementation: `internal/api/environment_clone.go`) copies a whole environment: every app tagged with it, plus its own shared env vars, into a brand-new environment in the same project. This is a different operation from `POST /apps/{name}/promote`, which only ever moves one app's image tag onto an existing sibling app. Cloning creates new apps and a new environment from scratch, and actually deploys them through the normal reconcile path, the same as creating an app through the API directly.
+
+`GET /api/v1/environments/{id}/clone/preview?new_environment_name={name}` shows what a clone would create without applying it: each tagged app's suggested new name, current image, current domains (which will **not** be copied), declared secret env var names, and scheduled task count, plus the source environment's own shared env var keys.
+
+### What's copied, regenerated, or dropped
+
+| Copied verbatim | Regenerated | Dropped (opt back in explicitly) |
+| --- | --- | --- |
+| Image, port, bind address, env vars, command/entrypoint, pull policy, registry credential | App name (`desired_services.name` is globally unique, so cloning "api" always needs a new name) | Domains (a domain can only belong to one service; assign new ones via the clone request or afterward) |
+| Resources, health checks, hooks, egress policy, labels, strategy/replicas | Docker volume names (rewritten from the old app name's prefix to the new one; volumes start empty, no data is copied) | Host port pins (would collide with the source) |
+| Storage target, log drain, auto-rollback flag, exec-enabled flag, scheduled tasks | | Database attachments and app.yaml database env references (databases aren't cloned) |
+| Secret/vault env **declarations** (names and required flags, not values) | | Git build source and node placement |
+| Secret **values**, per-app and environment-shared alike | | Off by default; every declared secret is created with no value (same as a brand-new required secret) unless the request sets `copy_secret_values: true` |
+
+This mirrors `promote.go`'s own precedent (`promotePreviewUnsnapshottedFields`) of being deliberate about what crosses an environment boundary unprompted: config crosses freely, secret plaintext only on explicit opt-in.
+
+### Request shape
+
+```json
+POST /api/v1/environments/env_src123/clone
+{
+  "new_environment_name": "staging-eu",
+  "copy_secret_values": false,
+  "apps": [
+    { "source_app": "web", "new_name": "web-eu", "domains": ["web-eu.example.com"] }
+  ]
+}
+```
+
+`apps` is optional per source app: omit an entry entirely and that app clones under its own auto-suggested name (`<source>-<slugified new environment name>`) with no domains assigned. Only list apps whose default name or domain assignment needs to change.
+
+A name collision with an existing app (auto-suggested or explicit) fails the whole request with `409 Conflict` before anything is written; nothing is partially created because of a name clash. A requested domain already claimed by another service (including the source app itself) fails the same way, the same `*store.ErrDomainTaken` `SaveDesiredService` itself returns.
+
+### CLI
+
+```bash
+levelrail-cli apps environments clone-preview <id> --new-name NAME [flags]
+levelrail-cli apps environments clone <id> --new-name NAME \
+  [--app-rename SOURCE=NEWNAME ...] [--domain SOURCE=domain1,domain2 ...] \
+  [--copy-secret-values] [flags]
+```
+
+### Dashboard
+
+The environment detail page (`/projects/$id/environments/$envId`) has a "Clone environment..." button next to the protected toggle and delete action, opening `CloneEnvironmentDialog`. It shows the same preview as the API (suggested names, domains not copied, secret/scheduled-task counts), lets you override a name or assign domains per app, and has an explicit "Also copy real secret values" checkbox that defaults unchecked.
+
 ## Dashboard pages
 
 | Page | What's there |
 | --- | --- |
 | `/projects` | Virtualized list of all projects with "New project" dialog |
 | `/projects/$id` | Project name, organization, environments (create/delete inline), stop/start/restart/delete actions, member apps and databases (client-filtered) |
-| `/projects/$id/environments/$envId` | Environment's protected toggle, shared env var editor, sibling environment links, apps tagged with it |
+| `/projects/$id/environments/$envId` | Environment's protected toggle, clone-environment dialog, shared env var editor, sibling environment links, apps tagged with it |
 | `/settings/organizations` | List of all organizations with "New organization" dialog |
 | `/organizations/$id` | Organization name, shared env var editor, projects filed under it (client-filtered from API) |
 | App/Database Overview | "Move" (project) and "Change" (environment for apps only) actions to reassign membership |
@@ -307,6 +355,8 @@ File a project into an organization from the project detail page, not from the o
 | `GET` | `/api/v1/environments/{id}/env/secrets` | `read` | Secret-marked var keys only (values never returned) |
 | `PUT` | `/api/v1/environments/{id}/env/secrets/{key}` | `write` | Create or update a secret-marked shared var |
 | `DELETE` | `/api/v1/environments/{id}/env/secrets/{key}` | `write` | Delete a secret-marked shared var |
+| `GET` | `/api/v1/environments/{id}/clone/preview` | `read` | Preview cloning a whole environment's app set |
+| `POST` | `/api/v1/environments/{id}/clone` | `deploy` | Clone a whole environment's app set into a new one |
 | `GET` | `/api/v1/projects/{id}/env` | `read` |
 | `PUT` | `/api/v1/projects/{id}/env` | `write` |
 | `GET` | `/api/v1/projects/{id}/env/all` | `read` | Plain and secret-marked shared vars combined |
@@ -348,6 +398,9 @@ levelrail-cli apps environments update <id> --protected=true|false [flags]
 levelrail-cli apps environments delete <id> [flags]
 levelrail-cli apps environments env-get <id> [flags]
 levelrail-cli apps environments env-set <id> --var KEY=VALUE [--var KEY=VALUE ...] [flags]
+levelrail-cli apps environments clone-preview <id> --new-name NAME [flags]
+levelrail-cli apps environments clone <id> --new-name NAME \
+  [--app-rename SOURCE=NEWNAME ...] [--domain SOURCE=D1,D2 ...] [--copy-secret-values] [flags]
 
 # Shared environment variables (projects, organizations, environments)
 levelrail-cli shared-env list --scope project|organization|environment --id ID [flags]

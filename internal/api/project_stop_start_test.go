@@ -202,6 +202,9 @@ func (f *fakeProjectLifecycleAppStore) ListDesiredServicesByNode(context.Context
 func (f *fakeProjectLifecycleAppStore) ListDesiredServicesByProject(context.Context, string) ([]store.DesiredService, error) {
 	return f.services, nil
 }
+func (f *fakeProjectLifecycleAppStore) ListDesiredServicesByEnvironment(context.Context, string) ([]store.DesiredService, error) {
+	return nil, nil
+}
 func (f *fakeProjectLifecycleAppStore) RestartService(context.Context, string) error { return nil }
 func (f *fakeProjectLifecycleAppStore) UpdateServiceProject(context.Context, string, string) error {
 	return nil

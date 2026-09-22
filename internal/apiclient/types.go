@@ -1449,6 +1449,72 @@ type UpdateEnvironmentRequest struct {
 	Protected bool `json:"protected"`
 }
 
+// EnvironmentCloneAppPreview mirrors internal/api's
+// environmentCloneAppPreview (internal/api/environment_clone.go): one
+// source app's own view inside GET .../clone/preview.
+type EnvironmentCloneAppPreview struct {
+	SourceApp             string   `json:"source_app"`
+	SuggestedNewName      string   `json:"suggested_new_name"`
+	Image                 string   `json:"image"`
+	EnvVarCount           int      `json:"env_var_count"`
+	SecretEnvKeys         []string `json:"secret_env_keys"`
+	CurrentDomains        []string `json:"current_domains"`
+	VolumeCount           int      `json:"volume_count"`
+	BindMountCount        int      `json:"bind_mount_count"`
+	HasHealthCheck        bool     `json:"has_health_check"`
+	HasDatabaseAttachment bool     `json:"has_database_attachment"`
+	HasHostPortPin        bool     `json:"has_host_port_pin"`
+	ScheduledTaskCount    int      `json:"scheduled_task_count"`
+}
+
+// EnvironmentClonePreviewResource mirrors internal/api's
+// environmentClonePreviewResource, GET .../clone/preview's response.
+type EnvironmentClonePreviewResource struct {
+	SourceEnvironment        EnvironmentResource          `json:"source_environment"`
+	NewEnvironmentName       string                       `json:"new_environment_name"`
+	Apps                     []EnvironmentCloneAppPreview `json:"apps"`
+	EnvironmentEnvVarKeys    []string                     `json:"environment_env_var_keys"`
+	EnvironmentSecretEnvKeys []string                     `json:"environment_secret_env_keys"`
+	UnclonedFields           []string                     `json:"uncloned_fields"`
+	Note                     string                       `json:"note"`
+}
+
+// EnvironmentCloneAppInput mirrors internal/api's
+// environmentCloneAppInput: an optional per-app override inside a clone
+// request. Omitted entirely for a source app means "use the
+// auto-suggested name, assign no domains".
+type EnvironmentCloneAppInput struct {
+	SourceApp string   `json:"source_app"`
+	NewName   string   `json:"new_name,omitempty"`
+	Domains   []string `json:"domains,omitempty"`
+}
+
+// EnvironmentCloneRequest mirrors internal/api's environmentCloneRequest,
+// POST /api/v1/environments/{id}/clone's body.
+type EnvironmentCloneRequest struct {
+	NewEnvironmentName string                     `json:"new_environment_name"`
+	CopySecretValues   bool                       `json:"copy_secret_values,omitempty"`
+	Apps               []EnvironmentCloneAppInput `json:"apps,omitempty"`
+}
+
+// EnvironmentCloneAppResult mirrors internal/api's
+// environmentCloneAppResult: one cloned app's own entry inside POST
+// .../clone's response.
+type EnvironmentCloneAppResult struct {
+	SourceApp string `json:"source_app"`
+	NewApp    string `json:"new_app"`
+	Image     string `json:"image"`
+}
+
+// EnvironmentCloneResultResource mirrors internal/api's
+// environmentCloneResultResource, POST .../clone's response.
+type EnvironmentCloneResultResource struct {
+	Environment        EnvironmentResource         `json:"environment"`
+	Apps               []EnvironmentCloneAppResult `json:"apps"`
+	CopiedSecretValues bool                        `json:"copied_secret_values"`
+	Note               string                      `json:"note"`
+}
+
 // SetAppEnvironmentRequest mirrors internal/api's
 // setAppEnvironmentRequest. An empty EnvironmentID clears the
 // assignment.

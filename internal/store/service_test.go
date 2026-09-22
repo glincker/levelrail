@@ -1216,6 +1216,67 @@ func TestListDesiredServicesByProject(t *testing.T) {
 	}
 }
 
+func TestListDesiredServicesByEnvironment(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveProject(ctx, Project{ID: "proj-1", Name: "one"}); err != nil {
+		t.Fatalf("SaveProject error = %v", err)
+	}
+	for _, e := range []Environment{
+		{ID: "env-1", ProjectID: "proj-1", Name: "staging"},
+		{ID: "env-2", ProjectID: "proj-1", Name: "production"},
+	} {
+		if err := db.SaveEnvironment(ctx, e); err != nil {
+			t.Fatalf("SaveEnvironment(%s) error = %v", e.ID, err)
+		}
+	}
+	for _, svc := range []struct {
+		name string
+		port int
+		env  string
+	}{
+		{"web", 8080, "env-1"},
+		{"worker", 8081, "env-1"},
+		{"api", 8082, "env-2"},
+		{"untagged", 8083, ""},
+	} {
+		if err := db.SaveDesiredService(ctx, DesiredService{Name: svc.name, Image: "img:v1", Port: svc.port}); err != nil {
+			t.Fatalf("SaveDesiredService(%s) error = %v", svc.name, err)
+		}
+		if svc.env != "" {
+			if err := db.SetServiceEnvironment(ctx, svc.name, svc.env); err != nil {
+				t.Fatalf("SetServiceEnvironment(%s) error = %v", svc.name, err)
+			}
+		}
+	}
+
+	tests := []struct {
+		name          string
+		environmentID string
+		want          []string
+	}{
+		{name: "environment with two services", environmentID: "env-1", want: []string{"web", "worker"}},
+		{name: "environment with one service", environmentID: "env-2", want: []string{"api"}},
+		{name: "unknown environment", environmentID: "env-none", want: nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := db.ListDesiredServicesByEnvironment(ctx, tt.environmentID)
+			if err != nil {
+				t.Fatalf("ListDesiredServicesByEnvironment(%q) error = %v", tt.environmentID, err)
+			}
+			var names []string
+			for _, svc := range got {
+				names = append(names, svc.Name)
+			}
+			if !reflect.DeepEqual(names, tt.want) {
+				t.Errorf("ListDesiredServicesByEnvironment(%q) = %v, want %v", tt.environmentID, names, tt.want)
+			}
+		})
+	}
+}
+
 func TestSaveDesiredService_StrategyAndReplicas_RoundTrip(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
