@@ -36,9 +36,9 @@ type fakeEnrollStore struct {
 
 	// touchMu guards lastTouchedID and touchCount: unlike every other
 	// field here, TouchNodeLastSeen is called both synchronously
-	// (Session's own initial touch) and repeatedly from
-	// Server.heartbeatLoop's own background goroutine
-	// for as long as a test's fake session stays open, so concurrent
+	// (Session's own initial touch) and from Server.heartbeatLoop's own
+	// background goroutine, driven by mux.go's onHeartbeat callback
+	// firing every time a real Heartbeat frame arrives, so concurrent
 	// access is real here, not theoretical.
 	touchMu       sync.Mutex
 	lastTouchedID string
@@ -349,13 +349,20 @@ func TestServer_Session_Success(t *testing.T) {
 	}
 }
 
-// TestServer_Session_PeriodicHeartbeat is the real point:
-// TouchNodeLastSeen must keep being called on an interval for as long as
-// the session's stream stays open, not just once at connect. Without
-// this, internal/reconcile/nodehealth would see LastSeenAt go stale on
-// every long-lived, perfectly healthy connection and incorrectly flip it
-// Offline.
-func TestServer_Session_PeriodicHeartbeat(t *testing.T) {
+// heartbeatFrame builds the AgentMessage a real agent sends to signal
+// liveness, the same frame client.go's own heartbeatLoop emits.
+func heartbeatFrame() *agentpb.AgentMessage {
+	return &agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Heartbeat{Heartbeat: &agentpb.Heartbeat{}}}
+}
+
+// TestServer_Session_HeartbeatFrame_TouchesLastSeen is the real point of
+// this fix: TouchNodeLastSeen must be driven by actual Heartbeat frames
+// arriving on the stream, not by a server-side timer that fires for as
+// long as the stream object merely exists. Without this, a frozen agent
+// process (SIGSTOP'd, deadlocked) whose TCP/TLS connection is still
+// technically open would keep looking healthy forever, exactly the bug
+// this test guards against.
+func TestServer_Session_HeartbeatFrame_TouchesLastSeen(t *testing.T) {
 	ca, _ := GenerateCA()
 	st := newFakeEnrollStore()
 	certPEM, _, err := ca.IssueClientCert("node-1", time.Hour)
@@ -370,7 +377,7 @@ func TestServer_Session_PeriodicHeartbeat(t *testing.T) {
 	st.nodes["node-1"] = &store.Node{ID: "node-1", Name: "worker-1", CertFingerprint: fp, CreatedAt: now, UpdatedAt: now}
 
 	registry := NewRegistry()
-	srv := NewServer(ca, st, registry, nil, WithHeartbeatInterval(10*time.Millisecond))
+	srv := NewServer(ca, st, registry, nil)
 
 	stream := &fakeAgentSessionServer{
 		ctx:  ctxWithPeerCert(certPEM),
@@ -381,20 +388,22 @@ func TestServer_Session_PeriodicHeartbeat(t *testing.T) {
 	sessionDone := make(chan error, 1)
 	go func() { sessionDone <- srv.Session(stream) }()
 
-	// Wait for enough ticks that the loop must have fired more than
-	// once: the connect-time touch (1) plus at least a couple of
-	// interval ticks.
-	deadline := time.After(2 * time.Second)
-	for {
-		if _, count := st.touchStats(); count >= 3 {
-			break
-		}
-		select {
-		case <-deadline:
-			_, count := st.touchStats()
-			t.Fatalf("timed out waiting for periodic heartbeat touches, got count=%d, want >= 3", count)
-		case <-time.After(5 * time.Millisecond):
-		}
+	// The connect-time touch (Session's own synchronous call) happens
+	// before any frame is ever read, so wait for exactly that first.
+	waitForTouchCount(t, st, 1)
+
+	// Sending three real Heartbeat frames, one at a time, each waited out
+	// before the next is sent (heartbeatLoop's own delivery channel
+	// deliberately coalesces a heartbeat signal that arrives while one is
+	// already pending, the same non-blocking backpressure discipline
+	// deliverEvent's own doc comment documents, so sending them
+	// back-to-back without waiting could legitimately collapse into
+	// fewer touches), must produce three more touches on top of the
+	// connect-time one, proving last_seen_at is actually keyed off the
+	// frames arriving, not off a timer.
+	for i := 1; i <= 3; i++ {
+		stream.recv <- heartbeatFrame()
+		waitForTouchCount(t, st, 1+i)
 	}
 
 	stream.recvErr = errors.New("connection reset")
@@ -406,13 +415,86 @@ func TestServer_Session_PeriodicHeartbeat(t *testing.T) {
 		t.Fatal("timed out waiting for Session() to return")
 	}
 
-	// The heartbeat loop must actually stop once the session ends, not
-	// keep touching a node that's no longer connected.
+	// The heartbeat loop must actually stop once the session ends.
 	_, countAtEnd := st.touchStats()
 	time.Sleep(50 * time.Millisecond)
 	_, countAfterWait := st.touchStats()
 	if countAfterWait != countAtEnd {
 		t.Errorf("touch count kept growing after Session() returned (%d -> %d), want the heartbeat loop to have stopped", countAtEnd, countAfterWait)
+	}
+}
+
+// TestServer_Session_NoHeartbeatFrames_LastSeenDoesNotAdvance is the
+// direct regression test for the hard-disconnect-detection bug: an open
+// stream that never sends another Heartbeat frame after the initial
+// connect (a frozen agent process, or one that hung before its first
+// heartbeat tick) must not have its last_seen_at advanced just because
+// the stream object is still allocated and no Recv error has fired yet.
+// Before this fix, Server ran its own ticker regardless of anything the
+// agent actually sent, which is exactly what let a SIGSTOP'd agent
+// report healthy for minutes: internal/reconcile/nodehealth's staleness
+// timeout can only do its job if last_seen_at genuinely stops advancing
+// when the agent stops responding.
+func TestServer_Session_NoHeartbeatFrames_LastSeenDoesNotAdvance(t *testing.T) {
+	ca, _ := GenerateCA()
+	st := newFakeEnrollStore()
+	certPEM, _, err := ca.IssueClientCert("node-1", time.Hour)
+	if err != nil {
+		t.Fatalf("IssueClientCert() error = %v", err)
+	}
+	fp, err := certFingerprintFromPEM(certPEM)
+	if err != nil {
+		t.Fatalf("certFingerprintFromPEM() error = %v", err)
+	}
+	now := time.Now()
+	st.nodes["node-1"] = &store.Node{ID: "node-1", Name: "worker-1", CertFingerprint: fp, CreatedAt: now, UpdatedAt: now}
+
+	registry := NewRegistry()
+	srv := NewServer(ca, st, registry, nil)
+
+	stream := &fakeAgentSessionServer{
+		ctx:  ctxWithPeerCert(certPEM),
+		recv: make(chan *agentpb.AgentMessage),
+		sent: make(chan *agentpb.ControlMessage, 4),
+	}
+
+	sessionDone := make(chan error, 1)
+	go func() { sessionDone <- srv.Session(stream) }()
+
+	waitForTouchCount(t, st, 1)
+
+	// Simulate a frozen agent: the stream stays open (nothing closes
+	// stream.recv, no error), but the agent side never sends another
+	// frame. touchCount must stay at the connect-time value the whole
+	// time this test waits, proving there is no hidden server-side timer
+	// still advancing last_seen_at on its own.
+	time.Sleep(150 * time.Millisecond)
+	if _, count := st.touchStats(); count != 1 {
+		t.Errorf("touchCount = %d after a silent-but-open stream, want 1 (no touch beyond connect-time without a real Heartbeat frame)", count)
+	}
+
+	stream.recvErr = errors.New("connection reset")
+	close(stream.recv)
+	select {
+	case <-sessionDone:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for Session() to return")
+	}
+}
+
+func waitForTouchCount(t *testing.T, st *fakeEnrollStore, want int) {
+	t.Helper()
+	deadline := time.After(2 * time.Second)
+	for {
+		if _, count := st.touchStats(); count >= want {
+			return
+		}
+		select {
+		case <-deadline:
+			_, count := st.touchStats()
+			t.Fatalf("timed out waiting for touch count >= %d, got %d", want, count)
+		case <-time.After(5 * time.Millisecond):
+		}
 	}
 }
 
