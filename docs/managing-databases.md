@@ -457,6 +457,84 @@ This endpoint is gated at `read:sensitive` (one tier above the metadata-only `re
 - Dashboard: Click the **Download** button next to Restore in the backup history table (auth rides the session cookie).
 - CLI: No `backups download` subcommand exists today. Use `GET /api/v1/databases/{name}/backups/{historyId}/download` directly with your own bearer token for scripting.
 
+## Slow query log viewer
+
+Slow query logs capture individual statements that exceed a performance threshold, letting you find expensive queries without waiting for a production incident to surface them.
+
+**Supported engines:** Postgres and MySQL only. Redis has no log-based slow query record (SLOWLOG is a live-server command, not stored in logs). MongoDB and other engines return an error when queried.
+
+### How it works
+
+**Postgres** reads slow statements from its own container log stream. Every Postgres container is started with `log_min_duration_statement=1000` by default (1 second), so any statement exceeding 1000ms is logged automatically. This threshold is built-in and not currently configurable per database.
+
+**MySQL** reads the slow query log directly from the running container's file system (`/var/log/mysql/slow.log`), since MySQL's FILE log sink does not reliably open `/dev/stderr` from inside a container. The platform automatically configures MySQL with `long_query_time=1` and `slow_query_log=ON` at creation time.
+
+**Query results** are sorted by duration descending and paginated by default at 100 entries per page (max 500).
+
+### Viewing slow queries
+
+**CLI**
+
+```bash
+levelrail-cli databases slow-queries <name> [flags]
+```
+
+Flags:
+- `--since DURATION` - how far back to search (default: 1h, e.g. "1h", "30m")
+- `--from RFC3339` - start of search window (overrides `--since`)
+- `--to RFC3339` - end of search window (default: now)
+- `--limit N` - max entries to return (default: 100, max 500)
+- `--offset N` - skip this many entries before returning results
+- `--json` - output JSON array (default: human-readable table)
+
+Example:
+
+```bash
+$ levelrail-cli databases slow-queries main --since 1h
+Query                                              Duration (ms)  Rows Examined
+SELECT * FROM large_table WHERE ...               2345.67        1500000
+SELECT COUNT(*) FROM users WHERE ...              1523.21        2000000
+INSERT INTO audit_log SELECT ...                  1100.45        0
+```
+
+**Dashboard**
+
+Database Overview page has a **Slow Queries** tab with:
+- A time-range picker (default: last 1 hour)
+- A sortable table of slow queries sorted by duration descending
+- Query text, duration in milliseconds, and rows examined (MySQL only)
+- Live search is available when you query historical periods
+
+**API**
+
+`GET /api/v1/databases/{name}/slow-queries` returns:
+
+```json
+{
+  "entries": [
+    {
+      "timestamp": "2026-09-22T14:32:07Z",
+      "duration_ms": 2345.67,
+      "query": "SELECT * FROM users WHERE...",
+      "rows_examined": 1500000
+    }
+  ],
+  "total": 342
+}
+```
+
+Query parameters:
+- `from` (RFC3339) - start of search window
+- `to` (RFC3339) - end of search window
+- `limit` - max entries (default 100, max 500)
+- `offset` - pagination offset
+
+::: details No slow queries in the results?
+- **For Postgres:** Make sure the statement duration actually exceeded 1000ms. Very fast queries won't appear no matter how long your search window is.
+- **For MySQL:** The slow query file exists on disk only after at least one slow statement has executed. If the database is brand new or has never had a slow query, the file doesn't exist yet and an empty result is normal.
+- **Check the database is actually running:** If the container is stopped or crashed, there are no new slow query entries to log.
+:::
+
 ## API reference
 
 | Method | Path | Ability |
@@ -470,6 +548,7 @@ This endpoint is gated at `read:sensitive` (one tier above the metadata-only `re
 | `GET` | `/api/v1/databases/{name}/metrics` | `read` |
 | `GET` | `/api/v1/databases/{name}/logs` | `read` |
 | `GET` | `/api/v1/databases/{name}/logs/stream` | `read` |
+| `GET` | `/api/v1/databases/{name}/slow-queries` | `read` |
 | `GET` | `/api/v1/databases/{name}/resource-recommendation` | `read` |
 | `PUT` | `/api/v1/databases/{name}/node` | `root` |
 | `PUT` | `/api/v1/databases/{name}/project` | `write` |
@@ -517,6 +596,7 @@ levelrail-cli databases set-project <name> <project-id>
 levelrail-cli databases clear-project <name>
 levelrail-cli databases public-access set <name> [--port N] [--bind-address ADDR]
 levelrail-cli databases public-access clear <name>
+levelrail-cli databases slow-queries <name> [--since DURATION] [--from RFC3339] [--to RFC3339] [--limit N] [--offset N]
 
 levelrail-cli backups list <database> [--limit N] [--before TIMESTAMP]
 levelrail-cli backups trigger <database> --target ID
