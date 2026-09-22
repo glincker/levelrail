@@ -293,6 +293,34 @@ A locked secret cannot be changed by the dashboard or CLI without unlocking it f
 - CLI: `levelrail-cli apps secrets lock <name> <key> --locked=true|false`
 - API: `POST /api/v1/apps/{name}/secrets/<key>/lock` with JSON `{ locked: true }`
 
+### Secret age tracking and rotation reminders
+
+Every secret stores when it was last set, and the platform flags it as stale once it reaches the rotation warning age threshold (90 days by default, configurable via `APP_SECRET_ROTATION_WARN_DAYS` env var).
+
+**Where to see secret age:**
+
+- Dashboard: app Environment tab shows "Set N days/months ago" next to each secret key. A "Needs rotation" badge appears once the secret crosses the threshold.
+- CLI: `levelrail-cli apps secrets list <name>` shows an `AGE` column (e.g., "123d" for days) and a `STALE` column (true/false).
+
+**Shared environment variables:**
+
+The same age tracking applies to secret-marked env vars at the project/organization/environment tier:
+
+- Dashboard: shared env var card shows age and staleness the same way
+- CLI: `levelrail-cli shared-env list --level project|org|env` shows `AGE` and `STALE` columns
+
+**System status check:**
+
+`GET /api/v1/system/doctor` includes a `stale_secrets` check that counts every stale secret across all apps and scopes (project/org/env). This appears on the System Status page in the dashboard with a CTA link to the Projects section where you can review and rotate stale secrets.
+
+**Configuring the threshold:**
+
+The default warning age is 90 days. Change it cluster-wide (not per-secret) via:
+
+```bash
+APP_SECRET_ROTATION_WARN_DAYS=180  # Change from 90 to 180 days
+```
+
 ## Lifecycle actions
 
 | Action | What it does | Not to confuse with |
