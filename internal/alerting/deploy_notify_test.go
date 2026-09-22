@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/textproto"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -441,6 +442,20 @@ func TestSendDeployOutcome_Email_NoDestinationAddress_Errors(t *testing.T) {
 	target := DeployTarget{NotifyKind: NotifyEmail, Enabled: true} // NotifyURL left empty
 	if err := sendDeployOutcome(context.Background(), nil, sender, target, DeployOutcome{AppName: "web"}); err == nil {
 		t.Error("sendDeployOutcome() error = nil, want an error when no destination address is configured")
+	}
+}
+
+func TestSendDeployOutcome_Email_TransientSMTPError_RetriesThenSucceeds(t *testing.T) {
+	transient := &textproto.Error{Code: 421, Msg: "service not available"}
+	sender := &fakeEmailSender{errs: []error{transient, transient}}
+	target := DeployTarget{NotifyURL: "ops@example.com", NotifyKind: NotifyEmail, Enabled: true}
+
+	err := sendDeployOutcome(context.Background(), nil, sender, target, DeployOutcome{AppName: "web", Succeeded: true})
+	if err != nil {
+		t.Fatalf("sendDeployOutcome() error = %v, want the third attempt (which succeeds) to win", err)
+	}
+	if got := sender.attempts.Load(); got != notifyMaxAttempts {
+		t.Errorf("attempts = %d, want exactly %d (fails until the last one), proving deploy-outcome email sends get the same retry as every HTTP channel", got, notifyMaxAttempts)
 	}
 }
 

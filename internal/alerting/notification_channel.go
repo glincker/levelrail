@@ -214,7 +214,7 @@ func sendTestNotification(ctx context.Context, client *http.Client, sender email
 		if notifyURL == "" {
 			return fmt.Errorf("alerting: test notification: no destination email address configured")
 		}
-		if err := sender.Send(ctx, notifyURL, "[Levelrail] test notification", testText); err != nil {
+		if err := sendEmailWithRetry(ctx, sender, notifyURL, "[Levelrail] test notification", testText); err != nil {
 			return fmt.Errorf("alerting: test notification: %w", err)
 		}
 		return nil

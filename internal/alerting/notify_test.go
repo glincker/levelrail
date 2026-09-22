@@ -3,8 +3,10 @@ package alerting
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/textproto"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -515,6 +517,106 @@ func TestNewNotifier_Email_UnreachableServer_ErrorPropagates(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "send email") {
 		t.Errorf("error = %q, want it wrapped with \"send email\"", err.Error())
+	}
+}
+
+// fakeEmailSender is an email.Sender test double whose Send behavior is
+// driven by errs: attempt N (1-indexed) returns errs[N-1], or nil once N
+// exceeds len(errs), letting a test script "fails twice, then succeeds"
+// the same way TestNotify_TransientServerError_RetriesThenSucceeds
+// scripts an httptest.Server's response sequence for the HTTP retry path.
+type fakeEmailSender struct {
+	errs     []error
+	attempts atomic.Int32
+}
+
+func (f *fakeEmailSender) Send(_ context.Context, _, _, _ string) error {
+	n := f.attempts.Add(1)
+	if int(n) <= len(f.errs) {
+		return f.errs[n-1]
+	}
+	return nil
+}
+
+func TestSendEmailWithRetry_TransientSMTPError_RetriesThenSucceeds(t *testing.T) {
+	// 421: SMTP's "service not available, try again later" - a transient
+	// 4xx negative completion, the SMTP analogue of an HTTP 503.
+	transient := &textproto.Error{Code: 421, Msg: "service not available"}
+	sender := &fakeEmailSender{errs: []error{transient, transient}}
+
+	err := sendEmailWithRetry(context.Background(), sender, "ops@example.com", "subject", "body")
+	if err != nil {
+		t.Fatalf("sendEmailWithRetry() error = %v, want the third attempt (which succeeds) to win", err)
+	}
+	if got := sender.attempts.Load(); got != notifyMaxAttempts {
+		t.Errorf("attempts = %d, want exactly %d (fails until the last one)", got, notifyMaxAttempts)
+	}
+}
+
+func TestSendEmailWithRetry_PersistentTransientSMTPError_RetriesExactlyMaxAttemptsThenFails(t *testing.T) {
+	transient := &textproto.Error{Code: 450, Msg: "mailbox busy"}
+	sender := &fakeEmailSender{errs: []error{transient, transient, transient, transient, transient}}
+
+	err := sendEmailWithRetry(context.Background(), sender, "ops@example.com", "subject", "body")
+	if err == nil {
+		t.Fatal("sendEmailWithRetry() error = nil, want every attempt to fail against an always-450 sender")
+	}
+	if got := sender.attempts.Load(); got != notifyMaxAttempts {
+		t.Errorf("attempts = %d, want exactly notifyMaxAttempts (%d), not fewer or unbounded", got, notifyMaxAttempts)
+	}
+}
+
+func TestSendEmailWithRetry_PermanentSMTPError_NeverRetried(t *testing.T) {
+	// 550: SMTP's "mailbox unavailable" - a permanent 5xx negative
+	// completion (bad recipient), the SMTP analogue of an HTTP 400: no
+	// number of retries fixes a nonexistent mailbox.
+	permanent := &textproto.Error{Code: 550, Msg: "mailbox unavailable"}
+	sender := &fakeEmailSender{errs: []error{permanent}}
+
+	err := sendEmailWithRetry(context.Background(), sender, "ops@example.com", "subject", "body")
+	if err == nil {
+		t.Fatal("sendEmailWithRetry() error = nil, want an error for a 550 response")
+	}
+	if got := sender.attempts.Load(); got != 1 {
+		t.Errorf("attempts = %d, want exactly 1: a 550 is a permanent failure (bad recipient), retrying it wastes time surfacing that", got)
+	}
+}
+
+func TestSendEmailWithRetry_TransportError_Retries(t *testing.T) {
+	// A plain error with no textproto.Error inside it: a dial failure, a
+	// DNS lookup failure, or any non-SMTP backend's error (SES), the
+	// other retryable case isRetryableEmailError covers.
+	transport := errors.New("dial tcp: connection refused")
+	sender := &fakeEmailSender{errs: []error{transport, transport}}
+
+	err := sendEmailWithRetry(context.Background(), sender, "ops@example.com", "subject", "body")
+	if err != nil {
+		t.Fatalf("sendEmailWithRetry() error = %v, want the third attempt (which succeeds) to win", err)
+	}
+	if got := sender.attempts.Load(); got != notifyMaxAttempts {
+		t.Errorf("attempts = %d, want exactly %d (fails until the last one)", got, notifyMaxAttempts)
+	}
+}
+
+func TestSendEmailWithRetry_ContextCanceledDuringBackoff_StopsRetrying(t *testing.T) {
+	transient := &textproto.Error{Code: 421, Msg: "service not available"}
+	sender := &fakeEmailSender{errs: []error{transient, transient, transient}}
+
+	// A real, positive backoff (unlike TestMain's shrunk default) so
+	// there's actually a window to cancel inside, proving the retry loop
+	// honors ctx instead of blindly sleeping through it.
+	notifyRetryBaseDelay = 50 * time.Millisecond
+	defer func() { notifyRetryBaseDelay = time.Millisecond }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	err := sendEmailWithRetry(ctx, sender, "ops@example.com", "subject", "body")
+	if err == nil {
+		t.Fatal("sendEmailWithRetry() error = nil, want an error once the context is canceled mid-backoff")
+	}
+	if got := sender.attempts.Load(); got >= notifyMaxAttempts {
+		t.Errorf("attempts = %d, want fewer than notifyMaxAttempts (%d): the context should have been canceled during the first backoff wait", got, notifyMaxAttempts)
 	}
 }
 
