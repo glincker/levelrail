@@ -12,6 +12,7 @@ import {
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { HelpLink } from '@/components/HelpLink'
 import {
   Dialog,
   DialogContent,
@@ -215,6 +216,10 @@ export function AppEgressPolicyCard({ appName }: { appName: string }) {
             <LockOpenIcon className="size-4" />
           )}
           Outbound network
+          <HelpLink
+            path="/deploying-apps#outbound-network-egress-allowlist"
+            label="Egress allowlist guide"
+          />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

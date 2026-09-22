@@ -36,6 +36,7 @@ import {
 import type { CertificateStatus } from '../../queries/certificates'
 import { CleanUpDockerDialog } from '../../components/CleanUpDockerDialog'
 import { RotateMasterKeyDialog } from '../../components/RotateMasterKeyDialog'
+import { HelpLink } from '@/components/HelpLink'
 import { PageSpinner } from '@/components/ui/page-spinner'
 
 // Platform info comes from the already-warm /api/v1/brand cache via
@@ -304,10 +305,16 @@ function MasterKeyCard() {
               <KeyIcon className="size-4" />
             </div>
             <div>
-              <CardTitle>Master key</CardTitle>
+              <CardTitle className="flex items-center gap-1.5">
+                Master key
+                <HelpLink
+                  path="/master-key-rotation"
+                  label="Master key rotation guide"
+                />
+              </CardTitle>
               <CardDescription>
-                Rotate the envelope-encryption key every stored secret
-                depends on.
+                Rotate the envelope-encryption key every stored secret depends
+                on.
               </CardDescription>
             </div>
           </div>

@@ -3,6 +3,23 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DomainWafControl } from './DomainWafControl'
+import type { Brand } from '../types/brand'
+
+// DomainWafControl now renders a HelpLink, which reads brand.DocsURL via
+// useBrand; mocked the same way CreateRegistryCredentialDialog.test.tsx
+// mocks it for its own brand.DocsURL-dependent rendering.
+vi.mock('../hooks/useBrand', () => ({
+  useBrand: (): Brand => ({
+    Name: 'Test Brand',
+    ShortName: 'testbrand',
+    BinaryName: 'testbrand',
+    Domain: 'test.example',
+    SupportURL: 'https://test.example/support',
+    PrimaryColor: '#000000',
+    LogoSVG: '',
+    DocsURL: 'https://test.example/docs',
+  }),
+}))
 
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -80,36 +97,36 @@ describe('DomainWafControl', () => {
   })
 
   it('PUTs the enabled waf_enabled/waf_mode/rate limit fields on save', async () => {
-    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
-      (input, init) => {
-        const url = requestUrlOf(input)
-        if (!url.endsWith('/waf')) {
-          throw new Error(`unexpected fetch: ${url}`)
-        }
-        if (init?.method === 'PUT') {
-          return Promise.resolve(
-            fakeJsonResponse({
-              domain: 'app.example.com',
-              waf_enabled: true,
-              waf_mode: 'detect',
-              rate_limit_enabled: false,
-              rate_limit_rps: 0,
-              rate_limit_burst: 0,
-            }),
-          )
-        }
+    const fetchMock = vi.fn<
+      (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+    >((input, init) => {
+      const url = requestUrlOf(input)
+      if (!url.endsWith('/waf')) {
+        throw new Error(`unexpected fetch: ${url}`)
+      }
+      if (init?.method === 'PUT') {
         return Promise.resolve(
           fakeJsonResponse({
             domain: 'app.example.com',
-            waf_enabled: false,
+            waf_enabled: true,
             waf_mode: 'detect',
             rate_limit_enabled: false,
             rate_limit_rps: 0,
             rate_limit_burst: 0,
           }),
         )
-      },
-    )
+      }
+      return Promise.resolve(
+        fakeJsonResponse({
+          domain: 'app.example.com',
+          waf_enabled: false,
+          waf_mode: 'detect',
+          rate_limit_enabled: false,
+          rate_limit_rps: 0,
+          rate_limit_burst: 0,
+        }),
+      )
+    })
     vi.stubGlobal('fetch', fetchMock)
 
     renderControl()

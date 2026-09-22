@@ -13,14 +13,22 @@ import type { Icon } from '@phosphor-icons/react'
 import type { VariantProps } from 'class-variance-authority'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { ListSkeleton } from '@/components/ui/list-skeleton'
+import { HelpLink } from '@/components/HelpLink'
 import {
   systemDoctorQueryOptions,
   useSystemDoctor,
 } from '../../queries/systemDoctor'
 import type { DoctorCheck, DoctorCheckStatus } from '../../queries/systemDoctor'
+import { getCheckCta } from './system-status-ctas'
 
 // Web half of "levelrail-cli doctor": that command already runs
 // /api/v1/system/doctor's full preflight bundle (Docker reachability,
@@ -37,7 +45,11 @@ export const Route = createFileRoute('/settings/system-status')({
 
 const STATUS_META: Record<
   DoctorCheckStatus,
-  { label: string; variant: VariantProps<typeof badgeVariants>['variant']; icon: Icon }
+  {
+    label: string
+    variant: VariantProps<typeof badgeVariants>['variant']
+    icon: Icon
+  }
 > = {
   ok: { label: 'OK', variant: 'success', icon: CheckCircleIcon },
   warn: { label: 'Warning', variant: 'warning', icon: WarningCircleIcon },
@@ -63,7 +75,9 @@ const SECURITY_CODES = ['firewall', 'master_key_rotation']
 function groupChecks(checks: DoctorCheck[]) {
   const byCode = new Map(checks.map((c) => [c.code, c]))
   const take = (codes: string[]) =>
-    codes.map((code) => byCode.get(code)).filter((c): c is DoctorCheck => Boolean(c))
+    codes
+      .map((code) => byCode.get(code))
+      .filter((c): c is DoctorCheck => Boolean(c))
   const infrastructure = take(INFRASTRUCTURE_CODES)
   const security = take(SECURITY_CODES)
   const seen = new Set([...INFRASTRUCTURE_CODES, ...SECURITY_CODES])
@@ -74,16 +88,27 @@ function groupChecks(checks: DoctorCheck[]) {
 function CheckRow({ check }: { check: DoctorCheck }) {
   const meta = STATUS_META[check.status]
   const StatusIcon = meta.icon
+  const cta = getCheckCta(check)
   return (
-    <div className="flex items-start justify-between gap-3 py-2.5 text-sm">
-      <div className="min-w-0">
-        <p className="font-medium text-foreground">{check.name}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{check.message}</p>
+    <div className="py-2.5 text-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-medium text-foreground">{check.name}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {check.message}
+          </p>
+        </div>
+        <Badge variant={meta.variant} className="shrink-0">
+          <StatusIcon />
+          {meta.label}
+        </Badge>
       </div>
-      <Badge variant={meta.variant} className="shrink-0">
-        <StatusIcon />
-        {meta.label}
-      </Badge>
+      {cta ? (
+        <div className="mt-2 rounded-md bg-muted/50 p-2.5">
+          <p className="text-xs text-muted-foreground">{cta.message}</p>
+          <div className="mt-1.5">{cta.action}</div>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -162,8 +187,9 @@ function SystemStatusPage() {
             <HeartbeatIcon className="size-4" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-foreground">
+            <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
               System status
+              <HelpLink path="/troubleshooting" label="Troubleshooting guide" />
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Preflight checks: Docker, disk, ports, database, and firewall.

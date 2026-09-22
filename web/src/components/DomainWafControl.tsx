@@ -1,11 +1,22 @@
 import { useState } from 'react'
-import { ShieldCheckIcon, ShieldIcon, ShieldWarningIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ShieldCheckIcon,
+  ShieldIcon,
+  ShieldWarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { HelpLink } from '@/components/HelpLink'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import {
@@ -20,7 +31,13 @@ import {
 // the next reconcile pass (internal/reconcile/ingress). Collapsed by
 // default the same way DomainBasicAuthControl is: a status badge plus a
 // toggle, expanding into a form for the two independent settings.
-export function DomainWafControl({ appName, domain }: { appName: string; domain: string }) {
+export function DomainWafControl({
+  appName,
+  domain,
+}: {
+  appName: string
+  domain: string
+}) {
   const { data: waf, isLoading } = useDomainWaf(appName, domain)
   const [open, setOpen] = useState(false)
   const [wafEnabled, setWafEnabled] = useState<boolean | null>(null)
@@ -42,7 +59,8 @@ export function DomainWafControl({ appName, domain }: { appName: string; domain:
     )
   }
 
-  const active = (waf?.waf_enabled ?? false) || (waf?.rate_limit_enabled ?? false)
+  const active =
+    (waf?.waf_enabled ?? false) || (waf?.rate_limit_enabled ?? false)
   const effectiveWafEnabled = wafEnabled ?? waf?.waf_enabled ?? false
   const effectiveMode = wafMode ?? waf?.waf_mode ?? 'detect'
   const effectiveRps = rps ?? String(waf?.rate_limit_rps ?? 0)
@@ -80,10 +98,21 @@ export function DomainWafControl({ appName, domain }: { appName: string; domain:
             </Badge>
           )}
         </button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen((v) => !v)}>
-          <ShieldIcon className="size-3.5" />
-          {open ? 'Hide' : active ? 'Manage' : 'Add WAF / rate limit'}
-        </Button>
+        <div className="flex items-center gap-1">
+          <HelpLink
+            path="/domains-and-ingress#opt-in-waf-and-rate-limiting"
+            label="WAF and rate limiting guide"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setOpen((v) => !v)}
+          >
+            <ShieldIcon className="size-3.5" />
+            {open ? 'Hide' : active ? 'Manage' : 'Add WAF / rate limit'}
+          </Button>
+        </div>
       </div>
 
       {open ? (
@@ -94,7 +123,9 @@ export function DomainWafControl({ appName, domain }: { appName: string; domain:
           className="mt-3 space-y-3"
         >
           <Field orientation="horizontal">
-            <FieldLabel htmlFor={`waf-enabled-${domain}`}>OWASP Coraza WAF</FieldLabel>
+            <FieldLabel htmlFor={`waf-enabled-${domain}`}>
+              OWASP Coraza WAF
+            </FieldLabel>
             <Switch
               id={`waf-enabled-${domain}`}
               checked={effectiveWafEnabled}
@@ -115,16 +146,21 @@ export function DomainWafControl({ appName, domain }: { appName: string; domain:
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="detect">Detect (log only, recommended to start)</SelectItem>
-                  <SelectItem value="block">Block (reject matching requests)</SelectItem>
+                  <SelectItem value="detect">
+                    Detect (log only, recommended to start)
+                  </SelectItem>
+                  <SelectItem value="block">
+                    Block (reject matching requests)
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <FieldDescription>
                 {effectiveMode === 'detect' ? (
                   <span className="flex items-center gap-1">
                     <ShieldWarningIcon className="size-3.5 shrink-0" />
-                    Requests matching OWASP CRS rules are logged, never rejected. Switch to Block
-                    once you have reviewed logs for false positives.
+                    Requests matching OWASP CRS rules are logged, never
+                    rejected. Switch to Block once you have reviewed logs for
+                    false positives.
                   </span>
                 ) : (
                   'Requests matching OWASP CRS rules are rejected with an error.'
@@ -134,7 +170,9 @@ export function DomainWafControl({ appName, domain }: { appName: string; domain:
           ) : null}
 
           <Field>
-            <FieldLabel htmlFor={`waf-rps-${domain}`}>Rate limit (requests/sec per IP)</FieldLabel>
+            <FieldLabel htmlFor={`waf-rps-${domain}`}>
+              Rate limit (requests/sec per IP)
+            </FieldLabel>
             <Input
               id={`waf-rps-${domain}`}
               type="number"
@@ -145,12 +183,16 @@ export function DomainWafControl({ appName, domain }: { appName: string; domain:
               disabled={pending}
               placeholder="0 (disabled)"
             />
-            <FieldDescription>0 disables rate limiting for this domain.</FieldDescription>
+            <FieldDescription>
+              0 disables rate limiting for this domain.
+            </FieldDescription>
           </Field>
 
           {Number.parseInt(effectiveRps, 10) > 0 ? (
             <Field>
-              <FieldLabel htmlFor={`waf-burst-${domain}`}>Burst allowance</FieldLabel>
+              <FieldLabel htmlFor={`waf-burst-${domain}`}>
+                Burst allowance
+              </FieldLabel>
               <Input
                 id={`waf-burst-${domain}`}
                 type="number"
@@ -162,8 +204,8 @@ export function DomainWafControl({ appName, domain }: { appName: string; domain:
                 placeholder="0 (no extra burst)"
               />
               <FieldDescription>
-                Requests allowed in a single second beyond the sustained rate above. Leave at 0 for
-                a strict cap.
+                Requests allowed in a single second beyond the sustained rate
+                above. Leave at 0 for a strict cap.
               </FieldDescription>
             </Field>
           ) : null}
