@@ -355,6 +355,21 @@ If `ufw` was already active, it just adds the rules without re-enabling it.
 
 If you don't set this flag, open these ports manually via your cloud provider's firewall, `ufw`, or `iptables`.
 
+### Running on non-default ports
+
+If port 443 (or 80) is already taken on the host, most often by a second control-plane instance, set the ingress listen addresses instead of fighting over the defaults:
+
+```bash
+APP_INGRESS_HTTPS_ADDR=:8443 \
+APP_INGRESS_HTTP_ADDR=:8080 \
+./levelrail
+```
+
+- `APP_INGRESS_HTTPS_ADDR` (default `:443`): the embedded Caddy ingress's HTTPS listener.
+- `APP_INGRESS_HTTP_ADDR` (default `:80`): kept off port 80 only when real ACME (not the default self-signed issuer) is enabled for a non-wildcard domain, since that's the one path that can otherwise reach for a literal port 80 for its HTTP-01 challenge.
+
+`GET /api/v1/system/doctor`'s port checks follow whatever you set here, so a second instance running on `:8443`/`:8080` reports those ports as owned and available, not `:443`/`:80`.
+
 ## Walkthrough: your first domain, from install to HTTPS
 
 This assumes you already have the control plane running and an app deployed (see [docs/getting-started.md](getting-started.md)).

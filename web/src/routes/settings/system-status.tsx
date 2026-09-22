@@ -62,15 +62,15 @@ const STATUS_META: Record<
 // locked down), not a distinction the API itself makes. Any check code
 // the backend adds later that isn't listed here still renders, just
 // under "Other checks" rather than being silently dropped.
-const INFRASTRUCTURE_CODES = [
-  'docker',
-  'disk_space',
-  'data_dir_writable',
-  'port_80',
-  'port_443',
-  'database',
-]
+const INFRASTRUCTURE_CODES = ['docker', 'disk_space', 'data_dir_writable']
+const INFRASTRUCTURE_CODES_AFTER_PORTS = ['database']
 const SECURITY_CODES = ['firewall', 'master_key_rotation']
+
+// PORT_CHECK_CODE matches port_<n> for whatever ports this instance's
+// ingress is actually configured on (APP_INGRESS_HTTP_ADDR/
+// APP_INGRESS_HTTPS_ADDR), not just the literal port_80/port_443 codes
+// a default-port instance reports.
+const PORT_CHECK_CODE = /^port_\d+$/
 
 function groupChecks(checks: DoctorCheck[]) {
   const byCode = new Map(checks.map((c) => [c.code, c]))
@@ -78,9 +78,19 @@ function groupChecks(checks: DoctorCheck[]) {
     codes
       .map((code) => byCode.get(code))
       .filter((c): c is DoctorCheck => Boolean(c))
-  const infrastructure = take(INFRASTRUCTURE_CODES)
+  const portChecks = checks.filter((c) => PORT_CHECK_CODE.test(c.code))
+  const infrastructure = [
+    ...take(INFRASTRUCTURE_CODES),
+    ...portChecks,
+    ...take(INFRASTRUCTURE_CODES_AFTER_PORTS),
+  ]
   const security = take(SECURITY_CODES)
-  const seen = new Set([...INFRASTRUCTURE_CODES, ...SECURITY_CODES])
+  const seen = new Set([
+    ...INFRASTRUCTURE_CODES,
+    ...INFRASTRUCTURE_CODES_AFTER_PORTS,
+    ...SECURITY_CODES,
+    ...portChecks.map((c) => c.code),
+  ])
   const other = checks.filter((c) => !seen.has(c.code))
   return { infrastructure, security, other }
 }

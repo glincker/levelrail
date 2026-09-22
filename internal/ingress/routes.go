@@ -297,6 +297,14 @@ type RoutesOptions struct {
 	// ListenAddr is a Caddy network address shared by every route, e.g.
 	// ":443".
 	ListenAddr string
+	// HTTPPort is this control plane's own configured HTTP/port-80
+	// equivalent (see internal/reconcile/ingress.WithHTTPListenAddr).
+	// Threaded to HTTPApp.HTTPPort and, when ACME is enabled for a
+	// non-wildcard host, to the ACME issuer's Challenges.HTTP.
+	// AlternatePort (see NewACMEIssuer), so an instance running its
+	// ingress on non-default ports never reaches for a literal port 80.
+	// 0 keeps Caddy's own default (80) in both places.
+	HTTPPort int
 	// Routes is every reverse-proxy backend to route on this listener.
 	// Empty is valid: it produces a listener with no routes and no TLS
 	// automation policy, the normal shape for a reconcile pass over zero
@@ -529,6 +537,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 				Servers: map[string]*Server{
 					opts.ServerName: server,
 				},
+				HTTPPort: opts.HTTPPort,
 			},
 		},
 	}
@@ -555,7 +564,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			if len(regularHosts) > 0 {
 				policies = append(policies, AutomationPolicy{
 					Subjects: regularHosts,
-					Issuers:  []any{NewACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL)},
+					Issuers:  []any{NewACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.HTTPPort)},
 				})
 			}
 			// Real ACME has no local CA for a pki app to manage trust
@@ -563,7 +572,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			// is deliberately left nil here.
 			cfg.Apps.TLS = &TLSApp{Automation: &Automation{Policies: policies}}
 		case opts.ACMEEnabled:
-			cfg.Apps.TLS = acmeIssuerTLSApp(allHosts, opts.ACMEEmail, opts.ACMEDirectoryURL)
+			cfg.Apps.TLS = acmeIssuerTLSApp(allHosts, opts.ACMEEmail, opts.ACMEDirectoryURL, opts.HTTPPort)
 		default:
 			cfg.Apps.TLS = internalIssuerTLSApp(allHosts)
 			cfg.Apps.PKI = newInternalPKIApp()

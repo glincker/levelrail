@@ -65,6 +65,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 	"strconv"
 
 	"golang.org/x/crypto/bcrypt"
@@ -207,6 +208,14 @@ const (
 	defaultServerName = "levelrail-ingress"
 	defaultListenAddr = ":443"
 
+	// defaultHTTPListenAddr is the port-80 equivalent WithHTTPListenAddr
+	// overrides. Not itself bound as a listener (see
+	// Server.AutomaticHTTPS's DisableRedir comment); only used to derive
+	// HTTPPort for ingress.RoutesOptions, so an operator running two
+	// instances on one host can still keep their real ACME HTTP-01
+	// challenge off port 80 on the second one.
+	defaultHTTPListenAddr = ":80"
+
 	// defaultAdminListen pins Caddy's admin API to loopback only. Caddy's
 	// own default is already localhost:2019 (see internal/ingress's
 	// AdminConfig doc comment), so this doesn't change behavior; it makes
@@ -242,10 +251,11 @@ type Controller struct {
 	driver  Applier
 	logger  *slog.Logger
 
-	serverName  string
-	listenAddr  string
-	adminListen string
-	storageDir  string
+	serverName     string
+	listenAddr     string
+	httpListenAddr string
+	adminListen    string
+	storageDir     string
 
 	// dashboardDial is the control plane's own dashboard bind address
 	// (see WithDashboardDial), reverse-proxied to whenever
@@ -326,6 +336,15 @@ func WithServerName(name string) Option {
 // listener binds. Defaults to ":443".
 func WithListenAddr(addr string) Option {
 	return func(c *Controller) { c.listenAddr = addr }
+}
+
+// WithHTTPListenAddr overrides this instance's HTTP/port-80 equivalent,
+// used to derive ingress.RoutesOptions.HTTPPort (see that field's own
+// doc comment). Defaults to ":80". This package never binds addr itself
+// as a listener; only its port number is used, so a host or scheme
+// prefix, if given, is ignored.
+func WithHTTPListenAddr(addr string) Option {
+	return func(c *Controller) { c.httpListenAddr = addr }
 }
 
 // WithAdminListen overrides Caddy's admin API bind address. Defaults to
@@ -458,13 +477,14 @@ func WithLogger(logger *slog.Logger) Option {
 // New builds a Controller.
 func New(svcStore ServiceStore, runtime docker.Runtime, driver Applier, opts ...Option) *Controller {
 	c := &Controller{
-		store:       svcStore,
-		runtime:     runtime,
-		driver:      driver,
-		logger:      slog.Default(),
-		serverName:  defaultServerName,
-		listenAddr:  defaultListenAddr,
-		adminListen: defaultAdminListen,
+		store:          svcStore,
+		runtime:        runtime,
+		driver:         driver,
+		logger:         slog.Default(),
+		serverName:     defaultServerName,
+		listenAddr:     defaultListenAddr,
+		httpListenAddr: defaultHTTPListenAddr,
+		adminListen:    defaultAdminListen,
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -713,6 +733,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	cfg, err := ingress.BuildRoutesConfig(ingress.RoutesOptions{
 		ServerName:        c.serverName,
 		ListenAddr:        c.listenAddr,
+		HTTPPort:          httpPortFromAddr(c.httpListenAddr),
 		Routes:            routes,
 		StaticRoutes:      staticRoutes,
 		MaintenanceRoutes: maintenanceRoutes,
@@ -743,6 +764,24 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		Reason:  reason,
 		Message: fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly, %d in maintenance mode, %d redirected)", total, len(routes), len(staticRoutes), len(maintenanceRoutes), len(redirectRoutes)),
 	}}}, nil
+}
+
+// httpPortFromAddr extracts the numeric port from addr (a Caddy-style
+// network address, e.g. ":80" or "0.0.0.0:8080") for
+// ingress.RoutesOptions.HTTPPort. An unparseable addr degrades to 0
+// (ingress.RoutesOptions.HTTPPort's own "keep Caddy's default" zero
+// value) rather than erroring: this is best-effort port derivation, not
+// address validation, which WithHTTPListenAddr's caller already owns.
+func httpPortFromAddr(addr string) int {
+	_, portStr, err := net.SplitHostPort(addr)
+	if err != nil {
+		return 0
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return 0
+	}
+	return port
 }
 
 // firstDuplicateHost reports the first of domains already present in

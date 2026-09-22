@@ -86,6 +86,11 @@ type Apps struct {
 // own listeners and routes.
 type HTTPApp struct {
 	Servers map[string]*Server `json:"servers,omitempty"`
+	// HTTPPort mirrors Caddy's own top-level "http_port" field: the port
+	// automatic-HTTPS features (an enabled redirect, or an ACME HTTP-01
+	// challenge with no AlternatePort set) fall back to. 0 (omitempty)
+	// keeps Caddy's compiled-in default, port 80.
+	HTTPPort int `json:"http_port,omitempty"`
 }
 
 // Server is a single HTTP(S) listener plus the routes it serves.
@@ -438,16 +443,31 @@ type ACMEIssuer struct {
 	// operator believes is a production toggle would be a worse
 	// surprise than requiring them to opt in explicitly.
 	CA string `json:"ca,omitempty"`
-	// Challenges is non-nil only for wildcard subjects: RFC 8555 7.1.1
-	// restricts HTTP-01 to non-wildcard identifiers, so
-	// NewCloudflareDNSACMEIssuer sets DNS-01 here instead.
+	// Challenges is non-nil for wildcard subjects (NewDNSACMEIssuer sets
+	// DNS-01 here, RFC 8555 7.1.1 forbids HTTP-01 for a wildcard
+	// identifier) or when a non-default HTTP-01 port is configured
+	// (NewACMEIssuer's altHTTPPort parameter).
 	Challenges *ChallengesConfig `json:"challenges,omitempty"`
 }
 
 // ChallengesConfig mirrors Caddy's caddytls.ChallengesConfig, scoped to
-// the one field this package sets: DNS.
+// the two fields this package sets: DNS and HTTP.
 type ChallengesConfig struct {
-	DNS *DNSChallengeConfig `json:"dns,omitempty"`
+	DNS  *DNSChallengeConfig  `json:"dns,omitempty"`
+	HTTP *HTTPChallengeConfig `json:"http,omitempty"`
+}
+
+// HTTPChallengeConfig mirrors Caddy's caddytls.HTTPChallengeConfig,
+// scoped to the one field this package sets: AlternatePort. Without it,
+// certmagic's HTTP-01 solver binds port 80 directly
+// (github.com/caddyserver/certmagic's own default), independent of
+// HTTPApp.HTTPPort, whenever Caddy's http app has no server already
+// listening on port 80 to serve the challenge through (true here: see
+// Server.AutomaticHTTPS's DisableRedir comment, this package never
+// stands up that server). AlternatePort redirects that bind to whatever
+// port this control plane's own ingress is actually configured for.
+type HTTPChallengeConfig struct {
+	AlternatePort int `json:"alternate_port,omitempty"`
 }
 
 // DNSChallengeConfig mirrors Caddy's caddytls.DNSChallengeConfig, scoped
@@ -512,7 +532,9 @@ func (p Route53DNSProvider) dnsProviderModule() any { return p }
 // sets. This package performs no validation on provider's credentials;
 // internal/api owns that.
 func NewDNSACMEIssuer(email, directoryURL string, provider DNS01Provider) ACMEIssuer {
-	iss := NewACMEIssuer(email, directoryURL)
+	// altHTTPPort is 0 (irrelevant) here: DNS-01 never solves an HTTP-01
+	// challenge, so there is no HTTP port to redirect.
+	iss := NewACMEIssuer(email, directoryURL, 0)
 	iss.Challenges = &ChallengesConfig{
 		DNS: &DNSChallengeConfig{Provider: provider.dnsProviderModule()},
 	}
@@ -527,9 +549,16 @@ func NewDNSACMEIssuer(email, directoryURL string, provider DNS01Provider) ACMEIs
 // empty is accepted by this constructor (it does not itself enforce the
 // non-empty rule), since that validation belongs to the caller that owns
 // the operator-facing form (internal/api), not to this low-level config
-// builder.
-func NewACMEIssuer(email, directoryURL string) ACMEIssuer {
-	return ACMEIssuer{Module: "acme", Email: email, CA: directoryURL}
+// builder. altHTTPPort, if non-zero and not 80, sets
+// Challenges.HTTP.AlternatePort (see HTTPChallengeConfig's doc comment)
+// so a non-wildcard host's HTTP-01 challenge doesn't reach for port 80
+// on an instance configured to run its ingress on different ports.
+func NewACMEIssuer(email, directoryURL string, altHTTPPort int) ACMEIssuer {
+	iss := ACMEIssuer{Module: "acme", Email: email, CA: directoryURL}
+	if altHTTPPort != 0 && altHTTPPort != 80 {
+		iss.Challenges = &ChallengesConfig{HTTP: &HTTPChallengeConfig{AlternatePort: altHTTPPort}}
+	}
+	return iss
 }
 
 // FileStorage is Caddy's default storage module
@@ -705,13 +734,13 @@ func internalIssuerTLSApp(hosts []string) *TLSApp {
 // NewACMEIssuer; unlike the internal issuer path, this never pairs with
 // a PKIApp, real ACME has no local CA for Caddy's pki app to manage
 // trust for.
-func acmeIssuerTLSApp(hosts []string, email, directoryURL string) *TLSApp {
+func acmeIssuerTLSApp(hosts []string, email, directoryURL string, altHTTPPort int) *TLSApp {
 	return &TLSApp{
 		Automation: &Automation{
 			Policies: []AutomationPolicy{
 				{
 					Subjects: hosts,
-					Issuers:  []any{NewACMEIssuer(email, directoryURL)},
+					Issuers:  []any{NewACMEIssuer(email, directoryURL, altHTTPPort)},
 				},
 			},
 		},
