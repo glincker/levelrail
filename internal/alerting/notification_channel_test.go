@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/textproto"
 	"strings"
 	"testing"
 )
@@ -355,6 +356,26 @@ func TestSendTestNotification_UnreachableURL_Errors(t *testing.T) {
 	err := sendTestNotification(context.Background(), nil, nil, NotifyGeneric, "http://127.0.0.1:1/hook")
 	if err == nil {
 		t.Error("sendTestNotification() error = nil, want an error for an unreachable URL")
+	}
+}
+
+func TestSendTestNotification_Email_TransientSMTPError_RetriesThenSucceeds(t *testing.T) {
+	transient := &textproto.Error{Code: 421, Msg: "service not available"}
+	sender := &fakeEmailSender{errs: []error{transient, transient}}
+
+	err := sendTestNotification(context.Background(), nil, sender, NotifyEmail, "ops@example.com")
+	if err != nil {
+		t.Fatalf("sendTestNotification() error = %v, want the third attempt (which succeeds) to win", err)
+	}
+	if got := sender.attempts.Load(); got != notifyMaxAttempts {
+		t.Errorf("attempts = %d, want exactly %d (fails until the last one), proving a test-send gets the same retry as a real email notification", got, notifyMaxAttempts)
+	}
+}
+
+func TestSendTestNotification_Email_NoSender_Errors(t *testing.T) {
+	err := sendTestNotification(context.Background(), nil, nil, NotifyEmail, "ops@example.com")
+	if err == nil || !strings.Contains(err.Error(), "not configured") {
+		t.Errorf("sendTestNotification() error = %v, want a clear 'not configured' error", err)
 	}
 }
 

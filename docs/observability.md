@@ -234,15 +234,19 @@ For most kinds, `notify_url` is a webhook URL. A few pack multiple credentials i
 
 **Retries**
 
-HTTP-based kinds (everything except `email`) use one send path (`postJSONWithAuth`) with up to 3 retries on transient failures:
+Every kind, including `email`, retries up to 3 times on a transient failure with the same 500ms-then-1s backoff, just via two different send paths since the transports aren't alike:
+
+HTTP-based kinds (everything except `email`) use `postJSONWithAuth`, retrying on:
 - Transport errors (DNS, TLS, connection refused, timeout)
 - 5xx or 429 responses
 
-Retry backoff: 500ms, then 1s.
-
 Any other status (malformed payload, bad credential, 404'd URL) fails on the first attempt. Retrying inherently-wrong requests only delays surfacing the real problem.
 
-Email is not yet covered: it sends through the control plane's SMTP client, a different transport with different failure semantics, not wired into this retry path.
+`email` uses `sendEmailWithRetry`, retrying on:
+- Transport-level failures (DNS, dial, TLS handshake, a client-side timeout, or any non-SMTP backend such as SES)
+- SMTP 4xx replies (a transient negative completion per RFC 5321 S4.2.1, e.g. "mailbox busy" or "service not available")
+
+An SMTP 5xx reply (bad recipient, bad auth, policy rejection) fails on the first attempt, the SMTP analogue of an HTTP 4xx: permanent, so retrying it only delays surfacing the real problem.
 
 **Test-send**
 

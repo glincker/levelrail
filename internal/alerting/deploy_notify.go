@@ -341,7 +341,7 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		if !ev.Succeeded {
 			subject = fmt.Sprintf("[Levelrail] deploy FAILED: %s", ev.AppName)
 		}
-		if err := sender.Send(ctx, t.NotifyURL, subject, summaryDeployText(ev)); err != nil {
+		if err := sendEmailWithRetry(ctx, sender, t.NotifyURL, subject, summaryDeployText(ev)); err != nil {
 			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
 		}
 		return nil

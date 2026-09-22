@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"strings"
 	"time"
@@ -776,8 +777,56 @@ func (n emailNotifier) Notify(ctx context.Context, ev Event) error {
 	if ev.Resolved {
 		subject = fmt.Sprintf("[Levelrail][RESOLVED] %s", ev.Rule.Name)
 	}
-	if err := n.sender.Send(ctx, n.to, subject, summaryText(ev)); err != nil {
+	if err := sendEmailWithRetry(ctx, n.sender, n.to, subject, summaryText(ev)); err != nil {
 		return fmt.Errorf("alerting: notify: %w", err)
 	}
 	return nil
+}
+
+// isRetryableEmailError classifies an email.Sender error the same way
+// isRetryableNotifyError classifies an HTTP one, adapted to SMTP's
+// inverted status-code convention: a transport-level failure (no SMTP
+// reply at all - DNS, dial, TLS handshake, a client-side timeout, or any
+// non-SMTP backend such as SES) is always worth a retry, an SMTP 4xx
+// reply is a transient negative completion per RFC 5321 S4.2.1 (mailbox
+// busy, server temporarily unavailable) and usually resolves itself, and
+// an SMTP 5xx reply is permanent (bad recipient, bad auth, policy
+// rejection) and retrying it only delays surfacing the real, fixable
+// problem.
+func isRetryableEmailError(err error) bool {
+	var protoErr *textproto.Error
+	if errors.As(err, &protoErr) {
+		return protoErr.Code < 500
+	}
+	return true
+}
+
+// sendEmailWithRetry sends one email through sender, retrying up to
+// notifyMaxAttempts times on a transient failure (isRetryableEmailError)
+// with postJSONWithAuth's identical exponential backoff: previously a
+// single transient SMTP hiccup permanently dropped an email notification
+// with no second chance, unlike every HTTP-based channel, which is
+// exactly the "Email is not yet covered (different transport and
+// semantics)" gap docs/roadmap.md used to call out.
+func sendEmailWithRetry(ctx context.Context, sender email.Sender, to, subject, body string) error {
+	var lastErr error
+	delay := notifyRetryBaseDelay
+	for attempt := 1; attempt <= notifyMaxAttempts; attempt++ {
+		lastErr = sender.Send(ctx, to, subject, body)
+		if lastErr == nil {
+			return nil
+		}
+		if attempt == notifyMaxAttempts || !isRetryableEmailError(lastErr) {
+			return lastErr
+		}
+		timer := time.NewTimer(delay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return lastErr
+		case <-timer.C:
+		}
+		delay *= 2
+	}
+	return lastErr
 }

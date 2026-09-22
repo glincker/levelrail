@@ -382,7 +382,7 @@ flowchart LR
   
   Each evaluator is independent. Seventeen notification channel kinds supported: webhook, Slack, Discord, email, Telegram, Pushover, PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark, Rocket.Chat, Opsgenie, Webex, and Google Chat, plus separate deploy-outcome notifications.
   
-  HTTP-based channels retry transient failures (transport errors or 5xx/429 responses) up to 3 times with short backoff, rather than dropping alerts on one-off hiccups. Email is not yet covered (different transport and semantics).
+  Every channel, including email, retries transient failures up to 3 times with short backoff rather than dropping alerts on one-off hiccups: HTTP-based channels on transport errors or 5xx/429 responses, email on transport errors or an SMTP 4xx reply.
   
   Delivery history for every notification channel is independently queryable via API/CLI/MCP. A dismissible dashboard nudge prompts enabling platform-wide alert rules (patch-status, node-disk-space, node-resource-usage) when none are configured yet.
 - Prometheus remote-read endpoint.
