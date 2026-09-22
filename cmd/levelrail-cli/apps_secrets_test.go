@@ -9,14 +9,20 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRun_AppsSecretsList(t *testing.T) {
 	var gotPath, gotMethod string
+	staleUpdatedAt := time.Now().Add(-120 * 24 * time.Hour).UTC().Format(time.RFC3339)
+	freshUpdatedAt := time.Now().Add(-2 * time.Hour).UTC().Format(time.RFC3339)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath, gotMethod = r.URL.Path, r.Method
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode([]secretKeyResource{{Key: "API_KEY", Locked: true}, {Key: "DB_PASSWORD", Locked: false}})
+		_ = json.NewEncoder(w).Encode([]secretKeyResource{
+			{Key: "API_KEY", Locked: true, UpdatedAt: staleUpdatedAt, Stale: true},
+			{Key: "DB_PASSWORD", Locked: false, UpdatedAt: freshUpdatedAt, Stale: false},
+		})
 	}))
 	defer srv.Close()
 
@@ -29,6 +35,33 @@ func TestRun_AppsSecretsList(t *testing.T) {
 	}
 	if strings.Contains(stdout, "secret-value") {
 		t.Errorf("stdout = %q, must never contain a secret value", stdout)
+	}
+	if !strings.Contains(stdout, "AGE") || !strings.Contains(stdout, "STALE") {
+		t.Errorf("stdout = %q, want AGE and STALE columns in the header", stdout)
+	}
+	if !strings.Contains(stdout, "months ago") {
+		t.Errorf("stdout = %q, want the stale key's age rendered", stdout)
+	}
+}
+
+func TestRun_AppsSecretsList_JSON(t *testing.T) {
+	staleUpdatedAt := time.Now().Add(-120 * 24 * time.Hour).UTC().Format(time.RFC3339)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]secretKeyResource{
+			{Key: "API_KEY", Locked: true, UpdatedAt: staleUpdatedAt, Stale: true},
+		})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "secrets", "list", "web", "--json", "--api-url", srv.URL})
+
+	var got []secretKeyResource
+	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+		t.Fatalf("json.Unmarshal(%q): %v", stdout, err)
+	}
+	if len(got) != 1 || got[0].UpdatedAt != staleUpdatedAt || !got[0].Stale {
+		t.Errorf("got %+v, want a single stale API_KEY with UpdatedAt %q", got, staleUpdatedAt)
 	}
 }
 

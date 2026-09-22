@@ -6,16 +6,18 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRun_SharedEnvList(t *testing.T) {
 	var gotPath, gotMethod string
+	staleUpdatedAt := time.Now().Add(-120 * 24 * time.Hour).UTC().Format(time.RFC3339)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath, gotMethod = r.URL.Path, r.Method
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode([]sharedEnvVarResource{
 			{Key: "LOG_LEVEL", Value: "info", Secret: false},
-			{Key: "API_KEY", Value: "", Secret: true},
+			{Key: "API_KEY", Value: "", Secret: true, UpdatedAt: staleUpdatedAt, Stale: true},
 		})
 	}))
 	defer srv.Close()
@@ -29,6 +31,20 @@ func TestRun_SharedEnvList(t *testing.T) {
 	}
 	if !strings.Contains(stdout, "API_KEY") || !strings.Contains(stdout, "hidden") {
 		t.Errorf("stdout = %q, want the secret var listed with a hidden value", stdout)
+	}
+	if !strings.Contains(stdout, "AGE") || !strings.Contains(stdout, "STALE") {
+		t.Errorf("stdout = %q, want AGE and STALE columns in the header", stdout)
+	}
+	if !strings.Contains(stdout, "months ago") {
+		t.Errorf("stdout = %q, want the stale secret var's age rendered", stdout)
+	}
+	// Plain (non-secret) vars carry no UpdatedAt, so their AGE column must
+	// render the same "-" placeholder as an unset timestamp everywhere else.
+	lines := strings.Split(stdout, "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, "LOG_LEVEL") && !strings.Contains(line, "-") {
+			t.Errorf("LOG_LEVEL row = %q, want the AGE column to render \"-\" for a plain var", line)
+		}
 	}
 }
 

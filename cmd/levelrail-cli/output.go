@@ -475,6 +475,45 @@ func formatRecommendationNanoCPUs(nanoCPUs int64) string {
 	return fmt.Sprintf("%.2f cores", float64(nanoCPUs)/1e9)
 }
 
+// formatSecretAge renders an RFC3339 timestamp (SecretKeyResource.UpdatedAt,
+// SharedEnvVarResource.UpdatedAt) as a relative "N days ago" style string
+// for a table column, mirroring web/src/lib/format.ts's formatAge. An
+// empty or unparseable timestamp (a plain shared var never carries one)
+// renders as "-".
+func formatSecretAge(iso string) string {
+	if iso == "" {
+		return "-"
+	}
+	then, err := time.Parse(time.RFC3339, iso)
+	if err != nil {
+		return "-"
+	}
+
+	d := time.Since(then)
+	switch {
+	case d < time.Minute:
+		return "just now"
+	case d < time.Hour:
+		return pluralize(int(d/time.Minute), "minute") + " ago"
+	case d < 24*time.Hour:
+		return pluralize(int(d/time.Hour), "hour") + " ago"
+	case d < 30*24*time.Hour:
+		return pluralize(int(d/(24*time.Hour)), "day") + " ago"
+	case d < 365*24*time.Hour:
+		return pluralize(int(d/(30*24*time.Hour)), "month") + " ago"
+	default:
+		return pluralize(int(d/(365*24*time.Hour)), "year") + " ago"
+	}
+}
+
+// pluralize formats n and unit as "1 day" or "3 days".
+func pluralize(n int, unit string) string {
+	if n == 1 {
+		return fmt.Sprintf("%d %s", n, unit)
+	}
+	return fmt.Sprintf("%d %ss", n, unit)
+}
+
 // printAppNetworkHuman prints "apps network" output: the live traffic
 // path, container's declared port plus whatever host port Docker
 // currently has bound.

@@ -107,13 +107,13 @@ func printSharedEnvVarsTable(out io.Writer, vars []sharedEnvVarResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "KEY\tVALUE\tSECRET")
+	_, _ = fmt.Fprintln(tw, "KEY\tVALUE\tSECRET\tAGE\tSTALE")
 	for _, v := range vars {
 		value := v.Value
 		if v.Secret {
 			value = "(hidden)"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%t\n", v.Key, value, v.Secret)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%t\t%s\t%t\n", v.Key, value, v.Secret, formatSecretAge(v.UpdatedAt), v.Stale)
 	}
 	_ = tw.Flush()
 }

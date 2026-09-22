@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestWriteJSONValue(t *testing.T) {
@@ -132,5 +133,31 @@ func TestPrintAppsTable(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("table output missing %q; got:\n%s", want, out)
 		}
+	}
+}
+
+func TestFormatSecretAge(t *testing.T) {
+	tests := []struct {
+		name string
+		iso  string
+		want string
+	}{
+		{"empty", "", "-"},
+		{"unparseable", "not-a-timestamp", "-"},
+		{"just now", time.Now().Add(-30 * time.Second).Format(time.RFC3339), "just now"},
+		{"minutes", time.Now().Add(-5 * time.Minute).Format(time.RFC3339), "5 minutes ago"},
+		{"one minute", time.Now().Add(-1 * time.Minute).Format(time.RFC3339), "1 minute ago"},
+		{"hours", time.Now().Add(-3 * time.Hour).Format(time.RFC3339), "3 hours ago"},
+		{"days", time.Now().Add(-5 * 24 * time.Hour).Format(time.RFC3339), "5 days ago"},
+		{"one day", time.Now().Add(-25 * time.Hour).Format(time.RFC3339), "1 day ago"},
+		{"months", time.Now().Add(-100 * 24 * time.Hour).Format(time.RFC3339), "3 months ago"},
+		{"years", time.Now().Add(-400 * 24 * time.Hour).Format(time.RFC3339), "1 year ago"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := formatSecretAge(tt.iso); got != tt.want {
+				t.Errorf("formatSecretAge(%q) = %q, want %q", tt.iso, got, tt.want)
+			}
+		})
 	}
 }
