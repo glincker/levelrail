@@ -2199,6 +2199,27 @@ func (c *Client) GetNodePatchStatus(ctx context.Context, id string) (NodePatchSt
 	return out, err
 }
 
+// GetMeshStatus calls GET /api/v1/mesh: this node's live WireGuard mesh
+// state, every peer it currently knows about, and its own most recent
+// key rotation if any. Returns a 501-wrapping error when mesh networking
+// is not enabled on the target control plane.
+func (c *Client) GetMeshStatus(ctx context.Context) (MeshStatusResource, error) {
+	var out MeshStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/mesh", nil, &out)
+	return out, err
+}
+
+// RotateNodeMeshKey calls POST /api/v1/nodes/{id}/mesh/rotate-key:
+// generates a fresh WireGuard keypair for id and makes it live
+// immediately. Only actually succeeds for the node running the target
+// control plane itself today; see internal/api/mesh.go's own doc
+// comment for why remote-node rotation isn't possible yet.
+func (c *Client) RotateNodeMeshKey(ctx context.Context, id string) (RotateKeyResponse, error) {
+	var out RotateKeyResponse
+	err := c.do(ctx, http.MethodPost, nodePath(id)+"/mesh/rotate-key", nil, &out)
+	return out, err
+}
+
 // GetSystemStatus calls GET /api/v1/system/status: this control plane's
 // own configured/not-configured signals, including local Docker daemon
 // reachability (DockerConnected/DockerError).

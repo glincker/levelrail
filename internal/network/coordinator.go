@@ -155,6 +155,12 @@ type Coordinator struct {
 	// nothing else here does.
 	mu                sync.RWMutex
 	observedEndpoints map[string]string
+
+	// rotations tracks in-flight and recently-confirmed key rotations,
+	// keyed by node ID. See key_rotation.go for what populates and reads
+	// this; guarded by the same mu as observedEndpoints for the identical
+	// reason (RotateKey and Distribute are genuinely concurrent callers).
+	rotations map[string]*RotationStatus
 }
 
 // CoordinatorOption configures NewCoordinator.
@@ -288,6 +294,7 @@ func (c *Coordinator) Distribute(ctx context.Context, nodes []NodeInfo) ([]NodeI
 		slog.Int("nodes", len(result.Nodes)),
 		slog.Int("failed", len(result.Failed())),
 		slog.Int("updated", len(result.Updated)))
+	c.noteDistributeResult(result)
 	return inventory, result, nil
 }
 
@@ -355,6 +362,13 @@ type LocalSink struct {
 	nodeID string
 	mesh   Mesh
 
+	// mu guards every field below that RotateKey can change out from under
+	// a concurrent ApplyMesh call: a control plane restart is the only
+	// thing that used to touch these, but an operator-triggered rotation
+	// (key_rotation.go) now can too, at any time, on a different call
+	// path than the reconcile loop's own ApplyMesh calls.
+	mu sync.Mutex
+
 	// privateKey is this node's own, held here and never anywhere else in
 	// this package's control-plane-side types. It is injected into the
 	// config on the way to Mesh.Apply, which is the one place a private
@@ -362,11 +376,26 @@ type LocalSink struct {
 	privateKey Key
 	publicKey  Key
 	listenPort int
+
+	// lastCfg is the most recent config this sink sent to the mesh
+	// (private key excluded from what a caller reads back out, same
+	// "never logged or re-exposed" rule DeviceConfig.PrivateKey's own doc
+	// comment states), kept so RotateKey can reapply the current peer set
+	// with a new private key in place of the old one, without waiting for
+	// the reconcile loop's next ApplyMesh to do it.
+	lastCfg DeviceConfig
+
+	// persistFn optionally persists a newly generated private key before
+	// RotateKey makes it live. See WithKeyPersistFunc.
+	persistFn func(Key) error
 }
+
+// LocalSinkOption configures NewLocalSink.
+type LocalSinkOption func(*LocalSink)
 
 // NewLocalSink builds a sink that applies configs to mesh as nodeID,
 // using privateKey as this node's identity.
-func NewLocalSink(nodeID string, mesh Mesh, privateKey Key) (*LocalSink, error) {
+func NewLocalSink(nodeID string, mesh Mesh, privateKey Key, opts ...LocalSinkOption) (*LocalSink, error) {
 	if nodeID == "" {
 		return nil, fmt.Errorf("%w: local sink needs a node ID", ErrUnknownNode)
 	}
@@ -380,7 +409,11 @@ func NewLocalSink(nodeID string, mesh Mesh, privateKey Key) (*LocalSink, error) 
 	if err != nil {
 		return nil, fmt.Errorf("network: local sink for node %q: %w", nodeID, err)
 	}
-	return &LocalSink{nodeID: nodeID, mesh: mesh, privateKey: privateKey, publicKey: pub}, nil
+	s := &LocalSink{nodeID: nodeID, mesh: mesh, privateKey: privateKey, publicKey: pub}
+	for _, o := range opts {
+		o(s)
+	}
+	return s, nil
 }
 
 // ApplyMesh applies cfg to the local mesh and reports this node's
@@ -396,7 +429,10 @@ func (s *LocalSink) ApplyMesh(ctx context.Context, nodeID string, cfg DeviceConf
 			ErrUnknownNode, s.nodeID, nodeID)
 	}
 
+	s.mu.Lock()
 	cfg.PrivateKey = s.privateKey
+	s.mu.Unlock()
+
 	if err := s.mesh.Apply(ctx, cfg); err != nil {
 		return NodeIdentity{}, err
 	}
@@ -405,10 +441,19 @@ func (s *LocalSink) ApplyMesh(ctx context.Context, nodeID string, cfg DeviceConf
 	if st, err := s.mesh.Status(ctx); err == nil && st.ListenPort > 0 {
 		port = st.ListenPort
 	}
+
+	s.mu.Lock()
 	s.listenPort = port
+	// Cached with PrivateKey still attached: lastCfg is only ever read
+	// back by RotateKey to reapply with a *different* private key
+	// (key_rotation.go), never returned to a caller, so this does not
+	// violate DeviceConfig.PrivateKey's "never re-exposed" rule.
+	s.lastCfg = cfg
+	pub := s.publicKey
+	s.mu.Unlock()
 
 	return NodeIdentity{
-		PublicKey:  s.publicKey,
+		PublicKey:  pub,
 		ListenPort: port,
 		// No endpoint: the control plane's own node has no meaningful
 		// self-reported endpoint (it is the thing others dial), and
@@ -417,8 +462,14 @@ func (s *LocalSink) ApplyMesh(ctx context.Context, nodeID string, cfg DeviceConf
 	}, nil
 }
 
-// PublicKey reports this node's public key.
-func (s *LocalSink) PublicKey() Key { return s.publicKey }
+// PublicKey reports this node's current public key. Reads the same
+// mutex-guarded field RotateKey can change, so a caller always sees a
+// coherent value even immediately after a rotation.
+func (s *LocalSink) PublicKey() Key {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.publicKey
+}
 
 // staleAfter is how long a peer may go without a handshake before
 // PeerStatus.Healthy calls it unreachable. WireGuard's own rekey interval

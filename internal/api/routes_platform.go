@@ -295,6 +295,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/nodes/{id}/cordon", rt.requireAbility(AbilityRoot, rt.handleCordonNode))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/uncordon", rt.requireAbility(AbilityRoot, rt.handleUncordonNode))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/drain", rt.requireAbility(AbilityRoot, rt.handleDrainNode))
+	// Mesh status and key rotation, same AbilityRoot boundary: WireGuard
+	// peer/handshake data and a node's own key material are fleet
+	// infrastructure, not app-scoped, matching every other node route
+	// above.
+	mux.HandleFunc("GET /api/v1/mesh", rt.requireAbility(AbilityRoot, rt.handleGetMeshStatus))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/mesh/rotate-key", rt.requireAbility(AbilityRoot, rt.handleRotateNodeMeshKey))
 	// Node-level metrics (sum of per-container samples for everything
 	// placed on this node, see handleQueryNodeMetrics's own doc comment
 	// for exactly what that does and doesn't mean): same AbilityRoot

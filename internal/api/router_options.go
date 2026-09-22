@@ -438,6 +438,18 @@ func (rt *Router) SetLocalNodeID(id string) {
 	rt.localNodeID = id
 }
 
+// SetMesh wires GET /api/v1/mesh and POST /api/v1/nodes/{id}/mesh/rotate-key
+// to this node's live mesh device and coordinator. A late setter for the
+// same reason SetLocalNodeID is: cmd/levelrail's mesh setup runs after
+// NewRouter is called. Either argument may be nil independently (a test
+// or an embedder that wants status but not rotation, or vice versa); both
+// routes check their own dependency and return 501 rather than assuming
+// the other was set too.
+func (rt *Router) SetMesh(mesh MeshStatusProvider, rotator MeshKeyRotator) {
+	rt.mesh = mesh
+	rt.meshRotator = rotator
+}
+
 // WithMasterKeyRotation enables POST
 // /api/v1/system/master-key/rotate and the doctor's rotation-age check.
 // masterKeyFilePath should be the on-disk path the running control plane

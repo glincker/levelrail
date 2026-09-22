@@ -182,6 +182,7 @@ Usage:
   %[1]s nodes list|get|delete [flags]                        manage nodes
   %[1]s nodes join-token [flags]                             mint a one-time node enrollment token
   %[1]s nodes cordon|uncordon|drain|health|workloads <id> [flags]   node scheduling and maintenance
+  %[1]s nodes mesh|rotate-key [id] [flags]                          WireGuard mesh status and key rotation
   %[1]s status [flags]                                        control plane status, including local Docker daemon reachability
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
