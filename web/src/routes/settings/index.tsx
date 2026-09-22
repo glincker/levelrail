@@ -9,6 +9,7 @@ import {
   GithubLogoIcon,
   GitlabLogoIcon,
   GitBranchIcon,
+  TeaBagIcon,
   WebhooksLogoIcon,
   CloudArrowUpIcon,
   CloudCheckIcon,
@@ -106,6 +107,13 @@ const sections: SettingsSection[] = [
         icon: GitBranchIcon,
         title: 'Bitbucket App',
         description: 'Bitbucket Cloud repository access for git-based deploys.',
+      },
+      {
+        to: '/settings/gitea-app',
+        icon: TeaBagIcon,
+        title: 'Gitea App',
+        description:
+          'Self-hosted Gitea repository access for git-based deploys.',
       },
       {
         to: '/settings/notification-channels',

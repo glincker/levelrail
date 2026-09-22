@@ -1001,12 +1001,12 @@ clears the stored key and resets provider/model
 
 :::
 
-::: details Git Integrations (Github, Gitlab, Bitbucket setup)
+::: details Git Integrations (Github, Gitlab, Bitbucket, Gitea setup)
 
 ```
 levelrail git-providers [flags]
 ```
-connection status and capabilities (list branches, register a webhook, authenticated clone) for github, gitlab, and bitbucket in one call
+connection status and capabilities (list branches, register a webhook, authenticated clone) for github, gitlab, bitbucket, and gitea in one call
 
 ### Github App
 
@@ -1053,6 +1053,22 @@ forgets the stored connection locally; does not revoke the token or delete the c
 
 ```
 levelrail bitbucket-app repos [flags]
+```
+list repos the connected account can access
+
+### Gitea App
+
+```
+levelrail gitea-app status [flags]
+```
+
+```
+levelrail gitea-app disconnect [flags]
+```
+forgets the stored connection locally; does not revoke the token or delete the application on Gitea's own side
+
+```
+levelrail gitea-app repos [flags]
 ```
 list repos the connected account can access
 

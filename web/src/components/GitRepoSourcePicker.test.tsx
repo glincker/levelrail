@@ -11,8 +11,7 @@ import type { GitProviderStatus } from '../types/gitProviders'
 // only Link's `to` prop matters here (the "Connect" deep links), no real
 // router is needed to render it.
 vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('@tanstack/react-router')>()
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
   return {
     ...actual,
     Link: ({
@@ -45,7 +44,9 @@ function fakeJsonResponse(body: unknown, status = 200): Response {
   } as unknown as Response
 }
 
-function disconnected(provider: GitProviderStatus['provider']): GitProviderStatus {
+function disconnected(
+  provider: GitProviderStatus['provider'],
+): GitProviderStatus {
   return {
     provider,
     connected: false,
@@ -86,6 +87,15 @@ const fakeGitHubRepo = {
   clone_url: 'https://github.com/acme/app.git',
 }
 
+const fakeGiteaRepo = {
+  full_name: 'acme/app',
+  name: 'app',
+  private: false,
+  default_branch: 'main',
+  clone_url: 'https://git.example.com/acme/app.git',
+  web_url: 'https://git.example.com/acme/app',
+}
+
 const fakeGitLabProject = {
   id: 7,
   name: 'web',
@@ -121,7 +131,10 @@ function renderPicker() {
 // pick's own state update and (for GitLab) an enabled-flag flip commit,
 // which doesn't necessarily land in the same microtask fireEvent.click
 // flushes, especially under concurrent test-file load.
-async function branchFieldById(container: HTMLElement, id: string): Promise<HTMLElement> {
+async function branchFieldById(
+  container: HTMLElement,
+  id: string,
+): Promise<HTMLElement> {
   return waitFor(() => {
     const el = container.querySelector(`#${id}`)
     if (!el) throw new Error(`no element with id ${id}`)
@@ -170,9 +183,15 @@ describe('GitRepoSourcePicker', () => {
   let providers: GitProviderStatus[]
 
   beforeEach(() => {
-    providers = [disconnected('github'), disconnected('gitlab'), disconnected('bitbucket')]
+    providers = [
+      disconnected('github'),
+      disconnected('gitlab'),
+      disconnected('bitbucket'),
+      disconnected('gitea'),
+    ]
     fetchMock = mockFetchRoutes({
-      'GET /api/v1/git-providers': () => Promise.resolve(fakeJsonResponse(providers)),
+      'GET /api/v1/git-providers': () =>
+        Promise.resolve(fakeJsonResponse(providers)),
     })
   })
 
@@ -190,7 +209,7 @@ describe('GitRepoSourcePicker', () => {
   it('shows a Connect link for every provider when none are connected, and no repo pickers', async () => {
     renderPicker()
 
-    expect(await screen.findAllByText('Connect')).toHaveLength(3)
+    expect(await screen.findAllByText('Connect')).toHaveLength(4)
     expect(screen.queryByText('Repository')).not.toBeInTheDocument()
     expect(screen.queryByText('Project')).not.toBeInTheDocument()
 
@@ -201,20 +220,29 @@ describe('GitRepoSourcePicker', () => {
         '/settings/github-app',
         '/settings/gitlab-app',
         '/settings/bitbucket-app',
+        '/settings/gitea-app',
       ]),
     )
     // One aggregated call, not three per-provider status calls.
     const statusCalls = fetchMock.mock.calls.filter(
-      ([input]) => requestUrlOf(input as RequestInfo | URL) === '/api/v1/git-providers',
+      ([input]) =>
+        requestUrlOf(input as RequestInfo | URL) === '/api/v1/git-providers',
     )
     expect(statusCalls).toHaveLength(1)
   })
 
   it('shows the repository picker once GitHub is connected', async () => {
     providers = [
-      { provider: 'github', connected: true, can_list_branches: true, can_register_webhook: true, can_auth_clone: true },
+      {
+        provider: 'github',
+        connected: true,
+        can_list_branches: true,
+        can_register_webhook: true,
+        can_auth_clone: true,
+      },
       disconnected('gitlab'),
       disconnected('bitbucket'),
+      disconnected('gitea'),
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
@@ -224,15 +252,22 @@ describe('GitRepoSourcePicker', () => {
     renderPicker()
 
     expect(await screen.findByText('Repository')).toBeInTheDocument()
-    // GitLab and Bitbucket stay collapsed to their "Not connected" CTA.
-    expect(screen.getAllByText('Connect')).toHaveLength(2)
+    // GitLab, Bitbucket, and Gitea stay collapsed to their "Not connected" CTA.
+    expect(screen.getAllByText('Connect')).toHaveLength(3)
   })
 
   it('emits a github providerRef once a repo and branch are picked', async () => {
     providers = [
-      { provider: 'github', connected: true, can_list_branches: true, can_register_webhook: true, can_auth_clone: true },
+      {
+        provider: 'github',
+        connected: true,
+        can_list_branches: true,
+        can_register_webhook: true,
+        can_auth_clone: true,
+      },
       disconnected('gitlab'),
       disconnected('bitbucket'),
+      disconnected('gitea'),
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
@@ -270,8 +305,15 @@ describe('GitRepoSourcePicker', () => {
   it('shows a real branch select for a connected GitLab project, not the old free-text fallback', async () => {
     providers = [
       disconnected('github'),
-      { provider: 'gitlab', connected: true, can_list_branches: true, can_register_webhook: true, can_auth_clone: false },
+      {
+        provider: 'gitlab',
+        connected: true,
+        can_list_branches: true,
+        can_register_webhook: true,
+        can_auth_clone: false,
+      },
       disconnected('bitbucket'),
+      disconnected('gitea'),
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
@@ -303,7 +345,10 @@ describe('GitRepoSourcePicker', () => {
     // here yet" copy is gone, and both fetched branches are listed once
     // the control is opened.
     expect(screen.queryByText(/branch-listing/i)).not.toBeInTheDocument()
-    const branchControl = await branchFieldById(container, 'git-picker-gitlab-branch')
+    const branchControl = await branchFieldById(
+      container,
+      'git-picker-gitlab-branch',
+    )
     expect(branchControl).toHaveAttribute('role', 'combobox')
 
     fireEvent.click(branchControl)
@@ -313,8 +358,15 @@ describe('GitRepoSourcePicker', () => {
   it('falls back to a free-text branch field when a connected GitLab project cannot list branches', async () => {
     providers = [
       disconnected('github'),
-      { provider: 'gitlab', connected: true, can_list_branches: false, can_register_webhook: true, can_auth_clone: false },
+      {
+        provider: 'gitlab',
+        connected: true,
+        can_list_branches: false,
+        can_register_webhook: true,
+        can_auth_clone: false,
+      },
       disconnected('bitbucket'),
+      disconnected('gitea'),
     ]
     fetchMock = mockFetchRoutes({
       'GET /api/v1/git-providers': jsonRoute(providers),
@@ -328,7 +380,10 @@ describe('GitRepoSourcePicker', () => {
       expect(container.querySelector('#git-picker-gitlab-branch')).toBeTruthy()
     })
 
-    const branchControl = await branchFieldById(container, 'git-picker-gitlab-branch')
+    const branchControl = await branchFieldById(
+      container,
+      'git-picker-gitlab-branch',
+    )
     expect(branchControl).not.toHaveAttribute('role', 'combobox')
     expect(branchControl).toHaveValue('main')
   })
@@ -376,6 +431,45 @@ describe('GitRepoSourcePicker', () => {
       repoUrl: 'https://example.com/acme/app.git',
       branch: 'main',
       token: 'tok_abc123',
+    })
+  })
+
+  it('emits a gitea providerRef once a repo and branch are picked', async () => {
+    providers = [
+      disconnected('github'),
+      disconnected('gitlab'),
+      disconnected('bitbucket'),
+      {
+        provider: 'gitea',
+        connected: true,
+        can_list_branches: true,
+        can_register_webhook: true,
+        can_auth_clone: false,
+      },
+    ]
+    fetchMock = mockFetchRoutes({
+      'GET /api/v1/git-providers': jsonRoute(providers),
+      'GET /api/v1/gitea-app/repos': jsonRoute([fakeGiteaRepo]),
+      'GET /api/v1/gitea-app/repos/acme/app/branches': jsonRoute([
+        { name: 'main', commit_sha: 'abc123' },
+      ]),
+    })
+
+    const { onSelect, container } = renderPicker()
+    await screen.findByLabelText('Repository')
+
+    await pickOption(container, 'git-picker-gitea-repo', 'acme/app', () => {
+      expect(container.querySelector('#git-picker-gitea-branch')).toBeTruthy()
+    })
+    await pickOption(container, 'git-picker-gitea-branch', 'main', () => {
+      expect(onSelect).toHaveBeenCalled()
+    })
+
+    expect(onSelect).toHaveBeenLastCalledWith({
+      provider: 'gitea',
+      repoUrl: 'https://git.example.com/acme/app.git',
+      branch: 'main',
+      providerRef: { kind: 'gitea', owner: 'acme', repo: 'app' },
     })
   })
 })

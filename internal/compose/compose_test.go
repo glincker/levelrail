@@ -177,22 +177,87 @@ services:
 	}
 }
 
-func TestParse_UnsupportedPortsForm(t *testing.T) {
-	_, err := Parse([]byte(`
+func TestParse_LongFormPorts(t *testing.T) {
+	f, err := Parse([]byte(`
 services:
   web:
     image: nginx:1.27
     ports:
       - target: 80
         published: 8080
+      - target: 443
+        published: "8443"
+        protocol: tcp
+        mode: host
+      - target: 9000
 `))
-	if err == nil {
-		t.Fatal("Parse() error = nil, want an error for a long-form ports: entry")
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	ports := f.Services["web"].Ports
+	if len(ports) != 3 {
+		t.Fatalf("len(Ports) = %d, want 3", len(ports))
+	}
+	if ports[0].HostPort != 8080 || ports[0].ContainerPort != 80 {
+		t.Errorf("ports[0] = %+v, want {8080 80}", ports[0])
+	}
+	if ports[1].HostPort != 8443 || ports[1].ContainerPort != 443 {
+		t.Errorf("ports[1] = %+v, want {8443 443} (published as a quoted string)", ports[1])
+	}
+	if ports[2].HostPort != 0 || ports[2].ContainerPort != 9000 {
+		t.Errorf("ports[2] = %+v, want {0 9000} (no published: key)", ports[2])
 	}
 }
 
-func TestParse_UnsupportedVolumesForm(t *testing.T) {
-	_, err := Parse([]byte(`
+func TestParse_LongFormPorts_Rejections(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+	}{
+		{
+			name: "missing target",
+			yaml: `
+services:
+  web:
+    image: nginx:1.27
+    ports:
+      - published: 8080
+`,
+		},
+		{
+			name: "udp protocol",
+			yaml: `
+services:
+  web:
+    image: nginx:1.27
+    ports:
+      - target: 53
+        protocol: udp
+`,
+		},
+		{
+			name: "published range",
+			yaml: `
+services:
+  web:
+    image: nginx:1.27
+    ports:
+      - target: 80
+        published: "8000-8010"
+`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := Parse([]byte(tt.yaml)); err == nil {
+				t.Fatal("Parse() error = nil, want an error")
+			}
+		})
+	}
+}
+
+func TestParse_LongFormVolumes(t *testing.T) {
+	f, err := Parse([]byte(`
 services:
   web:
     image: nginx:1.27
@@ -200,9 +265,89 @@ services:
       - type: volume
         source: web-data
         target: /data
+      - type: volume
+        source: cache
+        target: /cache
+        read_only: true
+      - type: bind
+        source: /srv/myapp/static
+        target: /static
 `))
-	if err == nil {
-		t.Fatal("Parse() error = nil, want an error for a long-form volumes: entry")
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	volumes := f.Services["web"].Volumes
+	if len(volumes) != 3 {
+		t.Fatalf("len(Volumes) = %d, want 3", len(volumes))
+	}
+	if volumes[0].Name != "web-data" || volumes[0].ContainerPath != "/data" || volumes[0].ReadOnly {
+		t.Errorf("volumes[0] = %+v, want named volume web-data at /data, not read-only", volumes[0])
+	}
+	if volumes[1].Name != "cache" || volumes[1].ContainerPath != "/cache" || !volumes[1].ReadOnly {
+		t.Errorf("volumes[1] = %+v, want named volume cache at /cache, read-only", volumes[1])
+	}
+	if volumes[2].HostPath != "/srv/myapp/static" || volumes[2].ContainerPath != "/static" {
+		t.Errorf("volumes[2] = %+v, want bind mount /srv/myapp/static at /static", volumes[2])
+	}
+}
+
+func TestParse_LongFormVolumes_Rejections(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+	}{
+		{
+			name: "missing target",
+			yaml: `
+services:
+  web:
+    image: nginx:1.27
+    volumes:
+      - type: volume
+        source: web-data
+`,
+		},
+		{
+			name: "volume type with no source",
+			yaml: `
+services:
+  web:
+    image: nginx:1.27
+    volumes:
+      - type: volume
+        target: /data
+`,
+		},
+		{
+			name: "bind type with relative source",
+			yaml: `
+services:
+  web:
+    image: nginx:1.27
+    volumes:
+      - type: bind
+        source: ./data
+        target: /data
+`,
+		},
+		{
+			name: "tmpfs type is rejected",
+			yaml: `
+services:
+  web:
+    image: nginx:1.27
+    volumes:
+      - type: tmpfs
+        target: /cache
+`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := Parse([]byte(tt.yaml)); err == nil {
+				t.Fatal("Parse() error = nil, want an error")
+			}
+		})
 	}
 }
 

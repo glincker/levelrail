@@ -2138,9 +2138,20 @@ type BitbucketAppRepoResource struct {
 	WebURL        string `json:"web_url"`
 }
 
+// GiteaAppRepoResource mirrors internal/api's giteaAppRepoResource: one
+// entry of GET /api/v1/gitea-app/repos.
+type GiteaAppRepoResource struct {
+	FullName      string `json:"full_name"`
+	Name          string `json:"name"`
+	Private       bool   `json:"private"`
+	DefaultBranch string `json:"default_branch"`
+	CloneURL      string `json:"clone_url"`
+	WebURL        string `json:"web_url"`
+}
+
 // GitProviderResource mirrors internal/api's gitProviderResource: one
 // entry of GET /api/v1/git-providers, a capability summary for one git
-// provider (github, gitlab, bitbucket).
+// provider (github, gitlab, bitbucket, gitea).
 type GitProviderResource struct {
 	Provider           string `json:"provider"`
 	Connected          bool   `json:"connected"`
@@ -2182,6 +2193,17 @@ type BitbucketAppStatusResource struct {
 	CreatedAt  string `json:"created_at,omitempty"`
 	Authorized bool   `json:"authorized"`
 	BaseURL    string `json:"base_url,omitempty"`
+}
+
+// GiteaAppStatusResource mirrors internal/api's giteaAppStatusResource:
+// GET /api/v1/gitea-app's response.
+type GiteaAppStatusResource struct {
+	Connected   bool   `json:"connected"`
+	InstanceURL string `json:"instance_url,omitempty"`
+	ClientID    string `json:"client_id,omitempty"`
+	CreatedAt   string `json:"created_at,omitempty"`
+	Authorized  bool   `json:"authorized"`
+	BaseURL     string `json:"base_url,omitempty"`
 }
 
 // StaticSiteResource mirrors internal/api's staticSiteResource

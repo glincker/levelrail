@@ -1,14 +1,14 @@
 ---
-description: Connecting GitHub, GitLab, and Bitbucket for automatic git-triggered deploys, preview environments per pull request, and webhook history.
+description: Connecting GitHub, GitLab, Bitbucket, and Gitea for automatic git-triggered deploys, preview environments per pull request, and webhook history.
 ---
 
-# Git integrations: GitHub, GitLab, Bitbucket, and preview environments
+# Git integrations: GitHub, GitLab, Bitbucket, Gitea, and preview environments
 
 Connect a git provider once at the control-plane level, then point any number of apps at repos it can see.
 
 **Relevant packages:**
 
-- Backend: `internal/api/github_app*.go`, `gitlab_app*.go`, `bitbucket_app*.go`, `git_webhook.go`, `webhook_deliveries.go`, `preview_environments*.go`
+- Backend: `internal/api/github_app*.go`, `gitlab_app*.go`, `bitbucket_app*.go`, `gitea_app*.go`, `git_webhook.go`, `webhook_deliveries.go`, `preview_environments*.go`
 - Webhooks: `internal/webhook`
 
 ## Provider connections vs. git sources
@@ -22,7 +22,7 @@ An **app's git source** (`GET/PUT/DELETE /api/v1/apps/{name}/git-source`) is a p
 - One webhook secret
 - One deploy trigger mode (see [Deploy triggers: push vs. release](#deploy-triggers-push-vs-release))
 
-A **provider connection** (GitHub App, GitLab OAuth Application, Bitbucket OAuth consumer) is a control-plane-wide credential that can see many repos across many orgs or workspaces.
+A **provider connection** (GitHub App, GitLab OAuth Application, Bitbucket OAuth consumer, Gitea OAuth2 Application) is a control-plane-wide credential that can see many repos across many orgs or workspaces.
 
 ### Why separate them
 
@@ -34,15 +34,16 @@ Keeping them separate means:
 
 ### Provider differences
 
-The three providers are not equivalent, and the code reflects that:
+The four providers are not equivalent, and the code reflects that:
 
-| Provider | Auth method | Token lifetime | PR comments/statuses |
-| --- | --- | --- | --- |
-| **GitHub** | Real GitHub App with manifest flow | Short-lived per API call | Yes |
-| **GitLab** | Hand-registered OAuth Application | Long-lived | No |
-| **Bitbucket** | Hand-registered OAuth consumer | Long-lived | No |
+| Provider | Auth method | Token lifetime | PR comments/statuses | Self-hosted |
+| --- | --- | --- | --- | --- |
+| **GitHub** | Real GitHub App with manifest flow | Short-lived per API call | Yes | Enterprise Server, via `instance_url` |
+| **GitLab** | Hand-registered OAuth Application | Long-lived | No | Yes, via `instance_url` |
+| **Bitbucket** | Hand-registered OAuth consumer | Long-lived | No | Cloud only |
+| **Gitea** | Hand-registered OAuth2 Application | Long-lived, refreshed | No | Almost always, via `instance_url` |
 
-GitHub's manifest flow creates the App automatically on GitHub's side. GitLab and Bitbucket require manual App/consumer creation in their own settings first, then pasting credentials in.
+GitHub's manifest flow creates the App automatically on GitHub's side. GitLab, Bitbucket, and Gitea require manual App/consumer creation in their own settings first, then pasting credentials in.
 
 ### Checking capabilities
 
@@ -109,18 +110,31 @@ Navigate to `/settings/bitbucket-app`.
 2. Authorize via GET /api/v1/bitbucket-app/connect
 ```
 
+```
+[Gitea]
+
+Navigate to `/settings/gitea-app`.
+
+1. Paste your OAuth2 application's credentials via PUT /api/v1/gitea-app:
+   - instance_url
+   - client_id
+   - client_secret
+2. Authorize via GET /api/v1/gitea-app/connect
+   (redirects to your instance's /login/oauth/authorize)
+```
+
 :::
 
 
-### Prerequisites (all three)
+### Prerequisites (all four)
 
-**Master key:** All three need a master key configured on the control plane (the same one envelope-encrypts every secret). Routes that need it return `501` when absent, rather than crashing.
+**Master key:** All four need a master key configured on the control plane (the same one envelope-encrypts every secret). Routes that need it return `501` when absent, rather than crashing.
 
 **GitHub's manifest flow:** Additionally needs a primary domain set in ingress settings first. GitHub needs a real, reachable callback URL. A `409` explains exactly that if you try before setting one.
 
 ### Disconnecting
 
-`DELETE /api/v1/github-app`, `/gitlab-app`, or `/bitbucket-app` deletes the connection row and secrets locally only.
+`DELETE /api/v1/github-app`, `/gitlab-app`, `/bitbucket-app`, or `/gitea-app` deletes the connection row and secrets locally only.
 
 It does not reach out to revoke anything or delete the App/Application/consumer on the provider's own side. To remove the App from GitHub, delete it from `github.com/settings/apps` yourself.
 
@@ -148,6 +162,12 @@ levelrail-cli gitlab-app use-as-source <project-id> --app-name my-app
 levelrail-cli bitbucket-app repos
 levelrail-cli bitbucket-app branches <workspace> <repo-slug>
 levelrail-cli bitbucket-app use-as-source <workspace> <repo-slug> --app-name my-app
+```
+
+```bash [Gitea]
+levelrail-cli gitea-app repos
+levelrail-cli gitea-app branches <owner> <repo>
+levelrail-cli gitea-app use-as-source <owner> <repo> --app-name my-app
 ```
 
 :::
@@ -178,23 +198,23 @@ webhook_registered:  true
 - `--build-path`: path to the build file within the repo
 - `--trigger-mode`: `push` or `release` (default: `push`), see [Deploy triggers: push vs. release](#deploy-triggers-push-vs-release)
 
-GitLab uses numeric project IDs instead of owner/repo pairs. So `gitlab-app branches` and `use-as-source` take one positional argument instead of two.
+GitLab uses numeric project IDs instead of owner/repo pairs. So `gitlab-app branches` and `use-as-source` take one positional argument instead of two. Bitbucket and Gitea both use owner/repo-shaped path pairs (`workspace`/`repo-slug` and `owner`/`repo` respectively), the same two-positional-argument shape.
 
 ### Graceful degradation
 
 **GitHub:** `use-as-source` degrades gracefully if the installation predates `repository_hooks:write`. It connects the repo and reports `webhook_registered: false` with a `webhook_error` explaining the permission gap, rather than failing entirely.
 
-**GitLab & Bitbucket:** `use-as-source` fails the whole request (`502`) if webhook registration fails, since neither has a partial-success fallback.
+**GitLab, Bitbucket & Gitea:** `use-as-source` fails the whole request (`502`) if webhook registration fails, since none of the three has a partial-success fallback.
 
-### No CLI for git-providers status
+### `git-providers` CLI command
 
-There is no `git-providers` CLI command. `GET /api/v1/git-providers` exists to feed the dashboard's aggregated repo-picker UI in one call. The CLI covers all operator use cases via the three provider-specific commands above.
+`levelrail-cli git-providers` calls `GET /api/v1/git-providers` directly: connection status and capabilities (list branches, register a webhook, authenticated clone) for all four providers in one call, the same aggregated response the dashboard's repo picker uses. Useful for a quick "what's connected" overview without four separate `<provider>-app status` calls.
 
 ## The webhook receiver and delivery history
 
 ### Webhook processing flow
 
-All webhooks from GitHub, GitLab, and Bitbucket follow the same processing path:
+All push webhooks from GitHub, GitLab, Bitbucket, and Gitea follow the same processing path (pull-request events are GitHub/GitLab/Bitbucket only today, see [Not built yet](#not-built-yet-deliberate-follow-ups)):
 
 ```mermaid
 flowchart LR
@@ -218,13 +238,13 @@ Every webhook, whether it succeeds, fails, or mismatches, creates a delivery his
 
 ### Single webhook endpoint for all providers
 
-Push and pull-request webhooks from all three providers land on the same URL:
+Push webhooks from all four providers (and pull-request webhooks from the three that support them) land on the same URL:
 
 ```
 POST /api/v1/webhooks/github/{name}
 ```
 
-The path says "github" for backward compatibility with already-configured GitHub webhooks. GitLab and Bitbucket register at this exact same path. The provider is detected from headers alone (`X-Gitlab-Event`, `X-GitHub-Event`, or `X-Event-Key`), not the URL.
+The path says "github" for backward compatibility with already-configured GitHub webhooks. GitLab, Bitbucket, and Gitea all register at this exact same path. The provider is detected from headers alone (`X-Gitlab-Event`, `X-GitHub-Event`, `X-Event-Key`, or `X-Gitea-Event-Type`), not the URL.
 
 ### Authentication
 
@@ -235,12 +255,13 @@ This route is deliberately unauthenticated in the `requireAbility` sense. No pro
 | GitHub | HMAC-SHA256, header: `X-Hub-Signature-256`, format: `sha256=<hex>` |
 | Bitbucket | HMAC-SHA256, header: `X-Hub-Signature` (older, unsuffixed), format: `sha256=<hex>` |
 | GitLab | Secret sent verbatim, header: `X-Gitlab-Token`, checked with constant-time comparison |
+| Gitea | HMAC-SHA256, verified via the same `X-Hub-Signature-256` GitHub uses (Gitea sends it for GitHub compatibility alongside its own bare-hex `X-Gitea-Signature`, which this platform doesn't read) |
 
 ### Event routing
 
 **Push events:** Accepted (`200`) but ignored if the ref doesn't match the git source's trigger mode (branch or tag, see below). Rejected refs return early, not processed.
 
-**Pull-request events:** Routed separately from pushes.
+**Pull-request events:** Routed separately from pushes, GitHub/GitLab/Bitbucket only today (Gitea sends `pull_request` events too, but this platform doesn't parse them yet, see [Not built yet](#not-built-yet-deliberate-follow-ups)).
 - `opened` / `synchronize`: Deploys or redeploys a preview environment (gated on `PreviewEnabled`)
 - `closed`: Tears down the preview, regardless of merge status
 
@@ -260,6 +281,7 @@ Every git source has a `trigger_mode`, independent of preview environments and u
 | **GitHub** | Yes. A push to `refs/tags/<name>` deploys, using the tag's own commit. | Yes. A `release` event with `action: "published"` deploys, checked out by the tag's own ref (`refs/tags/<name>`), since a release payload carries no commit SHA of its own. The built image is tagged with the release's tag name (`/` replaced with `-` to stay a valid Docker tag). |
 | **GitLab** | Yes. GitLab's Tag Push Hook payload shares the same `ref`/`after` shape as a branch push, so it's recognized with no extra parsing. | Not wired up. GitLab has its own separate Releases API/webhook event this platform doesn't subscribe to. |
 | **Bitbucket** | **No, known gap.** Bitbucket's `repo:push` payload marks each change with its own `"type": "branch"` or `"type": "tag"`, but this platform's webhook parser (`internal/webhook.ParseBitbucketPushEvent`) currently discards that field and always synthesizes a `refs/heads/<name>` ref regardless. A Bitbucket tag push is therefore indistinguishable from a same-named branch push today, and never matches `release` mode's tag check. This fails closed (a tag push simply never deploys), not open. Fixing it means teaching that parser to preserve the change's real ref kind, a `internal/webhook` change tracked as a follow-up, not done here. | Not wired up. |
+| **Gitea** | Yes. Gitea's push payload is GitHub-shaped (`ref`/`after` top-level, including `refs/tags/<name>`), so `webhook.ParsePushEvent` recognizes a Gitea tag push with no dedicated parser, the same "no extra parsing" reason GitLab's row gives. | Not wired up. Gitea sends its own `release` event (`X-Gitea-Event-Type: release`) this platform doesn't subscribe to. |
 
 Switching an existing app from `push` to `release` (or back) takes effect on the next incoming webhook; it never touches whatever is currently deployed.
 
@@ -273,6 +295,7 @@ levelrail-cli apps git-source set storefront --repo-url https://github.com/acme/
 levelrail-cli github-app use-as-source acme storefront --app-name storefront --trigger-mode release
 levelrail-cli gitlab-app use-as-source <project-id> --app-name storefront --trigger-mode release
 levelrail-cli bitbucket-app use-as-source <workspace> <repo-slug> --app-name storefront --trigger-mode release
+levelrail-cli gitea-app use-as-source <owner> <repo> --app-name storefront --trigger-mode release
 ```
 
 Omitting `--trigger-mode` (or leaving the dashboard select on its default) keeps `push`, exactly matching every git source connected before trigger modes existed.
@@ -303,6 +326,8 @@ Each app's **Source** tab (`/apps/{name}/source`) shows a "Recent webhook delive
 ## Preview environments per pull request
 
 Opt-in, per app, off by default. Once enabled, opening a pull request against the connected repo's target branch deploys an independent copy of the app under `<app-name>-pr-<number>`.
+
+GitHub, GitLab, and Bitbucket sources only. Gitea's push-triggered deploys work today, but its `pull_request` webhook event isn't parsed yet, so a Gitea-sourced app can't have preview environments until that lands (see [Not built yet](#not-built-yet-deliberate-follow-ups)).
 
 ### Lifecycle
 
@@ -434,6 +459,14 @@ Or click the "Sweep stale previews" button (appears once at least one preview is
 | `GET` | `/api/v1/bitbucket-app/repos` | `read:sensitive` |
 | `GET` | `/api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/branches` | `read:sensitive` |
 | `POST` | `/api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source` | `write:sensitive` |
+| `GET` | `/api/v1/gitea-app` | `root` |
+| `PUT` | `/api/v1/gitea-app` | `root` |
+| `DELETE` | `/api/v1/gitea-app` | `root` |
+| `GET` | `/api/v1/gitea-app/connect` | `root` |
+| `GET` | `/api/v1/gitea-app/callback` | `root` |
+| `GET` | `/api/v1/gitea-app/repos` | `read:sensitive` |
+| `GET` | `/api/v1/gitea-app/repos/{owner}/{repo}/branches` | `read:sensitive` |
+| `POST` | `/api/v1/gitea-app/repos/{owner}/{repo}/use-as-source` | `write:sensitive` |
 | `POST` | `/api/v1/webhooks/github/{name}` | none (HMAC/token verified) |
 | `GET` | `/api/v1/apps/{name}/webhook-deliveries` | `read` |
 | `POST` | `/api/v1/apps/{name}/webhook-deliveries/{id}/replay` | `deploy` |
@@ -479,6 +512,13 @@ levelrail-cli bitbucket-app branches <workspace> <repo-slug> [flags]
 levelrail-cli bitbucket-app use-as-source <workspace> <repo-slug> --app-name NAME [--branch BRANCH] [--build-type TYPE] [--build-path PATH] [--trigger-mode MODE]
 ```
 
+**Gitea:**
+```bash
+levelrail-cli gitea-app repos [flags]
+levelrail-cli gitea-app branches <owner> <repo> [flags]
+levelrail-cli gitea-app use-as-source <owner> <repo> --app-name NAME [--branch BRANCH] [--build-type TYPE] [--build-path PATH] [--trigger-mode MODE]
+```
+
 ### Webhook deliveries
 
 ```bash
@@ -506,7 +546,7 @@ levelrail-cli apps preview-env clear <app-name> <key>
 ```
 
 ::: warning
-Connecting a provider is dashboard-only. `github-app`/`gitlab-app`/`bitbucket-app` with no subcommand only prints usage. This is intentional: it requires a real browser redirect through the provider's manifest or OAuth flow, not something a scriptable client can drive.
+Connecting a provider is dashboard-only. `github-app`/`gitlab-app`/`bitbucket-app`/`gitea-app` with no subcommand only prints usage. This is intentional: it requires a real browser redirect through the provider's manifest or OAuth flow, not something a scriptable client can drive.
 :::
 
 ## See also
@@ -516,6 +556,10 @@ Connecting a provider is dashboard-only. `github-app`/`gitlab-app`/`bitbucket-ap
 - [app.yaml reference](app-spec-reference.md) - Deployment spec schema used by multi-service deploys and app.yaml files
 
 ## Not built yet (deliberate follow-ups)
+
+### Gitea preview environments
+
+- **No pull-request webhook support for Gitea.** `internal/webhook.IsPullRequestEvent`/`ParsePullRequestEventForProvider` only recognize GitHub's, GitLab's, and Bitbucket's own event-discriminator headers. Gitea sends `X-Gitea-Event-Type: pull_request` with a GitHub-shaped payload body, but nothing detects or parses it yet, so a Gitea-sourced app can't opt into preview environments at all today, not even a degraded version. Push-triggered deploys (the everyday path) are unaffected. This is the single largest gap between Gitea and the other three providers, and the most likely next follow-up.
 
 ### Release trigger mode
 
@@ -528,14 +572,14 @@ Connecting a provider is dashboard-only. `github-app`/`gitlab-app`/`bitbucket-ap
 
 ### Deploy token reuse
 
-- **No deploy token reuse for private GitLab or Bitbucket repos.** `use-as-source` connects the repo and registers the webhook, but doesn't carry the short-lived OAuth token forward as the git source's deploy token. A private project only builds once an operator separately pastes a personal access token into the app's git source card. GitHub's `use-as-source` doesn't have this gap (installation token is minted fresh on every call).
+- **No deploy token reuse for private GitLab, Bitbucket, or Gitea repos.** `use-as-source` connects the repo and registers the webhook, but doesn't carry the short-lived OAuth token forward as the git source's deploy token. A private project only builds once an operator separately pastes a personal access token into the app's git source card. GitHub's `use-as-source` doesn't have this gap (installation token is minted fresh on every call).
 
 ### Authenticated clones
 
-- **No authenticated clone path for GitLab or Bitbucket.** `GET /api/v1/git-providers`'s `can_auth_clone` is hard-coded `false` for both. Only GitHub's installation token doubles as clone credentials.
+- **No authenticated clone path for GitLab, Bitbucket, or Gitea.** `GET /api/v1/git-providers`'s `can_auth_clone` is hard-coded `false` for all three. Only GitHub's installation token doubles as clone credentials.
 
 - **GitHub Enterprise Server clone auth assumes github.com.** A connection to a GHES instance is fully supported for the App itself, but the `isGitHubHTTPSRepoURL` check behind the authenticated-clone path only recognizes `github.com` URLs. This is a separately tracked gap.
 
 ### Revocation
 
-- **No revoke-on-disconnect.** Disconnecting any of the three providers deletes the local connection row and secrets only. It never calls the provider to revoke the token, uninstall the App, or delete the OAuth Application/consumer on its own side.
+- **No revoke-on-disconnect.** Disconnecting any of the four providers deletes the local connection row and secrets only. It never calls the provider to revoke the token, uninstall the App, or delete the OAuth Application/consumer on its own side.

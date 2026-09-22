@@ -308,11 +308,11 @@ func assertProviderStatusNotConnected(t *testing.T, path string) {
 }
 
 // assertGitSourceWebhookRegistered proves the common "use repo/project as
-// source" success shape shared by GitHub's, GitLab's, and Bitbucket's own
-// handlers: the fake client's CreateWebhook-equivalent was called with a
-// URL ending in the generic push path, and the hook token it received
-// matches the git source's own stored webhook secret.
-func assertGitSourceWebhookRegistered(t *testing.T, gitSourceSecrets GitSourceSecrets, appName string, hookCalled bool, hookURL, hookToken string) {
+// source" success shape shared by GitHub's, GitLab's, Bitbucket's, and
+// Gitea's own handlers: the fake client's CreateWebhook-equivalent was
+// called with a URL ending in the generic push path, and the hook token
+// it received matches the git source's own stored webhook secret.
+func assertGitSourceWebhookRegistered(t *testing.T, gitSourceSecrets GitSourceSecrets, appName string, hookCalled bool, hookURL, hookToken string) { //nolint:unparam // appName is always "web" today because every one of this helper's four callers seeds the same fixture app, not because the parameter is dead; each caller's own seedApp(t, db, "web") is what fixes the value, not this signature
 	t.Helper()
 	if !hookCalled {
 		t.Fatal("CreateWebhook was not called")

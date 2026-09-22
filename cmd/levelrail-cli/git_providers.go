@@ -9,9 +9,10 @@ import (
 
 // runGitProviders implements "git-providers": GET /api/v1/git-providers
 // (internal/api/git_providers.go), a capability summary for every git
-// provider (github, gitlab, bitbucket) in one call, replacing three
-// separate "github-app status"/"gitlab-app status"/"bitbucket-app
-// status" round-trips when a caller just wants an overview. Read-only,
+// provider (github, gitlab, bitbucket, gitea) in one call, replacing
+// four separate "github-app status"/"gitlab-app status"/"bitbucket-app
+// status"/"gitea-app status" round-trips when a caller just wants an
+// overview. Read-only,
 // no subcommand, the same flat shape "containers" and "status" already
 // use for a single GET with no verb of its own.
 func runGitProviders(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -38,9 +39,10 @@ func gitProvidersUsage(prog string) string {
   %[1]s git-providers [flags]
 
 Shows connection status and capabilities (list branches, register a
-webhook, authenticated clone) for github, gitlab, and bitbucket in one
-call. See "%[1]s github-app status", "%[1]s gitlab-app status", or
-"%[1]s bitbucket-app status" for one provider's own fuller detail.
+webhook, authenticated clone) for github, gitlab, bitbucket, and gitea
+in one call. See "%[1]s github-app status", "%[1]s gitlab-app status",
+"%[1]s bitbucket-app status", or "%[1]s gitea-app status" for one
+provider's own fuller detail.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

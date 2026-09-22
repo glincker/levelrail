@@ -37,6 +37,7 @@ import {
 import { connectGitHubRepoAsSource } from '../queries/githubApp'
 import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
 import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
+import { connectGiteaRepoAsSource } from '../queries/giteaApp'
 import {
   GitRepoSourcePicker,
   type GitRepoSourceValue,
@@ -323,9 +324,23 @@ async function connectGitSource(
       )
       return { resource, autoRegistered: true }
     }
-    const resource = await connectBitbucketRepoAsSource(
-      form.providerRef.workspace,
-      form.providerRef.repoSlug,
+    if (form.providerRef.kind === 'bitbucket') {
+      const resource = await connectBitbucketRepoAsSource(
+        form.providerRef.workspace,
+        form.providerRef.repoSlug,
+        {
+          app_name: appName,
+          branch,
+          build_type: form.buildType,
+          build_path: buildPath,
+          trigger_mode: form.triggerMode,
+        },
+      )
+      return { resource, autoRegistered: true }
+    }
+    const resource = await connectGiteaRepoAsSource(
+      form.providerRef.owner,
+      form.providerRef.repo,
       {
         app_name: appName,
         branch,

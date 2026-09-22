@@ -41,6 +41,7 @@ func (rt *Router) handleListGitProviders(w http.ResponseWriter, r *http.Request)
 		rt.githubProviderStatus(ctx),
 		rt.gitlabProviderStatus(ctx),
 		rt.bitbucketProviderStatus(ctx),
+		rt.giteaProviderStatus(ctx),
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -115,6 +116,32 @@ func (rt *Router) bitbucketProviderStatus(ctx context.Context) gitProviderResour
 	authorized, err := rt.bitbucketAppSecrets.Exists(ctx, store.BitbucketAppSecretsKey(), bitbucketAppAccessTokenKey)
 	if err != nil {
 		rt.logger.Error("api: check bitbucket app authorization for git-providers status failed", slog.String("error", err.Error()))
+		return res
+	}
+	res.Connected = authorized
+	res.CanListBranches = authorized
+	res.CanRegisterWebhook = authorized
+	return res
+}
+
+// giteaProviderStatus reports Gitea's entry, the same "connected means
+// authorized" shape gitlabProviderStatus uses. CanAuthClone stays
+// false: Gitea has no authenticated clone path today, matching
+// GitLab's own capability table entry.
+func (rt *Router) giteaProviderStatus(ctx context.Context) gitProviderResource {
+	res := gitProviderResource{Provider: "gitea"}
+	if _, err := rt.giteaApp.GetGiteaAppConnection(ctx); err != nil {
+		if !errors.Is(err, store.ErrGiteaAppConnectionNotFound) {
+			rt.logger.Error("api: get gitea app connection for git-providers status failed", slog.String("error", err.Error()))
+		}
+		return res
+	}
+	if rt.giteaAppSecrets == nil {
+		return res
+	}
+	authorized, err := rt.giteaAppSecrets.Exists(ctx, store.GiteaAppSecretsKey(), giteaAppAccessTokenKey)
+	if err != nil {
+		rt.logger.Error("api: check gitea app authorization for git-providers status failed", slog.String("error", err.Error()))
 		return res
 	}
 	res.Connected = authorized

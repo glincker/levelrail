@@ -160,15 +160,23 @@ func (d *DependsOn) UnmarshalYAML(node *yaml.Node) error {
 	}
 }
 
-// UnmarshalYAML supports ports:'s short form only: "container" or
-// "host:container". Long-form mapping entries are rejected rather than
-// silently dropped.
+// UnmarshalYAML supports both of ports:'s forms: the short scalar form
+// ("container" or "host:container") and the long mapping form
+// (target/published/protocol/mode keys). mode: is accepted but ignored,
+// since Levelrail has no host-vs-ingress publishing distinction to
+// carry it onto.
 func (p *Port) UnmarshalYAML(node *yaml.Node) error {
-	if node.Kind != yaml.ScalarNode {
-		return fmt.Errorf("ports: long-form entries are not supported, use \"container\" or \"host:container\"")
+	switch node.Kind {
+	case yaml.ScalarNode:
+		return p.parsePortShortForm(node.Value)
+	case yaml.MappingNode:
+		return p.parsePortLongForm(node)
+	default:
+		return fmt.Errorf("ports: entry must be a string (short form) or a mapping (long form)")
 	}
-	raw := node.Value
+}
 
+func (p *Port) parsePortShortForm(raw string) error {
 	parts := strings.Split(raw, ":")
 	switch len(parts) {
 	case 1:
@@ -195,6 +203,61 @@ func (p *Port) UnmarshalYAML(node *yaml.Node) error {
 	}
 }
 
+// rawLongPort is ports:'s long mapping form. Target and Published use
+// yamlScalarString rather than int, since real Compose allows either
+// spelling (target: 80 or target: "80") for both keys.
+type rawLongPort struct {
+	Target    yamlScalarString `yaml:"target"`
+	Published yamlScalarString `yaml:"published"`
+	Protocol  string           `yaml:"protocol"`
+	Mode      string           `yaml:"mode"`
+}
+
+func (p *Port) parsePortLongForm(node *yaml.Node) error {
+	var raw rawLongPort
+	if err := node.Decode(&raw); err != nil {
+		return fmt.Errorf("ports: %w", err)
+	}
+	if raw.Target == "" {
+		return fmt.Errorf("ports: target is required")
+	}
+	target, err := parsePort(string(raw.Target))
+	if err != nil {
+		return fmt.Errorf("ports: target: %w", err)
+	}
+	switch raw.Protocol {
+	case "", "tcp":
+	default:
+		return fmt.Errorf("ports: target %d: protocol %q is not supported, only tcp is", target, raw.Protocol)
+	}
+	p.ContainerPort = target
+	if raw.Published == "" {
+		return nil
+	}
+	if strings.Contains(string(raw.Published), "-") {
+		return fmt.Errorf("ports: target %d: a published port range is not supported, publish a single port", target)
+	}
+	host, err := parsePort(string(raw.Published))
+	if err != nil {
+		return fmt.Errorf("ports: target %d: published: %w", target, err)
+	}
+	p.HostPort = host
+	return nil
+}
+
+// yamlScalarString decodes any YAML scalar (string or number) into its
+// raw text, so a long-form key written as an unquoted number (target:
+// 80) and one written as a string (target: "80") both parse the same.
+type yamlScalarString string
+
+func (s *yamlScalarString) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.ScalarNode {
+		return fmt.Errorf("must be a string or a number")
+	}
+	*s = yamlScalarString(node.Value)
+	return nil
+}
+
 func parsePort(s string) (int, error) {
 	n, err := strconv.Atoi(s)
 	if err != nil {
@@ -206,26 +269,38 @@ func parsePort(s string) (int, error) {
 	return n, nil
 }
 
-// UnmarshalYAML supports volumes:'s short form only: "name:/path",
-// optionally with a trailing ":ro"/":rw". The left side is a bind mount
-// (HostPath set, Name left empty) when it starts with "/", a real
-// Docker Compose absolute host path; one starting with "." is rejected
-// outright, since there's no defined working directory here to resolve
-// a relative path against (real Compose resolves it against the
-// compose file's own directory, which this package's direct-import
-// path, unlike the git-sourced expand path, doesn't have). Anything
-// else is a named volume, unchanged from before bind mounts existed.
+// UnmarshalYAML supports both of volumes:'s forms: the short scalar
+// form ("name:/path", optionally with a trailing ":ro"/":rw") and the
+// long mapping form (type/source/target/read_only keys). See
+// parseVolumeShortForm and parseVolumeLongForm.
 func (v *Volume) UnmarshalYAML(node *yaml.Node) error {
-	if node.Kind != yaml.ScalarNode {
-		return fmt.Errorf("volumes: long-form entries are not supported, use \"name:/path\"")
+	switch node.Kind {
+	case yaml.ScalarNode:
+		return v.parseVolumeShortForm(node.Value)
+	case yaml.MappingNode:
+		return v.parseVolumeLongForm(node)
+	default:
+		return fmt.Errorf("volumes: entry must be a string (short form) or a mapping (long form)")
 	}
-	parts := strings.SplitN(node.Value, ":", 3)
+}
+
+// parseVolumeShortForm parses "name:/path", optionally with a trailing
+// ":ro"/":rw". The left side is a bind mount (HostPath set, Name left
+// empty) when it starts with "/", a real Docker Compose absolute host
+// path; one starting with "." is rejected outright, since there's no
+// defined working directory here to resolve a relative path against
+// (real Compose resolves it against the compose file's own directory,
+// which this package's direct-import path, unlike the git-sourced
+// expand path, doesn't have). Anything else is a named volume,
+// unchanged from before bind mounts existed.
+func (v *Volume) parseVolumeShortForm(raw string) error {
+	parts := strings.SplitN(raw, ":", 3)
 	if len(parts) < 2 {
-		return fmt.Errorf("volumes: %q must be \"name:/path\"", node.Value)
+		return fmt.Errorf("volumes: %q must be \"name:/path\"", raw)
 	}
 	left, path := parts[0], parts[1]
 	if strings.HasPrefix(left, ".") {
-		return fmt.Errorf("volumes: %q: relative bind-mount paths are not supported, use an absolute path", node.Value)
+		return fmt.Errorf("volumes: %q: relative bind-mount paths are not supported, use an absolute path", raw)
 	}
 	if strings.HasPrefix(left, "/") {
 		v.HostPath = left
@@ -236,6 +311,53 @@ func (v *Volume) UnmarshalYAML(node *yaml.Node) error {
 	if len(parts) == 3 {
 		v.ReadOnly = parts[2] == "ro"
 	}
+	return nil
+}
+
+// rawLongVolume is volumes:'s long mapping form. tmpfs and npipe
+// (real Compose's other two type: values) have no equivalent in
+// store.ServiceVolume/store.ServiceBindMount, so parseVolumeLongForm
+// rejects them rather than silently dropping the mount.
+type rawLongVolume struct {
+	Type     string `yaml:"type"`
+	Source   string `yaml:"source"`
+	Target   string `yaml:"target"`
+	ReadOnly bool   `yaml:"read_only"`
+}
+
+func (v *Volume) parseVolumeLongForm(node *yaml.Node) error {
+	var raw rawLongVolume
+	if err := node.Decode(&raw); err != nil {
+		return fmt.Errorf("volumes: %w", err)
+	}
+	if raw.Target == "" {
+		return fmt.Errorf("volumes: target is required")
+	}
+	switch raw.Type {
+	case "", "volume":
+		if raw.Source == "" {
+			return fmt.Errorf("volumes: target %q must be a named volume (set source:) or use type: bind with an absolute source path", raw.Target)
+		}
+		if strings.HasPrefix(raw.Source, "/") || strings.HasPrefix(raw.Source, ".") {
+			return fmt.Errorf("volumes: target %q: source %q looks like a path, set type: bind instead", raw.Target, raw.Source)
+		}
+		v.Name = raw.Source
+	case "bind":
+		if raw.Source == "" {
+			return fmt.Errorf("volumes: target %q: type: bind requires source", raw.Target)
+		}
+		if strings.HasPrefix(raw.Source, ".") {
+			return fmt.Errorf("volumes: target %q: relative bind-mount paths are not supported, use an absolute path", raw.Target)
+		}
+		if !strings.HasPrefix(raw.Source, "/") {
+			return fmt.Errorf("volumes: target %q: type: bind requires an absolute source path", raw.Target)
+		}
+		v.HostPath = raw.Source
+	default:
+		return fmt.Errorf("volumes: target %q: type: %q is not supported, use \"volume\" or \"bind\"", raw.Target, raw.Type)
+	}
+	v.ContainerPath = raw.Target
+	v.ReadOnly = raw.ReadOnly
 	return nil
 }
 

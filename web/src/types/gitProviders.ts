@@ -2,7 +2,7 @@
 // GET /api/v1/git-providers (internal/api/git_providers.go's
 // gitProviderResource), matching its resource struct field for field.
 
-export type GitProviderName = 'github' | 'gitlab' | 'bitbucket'
+export type GitProviderName = 'github' | 'gitlab' | 'bitbucket' | 'gitea'
 
 export interface GitProviderStatus {
   provider: GitProviderName

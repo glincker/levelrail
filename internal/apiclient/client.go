@@ -2835,6 +2835,46 @@ func (c *Client) UseBitbucketRepoAsSource(ctx context.Context, workspace, repoSl
 	return out, err
 }
 
+// GetGiteaAppStatus calls GET /api/v1/gitea-app: the connection status
+// (configured, and whether the OAuth authorization-code flow has
+// completed).
+func (c *Client) GetGiteaAppStatus(ctx context.Context) (GiteaAppStatusResource, error) {
+	var out GiteaAppStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/gitea-app", nil, &out)
+	return out, err
+}
+
+// DisconnectGiteaApp calls DELETE /api/v1/gitea-app: forgets the stored
+// connection locally. Does not revoke the token or delete the
+// Application on Gitea's own side.
+func (c *Client) DisconnectGiteaApp(ctx context.Context) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/gitea-app", nil, nil)
+}
+
+// ListGiteaAppRepos calls GET /api/v1/gitea-app/repos: every repository
+// the connected Gitea account can access.
+func (c *Client) ListGiteaAppRepos(ctx context.Context) ([]GiteaAppRepoResource, error) {
+	var out []GiteaAppRepoResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/gitea-app/repos", nil, &out)
+	return out, err
+}
+
+// ListGiteaAppBranches calls GET
+// /api/v1/gitea-app/repos/{owner}/{repo}/branches.
+func (c *Client) ListGiteaAppBranches(ctx context.Context, owner, repo string) ([]GitAppBranchResource, error) {
+	var out []GitAppBranchResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/gitea-app/repos/"+PathEscape(owner)+"/"+PathEscape(repo)+"/branches", nil, &out)
+	return out, err
+}
+
+// UseGiteaRepoAsSource calls POST
+// /api/v1/gitea-app/repos/{owner}/{repo}/use-as-source.
+func (c *Client) UseGiteaRepoAsSource(ctx context.Context, owner, repo string, req UseRepoAsSourceRequest) (GitSourceResource, error) {
+	var out GitSourceResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/gitea-app/repos/"+PathEscape(owner)+"/"+PathEscape(repo)+"/use-as-source", req, &out)
+	return out, err
+}
+
 // ListStaticSites calls GET /api/v1/static-sites: every build.type:
 // static site currently served directly through embedded Caddy.
 func (c *Client) ListStaticSites(ctx context.Context) ([]StaticSiteResource, error) {

@@ -6,8 +6,10 @@
 // checkout). The git-sourced expand path (ExpandBuildService, via
 // ValidateForBuild) allows build: for exactly that reason: it always
 // has a real checkout. Both paths share the same narrow scope
-// otherwise: environment/ports/volumes support only their short-form
-// syntax. restart:, networks:, and depends_on: all parse and are
+// otherwise: environment/ports/volumes accept both Compose's short and
+// long forms (see yaml.go), but only the fields Levelrail's own model
+// has room for: no port ranges, no UDP, no tmpfs/npipe mounts.
+// restart:, networks:, and depends_on: all parse and are
 // surfaced as non-blocking Notices instead of being silently dropped or
 // translated: see Notices for why none of the three has a real
 // translation onto how Levelrail runs a service (depends_on: in

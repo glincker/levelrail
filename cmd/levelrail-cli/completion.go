@@ -159,6 +159,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"github-app":    {subs: map[string]*cmdNode{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil}},
 	"gitlab-app":    {subs: map[string]*cmdNode{"status": nil, "disconnect": nil, "projects": nil, "branches": nil, "use-as-source": nil}},
 	"bitbucket-app": {subs: map[string]*cmdNode{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil}},
+	"gitea-app":     {subs: map[string]*cmdNode{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil}},
 	"templates":     {subs: map[string]*cmdNode{"list": nil, "get": nil, "deploy": nil}},
 	"static-sites":  {subs: map[string]*cmdNode{"list": nil}},
 }

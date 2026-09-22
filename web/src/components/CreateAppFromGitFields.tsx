@@ -25,6 +25,7 @@ import { gitSourceKeys, setGitSource } from '../queries/gitSources'
 import { connectGitHubRepoAsSource } from '../queries/githubApp'
 import { connectGitLabProjectAsSource } from '../queries/gitlabApp'
 import { connectBitbucketRepoAsSource } from '../queries/bitbucketApp'
+import { connectGiteaRepoAsSource } from '../queries/giteaApp'
 import type { GitSourceBuildType, GitSourceResource } from '../types/gitSource'
 import { useFormDraft } from '../hooks/useFormDraft'
 import {
@@ -237,7 +238,10 @@ function buildArgsRecord(
 // GitRepoSourcePicker's onSelect handler below), never to overwrite
 // something the operator already typed.
 function repoSlugFrom(repoUrl: string): string {
-  const cleaned = repoUrl.trim().replace(/\.git$/i, '').replace(/\/+$/, '')
+  const cleaned = repoUrl
+    .trim()
+    .replace(/\.git$/i, '')
+    .replace(/\/+$/, '')
   const segments = cleaned.split(/[/:]/).filter(Boolean)
   const last = segments[segments.length - 1] ?? ''
   return last
@@ -251,14 +255,17 @@ function repoSlugFrom(repoUrl: string): string {
 // build (once the connect call below succeeds) uses the same build
 // config as the very first one, not the git_source defaults. Only called
 // once buildType !== 'image' is already known true.
-function gitSourceBuildFields(
-  values: FormOutput,
-): { buildType: GitSourceBuildType; buildPath?: string } {
+function gitSourceBuildFields(values: FormOutput): {
+  buildType: GitSourceBuildType
+  buildPath?: string
+} {
   const buildType = values.buildType as GitSourceBuildType
   return {
     buildType,
     buildPath:
-      buildType === 'dockerfile' ? values.dockerfilePath.trim() || undefined : undefined,
+      buildType === 'dockerfile'
+        ? values.dockerfilePath.trim() || undefined
+        : undefined,
   }
 }
 
@@ -288,36 +295,65 @@ async function connectGitSourceFor(
   name: string,
   values: FormOutput,
   source: GitRepoSourceValue | null,
-): Promise<{ resource: GitSourceResource; autoRegistered: boolean; webhookError?: string }> {
+): Promise<{
+  resource: GitSourceResource
+  autoRegistered: boolean
+  webhookError?: string
+}> {
   const repoUrl = values.repoUrl.trim()
   const branch = values.ref.trim()
   const { buildType, buildPath } = gitSourceBuildFields(values)
   const effective =
-    source && source.repoUrl === repoUrl && source.branch === branch ? source : null
+    source && source.repoUrl === repoUrl && source.branch === branch
+      ? source
+      : null
 
   if (effective?.providerRef?.kind === 'github') {
-    const { webhook_registered: webhookRegistered, webhook_error: webhookError, ...resource } =
-      await connectGitHubRepoAsSource(effective.providerRef.owner, effective.providerRef.repo, {
+    const {
+      webhook_registered: webhookRegistered,
+      webhook_error: webhookError,
+      ...resource
+    } = await connectGitHubRepoAsSource(
+      effective.providerRef.owner,
+      effective.providerRef.repo,
+      {
         app_name: name,
         branch,
         build_type: buildType,
         build_path: buildPath,
-      })
+      },
+    )
     return { resource, autoRegistered: webhookRegistered, webhookError }
   }
   if (effective?.providerRef?.kind === 'gitlab') {
-    const resource = await connectGitLabProjectAsSource(effective.providerRef.projectId, {
-      app_name: name,
-      branch,
-      build_type: buildType,
-      build_path: buildPath,
-    })
+    const resource = await connectGitLabProjectAsSource(
+      effective.providerRef.projectId,
+      {
+        app_name: name,
+        branch,
+        build_type: buildType,
+        build_path: buildPath,
+      },
+    )
     return { resource, autoRegistered: true }
   }
   if (effective?.providerRef?.kind === 'bitbucket') {
     const resource = await connectBitbucketRepoAsSource(
       effective.providerRef.workspace,
       effective.providerRef.repoSlug,
+      {
+        app_name: name,
+        branch,
+        build_type: buildType,
+        build_path: buildPath,
+      },
+    )
+    return { resource, autoRegistered: true }
+  }
+  if (effective?.providerRef?.kind === 'gitea') {
+    const resource = await connectGiteaRepoAsSource(
+      effective.providerRef.owner,
+      effective.providerRef.repo,
       {
         app_name: name,
         branch,
@@ -467,7 +503,10 @@ export function CreateAppFromGitFields({
     mutationFn: ({ name, values }: { name: string; values: FormOutput }) =>
       connectGitSourceFor(name, values, source),
     onSuccess: (result, variables) => {
-      queryClient.setQueryData(gitSourceKeys.detail(variables.name), result.resource)
+      queryClient.setQueryData(
+        gitSourceKeys.detail(variables.name),
+        result.resource,
+      )
     },
   })
   const {
@@ -559,7 +598,11 @@ export function CreateAppFromGitFields({
     if (needsSource && !connectSourceMutation.isSuccess) {
       connectSourceMutation.mutate(
         { name, values },
-        { onSettled: () => { runBuild(name, values) } },
+        {
+          onSettled: () => {
+            runBuild(name, values)
+          },
+        },
       )
       return
     }
@@ -581,7 +624,10 @@ export function CreateAppFromGitFields({
         image: `${values.name.trim()}:${PENDING_BUILD_TAG}`,
         port: values.port,
         domains: values.domain.trim() ? [values.domain.trim()] : undefined,
-        health: healthCheckFrom(values.healthCheckEnabled, values.healthCheckPath),
+        health: healthCheckFrom(
+          values.healthCheckEnabled,
+          values.healthCheckPath,
+        ),
       },
       {
         onSuccess: (created) => {
@@ -592,7 +638,9 @@ export function CreateAppFromGitFields({
   })
 
   const busy =
-    createApp.isPending || connectSourceMutation.isPending || buildMutation.isPending
+    createApp.isPending ||
+    connectSourceMutation.isPending ||
+    buildMutation.isPending
   // Locks name/port/domain forever once the app record exists: none of
   // the three are resent on a retry (see buildInputFrom and onSubmit
   // above), so editing them after step 1 succeeded would silently have
@@ -696,9 +744,8 @@ export function CreateAppFromGitFields({
           />
           <FieldError errors={[formState.errors.domain]} />
           <FieldDescription>
-            Routed once its DNS record points here. A TLS certificate is
-            issued automatically, or add this later from the app&apos;s
-            Domains tab.
+            Routed once its DNS record points here. A TLS certificate is issued
+            automatically, or add this later from the app&apos;s Domains tab.
           </FieldDescription>
         </Field>
       </div>
@@ -729,9 +776,9 @@ export function CreateAppFromGitFields({
               {...register('healthCheckPath')}
             />
             <FieldHint>
-              Checked before cutting traffic to a new container, and to
-              detect a crashed one afterward. Railpack-detected apps that
-              don&rsquo;t serve this path should turn it off.
+              Checked before cutting traffic to a new container, and to detect a
+              crashed one afterward. Railpack-detected apps that don&rsquo;t
+              serve this path should turn it off.
             </FieldHint>
             <FieldError errors={[formState.errors.healthCheckPath]} />
           </Field>
@@ -747,11 +794,14 @@ export function CreateAppFromGitFields({
             ? connectSourceMutation.error.message
             : undefined
         }
-        buildError={buildMutation.isError ? buildMutation.error.message : undefined}
+        buildError={
+          buildMutation.isError ? buildMutation.error.message : undefined
+        }
       />
 
-      {connectSourceMutation.data && !connectSourceMutation.data.autoRegistered
-      && connectSourceMutation.data.resource.webhook_secret ? (
+      {connectSourceMutation.data &&
+      !connectSourceMutation.data.autoRegistered &&
+      connectSourceMutation.data.resource.webhook_secret ? (
         <GitSourceWebhookBanner
           webhookUrl={`${window.location.origin}${connectSourceMutation.data.resource.webhook_url}`}
           webhookSecret={connectSourceMutation.data.resource.webhook_secret}
