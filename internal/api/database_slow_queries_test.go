@@ -3,11 +3,14 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -95,28 +98,35 @@ func TestHandleQueryDatabaseSlowQueries_Postgres_ParsesAndSortsByDuration(t *tes
 	}
 }
 
-func TestHandleQueryDatabaseSlowQueries_MySQL_ParsesMultiLineBlocks(t *testing.T) {
-	rt, db, tdb := newTestRouterWithTelemetry(t)
+// mysqlSlowLogFixture is what the "test -f && tail" command
+// (mysqlSlowQueryEntries) gets back from a real container: MySQL's own
+// slow log format, see database.MySQLSlowQueryLogPath's own doc comment
+// for why this is read via exec rather than the Docker log stream.
+const mysqlSlowLogFixture = "# Query_time: 2.000000  Lock_time: 0.000000 Rows_sent: 1  Rows_examined: 500000\n" +
+	"SET timestamp=1704110400;\n" +
+	"SELECT COUNT(*) FROM orders;\n"
+
+func TestHandleQueryDatabaseSlowQueries_MySQL_ExecsAndParsesMultiLineBlocks(t *testing.T) {
+	fake := &fakeExecAppRuntime{
+		inspectState: &docker.ContainerState{ID: "container-1", Running: true},
+		execReader:   io.NopCloser(strings.NewReader(mysqlSlowLogFixture)),
+	}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}); err != nil {
 		t.Fatalf("seed database: %v", err)
 	}
 
-	now := time.Now().UTC().Truncate(time.Second)
-	err := tdb.WriteLogBatch(context.Background(), []telemetry.LogEntry{
-		{ResourceID: "database:main", Stream: "stderr", Timestamp: now, Message: "# Query_time: 2.000000  Lock_time: 0.000000 Rows_sent: 1  Rows_examined: 500000"},
-		{ResourceID: "database:main", Stream: "stderr", Timestamp: now, Message: "SET timestamp=1704110400;"},
-		{ResourceID: "database:main", Stream: "stderr", Timestamp: now, Message: "SELECT COUNT(*) FROM orders;"},
-	})
-	if err != nil {
-		t.Fatalf("seed log entries: %v", err)
-	}
-
 	rec := httptest.NewRecorder()
-	url := "/api/v1/databases/main/slow-queries?from=" + now.Add(-time.Hour).Format(time.RFC3339) + "&to=" + now.Add(time.Minute).Format(time.RFC3339)
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, url, ""))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/slow-queries", ""))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if fake.execCalls != 1 {
+		t.Fatalf("execCalls = %d, want 1", fake.execCalls)
+	}
+	if fake.gotContainerID != "container-1" {
+		t.Errorf("gotContainerID = %q, want %q", fake.gotContainerID, "container-1")
 	}
 
 	var got slowQueriesResponse
@@ -135,6 +145,65 @@ func TestHandleQueryDatabaseSlowQueries_MySQL_ParsesMultiLineBlocks(t *testing.T
 	}
 	if e.Query != "SELECT COUNT(*) FROM orders" {
 		t.Errorf("Query = %q, want %q", e.Query, "SELECT COUNT(*) FROM orders")
+	}
+}
+
+// TestHandleQueryDatabaseSlowQueries_MySQL_NoLogFileYet proves an empty
+// exec result (the "test -f" guard finding nothing, this database's
+// slow query log hasn't been created yet because no statement has ever
+// crossed the threshold) is a normal empty response, not an error.
+func TestHandleQueryDatabaseSlowQueries_MySQL_NoLogFileYet(t *testing.T) {
+	fake := &fakeExecAppRuntime{
+		inspectState: &docker.ContainerState{ID: "container-1", Running: true},
+		execReader:   io.NopCloser(strings.NewReader("")),
+	}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/slow-queries", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	var got slowQueriesResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Total != 0 || len(got.Entries) != 0 {
+		t.Errorf("got %+v, want an empty response", got)
+	}
+}
+
+func TestHandleQueryDatabaseSlowQueries_MySQL_ExecNotConfigured(t *testing.T) {
+	rt, db := newTestRouter(t) // no WithExecRuntime
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/slow-queries", ""))
+	if rec.Code != http.StatusNotImplemented {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusNotImplemented)
+	}
+}
+
+func TestHandleQueryDatabaseSlowQueries_MySQL_NoRunningContainer(t *testing.T) {
+	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "container-1", Running: false}}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/slow-queries", ""))
+	if rec.Code != http.StatusConflict {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusConflict)
 	}
 }
 

@@ -832,20 +832,25 @@ func postgresCommand(tls *TLSMaterial, slowQueryThresholdMs int, pitrEnabled boo
 	return command
 }
 
+// MySQLSlowQueryLogPath is where mysqlCommand directs the slow query log
+// inside the container's own writable data directory. Not the
+// container's stdout/stderr: MySQL 8's FILE log sink cannot reliably
+// open /dev/stderr (confirmed against a real container: "Could not use
+// /dev/stderr for logging, error 2"), so internal/api's slow-queries
+// handler execs into the container to read this file directly instead
+// of going through the Docker log stream database_logs.go uses.
+const MySQLSlowQueryLogPath = "/var/lib/mysql/slow-query.log"
+
 // mysqlCommand overrides the mysql image's default CMD to enable the
-// slow query log, directed at the container's own stderr
-// (slow-query-log-file=/dev/stderr, log-output=FILE) so it lands in the
-// same Docker log stream database_logs.go already captures rather than a
-// file only reachable via a shell inside the container; internal/
-// slowquery's ParseMySQL is what reads these lines back out.
-// long-query-time is MySQL's own flag name and takes seconds as a
-// float, so thresholdMs is converted here.
+// slow query log at MySQLSlowQueryLogPath; internal/slowquery's
+// ParseMySQL reads it back out. long-query-time is MySQL's own flag
+// name and takes seconds as a float, so thresholdMs is converted here.
 func mysqlCommand(thresholdMs int) []string {
 	longQueryTimeSec := strconv.FormatFloat(float64(thresholdMs)/1000, 'f', -1, 64)
 	return []string{
 		"--slow-query-log=1",
 		"--long-query-time=" + longQueryTimeSec,
-		"--slow-query-log-file=/dev/stderr",
+		"--slow-query-log-file=" + MySQLSlowQueryLogPath,
 		"--log-output=FILE",
 	}
 }

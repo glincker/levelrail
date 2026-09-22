@@ -75,12 +75,21 @@ func ParsePostgres(lines []LogLine) []Entry {
 //	# Query_time: 1.234567  Lock_time: 0.000123 Rows_sent: 1  Rows_examined: 1000000
 var mysqlQueryTimePattern = regexp.MustCompile(`^#\s*Query_time:\s*([0-9.]+)\s+Lock_time:\s*[0-9.]+\s+Rows_sent:\s*[0-9]+\s+Rows_examined:\s*([0-9]+)`)
 
-// mysqlSetTimestampPattern matches the "SET timestamp=...;" line the
-// mysqldump/slow-log format inserts between an entry's header and its
-// actual SQL text; it carries no information this package surfaces (the
-// entry's own LogLine.Timestamp already gives a real capture time) so
-// ParseMySQL skips it rather than including it in Query.
-var mysqlSetTimestampPattern = regexp.MustCompile(`^SET timestamp=[0-9]+;$`)
+// mysqlUseDBPattern matches the "use <db>;" context line MySQL's slow
+// log emits per entry whenever the connection's default database was
+// just set (confirmed against a real container: a client that connects
+// with a default schema logs this line before "SET timestamp=..."), a
+// database-context marker carrying no query text of its own.
+var mysqlUseDBPattern = regexp.MustCompile(`(?i)^use\s+\S+;$`)
+
+// mysqlSetTimestampPattern matches the "SET timestamp=<unix-seconds>;"
+// line MySQL's slow log always emits per entry: the query actually ran
+// at this time, which ParseMySQL uses as the entry's Timestamp in place
+// of the caller-supplied LogLine.Timestamp (accurate when reading the
+// log file directly via exec, where LogLine.Timestamp carries no real
+// per-line time at all; still more accurate than a Docker log-capture
+// timestamp when both are available).
+var mysqlSetTimestampPattern = regexp.MustCompile(`^SET timestamp=([0-9]+);$`)
 
 // ParseMySQL extracts every slow-query entry from lines, in the order
 // given, reconstructing each entry's multi-line block: a "# Query_time:"
@@ -136,7 +145,13 @@ func ParseMySQL(lines []LogLine) []Entry {
 			// belonging to this same entry: carries no query text.
 			continue
 		}
-		if mysqlSetTimestampPattern.MatchString(trimmed) {
+		if m := mysqlSetTimestampPattern.FindStringSubmatch(trimmed); m != nil {
+			if epoch, err := strconv.ParseInt(m[1], 10, 64); err == nil {
+				current.Timestamp = time.Unix(epoch, 0).UTC()
+			}
+			continue
+		}
+		if mysqlUseDBPattern.MatchString(trimmed) {
 			continue
 		}
 		queryParts = append(queryParts, trimmed)

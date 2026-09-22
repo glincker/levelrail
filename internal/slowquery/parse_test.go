@@ -78,8 +78,12 @@ func TestParseMySQL(t *testing.T) {
 	if got[0].Query != wantQuery0 {
 		t.Errorf("entry 0 Query = %q, want %q", got[0].Query, wantQuery0)
 	}
-	if !got[0].Timestamp.Equal(ts.Add(time.Second)) {
-		t.Errorf("entry 0 Timestamp = %v, want %v", got[0].Timestamp, ts.Add(time.Second))
+	// Timestamp comes from the entry's own "SET timestamp=..." line
+	// (1704110400), not the caller-supplied LogLine.Timestamp: it's the
+	// engine's own authoritative record of when the query ran.
+	wantTS0 := time.Unix(1704110400, 0).UTC()
+	if !got[0].Timestamp.Equal(wantTS0) {
+		t.Errorf("entry 0 Timestamp = %v, want %v", got[0].Timestamp, wantTS0)
 	}
 
 	if got[1].DurationMs != 500 {
@@ -92,6 +96,10 @@ func TestParseMySQL(t *testing.T) {
 	if got[1].Query != wantQuery1 {
 		t.Errorf("entry 1 Query = %q, want %q", got[1].Query, wantQuery1)
 	}
+	wantTS1 := time.Unix(1704110401, 0).UTC()
+	if !got[1].Timestamp.Equal(wantTS1) {
+		t.Errorf("entry 1 Timestamp = %v, want %v", got[1].Timestamp, wantTS1)
+	}
 }
 
 func TestParseMySQL_NoQueryTimeHeader(t *testing.T) {
@@ -100,6 +108,23 @@ func TestParseMySQL_NoQueryTimeHeader(t *testing.T) {
 	}
 	if got := ParseMySQL(lines); len(got) != 0 {
 		t.Errorf("ParseMySQL() = %+v, want no entries", got)
+	}
+}
+
+func TestParseMySQL_SkipsUseDBContextLine(t *testing.T) {
+	ts := time.Now()
+	lines := []LogLine{
+		{Timestamp: ts, Message: "# Query_time: 2.300919  Lock_time: 0.000000 Rows_sent: 1  Rows_examined: 1"},
+		{Timestamp: ts, Message: "use sq-mysql-test;"},
+		{Timestamp: ts, Message: "SET timestamp=1790106791;"},
+		{Timestamp: ts, Message: "SELECT SLEEP(2.3);"},
+	}
+	got := ParseMySQL(lines)
+	if len(got) != 1 {
+		t.Fatalf("ParseMySQL() returned %d entries, want 1: %+v", len(got), got)
+	}
+	if got[0].Query != "SELECT SLEEP(2.3)" {
+		t.Errorf("Query = %q, want %q (the \"use <db>;\" context line must not leak into it)", got[0].Query, "SELECT SLEEP(2.3)")
 	}
 }
 

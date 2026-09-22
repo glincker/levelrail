@@ -2119,7 +2119,7 @@ func TestController_Reconcile_MySQL_SetsSlowQueryLogFlagsByDefault(t *testing.T)
 	wantCommand := []string{
 		"--slow-query-log=1",
 		"--long-query-time=1",
-		"--slow-query-log-file=/dev/stderr",
+		"--slow-query-log-file=" + MySQLSlowQueryLogPath,
 		"--log-output=FILE",
 	}
 	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
@@ -2142,7 +2142,7 @@ func TestController_Reconcile_MySQL_WithSlowQueryThreshold_ConvertsMsToSeconds(t
 	wantCommand := []string{
 		"--slow-query-log=1",
 		"--long-query-time=0.5",
-		"--slow-query-log-file=/dev/stderr",
+		"--slow-query-log-file=" + MySQLSlowQueryLogPath,
 		"--log-output=FILE",
 	}
 	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {

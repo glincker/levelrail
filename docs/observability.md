@@ -103,6 +103,7 @@ Request rate, response time percentiles, error rate, container restart count, an
 - `/apps/$name/logs` - Two tabs: `Live` (LiveLogViewer, default) and `Search` (LogSearchPanel for historical full-text search). Scoped to the app's running container(s).
 - Separate from `/apps/$name/deploys/$deployId/logs`, which tails a specific deploy attempt's output.
 - `/databases/$name/logs` - The same live/search pair (LiveDatabaseLogViewer, DatabaseLogSearchPanel) for managed databases.
+- `/databases/$name/slow-queries` - `DatabaseSlowQueriesPanel` shows the slow query log for Postgres/MySQL databases, sortable by duration or timestamp with a minimum-duration filter.
 
 **Overview and alerts:**
 - **Dashboard home** - `FleetUtilizationSummary` shows a compact fleet-wide CPU/memory/disk card (backed by `GET /api/v1/nodes/resource-usage`, polled every 30 seconds), above `TopResourceConsumers` (ranks every app by latest CPU/memory/network reading, backed by `GET /api/v1/apps/resource-usage`) and `FleetResourceChart` (a 30-minute rolling history of total CPU and memory usage across all apps, polled every 30 seconds from the same app resource-usage endpoint). All three render nothing when telemetry is unconfigured or no samples exist.
@@ -134,6 +135,16 @@ These are three different reads over the same underlying log store, not separate
 - Mirror app endpoints exactly (same query params, same SSE shape).
 - Use resource ID prefix `database:` instead of `service:`.
 - No download endpoint for databases yet, only apps.
+
+## Database slow query log
+
+`GET /api/v1/databases/{name}/slow-queries` returns structured slow-query entries (timestamp, duration, query text, rows examined where the engine reports it) for Postgres and MySQL. The two engines get their data differently:
+
+- **Postgres**: `log_min_duration_statement` is always set on the container (default 1000ms), so any statement at or above the threshold gets logged as `duration: N ms  statement: ...`. This lands in the same container log stream `/logs` already reads, so the handler reads it from the log store, no separate collector. No rows-examined count; Postgres doesn't log it here.
+- **MySQL**: the built-in slow query log is enabled (`slow-query-log=1`, `long-query-time` from the same threshold), writing to a file inside the container's own data directory. MySQL 8's FILE log sink cannot reliably open `/dev/stderr` from inside a container (confirmed against a real container: `Could not use /dev/stderr for logging`), so there is no working Docker-log-stream source for this engine. The handler execs into the running container instead (the same `docker.Runtime.Exec` primitive backups already use to run `pg_dump`/`mysqldump`) and reads the file directly, bounded to the last 4,000 lines.
+- **Redis and every other engine** (MongoDB, MariaDB, KeyDB, Dragonfly, ClickHouse) return 400. Redis's SLOWLOG is a live-server command against an in-memory ring buffer, not something that appears in log output, so it doesn't fit this shape and isn't planned for this endpoint.
+
+Threshold is control-plane-wide, not per-database: `APP_DATABASE_SLOW_QUERY_THRESHOLD_MS` (default 1000). Changing it takes effect on the database's next reconcile (container recreate). The MySQL path requires exec support configured on the control plane (same requirement `apps/{name}/exec` has); without it, MySQL slow-query requests return 501.
 
 ## External log drains
 
@@ -339,6 +350,7 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 | `GET` | `/api/v1/apps/{name}/logs/download` | `read` |
 | `GET` | `/api/v1/databases/{name}/logs` | `read` |
 | `GET` | `/api/v1/databases/{name}/logs/stream` (SSE) | `read` |
+| `GET` | `/api/v1/databases/{name}/slow-queries?from=...&to=...&limit=...&offset=...` | `read` |
 | `GET` | `/api/v1/apps/{name}/log-drain` | `read` |
 | `PUT` | `/api/v1/apps/{name}/log-drain` | `write` (sensitive) |
 | `DELETE` | `/api/v1/apps/{name}/log-drain` | `write` (sensitive) |
@@ -365,6 +377,8 @@ levelrail-cli nodes resource-usage
 
 levelrail-cli apps logs <name> [--since 1h | --from ... --to ...] [--q PHRASE] [--tail N]
 levelrail-cli apps logs <name> --follow
+
+levelrail-cli databases slow-queries <name> [--since 1h | --from ... --to ...] [--limit N] [--offset N]
 
 levelrail-cli apps log-drain get <name>
 levelrail-cli apps log-drain set <name> --type http|syslog --target TARGET [--disabled]
@@ -408,6 +422,8 @@ levelrail-cli channels deliveries <id> [--limit N]
 **Missing CLI and API features:**
 - No `levelrail-cli apps logs download` wrapper (endpoint exists; works via `curl`).
 - No download endpoint for database logs (only apps).
+- Slow query log threshold is control-plane-wide (`APP_DATABASE_SLOW_QUERY_THRESHOLD_MS`), not configurable per database.
+- Postgres slow-query parsing only captures the single log line the `duration:` LOG entry itself occupies; a query long enough to wrap, or followed by a `DETAIL`/parameters line, isn't stitched back together.
 - No API endpoint reconstructs exact log lines a firing crashloop alert attached to its notification (payload only; dashboard links to log view instead).
 
 **Fixed configurations:**
