@@ -324,6 +324,13 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// boundary and nil-telemetry 501 shape as every route above, and the
 	// same query-param contract as GET /apps/{name}/metrics above it.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/metrics", rt.requireAbility(AbilityRoot, rt.handleQueryNodeMetrics))
+	// Fleet-wide latest CPU/memory/disk snapshot plus rollup
+	// (node_resource_usage.go), the node-scoped counterpart to
+	// GET /apps/resource-usage above: registered as a literal path
+	// segment under /nodes/, which Go's net/http mux matches ahead of
+	// the /nodes/{id} wildcard above regardless of registration order,
+	// the same precedent apps/resource-usage already relies on.
+	mux.HandleFunc("GET /api/v1/nodes/resource-usage", rt.requireAbility(AbilityRoot, rt.handleFleetResourceUsage))
 	// Latest OS-patch reading (internal/telemetry/hostpatch.go's
 	// HostPatchCollector), a single current fact rather than a time
 	// series, same AbilityRoot boundary as every other node route.

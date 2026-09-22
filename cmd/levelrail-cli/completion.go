@@ -127,7 +127,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"nodes": {subs: map[string]*cmdNode{
 		"list": nil, "get": nil, "delete": nil, "join-token": nil,
 		"cordon": nil, "uncordon": nil, "drain": nil, "workloads": nil,
-		"health": nil, "patch-status": nil, "metrics": nil,
+		"health": nil, "patch-status": nil, "metrics": nil, "resource-usage": nil,
 		"mesh": nil, "rotate-key": nil,
 	}},
 	"status":                   nil,
