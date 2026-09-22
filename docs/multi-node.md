@@ -271,7 +271,7 @@ This is not atomic. If any step fails, the app is left suspended (stopped). `nod
 
 ## WireGuard mesh and internal DNS
 
-This is the one genuinely incomplete feature on this page, not just optional. The design is scoped and will work, but the multi-node arm is not landed.
+This section has two parts: what works today (viewing mesh status, key rotation on the control plane's node), and the incomplete multi-node arm that keeps the design scoped.
 
 ### Why it needs to exist
 
@@ -281,31 +281,82 @@ Solution: Use DNS names from the start. The name resolves to wherever the servic
 
 ### What works today
 
-Enable with `APP_MESH_ENABLED=1` (default: off). Non-fatal to misconfigure - the control plane still starts if mesh setup fails.
+Enable with `APP_MESH_ENABLED=1` (default: off). Non-fatal to misconfigure, the control plane still starts if mesh setup fails.
 
 This brings up:
-- The control plane's own WireGuard device.
-- Its own DNS server.
+- The control plane's own WireGuard device, interface, and mesh address.
+- Its own DNS server (configurable via `APP_MESH_DNS_ADDR`, default `:5390`).
 - A self-peer entry for the local node.
 
-**Single-node DNS caveat:** The mesh DNS server defaults to port `:5390` (`APP_MESH_DNS_ADDR`), an unprivileged port. Docker container DNS accepts only a bare IP, never a custom port. In default configuration, no container actually queries this DNS server. To enable it:
+**Configuration:**
+- `APP_MESH_ENABLED`: Set to `1` to enable mesh (default: off).
+- `APP_MESH_CIDR`: WireGuard mesh subnet in CIDR notation (default: `10.0.0.0/8`, picked automatically). An invalid override is logged as a warning and the default is used instead; the control plane does not fail.
+- `APP_MESH_DNS_ADDR`: Which address to bind the internal DNS server to (default: `:5390`). An unprivileged port, not `:53`, so containers cannot query it without additional setup (see caveat below).
 
-1. Set `APP_MESH_DNS_ADDR` to bind port `:53`.
-2. Grant the process permission to bind port 53.
+**Single-node DNS caveat:** Docker container DNS accepts only a bare IP address, never a custom port. In the default configuration (port 5390), no container actually queries the mesh DNS server. To enable it:
 
-Without port 53, containers fall back to Docker's resolver. Mesh failures (disabled, DNS not on 53, etc.) log warnings but never break anything.
+1. Set `APP_MESH_DNS_ADDR=:53`.
+2. Grant the process permission to bind port 53 (e.g., via `setcap` on Linux).
+3. Restart the control plane.
 
-### What doesn't work yet: multi-node
+Without port 53, containers fall back to Docker's embedded resolver. Mesh failures (disabled, DNS not on 53, etc.) log warnings but never break anything.
+
+### Viewing mesh status
+
+Check the control plane's live WireGuard mesh state, interface details, and every peer:
+
+::: code-group
+```bash [CLI]
+levelrail-cli nodes mesh
+```
+
+```bash [API]
+curl -H "Authorization: Bearer $TOKEN" \
+  https://control-plane.example.com/api/v1/mesh
+```
+:::
+
+**Output includes:**
+- Backend: `kernel` (WireGuard kernel module), `userspace` (wireguard-go fallback), or `disabled`.
+- Interface: The WireGuard device name (e.g., `wg0`).
+- Mesh address: The local node's assigned IP in the mesh.
+- Public key: The local node's WireGuard public key.
+- Last rotation: Timestamp and state if a key rotation is in progress (confirming or confirmed).
+- Peers: One entry per enrolled node, showing mesh address, last handshake, health status, and whether it has a live device entry.
+
+A peer with `live: false` is registered in the node inventory but the mesh device has no live entry yet (the reconciler has not reached it this pass, or peering hasn't converged yet).
+
+### Rotating the control plane's mesh key
+
+Generate a fresh WireGuard keypair for the control plane's node and make it the live mesh identity immediately:
+
+::: code-group
+```bash [CLI]
+levelrail-cli nodes rotate-key <local-node-id>
+```
+
+```bash [API]
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  https://control-plane.example.com/api/v1/nodes/<local-node-id>/mesh/rotate-key
+```
+:::
+
+**What it does:**
+- Generates a fresh keypair immediately.
+- Updates the local node's mesh entry with the new public key.
+- The mesh reconciler propagates the new key to every peer on its next pass.
+- Watch `levelrail-cli nodes mesh` and its `rotation` field to see when every reachable peer has caught up.
+- A brief reconnect blip on mesh traffic is possible until all peers have the new key.
+
+**Limitation:** Only the node running the control plane itself can be rotated today. Rotating a remote node returns HTTP `501` (not implemented). The agent-side wire extension for remote key rotation does not exist yet, but is scoped future work.
+
+### What doesn't work yet: multi-node mesh
 
 `internal/network.ConfigSink` (the interface that carries mesh config to remote nodes over gRPC) is not built. Today only `LocalSink` exists, which configures only the process it runs in.
 
-**Result:** Enabling `APP_MESH_ENABLED` on a control plane with a second enrolled node does not mesh that node in. There's no agent message to deliver config, no agent-side code to apply it.
+**Result:** Enabling `APP_MESH_ENABLED` on a control plane with a second enrolled node does not mesh that node in. The control plane has its own device and can rotate its own key (both documented above), but there's no agent message to deliver config to remote nodes, and no agent-side code to apply it.
 
 **What's scoped:** One new agent request/response message, plus a case in `internal/agent.Execute` calling `Mesh.Apply`. It's defined work, not built.
-
-### No operator surface
-
-No CLI or dashboard surface for mesh status yet. There's nothing multi-node to act on until the gRPC arm lands.
 
 ## API reference
 
@@ -322,6 +373,8 @@ No CLI or dashboard surface for mesh status yet. There's nothing multi-node to a
 | `POST` | `/api/v1/nodes/{id}/drain?target_node_id=` | `root` |
 | `GET` | `/api/v1/nodes/{id}/metrics?metric=&from=&to=&step=` | `root` |
 | `GET` | `/api/v1/nodes/{id}/patch-status` | `root` |
+| `POST` | `/api/v1/nodes/{id}/mesh/rotate-key` | `root` |
+| `GET` | `/api/v1/mesh` | `root` |
 | `PUT` | `/api/v1/apps/{name}/node` | `root` |
 | `POST` | `/api/v1/apps/{name}/move-with-volumes` | `root` |
 | `GET` | `/api/v1/apps/{name}/moves` | `read` |
@@ -351,6 +404,8 @@ levelrail-cli nodes workloads <id> --accepts-app=BOOL --accepts-build=BOOL [flag
 levelrail-cli nodes health <id> [flags]
 levelrail-cli nodes patch-status <id> [flags]
 levelrail-cli nodes metrics <id> --metric NAME [--since DURATION | --from TIME --to TIME] [--step DURATION] [flags]
+levelrail-cli nodes mesh [flags]
+levelrail-cli nodes rotate-key <id> [flags]
 levelrail-cli apps set-node <name> <node-id> [--with-volumes] [flags]
 levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 ```
@@ -382,7 +437,8 @@ levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 
 ::: details The WireGuard mesh does not span nodes yet
 `ConfigSink`'s gRPC arm is scoped but not built (wire contract change plus agent-side `Mesh.Apply`).
-Enabling `APP_MESH_ENABLED` today only wires up the control plane's own node.
+Enabling `APP_MESH_ENABLED` today only wires up the control plane's own node; you can view its status and rotate its key.
+Remote nodes cannot be meshed until the agent-side wire extension lands.
 :::
 
 ::: details No dedicated "what's placed on this node" endpoint
