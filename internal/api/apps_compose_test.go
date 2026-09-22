@@ -506,3 +506,51 @@ func TestHandleDeployCompose_RestartAndNetworksSurfaceAsNotices(t *testing.T) {
 		t.Errorf("Notices[1].Level = %q, want warning", got.Notices[1].Level)
 	}
 }
+
+// TestHandleDeployCompose_LongFormPortsAndVolumes proves a real-world
+// compose file using Compose's long mapping form for ports: and
+// volumes: (common in upstream project compose files, unlike this
+// platform's own short-form-only templates) deploys end to end, the
+// same as validComposeYAML's short-form equivalent.
+func TestHandleDeployCompose_LongFormPortsAndVolumes(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	const yaml = `
+services:
+  web:
+    image: nginx:1.27
+    ports:
+      - target: 80
+        published: 8080
+    volumes:
+      - type: volume
+        source: web-data
+        target: /usr/share/nginx/html
+        read_only: true
+`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", yaml))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got composeDeployResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(got.Services) != 1 {
+		t.Fatalf("got %d services, want 1", len(got.Services))
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), got.Services[0].Name)
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if svc.Port != 80 {
+		t.Errorf("Port = %d, want 80 (from long-form target:)", svc.Port)
+	}
+	if len(svc.Volumes) != 1 || svc.Volumes[0].ContainerPath != "/usr/share/nginx/html" {
+		t.Errorf("Volumes = %+v, want one entry mounted at /usr/share/nginx/html", svc.Volumes)
+	}
+}

@@ -60,11 +60,28 @@ vi.mock('./GitRepoSourcePicker', () => ({
             provider: 'bitbucket',
             repoUrl: 'https://bitbucket.org/acme/app.git',
             branch: 'main',
-            providerRef: { kind: 'bitbucket', workspace: 'acme', repoSlug: 'app' },
+            providerRef: {
+              kind: 'bitbucket',
+              workspace: 'acme',
+              repoSlug: 'app',
+            },
           })
         }}
       >
         Pick Bitbucket repo (test)
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          onSelect({
+            provider: 'gitea',
+            repoUrl: 'https://git.example.com/acme/app.git',
+            branch: 'main',
+            providerRef: { kind: 'gitea', owner: 'acme', repo: 'app' },
+          })
+        }}
+      >
+        Pick Gitea repo (test)
       </button>
       <button
         type="button"
@@ -179,7 +196,9 @@ describe('GitSourceCard', () => {
         return Promise.resolve(
           fakeJsonResponse(
             {
-              ...fakeGitSourceResource({ repo_url: 'https://github.com/acme/app.git' }),
+              ...fakeGitSourceResource({
+                repo_url: 'https://github.com/acme/app.git',
+              }),
               webhook_registered: true,
             },
             201,
@@ -192,7 +211,9 @@ describe('GitSourceCard', () => {
       ) {
         return Promise.resolve(
           fakeJsonResponse(
-            fakeGitSourceResource({ repo_url: 'https://gitlab.example.com/acme/app.git' }),
+            fakeGitSourceResource({
+              repo_url: 'https://gitlab.example.com/acme/app.git',
+            }),
             201,
           ),
         )
@@ -203,7 +224,22 @@ describe('GitSourceCard', () => {
       ) {
         return Promise.resolve(
           fakeJsonResponse(
-            fakeGitSourceResource({ repo_url: 'https://bitbucket.org/acme/app.git' }),
+            fakeGitSourceResource({
+              repo_url: 'https://bitbucket.org/acme/app.git',
+            }),
+            201,
+          ),
+        )
+      }
+      if (
+        url === '/api/v1/gitea-app/repos/acme/app/use-as-source' &&
+        method === 'POST'
+      ) {
+        return Promise.resolve(
+          fakeJsonResponse(
+            fakeGitSourceResource({
+              repo_url: 'https://git.example.com/acme/app.git',
+            }),
             201,
           ),
         )
@@ -222,11 +258,15 @@ describe('GitSourceCard', () => {
     const user = userEvent.setup()
     renderCard()
 
-    await user.click(await screen.findByRole('button', { name: 'Pick manual URL (test)' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Pick manual URL (test)' }),
+    )
     await user.click(screen.getByRole('button', { name: 'Connect' }))
 
     await waitFor(() => {
-      expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(1)
+      expect(
+        callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT'),
+      ).toHaveLength(1)
     })
     const [call] = callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')
     const body = JSON.parse(call?.init?.body as string) as {
@@ -247,15 +287,23 @@ describe('GitSourceCard', () => {
     const user = userEvent.setup()
     renderCard()
 
-    await user.click(await screen.findByRole('button', { name: 'Pick GitHub repo (test)' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Pick GitHub repo (test)' }),
+    )
     await user.click(screen.getByRole('button', { name: 'Connect' }))
 
     await waitFor(() => {
       expect(
-        callsTo(fetchMock, '/api/v1/github-app/repos/acme/app/use-as-source', 'POST'),
+        callsTo(
+          fetchMock,
+          '/api/v1/github-app/repos/acme/app/use-as-source',
+          'POST',
+        ),
       ).toHaveLength(1)
     })
-    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(0)
+    expect(
+      callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT'),
+    ).toHaveLength(0)
 
     await screen.findByText(/registered automatically/)
     expect(screen.queryByText('wh_secret_abc')).not.toBeInTheDocument()
@@ -265,47 +313,94 @@ describe('GitSourceCard', () => {
     const user = userEvent.setup()
     renderCard()
 
-    await user.click(await screen.findByRole('button', { name: 'Pick GitLab project (test)' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Pick GitLab project (test)' }),
+    )
     await user.click(screen.getByRole('button', { name: 'Connect' }))
 
     await waitFor(() => {
       expect(
-        callsTo(fetchMock, '/api/v1/gitlab-app/projects/7/use-as-source', 'POST'),
+        callsTo(
+          fetchMock,
+          '/api/v1/gitlab-app/projects/7/use-as-source',
+          'POST',
+        ),
       ).toHaveLength(1)
     })
-    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(0)
+    expect(
+      callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT'),
+    ).toHaveLength(0)
   })
 
   it('connects via use-as-source for a picked Bitbucket repo', async () => {
     const user = userEvent.setup()
     renderCard()
 
-    await user.click(await screen.findByRole('button', { name: 'Pick Bitbucket repo (test)' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Pick Bitbucket repo (test)' }),
+    )
     await user.click(screen.getByRole('button', { name: 'Connect' }))
 
     await waitFor(() => {
       expect(
-        callsTo(fetchMock, '/api/v1/bitbucket-app/repos/acme/app/use-as-source', 'POST'),
+        callsTo(
+          fetchMock,
+          '/api/v1/bitbucket-app/repos/acme/app/use-as-source',
+          'POST',
+        ),
       ).toHaveLength(1)
     })
-    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(0)
+    expect(
+      callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT'),
+    ).toHaveLength(0)
+  })
+
+  it('connects via use-as-source for a picked Gitea repo', async () => {
+    const user = userEvent.setup()
+    renderCard()
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Pick Gitea repo (test)' }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Connect' }))
+
+    await waitFor(() => {
+      expect(
+        callsTo(
+          fetchMock,
+          '/api/v1/gitea-app/repos/acme/app/use-as-source',
+          'POST',
+        ),
+      ).toHaveLength(1)
+    })
+    expect(
+      callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT'),
+    ).toHaveLength(0)
   })
 
   it('falls back to the generic endpoint when additional services are configured alongside a provider pick', async () => {
     const user = userEvent.setup()
     renderCard()
 
-    await user.click(await screen.findByRole('button', { name: 'Pick GitHub repo (test)' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Pick GitHub repo (test)' }),
+    )
     await user.click(screen.getByRole('button', { name: 'Add service' }))
     await user.type(screen.getByPlaceholderText('worker'), 'worker')
 
     await user.click(screen.getByRole('button', { name: 'Connect' }))
 
     await waitFor(() => {
-      expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(1)
+      expect(
+        callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT'),
+      ).toHaveLength(1)
     })
     expect(
-      callsTo(fetchMock, '/api/v1/github-app/repos/acme/app/use-as-source', 'POST'),
+      callsTo(
+        fetchMock,
+        '/api/v1/github-app/repos/acme/app/use-as-source',
+        'POST',
+      ),
     ).toHaveLength(0)
 
     const [call] = callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')
@@ -323,16 +418,27 @@ describe('GitSourceCard', () => {
     const user = userEvent.setup()
     renderCard()
 
-    await user.click(await screen.findByRole('button', { name: 'Pick manual URL (test)' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Pick manual URL (test)' }),
+    )
     await user.click(screen.getByRole('button', { name: 'Add service' }))
-    await user.type(screen.getByPlaceholderText('./worker/Dockerfile'), './worker')
+    await user.type(
+      screen.getByPlaceholderText('./worker/Dockerfile'),
+      './worker',
+    )
 
     await user.click(screen.getByRole('button', { name: 'Connect' }))
 
     await screen.findByText(/missing a service name/)
-    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(0)
     expect(
-      callsTo(fetchMock, '/api/v1/github-app/repos/acme/app/use-as-source', 'POST'),
+      callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT'),
+    ).toHaveLength(0)
+    expect(
+      callsTo(
+        fetchMock,
+        '/api/v1/github-app/repos/acme/app/use-as-source',
+        'POST',
+      ),
     ).toHaveLength(0)
   })
 
@@ -340,7 +446,9 @@ describe('GitSourceCard', () => {
     const user = userEvent.setup()
     renderCard()
 
-    await user.click(await screen.findByRole('button', { name: 'Pick manual URL (test)' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Pick manual URL (test)' }),
+    )
     await user.click(screen.getByRole('tab', { name: 'Services map' }))
     await user.click(screen.getByRole('button', { name: 'Add service' }))
     await user.type(screen.getByPlaceholderText('web'), 'web')
@@ -349,7 +457,9 @@ describe('GitSourceCard', () => {
     await user.click(screen.getByRole('button', { name: 'Connect' }))
 
     await waitFor(() => {
-      expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(1)
+      expect(
+        callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT'),
+      ).toHaveLength(1)
     })
     const [call] = callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')
     const body = JSON.parse(call?.init?.body as string) as {
@@ -366,27 +476,38 @@ describe('GitSourceCard', () => {
     const user = userEvent.setup()
     renderCard()
 
-    await user.click(await screen.findByRole('button', { name: 'Pick manual URL (test)' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Pick manual URL (test)' }),
+    )
     await user.click(screen.getByRole('tab', { name: 'Services map' }))
 
     await user.click(screen.getByRole('button', { name: 'Connect' }))
 
     await screen.findByText(/Add at least one service/)
-    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(0)
+    expect(
+      callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT'),
+    ).toHaveLength(0)
   })
 
   it('sends the chosen build pack and path with a manual connect', async () => {
     const user = userEvent.setup()
     renderCard()
 
-    await user.click(await screen.findByRole('button', { name: 'Pick manual URL (test)' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Pick manual URL (test)' }),
+    )
     await user.click(screen.getByRole('tab', { name: 'Dockerfile' }))
-    await user.type(screen.getByLabelText('Dockerfile path (optional)'), './build/Dockerfile')
+    await user.type(
+      screen.getByLabelText('Dockerfile path (optional)'),
+      './build/Dockerfile',
+    )
 
     await user.click(screen.getByRole('button', { name: 'Connect' }))
 
     await waitFor(() => {
-      expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(1)
+      expect(
+        callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT'),
+      ).toHaveLength(1)
     })
     const [call] = callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')
     const body = JSON.parse(call?.init?.body as string) as {
@@ -407,15 +528,22 @@ describe('GitSourceCard', () => {
 
     // Editing shows what stays connected unless a new pick is made.
     await screen.findByText(/Currently connected to/)
-    expect(screen.getByText('https://example.com/repo.git', { selector: 'span' })).toBeInTheDocument()
+    expect(
+      screen.getByText('https://example.com/repo.git', { selector: 'span' }),
+    ).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
-      expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(1)
+      expect(
+        callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT'),
+      ).toHaveLength(1)
     })
     const [call] = callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')
-    const body = JSON.parse(call?.init?.body as string) as { repo_url: string; branch: string }
+    const body = JSON.parse(call?.init?.body as string) as {
+      repo_url: string
+      branch: string
+    }
     // Unchanged repo/branch resent as-is, since no new pick overrode them.
     expect(body.repo_url).toBe('https://example.com/repo.git')
     expect(body.branch).toBe('main')

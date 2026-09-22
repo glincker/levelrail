@@ -24,7 +24,7 @@ func TestHandleListGitProviders_NoneConnected(t *testing.T) {
 		t.Fatalf("status = %d, want 200, body = %s", rec.Code, rec.Body.String())
 	}
 	body := rec.Body.String()
-	for _, provider := range []string{"github", "gitlab", "bitbucket"} {
+	for _, provider := range []string{"github", "gitlab", "bitbucket", "gitea"} {
 		if !strings.Contains(body, `"provider":"`+provider+`"`) {
 			t.Errorf("body = %s, missing %q entry", body, provider)
 		}
@@ -99,21 +99,25 @@ func TestHandleListGitProviders_AllConnected(t *testing.T) {
 	fakeGitHubSecrets := newFakeGitHubAppSecrets()
 	fakeGitLabSecrets := authorizedGitLabSecrets(t)
 	fakeBitbucketSecrets := authorizedBitbucketSecrets(t)
+	fakeGiteaSecrets := authorizedGiteaSecrets(t)
 
 	db := openTestDB(t)
 	rt := NewRouter(discardLogger(), testBrand(), db,
 		WithGitHubAppSecrets(fakeGitHubSecrets),
 		WithGitLabAppSecrets(fakeGitLabSecrets),
 		WithBitbucketAppSecrets(fakeBitbucketSecrets),
+		WithGiteaAppSecrets(fakeGiteaSecrets),
 	)
 	rt.githubAppClient = &fakeGitHubAppClient{}
 	rt.gitlabAppClient = &fakeGitLabAppClient{}
 	rt.bitbucketAppClient = &fakeBitbucketAppClient{}
+	rt.giteaAppClient = &fakeGiteaAppClient{}
 	cookie := loginTestSession(t, rt, db)
 
 	seedInstalledGitHubApp(t, db, fakeGitHubSecrets)
 	seedGitLabAppConnection(t, db)
 	seedBitbucketAppConnection(t, db)
+	seedGiteaAppConnection(t, db)
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/git-providers", ""))
@@ -129,5 +133,8 @@ func TestHandleListGitProviders_AllConnected(t *testing.T) {
 	}
 	if !strings.Contains(body, `{"provider":"bitbucket","connected":true,"can_list_branches":true,"can_register_webhook":true,"can_auth_clone":false}`) {
 		t.Errorf("body = %s, want bitbucket connected with branch listing and webhook registration, no auth clone", body)
+	}
+	if !strings.Contains(body, `{"provider":"gitea","connected":true,"can_list_branches":true,"can_register_webhook":true,"can_auth_clone":false}`) {
+		t.Errorf("body = %s, want gitea connected with branch listing and webhook registration, no auth clone", body)
 	}
 }

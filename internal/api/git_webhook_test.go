@@ -399,6 +399,76 @@ func TestHandleGitPushWebhook_BitbucketWrongSignature_Rejected(t *testing.T) {
 	}
 }
 
+// TestHandleGitPushWebhook_GiteaSignatureHeader_TriggersDeploy proves
+// the same webhook route accepts a real Gitea delivery: GitHub-shaped
+// ref/after payload (webhook.ParsePushEvent, no dedicated parser
+// needed) plus Gitea's own X-Hub-Signature-256 compatibility header.
+func TestHandleGitPushWebhook_GiteaSignatureHeader_TriggersDeploy(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	created := connectGitSource(t, rt, cookie, `{"repo_url":"https://git.example.com/org/web.git","branch":"main","build_type":"dockerfile"}`)
+
+	var fetchCalls []fakeGitSourceFetchCall
+	rt.gitSourceFetch = newFakeGitSourceFetch(&fetchCalls, t.TempDir(), new(bool), nil)
+	fb := &fakeBuilder{tag: "web:gitea-sha1"}
+	rt.builder = fb
+
+	body := []byte(`{"ref":"refs/heads/main","after":"gitea-sha1"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+	req.Header.Set("X-Gitea-Event-Type", "push")
+	req.Header.Set("X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body))
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if fb.calls != 1 {
+		t.Fatalf("builder called %d times, want 1", fb.calls)
+	}
+	if fb.lastReq.CommitSHA != "gitea-sha1" {
+		t.Errorf("deploy request CommitSHA = %q, want gitea-sha1", fb.lastReq.CommitSHA)
+	}
+}
+
+// TestDetectWebhookProviderAndEvent covers every provider
+// detectWebhookProviderAndEvent recognizes from headers alone,
+// including the precedence a delivery carrying more than one
+// discriminator header resolves to.
+func TestDetectWebhookProviderAndEvent(t *testing.T) {
+	tests := []struct {
+		name          string
+		headers       map[string]string
+		wantProvider  string
+		wantEventType string
+	}{
+		{"github", map[string]string{"X-GitHub-Event": "push"}, "github", "push"},
+		{"gitlab", map[string]string{"X-Gitlab-Event": "Push Hook"}, "gitlab", "Push Hook"},
+		{"bitbucket", map[string]string{"X-Event-Key": "repo:push"}, "bitbucket", "repo:push"},
+		{"gitea", map[string]string{"X-Gitea-Event-Type": "push"}, "gitea", "push"},
+		{
+			name:          "gitea takes precedence over its own github-compat signature header alone",
+			headers:       map[string]string{"X-Gitea-Event-Type": "push", "X-Hub-Signature-256": "sha256=irrelevant"},
+			wantProvider:  "gitea",
+			wantEventType: "push",
+		},
+		{"unknown", map[string]string{}, "unknown", "unknown"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := http.Header{}
+			for k, v := range tt.headers {
+				h.Set(k, v)
+			}
+			provider, eventType, _ := detectWebhookProviderAndEvent(h)
+			if provider != tt.wantProvider || eventType != tt.wantEventType {
+				t.Errorf("detectWebhookProviderAndEvent() = (%q, %q), want (%q, %q)", provider, eventType, tt.wantProvider, tt.wantEventType)
+			}
+		})
+	}
+}
+
 // TestVerifyGitPushWebhookAuth covers the full header matrix
 // verifyGitPushWebhookAuth branches on, including the case none of the
 // three known headers are present, which must fail closed rather than
@@ -441,6 +511,13 @@ func TestVerifyGitPushWebhookAuth(t *testing.T) {
 			name:    "bitbucket wrong signature",
 			headers: map[string]string{"X-Hub-Signature": sign([]byte("wrong"), body)},
 			want:    false,
+		},
+		{
+			name: "gitea valid signature (falls into the github branch via its own X-Hub-Signature-256)",
+			// Gitea also sends a bare-hex X-Gitea-Signature this package
+			// never reads; only its GitHub-compatible header matters here.
+			headers: map[string]string{"X-Hub-Signature-256": sign([]byte(secret), body), "X-Gitea-Signature": "unused-bare-hex"},
+			want:    true,
 		},
 		{
 			name:    "no known header present",

@@ -232,6 +232,8 @@ type (
 	useGitHubRepoAsSourceResponse      = apiclient.UseGitHubRepoAsSourceResponse
 	gitLabAppProjectResource           = apiclient.GitLabAppProjectResource
 	bitbucketAppRepoResource           = apiclient.BitbucketAppRepoResource
+	giteaAppStatusResource             = apiclient.GiteaAppStatusResource
+	giteaAppRepoResource               = apiclient.GiteaAppRepoResource
 	serviceTemplateListItem            = apiclient.ServiceTemplateListItem
 	serviceTemplateDetail              = apiclient.ServiceTemplateDetail
 	staticSiteResource                 = apiclient.StaticSiteResource

@@ -13,8 +13,7 @@ const navigateMock = vi.fn()
 // CTAs link to each provider's settings page), neither is asserted on
 // here.
 vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('@tanstack/react-router')>()
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
   return {
     ...actual,
     useNavigate: () => navigateMock,
@@ -74,7 +73,11 @@ vi.mock('./GitRepoSourcePicker', () => ({
             provider: 'github',
             repoUrl: 'https://github.com/example/legacy-install.git',
             branch: 'main',
-            providerRef: { kind: 'github', owner: 'example', repo: 'legacy-install' },
+            providerRef: {
+              kind: 'github',
+              owner: 'example',
+              repo: 'legacy-install',
+            },
           })
         }}
       >
@@ -100,11 +103,28 @@ vi.mock('./GitRepoSourcePicker', () => ({
             provider: 'bitbucket',
             repoUrl: 'https://bitbucket.org/acme/app.git',
             branch: 'main',
-            providerRef: { kind: 'bitbucket', workspace: 'acme', repoSlug: 'app' },
+            providerRef: {
+              kind: 'bitbucket',
+              workspace: 'acme',
+              repoSlug: 'app',
+            },
           })
         }}
       >
         Pick Bitbucket repo (test)
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          onSelect({
+            provider: 'gitea',
+            repoUrl: 'https://git.example.com/acme/app.git',
+            branch: 'main',
+            providerRef: { kind: 'gitea', owner: 'acme', repo: 'app' },
+          })
+        }}
+      >
+        Pick Gitea repo (test)
       </button>
     </div>
   ),
@@ -217,7 +237,8 @@ describe('CreateAppFromGitFields', () => {
         )
       }
       if (
-        url === '/api/v1/github-app/repos/example/legacy-install/use-as-source' &&
+        url ===
+          '/api/v1/github-app/repos/example/legacy-install/use-as-source' &&
         method === 'POST'
       ) {
         // The permission-denied degrade path (piece 2): an installation
@@ -259,6 +280,19 @@ describe('CreateAppFromGitFields', () => {
           fakeJsonResponse(
             fakeGitSourceResource({
               repo_url: 'https://bitbucket.org/acme/app.git',
+            }),
+            201,
+          ),
+        )
+      }
+      if (
+        url === '/api/v1/gitea-app/repos/acme/app/use-as-source' &&
+        method === 'POST'
+      ) {
+        return Promise.resolve(
+          fakeJsonResponse(
+            fakeGitSourceResource({
+              repo_url: 'https://git.example.com/acme/app.git',
             }),
             201,
           ),
@@ -337,7 +371,9 @@ describe('CreateAppFromGitFields', () => {
     // only ever fires once: it already succeeded on the first submit, so
     // the retry (which only resubmits the build) must not register a
     // second webhook.
-    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(1)
+    expect(
+      callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT'),
+    ).toHaveLength(1)
   })
 
   // Bug 1: the GitHub wizard path used to create the app and
@@ -366,6 +402,11 @@ describe('CreateAppFromGitFields', () => {
       pickButton: 'Pick Bitbucket repo (test)',
       connectURL: '/api/v1/bitbucket-app/repos/acme/app/use-as-source',
     },
+    {
+      name: 'Gitea',
+      pickButton: 'Pick Gitea repo (test)',
+      connectURL: '/api/v1/gitea-app/repos/acme/app/use-as-source',
+    },
   ])(
     'connects the git source via use-as-source for a $name pick, then triggers the build',
     async ({ pickButton, connectURL }) => {
@@ -391,8 +432,12 @@ describe('CreateAppFromGitFields', () => {
       expect(body.app_name).toBe('demo-app')
       expect(body.branch).toBe('main')
 
-      expect(callsTo(fetchMock, '/api/v1/apps/demo-app/builds', 'POST')).toHaveLength(1)
-      expect(callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT')).toHaveLength(0)
+      expect(
+        callsTo(fetchMock, '/api/v1/apps/demo-app/builds', 'POST'),
+      ).toHaveLength(1)
+      expect(
+        callsTo(fetchMock, '/api/v1/apps/demo-app/git-source', 'PUT'),
+      ).toHaveLength(0)
     },
   )
 
@@ -408,7 +453,9 @@ describe('CreateAppFromGitFields', () => {
 
     await screen.findByLabelText('Name')
     await user.click(
-      screen.getByRole('button', { name: 'Pick GitHub repo on a legacy install (test)' }),
+      screen.getByRole('button', {
+        name: 'Pick GitHub repo on a legacy install (test)',
+      }),
     )
     await user.type(screen.getByLabelText('Port'), '3000')
 
@@ -419,16 +466,20 @@ describe('CreateAppFromGitFields', () => {
     })
 
     expect(
-      callsTo(fetchMock, '/api/v1/github-app/repos/example/legacy-install/use-as-source', 'POST'),
+      callsTo(
+        fetchMock,
+        '/api/v1/github-app/repos/example/legacy-install/use-as-source',
+        'POST',
+      ),
     ).toHaveLength(1)
-    expect(callsTo(fetchMock, '/api/v1/apps/demo-app/builds', 'POST')).toHaveLength(1)
+    expect(
+      callsTo(fetchMock, '/api/v1/apps/demo-app/builds', 'POST'),
+    ).toHaveLength(1)
 
     // The source is connected (build still runs, per the assertion
     // above); the degrade banner explains why auto-deploy needs a manual
     // step, using the backend's own webhook_error message.
-    await screen.findByText(
-      /doesn't have permission to register webhooks yet/,
-    )
+    await screen.findByText(/doesn't have permission to register webhooks yet/)
     expect(screen.getByText('wh_secret_abc')).toBeInTheDocument()
   })
 
@@ -454,7 +505,9 @@ describe('CreateAppFromGitFields', () => {
     })
     const body = JSON.parse(
       callsTo(fetchMock, '/api/v1/apps', 'POST')[0]?.init?.body as string,
-    ) as { health?: { readiness?: { path: string }; liveness?: { path: string } } }
+    ) as {
+      health?: { readiness?: { path: string }; liveness?: { path: string } }
+    }
     expect(body.health?.readiness?.path).toBe('/healthz')
     expect(body.health?.liveness?.path).toBe('/healthz')
   })
@@ -464,7 +517,9 @@ describe('CreateAppFromGitFields', () => {
     renderForm()
 
     await screen.findByLabelText('Name')
-    await user.click(screen.getByRole('switch', { name: 'Enable a health check' }))
+    await user.click(
+      screen.getByRole('switch', { name: 'Enable a health check' }),
+    )
     expect(screen.queryByLabelText('Path')).not.toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Name'), 'demo-app')

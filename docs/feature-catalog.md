@@ -105,7 +105,7 @@ the exact method/path/ability of every one), grouped by resource:
 | Ingress / certs / domains / email / Cloudflare | 19 | `/certificates`, `/settings/ingress*`, `/settings/cloudflare-tunnel*`, `/domains/{domain}/tls-cert` |
 | Static sites / backup targets / registry credentials | 15 | `/static-sites`, `/backup-targets*`, `/registry-credentials*` |
 | Built-in container registry | 5 | `/settings/registry`, `/registry/repositories`, `/registry/tags` |
-| Git provider apps (GitHub/GitLab/Bitbucket) | 27 | `/github-app*`, `/gitlab-app*`, `/bitbucket-app*` |
+| Git provider apps (GitHub/GitLab/Bitbucket/Gitea) | 34 | `/github-app*`, `/gitlab-app*`, `/bitbucket-app*`, `/gitea-app*` |
 | DB backups/restore/clone-restore | 17 | `/databases/{name}/backups*`, `/restore-as-new`, `/backup-schedule`, `/backups` |
 | App volume backups/restore | 11 | `/apps/{name}/volumes/{volume}/backups*` |
 | App storage/database attach | 5 | `/apps/{name}/storage`, `/apps/{name}/database` |
@@ -115,7 +115,7 @@ the exact method/path/ability of every one), grouped by resource:
 
 All command groups available:
 
-`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `templates`, `static-sites`, `tags`, `shared-env`.
+`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `gitea-app`, `templates`, `static-sites`, `tags`, `shared-env`.
 
 ### Key command groups
 
@@ -154,7 +154,7 @@ Headless first-run setup with no browser needed:
 - `email` (get/set) - outbound email configuration
 - `ingress` (get/set) - ingress and ACME configuration
 
-**github-app** / **gitlab-app** / **bitbucket-app**
+**github-app** / **gitlab-app** / **bitbucket-app** / **gitea-app**
 
 `repos` (or `projects` for gitlab-app), `branches`, `use-as-source`. Connecting the App/OAuth integration itself stays dashboard-only (browser redirect through the provider's OAuth flow). These subcommands let you browse and use an already-connected integration's repos from the CLI.
 

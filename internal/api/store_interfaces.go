@@ -468,6 +468,7 @@ type Store interface {
 	GitHubAppStore
 	GitLabAppStore
 	BitbucketAppStore
+	GiteaAppStore
 	OAuthSettingsStore
 	OAuthIdentityStore
 	EmailSettingsStore

@@ -432,13 +432,20 @@ func (rt *Router) deployFromGitSource(ctx context.Context, name string, gs store
 // needs to take the identical branch on replay.
 func detectWebhookProviderAndEvent(header http.Header) (provider, eventType string, headerFields map[string]string) {
 	headerFields = map[string]string{
-		"X-GitHub-Event": header.Get("X-GitHub-Event"),
-		"X-Gitlab-Event": header.Get("X-Gitlab-Event"),
-		"X-Event-Key":    header.Get("X-Event-Key"),
+		"X-GitHub-Event":     header.Get("X-GitHub-Event"),
+		"X-Gitlab-Event":     header.Get("X-Gitlab-Event"),
+		"X-Event-Key":        header.Get("X-Event-Key"),
+		"X-Gitea-Event-Type": header.Get("X-Gitea-Event-Type"),
 	}
 	switch {
 	case headerFields["X-Gitlab-Event"] != "":
 		return "gitlab", headerFields["X-Gitlab-Event"], headerFields
+	case headerFields["X-Gitea-Event-Type"] != "":
+		// Checked before X-GitHub-Event: Gitea also sends
+		// X-Hub-Signature-256 for GitHub compatibility (verifyGitPushWebhookAuth's
+		// own doc comment), but never X-GitHub-Event, so this branch never
+		// shadows a real GitHub delivery.
+		return "gitea", headerFields["X-Gitea-Event-Type"], headerFields
 	case headerFields["X-GitHub-Event"] != "":
 		return "github", headerFields["X-GitHub-Event"], headerFields
 	case headerFields["X-Event-Key"] != "":
@@ -578,8 +585,11 @@ func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, 
 // signs the body the same HMAC-SHA256 way GitHub does, over the
 // identical "sha256=<hex>" wire format, just under a header name with
 // no "-256" suffix (X-Hub-Signature), so webhook.VerifySignature's own
-// parsing is reused unchanged for it. No known-header case present, or
-// a mismatch, fails closed.
+// parsing is reused unchanged for it. Gitea sends its own bare-hex
+// X-Gitea-Signature, but also sends X-Hub-Signature-256 in GitHub's
+// exact format for compatibility, so it falls into the GitHub branch
+// with no dedicated case needed. No known-header case present, or a
+// mismatch, fails closed.
 func verifyGitPushWebhookAuth(secret string, body []byte, header http.Header) bool {
 	if token := header.Get("X-Gitlab-Token"); token != "" {
 		return secret != "" && subtle.ConstantTimeCompare([]byte(token), []byte(secret)) == 1

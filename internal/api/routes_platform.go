@@ -580,6 +580,20 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListBitbucketAppBranches))
 	mux.HandleFunc("POST /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseBitbucketRepoAsSource))
 
+	// Gitea App: the OAuth-Application counterpart of the GitLab App
+	// routes above, same ability tiers and self-hosted instance_url shape
+	// (Gitea is almost always self-hosted). Repos are addressed by an
+	// "owner/repo" path pair like Bitbucket's workspace/repoSlug, not a
+	// numeric id like GitLab's.
+	mux.HandleFunc("GET /api/v1/gitea-app", rt.requireAbility(AbilityRoot, rt.handleGetGiteaAppStatus))
+	mux.HandleFunc("PUT /api/v1/gitea-app", rt.requireAbility(AbilityRoot, rt.handleConnectGiteaApp))
+	mux.HandleFunc("DELETE /api/v1/gitea-app", rt.requireAbility(AbilityRoot, rt.handleDisconnectGiteaApp))
+	mux.HandleFunc("GET /api/v1/gitea-app/connect", rt.requireAbility(AbilityRoot, rt.handleStartGiteaAppConnect))
+	mux.HandleFunc("GET /api/v1/gitea-app/callback", rt.requireAbility(AbilityRoot, rt.handleGiteaAppCallback))
+	mux.HandleFunc("GET /api/v1/gitea-app/repos", rt.requireAbility(AbilityReadSensitive, rt.handleListGiteaAppRepos))
+	mux.HandleFunc("GET /api/v1/gitea-app/repos/{owner}/{repo}/branches", rt.requireAbility(AbilityReadSensitive, rt.handleListGiteaAppBranches))
+	mux.HandleFunc("POST /api/v1/gitea-app/repos/{owner}/{repo}/use-as-source", rt.requireAbility(AbilityWriteSensitive, rt.handleUseGiteaRepoAsSource))
+
 	// Backup history and manual trigger, per database. Trigger needs
 	// AbilityWriteSensitive: it starts real work against a live bucket
 	// using a previously-stored credential, the same sensitivity class

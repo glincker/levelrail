@@ -154,6 +154,7 @@ with raw `compose.yaml` body. Each service gets its own `deploy_attempts` row.
 **Translation notes:**
 - Anything Levelrail can't translate (e.g., health check with no readiness-probe equivalent) comes back as a `notices` entry, not dropped silently.
 - `pull_policy: always` forces a fresh image pull on every deploy, even if the tag exists locally (useful for mutable tags like `:latest`). Default is pull-if-absent.
+- `ports:` and `volumes:` accept both Compose's short form (`"8080:80"`, `web-data:/data`) and long mapping form (`target`/`published`/`protocol`, `type`/`source`/`target`), so an upstream project's own `docker-compose.yml` usually pastes in unchanged. Port ranges, UDP, and `tmpfs`/`npipe` mounts have no Levelrail equivalent and are rejected.
 
 **Dashboard:** "Docker Compose" wizard card (`CreateComposeFields.tsx`)
 
