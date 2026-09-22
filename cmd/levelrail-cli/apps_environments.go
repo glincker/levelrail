@@ -35,6 +35,10 @@ func runAppsEnvironments(prog string, args []string, stdout, stderr io.Writer, l
 		return runAppsEnvironmentsEnvGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "env-set":
 		return runAppsEnvironmentsEnvSet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "clone-preview":
+		return runAppsEnvironmentsClonePreview(prog, args[1:], stdout, stderr, lookupEnv)
+	case "clone":
+		return runAppsEnvironmentsClone(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps environments subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsEnvironmentsUsage(prog))
@@ -50,6 +54,8 @@ func appsEnvironmentsUsage(prog string) string {
   %[1]s apps environments delete <id> [flags]                                          delete an environment
   %[1]s apps environments env-get <id> [flags]                                         show an environment's shared env vars
   %[1]s apps environments env-set <id> --var KEY=VALUE [flags]                     replace an environment's shared env vars
+  %[1]s apps environments clone-preview <id> --new-name NAME [flags]              preview cloning an environment's whole app set
+  %[1]s apps environments clone <id> --new-name NAME [flags]                        clone an environment's whole app set into a new one
 
 Tag an app with an environment via "%[1]s apps set-environment". An
 environment's shared env vars sit between its project's own shared env

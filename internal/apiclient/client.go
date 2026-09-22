@@ -1849,6 +1849,29 @@ func (c *Client) ListEnvironments(ctx context.Context, projectID string) ([]Envi
 	return out, err
 }
 
+// PreviewEnvironmentClone calls GET /api/v1/environments/{id}/clone/preview:
+// what cloning id into a new environment named newEnvironmentName would
+// most likely create, without applying it or reserving any name.
+func (c *Client) PreviewEnvironmentClone(ctx context.Context, id, newEnvironmentName string) (EnvironmentClonePreviewResource, error) {
+	path := environmentPath(id) + "/clone/preview"
+	q := url.Values{}
+	q.Set("new_environment_name", newEnvironmentName)
+	path += "?" + q.Encode()
+
+	var out EnvironmentClonePreviewResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// CloneEnvironment calls POST /api/v1/environments/{id}/clone: creates a
+// new environment in id's own project plus a real, deployed copy of
+// every app tagged with id.
+func (c *Client) CloneEnvironment(ctx context.Context, id string, req EnvironmentCloneRequest) (EnvironmentCloneResultResource, error) {
+	var out EnvironmentCloneResultResource
+	err := c.do(ctx, http.MethodPost, environmentPath(id)+"/clone", req, &out)
+	return out, err
+}
+
 // UpdateEnvironment calls PATCH /api/v1/environments/{id}.
 func (c *Client) UpdateEnvironment(ctx context.Context, id string, req UpdateEnvironmentRequest) (EnvironmentResource, error) {
 	var out EnvironmentResource

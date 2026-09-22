@@ -229,6 +229,13 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/environments/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteEnvironment))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/environment", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppEnvironment))
 
+	// Clone environment (environment_clone.go): copy a whole
+	// environment's app set plus config into a brand-new environment,
+	// AbilityDeploy-gated like promote.go's own trigger route since it
+	// actually deploys real containers, not just database rows.
+	mux.HandleFunc("GET /api/v1/environments/{id}/clone/preview", rt.requireAbility(AbilityRead, rt.handleEnvironmentClonePreview))
+	mux.HandleFunc("POST /api/v1/environments/{id}/clone", rt.requireAbility(AbilityDeploy, rt.handleEnvironmentClone))
+
 	// Shared env vars every service tagged with this environment inherits
 	// (environment_env.go): the tier between organizations/{id}/env and
 	// projects/{id}/env above and a service's own env below.

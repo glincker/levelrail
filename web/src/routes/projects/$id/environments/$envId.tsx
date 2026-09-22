@@ -15,6 +15,7 @@ import { environmentEnvQueryOptions } from '../../../../queries/environmentEnv'
 import { appListQueryOptions } from '../../../../queries/apps'
 import { Breadcrumbs } from '../../../../components/Breadcrumbs'
 import { DeleteEnvironmentDialog } from '../../../../components/DeleteEnvironmentDialog'
+import { CloneEnvironmentDialog } from '../../../../components/CloneEnvironmentDialog'
 import { ProtectedEnvironmentToggle } from '../../../../components/ProtectedEnvironmentToggle'
 import { EnvironmentEnvEditor } from '../../../../components/EnvironmentEnvEditor'
 import { SharedEnvSecretsCard } from '../../../../components/SharedEnvSecretsCard'
@@ -102,6 +103,11 @@ function EnvironmentDetailPage() {
               id={environment.id}
               name={environment.name}
               protectedFlag={environment.protected}
+              projectId={id}
+            />
+            <CloneEnvironmentDialog
+              environmentId={environment.id}
+              environmentName={environment.name}
               projectId={id}
             />
             <DeleteEnvironmentDialog

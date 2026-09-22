@@ -169,6 +169,11 @@ type (
 	createEnvironmentRequest         = apiclient.CreateEnvironmentRequest
 	updateEnvironmentRequest         = apiclient.UpdateEnvironmentRequest
 	setAppEnvironmentRequest         = apiclient.SetAppEnvironmentRequest
+	environmentClonePreviewResource  = apiclient.EnvironmentClonePreviewResource
+	environmentCloneAppPreview       = apiclient.EnvironmentCloneAppPreview
+	environmentCloneRequest          = apiclient.EnvironmentCloneRequest
+	environmentCloneAppInput         = apiclient.EnvironmentCloneAppInput
+	environmentCloneResultResource   = apiclient.EnvironmentCloneResultResource
 	previewEnvironmentResource       = apiclient.PreviewEnvironmentResource
 	previewEphemeralDatabaseResource = apiclient.PreviewEphemeralDatabaseResource
 	setPreviewSettingsRequest        = apiclient.SetPreviewSettingsRequest

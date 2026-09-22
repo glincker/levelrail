@@ -127,6 +127,16 @@ levelrail apps deploys logs <name> <deploy-id> [flags]
 one deploy attempt's full build/log output, printed to stdout (redirect to a file to save it)
 
 ```
+levelrail apps environments clone <id> --new-name NAME [--app-rename SOURCE=NEWNAME ...] [--domain SOURCE=D1,D2 ...] [--copy-secret-values] [flags]
+```
+clone a whole environment's app set plus config into a new environment
+
+```
+levelrail apps environments clone-preview <id> --new-name NAME [flags]
+```
+preview what cloning an environment would create, without applying it
+
+```
 levelrail apps environments create <project-id> --name NAME [--protected] [flags]
 ```
 create an environment under a project

@@ -88,7 +88,7 @@ stub, the substance lives in the imported component.
 
 ## API resource groups (`internal/api/routes.go`, `routes_platform.go`)
 
-296 registered routes total (see [api-reference.md](api-reference.md) for
+298 registered routes total (see [api-reference.md](api-reference.md) for
 the exact method/path/ability of every one), grouped by resource:
 
 | Resource | Routes | Representative paths |
@@ -100,7 +100,7 @@ the exact method/path/ability of every one), grouped by resource:
 | Telemetry (metrics/logs) | 10 | `/apps/{name}/metrics`, `/logs/stream`, `/logs/download` |
 | Alerts / scheduled tasks / feature flags / notify channels | 22 | `/apps/{name}/alerts`, `/flags/evaluate/{key}`, `/notification-channels*` |
 | Databases CRUD + engines + resources | 10 | `/database-engines`, `/databases/{name}/resource-recommendation` |
-| Projects / orgs / environments (+ shared env layers) | 20 | `/projects*`, `/organizations/{id}/env` |
+| Projects / orgs / environments (+ shared env layers) | 22 | `/projects*`, `/organizations/{id}/env` |
 | Nodes | 11 | `/nodes`, `/{id}/cordon`, `/drain`, `/workloads` |
 | Ingress / certs / domains / email / Cloudflare | 19 | `/certificates`, `/settings/ingress*`, `/settings/cloudflare-tunnel*`, `/domains/{domain}/tls-cert` |
 | Static sites / backup targets / registry credentials | 15 | `/static-sites`, `/backup-targets*`, `/registry-credentials*` |
@@ -192,6 +192,6 @@ instead of leaving it listed as both done and gapped.
 
 ## See also
 
-- [API reference](api-reference.md) - Detailed method/path/ability for all 296 routes
+- [API reference](api-reference.md) - Detailed method/path/ability for all 298 routes
 - [Roadmap](roadmap.md) - Current status and what's in progress
 - [Getting started](getting-started.md) - Your first deploy walkthrough

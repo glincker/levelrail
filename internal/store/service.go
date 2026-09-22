@@ -1177,6 +1177,41 @@ func (db *DB) ListDesiredServicesByProject(ctx context.Context, projectID string
 	return out, nil
 }
 
+// ListDesiredServicesByEnvironment returns every saved service tagged
+// with environmentID, ordered by name, the environment-kind counterpart
+// to ListDesiredServicesByProject above. Used by
+// internal/api/environment_clone.go to find what a "clone environment"
+// operation copies, without listing every service and filtering
+// in-memory the way promote.go's own findPromotionCandidates still does
+// for its narrower single-app lookup.
+func (db *DB) ListDesiredServicesByEnvironment(ctx context.Context, environmentID string) ([]DesiredService, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT `+desiredServiceColumns+`
+		FROM desired_services
+		WHERE environment_id = ?
+		ORDER BY name
+	`, environmentID)
+	if err != nil {
+		return nil, fmt.Errorf("store: list desired services for environment %q: %w", environmentID, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var out []DesiredService
+	for rows.Next() {
+		svc, err := scanDesiredService(rows.Scan)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan desired service row: %w", err)
+		}
+		out = append(out, *svc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate desired service rows: %w", err)
+	}
+	return out, nil
+}
+
 // DeleteDesiredService removes a service's desired state, e.g. because
 // the app was deleted through the HTTP API. It returns
 // ErrServiceNotFound if no such service exists, the same sentinel

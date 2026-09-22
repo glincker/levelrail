@@ -216,6 +216,13 @@ const (
 	DeployAttemptSourceCompose      = "compose"
 	DeployAttemptSourcePromote      = "promote"
 	DeployAttemptSourceAutoRollback = "auto_rollback"
+	// DeployAttemptSourceClone marks the first deploy of an app created
+	// by cloning a whole environment (internal/api/environment_clone.go's
+	// handleCloneEnvironment): a fresh app, same shape as the plain
+	// image-tag path, just recorded under its own source so deploy
+	// history can tell "created by cloning environment X" apart from an
+	// ordinary manual create.
+	DeployAttemptSourceClone = "clone"
 )
 
 // deployAttemptIDPrefix mirrors internal/api/tokens.go's "tok_" prefix
