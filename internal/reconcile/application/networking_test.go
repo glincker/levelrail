@@ -285,15 +285,21 @@ func TestNetworkCleanupController_RemovesOrphanedNetworks(t *testing.T) {
 // DoesNotRemoveOtherInstanceContainers proves for containers, but for
 // this controller's own whole-fleet network sweep: instance A's
 // NetworkCleanupController must never remove a network another
-// control-plane instance created and still owns, even when that
-// network's app ID isn't one instance A's own store knows about (from
-// instance A's point of view, indistinguishable from a genuinely
-// orphaned network of its own, without the instance label).
+// control-plane instance created and still owns, including one that
+// carries no instance label at all. Unlike the analogous container path,
+// an unlabeled network is never treated as "mine" here: unlike a
+// container name, a network name ("<prefix>-app-<appID>") can collide
+// across independent instances on the same Docker daemon without either
+// instance doing anything wrong (this is what caused a real incident),
+// so the only safe cleanup candidate is one explicitly labeled with this
+// instance's own ID.
 func TestNetworkCleanupController_DoesNotRemoveOtherInstanceNetworks(t *testing.T) {
 	rt := newFakeRuntime(0)
-	rt.networks["acme-app-mine-but-gone"] = "net-1"
+	rt.networks["acme-app-mine-and-gone"] = "net-1"
+	rt.networkLabels["acme-app-mine-and-gone"] = map[string]string{"platform-reserved.instance": "inst-a"}
 	rt.networks["acme-app-not-mine"] = "net-2"
 	rt.networkLabels["acme-app-not-mine"] = map[string]string{"platform-reserved.instance": "inst-b"}
+	rt.networks["acme-app-unlabeled-not-mine"] = "net-3" // no label at all: a different instance's network, or a pre-upgrade leftover of unknown origin
 
 	apps := &fakeAppLister{} // instance A's own store has no apps at all
 	c := NewNetworkCleanupController(apps, rt, "acme", "inst-a")
@@ -307,11 +313,14 @@ func TestNetworkCleanupController_DoesNotRemoveOtherInstanceNetworks(t *testing.
 		t.Errorf("condition = %+v, want Status=True Reason=OrphanedNetworksRemoved", cond)
 	}
 
-	if _, ok := rt.networks["acme-app-mine-but-gone"]; ok {
-		t.Error("acme-app-mine-but-gone still present, want it removed (this instance's own orphan)")
+	if _, ok := rt.networks["acme-app-mine-and-gone"]; ok {
+		t.Error("acme-app-mine-and-gone still present, want it removed (labeled as this instance's own orphan)")
 	}
 	if _, ok := rt.networks["acme-app-not-mine"]; !ok {
-		t.Error("acme-app-not-mine was removed, want it untouched (belongs to a different control-plane instance)")
+		t.Error("acme-app-not-mine was removed, want it untouched (labeled as belonging to a different control-plane instance)")
+	}
+	if _, ok := rt.networks["acme-app-unlabeled-not-mine"]; !ok {
+		t.Error("acme-app-unlabeled-not-mine was removed, want it untouched (no label = never a cleanup candidate, could belong to any instance)")
 	}
 }
 
