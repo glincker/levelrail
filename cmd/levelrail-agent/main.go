@@ -97,7 +97,19 @@ func run(logger *slog.Logger) error {
 		}()
 	}
 
-	runReconnectLoop(ctx, addr, id, client, builder, logger)
+	meshCfg, err := setupAgentMesh(ctx, id.NodeID, logger)
+	if err != nil {
+		// Not fatal, same reasoning cmd/levelrail's own setupMesh call
+		// site already applies: a misconfigured, opted-in mesh
+		// (APP_MESH_ENABLED=1) should not stop this node from serving
+		// Docker operations, which is this binary's actual job.
+		logger.Warn("mesh not configured", slog.String("error", err.Error()))
+	}
+	if meshCfg != nil {
+		defer meshCfg.close()
+	}
+
+	runReconnectLoop(ctx, addr, id, client, builder, meshCfg, logger)
 	return nil
 }
 
@@ -141,10 +153,13 @@ func loadBuildRunner(ctx context.Context, logger *slog.Logger) (agent.BuildRunne
 // strictly worse than the SSH-per-command tools ADR 003 rejected, which
 // at least retry by construction on the next invocation. Only ctx
 // cancellation (process shutdown) ends this loop.
-func runReconnectLoop(ctx context.Context, addr string, id *agent.Identity, rt docker.Runtime, builder agent.BuildRunner, logger *slog.Logger) {
+func runReconnectLoop(ctx context.Context, addr string, id *agent.Identity, rt docker.Runtime, builder agent.BuildRunner, meshCfg *meshAgentSetup, logger *slog.Logger) {
 	var opts []agent.SessionOption
 	if builder != nil {
 		opts = append(opts, agent.WithBuildRunner(builder))
+	}
+	if meshCfg != nil {
+		opts = append(opts, agent.WithMesh(id.NodeID, meshCfg.sink))
 	}
 	if d := heartbeatIntervalFromEnv(); d > 0 {
 		opts = append(opts, agent.WithHeartbeatInterval(d))

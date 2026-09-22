@@ -71,21 +71,24 @@ function PeerRow({ peer }: { peer: MeshPeerResource }) {
 
 // Node detail route's mesh section: this control plane's own WireGuard
 // mesh identity and peer list, plus a rotate-key action. See
-// internal/api/mesh.go's own doc comment for the real, honest limitation
-// this UI reflects rather than papers over: GET /api/v1/mesh is one
-// live view (the control plane's own node), so this card renders the
-// same content on every node's detail page, with the rotate action only
-// meaningfully wired for the local node (see isLocal below) since
-// remote-node rotation returns 501 until the agent wire extension for it
-// exists.
+// internal/api/mesh.go's own doc comment: GET /api/v1/mesh is one live
+// view (the control plane's own node's UAPI-backed status, plus
+// best-effort static info for every other node), so this card renders
+// the same content on every node's detail page. The rotate action is
+// offered on every node now, local or remote: POST
+// /api/v1/nodes/{id}/mesh/rotate-key reaches any currently-connected
+// node over its own agent Session (internal/agent.GRPCSink). A node with
+// no live connection still surfaces a real error from the dialog itself
+// (RotateMeshKeyDialog renders rotate.error.message verbatim) rather than
+// hiding the button, since "not currently connected" is exactly the kind
+// of node state an operator opening this card wants to discover, not one
+// this UI should mask by omission.
 export function NodeMeshCard({
   nodeId,
   nodeName,
-  isLocal,
 }: {
   nodeId: string
   nodeName: string
-  isLocal: boolean
 }) {
   const { data, isPending, isError, error } = useMeshStatus()
 
@@ -136,9 +139,7 @@ export function NodeMeshCard({
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle>WireGuard mesh</CardTitle>
-          {isLocal ? (
-            <RotateMeshKeyDialog nodeId={nodeId} nodeName={nodeName} />
-          ) : null}
+          <RotateMeshKeyDialog nodeId={nodeId} nodeName={nodeName} />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

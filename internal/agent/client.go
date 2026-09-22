@@ -182,12 +182,14 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 		heartbeatInterval = cfg.heartbeatInterval
 	}
 
-	return serveSession(ctx, stream, rt, cfg.builder, heartbeatInterval, logger)
+	return serveSession(ctx, stream, rt, cfg.builder, cfg.mesh, cfg.meshNodeID, heartbeatInterval, logger)
 }
 
 // sessionConfig holds RunSession's optional wiring.
 type sessionConfig struct {
 	builder           BuildRunner
+	mesh              MeshApplier
+	meshNodeID        string
 	heartbeatInterval time.Duration
 	keepaliveTime     time.Duration
 	keepaliveTimeout  time.Duration
@@ -202,6 +204,19 @@ type SessionOption func(*sessionConfig)
 // is unreachable still serves every container operation normally.
 func WithBuildRunner(runner BuildRunner) SessionOption {
 	return func(c *sessionConfig) { c.builder = runner }
+}
+
+// WithMesh lets this node accept and apply mesh config (and rotate its
+// own mesh key) dispatched by the control plane, over ApplyMesh/
+// RotateMeshKey requests on this same Session stream. nodeID is this
+// node's own ID, since RotateMeshKeyRequest carries no fields of its own
+// (this file's own header on why: it always means "rotate the node
+// holding this stream," never another). Without this option, both
+// request kinds answer with ErrMeshUnavailable: a node whose Docker
+// operations work fine but has no mesh device configured, not a broken
+// connection.
+func WithMesh(nodeID string, mesh MeshApplier) SessionOption {
+	return func(c *sessionConfig) { c.meshNodeID, c.mesh = nodeID, mesh }
 }
 
 // WithHeartbeatInterval overrides how often RunSession sends an
@@ -243,7 +258,7 @@ func WithKeepalive(pingTime, timeout time.Duration) SessionOption {
 // is not safe for concurrent Send calls, the identical reasoning mux.go's
 // own sendMu already documents for the control-plane side of this same
 // connection.
-func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runtime, builder BuildRunner, heartbeatInterval time.Duration, logger *slog.Logger) error {
+func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runtime, builder BuildRunner, mesh MeshApplier, meshNodeID string, heartbeatInterval time.Duration, logger *slog.Logger) error {
 	var sendMu sync.Mutex
 	send := func(msg *agentpb.AgentMessage) {
 		sendMu.Lock()
@@ -280,6 +295,14 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 			}
 			if b := req.GetBuild(); b != nil {
 				builds.Start(ctx, req.GetRequestId(), b)
+				continue
+			}
+			if am := req.GetApplyMesh(); am != nil {
+				go handleApplyMesh(ctx, mesh, meshNodeID, req.GetRequestId(), am, send)
+				continue
+			}
+			if req.GetRotateMeshKey() != nil {
+				go handleRotateMeshKey(ctx, mesh, meshNodeID, req.GetRequestId(), send)
 				continue
 			}
 			go func() {

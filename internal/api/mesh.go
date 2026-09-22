@@ -2,25 +2,30 @@ package api
 
 // This file: the WireGuard mesh status and key-rotation routes.
 //
-// A real, honest limitation runs through every handler here, stated once
-// rather than repeated at every call site: internal/network.ConfigSink's
-// gRPC arm (the piece that would carry a config, a status query, or a
-// rotation request to a *remote* node over the agent Session stream)
-// does not exist yet (see that interface's own doc comment, and
-// cmd/levelrail/mesh.go's top-of-file note on why APP_MESH_ENABLED is
-// still opt-in). What exists today is one Coordinator and one Mesh
-// device, both for the control plane's own node.
-// So:
+// internal/network.ConfigSink's gRPC arm now exists
+// (internal/agent.GRPCSink, dispatched over the agent Session stream),
+// so POST /api/v1/nodes/{id}/mesh/rotate-key actually rotates a remote
+// node's key now, the same as the local node: rt.meshRotator (a
+// *network.Coordinator built with a network.MultiSink, cmd/levelrail's
+// own setupMesh) reaches every enrolled, currently-connected node, not
+// only the control plane's own. What this handler still cannot do
+// anything about is a node that is not currently connected (never
+// enrolled, or its agent process is down): that fails with a real error
+// from GRPCSink (agent.ErrNodeNotRegistered, wrapped), reported as 500
+// here rather than a special case, the same "one node's problem, surfaced
+// honestly" treatment ApplyMesh's own NodeResult.Err gives it one layer
+// down.
 //
 //   - GET /api/v1/mesh returns real, UAPI-backed peer and handshake data
-//     for that one node, plus best-effort static info (public key, mesh
-//     address, as last persisted by the mesh reconciler) for every other
-//     node in the fleet, clearly labeled as such rather than presented
-//     as equally live.
-//   - POST /api/v1/nodes/{id}/mesh/rotate-key only actually succeeds for
-//     the local node; asking it to rotate any other node's key returns a
-//     clear 501 naming the same gap, not a silent no-op or a misleading
-//     success.
+//     for the control plane's own node, plus best-effort static info
+//     (public key, mesh address, as last persisted by the mesh
+//     reconciler) for every other node in the fleet, clearly labeled as
+//     such rather than presented as equally live: this control plane can
+//     only ever read its own device's UAPI directly, a remote node's live
+//     handshake/transfer state is that node's own status to report, not
+//     modeled as a status route here.
+//   - POST /api/v1/nodes/{id}/mesh/rotate-key now works for any
+//     currently-connected node in the fleet, local or remote.
 //
 // Both routes degrade to 501 entirely when mesh networking was never
 // enabled (APP_MESH_ENABLED unset), the same "not configured, not
@@ -245,12 +250,12 @@ type rotateKeyResponse struct {
 
 // handleRotateNodeMeshKey handles POST /api/v1/nodes/{id}/mesh/rotate-key:
 // generates a fresh WireGuard keypair for id, makes it that node's live
-// identity immediately, and returns the change. See this file's own
-// header for what "immediately" means for partition safety (a brief
-// reconnect blip is possible while the rest of the fleet's next reconcile
-// pass catches up, tracked via the rotation field on
-// GET /api/v1/mesh), and for why this only actually works for id ==
-// this control plane's own node today.
+// identity immediately, and returns the change. Works for any
+// currently-connected node in the fleet, local or remote (this file's own
+// header). See this file's own header for what "immediately" means for
+// partition safety (a brief reconnect blip is possible while the rest of
+// the fleet's next reconcile pass catches up, tracked via the rotation
+// field on GET /api/v1/mesh).
 func (rt *Router) handleRotateNodeMeshKey(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
@@ -269,11 +274,23 @@ func (rt *Router) handleRotateNodeMeshKey(w http.ResponseWriter, r *http.Request
 
 	result, err := rt.meshRotator.RotateKey(r.Context(), id)
 	switch {
-	case errors.Is(err, network.ErrRotationNotSupported), errors.Is(err, network.ErrUnknownNode):
-		writeError(w, http.StatusNotImplemented,
-			"key rotation is only available for the node running this control plane; remote-node rotation needs the agent wire extension, which does not exist yet")
+	case errors.Is(err, network.ErrRotationNotSupported):
+		// Reachable only if this control plane's own mesh sink genuinely
+		// cannot rotate a key at all (a degraded/partial configuration),
+		// not the normal "remote node" case network.MultiSink now handles
+		// for real.
+		writeError(w, http.StatusNotImplemented, "key rotation is not available on this control plane's current mesh configuration")
 		return
 	case err != nil:
+		// Most commonly a remote node with no live agent session right
+		// now (never enrolled, or its agent process is down): this
+		// package deliberately does not import internal/agent to
+		// distinguish that from any other mesh-sink failure (see
+		// cmd/levelrail/main.go's own rootHandler doc comment on why
+		// internal/api stays off that dependency edge), so it is reported
+		// as a plain 500 with the real reason logged server-side, the
+		// same generic-to-the-client shape every other unexpected store
+		// or transport failure in this package already gets.
 		rt.logger.Error("api: rotate node mesh key failed", slog.String("error", err.Error()), slog.String("node_id", id))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
