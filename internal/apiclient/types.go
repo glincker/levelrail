@@ -255,12 +255,63 @@ type BuildTriggerResponse struct {
 }
 
 // DeployTriggerRequest mirrors internal/api's deployTriggerRequest
-// (internal/api/deploys.go). Response is a plain AppResource (the app's
-// now-updated desired state), the same shape CreateApp/GetApp already
-// use, so no separate response type is needed here.
+// (internal/api/deploys.go).
 type DeployTriggerRequest struct {
 	Image   string `json:"image"`
 	Confirm bool   `json:"confirm,omitempty"`
+}
+
+// DeployTriggerResult mirrors internal/api's deployTriggerResult
+// (deploys.go): the common case is a flat AppResource on the wire
+// (*AppResource is embedded so those fields promote to the top level,
+// unchanged from before this type existed), PendingApproval is only
+// ever set instead, when the target environment is protected and the
+// deploy/promote was accepted as a pending approval rather than applied.
+type DeployTriggerResult struct {
+	*AppResource
+	PendingApproval *DeployApprovalResource `json:"pending_approval,omitempty"`
+}
+
+// DeployApprovalResource mirrors internal/api's deployApprovalResource
+// (deploy_approvals.go): a pending or decided two-person approval gate
+// on a deploy/promote into a protected environment.
+type DeployApprovalResource struct {
+	ID                string `json:"id"`
+	ServiceName       string `json:"service_name"`
+	SourceServiceName string `json:"source_service_name,omitempty"`
+	EnvironmentID     string `json:"environment_id"`
+	Action            string `json:"action"`
+	Image             string `json:"image"`
+	Status            string `json:"status"`
+	RequestedByType   string `json:"requested_by_type"`
+	RequestedBy       string `json:"requested_by"`
+	RequestedByName   string `json:"requested_by_name"`
+	ApprovedByType    string `json:"approved_by_type,omitempty"`
+	ApprovedBy        string `json:"approved_by,omitempty"`
+	ApprovedByName    string `json:"approved_by_name,omitempty"`
+	Reason            string `json:"reason,omitempty"`
+	CreatedAt         string `json:"created_at"`
+	ExpiresAt         string `json:"expires_at"`
+	DecidedAt         string `json:"decided_at,omitempty"`
+}
+
+// DeployApprovalListResult mirrors internal/api's
+// deployApprovalListResponse (GET /api/v1/deploy-approvals).
+type DeployApprovalListResult struct {
+	Approvals []DeployApprovalResource `json:"approvals"`
+}
+
+// RejectDeployApprovalRequest mirrors internal/api's
+// rejectDeployApprovalRequest (POST .../deploy-approvals/{id}/reject).
+type RejectDeployApprovalRequest struct {
+	Reason string `json:"reason,omitempty"`
+}
+
+// DeployApprovalDecisionResult mirrors internal/api's
+// deployApprovalDecisionResponse (POST .../deploy-approvals/{id}/approve).
+type DeployApprovalDecisionResult struct {
+	Approval DeployApprovalResource `json:"approval"`
+	App      AppResource            `json:"app"`
 }
 
 // ComposeDeployResult mirrors internal/api's composeDeployResponse

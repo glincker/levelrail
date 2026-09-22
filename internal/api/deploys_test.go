@@ -61,9 +61,14 @@ func TestHandleTriggerDeploy(t *testing.T) {
 }
 
 // TestHandleTriggerDeploy_ProtectedEnvironment covers the confirm: true
-// gate (environments.go's requireEnvironmentConfirmation): a deploy
+// gate (environments.go's checkEnvironmentProtection): a deploy
 // targeting an app tagged with a protected environment is rejected with
-// a 409 and leaves desired state untouched until confirm is set.
+// a 409 until confirm is set, and even once confirm is true it does not
+// deploy immediately: it becomes a pending deploy_approvals row
+// (deploy_approvals.go), leaving desired state untouched until a
+// different, sufficiently privileged user approves it (see
+// TestHandleApproveDeployApproval in deploy_approvals_test.go for that
+// second half of the flow).
 func TestHandleTriggerDeploy_ProtectedEnvironment(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -100,12 +105,26 @@ func TestHandleTriggerDeploy_ProtectedEnvironment(t *testing.T) {
 	if recConfirmed.Code != http.StatusAccepted {
 		t.Fatalf("status = %d, want %d; body = %s", recConfirmed.Code, http.StatusAccepted, recConfirmed.Body.String())
 	}
+	var result deployTriggerResult
+	if err := json.Unmarshal(recConfirmed.Body.Bytes(), &result); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if result.PendingApproval == nil {
+		t.Fatalf("confirm: true into a protected environment must return a pending approval, got body %s", recConfirmed.Body.String())
+	}
+	if result.PendingApproval.Status != store.DeployApprovalStatusPending {
+		t.Errorf("PendingApproval.Status = %q, want %q", result.PendingApproval.Status, store.DeployApprovalStatusPending)
+	}
+	if result.PendingApproval.Image != "levelrail/web:2" {
+		t.Errorf("PendingApproval.Image = %q, want %q", result.PendingApproval.Image, "levelrail/web:2")
+	}
+
 	svc, err = db.GetDesiredService(ctx, "web")
 	if err != nil {
 		t.Fatalf("GetDesiredService: %v", err)
 	}
-	if svc.Image != "levelrail/web:2" {
-		t.Errorf("confirm: true deploy did not update Image, got %q", svc.Image)
+	if svc.Image != "levelrail/web:1" {
+		t.Errorf("a confirm: true deploy accepted as a pending approval must not change desired state yet, Image = %q", svc.Image)
 	}
 }
 

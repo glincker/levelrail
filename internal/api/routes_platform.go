@@ -236,6 +236,16 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/environments/{id}/clone/preview", rt.requireAbility(AbilityRead, rt.handleEnvironmentClonePreview))
 	mux.HandleFunc("POST /api/v1/environments/{id}/clone", rt.requireAbility(AbilityDeploy, rt.handleEnvironmentClone))
 
+	// Deploy approvals (deploy_approvals.go): the real two-person gate
+	// behind a protected environment's confirm: true, replacing a
+	// same-actor confirm flag. List/get are AbilityRead; approve/reject
+	// are AbilityDeploy, the same tier the gated deploy/promote itself
+	// needs, plus loadDecidableApproval's own same-actor rejection.
+	mux.HandleFunc("GET /api/v1/deploy-approvals", rt.requireAbility(AbilityRead, rt.handleListDeployApprovals))
+	mux.HandleFunc("GET /api/v1/deploy-approvals/{id}", rt.requireAbility(AbilityRead, rt.handleGetDeployApproval))
+	mux.HandleFunc("POST /api/v1/deploy-approvals/{id}/approve", rt.requireAbility(AbilityDeploy, rt.handleApproveDeployApproval))
+	mux.HandleFunc("POST /api/v1/deploy-approvals/{id}/reject", rt.requireAbility(AbilityDeploy, rt.handleRejectDeployApproval))
+
 	// Shared env vars every service tagged with this environment inherits
 	// (environment_env.go): the tier between organizations/{id}/env and
 	// projects/{id}/env above and a service's own env below.

@@ -703,6 +703,17 @@ func WithStaleSecretCounter(c StaleSecretCounter) Option {
 	return func(rt *Router) { rt.staleSecretCounter = c }
 }
 
+// WithDeployApprovalTTL overrides how long a pending deploy approval
+// (deploy_approvals.go) stays decidable before it's treated as expired.
+// Without one configured (or passed as 0), defaultDeployApprovalTTL (24
+// hours) applies. Same "no hardcoded thresholds, use env vars" shape as
+// WithAuditLogRetention: this package never reads the environment
+// directly, cmd/levelrail/main.go reads APP_DEPLOY_APPROVAL_TTL and
+// passes the parsed duration here.
+func WithDeployApprovalTTL(d time.Duration) Option {
+	return func(rt *Router) { rt.deployApprovalTTL = d }
+}
+
 // WithResourceRecommendationLookback overrides how far back GET
 // /api/v1/apps/{name}/resource-recommendation looks for usage history
 // (handleAppResourceRecommendation). Without one configured (or passed as

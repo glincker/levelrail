@@ -15,6 +15,7 @@ import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { CloneAppDialog } from '../../components/CloneAppDialog'
 import { DeleteAppDialog } from '../../components/DeleteAppDialog'
 import { DeployTriggerForm } from '../../components/DeployTriggerForm'
+import { PendingDeployApprovalBanner } from '../../components/PendingDeployApprovalBanner'
 import { PromoteAppDialog } from '../../components/PromoteAppDialog'
 import { RestartAppButton } from '../../components/RestartAppButton'
 import { StopStartAppButton } from '../../components/StopStartAppButton'
@@ -140,6 +141,8 @@ function AppDetailLayout() {
       </div>
 
       <TagsControl appName={app.name} tags={app.tags} />
+
+      <PendingDeployApprovalBanner appName={app.name} />
 
       {showDeployTrigger ? <DeployTriggerForm appName={app.name} /> : null}
 

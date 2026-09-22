@@ -13,6 +13,9 @@ import (
 type (
 	Client                           = apiclient.Client
 	appResource                      = apiclient.AppResource
+	deployTriggerResult              = apiclient.DeployTriggerResult
+	deployApprovalResource           = apiclient.DeployApprovalResource
+	deployApprovalDecisionResult     = apiclient.DeployApprovalDecisionResult
 	serviceResources                 = apiclient.ServiceResources
 	serviceProbe                     = apiclient.ServiceProbe
 	serviceHealth                    = apiclient.ServiceHealth

@@ -328,6 +328,8 @@ type Router struct {
 	deviceAuth                     DeviceAuthStore                  // always set, same "core Store interface" shape as policies above: device_auth_requests always exists
 	deviceFlow                     *loginLimiter                    // per-IP device-login-start budget, distinct from logins/forgotPasswordByIP above
 	hookRuns                       HookRunStore                     // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
+	deployApprovals                DeployApprovalStore              // always set, same "core Store interface" shape as hookRuns above: deploy_approvals always exists, empty is a valid, non-error result
+	deployApprovalTTL              time.Duration                    // 0 means "use defaultDeployApprovalTTL", set via WithDeployApprovalTTL
 	invites                        InviteStore                      // always set, same "core Store interface" shape as passwordResetTokens above
 	inviteTTL                      time.Duration                    // 0 means "use defaultInviteTTL", set via WithInviteTTL
 	aiSettings                     AIAssistantSettingsStore         // always set, same shape as emailSettings above: the provider/model row always exists (migrations/0106's own seeded row)
@@ -382,6 +384,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainBasicAuth:             s,
 		domainMaintenance:           s,
 		hookRuns:                    s,
+		deployApprovals:             s,
 		domainTLSCert:               s,
 		domainWAF:                   s,
 		domainRedirect:              s,

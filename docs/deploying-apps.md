@@ -321,9 +321,29 @@ This shows what would change. Only the image tag is compared. Env vars, ports, d
 ### Protected environments
 
 Both deploy and promote respect protected environments. If the app (or promotion target) is tagged with one:
-- The request needs `confirm: true` in the body
+- The request needs `confirm: true` in the body just to be accepted at all
 - Without it, the request fails with a 409
 - The CLI falls back to an interactive "yes" prompt on stdin when `--confirm` isn't given
+
+`confirm: true` does not deploy immediately. A protected environment requires a real, second-person approval before the change reaches reconcile:
+
+1. The requester sends `POST .../deploys` (or `.../promote`) with `confirm: true`. Instead of applying, this creates a pending approval and returns `202 Accepted` with `pending_approval` set (not `app`) in the response body.
+2. A different user, holding the `deploy` ability, must approve it: `POST /api/v1/deploy-approvals/{id}/approve`. The same user or API token that requested it cannot approve or reject its own request; the server rejects that with 403.
+3. Approving runs the deploy/promote through the exact same path an unprotected one uses (`executeConfirmedDeploy` for deploy/rollback, `setDesiredImage` + `recordInstantDeployAttempt` for promote): desired state changes, a deploy attempt is recorded, and the reconciler picks it up on its next pass.
+4. Rejecting (`POST .../reject`, optional `{"reason": "..."}`) leaves desired state untouched. A rejected or expired request never proceeds.
+5. A pending approval that's neither approved nor rejected expires after a TTL (24 hours by default, `APP_DEPLOY_APPROVAL_TTL` env var) and can no longer be decided once expired.
+
+Who can approve is governed by the platform's existing ability model, not a separate permission concept: holding `deploy` (directly, or via the curated `operator`/`admin` roles) is what lets a user approve, the same ability tier that lets them trigger an unprotected deploy in the first place. There is no dedicated "approver" role; any sufficiently privileged user other than the requester can decide it.
+
+Endpoints:
+- `GET /api/v1/deploy-approvals?status=pending&service=<name>`: list (status defaults to `pending`; `all` for every status)
+- `GET /api/v1/deploy-approvals/{id}`: one approval
+- `POST /api/v1/deploy-approvals/{id}/approve`: approve and apply
+- `POST /api/v1/deploy-approvals/{id}/reject`: reject, optional `reason`
+
+CLI: `levelrail-cli deploy-approvals list|get|approve|reject`.
+
+Dashboard: a pending request shows as a banner directly on the app's own detail page (with inline Approve/Reject), and the full cross-app queue lives at `/approvals` in the main sidebar, badged with the current pending count.
 
 ### Dashboard layout
 

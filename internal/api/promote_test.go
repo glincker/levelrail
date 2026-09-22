@@ -236,7 +236,10 @@ func TestHandlePromoteApp(t *testing.T) {
 // gate (environments.go's environmentNeedsConfirmation), checked against
 // the "to" environment itself rather than the resolved target app's own
 // tag: seedPromotionFixture's own target (web-prod) is what's checked
-// here since it's exactly the app tagged with env_prod.
+// here since it's exactly the app tagged with env_prod. Even once
+// confirmed, a promote into a protected environment does not apply
+// immediately: it becomes a pending deploy_approvals row
+// (deploy_approvals.go), same as a protected deploy.
 func TestHandlePromoteApp_ProtectedEnvironment(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -265,12 +268,23 @@ func TestHandlePromoteApp_ProtectedEnvironment(t *testing.T) {
 	if recConfirmed.Code != http.StatusAccepted {
 		t.Fatalf("status = %d, want %d; body = %s", recConfirmed.Code, http.StatusAccepted, recConfirmed.Body.String())
 	}
+	var result deployTriggerResult
+	if err := json.Unmarshal(recConfirmed.Body.Bytes(), &result); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if result.PendingApproval == nil {
+		t.Fatalf("confirm: true promote into a protected environment must return a pending approval, got body %s", recConfirmed.Body.String())
+	}
+	if result.PendingApproval.Action != store.DeployApprovalActionPromote {
+		t.Errorf("PendingApproval.Action = %q, want %q", result.PendingApproval.Action, store.DeployApprovalActionPromote)
+	}
+
 	target, err = db.GetDesiredService(ctx, "web-prod")
 	if err != nil {
 		t.Fatalf("GetDesiredService: %v", err)
 	}
-	if target.Image != "levelrail/web:2" {
-		t.Errorf("confirm: true promote did not update Image, got %q", target.Image)
+	if target.Image != "levelrail/web:1" {
+		t.Errorf("a confirm: true promote accepted as a pending approval must not change desired state yet, Image = %q", target.Image)
 	}
 }
 

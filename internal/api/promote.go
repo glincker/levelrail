@@ -84,8 +84,11 @@ type promoteTriggerRequest struct {
 // through the exact same setDesiredImage/recordInstantDeployAttempt path
 // a plain trigger or rollback uses (deploys.go), rather than a separate
 // promotion-specific reconciliation mechanism. Promoting into a protected
-// environment requires confirm: true, the same gate handleTriggerDeploy
-// enforces (environments.go's environmentNeedsConfirmation).
+// environment requires confirm: true just to be accepted at all, the
+// same gate handleTriggerDeploy enforces (environments.go's
+// environmentNeedsConfirmation); once accepted it becomes a pending
+// deploy_approvals row exactly like a protected deploy does
+// (deploy_approvals.go), not an immediate promotion.
 func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -104,6 +107,14 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 		writeEnvironmentConfirmationRequired(w, res.env)
 		return
 	}
+	if res.env.Protected {
+		approval, ok := rt.requestDeployApproval(w, r, res.env, res.target.Name, res.source.Name, store.DeployApprovalActionPromote, res.source.Image)
+		if !ok {
+			return
+		}
+		writeJSON(w, http.StatusAccepted, deployTriggerResult{PendingApproval: &approval})
+		return
+	}
 
 	updated, err := rt.setDesiredImage(r.Context(), res.target, res.source.Image)
 	if err != nil {
@@ -115,7 +126,8 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 	rt.recordInstantDeployAttempt(r.Context(), updated, res.source.Image, store.DeployAttemptSourcePromote)
 
 	rt.nudgeReconciler()
-	writeJSON(w, http.StatusAccepted, toAppResource(updated))
+	res2 := toAppResource(updated)
+	writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res2})
 }
 
 // promoteResolution is what resolvePromotion found: the source app, the

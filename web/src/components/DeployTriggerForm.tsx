@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
 import { GitBranchIcon, RocketIcon } from '@phosphor-icons/react/dist/ssr'
 import { useApp } from '../queries/apps'
-import { useTriggerDeploy } from '../queries/deploys'
+import { isPendingApproval, useTriggerDeploy } from '../queries/deploys'
 import { useTriggerBuild } from '../queries/builds'
 import { useImageTagsOptional } from '../queries/images'
 import { useProtectedEnvironment } from '../queries/environments'
@@ -71,9 +71,18 @@ function DeployExistingImageForm({ appName }: { appName: string }) {
     triggerDeploy.mutate(
       { image: values.image.trim(), confirm: ackProtected },
       {
-        onSuccess: () => {
+        onSuccess: (result) => {
           reset({ image: '' })
           setAckProtected(false)
+          if (isPendingApproval(result)) {
+            toast.add({
+              title: 'Deploy is pending approval.',
+              description:
+                'The target environment is protected: a different, sufficiently privileged user must approve it before it runs.',
+              type: 'info',
+            })
+            return
+          }
           toast.add({
             title: 'Deploy triggered.',
             description: 'Check the Overview tab for the outcome.',

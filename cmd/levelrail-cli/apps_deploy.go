@@ -91,13 +91,21 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
-	updated, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (appResource, error) {
+	result, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (deployTriggerResult, error) {
 		return client.DeployApp(ctx, name, image, confirm)
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s app %q: %w", cfg.errContext, name, err))
 	}
 
+	if result.PendingApproval != nil {
+		approval := *result.PendingApproval
+		return writeScheduledTaskResult(stdout, stderr, of, approval, func() {
+			printDeployApprovalPendingHuman(stderr, prog, approval)
+		})
+	}
+
+	updated := *result.AppResource
 	return writeScheduledTaskResult(stdout, stderr, of, updated, func() {
 		_, _ = fmt.Fprintf(stderr, cfg.successFormat, updated.Name, updated.Image, prog, updated.Name)
 		printAppHuman(stdout, updated)

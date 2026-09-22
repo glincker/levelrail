@@ -50,6 +50,7 @@ func NewServer(client *apiclient.Client) *mcp.Server {
 	registerCertificateTools(server, client)
 	registerLogDrainTools(server, client)
 	registerSettingsTools(server, client)
+	registerDeployApprovalTools(server, client)
 
 	return server
 }

@@ -22,13 +22,13 @@ func registerPromoteTools(server *mcp.Server, client *apiclient.Client) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "promote_app",
-		Description: "Point a sibling app's image at name's current image and redeploy it, through the same mechanism deploy_app uses. The sibling app is found in the same project as name: target names it explicitly, or it's auto-discovered when exactly one app tagged with the destination environment belongs to that project. Asynchronous: use get_app_status on the target app to watch it converge. Promoting into a protected environment requires confirm true, the same gate deploy_app enforces.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in promoteAppInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
-		app, err := client.PromoteApp(ctx, in.Name, apiclient.PromoteAppRequest{To: in.To, Target: in.Target, Confirm: in.Confirm})
+		Description: "Point a sibling app's image at name's current image and redeploy it, through the same mechanism deploy_app uses. The sibling app is found in the same project as name: target names it explicitly, or it's auto-discovered when exactly one app tagged with the destination environment belongs to that project. Asynchronous: use get_app_status on the target app to watch it converge. Promoting into a protected environment requires confirm true just to be accepted at all, and even then the result's pending_approval is set instead of the promotion actually applying: a different, sufficiently privileged human must approve it (approve_deploy_approval) first.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in promoteAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
+		result, err := client.PromoteApp(ctx, in.Name, apiclient.PromoteAppRequest{To: in.To, Target: in.Target, Confirm: in.Confirm})
 		if err != nil {
-			return nil, apiclient.AppResource{}, fmt.Errorf("promote app %q to environment %q: %w", in.Name, in.To, err)
+			return nil, apiclient.DeployTriggerResult{}, fmt.Errorf("promote app %q to environment %q: %w", in.Name, in.To, err)
 		}
-		return nil, app, nil
+		return nil, result, nil
 	})
 }
 

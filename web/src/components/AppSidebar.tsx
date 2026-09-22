@@ -12,6 +12,7 @@ import {
   GlobeIcon,
   CloudArrowUpIcon,
   RobotIcon,
+  GavelIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -30,6 +31,7 @@ import { Button } from '@/components/ui/button'
 import { useBrand } from '../hooks/useBrand'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { useLogout } from '../queries/auth'
+import { useDeployApprovalsOptional } from '../queries/deployApprovals'
 
 // Lazy: exactly one of these three renders at a time (mutually exclusive
 // by pathname below), so a session that never visits /databases or
@@ -82,6 +84,13 @@ export function AppSidebar() {
   const scopedAppName = pathname.match(APP_SCOPE_PATTERN)?.[1]
   const scopedDatabaseName = pathname.match(DATABASE_SCOPE_PATTERN)?.[1]
   const isSettingsScoped = SETTINGS_SCOPE_PATTERN.test(pathname)
+  // Optional convenience only, the same graceful-degradation shape
+  // useImageTagsOptional's own doc comment establishes: a failure or
+  // empty result here must never block the sidebar rendering, so the
+  // badge simply doesn't show rather than surfacing a loading/error
+  // state of its own.
+  const pendingApprovals = useDeployApprovalsOptional('pending')
+  const pendingApprovalCount = pendingApprovals.data?.length ?? 0
 
   return (
     <Sidebar collapsible="icon" variant="floating">
@@ -192,6 +201,21 @@ export function AppSidebar() {
                     >
                       <CloudArrowUpIcon />
                       <span>Backups</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/approvals" />}
+                      isActive={pathname.startsWith('/approvals')}
+                      tooltip="Deploy approvals"
+                    >
+                      <GavelIcon />
+                      <span>Deploy approvals</span>
+                      {pendingApprovalCount > 0 ? (
+                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white group-data-[collapsible=icon]:hidden">
+                          {pendingApprovalCount}
+                        </span>
+                      ) : null}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
