@@ -651,6 +651,22 @@ type DockerPruner interface {
 	Prune(ctx context.Context, keep []string) docker.PruneResult
 }
 
+// OrphanedVolumeManager is the surface GET
+// /api/v1/system/volumes/orphaned and POST
+// /api/v1/system/volumes/orphaned/cleanup need: list this instance's own
+// named (non-anonymous) Docker volumes, and remove one by exact name.
+// Unlike DockerPruner, this package (not internal/docker) decides which
+// of ListNamedVolumes' results are actually orphaned, by cross-
+// referencing against current desired state (computeOrphanedVolumes in
+// volumes_orphaned.go): internal/docker stays store-agnostic, the same
+// split PruneContainers' own keep-list parameter already establishes.
+// *docker.Client satisfies this structurally via ListNamedVolumes and
+// RemoveVolume (internal/docker/volumes_orphaned.go).
+type OrphanedVolumeManager interface {
+	ListNamedVolumes(ctx context.Context) ([]docker.NamedVolume, error)
+	RemoveVolume(ctx context.Context, name string) error
+}
+
 // RegistryAuthTester is the surface POST
 // /api/v1/registry-credentials/{id}/test needs: ask the control plane's
 // own local Docker daemon to authenticate against a registry host with a

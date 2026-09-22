@@ -1865,6 +1865,32 @@ type SystemPruneResult struct {
 	Errors                   []string `json:"errors,omitempty"`
 }
 
+// OrphanedVolumeResource mirrors internal/api's orphanedVolumeResource:
+// one of this instance's own named Docker volumes that current desired
+// state no longer references. SizeBytes is nil when the volume driver
+// didn't report a size, never a fabricated 0.
+type OrphanedVolumeResource struct {
+	Name      string `json:"name"`
+	SizeBytes *int64 `json:"size_bytes,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
+}
+
+// CleanupOrphanedVolumesRequest mirrors internal/api's
+// cleanupOrphanedVolumesRequest: the exact, operator-confirmed set of
+// volume names to remove.
+type CleanupOrphanedVolumesRequest struct {
+	Names []string `json:"names"`
+}
+
+// CleanupOrphanedVolumesResult mirrors internal/api's
+// cleanupOrphanedVolumesResponse.
+type CleanupOrphanedVolumesResult struct {
+	Removed        []string `json:"removed"`
+	ReclaimedBytes uint64   `json:"reclaimed_bytes"`
+	Skipped        []string `json:"skipped,omitempty"`
+	Errors         []string `json:"errors,omitempty"`
+}
+
 // ContainerPortResource mirrors internal/api's containerPortResource.
 type ContainerPortResource struct {
 	ContainerPort int    `json:"container_port"`

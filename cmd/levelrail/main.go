@@ -1882,6 +1882,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithContainerLister(client),
 		api.WithDockerDiskUsager(client),
 		api.WithDockerPruner(client),
+		api.WithOrphanedVolumeManager(client),
 		api.WithRegistryAuthTester(client),
 		api.WithDBPinger(db),
 		api.WithSecretRotationWarnAge(secretRotationWarnAge(logger)),

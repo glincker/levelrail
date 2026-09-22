@@ -119,6 +119,7 @@ type Router struct {
 	containers             ContainerLister        // nil is valid: GET /api/v1/system/containers returns 501, same shape as execRuntime above
 	dockerDiskUsage        DockerDiskUsager       // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
 	dockerPruner           DockerPruner           // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
+	orphanedVolumes        OrphanedVolumeManager  // nil is valid: GET/POST /system/volumes/orphaned* return 501, same shape as dockerPruner above
 	registryAuthTester     RegistryAuthTester     // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
 	execRuntime            NodeRuntimeResolver    // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
 	reconcileNudger        ReconcileNudger        // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above

@@ -66,7 +66,7 @@ stub, the substance lives in the imported component.
 
 - Account
 - Security (2FA, TOTP)
-- General (system status, Docker cleanup, certificates, master key rotation)
+- General (system status, Docker cleanup, orphaned volume cleanup, certificates, master key rotation)
 - Tokens
 - CLI access
 - Users
@@ -88,12 +88,12 @@ stub, the substance lives in the imported component.
 
 ## API resource groups (`internal/api/routes.go`, `routes_platform.go`)
 
-298 registered routes total (see [api-reference.md](api-reference.md) for
+300 registered routes total (see [api-reference.md](api-reference.md) for
 the exact method/path/ability of every one), grouped by resource:
 
 | Resource | Routes | Representative paths |
 | --- | --- | --- |
-| System (status/doctor/containers/prune/master-key/firewall/onboarding/updates) | 12 | `GET /system/status`, `POST /system/prune`, `POST /system/master-key/rotate` |
+| System (status/doctor/containers/prune/orphaned-volumes/master-key/firewall/onboarding/updates) | 14 | `GET /system/status`, `POST /system/prune`, `GET /system/volumes/orphaned`, `POST /system/master-key/rotate` |
 | Auth/2FA/users/roles/IAM/device-auth/OAuth | 33 | `/auth/login`, `/auth/2fa/*`, `/iam/policies*`, `/auth/device/*` |
 | Apps CRUD/lifecycle/deploy | 31 | `/apps`, `/apps/{name}/deploys`, `/restart`, `/exec`, `/deploy-spec`, `/hook-runs` |
 | Secrets / git-source / webhooks / previews | 12 | `/apps/{name}/secrets*`, `/webhooks/github/{name}`, `/previews*` |
@@ -116,7 +116,7 @@ the exact method/path/ability of every one), grouped by resource:
 
 All command groups available:
 
-`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `pitr`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `gitea-app`, `templates`, `static-sites`, `tags`, `shared-env`.
+`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `pitr`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`, `system-prune`, `volumes-orphaned`, `volumes-orphaned-cleanup`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `gitea-app`, `templates`, `static-sites`, `tags`, `shared-env`.
 
 ### Key command groups
 
@@ -197,6 +197,6 @@ instead of leaving it listed as both done and gapped.
 
 ## See also
 
-- [API reference](api-reference.md) - Detailed method/path/ability for all 298 routes
+- [API reference](api-reference.md) - Detailed method/path/ability for all 300 routes
 - [Roadmap](roadmap.md) - Current status and what's in progress
 - [Getting started](getting-started.md) - Your first deploy walkthrough
