@@ -231,6 +231,9 @@ type (
 
 	systemPruneResult = apiclient.SystemPruneResult
 
+	orphanedVolumeResource       = apiclient.OrphanedVolumeResource
+	cleanupOrphanedVolumesResult = apiclient.CleanupOrphanedVolumesResult
+
 	oauthProviderSettingsResource      = apiclient.OAuthProviderSettingsResource
 	updateOAuthProviderSettingsRequest = apiclient.UpdateOAuthProviderSettingsRequest
 	emailSettingsResource              = apiclient.EmailSettingsResource

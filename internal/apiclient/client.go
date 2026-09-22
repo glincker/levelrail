@@ -2381,6 +2381,25 @@ func (c *Client) PruneSystem(ctx context.Context) (SystemPruneResult, error) {
 	return out, err
 }
 
+// ListOrphanedVolumes calls GET /api/v1/system/volumes/orphaned: every
+// named Docker volume this instance created that current desired state
+// no longer references.
+func (c *Client) ListOrphanedVolumes(ctx context.Context) ([]OrphanedVolumeResource, error) {
+	var out []OrphanedVolumeResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/system/volumes/orphaned", nil, &out)
+	return out, err
+}
+
+// CleanupOrphanedVolumes calls POST
+// /api/v1/system/volumes/orphaned/cleanup: removes exactly the named
+// volumes, after the control plane re-confirms each one is still
+// genuinely orphaned.
+func (c *Client) CleanupOrphanedVolumes(ctx context.Context, names []string) (CleanupOrphanedVolumesResult, error) {
+	var out CleanupOrphanedVolumesResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/system/volumes/orphaned/cleanup", CleanupOrphanedVolumesRequest{Names: names}, &out)
+	return out, err
+}
+
 // GetUpdates calls GET /api/v1/updates: the running control plane
 // version against GitHub's latest published release.
 func (c *Client) GetUpdates(ctx context.Context) (UpdatesResource, error) {
