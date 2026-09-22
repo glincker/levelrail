@@ -16,7 +16,7 @@ import { useMemo } from 'react'
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { MetricSeries } from '../types/metrics'
 
-export type ChartUnit = 'percent' | 'bytes'
+export type ChartUnit = 'percent' | 'bytes' | 'count' | 'seconds'
 
 export interface ChartRow {
   t: number
@@ -58,8 +58,44 @@ export function formatByteValue(value: number): string {
   return `${sign}${v.toFixed(decimals)} ${units[unitIndex]}`
 }
 
+// formatDurationValue renders a seconds figure the way an operator
+// scanning a build-duration chart actually reads it: whole seconds
+// under a minute (build times under 60s are common and a decimal
+// second is noise), minutes+seconds up to an hour, and hours+minutes
+// beyond that. Never negative in practice (a real build duration), but
+// falls back to a plain second figure rather than crashing if it ever
+// is.
+export function formatDurationValue(value: number): string {
+  if (!Number.isFinite(value)) {
+    return '-'
+  }
+  const totalSeconds = Math.round(Math.abs(value))
+  const sign = value < 0 ? '-' : ''
+  if (totalSeconds < 60) {
+    return `${sign}${totalSeconds}s`
+  }
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  if (hours > 0) {
+    return `${sign}${hours}h ${minutes}m`
+  }
+  return `${sign}${minutes}m ${seconds}s`
+}
+
 export function formatMetricValue(unit: ChartUnit, value: number): string {
-  return unit === 'percent' ? `${value.toFixed(1)}%` : formatByteValue(value)
+  switch (unit) {
+    case 'percent':
+      return `${value.toFixed(1)}%`
+    case 'bytes':
+      return formatByteValue(value)
+    case 'seconds':
+      return formatDurationValue(value)
+    case 'count':
+      return Number.isFinite(value) ? value.toFixed(0) : '-'
+    default:
+      return String(value)
+  }
 }
 
 export function formatAxisTick(ms: number, spanMs: number): string {
@@ -104,7 +140,10 @@ export function mergeMetricSeries(
 // chart's title as a "current reading" the way Vercel/Grafana
 // small-multiple panels pair a stat with a sparkline rather than making
 // the reader trace the line to the right edge to find "now".
-export function latestReading(rows: ChartRow[], unit: ChartUnit): string | null {
+export function latestReading(
+  rows: ChartRow[],
+  unit: ChartUnit,
+): string | null {
   for (let i = rows.length - 1; i >= 0; i -= 1) {
     const value = rows[i]?.primary
     if (value !== undefined) {
@@ -159,7 +198,8 @@ export function useMergedChartQuery(
 ): MergedChartQuery {
   const isLoading =
     primaryQuery.isLoading || (hasSecondary && secondaryQuery.isLoading)
-  const error = primaryQuery.error ?? (hasSecondary ? secondaryQuery.error : null)
+  const error =
+    primaryQuery.error ?? (hasSecondary ? secondaryQuery.error : null)
 
   const rows = useMemo(
     () =>

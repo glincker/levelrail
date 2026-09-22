@@ -13,6 +13,8 @@ export const METRIC_NAME_LABEL: Record<MetricName, string> = {
   network_tx_bytes: 'Network sent',
   disk_read_bytes: 'Disk read',
   disk_write_bytes: 'Disk write',
+  container_restart_count: 'Container restarts',
+  build_duration_seconds: 'Build duration',
 }
 
 export const METRIC_NAME_OPTIONS: MetricName[] = [
@@ -23,4 +25,6 @@ export const METRIC_NAME_OPTIONS: MetricName[] = [
   'network_tx_bytes',
   'disk_read_bytes',
   'disk_write_bytes',
+  'container_restart_count',
+  'build_duration_seconds',
 ]

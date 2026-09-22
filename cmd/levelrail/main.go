@@ -700,8 +700,12 @@ func run(logger *slog.Logger) error {
 	// crashloop rules; Engine evaluates every enabled rule
 	// (threshold and crashloop alike) on its own tick, querying
 	// telemetryDB through the same kind of federator rootHandler already
-	// builds for the HTTP query routes.
-	restartTracker := alerting.NewRestartTracker()
+	// builds for the HTTP query routes. WithRecorder(telemetryDB, ...)
+	// also persists every restart it observes as a real
+	// container_restart_count metric sample, so the same restarts
+	// crashloop rules already act on show up on the per-app metrics
+	// dashboard too, not just in this in-memory tracker.
+	restartTracker := alerting.NewRestartTracker().WithRecorder(telemetryDB, logger)
 	go func() {
 		if err := restartTracker.Run(ctx, client, db, restartTrackerResyncInterval, logger); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting restart tracker stopped", slog.String("error", err.Error()))
