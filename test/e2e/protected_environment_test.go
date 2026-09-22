@@ -1,20 +1,27 @@
 // TestProtectedEnvironment_Live_DeployBlockedThenAllowed is this
-// package's live proof for the confirm: true gate internal/api's
-// TestHandleTriggerDeploy_ProtectedEnvironment (deploys_test.go) already
-// covers at the handler level: that test asserts a 409 and an unchanged
-// store row using httptest.NewRecorder against the handler directly.
-// What it cannot show is the thing that actually matters operationally:
-// whether the block genuinely stops a container from changing, or only
-// stops a JSON field from changing while some other path still mutates
-// the running deployment. This test drives the same gate over a real
-// TCP connection, a real cookie-authenticated session, and a real
-// application.Controller reconciling real Docker containers, so an
-// unconfirmed request is proven to leave the exact running container
-// untouched, and a confirmed one is proven to actually cut over.
+// package's live proof for the deploy-approval gate internal/api's
+// TestHandleTriggerDeploy_ProtectedEnvironment (deploys_test.go) and
+// TestHandleApproveDeployApproval/TestHandleApproveDeployApproval_SameActorForbidden
+// (deploy_approvals_test.go) already cover at the handler level: those
+// tests assert status codes and store rows using httptest.NewRecorder
+// against handlers directly. What they cannot show is the thing that
+// actually matters operationally: whether the gate genuinely stops a
+// container from changing until a real, distinct second user approves
+// it, or only stops a JSON field from changing while some other path
+// still mutates the running deployment. This test drives the whole
+// two-person approval gate (deploy_approvals.go) over a real TCP
+// connection, two real cookie-authenticated sessions (a requester and a
+// separate, distinct approver), and a real application.Controller
+// reconciling real Docker containers: an unconfirmed request, a
+// confirmed-but-not-yet-approved request, and a same-actor approval
+// attempt all leave the running container untouched, and only a
+// different, sufficiently privileged user's approval actually cuts it
+// over.
 package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/cookiejar"
 	"strings"
@@ -22,6 +29,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/image"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
@@ -34,13 +42,29 @@ import (
 const (
 	e2eProtectedEnvAdminUsername = "e2e-protected-env-admin"
 	e2eProtectedEnvAdminPassword = "e2e-protected-env-correct-horse" //nolint:gosec // test fixture credential, not a real secret
+
+	// e2eProtectedEnvApproverEmail/Password identify a genuinely
+	// distinct second actor: a real, separately-created user account
+	// holding only AbilityDeploy (not root), proving the approval gate
+	// works for the least-privileged account that can actually approve
+	// anything, not just for a root admin approving itself under a
+	// different label.
+	e2eProtectedEnvApproverEmail    = "e2e-protected-env-approver@example.com"
+	e2eProtectedEnvApproverPassword = "e2e-protected-env-approver-horse" //nolint:gosec // test fixture credential, not a real secret
+
+	// e2eProtectedEnvServiceName is this test's single app name,
+	// hoisted to package scope (not a local const inside the test func)
+	// so assertRunningWithImage below can reference it directly instead
+	// of taking it as a parameter every one of its four call sites in
+	// this file would otherwise pass the identical value for.
+	e2eProtectedEnvServiceName = "levelrail-test-e2e-protected-env"
 )
 
 func TestProtectedEnvironment_Live_DeployBlockedThenAllowed(t *testing.T) {
 	env := newLiveBuildEnv(t)
 	dockerCli, buildClient, runtime := env.DockerCli, env.BuildClient, env.Runtime
 
-	const serviceName = "levelrail-test-e2e-protected-env"
+	const serviceName = e2eProtectedEnvServiceName
 	repo := "levelrail/test-e2e-protected-env"
 	tagA := repo + ":e2eprotectedenva"
 	tagB := repo + ":e2eprotectedenvb"
@@ -105,7 +129,7 @@ func TestProtectedEnvironment_Live_DeployBlockedThenAllowed(t *testing.T) {
 	if result, err := appCtrl.Reconcile(ctx); err != nil {
 		t.Fatalf("initial Reconcile() error = %v, result = %+v", err, result)
 	}
-	assertRunningWithImage(ctx, t, runtime, serviceName, nameA, resA.Tag)
+	assertRunningWithImage(ctx, t, runtime, nameA, resA.Tag)
 
 	// Step 2: a real *api.Router, a real HTTP server, and a real
 	// cookie-authenticated session, the same construction
@@ -143,15 +167,60 @@ func TestProtectedEnvironment_Live_DeployBlockedThenAllowed(t *testing.T) {
 	if result, err := appCtrl.Reconcile(ctx); err != nil {
 		t.Fatalf("post-block Reconcile() error = %v, result = %+v", err, result)
 	}
-	assertRunningWithImage(ctx, t, runtime, serviceName, nameA, resA.Tag)
+	assertRunningWithImage(ctx, t, runtime, nameA, resA.Tag)
 	assertContainerAbsent(ctx, t, runtime, nameB, "B")
 
-	// Step 4: the confirmed deploy. A real 202, a real store update, and
-	// a real reconcile that genuinely swaps the running container to
-	// image B.
+	// Step 4: the confirmed deploy. A real 202, but the deploy-approval
+	// gate (deploy_approvals.go) means this does not apply yet: the
+	// response carries pending_approval, not app, and desired state (and
+	// the running container) must stay on image A until a distinct
+	// second user approves it.
 	status, body = postJSON(t, client, ts.URL+"/api/v1/apps/"+serviceName+"/deploys", `{"image":"`+resB.Tag+`","confirm":true}`)
 	if status != http.StatusAccepted {
 		t.Fatalf("confirmed deploy: status = %d, want %d, body = %s", status, http.StatusAccepted, body)
+	}
+	approvalID := decodePendingApprovalID(t, body)
+
+	svc, err = svcStore.GetDesiredService(ctx, serviceName)
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if svc.Image != resA.Tag {
+		t.Fatalf("desired state Image = %q after a confirmed deploy accepted as a pending approval, want it to stay unchanged at %q until approved", svc.Image, resA.Tag)
+	}
+
+	if result, err := appCtrl.Reconcile(ctx); err != nil {
+		t.Fatalf("post-confirm-pending Reconcile() error = %v, result = %+v", err, result)
+	}
+	assertRunningWithImage(ctx, t, runtime, nameA, resA.Tag)
+	assertContainerAbsent(ctx, t, runtime, nameB, "B")
+
+	// Step 5: the same actor that requested the deploy tries to approve
+	// its own request. A real 403, and the running container still
+	// unchanged.
+	status, body = postJSON(t, client, ts.URL+"/api/v1/deploy-approvals/"+approvalID+"/approve", "")
+	if status != http.StatusForbidden {
+		t.Fatalf("self-approve: status = %d, want %d, body = %s", status, http.StatusForbidden, body)
+	}
+
+	svc, err = svcStore.GetDesiredService(ctx, serviceName)
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if svc.Image != resA.Tag {
+		t.Fatalf("desired state Image = %q after a rejected self-approval, want unchanged %q", svc.Image, resA.Tag)
+	}
+
+	// Step 6: a genuinely distinct second user, holding only
+	// AbilityDeploy, approves it. A real 200, a real store update, and a
+	// real reconcile that genuinely swaps the running container to
+	// image B.
+	approver := createE2EUser(t, svcStore, e2eProtectedEnvApproverEmail, e2eProtectedEnvApproverPassword, []string{api.AbilityDeploy})
+	approverClient := loginE2EClient(t, ts.URL, approver.Email, e2eProtectedEnvApproverPassword)
+
+	status, body = postJSON(t, approverClient, ts.URL+"/api/v1/deploy-approvals/"+approvalID+"/approve", "")
+	if status != http.StatusOK {
+		t.Fatalf("approve: status = %d, want %d, body = %s", status, http.StatusOK, body)
 	}
 
 	svc, err = svcStore.GetDesiredService(ctx, serviceName)
@@ -159,28 +228,77 @@ func TestProtectedEnvironment_Live_DeployBlockedThenAllowed(t *testing.T) {
 		t.Fatalf("GetDesiredService() error = %v", err)
 	}
 	if svc.Image != resB.Tag {
-		t.Fatalf("desired state Image = %q after a confirmed deploy, want %q", svc.Image, resB.Tag)
+		t.Fatalf("desired state Image = %q after approval, want %q", svc.Image, resB.Tag)
 	}
 
 	if result, err := appCtrl.Reconcile(ctx); err != nil {
-		t.Fatalf("post-confirm Reconcile() error = %v, result = %+v", err, result)
+		t.Fatalf("post-approve Reconcile() error = %v, result = %+v", err, result)
 	}
-	assertRunningWithImage(ctx, t, runtime, serviceName, nameB, resB.Tag)
+	assertRunningWithImage(ctx, t, runtime, nameB, resB.Tag)
 	assertContainerAbsent(ctx, t, runtime, nameA, "A")
 }
 
-// assertRunningWithImage verifies, directly against docker.Runtime, that
-// exactly one container exists for serviceName, is running, and matches
-// both wantName and wantImage: the same independent-of-Reconcile's-own-
-// return-value rigor this package's other live tests apply throughout.
-func assertRunningWithImage(ctx context.Context, t *testing.T, runtime docker.Runtime, serviceName, wantName, wantImage string) {
+// decodePendingApprovalID extracts pending_approval.id from a
+// deployTriggerResult JSON body (internal/api/deploys.go): the approval
+// ID this test needs to drive the approve/reject routes next, failing
+// loudly if the confirmed deploy came back applied instead of pending
+// (the exact regression this test guards against).
+func decodePendingApprovalID(t *testing.T, body string) string {
 	t.Helper()
-	containers, err := runtime.ListByPrefix(ctx, serviceName+"-")
+	var result struct {
+		PendingApproval *struct {
+			ID string `json:"id"`
+		} `json:"pending_approval"`
+	}
+	if err := json.Unmarshal([]byte(body), &result); err != nil {
+		t.Fatalf("decode confirmed-deploy response: %v; body = %s", err, body)
+	}
+	if result.PendingApproval == nil || result.PendingApproval.ID == "" {
+		t.Fatalf("confirmed deploy into a protected environment did not come back as a pending approval; body = %s", body)
+	}
+	return result.PendingApproval.ID
+}
+
+// createE2EUser inserts a real, individually-identified user account
+// directly via the store (the same shape api.BootstrapAdmin uses to hash
+// a password), for a genuinely distinct second actor this package's live
+// tests need to log in as over a real HTTP session, not the bootstrap
+// admin under a different label.
+func createE2EUser(t *testing.T, svcStore *store.DB, email, password string, abilities []string) store.User {
+	t.Helper()
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatalf("bcrypt.GenerateFromPassword() error = %v", err)
+	}
+	hashStr := string(hash)
+	u := store.User{
+		ID:           "user_" + email,
+		Email:        email,
+		DisplayName:  email,
+		PasswordHash: &hashStr,
+		Abilities:    abilities,
+		CreatedAt:    time.Now().UTC(),
+	}
+	if err := svcStore.CreateUser(context.Background(), u); err != nil {
+		t.Fatalf("CreateUser(%q) error = %v", email, err)
+	}
+	return u
+}
+
+// assertRunningWithImage verifies, directly against docker.Runtime, that
+// exactly one container exists for e2eProtectedEnvServiceName, is
+// running, and matches both wantName and wantImage: the same
+// independent-of-Reconcile's-own-return-value rigor this package's other
+// live tests apply throughout. Only ever called with that one service
+// name in this file, so it's not a parameter.
+func assertRunningWithImage(ctx context.Context, t *testing.T, runtime docker.Runtime, wantName, wantImage string) {
+	t.Helper()
+	containers, err := runtime.ListByPrefix(ctx, e2eProtectedEnvServiceName+"-")
 	if err != nil {
 		t.Fatalf("ListByPrefix() error = %v", err)
 	}
 	if len(containers) != 1 {
-		t.Fatalf("expected exactly 1 container for %q, got %d: %+v", serviceName, len(containers), containers)
+		t.Fatalf("expected exactly 1 container for %q, got %d: %+v", e2eProtectedEnvServiceName, len(containers), containers)
 	}
 	if !containers[0].Running {
 		t.Fatalf("container %+v is not running", containers[0])
