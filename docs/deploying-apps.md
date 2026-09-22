@@ -333,17 +333,184 @@ Both deploy and promote respect protected environments. If the app (or promotion
 4. Rejecting (`POST .../reject`, optional `{"reason": "..."}`) leaves desired state untouched. A rejected or expired request never proceeds.
 5. A pending approval that's neither approved nor rejected expires after a TTL (24 hours by default, `APP_DEPLOY_APPROVAL_TTL` env var) and can no longer be decided once expired.
 
-Who can approve is governed by the platform's existing ability model, not a separate permission concept: holding `deploy` (directly, or via the curated `operator`/`admin` roles) is what lets a user approve, the same ability tier that lets them trigger an unprotected deploy in the first place. There is no dedicated "approver" role; any sufficiently privileged user other than the requester can decide it.
+**RBAC model:** Who can approve is governed by the platform's existing ability model, not a separate permission concept. Holding `deploy` (directly, or via the curated `operator`/`admin` roles) is what lets a user approve, the same ability tier that lets them trigger an unprotected deploy in the first place. There is no dedicated "approver" role; any sufficiently privileged user other than the requester can decide it.
 
-Endpoints:
-- `GET /api/v1/deploy-approvals?status=pending&service=<name>`: list (status defaults to `pending`; `all` for every status)
-- `GET /api/v1/deploy-approvals/{id}`: one approval
-- `POST /api/v1/deploy-approvals/{id}/approve`: approve and apply
-- `POST /api/v1/deploy-approvals/{id}/reject`: reject, optional `reason`
+**Same-actor restriction:** The same user or API token that requested a deploy cannot approve or reject their own request. The system blocks this with a 403 error, comparing both the principal type (user vs token) and ID. This prevents unilateral control over production changes and ensures a genuine handoff between different principals. When using service accounts or CI/CD tokens, approval must come from a different authenticated principal (either a different token or a human user).
 
-CLI: `levelrail-cli deploy-approvals list|get|approve|reject`.
+**Expiry and TTL:** Pending approvals have a 24-hour default expiry (configurable via `APP_DEPLOY_APPROVAL_TTL` environment variable). After expiry, the approval moves to `expired` status and can no longer be decided. The system lazily expires stale approvals on read (so an expired request never actually proceeds through reconcile) and runs a background sweep to mark expired rows for UI visibility.
 
-Dashboard: a pending request shows as a banner directly on the app's own detail page (with inline Approve/Reject), and the full cross-app queue lives at `/approvals` in the main sidebar, badged with the current pending count.
+**Endpoints:**
+- `GET /api/v1/deploy-approvals?status=pending&service=<name>`: list pending approvals (status defaults to `pending`; pass `status=all` to see approved, rejected, and expired requests)
+- `GET /api/v1/deploy-approvals/{id}`: retrieve one approval's full details
+- `POST /api/v1/deploy-approvals/{id}/approve`: approve and apply the deployment
+- `POST /api/v1/deploy-approvals/{id}/reject`: reject, with optional `{"reason": "..."}` body
+
+**CLI:**
+```bash
+levelrail-cli deploy-approvals list [--status pending|all|approved|rejected|expired] [--service NAME]
+levelrail-cli deploy-approvals get <id>
+levelrail-cli deploy-approvals approve <id>
+levelrail-cli deploy-approvals reject <id> [--reason "explain why"]
+```
+
+**Dashboard:** A pending request shows as a banner directly on the app's own detail page (with inline Approve/Reject), and the full cross-app queue lives at `/approvals` in the main sidebar, badged with the current pending count.
+
+## Environment cloning
+
+Clone an entire environment with all its apps, config, and settings into a new environment in the same project. This is useful for creating staging or preview environments, duplicating a production environment for testing, or onboarding new tenants with a pre-configured setup.
+
+### What gets copied
+
+Cloning is config-focused, not data-focused. For each app tagged with the source environment, the clone creates a new app with:
+- Image and port configuration
+- All environment variables (from both the app and the shared environment level)
+- Resource limits (CPU, memory)
+- Health checks (readiness and liveness probes)
+- Volumes and bind mounts
+- Labels, command/entrypoint, pull policy
+- Scheduled tasks (each gets a fresh run history)
+- Registry credentials, auto-rollback, exec-enabled, and log drain settings
+- Egress allowlist policy
+- Hooks (pre-start, post-start, pre-stop, post-stop)
+- Service replicas and deployment strategy
+
+### What is regenerated
+
+- **App names:** Since app names are globally unique, cloned apps get an auto-suggested name combining the source app name with the new environment name. Customize with `--app-rename SOURCE=NEWNAME`.
+- **Docker volumes:** Volume names are regenerated to avoid pointing the clone at the source's data. Volumes start empty; no data is copied.
+
+### What is dropped
+
+These are deliberately not carried over:
+
+- **Domains:** A domain can only belong to one service. The clone starts with no domains unless you explicitly assign new ones with `--domain SOURCE=domain1,domain2`.
+- **Host port pins:** Pinned host ports create collision risk across environments. The clone uses dynamic port assignment.
+- **Database attachments:** Cloning copies services, not managed databases. Attach new or existing databases after the clone.
+- **Git sources:** The clone deploys the source app's current image. It doesn't inherit a git build source; you must manually connect a repo if needed.
+- **Node placement:** The clone uses the default placement logic. Reassign to specific nodes after cloning if needed.
+
+### Secret values (opt-in)
+
+All secret-backed env vars are declared on the clone (same keys as the source) but left with no value, the same as a brand-new app with a required secret. This is the safe default: secrets are sensitive and crossing a tier boundary unprompted (for example, dev to staging to production) should be deliberate.
+
+To also copy real secret values:
+```bash
+levelrail-cli apps environments clone <id> --new-name NAME --copy-secret-values
+```
+
+**Preview first:** Always preview before cloning:
+
+```bash
+levelrail-cli apps environments clone-preview <id> --new-name "staging"
+```
+
+This shows:
+- Which apps will be cloned and their suggested new names
+- What fields will be copied, dropped, or left with no value
+- A breakdown of env vars and secrets
+- The auto-suggested app names (override these with `--app-rename` if needed)
+
+### Common workflows
+
+**Clone a production environment for testing:**
+
+```bash
+# Preview what would be cloned
+levelrail-cli apps environments clone-preview prod-env-id --new-name "test-staging"
+
+# Create the clone (no domains, no secrets)
+levelrail-cli apps environments clone prod-env-id --new-name "test-staging"
+
+# Assign new domains to cloned apps
+levelrail-cli apps domains assign cloned-app-1 staging-app-1.example.com
+levelrail-cli apps domains assign cloned-app-2 staging-app-2.example.com
+
+# Set secrets for the cloned environment
+levelrail-cli apps secrets set cloned-app-1 DATABASE_PASSWORD --value "..."
+```
+
+**Clone with custom app names and domains:**
+
+```bash
+levelrail-cli apps environments clone prod-env-id \
+  --new-name "preview-pr-123" \
+  --app-rename web=web-pr-123 \
+  --app-rename api=api-pr-123 \
+  --domain web=web-pr-123.example.com \
+  --domain api=api-pr-123.example.com \
+  --copy-secret-values
+```
+
+**Clone and immediately apply new secrets:**
+
+```bash
+levelrail-cli apps environments clone prod-env-id --new-name "staging"
+
+# Then update secrets for each cloned app
+for app in cloned-web cloned-api cloned-db; do
+  levelrail-cli apps secrets set "$app" NEW_SECRET --value "..."
+done
+```
+
+### API endpoints
+
+- `GET /api/v1/environments/{id}/clone/preview?new_environment_name=<name>`: preview without applying
+- `POST /api/v1/environments/{id}/clone`: perform the clone
+
+Request body for POST:
+```json
+{
+  "new_environment_name": "staging",
+  "copy_secret_values": false,
+  "apps": [
+    { "source_app": "web", "new_name": "web-staging", "domains": ["web-staging.example.com"] },
+    { "source_app": "api", "new_name": "api-staging", "domains": ["api-staging.example.com"] }
+  ]
+}
+```
+
+The `apps` array is optional; omit it to use auto-suggested names and no domains for every app. Only override the apps you need to customize.
+
+### Workflow after cloning
+
+After a successful clone:
+1. Cloned apps start deploying immediately (via the normal reconcile path)
+2. Check deployment status: `levelrail-cli apps status <cloned-app>`
+3. Assign domains: `levelrail-cli apps domains assign <cloned-app> <domain>`
+4. Set or import secrets: `levelrail-cli apps secrets set <cloned-app> KEY --value VALUE`
+5. Attach databases if needed: `levelrail-cli apps database set <cloned-app> --database-name <db-name>`
+6. Adjust resources or other config if the clone's purpose differs from the source
+
+::: details Troubleshooting
+
+**Q: Clone failed partway through, some apps created but not all**
+A: The environment was created successfully; check which apps failed to create via `levelrail-cli apps list`. Either finish cloning manually or delete the partial environment and retry: `levelrail-cli apps environments delete <env-id>`.
+
+**Q: New domain assignments fail with "domain already taken"**
+A: The domain is already assigned to another app. Assign a different domain, or unassign the existing one first.
+
+**Q: Secrets show as "no value set" but I passed --copy-secret-values**
+A: Secrets are only copied if they had values in the source app. If a required secret wasn't set in the source, the clone has no value to copy. Set it manually on the clone.
+
+**Q: Cloned app is stuck in "pending" status**
+A: Check `levelrail-cli apps deploys <cloned-app>` for the deployment error. Common issues: resource limits too tight for the app, image pull failed, or readiness probe times out. Adjust and restart.
+
+:::
+
+### CLI commands
+
+```bash
+levelrail-cli apps environments clone-preview <id> --new-name NAME [flags]
+levelrail-cli apps environments clone <id> --new-name NAME [--app-rename SOURCE=NEWNAME ...] [--domain SOURCE=D1,D2 ...] [--copy-secret-values] [flags]
+```
+
+Additional flags:
+- `--new-name string` (required): name for the new environment
+- `--app-rename SOURCE=NEWNAME`: override an app's cloned name (repeatable)
+- `--domain SOURCE=D1,D2,...`: assign domains to a cloned app (repeatable)
+- `--copy-secret-values`: also copy real secret values; without this, all secrets are declared but left unset
+- `--token`, `--api-url`, `--profile`: standard authentication flags
+- `--json`, `--output`, `--query`: output formatting
 
 ### Dashboard layout
 
@@ -577,6 +744,12 @@ The request dispatches from a detached background goroutine and returns `202 Acc
 | `PUT` | `/api/v1/apps/{name}/scheduled-tasks/{id}` | `write` |
 | `DELETE` | `/api/v1/apps/{name}/scheduled-tasks/{id}` | `write` |
 | `POST` | `/api/v1/apps/{name}/scheduled-tasks/{id}/run` | `deploy` |
+| `GET` | `/api/v1/deploy-approvals?status=<status>&service=<name>` | `read` |
+| `GET` | `/api/v1/deploy-approvals/{id}` | `read` |
+| `POST` | `/api/v1/deploy-approvals/{id}/approve` | `deploy` |
+| `POST` | `/api/v1/deploy-approvals/{id}/reject` | `deploy` |
+| `GET` | `/api/v1/environments/{id}/clone/preview?new_environment_name=<name>` | `read` |
+| `POST` | `/api/v1/environments/{id}/clone` | `deploy` |
 
 ## CLI
 
@@ -603,9 +776,15 @@ levelrail-cli apps scheduled-tasks get <app> <id> [flags]
 levelrail-cli apps scheduled-tasks update <app> <id> --schedule CRON [--disabled] [--concurrency-policy allow|forbid|replace] -- <command> [args...]
 levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 levelrail-cli apps scheduled-tasks run <app> <id> [flags]
+levelrail-cli deploy-approvals list [--status pending|all|approved|rejected|expired] [--service NAME] [flags]
+levelrail-cli deploy-approvals get <id> [flags]
+levelrail-cli deploy-approvals approve <id> [flags]
+levelrail-cli deploy-approvals reject <id> [--reason TEXT] [flags]
+levelrail-cli apps environments clone-preview <id> --new-name NAME [flags]
+levelrail-cli apps environments clone <id> --new-name NAME [--app-rename SOURCE=NEWNAME ...] [--domain SOURCE=D1,D2 ...] [--copy-secret-values] [flags]
 ```
 
-Run `levelrail-cli apps <subcommand> -h` for a subcommand's own flags.
+Run `levelrail-cli <subcommand> -h` for any command's own flags.
 Domains/TLS live under `apps domains` (separate doc); databases under
 `apps <db-verb>`/`databases` (separate doc); git-provider connections
 under `apps git-source` (separate doc).

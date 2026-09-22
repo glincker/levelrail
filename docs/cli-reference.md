@@ -127,6 +127,25 @@ levelrail apps deploys logs <name> <deploy-id> [flags]
 one deploy attempt's full build/log output, printed to stdout (redirect to a file to save it)
 
 ```
+levelrail deploy-approvals list [--status pending|all|approved|rejected|expired] [--service NAME] [flags]
+```
+list deploy approvals (status defaults to pending)
+
+```
+levelrail deploy-approvals get <id> [flags]
+```
+
+```
+levelrail deploy-approvals approve <id> [flags]
+```
+approve a pending deploy; the gated deploy/promote runs now
+
+```
+levelrail deploy-approvals reject <id> [--reason TEXT] [flags]
+```
+reject a pending deploy; the app's desired state is left untouched
+
+```
 levelrail apps environments clone <id> --new-name NAME [--app-rename SOURCE=NEWNAME ...] [--domain SOURCE=D1,D2 ...] [--copy-secret-values] [flags]
 ```
 clone a whole environment's app set plus config into a new environment
