@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 // SetEnvironmentEnvVars full-replaces environmentID's shared env vars
@@ -138,7 +139,7 @@ func (db *DB) ListEnvironmentSecretEnvKeys(ctx context.Context, environmentID st
 // ListProjectEnvVarsDetailed.
 func (db *DB) ListEnvironmentEnvVarsDetailed(ctx context.Context, environmentID string) ([]SharedEnvVar, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT key, value, is_secret FROM environment_env_vars WHERE environment_id = ? ORDER BY key
+		SELECT key, value, is_secret, updated_at FROM environment_env_vars WHERE environment_id = ? ORDER BY key
 	`, environmentID)
 	if err != nil {
 		return nil, fmt.Errorf("store: list detailed environment env vars for %q: %w", environmentID, err)
@@ -151,10 +152,16 @@ func (db *DB) ListEnvironmentEnvVarsDetailed(ctx context.Context, environmentID 
 	for rows.Next() {
 		var v SharedEnvVar
 		var isSecret int
-		if err := rows.Scan(&v.Key, &v.Value, &isSecret); err != nil {
+		var updatedAtRaw string
+		if err := rows.Scan(&v.Key, &v.Value, &isSecret, &updatedAtRaw); err != nil {
 			return nil, fmt.Errorf("store: scan detailed environment env var for %q: %w", environmentID, err)
 		}
 		v.Secret = isSecret != 0
+		updatedAt, err := time.Parse(time.RFC3339Nano, updatedAtRaw)
+		if err != nil {
+			return nil, fmt.Errorf("store: parse environment env var updated_at for %q/%q: %w", environmentID, v.Key, err)
+		}
+		v.UpdatedAt = updatedAt
 		out = append(out, v)
 	}
 	if err := rows.Err(); err != nil {

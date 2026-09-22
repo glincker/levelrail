@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -83,6 +84,13 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 type secretKeyResource struct {
 	Key    string `json:"key"`
 	Locked bool   `json:"locked"`
+	// UpdatedAt is when this key's value was last set or rotated
+	// (RFC3339), and Stale reports whether that's older than the
+	// effective secret rotation warning threshold
+	// (Router.effectiveSecretRotationWarnAge, secret_rotation.go),
+	// letting a UI show a secret's age and flag it as due for rotation.
+	UpdatedAt string `json:"updated_at"`
+	Stale     bool   `json:"stale"`
 }
 
 // handleListSecrets handles GET /api/v1/apps/{name}/secrets: every known
@@ -119,7 +127,12 @@ func (rt *Router) handleListSecrets(w http.ResponseWriter, r *http.Request) {
 
 	out := make([]secretKeyResource, len(keys))
 	for i, k := range keys {
-		out[i] = secretKeyResource{Key: k.Key, Locked: k.Locked}
+		out[i] = secretKeyResource{
+			Key:       k.Key,
+			Locked:    k.Locked,
+			UpdatedAt: k.UpdatedAt.UTC().Format(time.RFC3339),
+			Stale:     rt.secretIsStale(k.UpdatedAt),
+		}
 	}
 	writeJSON(w, http.StatusOK, out)
 }

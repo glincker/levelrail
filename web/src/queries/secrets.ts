@@ -31,6 +31,19 @@ export const secretKeys = {
 export interface SecretKeyState {
   key: string
   locked: boolean
+  // updatedAt (RFC3339) is when this key's value was last set or
+  // rotated; stale reports whether that's older than the control
+  // plane's configured secret rotation warning threshold
+  // (APP_SECRET_ROTATION_WARN_DAYS, default 90 days).
+  updatedAt: string
+  stale: boolean
+}
+
+interface SecretKeyResource {
+  key: string
+  locked: boolean
+  updated_at: string
+  stale: boolean
 }
 
 // Fetches every known secret key for an app, with its locked state,
@@ -38,9 +51,7 @@ export interface SecretKeyState {
 export async function fetchSecretKeys(
   appName: string,
 ): Promise<SecretKeyState[]> {
-  const res = await fetch(
-    `/api/v1/apps/${encodeURIComponent(appName)}/secrets`,
-  )
+  const res = await fetch(`/api/v1/apps/${encodeURIComponent(appName)}/secrets`)
   if (res.status === 501) {
     throw new SecretsNotConfiguredError()
   }
@@ -50,7 +61,13 @@ export async function fetchSecretKeys(
       await readErrorMessage(res, `list secret keys failed: ${res.status}`),
     )
   }
-  return (await res.json()) as SecretKeyState[]
+  const resources = (await res.json()) as SecretKeyResource[]
+  return resources.map((r) => ({
+    key: r.key,
+    locked: r.locked,
+    updatedAt: r.updated_at,
+    stale: r.stale,
+  }))
 }
 
 export function useSecretKeys(appName: string) {

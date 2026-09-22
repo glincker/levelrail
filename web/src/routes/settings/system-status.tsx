@@ -64,7 +64,7 @@ const STATUS_META: Record<
 // under "Other checks" rather than being silently dropped.
 const INFRASTRUCTURE_CODES = ['docker', 'disk_space', 'data_dir_writable']
 const INFRASTRUCTURE_CODES_AFTER_PORTS = ['database']
-const SECURITY_CODES = ['firewall', 'master_key_rotation']
+const SECURITY_CODES = ['firewall', 'master_key_rotation', 'stale_secrets']
 
 // PORT_CHECK_CODE matches port_<n> for whatever ports this instance's
 // ingress is actually configured on (APP_INGRESS_HTTP_ADDR/

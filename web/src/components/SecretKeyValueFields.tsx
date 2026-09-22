@@ -1,6 +1,12 @@
 import type { FieldErrors, UseFormRegister } from 'react-hook-form'
-import { EyeIcon, EyeSlashIcon, LockIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  EyeIcon,
+  EyeSlashIcon,
+  LockIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Field,
@@ -9,6 +15,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { formatAge } from '@/lib/format'
 import type { SecretKeyValueFormValues } from '@/lib/secretKeyValueSchema'
 
 // Shown by SecretsEditor and SharedEnvSecretsCard in place of their own
@@ -36,6 +43,35 @@ export function SecretNotConfiguredCard({ title }: { title: string }) {
         </Alert>
       </CardContent>
     </Card>
+  )
+}
+
+// Shown next to a secret row by SecretsEditor and SharedEnvSecretsCard:
+// its last-set/rotated age (SecretKeyState.updatedAt /
+// SharedEnvVar.updatedAt), plus a "Needs rotation" warning pill once the
+// control plane's stale flag (SecretKeyState.stale / SharedEnvVar.stale,
+// computed server-side from APP_SECRET_ROTATION_WARN_DAYS) is set.
+// updatedAt undefined renders nothing rather than "unknown": a row this
+// component has never fetched an age for (e.g. a plain, non-secret
+// shared var) should stay silent, not imply staleness.
+export function SecretAgeBadge({
+  updatedAt,
+  stale,
+}: {
+  updatedAt: string | undefined
+  stale: boolean | undefined
+}) {
+  if (!updatedAt) return null
+  return (
+    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span>Set {formatAge(updatedAt)}</span>
+      {stale ? (
+        <Badge variant="warning">
+          <WarningIcon />
+          Needs rotation
+        </Badge>
+      ) : null}
+    </span>
   )
 }
 

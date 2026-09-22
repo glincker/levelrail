@@ -664,6 +664,26 @@ func WithAuditLogRetention(d time.Duration) Option {
 	return func(rt *Router) { rt.auditLogRetention = d }
 }
 
+// WithSecretRotationWarnAge overrides how old a secret's last-set value
+// can get before it is flagged as due for rotation (GET
+// /apps/{name}/secrets, GET .../env/all, and the doctor's stale_secrets
+// check). Without one configured (or passed as 0),
+// defaultSecretRotationWarnAge (90 days) applies. Same "no hardcoded
+// thresholds, use env vars" shape as WithAuditLogRetention: this package
+// never reads the environment directly, cmd/levelrail/main.go reads
+// APP_SECRET_ROTATION_WARN_DAYS and passes the parsed duration here.
+func WithSecretRotationWarnAge(d time.Duration) Option {
+	return func(rt *Router) { rt.secretRotationWarnAge = d }
+}
+
+// WithStaleSecretCounter enables the stale_secrets check on GET
+// /api/v1/system/doctor. Without one configured (the default), that
+// check reports unknown, the same "optional signal, absence is not an
+// error" shape WithDBPinger's own absence already has.
+func WithStaleSecretCounter(c StaleSecretCounter) Option {
+	return func(rt *Router) { rt.staleSecretCounter = c }
+}
+
 // WithResourceRecommendationLookback overrides how far back GET
 // /api/v1/apps/{name}/resource-recommendation looks for usage history
 // (handleAppResourceRecommendation). Without one configured (or passed as

@@ -105,6 +105,20 @@ export function getCheckCta(check: DoctorCheck): CheckCta | null {
       }
       return null
 
+    case 'stale_secrets':
+      if (check.status === 'warn') {
+        return {
+          message:
+            'One or more secrets (per-app or shared) have not been rotated in a while. Each app and each project/organization/environment has its own Secrets card to set a fresh value.',
+          action: (
+            <Link to="/projects" className={inlineLinkClassName}>
+              Browse projects and apps
+            </Link>
+          ),
+        }
+      }
+      return null
+
     case 'firewall':
       if (check.status === 'warn' || check.status === 'unknown') {
         return {

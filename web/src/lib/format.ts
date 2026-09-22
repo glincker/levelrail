@@ -39,6 +39,57 @@ export function formatDate(iso: string | undefined, fallback: string): string {
   return iso ? new Date(iso).toLocaleString() : fallback
 }
 
+// formatAge renders an RFC3339 timestamp as a relative "Set N days ago"
+// style string for a secret/env var's last-set time
+// (SecretKeyState.updatedAt, SharedEnvVar.updatedAt). Falls back to a
+// placeholder for an unset/unparseable timestamp, the same "absence is
+// not an error" shape formatDate's own fallback param already has.
+export function formatAge(
+  iso: string | undefined,
+  fallback = 'unknown',
+): string {
+  if (!iso) return fallback
+  const then = new Date(iso).getTime()
+  if (Number.isNaN(then)) return fallback
+
+  const diffMs = Date.now() - then
+  const diffSeconds = Math.floor(diffMs / 1000)
+  if (diffSeconds < 60) return 'just now'
+
+  const diffMinutes = Math.floor(diffSeconds / 60)
+  if (diffMinutes < 60) {
+    return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60)
+  if (diffHours < 24) {
+    return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
+  }
+
+  const diffDays = Math.floor(diffHours / 24)
+  if (diffDays < 30) {
+    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
+  }
+
+  const diffMonths = Math.floor(diffDays / 30)
+  if (diffMonths < 12) {
+    return `${diffMonths} month${diffMonths === 1 ? '' : 's'} ago`
+  }
+
+  const diffYears = Math.floor(diffDays / 365)
+  return `${diffYears} year${diffYears === 1 ? '' : 's'} ago`
+}
+
+// ageInDays converts an RFC3339 timestamp to a whole number of days
+// elapsed since, for a numeric "N days" display rather than formatAge's
+// prose. Returns null for an unset/unparseable timestamp.
+export function ageInDays(iso: string | undefined): number | null {
+  if (!iso) return null
+  const then = new Date(iso).getTime()
+  if (Number.isNaN(then)) return null
+  return Math.floor((Date.now() - then) / (1000 * 60 * 60 * 24))
+}
+
 export function formatDurationNs(nanoseconds?: number | null): string {
   if (!nanoseconds || nanoseconds <= 0) {
     return 'not set'

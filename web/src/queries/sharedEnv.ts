@@ -17,6 +17,20 @@ export interface SharedEnvVar {
   key: string
   value: string
   secret: boolean
+  // updatedAt/stale are only populated when secret is true: a plain
+  // shared var's own updated_at reflects the last full-replace PUT, not
+  // a rotation-relevant event, matching the backend's own
+  // sharedEnvVarResource shape (internal/api/shared_env_secrets.go).
+  updatedAt?: string
+  stale?: boolean
+}
+
+interface SharedEnvVarResource {
+  key: string
+  value: string
+  secret: boolean
+  updated_at?: string
+  stale?: boolean
 }
 
 function scopePath(scope: SharedEnvScope, id: string): string {
@@ -48,7 +62,14 @@ export async function fetchSharedEnvAll(
       await readErrorMessage(res, `list shared env vars failed: ${res.status}`),
     )
   }
-  return (await res.json()) as SharedEnvVar[]
+  const resources = (await res.json()) as SharedEnvVarResource[]
+  return resources.map((r) => ({
+    key: r.key,
+    value: r.value,
+    secret: r.secret,
+    updatedAt: r.updated_at,
+    stale: r.stale,
+  }))
 }
 
 export function useSharedEnvAll(scope: SharedEnvScope, id: string) {

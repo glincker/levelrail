@@ -48,10 +48,10 @@ func TestHandleSystemDoctor_NothingConfigured(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got.Checks) != 8 {
-		t.Fatalf("len(Checks) = %d, want 8", len(got.Checks))
+	if len(got.Checks) != 9 {
+		t.Fatalf("len(Checks) = %d, want 9", len(got.Checks))
 	}
-	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable", "master_key_rotation"} {
+	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable", "master_key_rotation", "stale_secrets"} {
 		if c := doctorCheckByCode(t, got.Checks, code); c.Status != doctorStatusUnknown {
 			t.Errorf("%s status = %q, want %q (nothing configured)", code, c.Status, doctorStatusUnknown)
 		}
@@ -344,5 +344,56 @@ func TestDoctorCheckMasterKeyRotation_NotConfigured(t *testing.T) {
 	c := rt.doctorCheckMasterKeyRotation(context.Background())
 	if c.Status != doctorStatusUnknown {
 		t.Errorf("status = %q, want %q (no master key configured)", c.Status, doctorStatusUnknown)
+	}
+}
+
+func TestDoctorCheckStaleSecrets_NotConfigured(t *testing.T) {
+	rt, _ := newTestRouter(t) // no WithStaleSecretCounter
+	c := rt.doctorCheckStaleSecrets(context.Background())
+	if c.Status != doctorStatusUnknown {
+		t.Errorf("status = %q, want %q (no stale secret counter configured)", c.Status, doctorStatusUnknown)
+	}
+}
+
+func TestDoctorCheckStaleSecrets_NoneStale(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithStaleSecretCounter(db))
+	if err := db.SaveServiceDEK(context.Background(), "web", []byte("dek")); err != nil {
+		t.Fatalf("SaveServiceDEK() error = %v", err)
+	}
+	if err := db.SaveSecretValue(context.Background(), "web", "API_KEY", []byte("ct")); err != nil {
+		t.Fatalf("SaveSecretValue() error = %v", err)
+	}
+
+	c := rt.doctorCheckStaleSecrets(context.Background())
+	if c.Status != doctorStatusOK {
+		t.Errorf("status = %q, want %q (secret just set, well under the default 90 day threshold)", c.Status, doctorStatusOK)
+	}
+}
+
+func TestDoctorCheckStaleSecrets_WarnsWhenOverThreshold(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db,
+		WithStaleSecretCounter(db),
+		WithSecretRotationWarnAge(24*time.Hour),
+	)
+	if err := db.SaveServiceDEK(context.Background(), "web", []byte("dek")); err != nil {
+		t.Fatalf("SaveServiceDEK() error = %v", err)
+	}
+	if err := db.SaveSecretValue(context.Background(), "web", "API_KEY", []byte("ct")); err != nil {
+		t.Fatalf("SaveSecretValue() error = %v", err)
+	}
+	if _, err := db.ExecContext(context.Background(), `
+		UPDATE service_secret_values SET updated_at = ? WHERE service_name = ? AND env_key = ?
+	`, time.Now().Add(-48*time.Hour).UTC().Format("2006-01-02T15:04:05.000Z"), "web", "API_KEY"); err != nil {
+		t.Fatalf("backdate: %v", err)
+	}
+
+	c := rt.doctorCheckStaleSecrets(context.Background())
+	if c.Status != doctorStatusWarn {
+		t.Errorf("status = %q, want %q (48h old, past the 24h configured threshold)", c.Status, doctorStatusWarn)
+	}
+	if !strings.Contains(c.Message, "1 secret") {
+		t.Errorf("message = %q, want it to mention the 1 stale secret found", c.Message)
 	}
 }

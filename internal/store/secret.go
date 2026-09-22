@@ -114,19 +114,24 @@ func (db *DB) HasSecretValue(ctx context.Context, serviceName, envKey string) (b
 }
 
 // SecretKeyInfo is one secret key known for a service, with its locked
-// state, never a value.
+// state and when its value was last set (created or rotated), never the
+// value itself. UpdatedAt is service_secret_values.updated_at (bumped by
+// every SaveSecretValue upsert, so a rotation moves it the same as an
+// initial set), used by GET /apps/{name}/secrets to let a UI surface a
+// secret's age and flag it stale past Router.effectiveSecretRotationWarnAge.
 type SecretKeyInfo struct {
-	Key    string
-	Locked bool
+	Key       string
+	Locked    bool
+	UpdatedAt time.Time
 }
 
 // ListSecretKeys returns every secret key set for serviceName, ordered
-// by key, each with its locked state. Never touches ciphertext: the
-// caller (internal/api's GET /apps/{name}/secrets) can safely return
-// this straight to a browser.
+// by key, each with its locked state and last-set timestamp. Never
+// touches ciphertext: the caller (internal/api's GET /apps/{name}/secrets)
+// can safely return this straight to a browser.
 func (db *DB) ListSecretKeys(ctx context.Context, serviceName string) ([]SecretKeyInfo, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT env_key, locked FROM service_secret_values
+		SELECT env_key, locked, updated_at FROM service_secret_values
 		WHERE service_name = ? ORDER BY env_key
 	`, serviceName)
 	if err != nil {
@@ -140,10 +145,16 @@ func (db *DB) ListSecretKeys(ctx context.Context, serviceName string) ([]SecretK
 	for rows.Next() {
 		var info SecretKeyInfo
 		var locked int
-		if err := rows.Scan(&info.Key, &locked); err != nil {
+		var updatedAtRaw string
+		if err := rows.Scan(&info.Key, &locked, &updatedAtRaw); err != nil {
 			return nil, fmt.Errorf("store: scan secret key for %q: %w", serviceName, err)
 		}
 		info.Locked = locked != 0
+		updatedAt, err := time.Parse(time.RFC3339Nano, updatedAtRaw)
+		if err != nil {
+			return nil, fmt.Errorf("store: parse secret key updated_at for %q/%q: %w", serviceName, info.Key, err)
+		}
+		info.UpdatedAt = updatedAt
 		keys = append(keys, info)
 	}
 	if err := rows.Err(); err != nil {

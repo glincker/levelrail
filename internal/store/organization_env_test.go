@@ -309,8 +309,8 @@ func TestListOrganizationEnvVarsDetailed(t *testing.T) {
 		t.Fatalf("ListOrganizationEnvVarsDetailed() = %+v, want %+v", got, want)
 	}
 	for i, w := range want {
-		if got[i] != w {
-			t.Errorf("ListOrganizationEnvVarsDetailed()[%d] = %+v, want %+v", i, got[i], w)
+		if got[i].Key != w.Key || got[i].Value != w.Value || got[i].Secret != w.Secret {
+			t.Errorf("ListOrganizationEnvVarsDetailed()[%d] = %+v, want Key/Value/Secret %+v", i, got[i], w)
 		}
 	}
 }

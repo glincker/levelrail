@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -15,8 +16,9 @@ import (
 )
 
 type fakeSecretKeyInfo struct {
-	key    string
-	locked bool
+	key       string
+	locked    bool
+	updatedAt time.Time
 }
 
 // fakeSecretSetter is a hand-written fake for SecretSetter, the same
@@ -82,7 +84,7 @@ func (f *fakeSecretSetter) ListKeys(_ context.Context, _ string) ([]store.Secret
 	}
 	out := make([]store.SecretKeyInfo, len(f.keys))
 	for i, k := range f.keys {
-		out[i] = store.SecretKeyInfo{Key: k.key, Locked: k.locked}
+		out[i] = store.SecretKeyInfo{Key: k.key, Locked: k.locked, UpdatedAt: k.updatedAt}
 	}
 	return out, nil
 }
@@ -327,6 +329,54 @@ func TestHandleListSecrets_Success(t *testing.T) {
 	}
 	if strings.Contains(rec.Body.String(), "sk-") {
 		t.Errorf("body = %s, must never contain a value", rec.Body.String())
+	}
+}
+
+// TestHandleListSecrets_StaleFlag proves GET /apps/{name}/secrets flags a
+// key as stale once its UpdatedAt is older than the configured secret
+// rotation warning threshold (WithSecretRotationWarnAge), and leaves a
+// fresh key unflagged, both in the same response.
+func TestHandleListSecrets_StaleFlag(t *testing.T) {
+	setter := &fakeSecretSetter{keys: []fakeSecretKeyInfo{
+		{key: "OLD_KEY", updatedAt: time.Now().Add(-48 * time.Hour)},
+		{key: "FRESH_KEY", updatedAt: time.Now().Add(-time.Hour)},
+	}}
+	db := openTestDB(t)
+	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
+	rt := NewRouter(logger, testBrand(), db,
+		WithSecretSetter(setter),
+		WithSecretRotationWarnAge(24*time.Hour),
+	)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "img:v1", Port: 80}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/secrets", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got []secretKeyResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("unmarshal response: %v, body = %s", err, rec.Body.String())
+	}
+	if len(got) != 2 {
+		t.Fatalf("got %d entries, want 2: %+v", len(got), got)
+	}
+	byKey := map[string]secretKeyResource{}
+	for _, r := range got {
+		byKey[r.Key] = r
+	}
+	if !byKey["OLD_KEY"].Stale {
+		t.Errorf("OLD_KEY (48h old, 24h threshold) stale = false, want true")
+	}
+	if byKey["FRESH_KEY"].Stale {
+		t.Errorf("FRESH_KEY (1h old, 24h threshold) stale = true, want false")
+	}
+	if byKey["OLD_KEY"].UpdatedAt == "" {
+		t.Errorf("OLD_KEY updated_at is empty, want a populated timestamp")
 	}
 }
 

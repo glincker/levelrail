@@ -85,6 +85,7 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		rt.doctorCheckPort(httpsPort),
 		rt.doctorCheckDatabase(ctx),
 		rt.doctorCheckMasterKeyRotation(ctx),
+		rt.doctorCheckStaleSecrets(ctx),
 		doctorCheckFirewallCtx(ctx),
 	}
 
@@ -230,4 +231,32 @@ func (rt *Router) doctorCheckMasterKeyRotation(ctx context.Context) doctorCheckR
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusWarn, Message: fmt.Sprintf("last rotated %s ago, consider rotating again", age.Round(time.Hour))}
 	}
 	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("last rotated %s ago", age.Round(time.Hour))}
+}
+
+// doctorCheckStaleSecrets surfaces how many secret-backed values (per-app
+// and shared-env alike) haven't been set or rotated within
+// effectiveSecretRotationWarnAge, a distinct signal from
+// doctorCheckMasterKeyRotation above: that one is about the envelope-
+// encryption master key itself, this one is about the individual secret
+// values it encrypts. A soft nudge, never fail, the same reasoning
+// doctorCheckMasterKeyRotation's own doc comment gives: this platform
+// cannot know whether an old secret is actually unsafe for a given
+// operator.
+func (rt *Router) doctorCheckStaleSecrets(ctx context.Context) doctorCheckResource {
+	const code, name = "stale_secrets", "Secret rotation"
+	if rt.staleSecretCounter == nil {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "no master key configured"}
+	}
+
+	threshold := rt.effectiveSecretRotationWarnAge()
+	cutoff := time.Now().UTC().Add(-threshold)
+	n, err := rt.staleSecretCounter.CountStaleSecrets(ctx, cutoff)
+	if err != nil {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: fmt.Sprintf("could not count stale secrets: %s", err)}
+	}
+	thresholdDays := int(threshold / (24 * time.Hour))
+	if n > 0 {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusWarn, Message: fmt.Sprintf("%d secret(s) not rotated in over %d days, consider rotating them", n, thresholdDays)}
+	}
+	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("no secrets older than %d days", thresholdDays)}
 }
