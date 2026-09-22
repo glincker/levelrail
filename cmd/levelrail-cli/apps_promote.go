@@ -52,13 +52,25 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 		return exitOK
 	}
 
-	updated, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (appResource, error) {
+	result, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (deployTriggerResult, error) {
 		return client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: confirm})
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("promote app %q: %w", name, err))
 	}
 
+	if result.PendingApproval != nil {
+		approval := *result.PendingApproval
+		if err := renderResult(stdout, of.Format, of.Query, approval, func() {
+			printDeployApprovalPendingHuman(stderr, prog, approval)
+		}); err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return exitCodeForError(err)
+		}
+		return exitOK
+	}
+
+	updated := *result.AppResource
 	if err := renderResult(stdout, of.Format, of.Query, updated, func() {
 		_, _ = fmt.Fprintf(stderr, "app %q promoted onto %q (now image %q); reconcile is asynchronous, check \"%s apps status %s\"\n", name, updated.Name, updated.Image, prog, updated.Name)
 		printAppHuman(stdout, updated)

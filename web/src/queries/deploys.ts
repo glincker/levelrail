@@ -19,8 +19,10 @@ import {
 } from '@tanstack/react-query'
 import type { AppDetail } from '../types/appDetail'
 import type { ReconcileCondition } from '../types/deploy'
+import type { DeployApprovalResource } from '../types/deployApproval'
 import { appKeys } from './apps'
 import { deployAttemptKeys } from './deployAttempts'
+import { deployApprovalKeys } from './deployApprovals'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const deployKeys = {
@@ -69,10 +71,31 @@ export interface TriggerDeployInput {
   confirm?: boolean
 }
 
+// TriggerDeployResult mirrors internal/api's deployTriggerResult
+// (deploys.go): the common case is a flat AppDetail on the wire
+// (unchanged from before this type existed); pendingApproval is only
+// ever set instead, when the target environment is protected and the
+// deploy was accepted as a pending approval rather than applied. Only
+// one of the two is ever meaningfully populated; callers branch on
+// pending_approval's presence first.
+export type TriggerDeployResult =
+  AppDetail | { pending_approval: DeployApprovalResource }
+
+export function isPendingApproval(
+  result: TriggerDeployResult,
+): result is { pending_approval: DeployApprovalResource } {
+  return (
+    typeof result === 'object' &&
+    result !== null &&
+    'pending_approval' in result &&
+    result.pending_approval != null
+  )
+}
+
 export async function triggerDeploy(
   appName: string,
   input: TriggerDeployInput,
-): Promise<AppDetail> {
+): Promise<TriggerDeployResult> {
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/deploys`,
     {
@@ -90,7 +113,7 @@ export async function triggerDeploy(
       await readErrorMessage(res, `trigger deploy failed: ${res.status}`),
     )
   }
-  return (await res.json()) as AppDetail
+  return (await res.json()) as TriggerDeployResult
 }
 
 // On success, updates both the app detail cache (the response is the
@@ -104,12 +127,23 @@ export async function triggerDeploy(
 // Deploys section, or DeployAttemptsList.tsx's own rollback button
 // reusing this exact mutation) needs its history to refresh the moment
 // a trigger succeeds, not on the next unrelated navigation.
+//
+// When the result is a pending approval instead (isPendingApproval),
+// none of that applies yet: nothing deployed, so only the approvals
+// queue itself is invalidated, letting the app detail page's own
+// pending-approval banner (PendingDeployApprovalBanner.tsx) pick it up.
 export function useTriggerDeploy(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: TriggerDeployInput) => triggerDeploy(appName, input),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(appKeys.detail(appName), updated)
+    onSuccess: (result) => {
+      if (isPendingApproval(result)) {
+        void queryClient.invalidateQueries({
+          queryKey: deployApprovalKeys.all,
+        })
+        return
+      }
+      queryClient.setQueryData(appKeys.detail(appName), result)
       void queryClient.invalidateQueries({
         queryKey: deployKeys.status(appName),
       })

@@ -29,6 +29,20 @@ type deployTriggerRequest struct {
 	Confirm bool   `json:"confirm,omitempty"`
 }
 
+// deployTriggerResult is POST .../deploys and POST .../promote's shared
+// response shape. *appResource is embedded anonymously so the common
+// case (no protected environment, or one applied immediately) still
+// marshals as a flat app object exactly like before this type existed;
+// PendingApproval is only ever set instead, when the target environment
+// is protected and the request was accepted as a pending approval rather
+// than applied (requestDeployApproval, deploy_approvals.go). A nil
+// embedded pointer contributes no keys, so the two shapes never overlap
+// on the wire.
+type deployTriggerResult struct {
+	*appResource
+	PendingApproval *deployApprovalResource `json:"pending_approval,omitempty"`
+}
+
 // handleTriggerDeploy handles POST /api/v1/apps/{name}/deploys. It
 // points the app's desired image at a new tag; the application
 // controller's next reconcile (once main.go wires one for this app, see
@@ -37,9 +51,14 @@ type deployTriggerRequest struct {
 // rollback ("pointing desired.Image back at an older tag and
 // reconciling converges to it the same way any other redeploy does"),
 // run forward with a newer tag instead of an older one. The build that
-// produces that tag (1.4/1.5) is not this endpoint's job. If name is
-// tagged with a protected environment, confirm: true is required
-// (requireEnvironmentConfirmation, environments.go).
+// produces that tag (1.4/1.5) is not this endpoint's job.
+//
+// If name is tagged with a protected environment, confirm: true is
+// required just to be accepted at all (checkEnvironmentProtection,
+// environments.go); once accepted, the deploy itself does not apply yet,
+// it becomes a pending deploy_approvals row a different, sufficiently
+// privileged user must approve (deploy_approvals.go) before this same
+// image tag actually reaches executeConfirmedDeploy below.
 func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -64,28 +83,49 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !rt.requireEnvironmentConfirmation(r.Context(), w, existing.EnvironmentID, req.Confirm) {
+	env, protected, ok := rt.checkEnvironmentProtection(r.Context(), w, existing.EnvironmentID, req.Confirm)
+	if !ok {
+		return
+	}
+	if protected {
+		approval, ok := rt.requestDeployApproval(w, r, env, existing.Name, "", store.DeployApprovalActionDeploy, req.Image)
+		if !ok {
+			return
+		}
+		writeJSON(w, http.StatusAccepted, deployTriggerResult{PendingApproval: &approval})
 		return
 	}
 
-	// deploy.TriggerImageDeploy is the same shared save+record+nudge path
-	// internal/alerting's crashloop auto-rollback (MaybeAutoRollback)
-	// drives too: a manual rollback and an automatic one converge through
-	// identical code, not two divergent ones. rt.reconcileNudger already
-	// satisfies deploy.ReconcileNudger (both declare exactly Nudge()).
-	updated, err := deploy.TriggerImageDeploy(r.Context(), deployTriggerImageStore{rt}, rt.reconcileNudger, *existing, req.Image, store.DeployAttemptSourceImage, rt.logger)
+	updated, err := rt.executeConfirmedDeploy(r.Context(), *existing, req.Image)
 	if err != nil {
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+
+	res := toAppResource(updated)
+	writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res})
+}
+
+// executeConfirmedDeploy runs the actual desired-state change a deploy
+// trigger makes, once any protected-environment gate has already passed
+// (either there was none, or a deploy approval for it was just
+// approved, see handleApproveDeployApproval in deploy_approvals.go): the
+// exact save+record+nudge path internal/alerting's crashloop
+// auto-rollback (MaybeAutoRollback) also drives, so a manual deploy, an
+// approved one, and an automatic rollback all converge through identical
+// code, never three divergent ones.
+func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.DesiredService, image string) (store.DesiredService, error) {
+	updated, err := deploy.TriggerImageDeploy(ctx, deployTriggerImageStore{rt}, rt.reconcileNudger, existing, image, store.DeployAttemptSourceImage, rt.logger)
+	if err != nil {
+		return store.DesiredService{}, err
+	}
 	if rt.deployNotifier != nil {
-		rt.deployNotifier.Dispatch(r.Context(), resourceIDForApp(name), alerting.DeployOutcome{
-			AppName: name, Image: req.Image, Succeeded: true,
+		rt.deployNotifier.Dispatch(ctx, resourceIDForApp(existing.Name), alerting.DeployOutcome{
+			AppName: existing.Name, Image: image, Succeeded: true,
 		})
 	}
-
-	writeJSON(w, http.StatusAccepted, toAppResource(updated))
+	return updated, nil
 }
 
 // deployTriggerImageStore adapts rt.apps and rt.deployAttempts, two

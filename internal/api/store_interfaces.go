@@ -435,6 +435,18 @@ type HookRunStore interface {
 	GetHookRuns(ctx context.Context, serviceName string) ([]store.HookRun, error)
 }
 
+// DeployApprovalStore is the surface deploy_approvals.go needs: create a
+// pending approval gate for a deploy/promote into a protected
+// environment, list/get it, and record a terminal decision (approve,
+// reject, or expire). Always set, the same "core Store interface, not
+// an optional plug-in" shape HookRunStore above establishes.
+type DeployApprovalStore interface {
+	SaveDeployApproval(ctx context.Context, a store.DeployApproval) error
+	GetDeployApproval(ctx context.Context, id string) (store.DeployApproval, error)
+	ListDeployApprovals(ctx context.Context, status, serviceName string) ([]store.DeployApproval, error)
+	DecideDeployApproval(ctx context.Context, id, newStatus, approvedByType, approvedBy, approvedByName, reason, decidedAt string) (bool, error)
+}
+
 // Store is the full surface NewRouter needs. *store.DB satisfies it
 // structurally, same pattern internal/reconcile/application.ServiceStore
 // already established for this codebase.
@@ -500,6 +512,7 @@ type Store interface {
 	PolicyStore
 	DeviceAuthStore
 	HookRunStore
+	DeployApprovalStore
 	AIAssistantSettingsStore
 	AIChatStore
 }

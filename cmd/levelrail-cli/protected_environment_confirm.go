@@ -12,7 +12,7 @@ import (
 )
 
 // protectedEnvironmentError reports whether err is the 409
-// internal/api's requireEnvironmentConfirmation/environmentNeedsConfirmation
+// internal/api's checkEnvironmentProtection/environmentNeedsConfirmation
 // return when a deploy, rollback, or promote targets a protected
 // environment with confirm not already true: the only 409 those three
 // endpoints ever return, so the status code alone disambiguates it from
@@ -44,8 +44,11 @@ func resolveProtectedEnvironmentConfirmation(message string, stdin io.Reader, st
 // confirm=true when the operator confirms; otherwise it returns
 // attempt's own result and error unchanged. Shared by "apps
 // deploy"/"apps rollback"/"apps promote", which all hit this same
-// protected-environment gate through a different underlying call.
-func confirmProtectedEnvironment(confirm bool, stdin io.Reader, stderr io.Writer, attempt func(confirm bool) (appResource, error)) (appResource, error) {
+// protected-environment gate through a different underlying call. Even
+// a confirm=true retry may come back with PendingApproval set instead of
+// an applied app (deployTriggerResult, deploys.go): that is not this
+// function's concern, the caller decides how to present it.
+func confirmProtectedEnvironment(confirm bool, stdin io.Reader, stderr io.Writer, attempt func(confirm bool) (deployTriggerResult, error)) (deployTriggerResult, error) {
 	result, err := attempt(confirm)
 	if confirm || err == nil {
 		return result, err

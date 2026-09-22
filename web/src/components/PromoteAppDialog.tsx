@@ -22,7 +22,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/components/ui/toast'
 import { useEnvironmentListOptional } from '../queries/environments'
 import { useAppListOptional } from '../queries/apps'
-import { usePromoteApp, usePromotePreview } from '../queries/promote'
+import {
+  isPendingPromoteApproval,
+  usePromoteApp,
+  usePromotePreview,
+} from '../queries/promote'
 import { ApiError } from '../lib/apiError'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
 
@@ -85,11 +89,20 @@ export function PromoteAppDialog({
     promote.mutate(
       { to: environmentId, target, confirm: ackProtected },
       {
-        onSuccess: (updated) => {
+        onSuccess: (result) => {
           setOpen(false)
+          if (isPendingPromoteApproval(result)) {
+            toast.add({
+              title: 'Promotion is pending approval.',
+              description:
+                'The target environment is protected: a different, sufficiently privileged user must approve it before it runs.',
+              type: 'info',
+            })
+            return
+          }
           toast.add({
-            title: `Promoted "${appName}" onto "${updated.name}".`,
-            description: `Now running ${updated.image}.`,
+            title: `Promoted "${appName}" onto "${result.name}".`,
+            description: `Now running ${result.image}.`,
             type: 'success',
           })
         },
@@ -114,20 +127,20 @@ export function PromoteAppDialog({
           <DialogTitle>Promote &ldquo;{appName}&rdquo;</DialogTitle>
           <DialogDescription>
             Points a sibling app in another environment at this app&apos;s
-            current image and redeploys it, the same mechanism a deploy
-            trigger uses. Scoped to apps within one project.
+            current image and redeploys it, the same mechanism a deploy trigger
+            uses. Scoped to apps within one project.
           </DialogDescription>
         </DialogHeader>
 
         {!projectId ? (
           <p className="text-sm text-muted-foreground">
-            Assign this app to a project first: promotion moves an image
-            between apps in the same project.
+            Assign this app to a project first: promotion moves an image between
+            apps in the same project.
           </p>
         ) : environments.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No environments yet for this app&apos;s project. Create one from
-            the project&apos;s own detail page first.
+            No environments yet for this app&apos;s project. Create one from the
+            project&apos;s own detail page first.
           </p>
         ) : (
           <div className="space-y-4">
@@ -143,7 +156,10 @@ export function PromoteAppDialog({
                   setAckProtected(false)
                 }}
               >
-                <SelectTrigger id="promote-target-environment" className="w-full">
+                <SelectTrigger
+                  id="promote-target-environment"
+                  className="w-full"
+                >
                   <SelectValue placeholder="Choose an environment..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -182,9 +198,8 @@ export function PromoteAppDialog({
               </Select>
               {environmentId && candidateApps.length === 0 ? (
                 <FieldHint>
-                  No other apps in this project are tagged with that
-                  environment yet. Auto-detect only works when exactly one
-                  is.
+                  No other apps in this project are tagged with that environment
+                  yet. Auto-detect only works when exactly one is.
                 </FieldHint>
               ) : null}
             </Field>
@@ -208,7 +223,10 @@ export function PromoteAppDialog({
             {preview.data ? (
               <div className="space-y-2 rounded-md border border-border p-3 text-sm">
                 <p className="text-muted-foreground">
-                  Target: <span className="text-foreground">{preview.data.target_app}</span>
+                  Target:{' '}
+                  <span className="text-foreground">
+                    {preview.data.target_app}
+                  </span>
                 </p>
                 {isNoop ? (
                   <p className="text-muted-foreground">

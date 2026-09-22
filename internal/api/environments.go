@@ -191,28 +191,36 @@ func writeEnvironmentConfirmationRequired(w http.ResponseWriter, env store.Envir
 	writeError(w, http.StatusConflict, fmt.Sprintf("environment %q is protected; set confirm: true to proceed", env.Name))
 }
 
-// requireEnvironmentConfirmation is handleTriggerDeploy's (deploys.go)
-// own gate: an app with no environment, or one tagged with an
-// unprotected environment, always passes. A missing environmentID
-// reference degrades to "not protected" rather than blocking the caller
-// with a validation error this endpoint isn't otherwise responsible for.
-func (rt *Router) requireEnvironmentConfirmation(ctx context.Context, w http.ResponseWriter, environmentID string, confirm bool) bool {
+// checkEnvironmentProtection is handleTriggerDeploy's (deploys.go) own
+// gate: an app with no environment, or one tagged with an unprotected
+// environment, always passes with protected=false. A missing
+// environmentID reference degrades to "not protected" rather than
+// blocking the caller with a validation error this endpoint isn't
+// otherwise responsible for. When environmentID names a protected
+// environment and confirm is true, this writes nothing and returns
+// protected=true, ok=true: the caller (handleTriggerDeploy) is
+// responsible for routing that case into requestDeployApproval
+// (deploy_approvals.go) rather than applying the deploy directly.
+func (rt *Router) checkEnvironmentProtection(ctx context.Context, w http.ResponseWriter, environmentID string, confirm bool) (env store.Environment, protected, ok bool) {
 	if environmentID == "" {
-		return true
+		return store.Environment{}, false, true
 	}
-	env, err := rt.environments.GetEnvironment(ctx, environmentID)
+	e, err := rt.environments.GetEnvironment(ctx, environmentID)
 	if errors.Is(err, store.ErrEnvironmentNotFound) {
-		return true
+		return store.Environment{}, false, true
 	}
 	if err != nil {
 		rt.internalError(w, "api: check environment protection failed", err, slog.String("environment_id", environmentID))
-		return false
+		return store.Environment{}, false, false
 	}
-	if environmentNeedsConfirmation(env, confirm) {
-		writeEnvironmentConfirmationRequired(w, env)
-		return false
+	if !e.Protected {
+		return e, false, true
 	}
-	return true
+	if !confirm {
+		writeEnvironmentConfirmationRequired(w, e)
+		return store.Environment{}, false, false
+	}
+	return e, true, true
 }
 
 // randomEnvironmentID mirrors randomProjectID exactly.

@@ -211,13 +211,65 @@ func (c *Client) TriggerBuild(ctx context.Context, name string, req BuildTrigger
 // desired state is saved, not once a container is actually running it.
 // Also how a rollback is done: deploying an older, already-known tag
 // with this same method.
-// confirm must be true to deploy into an app tagged with a protected
-// environment (internal/api/environments.go's environmentNeedsConfirmation);
-// otherwise the call fails with a 409, ignored when the app has no
-// protected environment.
-func (c *Client) DeployApp(ctx context.Context, name, image string, confirm bool) (AppResource, error) {
-	var out AppResource
+//
+// confirm must be true just to have the request accepted at all when the
+// app is tagged with a protected environment (internal/api/
+// environments.go's checkEnvironmentProtection); otherwise the call
+// fails with a 409, ignored when the app has no protected environment.
+// Even with confirm: true, a protected environment does not deploy
+// immediately: the result's PendingApproval is set instead of App, and a
+// different, sufficiently privileged user must approve it
+// (ApproveDeployApproval below) before this tag actually reaches a
+// running container.
+func (c *Client) DeployApp(ctx context.Context, name, image string, confirm bool) (DeployTriggerResult, error) {
+	var out DeployTriggerResult
 	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploys", DeployTriggerRequest{Image: image, Confirm: confirm}, &out)
+	return out, err
+}
+
+// ListDeployApprovals calls GET /api/v1/deploy-approvals: status
+// defaults server-side to "pending" when empty; pass "all" to include
+// decided requests too. service filters to one app, empty means every
+// app.
+func (c *Client) ListDeployApprovals(ctx context.Context, status, service string) ([]DeployApprovalResource, error) {
+	q := url.Values{}
+	if status != "" {
+		q.Set("status", status)
+	}
+	if service != "" {
+		q.Set("service", service)
+	}
+	path := "/api/v1/deploy-approvals"
+	if enc := q.Encode(); enc != "" {
+		path += "?" + enc
+	}
+	var out DeployApprovalListResult
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out.Approvals, err
+}
+
+// GetDeployApproval calls GET /api/v1/deploy-approvals/{id}.
+func (c *Client) GetDeployApproval(ctx context.Context, id string) (DeployApprovalResource, error) {
+	var out DeployApprovalResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/deploy-approvals/"+PathEscape(id), nil, &out)
+	return out, err
+}
+
+// ApproveDeployApproval calls POST /api/v1/deploy-approvals/{id}/approve:
+// applies the gated deploy/promote through the normal reconcile path.
+// Fails with 403 if the caller is the same actor who requested it, or
+// 409 if it's no longer pending (already decided, or expired).
+func (c *Client) ApproveDeployApproval(ctx context.Context, id string) (DeployApprovalDecisionResult, error) {
+	var out DeployApprovalDecisionResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/deploy-approvals/"+PathEscape(id)+"/approve", nil, &out)
+	return out, err
+}
+
+// RejectDeployApproval calls POST /api/v1/deploy-approvals/{id}/reject:
+// records the decision, the app's desired state is left untouched.
+func (c *Client) RejectDeployApproval(ctx context.Context, id, reason string) (DeployApprovalResource, error) {
+	var out DeployApprovalResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/deploy-approvals/"+PathEscape(id)+"/reject", RejectDeployApprovalRequest{Reason: reason}, &out)
 	return out, err
 }
 
@@ -1382,8 +1434,8 @@ func (c *Client) PreviewPromotion(ctx context.Context, name, environmentID, targ
 
 // PromoteApp calls POST /api/v1/apps/{name}/promote: points the
 // resolved target app's image at name's current image and redeploys it.
-func (c *Client) PromoteApp(ctx context.Context, name string, req PromoteAppRequest) (AppResource, error) {
-	var out AppResource
+func (c *Client) PromoteApp(ctx context.Context, name string, req PromoteAppRequest) (DeployTriggerResult, error) {
+	var out DeployTriggerResult
 	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/promote", req, &out)
 	return out, err
 }

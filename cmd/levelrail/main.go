@@ -237,6 +237,16 @@ const (
 	// retention window needs no minute-granularity checks.
 	defaultAuditLogSweepInterval = 1 * time.Hour
 
+	// defaultDeployApprovalSweepInterval is how often
+	// api.Router.RunDeployApprovalExpirySweep checks pending deploy
+	// approvals against their TTL (api.defaultDeployApprovalTTL, 24
+	// hours), env-overridable via APP_DEPLOY_APPROVAL_SWEEP_INTERVAL
+	// (deployApprovalSweepInterval below). Minutes, not
+	// defaultAuditLogSweepInterval's hour: the TTL itself is hours-scale,
+	// not days, so a stale pending row should show as expired in the UI
+	// well before an operator happens to look at it again.
+	defaultDeployApprovalSweepInterval = 5 * time.Minute
+
 	// defaultAPIRateLimitReadRPM/defaultAPIRateLimitWriteRPM are
 	// api.WithAPIRateLimit's per-actor (token, session, or IP) budget
 	// when APP_API_RATE_LIMIT_READ_RPM/APP_API_RATE_LIMIT_WRITE_RPM are
@@ -808,6 +818,19 @@ func run(logger *slog.Logger) error {
 	go func() {
 		if err := apiRouter.RunAuditLogSweeper(ctx, auditLogSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("audit log sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	// Deploy approval expiry sweep (api.Router.RunDeployApprovalExpirySweep,
+	// internal/api/deploy_approvals.go): marks a pending deploy_approvals
+	// row past its TTL as expired on its own tick, so the UI reflects that
+	// without waiting for someone to open it again (the per-request lazy
+	// expiry in expireIfStale already guarantees it never proceeds
+	// regardless). Always runs, the same "always non-nil, no
+	// secretsManager gate" shape as the audit log sweeper just above.
+	go func() {
+		if err := apiRouter.RunDeployApprovalExpirySweep(ctx, deployApprovalSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("deploy approval expiry sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
 
@@ -1906,6 +1929,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithPreviewTTL(previewTTL(logger)),
 		api.WithInviteTTL(inviteTTL(logger)),
 		api.WithAuditLogRetention(auditLogRetention(logger)),
+		api.WithDeployApprovalTTL(deployApprovalTTL(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
@@ -2634,6 +2658,41 @@ func auditLogSweepInterval(logger *slog.Logger) time.Duration {
 	if err != nil {
 		logger.Warn("invalid APP_AUDIT_LOG_SWEEP_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return defaultAuditLogSweepInterval
+	}
+	return d
+}
+
+// deployApprovalTTL reads APP_DEPLOY_APPROVAL_TTL as a Go duration
+// string, the same env-var-with-default shape previewTTL above uses for
+// api.WithPreviewTTL, applied here to api.WithDeployApprovalTTL. Returns
+// 0 (api's own signal to fall back to its internal default,
+// api.defaultDeployApprovalTTL, 24 hours) when unset or unparseable.
+func deployApprovalTTL(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_DEPLOY_APPROVAL_TTL")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_DEPLOY_APPROVAL_TTL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// deployApprovalSweepInterval reads APP_DEPLOY_APPROVAL_SWEEP_INTERVAL as
+// a Go duration string, the same shape auditLogSweepInterval above uses:
+// api.Router.RunDeployApprovalExpirySweep takes its interval directly
+// with no built-in fallback of its own.
+func deployApprovalSweepInterval(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_DEPLOY_APPROVAL_SWEEP_INTERVAL")
+	if raw == "" {
+		return defaultDeployApprovalSweepInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_DEPLOY_APPROVAL_SWEEP_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return defaultDeployApprovalSweepInterval
 	}
 	return d
 }
