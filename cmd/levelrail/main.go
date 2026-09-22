@@ -1884,6 +1884,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDockerPruner(client),
 		api.WithRegistryAuthTester(client),
 		api.WithDBPinger(db),
+		api.WithSecretRotationWarnAge(secretRotationWarnAge(logger)),
 		api.WithDoctorDiskWarningBytes(doctorDiskWarningBytes(logger)),
 		api.WithIngressPortOwner(ingressDriver),
 		api.WithDoctorIngressPorts(ingressPortFromAddr(ingressHTTPAddr()), ingressPortFromAddr(ingressHTTPSAddr())),
@@ -1918,6 +1919,12 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		opts = append(opts, api.WithSecretSetter(secretsManager))
 		opts = append(opts, api.WithMasterKeyRotation(secretsManager, masterKeyFilePath))
 		opts = append(opts, api.WithDoctorMasterKeyRotationWarnAge(doctorMasterKeyRotationWarnAge(logger)))
+		// The stale_secrets doctor check counts secret-marked rows across
+		// service_secret_values and the three shared-env tiers, all of
+		// which are only ever written once a master key is configured
+		// (every secret write path checks rt.secrets != nil first), so
+		// this is gated the same way as everything else in this block.
+		opts = append(opts, api.WithStaleSecretCounter(db))
 		// Email settings' SMTP password / SES secret access key go
 		// through the same secretsManager as everything else here.
 		opts = append(opts, api.WithEmailSecrets(secretsManager))
@@ -2589,6 +2596,25 @@ func auditLogRetention(logger *slog.Logger) time.Duration {
 	days, err := strconv.ParseInt(raw, 10, 64)
 	if err != nil {
 		logger.Warn("invalid APP_AUDIT_LOG_RETENTION_DAYS, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return time.Duration(days) * 24 * time.Hour
+}
+
+// secretRotationWarnAge reads APP_SECRET_ROTATION_WARN_DAYS, the same
+// env-var-with-default shape auditLogRetention above uses for
+// api.WithAuditLogRetention, applied here to
+// api.WithSecretRotationWarnAge. Returns 0 (api's own signal to fall
+// back to its internal default, api.defaultSecretRotationWarnAge, 90
+// days) when unset or unparseable.
+func secretRotationWarnAge(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_SECRET_ROTATION_WARN_DAYS")
+	if raw == "" {
+		return 0
+	}
+	days, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		logger.Warn("invalid APP_SECRET_ROTATION_WARN_DAYS, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
 	}
 	return time.Duration(days) * 24 * time.Hour

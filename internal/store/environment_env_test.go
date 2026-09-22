@@ -109,3 +109,39 @@ func TestSetEnvironmentEnvVars_EnvironmentDeletedCascades(t *testing.T) {
 		t.Errorf("ListEnvironmentEnvVars() after environment delete = %+v, want empty (cascade deleted)", got)
 	}
 }
+
+// TestListEnvironmentEnvVarsDetailed proves the combined shape used by
+// the settings-page table: plain rows carry their value, secret rows
+// never do, and every row (plain or secret) carries a real UpdatedAt,
+// mirroring TestListProjectEnvVarsDetailed one tier down.
+func TestListEnvironmentEnvVarsDetailed(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	seedTestEnvironment(t, db)
+	if err := db.SetEnvironmentEnvVars(ctx, "env_test1", map[string]string{"NODE_ENV": "production"}); err != nil {
+		t.Fatalf("SetEnvironmentEnvVars() error = %v", err)
+	}
+	if err := db.SetEnvironmentSecretEnvVar(ctx, "env_test1", "API_KEY"); err != nil {
+		t.Fatalf("SetEnvironmentSecretEnvVar() error = %v", err)
+	}
+
+	got, err := db.ListEnvironmentEnvVarsDetailed(ctx, "env_test1")
+	if err != nil {
+		t.Fatalf("ListEnvironmentEnvVarsDetailed() error = %v", err)
+	}
+	want := []SharedEnvVar{
+		{Key: "API_KEY", Value: "", Secret: true},
+		{Key: "NODE_ENV", Value: "production", Secret: false},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("ListEnvironmentEnvVarsDetailed() = %+v, want %+v", got, want)
+	}
+	for i, w := range want {
+		if got[i].Key != w.Key || got[i].Value != w.Value || got[i].Secret != w.Secret {
+			t.Errorf("ListEnvironmentEnvVarsDetailed()[%d] = %+v, want Key/Value/Secret %+v", i, got[i], w)
+		}
+		if got[i].UpdatedAt.IsZero() {
+			t.Errorf("ListEnvironmentEnvVarsDetailed()[%d].UpdatedAt is zero, want a real timestamp", i)
+		}
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -13,17 +14,27 @@ import (
 // sharedEnvVarResource is the wire shape for one shared env var in the
 // combined GET .../env/all view: Value is always "" for a secret entry,
 // matching secretKeyResource's own "never echo a value" rule
-// (internal/api/secrets.go).
+// (internal/api/secrets.go). UpdatedAt/Stale are only meaningful (and
+// only populated) when Secret is true: a plain shared var's own
+// updated_at reflects the last full-replace PUT, not a rotation-relevant
+// event, so surfacing an age/staleness signal on it would be misleading.
 type sharedEnvVarResource struct {
-	Key    string `json:"key"`
-	Value  string `json:"value"`
-	Secret bool   `json:"secret"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	Secret    bool   `json:"secret"`
+	UpdatedAt string `json:"updated_at,omitempty"`
+	Stale     bool   `json:"stale,omitempty"`
 }
 
-func sharedEnvVarResources(vars []store.SharedEnvVar) []sharedEnvVarResource {
+func (rt *Router) sharedEnvVarResources(vars []store.SharedEnvVar) []sharedEnvVarResource {
 	out := make([]sharedEnvVarResource, len(vars))
 	for i, v := range vars {
-		out[i] = sharedEnvVarResource{Key: v.Key, Value: v.Value, Secret: v.Secret}
+		r := sharedEnvVarResource{Key: v.Key, Value: v.Value, Secret: v.Secret}
+		if v.Secret {
+			r.UpdatedAt = v.UpdatedAt.UTC().Format(time.RFC3339)
+			r.Stale = rt.secretIsStale(v.UpdatedAt)
+		}
+		out[i] = r
 	}
 	return out
 }
@@ -75,7 +86,7 @@ func (rt *Router) handleListSharedEnvAll(w http.ResponseWriter, r *http.Request,
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, sharedEnvVarResources(vars))
+	writeJSON(w, http.StatusOK, rt.sharedEnvVarResources(vars))
 }
 
 // handleListSharedEnvSecretKeys handles GET

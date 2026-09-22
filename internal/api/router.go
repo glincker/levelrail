@@ -211,6 +211,18 @@ type Router struct {
 	// PurgeOldAuditEntries removes it. 0 means "use the default", set via
 	// WithAuditLogRetention.
 	auditLogRetention time.Duration
+	// secretRotationWarnAge overrides defaultSecretRotationWarnAge
+	// (secret_rotation.go): how old a secret's last-set value can get
+	// before GET /apps/{name}/secrets, GET .../env/all, and the doctor's
+	// stale_secrets check all flag it as due for rotation. 0 means "use
+	// the default", set via WithSecretRotationWarnAge.
+	secretRotationWarnAge time.Duration
+	// staleSecretCounter is the surface the doctor's stale_secrets check
+	// needs to count secrets due for rotation across every app and
+	// shared-env scope in one query. nil is valid: that check reports
+	// unknown, the same shape dbPinger's own absence produces for the
+	// database check. Set via WithStaleSecretCounter.
+	staleSecretCounter StaleSecretCounter
 	// resourceRecommendationLookback overrides
 	// defaultResourceRecommendationLookback for GET
 	// /api/v1/apps/{name}/resource-recommendation's usage-history window.

@@ -629,6 +629,15 @@ type DBPinger interface {
 	PingContext(ctx context.Context) error
 }
 
+// StaleSecretCounter is the surface GET /api/v1/system/doctor's
+// stale_secrets check needs: count every secret-backed value (per-app
+// and every secret-marked shared-env row alike) last set or rotated
+// before cutoff. *store.DB satisfies this via CountStaleSecrets
+// (internal/store/secret_rotation.go).
+type StaleSecretCounter interface {
+	CountStaleSecrets(ctx context.Context, cutoff time.Time) (int, error)
+}
+
 // DockerPruner is the surface POST /api/v1/system/prune needs: run every
 // cleanup stage internal/docker/prune.go supports and report what
 // happened. Unlike DockerDiskUsager (a read), this is a destructive-ish

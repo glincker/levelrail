@@ -237,9 +237,9 @@ func printSecretKeysHuman(out io.Writer, keys []secretKeyResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "KEY\tLOCKED")
+	_, _ = fmt.Fprintln(tw, "KEY\tLOCKED\tAGE\tSTALE")
 	for _, k := range keys {
-		_, _ = fmt.Fprintf(tw, "%s\t%t\n", k.Key, k.Locked)
+		_, _ = fmt.Fprintf(tw, "%s\t%t\t%s\t%t\n", k.Key, k.Locked, formatSecretAge(k.UpdatedAt), k.Stale)
 	}
 	_ = tw.Flush()
 }

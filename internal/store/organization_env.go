@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // SetOrganizationEnvVars full-replaces orgID's shared env vars with vars,
@@ -174,7 +175,7 @@ func (db *DB) ListOrganizationSecretEnvKeys(ctx context.Context, orgID string) (
 // ListProjectEnvVarsDetailed one tier up.
 func (db *DB) ListOrganizationEnvVarsDetailed(ctx context.Context, orgID string) ([]SharedEnvVar, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT key, value, is_secret FROM organization_env_vars WHERE org_id = ? ORDER BY key
+		SELECT key, value, is_secret, updated_at FROM organization_env_vars WHERE org_id = ? ORDER BY key
 	`, orgID)
 	if err != nil {
 		return nil, fmt.Errorf("store: list detailed organization env vars for %q: %w", orgID, err)
@@ -187,10 +188,16 @@ func (db *DB) ListOrganizationEnvVarsDetailed(ctx context.Context, orgID string)
 	for rows.Next() {
 		var v SharedEnvVar
 		var isSecret int
-		if err := rows.Scan(&v.Key, &v.Value, &isSecret); err != nil {
+		var updatedAtRaw string
+		if err := rows.Scan(&v.Key, &v.Value, &isSecret, &updatedAtRaw); err != nil {
 			return nil, fmt.Errorf("store: scan detailed organization env var for %q: %w", orgID, err)
 		}
 		v.Secret = isSecret != 0
+		updatedAt, err := time.Parse(time.RFC3339Nano, updatedAtRaw)
+		if err != nil {
+			return nil, fmt.Errorf("store: parse organization env var updated_at for %q/%q: %w", orgID, v.Key, err)
+		}
+		v.UpdatedAt = updatedAt
 		out = append(out, v)
 	}
 	if err := rows.Err(); err != nil {

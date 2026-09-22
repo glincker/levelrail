@@ -21,6 +21,7 @@ import {
   type SharedEnvScope,
 } from '../queries/sharedEnv'
 import {
+  SecretAgeBadge,
   SecretKeyValueFields,
   SecretNotConfiguredCard,
 } from './SecretKeyValueFields'
@@ -120,7 +121,10 @@ export function SharedEnvSecretsCard({
                 key={k.key}
                 className="flex items-center justify-between gap-2 rounded px-2 py-1 text-sm"
               >
-                <span className="font-mono">{k.key}</span>
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-mono">{k.key}</span>
+                  <SecretAgeBadge updatedAt={k.updatedAt} stale={k.stale} />
+                </span>
                 <Button
                   type="button"
                   variant="ghost"

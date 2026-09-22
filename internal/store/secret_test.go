@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 )
 
 func TestSaveAndGetServiceDEK(t *testing.T) {
@@ -213,17 +214,65 @@ func TestListSecretKeys(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListSecretKeys() error = %v", err)
 	}
-	want := []SecretKeyInfo{
-		{Key: "API_KEY", Locked: false},
-		{Key: "DB_PASSWORD", Locked: false},
-	}
-	if len(keys) != len(want) {
-		t.Fatalf("got %d keys, want %d: %+v", len(keys), len(want), keys)
+	wantKeys := []string{"API_KEY", "DB_PASSWORD"}
+	if len(keys) != len(wantKeys) {
+		t.Fatalf("got %d keys, want %d: %+v", len(keys), len(wantKeys), keys)
 	}
 	for i, k := range keys {
-		if k != want[i] {
-			t.Errorf("keys[%d] = %+v, want %+v", i, k, want[i])
+		if k.Key != wantKeys[i] {
+			t.Errorf("keys[%d].Key = %q, want %q", i, k.Key, wantKeys[i])
 		}
+		if k.Locked {
+			t.Errorf("keys[%d].Locked = true, want false", i)
+		}
+		if k.UpdatedAt.IsZero() {
+			t.Errorf("keys[%d].UpdatedAt is zero, want a real timestamp from SaveSecretValue", i)
+		}
+		if time.Since(k.UpdatedAt) > time.Minute {
+			t.Errorf("keys[%d].UpdatedAt = %v, want close to now (SaveSecretValue just ran)", i, k.UpdatedAt)
+		}
+	}
+}
+
+// TestListSecretKeys_UpdatedAtMovesOnRotation confirms SecretKeyInfo.
+// UpdatedAt reflects a rotation, not just the original SaveSecretValue:
+// the same "rotation moves the age forward" behavior the frontend's
+// staleness badge depends on.
+func TestListSecretKeys_UpdatedAtMovesOnRotation(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveServiceDEK(ctx, "web", []byte("dek")); err != nil {
+		t.Fatalf("SaveServiceDEK() error = %v", err)
+	}
+	if err := db.SaveSecretValue(ctx, "web", "API_KEY", []byte("v1")); err != nil {
+		t.Fatalf("SaveSecretValue() error = %v", err)
+	}
+	keys, err := db.ListSecretKeys(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListSecretKeys() error = %v", err)
+	}
+	if len(keys) != 1 {
+		t.Fatalf("got %d keys, want 1", len(keys))
+	}
+	firstUpdatedAt := keys[0].UpdatedAt
+
+	// Force a measurable gap: SQLite's strftime('%f') has millisecond
+	// resolution, and two upserts in the same test can otherwise land in
+	// the same millisecond.
+	time.Sleep(5 * time.Millisecond)
+
+	if err := db.SaveSecretValue(ctx, "web", "API_KEY", []byte("v2")); err != nil {
+		t.Fatalf("SaveSecretValue() (rotate) error = %v", err)
+	}
+	keys, err = db.ListSecretKeys(ctx, "web")
+	if err != nil {
+		t.Fatalf("ListSecretKeys() error = %v", err)
+	}
+	if len(keys) != 1 {
+		t.Fatalf("got %d keys, want 1", len(keys))
+	}
+	if !keys[0].UpdatedAt.After(firstUpdatedAt) {
+		t.Errorf("UpdatedAt after rotation = %v, want strictly after the original %v", keys[0].UpdatedAt, firstUpdatedAt)
 	}
 }
 

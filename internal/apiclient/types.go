@@ -1102,10 +1102,13 @@ type SetSecretRequest struct {
 
 // SecretKeyResource mirrors internal/api's secretKeyResource
 // (internal/api/secrets.go): a secret's key and locked state, never its
-// value.
+// value. UpdatedAt is RFC3339, and Stale reports whether it's older than
+// the effective secret rotation warning threshold.
 type SecretKeyResource struct {
-	Key    string `json:"key"`
-	Locked bool   `json:"locked"`
+	Key       string `json:"key"`
+	Locked    bool   `json:"locked"`
+	UpdatedAt string `json:"updated_at"`
+	Stale     bool   `json:"stale"`
 }
 
 // SetSecretLockRequest mirrors internal/api's setSecretLockRequest
@@ -1118,11 +1121,14 @@ type SetSecretLockRequest struct {
 // (internal/api/shared_env_secrets.go): one shared env var at the
 // project/organization/environment tier. Value is always "" for a
 // secret-marked entry, matching SecretKeyResource's own "never a value"
-// rule above.
+// rule above. UpdatedAt/Stale are only populated when Secret is true, see
+// sharedEnvVarResource's own doc comment.
 type SharedEnvVarResource struct {
-	Key    string `json:"key"`
-	Value  string `json:"value"`
-	Secret bool   `json:"secret"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	Secret    bool   `json:"secret"`
+	UpdatedAt string `json:"updated_at,omitempty"`
+	Stale     bool   `json:"stale,omitempty"`
 }
 
 // SetSharedEnvSecretRequest mirrors internal/api's
