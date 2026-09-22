@@ -117,21 +117,45 @@ func (c *NetworkCleanupController) Reconcile(ctx context.Context) (reconcile.Res
 // site" split ListNetworksByPrefix's own doc comment describes. No
 // instanceID configured (the default) is a no-op: every observed network
 // is treated as this instance's own, this controller's behavior before
-// cross-instance safety existed. A network with no instance label at all
-// is also kept, not dropped, for the same pre-upgrade-leftover reasoning
-// application.Controller.ownsInstance documents: it can never acquire
-// the label retroactively, and treating it as foreign would leave it
-// permanently un-collectible instead of just un-collectible until this
-// instance's own next app deletion. Only a network explicitly labeled
-// with a different instance ID is excluded.
+// cross-instance safety existed.
+//
+// Deliberately stricter than application.Controller.ownsInstance's
+// analogous container check: a network with no instance label at all is
+// EXCLUDED here, not kept. That's the opposite of ownsInstance's
+// "unlabeled = mine" fallback, and on purpose. ownsInstance's fallback is
+// safe because a name collision there additionally requires an identical
+// content-hashed container name (see staleContainers' own doc comment);
+// a network's name is just "<prefix>-app-<appID>", and appID is
+// frequently a short, human-chosen slug (e.g. "verify-app"), so two
+// independent Levelrail instances sharing one Docker daemon (a real,
+// observed dev/multi-instance-per-host setup, not a hypothetical) can
+// trivially produce the exact same network name without either instance
+// doing anything wrong. Treating that unlabeled name match as "mine"
+// already caused a live incident: a freshly started, empty-DB instance
+// repeatedly attempted RemoveNetwork against another, unrelated running
+// instance's network purely because neither the network nor (at that
+// point) anything else distinguished the two. It only survived because
+// Docker refused the delete while the other instance's containers were
+// still attached.
+//
+// The cost of this stricter rule is that a network created by a
+// pre-instance-labeling build of this same instance (so genuinely this
+// instance's own orphan, just never labeled) is no longer
+// auto-collected: Docker's network API has no way to attach a label to
+// an existing network after creation, so there is no safe way to
+// migrate it into the labeled set short of deleting and recreating it,
+// which risks disrupting whatever is still attached. Leaving a rare
+// pre-upgrade orphan uncollected (operator can remove it by hand) is the
+// correct tradeoff against silently deleting another instance's live
+// network. Only a network explicitly labeled with this instance's own
+// ID is ever a cleanup candidate.
 func (c *NetworkCleanupController) ownNetworks(observed []docker.NetworkInfo) []docker.NetworkInfo {
 	if c.instanceID == "" {
 		return observed
 	}
 	out := make([]docker.NetworkInfo, 0, len(observed))
 	for _, n := range observed {
-		id, labeled := n.Labels[appspec.InstanceLabelKey]
-		if !labeled || id == c.instanceID {
+		if id, labeled := n.Labels[appspec.InstanceLabelKey]; labeled && id == c.instanceID {
 			out = append(out, n)
 		}
 	}
