@@ -595,7 +595,7 @@ func run(logger *slog.Logger) error {
 		IdleTimeout: 120 * time.Second,
 	}
 
-	meshCfg, err := setupMesh(ctx, db, b, agentDataDir, logger)
+	meshCfg, err := setupMesh(ctx, db, b, agentDataDir, agentRegistry, logger)
 	if err != nil {
 		// Not fatal: the same choice this function already makes for
 		// secrets and webhook above. A misconfigured, opted-in mesh

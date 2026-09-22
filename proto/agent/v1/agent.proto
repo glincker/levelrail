@@ -148,6 +148,18 @@ message AgentRequest {
     ExecRequest exec = 15;
     BuildRequest build = 16;
     InspectExitStateRequest inspect_exit_state = 17;
+    // ApplyMesh and RotateMeshKey are dispatched directly by the agent's
+    // own serveSession loop (internal/agent/client.go), not through
+    // Execute: see internal/network.ConfigSink's own doc comment for why
+    // this op exists (the gRPC arm that doc comment says is "deliberately
+    // not in this change" landing here, as its own reviewed diff against
+    // this wire contract) and MeshApplier for the agent-side contract it
+    // is dispatched against. Both carry this node's own mesh identity
+    // only: the private key behind that identity never crosses this wire
+    // in either direction (DeviceConfig.private_key is always unset on
+    // the way down, and there is no field for one on the way back).
+    ApplyMeshRequest apply_mesh = 18;
+    RotateMeshKeyRequest rotate_mesh_key = 19;
   }
 }
 
@@ -172,6 +184,8 @@ message AgentResponse {
     EnsureNetworkResponse ensure_network = 8;
     ListNetworksByPrefixResponse list_networks_by_prefix = 9;
     InspectExitStateResponse inspect_exit_state = 10;
+    ApplyMeshResponse apply_mesh = 11;
+    RotateMeshKeyResponse rotate_mesh_key = 12;
   }
 }
 
@@ -562,4 +576,81 @@ message InspectExitStateResponse {
   // container, not an error" contract.
   bool found = 1;
   ExitState state = 2;
+}
+
+// PeerConfig mirrors internal/network.PeerConfig: one other node, as seen
+// from the node this DeviceConfig is addressed to.
+message PeerConfig {
+  string node_id = 1;
+  // PublicKey is network.Key.String()'s standard-base64 form, the same
+  // textual form the control plane already stores and ships elsewhere.
+  string public_key = 2;
+  string endpoint = 3;
+  // AllowedIps is each prefix's netip.Prefix.String() form. Exactly one
+  // /32 per peer for a full mesh of single-address nodes; see
+  // network.PeerConfig.AllowedIPs's own doc comment for why never wider.
+  repeated string allowed_ips = 4;
+  // PersistentKeepaliveMs is network.PeerConfig.PersistentKeepalive in
+  // milliseconds, the same unit StopRequest.timeout_ms already uses for a
+  // Go time.Duration crossing this wire. Zero means no keepalive, not
+  // "unset": network.PlanOptions.Keepalive's own doc comment distinguishes
+  // "did not set this" from "explicitly disabled" only on the control
+  // plane's side of that decision; by the time a PeerConfig reaches this
+  // message, the decision is already made and zero is unambiguous.
+  int64 persistent_keepalive_ms = 5;
+}
+
+// DeviceConfig mirrors internal/network.DeviceConfig: the complete desired
+// WireGuard state for exactly one node. PrivateKey is deliberately absent
+// from this message, not merely zero-valued: DeviceConfig's own Go doc
+// comment establishes that a private key must never be logged, serialized
+// to the control plane, or included in any status response, and the
+// wire-contract enforcement of that rule is having no field for one to
+// occupy, the same reasoning that field's own comment gives for why the
+// control plane can never populate it in the first place. The receiving
+// node fills its own private key in locally, from its own key file,
+// immediately before applying this to its device (see MeshApplier).
+message DeviceConfig {
+  string node_id = 1;
+  // Address is netip.Prefix.String() (e.g. "10.181.0.3/16"), the node's
+  // own mesh address with the mesh CIDR's prefix length. Empty means no
+  // address assigned yet (network.DeviceConfig.Address's own "invalid
+  // until assigned" state).
+  string address = 2;
+  int32 listen_port = 3;
+  repeated PeerConfig peers = 4;
+}
+
+// NodeIdentity mirrors internal/network.NodeIdentity: what a node reports
+// back about itself when it applies a mesh config, the half of its
+// configuration only it can know.
+message NodeIdentity {
+  string public_key = 1;
+  int32 listen_port = 2;
+  string endpoint = 3;
+}
+
+// ApplyMeshRequest asks the receiving node to converge its own WireGuard
+// device on config (config.node_id names the node this is addressed to,
+// the same self-addressing InspectByNameRequest's own name field
+// establishes for a different resource). The agent fills in its own
+// private key from its local key file before calling network.Mesh.Apply,
+// per DeviceConfig's own doc comment above.
+message ApplyMeshRequest {
+  DeviceConfig config = 1;
+}
+message ApplyMeshResponse {
+  NodeIdentity identity = 1;
+}
+
+// RotateMeshKeyRequest asks the receiving node to generate a fresh
+// WireGuard keypair, make it that node's live identity immediately, and
+// persist it. Carries no fields: unlike ApplyMeshRequest, this always
+// means "rotate the node holding this Session stream's own key," never
+// another node's, the same restriction network.LocalSink.RotateKey's own
+// nodeID check already enforces one layer down.
+message RotateMeshKeyRequest {}
+message RotateMeshKeyResponse {
+  string old_public_key = 1;
+  string new_public_key = 2;
 }

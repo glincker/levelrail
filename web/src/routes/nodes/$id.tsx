@@ -242,7 +242,7 @@ function NodeDetailPage() {
 
       <NodeAlertStatusCard nodeId={id} />
 
-      <NodeMeshCard nodeId={id} nodeName={node.name} isLocal={node.is_local} />
+      <NodeMeshCard nodeId={id} nodeName={node.name} />
 
       <NodePatchStatusCard nodeId={id} />
 

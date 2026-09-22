@@ -3,17 +3,20 @@ package main
 // mesh.go wires the WireGuard mesh into the control plane, gated
 // behind APP_MESH_ENABLED (default off).
 //
-// It is opt-in rather than always-on for a concrete reason, not general
-// caution: internal/network.ConfigSink's gRPC arm, the piece that would
-// carry a remote node's config over the agent wire contract, is
-// deliberately not built yet (see that interface's own doc comment for
-// the exact messages it needs). Until it exists, enabling this only
-// brings up *this* node's own device, DNS zone, and self-peer entry;
-// a remote, enrolled node never receives a config to apply, so it is
-// real but not yet a working multi-node mesh. That is exactly the
-// "feature flags for anything half-built" case this project's own
-// process rules call for, not a permanent switch: once the wire
-// contract extension lands, this flag's default can flip.
+// It is opt-in rather than always-on because a control plane process
+// that never set APP_MESH_ENABLED=1 should see nothing different at all,
+// not a new TUN device and DNS server it did not ask for; it is not
+// opt-in because of any remaining functional gap. internal/network.ConfigSink's
+// gRPC arm now exists (internal/agent.GRPCSink, dispatched over the
+// agent Session stream, proto/agent/v1/agent.proto's ApplyMesh/
+// RotateMeshKey ops), so setupMesh below builds a
+// network.MultiSink that routes this node's own config through
+// network.LocalSink (in-process, as before) and every enrolled remote
+// node's config through GRPCSink, over that node's own live agent
+// connection when it has one. A remote node with no live connection
+// simply fails that one pass's NodeResult (ConfigSink.ApplyMesh's own
+// per-node contract), the same as any other transient node-unreachable
+// state elsewhere in this codebase; the next reconcile pass tries again.
 //
 // A node running the control plane needs a real row in the nodes table
 // for any of this to work at all: internal/reconcile/mesh.Controller
@@ -37,6 +40,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/network"
@@ -290,7 +294,7 @@ type meshSetup struct {
 // responsibility, not the mesh library's: a bad mesh key file, a taken
 // DNS port, or a broken local-node bootstrap are configuration problems
 // worth failing loudly on rather than starting in a half-wired state.
-func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string, logger *slog.Logger) (*meshSetup, error) {
+func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string, agentRegistry *agent.Registry, logger *slog.Logger) (*meshSetup, error) {
 	if !meshEnabled() {
 		return nil, nil
 	}
@@ -308,12 +312,13 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 	}
 
 	device, err := network.NewDevice(ctx, network.SystemProbe{},
-		network.WithLogger(logger), network.WithShortName(b.ShortName))
+		network.WithLogger(logger), network.WithShortName(b.ShortName),
+		network.WithLinkConfigurator(network.SystemLinkConfigurator{}))
 	if err != nil {
 		return nil, fmt.Errorf("bring up mesh device: %w", err)
 	}
 
-	sink, err := network.NewLocalSink(localNodeID, device, key,
+	localSink, err := network.NewLocalSink(localNodeID, device, key,
 		network.WithKeyPersistFunc(func(newKey network.Key) error {
 			return persistMeshKey(dataDir, newKey)
 		}))
@@ -321,6 +326,12 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 		_ = device.Close()
 		return nil, fmt.Errorf("build local mesh sink: %w", err)
 	}
+	// GRPCSink dispatches every node but localNodeID over that node's own
+	// live agent Session (internal/agent.GRPCSink, resolved per call
+	// through agentRegistry); MultiSink is what lets Coordinator hold the
+	// two of them as the single ConfigSink its own constructor requires.
+	// See mesh.go's own header for why this used to be LocalSink alone.
+	sink := network.NewMultiSink(localNodeID, localSink, agent.NewGRPCSink(agentRegistry))
 	coordinator := network.NewCoordinator(sink, network.PlanOptions{MeshCIDR: meshCIDR(logger)},
 		network.WithCoordinatorLogger(logger))
 
@@ -387,15 +398,15 @@ const dockerNameserverPort = 53
 // node's mesh DNS zone (internal/network/dns_server.go), or "" if that
 // isn't possible right now.
 //
-// No WireGuard mesh interface IP is bound to anything yet
-// (internal/network/device.go's configureLink no-ops without a
-// LinkConfigurator, a separate, out-of-scope gap), and docker.Client.Create
-// attaches every container to Docker's default "bridge" network with no
-// NetworkingConfig, so the mesh DNS server's own wildcard bind address is
-// never itself reachable from inside a container. The address that is
-// reachable is that bridge network's own gateway IP, queried live from
-// the Docker daemon rather than hardcoded (dockerd's bip config can
-// change it).
+// setupMesh above does now address the WireGuard mesh interface
+// (network.SystemLinkConfigurator, wired via network.WithLinkConfigurator),
+// but that address is only reachable from the host, not from inside a
+// container: docker.Client.Create attaches every container to Docker's
+// default "bridge" network with no NetworkingConfig, a separate, still
+// out-of-scope gap from the mesh interface itself. The address that is
+// reachable from inside a container is that bridge network's own gateway
+// IP, queried live from the Docker daemon rather than hardcoded
+// (dockerd's bip config can change it).
 //
 // That gateway IP is only useful, though, if the mesh DNS server is
 // actually listening on port 53 at it: dockerNameserverPort's own doc

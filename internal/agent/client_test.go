@@ -9,6 +9,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/network"
 )
 
 // fakeAgentClientStream is a hand-written fake for agentClientStream.
@@ -53,7 +54,7 @@ func TestServeSession_DispatchesRequest_SendsResponse(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	done := make(chan error, 1)
-	go func() { done <- serveSession(ctx, stream, rt, nil, time.Hour, testLogger()) }()
+	go func() { done <- serveSession(ctx, stream, rt, nil, nil, "", time.Hour, testLogger()) }()
 
 	stream.recv <- controlRequest(&agentpb.AgentRequest{
 		RequestId: "r1",
@@ -96,7 +97,7 @@ func TestServeSession_RecvError_ReturnsImmediately(t *testing.T) {
 	stream.recvErr = errors.New("connection reset")
 	close(stream.recv)
 
-	err := serveSession(context.Background(), stream, newExecRuntime(), nil, time.Hour, testLogger())
+	err := serveSession(context.Background(), stream, newExecRuntime(), nil, nil, "", time.Hour, testLogger())
 	if err == nil {
 		t.Fatal("serveSession() error = nil, want the recv error wrapped")
 	}
@@ -108,7 +109,7 @@ func TestServeSession_MultipleRequests_AllAnswered(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go func() { _ = serveSession(ctx, stream, rt, nil, time.Hour, testLogger()) }()
+	go func() { _ = serveSession(ctx, stream, rt, nil, nil, "", time.Hour, testLogger()) }()
 
 	stream.recv <- controlRequest(&agentpb.AgentRequest{
 		RequestId: "r1", Op: &agentpb.AgentRequest_Start{Start: &agentpb.StartRequest{Id: "c1"}},
@@ -137,7 +138,7 @@ func TestServeSession_WatchEvents_EmitsProxiedEvent(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go func() { _ = serveSession(ctx, stream, rt, nil, time.Hour, testLogger()) }()
+	go func() { _ = serveSession(ctx, stream, rt, nil, nil, "", time.Hour, testLogger()) }()
 
 	stream.recv <- controlRequest(&agentpb.AgentRequest{
 		RequestId: "r1",
@@ -164,5 +165,91 @@ func TestServeSession_WatchEvents_EmitsProxiedEvent(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for the relayed event")
+	}
+}
+
+// TestServeSession_DispatchesMeshRequests exercises the same path a real
+// control plane connection uses (WithMesh -> serveSession's own
+// ApplyMesh/RotateMeshKey branches, mesh_dispatch.go), rather than
+// calling handleApplyMesh/handleRotateMeshKey directly the way
+// mesh_dispatch_test.go does: this is the end-to-end proof that a
+// mesh-enabled Session actually reaches the applier, not just that the
+// handlers work in isolation.
+func TestServeSession_DispatchesMeshRequests(t *testing.T) {
+	stream := newFakeAgentClientStream()
+	applier := &fakeMeshApplier{
+		applyResult:  network.NodeIdentity{PublicKey: testMeshKey(t, 6)},
+		rotateResult: network.RotationResult{OldPublicKey: testMeshKey(t, 1), NewPublicKey: testMeshKey(t, 2)},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		_ = serveSession(ctx, stream, newExecRuntime(), nil, applier, "node-a", time.Hour, testLogger())
+	}()
+
+	stream.recv <- controlRequest(&agentpb.AgentRequest{
+		RequestId: "r1",
+		Op:        &agentpb.AgentRequest_ApplyMesh{ApplyMesh: &agentpb.ApplyMeshRequest{Config: &agentpb.DeviceConfig{NodeId: "node-a"}}},
+	})
+	select {
+	case msg := <-stream.sent:
+		resp := msg.GetResponse()
+		if resp.GetError() != "" {
+			t.Fatalf("ApplyMesh response error = %q, want none", resp.GetError())
+		}
+		if resp.GetApplyMesh().GetIdentity().GetPublicKey() != applier.applyResult.PublicKey.String() {
+			t.Errorf("ApplyMesh response PublicKey = %q, want %q", resp.GetApplyMesh().GetIdentity().GetPublicKey(), applier.applyResult.PublicKey.String())
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the ApplyMesh response")
+	}
+	if applier.appliedNodeID != "node-a" {
+		t.Errorf("ApplyMesh dispatched with nodeID = %q, want %q", applier.appliedNodeID, "node-a")
+	}
+
+	stream.recv <- controlRequest(&agentpb.AgentRequest{
+		RequestId: "r2",
+		Op:        &agentpb.AgentRequest_RotateMeshKey{RotateMeshKey: &agentpb.RotateMeshKeyRequest{}},
+	})
+	select {
+	case msg := <-stream.sent:
+		resp := msg.GetResponse()
+		if resp.GetError() != "" {
+			t.Fatalf("RotateMeshKey response error = %q, want none", resp.GetError())
+		}
+		if resp.GetRotateMeshKey().GetNewPublicKey() != applier.rotateResult.NewPublicKey.String() {
+			t.Errorf("RotateMeshKey response NewPublicKey = %q, want %q", resp.GetRotateMeshKey().GetNewPublicKey(), applier.rotateResult.NewPublicKey.String())
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the RotateMeshKey response")
+	}
+	if applier.rotatedNodeID != "node-a" {
+		t.Errorf("RotateMeshKey dispatched with nodeID = %q, want %q", applier.rotatedNodeID, "node-a")
+	}
+}
+
+// TestServeSession_MeshRequests_NoMeshApplier_ReturnsErrMeshUnavailable
+// confirms a Session started with no WithMesh option (an agent whose
+// node has mesh networking disabled, or predates mesh support) answers
+// clearly rather than hanging or panicking.
+func TestServeSession_MeshRequests_NoMeshApplier_ReturnsErrMeshUnavailable(t *testing.T) {
+	stream := newFakeAgentClientStream()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = serveSession(ctx, stream, newExecRuntime(), nil, nil, "", time.Hour, testLogger()) }()
+
+	stream.recv <- controlRequest(&agentpb.AgentRequest{
+		RequestId: "r1",
+		Op:        &agentpb.AgentRequest_ApplyMesh{ApplyMesh: &agentpb.ApplyMeshRequest{Config: &agentpb.DeviceConfig{}}},
+	})
+	select {
+	case msg := <-stream.sent:
+		if msg.GetResponse().GetError() != ErrMeshUnavailable.Error() {
+			t.Errorf("ApplyMesh response error = %q, want %q", msg.GetResponse().GetError(), ErrMeshUnavailable.Error())
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for the ApplyMesh response")
 	}
 }

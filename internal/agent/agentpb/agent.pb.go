@@ -621,6 +621,8 @@ type AgentRequest struct {
 	//	*AgentRequest_Exec
 	//	*AgentRequest_Build
 	//	*AgentRequest_InspectExitState
+	//	*AgentRequest_ApplyMesh
+	//	*AgentRequest_RotateMeshKey
 	Op            isAgentRequest_Op `protobuf_oneof:"op"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -814,6 +816,24 @@ func (x *AgentRequest) GetInspectExitState() *InspectExitStateRequest {
 	return nil
 }
 
+func (x *AgentRequest) GetApplyMesh() *ApplyMeshRequest {
+	if x != nil {
+		if x, ok := x.Op.(*AgentRequest_ApplyMesh); ok {
+			return x.ApplyMesh
+		}
+	}
+	return nil
+}
+
+func (x *AgentRequest) GetRotateMeshKey() *RotateMeshKeyRequest {
+	if x != nil {
+		if x, ok := x.Op.(*AgentRequest_RotateMeshKey); ok {
+			return x.RotateMeshKey
+		}
+	}
+	return nil
+}
+
 type isAgentRequest_Op interface {
 	isAgentRequest_Op()
 }
@@ -882,6 +902,24 @@ type AgentRequest_InspectExitState struct {
 	InspectExitState *InspectExitStateRequest `protobuf:"bytes,17,opt,name=inspect_exit_state,json=inspectExitState,proto3,oneof"`
 }
 
+type AgentRequest_ApplyMesh struct {
+	// ApplyMesh and RotateMeshKey are dispatched directly by the agent's
+	// own serveSession loop (internal/agent/client.go), not through
+	// Execute: see internal/network.ConfigSink's own doc comment for why
+	// this op exists (the gRPC arm that doc comment says is "deliberately
+	// not in this change" landing here, as its own reviewed diff against
+	// this wire contract) and MeshApplier for the agent-side contract it
+	// is dispatched against. Both carry this node's own mesh identity
+	// only: the private key behind that identity never crosses this wire
+	// in either direction (DeviceConfig.private_key is always unset on
+	// the way down, and there is no field for one on the way back).
+	ApplyMesh *ApplyMeshRequest `protobuf:"bytes,18,opt,name=apply_mesh,json=applyMesh,proto3,oneof"`
+}
+
+type AgentRequest_RotateMeshKey struct {
+	RotateMeshKey *RotateMeshKeyRequest `protobuf:"bytes,19,opt,name=rotate_mesh_key,json=rotateMeshKey,proto3,oneof"`
+}
+
 func (*AgentRequest_InspectByName) isAgentRequest_Op() {}
 
 func (*AgentRequest_Create) isAgentRequest_Op() {}
@@ -914,6 +952,10 @@ func (*AgentRequest_Build) isAgentRequest_Op() {}
 
 func (*AgentRequest_InspectExitState) isAgentRequest_Op() {}
 
+func (*AgentRequest_ApplyMesh) isAgentRequest_Op() {}
+
+func (*AgentRequest_RotateMeshKey) isAgentRequest_Op() {}
+
 // AgentResponse is the agent's answer to exactly one AgentRequest,
 // carrying the same request_id.
 type AgentResponse struct {
@@ -934,6 +976,8 @@ type AgentResponse struct {
 	//	*AgentResponse_EnsureNetwork
 	//	*AgentResponse_ListNetworksByPrefix
 	//	*AgentResponse_InspectExitState
+	//	*AgentResponse_ApplyMesh
+	//	*AgentResponse_RotateMeshKey
 	Result        isAgentResponse_Result `protobuf_oneof:"result"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1062,6 +1106,24 @@ func (x *AgentResponse) GetInspectExitState() *InspectExitStateResponse {
 	return nil
 }
 
+func (x *AgentResponse) GetApplyMesh() *ApplyMeshResponse {
+	if x != nil {
+		if x, ok := x.Result.(*AgentResponse_ApplyMesh); ok {
+			return x.ApplyMesh
+		}
+	}
+	return nil
+}
+
+func (x *AgentResponse) GetRotateMeshKey() *RotateMeshKeyResponse {
+	if x != nil {
+		if x, ok := x.Result.(*AgentResponse_RotateMeshKey); ok {
+			return x.RotateMeshKey
+		}
+	}
+	return nil
+}
+
 type isAgentResponse_Result interface {
 	isAgentResponse_Result()
 }
@@ -1101,6 +1163,14 @@ type AgentResponse_InspectExitState struct {
 	InspectExitState *InspectExitStateResponse `protobuf:"bytes,10,opt,name=inspect_exit_state,json=inspectExitState,proto3,oneof"`
 }
 
+type AgentResponse_ApplyMesh struct {
+	ApplyMesh *ApplyMeshResponse `protobuf:"bytes,11,opt,name=apply_mesh,json=applyMesh,proto3,oneof"`
+}
+
+type AgentResponse_RotateMeshKey struct {
+	RotateMeshKey *RotateMeshKeyResponse `protobuf:"bytes,12,opt,name=rotate_mesh_key,json=rotateMeshKey,proto3,oneof"`
+}
+
 func (*AgentResponse_InspectByName) isAgentResponse_Result() {}
 
 func (*AgentResponse_Create) isAgentResponse_Result() {}
@@ -1116,6 +1186,10 @@ func (*AgentResponse_EnsureNetwork) isAgentResponse_Result() {}
 func (*AgentResponse_ListNetworksByPrefix) isAgentResponse_Result() {}
 
 func (*AgentResponse_InspectExitState) isAgentResponse_Result() {}
+
+func (*AgentResponse_ApplyMesh) isAgentResponse_Result() {}
+
+func (*AgentResponse_RotateMeshKey) isAgentResponse_Result() {}
 
 type Empty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -4043,6 +4117,429 @@ func (x *InspectExitStateResponse) GetState() *ExitState {
 	return nil
 }
 
+// PeerConfig mirrors internal/network.PeerConfig: one other node, as seen
+// from the node this DeviceConfig is addressed to.
+type PeerConfig struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	NodeId string                 `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	// PublicKey is network.Key.String()'s standard-base64 form, the same
+	// textual form the control plane already stores and ships elsewhere.
+	PublicKey string `protobuf:"bytes,2,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
+	Endpoint  string `protobuf:"bytes,3,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	// AllowedIps is each prefix's netip.Prefix.String() form. Exactly one
+	// /32 per peer for a full mesh of single-address nodes; see
+	// network.PeerConfig.AllowedIPs's own doc comment for why never wider.
+	AllowedIps []string `protobuf:"bytes,4,rep,name=allowed_ips,json=allowedIps,proto3" json:"allowed_ips,omitempty"`
+	// PersistentKeepaliveMs is network.PeerConfig.PersistentKeepalive in
+	// milliseconds, the same unit StopRequest.timeout_ms already uses for a
+	// Go time.Duration crossing this wire. Zero means no keepalive, not
+	// "unset": network.PlanOptions.Keepalive's own doc comment distinguishes
+	// "did not set this" from "explicitly disabled" only on the control
+	// plane's side of that decision; by the time a PeerConfig reaches this
+	// message, the decision is already made and zero is unambiguous.
+	PersistentKeepaliveMs int64 `protobuf:"varint,5,opt,name=persistent_keepalive_ms,json=persistentKeepaliveMs,proto3" json:"persistent_keepalive_ms,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *PeerConfig) Reset() {
+	*x = PeerConfig{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[56]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PeerConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PeerConfig) ProtoMessage() {}
+
+func (x *PeerConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[56]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PeerConfig.ProtoReflect.Descriptor instead.
+func (*PeerConfig) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{56}
+}
+
+func (x *PeerConfig) GetNodeId() string {
+	if x != nil {
+		return x.NodeId
+	}
+	return ""
+}
+
+func (x *PeerConfig) GetPublicKey() string {
+	if x != nil {
+		return x.PublicKey
+	}
+	return ""
+}
+
+func (x *PeerConfig) GetEndpoint() string {
+	if x != nil {
+		return x.Endpoint
+	}
+	return ""
+}
+
+func (x *PeerConfig) GetAllowedIps() []string {
+	if x != nil {
+		return x.AllowedIps
+	}
+	return nil
+}
+
+func (x *PeerConfig) GetPersistentKeepaliveMs() int64 {
+	if x != nil {
+		return x.PersistentKeepaliveMs
+	}
+	return 0
+}
+
+// DeviceConfig mirrors internal/network.DeviceConfig: the complete desired
+// WireGuard state for exactly one node. PrivateKey is deliberately absent
+// from this message, not merely zero-valued: DeviceConfig's own Go doc
+// comment establishes that a private key must never be logged, serialized
+// to the control plane, or included in any status response, and the
+// wire-contract enforcement of that rule is having no field for one to
+// occupy, the same reasoning that field's own comment gives for why the
+// control plane can never populate it in the first place. The receiving
+// node fills its own private key in locally, from its own key file,
+// immediately before applying this to its device (see MeshApplier).
+type DeviceConfig struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	NodeId string                 `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	// Address is netip.Prefix.String() (e.g. "10.181.0.3/16"), the node's
+	// own mesh address with the mesh CIDR's prefix length. Empty means no
+	// address assigned yet (network.DeviceConfig.Address's own "invalid
+	// until assigned" state).
+	Address       string        `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
+	ListenPort    int32         `protobuf:"varint,3,opt,name=listen_port,json=listenPort,proto3" json:"listen_port,omitempty"`
+	Peers         []*PeerConfig `protobuf:"bytes,4,rep,name=peers,proto3" json:"peers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeviceConfig) Reset() {
+	*x = DeviceConfig{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeviceConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeviceConfig) ProtoMessage() {}
+
+func (x *DeviceConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeviceConfig.ProtoReflect.Descriptor instead.
+func (*DeviceConfig) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{57}
+}
+
+func (x *DeviceConfig) GetNodeId() string {
+	if x != nil {
+		return x.NodeId
+	}
+	return ""
+}
+
+func (x *DeviceConfig) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+func (x *DeviceConfig) GetListenPort() int32 {
+	if x != nil {
+		return x.ListenPort
+	}
+	return 0
+}
+
+func (x *DeviceConfig) GetPeers() []*PeerConfig {
+	if x != nil {
+		return x.Peers
+	}
+	return nil
+}
+
+// NodeIdentity mirrors internal/network.NodeIdentity: what a node reports
+// back about itself when it applies a mesh config, the half of its
+// configuration only it can know.
+type NodeIdentity struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PublicKey     string                 `protobuf:"bytes,1,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
+	ListenPort    int32                  `protobuf:"varint,2,opt,name=listen_port,json=listenPort,proto3" json:"listen_port,omitempty"`
+	Endpoint      string                 `protobuf:"bytes,3,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NodeIdentity) Reset() {
+	*x = NodeIdentity{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NodeIdentity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NodeIdentity) ProtoMessage() {}
+
+func (x *NodeIdentity) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NodeIdentity.ProtoReflect.Descriptor instead.
+func (*NodeIdentity) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{58}
+}
+
+func (x *NodeIdentity) GetPublicKey() string {
+	if x != nil {
+		return x.PublicKey
+	}
+	return ""
+}
+
+func (x *NodeIdentity) GetListenPort() int32 {
+	if x != nil {
+		return x.ListenPort
+	}
+	return 0
+}
+
+func (x *NodeIdentity) GetEndpoint() string {
+	if x != nil {
+		return x.Endpoint
+	}
+	return ""
+}
+
+// ApplyMeshRequest asks the receiving node to converge its own WireGuard
+// device on config (config.node_id names the node this is addressed to,
+// the same self-addressing InspectByNameRequest's own name field
+// establishes for a different resource). The agent fills in its own
+// private key from its local key file before calling network.Mesh.Apply,
+// per DeviceConfig's own doc comment above.
+type ApplyMeshRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Config        *DeviceConfig          `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApplyMeshRequest) Reset() {
+	*x = ApplyMeshRequest{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApplyMeshRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApplyMeshRequest) ProtoMessage() {}
+
+func (x *ApplyMeshRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApplyMeshRequest.ProtoReflect.Descriptor instead.
+func (*ApplyMeshRequest) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{59}
+}
+
+func (x *ApplyMeshRequest) GetConfig() *DeviceConfig {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+type ApplyMeshResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Identity      *NodeIdentity          `protobuf:"bytes,1,opt,name=identity,proto3" json:"identity,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApplyMeshResponse) Reset() {
+	*x = ApplyMeshResponse{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[60]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApplyMeshResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApplyMeshResponse) ProtoMessage() {}
+
+func (x *ApplyMeshResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[60]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApplyMeshResponse.ProtoReflect.Descriptor instead.
+func (*ApplyMeshResponse) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{60}
+}
+
+func (x *ApplyMeshResponse) GetIdentity() *NodeIdentity {
+	if x != nil {
+		return x.Identity
+	}
+	return nil
+}
+
+// RotateMeshKeyRequest asks the receiving node to generate a fresh
+// WireGuard keypair, make it that node's live identity immediately, and
+// persist it. Carries no fields: unlike ApplyMeshRequest, this always
+// means "rotate the node holding this Session stream's own key," never
+// another node's, the same restriction network.LocalSink.RotateKey's own
+// nodeID check already enforces one layer down.
+type RotateMeshKeyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RotateMeshKeyRequest) Reset() {
+	*x = RotateMeshKeyRequest{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[61]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RotateMeshKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RotateMeshKeyRequest) ProtoMessage() {}
+
+func (x *RotateMeshKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[61]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RotateMeshKeyRequest.ProtoReflect.Descriptor instead.
+func (*RotateMeshKeyRequest) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{61}
+}
+
+type RotateMeshKeyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OldPublicKey  string                 `protobuf:"bytes,1,opt,name=old_public_key,json=oldPublicKey,proto3" json:"old_public_key,omitempty"`
+	NewPublicKey  string                 `protobuf:"bytes,2,opt,name=new_public_key,json=newPublicKey,proto3" json:"new_public_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RotateMeshKeyResponse) Reset() {
+	*x = RotateMeshKeyResponse{}
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[62]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RotateMeshKeyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RotateMeshKeyResponse) ProtoMessage() {}
+
+func (x *RotateMeshKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_agent_v1_agent_proto_msgTypes[62]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RotateMeshKeyResponse.ProtoReflect.Descriptor instead.
+func (*RotateMeshKeyResponse) Descriptor() ([]byte, []int) {
+	return file_proto_agent_v1_agent_proto_rawDescGZIP(), []int{62}
+}
+
+func (x *RotateMeshKeyResponse) GetOldPublicKey() string {
+	if x != nil {
+		return x.OldPublicKey
+	}
+	return ""
+}
+
+func (x *RotateMeshKeyResponse) GetNewPublicKey() string {
+	if x != nil {
+		return x.NewPublicKey
+	}
+	return ""
+}
+
 var File_proto_agent_v1_agent_proto protoreflect.FileDescriptor
 
 const file_proto_agent_v1_agent_proto_rawDesc = "" +
@@ -4082,7 +4579,8 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\fbuild_credit\x18\a \x01(\v2\x1f.levelrail.agent.v1.BuildCreditH\x00R\vbuildCredit\x12A\n" +
 	"\vexec_resize\x18\b \x01(\v2\x1e.levelrail.agent.v1.ExecResizeH\x00R\n" +
 	"execResizeB\t\n" +
-	"\apayload\"\xe1\t\n" +
+	"\apayload\"\xfc\n" +
+	"\n" +
 	"\fAgentRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12R\n" +
@@ -4103,8 +4601,11 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x17list_networks_by_prefix\x18\x0e \x01(\v2/.levelrail.agent.v1.ListNetworksByPrefixRequestH\x00R\x14listNetworksByPrefix\x125\n" +
 	"\x04exec\x18\x0f \x01(\v2\x1f.levelrail.agent.v1.ExecRequestH\x00R\x04exec\x128\n" +
 	"\x05build\x18\x10 \x01(\v2 .levelrail.agent.v1.BuildRequestH\x00R\x05build\x12[\n" +
-	"\x12inspect_exit_state\x18\x11 \x01(\v2+.levelrail.agent.v1.InspectExitStateRequestH\x00R\x10inspectExitStateB\x04\n" +
-	"\x02op\"\xce\x05\n" +
+	"\x12inspect_exit_state\x18\x11 \x01(\v2+.levelrail.agent.v1.InspectExitStateRequestH\x00R\x10inspectExitState\x12E\n" +
+	"\n" +
+	"apply_mesh\x18\x12 \x01(\v2$.levelrail.agent.v1.ApplyMeshRequestH\x00R\tapplyMesh\x12R\n" +
+	"\x0frotate_mesh_key\x18\x13 \x01(\v2(.levelrail.agent.v1.RotateMeshKeyRequestH\x00R\rrotateMeshKeyB\x04\n" +
+	"\x02op\"\xeb\x06\n" +
 	"\rAgentResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12\x14\n" +
@@ -4118,7 +4619,10 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x0eensure_network\x18\b \x01(\v2).levelrail.agent.v1.EnsureNetworkResponseH\x00R\rensureNetwork\x12i\n" +
 	"\x17list_networks_by_prefix\x18\t \x01(\v20.levelrail.agent.v1.ListNetworksByPrefixResponseH\x00R\x14listNetworksByPrefix\x12\\\n" +
 	"\x12inspect_exit_state\x18\n" +
-	" \x01(\v2,.levelrail.agent.v1.InspectExitStateResponseH\x00R\x10inspectExitStateB\b\n" +
+	" \x01(\v2,.levelrail.agent.v1.InspectExitStateResponseH\x00R\x10inspectExitState\x12F\n" +
+	"\n" +
+	"apply_mesh\x18\v \x01(\v2%.levelrail.agent.v1.ApplyMeshResponseH\x00R\tapplyMesh\x12S\n" +
+	"\x0frotate_mesh_key\x18\f \x01(\v2).levelrail.agent.v1.RotateMeshKeyResponseH\x00R\rrotateMeshKeyB\b\n" +
 	"\x06result\"\a\n" +
 	"\x05Empty\"\v\n" +
 	"\tHeartbeat\"m\n" +
@@ -4314,7 +4818,36 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"e\n" +
 	"\x18InspectExitStateResponse\x12\x14\n" +
 	"\x05found\x18\x01 \x01(\bR\x05found\x123\n" +
-	"\x05state\x18\x02 \x01(\v2\x1d.levelrail.agent.v1.ExitStateR\x05state*[\n" +
+	"\x05state\x18\x02 \x01(\v2\x1d.levelrail.agent.v1.ExitStateR\x05state\"\xb9\x01\n" +
+	"\n" +
+	"PeerConfig\x12\x17\n" +
+	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x12\x1d\n" +
+	"\n" +
+	"public_key\x18\x02 \x01(\tR\tpublicKey\x12\x1a\n" +
+	"\bendpoint\x18\x03 \x01(\tR\bendpoint\x12\x1f\n" +
+	"\vallowed_ips\x18\x04 \x03(\tR\n" +
+	"allowedIps\x126\n" +
+	"\x17persistent_keepalive_ms\x18\x05 \x01(\x03R\x15persistentKeepaliveMs\"\x98\x01\n" +
+	"\fDeviceConfig\x12\x17\n" +
+	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x12\x18\n" +
+	"\aaddress\x18\x02 \x01(\tR\aaddress\x12\x1f\n" +
+	"\vlisten_port\x18\x03 \x01(\x05R\n" +
+	"listenPort\x124\n" +
+	"\x05peers\x18\x04 \x03(\v2\x1e.levelrail.agent.v1.PeerConfigR\x05peers\"j\n" +
+	"\fNodeIdentity\x12\x1d\n" +
+	"\n" +
+	"public_key\x18\x01 \x01(\tR\tpublicKey\x12\x1f\n" +
+	"\vlisten_port\x18\x02 \x01(\x05R\n" +
+	"listenPort\x12\x1a\n" +
+	"\bendpoint\x18\x03 \x01(\tR\bendpoint\"L\n" +
+	"\x10ApplyMeshRequest\x128\n" +
+	"\x06config\x18\x01 \x01(\v2 .levelrail.agent.v1.DeviceConfigR\x06config\"Q\n" +
+	"\x11ApplyMeshResponse\x12<\n" +
+	"\bidentity\x18\x01 \x01(\v2 .levelrail.agent.v1.NodeIdentityR\bidentity\"\x16\n" +
+	"\x14RotateMeshKeyRequest\"c\n" +
+	"\x15RotateMeshKeyResponse\x12$\n" +
+	"\x0eold_public_key\x18\x01 \x01(\tR\foldPublicKey\x12$\n" +
+	"\x0enew_public_key\x18\x02 \x01(\tR\fnewPublicKey*[\n" +
 	"\tBuildKind\x12\x1a\n" +
 	"\x16BUILD_KIND_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15BUILD_KIND_DOCKERFILE\x10\x01\x12\x17\n" +
@@ -4336,7 +4869,7 @@ func file_proto_agent_v1_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_agent_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 59)
+var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 66)
 var file_proto_agent_v1_agent_proto_goTypes = []any{
 	(BuildKind)(0),                       // 0: levelrail.agent.v1.BuildKind
 	(*EnrollRequest)(nil),                // 1: levelrail.agent.v1.EnrollRequest
@@ -4395,10 +4928,17 @@ var file_proto_agent_v1_agent_proto_goTypes = []any{
 	(*ExitState)(nil),                    // 54: levelrail.agent.v1.ExitState
 	(*InspectExitStateRequest)(nil),      // 55: levelrail.agent.v1.InspectExitStateRequest
 	(*InspectExitStateResponse)(nil),     // 56: levelrail.agent.v1.InspectExitStateResponse
-	nil,                                  // 57: levelrail.agent.v1.ContainerSpec.EnvEntry
-	nil,                                  // 58: levelrail.agent.v1.BuildRequest.BuildArgsEntry
-	nil,                                  // 59: levelrail.agent.v1.BuildDone.ExporterResponseEntry
-	(*timestamppb.Timestamp)(nil),        // 60: google.protobuf.Timestamp
+	(*PeerConfig)(nil),                   // 57: levelrail.agent.v1.PeerConfig
+	(*DeviceConfig)(nil),                 // 58: levelrail.agent.v1.DeviceConfig
+	(*NodeIdentity)(nil),                 // 59: levelrail.agent.v1.NodeIdentity
+	(*ApplyMeshRequest)(nil),             // 60: levelrail.agent.v1.ApplyMeshRequest
+	(*ApplyMeshResponse)(nil),            // 61: levelrail.agent.v1.ApplyMeshResponse
+	(*RotateMeshKeyRequest)(nil),         // 62: levelrail.agent.v1.RotateMeshKeyRequest
+	(*RotateMeshKeyResponse)(nil),        // 63: levelrail.agent.v1.RotateMeshKeyResponse
+	nil,                                  // 64: levelrail.agent.v1.ContainerSpec.EnvEntry
+	nil,                                  // 65: levelrail.agent.v1.BuildRequest.BuildArgsEntry
+	nil,                                  // 66: levelrail.agent.v1.BuildDone.ExporterResponseEntry
+	(*timestamppb.Timestamp)(nil),        // 67: google.protobuf.Timestamp
 }
 var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	6,  // 0: levelrail.agent.v1.AgentMessage.response:type_name -> levelrail.agent.v1.AgentResponse
@@ -4432,47 +4972,54 @@ var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	35, // 28: levelrail.agent.v1.AgentRequest.exec:type_name -> levelrail.agent.v1.ExecRequest
 	44, // 29: levelrail.agent.v1.AgentRequest.build:type_name -> levelrail.agent.v1.BuildRequest
 	55, // 30: levelrail.agent.v1.AgentRequest.inspect_exit_state:type_name -> levelrail.agent.v1.InspectExitStateRequest
-	17, // 31: levelrail.agent.v1.AgentResponse.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameResponse
-	19, // 32: levelrail.agent.v1.AgentResponse.create:type_name -> levelrail.agent.v1.CreateResponse
-	25, // 33: levelrail.agent.v1.AgentResponse.list_images:type_name -> levelrail.agent.v1.ListImagesResponse
-	27, // 34: levelrail.agent.v1.AgentResponse.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixResponse
-	7,  // 35: levelrail.agent.v1.AgentResponse.empty:type_name -> levelrail.agent.v1.Empty
-	31, // 36: levelrail.agent.v1.AgentResponse.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkResponse
-	34, // 37: levelrail.agent.v1.AgentResponse.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixResponse
-	56, // 38: levelrail.agent.v1.AgentResponse.inspect_exit_state:type_name -> levelrail.agent.v1.InspectExitStateResponse
-	9,  // 39: levelrail.agent.v1.ContainerSpec.ports:type_name -> levelrail.agent.v1.PortBinding
-	57, // 40: levelrail.agent.v1.ContainerSpec.env:type_name -> levelrail.agent.v1.ContainerSpec.EnvEntry
-	10, // 41: levelrail.agent.v1.ContainerSpec.resources:type_name -> levelrail.agent.v1.Resources
-	11, // 42: levelrail.agent.v1.ContainerSpec.volumes:type_name -> levelrail.agent.v1.VolumeMount
-	9,  // 43: levelrail.agent.v1.ContainerState.ports:type_name -> levelrail.agent.v1.PortBinding
-	60, // 44: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
-	60, // 45: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
-	13, // 46: levelrail.agent.v1.InspectByNameResponse.state:type_name -> levelrail.agent.v1.ContainerState
-	12, // 47: levelrail.agent.v1.CreateRequest.spec:type_name -> levelrail.agent.v1.ContainerSpec
-	10, // 48: levelrail.agent.v1.UpdateResourcesRequest.resources:type_name -> levelrail.agent.v1.Resources
-	14, // 49: levelrail.agent.v1.ListImagesResponse.images:type_name -> levelrail.agent.v1.ImageInfo
-	13, // 50: levelrail.agent.v1.ListByPrefixResponse.containers:type_name -> levelrail.agent.v1.ContainerState
-	29, // 51: levelrail.agent.v1.ListNetworksByPrefixResponse.networks:type_name -> levelrail.agent.v1.NetworkInfo
-	36, // 52: levelrail.agent.v1.ExecRequest.tty_size:type_name -> levelrail.agent.v1.ExecTTYSize
-	42, // 53: levelrail.agent.v1.ExecOutput.failure:type_name -> levelrail.agent.v1.ExecFailure
-	43, // 54: levelrail.agent.v1.ExecFailure.exit:type_name -> levelrail.agent.v1.ExecExit
-	0,  // 55: levelrail.agent.v1.BuildRequest.kind:type_name -> levelrail.agent.v1.BuildKind
-	58, // 56: levelrail.agent.v1.BuildRequest.build_args:type_name -> levelrail.agent.v1.BuildRequest.BuildArgsEntry
-	45, // 57: levelrail.agent.v1.BuildRequest.cache:type_name -> levelrail.agent.v1.BuildCache
-	50, // 58: levelrail.agent.v1.BuildOutput.progress:type_name -> levelrail.agent.v1.BuildProgress
-	51, // 59: levelrail.agent.v1.BuildOutput.done:type_name -> levelrail.agent.v1.BuildDone
-	52, // 60: levelrail.agent.v1.BuildOutput.failure:type_name -> levelrail.agent.v1.BuildFailure
-	59, // 61: levelrail.agent.v1.BuildDone.exporter_response:type_name -> levelrail.agent.v1.BuildDone.ExporterResponseEntry
-	54, // 62: levelrail.agent.v1.InspectExitStateResponse.state:type_name -> levelrail.agent.v1.ExitState
-	1,  // 63: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
-	3,  // 64: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
-	2,  // 65: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
-	4,  // 66: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
-	65, // [65:67] is the sub-list for method output_type
-	63, // [63:65] is the sub-list for method input_type
-	63, // [63:63] is the sub-list for extension type_name
-	63, // [63:63] is the sub-list for extension extendee
-	0,  // [0:63] is the sub-list for field type_name
+	60, // 31: levelrail.agent.v1.AgentRequest.apply_mesh:type_name -> levelrail.agent.v1.ApplyMeshRequest
+	62, // 32: levelrail.agent.v1.AgentRequest.rotate_mesh_key:type_name -> levelrail.agent.v1.RotateMeshKeyRequest
+	17, // 33: levelrail.agent.v1.AgentResponse.inspect_by_name:type_name -> levelrail.agent.v1.InspectByNameResponse
+	19, // 34: levelrail.agent.v1.AgentResponse.create:type_name -> levelrail.agent.v1.CreateResponse
+	25, // 35: levelrail.agent.v1.AgentResponse.list_images:type_name -> levelrail.agent.v1.ListImagesResponse
+	27, // 36: levelrail.agent.v1.AgentResponse.list_by_prefix:type_name -> levelrail.agent.v1.ListByPrefixResponse
+	7,  // 37: levelrail.agent.v1.AgentResponse.empty:type_name -> levelrail.agent.v1.Empty
+	31, // 38: levelrail.agent.v1.AgentResponse.ensure_network:type_name -> levelrail.agent.v1.EnsureNetworkResponse
+	34, // 39: levelrail.agent.v1.AgentResponse.list_networks_by_prefix:type_name -> levelrail.agent.v1.ListNetworksByPrefixResponse
+	56, // 40: levelrail.agent.v1.AgentResponse.inspect_exit_state:type_name -> levelrail.agent.v1.InspectExitStateResponse
+	61, // 41: levelrail.agent.v1.AgentResponse.apply_mesh:type_name -> levelrail.agent.v1.ApplyMeshResponse
+	63, // 42: levelrail.agent.v1.AgentResponse.rotate_mesh_key:type_name -> levelrail.agent.v1.RotateMeshKeyResponse
+	9,  // 43: levelrail.agent.v1.ContainerSpec.ports:type_name -> levelrail.agent.v1.PortBinding
+	64, // 44: levelrail.agent.v1.ContainerSpec.env:type_name -> levelrail.agent.v1.ContainerSpec.EnvEntry
+	10, // 45: levelrail.agent.v1.ContainerSpec.resources:type_name -> levelrail.agent.v1.Resources
+	11, // 46: levelrail.agent.v1.ContainerSpec.volumes:type_name -> levelrail.agent.v1.VolumeMount
+	9,  // 47: levelrail.agent.v1.ContainerState.ports:type_name -> levelrail.agent.v1.PortBinding
+	67, // 48: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
+	67, // 49: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
+	13, // 50: levelrail.agent.v1.InspectByNameResponse.state:type_name -> levelrail.agent.v1.ContainerState
+	12, // 51: levelrail.agent.v1.CreateRequest.spec:type_name -> levelrail.agent.v1.ContainerSpec
+	10, // 52: levelrail.agent.v1.UpdateResourcesRequest.resources:type_name -> levelrail.agent.v1.Resources
+	14, // 53: levelrail.agent.v1.ListImagesResponse.images:type_name -> levelrail.agent.v1.ImageInfo
+	13, // 54: levelrail.agent.v1.ListByPrefixResponse.containers:type_name -> levelrail.agent.v1.ContainerState
+	29, // 55: levelrail.agent.v1.ListNetworksByPrefixResponse.networks:type_name -> levelrail.agent.v1.NetworkInfo
+	36, // 56: levelrail.agent.v1.ExecRequest.tty_size:type_name -> levelrail.agent.v1.ExecTTYSize
+	42, // 57: levelrail.agent.v1.ExecOutput.failure:type_name -> levelrail.agent.v1.ExecFailure
+	43, // 58: levelrail.agent.v1.ExecFailure.exit:type_name -> levelrail.agent.v1.ExecExit
+	0,  // 59: levelrail.agent.v1.BuildRequest.kind:type_name -> levelrail.agent.v1.BuildKind
+	65, // 60: levelrail.agent.v1.BuildRequest.build_args:type_name -> levelrail.agent.v1.BuildRequest.BuildArgsEntry
+	45, // 61: levelrail.agent.v1.BuildRequest.cache:type_name -> levelrail.agent.v1.BuildCache
+	50, // 62: levelrail.agent.v1.BuildOutput.progress:type_name -> levelrail.agent.v1.BuildProgress
+	51, // 63: levelrail.agent.v1.BuildOutput.done:type_name -> levelrail.agent.v1.BuildDone
+	52, // 64: levelrail.agent.v1.BuildOutput.failure:type_name -> levelrail.agent.v1.BuildFailure
+	66, // 65: levelrail.agent.v1.BuildDone.exporter_response:type_name -> levelrail.agent.v1.BuildDone.ExporterResponseEntry
+	54, // 66: levelrail.agent.v1.InspectExitStateResponse.state:type_name -> levelrail.agent.v1.ExitState
+	57, // 67: levelrail.agent.v1.DeviceConfig.peers:type_name -> levelrail.agent.v1.PeerConfig
+	58, // 68: levelrail.agent.v1.ApplyMeshRequest.config:type_name -> levelrail.agent.v1.DeviceConfig
+	59, // 69: levelrail.agent.v1.ApplyMeshResponse.identity:type_name -> levelrail.agent.v1.NodeIdentity
+	1,  // 70: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
+	3,  // 71: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
+	2,  // 72: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
+	4,  // 73: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
+	72, // [72:74] is the sub-list for method output_type
+	70, // [70:72] is the sub-list for method input_type
+	70, // [70:70] is the sub-list for extension type_name
+	70, // [70:70] is the sub-list for extension extendee
+	0,  // [0:70] is the sub-list for field type_name
 }
 
 func init() { file_proto_agent_v1_agent_proto_init() }
@@ -4516,6 +5063,8 @@ func file_proto_agent_v1_agent_proto_init() {
 		(*AgentRequest_Exec)(nil),
 		(*AgentRequest_Build)(nil),
 		(*AgentRequest_InspectExitState)(nil),
+		(*AgentRequest_ApplyMesh)(nil),
+		(*AgentRequest_RotateMeshKey)(nil),
 	}
 	file_proto_agent_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
 		(*AgentResponse_InspectByName)(nil),
@@ -4526,6 +5075,8 @@ func file_proto_agent_v1_agent_proto_init() {
 		(*AgentResponse_EnsureNetwork)(nil),
 		(*AgentResponse_ListNetworksByPrefix)(nil),
 		(*AgentResponse_InspectExitState)(nil),
+		(*AgentResponse_ApplyMesh)(nil),
+		(*AgentResponse_RotateMeshKey)(nil),
 	}
 	file_proto_agent_v1_agent_proto_msgTypes[48].OneofWrappers = []any{
 		(*BuildOutput_Progress)(nil),
@@ -4539,7 +5090,7 @@ func file_proto_agent_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_agent_v1_agent_proto_rawDesc), len(file_proto_agent_v1_agent_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   59,
+			NumMessages:   66,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

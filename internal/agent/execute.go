@@ -180,6 +180,16 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		// it there directly.
 		resp.Error = "agent: build requests are dispatched through BuildRelay, not Execute"
 
+	case *agentpb.AgentRequest_ApplyMesh:
+		// Mesh ops need this node's own ID and a MeshApplier, neither of
+		// which docker.Runtime carries, so serveSession dispatches them
+		// directly (mesh_dispatch.go) before a request ever reaches here,
+		// the same reasoning Exec/Build are special-cased above.
+		resp.Error = "agent: apply-mesh requests are dispatched directly by serveSession, not Execute"
+
+	case *agentpb.AgentRequest_RotateMeshKey:
+		resp.Error = "agent: rotate-mesh-key requests are dispatched directly by serveSession, not Execute"
+
 	default:
 		resp.Error = fmt.Sprintf("agent: unknown request op %T", op)
 	}

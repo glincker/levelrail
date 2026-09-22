@@ -10,12 +10,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/network"
 )
 
 // GRPCTransport implements Transport by dispatching every call over an
@@ -486,6 +488,44 @@ func (t *GRPCTransport) ListNetworksByPrefix(ctx context.Context, prefix string)
 		return nil, err
 	}
 	return networkInfosFromPB(resp.GetListNetworksByPrefix().GetNetworks()), nil
+}
+
+// ApplyMesh sends cfg to this transport's own node over its Session
+// stream and returns what the node reported back about itself. Part of
+// meshTransport (mesh_sink.go), not Transport itself: mesh operations are
+// not a docker.Runtime concern, so keeping them off Transport's own
+// interface means a caller that only wants container operations never
+// has to know mesh dispatch exists.
+func (t *GRPCTransport) ApplyMesh(ctx context.Context, cfg network.DeviceConfig) (network.NodeIdentity, error) {
+	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{
+		Op: &agentpb.AgentRequest_ApplyMesh{ApplyMesh: &agentpb.ApplyMeshRequest{Config: deviceConfigToPB(cfg)}},
+	})
+	if err != nil {
+		return network.NodeIdentity{}, err
+	}
+	return nodeIdentityFromPB(resp.GetApplyMesh().GetIdentity())
+}
+
+// RotateMeshKey asks this transport's own node to rotate its mesh key and
+// returns the change. Part of meshTransport, same reasoning as ApplyMesh
+// above.
+func (t *GRPCTransport) RotateMeshKey(ctx context.Context) (network.RotationResult, error) {
+	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{
+		Op: &agentpb.AgentRequest_RotateMeshKey{RotateMeshKey: &agentpb.RotateMeshKeyRequest{}},
+	})
+	if err != nil {
+		return network.RotationResult{}, err
+	}
+	got := resp.GetRotateMeshKey()
+	oldKey, err := network.ParseKey(got.GetOldPublicKey())
+	if err != nil {
+		return network.RotationResult{}, fmt.Errorf("agent: rotate mesh key: parse old public key: %w", err)
+	}
+	newKey, err := network.ParseKey(got.GetNewPublicKey())
+	if err != nil {
+		return network.RotationResult{}, fmt.Errorf("agent: rotate mesh key: parse new public key: %w", err)
+	}
+	return network.RotationResult{OldPublicKey: oldKey, NewPublicKey: newKey}, nil
 }
 
 // EnsureVolume implements Transport (docker.Runtime).

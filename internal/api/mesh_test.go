@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
@@ -245,5 +246,25 @@ func TestHandleRotateNodeMeshKey_NotSupported(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/node_a/mesh/rotate-key", ""))
 	if rec.Code != http.StatusNotImplemented {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
+	}
+}
+
+// TestHandleRotateNodeMeshKey_RemoteNodeNotConnected covers a remote node
+// with no live agent session right now (this file's own header): unlike
+// the old, permanent 501 this route used to return for any node but the
+// local one, that is now a 500 with the real reason logged server-side,
+// the same as any other transport failure this package reports, not a
+// missing-capability response.
+func TestHandleRotateNodeMeshKey_RemoteNodeNotConnected(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_b", "beta")
+
+	rt.SetMesh(nil, &fakeMeshRotator{err: fmt.Errorf("agent: node not registered in this transport registry: %q", "node_b")})
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/node_b/mesh/rotate-key", ""))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
 	}
 }
