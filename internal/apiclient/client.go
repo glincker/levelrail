@@ -1082,6 +1082,50 @@ func (c *Client) TriggerRestore(ctx context.Context, name, backupID string) (Res
 	return out, err
 }
 
+// EnablePITR calls POST /api/v1/databases/{name}/pitr: turns on
+// continuous WAL archiving for name going forward.
+func (c *Client) EnablePITR(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/pitr", nil, nil)
+}
+
+// DisablePITR calls DELETE /api/v1/databases/{name}/pitr.
+func (c *Client) DisablePITR(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/pitr", nil, nil)
+}
+
+// GetPITRStatus calls GET /api/v1/databases/{name}/pitr: whether PITR
+// is enabled and, if so, the currently recoverable window.
+func (c *Client) GetPITRStatus(ctx context.Context, name string) (PITRStatusResource, error) {
+	var out PITRStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/pitr", nil, &out)
+	return out, err
+}
+
+// TriggerBaseBackup calls POST /api/v1/databases/{name}/base-backups:
+// starts a real physical base backup, the point-in-time-restore
+// counterpart of TriggerBackup.
+func (c *Client) TriggerBaseBackup(ctx context.Context, name, targetID string) (BaseBackupHistoryResource, error) {
+	var out BaseBackupHistoryResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/base-backups", TriggerBaseBackupRequest{TargetID: targetID}, &out)
+	return out, err
+}
+
+// ListBaseBackups calls GET /api/v1/databases/{name}/base-backups.
+func (c *Client) ListBaseBackups(ctx context.Context, name string) ([]BaseBackupHistoryResource, error) {
+	var out []BaseBackupHistoryResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/base-backups", nil, &out)
+	return out, err
+}
+
+// TriggerPITRRestore calls POST /api/v1/databases/{name}/pitr-restore:
+// starts a real point-in-time restore to targetTime, replaying archived
+// WAL forward from baseBackupID.
+func (c *Client) TriggerPITRRestore(ctx context.Context, name, baseBackupID, targetTime string) (PITRRestoreHistoryResource, error) {
+	var out PITRRestoreHistoryResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/pitr-restore", TriggerPITRRestoreRequest{BaseBackupID: baseBackupID, TargetTime: targetTime}, &out)
+	return out, err
+}
+
 // volumeBackupsPath builds /api/v1/apps/{name}/volumes/{volume}/backups,
 // shared by every app service volume backup method below, the same
 // path-building-helper shape domainAuthPath already establishes for its

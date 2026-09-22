@@ -80,6 +80,11 @@ type (
 	backupScheduleResource           = apiclient.BackupScheduleResource
 	setBackupScheduleRequest         = apiclient.SetBackupScheduleRequest
 	triggerRestoreRequest            = apiclient.TriggerRestoreRequest
+	pitrStatusResource               = apiclient.PITRStatusResource
+	baseBackupHistoryResource        = apiclient.BaseBackupHistoryResource
+	triggerBaseBackupRequest         = apiclient.TriggerBaseBackupRequest
+	pitrRestoreHistoryResource       = apiclient.PITRRestoreHistoryResource
+	triggerPITRRestoreRequest        = apiclient.TriggerPITRRestoreRequest
 	appVolumeResource                = apiclient.AppVolumeResource
 	appVolumeMoveResource            = apiclient.AppVolumeMoveResource
 	appVolumeMoveStepResource        = apiclient.AppVolumeMoveStepResource

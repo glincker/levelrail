@@ -1987,6 +1987,29 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			Restorer:       &backup.ContainerRestorer{Runtime: client},
 			VolumeRestorer: &backup.ContainerVolumeRestorer{Runtime: client},
 		}
+		// baseBackupRunner/pitrRunner back point-in-time restore
+		// (internal/api/pitr.go): the physical-backup and PITR-restore
+		// counterparts of backupRunner/restoreRunner just above, same
+		// secretsManager dependency, same local-node client. pitrRunner's
+		// Nudge is engine.Nudge (constructed earlier in run(), see its
+		// own doc comment) so a PITR restore's suspend/unsuspend cycle
+		// gets picked up immediately instead of waiting out a full
+		// resyncInterval on each side of the wipe.
+		baseBackupRunner := &backup.BaseBackupRunner{
+			Store:        db,
+			Secrets:      secretsManager,
+			BaseBackuper: &backup.ContainerBaseBackuper{Runtime: client},
+			Uploader:     backup.S3Uploader{},
+			Runtime:      client,
+		}
+		pitrRunner := &backup.PITRRunner{
+			Store:      db,
+			Secrets:    secretsManager,
+			Downloader: backup.S3Downloader{},
+			Restorer:   &backup.ContainerPITRRestorer{Runtime: client},
+			Runtime:    client,
+			Nudge:      engine.Nudge,
+		}
 		opts = append(opts,
 			api.WithBackupSecrets(secretsManager),
 			// Registry credentials (build.type: image's optional
@@ -2089,6 +2112,11 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// secretsManager, same nil-interface hazard as everything
 			// else in this block.
 			api.WithAIAssistantSecrets(secretsManager),
+			// Point-in-time restore (baseBackupRunner/pitrRunner just
+			// above): manual base-backup trigger and the actual PITR
+			// restore endpoint.
+			api.WithBaseBackupRunner(baseBackupRunner),
+			api.WithPITRRestoreRunner(pitrRunner),
 		)
 		// The AI assistant's own tool-calling engine, distinct from the
 		// BYOK key above: it needs a self-call API token to reach this

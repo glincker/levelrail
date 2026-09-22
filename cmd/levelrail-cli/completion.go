@@ -107,6 +107,10 @@ var cliCommandTree = map[string]*cmdNode{
 		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
+	"pitr": {subs: map[string]*cmdNode{
+		"enable": nil, "disable": nil, "status": nil, "restore": nil,
+		"base-backups": {subs: map[string]*cmdNode{"list": nil, "trigger": nil}},
+	}},
 	"app-volume-backups": {subs: map[string]*cmdNode{
 		"list": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},

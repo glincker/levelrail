@@ -90,6 +90,15 @@ type DesiredDatabase struct {
 	// UpdateDatabaseSuspended does" exception NodeID/ProjectID already
 	// establish above (migrations/0094_database_suspended.sql).
 	Suspended bool
+
+	// PITREnabled/PITREnabledAt (migrations/0115_database_pitr.sql):
+	// whether this database's reconciler should run it with WAL
+	// archiving on, and when that was turned on. Same
+	// SaveDesiredDatabase-never-writes-it exception as NodeID/
+	// BackupSchedule/Suspended above; only SetDatabasePITR writes these
+	// two. PITREnabledAt is "" whenever PITREnabled is false.
+	PITREnabled   bool
+	PITREnabledAt string
 }
 
 // SaveDesiredDatabase creates or fully replaces the desired state for a
@@ -173,6 +182,41 @@ func (db *DB) UpdateDatabaseSuspended(ctx context.Context, name string, suspende
 	n, err := res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("store: update suspended for database %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrDatabaseNotFound
+	}
+	return nil
+}
+
+// SetDatabasePITR turns point-in-time restore on or off for name.
+// enabledAt is the caller-supplied "now" (UTC, RFC3339) to record as
+// PITREnabledAt when enabled is true; ignored (and the stored value left
+// untouched) when enabled is false, so disabling and re-enabling later
+// doesn't lose the original enable time a caller might still want for
+// display. internal/reconcile/database reads PITREnabled on every
+// reconcile pass to decide whether to run this database's container
+// with WAL archiving on; internal/api's PITR handlers call this, never
+// SaveDesiredDatabase, the same one-writer-per-special-field convention
+// NodeID/BackupSchedule/Suspended above already establish.
+func (db *DB) SetDatabasePITR(ctx context.Context, name string, enabled bool, enabledAt string) error {
+	var res sql.Result
+	var err error
+	if enabled {
+		res, err = db.ExecContext(ctx, `
+			UPDATE desired_databases SET pitr_enabled = 1, pitr_enabled_at = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+		`, enabledAt, name)
+	} else {
+		res, err = db.ExecContext(ctx, `
+			UPDATE desired_databases SET pitr_enabled = 0, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+		`, name)
+	}
+	if err != nil {
+		return fmt.Errorf("store: set pitr for database %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set pitr for database %q: rows affected: %w", name, err)
 	}
 	if n == 0 {
 		return ErrDatabaseNotFound
@@ -521,7 +565,7 @@ func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, er
 // ListDesiredDatabasesByNode, ListDesiredDatabasesByProject,
 // ListScheduledDatabases), the database-kind counterpart to
 // desiredServiceColumns in service.go.
-const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended"
+const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended, pitr_enabled, pitr_enabled_at"
 
 // scanDesiredDatabase reads the column shape desiredDatabaseColumns
 // selects, via either row.Scan or rows.Scan (same signature), so the
@@ -537,11 +581,13 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 		publicBindAddress         sql.NullString
 		resourcesJSON             string
 		suspended                 bool
+		pitrEnabled               bool
 	)
-	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended); err != nil {
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended, &pitrEnabled, &d.PITREnabledAt); err != nil {
 		return nil, err
 	}
 	d.Suspended = suspended
+	d.PITREnabled = pitrEnabled
 	d.ProjectID = projectID.String
 	d.BackupTargetID = backupTargetID.String
 	d.PubliclyAccessible = publiclyAccessible

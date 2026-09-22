@@ -820,6 +820,57 @@ type TriggerRestoreRequest struct {
 	BackupID string `json:"backup_id"`
 }
 
+// PITRStatusResource mirrors internal/api's pitrStatusResource
+// (internal/api/pitr.go): GET /api/v1/databases/{name}/pitr.
+type PITRStatusResource struct {
+	Enabled       bool   `json:"enabled"`
+	EnabledAt     string `json:"enabled_at,omitempty"`
+	HasBaseBackup bool   `json:"has_base_backup"`
+	WindowStart   string `json:"window_start,omitempty"`
+	WindowEnd     string `json:"window_end,omitempty"`
+	WindowError   string `json:"window_error,omitempty"`
+}
+
+// BaseBackupHistoryResource mirrors internal/api's
+// baseBackupHistoryResource: GET/POST .../base-backups.
+type BaseBackupHistoryResource struct {
+	ID           string `json:"id"`
+	DatabaseName string `json:"database_name"`
+	TargetID     string `json:"target_id"`
+	LSN          string `json:"lsn,omitempty"`
+	SizeBytes    int64  `json:"size_bytes"`
+	Status       string `json:"status"`
+	Error        string `json:"error,omitempty"`
+	StartedAt    string `json:"started_at"`
+	FinishedAt   string `json:"finished_at,omitempty"`
+}
+
+// TriggerBaseBackupRequest mirrors internal/api's
+// triggerBaseBackupRequest.
+type TriggerBaseBackupRequest struct {
+	TargetID string `json:"target_id"`
+}
+
+// PITRRestoreHistoryResource mirrors internal/api's
+// pitrRestoreHistoryResource: GET/POST .../pitr-restore(s).
+type PITRRestoreHistoryResource struct {
+	ID                  string `json:"id"`
+	DatabaseName        string `json:"database_name"`
+	BaseBackupHistoryID string `json:"base_backup_history_id"`
+	TargetTimestamp     string `json:"target_timestamp"`
+	Status              string `json:"status"`
+	Error               string `json:"error,omitempty"`
+	StartedAt           string `json:"started_at"`
+	FinishedAt          string `json:"finished_at,omitempty"`
+}
+
+// TriggerPITRRestoreRequest mirrors internal/api's
+// triggerPITRRestoreRequest.
+type TriggerPITRRestoreRequest struct {
+	BaseBackupID string `json:"base_backup_id"`
+	TargetTime   string `json:"target_time"`
+}
+
 // VolumeBackupScheduleResource mirrors internal/api's
 // volumeBackupScheduleResource (internal/api/app_volume_backups.go).
 type VolumeBackupScheduleResource struct {

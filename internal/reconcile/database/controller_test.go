@@ -81,6 +81,14 @@ type fakeRuntime struct {
 	lastExecContainerID string
 	lastExecCmd         []string
 	lastExecInput       []byte
+
+	// execCalls/lastExecArgCmd/execErr back Exec itself: unused before
+	// PITR (see ensureWALArchiveWritable, controller.go), which is the
+	// first caller in this package that needs the plain no-stdin Exec
+	// path, not just ExecWithInput above.
+	execCalls      int
+	lastExecArgCmd []string
+	execErr        error
 }
 
 func newFakeRuntime() *fakeRuntime {
@@ -158,7 +166,7 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 	}
 	f.nextID++
 	id := strconv.Itoa(f.nextID)
-	f.containers[spec.Name] = &docker.ContainerState{ID: id, Name: spec.Name, Image: spec.Image}
+	f.containers[spec.Name] = &docker.ContainerState{ID: id, Name: spec.Name, Image: spec.Image, Labels: spec.Labels}
 	return id, nil
 }
 
@@ -242,8 +250,15 @@ func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan err
 // container lifecycle, never runs a command inside one. internal/backup's
 // Dumper is the real Exec caller, exercised by internal/backup's own
 // tests instead. Stubbed here to satisfy docker.Runtime.
-func (f *fakeRuntime) Exec(_ context.Context, _ string, _ []string) (io.ReadCloser, error) {
-	return nil, errors.New("fakeRuntime: Exec not implemented")
+func (f *fakeRuntime) Exec(_ context.Context, _ string, cmd []string) (io.ReadCloser, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.execCalls++
+	f.lastExecArgCmd = cmd
+	if f.execErr != nil {
+		return nil, f.execErr
+	}
+	return io.NopCloser(strings.NewReader("")), nil
 }
 
 // ExecWithInput backs provisionCerts' own use of it (tls_mount.go): it
@@ -702,7 +717,7 @@ func TestController_Reconcile_Postgres_TLS_MountsCertsAndConfiguresSSL(t *testin
 		t.Errorf("surviving container count = %d, want 1 (helper must be removed)", got)
 	}
 
-	wantCommand := postgresTLSCommand()
+	wantCommand := postgresCommand(&TLSMaterial{}, false)
 	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
 		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
 	}
@@ -805,6 +820,144 @@ func TestController_Reconcile_Redis_TLS_DisablesPlaintextPort(t *testing.T) {
 	}
 	if rt.execWithInputCalls != 1 {
 		t.Errorf("execWithInputCalls = %d, want 1", rt.execWithInputCalls)
+	}
+}
+
+// TestController_Reconcile_Postgres_PITR_MountsWALArchiveAndEnablesArchiving
+// proves a brand-new PITR-enabled Postgres database gets the wal-archive
+// volume mounted and the archive_mode/archive_command flags set, and
+// that ensureWALArchiveWritable's chown runs against it.
+func TestController_Reconcile_Postgres_PITR_MountsWALArchiveAndEnablesArchiving(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16", PITREnabled: true}
+	c := New("main", &fakeStore{db: desired}, rt, WithPostgresCredentials(&PostgresCredentials{Username: "main", Password: "s3cret"}))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+
+	walVol := walArchiveVolumeName("main")
+	if !rt.hasVolume(walVol) {
+		t.Errorf("expected wal archive volume %q to have been ensured", walVol)
+	}
+	foundMount := false
+	for _, m := range rt.lastCreateSpec.Volumes {
+		if m.Name == walVol {
+			foundMount = true
+			if m.ContainerPath != postgresWALArchivePath {
+				t.Errorf("wal archive mount path = %q, want %q", m.ContainerPath, postgresWALArchivePath)
+			}
+		}
+	}
+	if !foundMount {
+		t.Errorf("database container Volumes = %+v, want a mount for %q", rt.lastCreateSpec.Volumes, walVol)
+	}
+
+	wantCommand := postgresCommand(nil, true)
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+	if rt.lastCreateSpec.Labels[pitrLabelKey] != "true" {
+		t.Errorf("database container Labels[%q] = %q, want \"true\"", pitrLabelKey, rt.lastCreateSpec.Labels[pitrLabelKey])
+	}
+
+	if rt.execCalls != 1 {
+		t.Fatalf("execCalls = %d, want 1 (the wal archive chown)", rt.execCalls)
+	}
+	wantChown := []string{"chown", "-R", "postgres:postgres", postgresWALArchivePath}
+	if !reflect.DeepEqual(rt.lastExecArgCmd, wantChown) {
+		t.Errorf("exec command = %v, want %v", rt.lastExecArgCmd, wantChown)
+	}
+}
+
+// TestController_Reconcile_Postgres_PITR_AlreadyRunning_NoOp proves an
+// already-converged PITR database (same label, same image, same ports)
+// reconciles as a no-op, not a replace: pitrEnabledFromLabel's own doc
+// comment explains why an observed label match, not merely "PITR is
+// active," is what this depends on.
+func TestController_Reconcile_Postgres_PITR_AlreadyRunning_NoOp(t *testing.T) {
+	rt := newFakeRuntime()
+	target := containerName("main")
+	rt.seed(target, "postgres:16", true)
+	rt.containers[target].Labels = map[string]string{pitrLabelKey: "true"}
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16", PITREnabled: true}
+	c := New("main", &fakeStore{db: desired}, rt, WithPostgresCredentials(&PostgresCredentials{Username: "main", Password: "s3cret"}))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
+		t.Errorf("condition = %+v, want Status=True Reason=AlreadyRunning", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0 (already converged, must be a no-op)", rt.createCalls)
+	}
+	// Still chowned: ensureWALArchiveWritable's own doc comment explains
+	// why this runs every pass, not only right after a fresh create.
+	if rt.execCalls != 1 {
+		t.Errorf("execCalls = %d, want 1", rt.execCalls)
+	}
+}
+
+// TestController_Reconcile_Postgres_PITR_EnableTriggersReplace proves
+// toggling PITREnabled on an already-running, pre-existing (no label at
+// all, the same shape every database container created before this
+// feature existed has) container replaces it, picking up the wal-archive
+// volume and archive command it never had.
+func TestController_Reconcile_Postgres_PITR_EnableTriggersReplace(t *testing.T) {
+	rt := newFakeRuntime()
+	target := containerName("main")
+	rt.seed(target, "postgres:16", true) // no labels at all, pre-PITR shape
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16", PITREnabled: true}
+	c := New("main", &fakeStore{db: desired}, rt, WithPostgresCredentials(&PostgresCredentials{Username: "main", Password: "s3cret"}))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	if rt.stopCalls != 1 || rt.createCalls != 1 {
+		t.Errorf("stopCalls = %d, createCalls = %d, want 1, 1 (a sequential replace)", rt.stopCalls, rt.createCalls)
+	}
+	if rt.lastCreateSpec.Labels[pitrLabelKey] != "true" {
+		t.Errorf("database container Labels[%q] = %q, want \"true\"", pitrLabelKey, rt.lastCreateSpec.Labels[pitrLabelKey])
+	}
+}
+
+// TestController_Reconcile_Postgres_NoPITR_PreExisting_NoOp is the
+// regression this package's diff logic must never reintroduce: a
+// pre-existing, PITR-never-enabled database container (no pitrLabelKey
+// label at all, since it predates this feature) must reconcile as a
+// no-op, not get replaced merely because it lacks a label PITREnabled:
+// false was never going to set anyway. Caught for real while building
+// this feature: an earlier version of the label diff compared the
+// observed label's raw string directly against spec.Labels' always-
+// present "false" value, which would have restarted every existing
+// database container on the first reconcile pass after this feature
+// shipped.
+func TestController_Reconcile_Postgres_NoPITR_PreExisting_NoOp(t *testing.T) {
+	rt := newFakeRuntime()
+	target := containerName("main")
+	rt.seed(target, "postgres:16", true) // no labels at all
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}
+	c := New("main", &fakeStore{db: desired}, rt, WithPostgresCredentials(&PostgresCredentials{Username: "main", Password: "s3cret"}))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "AlreadyRunning" {
+		t.Errorf("condition = %+v, want Status=True Reason=AlreadyRunning", cond)
+	}
+	if rt.createCalls != 0 {
+		t.Errorf("createCalls = %d, want 0 (must not replace a pre-existing container just because it predates the PITR label)", rt.createCalls)
 	}
 }
 

@@ -205,6 +205,16 @@ flowchart LR
   Backup and restore are live-Docker-tested for every engine, including
   MariaDB, ClickHouse, KeyDB, and Dragonfly's own restore paths, plus a
   fix scoping MongoDB restore to drop only non-system databases first.
+- Point-in-time restore (PITR) for Postgres: continuous WAL archiving
+  once opted in (`pitr enable`), physical base backups via
+  `pg_basebackup`, and restore to an arbitrary timestamp within the
+  currently recoverable window, not just to whenever a backup happened
+  to run. Only ever recoverable from the moment archiving was enabled
+  forward, never retroactive. Live-Docker-verified end to end: real
+  data written before a chosen timestamp survives a restore to that
+  timestamp, real data written after it does not. Dashboard, CLI
+  (`pitr`), and API surfaces all wired. No automatic base-backup
+  scheduling yet (manual trigger only).
 - TLS for managed database connections, enabled by default for newly
   created Postgres and Redis databases with no operator action required.
   The reconciler generates a self-signed certificate at container-creation
