@@ -1636,6 +1636,63 @@ type NodePatchStatusResource struct {
 	CheckedAt *time.Time `json:"checked_at,omitempty"`
 }
 
+// MeshPeerResource mirrors internal/api's meshPeerResource
+// (internal/api/mesh.go): one WireGuard peer as this node's own device
+// sees it, joined with the store's record of that node's identity. Live
+// is false for a peer this control plane only knows about from the
+// store (no live device peer entry for it yet), true for one the local
+// device actually has, real UAPI-backed handshake data and all.
+type MeshPeerResource struct {
+	NodeID        string     `json:"node_id"`
+	Name          string     `json:"name,omitempty"`
+	PublicKey     string     `json:"public_key"`
+	MeshAddress   string     `json:"mesh_address,omitempty"`
+	Endpoint      string     `json:"endpoint,omitempty"`
+	LastHandshake *time.Time `json:"last_handshake_at,omitempty"`
+	Healthy       bool       `json:"healthy"`
+	TransferRx    int64      `json:"transfer_rx_bytes"`
+	TransferTx    int64      `json:"transfer_tx_bytes"`
+	Live          bool       `json:"live"`
+}
+
+// MeshRotationResource mirrors internal/api's meshRotationResource: one
+// key rotation's tracked confirmation state.
+type MeshRotationResource struct {
+	NodeID       string     `json:"node_id"`
+	OldPublicKey string     `json:"old_public_key"`
+	NewPublicKey string     `json:"new_public_key"`
+	StartedAt    time.Time  `json:"started_at"`
+	Confirmed    bool       `json:"confirmed"`
+	ConfirmedAt  *time.Time `json:"confirmed_at,omitempty"`
+}
+
+// MeshStatusResource mirrors internal/api's meshStatusResource
+// (GET /api/v1/mesh). Enabled is false only via a 501 response (mesh
+// networking not turned on for this control plane at all), which
+// GetMeshStatus surfaces as an error rather than a false-valued
+// response, so in practice a caller that got a MeshStatusResource back
+// at all always has Enabled true; the field is kept for parity with the
+// wire response rather than assumed away.
+type MeshStatusResource struct {
+	Enabled     bool                  `json:"enabled"`
+	Backend     string                `json:"backend,omitempty"`
+	Interface   string                `json:"interface,omitempty"`
+	LocalNodeID string                `json:"local_node_id,omitempty"`
+	PublicKey   string                `json:"public_key,omitempty"`
+	MeshAddress string                `json:"mesh_address,omitempty"`
+	ListenPort  int                   `json:"listen_port,omitempty"`
+	Peers       []MeshPeerResource    `json:"peers"`
+	Rotation    *MeshRotationResource `json:"rotation,omitempty"`
+}
+
+// RotateKeyResponse mirrors internal/api's rotateKeyResponse
+// (POST /api/v1/nodes/{id}/mesh/rotate-key).
+type RotateKeyResponse struct {
+	NodeID       string `json:"node_id"`
+	OldPublicKey string `json:"old_public_key"`
+	NewPublicKey string `json:"new_public_key"`
+}
+
 // SystemStatusResource mirrors internal/api's systemStatusResponse
 // (internal/api/status.go): DockerConnected/DockerError are this
 // control plane's own local Docker daemon reachability, not a per-node

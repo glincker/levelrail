@@ -149,6 +149,10 @@ type (
 	drainNodeResponse           = apiclient.DrainNodeResponse
 	nodePatchStatusResource     = apiclient.NodePatchStatusResource
 	nodeAlertStatusResource     = apiclient.NodeAlertStatusResource
+	meshStatusResource          = apiclient.MeshStatusResource
+	meshPeerResource            = apiclient.MeshPeerResource
+	meshRotationResource        = apiclient.MeshRotationResource
+	rotateKeyResponse           = apiclient.RotateKeyResponse
 
 	organizationResource             = apiclient.OrganizationResource
 	createOrganizationRequest        = apiclient.CreateOrganizationRequest

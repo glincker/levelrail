@@ -119,10 +119,25 @@ func loadOrGenerateMeshKey(dataDir string) (network.Key, error) {
 	if err != nil {
 		return network.Key{}, fmt.Errorf("generate mesh key: %w", err)
 	}
-	if err := os.WriteFile(path, []byte(key.String()), 0o600); err != nil { //nolint:gosec // operator-controlled data directory path, not user input
-		return network.Key{}, fmt.Errorf("persist mesh key: %w", err)
+	if err := persistMeshKey(dataDir, key); err != nil {
+		return network.Key{}, err
 	}
 	return key, nil
+}
+
+// persistMeshKey writes key to dataDir's mesh key file, the same location
+// and format loadOrGenerateMeshKey itself reads and (on first run)
+// writes. Factored out so network.WithKeyPersistFunc's callback (wired in
+// setupMesh below) and a fresh node's first-run generation share exactly
+// one write path: a key rotation that persisted through a second,
+// slightly different code path would be the kind of divergence that only
+// shows up the day the two disagree.
+func persistMeshKey(dataDir string, key network.Key) error {
+	path := filepath.Join(dataDir, meshKeyFilename)
+	if err := os.WriteFile(path, []byte(key.String()), 0o600); err != nil { //nolint:gosec // operator-controlled data directory path, not user input
+		return fmt.Errorf("persist mesh key: %w", err)
+	}
+	return nil
 }
 
 // loadOrGenerateLocalNodeID loads this node's persisted node ID from
@@ -243,6 +258,15 @@ type meshSetup struct {
 	localNodeID string
 	coordinator *network.Coordinator
 	resolver    *network.Resolver
+	// device is this node's own live Mesh handle: internal/api's mesh
+	// status route (internal/api/mesh.go) reads Status() straight off it
+	// for real, UAPI-backed peer/handshake data, the same handle the
+	// reconcile loop itself applies configs through via the coordinator's
+	// sink. Never nil when meshSetup itself is non-nil: NewDevice's own
+	// contract is that it always returns a usable Mesh (a real Device or a
+	// *Disabled), never a nil interface value or an error, for exactly
+	// this reason.
+	device network.Mesh
 	// dnsAddr is the mesh DNS server's actual bound address (host, not
 	// container-reachable, port only meaningful once combined with a
 	// resolved bridge gateway, see containerDNSAddr): DNSServer.Addr's
@@ -289,7 +313,10 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 		return nil, fmt.Errorf("bring up mesh device: %w", err)
 	}
 
-	sink, err := network.NewLocalSink(localNodeID, device, key)
+	sink, err := network.NewLocalSink(localNodeID, device, key,
+		network.WithKeyPersistFunc(func(newKey network.Key) error {
+			return persistMeshKey(dataDir, newKey)
+		}))
 	if err != nil {
 		_ = device.Close()
 		return nil, fmt.Errorf("build local mesh sink: %w", err)
@@ -325,6 +352,7 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 		localNodeID: localNodeID,
 		coordinator: coordinator,
 		resolver:    resolver,
+		device:      device,
 		dnsAddr:     dnsServer.Addr(),
 		close: func() {
 			cancelHeartbeat()

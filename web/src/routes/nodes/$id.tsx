@@ -13,6 +13,7 @@ import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { CordonNodeDialog } from '../../components/CordonNodeDialog'
 import { DrainNodeDialog } from '../../components/DrainNodeDialog'
 import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
+import { NodeMeshCard } from '../../components/NodeMeshCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
 import { routeErrorMessage } from '../../lib/apiError'
@@ -240,6 +241,8 @@ function NodeDetailPage() {
       </Card>
 
       <NodeAlertStatusCard nodeId={id} />
+
+      <NodeMeshCard nodeId={id} nodeName={node.name} isLocal={node.is_local} />
 
       <NodePatchStatusCard nodeId={id} />
 

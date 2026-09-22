@@ -44,6 +44,10 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesPatchStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "metrics":
 		return runNodesMetrics(prog, args[1:], stdout, stderr, lookupEnv)
+	case "mesh":
+		return runNodesMesh(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rotate-key":
+		return runNodesRotateKey(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown nodes subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, nodesUsage(prog))
@@ -64,6 +68,8 @@ func nodesUsage(prog string) string {
   %[1]s nodes health <id> [flags]                                    show a node's current reconcile conditions
   %[1]s nodes patch-status <id> [flags]                              show a node's latest available-OS-updates reading
   %[1]s nodes metrics <id> --metric NAME [flags]                     query a node's metric time series
+  %[1]s nodes mesh [flags]                                           show this control plane's live WireGuard mesh state and peers
+  %[1]s nodes rotate-key <id> [flags]                                rotate a node's WireGuard key (only the local node today)
 
 Run "%[1]s nodes <subcommand> -h" for a subcommand's own flags.
 `, prog)

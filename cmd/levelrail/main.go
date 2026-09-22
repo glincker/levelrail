@@ -606,6 +606,7 @@ func run(logger *slog.Logger) error {
 	if meshCfg != nil {
 		defer meshCfg.close()
 		apiRouter.SetLocalNodeID(meshCfg.localNodeID)
+		apiRouter.SetMesh(meshCfg.device, meshCfg.coordinator)
 	}
 	// Resolved once at startup, not per reconcile pass: the bridge
 	// gateway IP a container-reachable mesh DNS address depends on
