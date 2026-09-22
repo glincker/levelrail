@@ -2236,6 +2236,16 @@ func (c *Client) ListNodes(ctx context.Context) ([]NodeResource, error) {
 	return out, err
 }
 
+// GetFleetResourceUsage calls GET /api/v1/nodes/resource-usage
+// (internal/api/node_resource_usage.go's handleFleetResourceUsage): the
+// latest CPU/memory/disk reading for every node plus a fleet-wide
+// rollup, the node-scoped counterpart to ListAppResourceUsage.
+func (c *Client) GetFleetResourceUsage(ctx context.Context) (FleetResourceUsageResource, error) {
+	var out FleetResourceUsageResource
+	err := c.do(ctx, http.MethodGet, nodesCollectionPath()+"/resource-usage", nil, &out)
+	return out, err
+}
+
 // GetNode calls GET /api/v1/nodes/{id}.
 func (c *Client) GetNode(ctx context.Context, id string) (NodeResource, error) {
 	var out NodeResource

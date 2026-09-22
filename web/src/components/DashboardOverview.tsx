@@ -16,6 +16,7 @@ import { CreateResourceWizard } from './CreateResourceWizard'
 import { OnboardingFlow } from './OnboardingFlow'
 import { AlertingQuickSetupPrompt } from './AlertingQuickSetupPrompt'
 import { FleetResourceChart } from './FleetResourceChart'
+import { FleetUtilizationSummary } from './FleetUtilizationSummary'
 import { TopResourceConsumers } from './TopResourceConsumers'
 import { useCompleteOnboarding } from '../queries/onboarding'
 import { Card, CardContent } from '@/components/ui/card'
@@ -104,6 +105,8 @@ export function DashboardOverview({
           tone="muted"
         />
       </div>
+
+      <FleetUtilizationSummary />
 
       <FleetResourceChart />
 
