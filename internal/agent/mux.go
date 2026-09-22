@@ -106,6 +106,17 @@ type mux struct {
 	err      error                                  // set once, right before the maps above are nilled
 
 	closed chan struct{}
+
+	// onHeartbeat, if set, is called from recvLoop every time an
+	// AgentMessage_Heartbeat frame arrives. It is set directly by
+	// Server.Session (same package, unexported field, no constructor
+	// plumbing needed through the many other newMux call sites that never
+	// care about heartbeats) before Recv is ever read, so there is no
+	// race with recvLoop's own goroutine starting in newMux. Must not
+	// block: recvLoop is the one goroutine reading every frame off the
+	// physical stream, the same reasoning eventChanBuffer's own doc
+	// comment gives for deliverEvent never blocking on a slow watcher.
+	onHeartbeat func()
 }
 
 // frameSub is one in-flight multi-frame operation's control-plane-side
@@ -141,9 +152,15 @@ type (
 	buildSub = frameSub[*agentpb.BuildOutput]
 )
 
-// newMux starts dispatching stream immediately (recvLoop runs in its
-// own goroutine from this call onward).
-func newMux(stream sessionStream) *mux {
+// newMux starts dispatching stream immediately (recvLoop runs in its own
+// goroutine from this call onward). onHeartbeat is variadic purely so
+// every existing call site that never cares about heartbeats (every test
+// file, GRPCTransport's own construction) stays unchanged; at most the
+// first value passed is used, and Server.Session is the only caller that
+// ever passes one. Passing it here, before recvLoop starts, is what
+// avoids a data race against recvLoop reading m.onHeartbeat concurrently
+// with it being set afterward.
+func newMux(stream sessionStream, onHeartbeat ...func()) *mux {
 	m := &mux{
 		stream:   stream,
 		pending:  make(map[string]chan *agentpb.AgentResponse),
@@ -151,6 +168,9 @@ func newMux(stream sessionStream) *mux {
 		execs:    make(map[string]*execSub),
 		builds:   make(map[string]*buildSub),
 		closed:   make(chan struct{}),
+	}
+	if len(onHeartbeat) > 0 {
+		m.onHeartbeat = onHeartbeat[0]
 	}
 	go m.recvLoop()
 	return m
@@ -176,6 +196,10 @@ func (m *mux) recvLoop() {
 			m.deliverBuildOutput(p.BuildOutput)
 		case *agentpb.AgentMessage_BuildCredit:
 			m.deliverBuildCredit(p.BuildCredit)
+		case *agentpb.AgentMessage_Heartbeat:
+			if m.onHeartbeat != nil {
+				m.onHeartbeat()
+			}
 		}
 	}
 }

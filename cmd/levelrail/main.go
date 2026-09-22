@@ -24,6 +24,7 @@ import (
 
 	dockerclient "github.com/docker/docker/client"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
@@ -176,6 +177,18 @@ const (
 	// slow tick or a brief GC pause doesn't flip a healthy node Offline,
 	// short enough that a real hang is caught well within a minute.
 	defaultNodeHeartbeatTimeout = 45 * time.Second
+
+	// defaultNodeKeepaliveTime/defaultNodeKeepaliveTimeout configure the
+	// agent gRPC server's HTTP/2 PING keepalive (matches
+	// internal/agent.defaultKeepaliveTime/defaultKeepaliveTimeout, the
+	// agent-side counterpart): worst-case detection of a connection whose
+	// peer stopped responding (not merely stopped sending Heartbeat
+	// frames, which nodehealth's own timeout already covers) is roughly
+	// their sum, kept comfortably under defaultNodeHeartbeatTimeout above
+	// so the transport itself notices well before the next reconcile pass
+	// would have to.
+	defaultNodeKeepaliveTime    = 10 * time.Second
+	defaultNodeKeepaliveTimeout = 10 * time.Second
 
 	// defaultOSPatchCheckInterval governs HostPatchCollector: unlike disk
 	// space or container metrics, this shells out to a package manager
@@ -405,8 +418,37 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("start agent grpc listener: %w", err)
 	}
-	agentGRPCServer := grpc.NewServer(grpc.Creds(agentCreds))
-	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger, agent.WithHeartbeatInterval(nodeHeartbeatInterval())))
+	agentGRPCServer := grpc.NewServer(grpc.Creds(agentCreds),
+		// KeepaliveParams is the transport-level backstop behind the
+		// Heartbeat application frame internal/agent's own mux.go now
+		// requires for last_seen_at to advance: a frozen agent process
+		// (SIGSTOP'd, deadlocked) cannot service an HTTP/2 PING any more
+		// than it can send a Heartbeat frame, since both require a
+		// scheduled goroutine on the agent's side. Without this, that
+		// agent's TCP/TLS connection could sit open indefinitely with no
+		// Recv() error ever firing on this side either, leaving Session
+		// running and the node's Status stuck Online until the next
+		// internal/reconcile/nodehealth pass alone catches it, up to
+		// nodeHeartbeatTimeout later. nodeKeepaliveTime+nodeKeepaliveTimeout
+		// bounds worst-case detection well under that.
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			Time:    nodeKeepaliveTime(),
+			Timeout: nodeKeepaliveTimeout(),
+		}),
+		// EnforcementPolicy governs pings this server accepts *from* an
+		// agent: MinTime rejects an agent that pings more often than its
+		// own keepalive interval allows for (abuse/misconfiguration, not
+		// the normal case), PermitWithoutStream matters less here since
+		// Session's one stream is normally active for the connection's
+		// entire lifetime, but is set anyway so a ping during the brief
+		// window before Session is established is never itself a reason
+		// to tear the connection down.
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             nodeKeepaliveTime() / 2,
+			PermitWithoutStream: true,
+		}),
+	)
+	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger))
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
 		if err := agentGRPCServer.Serve(agentListener); err != nil {
@@ -1266,10 +1308,16 @@ func metricsRetention() time.Duration {
 	return d
 }
 
-// nodeHeartbeatInterval reads APP_NODE_HEARTBEAT_INTERVAL,
-// the same env-var-with-default shape as metricsRetention/
-// logsRetention above, applied to how often a connected agent's
-// last_seen_at is touched (internal/agent.WithHeartbeatInterval).
+// nodeHeartbeatInterval reads APP_NODE_HEARTBEAT_INTERVAL, the same
+// env-var-with-default shape as metricsRetention/logsRetention above.
+// Used by mesh.go's own localNodeHeartbeat, how often the control
+// plane's local node touches its own last_seen_at (it heartbeats
+// itself, docs/multi-node.md's own "no gRPC" note). A connected remote
+// agent's last_seen_at is a different mechanism now
+// (internal/agent.WithHeartbeatInterval, agent-side, driving a real
+// Heartbeat frame up the Session stream rather than a server-side
+// timer): cmd/levelrail-agent's own main.go reads this same env var
+// name for that, so one setting still governs both cadences by default.
 func nodeHeartbeatInterval() time.Duration {
 	raw := os.Getenv("APP_NODE_HEARTBEAT_INTERVAL")
 	if raw == "" {
@@ -1293,6 +1341,35 @@ func nodeHeartbeatTimeout() time.Duration {
 	d, err := time.ParseDuration(raw)
 	if err != nil {
 		return defaultNodeHeartbeatTimeout
+	}
+	return d
+}
+
+// nodeKeepaliveTime reads APP_NODE_KEEPALIVE_TIME, how often the agent
+// gRPC server sends an HTTP/2 PING on an otherwise-idle connection.
+func nodeKeepaliveTime() time.Duration {
+	raw := os.Getenv("APP_NODE_KEEPALIVE_TIME")
+	if raw == "" {
+		return defaultNodeKeepaliveTime
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		return defaultNodeKeepaliveTime
+	}
+	return d
+}
+
+// nodeKeepaliveTimeout reads APP_NODE_KEEPALIVE_TIMEOUT, how long the
+// agent gRPC server waits for a PING ack before considering the
+// connection dead.
+func nodeKeepaliveTimeout() time.Duration {
+	raw := os.Getenv("APP_NODE_KEEPALIVE_TIMEOUT")
+	if raw == "" {
+		return defaultNodeKeepaliveTimeout
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		return defaultNodeKeepaliveTimeout
 	}
 	return d
 }

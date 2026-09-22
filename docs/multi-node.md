@@ -91,11 +91,15 @@ Once connected, it is a normal placement target:
 
 ### How heartbeats work
 
-A connected agent touches `last_seen_at` at a regular interval (default 15 seconds, `APP_NODE_HEARTBEAT_INTERVAL`).
+A connected agent sends an unprompted `Heartbeat` frame up its Session stream at a regular interval (default 15 seconds, `APP_NODE_HEARTBEAT_INTERVAL`, read agent-side). The control plane only touches `last_seen_at` when one of these frames actually arrives, never merely because the stream is still open: a stream staying open proves the TCP/TLS connection hasn't been torn down, not that the agent process on the other end is still actually running.
+
+The connection also carries an HTTP/2 PING keepalive in both directions (`APP_NODE_KEEPALIVE_TIME`/`APP_NODE_KEEPALIVE_TIMEOUT`, default 10s/10s on the control plane; the agent mirrors this with its own env vars of the same name). A process that stops running entirely, frozen or deadlocked rather than exited, cannot answer a PING any more than it can send a Heartbeat frame, so gRPC tears the connection down from underneath it, well within the timeout below, without waiting on the reconcile pass at all.
 
 **Graceful disconnect:** Agent process exits cleanly, node flips to `offline` immediately.
 
-**Hard disconnect:** No clean gRPC closure, so the control plane doesn't notice. The `internal/reconcile/nodehealth.Controller` detects this: every reconcile pass compares `last_seen_at` against `APP_NODE_HEARTBEAT_TIMEOUT` (default 45 seconds). If a node is past the timeout and still marked `online`, the controller flips it to `offline` and records a `Heartbeat` condition explaining why.
+**Hard disconnect (clean, no keepalive):** No clean gRPC closure, so the control plane doesn't notice via the stream itself. The `internal/reconcile/nodehealth.Controller` detects this: every reconcile pass compares `last_seen_at` against `APP_NODE_HEARTBEAT_TIMEOUT` (default 45 seconds). If a node is past the timeout and still marked `online`, the controller flips it to `offline` and records a `Heartbeat` condition explaining why.
+
+**Hard disconnect (frozen process, e.g. `SIGSTOP`):** The TCP/TLS connection can stay technically open indefinitely with nothing to close it. The keepalive PING above is the backstop for exactly this: the transport itself notices the peer stopped responding and ends the connection, which then follows the same path as any other hard disconnect (the node's `Status` update happens as soon as `Session` returns, without needing to wait for `nodehealth`'s own timeout).
 
 ### Checking node health
 

@@ -51,46 +51,24 @@ type EnrollStore interface {
 // for a year.
 const clientCertValidity = 90 * 24 * time.Hour
 
-// defaultHeartbeatInterval is how often Session touches last_seen_at
-// for a connected node while its stream stays open,
-// matching the observability design's own metrics-collection cadence
-// (15s): reusing that same number isn't required by anything, but two
-// independent "how fresh does this need to be" judgment calls landing
-// on the same value is a reasonable default rather than inventing a
-// third cadence.
-const defaultHeartbeatInterval = 15 * time.Second
-
 // Server implements agentpb.AgentServiceServer.
 type Server struct {
 	agentpb.UnimplementedAgentServiceServer
-	ca                *CA
-	store             EnrollStore
-	registry          *Registry
-	logger            *slog.Logger
-	heartbeatInterval time.Duration
+	ca       *CA
+	store    EnrollStore
+	registry *Registry
+	logger   *slog.Logger
 }
 
 // Option configures optional Server behavior.
 type Option func(*Server)
-
-// WithHeartbeatInterval overrides how often Session touches
-// last_seen_at for a connected node. Without one configured,
-// defaultHeartbeatInterval applies. cmd/levelrail's own main.go reads
-// APP_NODE_HEARTBEAT_INTERVAL and passes the parsed duration here,
-// following the project's "no hardcoded thresholds, use env vars"
-// rule; this package itself never reads the environment directly, the
-// same "constructor args only" convention api.WithSessionTTL already
-// establishes.
-func WithHeartbeatInterval(d time.Duration) Option {
-	return func(s *Server) { s.heartbeatInterval = d }
-}
 
 // NewServer builds a Server. logger defaults to slog.Default() if nil.
 func NewServer(ca *CA, st EnrollStore, registry *Registry, logger *slog.Logger, opts ...Option) *Server {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	s := &Server{ca: ca, store: st, registry: registry, logger: logger, heartbeatInterval: defaultHeartbeatInterval}
+	s := &Server{ca: ca, store: st, registry: registry, logger: logger}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -216,17 +194,35 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 		s.logger.Warn("agent: session: touch last seen failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
 	}
 
-	m := newMux(stream)
+	// heartbeats carries a signal every time this stream's mux actually
+	// receives an AgentMessage_Heartbeat frame from the agent (mux.go's
+	// onHeartbeat callback below); heartbeatLoop is what turns that into
+	// a TouchNodeLastSeen call. A single touch at connect time (above)
+	// can't distinguish "still connected" from "connected an hour ago,
+	// then the process hung", which is exactly what
+	// internal/reconcile/nodehealth needs LastSeenAt to reflect: this is
+	// deliberately event-driven off a real frame the agent chose to send,
+	// not a server-side timer that would touch last_seen_at for as long
+	// as the stream object merely exists, whether or not the agent
+	// process on the other end is actually still running.
+	// Buffered 1 and non-blocking on send: recvLoop (this callback's
+	// caller) must never block delivering a heartbeat signal, the same
+	// discipline eventChanBuffer's own doc comment requires of
+	// deliverEvent; a heartbeat that arrives while one is already pending
+	// collapses into it, which is fine, since all heartbeatLoop does with
+	// the signal is refresh a timestamp.
+	heartbeats := make(chan struct{}, 1)
+	m := newMux(stream, func() {
+		select {
+		case heartbeats <- struct{}{}:
+		default:
+		}
+	})
 	s.registry.Register(nodeID, newGRPCTransport(m))
 	s.logger.Info("agent: node connected", slog.String("node_id", nodeID))
 
-	// heartbeatDone stops the periodic TouchNodeLastSeen loop below:
-	// a single touch at connect time (above) can't
-	// distinguish "still connected" from "connected an hour ago, then
-	// the process hung", which is exactly what
-	// internal/reconcile/nodehealth needs LastSeenAt to reflect.
 	heartbeatDone := make(chan struct{})
-	go s.heartbeatLoop(nodeID, heartbeatDone)
+	go s.heartbeatLoop(nodeID, heartbeats, heartbeatDone)
 
 	defer func() {
 		close(heartbeatDone)
@@ -245,24 +241,24 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 	return nil
 }
 
-// heartbeatLoop touches last_seen_at for nodeID every heartbeatInterval
-// until done is closed. Runs in its own goroutine for the lifetime of
-// one Session call; a single TouchNodeLastSeen failure is logged and
-// retried on the next tick, the same "best-effort, never block the
-// caller" posture TouchNodeLastSeen's own doc comment already commits
-// to.
-func (s *Server) heartbeatLoop(nodeID string, done <-chan struct{}) {
-	ticker := time.NewTicker(s.heartbeatInterval)
-	defer ticker.Stop()
+// heartbeatLoop touches last_seen_at for nodeID every time a signal
+// arrives on heartbeats (a real AgentMessage_Heartbeat frame having just
+// been received, per mux.go's onHeartbeat callback), until done is
+// closed. Runs in its own goroutine for the lifetime of one Session
+// call; a single TouchNodeLastSeen failure is logged and forgotten
+// rather than retried, the same "best-effort, never block the caller"
+// posture TouchNodeLastSeen's own doc comment already commits to (the
+// next heartbeat frame, moments away, is the retry).
+func (s *Server) heartbeatLoop(nodeID string, heartbeats <-chan struct{}, done <-chan struct{}) {
 	for {
 		select {
 		case <-done:
 			return
-		case <-ticker.C:
+		case <-heartbeats:
 			// context.Background(), not the stream's context: the same
 			// reasoning as the final offline update above, a heartbeat
 			// touch must not be cancelled by the stream context tearing
-			// down mid-tick.
+			// down mid-call.
 			if err := s.store.TouchNodeLastSeen(context.Background(), nodeID); err != nil {
 				s.logger.Warn("agent: session: heartbeat touch failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
 			}

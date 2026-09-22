@@ -91,6 +91,17 @@ message AgentMessage {
     // BuildCredit here refunds the control plane's build-context window:
     // the agent has consumed that many BuildInput frames.
     BuildCredit build_credit = 6;
+    // Heartbeat is an unprompted liveness signal the agent sends up this
+    // stream at a fixed interval, on its own initiative, independent of
+    // any AgentRequest/AgentResponse traffic. This is deliberately a real
+    // application-level message, not inferred from the stream merely
+    // staying open: internal/agent.Server only refreshes a node's
+    // last_seen_at when this frame actually arrives, so a frozen agent
+    // process (hung, deadlocked, or stopped without exiting) whose TCP/TLS
+    // connection is still technically established stops advancing
+    // last_seen_at the moment it stops actually running, rather than
+    // looking healthy for as long as the transport happens to stay up.
+    Heartbeat heartbeat = 7;
   }
 }
 
@@ -165,6 +176,12 @@ message AgentResponse {
 }
 
 message Empty {}
+
+// Heartbeat carries no data of its own: the frame's mere arrival on the
+// Session stream is the whole signal, the same "presence is the
+// message" shape WatchEventsRequest's own watch_id establishes for a
+// different unprompted, agent-initiated frame.
+message Heartbeat {}
 
 message PortBinding {
   int32 container_port = 1;

@@ -146,6 +146,12 @@ func runReconnectLoop(ctx context.Context, addr string, id *agent.Identity, rt d
 	if builder != nil {
 		opts = append(opts, agent.WithBuildRunner(builder))
 	}
+	if d := heartbeatIntervalFromEnv(); d > 0 {
+		opts = append(opts, agent.WithHeartbeatInterval(d))
+	}
+	if t, timeout := keepaliveFromEnv(); t > 0 || timeout > 0 {
+		opts = append(opts, agent.WithKeepalive(t, timeout))
+	}
 
 	delay := reconnectBaseDelay
 	for {
@@ -264,4 +270,43 @@ func identityFilePath() string {
 		p = defaultIdentityFile
 	}
 	return p
+}
+
+// heartbeatIntervalFromEnv reads APP_NODE_HEARTBEAT_INTERVAL, the same
+// env var name cmd/levelrail's own main.go reads for the control
+// plane's local-node self-heartbeat, so one setting governs both
+// cadences by default: how often this agent sends an unprompted
+// Heartbeat frame up its Session stream (internal/agent.WithHeartbeatInterval).
+// A zero return means unset or unparseable: runReconnectLoop leaves
+// agent.RunSession's own default in place rather than passing a zero
+// duration through.
+func heartbeatIntervalFromEnv() time.Duration {
+	raw := os.Getenv("APP_NODE_HEARTBEAT_INTERVAL")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		return 0
+	}
+	return d
+}
+
+// keepaliveFromEnv reads APP_NODE_KEEPALIVE_TIME/APP_NODE_KEEPALIVE_TIMEOUT,
+// the same env var names cmd/levelrail's own main.go reads for the agent
+// gRPC server's side of this connection's HTTP/2 PING keepalive
+// (internal/agent.WithKeepalive). Either returning zero means
+// runReconnectLoop leaves agent.RunSession's own defaults in place.
+func keepaliveFromEnv() (t, timeout time.Duration) {
+	if raw := os.Getenv("APP_NODE_KEEPALIVE_TIME"); raw != "" {
+		if d, err := time.ParseDuration(raw); err == nil {
+			t = d
+		}
+	}
+	if raw := os.Getenv("APP_NODE_KEEPALIVE_TIMEOUT"); raw != "" {
+		if d, err := time.ParseDuration(raw); err == nil {
+			timeout = d
+		}
+	}
+	return t, timeout
 }

@@ -15,12 +15,45 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/docker"
+)
+
+// defaultHeartbeatInterval is how often RunSession sends an unprompted
+// Heartbeat frame up the Session stream while it stays open. This is
+// the one thing internal/agent.Server's own last_seen_at freshness
+// actually depends on now (server.go's mux onHeartbeat callback): the
+// stream staying open is no longer enough on its own, so this interval,
+// not a server-side timer, is what keeps a healthy node looking healthy.
+// Matches the observability design's own metrics-collection cadence
+// (15s), same reasoning nodeHeartbeatInterval's own doc comment already
+// gives for reusing that number rather than inventing a fresh one.
+const defaultHeartbeatInterval = 15 * time.Second
+
+// defaultKeepaliveTime/defaultKeepaliveTimeout configure this
+// connection's HTTP/2-level PING keepalive, the transport-level backstop
+// behind the application-level Heartbeat frame above: a frozen agent
+// process (SIGSTOP'd, deadlocked, or otherwise not actually running any
+// goroutines, as opposed to having exited) cannot service an incoming
+// PING either, since responding requires a scheduled goroutine just as
+// much as sending a Heartbeat frame does. Without this, the underlying
+// TCP/TLS connection for a frozen-but-not-crashed agent can sit open
+// indefinitely with no Heartbeat frame ever arriving again, but also no
+// Recv() error ever firing to end Session on the control plane's own
+// side either. 10s/10s bounds worst-case detection at roughly
+// defaultKeepaliveTime+defaultKeepaliveTimeout (20s), comfortably under
+// internal/reconcile/nodehealth's own 45s staleness timeout
+// (APP_NODE_HEARTBEAT_TIMEOUT) so the transport itself, not just the
+// next reconcile pass, notices and tears the connection down.
+const (
+	defaultKeepaliveTime    = 10 * time.Second
+	defaultKeepaliveTimeout = 10 * time.Second
 )
 
 // Identity is what an enrolled node needs to reconnect: its own client
@@ -117,11 +150,23 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 		return fmt.Errorf("agent: parse CA certificate: no valid certificate found")
 	}
 
+	keepaliveTime, keepaliveTimeout := defaultKeepaliveTime, defaultKeepaliveTimeout
+	if cfg.keepaliveTime > 0 {
+		keepaliveTime = cfg.keepaliveTime
+	}
+	if cfg.keepaliveTimeout > 0 {
+		keepaliveTimeout = cfg.keepaliveTimeout
+	}
+
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 		Certificates: []tls.Certificate{cert},
 		RootCAs:      pool,
 		NextProtos:   []string{"h2"},
-	})))
+	})), grpc.WithKeepaliveParams(keepalive.ClientParameters{
+		Time:                keepaliveTime,
+		Timeout:             keepaliveTimeout,
+		PermitWithoutStream: true, // this connection's whole purpose is the one long-lived Session stream, so keep pinging even between requests
+	}))
 	if err != nil {
 		return fmt.Errorf("agent: dial %q: %w", addr, err)
 	}
@@ -132,12 +177,20 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 		return fmt.Errorf("agent: open session: %w", err)
 	}
 
-	return serveSession(ctx, stream, rt, cfg.builder, logger)
+	heartbeatInterval := defaultHeartbeatInterval
+	if cfg.heartbeatInterval > 0 {
+		heartbeatInterval = cfg.heartbeatInterval
+	}
+
+	return serveSession(ctx, stream, rt, cfg.builder, heartbeatInterval, logger)
 }
 
 // sessionConfig holds RunSession's optional wiring.
 type sessionConfig struct {
-	builder BuildRunner
+	builder           BuildRunner
+	heartbeatInterval time.Duration
+	keepaliveTime     time.Duration
+	keepaliveTimeout  time.Duration
 }
 
 // SessionOption configures optional RunSession behavior.
@@ -151,11 +204,35 @@ func WithBuildRunner(runner BuildRunner) SessionOption {
 	return func(c *sessionConfig) { c.builder = runner }
 }
 
+// WithHeartbeatInterval overrides how often RunSession sends an
+// unprompted Heartbeat frame up the Session stream. Without one
+// configured, defaultHeartbeatInterval applies. cmd/levelrail-agent's
+// own main.go reads APP_NODE_HEARTBEAT_INTERVAL and passes the parsed
+// duration here, the project's "no hardcoded thresholds, use env vars"
+// rule; this package itself never reads the environment directly.
+func WithHeartbeatInterval(d time.Duration) SessionOption {
+	return func(c *sessionConfig) { c.heartbeatInterval = d }
+}
+
+// WithKeepalive overrides this connection's HTTP/2 PING keepalive
+// timing. Without one configured, defaultKeepaliveTime/
+// defaultKeepaliveTimeout apply. cmd/levelrail-agent's own main.go
+// reads APP_NODE_KEEPALIVE_TIME/APP_NODE_KEEPALIVE_TIMEOUT and passes
+// the parsed durations here, the same env-var-with-default convention
+// WithHeartbeatInterval above follows.
+func WithKeepalive(pingTime, timeout time.Duration) SessionOption {
+	return func(c *sessionConfig) { c.keepaliveTime, c.keepaliveTimeout = pingTime, timeout }
+}
+
 // serveSession is RunSession's pure loop, split out so it's directly
 // testable against a fake agentClientStream: reads incoming
 // ControlMessage frames and dispatches each against rt, replying with
 // the resulting AgentResponse (and any ProxiedEvent or ExecOutput frames
-// a watch or an exec produces along the way).
+// a watch or an exec produces along the way). It also starts this
+// agent's own heartbeatLoop, sending an unprompted Heartbeat frame every
+// heartbeatInterval for as long as the stream stays open: this is what
+// internal/agent.Server's mux.onHeartbeat callback actually keys
+// last_seen_at freshness off now, not the stream merely existing.
 //
 // Each request is dispatched in its own goroutine, not handled
 // sequentially in this loop: a slow operation (Create pulling a large
@@ -166,7 +243,7 @@ func WithBuildRunner(runner BuildRunner) SessionOption {
 // is not safe for concurrent Send calls, the identical reasoning mux.go's
 // own sendMu already documents for the control-plane side of this same
 // connection.
-func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runtime, builder BuildRunner, logger *slog.Logger) error {
+func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runtime, builder BuildRunner, heartbeatInterval time.Duration, logger *slog.Logger) error {
 	var sendMu sync.Mutex
 	send := func(msg *agentpb.AgentMessage) {
 		sendMu.Lock()
@@ -184,6 +261,10 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 
 	builds := NewBuildRelay(builder, send)
 	defer builds.CloseAll()
+
+	heartbeatDone := make(chan struct{})
+	defer close(heartbeatDone)
+	go heartbeatLoop(send, heartbeatInterval, heartbeatDone)
 
 	for {
 		msg, err := stream.Recv()
@@ -219,6 +300,24 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 			builds.Cancel(p.BuildCancel.GetBuildId())
 		case *agentpb.ControlMessage_BuildCredit:
 			builds.Credit(p.BuildCredit)
+		}
+	}
+}
+
+// heartbeatLoop sends an unprompted Heartbeat frame via send every
+// interval, until done is closed. Runs in its own goroutine for the
+// lifetime of one serveSession call: send is already safe for concurrent
+// use (serialized by serveSession's own sendMu), so this never
+// coordinates with the main recv loop beyond that.
+func heartbeatLoop(send func(*agentpb.AgentMessage), interval time.Duration, done <-chan struct{}) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-done:
+			return
+		case <-ticker.C:
+			send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Heartbeat{Heartbeat: &agentpb.Heartbeat{}}})
 		}
 	}
 }
