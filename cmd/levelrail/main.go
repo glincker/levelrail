@@ -628,23 +628,24 @@ func run(logger *slog.Logger) error {
 
 	engine.SetStore(db)
 	engine.SetSource(dynamicSource(dynamicSourceDeps{
-		db:               db,
-		runtime:          client,
-		driver:           ingressDriver,
-		logger:           logger,
-		telemetryDB:      telemetryDB,
-		secretsManager:   secretsManager,
-		agentRegistry:    agentRegistry,
-		heartbeatTimeout: nodeHeartbeatTimeout(),
-		meshCfg:          meshCfg,
-		meshDNSAddr:      meshDNSAddr,
-		dashboardDial:    dashboardDialAddr(httpAddr()),
-		networkPrefix:    b.ShortName,
-		instanceID:       instanceID,
-		livenessTracker:  application.NewLivenessTracker(),
-		publicHost:       publicHost(),
-		ingressHTTPSAddr: ingressHTTPSAddr(),
-		ingressHTTPAddr:  ingressHTTPAddr(),
+		db:                           db,
+		runtime:                      client,
+		driver:                       ingressDriver,
+		logger:                       logger,
+		telemetryDB:                  telemetryDB,
+		secretsManager:               secretsManager,
+		agentRegistry:                agentRegistry,
+		heartbeatTimeout:             nodeHeartbeatTimeout(),
+		meshCfg:                      meshCfg,
+		meshDNSAddr:                  meshDNSAddr,
+		databaseSlowQueryThresholdMs: databaseSlowQueryThresholdMs(logger),
+		dashboardDial:                dashboardDialAddr(httpAddr()),
+		networkPrefix:                b.ShortName,
+		instanceID:                   instanceID,
+		livenessTracker:              application.NewLivenessTracker(),
+		publicHost:                   publicHost(),
+		ingressHTTPSAddr:             ingressHTTPSAddr(),
+		ingressHTTPAddr:              ingressHTTPAddr(),
 	}))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
@@ -2645,6 +2646,23 @@ func secretRotationWarnAge(logger *slog.Logger) time.Duration {
 	return time.Duration(days) * 24 * time.Hour
 }
 
+// databaseSlowQueryThresholdMs reads APP_DATABASE_SLOW_QUERY_THRESHOLD_MS,
+// the same env-var-with-default shape auditLogRetention above uses:
+// returns 0 (database.WithSlowQueryThreshold's own signal to fall back to
+// database.defaultSlowQueryThresholdMs) when unset or unparseable.
+func databaseSlowQueryThresholdMs(logger *slog.Logger) int {
+	raw := os.Getenv("APP_DATABASE_SLOW_QUERY_THRESHOLD_MS")
+	if raw == "" {
+		return 0
+	}
+	ms, err := strconv.Atoi(raw)
+	if err != nil {
+		logger.Warn("invalid APP_DATABASE_SLOW_QUERY_THRESHOLD_MS, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return ms
+}
+
 // auditLogSweepInterval reads APP_AUDIT_LOG_SWEEP_INTERVAL as a Go
 // duration string, the same env-var-with-default shape
 // previewSweepInterval above uses: api.Router.RunAuditLogSweeper takes its
@@ -2823,6 +2841,10 @@ type dynamicSourceDeps struct {
 	meshDNSAddr      string
 	dashboardDial    string
 	networkPrefix    string
+	// databaseSlowQueryThresholdMs is 0 (databaseSlowQueryThresholdMs's own
+	// "use the default" signal) unless APP_DATABASE_SLOW_QUERY_THRESHOLD_MS
+	// is set; see database.WithSlowQueryThreshold.
+	databaseSlowQueryThresholdMs int
 	// instanceID is this control-plane instance's own persistent identity
 	// (store.GetOrCreateInstanceID), threaded to every controller doing
 	// name/prefix-based Docker cleanup so two instances sharing one
@@ -3034,6 +3056,7 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 			opts = append(opts, database.WithPostgresCredentials(creds))
 		}
 		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name)...)
+		opts = append(opts, database.WithSlowQueryThreshold(deps.databaseSlowQueryThresholdMs))
 	case store.EngineRedis:
 		// Redis needs no credentials to reconcile at all (this package's
 		// own doc comment), so TLS is the only per-engine option it ever
@@ -3047,6 +3070,7 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		} else if creds != nil {
 			opts = append(opts, database.WithMySQLCredentials(creds))
 		}
+		opts = append(opts, database.WithSlowQueryThreshold(deps.databaseSlowQueryThresholdMs))
 	case store.EngineMongoDB:
 		creds, err := mongoCredentialsFor(ctx, deps.secretsManager, desired.Name)
 		if err != nil {

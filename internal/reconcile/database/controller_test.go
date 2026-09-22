@@ -717,7 +717,7 @@ func TestController_Reconcile_Postgres_TLS_MountsCertsAndConfiguresSSL(t *testin
 		t.Errorf("surviving container count = %d, want 1 (helper must be removed)", got)
 	}
 
-	wantCommand := postgresCommand(&TLSMaterial{}, false)
+	wantCommand := postgresCommand(&TLSMaterial{}, defaultSlowQueryThresholdMs, false)
 	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
 		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
 	}
@@ -857,7 +857,7 @@ func TestController_Reconcile_Postgres_PITR_MountsWALArchiveAndEnablesArchiving(
 		t.Errorf("database container Volumes = %+v, want a mount for %q", rt.lastCreateSpec.Volumes, walVol)
 	}
 
-	wantCommand := postgresCommand(nil, true)
+	wantCommand := postgresCommand(nil, defaultSlowQueryThresholdMs, true)
 	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
 		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
 	}
@@ -2066,6 +2066,87 @@ func TestController_Teardown(t *testing.T) {
 				t.Errorf("removeCalls = %d, want %d", rt.removeCalls, tt.wantRemoveCall)
 			}
 		})
+	}
+}
+
+func TestController_Reconcile_Postgres_NoTLS_SetsSlowQueryLogFlagByDefault(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}
+	c := New("main", &fakeStore{db: desired}, rt,
+		WithPostgresCredentials(&PostgresCredentials{Username: "main", Password: "s3cret"}),
+	)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	wantCommand := []string{"postgres", "-c", "log_min_duration_statement=1000"}
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+}
+
+func TestController_Reconcile_Postgres_WithSlowQueryThreshold_UsesConfiguredValue(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}
+	c := New("main", &fakeStore{db: desired}, rt,
+		WithPostgresCredentials(&PostgresCredentials{Username: "main", Password: "s3cret"}),
+		WithSlowQueryThreshold(250),
+	)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	wantCommand := []string{"postgres", "-c", "log_min_duration_statement=250"}
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+}
+
+func TestController_Reconcile_MySQL_SetsSlowQueryLogFlagsByDefault(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}
+	c := New("main", &fakeStore{db: desired}, rt, WithMySQLCredentials(&MySQLCredentials{
+		Username: "main",
+		Password: "s3cret",
+	}))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	wantCommand := []string{
+		"--slow-query-log=1",
+		"--long-query-time=1",
+		"--slow-query-log-file=/dev/stderr",
+		"--log-output=FILE",
+	}
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+}
+
+func TestController_Reconcile_MySQL_WithSlowQueryThreshold_ConvertsMsToSeconds(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}
+	c := New("main", &fakeStore{db: desired}, rt,
+		WithMySQLCredentials(&MySQLCredentials{Username: "main", Password: "s3cret"}),
+		WithSlowQueryThreshold(500),
+	)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	wantCommand := []string{
+		"--slow-query-log=1",
+		"--long-query-time=0.5",
+		"--slow-query-log-file=/dev/stderr",
+		"--log-output=FILE",
+	}
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
 	}
 }
 

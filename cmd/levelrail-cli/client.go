@@ -76,6 +76,7 @@ type (
 	setDatabaseResourcesRequest      = apiclient.SetDatabaseResourcesRequest
 	databasePublicAccessResource     = apiclient.DatabasePublicAccessResource
 	setDatabasePublicAccessRequest   = apiclient.SetDatabasePublicAccessRequest
+	slowQueryEntryResource           = apiclient.SlowQueryEntryResource
 	composeDeployResult              = apiclient.ComposeDeployResult
 	apiError                         = apiclient.APIError
 	deployTriggerRequest             = apiclient.DeployTriggerRequest

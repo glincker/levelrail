@@ -537,6 +537,27 @@ func (c *Client) QueryDatabaseLogs(ctx context.Context, name string, from, to ti
 	return out.Entries, err
 }
 
+// QueryDatabaseSlowQueries calls GET
+// /api/v1/databases/{name}/slow-queries?from=&to=&limit=&offset=
+// (internal/api/database_slow_queries.go's handleQueryDatabaseSlowQueries),
+// returning parsed slow-query entries sorted by duration descending plus
+// the total count before limit/offset truncation. limit <= 0 omits the
+// ?limit param, letting the server apply its own default.
+func (c *Client) QueryDatabaseSlowQueries(ctx context.Context, name string, from, to time.Time, limit, offset int) ([]SlowQueryEntryResource, int, error) {
+	query := url.Values{}
+	query.Set("from", from.UTC().Format(time.RFC3339))
+	query.Set("to", to.UTC().Format(time.RFC3339))
+	if limit > 0 {
+		query.Set("limit", strconv.Itoa(limit))
+	}
+	if offset > 0 {
+		query.Set("offset", strconv.Itoa(offset))
+	}
+	var out slowQueriesResponse
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/slow-queries?"+query.Encode(), nil, &out)
+	return out.Entries, out.Total, err
+}
+
 // CreateDatabase calls POST /api/v1/databases.
 func (c *Client) CreateDatabase(ctx context.Context, req DatabaseResource) (DatabaseResource, error) {
 	var out DatabaseResource

@@ -5,6 +5,7 @@ import {
   CpuIcon,
   PulseIcon,
   ScrollIcon,
+  GaugeIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   SidebarGroup,
@@ -22,10 +23,11 @@ import { summarizeDatabaseStatus } from '../lib/databaseStatus'
 // direct structural sibling of AppScopedSidebar.tsx: rendered in place of
 // the global nav whenever the current route is under /databases/$name/*.
 //
-// Four nav items now, not two: Overview and Resources (unchanged) plus
-// Metrics and Logs (internal/api/database_metrics.go,
-// internal/api/database_logs.go), closing the observability gap this
-// sidebar used to document as missing. Still no domains/environment/
+// Five nav items now, not two: Overview and Resources (unchanged) plus
+// Metrics, Logs, and Slow Queries (internal/api/database_metrics.go,
+// internal/api/database_logs.go, internal/api/database_slow_queries.go),
+// closing the observability gap this sidebar used to document as
+// missing. Still no domains/environment/
 // health/alerts equivalent, and still no frontend connection-string/
 // credentials display (cmd/levelrail's database_credentials.go remains a
 // CLI-only subcommand): those stay genuinely absent, not just
@@ -115,6 +117,18 @@ export function DatabaseScopedSidebar({ name }: { name: string }) {
               >
                 <ScrollIcon />
                 <span>Logs</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/databases/$name/slow-queries" params={{ name }} />
+                }
+                isActive={pathname.endsWith('/slow-queries')}
+                tooltip="Slow Queries"
+              >
+                <GaugeIcon />
+                <span>Slow Queries</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
