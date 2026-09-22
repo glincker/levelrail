@@ -5,7 +5,7 @@ description: Status of Levelrail by phase - what is shipped, in progress, and pl
 
 # Roadmap
 
-Status as of 2026-09-17 (refreshed against current `main`), not the aspirational plan. See `/adr` for the phase-by-phase architectural decisions behind this build order.
+Status as of 2026-09-22 (refreshed against current `main`), not the aspirational plan. See `/adr` for the phase-by-phase architectural decisions behind this build order.
 
 The build has moved further and less linearly than the phase plan implies: parts of Phase 3 (multi-node, the WireGuard mesh) ship while some Phase 1 items (real public ACME against a live domain) remain open. This page describes what is actually true today.
 
@@ -103,12 +103,12 @@ flowchart LR
   with a "test auth" action that validates them against the real
   registry, plus expiry tracking (healthy/expiring-soon/expired), a
   dashboard settings page, and CRUD via the API.
-- GitLab (gitlab.com or self-hosted) and Bitbucket Cloud as full
-  alternative git providers: OAuth connect, repo/branch picker, and
-  webhook-triggered auto-deploy, the same as GitHub. A single shared
-  picker component is used everywhere a repo gets chosen (the app
-  creation wizard, an existing app's git-source settings), so the
-  provider you connect doesn't change the mental model; GitHub's own
+- GitLab (gitlab.com or self-hosted), Bitbucket Cloud, and Gitea (self-hosted)
+  as full alternative git providers: OAuth connect (or Gitea's personal access
+  token), repo/branch picker, and webhook-triggered auto-deploy, the same as
+  GitHub. A single shared picker component is used everywhere a repo gets
+  chosen (the app creation wizard, an existing app's git-source settings), so
+  the provider you connect doesn't change the mental model; GitHub's own
   webhook auto-registration degrades gracefully to a manual
   paste-the-secret banner if a pre-existing App installation predates
   the permission it now requests.
@@ -168,6 +168,10 @@ flowchart LR
   defaults to an internal, self-signed issuer. A public ACME issuer exists
   and is toggleable but unverified against a live domain (see In progress).
   
+  Ingress HTTP and HTTPS listen ports are configurable via
+  `APP_INGRESS_HTTP_PORT` and `APP_INGRESS_HTTPS_PORT`, wired into
+  Settings > Ingress for dashboard control.
+  
   A service with no configured domain gets a zero-config, publicly
   resolvable fallback URL (`<app>.<public-ip-dash-encoded>.sslip.io`,
   real HTTPS via Caddy, no DNS setup) whenever `APP_PUBLIC_HOST` is a
@@ -187,7 +191,8 @@ flowchart LR
   container-create time. Master-key rotation (`POST
   /api/v1/system/master-key/rotate`, `levelrail-cli secrets rotate-master-key`)
   re-wraps every per-service data-encryption key in one transaction.
-  Rotation age is checked by the doctor command.
+  Rotation age is checked by the doctor command and tracked for reminders,
+  with a dismissible dashboard nudge when rotation is overdue.
 - Managed Redis as a first-class volume-backed resource.
 - Eight managed database engines via a dynamic engine registry
   (`internal/store/database_engines.yaml`): Postgres, Redis, MySQL,
@@ -300,7 +305,8 @@ flowchart LR
   reachability, disk space, and more). The same checks run server-side as
   a system doctor API endpoint, including master-key-rotation-age and
   firewall/ufw status. Dashboard "System status" settings page surfaces
-  the same bundle, not just the CLI.
+  the same bundle with actionable CTAs and contextual help links for
+  remediation, not just the CLI.
 - `GET /api/v1/system/containers` and `levelrail-cli containers`: a
   read-only list of every container on the node (not just ones the
   reconciler manages), name, image, state, and ports. Deliberately no
@@ -372,7 +378,8 @@ flowchart LR
 **Observability**
 
 - Node-local metrics store at 15s resolution: CPU, memory, disk IO,
-  network IO, deploy count, build duration. Configurable retention.
+  network IO, deploy count, build duration, and container restart count.
+  Configurable retention.
 - Node-local log store with full-text search and structured (JSON) log
   parsing. Container logs are also downloadable as a file, separate
   from the live/search views.
@@ -410,6 +417,8 @@ flowchart LR
 - Managed database observability: log search, live SSE log tail, and
   metrics for every database engine, not just apps. Shares the query
   implementation with app-scoped equivalents instead of duplicating code.
+  Slow query logs for Postgres and MySQL surface long-running queries
+  automatically, with configurable query duration threshold per database.
 - Resource right-sizing: P95-based memory/CPU suggestions for apps and
   databases from observed usage over a lookback window, with confidence
   level. A suggestion only, surfaced on the resources page; never
@@ -464,8 +473,11 @@ flowchart LR
 - Distributed certificate storage across ingress instances.
 - Node health (heartbeat), cordon, and drain. Per-node live alert status
   (ok/firing/unknown) for patch-status, node-disk-space, and
-  node-resource-usage rules, evaluated on demand per fetch. Surfaced in
-  `nodes get`/`nodes health` and the node detail page.
+  node-resource-usage rules, evaluated on demand per fetch. Heartbeat
+  frames over the gRPC connection detect frozen agent processes and
+  hard disconnects, distinguishing network-level failures from
+  application-level deadlock. Surfaced in `nodes get`/`nodes health`
+  and the node detail page.
 - Frontend node management: add-node flow, node list with health status,
   per-service node assignment, cordon, and drain controls.
 
@@ -517,9 +529,16 @@ flowchart LR
   
   An environment can be marked protected, turning deploy or promotion into
   a 409 requiring explicit confirmation (dialog in dashboard, prompt in
-  CLI). Environment promotion moves an app's image tag from source to
-  target; env vars, ports, domains, and resource limits are resolved live
-  per environment rather than promoted, by design.
+  CLI). Two-person approval gates can be enabled on protected environments,
+  requiring a second authorized user to approve any deploy or promotion
+  before the operation proceeds. Environment promotion moves an app's image
+  tag from source to target; env vars, ports, domains, and resource limits
+  are resolved live per environment rather than promoted, by design.
+  
+  Environment cloning: copy an environment's entire app set, with all
+  configuration and current image tags, into a new environment (e.g.,
+  clone staging to production after validation). Single operation via
+  dashboard or CLI (`environments clone`).
 - Custom Docker labels.
 - App duplication/cloning.
 - Database public-accessibility toggle with host port exposure.
