@@ -235,6 +235,10 @@ type Router struct {
 	restoreRunner                  RestoreRunner                    // nil is valid: POST /api/v1/databases/{name}/restore returns 501, same shape as backupRunner above
 	cloneRestoreHistory            CloneRestoreHistoryStore         // always set, same "core Store interface" shape as restoreHistory above
 	cloneRestoreRunner             CloneRestoreRunner               // nil is valid: POST /api/v1/databases/{name}/restore-as-new returns 501, same shape as restoreRunner above
+	baseBackupHistory              BaseBackupHistoryStore           // always set, same "core Store interface" shape as backupHistory above
+	baseBackupRunner               BaseBackupRunner                 // nil is valid: POST /api/v1/databases/{name}/base-backups returns 501, same shape as backupRunner above
+	pitrRestoreHistory             PITRRestoreHistoryStore          // always set, same "core Store interface" shape as restoreHistory above
+	pitrRestoreRunner              PITRRestoreRunner                // nil is valid: POST /api/v1/databases/{name}/pitr-restore returns 501, same shape as restoreRunner above
 	serviceVolumeBackupHistory     ServiceVolumeBackupHistoryStore  // always set, same "core Store interface" shape as backupHistory above
 	serviceVolumeBackupSchedule    ServiceVolumeBackupScheduleStore // always set, same "core Store interface" shape as backupTargets above: reading a volume's schedule needs no runner configuration, only triggering a manual backup does
 	serviceVolumeBackupRunner      ServiceVolumeBackupRunner        // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/backups returns 501, same shape as backupRunner above
@@ -377,6 +381,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		backupHistory:               s,
 		backupVerifications:         s,
 		restoreHistory:              s,
+		baseBackupHistory:           s,
+		pitrRestoreHistory:          s,
 		serviceVolumeBackupHistory:  s,
 		serviceVolumeBackupSchedule: s,
 		serviceVolumeRestoreHistory: s,

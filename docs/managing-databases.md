@@ -304,6 +304,115 @@ Past attempts show in their own history tables on the same card (`RestoreHistory
 
 The CLI has no `clone-restores` list subcommand today, only the trigger. However, `GET /api/v1/databases/{name}/clone-restores` exists for scripting.
 
+### Point-in-time restore (PITR): Postgres only
+
+Every restore covered above is snapshot-based: it puts the database back
+exactly as it was at the moment a specific backup (a `pg_dump`/`mysqldump`
+logical dump) was taken, nothing in between. Point-in-time restore is
+different: it can put a Postgres database back to *any exact timestamp*,
+down to the second, not just to whenever a backup happened to run.
+
+::: warning Only recoverable from when you enable it, forward
+This is the single most important thing to understand before turning
+PITR on: **it is never retroactive.** The moment you run `pitr enable`,
+Postgres starts continuously archiving its write-ahead log (WAL). Only
+timestamps from that moment onward are ever recoverable by point-in-time
+restore. Nothing from before you enabled it can be restored this way,
+only through an ordinary backup if one happened to exist from that
+period. Enable it as early as you reasonably can, not after the fact.
+:::
+
+**How it works**
+
+1. `pitr enable <database>` turns on continuous WAL archiving
+   (`wal_level=replica`, `archive_mode=on`) going forward. Postgres only;
+   no other engine implements this today.
+2. Take a **physical base backup** (`pg_basebackup`, not a logical dump)
+   with `pitr base-backups trigger`. This is the "floor" a restore
+   replays WAL forward from. Take one periodically, the same way you'd
+   schedule an ordinary backup: the more recent your latest base backup,
+   the less WAL a restore has to replay to reach a given timestamp.
+3. `pitr status <database>` reports the currently recoverable window:
+   the oldest succeeded base backup's own timestamp on one end, and the
+   latest instant WAL archiving has *provably* reached on the other
+   (forced fresh, not a stale cached value, every time you ask).
+4. `pitr restore <database> --base-backup ID --target-time RFC3339`
+   restores to that exact timestamp: extracts the named base backup,
+   replays archived WAL forward, and stops at the first transaction
+   commit after `--target-time`.
+
+```mermaid
+flowchart LR
+  A[pitr enable] --> B[WAL archives continuously]
+  B --> C[pitr base-backups trigger]
+  C --> D[pitr status<br/>shows recoverable window]
+  D --> E[pitr restore --target-time]
+  E --> F[Database restored to<br/>that exact second]
+```
+
+**Why the database goes offline during a restore**
+
+Unlike an ordinary in-place restore (which pipes a dump into `psql`
+against a still-running container), a PITR restore needs Postgres's own
+data directory replaced out from under it, which cannot happen while the
+server process is running against it. The control plane handles this for
+you: it stops the container, wipes and repopulates its data volume from
+the base backup, and lets the reconciler bring it back up once recovery
+is configured. This is why a PITR restore takes noticeably longer than
+an in-place logical restore, proportional to how much WAL there is to
+replay, not to the database's total size.
+
+**A target timestamp outside the recoverable window is rejected before
+anything is touched** (`409`), the same synchronous-validation-first
+discipline the ordinary restore endpoint already follows: a request
+naming a timestamp before your oldest base backup, or after what's
+actually been archived, never reaches the live database at all.
+
+**CLI**
+
+```bash
+levelrail-cli pitr enable <database>
+levelrail-cli pitr status <database>
+levelrail-cli pitr base-backups trigger <database> --target ID
+levelrail-cli pitr base-backups list <database>
+levelrail-cli pitr restore <database> --base-backup ID --target-time RFC3339 [--confirm NAME]
+levelrail-cli pitr disable <database>
+```
+
+```bash
+$ levelrail-cli pitr enable main
+point-in-time restore enabled for database "main"; take a base backup with "levelrail-cli pitr base-backups trigger main --target ID"
+
+$ levelrail-cli pitr base-backups trigger main --target bkt_9f3ma
+base backup "bbh_h2n8fq31z" for database "main" started; check "levelrail-cli pitr base-backups list main" for status
+
+$ levelrail-cli pitr status main
+enabled since 2026-09-20T00:00:00Z
+recoverable window: 2026-09-20T00:00:00Z to 2026-09-22T14:32:07Z
+
+$ levelrail-cli pitr restore main --base-backup bbh_h2n8fq31z --target-time 2026-09-21T09:00:00Z --confirm main
+point-in-time restore "pitr_k2n8fq31z" of database "main" to "2026-09-21T09:00:00Z" started; check "levelrail-cli pitr status main" for the database's own condition once it finishes
+```
+
+Same "type the database's exact name to confirm" gate `backups restore`
+already uses (`--confirm`, or an interactive prompt if you leave it off):
+this is exactly as destructive as an ordinary in-place restore, gated at
+the same `root` ability tier.
+
+**Dashboard**
+
+The database's Overview page has its own "Point-in-time restore" card,
+separate from the ordinary Backups card: an Enable/Disable toggle, the
+current recoverable window, base backup history with a manual trigger,
+and a "Restore to timestamp" dialog with a datetime picker bounded to
+the actual recoverable window (anything outside it can't even be typed
+in).
+
+**No CLI history listing for individual restore attempts today.**
+`GET /api/v1/databases/{name}/pitr-restores` exists for scripting, but
+only the dashboard reads it, the same gap this doc already documents for
+`GET .../clone-restores`.
+
 ### Backup verification: re-download and re-hash
 
 ```bash
@@ -380,6 +489,13 @@ This endpoint is gated at `read:sensitive` (one tier above the metadata-only `re
 | `GET` | `/api/v1/databases/{name}/restores` | `read` |
 | `POST` | `/api/v1/databases/{name}/restore-as-new` | `write:sensitive` |
 | `GET` | `/api/v1/databases/{name}/clone-restores` | `read` |
+| `POST` | `/api/v1/databases/{name}/pitr` | `write:sensitive` |
+| `DELETE` | `/api/v1/databases/{name}/pitr` | `write:sensitive` |
+| `GET` | `/api/v1/databases/{name}/pitr` | `read` |
+| `POST` | `/api/v1/databases/{name}/base-backups` | `write:sensitive` |
+| `GET` | `/api/v1/databases/{name}/base-backups` | `read` |
+| `POST` | `/api/v1/databases/{name}/pitr-restore` | `root` |
+| `GET` | `/api/v1/databases/{name}/pitr-restores` | `read` |
 | `PUT` | `/api/v1/apps/{name}/database` | `write` |
 | `DELETE` | `/api/v1/apps/{name}/database` | `write` |
 | `GET`/`POST`/`PUT`/`DELETE` | `/api/v1/backup-targets` (+ `/{id}`, `/{id}/test`) | `read` (GET) / `write:sensitive` (everything else) |
@@ -410,6 +526,13 @@ levelrail-cli backups schedule set <database> --target ID --cron EXPR [--retain 
 levelrail-cli backups schedule clear <database>
 levelrail-cli backups verify <database> --backup ID
 levelrail-cli backups verifications <database> --backup ID
+
+levelrail-cli pitr enable <database>
+levelrail-cli pitr disable <database>
+levelrail-cli pitr status <database>
+levelrail-cli pitr base-backups list <database>
+levelrail-cli pitr base-backups trigger <database> --target ID
+levelrail-cli pitr restore <database> --base-backup ID --target-time RFC3339 [--confirm NAME]
 
 levelrail-cli backup-targets create --name NAME --provider PROVIDER --bucket BUCKET --access-key-id ID --secret-access-key SECRET [--endpoint URL] [--region REGION]
 levelrail-cli backup-targets list
@@ -450,6 +573,12 @@ database's own Overview and Resources tabs once it exists.
 
 - **No scheduler catch-up after downtime**
   If the control plane is down when a scheduled backup should fire, that run is missed, not queued or caught up on restart. Deliberately deferred because catch-up needs design work (how many missed runs to replay, how to avoid a thundering herd after a long outage).
+
+- **No automatic scheduling for PITR base backups**
+  Ordinary logical backups can run on a cron (`backups schedule set`). Physical base backups for point-in-time restore are manual-trigger only today (`pitr base-backups trigger`), dashboard button or CLI/API call. The longer you go without taking a fresh one, the more WAL a restore has to replay to reach a recent timestamp. Take one periodically yourself until this gets its own schedule.
+
+- **No CLI list command for PITR restore history**
+  Same gap as clone-restore history above: `GET .../pitr-restores` exists for scripting, only the dashboard reads it today.
 
 :::
 

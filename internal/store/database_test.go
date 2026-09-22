@@ -263,6 +263,71 @@ func TestSaveDesiredDatabase_ResaveDoesNotResetSuspended(t *testing.T) {
 	}
 }
 
+func TestSetDatabasePITR(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("initial save: %v", err)
+	}
+
+	got, err := db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.PITREnabled || got.PITREnabledAt != "" {
+		t.Fatalf("fresh database PITR = (%v, %q), want (false, \"\")", got.PITREnabled, got.PITREnabledAt)
+	}
+
+	if err := db.SetDatabasePITR(ctx, "main", true, "2026-09-20T00:00:00Z"); err != nil {
+		t.Fatalf("SetDatabasePITR(true) error = %v", err)
+	}
+	got, err = db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if !got.PITREnabled || got.PITREnabledAt != "2026-09-20T00:00:00Z" {
+		t.Fatalf("after enable = (%v, %q), want (true, 2026-09-20T00:00:00Z)", got.PITREnabled, got.PITREnabledAt)
+	}
+
+	// A resave (e.g. an ordinary version bump) must not silently disable
+	// PITR: only SetDatabasePITR ever writes these columns.
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "main", Engine: EnginePostgres, Version: "17"}); err != nil {
+		t.Fatalf("resave: %v", err)
+	}
+	got, err = db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if !got.PITREnabled {
+		t.Error("PITREnabled = false after resave, want true (a resave must not clear it)")
+	}
+
+	// Disabling clears the flag but keeps the original enabled_at around
+	// for display, rather than blanking it.
+	if err := db.SetDatabasePITR(ctx, "main", false, ""); err != nil {
+		t.Fatalf("SetDatabasePITR(false) error = %v", err)
+	}
+	got, err = db.GetDesiredDatabase(ctx, "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if got.PITREnabled {
+		t.Error("PITREnabled = true after disable, want false")
+	}
+	if got.PITREnabledAt != "2026-09-20T00:00:00Z" {
+		t.Errorf("PITREnabledAt after disable = %q, want it preserved", got.PITREnabledAt)
+	}
+}
+
+func TestSetDatabasePITR_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetDatabasePITR(context.Background(), "missing", true, "2026-09-20T00:00:00Z")
+	if !errors.Is(err, ErrDatabaseNotFound) {
+		t.Fatalf("error = %v, want ErrDatabaseNotFound", err)
+	}
+}
+
 func TestSaveDesiredDatabase_ResaveDoesNotResetNodeID(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

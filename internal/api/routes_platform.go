@@ -701,6 +701,21 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleTriggerRestore))
 	mux.HandleFunc("GET /api/v1/databases/{name}/restores", rt.requireAbility(AbilityRead, rt.handleListRestoreHistory))
 
+	// Point-in-time restore (pitr.go): enabling/disabling PITR is
+	// AbilityWriteSensitive, the same tier creating a backup target or
+	// triggering an ordinary backup already uses; base backups are the
+	// physical counterpart of an ordinary backup, same tier again.
+	// Triggering an actual PITR restore is AbilityRoot, matching the
+	// ordinary restore route above for the identical reason: it
+	// overwrites a live database's actual data with no way back.
+	mux.HandleFunc("POST /api/v1/databases/{name}/pitr", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleEnablePITR))
+	mux.HandleFunc("DELETE /api/v1/databases/{name}/pitr", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleDisablePITR))
+	mux.HandleFunc("GET /api/v1/databases/{name}/pitr", rt.requireAbility(AbilityRead, rt.handleGetPITRStatus))
+	mux.HandleFunc("POST /api/v1/databases/{name}/base-backups", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleTriggerBaseBackup))
+	mux.HandleFunc("GET /api/v1/databases/{name}/base-backups", rt.requireAbility(AbilityRead, rt.handleListBaseBackupHistory))
+	mux.HandleFunc("POST /api/v1/databases/{name}/pitr-restore", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleTriggerPITRRestore))
+	mux.HandleFunc("GET /api/v1/databases/{name}/pitr-restores", rt.requireAbility(AbilityRead, rt.handleListPITRRestoreHistory))
+
 	// App service volume backups (app_volume_backups.go/
 	// app_volume_backup_download.go/app_volume_backup_verify.go): the
 	// exact same ability tiers as the database routes just above, applied

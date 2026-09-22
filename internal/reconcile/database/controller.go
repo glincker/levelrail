@@ -41,6 +41,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"reflect"
 	"strconv"
 	"time"
@@ -81,6 +82,51 @@ const (
 )
 
 const defaultStopTimeout = 10 * time.Second
+
+// postgresWALArchivePath is where this controller mounts a PITR-enabled
+// Postgres database's own wal-archive volume (walArchiveVolumeName):
+// archive_command below copies each completed WAL segment here as it's
+// produced, and a PITR restore's own restore_command (internal/backup's
+// ContainerPITRRestorer) reads segments back from this identical path,
+// since a restore reuses this same container's own volumes rather than
+// requiring a separate WAL-shipping destination. See PITRRestorer's own
+// doc comment for the full restore sequence this path is one half of.
+const postgresWALArchivePath = "/var/lib/postgresql/wal_archive"
+
+// pitrLabelKey is a Docker label reconcileEngine sets on every database
+// container reflecting whether store.DesiredDatabase.PITREnabled was
+// true at create/replace time. reconcileEngine's own diff logic (see its
+// "case state.Image != image" and its PITR-label sibling below) has no
+// way to compare a running container's actual command/env against
+// desired state's built spec.Command/spec.Env, only its image and
+// published ports (docker.ContainerState carries neither); a label is
+// the one piece of a running container's create-time configuration this
+// controller can both set and later observe via InspectByName, so
+// toggling PITREnabled is detectable and triggers the same sequential
+// replaceContainer path an image change already does.
+const pitrLabelKey = "levelrail.pitr-enabled"
+
+func pitrLabelValue(enabled bool) string {
+	if enabled {
+		return "true"
+	}
+	return "false"
+}
+
+// pitrEnabledFromLabel reads pitrLabelKey back off an observed
+// container's labels, treating an absent key as false rather than as a
+// mismatch to correct: every database container created before this
+// feature existed has no such label at all, and none of them ever had
+// PITR active, so "absent" and "false" must compare equal or this
+// controller would replace every already-running database container,
+// PITR-unrelated or not, the very first time it reconciles one under a
+// build that includes this feature (proven by this package's own
+// existing AlreadyRunning/RestartAfterCrash tests, which seed a running
+// container's observed state with no labels at all and require a
+// no-op).
+func pitrEnabledFromLabel(labels map[string]string) bool {
+	return labels[pitrLabelKey] == "true"
+}
 
 // Store is the narrow surface this controller needs from
 // internal/store, so tests can fake it without a real database. *store.DB
@@ -297,10 +343,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"POSTGRES_USER":     c.postgresCreds.Username,
 			"POSTGRES_PASSWORD": c.postgresCreds.Password,
 		}
-		var command []string
-		if c.tls != nil {
-			command = postgresTLSCommand()
-		}
+		command := postgresCommand(c.tls, desired.PITREnabled)
 		return c.reconcileEngine(ctx, desired, env, command, postgresDataPath, postgresContainerPort, c.tls)
 
 	case store.EngineMySQL:
@@ -433,9 +476,20 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	image := dockerImageFor(desired.Engine) + ":" + versionOrDefault(desired.Version)
 	target := containerName(c.dbName)
 	volName := dataVolumeName(c.dbName)
+	// pitrActive gates every PITR-specific step below: only Postgres
+	// implements it (postgresCommand/postgresWALArchivePath), so a
+	// non-Postgres database with PITREnabled somehow set (never possible
+	// through internal/api's own enable handler, which refuses any other
+	// engine) still reconciles exactly as it always has.
+	pitrActive := desired.Engine == store.EnginePostgres && desired.PITREnabled
 
 	if err := c.runtime.EnsureVolume(ctx, volName); err != nil {
 		return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure volume %q: %w", c.dbName, volName, err)
+	}
+	if pitrActive {
+		if err := c.runtime.EnsureVolume(ctx, walArchiveVolumeName(c.dbName)); err != nil {
+			return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure wal archive volume: %w", c.dbName, err)
+		}
 	}
 
 	state, err := c.runtime.InspectByName(ctx, target)
@@ -449,10 +503,16 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		Env:     env,
 		Command: command,
 		Volumes: []docker.VolumeMount{{Name: volName, ContainerPath: dataPath}},
+		Labels:  map[string]string{pitrLabelKey: pitrLabelValue(pitrActive)},
 	}
 	if tlsMaterial != nil {
 		spec.Volumes = append(spec.Volumes, docker.VolumeMount{
 			Name: certsVolumeName(c.dbName), ContainerPath: certsMountPath, ReadOnly: true,
+		})
+	}
+	if pitrActive {
+		spec.Volumes = append(spec.Volumes, docker.VolumeMount{
+			Name: walArchiveVolumeName(c.dbName), ContainerPath: postgresWALArchivePath,
 		})
 	}
 	if c.meshDNSAddr != "" {
@@ -522,6 +582,18 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		}
 		justDeployed = true
 
+	case pitrEnabledFromLabel(state.Labels) != pitrActive:
+		// Toggling PITREnabled: pitrLabelKey's own doc comment explains
+		// why a label, not a live command/env diff, is what detects this.
+		// Same sequential replace as an image change: the container needs
+		// the wal-archive volume mounted (or unmounted) and its command
+		// rebuilt with (or without) archive_mode, neither of which can be
+		// applied to a running container in place.
+		if err := c.replaceContainer(ctx, state, spec); err != nil {
+			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+		}
+		justDeployed = true
+
 	case state.Running && !portsMatch(state.Ports, spec.Ports):
 		// Docker bakes a container's published ports into its create-time
 		// HostConfig; toggling public access or changing the assigned
@@ -554,10 +626,50 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		if state == nil || !state.Running {
 			return notReady("VanishedAfterStart", nil), fmt.Errorf("database/%s: %q not running immediately after starting it", c.dbName, target)
 		}
-		return ready("Deployed"), nil
 	}
 
+	if pitrActive {
+		if err := c.ensureWALArchiveWritable(ctx, target); err != nil {
+			return notReady("PITRVolumePermissionsFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+		}
+	}
+
+	if justDeployed {
+		return ready("Deployed"), nil
+	}
 	return ready("AlreadyRunning"), nil
+}
+
+// ensureWALArchiveWritable chowns postgresWALArchivePath to the
+// postgres image's own postgres user/group inside target, root:root by
+// default the moment a fresh named Docker volume is first mounted (no
+// Dockerfile-level chown runs against a bind target it wasn't built
+// expecting), which otherwise makes every archive_command invocation
+// fail with a permission error until fixed (proven against a real
+// container while building this feature: archive_command's cp silently
+// failed, pg_stat_archiver.failed_count climbed, and pg_backup_stop's
+// wait_for_archive hung indefinitely as a direct result). Run via
+// Runtime.Exec, which this codebase's docker.Client implementation runs
+// as the container's raw default user (root, before the image's own
+// entrypoint gosu's down to postgres for the server process itself, see
+// internal/backup's ContainerBaseBackuper.BaseBackup for the identical
+// reliance elsewhere), so this needs no separate privilege escalation.
+// Idempotent and cheap (a single stat-and-maybe-chown pass over an
+// otherwise-small directory), so running it on every reconcile pass
+// while PITR is active, not only right after a fresh create, keeps this
+// self-healing if something else ever resets the volume's ownership.
+func (c *Controller) ensureWALArchiveWritable(ctx context.Context, target string) error {
+	rc, err := c.runtime.Exec(ctx, target, []string{"chown", "-R", "postgres:postgres", postgresWALArchivePath})
+	if err != nil {
+		return fmt.Errorf("chown wal archive volume: %w", err)
+	}
+	defer func() {
+		_ = rc.Close()
+	}()
+	if _, err := io.Copy(io.Discard, rc); err != nil {
+		return fmt.Errorf("chown wal archive volume: %w", err)
+	}
+	return nil
 }
 
 // startAfterCreateError marks a createAndStart failure in the Start step,
@@ -641,18 +753,44 @@ var dockerImageMapping = map[string]string{
 	store.EngineClickHouse: "clickhouse/clickhouse-server",
 }
 
-// postgresTLSCommand overrides the postgres image's default CMD ("postgres"
-// with no args) to enable TLS via -c flags rather than a mounted
-// postgresql.conf: the entrypoint script only runs its full
-// initialization path when it recognizes the first argument as
-// "postgres", which this preserves.
-func postgresTLSCommand() []string {
-	return []string{
-		"postgres",
-		"-c", "ssl=on",
-		"-c", "ssl_cert_file=" + certsMountPath + "/" + tlsCertFile,
-		"-c", "ssl_key_file=" + certsMountPath + "/" + tlsKeyFile,
+// postgresCommand overrides the postgres image's default CMD ("postgres"
+// with no args) via -c flags rather than a mounted postgresql.conf,
+// whenever TLS or PITR (or both) need non-default settings: the
+// entrypoint script only runs its full initialization path when it
+// recognizes the first argument as "postgres", which every branch below
+// preserves. nil (the image's own unmodified default) when neither is
+// configured, byte-identical to every Postgres database before PITR
+// existed and before TLS supported this engine.
+//
+// archive_timeout=60 forces even an idle database to archive its current
+// WAL segment at least once a minute: without it, a database that goes
+// quiet after a write could sit with that write parked in an
+// unarchived segment indefinitely, which would make the PITR
+// recoverable window's live upper bound (internal/backup's
+// ContainerBaseBackuper.RecoverableWindowEnd, which forces its own
+// pg_switch_wal on demand) the only thing keeping it current rather than
+// archiving progressing on its own between restore attempts.
+func postgresCommand(tls *TLSMaterial, pitrEnabled bool) []string {
+	if tls == nil && !pitrEnabled {
+		return nil
 	}
+	command := []string{"postgres"}
+	if tls != nil {
+		command = append(command,
+			"-c", "ssl=on",
+			"-c", "ssl_cert_file="+certsMountPath+"/"+tlsCertFile,
+			"-c", "ssl_key_file="+certsMountPath+"/"+tlsKeyFile,
+		)
+	}
+	if pitrEnabled {
+		command = append(command,
+			"-c", "wal_level=replica",
+			"-c", "archive_mode=on",
+			"-c", "archive_timeout=60",
+			"-c", "archive_command=test ! -f "+postgresWALArchivePath+"/%f && cp %p "+postgresWALArchivePath+"/%f",
+		)
+	}
+	return command
 }
 
 // redisCommandAndPort returns Redis's own container command and the port
@@ -727,6 +865,21 @@ func containerName(dbName string) string {
 // comment already documents for an ordinary database delete.
 func dataVolumeName(dbName string) string {
 	return "db-" + dbName + "-data"
+}
+
+// walArchiveVolumeName is the named Docker volume backing dbName's
+// archived Postgres WAL segments (postgresCommand's archive_command
+// writes into it, postgresWALArchivePath's own doc comment describes the
+// full round trip): mounted only while store.DesiredDatabase.PITREnabled
+// is true, but never removed once created, the same "stable across
+// replacements, no RemoveVolume method today" reasoning dataVolumeName's
+// own doc comment gives. Duplicated in internal/backup's PITRRunner with
+// its own cross-referencing doc comment, the same "duplicate a small,
+// stable format instead of a real cross-package import" tradeoff
+// internal/api's databaseContainerName already documents for
+// containerName above.
+func walArchiveVolumeName(dbName string) string {
+	return "db-" + dbName + "-wal-archive"
 }
 
 func ready(reason string) reconcile.Result {

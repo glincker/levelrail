@@ -260,6 +260,25 @@ func WithRestoreRunner(r RestoreRunner) Option {
 	return func(rt *Router) { rt.restoreRunner = r }
 }
 
+// WithBaseBackupRunner enables POST /api/v1/databases/{name}/base-backups.
+// Without one configured (the default), that route returns 501, the same
+// "not configured" shape WithBackupRunner's absence produces; listing
+// base backup history (GET .../base-backups) works regardless, the same
+// "listing needs no live runner" reasoning WithBackupRunner's own doc
+// comment gives.
+func WithBaseBackupRunner(r BaseBackupRunner) Option {
+	return func(rt *Router) { rt.baseBackupRunner = r }
+}
+
+// WithPITRRestoreRunner enables POST /api/v1/databases/{name}/pitr-restore
+// and GET /api/v1/databases/{name}/pitr's own live window computation.
+// Without one configured (the default), the restore route returns 501
+// and the status route reports enabled/enabled_at only, no window: the
+// same "not configured" shape WithRestoreRunner's absence produces.
+func WithPITRRestoreRunner(r PITRRestoreRunner) Option {
+	return func(rt *Router) { rt.pitrRestoreRunner = r }
+}
+
 // WithServiceVolumeBackupRunner enables
 // POST /api/v1/apps/{name}/volumes/{volume}/backups. Without one
 // configured (the default), that route returns 501, the same

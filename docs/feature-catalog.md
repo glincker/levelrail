@@ -107,6 +107,7 @@ the exact method/path/ability of every one), grouped by resource:
 | Built-in container registry | 5 | `/settings/registry`, `/registry/repositories`, `/registry/tags` |
 | Git provider apps (GitHub/GitLab/Bitbucket/Gitea) | 34 | `/github-app*`, `/gitlab-app*`, `/bitbucket-app*`, `/gitea-app*` |
 | DB backups/restore/clone-restore | 17 | `/databases/{name}/backups*`, `/restore-as-new`, `/backup-schedule`, `/backups` |
+| DB point-in-time restore (PITR, postgres only) | 7 | `/databases/{name}/pitr*`, `/base-backups*`, `/pitr-restore*` |
 | App volume backups/restore | 11 | `/apps/{name}/volumes/{volume}/backups*` |
 | App storage/database attach | 5 | `/apps/{name}/storage`, `/apps/{name}/database` |
 | Audit log / log-drain | 5 | `/audit-log`, `/audit-log/purge` |
@@ -115,7 +116,7 @@ the exact method/path/ability of every one), grouped by resource:
 
 All command groups available:
 
-`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `gitea-app`, `templates`, `static-sites`, `tags`, `shared-env`.
+`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `pitr`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `gitea-app`, `templates`, `static-sites`, `tags`, `shared-env`.
 
 ### Key command groups
 
@@ -138,6 +139,10 @@ All command groups available:
 **backups** / **app-volume-backups**
 
 `list`, `list-all` (backups only; instance-wide across every database and app volume), `trigger`, `restore`, `restore-as-new`, `schedule`, `verify`, `verifications`.
+
+**pitr** (postgres only)
+
+`enable`, `disable`, `status`, `base-backups` (`list`, `trigger`), `restore`.
 
 **migrate**
 

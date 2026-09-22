@@ -257,6 +257,10 @@ type DatabaseStore interface {
 	// store method" separation UpdateDatabaseNode/UpdateDatabaseProject
 	// already establish for their own single-purpose updates.
 	SetDatabaseBackupSchedule(ctx context.Context, name, targetID, schedule string, retain, retainDays int) error
+	// SetDatabasePITR backs POST/DELETE /api/v1/databases/{name}/pitr
+	// (pitr.go): same "own endpoint, own store method" separation
+	// SetDatabaseBackupSchedule above establishes.
+	SetDatabasePITR(ctx context.Context, name string, enabled bool, enabledAt string) error
 	// SetDatabasePublicAccess backs
 	// PUT/DELETE /api/v1/databases/{name}/public-access
 	// (database_public_access.go): the same "own endpoint, own store
@@ -451,6 +455,8 @@ type Store interface {
 	BackupHistoryStore
 	BackupVerificationStore
 	RestoreHistoryStore
+	BaseBackupHistoryStore
+	PITRRestoreHistoryStore
 	ServiceVolumeBackupHistoryStore
 	ServiceVolumeBackupScheduleStore
 	ServiceVolumeRestoreHistoryStore
