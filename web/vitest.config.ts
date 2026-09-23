@@ -28,5 +28,9 @@ export default defineConfig({
     // `npm test`, not just a --no-file-parallelism flag someone has to
     // remember to pass).
     fileParallelism: false,
+    // CI only, so local runs still fail loudly. Vitest's github-actions
+    // reporter (on by default in Actions) lists retried tests under
+    // "Flaky Tests" in the job summary, so a retry is visible, not hidden.
+    retry: process.env.CI ? 2 : 0,
   },
 })

@@ -9,6 +9,15 @@ updates:
     commit-message:
       prefix: "chore"
 
+  - package-ecosystem: "gomod"
+    directory: "/tools"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 2
+    labels: ["type/chore", "area/ci"]
+    commit-message:
+      prefix: "chore"
+
   - package-ecosystem: "npm"
     directory: "/web"
     schedule:

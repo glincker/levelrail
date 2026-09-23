@@ -63,6 +63,7 @@ jobs:
               - '.golangci.yml'
               - 'scripts/**'
               - '.github/workflows/**'
+              - '.github/flaky-tests.txt'
             frontend:
               - 'web/**'
               - '.github/workflows/**'
@@ -95,18 +96,43 @@ jobs:
       - name: go vet
         run: go vet ./...
 
-  # internal/api gets its own parallel job since it was the module's
-  # slowest package by far. PR/push runs skip -race and use -short (the
-  # thorough run lives in nightly.yml instead), which is faster and
-  # avoids the timing-sensitive tests flaking under runner load.
-  test-api:
-    name: Test (internal/api)
+      - name: Quarantine list (.github/flaky-tests.txt)
+        env:
+          QUARANTINE_AGE: warn
+        run: scripts/check-flaky-tests.sh
+
+  # Go tests are split into lanes by scripts/go-test-groups.sh: internal/api
+  # (sharded by test name, it is the slowest package by far), Docker-backed
+  # packages (own job, bounded -p so live containers can't OOM each other),
+  # and everything else. PR/push runs use -short without -race; nightly.yml
+  # has the thorough run. scripts/ci-go-test.sh reruns failed tests at most
+  # twice and lists any test that passed only on retry in the job summary.
+  test-go:
+    name: Test (${{ matrix.lane }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
     needs: [changes, build-vet]
     if: needs.changes.outputs.backend == 'true'
-    timeout-minutes: 18
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: api-1
+            group: api
+            shard: 1/2
+            flags: -short -timeout=10m
+          - lane: api-2
+            group: api
+            shard: 2/2
+            flags: -short -timeout=10m
+          - lane: docker
+            group: docker
+            flags: -short -p 2 -timeout=12m
+          - lane: rest
+            group: rest
+            flags: -short -timeout=10m
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -115,44 +141,13 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
 
-      # See test-rest's identical step below for why this is here.
-      - name: Enable containerd image store for BuildKit's docker exporter
-        run: |
-          sudo mkdir -p /etc/docker
-          echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
-          sudo systemctl restart docker
-
-      # 13m, up from 10m: this package's test suite runs in ~3m locally
-      # but has been clearing 10m on shared CI runners as it's grown, two
-      # consecutive timeouts on the same commit with no slow/hanging test
-      # found on inspection (github.com/GLINCKER/levelrail#520).
-      - name: go test (short, coverage profile)
-        run: go test ./internal/api/... -short -timeout=13m -coverprofile=coverage-api.out
-
-      - name: Upload coverage profile
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-api
-          path: coverage-api.out
-          retention-days: 1
-
-  test-rest:
-    name: Test (everything else)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    needs: [changes, build-vet]
-    if: needs.changes.outputs.backend == 'true'
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
+      # Version and checksums locked by tools/go.mod and tools/go.sum.
+      - name: Install gotestsum
+        run: go -C tools install gotest.tools/gotestsum
 
       # BuildKit's docker exporter needs the daemon on containerd-backed
       # storage, off by default on the runner's stock Docker install.
@@ -162,24 +157,114 @@ jobs:
           echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
           sudo systemctl restart docker
 
-      - name: go test (short, coverage profile)
+      - name: go test
+        env:
+          GO_TEST_FLAGS: ${{ matrix.flags }}
+          SHARD: ${{ matrix.shard }}
+          COVERPROFILE: coverage-${{ matrix.lane }}.out
         run: |
-          PACKAGES=$(go list ./... | grep -v '^github.com/GLINCKER/levelrail/internal/api$')
-          go test $PACKAGES -short -coverprofile=coverage-rest.out
+          pkgs="$(scripts/go-test-groups.sh '${{ matrix.group }}')"
+          mapfile -t packages <<<"$pkgs"
+          scripts/ci-go-test.sh '${{ matrix.lane }}' "${packages[@]}"
 
+      # overwrite: a re-run of this job replaces its own artifact instead of
+      # failing on the name. 7 days: "re-run failed jobs" reuses sibling
+      # jobs' artifacts from the first attempt, which a 1-day retention lost.
       - name: Upload coverage profile
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-rest
-          path: coverage-rest.out
-          retention-days: 1
+          name: coverage-${{ matrix.lane }}
+          path: coverage-${{ matrix.lane }}.out
+          retention-days: 7
+          overwrite: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-${{ matrix.lane }}
+          path: test-results/
+          retention-days: 7
+          overwrite: true
+
+  # Branch protection requires these two exact check names from before the
+  # lanes were split; each passes only if its lanes in test-go passed.
+  test-api:
+    name: Test (internal/api)
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    needs: [changes, test-go]
+    if: always() && needs.changes.outputs.backend == 'true'
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check lanes api-1, api-2
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/check-lane-results.sh "Test (api-1)" "Test (api-2)"
+
+  test-rest:
+    name: Test (everything else)
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    needs: [changes, test-go]
+    if: always() && needs.changes.outputs.backend == 'true'
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check lanes docker, rest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/check-lane-results.sh "Test (docker)" "Test (rest)"
+
+  # Non-blocking: runs only the tests in .github/flaky-tests.txt, so a
+  # quarantined test keeps producing signal without gating merges.
+  test-quarantined:
+    name: Test (quarantined, non-blocking)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: [changes, build-vet]
+    if: needs.changes.outputs.backend == 'true'
+    continue-on-error: true
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+
+      # Version and checksums locked by tools/go.mod and tools/go.sum.
+      - name: Install gotestsum
+        run: go -C tools install gotest.tools/gotestsum
+
+      - name: go test (quarantined only)
+        env:
+          GO_TEST_FLAGS: -short -timeout=10m
+          QUARANTINE: only
+          RERUNS: '0'
+        run: scripts/ci-go-test.sh quarantined ./...
 
   coverage-gate:
     name: Coverage gate
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [changes, test-api, test-rest]
+    needs: [changes, test-go]
     if: needs.changes.outputs.backend == 'true'
     timeout-minutes: 5
     steps:
@@ -199,13 +284,17 @@ jobs:
           path: coverage-artifacts
           merge-multiple: true
 
-      # Disjoint package sets and the same covermode, so concatenating
-      # statement lines under one mode header is the whole merge.
       - name: Merge coverage profiles
         run: |
-          head -n1 coverage-artifacts/coverage-api.out > coverage.out
-          tail -n +2 coverage-artifacts/coverage-api.out >> coverage.out
-          tail -n +2 coverage-artifacts/coverage-rest.out >> coverage.out
+          missing=0
+          for lane in api-1 api-2 docker rest; do
+            if [ ! -f "coverage-artifacts/coverage-$lane.out" ]; then
+              echo "::error::coverage-$lane.out missing (artifact expired or its job never uploaded); re-run all jobs"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+          scripts/merge-coverprofiles.sh coverage.out coverage-artifacts/coverage-*.out
 
       - name: Coverage gate (70% for /internal)
         run: scripts/check-coverage.sh coverage.out internal/ 70
@@ -217,6 +306,36 @@ jobs:
       - name: Changed-line coverage gate (70% for /internal, PRs only)
         if: github.event_name == 'pull_request'
         run: scripts/check-changed-file-coverage.sh coverage.out "origin/${{ github.event.pull_request.base.ref }}" internal/ 70
+
+  # Push to main only: PR flakes may be the PR's own doing, main's are not.
+  flake-report:
+    name: File flaky-test issues
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    needs: [changes, test-go]
+    if: always() && github.event_name == 'push' && needs.changes.outputs.backend == 'true'
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: test-results
+          merge-multiple: true
+
+      - name: Open or update flaky-test issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          files=(test-results/*/flaky.txt)
+          [ "${#files[@]}" -gt 0 ] || exit 0
+          scripts/report-flaky-tests.sh "${files[@]}"
 
   lint:
     name: Lint
@@ -341,7 +460,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [migration-versions, changes, build-vet, test-api, test-rest, coverage-gate, lint, web-check, install-sh]
+    needs: [migration-versions, changes, build-vet, test-go, test-api, test-rest, coverage-gate, lint, web-check, install-sh]
     if: always()
     timeout-minutes: 3
     steps:
@@ -366,6 +485,7 @@ jobs:
             fi
           }
           check "build-vet" "${{ needs.build-vet.result }}" "$backend"
+          check "test-go" "${{ needs.test-go.result }}" "$backend"
           check "test-api" "${{ needs.test-api.result }}" "$backend"
           check "test-rest" "${{ needs.test-rest.result }}" "$backend"
           check "coverage-gate" "${{ needs.coverage-gate.result }}" "$backend"
