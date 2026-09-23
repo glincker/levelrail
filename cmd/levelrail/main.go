@@ -425,70 +425,15 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
-	// The agent gRPC service. agentRegistry starts empty and stays
-	// that way in this pass, wired to nothing else yet: node placement
-	// is what will have dynamicSource actually look nodes up in it.
-	// Building and running the real Enroll/Session server now anyway
-	// (not deferred to that later work) is deliberate, matching the
-	// same "build the primitive, prove it live, wire consumers later"
-	// shape internal/agent already used: a control plane that can't
-	// yet route reconciles to a second node can still legitimately
-	// accept an agent's enrollment and hold its connection open.
 	agentDataDir := os.Getenv("APP_DATA_DIR")
 	if agentDataDir == "" {
 		agentDataDir = defaultDataDir
 	}
-	agentCA, err := loadOrGenerateAgentCA(agentDataDir)
+	agentRegistry, agentCA, stopAgentGRPC, err := startAgentGRPCServer(logger, db, agentDataDir)
 	if err != nil {
-		return fmt.Errorf("load or generate agent CA: %w", err)
+		return err
 	}
-	agentRegistry := agent.NewRegistry()
-	agentCreds, err := agent.NewServerCredentials(agentCA, []string{agentAdvertiseHost()}, agentServerCertValidity)
-	if err != nil {
-		return fmt.Errorf("build agent grpc credentials: %w", err)
-	}
-	agentListener, err := net.Listen("tcp", agentAddr())
-	if err != nil {
-		return fmt.Errorf("start agent grpc listener: %w", err)
-	}
-	agentGRPCServer := grpc.NewServer(grpc.Creds(agentCreds),
-		// KeepaliveParams is the transport-level backstop behind the
-		// Heartbeat application frame internal/agent's own mux.go now
-		// requires for last_seen_at to advance: a frozen agent process
-		// (SIGSTOP'd, deadlocked) cannot service an HTTP/2 PING any more
-		// than it can send a Heartbeat frame, since both require a
-		// scheduled goroutine on the agent's side. Without this, that
-		// agent's TCP/TLS connection could sit open indefinitely with no
-		// Recv() error ever firing on this side either, leaving Session
-		// running and the node's Status stuck Online until the next
-		// internal/reconcile/nodehealth pass alone catches it, up to
-		// nodeHeartbeatTimeout later. nodeKeepaliveTime+nodeKeepaliveTimeout
-		// bounds worst-case detection well under that.
-		grpc.KeepaliveParams(keepalive.ServerParameters{
-			Time:    nodeKeepaliveTime(),
-			Timeout: nodeKeepaliveTimeout(),
-		}),
-		// EnforcementPolicy governs pings this server accepts *from* an
-		// agent: MinTime rejects an agent that pings more often than its
-		// own keepalive interval allows for (abuse/misconfiguration, not
-		// the normal case), PermitWithoutStream matters less here since
-		// Session's one stream is normally active for the connection's
-		// entire lifetime, but is set anyway so a ping during the brief
-		// window before Session is established is never itself a reason
-		// to tear the connection down.
-		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
-			MinTime:             nodeKeepaliveTime() / 2,
-			PermitWithoutStream: true,
-		}),
-	)
-	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger))
-	go func() {
-		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
-		if err := agentGRPCServer.Serve(agentListener); err != nil {
-			logger.Error("agent grpc server stopped", slog.String("error", err.Error()))
-		}
-	}()
-	defer agentGRPCServer.GracefulStop()
+	defer stopAgentGRPC()
 
 	secretsManager, masterKeyFilePath, err := loadSecretsManager(db, agentDataDir)
 	if err != nil {
@@ -672,196 +617,13 @@ func run(logger *slog.Logger) error {
 		ingressHTTPAddr:              ingressHTTPAddr(),
 	}))
 
-	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
-	go func() {
-		if err := collector.Run(ctx, telemetryTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
-			logger.Error("telemetry collector stopped", slog.String("error", err.Error()))
-		}
-	}()
-	go runMetricsRetentionSweep(ctx, telemetryDB, logger)
+	startTelemetryCollectors(ctx, logger, b, db, telemetryDB, client, agentDataDir, logBroadcaster, meshCfg)
 
-	// Host disk space only has a real node to attribute samples to once
-	// meshCfg has bootstrapped this process's own nodes row
-	// (setupMesh -> bootstrapLocalNode), the same gate meshreconcile's
-	// controller below already requires: with mesh off there is no
-	// "self" node ID and no reachable /nodes/{id} page to show it on.
-	if meshCfg != nil {
-		// "node:" + id matches internal/api/node_metrics.go's own
-		// nodeResourceID exactly: that's the key handleQueryNodeMetrics
-		// reads nodeHostMetrics samples back from.
-		diskCollector := telemetry.NewHostDiskCollector(agentDataDir, "node:"+meshCfg.localNodeID, telemetryDB, metricsCollectionInterval, logger)
-		go func() {
-			if err := diskCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
-				logger.Error("telemetry host disk collector stopped", slog.String("error", err.Error()))
-			}
-		}()
+	startAlertingEngine(ctx, logger, db, telemetryDB, alertingDB, client, notifyClient, emailSender, apiRouter, engine)
 
-		memoryCollector := telemetry.NewHostMemoryCollector("node:"+meshCfg.localNodeID, telemetryDB, metricsCollectionInterval, logger)
-		go func() {
-			if err := memoryCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
-				logger.Error("telemetry host memory collector stopped", slog.String("error", err.Error()))
-			}
-		}()
+	startSchedulers(ctx, logger, db, backupRunner, backupVerifyRunner, scheduledTaskRunner)
 
-		patchCollector := telemetry.NewHostPatchCollector(nil, "node:"+meshCfg.localNodeID, telemetryDB, osPatchCheckInterval(), logger)
-		go func() {
-			if err := patchCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
-				logger.Error("telemetry host patch collector stopped", slog.String("error", err.Error()))
-			}
-		}()
-	}
-
-	logCollector := telemetry.NewLogCollector(client, telemetryDB, logBroadcaster, logger)
-	go func() {
-		if err := logCollector.Run(ctx, logTargetsResyncInterval, logTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
-			logger.Error("telemetry log collector stopped", slog.String("error", err.Error()))
-		}
-	}()
-	go runLogsRetentionSweep(ctx, telemetryDB, logger)
-
-	// drainForwarder taps logBroadcaster the same way a live SSE viewer
-	// does (internal/telemetry/drain.go's own doc comment): a pure
-	// additional consumer of the log stream, never touching logCollector
-	// or its store writes.
-	drainForwarder := telemetry.NewDrainForwarder(logBroadcaster, logger, b.ShortName)
-	go func() {
-		if err := drainForwarder.Run(ctx, logTargetsResyncInterval, drainTargets(db)); err != nil && !errors.Is(err, context.Canceled) {
-			logger.Error("telemetry log drain forwarder stopped", slog.String("error", err.Error()))
-		}
-	}()
-
-	// Alerting: RestartTracker watches the same
-	// Docker client's event stream, independently of the reconcile
-	// engine's own subscription below, to count restarts per service for
-	// crashloop rules; Engine evaluates every enabled rule
-	// (threshold and crashloop alike) on its own tick, querying
-	// telemetryDB through the same kind of federator rootHandler already
-	// builds for the HTTP query routes. WithRecorder(telemetryDB, ...)
-	// also persists every restart it observes as a real
-	// container_restart_count metric sample, so the same restarts
-	// crashloop rules already act on show up on the per-app metrics
-	// dashboard too, not just in this in-memory tracker.
-	restartTracker := alerting.NewRestartTracker().WithRecorder(telemetryDB, logger)
-	go func() {
-		if err := restartTracker.Run(ctx, client, db, restartTrackerResyncInterval, logger); err != nil && !errors.Is(err, context.Canceled) {
-			logger.Error("alerting restart tracker stopped", slog.String("error", err.Error()))
-		}
-	}()
-
-	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
-	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier { return alerting.NewNotifier(notifyClient, emailSender, r) }
-	// db (the same *store.DB every other cert-storage reader in this
-	// function uses) satisfies alerting.CertSource structurally, so a
-	// kind=cert_expiry rule reads the exact same certificate storage GET
-	// /api/v1/certificates does (api.WithCertExpiryWarningWindow below
-	// reads the identical env var, so the two can never silently
-	// disagree on when "expiring_soon" starts). db also satisfies
-	// alerting.NodeSource, so a kind=patch_status rule lists the same
-	// fleet GET /api/v1/nodes does, and alerting.NodeServiceSource, so a
-	// kind=node_resource_usage rule sums the same placed-service metrics
-	// GET /api/v1/nodes/{id}/metrics already sums for its dashboard. db
-	// also satisfies alerting.AppDomainSource, so a kind=domain_health
-	// rule reads the same app's configured domains GET /api/v1/apps/
-	// {name} does; apiRouter satisfies alerting.DomainCheckSource via its
-	// own CheckDomainStatus, the same DNS check GET .../domains/
-	// {domain}/check runs. db also satisfies alerting.BackupSource, so a
-	// kind=backup_missing rule reads the same schedule and history
-	// internal/backup.Scheduler and GET /api/v1/databases/{name}/backups
-	// already read.
-	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db, db,
-		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
-		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
-		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
-	// db satisfies alerting.AutoRollbackStore structurally (it already
-	// satisfies deploy.ImageDeployStore, plus GetDesiredService/
-	// ListDeployAttempts); engine (the reconcile engine, already passed
-	// to api.WithReconcileNudger below) satisfies deploy.ReconcileNudger
-	// via the same Nudge() method. Opt-in per app
-	// (store.DesiredService.AutoRollbackOnCrashloop, off by default), so
-	// wiring this unconditionally does not change behavior for any app
-	// that hasn't turned it on.
-	alertingEngine.SetAutoRollback(db, engine)
-	go func() {
-		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
-			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
-		}
-	}()
-
-	// Scheduled backups (wave-2 roadmap item 6): internal/backup.Scheduler
-	// checks, on its own tick, which databases have a due cron schedule
-	// (store.DesiredDatabase's BackupSchedule/BackupTargetID/BackupRetain,
-	// migrations/0023_scheduled_backups.sql) and runs them through the
-	// same backupRunner the manual trigger path (api.WithBackupRunner
-	// above) uses. Gated on backupRunner being non-nil, the identical
-	// "no APP_MASTER_KEY, no backup features at all" boundary rootHandler
-	// already draws for the manual path: a scheduled backup needs the
-	// same stored, decryptable target credentials a manual one does, so
-	// there is nothing for the scheduler to usefully do without one
-	// either.
-	if backupRunner != nil {
-		scheduler := backup.NewScheduler(db, backupRunner, backup.S3Deleter{}, logger)
-		// Every scheduled backup is auto-verified right after it
-		// completes, no opt-in toggle: same "just works" default the
-		// manual verify button already gives an operator on demand.
-		scheduler.Verifier = backupVerifyRunner
-		go func() {
-			if err := scheduler.Run(ctx, backupSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
-				logger.Error("backup scheduler stopped", slog.String("error", err.Error()))
-			}
-		}()
-	}
-
-	// Scheduled tasks: internal/scheduledtask.Scheduler checks, on its
-	// own tick, which tasks have a due cron schedule
-	// (store.ScheduledTask, migrations/0048_scheduled_tasks.sql) and runs
-	// them through the same scheduledTaskRunner the manual "run now"
-	// trigger (api.WithScheduledTaskRunner above) uses. Unlike the backup
-	// scheduler just above, this needs no secretsManager gate:
-	// scheduledTaskRunner is always non-nil, so this loop always runs.
-	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
-	go func() {
-		if err := scheduledTaskScheduler.Run(ctx, scheduledTaskSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
-			logger.Error("scheduled task scheduler stopped", slog.String("error", err.Error()))
-		}
-	}()
-
-	// Preview environment TTL sweep (api.Router.RunPreviewSweeper,
-	// internal/api/preview_environments_sweep.go): the fallback for a
-	// pull-request-closed webhook delivery that never arrived, tearing
-	// down any preview environment stale past its TTL on its own tick.
-	// Always runs, the same "always non-nil, no secretsManager gate"
-	// shape as the scheduled task scheduler just above: nothing about
-	// this loop needs a master key configured.
-	go func() {
-		if err := apiRouter.RunPreviewSweeper(ctx, previewSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
-			logger.Error("preview sweeper stopped", slog.String("error", err.Error()))
-		}
-	}()
-
-	// Audit log retention sweep (api.Router.RunAuditLogSweeper,
-	// internal/api/audit_retention.go): deletes audit_log rows past the
-	// operator-configured retention window on its own tick, the CloudTrail-
-	// parity retention mechanism this table never had before. Always runs,
-	// the same "always non-nil, no secretsManager gate" shape as the
-	// preview sweeper just above.
-	go func() {
-		if err := apiRouter.RunAuditLogSweeper(ctx, auditLogSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
-			logger.Error("audit log sweeper stopped", slog.String("error", err.Error()))
-		}
-	}()
-
-	// Deploy approval expiry sweep (api.Router.RunDeployApprovalExpirySweep,
-	// internal/api/deploy_approvals.go): marks a pending deploy_approvals
-	// row past its TTL as expired on its own tick, so the UI reflects that
-	// without waiting for someone to open it again (the per-request lazy
-	// expiry in expireIfStale already guarantees it never proceeds
-	// regardless). Always runs, the same "always non-nil, no
-	// secretsManager gate" shape as the audit log sweeper just above.
-	go func() {
-		if err := apiRouter.RunDeployApprovalExpirySweep(ctx, deployApprovalSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
-			logger.Error("deploy approval expiry sweeper stopped", slog.String("error", err.Error()))
-		}
-	}()
+	startBackgroundSweepers(ctx, logger, apiRouter)
 
 	events, errs := client.Events(ctx)
 	go func() {
@@ -3271,4 +3033,205 @@ func bootstrapAdmin(ctx context.Context, db *store.DB) error {
 		return nil
 	}
 	return api.BootstrapAdmin(ctx, db, username, password)
+}
+
+// startAgentGRPCServer builds and runs the gRPC server that accepts agent
+// enrollments and heartbeats. Returns the registry, the CA, and a cleanup
+// function to gracefully stop the server.
+func startAgentGRPCServer(logger *slog.Logger, db *store.DB, agentDataDir string) (*agent.Registry, *agent.CA, func(), error) {
+	agentCA, err := loadOrGenerateAgentCA(agentDataDir)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("load or generate agent CA: %w", err)
+	}
+	agentRegistry := agent.NewRegistry()
+	agentCreds, err := agent.NewServerCredentials(agentCA, []string{agentAdvertiseHost()}, agentServerCertValidity)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("build agent grpc credentials: %w", err)
+	}
+	agentListener, err := net.Listen("tcp", agentAddr())
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("start agent grpc listener: %w", err)
+	}
+	agentGRPCServer := grpc.NewServer(grpc.Creds(agentCreds),
+		// KeepaliveParams is the transport-level backstop behind the
+		// Heartbeat application frame internal/agent's own mux.go now
+		// requires for last_seen_at to advance: a frozen agent process
+		// (SIGSTOP'd, deadlocked) cannot service an HTTP/2 PING any more
+		// than it can send a Heartbeat frame, since both require a
+		// scheduled goroutine on the agent's side. Without this, that
+		// agent's TCP/TLS connection could sit open indefinitely with no
+		// Recv() error ever firing on this side either, leaving Session
+		// running and the node's Status stuck Online until the next
+		// internal/reconcile/nodehealth pass alone catches it, up to
+		// nodeHeartbeatTimeout later. nodeKeepaliveTime+nodeKeepaliveTimeout
+		// bounds worst-case detection well under that.
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			Time:    nodeKeepaliveTime(),
+			Timeout: nodeKeepaliveTimeout(),
+		}),
+		// EnforcementPolicy governs pings this server accepts *from* an
+		// agent: MinTime rejects an agent that pings more often than its
+		// own keepalive interval allows for (abuse/misconfiguration, not
+		// the normal case), PermitWithoutStream matters less here since
+		// Session's one stream is normally active for the connection's
+		// entire lifetime, but is set anyway so a ping during the brief
+		// window before Session is established is never itself a reason
+		// to tear the connection down.
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             nodeKeepaliveTime() / 2,
+			PermitWithoutStream: true,
+		}),
+	)
+	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger))
+	go func() {
+		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
+		if err := agentGRPCServer.Serve(agentListener); err != nil {
+			logger.Error("agent grpc server stopped", slog.String("error", err.Error()))
+		}
+	}()
+	return agentRegistry, agentCA, agentGRPCServer.GracefulStop, nil
+}
+
+// startTelemetryCollectors starts the background loops that collect metrics
+// and logs from the local Docker daemon and host, plus their retention sweepers.
+func startTelemetryCollectors(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, client *docker.Client, agentDataDir string, logBroadcaster *telemetry.LogBroadcaster, meshCfg *meshSetup) {
+	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
+	go func() {
+		if err := collector.Run(ctx, telemetryTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("telemetry collector stopped", slog.String("error", err.Error()))
+		}
+	}()
+	go runMetricsRetentionSweep(ctx, telemetryDB, logger)
+
+	if meshCfg != nil {
+		diskCollector := telemetry.NewHostDiskCollector(agentDataDir, "node:"+meshCfg.localNodeID, telemetryDB, metricsCollectionInterval, logger)
+		go func() {
+			if err := diskCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("telemetry host disk collector stopped", slog.String("error", err.Error()))
+			}
+		}()
+
+		memoryCollector := telemetry.NewHostMemoryCollector("node:"+meshCfg.localNodeID, telemetryDB, metricsCollectionInterval, logger)
+		go func() {
+			if err := memoryCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("telemetry host memory collector stopped", slog.String("error", err.Error()))
+			}
+		}()
+
+		patchCollector := telemetry.NewHostPatchCollector(nil, "node:"+meshCfg.localNodeID, telemetryDB, osPatchCheckInterval(), logger)
+		go func() {
+			if err := patchCollector.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("telemetry host patch collector stopped", slog.String("error", err.Error()))
+			}
+		}()
+	}
+
+	logCollector := telemetry.NewLogCollector(client, telemetryDB, logBroadcaster, logger)
+	go func() {
+		if err := logCollector.Run(ctx, logTargetsResyncInterval, logTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("telemetry log collector stopped", slog.String("error", err.Error()))
+		}
+	}()
+	go runLogsRetentionSweep(ctx, telemetryDB, logger)
+
+	drainForwarder := telemetry.NewDrainForwarder(logBroadcaster, logger, b.ShortName)
+	go func() {
+		if err := drainForwarder.Run(ctx, logTargetsResyncInterval, drainTargets(db)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("telemetry log drain forwarder stopped", slog.String("error", err.Error()))
+		}
+	}()
+}
+
+// startAlertingEngine starts the background loop that evaluates alert rules
+// against current telemetry/state, plus its dependent restart tracker.
+func startAlertingEngine(ctx context.Context, logger *slog.Logger, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, client *docker.Client, notifyClient *http.Client, emailSender email.Sender, apiRouter *api.Router, engine *reconcile.Engine) {
+	restartTracker := alerting.NewRestartTracker().WithRecorder(telemetryDB, logger)
+	go func() {
+		if err := restartTracker.Run(ctx, client, db, restartTrackerResyncInterval, logger); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("alerting restart tracker stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
+	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier { return alerting.NewNotifier(notifyClient, emailSender, r) }
+	// db (the same *store.DB every other cert-storage reader in this
+	// function uses) satisfies alerting.CertSource structurally, so a
+	// kind=cert_expiry rule reads the exact same certificate storage GET
+	// /api/v1/certificates does (api.WithCertExpiryWarningWindow below
+	// reads the identical env var, so the two can never silently
+	// disagree on when "expiring_soon" starts). db also satisfies
+	// alerting.NodeSource, so a kind=patch_status rule lists the same
+	// fleet GET /api/v1/nodes does, and alerting.NodeServiceSource, so a
+	// kind=node_resource_usage rule sums the same placed-service metrics
+	// GET /api/v1/nodes/{id}/metrics already sums for its dashboard. db
+	// also satisfies alerting.AppDomainSource, so a kind=domain_health
+	// rule reads the same app's configured domains GET /api/v1/apps/
+	// {name} does; apiRouter satisfies alerting.DomainCheckSource via its
+	// own CheckDomainStatus, the same DNS check GET .../domains/
+	// {domain}/check runs. db also satisfies alerting.BackupSource, so a
+	// kind=backup_missing rule reads the same schedule and history
+	// internal/backup.Scheduler and GET /api/v1/databases/{name}/backups
+	// already read.
+	alertingEngine := alerting.NewEngine(alertingDB, alertingFederator, alertingFederator, restartTracker, db, db,
+		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
+		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
+		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
+
+	// db satisfies alerting.AutoRollbackStore structurally (it already
+	// satisfies deploy.ImageDeployStore, plus GetDesiredService/
+	// ListDeployAttempts); engine (the reconcile engine, already passed
+	// to api.WithReconcileNudger below) satisfies deploy.ReconcileNudger
+	// via the same Nudge() method. Opt-in per app
+	// (store.DesiredService.AutoRollbackOnCrashloop, off by default), so
+	// wiring this unconditionally does not change behavior for any app
+	// that hasn't turned it on.
+	alertingEngine.SetAutoRollback(db, engine)
+	go func() {
+		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
+		}
+	}()
+}
+
+// startSchedulers starts the background loops that trigger scheduled backups
+// and scheduled tasks when their cron intervals come due.
+func startSchedulers(ctx context.Context, logger *slog.Logger, db *store.DB, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, scheduledTaskRunner *scheduledtask.Runner) {
+	if backupRunner != nil {
+		scheduler := backup.NewScheduler(db, backupRunner, backup.S3Deleter{}, logger)
+		scheduler.Verifier = backupVerifyRunner
+		go func() {
+			if err := scheduler.Run(ctx, backupSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("backup scheduler stopped", slog.String("error", err.Error()))
+			}
+		}()
+	}
+
+	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
+	go func() {
+		if err := scheduledTaskScheduler.Run(ctx, scheduledTaskSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("scheduled task scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
+}
+
+// startBackgroundSweepers starts the background loops that clean up expired
+// preview environments, audit logs, and deploy approvals.
+func startBackgroundSweepers(ctx context.Context, logger *slog.Logger, apiRouter *api.Router) {
+	go func() {
+		if err := apiRouter.RunPreviewSweeper(ctx, previewSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("preview sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	go func() {
+		if err := apiRouter.RunAuditLogSweeper(ctx, auditLogSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("audit log sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	go func() {
+		if err := apiRouter.RunDeployApprovalExpirySweep(ctx, deployApprovalSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("deploy approval expiry sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
 }
