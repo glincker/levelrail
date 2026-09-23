@@ -47,6 +47,8 @@ type GitLabAppClient interface {
 	GetProject(ctx context.Context, instanceURL, accessToken string, projectID int64) (gitlabapp.Project, error)
 	ListBranches(ctx context.Context, instanceURL, accessToken string, projectID int64) ([]gitlabapp.Branch, error)
 	CreateProjectWebhook(ctx context.Context, instanceURL, accessToken string, projectID int64, hookURL, secretToken string) error
+	CreateMergeRequestNote(ctx context.Context, instanceURL, accessToken, projectPath string, mrIID int, body string) error
+	CreateCommitStatus(ctx context.Context, instanceURL, accessToken, projectPath, sha string, state gitlabapp.CommitState, targetURL, description, name string) error
 }
 
 const (

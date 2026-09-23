@@ -232,3 +232,107 @@ func TestClient_CreateProjectWebhook_ErrorResponse(t *testing.T) {
 		t.Fatal("CreateProjectWebhook() error = nil, want an error for a 403 response")
 	}
 }
+
+func TestEncodedProjectID(t *testing.T) {
+	tests := []struct {
+		path string
+		want string
+	}{
+		{"org/web", "org%2Fweb"},
+		{"org/team/web", "org%2Fteam%2Fweb"},
+		{"org/we b", "org%2Fwe%20b"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			if got := encodedProjectID(tt.path); got != tt.want {
+				t.Errorf("encodedProjectID(%q) = %q, want %q", tt.path, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestClient_CreateMergeRequestNote(t *testing.T) {
+	var gotBody createNoteRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %q, want POST", r.Method)
+		}
+		if r.URL.EscapedPath() != "/api/v4/projects/org%2Fweb/merge_requests/42/notes" {
+			t.Errorf("path = %q, want /api/v4/projects/org%%2Fweb/merge_requests/42/notes", r.URL.EscapedPath())
+		}
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer srv.Close()
+
+	c := &Client{HTTP: srv.Client()}
+	err := c.CreateMergeRequestNote(context.Background(), srv.URL, "at-1", "org/web", 42, "preview deployed")
+	if err != nil {
+		t.Fatalf("CreateMergeRequestNote() error = %v", err)
+	}
+	if gotBody.Body != "preview deployed" {
+		t.Errorf("body = %q, want %q", gotBody.Body, "preview deployed")
+	}
+}
+
+func TestClient_CreateMergeRequestNote_ErrorResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"message":"403 Forbidden"}`))
+	}))
+	defer srv.Close()
+
+	c := &Client{HTTP: srv.Client()}
+	err := c.CreateMergeRequestNote(context.Background(), srv.URL, "at-1", "org/web", 42, "body")
+	if err == nil {
+		t.Fatal("CreateMergeRequestNote() error = nil, want an error for a 403 response")
+	}
+}
+
+func TestClient_CreateCommitStatus(t *testing.T) {
+	var gotBody createCommitStatusRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %q, want POST", r.Method)
+		}
+		if r.URL.EscapedPath() != "/api/v4/projects/org%2Fweb/statuses/sha1" {
+			t.Errorf("path = %q, want /api/v4/projects/org%%2Fweb/statuses/sha1", r.URL.EscapedPath())
+		}
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer srv.Close()
+
+	c := &Client{HTTP: srv.Client()}
+	err := c.CreateCommitStatus(context.Background(), srv.URL, "at-1", "org/web", "sha1", CommitStateSuccess, "https://preview.example.com", "Preview deployed", "levelrail/preview")
+	if err != nil {
+		t.Fatalf("CreateCommitStatus() error = %v", err)
+	}
+	if gotBody.State != "success" {
+		t.Errorf("state = %q, want success", gotBody.State)
+	}
+	if gotBody.TargetURL != "https://preview.example.com" {
+		t.Errorf("target_url = %q, want https://preview.example.com", gotBody.TargetURL)
+	}
+	if gotBody.Name != "levelrail/preview" {
+		t.Errorf("name = %q, want levelrail/preview", gotBody.Name)
+	}
+}
+
+func TestClient_CreateCommitStatus_ErrorResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"message":"404 Not Found"}`))
+	}))
+	defer srv.Close()
+
+	c := &Client{HTTP: srv.Client()}
+	err := c.CreateCommitStatus(context.Background(), srv.URL, "at-1", "org/web", "sha1", CommitStateFailed, "", "failed", "levelrail/preview")
+	if err == nil {
+		t.Fatal("CreateCommitStatus() error = nil, want an error for a 404 response")
+	}
+}

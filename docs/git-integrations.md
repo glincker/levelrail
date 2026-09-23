@@ -39,9 +39,9 @@ The four providers are not equivalent, and the code reflects that:
 | Provider | Auth method | Token lifetime | PR comments/statuses | Self-hosted |
 | --- | --- | --- | --- | --- |
 | **GitHub** | Real GitHub App with manifest flow | Short-lived per API call | Yes | Enterprise Server, via `instance_url` |
-| **GitLab** | Hand-registered OAuth Application | Long-lived | No | Yes, via `instance_url` |
-| **Bitbucket** | Hand-registered OAuth consumer | Long-lived | No | Cloud only |
-| **Gitea** | Hand-registered OAuth2 Application | Long-lived, refreshed | No | Almost always, via `instance_url` |
+| **GitLab** | Hand-registered OAuth Application | Long-lived | Yes | Yes, via `instance_url` |
+| **Bitbucket** | Hand-registered OAuth consumer | Long-lived | Yes | Cloud only |
+| **Gitea** | Hand-registered OAuth2 Application | Long-lived, refreshed | Yes | Almost always, via `instance_url` |
 
 GitHub's manifest flow creates the App automatically on GitHub's side. GitLab, Bitbucket, and Gitea require manual App/consumer creation in their own settings first, then pasting credentials in.
 
@@ -214,7 +214,7 @@ GitLab uses numeric project IDs instead of owner/repo pairs. So `gitlab-app bran
 
 ### Webhook processing flow
 
-All push webhooks from GitHub, GitLab, Bitbucket, and Gitea follow the same processing path (pull-request events are GitHub/GitLab/Bitbucket only today, see [Not built yet](#not-built-yet-deliberate-follow-ups)):
+All push and pull-request webhooks from GitHub, GitLab, Bitbucket, and Gitea follow the same processing path:
 
 ```mermaid
 flowchart LR
@@ -238,7 +238,7 @@ Every webhook, whether it succeeds, fails, or mismatches, creates a delivery his
 
 ### Single webhook endpoint for all providers
 
-Push webhooks from all four providers (and pull-request webhooks from the three that support them) land on the same URL:
+Push and pull-request webhooks from all four providers land on the same URL:
 
 ```
 POST /api/v1/webhooks/github/{name}
@@ -267,7 +267,7 @@ The budget is `APP_WEBHOOK_RATE_LIMIT_RPM` requests per minute (default `60`, i.
 
 **Push events:** Accepted (`200`) but ignored if the ref doesn't match the git source's trigger mode (branch or tag, see below). Rejected refs return early, not processed.
 
-**Pull-request events:** Routed separately from pushes, GitHub/GitLab/Bitbucket only today (Gitea sends `pull_request` events too, but this platform doesn't parse them yet, see [Not built yet](#not-built-yet-deliberate-follow-ups)).
+**Pull-request events:** Routed separately from pushes, supported on all four providers.
 - `opened` / `synchronize`: Deploys or redeploys a preview environment (gated on `PreviewEnabled`)
 - `closed`: Tears down the preview, regardless of merge status
 
@@ -333,7 +333,7 @@ Each app's **Source** tab (`/apps/{name}/source`) shows a "Recent webhook delive
 
 Opt-in, per app, off by default. Once enabled, opening a pull request against the connected repo's target branch deploys an independent copy of the app under `<app-name>-pr-<number>`.
 
-GitHub, GitLab, and Bitbucket sources only. Gitea's push-triggered deploys work today, but its `pull_request` webhook event isn't parsed yet, so a Gitea-sourced app can't have preview environments until that lands (see [Not built yet](#not-built-yet-deliberate-follow-ups)).
+GitHub, GitLab, Bitbucket, and Gitea sources all support preview environments.
 
 ### Lifecycle
 
@@ -371,7 +371,7 @@ PR  PREVIEW APP           BRANCH        STATUS  DOMAIN                          
 
 ### PR comments and commit statuses
 
-GitHub only. A second, independent toggle.
+Supported on all four providers: GitHub, GitLab, Bitbucket, and Gitea. A second, independent toggle from preview environments themselves.
 
 **Enable/disable:**
 ```bash
@@ -379,14 +379,14 @@ levelrail-cli apps previews pr-status enable storefront
 levelrail-cli apps previews pr-status disable storefront
 ```
 
-**Behavior:** When on, every preview deploy posts a `levelrail/preview` commit status on the PR's head commit:
+**Behavior:** When on, every preview deploy posts a `levelrail/preview` commit status (GitLab calls this a pipeline status `name`, Bitbucket a build status `key`) on the PR/MR's head commit:
 - `pending`: Building
 - `success`: Live with preview URL
-- `failure`: Deploy failed (truncated to GitHub's 140-character limit)
+- `failure`: Deploy failed (truncated to 140 characters on GitHub, 255 on GitLab; sent untruncated to Bitbucket and Gitea, which document no hard limit)
 
-A successful deploy or teardown also posts a PR comment.
+A successful deploy or teardown also posts a comment: a GitHub/Gitea issue comment, a GitLab merge request note, or a Bitbucket pull request comment, whichever the connected source is.
 
-**Implementation:** Uses the same GitHub App installation token as other repo/branch calls. For GitLab or Bitbucket sources, or for GitHub repos predating the App having a usable installation, this is a no-op. It's silently skipped and logged, never failing the preview deploy.
+**Implementation:** Each provider uses its own connected app/OAuth token the same way its repo/branch calls do (GitHub App installation token, GitLab/Gitea OAuth access token, Bitbucket OAuth consumer token). If `repo_url` isn't hosted on the connected instance for that provider, or no provider is connected and authorized at all, this is a silent no-op: logged, never failing the preview deploy.
 
 ### Per-preview env overrides
 
@@ -563,18 +563,10 @@ Connecting a provider is dashboard-only. `github-app`/`gitlab-app`/`bitbucket-ap
 
 ## Not built yet (deliberate follow-ups)
 
-### Gitea preview environments
-
-- **No pull-request webhook support for Gitea.** `internal/webhook.IsPullRequestEvent`/`ParsePullRequestEventForProvider` only recognize GitHub's, GitLab's, and Bitbucket's own event-discriminator headers. Gitea sends `X-Gitea-Event-Type: pull_request` with a GitHub-shaped payload body, but nothing detects or parses it yet, so a Gitea-sourced app can't opt into preview environments at all today, not even a degraded version. Push-triggered deploys (the everyday path) are unaffected. This is the single largest gap between Gitea and the other three providers, and the most likely next follow-up.
-
 ### Release trigger mode
 
 - **No Bitbucket tag push support.** See [Per-provider support](#per-provider-support): `internal/webhook.ParseBitbucketPushEvent` discards Bitbucket's own branch-vs-tag change type, so a Bitbucket tag push is never distinguished from a branch push of the same name. `release` trigger mode fails closed for Bitbucket (never deploys on a tag), rather than risking a false match.
 - **No GitLab-native release events.** GitLab has its own Releases API and a separate webhook event for it; this platform only recognizes a GitLab tag push (`Tag Push Hook`, parsed the same generic way as a branch push), not a GitLab "release created" event. A GitLab tag push still triggers `release` mode correctly, this is only about GitLab's separate, richer release object.
-
-### PR comments and statuses
-
-- **No PR comments or commit statuses for GitLab or Bitbucket.** Only GitHub posts them (`preview_environments_github.go`). A GitLab or Bitbucket source with `post_pr_comments` enabled has nothing to post to yet.
 
 ### Deploy token reuse
 

@@ -95,6 +95,31 @@ type fakeGitLabAppClient struct {
 	createHookURL  string
 	createHookTok  string
 	createHookCall bool
+
+	noteErr   error
+	noteCalls []fakeGitLabNote
+
+	statusErr   error
+	statusCalls []fakeGitLabCommitStatus
+}
+
+// fakeGitLabNote records one fakeGitLabAppClient.CreateMergeRequestNote
+// call, mirroring fakeIssueComment (github_app_test.go).
+type fakeGitLabNote struct {
+	projectPath string
+	mrIID       int
+	body        string
+}
+
+// fakeGitLabCommitStatus records one
+// fakeGitLabAppClient.CreateCommitStatus call, mirroring
+// fakeCommitStatus (github_app_test.go).
+type fakeGitLabCommitStatus struct {
+	projectPath, sha string
+	state            gitlabapp.CommitState
+	targetURL        string
+	description      string
+	name             string
 }
 
 func (f *fakeGitLabAppClient) ExchangeCode(_ context.Context, _, _, _, _, code string) (gitlabapp.Tokens, error) {
@@ -124,6 +149,18 @@ func (f *fakeGitLabAppClient) CreateProjectWebhook(_ context.Context, _, _ strin
 	f.createHookURL = hookURL
 	f.createHookTok = secretToken
 	return f.createHookErr
+}
+
+func (f *fakeGitLabAppClient) CreateMergeRequestNote(_ context.Context, _, _, projectPath string, mrIID int, body string) error {
+	f.noteCalls = append(f.noteCalls, fakeGitLabNote{projectPath: projectPath, mrIID: mrIID, body: body})
+	return f.noteErr
+}
+
+func (f *fakeGitLabAppClient) CreateCommitStatus(_ context.Context, _, _, projectPath, sha string, state gitlabapp.CommitState, targetURL, description, name string) error {
+	f.statusCalls = append(f.statusCalls, fakeGitLabCommitStatus{
+		projectPath: projectPath, sha: sha, state: state, targetURL: targetURL, description: description, name: name,
+	})
+	return f.statusErr
 }
 
 func newTestRouterWithGitLabApp(t *testing.T, secrets GitLabAppSecrets, client GitLabAppClient) (*Router, *store.DB) {

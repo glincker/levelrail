@@ -61,7 +61,7 @@ func normalizePullRequestAction(raw string) (PullRequestAction, bool) {
 	switch raw {
 	case "opened", "reopened", "open", "reopen", "pullrequest:created":
 		return PullRequestOpened, true
-	case "synchronize", "update", "pullrequest:updated":
+	case "synchronize", "synchronized", "update", "pullrequest:updated":
 		return PullRequestSynchronize, true
 	case "closed", "close", "merge", "pullrequest:fulfilled", "pullrequest:rejected":
 		return PullRequestClosed, true
@@ -73,16 +73,19 @@ func normalizePullRequestAction(raw string) (PullRequestAction, bool) {
 // IsPullRequestEvent reports whether header names a provider's own pull
 // request / merge request event, so a caller can route to
 // ParsePullRequestEventForProvider instead of ParsePushEventForProvider
-// before looking at the body at all. GitHub and GitLab both send an
-// unambiguous event-name header on every delivery (X-GitHub-Event,
-// X-Gitlab-Event); Bitbucket reuses X-Event-Key, already read for its
-// own push detection (ParsePushEventForProvider), just with a
-// "pullrequest:"-prefixed value instead of "repo:push".
+// before looking at the body at all. GitHub, GitLab, and Gitea each send
+// an unambiguous event-name header on every delivery (X-GitHub-Event,
+// X-Gitlab-Event, X-Gitea-Event-Type); Bitbucket reuses X-Event-Key,
+// already read for its own push detection (ParsePushEventForProvider),
+// just with a "pullrequest:"-prefixed value instead of "repo:push".
 func IsPullRequestEvent(header http.Header) bool {
 	if header.Get("X-GitHub-Event") == "pull_request" {
 		return true
 	}
 	if header.Get("X-Gitlab-Event") == "Merge Request Hook" {
+		return true
+	}
+	if header.Get("X-Gitea-Event-Type") == "pull_request" {
 		return true
 	}
 	return strings.HasPrefix(header.Get("X-Event-Key"), "pullrequest:")
@@ -95,6 +98,9 @@ func IsPullRequestEvent(header http.Header) bool {
 func ParsePullRequestEventForProvider(body []byte, header http.Header) (PullRequestEvent, error) {
 	if header.Get("X-Gitlab-Event") == "Merge Request Hook" {
 		return parseGitLabPullRequestEvent(body)
+	}
+	if header.Get("X-Gitea-Event-Type") == "pull_request" {
+		return parseGiteaPullRequestEvent(body)
 	}
 	if eventKey := header.Get("X-Event-Key"); strings.HasPrefix(eventKey, "pullrequest:") {
 		return parseBitbucketPullRequestEvent(body, eventKey)
@@ -201,5 +207,40 @@ func parseBitbucketPullRequestEvent(body []byte, eventKey string) (PullRequestEv
 		Action: action, Number: p.PullRequest.ID,
 		HeadRef: p.PullRequest.Source.Branch.Name, HeadSHA: p.PullRequest.Source.Commit.Hash,
 		BaseRef: p.PullRequest.Destination.Branch.Name,
+	}, nil
+}
+
+// giteaPullRequestPayload is the subset of Gitea's pull_request event
+// payload this package needs. Gitea's own structs.PullRequestPayload is
+// GitHub-shaped (a top-level "number" plus a nested "pull_request"
+// object), unlike GitLab's flatter object_attributes.
+// https://gitea.com/gitea/go-sdk (modules/structs/hook.go, PullRequestPayload/PRBranchInfo)
+type giteaPullRequestPayload struct {
+	Action      string `json:"action"`
+	Number      int    `json:"number"`
+	PullRequest struct {
+		Head struct {
+			Ref string `json:"ref"`
+			SHA string `json:"sha"`
+		} `json:"head"`
+		Base struct {
+			Ref string `json:"ref"`
+		} `json:"base"`
+	} `json:"pull_request"`
+}
+
+func parseGiteaPullRequestEvent(body []byte) (PullRequestEvent, error) {
+	var p giteaPullRequestPayload
+	if err := json.Unmarshal(body, &p); err != nil {
+		return PullRequestEvent{}, fmt.Errorf("webhook: malformed gitea pull_request payload: %w", err)
+	}
+	action, ok := normalizePullRequestAction(p.Action)
+	if !ok || p.Number == 0 || p.PullRequest.Head.SHA == "" {
+		return PullRequestEvent{}, ErrPullRequestEventFieldsMissing
+	}
+	return PullRequestEvent{
+		Action: action, Number: p.Number,
+		HeadRef: p.PullRequest.Head.Ref, HeadSHA: p.PullRequest.Head.SHA,
+		BaseRef: p.PullRequest.Base.Ref,
 	}, nil
 }

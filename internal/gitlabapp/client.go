@@ -261,3 +261,73 @@ func (c *Client) CreateProjectWebhook(ctx context.Context, instanceURL, accessTo
 	u := apiBaseURL(instanceURL) + "/projects/" + strconv.FormatInt(projectID, 10) + "/hooks"
 	return c.do(ctx, http.MethodPost, u, "Bearer "+accessToken, bytes.NewReader(body), nil)
 }
+
+// encodedProjectID escapes projectPath ("namespace/project" or
+// "namespace/subgroup/project") into GitLab's own documented "id" path
+// parameter shape: each segment individually percent-encoded, joined by
+// the literal sequence "%2F" rather than a real "/", since GitLab's
+// router treats a real "/" in this segment as more path segments, not
+// part of the project identifier (docs.gitlab.com/api/rest/#namespaced-paths).
+func encodedProjectID(projectPath string) string {
+	parts := strings.Split(projectPath, "/")
+	for i, p := range parts {
+		parts[i] = url.PathEscape(p)
+	}
+	return strings.Join(parts, "%2F")
+}
+
+type createNoteRequest struct {
+	Body string `json:"body"`
+}
+
+// CreateMergeRequestNote posts a new comment on merge request mrIID of
+// projectPath ("namespace/project"), authenticated with an OAuth access
+// token the same way CreateProjectWebhook is. GitLab's REST API has no
+// separate "merge request comment" endpoint distinct from a note, the
+// same "PR is also an issue" shape GitHub's own CreateIssueComment
+// documents for its own single comment endpoint.
+func (c *Client) CreateMergeRequestNote(ctx context.Context, instanceURL, accessToken, projectPath string, mrIID int, body string) error {
+	payload, err := json.Marshal(createNoteRequest{Body: body})
+	if err != nil {
+		return fmt.Errorf("gitlabapp: marshal merge request note request: %w", err)
+	}
+	u := fmt.Sprintf("%s/projects/%s/merge_requests/%d/notes", apiBaseURL(instanceURL), encodedProjectID(projectPath), mrIID)
+	return c.do(ctx, http.MethodPost, u, "Bearer "+accessToken, bytes.NewReader(payload), nil)
+}
+
+// CommitState is GitLab's own documented "state" enum for
+// POST .../statuses/{sha}.
+type CommitState string
+
+const (
+	// CommitStatePending marks a commit status as still in progress.
+	CommitStatePending CommitState = "pending"
+	// CommitStateSuccess marks a commit status as succeeded.
+	CommitStateSuccess CommitState = "success"
+	// CommitStateFailed marks a commit status as failed.
+	CommitStateFailed CommitState = "failed"
+)
+
+type createCommitStatusRequest struct {
+	State       string `json:"state"`
+	TargetURL   string `json:"target_url,omitempty"`
+	Description string `json:"description,omitempty"`
+	Name        string `json:"name,omitempty"`
+}
+
+// CreateCommitStatus sets a commit status on sha of projectPath
+// ("namespace/project"), authenticated with an OAuth access token the
+// same way CreateProjectWebhook is. name is GitLab's own label to
+// differentiate one status from another on the same commit
+// (docs.gitlab.com/api/commits/#set-the-pipeline-status-of-a-commit),
+// the same role GitHub's own "context" plays.
+func (c *Client) CreateCommitStatus(ctx context.Context, instanceURL, accessToken, projectPath, sha string, state CommitState, targetURL, description, name string) error {
+	payload, err := json.Marshal(createCommitStatusRequest{
+		State: string(state), TargetURL: targetURL, Description: description, Name: name,
+	})
+	if err != nil {
+		return fmt.Errorf("gitlabapp: marshal commit status request: %w", err)
+	}
+	u := fmt.Sprintf("%s/projects/%s/statuses/%s", apiBaseURL(instanceURL), encodedProjectID(projectPath), url.PathEscape(sha))
+	return c.do(ctx, http.MethodPost, u, "Bearer "+accessToken, bytes.NewReader(payload), nil)
+}

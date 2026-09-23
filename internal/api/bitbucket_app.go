@@ -47,6 +47,8 @@ type BitbucketAppClient interface {
 	GetRepo(ctx context.Context, accessToken, fullName string) (bitbucketapp.Repo, error)
 	ListBranches(ctx context.Context, accessToken, fullName string) ([]bitbucketapp.Branch, error)
 	CreateRepoWebhook(ctx context.Context, accessToken, fullName, hookURL, secret string) error
+	CreatePullRequestComment(ctx context.Context, accessToken, fullName string, prID int, body string) error
+	CreateCommitBuildStatus(ctx context.Context, accessToken, fullName, commit string, state bitbucketapp.BuildStatusState, targetURL, description, key string) error
 }
 
 const (

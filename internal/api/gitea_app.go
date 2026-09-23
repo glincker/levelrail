@@ -47,6 +47,8 @@ type GiteaAppClient interface {
 	GetRepo(ctx context.Context, instanceURL, accessToken, fullName string) (giteaapp.Repo, error)
 	ListBranches(ctx context.Context, instanceURL, accessToken, fullName string) ([]giteaapp.Branch, error)
 	CreateRepoWebhook(ctx context.Context, instanceURL, accessToken, fullName, hookURL, secret string) error
+	CreateIssueComment(ctx context.Context, instanceURL, accessToken, fullName string, number int, body string) error
+	CreateCommitStatus(ctx context.Context, instanceURL, accessToken, fullName, sha string, state giteaapp.CommitStatusState, targetURL, description, statusContext string) error
 }
 
 const (

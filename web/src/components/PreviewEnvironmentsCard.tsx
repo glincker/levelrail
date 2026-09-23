@@ -26,7 +26,10 @@ import {
 } from '../queries/previewEnvironments'
 import { ApiError } from '../lib/apiError'
 import type { AppDetail } from '../types/appDetail'
-import type { PreviewEnvironmentStatus, PreviewEphemeralDatabase } from '../types/previewEnvironment'
+import type {
+  PreviewEnvironmentStatus,
+  PreviewEphemeralDatabase,
+} from '../types/previewEnvironment'
 
 // Preview environments per pull request (internal/api/preview_environments.go):
 // the opt-in toggle plus the active-preview list, rendered alongside
@@ -80,12 +83,21 @@ function PreviewStatusBadge({ status }: { status: PreviewEnvironmentStatus }) {
 // (no delete/retry button): retrying is exactly what tearing down or
 // re-closing the pull request already does, this is a status display
 // only.
-function EphemeralDatabaseRow({ database }: { database: PreviewEphemeralDatabase }) {
+function EphemeralDatabaseRow({
+  database,
+}: {
+  database: PreviewEphemeralDatabase
+}) {
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-border/70 bg-muted/30 px-2 py-1.5">
       <div className="flex min-w-0 items-center gap-2">
-        <DatabaseIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-        <span className="truncate font-mono text-xs text-foreground">{database.database_name}</span>
+        <DatabaseIcon
+          className="size-3.5 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <span className="truncate font-mono text-xs text-foreground">
+          {database.database_name}
+        </span>
         <span className="text-xs text-muted-foreground">{database.engine}</span>
       </div>
       <div className="flex items-center gap-2">
@@ -94,7 +106,10 @@ function EphemeralDatabaseRow({ database }: { database: PreviewEphemeralDatabase
             Teardown failed
           </Badge>
         ) : (
-          <Badge variant={database.ready.variant} className="rounded-full text-[10px]">
+          <Badge
+            variant={database.ready.variant}
+            className="rounded-full text-[10px]"
+          >
             {database.ready.label}
           </Badge>
         )}
@@ -120,12 +135,18 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
     setPreviewEnabled.mutate(next, {
       onSuccess: () => {
         toast.add({
-          title: next ? 'Preview environments enabled.' : 'Preview environments disabled.',
+          title: next
+            ? 'Preview environments enabled.'
+            : 'Preview environments disabled.',
           type: 'success',
         })
       },
       onError: (error) => {
-        toast.add({ title: 'Could not update preview environments.', description: error.message, type: 'error' })
+        toast.add({
+          title: 'Could not update preview environments.',
+          description: error.message,
+          type: 'error',
+        })
       },
     })
   }
@@ -134,12 +155,18 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
     setPostPRComments.mutate(next, {
       onSuccess: () => {
         toast.add({
-          title: next ? 'PR comments and status checks enabled.' : 'PR comments and status checks disabled.',
+          title: next
+            ? 'PR comments and status checks enabled.'
+            : 'PR comments and status checks disabled.',
           type: 'success',
         })
       },
       onError: (error) => {
-        toast.add({ title: 'Could not update PR comments and status checks.', description: error.message, type: 'error' })
+        toast.add({
+          title: 'Could not update PR comments and status checks.',
+          description: error.message,
+          type: 'error',
+        })
       },
     })
   }
@@ -147,10 +174,17 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
   function tearDown(prNumber: number) {
     teardown.mutate(prNumber, {
       onSuccess: () => {
-        toast.add({ title: `Preview for PR #${prNumber} torn down.`, type: 'success' })
+        toast.add({
+          title: `Preview for PR #${prNumber} torn down.`,
+          type: 'success',
+        })
       },
       onError: (error: ApiError) => {
-        toast.add({ title: 'Could not tear down preview.', description: error.message, type: 'error' })
+        toast.add({
+          title: 'Could not tear down preview.',
+          description: error.message,
+          type: 'error',
+        })
       },
     })
   }
@@ -158,10 +192,17 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
   function sweepStale() {
     sweep.mutate(undefined, {
       onSuccess: (result) => {
-        toast.add({ title: `Swept ${result.swept} stale preview environment(s) across all apps.`, type: 'success' })
+        toast.add({
+          title: `Swept ${result.swept} stale preview environment(s) across all apps.`,
+          type: 'success',
+        })
       },
       onError: (error: ApiError) => {
-        toast.add({ title: 'Could not sweep stale previews.', description: error.message, type: 'error' })
+        toast.add({
+          title: 'Could not sweep stale previews.',
+          description: error.message,
+          type: 'error',
+        })
       },
     })
   }
@@ -195,14 +236,16 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
             <p className="text-sm font-medium text-foreground">Enabled</p>
             <p className="text-sm text-muted-foreground">
               {connected
-                ? 'Deploy an independent preview for every pull request opened against this app\'s repo, torn down automatically when the pull request closes.'
+                ? "Deploy an independent preview for every pull request opened against this app's repo, torn down automatically when the pull request closes."
                 : 'Connect a git source above first: a preview has nothing to build from otherwise.'}
             </p>
           </div>
           <Switch
             checked={enabled}
             onCheckedChange={toggle}
-            disabled={!connected || setPreviewEnabled.isPending || gitSource.isLoading}
+            disabled={
+              !connected || setPreviewEnabled.isPending || gitSource.isLoading
+            }
             aria-label="Preview environments enabled"
           />
         </div>
@@ -210,10 +253,14 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
         {enabled ? (
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-foreground">PR comments and status checks</p>
+              <p className="text-sm font-medium text-foreground">
+                PR comments and status checks
+              </p>
               <p className="text-sm text-muted-foreground">
-                Post a comment with the preview URL (or a teardown notice) and a commit status
-                (pending/success/failure) on the pull request, using the connected GitHub App.
+                Post a comment with the preview URL (or a teardown notice) and a
+                commit status (pending/success/failure) on the pull request,
+                using the connected GitHub App, GitLab OAuth application,
+                Bitbucket OAuth consumer, or Gitea OAuth2 application.
               </p>
             </div>
             <Switch
@@ -240,7 +287,9 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                 >
                   <div className="min-w-0 space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm">PR #{preview.pr_number}</span>
+                      <span className="font-mono text-sm">
+                        PR #{preview.pr_number}
+                      </span>
                       <PreviewStatusBadge status={preview.status} />
                       {preview.stale ? (
                         <Badge variant="warning" className="rounded-full">
@@ -267,12 +316,18 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                       ) : null}
                     </p>
                     {preview.status_reason ? (
-                      <p className="text-xs text-amber-700 dark:text-amber-400">{preview.status_reason}</p>
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        {preview.status_reason}
+                      </p>
                     ) : null}
-                    {preview.ephemeral_databases && preview.ephemeral_databases.length > 0 ? (
+                    {preview.ephemeral_databases &&
+                    preview.ephemeral_databases.length > 0 ? (
                       <ul className="space-y-1 pt-1">
                         {preview.ephemeral_databases.map((database) => (
-                          <EphemeralDatabaseRow key={database.source_key} database={database} />
+                          <EphemeralDatabaseRow
+                            key={database.source_key}
+                            database={database}
+                          />
                         ))}
                       </ul>
                     ) : null}
@@ -282,7 +337,9 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                     size="sm"
                     variant="outline"
                     disabled={teardown.isPending}
-                    onClick={() => { tearDown(preview.pr_number) }}
+                    onClick={() => {
+                      tearDown(preview.pr_number)
+                    }}
                   >
                     <TrashIcon />
                     Tear down
@@ -292,7 +349,8 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
             </ul>
           ) : (
             <p className="text-sm text-muted-foreground">
-              No active previews. Open a pull request against the connected repo to deploy one.
+              No active previews. Open a pull request against the connected repo
+              to deploy one.
             </p>
           )
         ) : null}

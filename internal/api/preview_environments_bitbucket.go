@@ -1,0 +1,126 @@
+package api
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"net/url"
+	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+// previewBitbucketTarget resolves what CreatePullRequestComment/
+// CreateCommitBuildStatus need to notify Bitbucket about gs's preview:
+// an OAuth access token and gs's own "workspace/repo_slug" full name. ok
+// is false, and every caller here treats that as a silent no-op,
+// whenever gs.PostPRComments is off, no Bitbucket OAuth consumer is
+// connected and authorized, or gs.RepoURL isn't hosted on bitbucket.org
+// (Bitbucket Cloud only, see internal/bitbucketapp's own doc comment):
+// the same "logged, not fatal" shape previewGitHubTarget already
+// establishes.
+func (rt *Router) previewBitbucketTarget(ctx context.Context, appName string, gs store.GitSource) (accessToken, fullName string, ok bool) {
+	if !gs.PostPRComments || rt.bitbucketAppSecrets == nil {
+		return "", "", false
+	}
+	accessToken, err := rt.bitbucketAccessToken(ctx)
+	if err != nil {
+		rt.logger.Info("api: preview bitbucket notification skipped: no usable bitbucket connection",
+			slog.String("app_name", appName), slog.String("error", err.Error()))
+		return "", "", false
+	}
+	fullName, ok = bitbucketFullNameFromURL(gs.RepoURL)
+	if !ok {
+		rt.logger.Info("api: preview bitbucket notification skipped: repo_url is not on bitbucket.org",
+			slog.String("app_name", appName), slog.String("repo_url", gs.RepoURL))
+		return "", "", false
+	}
+	return accessToken, fullName, true
+}
+
+// bitbucketFullNameFromURL extracts a "workspace/repo_slug" full name
+// from repoURL, valid only when it's an https URL on bitbucket.org,
+// mirroring githubOwnerRepoFromURL's own validation shape.
+func bitbucketFullNameFromURL(repoURL string) (fullName string, ok bool) {
+	u, err := url.Parse(repoURL)
+	if err != nil || u.Scheme != "https" || !strings.EqualFold(u.Host, "bitbucket.org") {
+		return "", false
+	}
+	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", false
+	}
+	return parts[0] + "/" + strings.TrimSuffix(parts[1], ".git"), true
+}
+
+// notifyPreviewPendingBitbucket sets an in-progress build status on
+// headSHA right before a preview deploy/redeploy actually starts
+// building, mirroring notifyPreviewPendingGitHub's own reasoning.
+func (rt *Router) notifyPreviewPendingBitbucket(ctx context.Context, appName string, gs store.GitSource, headSHA string) {
+	accessToken, fullName, ok := rt.previewBitbucketTarget(ctx, appName, gs)
+	if !ok {
+		return
+	}
+	if err := rt.bitbucketAppClient.CreateCommitBuildStatus(ctx, accessToken, fullName, headSHA,
+		bitbucketapp.BuildStatusInProgress, "", "Deploying preview environment...", previewStatusContext); err != nil {
+		rt.logger.Warn("api: post preview pending bitbucket build status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
+	}
+}
+
+// notifyPreviewSuccessBitbucket posts the live preview URL as a pull
+// request comment and sets a successful build status pointing at it,
+// mirroring notifyPreviewSuccessGitHub's own reasoning.
+func (rt *Router) notifyPreviewSuccessBitbucket(ctx context.Context, appName string, gs store.GitSource, prID int, headSHA, previewURL string) {
+	accessToken, fullName, ok := rt.previewBitbucketTarget(ctx, appName, gs)
+	if !ok {
+		return
+	}
+
+	description := "Preview deployed"
+	targetURL := ""
+	body := fmt.Sprintf("Preview environment deployed for commit `%s`.", headSHA)
+	if previewURL != "" {
+		targetURL = "https://" + previewURL
+		description = "Preview deployed: " + previewURL
+		body = fmt.Sprintf("Preview environment deployed for commit `%s`: %s", headSHA, targetURL)
+	}
+
+	if err := rt.bitbucketAppClient.CreateCommitBuildStatus(ctx, accessToken, fullName, headSHA,
+		bitbucketapp.BuildStatusSuccessful, targetURL, description, previewStatusContext); err != nil {
+		rt.logger.Warn("api: post preview success bitbucket build status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
+	}
+	if err := rt.bitbucketAppClient.CreatePullRequestComment(ctx, accessToken, fullName, prID, body); err != nil {
+		rt.logger.Warn("api: post preview success bitbucket pr comment failed", slog.String("error", err.Error()), slog.String("app_name", appName), slog.Int("pr_id", prID))
+	}
+}
+
+// notifyPreviewFailureBitbucket sets a failed build status, no pull
+// request comment, mirroring notifyPreviewFailureGitHub's own reasoning.
+// reason is sent untruncated: Bitbucket's build status "description"
+// field has no documented hard limit the way GitHub's (140) and
+// GitLab's (255) do.
+func (rt *Router) notifyPreviewFailureBitbucket(ctx context.Context, appName string, gs store.GitSource, headSHA, reason string) {
+	accessToken, fullName, ok := rt.previewBitbucketTarget(ctx, appName, gs)
+	if !ok {
+		return
+	}
+	if err := rt.bitbucketAppClient.CreateCommitBuildStatus(ctx, accessToken, fullName, headSHA,
+		bitbucketapp.BuildStatusFailed, "", reason, previewStatusContext); err != nil {
+		rt.logger.Warn("api: post preview failure bitbucket build status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
+	}
+}
+
+// notifyPreviewTornDownBitbucket posts a teardown notice as a pull
+// request comment, mirroring notifyPreviewTornDownGitHub's own
+// reasoning.
+func (rt *Router) notifyPreviewTornDownBitbucket(ctx context.Context, preview store.PreviewEnvironment, gs store.GitSource) {
+	accessToken, fullName, ok := rt.previewBitbucketTarget(ctx, preview.AppName, gs)
+	if !ok {
+		return
+	}
+	body := fmt.Sprintf("Preview environment `%s` torn down.", preview.PreviewAppID)
+	if err := rt.bitbucketAppClient.CreatePullRequestComment(ctx, accessToken, fullName, preview.PRNumber, body); err != nil {
+		rt.logger.Warn("api: post preview teardown bitbucket pr comment failed", slog.String("error", err.Error()), slog.String("app_name", preview.AppName), slog.Int("pr_number", preview.PRNumber))
+	}
+}
