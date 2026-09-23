@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from './ui/button'
 import { TIME_RANGE_PRESETS, type TimeRangeKey } from '../lib/timeRange'
@@ -17,10 +18,12 @@ export function TimeRangeControls({
   rangeKey,
   onRangeChange,
   onRefresh,
+  children,
 }: {
   rangeKey: TimeRangeKey
   onRangeChange: (key: TimeRangeKey) => void
   onRefresh: () => void
+  children?: ReactNode
 }) {
   return (
     <div className="flex items-center gap-2">
@@ -51,6 +54,7 @@ export function TimeRangeControls({
         <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
         Refresh
       </Button>
+      {children}
     </div>
   )
 }

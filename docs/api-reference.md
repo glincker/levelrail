@@ -44,7 +44,8 @@ Endpoints for:
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
 | POST | /api/v1/auth/login | Public | handleLogin |
-| POST | /api/v1/auth/register | Public | handleRegister |
+| POST | /api/v1/auth/register | Public (setup token) | handleRegister |
+| GET | /api/v1/auth/setup-status | Public | handleSetupStatus |
 | POST | /api/v1/auth/logout | Session | handleLogout |
 | PUT | /api/v1/auth/password | Session | handleChangePassword |
 | GET | /api/v1/auth/session | Session | handleGetSession |
@@ -319,6 +320,8 @@ Endpoints for:
 | GET | /api/v1/settings/ingress | AbilityRead | handleGetIngressSettings |
 | PUT | /api/v1/settings/ingress | AbilityRoot | handleUpdateIngressSettings |
 | GET | /api/v1/settings/ingress/check | AbilityRoot | handleCheckIngressDomain |
+| GET | /api/v1/settings/dashboard-url | AbilityRead | handleGetDashboardURL |
+| PUT | /api/v1/settings/dashboard-url | AbilityRoot | handleUpdateDashboardURL |
 | GET | /api/v1/apps/{name}/domains/{domain}/check | AbilityRead | handleCheckDomain |
 | GET | /api/v1/apps/{name}/domains/{domain}/auth | AbilityRead | handleGetDomainBasicAuth |
 | PUT | /api/v1/apps/{name}/domains/{domain}/auth | AbilityRoot | handleSetDomainBasicAuth |

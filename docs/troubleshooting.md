@@ -19,7 +19,9 @@ This has its own dedicated runbook: [ACME verification runbook](acme-verificatio
 :::
 
 ::: details I can't log in, or my session keeps dropping
-The session cookie is set `Secure`, so it only survives over HTTPS. If you're hitting the control plane directly over plain `http://` (common in local dev without Caddy in front), the cookie never round-trips back. Use `levelrail-cli auth login --device` instead, or put Caddy/TLS in front. Full detail: [Identity and access](identity-and-access.md#principals-a-session-or-a-token).
+If sign-in fails with "sign-in over plain HTTP is disabled", an `https://` dashboard URL is configured: open that URL instead. If it no longer works, set `APP_ALLOW_INSECURE_LOGIN=true` on the control plane (for install.sh installs, add `Environment=APP_ALLOW_INSECURE_LOGIN=true` to the systemd unit), restart it, sign in over HTTP, and fix or clear the dashboard URL on the Domains page.
+
+On a fresh install the login page asks for a **setup token**. Print it with `sudo levelrail setup-token` on the server. Full detail: [Identity and access](identity-and-access.md#principals-a-session-or-a-token).
 :::
 
 ::: details A node shows offline or won't enroll

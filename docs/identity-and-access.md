@@ -48,7 +48,9 @@ Sessions are an in-memory map keyed by an opaque token (`sessionStore`), with a 
 
 **Session cookie security**
 
-The session cookie is set `Secure`, even though the control plane's HTTP listener speaks plain HTTP. Embedded Caddy is expected to terminate TLS in front of it. Hitting the control plane directly over `http://` (common in local dev) means the cookie never round-trips back on follow-up requests. This is a real gap that `levelrail-cli auth login` inherits (see "Not built yet" below).
+The session cookie's `Secure` flag follows the request: it is set when the request arrived over TLS, or through the embedded Caddy ingress (a loopback peer sending `X-Forwarded-Proto: https`). `X-Forwarded-Proto` from any other peer is ignored, so a remote client can't spoof it. A fresh install reached at `http://<server-ip>:8080` therefore works out of the box, and the dashboard shows a persistent "connection is not encrypted" banner until you move to HTTPS.
+
+Once you set an `https://` **dashboard URL** (Domains page, `levelrail-cli settings dashboard-url set --url https://...`, or `PUT /api/v1/settings/dashboard-url`), sign-in over plain HTTP is refused with a `403` pointing at that URL. This covers password login, 2FA verification, and invite acceptance. An `https://` URL can only be saved from a request that already arrived over HTTPS (or from the server itself), so saving it can't lock you out. If the https URL breaks later, set `APP_ALLOW_INSECURE_LOGIN=true` on the control plane and restart it to recover.
 
 ### Abilities and roles
 
@@ -125,7 +127,7 @@ A policy attaches to a `user` or a `token` (`principal_type`), by that principal
 
 On startup, `BootstrapAdmin` creates a user from `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` only if zero users exist. It is a no-op on later restarts, so a password change doesn't get silently reverted.
 
-Without those env vars set and no user yet, the control plane still starts (it serves the public `/api/v1/brand` endpoint) but auth-required routes stay inaccessible until an operator sets them and restarts, or calls `POST /api/v1/auth/register` by hand.
+Without those env vars and with no user yet, the control plane generates a one-time **setup token**, writes it to `<data dir>/setup-token` (mode `0600`), and logs it once. `GET /api/v1/auth/setup-status` (public) returns `{"needs_setup": true}` until the first admin exists, and the login page switches to its setup form on its own. `POST /api/v1/auth/register` requires the token in `setup_token` (constant-time compare) and deletes the file on success, so whoever reaches the dashboard first can't claim the instance without shell access to the server. `install.sh` prints the token and a `http://<ip>:8080/login?setup=<token>` link; `sudo levelrail setup-token` prints it again.
 
 `POST /api/v1/auth/register` is gated at the database layer to succeed exactly once (a unique constraint, not an application check). A race between concurrent first-registration attempts cannot create two "first" admins. Either path grants `AbilityRoot` because no one else exists yet.
 
@@ -369,7 +371,8 @@ Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automati
 
 | Method | Path | Ability |
 | --- | --- | --- |
-| `POST` | `/api/v1/auth/register` | public (first user only) |
+| `POST` | `/api/v1/auth/register` | public (first user only, setup token required) |
+| `GET` | `/api/v1/auth/setup-status` | public |
 | `POST` | `/api/v1/auth/login` | public |
 | `POST` | `/api/v1/auth/logout` | session |
 | `GET` | `/api/v1/auth/session` | session |
@@ -507,9 +510,6 @@ levelrail-cli audit-purge
 
 - **`auth whoami` cannot work against a bearer token**
   `GET /api/v1/auth/session` is session-cookie-only by design. The CLI only persists a bearer token, so `levelrail-cli auth whoami` returns `401` every time. No bearer-token-compatible identity endpoint exists yet.
-
-- **`auth login` (username/password) needs an HTTPS front**
-  The session cookie `POST /api/v1/auth/login` sets is `Secure`, so it never round-trips back against a plain-HTTP target (common in local dev without TLS-terminating Caddy in front). Use `--device` to avoid this; it works over plain HTTP.
 
 - **No per-team or per-project access boundary**
   IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. There is no organization- or project-level grouping in the permission model. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.

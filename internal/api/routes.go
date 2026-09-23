@@ -72,6 +72,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// everything else requires an existing session.
 	mux.HandleFunc("POST /api/v1/auth/login", rt.handleLogin)
 	mux.HandleFunc("POST /api/v1/auth/register", rt.handleRegister)
+	mux.HandleFunc("GET /api/v1/auth/setup-status", rt.handleSetupStatus)
 	mux.HandleFunc("POST /api/v1/auth/logout", rt.requireAuth(rt.handleLogout))
 	mux.HandleFunc("PUT /api/v1/auth/password", rt.requireAuth(rt.handleChangePassword))
 	mux.HandleFunc("GET /api/v1/auth/session", rt.requireAuth(rt.handleGetSession))
@@ -409,6 +410,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/databases/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseMetrics))
 	mux.HandleFunc("GET /api/v1/databases/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseLogs))
 	mux.HandleFunc("GET /api/v1/databases/{name}/logs/stream", rt.requireAbility(AbilityRead, rt.handleLiveDatabaseLogStream))
+
+	// Slow query log, Postgres/MySQL only (database_slow_queries.go's own
+	// doc comment explains why Redis and every other engine return 400):
+	// parses the same stored container log lines the routes above expose,
+	// rather than a new telemetry source.
+	mux.HandleFunc("GET /api/v1/databases/{name}/slow-queries", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseSlowQueries))
 
 	// Resource right-sizing, the database counterpart to
 	// GET /apps/{name}/resource-recommendation above

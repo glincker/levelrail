@@ -2074,6 +2074,11 @@ const docsManifest: DocsManifest = {
           level: 2,
         },
         {
+          id: 'first-sign-in',
+          text: 'First sign-in',
+          level: 3,
+        },
+        {
           id: 'option-2-docker',
           text: 'Option 2: Docker',
           level: 2,
@@ -2551,6 +2556,11 @@ const docsManifest: DocsManifest = {
         {
           id: 'live-tailing-vs-stored-search-vs-download',
           text: 'Live tailing vs stored search vs download',
+          level: 2,
+        },
+        {
+          id: 'database-slow-query-log',
+          text: 'Database slow query log',
           level: 2,
         },
         {

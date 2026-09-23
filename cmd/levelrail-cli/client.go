@@ -76,6 +76,7 @@ type (
 	setDatabaseResourcesRequest      = apiclient.SetDatabaseResourcesRequest
 	databasePublicAccessResource     = apiclient.DatabasePublicAccessResource
 	setDatabasePublicAccessRequest   = apiclient.SetDatabasePublicAccessRequest
+	slowQueryEntryResource           = apiclient.SlowQueryEntryResource
 	composeDeployResult              = apiclient.ComposeDeployResult
 	apiError                         = apiclient.APIError
 	deployTriggerRequest             = apiclient.DeployTriggerRequest
@@ -238,6 +239,7 @@ type (
 	updateOAuthProviderSettingsRequest = apiclient.UpdateOAuthProviderSettingsRequest
 	emailSettingsResource              = apiclient.EmailSettingsResource
 	ingressSettingsResource            = apiclient.IngressSettingsResource
+	dashboardURLResource               = apiclient.DashboardURLResource
 	aiAssistantSettingsResource        = apiclient.AIAssistantSettingsResource
 	updateAIAssistantSettingsRequest   = apiclient.UpdateAIAssistantSettingsRequest
 	appStorageResource                 = apiclient.AppStorageResource

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { latestValue } from '../hooks/useNodeCapacityHint'
 import { formatBytes } from '../lib/format'
@@ -18,12 +19,18 @@ export function RamFitBadge({
   const nodesQuery = useNodeListOptional()
   const localNode = nodesQuery.data?.find((n) => n.is_local)
 
-  const now = new Date()
-  const from = new Date(now.getTime() - 5 * 60 * 1000)
+  // Fixed once per mount, not recomputed on every render: a fresh Date
+  // here would change useNodeMetricSeries's query key each render (its
+  // key includes from/to as ISO strings), so the query never settles
+  // and this badge never stops flickering between loading and shown.
+  const range = useMemo(() => {
+    const to = new Date()
+    return { from: new Date(to.getTime() - 5 * 60 * 1000), to }
+  }, [])
   const memoryQuery = useNodeMetricSeries(
     localNode?.id ?? '',
     'memory_available_bytes',
-    { from, to: now },
+    range,
     { enabled: !!localNode, retry: false },
   )
 

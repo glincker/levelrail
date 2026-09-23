@@ -7,16 +7,16 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { logDownloadURL, useLogSearch } from '../queries/logs'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
-import { Button, buttonVariants } from './ui/button'
+import { buttonVariants } from './ui/button'
 import { Input } from './ui/input'
 import { LogSearchEmptyState } from './LogSearchEmptyState'
 import { Skeleton } from './ui/skeleton'
 import {
   DEFAULT_TIME_RANGE_KEY,
-  TIME_RANGE_PRESETS,
   resolveTimeRange,
   type TimeRangeKey,
 } from '../lib/timeRange'
+import { TimeRangeControls } from './TimeRangeControls'
 
 // Historical log search over GET /api/v1/apps/{name}/logs
 // (internal/api/logs.go): a full-text query over entries
@@ -108,40 +108,13 @@ export function LogSearchPanel({ appName }: { appName: string }) {
             live tail; see the Live tab for that.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div
-            role="group"
-            aria-label="Time range"
-            className="inline-flex rounded-md border border-border"
-          >
-            {TIME_RANGE_PRESETS.map((preset) => (
-              <button
-                key={preset.key}
-                type="button"
-                onClick={() => {
-                  setRangeKey(preset.key)
-                }}
-                aria-pressed={rangeKey === preset.key}
-                className={`px-2.5 py-1 text-xs font-medium first:rounded-l-md last:rounded-r-md ${
-                  rangeKey === preset.key
-                    ? 'bg-foreground text-background'
-                    : 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setRefreshNonce((n) => n + 1)
-            }}
-          >
-            Refresh
-          </Button>
+        <TimeRangeControls
+          rangeKey={rangeKey}
+          onRangeChange={setRangeKey}
+          onRefresh={() => {
+            setRefreshNonce((n) => n + 1)
+          }}
+        >
           <a
             href={logDownloadURL(appName, {
               from: range.from,
@@ -154,7 +127,7 @@ export function LogSearchPanel({ appName }: { appName: string }) {
             <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
             Download logs
           </a>
-        </div>
+        </TimeRangeControls>
       </div>
 
       <div className="relative mt-3">

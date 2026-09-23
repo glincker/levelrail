@@ -537,6 +537,27 @@ func (c *Client) QueryDatabaseLogs(ctx context.Context, name string, from, to ti
 	return out.Entries, err
 }
 
+// QueryDatabaseSlowQueries calls GET
+// /api/v1/databases/{name}/slow-queries?from=&to=&limit=&offset=
+// (internal/api/database_slow_queries.go's handleQueryDatabaseSlowQueries),
+// returning parsed slow-query entries sorted by duration descending plus
+// the total count before limit/offset truncation. limit <= 0 omits the
+// ?limit param, letting the server apply its own default.
+func (c *Client) QueryDatabaseSlowQueries(ctx context.Context, name string, from, to time.Time, limit, offset int) ([]SlowQueryEntryResource, int, error) {
+	query := url.Values{}
+	query.Set("from", from.UTC().Format(time.RFC3339))
+	query.Set("to", to.UTC().Format(time.RFC3339))
+	if limit > 0 {
+		query.Set("limit", strconv.Itoa(limit))
+	}
+	if offset > 0 {
+		query.Set("offset", strconv.Itoa(offset))
+	}
+	var out slowQueriesResponse
+	err := c.do(ctx, http.MethodGet, "/api/v1/databases/"+PathEscape(name)+"/slow-queries?"+query.Encode(), nil, &out)
+	return out.Entries, out.Total, err
+}
+
 // CreateDatabase calls POST /api/v1/databases.
 func (c *Client) CreateDatabase(ctx context.Context, req DatabaseResource) (DatabaseResource, error) {
 	var out DatabaseResource
@@ -2834,6 +2855,27 @@ func (c *Client) GetIngressSettings(ctx context.Context) (IngressSettingsResourc
 func (c *Client) UpdateIngressSettings(ctx context.Context, req IngressSettingsResource) (IngressSettingsResource, error) {
 	var out IngressSettingsResource
 	err := c.do(ctx, http.MethodPut, "/api/v1/settings/ingress", req, &out)
+	return out, err
+}
+
+// GetDashboardURL calls GET /api/v1/settings/dashboard-url.
+func (c *Client) GetDashboardURL(ctx context.Context) (DashboardURLResource, error) {
+	var out DashboardURLResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/dashboard-url", nil, &out)
+	return out, err
+}
+
+// UpdateDashboardURL calls PUT /api/v1/settings/dashboard-url.
+func (c *Client) UpdateDashboardURL(ctx context.Context, req DashboardURLResource) (DashboardURLResource, error) {
+	var out DashboardURLResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/dashboard-url", req, &out)
+	return out, err
+}
+
+// GetSetupStatus calls GET /api/v1/auth/setup-status.
+func (c *Client) GetSetupStatus(ctx context.Context) (SetupStatusResource, error) {
+	var out SetupStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/auth/setup-status", nil, &out)
 	return out, err
 }
 

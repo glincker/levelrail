@@ -30,6 +30,8 @@ func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSettingsEmail(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ingress":
 		return runSettingsIngress(prog, args[1:], stdout, stderr, lookupEnv)
+	case "dashboard-url":
+		return runSettingsDashboardURL(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ai-assistant":
 		return runSettingsAIAssistant(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -47,6 +49,8 @@ func settingsUsage(prog string) string {
   %[1]s settings email set [flags]                        configure outbound email
   %[1]s settings ingress get [flags]                      show the current ingress/ACME settings
   %[1]s settings ingress set [flags]                      configure the primary domain and ACME (Let's Encrypt) settings
+  %[1]s settings dashboard-url get [flags]                show the public URL operators use to reach the dashboard
+  %[1]s settings dashboard-url set --url URL [flags]      set it (https refuses plain-HTTP sign-in afterwards)
   %[1]s settings ai-assistant get [flags]                 show the current BYOK AI assistant settings
   %[1]s settings ai-assistant set --model NAME --api-key KEY [flags]   configure the BYOK AI assistant
   %[1]s settings ai-assistant clear [flags]               disable the AI assistant and forget the stored key

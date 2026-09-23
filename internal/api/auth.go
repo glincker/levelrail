@@ -176,6 +176,9 @@ type loginResponse struct {
 // what it means now. Same generic "invalid credentials" for unknown
 // email or wrong password.
 func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
+	if rt.refuseInsecureLogin(w, r) {
+		return
+	}
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -229,7 +232,7 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := rt.establishSession(r.Context(), w, *user); err != nil {
+	if err := rt.establishSession(w, r, *user); err != nil {
 		rt.logger.Error("api: login: establish session failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
@@ -241,7 +244,7 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 // last_login_at gets stamped: handleLogin, handleRegister, and the OAuth
 // callback handlers all funnel through this, so every sign-in path
 // shares identical session properties by construction.
-func (rt *Router) establishSession(ctx context.Context, w http.ResponseWriter, user store.User) error {
+func (rt *Router) establishSession(w http.ResponseWriter, r *http.Request, user store.User) error {
 	token, err := rt.sessions.create(user.ID)
 	if err != nil {
 		return fmt.Errorf("create session: %w", err)
@@ -249,28 +252,11 @@ func (rt *Router) establishSession(ctx context.Context, w http.ResponseWriter, u
 
 	// Best-effort: last_login_at is an observability nicety for the Users
 	// settings page, never something a sign-in should fail over.
-	if err := rt.auth.UpdateUserLastLogin(ctx, user.ID, time.Now()); err != nil {
+	if err := rt.auth.UpdateUserLastLogin(r.Context(), user.ID, time.Now()); err != nil {
 		rt.logger.Warn("api: update last_login_at failed", slog.String("error", err.Error()), slog.String("user_id", user.ID))
 	}
 
-	// Secure is intentional even though this HTTP listener itself speaks
-	// plain HTTP (main.go's httpServer): embedded Caddy sits in front
-	// doing TLS termination in any real deployment, and a
-	// session cookie is exactly the kind of value that must never be
-	// sent back over a plain connection. Local development against this
-	// listener directly (no Caddy in front yet) needs to go
-	// through something that terminates TLS, e.g. a local reverse proxy,
-	// for the cookie to round-trip; that's a known dev-workflow gap, not
-	// a reason to weaken the cookie.
-	http.SetCookie(w, &http.Cookie{
-		Name:     sessionCookieName,
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().Add(rt.sessions.ttl),
-	})
+	setSessionCookie(w, r, token, time.Now().Add(rt.sessions.ttl))
 	return nil
 }
 
@@ -281,15 +267,7 @@ func (rt *Router) handleLogout(w http.ResponseWriter, r *http.Request) {
 	if c, err := r.Cookie(sessionCookieName); err == nil {
 		rt.sessions.revoke(c.Value)
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name:     sessionCookieName,
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
+	setSessionCookie(w, r, "", time.Time{})
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -590,24 +568,43 @@ func hashToken(plaintext string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// handleRegister handles POST /api/v1/auth/register: creates the very
-// first user of a genuinely empty instance, nothing else. Every
-// subsequent user comes from OAuth (oauth.go) or an authenticated caller
-// via POST /api/v1/auth/users: open self-registration is too big a risk
-// once this control plane is internet-reachable, with no invite system
-// to bound it. Gated at the mutation layer via
-// ux_users_single_first_user (migrations/0035), closing the
-// two-concurrent-registrations race. This is the very first admin, the
-// same as BootstrapAdmin's user, so it gets AbilityRoot for the same
-// reason: no one else exists yet to grant it.
+type registerRequest struct {
+	Email      string `json:"username"`
+	Password   string `json:"password"`
+	SetupToken string `json:"setup_token"`
+}
+
+// handleRegister handles POST /api/v1/auth/register: creates the first
+// user of an empty instance, root-scoped, and only for a caller holding
+// the one-time setup token (EnsureSetupToken). Everyone after that comes
+// from OAuth, invites, or POST /api/v1/auth/users. The single-first-user
+// index (migrations/0035) closes the concurrent-registration race.
 func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
-	var req loginRequest
+	var req registerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if req.Email == "" || req.Password == "" {
 		writeError(w, http.StatusBadRequest, "username and password are required")
+		return
+	}
+	n, err := rt.auth.CountUsers(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: register: count users failed", err)
+		return
+	}
+	if n > 0 {
+		writeError(w, http.StatusConflict, "an account already exists; sign in instead")
+		return
+	}
+	ok, err := rt.setupTokenValid(req.SetupToken)
+	if err != nil {
+		rt.internalError(w, "api: register: read setup token failed", err)
+		return
+	}
+	if !ok {
+		writeError(w, http.StatusForbidden, "a valid setup token is required; print it on the server with the setup-token subcommand")
 		return
 	}
 	if len(req.Password) < minPasswordLength {
@@ -650,7 +647,11 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := rt.establishSession(r.Context(), w, user); err != nil {
+	if err := removeSetupToken(rt.dataDir); err != nil {
+		rt.logger.Warn("api: register: remove setup token failed", slog.String("error", err.Error()))
+	}
+
+	if err := rt.establishSession(w, r, user); err != nil {
 		rt.logger.Error("api: register: establish session failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return

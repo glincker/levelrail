@@ -128,6 +128,16 @@ func pitrEnabledFromLabel(labels map[string]string) bool {
 	return labels[pitrLabelKey] == "true"
 }
 
+// defaultSlowQueryThresholdMs is the slow-query-log duration threshold
+// applied when no WithSlowQueryThreshold option is configured: any
+// Postgres or MySQL statement taking at least this long is captured in
+// the container's own log stream, which
+// internal/api/database_slow_queries.go later parses back out
+// (internal/slowquery). 1000ms is a conventional slow-query default
+// (MySQL's own long_query_time default is 10s, but 1s surfaces enough to
+// be useful without logging every ordinary query on a busy database).
+const defaultSlowQueryThresholdMs = 1000
+
 // Store is the narrow surface this controller needs from
 // internal/store, so tests can fake it without a real database. *store.DB
 // satisfies this.
@@ -212,6 +222,10 @@ type Controller struct {
 	clickhouseCreds *ClickHouseCredentials
 	tls             *TLSMaterial
 	meshDNSAddr     string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	// slowQueryThresholdMs is 0 (the default) whenever WithSlowQueryThreshold
+	// isn't set, meaning "use defaultSlowQueryThresholdMs"; see
+	// effectiveSlowQueryThresholdMs.
+	slowQueryThresholdMs int
 }
 
 // Option configures optional Controller behavior.
@@ -286,6 +300,31 @@ func WithMeshDNSAddr(addr string) Option {
 	return func(c *Controller) { c.meshDNSAddr = addr }
 }
 
+// WithSlowQueryThreshold sets the Postgres log_min_duration_statement/
+// MySQL long_query_time threshold, in milliseconds, above which a
+// statement is captured in the container's own log stream. ms <= 0
+// leaves the field unset, so Reconcile falls back to
+// defaultSlowQueryThresholdMs; this mirrors every other WithX option's
+// "unset means the documented default" shape rather than requiring every
+// caller to know the default value itself. Only read by the Postgres and
+// MySQL cases in Reconcile.
+func WithSlowQueryThreshold(ms int) Option {
+	return func(c *Controller) {
+		if ms > 0 {
+			c.slowQueryThresholdMs = ms
+		}
+	}
+}
+
+// effectiveSlowQueryThresholdMs returns the configured threshold, or
+// defaultSlowQueryThresholdMs when none was set.
+func (c *Controller) effectiveSlowQueryThresholdMs() int {
+	if c.slowQueryThresholdMs > 0 {
+		return c.slowQueryThresholdMs
+	}
+	return defaultSlowQueryThresholdMs
+}
+
 // New builds a Controller for dbName.
 func New(dbName string, dbStore Store, runtime docker.Runtime, opts ...Option) *Controller {
 	ctrl := &Controller{
@@ -343,7 +382,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"POSTGRES_USER":     c.postgresCreds.Username,
 			"POSTGRES_PASSWORD": c.postgresCreds.Password,
 		}
-		command := postgresCommand(c.tls, desired.PITREnabled)
+		command := postgresCommand(c.tls, c.effectiveSlowQueryThresholdMs(), desired.PITREnabled)
 		return c.reconcileEngine(ctx, desired, env, command, postgresDataPath, postgresContainerPort, c.tls)
 
 	case store.EngineMySQL:
@@ -365,7 +404,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MYSQL_USER":          c.mysqlCreds.Username,
 			"MYSQL_PASSWORD":      c.mysqlCreds.Password,
 		}
-		return c.reconcileEngine(ctx, desired, env, nil, mysqlDataPath, mysqlContainerPort, nil)
+		command := mysqlCommand(c.effectiveSlowQueryThresholdMs())
+		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, nil)
 
 	case store.EngineMongoDB:
 		if c.mongoCreds == nil {
@@ -754,13 +794,12 @@ var dockerImageMapping = map[string]string{
 }
 
 // postgresCommand overrides the postgres image's default CMD ("postgres"
-// with no args) via -c flags rather than a mounted postgresql.conf,
-// whenever TLS or PITR (or both) need non-default settings: the
-// entrypoint script only runs its full initialization path when it
-// recognizes the first argument as "postgres", which every branch below
-// preserves. nil (the image's own unmodified default) when neither is
-// configured, byte-identical to every Postgres database before PITR
-// existed and before TLS supported this engine.
+// with no args) to always set log_min_duration_statement (see
+// internal/slowquery's package doc comment for what reads these lines
+// back out), plus TLS and PITR via -c flags rather than a mounted
+// postgresql.conf when applicable: the entrypoint script only runs its
+// full initialization path when it recognizes the first argument as
+// "postgres", which every branch below preserves.
 //
 // archive_timeout=60 forces even an idle database to archive its current
 // WAL segment at least once a minute: without it, a database that goes
@@ -770,11 +809,11 @@ var dockerImageMapping = map[string]string{
 // ContainerBaseBackuper.RecoverableWindowEnd, which forces its own
 // pg_switch_wal on demand) the only thing keeping it current rather than
 // archiving progressing on its own between restore attempts.
-func postgresCommand(tls *TLSMaterial, pitrEnabled bool) []string {
-	if tls == nil && !pitrEnabled {
-		return nil
+func postgresCommand(tls *TLSMaterial, slowQueryThresholdMs int, pitrEnabled bool) []string {
+	command := []string{
+		"postgres",
+		"-c", "log_min_duration_statement=" + strconv.Itoa(slowQueryThresholdMs),
 	}
-	command := []string{"postgres"}
 	if tls != nil {
 		command = append(command,
 			"-c", "ssl=on",
@@ -791,6 +830,29 @@ func postgresCommand(tls *TLSMaterial, pitrEnabled bool) []string {
 		)
 	}
 	return command
+}
+
+// MySQLSlowQueryLogPath is where mysqlCommand directs the slow query log
+// inside the container's own writable data directory. Not the
+// container's stdout/stderr: MySQL 8's FILE log sink cannot reliably
+// open /dev/stderr (confirmed against a real container: "Could not use
+// /dev/stderr for logging, error 2"), so internal/api's slow-queries
+// handler execs into the container to read this file directly instead
+// of going through the Docker log stream database_logs.go uses.
+const MySQLSlowQueryLogPath = "/var/lib/mysql/slow-query.log"
+
+// mysqlCommand overrides the mysql image's default CMD to enable the
+// slow query log at MySQLSlowQueryLogPath; internal/slowquery's
+// ParseMySQL reads it back out. long-query-time is MySQL's own flag
+// name and takes seconds as a float, so thresholdMs is converted here.
+func mysqlCommand(thresholdMs int) []string {
+	longQueryTimeSec := strconv.FormatFloat(float64(thresholdMs)/1000, 'f', -1, 64)
+	return []string{
+		"--slow-query-log=1",
+		"--long-query-time=" + longQueryTimeSec,
+		"--slow-query-log-file=" + MySQLSlowQueryLogPath,
+		"--log-output=FILE",
+	}
 }
 
 // redisCommandAndPort returns Redis's own container command and the port

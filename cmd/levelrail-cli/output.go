@@ -562,6 +562,29 @@ func printMetricPointsHuman(out io.Writer, metric string, points []metricPointRe
 	_ = tw.Flush()
 }
 
+// printSlowQueryEntriesHuman prints "databases slow-queries" output: one
+// row per entry, already sorted by duration descending (the server's own
+// order), truncating a long query to keep the table readable; --output
+// json/--query is how a caller gets the untruncated text.
+func printSlowQueryEntriesHuman(out io.Writer, entries []slowQueryEntryResource, total int) {
+	if len(entries) == 0 {
+		_, _ = fmt.Fprintln(out, "no slow query entries in range")
+		return
+	}
+	_, _ = fmt.Fprintf(out, "showing %d of %d\n", len(entries), total)
+	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "TIMESTAMP\tDURATION_MS\tROWS_EXAMINED\tQUERY")
+	for _, e := range entries {
+		query := e.Query
+		const maxQueryLen = 80
+		if len(query) > maxQueryLen {
+			query = query[:maxQueryLen] + "..."
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\n", e.Timestamp.Format(time.RFC3339), strconv.FormatFloat(e.DurationMs, 'f', -1, 64), e.RowsExamined, query)
+	}
+	_ = tw.Flush()
+}
+
 // printAppHookRunsHuman prints "apps hook-runs" output: each configured
 // hook's most recent outcome, including its output, or a plain "never
 // run" line when a hook type has no recorded run yet.
