@@ -84,7 +84,7 @@ export function ServerCheckStep({ onContinue, pending }: StepProps) {
         <div>
           <p className="text-xs text-muted-foreground">
             {warnings === 0
-              ? `All ${sorted.length} checks look good.`
+              ? `No failures or warnings across ${sorted.length} checks.`
               : `${warnings} of ${sorted.length} checks need attention.`}
           </p>
           <div className="divide-y divide-border">

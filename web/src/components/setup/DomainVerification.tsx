@@ -5,6 +5,7 @@ import {
 import { Button } from '@/components/ui/button'
 import type { DomainProgress } from '../../lib/setupWizard'
 import { CopyValue, SubStepRow } from './StepChrome'
+import { DashboardUrlAction } from './DashboardUrlAction'
 
 /** DomainVerification shows the DNS record to create and the live DNS and HTTPS sub-steps. */
 export function DomainVerification({
@@ -103,6 +104,9 @@ export function DomainVerification({
             Open {httpsUrl}
             <ArrowSquareOutIcon />
           </Button>
+          <div className="w-full">
+            <DashboardUrlAction httpsUrl={httpsUrl} />
+          </div>
         </div>
       ) : null}
     </div>
