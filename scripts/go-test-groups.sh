@@ -28,13 +28,13 @@ uses_docker() {
 
 go list -f '{{.ImportPath}} {{.Dir}}' ./... | while read -r pkg dir; do
 	if [ "$pkg" = "$api_pkg" ]; then
-		[ "$group" = "api" ] && echo "$pkg"
+		if [ "$group" = "api" ]; then echo "$pkg"; fi
 		continue
 	fi
 	case "$group" in
 	api) ;;
-	docker) uses_docker "$dir" && echo "$pkg" ;;
-	rest) uses_docker "$dir" || echo "$pkg" ;;
+	docker) if uses_docker "$dir"; then echo "$pkg"; fi ;;
+	rest) if ! uses_docker "$dir"; then echo "$pkg"; fi ;;
 	*)
 		echo "unknown group: $group" >&2
 		exit 2
