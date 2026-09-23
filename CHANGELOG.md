@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.0-beta.13](https://github.com/glincker/levelrail/compare/v0.2.0-beta.12...v0.2.0-beta.13) (2026-09-23)
+
+
+### Features
+
+* branch-scoped env var overrides for preview deploys ([#632](https://github.com/glincker/levelrail/issues/632)) ([2c9930b](https://github.com/glincker/levelrail/commit/2c9930baa02b43d7afd733767c20a4bb335becf0))
+* per-app integrations catalog (PostHog, Sentry, Datadog, and more) ([#647](https://github.com/glincker/levelrail/issues/647)) ([ae6ffdd](https://github.com/glincker/levelrail/commit/ae6ffddfd238a670913f21ae0c6483f25e93b3b8))
+* pre-flight framework detection and live deploy step feed ([#648](https://github.com/glincker/levelrail/issues/648)) ([9f01182](https://github.com/glincker/levelrail/commit/9f011820df1559a0dbe19010a9c11168832cb87f))
+
 ## [0.2.0-beta.12](https://github.com/glincker/levelrail/compare/v0.2.0-beta.11...v0.2.0-beta.12) (2026-09-23)
 
 
