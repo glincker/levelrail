@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0-beta.9](https://github.com/glincker/levelrail/compare/v0.2.0-beta.8...v0.2.0-beta.9) (2026-09-23)
+
+
+### Bug Fixes
+
+* bundle docs/ into the web build stage of the Docker image ([#611](https://github.com/glincker/levelrail/issues/611)) ([1a1347e](https://github.com/glincker/levelrail/commit/1a1347e956cd54f7bce3a2e05e0d82dd76eda9eb))
+
 ## [0.2.0-beta.8](https://github.com/glincker/levelrail/compare/v0.2.0-beta.7...v0.2.0-beta.8) (2026-09-23)
 
 
