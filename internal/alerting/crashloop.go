@@ -26,6 +26,17 @@ type ServiceLister interface {
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 }
 
+// RestartRecorder is the narrow telemetry surface RestartTracker needs
+// to persist each real restart it counts as a queryable metric sample,
+// alongside this tracker's own in-memory crashloop-window bookkeeping.
+// *telemetry.DB satisfies this structurally. Not imported directly
+// (internal/telemetry does not depend on internal/alerting, and this
+// keeps it that way): the same narrow, consumer-defined interface shape
+// EventSource and ServiceLister above already use.
+type RestartRecorder interface {
+	RecordContainerRestart(ctx context.Context, serviceName string, at time.Time) error
+}
+
 const containerHashLen = 8
 
 // RestartTracker watches Docker's event stream and records each "start"
@@ -49,9 +60,15 @@ type RestartTracker struct {
 	mu       sync.Mutex
 	restarts map[string][]time.Time // resourceID -> restart timestamps, oldest first
 	seen     map[string]bool        // container names whose first start has already been observed
+	recorder RestartRecorder        // optional: persists each restart as a metric sample, nil in every existing test in this package
+	logger   *slog.Logger
 }
 
-// NewRestartTracker builds an empty RestartTracker.
+// NewRestartTracker builds an empty RestartTracker with no persistence:
+// Observe only updates this tracker's own in-memory crashloop-window
+// state, the behavior every test in this package already exercises.
+// Call WithRecorder to also persist each real restart as a queryable
+// metric sample.
 func NewRestartTracker() *RestartTracker {
 	return &RestartTracker{
 		restarts: make(map[string][]time.Time),
@@ -59,16 +76,54 @@ func NewRestartTracker() *RestartTracker {
 	}
 }
 
+// WithRecorder attaches recorder so every restart Observe counts from
+// here on is also persisted via RecordContainerRestart, not just kept
+// in this tracker's own pruned in-memory window. Returns t for chaining
+// at construction (cmd/levelrail/main.go's own call site style). logger
+// defaults to slog.Default() if nil, and is only ever used to log a
+// failed persistence write, never to block or fail Observe itself: a
+// telemetry write failing must not stop crashloop detection, the same
+// "one broken part must not stop the rest" principle
+// telemetry.Collector.CollectOnce's own doc comment already applies to
+// collection.
+func (t *RestartTracker) WithRecorder(recorder RestartRecorder, logger *slog.Logger) *RestartTracker {
+	if logger == nil {
+		logger = slog.Default()
+	}
+	t.recorder = recorder
+	t.logger = logger
+	return t
+}
+
 // Observe records one "start" event for containerName, owned by
-// resourceID, at time at. Safe for concurrent use.
+// resourceID, at time at. Safe for concurrent use. When a recorder is
+// attached (WithRecorder), a genuine restart (not a container's first
+// observed start) is also persisted as a MetricContainerRestartCount
+// sample; a failed persistence write is logged and otherwise ignored,
+// this tracker's own in-memory count is still updated either way.
 func (t *RestartTracker) Observe(resourceID, containerName string, at time.Time) {
 	t.mu.Lock()
-	defer t.mu.Unlock()
 	if !t.seen[containerName] {
 		t.seen[containerName] = true
+		t.mu.Unlock()
 		return
 	}
 	t.restarts[resourceID] = append(t.restarts[resourceID], at)
+	recorder := t.recorder
+	logger := t.logger
+	t.mu.Unlock()
+
+	if recorder == nil {
+		return
+	}
+	serviceName, ok := strings.CutPrefix(resourceID, "service:")
+	if !ok || serviceName == "" {
+		return
+	}
+	if err := recorder.RecordContainerRestart(context.Background(), serviceName, at); err != nil {
+		logger.Error("alerting: crashloop: record restart metric failed",
+			slog.String("error", err.Error()), slog.String("resource_id", resourceID))
+	}
 }
 
 // CountSince returns how many restarts resourceID has had strictly

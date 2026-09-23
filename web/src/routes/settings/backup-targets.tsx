@@ -50,7 +50,10 @@ function BackupTargetsPage() {
         </div>
         <CreateBackupTargetDialog />
       </div>
-      <BackupTargetTable targets={targets} />
+      <BackupTargetTable
+        targets={targets}
+        action={<CreateBackupTargetDialog />}
+      />
     </div>
   )
 }
@@ -61,9 +64,7 @@ function BackupTargetsPage() {
 function BackupTargetsPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">
-        Backup targets
-      </h1>
+      <h1 className="text-lg font-semibold text-foreground">Backup targets</h1>
       <TableSkeleton columnCount={6} />
     </div>
   )

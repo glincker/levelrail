@@ -181,6 +181,16 @@ type Router struct {
 	// place that enables it for the real running control plane, via
 	// WithAPIRateLimit.
 	apiRateLimit *apiRateLimit
+	// webhookRateLimit throttles POST /api/v1/webhooks/github/{name}
+	// (git_webhook.go), keyed per (client IP, app name) rather than
+	// apiRateLimit's per-actor keying: that route is deliberately
+	// unauthenticated (no session, token, or ability to key on), so IP
+	// alone would let one abusive client exhaust every app's webhook
+	// budget from a single source, and app name alone would let an
+	// attacker spread requests across source IPs to dodge the limit.
+	// nil is valid, the same "unset means unthrottled" shape apiRateLimit
+	// above establishes. Set via WithWebhookRateLimit.
+	webhookRateLimit *apiRateLimiter
 	// fetchLatestRelease is handleGetUpdates' GitHub Releases lookup;
 	// always non-nil, defaulted to defaultFetchLatestRelease in
 	// NewRouter, overridable in tests the same way lookupHost is above.

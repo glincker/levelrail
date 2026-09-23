@@ -257,6 +257,12 @@ This route is deliberately unauthenticated in the `requireAbility` sense. No pro
 | GitLab | Secret sent verbatim, header: `X-Gitlab-Token`, checked with constant-time comparison |
 | Gitea | HMAC-SHA256, verified via the same `X-Hub-Signature-256` GitHub uses (Gitea sends it for GitHub compatibility alongside its own bare-hex `X-Gitea-Signature`, which this platform doesn't read) |
 
+### Rate limiting
+
+Because this route is unauthenticated, it accepts requests from any client, including ones that never produce a valid signature. Each request is rate limited per (client IP, app name) before the git source lookup, secret resolution, or delivery history write run, so an abusive or misconfigured client is rejected cheaply instead of burning that work on every attempt.
+
+The budget is `APP_WEBHOOK_RATE_LIMIT_RPM` requests per minute (default `60`, i.e. 1/s), refilled continuously rather than reset on a fixed window, so a legitimate burst (several pushes fired back to back, a force-push retry, a bulk tag operation) never trips it. A request over budget gets `429 Too Many Requests` with a `Retry-After` header. Set `APP_WEBHOOK_RATE_LIMIT_RPM=0` to disable the limit.
+
 ### Event routing
 
 **Push events:** Accepted (`200`) but ignored if the ref doesn't match the git source's trigger mode (branch or tag, see below). Rejected refs return early, not processed.

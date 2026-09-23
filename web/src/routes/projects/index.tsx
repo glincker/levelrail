@@ -9,6 +9,7 @@ import {
   RowSkeleton,
 } from '../../components/ProjectRow'
 import { CreateProjectDialog } from '../../components/CreateProjectDialog'
+import { EmptyState } from '../../components/ui/empty-state'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useProjects() (suspense), mirroring routes/nodes/index.tsx
@@ -70,21 +71,12 @@ function ProjectListPage() {
         </div>
       </div>
       {projects.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
-          <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <FolderIcon className="size-5" aria-hidden="true" />
-          </span>
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">
-              No projects yet
-            </p>
-            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-              Group a web app with its database and cache under one project for
-              organization. Nothing about how they run changes.
-            </p>
-          </div>
-          <CreateProjectDialog />
-        </div>
+        <EmptyState
+          icon={<FolderIcon className="size-5" />}
+          title="No projects yet"
+          description="Group a web app with its database and cache under one project for organization. Nothing about how they run changes."
+          action={<CreateProjectDialog />}
+        />
       ) : (
         <div
           ref={parentRef}

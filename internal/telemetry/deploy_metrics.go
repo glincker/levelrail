@@ -25,6 +25,21 @@ const (
 	// seconds, taken directly from build.Result.Duration rather than
 	// re-measured here.
 	MetricBuildDuration = "build_duration_seconds"
+	// MetricContainerRestartCount is one sample per real container
+	// restart (RecordContainerRestart), always Value 1, the same
+	// "raw sample count is the metric" shape MetricDeployCount already
+	// establishes above. Deliberately not sourced from Docker's own
+	// container-inspect RestartCount field: every levelrail-managed
+	// container is created with its restart policy disabled
+	// (internal/docker's buildHostConfig), the reconciler alone decides
+	// whether a dead container comes back, so Docker's own counter never
+	// moves and would only ever read 0. The real signal already exists
+	// in this codebase: internal/alerting.RestartTracker watches
+	// Docker's event stream and counts each "start" after a container's
+	// first as a restart, exactly what crashloop detection already
+	// treats as ground truth; this just persists that same signal as a
+	// queryable metric instead of keeping it in-memory only.
+	MetricContainerRestartCount = "container_restart_count"
 )
 
 // RecordDeploy writes one MetricDeployCount sample for serviceName at at.
@@ -50,5 +65,19 @@ func (db *DB) RecordBuildDuration(ctx context.Context, serviceName string, d tim
 		Metric:     MetricBuildDuration,
 		Timestamp:  at,
 		Value:      d.Seconds(),
+	}})
+}
+
+// RecordContainerRestart writes one MetricContainerRestartCount sample
+// for serviceName at at. Callers must call this only for a genuine
+// restart of an already-started container (alerting.RestartTracker's
+// own "not the container's first start" definition), not for a fresh
+// deploy's first start.
+func (db *DB) RecordContainerRestart(ctx context.Context, serviceName string, at time.Time) error {
+	return db.WriteSamples(ctx, []Sample{{
+		ResourceID: "service:" + serviceName,
+		Metric:     MetricContainerRestartCount,
+		Timestamp:  at,
+		Value:      1,
 	}})
 }

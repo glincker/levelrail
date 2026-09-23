@@ -22,14 +22,26 @@ import {
 // Per-app metrics dashboard, wired against the real
 // `GET /api/v1/apps/{name}/metrics`. One remaining honest gap against
 // the full per-app metrics list the observability phase requires
-// without configuration, deliberately not papered over: only the 7
+// without configuration, deliberately not papered over: only the 9
 // metrics MetricName covers (types/metrics.ts) are actually collected
-// today. Request rate, response time percentiles, error rate, container
-// restart count, and build duration are required per-app metrics but
-// have no collector behind them yet (see types/metrics.ts's comment for
-// exactly why each is missing). NOT_YET_COLLECTED below renders that
-// list as a plain, clearly labeled gap, not as empty or fabricated
-// charts.
+// today. Request rate, response time percentiles, and error rate are
+// required per-app metrics but have no collector behind them yet (see
+// types/metrics.ts's comment for exactly why). NOT_YET_COLLECTED below
+// renders that remaining list as a plain, clearly labeled gap, not as
+// empty or fabricated charts.
+//
+// Container restart count is real but deliberately not a CHART_GROUPS
+// line chart: internal/telemetry.MetricContainerRestartCount is one
+// sample per real restart (Value always 1, the same discrete-event
+// shape as deploy_count), so a line chart of it would just be a flat
+// row of 1s, not a trend worth plotting. restartCountLabel below reads
+// the same way deployMarkers.length already does for deploy frequency:
+// the number of samples in the visible range *is* the restart count for
+// that range, shown as a stat next to deploy frequency, not a chart.
+//
+// Build duration (build_duration_seconds) is the opposite case: each
+// sample's Value is a real, varying number (one build's wall-clock
+// duration), so it renders as a normal CHART_GROUPS line chart below.
 //
 // "Deploy markers overlaid on metric charts" (Phase 2's own framing:
 // the feature that makes "which deploy caused this" a visual question
@@ -65,8 +77,6 @@ const NOT_YET_COLLECTED = [
   'Request rate',
   'Response time percentiles',
   'Error rate',
-  'Container restart count',
-  'Build duration',
 ]
 
 interface SeriesConfig {
@@ -124,6 +134,15 @@ const CHART_GROUPS: ChartGroupConfig[] = [
       metric: 'disk_write_bytes',
       label: 'Write',
       color: '#a855f7',
+    },
+  },
+  {
+    title: 'Build duration',
+    unit: 'seconds',
+    primary: {
+      metric: 'build_duration_seconds',
+      label: 'Duration',
+      color: '#0ea5e9',
     },
   },
 ]
@@ -254,6 +273,18 @@ export function MetricsDashboard({
     () => resolveDeployMarkers(deployAttempts, range),
     [deployAttempts, range],
   )
+  // Restart count for this range is just "how many samples landed":
+  // internal/telemetry.MetricContainerRestartCount writes exactly one
+  // sample per real restart (this file's own header comment explains
+  // why that's a stat, not a chart), the same "raw sample count is the
+  // metric" reading deployMarkers.length already relies on for deploy
+  // frequency above.
+  const restartCountQuery = useMetricSeries(
+    appName,
+    'container_restart_count',
+    range,
+  )
+  const restartCount = restartCountQuery.data?.points.length ?? null
 
   return (
     <section className="rounded-lg border border-border p-4">
@@ -271,6 +302,9 @@ export function MetricsDashboard({
             {deployMarkers.length} in this range.
             {deployMarkers.length > 0
               ? ' Dashed lines mark real deploy attempts (green succeeded, red failed, gray running); hover a marker for its image tag and start time.'
+              : ''}{' '}
+            {restartCount !== null
+              ? `Restarts: ${restartCount} in this range.`
               : ''}
           </p>
         </div>

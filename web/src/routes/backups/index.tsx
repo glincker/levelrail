@@ -107,6 +107,18 @@ function KindBadge({ backup }: { backup: BackupHistoryRecord }) {
   )
 }
 
+// Whether the empty-state's prerequisite branch ("add a backup target
+// first") should show: only once the optional targets query has
+// actually resolved, since it reports [] while still loading regardless
+// of what's really configured, and that must not flash the prerequisite
+// message ahead of a real answer.
+export function shouldPromptForBackupTarget(
+  targetsLoading: boolean,
+  targetCount: number,
+): boolean {
+  return !targetsLoading && targetCount === 0
+}
+
 function AllBackupsPage() {
   const { data: initial } = useSuspenseQuery(allBackupHistoryQueryOptions())
   const [history, setHistory] = useState<BackupHistoryRecord[]>(initial)
@@ -117,6 +129,10 @@ function AllBackupsPage() {
   )
   const targetsQuery = useBackupTargetsOptional()
   const targets = targetsQuery.data ?? []
+  const noBackupTarget = shouldPromptForBackupTarget(
+    targetsQuery.isLoading,
+    targets.length,
+  )
   const targetName = (targetId: string) =>
     targets.find((t) => t.id === targetId)?.name ?? 'Deleted target'
 
@@ -157,11 +173,28 @@ function AllBackupsPage() {
       </div>
 
       {history.length === 0 ? (
-        <EmptyState
-          icon={<CloudArrowUpIcon className="size-5" />}
-          title="No backups yet"
-          description="No backups have been taken yet."
-        />
+        noBackupTarget ? (
+          <EmptyState
+            icon={<CloudArrowUpIcon className="size-5" />}
+            title="No backup target connected"
+            description="Backups need somewhere to store to. Connect an S3-compatible bucket, then schedule or trigger a backup from a database's own page."
+            action={
+              <Button
+                size="sm"
+                render={<Link to="/settings/backup-targets" />}
+                nativeButton={false}
+              >
+                Add a backup target
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={<CloudArrowUpIcon className="size-5" />}
+            title="No backups yet"
+            description="Backups will show up here once a schedule runs or you trigger one manually from a database's or app volume's own page."
+          />
+        )
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">
           <Table>
