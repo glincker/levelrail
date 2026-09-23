@@ -9,6 +9,8 @@ import (
 	"os"
 	"syscall"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/diskspace"
 )
 
 // Doctor check statuses. Warn never affects the response's overall OK
@@ -141,9 +143,9 @@ func (rt *Router) doctorCheckDiskSpace() doctorCheckResource {
 		threshold = defaultDoctorDiskWarningBytes
 	}
 	if freeBytes < threshold {
-		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusWarn, Message: fmt.Sprintf("%d bytes free, below the %d byte warning threshold", freeBytes, threshold)}
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusWarn, Message: fmt.Sprintf("%s free, below the %s warning threshold", diskspace.HumanBytes(freeBytes), diskspace.HumanBytes(threshold))}
 	}
-	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("%d bytes free", freeBytes)}
+	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("%s free", diskspace.HumanBytes(freeBytes))}
 }
 
 func (rt *Router) doctorCheckDataDirWritable() doctorCheckResource {
