@@ -258,6 +258,15 @@ const (
 	// compromised token hammering the API ever hits it.
 	defaultAPIRateLimitReadRPM  = 600
 	defaultAPIRateLimitWriteRPM = 120
+
+	// defaultWebhookRateLimitRPM is api.WithWebhookRateLimit's
+	// per-(client IP, app name) budget for POST
+	// /api/v1/webhooks/github/{name} when APP_WEBHOOK_RATE_LIMIT_RPM is
+	// unset (webhookRateLimitRPM below). 60/min (1/s) is far above any
+	// real git provider's delivery cadence, including a burst of tag
+	// pushes or a force-push retry storm against one app, so only a
+	// client deliberately hammering this unauthenticated route hits it.
+	defaultWebhookRateLimitRPM = 60
 )
 
 func main() {
@@ -1903,6 +1912,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
 		api.WithHSTS(hstsEnabled(logger)),
 		api.WithAPIRateLimit(apiRateLimitReadRPM(logger), apiRateLimitWriteRPM(logger)),
+		api.WithWebhookRateLimit(webhookRateLimitRPM(logger)),
 		api.WithDataDir(dataDir),
 		api.WithDockerPinger(client),
 		api.WithImageLister(client),
@@ -2773,6 +2783,18 @@ func apiRateLimitReadRPM(logger *slog.Logger) int {
 
 func apiRateLimitWriteRPM(logger *slog.Logger) int {
 	return apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_WRITE_RPM", defaultAPIRateLimitWriteRPM)
+}
+
+// webhookRateLimitRPM reads APP_WEBHOOK_RATE_LIMIT_RPM, the value
+// api.WithWebhookRateLimit configures for POST
+// /api/v1/webhooks/github/{name}, keyed per (client IP, app name) since
+// that route has no session, token, or other actor identity to key on.
+// defaultWebhookRateLimitRPM (60, 1/s) sits well above any real git
+// provider's push/release delivery cadence, including a force-push or
+// bulk-tag burst against one app, while still capping a client that
+// hammers this specific unauthenticated route.
+func webhookRateLimitRPM(logger *slog.Logger) int {
+	return apiRateLimitRPM(logger, "APP_WEBHOOK_RATE_LIMIT_RPM", defaultWebhookRateLimitRPM)
 }
 
 func apiRateLimitRPM(logger *slog.Logger, envVar string, fallback int) int {
