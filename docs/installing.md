@@ -97,7 +97,31 @@ Images available:
 - `ghcr.io/glincker/levelrail` (control plane)
 - `ghcr.io/glincker/levelrail-agent` (node agent)
 
-Both are published for `linux/amd64` and `linux/arm64` on every tagged release.
+Both are published for `linux/amd64` and `linux/arm64`, multi-arch, under three tag channels:
+
+| Tag | Built from | Stability |
+| --- | --- | --- |
+| `:latest`, `:vX.Y`, `:vX.Y.Z` | a non-prerelease tag (`v1.2.3`) | stable release |
+| `:beta` | a prerelease tag (`v1.2.3-beta.1`, `-rc.1`, etc.) | prerelease |
+| `:edge` | every push to `main` | unreleased, use for testing only |
+
+`:latest` and `:vX.Y` only ever move on a stable tag; `:beta` and `:edge` move continuously, so pin an exact `:vX.Y.Z` tag for anything you care about staying still.
+
+### Verifying image signatures
+
+Every image is signed keylessly with [cosign](https://docs.sigstore.dev/cosign/overview/) via GitHub Actions OIDC (no long-lived signing key), with an SBOM attached as a signed attestation. Verify a pulled image against this repository's release workflow:
+
+```bash
+cosign verify ghcr.io/glincker/levelrail:latest \
+  --certificate-identity-regexp 'https://github.com/glincker/levelrail/\.github/workflows/release\.yml@.*' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+Swap in `levelrail-agent` and any tag from the table above. To inspect the attached SBOM:
+
+```bash
+cosign download sbom ghcr.io/glincker/levelrail:latest
+```
 
 ::: tip
 `install.sh` remains the recommended path for a real single-node deployment since it also provisions Docker and a systemd unit for you. The Docker image is for operators who want Levelrail to fit into an existing container-only setup.

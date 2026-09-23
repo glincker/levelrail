@@ -42,4 +42,6 @@ COPY --from=build --chown=nonroot:nonroot /levelrail /app/levelrail
 COPY --from=build --chown=nonroot:nonroot /src/brand.yaml /app/brand.yaml
 COPY --from=build --chown=nonroot:nonroot /data/levelrail /var/lib/levelrail-data
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD ["/app/levelrail", "healthcheck"]
 ENTRYPOINT ["/app/levelrail"]

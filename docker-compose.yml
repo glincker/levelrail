@@ -1,0 +1,24 @@
+services:
+  levelrail:
+    image: ghcr.io/glincker/levelrail:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - levelrail-data:/var/lib/levelrail-data
+    group_add:
+      # Match your host's docker group GID: `getent group docker | cut -d: -f3`.
+      # Export DOCKER_GID with that value before running `docker compose up`,
+      # or set it in a .env file next to this compose file.
+      - "${DOCKER_GID:-999}"
+    environment:
+      APP_DATA_DIR: /var/lib/levelrail-data
+      # Optional: preset an admin account instead of the setup-token flow.
+      # APP_ADMIN_USERNAME: admin
+      # APP_ADMIN_PASSWORD: change-me
+
+volumes:
+  levelrail-data:
