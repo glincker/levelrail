@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -60,14 +61,26 @@ func NewLocalFederator(db *DB) *Federator {
 func (f *Federator) QueryMetrics(ctx context.Context, resourceID, metric string, from, to time.Time) ([]Sample, error) {
 	var all []Sample
 	var errs []error
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	wg.Add(len(f.metrics))
 	for _, src := range f.metrics {
-		got, err := src.Query(ctx, resourceID, metric, from, to)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		all = append(all, got...)
+		go func(s MetricsSource) {
+			defer wg.Done()
+			got, err := s.Query(ctx, resourceID, metric, from, to)
+
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				errs = append(errs, err)
+				return
+			}
+			all = append(all, got...)
+		}(src)
 	}
+	wg.Wait()
+
 	sort.Slice(all, func(i, j int) bool { return all[i].Timestamp.Before(all[j].Timestamp) })
 	return all, errors.Join(errs...)
 }
@@ -77,14 +90,26 @@ func (f *Federator) QueryMetrics(ctx context.Context, resourceID, metric string,
 func (f *Federator) QueryLogs(ctx context.Context, resourceID string, from, to time.Time, query string) ([]LogEntry, error) {
 	var all []LogEntry
 	var errs []error
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	wg.Add(len(f.logs))
 	for _, src := range f.logs {
-		got, err := src.QueryLogs(ctx, resourceID, from, to, query)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		all = append(all, got...)
+		go func(s LogsSource) {
+			defer wg.Done()
+			got, err := s.QueryLogs(ctx, resourceID, from, to, query)
+
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				errs = append(errs, err)
+				return
+			}
+			all = append(all, got...)
+		}(src)
 	}
+	wg.Wait()
+
 	sort.Slice(all, func(i, j int) bool { return all[i].Timestamp.Before(all[j].Timestamp) })
 	return all, errors.Join(errs...)
 }
@@ -98,18 +123,30 @@ func (f *Federator) QueryLogs(ctx context.Context, resourceID string, from, to t
 func (f *Federator) LatestByMetric(ctx context.Context, metric string) ([]Sample, error) {
 	latest := make(map[string]Sample)
 	var errs []error
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	wg.Add(len(f.metrics))
 	for _, src := range f.metrics {
-		got, err := src.LatestByMetric(ctx, metric)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		for _, s := range got {
-			if existing, ok := latest[s.ResourceID]; !ok || s.Timestamp.After(existing.Timestamp) {
-				latest[s.ResourceID] = s
+		go func(s MetricsSource) {
+			defer wg.Done()
+			got, err := s.LatestByMetric(ctx, metric)
+
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				errs = append(errs, err)
+				return
 			}
-		}
+			for _, s := range got {
+				if existing, ok := latest[s.ResourceID]; !ok || s.Timestamp.After(existing.Timestamp) {
+					latest[s.ResourceID] = s
+				}
+			}
+		}(src)
 	}
+	wg.Wait()
+
 	out := make([]Sample, 0, len(latest))
 	for _, s := range latest {
 		out = append(out, s)
