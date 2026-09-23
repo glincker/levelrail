@@ -73,13 +73,11 @@ func TestTemplates_MinimumCatalogSize(t *testing.T) {
 // could be confirmed for them; see the PR that converted the rest.
 var tcpOnlyTemplates = map[string]bool{
 	"libretranslate": true, // first boot downloads language models for many minutes
-	"keycloak":       true, // "start" without a hostname config exits before serving
 	"transmission":   true, // every HTTP path is behind the configured basic auth
 	"invoice-ninja":  true, // the :5 image serves php-fpm, its HTTP front is unverified
 	"grimmory":       true, // nightly image with no documented endpoint
 	"databasus":      true, // no documented health endpoint
 	"statusnook":     true, // no documented health endpoint
-	"vikunja":        true, // as shipped its sqlite file is not writable, so it exits on boot; fix the template first
 }
 
 func TestTemplates_HealthchecksBecomeActiveProbes(t *testing.T) {
