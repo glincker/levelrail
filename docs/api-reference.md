@@ -27,6 +27,7 @@ System endpoints for:
 | POST | /api/v1/system/master-key/rotate | AbilityRoot | handleRotateMasterKey |
 | GET | /api/v1/onboarding | AbilityRead | handleGetOnboardingState |
 | POST | /api/v1/onboarding/complete | AbilityWrite | handleCompleteOnboarding |
+| PUT | /api/v1/onboarding/progress | AbilityRoot | handleUpdateOnboardingProgress |
 | GET | /api/v1/updates | AbilityRead | handleGetUpdates |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth

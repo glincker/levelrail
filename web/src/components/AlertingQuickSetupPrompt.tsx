@@ -55,7 +55,7 @@ function writeDismissed(): void {
 
 // Dismissible dashboard nudge for the four platform-wide alert kinds
 // (cert_expiry, patch_status, node_disk_space, node_resource_usage),
-// none of which are seeded by default and none of which OnboardingFlow
+// none of which are seeded by default and none of which the setup wizard
 // ever mentions. Shown once at least one app exists rather than as an
 // onboarding step: a platform-wide rule still has to be created through
 // some app's own POST /api/v1/apps/{name}/alerts URL

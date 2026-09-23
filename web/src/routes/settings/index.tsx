@@ -21,6 +21,7 @@ import {
   PackageIcon,
   VaultIcon,
   RobotIcon,
+  SparkleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
@@ -165,6 +166,12 @@ const sections: SettingsSection[] = [
   {
     heading: 'Platform',
     cards: [
+      {
+        to: '/settings/setup-wizard',
+        icon: SparkleIcon,
+        title: 'Setup wizard',
+        description: 'Server checks, dashboard domain, git, and a first app.',
+      },
       {
         to: '/settings/general',
         icon: GearIcon,

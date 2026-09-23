@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { appListQueryOptions } from '../queries/apps'
 import { onboardingQueryOptions } from '../queries/onboarding'
+import { userListQueryOptions } from '../queries/users'
 import { DashboardOverview } from '../components/DashboardOverview'
 
 // Same loader/useSuspenseQuery split as routes/apps/index.tsx: the
@@ -14,6 +15,7 @@ export const Route = createFileRoute('/')({
     Promise.all([
       queryClient.ensureQueryData(appListQueryOptions()),
       queryClient.ensureQueryData(onboardingQueryOptions()),
+      queryClient.prefetchQuery(userListQueryOptions()),
     ]),
   component: DashboardPage,
   pendingComponent: DashboardPending,
@@ -22,9 +24,7 @@ export const Route = createFileRoute('/')({
 function DashboardPage() {
   const { data: apps } = useSuspenseQuery(appListQueryOptions())
   const { data: onboarding } = useSuspenseQuery(onboardingQueryOptions())
-  return (
-    <DashboardOverview apps={apps} onboardingCompleted={onboarding.completed} />
-  )
+  return <DashboardOverview apps={apps} onboarding={onboarding} />
 }
 
 function DashboardPending() {
