@@ -197,6 +197,14 @@ For `cpu_percent`, `memory_usage_bytes`, `network_rx_bytes`, `network_tx_bytes`,
 
 Databases placed on a node are excluded from the sum (only app services are included). Including them is separate future work.
 
+## Fleet-wide utilization
+
+```bash
+levelrail-cli nodes resource-usage
+```
+
+`GET /api/v1/nodes/resource-usage` is the fleet-wide counterpart to the per-node time series above: one snapshot with every node's latest CPU/memory/disk reading plus a rollup, read by the node list's CPU/Memory/Disk columns and the dashboard's fleet summary card. Same summed-not-host-read caveat for CPU/memory, same real-host-read caveat for disk (today, only ever populated for the node running the control plane). See `docs/observability.md`'s "Fleet utilization" section for the full response shape.
+
 ## OS patch status
 
 ```bash

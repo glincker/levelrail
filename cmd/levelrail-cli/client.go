@@ -231,6 +231,9 @@ type (
 
 	systemPruneResult = apiclient.SystemPruneResult
 
+	orphanedVolumeResource       = apiclient.OrphanedVolumeResource
+	cleanupOrphanedVolumesResult = apiclient.CleanupOrphanedVolumesResult
+
 	oauthProviderSettingsResource      = apiclient.OAuthProviderSettingsResource
 	updateOAuthProviderSettingsRequest = apiclient.UpdateOAuthProviderSettingsRequest
 	emailSettingsResource              = apiclient.EmailSettingsResource
@@ -259,6 +262,10 @@ type (
 	createTagRequest    = apiclient.CreateTagRequest
 	attachAppTagRequest = apiclient.AttachAppTagRequest
 	tagAppResource      = apiclient.TagAppResource
+
+	nodeResourceUsageResource  = apiclient.NodeResourceUsageResource
+	fleetResourceUsageRollup   = apiclient.FleetResourceUsageRollup
+	fleetResourceUsageResource = apiclient.FleetResourceUsageResource
 )
 
 // NewClient builds a Client, identifying every request as this CLI's own
