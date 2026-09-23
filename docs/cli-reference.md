@@ -895,6 +895,39 @@ levelrail containers [flags]
 
 :::
 
+::: details System Maintenance (fleet-wide cleanup, requires an admin/root-scoped token)
+
+### System Prune
+
+```
+levelrail system-prune [flags]
+```
+
+Removes every stopped container, dangling image, and unused anonymous
+volume or build cache not part of the reconciler's current desired
+state, fleet-wide. Never touches a named volume (an app's storage
+attachment, a database's data volume), even one that's actually
+orphaned: see Orphaned Volumes below for those.
+
+### Orphaned Volumes
+
+```
+levelrail volumes-orphaned [flags]
+levelrail volumes-orphaned-cleanup --names name1,name2 [flags]
+```
+
+Named Docker volumes (an app's storage attachment, a database's data
+volume) survive `system-prune` even after the app or database that
+created them is deleted, since Docker never removes a named volume on
+its own. `volumes-orphaned` lists every one this instance created that
+no current app, database, or storage attachment references any more.
+`volumes-orphaned-cleanup` removes exactly the volumes named with
+`--names` (comma-separated), after the control plane re-confirms each
+one is still genuinely orphaned; there is no flag that deletes every
+currently orphaned volume sight unseen, review the list first.
+
+:::
+
 ## Users
 
 ```

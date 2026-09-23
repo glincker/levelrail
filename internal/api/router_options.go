@@ -586,6 +586,14 @@ func WithDockerPruner(p DockerPruner) Option {
 	return func(rt *Router) { rt.dockerPruner = p }
 }
 
+// WithOrphanedVolumeManager enables GET /api/v1/system/volumes/orphaned
+// and POST /api/v1/system/volumes/orphaned/cleanup. Without one
+// configured (the default), both routes return 501, the same
+// "not configured" shape WithDockerPruner's absence produces.
+func WithOrphanedVolumeManager(m OrphanedVolumeManager) Option {
+	return func(rt *Router) { rt.orphanedVolumes = m }
+}
+
 // WithExecRuntime enables POST /apps/{name}/exec (exec.go's
 // handleExecApp). Without one configured (the default), that route
 // returns 501, the same "not configured" shape WithDockerPruner's
