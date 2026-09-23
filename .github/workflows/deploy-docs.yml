@@ -7,6 +7,10 @@ on:
     paths:
       - 'docs/**'
       - '.github/workflows/deploy-docs.yml'
+  # Releases made with GITHUB_TOKEN do not fire this; release.yml
+  # dispatches the workflow instead.
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -40,6 +44,8 @@ jobs:
 
       - name: Build
         working-directory: docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build
 
       - name: Upload artifact
