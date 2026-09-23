@@ -6,6 +6,9 @@ contact_links:
   - name: Discussions
     url: https://github.com/glincker/levelrail/discussions
     about: Ask questions, share ideas, discuss the roadmap.
+  - name: 💬 Ask a question on Discord
+    url: https://discord.gg/Ar5pcaZB99
+    about: Questions and help from the community in the #levelrail forum.
   - name: Documentation
     url: https://github.com/glincker/levelrail/tree/main/docs
     about: Getting started, architecture, app spec reference, roadmap.

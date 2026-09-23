@@ -11,6 +11,9 @@ architecture, especially around the reconciler, the agent transport, or
 the database schema, all of which have deliberate design constraints
 that aren't always obvious from the code alone.
 
+For quick questions before opening an issue, ask in the `#levelrail`
+forum on the [GLINR Discord](https://discord.gg/Ar5pcaZB99).
+
 ## Branches and commits
 
 - Branch names: `type/short-description`, e.g. `fix/rollback-image-gc`
