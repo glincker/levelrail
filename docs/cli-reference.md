@@ -43,6 +43,18 @@ levelrail apps auto-rollback status <app-name> [flags]
 ```
 
 ```
+levelrail apps health get <name> [flags]
+```
+
+```
+levelrail apps health set <name> --probe readiness|liveness (--path PATH | --exec CMD) [--scheme https] [--host HOST] [--tls-skip-verify] [--follow-redirects true|false] [--expected-status 200-399] [--interval 5s] [--timeout 2s] [--failures 3] [--ready-timeout 90s] [flags]
+```
+
+```
+levelrail apps health clear <name> [--probe readiness|liveness] [flags]
+```
+
+```
 levelrail apps builds trigger <name> --repo URL --ref REF [flags]
 ```
 build an image from a git source and deploy it to an existing app

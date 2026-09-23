@@ -68,3 +68,48 @@ func TestTemplates_MinimumCatalogSize(t *testing.T) {
 		t.Fatalf("got %d templates, want at least 12", len(Templates))
 	}
 }
+
+// tcpOnlyTemplates keep an inert TCP healthcheck because no active probe
+// could be confirmed for them; see the PR that converted the rest.
+var tcpOnlyTemplates = map[string]bool{
+	"libretranslate": true, // first boot downloads language models for many minutes
+	"keycloak":       true, // "start" without a hostname config exits before serving
+	"transmission":   true, // every HTTP path is behind the configured basic auth
+	"invoice-ninja":  true, // the :5 image serves php-fpm, its HTTP front is unverified
+	"grimmory":       true, // nightly image with no documented endpoint
+	"databasus":      true, // no documented health endpoint
+	"statusnook":     true, // no documented health endpoint
+	"vikunja":        true, // as shipped its sqlite file is not writable, so it exits on boot; fix the template first
+}
+
+func TestTemplates_HealthchecksBecomeActiveProbes(t *testing.T) {
+	for _, tpl := range Templates {
+		t.Run(tpl.ID, func(t *testing.T) {
+			f, err := compose.Parse([]byte(tpl.Compose))
+			if err != nil {
+				t.Fatalf("compose.Parse() error = %v", err)
+			}
+			services, warnings, err := compose.ToDesiredServices("test", f)
+			if err != nil {
+				t.Fatalf("compose.ToDesiredServices() error = %v", err)
+			}
+			if tcpOnlyTemplates[tpl.ID] {
+				if len(warnings) == 0 {
+					t.Errorf("listed as TCP-only but its healthcheck translated; drop it from tcpOnlyTemplates")
+				}
+				return
+			}
+			if len(warnings) != 0 {
+				t.Fatalf("healthcheck not translated into an active probe: %v", warnings)
+			}
+			for _, svc := range services {
+				if svc.Health == nil || svc.Health.Readiness == nil {
+					continue
+				}
+				if err := svc.Health.Readiness.ProbeConfig().Validate(); err != nil {
+					t.Errorf("service %q readiness probe invalid: %v", svc.Name, err)
+				}
+			}
+		})
+	}
+}

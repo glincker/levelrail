@@ -214,7 +214,7 @@ services:
 	}
 }
 
-func TestExpandBuildService_NonHTTPHealthcheck_LeavesHealthUnsetAndWarns(t *testing.T) {
+func TestExpandBuildService_NonHTTPHealthcheck_BecomesExecProbe(t *testing.T) {
 	sourceDir := t.TempDir()
 	writeComposeFile(t, sourceDir, "docker-compose.yml", `
 services:
@@ -229,11 +229,12 @@ services:
 	if err != nil {
 		t.Fatalf("ExpandBuildService() error = %v", err)
 	}
-	if out["cache"].Health != nil {
-		t.Errorf("cache.Health = %+v, want nil (no fabricated check)", out["cache"].Health)
+	h := out["cache"].Health
+	if h == nil || h.Readiness == nil || len(h.Readiness.Exec) != 2 || h.Readiness.Exec[0] != "redis-cli" {
+		t.Errorf("cache.Health = %+v, want an argv exec readiness probe", h)
 	}
-	if len(warnings) != 1 {
-		t.Fatalf("warnings = %v, want exactly one", warnings)
+	if len(warnings) != 0 {
+		t.Fatalf("warnings = %v, want none", warnings)
 	}
 }
 

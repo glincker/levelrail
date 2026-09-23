@@ -134,18 +134,55 @@ Exactly one of `name` or `hostPath` must be set:
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `readiness` | `Probe` | no | none | Checked before cutting traffic to a new container. |
+| `readiness` | `Probe` | no | none | Checked before cutting traffic to a new container. See [Health checks](#health-checks). |
 | `liveness` | `Probe` | no | none | Checked on a running container to detect a crashloop. |
 | `readyTimeout` | string | no | `60s` | Duration string matching `^[0-9]+(ms\|s\|m\|h)$`. How long a fresh deploy waits for `readiness` to pass before the deploy is marked `ReadinessFailed`. Raise this for a service with a genuinely slow cold start (JVM warm-up, a large migration, a slow external connection) instead of it being falsely flagged as failed; the platform still self-heals on the next resync once the container is actually healthy, but this avoids the false signal in the meantime. |
 
 ### `Probe`
 
+A probe is either an HTTP(S) request (set `path`) or a command run inside the container (set `exec`), never both.
+
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `path` | string | yes | none | HTTP path to check. |
-| `interval` | string | no | none | Duration string matching `^[0-9]+(ms\|s\|m\|h)$`, for example `5s`. |
-| `timeout` | string | no | none | Same duration pattern as `interval`. |
+| `path` | string | one of `path`/`exec` | none | HTTP path to request, starting with `/`. |
+| `scheme` | string | no | `http` | `http` or `https`. |
+| `host` | string | no | none | `Host` header to send, and the TLS server name for certificate verification. A bare hostname or `host:port`. |
+| `tls_skip_verify` | boolean | no | `false` | Accept any certificate. Only valid with `scheme: https`; meant for the self-signed certificates most images generate for themselves. Verification stays on unless this is set. |
+| `follow_redirects` | boolean | no | follow | `false` judges a 3xx response itself against `expected_status` instead of following it. Left unset, redirects are followed (up to `APP_PROBE_MAX_REDIRECTS`, default 10), which is how probes behaved before this field existed. |
+| `expected_status` | string, integer, or list | no | `200-299` | Accepted status codes: a code (`204`), a range (`200-399`), a comma-separated string (`"200,301-302"`), or a list (`[200, "301-302"]`). |
+| `exec` | string or list | one of `path`/`exec` | none | A string runs through `/bin/sh -c`; a list runs as argv (for images with no shell). Exit code 0 means healthy. Runs through the Docker Engine API, bounded by `timeout`; its output (capped at `APP_PROBE_EXEC_OUTPUT_BYTES`, default 512) shows up in the failure reason. A command that hangs past `timeout` is reported as failed, but Docker has no API to kill an exec'd process, so it keeps running inside the container. |
+| `interval` | string | no | `2s` (`APP_PROBE_DEFAULT_INTERVAL`) | Duration string matching `^[0-9]+(ms\|s\|m\|h)$`, for example `5s`. |
+| `timeout` | string | no | `2s` (`APP_PROBE_DEFAULT_TIMEOUT`) | Same duration pattern as `interval`. |
 | `failures` | integer | no | none | Minimum 1 if set. |
+
+### Health checks
+
+Readiness gates a deploy's cutover: the new container has to pass it before the old one is retired. Liveness runs on every reconcile pass against a running container and restarts it after `failures` consecutive failures. An HTTP probe needs a `port`; an exec probe does not, so a worker with nothing listening can still have one.
+
+```yaml
+health:
+  readiness:
+    path: /api/health
+    scheme: https
+    tls_skip_verify: true      # self-signed certificate inside the container
+    follow_redirects: false
+    expected_status: 200-399   # a login redirect counts as up
+  liveness:
+    exec: pg_isready -U app    # or [pg_isready, -U, app]
+    timeout: 5s
+    failures: 3
+```
+
+Every probe result lands in the app's `Ready` condition (reason `ReadinessFailed`, `RunningNotReady`, `LivenessDegraded`, and so on), and the message says exactly what failed, for example:
+
+- `GET https://127.0.0.1:32768/health returned 302 to /login; set follow_redirects or expected_status (currently 200-299)`
+- `GET https://127.0.0.1:32768/ : TLS verification failed: x509: certificate signed by unknown authority; set tls_skip_verify for a self-signed certificate`
+- `exec "redis-cli -p 6390 ping" exited 1: Could not connect to Redis at 127.0.0.1:6390: Connection refused`
+- `GET http://127.0.0.1:32768/healthz timed out after 2s`
+
+The same settings are editable in the dashboard (app, then Health), with `levelrail apps health set`, and through `PUT /api/v1/apps/{name}/health`.
+
+A Compose file's `healthcheck:` is translated into a readiness probe: a `curl`/`wget` command becomes an HTTP(S) probe that keeps the tool's own semantics (`curl -L` follows redirects, `curl -f` accepts any status below 400, `-k`/`--no-check-certificate` skip TLS verification), `start_period` widens the readiness budget, and any other command (`pg_isready`, `redis-cli ping`, `mysqladmin ping`) becomes an exec probe. A bare `/dev/tcp` connect check is not translated.
 
 ### `Resources`
 

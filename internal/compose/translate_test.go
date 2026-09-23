@@ -3,6 +3,7 @@ package compose
 import (
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -215,13 +216,14 @@ services:
 	if health == nil || health.Readiness == nil {
 		t.Fatal("Health.Readiness = nil, want a populated readiness probe")
 	}
-	want := store.ServiceProbe{Path: "/health", Interval: 15 * time.Second, Timeout: 3 * time.Second, Failures: 2}
+	noFollow := false
+	want := store.ServiceProbe{Path: "/health", FollowRedirects: &noFollow, ExpectedStatus: "200-399", Interval: 15 * time.Second, Timeout: 3 * time.Second, Failures: 2}
 	if !reflect.DeepEqual(*health.Readiness, want) {
 		t.Errorf("Health.Readiness = %+v, want %+v", *health.Readiness, want)
 	}
 }
 
-func TestToDesiredServices_NonHTTPHealthcheck_LeavesHealthUnsetAndWarns(t *testing.T) {
+func TestToDesiredServices_NonHTTPHealthcheck_BecomesExecProbe(t *testing.T) {
 	f, err := Parse([]byte(`
 services:
   db:
@@ -236,8 +238,31 @@ services:
 	if err != nil {
 		t.Fatalf("ToDesiredServices() error = %v", err)
 	}
+	if len(got) != 1 || got[0].Health == nil || strings.Join(got[0].Health.Readiness.Exec, "|") != "/bin/sh|-c|pg_isready -U postgres" {
+		t.Errorf("got[0].Health = %+v, want an exec readiness probe", got[0].Health)
+	}
+	if len(warnings) != 0 {
+		t.Fatalf("warnings = %v, want none", warnings)
+	}
+}
+
+func TestToDesiredServices_TCPOnlyHealthcheck_LeavesHealthUnsetAndWarns(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  web:
+    image: nginx
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	got, warnings, err := ToDesiredServices("myapp", f)
+	if err != nil {
+		t.Fatalf("ToDesiredServices() error = %v", err)
+	}
 	if len(got) != 1 || got[0].Health != nil {
-		t.Errorf("got[0].Health = %+v, want nil (no fabricated check)", got[0].Health)
+		t.Errorf("got[0].Health = %+v, want nil", got[0].Health)
 	}
 	if len(warnings) != 1 {
 		t.Fatalf("warnings = %v, want exactly one", warnings)
