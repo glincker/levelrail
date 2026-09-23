@@ -18,7 +18,8 @@ Credentials for backup targets and registry integrations follow the same write-o
 
 ## Sessions and tokens
 
-- **Session cookies** are set `Secure`, which means they only round-trip over HTTPS. Embedded Caddy is expected to terminate TLS in front of the control plane; hitting it directly over plain HTTP (common in local dev) means the cookie never comes back on the next request.
+- **Session cookies** are `HttpOnly`, `SameSite=Lax`, and `Secure` whenever the request arrived over HTTPS (directly or through the embedded Caddy ingress). Once an `https://` dashboard URL is set, sign-in over plain HTTP is refused (`APP_ALLOW_INSECURE_LOGIN=true` is the recovery escape hatch).
+- **First admin** registration requires the one-time setup token from `<data dir>/setup-token`, so an exposed fresh install can't be claimed by a stranger.
 - **API tokens** are minted per-user, scoped by ability, and can be issued through a device-code flow for headless environments.
 - **Two-factor authentication (TOTP)** is available per user, with recovery codes for account lockout.
 

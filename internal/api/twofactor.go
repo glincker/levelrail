@@ -380,6 +380,9 @@ type twoFactorVerifyRequest struct {
 // rt.logins, since brute-forcing a 6-digit code after a correct
 // password is a distinct attack surface from password guessing.
 func (rt *Router) handleVerifyTwoFactor(w http.ResponseWriter, r *http.Request) {
+	if rt.refuseInsecureLogin(w, r) {
+		return
+	}
 	var req twoFactorVerifyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -433,7 +436,7 @@ func (rt *Router) handleVerifyTwoFactor(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	if err := rt.establishSession(r.Context(), w, *user); err != nil {
+	if err := rt.establishSession(w, r, *user); err != nil {
 		rt.logger.Error("api: 2fa verify: establish session failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return

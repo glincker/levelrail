@@ -20,6 +20,8 @@ import { CloudflareDnsCard } from '../../components/CloudflareDnsCard'
 import { Route53DnsCard } from '../../components/Route53DnsCard'
 import { IngressSettingsCard } from '../../components/IngressSettingsCard'
 import { Button } from '../../components/ui/button'
+import { DashboardUrlCard } from '../../components/DashboardUrlCard'
+import { dashboardUrlQueryOptions } from '../../queries/dashboardUrl'
 import { EmptyState } from '../../components/ui/empty-state'
 
 // Centralized domains page: every domain currently claimed by an app
@@ -40,6 +42,7 @@ export const Route = createFileRoute('/domains/')({
       queryClient.ensureQueryData(cloudflareDnsSettingsQueryOptions()),
       queryClient.ensureQueryData(route53DnsSettingsQueryOptions()),
       queryClient.ensureQueryData(appListQueryOptions()),
+      queryClient.ensureQueryData(dashboardUrlQueryOptions()),
     ]),
   component: DomainsPage,
   pendingComponent: DomainsPending,
@@ -110,6 +113,8 @@ function DomainsPage() {
             : undefined
         }
       />
+
+      <DashboardUrlCard />
 
       <CloudflareDnsCard settings={cloudflareDns} />
 

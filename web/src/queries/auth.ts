@@ -11,7 +11,11 @@
 // and both hooks do the same thing on success: record the username
 // locally (lib/authStore.ts) and navigate to /apps.
 
-import { useMutation } from '@tanstack/react-query'
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { setStoredUsername, clearStoredUsername } from '../lib/authStore'
@@ -106,20 +110,18 @@ export async function verifyTwoFactor(
   return (await res.json()) as AuthUser
 }
 
-// First-run counterpart to login: same request/response shape, but also
-// creates the single admin row (internal/api/auth.go's handleRegister)
-// and auto-logs-in on success, same as login. 409 means an admin already
-// exists; RegisterForm surfaces that distinctly and offers to switch to
-// the sign-in tab, per the task's explicit UX carve-out for that one
-// status code (401 stays deliberately generic, 409 does not).
+// First-run counterpart to login: creates the first admin and signs in.
+// The server requires the one-time setup token printed by the installer.
+// 409 means an admin already exists; RegisterForm offers to switch tabs.
 export async function register(
   username: string,
   password: string,
+  setupToken: string,
 ): Promise<AuthUser> {
   const res = await fetch('/api/v1/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, setup_token: setupToken }),
   })
   if (!res.ok) {
     await throwAuthError(res, `registration failed: ${res.status}`)
@@ -142,6 +144,34 @@ export async function logout(): Promise<void> {
 interface Credentials {
   username: string
   password: string
+}
+
+interface RegisterCredentials extends Credentials {
+  setupToken: string
+}
+
+export interface SetupStatus {
+  needs_setup: boolean
+}
+
+// GET /api/v1/auth/setup-status: public, true until the first admin exists.
+export async function fetchSetupStatus(): Promise<SetupStatus> {
+  const res = await fetch('/api/v1/auth/setup-status')
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `setup status failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as SetupStatus
+}
+
+export function setupStatusQueryOptions() {
+  return queryOptions({
+    queryKey: ['auth', 'setup-status'] as const,
+    queryFn: fetchSetupStatus,
+    staleTime: 30_000,
+  })
 }
 
 // Both hooks pin TError to ApiError (RateLimitError's base class) rather
@@ -181,9 +211,14 @@ export function useVerifyTwoFactor() {
 
 export function useRegister() {
   const navigate = useNavigate()
-  return useMutation<AuthUser, ApiError, Credentials>({
-    mutationFn: ({ username, password }) => register(username, password),
+  const queryClient = useQueryClient()
+  return useMutation<AuthUser, ApiError, RegisterCredentials>({
+    mutationFn: ({ username, password, setupToken }) =>
+      register(username, password, setupToken),
     onSuccess: (user) => {
+      queryClient.setQueryData(setupStatusQueryOptions().queryKey, {
+        needs_setup: false,
+      })
       setStoredUsername(user.username)
       void navigate({ to: '/' })
     },

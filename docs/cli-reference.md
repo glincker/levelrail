@@ -1042,6 +1042,16 @@ levelrail settings ingress get [flags]
 ```
 
 ```
+levelrail settings dashboard-url get [flags]
+```
+shows the public dashboard URL
+
+```
+levelrail settings dashboard-url set --url URL [flags]
+```
+sets it; once it is `https://`, sign-in over plain HTTP is refused (`--url ""` clears it)
+
+```
 levelrail settings oauth list [flags]
 ```
 show every OAuth sign-in provider's current settings

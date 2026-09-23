@@ -361,6 +361,8 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// draining already reserve AbilityRoot for.
 	mux.HandleFunc("GET /api/v1/settings/ingress", rt.requireAbility(AbilityRead, rt.handleGetIngressSettings))
 	mux.HandleFunc("PUT /api/v1/settings/ingress", rt.requireAbility(AbilityRoot, rt.handleUpdateIngressSettings))
+	mux.HandleFunc("GET /api/v1/settings/dashboard-url", rt.requireAbility(AbilityRead, rt.handleGetDashboardURL))
+	mux.HandleFunc("PUT /api/v1/settings/dashboard-url", rt.requireAbility(AbilityRoot, rt.handleUpdateDashboardURL))
 
 	// Platform-level DNS check (ingress_settings.go): runDomainCheck
 	// against the platform's own PrimaryDomain instead of a per-app one.

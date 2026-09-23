@@ -835,3 +835,8 @@ func WithAPIRateLimit(readPerMinute, writePerMinute int) Option {
 func WithWebhookRateLimit(perMinute int) Option {
 	return func(rt *Router) { rt.webhookRateLimit = newAPIRateLimiter(perMinute) }
 }
+
+// WithAllowInsecureLogin permits plain-HTTP sign-in even when an https dashboard URL is configured.
+func WithAllowInsecureLogin(allow bool) Option {
+	return func(rt *Router) { rt.allowInsecureLogin = allow }
+}

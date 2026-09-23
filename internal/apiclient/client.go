@@ -2837,6 +2837,27 @@ func (c *Client) UpdateIngressSettings(ctx context.Context, req IngressSettingsR
 	return out, err
 }
 
+// GetDashboardURL calls GET /api/v1/settings/dashboard-url.
+func (c *Client) GetDashboardURL(ctx context.Context) (DashboardURLResource, error) {
+	var out DashboardURLResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/dashboard-url", nil, &out)
+	return out, err
+}
+
+// UpdateDashboardURL calls PUT /api/v1/settings/dashboard-url.
+func (c *Client) UpdateDashboardURL(ctx context.Context, req DashboardURLResource) (DashboardURLResource, error) {
+	var out DashboardURLResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/dashboard-url", req, &out)
+	return out, err
+}
+
+// GetSetupStatus calls GET /api/v1/auth/setup-status.
+func (c *Client) GetSetupStatus(ctx context.Context) (SetupStatusResource, error) {
+	var out SetupStatusResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/auth/setup-status", nil, &out)
+	return out, err
+}
+
 // GetAIAssistantSettings calls GET /api/v1/settings/ai-assistant.
 func (c *Client) GetAIAssistantSettings(ctx context.Context) (AIAssistantSettingsResource, error) {
 	var out AIAssistantSettingsResource

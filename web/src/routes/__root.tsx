@@ -13,6 +13,7 @@ import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
 import { CommandPalette } from '../components/CommandPalette'
 import { DockerHealthBanner } from '../components/DockerHealthBanner'
+import { InsecureConnectionBanner } from '../components/InsecureConnectionBanner'
 import { NotificationBell } from '../components/NotificationBell'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -126,6 +127,7 @@ function AppShell() {
             <ThemeToggle />
           </div>
         </header>
+        <InsecureConnectionBanner />
         <DockerHealthBanner />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="mx-auto w-full max-w-6xl">

@@ -2342,6 +2342,16 @@ type IngressSettingsResource struct {
 	ACMEDirectoryURL string `json:"acme_directory_url,omitempty"`
 }
 
+// DashboardURLResource mirrors internal/api's dashboardURLResource (GET/PUT /api/v1/settings/dashboard-url).
+type DashboardURLResource struct {
+	DashboardURL string `json:"dashboard_url"`
+}
+
+// SetupStatusResource mirrors GET /api/v1/auth/setup-status.
+type SetupStatusResource struct {
+	NeedsSetup bool `json:"needs_setup"`
+}
+
 // AIAssistantSettingsResource mirrors internal/api's
 // aiAssistantSettingsResource (internal/api/ai_settings.go): the shape
 // of GET/PUT/DELETE /api/v1/settings/ai-assistant. Configured reports

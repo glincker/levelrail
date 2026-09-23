@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -58,18 +59,14 @@ func TestAuthLifecycle_Live(t *testing.T) {
 	db := openLiveStore(t)
 	b := &brand.Brand{Name: "Test Platform", BinaryName: "testplatform"}
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	router := api.NewRouter(logger, b, db)
+	dataDir := t.TempDir()
+	setupToken, _, err := api.EnsureSetupToken(context.Background(), db, dataDir)
+	if err != nil {
+		t.Fatalf("EnsureSetupToken() error = %v", err)
+	}
+	router := api.NewRouter(logger, b, db, api.WithDataDir(dataDir))
 
-	// httptest.NewTLSServer, deliberately not the plain-HTTP NewServer:
-	// handleLogin and handleRegister (internal/api/auth.go) set the
-	// session cookie with Secure: true unconditionally, and Go's
-	// net/http/cookiejar correctly refuses to attach a Secure cookie to a
-	// request over a plain http:// connection, exactly like a real
-	// browser would. A plain httptest.NewServer would silently defeat the
-	// point of this test: the jar would store the Set-Cookie from
-	// register/login but then never send it back, so every later
-	// "authenticated" request would 401 for a reason that has nothing to
-	// do with the auth logic actually under test.
+	// TLS so the jar sends the session cookie back: it is Secure over https.
 	server := httptest.NewTLSServer(router.Handler())
 	t.Cleanup(server.Close)
 	serverURL, err := url.Parse(server.URL)
@@ -88,7 +85,7 @@ func TestAuthLifecycle_Live(t *testing.T) {
 	// (handleRegister), not BootstrapAdmin's env-var shortcut.
 	clientA := newAuthClient(t, server)
 	status, body := requestJSON(t, clientA, http.MethodPost, server.URL+"/api/v1/auth/register",
-		`{"username":"`+username+`","password":"`+oldPassword+`"}`)
+		`{"username":"`+username+`","password":"`+oldPassword+`","setup_token":"`+setupToken+`"}`)
 	if status != http.StatusCreated {
 		t.Fatalf("register: status = %d, want %d, body = %s", status, http.StatusCreated, body)
 	}

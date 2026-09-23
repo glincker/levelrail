@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { useRegister } from '../queries/auth'
+import { useBrand } from '../hooks/useBrand'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import {
@@ -16,6 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 
 const registerSchema = z
   .object({
+    setupToken: z.string().trim().min(1, 'Setup token is required'),
     username: z.string().trim().min(1, 'Username is required'),
     // Mirrors internal/api/auth.go's minPasswordLength (8) exactly: this
     // is a client-side head start, not a substitute for the server's own
@@ -30,23 +32,26 @@ const registerSchema = z
 
 type RegisterFormValues = z.infer<typeof registerSchema>
 
-// First-run admin setup. There is deliberately no "does an admin already
-// exist" signal from the backend (deliberately kept out of scope to
-// avoid backend churn), so this form is reached by the operator
-// picking the "Set up admin account" tab themselves (routes/login.tsx),
-// not by any auto-detection. A 409 here means they picked wrong, an
-// admin already exists, so this is the one place (per the task's
-// explicit carve-out) that suggests switching tabs instead of just
-// showing the raw server error.
+// First-run admin setup. The setup token comes from the installer's
+// summary or the control plane's setup-token subcommand; a 409 means an
+// admin already exists, so this offers to switch to Sign in.
 export function RegisterForm({
   onSwitchToSignIn,
+  initialSetupToken = '',
 }: {
   onSwitchToSignIn: () => void
+  initialSetupToken?: string
 }) {
   const registerAdmin = useRegister()
+  const brand = useBrand()
   const { register, handleSubmit, formState } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { username: '', password: '', confirmPassword: '' },
+    defaultValues: {
+      setupToken: initialSetupToken,
+      username: '',
+      password: '',
+      confirmPassword: '',
+    },
   })
 
   const onSubmit = handleSubmit((values) => {
@@ -64,6 +69,28 @@ export function RegisterForm({
       className="mt-4 space-y-4"
     >
       <FieldGroup>
+        <Field data-invalid={formState.errors.setupToken ? true : undefined}>
+          <FieldLabel htmlFor="register-setup-token">Setup token</FieldLabel>
+          <Input
+            id="register-setup-token"
+            autoComplete="off"
+            spellCheck={false}
+            className="font-mono"
+            aria-invalid={!!formState.errors.setupToken}
+            {...register('setupToken')}
+          />
+          {formState.errors.setupToken ? (
+            <FieldError errors={[formState.errors.setupToken]} />
+          ) : (
+            <FieldDescription>
+              Printed at the end of the install. Run{' '}
+              <code className="font-mono">
+                sudo {brand.BinaryName} setup-token
+              </code>{' '}
+              on the server to see it again.
+            </FieldDescription>
+          )}
+        </Field>
         <Field data-invalid={formState.errors.username ? true : undefined}>
           <FieldLabel htmlFor="register-username">Username</FieldLabel>
           <Input

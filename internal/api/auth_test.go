@@ -334,9 +334,9 @@ func TestWithSessionTTL_DefaultsWhenUnset(t *testing.T) {
 }
 
 func TestHandleRegister_Success(t *testing.T) {
-	rt, db := newTestRouter(t)
+	rt, db, token := newSetupTestRouter(t)
 
-	body := `{"username":"admin","password":"a-real-password"}`
+	body := `{"username":"admin","password":"a-real-password","setup_token":"` + token + `"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader(body))
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, req)
@@ -397,9 +397,9 @@ func TestHandleRegister_AlreadyBootstrapped_Conflict(t *testing.T) {
 }
 
 func TestHandleRegister_ShortPasswordRejected(t *testing.T) {
-	rt, db := newTestRouter(t)
+	rt, db, token := newSetupTestRouter(t)
 
-	body := `{"username":"admin","password":"short"}`
+	body := `{"username":"admin","password":"short","setup_token":"` + token + `"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader(body))
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, req)
@@ -436,7 +436,7 @@ func TestHandleRegister_ConcurrentRequests_OnlyOneWins(t *testing.T) {
 	// Guards the race a route-only "does an admin exist" check would
 	// leave open: the mutation itself must be the thing that decides,
 	// not a check performed earlier and trusted.
-	rt, db := newTestRouter(t)
+	rt, db, token := newSetupTestRouter(t)
 
 	const n = 10
 	results := make(chan int, n)
@@ -445,7 +445,7 @@ func TestHandleRegister_ConcurrentRequests_OnlyOneWins(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			body := fmt.Sprintf(`{"username":"admin-%d","password":"a-real-password"}`, i)
+			body := fmt.Sprintf(`{"username":"admin-%d","password":"a-real-password","setup_token":%q}`, i, token)
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader(body))
 			rec := httptest.NewRecorder()
 			rt.Handler().ServeHTTP(rec, req)

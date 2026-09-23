@@ -19,6 +19,8 @@ import (
 type IngressSettingsStore interface {
 	GetIngressSettings(ctx context.Context) (store.IngressSettings, error)
 	UpdateIngressSettings(ctx context.Context, s store.IngressSettings) error
+	GetDashboardURL(ctx context.Context) (string, error)
+	SetDashboardURL(ctx context.Context, u string) error
 }
 
 // ingressSettingsResource is the wire shape for GET and PUT
