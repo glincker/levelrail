@@ -23,7 +23,7 @@ func runHealthcheck(ctx context.Context, out io.Writer) error {
 		return fmt.Errorf("no dialable address for %q", httpAddr())
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr+"/api/v1/brand", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr+"/api/v1/brand", nil) // NOSONAR: addr is always loopback, this process checking its own local HTTP listener, never a real network HTTPS gap
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}

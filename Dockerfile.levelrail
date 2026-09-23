@@ -24,7 +24,7 @@ RUN CGO_ENABLED=0 go build -tags embedweb \
 # database into.
 RUN mkdir -p /data/levelrail
 
-FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+FROM gcr.io/distroless/static-debian12@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
 # nonroot (uid/gid 65532): /var/run/docker.sock's host-side group varies
 # per install, so it can't be matched at build time. Grant access at run
 # time instead, e.g. `--group-add $(stat -c '%g' /var/run/docker.sock)`,
