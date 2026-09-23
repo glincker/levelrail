@@ -4,7 +4,7 @@ import type { CertificateStatus } from '../queries/certificates'
 import type { DoctorReport } from '../queries/systemDoctor'
 import type { DiskPressure } from './diskPressure'
 import { certExpiryLabel } from './certStatus'
-import { formatBytes } from './format'
+import { formatAge, formatBytes } from './format'
 
 export type AttentionSeverity = 'critical' | 'warning'
 
@@ -67,7 +67,7 @@ export function buildAttentionItems({
         severity: 'critical',
         title: `Node ${node.name} is offline`,
         detail: node.last_seen_at
-          ? `Last seen ${node.last_seen_at}`
+          ? `Last seen ${formatAge(node.last_seen_at)}`
           : 'Never reported in',
         target: { kind: 'node', id: node.id },
       })

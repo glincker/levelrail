@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { formatAge } from '../../lib/format'
 import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   nodeDetailQueryOptions,
@@ -152,8 +153,11 @@ function NodeDetailPage() {
               <dt className="text-xs text-muted-foreground uppercase">
                 Last seen
               </dt>
-              <dd className="mt-1 text-sm text-foreground">
-                {formatNodeDate(node.last_seen_at)}
+              <dd
+                className="mt-1 text-sm text-foreground"
+                title={formatNodeDate(node.last_seen_at)}
+              >
+                {formatAge(node.last_seen_at, 'Never')}
               </dd>
             </div>
           </dl>

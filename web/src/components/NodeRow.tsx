@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { formatAge } from '../lib/format'
 import { CaretRightIcon, HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import type { NodeResource, NodeStatus } from '../types/nodeDetail'
 import type { NodeResourceUsage } from '../types/fleetResourceUsage'
@@ -112,8 +113,11 @@ export function NodeRow({
       <NodeMemoryCell usage={usage} />
       <NodeDiskCell usage={usage} />
 
-      <span className="min-w-0 truncate text-xs text-muted-foreground">
-        {formatNodeDate(node.last_seen_at)}
+      <span
+        className="min-w-0 truncate text-xs text-muted-foreground"
+        title={formatNodeDate(node.last_seen_at)}
+      >
+        {formatAge(node.last_seen_at, 'Never')}
       </span>
 
       <span className="flex shrink-0 items-center gap-2 justify-self-end">
