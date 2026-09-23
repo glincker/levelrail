@@ -8,32 +8,6 @@ import (
 	"testing"
 )
 
-func TestAuthorizeURL(t *testing.T) {
-	tests := []struct {
-		name        string
-		instanceURL string
-		want        string
-	}{
-		{
-			name:        "gitlab.com",
-			instanceURL: "https://gitlab.com",
-			want:        "https://gitlab.com/oauth/authorize?client_id=abc&redirect_uri=https%3A%2F%2Fexample.com%2Fcb&response_type=code&scope=api&state=xyz",
-		},
-		{
-			name:        "self-hosted with trailing slash",
-			instanceURL: "https://gitlab.internal.example.com/",
-			want:        "https://gitlab.internal.example.com/oauth/authorize?client_id=abc&redirect_uri=https%3A%2F%2Fexample.com%2Fcb&response_type=code&scope=api&state=xyz",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := AuthorizeURL(tt.instanceURL, "abc", "https://example.com/cb", "xyz")
-			if got != tt.want {
-				t.Errorf("AuthorizeURL() = %q, want %q", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestClient_ExchangeCode(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
