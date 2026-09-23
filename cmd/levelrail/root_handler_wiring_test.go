@@ -51,8 +51,13 @@ func TestRootHandler_GitProviderAppSecretsWired(t *testing.T) {
 
 	b := &brand.Brand{Name: "test", ShortName: "test", BinaryName: "levelrail"}
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	handler, _ := rootHandler(logger, b, db, nil, nil, secretsManager, masterKeyFilePath,
-		nil, nil, nil, nil, nil, nil, nil, nil, nil, "", nil, nil, nil, nil)
+	handler, _ := rootHandler(rootHandlerDeps{
+		logger:            logger,
+		b:                 b,
+		db:                db,
+		secretsManager:    secretsManager,
+		masterKeyFilePath: masterKeyFilePath,
+	})
 
 	cases := []struct {
 		name   string

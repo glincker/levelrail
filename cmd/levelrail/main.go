@@ -610,7 +610,29 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
-	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver)
+	apiHandler, apiRouter := rootHandler(rootHandlerDeps{
+		logger:              logger,
+		b:                   b,
+		db:                  db,
+		telemetryDB:         telemetryDB,
+		alertingDB:          alertingDB,
+		secretsManager:      secretsManager,
+		masterKeyFilePath:   masterKeyFilePath,
+		webhookHandler:      webhookHandler,
+		client:              client,
+		builder:             builder,
+		deployRecorder:      deployRecorder,
+		logBroadcaster:      logBroadcaster,
+		deployDispatcher:    deployDispatcher,
+		backupRunner:        backupRunner,
+		backupVerifyRunner:  backupVerifyRunner,
+		agentRegistry:       agentRegistry,
+		agentCAFingerprint:  agentCA.Fingerprint(),
+		emailSender:         emailSender,
+		scheduledTaskRunner: scheduledTaskRunner,
+		engine:              engine,
+		ingressDriver:       ingressDriver,
+	})
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
 		Handler:           apiHandler,
@@ -1910,193 +1932,217 @@ func buildNodeSource(db *store.DB, agentRegistry *agent.Registry) build.NodeSour
 // calling rootHandler): api.WithIngressPortOwner wires it in
 // unconditionally so GET /system/doctor can tell this control plane's
 // own ingress apart from an unrelated process on ports 80/443.
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, agentCAFingerprint string, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner, engine *reconcile.Engine, ingressDriver *ingressdriver.Driver) (http.Handler, *api.Router) {
+type rootHandlerDeps struct {
+	logger              *slog.Logger
+	b                   *brand.Brand
+	db                  *store.DB
+	telemetryDB         *telemetry.DB
+	alertingDB          *alerting.DB
+	secretsManager      *secrets.Manager
+	masterKeyFilePath   string
+	webhookHandler      http.Handler
+	client              *docker.Client
+	builder             *deploy.Pipeline
+	deployRecorder      *deploylog.Recorder
+	logBroadcaster      *telemetry.LogBroadcaster
+	deployDispatcher    *alerting.DeployDispatcher
+	backupRunner        *backup.Runner
+	backupVerifyRunner  *backup.VerifyRunner
+	agentRegistry       *agent.Registry
+	agentCAFingerprint  string
+	emailSender         email.Sender
+	scheduledTaskRunner *scheduledtask.Runner
+	engine              *reconcile.Engine
+	ingressDriver       *ingressdriver.Driver
+}
+
+func rootHandler(deps rootHandlerDeps) (http.Handler, *api.Router) {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
 	}
 	opts := []api.Option{
-		api.WithReconcileNudger(engine),
-		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
-		api.WithAlertRules(alertingDB),
-		api.WithDeployNotifyTargets(alertingDB),
-		api.WithDeployNotifier(deployDispatcher),
-		api.WithNotificationChannels(alertingDB),
-		api.WithNotificationChannelTester(deployDispatcher),
-		api.WithNotificationDeliveries(alertingDB),
-		api.WithSessionTTL(sessionTTL(logger)),
-		api.WithAutoPlacement(autoPlacementEnabled(logger)),
-		api.WithHSTS(hstsEnabled(logger)),
-		api.WithAllowInsecureLogin(allowInsecureLogin(logger)),
-		api.WithAPIRateLimit(apiRateLimitReadRPM(logger), apiRateLimitWriteRPM(logger)),
-		api.WithWebhookRateLimit(webhookRateLimitRPM(logger)),
+		api.WithReconcileNudger(deps.engine),
+		api.WithTelemetryQuerier(telemetry.NewLocalFederator(deps.telemetryDB)),
+		api.WithAlertRules(deps.alertingDB),
+		api.WithDeployNotifyTargets(deps.alertingDB),
+		api.WithDeployNotifier(deps.deployDispatcher),
+		api.WithNotificationChannels(deps.alertingDB),
+		api.WithNotificationChannelTester(deps.deployDispatcher),
+		api.WithNotificationDeliveries(deps.alertingDB),
+		api.WithSessionTTL(sessionTTL(deps.logger)),
+		api.WithAutoPlacement(autoPlacementEnabled(deps.logger)),
+		api.WithHSTS(hstsEnabled(deps.logger)),
+		api.WithAllowInsecureLogin(allowInsecureLogin(deps.logger)),
+		api.WithAPIRateLimit(apiRateLimitReadRPM(deps.logger), apiRateLimitWriteRPM(deps.logger)),
+		api.WithWebhookRateLimit(webhookRateLimitRPM(deps.logger)),
 		api.WithDataDir(dataDir),
-		api.WithDockerPinger(client),
-		api.WithImageLister(client),
-		api.WithContainerLister(client),
-		api.WithDockerDiskUsager(client),
-		api.WithDockerPruner(client),
-		api.WithOrphanedVolumeManager(client),
-		api.WithRegistryAuthTester(client),
-		api.WithDBPinger(db),
-		api.WithAgentCAFingerprint(agentCAFingerprint),
-		api.WithSecretRotationWarnAge(secretRotationWarnAge(logger)),
-		api.WithDoctorDiskWarningBytes(doctorDiskWarningBytes(logger)),
-		api.WithIngressPortOwner(ingressDriver),
+		api.WithDockerPinger(deps.client),
+		api.WithImageLister(deps.client),
+		api.WithContainerLister(deps.client),
+		api.WithDockerDiskUsager(deps.client),
+		api.WithDockerPruner(deps.client),
+		api.WithOrphanedVolumeManager(deps.client),
+		api.WithRegistryAuthTester(deps.client),
+		api.WithDBPinger(deps.db),
+		api.WithAgentCAFingerprint(deps.agentCAFingerprint),
+		api.WithSecretRotationWarnAge(secretRotationWarnAge(deps.logger)),
+		api.WithDoctorDiskWarningBytes(doctorDiskWarningBytes(deps.logger)),
+		api.WithIngressPortOwner(deps.ingressDriver),
 		api.WithDoctorIngressPorts(ingressPortFromAddr(ingressHTTPAddr()), ingressPortFromAddr(ingressHTTPSAddr())),
-		api.WithDoctorNetworkTimeout(doctorNetworkTimeout(logger)),
+		api.WithDoctorNetworkTimeout(doctorNetworkTimeout(deps.logger)),
 		api.WithDoctorPublicIPEndpoint(os.Getenv("APP_DOCTOR_PUBLIC_IP_ENDPOINT")),
-		api.WithDoctorClockSkewWarnAge(doctorClockSkewWarnAge(logger)),
-		api.WithDoctorMinRAMBytes(doctorMinRAMBytes(logger)),
-		api.WithDoctorMinCPUCount(doctorMinCPUCount(logger)),
+		api.WithDoctorClockSkewWarnAge(doctorClockSkewWarnAge(deps.logger)),
+		api.WithDoctorMinRAMBytes(doctorMinRAMBytes(deps.logger)),
+		api.WithDoctorMinCPUCount(doctorMinCPUCount(deps.logger)),
 		api.WithExecRuntime(func(nodeID string) (docker.Runtime, error) {
-			return resolveNodeTransport(client, agentRegistry, nodeID)
+			return resolveNodeTransport(deps.client, deps.agentRegistry, nodeID)
 		}),
-		// scheduledTaskRunner is always non-nil (constructed
+		// deps.scheduledTaskRunner is always non-nil (constructed
 		// unconditionally in run(), see that construction's own doc
 		// comment), so this is applied unconditionally too, the same
 		// shape api.WithDeployRecorder/api.WithLogBroadcaster already use
 		// for their own always-non-nil dependencies.
-		api.WithScheduledTaskRunner(scheduledTaskRunner),
-		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
+		api.WithScheduledTaskRunner(deps.scheduledTaskRunner),
+		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(deps.logger)),
 		api.WithNodeAlertThresholds(
-			patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
-			nodeCPUThreshold(logger), nodeMemoryThreshold(logger),
+			patchStatusThreshold(deps.logger), nodeDiskSpaceThreshold(deps.logger),
+			nodeCPUThreshold(deps.logger), nodeMemoryThreshold(deps.logger),
 		),
-		api.WithResourceRecommendationLookback(resourceRecommendationLookback(logger)),
-		api.WithPreviewTTL(previewTTL(logger)),
-		api.WithInviteTTL(inviteTTL(logger)),
-		api.WithAuditLogRetention(auditLogRetention(logger)),
-		api.WithDeployApprovalTTL(deployApprovalTTL(logger)),
+		api.WithResourceRecommendationLookback(resourceRecommendationLookback(deps.logger)),
+		api.WithPreviewTTL(previewTTL(deps.logger)),
+		api.WithInviteTTL(inviteTTL(deps.logger)),
+		api.WithAuditLogRetention(auditLogRetention(deps.logger)),
+		api.WithDeployApprovalTTL(deployApprovalTTL(deps.logger)),
 		api.WithPublicHost(publicHost()),
-		api.WithDeployLogQuerier(telemetryDB),
-		api.WithDeployRecorder(deployRecorder),
-		api.WithLogBroadcaster(logBroadcaster),
-		// emailSender is always non-nil (run() builds it unconditionally):
+		api.WithDeployLogQuerier(deps.telemetryDB),
+		api.WithDeployRecorder(deps.deployRecorder),
+		api.WithLogBroadcaster(deps.logBroadcaster),
+		// deps.emailSender is always non-nil (run() builds it unconditionally):
 		// forgot-password always exists, it just fails clearly at send
 		// time when nothing is actually configured.
-		api.WithEmailSender(emailSender),
+		api.WithEmailSender(deps.emailSender),
 	}
-	if secretsManager != nil {
-		opts = append(opts, api.WithSecretSetter(secretsManager))
-		opts = append(opts, api.WithMasterKeyRotation(secretsManager, masterKeyFilePath))
-		opts = append(opts, api.WithDoctorMasterKeyRotationWarnAge(doctorMasterKeyRotationWarnAge(logger)))
+	if deps.secretsManager != nil {
+		opts = append(opts, api.WithSecretSetter(deps.secretsManager))
+		opts = append(opts, api.WithMasterKeyRotation(deps.secretsManager, deps.masterKeyFilePath))
+		opts = append(opts, api.WithDoctorMasterKeyRotationWarnAge(doctorMasterKeyRotationWarnAge(deps.logger)))
 		// The stale_secrets doctor check counts secret-marked rows across
 		// service_secret_values and the three shared-env tiers, all of
 		// which are only ever written once a master key is configured
 		// (every secret write path checks rt.secrets != nil first), so
 		// this is gated the same way as everything else in this block.
-		opts = append(opts, api.WithStaleSecretCounter(db))
+		opts = append(opts, api.WithStaleSecretCounter(deps.db))
 		// Email settings' SMTP password / SES secret access key go
-		// through the same secretsManager as everything else here.
-		opts = append(opts, api.WithEmailSecrets(secretsManager))
-		// Cloudflare Tunnel's token goes through the same secretsManager,
+		// through the same deps.secretsManager as everything else here.
+		opts = append(opts, api.WithEmailSecrets(deps.secretsManager))
+		// Cloudflare Tunnel's token goes through the same deps.secretsManager,
 		// same nil-interface hazard as everything else in this block.
-		opts = append(opts, api.WithCloudflareTunnelSecrets(secretsManager))
+		opts = append(opts, api.WithCloudflareTunnelSecrets(deps.secretsManager))
 		// Cloudflare DNS-01's API token (a distinct credential from the
 		// Tunnel connector token above) goes through the same
-		// secretsManager, same nil-interface hazard.
-		opts = append(opts, api.WithCloudflareDNSSecrets(secretsManager))
+		// deps.secretsManager, same nil-interface hazard.
+		opts = append(opts, api.WithCloudflareDNSSecrets(deps.secretsManager))
 		// Route53 DNS-01's access key pair (a second, independent ACME
 		// DNS-01 provider from Cloudflare DNS-01 above) goes through the
-		// same secretsManager, same nil-interface hazard.
-		opts = append(opts, api.WithRoute53DNSSecrets(secretsManager))
+		// same deps.secretsManager, same nil-interface hazard.
+		opts = append(opts, api.WithRoute53DNSSecrets(deps.secretsManager))
 		// The built-in registry's generated password goes through the
-		// same secretsManager, same nil-interface hazard.
-		opts = append(opts, api.WithRegistrySecrets(secretsManager))
+		// same deps.secretsManager, same nil-interface hazard.
+		opts = append(opts, api.WithRegistrySecrets(deps.secretsManager))
 		// The built-in registry catalog picker resolves the same
 		// generated password server-side to authenticate its own upstream
 		// query, same nil-interface hazard.
-		opts = append(opts, api.WithRegistryCatalogSecrets(secretsManager))
+		opts = append(opts, api.WithRegistryCatalogSecrets(deps.secretsManager))
 		// The external Vault integration's own token/AppRole secret ID
-		// goes through the same secretsManager, same nil-interface hazard.
-		opts = append(opts, api.WithVaultSecrets(secretsManager))
+		// goes through the same deps.secretsManager, same nil-interface hazard.
+		opts = append(opts, api.WithVaultSecrets(deps.secretsManager))
 		// Per-domain HTTP Basic Auth passwords go through the same
-		// secretsManager, same nil-interface hazard.
-		opts = append(opts, api.WithDomainBasicAuthSecrets(secretsManager))
-		// BYO TLS certificate uploads go through the same secretsManager,
+		// deps.secretsManager, same nil-interface hazard.
+		opts = append(opts, api.WithDomainBasicAuthSecrets(deps.secretsManager))
+		// BYO TLS certificate uploads go through the same deps.secretsManager,
 		// same nil-interface hazard.
-		opts = append(opts, api.WithDomainTLSCertSecrets(secretsManager))
+		opts = append(opts, api.WithDomainTLSCertSecrets(deps.secretsManager))
 		// Git sources (a deferred follow-up,
 		// internal/api/git_sources.go, git_webhook.go): a connected
 		// source's deploy token and webhook secret go through the same
-		// secretsManager as everything else in this block, same nil-
+		// deps.secretsManager as everything else in this block, same nil-
 		// interface hazard, same "skipped entirely without a master key"
 		// shape.
-		opts = append(opts, api.WithGitSourceSecrets(secretsManager))
+		opts = append(opts, api.WithGitSourceSecrets(deps.secretsManager))
 		// Compose ingestion's generated template secrets (SERVICE_PASSWORD_*
-		// etc, internal/compose.ResolveMagicVars): same secretsManager,
+		// etc, internal/compose.ResolveMagicVars): same deps.secretsManager,
 		// same nil-interface hazard as everything else in this block.
-		opts = append(opts, api.WithComposeSecrets(secretsManager))
-		// OAuth provider client secrets (Google/GitHub sign-in): same
-		// secretsManager, same nil-interface hazard as everything else in
+		opts = append(opts, api.WithComposeSecrets(deps.secretsManager))
+		// OAuth provider deps.client secrets (Google/GitHub sign-in): same
+		// deps.secretsManager, same nil-interface hazard as everything else in
 		// this block.
-		opts = append(opts, api.WithOAuthSecrets(secretsManager))
+		opts = append(opts, api.WithOAuthSecrets(deps.secretsManager))
 		// Backup targets and running a real backup both need
-		// secretsManager: creating a target writes its credentials
+		// deps.secretsManager: creating a target writes its credentials
 		// through it (api.WithBackupSecrets), and actually running a
 		// backup reads them back through the identical *secrets.Manager
 		// value (internal/backup.Runner.Secrets), the one internal/api
 		// deliberately never does itself, see BackupSecretsSetter's own
 		// doc comment for why that split exists. Same nil-interface
 		// hazard as api.WithSecretSetter above: both are skipped
-		// entirely, not passed with a nil secretsManager inside a
+		// entirely, not passed with a nil deps.secretsManager inside a
 		// non-nil interface value, whenever no master key is configured.
 		// restoreRunner is shared between api.WithRestoreRunner (database
 		// restores) and api.WithServiceVolumeRestoreRunner (volume
 		// restores) below, the same "one implementation, two resource
-		// kinds" shape backupRunner above already establishes for the
+		// kinds" shape deps.backupRunner above already establishes for the
 		// forward direction: RestoreRunner.VolumeRestorer makes
 		// RunVolumeRestore available on the identical instance
 		// RunRestore already uses.
 		restoreRunner := &backup.RestoreRunner{
-			Store:          db,
-			Secrets:        secretsManager,
+			Store:          deps.db,
+			Secrets:        deps.secretsManager,
 			Downloader:     backup.S3Downloader{},
-			Restorer:       &backup.ContainerRestorer{Runtime: client},
-			VolumeRestorer: &backup.ContainerVolumeRestorer{Runtime: client},
+			Restorer:       &backup.ContainerRestorer{Runtime: deps.client},
+			VolumeRestorer: &backup.ContainerVolumeRestorer{Runtime: deps.client},
 		}
 		// baseBackupRunner/pitrRunner back point-in-time restore
 		// (internal/api/pitr.go): the physical-backup and PITR-restore
-		// counterparts of backupRunner/restoreRunner just above, same
-		// secretsManager dependency, same local-node client. pitrRunner's
-		// Nudge is engine.Nudge (constructed earlier in run(), see its
+		// counterparts of deps.backupRunner/restoreRunner just above, same
+		// deps.secretsManager dependency, same local-node deps.client. pitrRunner's
+		// Nudge is deps.engine.Nudge (constructed earlier in run(), see its
 		// own doc comment) so a PITR restore's suspend/unsuspend cycle
 		// gets picked up immediately instead of waiting out a full
 		// resyncInterval on each side of the wipe.
 		baseBackupRunner := &backup.BaseBackupRunner{
-			Store:        db,
-			Secrets:      secretsManager,
-			BaseBackuper: &backup.ContainerBaseBackuper{Runtime: client},
+			Store:        deps.db,
+			Secrets:      deps.secretsManager,
+			BaseBackuper: &backup.ContainerBaseBackuper{Runtime: deps.client},
 			Uploader:     backup.S3Uploader{},
-			Runtime:      client,
+			Runtime:      deps.client,
 		}
 		pitrRunner := &backup.PITRRunner{
-			Store:      db,
-			Secrets:    secretsManager,
+			Store:      deps.db,
+			Secrets:    deps.secretsManager,
 			Downloader: backup.S3Downloader{},
-			Restorer:   &backup.ContainerPITRRestorer{Runtime: client},
-			Runtime:    client,
-			Nudge:      engine.Nudge,
+			Restorer:   &backup.ContainerPITRRestorer{Runtime: deps.client},
+			Runtime:    deps.client,
+			Nudge:      deps.engine.Nudge,
 		}
 		opts = append(opts,
-			api.WithBackupSecrets(secretsManager),
+			api.WithBackupSecrets(deps.secretsManager),
 			// Registry credentials (build.type: image's optional
-			// registryCredential field): same secretsManager, same
+			// registryCredential field): same deps.secretsManager, same
 			// nil-interface hazard as everything else in this block.
-			api.WithRegistryCredentialSecrets(secretsManager),
-			api.WithBackupRunner(backupRunner),
+			api.WithRegistryCredentialSecrets(deps.secretsManager),
+			api.WithBackupRunner(deps.backupRunner),
 			// App service volume backups (internal/backup's own volume
-			// archiver/restorer, wired above): the same backupRunner/
+			// archiver/restorer, wired above): the same deps.backupRunner/
 			// restoreRunner instances the database routes just above
 			// use, since Runner/RestoreRunner now cover both resource
 			// kinds through the identical upload/download/history/
 			// scheduling pipeline.
-			api.WithServiceVolumeBackupRunner(backupRunner),
+			api.WithServiceVolumeBackupRunner(deps.backupRunner),
 			// The restore counterpart of the backup runner just above:
-			// same secretsManager dependency (a restore resolves the same
+			// same deps.secretsManager dependency (a restore resolves the same
 			// stored target credentials a backup wrote), same nil check,
-			// wired from the same client (this control plane's own node's
+			// wired from the same deps.client (this control plane's own node's
 			// docker.Runtime, since ContainerRestorer needs
 			// ExecWithInput the same way ContainerDumper above needs
 			// Exec).
@@ -2104,94 +2150,94 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			api.WithServiceVolumeRestoreRunner(restoreRunner),
 			// "Restore as new database" (internal/api/database_clone_
 			// restore.go): the non-destructive counterpart just above,
-			// same secretsManager/downloader/restorer dependencies, but
+			// same deps.secretsManager/downloader/restorer dependencies, but
 			// waits for a freshly created database to come up instead of
 			// overwriting one that already exists.
 			api.WithCloneRestoreRunner(&backup.CloneRestoreRunner{
-				Store:      db,
-				Secrets:    secretsManager,
+				Store:      deps.db,
+				Secrets:    deps.secretsManager,
 				Downloader: backup.S3Downloader{},
-				Restorer:   &backup.ContainerRestorer{Runtime: client},
+				Restorer:   &backup.ContainerRestorer{Runtime: deps.client},
 			}),
 			// "Restore as new volume"
 			// (internal/api/app_volume_clone_restore.go): the app service
 			// volume counterpart of the database clone-restore just above.
 			// Simpler than CloneRestoreRunner: a bare Docker volume has no
-			// reconciler to wait on, so Volumes (client itself, already a
+			// reconciler to wait on, so Volumes (deps.client itself, already a
 			// docker.Runtime) creates it synchronously before restoring.
 			api.WithVolumeCloneRestoreRunner(&backup.VolumeCloneRestoreRunner{
-				Store:          db,
-				Secrets:        secretsManager,
+				Store:          deps.db,
+				Secrets:        deps.secretsManager,
 				Downloader:     backup.S3Downloader{},
-				VolumeRestorer: &backup.ContainerVolumeRestorer{Runtime: client},
-				Volumes:        client,
+				VolumeRestorer: &backup.ContainerVolumeRestorer{Runtime: deps.client},
+				Volumes:        deps.client,
 			}),
 			// The plain-download counterpart of the restore runner above:
-			// same secretsManager dependency and same backup.S3Downloader,
+			// same deps.secretsManager dependency and same backup.S3Downloader,
 			// but hands the object stream straight back to internal/api
 			// instead of piping it into a container's stdin.
 			api.WithBackupDownloader(&backup.DownloadRunner{
-				Store:      db,
-				Secrets:    secretsManager,
+				Store:      deps.db,
+				Secrets:    deps.secretsManager,
 				Downloader: backup.S3Downloader{},
 			}),
 			// Deletes one specific archived backup on demand: same
-			// secretsManager dependency to resolve a target's credentials
+			// deps.secretsManager dependency to resolve a target's credentials
 			// before removing its object, plus the identical backup.S3Deleter
 			// the retention scheduler below already uses to prune old
 			// archives, so a manual delete and a retention-driven one clean
 			// up storage the exact same way.
 			api.WithBackupDeleter(&backup.DeleteRunner{
-				Store:   db,
-				Secrets: secretsManager,
+				Store:   deps.db,
+				Secrets: deps.secretsManager,
 				Deleter: backup.S3Deleter{},
-				Logger:  logger,
+				Logger:  deps.logger,
 			}),
 			// Re-downloads and re-checks a succeeded backup's own stored
 			// object for corruption, never attempting a live restore: the
 			// same instance scheduler.Verifier below uses automatically.
-			api.WithBackupVerifier(backupVerifyRunner),
+			api.WithBackupVerifier(deps.backupVerifyRunner),
 			// Probes a target's bucket over its stored credentials with a
-			// cheap HeadBucket call: same secretsManager dependency, same
+			// cheap HeadBucket call: same deps.secretsManager dependency, same
 			// nil-interface hazard as everything else in this block.
 			api.WithBackupTargetTester(&backup.TargetTester{
-				Store:   db,
-				Secrets: secretsManager,
+				Store:   deps.db,
+				Secrets: deps.secretsManager,
 				Tester:  backup.S3Tester{},
 			}),
 			// GitHub App connection: reads and writes through
-			// secretsManager directly rather than a separate runner
+			// deps.secretsManager directly rather than a separate runner
 			// type, see api.GitHubAppSecrets's own doc comment for why.
 			// Same nil-interface hazard as every other
-			// secretsManager-dependent option in this block.
-			api.WithGitHubAppSecrets(secretsManager),
+			// deps.secretsManager-dependent option in this block.
+			api.WithGitHubAppSecrets(deps.secretsManager),
 			// Per-user TOTP secrets (internal/api/twofactor.go): same
-			// secretsManager, same nil-interface hazard as everything else
+			// deps.secretsManager, same nil-interface hazard as everything else
 			// in this block.
-			api.WithTwoFactorSecrets(secretsManager),
-			// GitLab App connection: same secretsManager, same
+			api.WithTwoFactorSecrets(deps.secretsManager),
+			// GitLab App connection: same deps.secretsManager, same
 			// nil-interface hazard, the OAuth-Application counterpart of
 			// the GitHub App connection just above.
-			api.WithGitLabAppSecrets(secretsManager),
-			// Gitea App connection: same secretsManager, same
+			api.WithGitLabAppSecrets(deps.secretsManager),
+			// Gitea App connection: same deps.secretsManager, same
 			// nil-interface hazard, the GitLab-shaped self-hosted
 			// counterpart just above.
-			api.WithGiteaAppSecrets(secretsManager),
-			// Bitbucket App connection: same secretsManager, same
+			api.WithGiteaAppSecrets(deps.secretsManager),
+			// Bitbucket App connection: same deps.secretsManager, same
 			// nil-interface hazard, the third OAuth-consumer counterpart
 			// alongside the GitHub and GitLab App connections above.
-			api.WithBitbucketAppSecrets(secretsManager),
+			api.WithBitbucketAppSecrets(deps.secretsManager),
 			// BYOK LLM API key for the embedded AI assistant: same
-			// secretsManager, same nil-interface hazard as everything
+			// deps.secretsManager, same nil-interface hazard as everything
 			// else in this block.
-			api.WithAIAssistantSecrets(secretsManager),
+			api.WithAIAssistantSecrets(deps.secretsManager),
 			// Point-in-time restore (baseBackupRunner/pitrRunner just
 			// above): manual base-backup trigger and the actual PITR
 			// restore endpoint.
 			api.WithBaseBackupRunner(baseBackupRunner),
 			api.WithPITRRestoreRunner(pitrRunner),
 		)
-		// The AI assistant's own tool-calling engine, distinct from the
+		// The AI assistant's own tool-calling deps.engine, distinct from the
 		// BYOK key above: it needs a self-call API token to reach this
 		// instance's own REST API (see setupAIAssistantEngine's doc
 		// comment). Skipped, not fatal, if the dial address can't be
@@ -2199,25 +2245,25 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// feature in this block's own resilience posture: an operator
 		// loses the AI assistant, not the whole control plane.
 		if dial := dashboardDialAddr(httpAddr()); dial != "" {
-			engine, err := setupAIAssistantEngine(context.Background(), db, secretsManager, dial, b.Name, logger)
+			aiEngine, err := setupAIAssistantEngine(context.Background(), deps.db, deps.secretsManager, dial, deps.b.Name, deps.logger)
 			if err != nil {
-				logger.Error("ai assistant: setup failed, chat routes stay disabled", slog.String("error", err.Error()))
+				deps.logger.Error("ai assistant: setup failed, chat routes stay disabled", slog.String("error", err.Error()))
 			} else {
-				opts = append(opts, api.WithAIEngine(engine))
+				opts = append(opts, api.WithAIEngine(aiEngine))
 			}
 		}
 	}
-	if builder != nil {
-		opts = append(opts, api.WithBuilder(builder))
+	if deps.builder != nil {
+		opts = append(opts, api.WithBuilder(deps.builder))
 	}
 	if manifestCfg, err := loadGitHubAppManifestConfig(); err != nil {
-		logger.Error("load github app manifest config failed, using defaults", slog.String("error", err.Error()))
+		deps.logger.Error("load github app manifest config failed, using defaults", slog.String("error", err.Error()))
 	} else {
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
 
-	rt := api.NewRouter(logger, b, db, opts...)
-	return composeMux(rt.Handler(), webhookHandler, web.Handler()), rt
+	rt := api.NewRouter(deps.logger, deps.b, deps.db, opts...)
+	return composeMux(rt.Handler(), deps.webhookHandler, web.Handler()), rt
 }
 
 // composeMux wires the three top-level handlers rootHandler serves
@@ -2232,7 +2278,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 // /healthz" route. Without this explicit entry, "/healthz" has no
 // "/api/" prefix, so it would fall through to the "/" SPA fallback and
 // get back a 200 with the dashboard's index.html body instead of the
-// {"status":"ok"} JSON a prober actually expects. webhookHandler is
+// {"status":"ok"} JSON a prober actually expects. deps.webhookHandler is
 // nil-able: a control plane started without git-webhook config just
 // serves no POST /webhook route.
 func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler http.Handler) *http.ServeMux {
