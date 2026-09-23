@@ -1,0 +1,6 @@
+🧹 Refactor: use struct for waitForRollout parameters
+
+🎯 What: Grouped waitForRollout parameters into a rolloutWaitConfig struct.
+💡 Why: Reduces parameter count and improves code readability/maintainability, making function calls more explicit.
+✅ Verification: Ran go test ./cmd/levelrail-cli/... to confirm tests still pass.
+✨ Result: Cleaner function signature with preserved behavior.
