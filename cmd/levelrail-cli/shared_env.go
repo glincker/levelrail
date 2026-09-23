@@ -9,7 +9,6 @@ import (
 )
 
 type cliContext struct {
-	ctx     context.Context
 	stdout  io.Writer
 	stderr  io.Writer
 	jsonOut bool
@@ -176,8 +175,8 @@ func runSharedEnvSet(prog string, args []string, stdout, stderr io.Writer, looku
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
-	c := cliContext{ctx: ctx, stdout: stdout, stderr: stderr, jsonOut: jsonOut, client: client}
-	return applySharedEnvKey(c, *scopeP, *idP, key, "set", "set", secret,
+	c := cliContext{stdout: stdout, stderr: stderr, jsonOut: jsonOut, client: client}
+	return applySharedEnvKey(ctx, c, *scopeP, *idP, key, "set", "set", secret,
 		func() error { return client.SetSharedEnvSecret(ctx, *scopeP, *idP, key, value) },
 		func(current map[string]string) { current[key] = value },
 	)
@@ -212,8 +211,8 @@ func runSharedEnvDelete(prog string, args []string, stdout, stderr io.Writer, lo
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
-	c := cliContext{ctx: ctx, stdout: stdout, stderr: stderr, jsonOut: jsonOut, client: client}
-	return applySharedEnvKey(c, *scopeP, *idP, key, "delete", "removed", secret,
+	c := cliContext{stdout: stdout, stderr: stderr, jsonOut: jsonOut, client: client}
+	return applySharedEnvKey(ctx, c, *scopeP, *idP, key, "delete", "removed", secret,
 		func() error { return client.DeleteSharedEnvSecret(ctx, *scopeP, *idP, key) },
 		func(current map[string]string) { delete(current, key) },
 	)
@@ -226,7 +225,7 @@ func runSharedEnvDelete(prog string, args []string, stdout, stderr io.Writer, lo
 // to the current map before writing it back. errVerb names the operation
 // for wrapped error text (e.g. "set", "delete"), resultVerb for the
 // success message (e.g. "set", "removed").
-func applySharedEnvKey(c cliContext, scope, id, key, errVerb, resultVerb string, secret bool, secretOp func() error, mutate func(map[string]string)) int {
+func applySharedEnvKey(ctx context.Context, c cliContext, scope, id, key, errVerb, resultVerb string, secret bool, secretOp func() error, mutate func(map[string]string)) int {
 	if secret {
 		if err := secretOp(); err != nil {
 			return reportError(c.stdout, c.stderr, c.jsonOut, fmt.Errorf("%s secret shared var %q for %s %q: %w", errVerb, key, scope, id, err))
@@ -235,12 +234,12 @@ func applySharedEnvKey(c cliContext, scope, id, key, errVerb, resultVerb string,
 		return exitOK
 	}
 
-	current, err := getPlainSharedEnv(c.ctx, c.client, scope, id)
+	current, err := getPlainSharedEnv(ctx, c.client, scope, id)
 	if err != nil {
 		return reportError(c.stdout, c.stderr, c.jsonOut, fmt.Errorf("read current shared vars for %s %q: %w", scope, id, err))
 	}
 	mutate(current)
-	if err := setPlainSharedEnv(c.ctx, c.client, scope, id, current); err != nil {
+	if err := setPlainSharedEnv(ctx, c.client, scope, id, current); err != nil {
 		return reportError(c.stdout, c.stderr, c.jsonOut, fmt.Errorf("%s shared var %q for %s %q: %w", errVerb, key, scope, id, err))
 	}
 	_, _ = fmt.Fprintf(c.stdout, "shared var %q %s for %s %q\n", key, resultVerb, scope, id)
