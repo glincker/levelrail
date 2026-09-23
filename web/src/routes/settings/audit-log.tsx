@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { Input } from '@/components/ui/input'
+import { filterAuditEntries } from '../../lib/auditFilter'
 import { useState } from 'react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
@@ -59,9 +61,7 @@ function formatDate(iso: string): string {
 // scanning this table needs to notice first.
 function StatusBadge({ status }: { status: number }) {
   const ok = status >= 200 && status < 300
-  return (
-    <Badge variant={ok ? 'success' : 'destructive'}>{status}</Badge>
-  )
+  return <Badge variant={ok ? 'success' : 'destructive'}>{status}</Badge>
 }
 
 // Downloads GET /api/v1/audit-log?format=csv as a plain browser
@@ -96,7 +96,9 @@ const CLIENT_KIND_LABELS: Record<string, string> = {
 
 function ClientKindBadge({ clientKind }: { clientKind: string }) {
   return (
-    <Badge variant="outline">{CLIENT_KIND_LABELS[clientKind] ?? clientKind}</Badge>
+    <Badge variant="outline">
+      {CLIENT_KIND_LABELS[clientKind] ?? clientKind}
+    </Badge>
   )
 }
 
@@ -107,10 +109,14 @@ function AuditLogSettingsPage() {
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null)
   const [clientKindFilter, setClientKindFilter] = useState(ALL_CLIENT_KINDS)
   const [filterLoading, setFilterLoading] = useState(false)
+  const [search, setSearch] = useState('')
+  const [failedOnly, setFailedOnly] = useState(false)
   // A page shorter than the default limit means the store had no more
   // rows to return, the same "short page means done" signal offset-free
   // cursor pagination always relies on.
   const [exhausted, setExhausted] = useState(initial.length < 50)
+
+  const visibleEntries = filterAuditEntries(entries, search, failedOnly)
 
   const activeClientKind =
     clientKindFilter === ALL_CLIENT_KINDS ? undefined : clientKindFilter
@@ -164,9 +170,7 @@ function AuditLogSettingsPage() {
             <ClockCounterClockwiseIcon className="size-4" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-foreground">
-              Audit log
-            </h1>
+            <h1 className="text-lg font-semibold text-foreground">Audit log</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Who changed what: every write, deploy, or root-tier request,
               newest first. Read-only requests aren't recorded here.
@@ -213,49 +217,78 @@ function AuditLogSettingsPage() {
           </p>
         </div>
       ) : (
-        <div className="rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>Actor</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Ability</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Path</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {entries.map((entry) => (
-                <TableRow key={entry.id}>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(entry.created_at)}
-                  </TableCell>
-                  <TableCell className="font-medium text-foreground">
-                    {entry.actor_name}
-                    <Badge variant="outline" className="ml-2">
-                      {entry.actor_type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <ClientKindBadge clientKind={entry.client_kind} />
-                  </TableCell>
-                  <TableCell>{entry.ability}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {entry.method}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {entry.path}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={entry.status_code} />
-                  </TableCell>
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+              }}
+              placeholder="Search loaded entries"
+              aria-label="Search audit log entries"
+              className="max-w-xs"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant={failedOnly ? 'default' : 'outline'}
+              aria-pressed={failedOnly}
+              onClick={() => {
+                setFailedOnly((prev) => !prev)
+              }}
+            >
+              Failed only
+            </Button>
+            {visibleEntries.length !== entries.length ? (
+              <span className="text-xs text-muted-foreground">
+                {visibleEntries.length} of {entries.length} loaded entries
+              </span>
+            ) : null}
+          </div>
+          <div className="rounded-lg border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Actor</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Ability</TableHead>
+                  <TableHead>Method</TableHead>
+                  <TableHead>Path</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {visibleEntries.map((entry) => (
+                  <TableRow key={entry.id}>
+                    <TableCell className="text-muted-foreground">
+                      {formatDate(entry.created_at)}
+                    </TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      {entry.actor_name}
+                      <Badge variant="outline" className="ml-2">
+                        {entry.actor_type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <ClientKindBadge clientKind={entry.client_kind} />
+                    </TableCell>
+                    <TableCell>{entry.ability}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {entry.method}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {entry.path}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={entry.status_code} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       {loadMoreError ? (
