@@ -6,11 +6,15 @@
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
-git_dir="$(git rev-parse --git-dir)"
+# --git-path resolves core.hooksPath and, in a worktree, the per-worktree
+# hooks dir under the common .git dir, which doesn't exist until a hook
+# is installed into it.
+hooks_dir="$(git rev-parse --git-path hooks)"
+mkdir -p "$hooks_dir"
 
 for hook in "$repo_root"/scripts/git-hooks/*; do
 	name="$(basename "$hook")"
-	cp "$hook" "$git_dir/hooks/$name"
-	chmod +x "$git_dir/hooks/$name"
+	cp "$hook" "$hooks_dir/$name"
+	chmod +x "$hooks_dir/$name"
 	echo "installed $name"
 done
