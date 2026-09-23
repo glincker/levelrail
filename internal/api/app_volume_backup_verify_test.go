@@ -1,13 +1,10 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func TestHandleVerifyVolumeBackup_Success(t *testing.T) {
@@ -17,15 +14,7 @@ func TestHandleVerifyVolumeBackup_Success(t *testing.T) {
 	seedServiceWithVolume(t, db)
 	target := seedBackupTargetForAPI(t, db)
 
-	if err := db.StartBackupHistory(context.Background(), store.BackupHistory{
-		ID: "bkh_1", ResourceKind: store.BackupResourceKindVolume, ServiceName: "web", VolumeName: "data",
-		TargetID: target.ID, ObjectKey: "volumes/web/data/1.tar", StartedAt: "2026-08-14T00:00:00Z",
-	}); err != nil {
-		t.Fatalf("seed backup history: %v", err)
-	}
-	if err := db.FinishBackupHistory(context.Background(), "bkh_1", store.BackupStatusSucceeded, 9, "sum", "", "2026-08-14T00:01:00Z"); err != nil {
-		t.Fatalf("finish backup history: %v", err)
-	}
+	seedSucceededVolumeBackupForAPI(t, db, target.ID, "data")
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/volumes/data/backups/bkh_1/verify", ""))

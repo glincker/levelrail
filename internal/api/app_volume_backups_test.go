@@ -222,3 +222,19 @@ func TestHandleListVolumeBackupHistory_Success(t *testing.T) {
 		t.Fatalf("got = %+v, want exactly one row for bkh_1", got)
 	}
 }
+
+// seedSucceededVolumeBackupForAPI writes a store.BackupHistory row directly
+// to avoid duplication in testing. Mirrors seedSucceededBackupForAPI.
+func seedSucceededVolumeBackupForAPI(t *testing.T, db *store.DB, targetID string, volumeName string) {
+	t.Helper()
+	const id = "bkh_1"
+	if err := db.StartBackupHistory(context.Background(), store.BackupHistory{
+		ID: id, ResourceKind: store.BackupResourceKindVolume, ServiceName: "web", VolumeName: volumeName,
+		TargetID: targetID, ObjectKey: "volumes/web/" + volumeName + "/1.tar", StartedAt: "2026-08-14T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("seed backup history: %v", err)
+	}
+	if err := db.FinishBackupHistory(context.Background(), id, store.BackupStatusSucceeded, 9, "sum", "", "2026-08-14T00:01:00Z"); err != nil {
+		t.Fatalf("finish backup history: %v", err)
+	}
+}
