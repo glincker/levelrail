@@ -40,7 +40,7 @@ This is the same script linked from the root [README](../README.md). It:
 
 - Runs the preflight table and stops on a failed check (`--force` continues anyway)
 - Installs Docker via `get.docker.com` if missing
-- Downloads the newest release for `linux/amd64` or `linux/arm64` and verifies its checksum. While no stable release exists yet, it installs the newest pre-release; pick explicitly with `LEVELRAIL_CHANNEL=stable|beta`
+- Downloads the newest release for `linux/amd64` or `linux/arm64` and verifies its checksum. While no stable release exists yet, it installs the newest pre-release; pick explicitly with `LEVELRAIL_CHANNEL=stable|beta`. A release that ships no binary for your architecture is skipped with a warning
 - Writes a `levelrail.service` systemd unit and starts it, then waits for `GET /healthz`
 - Checks that ports 80 and 443 answer on the server's public IP, and prints the `ufw`/`firewalld` commands to open them if not (some providers never route a server's own public IP back to itself, so treat a failure there as a hint, not proof)
 - Prints every dashboard URL, the one-time **setup token** for creating the first admin, and a reminder to back up `<data dir>/master.key`

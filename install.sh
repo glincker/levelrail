@@ -90,10 +90,22 @@ github_api() {
 		-H "Accept: application/vnd.github+json" "https://api.github.com/repos/${REPO}/$1" 2>/dev/null
 }
 
-first_tag() {
-	grep -m1 '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/'
+# list_releases prints "<tag> <prerelease> <has-asset>" per release, newest
+# first, where has-asset is 1 when the release ships asset $1.
+list_releases() {
+	github_api "releases?per_page=30" | awk -v asset="\"name\": \"$1\"" '
+		/"tag_name":/ {
+			if (tag != "") print tag, pre, has
+			tag = $0; sub(/.*"tag_name": *"/, "", tag); sub(/".*/, "", tag)
+			pre = "false"; has = 0
+		}
+		/"prerelease": *true/ { pre = "true" }
+		index($0, asset) { has = 1 }
+		END { if (tag != "") print tag, pre, has }'
 }
 
+# resolve_version picks the newest release on the channel that actually
+# ships a binary for this architecture, skipping releases with no assets.
 resolve_version() {
 	if [ -n "${LEVELRAIL_VERSION:-}" ]; then
 		VERSION="$LEVELRAIL_VERSION"
@@ -104,18 +116,38 @@ resolve_version() {
 	"" | stable | beta) ;;
 	*) fatal "LEVELRAIL_CHANNEL must be stable or beta, got: $channel" ;;
 	esac
-	VERSION=""
-	if [ "$channel" != "beta" ]; then
-		VERSION="$(github_api "releases/latest" | first_tag || true)"
-		if [ -z "$VERSION" ] && [ "$channel" = "stable" ]; then
-			fatal "no stable release published yet. Use LEVELRAIL_CHANNEL=beta or set LEVELRAIL_VERSION."
+	asset="levelrail-linux-${GOARCH}"
+	releases="$(list_releases "$asset" || true)"
+	[ -n "$releases" ] || fatal "could not list releases from GitHub. Set LEVELRAIL_VERSION=vX.Y.Z to pin one."
+
+	newest_stable="$(printf '%s\n' "$releases" | awk '$2 == "false" { print $1; exit }')"
+	stable="$(printf '%s\n' "$releases" | awk '$2 == "false" && $3 == 1 { print $1; exit }')"
+	newest_any="$(printf '%s\n' "$releases" | awk '{ print $1; exit }')"
+	any="$(printf '%s\n' "$releases" | awk '$3 == 1 { print $1; exit }')"
+
+	case "$channel" in
+	stable)
+		VERSION="$stable"
+		newest="$newest_stable"
+		;;
+	beta)
+		VERSION="$any"
+		newest="$newest_any"
+		;;
+	*)
+		VERSION="$stable"
+		newest="$newest_stable"
+		if [ -z "$VERSION" ]; then
+			VERSION="$any"
+			newest="$newest_any"
+			[ -z "$VERSION" ] || log "No stable release with a ${asset} binary yet, using pre-release ${VERSION}."
 		fi
+		;;
+	esac
+	[ -n "$VERSION" ] || fatal "no ${channel:-published} release ships ${asset}. Set LEVELRAIL_VERSION=vX.Y.Z to pin one, or LEVELRAIL_BINARY_URL to a binary."
+	if [ -n "$newest" ] && [ "$newest" != "$VERSION" ]; then
+		warn "${newest} has no ${asset} binary, installing ${VERSION} instead"
 	fi
-	if [ -z "$VERSION" ]; then
-		VERSION="$(github_api "releases?per_page=1" | first_tag || true)"
-		[ -z "$VERSION" ] || [ "$channel" = "beta" ] || log "No stable release yet, installing the newest pre-release ${VERSION}."
-	fi
-	[ -n "$VERSION" ] || fatal "could not resolve a release from GitHub. Set LEVELRAIL_VERSION=vX.Y.Z to pin one."
 }
 
 detect_arch() {
@@ -248,7 +280,7 @@ fetch_binary() {
 	base_url="https://github.com/${REPO}/releases/download/${VERSION}"
 	log "Downloading ${asset} ${VERSION}..."
 	curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 300 -o "$dest" "${base_url}/${asset}" ||
-		fatal "download failed: ${base_url}/${asset}"
+		fatal "download failed: ${base_url}/${asset}. The release may not ship this binary; pick another with LEVELRAIL_VERSION."
 
 	sums="${dest}.checksums"
 	if curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 60 -o "$sums" "${base_url}/checksums.txt" 2>/dev/null; then

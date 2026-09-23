@@ -265,23 +265,15 @@ jobs:
         working-directory: web
         run: npm ci --ignore-scripts
 
-      # routeTree.gen.ts is gitignored and only ever generated as a side
-      # effect of running Vite (dev or build), via the tanstackRouter
-      # plugin. Without it, any new route file's loader context types
-      # resolve to something typescript-eslint's typed rules flag as
-      # unsafe (tsc itself tolerates the gap, eslint's stricter type
-      # info does not), a false positive on the file, not a real defect.
-      - name: Generate routeTree.gen.ts
+      # Same command release.yml runs: vite build (which also generates
+      # routeTree.gen.ts) then `tsc -b`, which type-checks test files too.
+      - name: Build (vite build && tsc -b)
         working-directory: web
-        run: npm exec --no -- vite build
+        run: npm run build
 
       - name: Bundle size budget
         working-directory: web
         run: npm run check-bundle-size
-
-      - name: tsc
-        working-directory: web
-        run: npm exec --no -- tsc --noEmit
 
       # eslint on the full tree still has a pre-existing backlog (mostly
       # routeTree.gen.ts-related no-unsafe-* noise, not this PR's doing),
