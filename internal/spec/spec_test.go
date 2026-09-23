@@ -1030,6 +1030,19 @@ func TestValidateLabels(t *testing.T) {
 			wantErr:       true,
 			wantErrSubstr: "exceeds",
 		},
+
+		{
+			name: "too many labels rejected",
+			labels: func() map[string]string {
+				m := make(map[string]string)
+				for i := 0; i <= MaxLabels; i++ {
+					m[string(rune('a'+i))] = "val"
+				}
+				return m
+			}(),
+			wantErr:       true,
+			wantErrSubstr: "at most",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

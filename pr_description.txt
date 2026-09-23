@@ -1,0 +1,3 @@
+🎯 **What:** Addressed the testing gap in `ValidateLabels` for checking the maximum number of custom labels (`MaxLabels`).
+📊 **Coverage:** The test suite now explicitly covers the scenario where the provided labels map exceeds `MaxLabels` (32), verifying it correctly throws the expected limit error. Other scenarios like empty keys and exceeding maximum key/value lengths were already covered.
+✨ **Result:** Improved test coverage for `ValidateLabels` ensuring the sanity bounds against unbounded container metadata growth are strictly enforced and verified during testing.
