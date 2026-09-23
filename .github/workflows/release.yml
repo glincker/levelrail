@@ -2,6 +2,8 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -13,10 +15,15 @@ on:
 
 env:
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+  # A push to main has no release tag: RELEASE_TAG resolves to "main"
+  # (github.ref_name), which is fine as a checkout ref but not a real
+  # version, so the image build-arg gets a distinct value for that case.
+  IMAGE_VERSION: ${{ inputs.tag || (github.ref_type == 'tag' && github.ref_name) || format('main-{0}', github.sha) }}
 
 jobs:
   build-web:
     name: Build frontend
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -51,6 +58,7 @@ jobs:
 
   build-binaries:
     name: Build (linux/${{ matrix.goarch }})
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
     needs: build-web
     timeout-minutes: 10
@@ -92,6 +100,7 @@ jobs:
 
   build-cli-binaries:
     name: Build CLI (${{ matrix.goos }}/${{ matrix.goarch }})
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -132,6 +141,7 @@ jobs:
 
   release:
     name: Publish release
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
     needs: [build-binaries, build-cli-binaries]
     timeout-minutes: 10
@@ -174,6 +184,35 @@ jobs:
               --repo "${{ github.repository }}" \
               --generate-notes
           fi
+
+  image-channel:
+    name: Resolve image tags
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      tags: ${{ steps.resolve.outputs.tags }}
+      primary_tag: ${{ steps.resolve.outputs.primary_tag }}
+    steps:
+      # One place decides which tags a build gets, shared by both
+      # merge-image-* jobs below: a main push only ever gets :edge, a
+      # prerelease tag (a hyphen in the SemVer sense, e.g.
+      # v1.2.3-beta.1) gets :beta, and a stable tag gets its own
+      # :vX.Y.Z (unchanged), plus :vX.Y and :latest.
+      - name: Resolve
+        id: resolve
+        env:
+          IS_MAIN_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: |
+          if [ "$IS_MAIN_PUSH" = "true" ]; then
+            tags="edge"
+          elif [[ "$RELEASE_TAG" == *-* ]]; then
+            tags="$RELEASE_TAG beta"
+          else
+            major_minor="$(echo "$RELEASE_TAG" | sed -E 's/^(v[0-9]+\.[0-9]+)\.[0-9]+$/\1/')"
+            tags="$RELEASE_TAG latest $major_minor"
+          fi
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+          echo "primary_tag=$(echo "$tags" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
   build-image-levelrail:
     name: Build levelrail image (${{ matrix.platform }})
@@ -223,7 +262,9 @@ jobs:
           file: Dockerfile.levelrail
           platforms: ${{ matrix.platform }}
           outputs: type=image,name=ghcr.io/glincker/levelrail,push-by-digest=true,name-canonical=true,push=true
-          build-args: VERSION=${{ env.RELEASE_TAG }}
+          build-args: VERSION=${{ env.IMAGE_VERSION }}
+          provenance: mode=max
+          sbom: true
           cache-from: type=gha,scope=levelrail-${{ matrix.artifact }}
           cache-to: type=gha,mode=max,scope=levelrail-${{ matrix.artifact }}
 
@@ -243,11 +284,12 @@ jobs:
   merge-image-levelrail:
     name: Merge and tag levelrail image
     runs-on: ubuntu-latest
-    needs: build-image-levelrail
+    needs: [build-image-levelrail, image-channel]
     timeout-minutes: 10
     permissions:
       contents: read
       packages: write
+      id-token: write
     steps:
       - name: Download digests
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -269,13 +311,27 @@ jobs:
       - name: Create and push manifest
         working-directory: ${{ runner.temp }}/digests
         run: |
-          docker buildx imagetools create \
-            -t ghcr.io/glincker/levelrail:${{ env.RELEASE_TAG }} \
-            -t ghcr.io/glincker/levelrail:latest \
+          tag_args=()
+          for t in ${{ needs.image-channel.outputs.tags }}; do
+            tag_args+=(-t "ghcr.io/glincker/levelrail:$t")
+          done
+          docker buildx imagetools create "${tag_args[@]}" \
             $(printf 'ghcr.io/glincker/levelrail@sha256:%s ' *)
 
       - name: Inspect
-        run: docker buildx imagetools inspect ghcr.io/glincker/levelrail:${{ env.RELEASE_TAG }}
+        run: docker buildx imagetools inspect ghcr.io/glincker/levelrail:${{ needs.image-channel.outputs.primary_tag }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      # Sign the manifest-list digest, not a tag: tags are mutable
+      # (:latest and :edge move), the digest is the exact content that
+      # was just pushed. The digest is the sha256 of the raw manifest
+      # list itself, per the OCI content-addressable convention.
+      - name: Sign image
+        run: |
+          digest="sha256:$(docker buildx imagetools inspect ghcr.io/glincker/levelrail:${{ needs.image-channel.outputs.primary_tag }} --raw | sha256sum | cut -d' ' -f1)"
+          cosign sign --yes "ghcr.io/glincker/levelrail@${digest}"
 
   build-image-levelrail-agent:
     name: Build levelrail-agent image (${{ matrix.platform }})
@@ -318,7 +374,9 @@ jobs:
           file: Dockerfile.levelrail-agent
           platforms: ${{ matrix.platform }}
           outputs: type=image,name=ghcr.io/glincker/levelrail-agent,push-by-digest=true,name-canonical=true,push=true
-          build-args: VERSION=${{ env.RELEASE_TAG }}
+          build-args: VERSION=${{ env.IMAGE_VERSION }}
+          provenance: mode=max
+          sbom: true
           cache-from: type=gha,scope=levelrail-agent-${{ matrix.artifact }}
           cache-to: type=gha,mode=max,scope=levelrail-agent-${{ matrix.artifact }}
 
@@ -338,11 +396,12 @@ jobs:
   merge-image-levelrail-agent:
     name: Merge and tag levelrail-agent image
     runs-on: ubuntu-latest
-    needs: build-image-levelrail-agent
+    needs: [build-image-levelrail-agent, image-channel]
     timeout-minutes: 10
     permissions:
       contents: read
       packages: write
+      id-token: write
     steps:
       - name: Download digests
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -364,10 +423,20 @@ jobs:
       - name: Create and push manifest
         working-directory: ${{ runner.temp }}/digests
         run: |
-          docker buildx imagetools create \
-            -t ghcr.io/glincker/levelrail-agent:${{ env.RELEASE_TAG }} \
-            -t ghcr.io/glincker/levelrail-agent:latest \
+          tag_args=()
+          for t in ${{ needs.image-channel.outputs.tags }}; do
+            tag_args+=(-t "ghcr.io/glincker/levelrail-agent:$t")
+          done
+          docker buildx imagetools create "${tag_args[@]}" \
             $(printf 'ghcr.io/glincker/levelrail-agent@sha256:%s ' *)
 
       - name: Inspect
-        run: docker buildx imagetools inspect ghcr.io/glincker/levelrail-agent:${{ env.RELEASE_TAG }}
+        run: docker buildx imagetools inspect ghcr.io/glincker/levelrail-agent:${{ needs.image-channel.outputs.primary_tag }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign image
+        run: |
+          digest="sha256:$(docker buildx imagetools inspect ghcr.io/glincker/levelrail-agent:${{ needs.image-channel.outputs.primary_tag }} --raw | sha256sum | cut -d' ' -f1)"
+          cosign sign --yes "ghcr.io/glincker/levelrail-agent@${digest}"

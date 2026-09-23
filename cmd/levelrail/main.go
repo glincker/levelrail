@@ -280,6 +280,14 @@ func main() {
 		return
 	}
 
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		if err := runHealthcheck(context.Background(), os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	if err := run(logger); err != nil {
 		logger.Error("exited with error", slog.String("error", err.Error()))
 		os.Exit(1)
