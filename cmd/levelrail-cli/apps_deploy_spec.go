@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -104,7 +105,32 @@ func toDeploySpecService(svc spec.Service) deploySpecService {
 			out.Env[k] = deploySpecServiceEnv{Value: v.Value, From: v.From, Secret: v.Secret, Required: v.Required}
 		}
 	}
+	if svc.Health != nil {
+		out.Health = &apiclient.DeploySpecServiceHealth{
+			Readiness:    toDeploySpecProbe(svc.Health.Readiness),
+			Liveness:     toDeploySpecProbe(svc.Health.Liveness),
+			ReadyTimeout: svc.Health.ReadyTimeout,
+		}
+	}
 	return out
+}
+
+func toDeploySpecProbe(p *spec.Probe) *apiclient.DeploySpecServiceProbe {
+	if p == nil {
+		return nil
+	}
+	return &apiclient.DeploySpecServiceProbe{
+		Path:            p.Path,
+		Scheme:          p.Scheme,
+		Host:            p.Host,
+		TLSSkipVerify:   p.TLSSkipVerify,
+		FollowRedirects: p.FollowRedirects,
+		ExpectedStatus:  string(p.ExpectedStatus),
+		Exec:            []string(p.Exec),
+		Interval:        p.Interval,
+		Timeout:         p.Timeout,
+		Failures:        p.Failures,
+	}
 }
 
 // applyDeploySpecSecrets sets Value on every { secret: true } env entry

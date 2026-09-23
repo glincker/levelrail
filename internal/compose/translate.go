@@ -13,10 +13,8 @@ import (
 // internal/deploy's own multi-service fan-out uses). Runs Validate
 // first, so a caller only needs to call this one function.
 //
-// warnings carries one message per service whose healthcheck: is a real,
-// non-HTTP check (see resolveHealthcheck): the caller is expected to
-// surface these to the operator (log line, response field, ...) since
-// that service's health is deliberately left unset rather than guessed.
+// warnings carries one message per service whose healthcheck: could not
+// be translated (see resolveHealthcheck), for the caller to surface.
 //
 // A bind-mount volumes: entry (compose.go's own doc comment) becomes a
 // store.ServiceBindMount, not a store.ServiceVolume: the caller must

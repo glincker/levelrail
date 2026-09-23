@@ -13,8 +13,16 @@ export interface ServiceResources {
   cpuset_cpus?: string
 }
 
+// An HTTP probe sets path (plus the optional HTTP fields); an exec probe
+// sets exec (argv run inside the container) and leaves path empty.
 export interface ServiceProbe {
   path: string
+  scheme?: 'http' | 'https'
+  host?: string
+  tls_skip_verify?: boolean
+  follow_redirects?: boolean
+  expected_status?: string
+  exec?: string[]
   interval?: number
   timeout?: number
   failures?: number
@@ -23,6 +31,8 @@ export interface ServiceProbe {
 export interface ServiceHealth {
   readiness?: ServiceProbe | null
   liveness?: ServiceProbe | null
+  // Nanoseconds; overrides how long a deploy waits for readiness.
+  ready_timeout?: number
 }
 
 // Matches internal/api/apps.go's appResource.Hooks exactly

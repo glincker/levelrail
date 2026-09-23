@@ -134,6 +134,8 @@ type AppStore interface {
 	// UpdateServiceStorageTarget, see
 	// store.DB.UpdateServiceEgressPolicy's own doc comment.
 	UpdateServiceEgressPolicy(ctx context.Context, name string, policy *store.ServiceEgressPolicy) error
+	// UpdateServiceHealth backs PUT /api/v1/apps/{name}/health (apps_health.go).
+	UpdateServiceHealth(ctx context.Context, name string, health *store.ServiceHealth) error
 }
 
 // AppGroupLister is the store surface GET /api/v1/apps/{name}/group

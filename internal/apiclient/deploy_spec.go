@@ -46,10 +46,16 @@ type DeploySpecServiceEnv struct {
 // DeploySpecServiceProbe mirrors internal/spec.Probe: human-readable
 // duration strings ("5s"), not ServiceProbe's nanosecond encoding.
 type DeploySpecServiceProbe struct {
-	Path     string `json:"path"`
-	Interval string `json:"interval,omitempty"`
-	Timeout  string `json:"timeout,omitempty"`
-	Failures int    `json:"failures,omitempty"`
+	Path            string   `json:"path,omitempty"`
+	Scheme          string   `json:"scheme,omitempty"`
+	Host            string   `json:"host,omitempty"`
+	TLSSkipVerify   bool     `json:"tls_skip_verify,omitempty"`
+	FollowRedirects *bool    `json:"follow_redirects,omitempty"`
+	ExpectedStatus  string   `json:"expected_status,omitempty"`
+	Exec            []string `json:"exec,omitempty"`
+	Interval        string   `json:"interval,omitempty"`
+	Timeout         string   `json:"timeout,omitempty"`
+	Failures        int      `json:"failures,omitempty"`
 }
 
 // DeploySpecServiceHealth mirrors internal/spec.Health.

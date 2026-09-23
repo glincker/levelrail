@@ -1090,3 +1090,7 @@ func TestNodeRoutes_RootToken_Succeeds(t *testing.T) {
 		t.Errorf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
 }
+
+func (f *fakeDrainAppStore) UpdateServiceHealth(context.Context, string, *store.ServiceHealth) error {
+	return nil
+}

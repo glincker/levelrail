@@ -333,6 +333,9 @@ func printAppHuman(out io.Writer, a appResource) {
 	if a.EnvDirty {
 		_, _ = fmt.Fprintln(out, "env:      pending restart (env vars saved since the running container was last recreated)")
 	}
+	if a.Health != nil {
+		printHealthHuman(out, a.Health)
+	}
 	if a.Hooks != nil {
 		if a.Hooks.PreDeploy != "" {
 			_, _ = fmt.Fprintf(out, "pre-deploy hook:  %s\n", a.Hooks.PreDeploy)

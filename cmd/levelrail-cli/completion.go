@@ -83,6 +83,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"tag":                nil,
 		"untag":              nil,
 		"egress":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
+		"health":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 	}},
 	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "logs": nil, "slow-queries": nil, "set-project": nil, "clear-project": nil, "set-node": nil, "clear-node": nil, "set-resources": nil, "public-access": {subs: map[string]*cmdNode{"set": nil, "clear": nil}}}},
 	"auth": {subs: map[string]*cmdNode{"login": nil, "whoami": nil, "2fa": {subs: map[string]*cmdNode{

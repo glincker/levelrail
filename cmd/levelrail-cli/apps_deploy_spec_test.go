@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
 func writeDeploySpecFixture(t *testing.T, yaml string) string {
@@ -312,5 +314,24 @@ func TestRun_AppsDeploySpec_Help(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "apps deploy-spec") {
 		t.Errorf("stderr = %q, want usage text", stderr.String())
+	}
+}
+
+func TestToDeploySpecService_CarriesHealth(t *testing.T) {
+	follow := false
+	svc := spec.Service{Health: &spec.Health{
+		Readiness:    &spec.Probe{Path: "/h", Scheme: "https", TLSSkipVerify: true, FollowRedirects: &follow, ExpectedStatus: "200-399", Interval: "5s"},
+		Liveness:     &spec.Probe{Exec: spec.ExecCommand{"redis-cli", "ping"}},
+		ReadyTimeout: "90s",
+	}}
+	got := toDeploySpecService(svc).Health
+	if got == nil || got.ReadyTimeout != "90s" {
+		t.Fatalf("Health = %+v", got)
+	}
+	if r := got.Readiness; r.Scheme != "https" || !r.TLSSkipVerify || *r.FollowRedirects || r.ExpectedStatus != "200-399" || r.Interval != "5s" {
+		t.Errorf("readiness = %+v", r)
+	}
+	if l := got.Liveness; len(l.Exec) != 2 || l.Exec[1] != "ping" {
+		t.Errorf("liveness = %+v", l)
 	}
 }

@@ -10,7 +10,7 @@ import (
 
 // ExpandBuildService parses the compose file at svc.Build.Path (relative
 // to sourceDir) and returns one spec.Service per compose service, plus a
-// warning for each non-HTTP healthcheck left untranslated.
+// warning for each healthcheck left untranslated.
 func ExpandBuildService(svc spec.Service, sourceDir string) (services map[string]spec.Service, warnings []string, err error) {
 	if svc.Build.Type != spec.BuildCompose {
 		return nil, nil, fmt.Errorf("compose: expand: build.type is %q, not %q", svc.Build.Type, spec.BuildCompose)
@@ -58,9 +58,8 @@ func ExpandBuildService(svc spec.Service, sourceDir string) (services map[string
 
 // toSpecService converts one compose.Service, already validated by
 // ValidateForBuild, into the spec.Service ExpandBuildService returns
-// for it, plus a non-empty warning when its healthcheck: is a real,
-// non-HTTP check that has to be left untranslated (see
-// resolveHealthcheck).
+// for it, plus a non-empty warning when its healthcheck: has to be left
+// untranslated (see resolveHealthcheck).
 func toSpecService(key string, csvc Service, domain string, composeDir string) (spec.Service, string, error) {
 	for envKey, v := range csvc.Environment {
 		if vars := FindMagicVars(v); len(vars) > 0 {

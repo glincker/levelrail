@@ -62,10 +62,10 @@ func TestSaveAndGetDesiredService(t *testing.T) {
 	if got.Resources == nil || *got.Resources != *want.Resources {
 		t.Errorf("Resources = %+v, want %+v", got.Resources, want.Resources)
 	}
-	if got.Health == nil || got.Health.Readiness == nil || *got.Health.Readiness != *want.Health.Readiness {
+	if got.Health == nil || got.Health.Readiness == nil || !reflect.DeepEqual(*got.Health.Readiness, *want.Health.Readiness) {
 		t.Errorf("Health.Readiness = %+v, want %+v", got.Health, want.Health)
 	}
-	if got.Health.Liveness == nil || *got.Health.Liveness != *want.Health.Liveness {
+	if got.Health.Liveness == nil || !reflect.DeepEqual(*got.Health.Liveness, *want.Health.Liveness) {
 		t.Errorf("Health.Liveness = %+v, want %+v", got.Health.Liveness, want.Health.Liveness)
 	}
 	if got.Health.ReadyTimeout != want.Health.ReadyTimeout {

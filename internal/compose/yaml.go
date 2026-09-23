@@ -37,10 +37,8 @@ type rawService struct {
 
 // Healthcheck is one service's healthcheck: block, Docker Compose's own
 // command-based health check schema (test/interval/timeout/retries/
-// start_period). Never executed: this platform's own health model is
-// HTTP-path based, so resolveHealthcheck (healthcheck.go) extracts a
-// readiness path from a curl/wget test when it can, and leaves health
-// unset otherwise.
+// start_period). Docker never runs it: resolveHealthcheck (healthcheck.go)
+// translates it into this platform's own readiness probe.
 type Healthcheck struct {
 	Test        healthcheckTest `yaml:"test"`
 	Interval    string          `yaml:"interval"`

@@ -1,8 +1,11 @@
 package compose
 
 import (
+	"reflect"
 	"testing"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func TestResolveHealthcheck_CMDShellCurl_Translates(t *testing.T) {
@@ -86,27 +89,51 @@ func TestResolveHealthcheck_BareListWithoutPrefix_TreatedAsShellCommand(t *testi
 	}
 }
 
-func TestResolveHealthcheck_NonHTTPCommand_LeavesUnsetWithWarning(t *testing.T) {
+func TestResolveHealthcheck_TranslatesProbeShape(t *testing.T) {
+	yes, no := true, false
 	tests := []struct {
-		name string
-		test healthcheckTest
+		name        string
+		hc          Healthcheck
+		want        store.ServiceProbe
+		wantReady   time.Duration
+		wantWarning bool
 	}{
-		{"pg_isready", healthcheckTest{"CMD", "pg_isready", "-U", "postgres"}},
-		{"redis-cli ping", healthcheckTest{"CMD-SHELL", "redis-cli ping"}},
-		{"mysqladmin", healthcheckTest{"CMD-SHELL", "mysqladmin ping -h localhost"}},
+		{name: "pg_isready CMD becomes argv exec", hc: Healthcheck{Test: healthcheckTest{"CMD", "pg_isready", "-U", "postgres"}}, want: store.ServiceProbe{Exec: []string{"pg_isready", "-U", "postgres"}}},
+		{name: "redis-cli CMD-SHELL becomes shell exec", hc: Healthcheck{Test: healthcheckTest{"CMD-SHELL", "redis-cli ping | grep PONG"}}, want: store.ServiceProbe{Exec: []string{"/bin/sh", "-c", "redis-cli ping | grep PONG"}}},
+		{name: "mysqladmin ping", hc: Healthcheck{Test: healthcheckTest{"CMD-SHELL", "mysqladmin ping -h localhost"}}, want: store.ServiceProbe{Exec: []string{"/bin/sh", "-c", "mysqladmin ping -h localhost"}}},
+		{name: "bare /dev/tcp stays unset", hc: Healthcheck{Test: healthcheckTest{"CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3001' || exit 1"}}, wantWarning: true},
+		{name: "curl -f without -L accepts 3xx unfollowed", hc: Healthcheck{Test: healthcheckTest{"CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3001/"}}, want: store.ServiceProbe{Path: "/", FollowRedirects: &no, ExpectedStatus: "200-399"}},
+		{name: "curl -fsSL follows", hc: Healthcheck{Test: healthcheckTest{"CMD", "curl", "-fsSL", "http://localhost/login"}}, want: store.ServiceProbe{Path: "/login", FollowRedirects: &yes, ExpectedStatus: "200-399"}},
+		{name: "curl -k https", hc: Healthcheck{Test: healthcheckTest{"CMD-SHELL", "curl -fsSk https://127.0.0.1:9443/api/system/status"}}, want: store.ServiceProbe{Path: "/api/system/status", Scheme: "https", TLSSkipVerify: true, FollowRedirects: &no, ExpectedStatus: "200-399"}},
+		{name: "wget https no-check-certificate keeps default follow", hc: Healthcheck{Test: healthcheckTest{"CMD-SHELL", "wget -q --no-check-certificate -O- https://localhost:8443/health"}}, want: store.ServiceProbe{Path: "/health", Scheme: "https", TLSSkipVerify: true}},
+		{
+			name:      "start_period widens the ready budget",
+			hc:        Healthcheck{Test: healthcheckTest{"CMD-SHELL", "wget -q -O- http://127.0.0.1:80/api/_health/"}, Interval: "10s", Retries: 3, StartPeriod: "120s"},
+			want:      store.ServiceProbe{Path: "/api/_health/", Interval: 10 * time.Second, Failures: 3},
+			wantReady: 150 * time.Second,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hc := &Healthcheck{Test: tt.test}
-			got, warning, err := resolveHealthcheck("db", hc)
+			hc := tt.hc
+			got, warning, err := resolveHealthcheck("svc", &hc)
 			if err != nil {
 				t.Fatalf("resolveHealthcheck() error = %v", err)
 			}
-			if got != nil {
-				t.Errorf("got = %+v, want nil (no fabricated health check)", got)
+			if tt.wantWarning {
+				if got != nil || warning == "" {
+					t.Errorf("got = %+v, warning %q; want nil with a warning", got, warning)
+				}
+				return
 			}
-			if warning == "" {
-				t.Error("warning = \"\", want a non-empty warning explaining the check could not be translated")
+			if got == nil || warning != "" {
+				t.Fatalf("got = %+v, warning %q", got, warning)
+			}
+			if !reflect.DeepEqual(got.ServiceProbe, tt.want) || got.ReadyTimeout != tt.wantReady {
+				t.Errorf("got %+v ready %v, want %+v ready %v", got.ServiceProbe, got.ReadyTimeout, tt.want, tt.wantReady)
+			}
+			if err := got.ProbeConfig().Validate(); err != nil {
+				t.Errorf("translated probe fails validation: %v", err)
 			}
 		})
 	}

@@ -381,3 +381,7 @@ func TestHandleStopProject_PartialFailure(t *testing.T) {
 		t.Fatalf("UpdateDatabaseSuspended call count = %d, want 2: every listed database must be attempted", len(databases.updateCalls))
 	}
 }
+
+func (f *fakeProjectLifecycleAppStore) UpdateServiceHealth(context.Context, string, *store.ServiceHealth) error {
+	return nil
+}

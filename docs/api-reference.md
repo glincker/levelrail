@@ -95,7 +95,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 32 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 35 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -112,6 +112,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name} | AbilityRead | handleGetApp |
 | PUT | /api/v1/apps/{name} | AbilityWrite | handleUpdateApp |
 | DELETE | /api/v1/apps/{name} | AbilityWrite | handleDeleteApp |
+| GET | /api/v1/apps/{name}/health | AbilityRead | handleGetAppHealth |
+| PUT | /api/v1/apps/{name}/health | AbilityWrite | handleSetAppHealth |
+| DELETE | /api/v1/apps/{name}/health | AbilityWrite | handleClearAppHealth |
 | GET | /api/v1/apps/{name}/group | AbilityRead | handleGetAppGroup |
 | GET | /api/v1/apps/{name}/hook-runs | AbilityRead | handleGetAppHookRuns |
 | POST | /api/v1/apps/{name}/compose | AbilityDeploy | handleDeployCompose |
@@ -141,6 +144,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/network | AbilityRead | handleGetAppNetwork |
 
 :::
+
+`PUT /api/v1/apps/{name}/health` replaces only the app's health config (the body is a `ServiceHealth`: `readiness`, `liveness`, `ready_timeout`), leaving every other field alone; an empty body clears it. Probe fields and validation match [the app spec](app-spec-reference.md#probe), with durations in nanoseconds.
 
 ## Secrets / Git Source / Webhooks / Preview Environments
 

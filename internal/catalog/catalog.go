@@ -65,8 +65,8 @@ var Templates = []Template{
     volumes:
       - uptime_kuma_data:/app/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3001' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3001/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -184,8 +184,8 @@ var Templates = []Template{
     volumes:
       - portainer_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/9443' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsSk -o /dev/null https://127.0.0.1:9443/api/system/status"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -293,10 +293,11 @@ var Templates = []Template{
     volumes:
       - wordpress_data:/var/www/html
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
   db:
     image: mysql:8.4
     environment:
@@ -427,10 +428,11 @@ var Templates = []Template{
     volumes:
       - ghost_data:/var/lib/ghost/content
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/2368' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:2368/ghost/api/admin/site/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
   db:
     image: mysql:8.4
     environment:
@@ -530,10 +532,11 @@ var Templates = []Template{
     volumes:
       - mealie_data:/app/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/9000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:9000/api/app/about"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
 `,
 	},
 	{
@@ -593,10 +596,11 @@ var Templates = []Template{
     volumes:
       - firefly_upload_data:/var/www/html/storage/upload
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 90s
   db:
     image: mariadb:11
     environment:
@@ -630,10 +634,11 @@ var Templates = []Template{
     volumes:
       - bookstack_data:/config
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/status"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 90s
   db:
     image: mariadb:11
     environment:
@@ -748,10 +753,11 @@ var Templates = []Template{
     volumes:
       - nocodb_data:/usr/app/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
 `,
 	},
 	{
@@ -813,8 +819,8 @@ var Templates = []Template{
     volumes:
       - trilium_data:/home/node/trilium-data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/api/health-check"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -858,8 +864,8 @@ var Templates = []Template{
     volumes:
       - changedetection_data:/datastore
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/5000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5000/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -880,10 +886,11 @@ var Templates = []Template{
     volumes:
       - stirling_pdf_data:/usr/share/tessdata
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 120s
 `,
 	},
 	{
@@ -990,10 +997,11 @@ var Templates = []Template{
       SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
       ALLOWED_HOSTS: "*"
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8000/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
   db:
     image: postgres:16-alpine
     environment:
@@ -1023,10 +1031,11 @@ var Templates = []Template{
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/misc/ping"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 90s
 `,
 	},
 	{
@@ -1100,10 +1109,11 @@ var Templates = []Template{
       - paperless_data:/usr/src/paperless/data
       - paperless_media:/usr/src/paperless/media
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8000/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 120s
   redis:
     image: redis:7.4
     volumes:
@@ -1177,8 +1187,8 @@ var Templates = []Template{
     volumes:
       - freshrss_data:/var/www/FreshRSS/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
       timeout: 5s
       retries: 3
   db:
@@ -1213,10 +1223,11 @@ var Templates = []Template{
       POSTGRES_USER: joplin
       POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/22300' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:22300/api/ping"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
   db:
     image: postgres:16
     environment:
@@ -1293,8 +1304,8 @@ var Templates = []Template{
     volumes:
       - grocy_data:/config
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -1317,10 +1328,11 @@ var Templates = []Template{
     volumes:
       - kimai_data:/opt/kimai/var
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8001' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8001/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 120s
   db:
     image: mysql:8
     environment:
@@ -1353,10 +1365,11 @@ var Templates = []Template{
       AP_POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
       AP_REDIS_HOST: redis
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 120s
   db:
     image: postgres:16-alpine
     environment:
@@ -1387,10 +1400,11 @@ var Templates = []Template{
     volumes:
       - appsmith_data:/appsmith-stacks
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/api/v1/health"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 180s
 `,
 	},
 	{
@@ -1473,10 +1487,11 @@ var Templates = []Template{
       DB_PASS: $SERVICE_PASSWORD_DB
       DB_NAME: wikijs
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/healthz"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
   db:
     image: postgres:16-alpine
     environment:
@@ -1507,10 +1522,11 @@ var Templates = []Template{
     volumes:
       - zipline_uploads:/zipline/uploads
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
   db:
     image: postgres:16-alpine
     environment:
@@ -1535,8 +1551,8 @@ var Templates = []Template{
     volumes:
       - memos_data:/var/opt/memos
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/5230' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5230/healthz"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -1649,10 +1665,11 @@ var Templates = []Template{
     volumes:
       - docmost_data:/app/data/storage
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
   db:
     image: postgres:16-alpine
     environment:
@@ -1685,10 +1702,11 @@ var Templates = []Template{
       GLITCHTIP_DOMAIN: ${SERVICE_FQDN_GLITCHTIP:-http://localhost:8080}
       DEFAULT_FROM_EMAIL: admin@example.com
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/_health/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 120s
   db:
     image: postgres:16-alpine
     environment:
@@ -1750,10 +1768,11 @@ var Templates = []Template{
       DATABASE_URL: postgresql://calcom:$SERVICE_PASSWORD_DB@db:5432/calcom
       CALCOM_TELEMETRY_DISABLED: "1"
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 180s
   db:
     image: postgres:16-alpine
     environment:
@@ -1786,8 +1805,8 @@ var Templates = []Template{
       - calibreweb_config:/config
       - calibreweb_books:/books
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8083' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8083/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -1813,8 +1832,8 @@ var Templates = []Template{
     volumes:
       - convertx_data:/app/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -1876,8 +1895,8 @@ var Templates = []Template{
       - duplicati_config:/config
       - duplicati_backups:/backups
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8200' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8200/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -1904,10 +1923,11 @@ var Templates = []Template{
     volumes:
       - formbricks_uploads:/apps/web/uploads
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 120s
   db:
     image: pgvector/pgvector:pg16
     environment:
@@ -1985,10 +2005,11 @@ var Templates = []Template{
       - leantime_userfiles:/var/www/html/userfiles
       - leantime_public_userfiles:/var/www/html/public/userfiles
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
   db:
     image: mysql:8.4
     environment:
@@ -2023,8 +2044,8 @@ var Templates = []Template{
       TELEMETRY: "false"
       WEBPORT: "82"
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/82' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:82/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -2050,8 +2071,8 @@ var Templates = []Template{
       - navidrome_data:/data
       - navidrome_music:/music
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/4533' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:4533/ping"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -2082,10 +2103,11 @@ var Templates = []Template{
     volumes:
       - osticket_data:/www/osticket
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 180s
   db:
     image: mariadb:11
     environment:
@@ -2147,10 +2169,11 @@ var Templates = []Template{
       - passbolt_gpg:/etc/passbolt/gpg
       - passbolt_jwt:/etc/passbolt/jwt
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/healthcheck/status.json"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 120s
   db:
     image: mariadb:11
     environment:
@@ -2233,8 +2256,8 @@ var Templates = []Template{
     volumes:
       - prowlarr_config:/config
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/9696' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:9696/ping"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -2260,8 +2283,8 @@ var Templates = []Template{
     volumes:
       - radarr_config:/config
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/7878' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:7878/ping"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -2284,8 +2307,8 @@ var Templates = []Template{
     volumes:
       - redisinsight_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/5540' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5540/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -2307,8 +2330,8 @@ var Templates = []Template{
       SOKETI_DEFAULT_APP_SECRET: $SERVICE_REALBASE64_64_APPSECRET
       SOKETI_PUSHER_SCHEME: https
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/6001' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:6001/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -2334,8 +2357,8 @@ var Templates = []Template{
     volumes:
       - sonarr_config:/config
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8989' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8989/ping"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -2366,10 +2389,11 @@ var Templates = []Template{
     volumes:
       - tolgee_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/actuator/health"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 180s
   db:
     image: postgres:16-alpine
     environment:
@@ -2413,10 +2437,11 @@ var Templates = []Template{
       - weblate_data:/app/data
       - weblate_cache:/app/cache
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/healthz/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 180s
   db:
     image: postgres:16-alpine
     environment:
@@ -2452,10 +2477,11 @@ var Templates = []Template{
       SECRET_PASSWORD: $SERVICE_HEX_64_SECRET
       NEXT_PUBLIC_BASE_URL: ${SERVICE_FQDN_RALLLY:-http://localhost:3000}
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
   db:
     image: postgres:16-alpine
     environment:
@@ -2491,8 +2517,8 @@ var Templates = []Template{
     volumes:
       - grist_data:/persist
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8484' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8484/status"]
+      interval: 10s
       timeout: 5s
       retries: 3
   db:
@@ -2526,8 +2552,8 @@ var Templates = []Template{
     volumes:
       - readeck_data:/readeck
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8000/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -2552,8 +2578,8 @@ var Templates = []Template{
     volumes:
       - linkding_data:/etc/linkding/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/9090' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:9090/health"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -2580,10 +2606,11 @@ var Templates = []Template{
     volumes:
       - hedgedoc_uploads:/hedgedoc/public/uploads
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/status"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
   db:
     image: postgres:16-alpine
     environment:
@@ -2638,8 +2665,8 @@ var Templates = []Template{
     volumes:
       - wakapi_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/api/health"]
+      interval: 10s
       timeout: 5s
       retries: 3
   db:
@@ -2746,10 +2773,11 @@ var Templates = []Template{
     volumes:
       - chatwoot_data:/app/storage
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/api"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 180s
   db:
     image: postgres:16-alpine
     environment:
@@ -2811,8 +2839,8 @@ var Templates = []Template{
     volumes:
       - pocket_id_data:/app/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/1411' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:1411/healthz"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -2834,8 +2862,8 @@ var Templates = []Template{
     volumes:
       - privatebin_data:/srv/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -2913,10 +2941,11 @@ var Templates = []Template{
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/15672' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:15672/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
 `,
 	},
 	{
@@ -2939,8 +2968,8 @@ var Templates = []Template{
     environment:
       GLANCES_OPT: "-w"
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/61208' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:61208/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -3020,10 +3049,11 @@ var Templates = []Template{
     volumes:
       - pihole_data:/etc/pihole
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/admin/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
 `,
 	},
 	{
@@ -3070,8 +3100,8 @@ var Templates = []Template{
     volumes:
       - beszel_data:/beszel_data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8090' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8090/api/health"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -3095,10 +3125,11 @@ var Templates = []Template{
     volumes:
       - matomo_data:/var/www/html
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
   db:
     image: mariadb:10.11
     environment:
@@ -3131,10 +3162,11 @@ var Templates = []Template{
       - photoprism_originals:/photoprism/originals
       - photoprism_storage:/photoprism/storage
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/2342' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:2342/api/v1/status"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 120s
 `,
 	},
 	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
@@ -3155,10 +3187,11 @@ var Templates = []Template{
     volumes:
       - planka_data:/app/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/1337' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:1337/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
   db:
     image: postgres:16-alpine
     environment:
@@ -3184,10 +3217,11 @@ var Templates = []Template{
     volumes:
       - baserow_data:/baserow/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/api/_health/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 240s
 `,
 	},
 	{
@@ -3227,10 +3261,11 @@ var Templates = []Template{
       - kavita_config:/kavita/config
       - kavita_data:/manga
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/5000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5000/api/health"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
 `,
 	},
 	{
@@ -3248,10 +3283,11 @@ var Templates = []Template{
       - komga_config:/config
       - komga_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/25600' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:25600/actuator/health"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 120s
 `,
 	},
 	{
@@ -3310,8 +3346,8 @@ var Templates = []Template{
       - kanboard_data:/var/www/app/data
       - kanboard_plugins:/var/www/app/plugins
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -3334,10 +3370,11 @@ var Templates = []Template{
       - wallabag_data:/var/www/wallabag/data
       - wallabag_images:/var/www/wallabag/web/assets/images
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
 `,
 	},
 	{
@@ -3374,8 +3411,8 @@ var Templates = []Template{
     volumes:
       - nodered_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/1880' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:1880/"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -3404,10 +3441,11 @@ var Templates = []Template{
       - tandoor_data:/opt/recipes/mediafiles
       - tandoor_static:/opt/recipes/staticfiles
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 120s
   db:
     image: postgres:16-alpine
     environment:
@@ -3434,8 +3472,8 @@ var Templates = []Template{
     volumes:
       - homebox_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/7745' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:7745/api/v1/status"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -3455,10 +3493,11 @@ var Templates = []Template{
     volumes:
       - bytebase_data:/var/opt/bytebase
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/healthz"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 60s
 `,
 	},
 	{
@@ -3508,10 +3547,11 @@ var Templates = []Template{
     volumes:
       - linkwarden_data:/data/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 120s
   db:
     image: postgres:16-alpine
     environment:
@@ -3542,8 +3582,8 @@ var Templates = []Template{
     volumes:
       - actual_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/5006' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5006/health"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,
@@ -3563,8 +3603,8 @@ var Templates = []Template{
     image: quay.io/redlib/redlib:sha-a4d36e9
     ports: ["8080:8080"]
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/settings"]
+      interval: 10s
       timeout: 5s
       retries: 3
 `,

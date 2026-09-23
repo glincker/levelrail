@@ -19,6 +19,7 @@ type (
 	serviceResources                 = apiclient.ServiceResources
 	serviceProbe                     = apiclient.ServiceProbe
 	serviceHealth                    = apiclient.ServiceHealth
+	appHealthResource                = apiclient.AppHealthResource
 	serviceHooks                     = apiclient.ServiceHooks
 	buildTriggerRequest              = apiclient.BuildTriggerRequest
 	buildTriggerRequestBuild         = apiclient.BuildTriggerRequestBuild

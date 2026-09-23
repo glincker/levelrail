@@ -82,6 +82,9 @@ func (svc *Service) validate(name string) error {
 	if err := svc.validateHooks(name); err != nil {
 		return err
 	}
+	if err := svc.Health.Validate(name); err != nil {
+		return err
+	}
 	if err := svc.validateEgress(name); err != nil {
 		return err
 	}

@@ -200,6 +200,7 @@ type Controller struct {
 	store          ServiceStore
 	runtime        docker.Runtime
 	httpClient     *http.Client
+	probeLimits    probe.Limits
 	readyBudget    time.Duration
 	secretResolver SecretResolver          // nil is valid: a service with no secret-backed env vars never needs one
 	deployRecorder DeployRecorder          // nil is valid: deploy frequency just isn't recorded
@@ -1584,26 +1585,18 @@ func (c *Controller) effectiveReadyBudget(desired *store.DesiredService) time.Du
 }
 
 // waitReady gates a freshly (re)started container on its readiness
-// probe, if the service declares one and has a port to probe at all. A
-// service with no port (a worker with nothing listening) or no
-// readiness config is considered ready the moment it's running: there's
-// nothing more to check.
+// probe. A service with no readiness config, or an HTTP probe but no port
+// (a worker with nothing listening), is ready the moment it's running.
 func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService) error {
-	if desired.Health == nil || desired.Health.Readiness == nil {
-		return nil
-	}
-	if desired.Port == 0 {
+	readiness := readinessProbeFor(desired)
+	if readiness == nil {
 		return nil
 	}
 
-	addr, err := primaryAddr(state)
+	target, err := probeTarget(state, *readiness)
 	if err != nil {
-		// A container reporting no published port here has virtually
-		// always already died (Docker only clears port bindings once a
-		// container stops), most commonly a process that exits before
-		// the runtime ever starts it. Give that its own crash reason
-		// instead of leaking the low-level "no ports" message as a
-		// generic ReadinessFailed.
+		// No published port here almost always means the container
+		// already died (Docker clears bindings once it stops).
 		if crash := c.exitedCrash(ctx, state.Name); crash != nil {
 			return crash
 		}
@@ -1613,14 +1606,10 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 	probeCtx, cancel := context.WithTimeout(ctx, c.effectiveReadyBudget(desired))
 	defer cancel()
 
-	cfg := probe.Config{
-		Path:     desired.Health.Readiness.Path,
-		Interval: desired.Health.Readiness.Interval,
-		Timeout:  desired.Health.Readiness.Timeout,
-	}
+	cfg := readiness.ProbeConfig()
 
 	readyErr := make(chan error, 1)
-	go func() { readyErr <- probe.WaitReady(probeCtx, c.httpClient, addr, cfg) }()
+	go func() { readyErr <- c.prober().WaitReady(probeCtx, target, cfg) }()
 
 	// inspector is present only for a Runtime that can tell "still
 	// starting" apart from "already exited/OOM-killed" (docker.Client
@@ -1657,19 +1646,17 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 // a minute here for one unready replica would stall every other
 // service's reconcile behind it.
 func (c *Controller) verifyRunningReady(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService) error {
-	if desired.Health == nil || desired.Health.Readiness == nil || desired.Port == 0 {
+	readiness := readinessProbeFor(desired)
+	if readiness == nil {
 		return nil
 	}
 
-	addr, err := primaryAddr(state)
+	target, err := probeTarget(state, *readiness)
 	if err != nil {
 		return fmt.Errorf("readiness recheck: %w", err)
 	}
 
-	probeErr := probe.Check(ctx, c.httpClient, addr, probe.Config{
-		Path:    desired.Health.Readiness.Path,
-		Timeout: desired.Health.Readiness.Timeout,
-	})
+	probeErr := c.prober().Check(ctx, target, readiness.ProbeConfig())
 	if probeErr == nil {
 		return nil
 	}

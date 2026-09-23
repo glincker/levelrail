@@ -530,10 +530,16 @@ func toServiceProbe(p spec.Probe) (serviceProbe, error) {
 		return serviceProbe{}, fmt.Errorf("timeout: %w", err)
 	}
 	return serviceProbe{
-		Path:     p.Path,
-		Interval: interval.Nanoseconds(),
-		Timeout:  timeout.Nanoseconds(),
-		Failures: p.Failures,
+		Path:            p.Path,
+		Scheme:          p.Scheme,
+		Host:            p.Host,
+		TLSSkipVerify:   p.TLSSkipVerify,
+		FollowRedirects: p.FollowRedirects,
+		ExpectedStatus:  string(p.ExpectedStatus),
+		Exec:            []string(p.Exec),
+		Interval:        interval.Nanoseconds(),
+		Timeout:         timeout.Nanoseconds(),
+		Failures:        p.Failures,
 	}, nil
 }
 

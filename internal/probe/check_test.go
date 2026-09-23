@@ -30,7 +30,7 @@ func TestCheck_SingleAttemptPerCall(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			err := Check(context.Background(), srv.Client(), hostPort(t, srv), Config{Path: "/livez", Timeout: time.Second})
+			err := New(srv.Client(), nil, Limits{}).Check(context.Background(), Target{Addr: hostPort(t, srv)}, Config{Path: "/livez", Timeout: time.Second})
 			if tt.wantErr != (err != nil) {
 				t.Errorf("Check() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -54,7 +54,7 @@ func TestCheck_HangingHandlerFailsOnTimeout(t *testing.T) {
 	defer close(block)
 
 	start := time.Now()
-	err := Check(context.Background(), srv.Client(), hostPort(t, srv), Config{Path: "/livez", Timeout: 50 * time.Millisecond})
+	err := New(srv.Client(), nil, Limits{}).Check(context.Background(), Target{Addr: hostPort(t, srv)}, Config{Path: "/livez", Timeout: 50 * time.Millisecond})
 	if err == nil {
 		t.Fatal("Check() error = nil, want a timeout error against a hung handler")
 	}
@@ -70,7 +70,7 @@ func TestCheck_ConnectionRefused(t *testing.T) {
 	addr := hostPort(t, srv)
 	srv.Close()
 
-	if err := Check(context.Background(), http.DefaultClient, addr, Config{Path: "/livez", Timeout: 200 * time.Millisecond}); err == nil {
+	if err := New(http.DefaultClient, nil, Limits{}).Check(context.Background(), Target{Addr: addr}, Config{Path: "/livez", Timeout: 200 * time.Millisecond}); err == nil {
 		t.Error("Check() error = nil, want a connection error")
 	}
 }
@@ -83,7 +83,7 @@ func TestCheck_ZeroTimeoutUsesDefault(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if err := Check(context.Background(), srv.Client(), hostPort(t, srv), Config{Path: "/"}); err != nil {
+	if err := New(srv.Client(), nil, Limits{}).Check(context.Background(), Target{Addr: hostPort(t, srv)}, Config{Path: "/"}); err != nil {
 		t.Fatalf("Check() with zero-value Config error = %v", err)
 	}
 }

@@ -132,6 +132,12 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	for key, svc := range req.Services {
+		if err := svc.Health.Validate(key); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
 	if deploySpecHasBindMount(req.Services) && !rt.callerHasAbility(r, AbilityRoot) {
 		writeError(w, http.StatusForbidden, "one or more services declare a bind mount, which requires the root ability")
 		return

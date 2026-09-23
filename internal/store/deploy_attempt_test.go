@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -396,10 +397,10 @@ func TestNewDeployAttemptSnapshot(t *testing.T) {
 			if (got.Health == nil) != (tt.want.Health == nil) {
 				t.Errorf("Health = %v, want %v", got.Health, tt.want.Health)
 			} else if got.Health != nil {
-				if *got.Health.Readiness != *tt.want.Health.Readiness {
+				if !reflect.DeepEqual(*got.Health.Readiness, *tt.want.Health.Readiness) {
 					t.Errorf("Health.Readiness = %+v, want %+v", got.Health.Readiness, tt.want.Health.Readiness)
 				}
-				if *got.Health.Liveness != *tt.want.Health.Liveness {
+				if !reflect.DeepEqual(*got.Health.Liveness, *tt.want.Health.Liveness) {
 					t.Errorf("Health.Liveness = %+v, want %+v", got.Health.Liveness, tt.want.Health.Liveness)
 				}
 			}
@@ -508,7 +509,7 @@ func TestSaveAndGetDeployAttempt_Snapshot(t *testing.T) {
 	if got.Snapshot.Strategy != want.Strategy {
 		t.Errorf("Snapshot.Strategy = %q, want %q", got.Snapshot.Strategy, want.Strategy)
 	}
-	if got.Snapshot.Health == nil || *got.Snapshot.Health.Readiness != *want.Health.Readiness || *got.Snapshot.Health.Liveness != *want.Health.Liveness {
+	if got.Snapshot.Health == nil || !reflect.DeepEqual(*got.Snapshot.Health.Readiness, *want.Health.Readiness) || !reflect.DeepEqual(*got.Snapshot.Health.Liveness, *want.Health.Liveness) {
 		t.Errorf("Snapshot.Health = %+v, want %+v", got.Snapshot.Health, want.Health)
 	}
 	if len(got.Snapshot.Volumes) != 1 || got.Snapshot.Volumes[0] != want.Volumes[0] {

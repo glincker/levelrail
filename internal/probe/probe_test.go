@@ -24,7 +24,7 @@ func TestWaitReady_ImmediateSuccess(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	err := WaitReady(ctx, srv.Client(), hostPort(t, srv), Config{Path: "/healthz", Interval: 50 * time.Millisecond, Timeout: 500 * time.Millisecond})
+	err := New(srv.Client(), nil, Limits{}).WaitReady(ctx, Target{Addr: hostPort(t, srv)}, Config{Path: "/healthz", Interval: 50 * time.Millisecond, Timeout: 500 * time.Millisecond})
 	if err != nil {
 		t.Fatalf("WaitReady() error = %v", err)
 	}
@@ -45,7 +45,7 @@ func TestWaitReady_SucceedsAfterInitialFailures(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	err := WaitReady(ctx, srv.Client(), hostPort(t, srv), Config{Path: "/healthz", Interval: 20 * time.Millisecond, Timeout: 500 * time.Millisecond})
+	err := New(srv.Client(), nil, Limits{}).WaitReady(ctx, Target{Addr: hostPort(t, srv)}, Config{Path: "/healthz", Interval: 20 * time.Millisecond, Timeout: 500 * time.Millisecond})
 	if err != nil {
 		t.Fatalf("WaitReady() error = %v", err)
 	}
@@ -63,7 +63,7 @@ func TestWaitReady_TimesOutWhenNeverHealthy(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
 	defer cancel()
 
-	err := WaitReady(ctx, srv.Client(), hostPort(t, srv), Config{Path: "/healthz", Interval: 20 * time.Millisecond, Timeout: 500 * time.Millisecond})
+	err := New(srv.Client(), nil, Limits{}).WaitReady(ctx, Target{Addr: hostPort(t, srv)}, Config{Path: "/healthz", Interval: 20 * time.Millisecond, Timeout: 500 * time.Millisecond})
 	if err == nil {
 		t.Fatal("WaitReady() error = nil, want a timeout error")
 	}
@@ -76,7 +76,7 @@ func TestWaitReady_ConnectionRefused(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	err := WaitReady(ctx, http.DefaultClient, "127.0.0.1:1", Config{Path: "/", Interval: 20 * time.Millisecond, Timeout: 30 * time.Millisecond})
+	err := New(http.DefaultClient, nil, Limits{}).WaitReady(ctx, Target{Addr: "127.0.0.1:1"}, Config{Path: "/", Interval: 20 * time.Millisecond, Timeout: 30 * time.Millisecond})
 	if err == nil {
 		t.Fatal("WaitReady() error = nil, want an error for a port nothing listens on")
 	}
@@ -110,7 +110,7 @@ func TestWaitReady_StatusCodeRanges(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
 
-			err := WaitReady(ctx, srv.Client(), hostPort(t, srv), Config{Path: "/", Interval: 20 * time.Millisecond, Timeout: 100 * time.Millisecond})
+			err := New(srv.Client(), nil, Limits{}).WaitReady(ctx, Target{Addr: hostPort(t, srv)}, Config{Path: "/", Interval: 20 * time.Millisecond, Timeout: 100 * time.Millisecond})
 			if tt.wantReady && err != nil {
 				t.Errorf("status %d: WaitReady() error = %v, want nil", tt.status, err)
 			}
@@ -132,7 +132,7 @@ func TestWaitReady_ZeroConfigUsesDefaults(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err := WaitReady(ctx, srv.Client(), hostPort(t, srv), Config{Path: "/"})
+	err := New(srv.Client(), nil, Limits{}).WaitReady(ctx, Target{Addr: hostPort(t, srv)}, Config{Path: "/"})
 	if err != nil {
 		t.Fatalf("WaitReady() with zero-value Config error = %v", err)
 	}
