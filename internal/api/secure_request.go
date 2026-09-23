@@ -45,5 +45,5 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expi
 	} else {
 		c.Expires = expires
 	}
-	http.SetCookie(w, c)
+	http.SetCookie(w, c) // NOSONAR: Secure is set whenever the client connection is HTTPS, see requestIsHTTPS
 }

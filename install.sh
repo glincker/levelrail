@@ -41,6 +41,8 @@ DATA_DIR="${LEVELRAIL_DATA_DIR:-/var/lib/levelrail-data}"
 UNIT_PATH="/etc/systemd/system/${SERVICE_NAME}.service"
 BIN_PATH="${INSTALL_DIR}/${BINARY_NAME}"
 DASHBOARD_PORT=8080
+# The dashboard is plain HTTP until the operator configures a domain with TLS.
+DASHBOARD_SCHEME="http"
 HTTPS_ONLY="=https"
 MIN_RAM_MB="${LEVELRAIL_MIN_RAM_MB:-1024}"
 MIN_DISK_GB="${LEVELRAIL_MIN_DISK_GB:-10}"
@@ -434,12 +436,12 @@ print_summary() {
 	for ip in $ips; do
 		case "$ip" in *:*) host="[$ip]" ;; *) host="$ip" ;; esac
 		if [ -n "$token" ]; then
-			log "  http://${host}:${DASHBOARD_PORT}/login?setup=${token}"
+			log "  ${DASHBOARD_SCHEME}://${host}:${DASHBOARD_PORT}/login?setup=${token}"
 		else
-			log "  http://${host}:${DASHBOARD_PORT}"
+			log "  ${DASHBOARD_SCHEME}://${host}:${DASHBOARD_PORT}"
 		fi
 	done
-	[ -n "$ips" ] || log "  http://<server-ip>:${DASHBOARD_PORT}"
+	[ -n "$ips" ] || log "  ${DASHBOARD_SCHEME}://<server-ip>:${DASHBOARD_PORT}"
 	log ""
 	if [ -n "$token" ]; then
 		cat <<EOF
