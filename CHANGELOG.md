@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0-beta.12](https://github.com/glincker/levelrail/compare/v0.2.0-beta.11...v0.2.0-beta.12) (2026-09-23)
+
+
+### Features
+
+* unblock Python/Django Railpack deploys ([#623](https://github.com/glincker/levelrail/issues/623)) ([caafa38](https://github.com/glincker/levelrail/commit/caafa38183d599d626da71c6f41f5991fccde09b))
+
+
+### Bug Fixes
+
+* harden Vikunja and Keycloak catalog templates toward production defaults ([#622](https://github.com/glincker/levelrail/issues/622)) ([999ab87](https://github.com/glincker/levelrail/commit/999ab87fdaf21533d7e5f10f44345ea11c0900db))
+
 ## [0.2.0-beta.11](https://github.com/glincker/levelrail/compare/v0.2.0-beta.10...v0.2.0-beta.11) (2026-09-23)
 
 
