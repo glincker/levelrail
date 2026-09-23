@@ -97,3 +97,53 @@ func TestRecordBuildDuration_WritesOneSample(t *testing.T) {
 		t.Errorf("Query()[0].Value = %v, want 42 (seconds)", got[0].Value)
 	}
 }
+
+func TestRecordContainerRestart_MultipleRestarts_EachCounted(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+	base := time.Unix(1_700_000_000, 0).UTC()
+
+	if err := db.RecordContainerRestart(ctx, "web", base); err != nil {
+		t.Fatalf("first RecordContainerRestart() error = %v", err)
+	}
+	if err := db.RecordContainerRestart(ctx, "web", base.Add(time.Hour)); err != nil {
+		t.Fatalf("second RecordContainerRestart() error = %v", err)
+	}
+
+	got, err := db.Query(ctx, "service:web", MetricContainerRestartCount, base.Add(-time.Minute), base.Add(2*time.Hour))
+	if err != nil {
+		t.Fatalf("Query() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("Query() = %d samples, want 2 (one per restart)", len(got))
+	}
+	if got[0].Value != 1 || got[1].Value != 1 {
+		t.Errorf("Query() values = %v, %v, want 1, 1", got[0].Value, got[1].Value)
+	}
+
+	bucketed := Aggregate(got, base.Add(-time.Minute), 3*time.Hour)
+	if len(bucketed) != 1 || bucketed[0].Count != 2 {
+		t.Errorf("Aggregate() = %+v, want a single bucket with Count 2 (restart count for this range)", bucketed)
+	}
+}
+
+func TestRecordContainerRestart_DifferentServices_DoNotLeak(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+	at := time.Unix(1_700_000_000, 0).UTC()
+
+	if err := db.RecordContainerRestart(ctx, "web", at); err != nil {
+		t.Fatalf("RecordContainerRestart(web) error = %v", err)
+	}
+	if err := db.RecordContainerRestart(ctx, "worker", at); err != nil {
+		t.Fatalf("RecordContainerRestart(worker) error = %v", err)
+	}
+
+	got, err := db.Query(ctx, "service:web", MetricContainerRestartCount, at.Add(-time.Minute), at.Add(time.Minute))
+	if err != nil {
+		t.Fatalf("Query() error = %v", err)
+	}
+	if len(got) != 1 {
+		t.Errorf("Query(service:web) = %d samples, want 1 (worker's restart must not leak in)", len(got))
+	}
+}

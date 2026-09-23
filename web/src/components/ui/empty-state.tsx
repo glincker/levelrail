@@ -1,30 +1,33 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { HelpLink } from '@/components/HelpLink'
 
-// Shared zero-item state for list pages/tables: an icon in a muted
-// circle, a one-line title, a slightly longer explainer, and an
-// optional primary action. Extracted from what used to be near-
-// identical inline markup duplicated across routes/apps/index.tsx,
-// routes/databases/index.tsx, and routes/nodes/index.tsx (byte-for-byte
-// the same wrapper classes, differing only in icon/copy/action), so a
-// future resource list gets this for free instead of a fourth copy.
-//
-// Deliberately not a dialog, toast, or anything with its own state:
-// this is presentation only, the caller still owns whichever
-// create-resource flow the action button opens.
+// Shared zero-item state for list pages and tables. Presentation only:
+// the caller owns whichever create-resource flow the action opens.
 export function EmptyState({
   icon,
   title,
   description,
   action,
+  secondaryAction,
+  hint,
+  helpPath,
+  helpLabel,
   className,
 }: {
   /** A single Phosphor icon element, e.g. `<PackageIcon className="size-5" />`. */
   icon: ReactNode
   title: string
   description: string
-  /** Typically a Button (or a dialog/wizard trigger rendering one). Omit for a purely informational empty state. */
+  /** Primary action, typically a Button or a dialog/wizard trigger rendering one. Omit for a purely informational state. */
   action?: ReactNode
+  /** Lower-emphasis action next to the primary one, e.g. "Start from a template". */
+  secondaryAction?: ReactNode
+  /** Short note pointing at an unmet prerequisite, e.g. why the primary action is a link to a different page. */
+  hint?: ReactNode
+  /** Docs path passed straight through to HelpLink; renders nothing without a configured docs URL. */
+  helpPath?: string
+  helpLabel?: string
   className?: string
 }) {
   return (
@@ -46,7 +49,22 @@ export function EmptyState({
           {description}
         </p>
       </div>
-      {action}
+      {hint ? (
+        <p className="mx-auto max-w-sm text-xs text-muted-foreground">{hint}</p>
+      ) : null}
+      {action || secondaryAction ? (
+        <div className="flex items-center gap-2">
+          {action}
+          {secondaryAction}
+        </div>
+      ) : null}
+      {helpPath ? (
+        <HelpLink
+          path={helpPath}
+          label={helpLabel ?? 'Learn more'}
+          variant="inline"
+        />
+      ) : null}
     </div>
   )
 }

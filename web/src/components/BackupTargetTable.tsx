@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import {
   CloudArrowUpIcon,
   PlugsConnectedIcon,
@@ -64,7 +65,13 @@ function TestButton({ target }: { target: BackupTarget }) {
 // since GET /api/v1/backup-targets carries none of that (nothing writes
 // backup history yet, see queries/backupTargets.ts's own header
 // comment), rather than a column that would just be permanently empty.
-export function BackupTargetTable({ targets }: { targets: BackupTarget[] }) {
+export function BackupTargetTable({
+  targets,
+  action,
+}: {
+  targets: BackupTarget[]
+  action?: ReactNode
+}) {
   if (targets.length === 0) {
     return (
       <EmptyState
@@ -72,6 +79,7 @@ export function BackupTargetTable({ targets }: { targets: BackupTarget[] }) {
         icon={<CloudArrowUpIcon className="size-5" />}
         title="No backup targets connected"
         description="Connect an S3-compatible bucket (AWS S3, Cloudflare R2, or any other S3-compatible endpoint) to use as a backup destination for managed databases."
+        action={action}
       />
     )
   }

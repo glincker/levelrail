@@ -41,7 +41,10 @@ function RegistryCredentialsPage() {
         </div>
         <CreateRegistryCredentialDialog />
       </div>
-      <RegistryCredentialTable credentials={credentials} />
+      <RegistryCredentialTable
+        credentials={credentials}
+        action={<CreateRegistryCredentialDialog />}
+      />
     </div>
   )
 }

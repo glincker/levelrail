@@ -147,6 +147,21 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 
 	name := r.PathValue("name")
 
+	// Checked before anything else in this handler, including the
+	// "not configured" 501 below: this is the one gate an abusive or
+	// misbehaving client hits before the DB lookup, secret resolution,
+	// and saveWebhookDelivery write this route otherwise runs on every
+	// request regardless of outcome, signature-verification failures
+	// included.
+	if rt.webhookRateLimit != nil {
+		key := clientIP(r) + "|" + name
+		if allowed, retryAfter := rt.webhookRateLimit.allow(key); !allowed {
+			rt.logger.Warn("api: git push webhook: rate limited", slog.String("name", name), slog.String("remote_addr", r.RemoteAddr))
+			writeRateLimited(w, retryAfter)
+			return
+		}
+	}
+
 	if rt.gitSourceSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "git sources are not configured on this control plane (no master key set)")
 		return
