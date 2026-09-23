@@ -1,44 +1,41 @@
 name: codeql
 
+# Path filtering moved to the trigger itself (paths/paths-ignore below)
+# instead of a runtime dorny/paths-filter job: ci.yml already computes
+# the identical backend/frontend split for every push/PR, so a second
+# job re-deriving the same answer on a second runner was pure waste, not
+# a real gate. Trigger-level filtering also means an irrelevant PR (e.g.
+# workflow-only) never even queues a runner for the job below, rather
+# than queuing one just to decide to skip. Workflow-file changes
+# deliberately do NOT re-trigger a scan here (unlike ci.yml's own build/
+# test jobs): CodeQL analyzes source, not YAML, so a workflow edit alone
+# has nothing new for it to find.
 on:
   push:
     branches: [main]
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'web/**'
   pull_request:
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'web/**'
   schedule:
     - cron: "0 8 * * 3"
   workflow_dispatch:
 
 jobs:
-  # Only meaningful for pull_request/push (a real diff to scope);
-  # schedule/workflow_dispatch skip this and both languages run below.
-  # Workflow-only changes deliberately don't force a rescan here (unlike
-  # ci.yml): CodeQL analyzes source, not YAML.
-  changes:
-    name: Detect changed areas
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    if: github.event_name == 'pull_request' || github.event_name == 'push'
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - '**/*.go'
-              - 'go.mod'
-              - 'go.sum'
-            frontend:
-              - 'web/**'
-
+  # A path-scoped trigger can't distinguish "which language changed",
+  # only "did anything relevant change", so both languages run whenever
+  # this workflow runs at all (including the weekly schedule and manual
+  # dispatch, which have no diff to scope in the first place).
   analyze-go:
     name: analyze (go)
     runs-on: ubuntu-latest
-    needs: changes
-    if: always() && (needs.changes.result == 'skipped' || needs.changes.outputs.backend == 'true')
     permissions:
       security-events: write
       contents: read
@@ -53,8 +50,6 @@ jobs:
   analyze-js:
     name: analyze (javascript-typescript)
     runs-on: ubuntu-latest
-    needs: changes
-    if: always() && (needs.changes.result == 'skipped' || needs.changes.outputs.frontend == 'true')
     permissions:
       security-events: write
       contents: read

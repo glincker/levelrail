@@ -39,7 +39,10 @@ function NotificationChannelsPage() {
         </div>
         <CreateNotificationChannelDialog />
       </div>
-      <NotificationChannelTable channels={channels} />
+      <NotificationChannelTable
+        channels={channels}
+        action={<CreateNotificationChannelDialog />}
+      />
     </div>
   )
 }

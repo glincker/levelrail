@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { PackageIcon, PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Table,
@@ -92,8 +93,10 @@ function TestButton({ credential }: { credential: RegistryCredential }) {
 // link lives).
 export function RegistryCredentialTable({
   credentials,
+  action,
 }: {
   credentials: RegistryCredential[]
+  action?: ReactNode
 }) {
   if (credentials.length === 0) {
     return (
@@ -102,6 +105,7 @@ export function RegistryCredentialTable({
         icon={<PackageIcon className="size-5" />}
         title="No registry credentials"
         description="Add a username and password (or access token) to pull private images from a container registry, referenced by name from app.yaml's build.registryCredential field."
+        action={action}
       />
     )
   }

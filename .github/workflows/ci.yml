@@ -8,13 +8,11 @@ on:
       - '**/*.md'
       - 'adr/**'
       - 'LICENSE'
+  # No paths-ignore here: required checks must report on docs-only PRs or
+  # auto-merge waits forever. The `changes` job skips the heavy jobs instead.
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - '**/*.md'
-      - 'adr/**'
-      - 'LICENSE'
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}

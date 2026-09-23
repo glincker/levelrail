@@ -1,4 +1,8 @@
-import { PencilSimpleIcon, ShieldCheckIcon, UsersIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  PencilSimpleIcon,
+  ShieldCheckIcon,
+  UsersIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Table,
   TableBody,
@@ -25,6 +29,11 @@ export function PolicyTable({ policies }: { policies: PolicyResource[] }) {
         icon={<ShieldCheckIcon className="size-5" />}
         title="No IAM policies yet"
         description="Create one to grant or deny access scoped to a specific app or database."
+        action={
+          <PolicyFormDialog
+            trigger={<Button size="sm">Create policy</Button>}
+          />
+        }
       />
     )
   }
@@ -48,7 +57,9 @@ export function PolicyTable({ policies }: { policies: PolicyResource[] }) {
               </TableCell>
               <TableCell className="max-w-xs truncate text-muted-foreground">
                 {policy.description || (
-                  <span className="text-muted-foreground/60">No description</span>
+                  <span className="text-muted-foreground/60">
+                    No description
+                  </span>
                 )}
               </TableCell>
               <TableCell className="text-muted-foreground">

@@ -28,11 +28,12 @@ type Template struct {
 // and GET /api/v1/service-templates/{id}.
 var Templates = []Template{
 	{
-		ID:               "n8n",
-		Name:             "n8n",
-		Slogan:           "Build automations and connect your tools with a visual, node-based workflow editor.",
-		Category:         "Automation",
-		DocumentationURL: "https://docs.n8n.io",
+		ID:                     "n8n",
+		Name:                   "n8n",
+		Slogan:                 "Build automations and connect your tools with a visual, node-based workflow editor.",
+		Category:               "Automation",
+		DocumentationURL:       "https://docs.n8n.io",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   n8n:
     image: n8nio/n8n:1.62.1
@@ -43,28 +44,40 @@ var Templates = []Template{
       N8N_PORT: "5678"
     volumes:
       - n8n_data:/home/node/.n8n
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "uptime-kuma",
-		Name:             "Uptime Kuma",
-		Slogan:           "A self-hosted uptime monitor with a clean dashboard for HTTP, TCP, DNS, and ping checks.",
-		Category:         "Monitoring",
-		DocumentationURL: "https://github.com/louislam/uptime-kuma/wiki",
+		ID:                     "uptime-kuma",
+		Name:                   "Uptime Kuma",
+		Slogan:                 "A self-hosted uptime monitor with a clean dashboard for HTTP, TCP, DNS, and ping checks.",
+		Category:               "Monitoring",
+		DocumentationURL:       "https://github.com/louislam/uptime-kuma/wiki",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   uptime-kuma:
     image: louislam/uptime-kuma:1.23.13
     ports: ["3001:3001"]
     volumes:
       - uptime_kuma_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3001' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "minio",
-		Name:             "MinIO",
-		Slogan:           "S3-compatible object storage you run yourself, with a built-in web console.",
-		Category:         "Storage",
-		DocumentationURL: "https://min.io/docs/minio/linux/index.html",
+		ID:                     "minio",
+		Name:                   "MinIO",
+		Slogan:                 "S3-compatible object storage you run yourself, with a built-in web console.",
+		Category:               "Storage",
+		DocumentationURL:       "https://min.io/docs/minio/linux/index.html",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Real MinIO images require a "server /data" style command to
 		// actually serve.
 		Compose: `services:
@@ -77,14 +90,20 @@ var Templates = []Template{
       MINIO_ROOT_PASSWORD: $SERVICE_PASSWORD_ROOT
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:9000/minio/health/live || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "metabase",
-		Name:             "Metabase",
-		Slogan:           "Ask questions of your data and share dashboards, no SQL required.",
-		Category:         "Analytics",
-		DocumentationURL: "https://www.metabase.com/docs/latest/",
+		ID:                     "metabase",
+		Name:                   "Metabase",
+		Slogan:                 "Ask questions of your data and share dashboards, no SQL required.",
+		Category:               "Analytics",
+		DocumentationURL:       "https://www.metabase.com/docs/latest/",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		Compose: `services:
   metabase:
     image: metabase/metabase:v0.50.8
@@ -93,14 +112,20 @@ var Templates = []Template{
       MB_DB_FILE: /metabase-data/metabase.db
     volumes:
       - metabase_data:/metabase-data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "grafana",
-		Name:             "Grafana",
-		Slogan:           "Dashboards and exploration for metrics, logs, and traces from any data source.",
-		Category:         "Monitoring",
-		DocumentationURL: "https://grafana.com/docs/grafana/latest/",
+		ID:                     "grafana",
+		Name:                   "Grafana",
+		Slogan:                 "Dashboards and exploration for metrics, logs, and traces from any data source.",
+		Category:               "Monitoring",
+		DocumentationURL:       "https://grafana.com/docs/grafana/latest/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   grafana:
     image: grafana/grafana:11.2.0
@@ -109,28 +134,40 @@ var Templates = []Template{
       GF_SECURITY_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
     volumes:
       - grafana_data:/var/lib/grafana
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "prometheus",
-		Name:             "Prometheus",
-		Slogan:           "A metrics time-series database and alerting engine built for pull-based scraping.",
-		Category:         "Monitoring",
-		DocumentationURL: "https://prometheus.io/docs/introduction/overview/",
+		ID:                     "prometheus",
+		Name:                   "Prometheus",
+		Slogan:                 "A metrics time-series database and alerting engine built for pull-based scraping.",
+		Category:               "Monitoring",
+		DocumentationURL:       "https://prometheus.io/docs/introduction/overview/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   prometheus:
     image: prom/prometheus:v2.54.1
     ports: ["9090:9090"]
     volumes:
       - prometheus_data:/prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:9090/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "portainer",
-		Name:             "Portainer",
-		Slogan:           "A web UI for managing containers, images, volumes, and networks.",
-		Category:         "Infrastructure",
-		DocumentationURL: "https://docs.portainer.io",
+		ID:                     "portainer",
+		Name:                   "Portainer",
+		Slogan:                 "A web UI for managing containers, images, volumes, and networks.",
+		Category:               "Infrastructure",
+		DocumentationURL:       "https://docs.portainer.io",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Portainer's usual setup bind-mounts the host Docker socket to
 		// manage other containers; bind mounts of ordinary host
 		// directories are now supported in general (internal/compose's
@@ -146,14 +183,20 @@ var Templates = []Template{
     ports: ["9443:9443"]
     volumes:
       - portainer_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/9443' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "vaultwarden",
-		Name:             "Vaultwarden",
-		Slogan:           "A lightweight, self-hosted password manager server compatible with the Bitwarden clients.",
-		Category:         "Security",
-		DocumentationURL: "https://github.com/dani-garcia/vaultwarden/wiki",
+		ID:                     "vaultwarden",
+		Name:                   "Vaultwarden",
+		Slogan:                 "A lightweight, self-hosted password manager server compatible with the Bitwarden clients.",
+		Category:               "Security",
+		DocumentationURL:       "https://github.com/dani-garcia/vaultwarden/wiki",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   vaultwarden:
     image: vaultwarden/server:1.32.1
@@ -162,14 +205,20 @@ var Templates = []Template{
       ADMIN_TOKEN: $SERVICE_HEX_64_ADMINTOKEN
     volumes:
       - vaultwarden_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/alive || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "vikunja",
-		Name:             "Vikunja",
-		Slogan:           "An open-source task and project manager for teams that outgrew sticky notes.",
-		Category:         "Productivity",
-		DocumentationURL: "https://vikunja.io/docs/",
+		ID:                     "vikunja",
+		Name:                   "Vikunja",
+		Slogan:                 "An open-source task and project manager for teams that outgrew sticky notes.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://vikunja.io/docs/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   vikunja:
     image: vikunja/vikunja:0.24.1
@@ -179,14 +228,20 @@ var Templates = []Template{
       VIKUNJA_DATABASE_TYPE: sqlite
     volumes:
       - vikunja_data:/app/vikunja/files
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3456' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "outline",
-		Name:             "Outline",
-		Slogan:           "A fast, structured team wiki and knowledge base with real-time collaborative editing.",
-		Category:         "Productivity",
-		DocumentationURL: "https://docs.getoutline.com",
+		ID:                     "outline",
+		Name:                   "Outline",
+		Slogan:                 "A fast, structured team wiki and knowledge base with real-time collaborative editing.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docs.getoutline.com",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   outline:
     image: outlinewiki/outline:0.79.0
@@ -200,6 +255,11 @@ var Templates = []Template{
       FORCE_HTTPS: "false"
     volumes:
       - outline_data:/var/lib/outline/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/_health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -215,11 +275,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "wordpress",
-		Name:             "WordPress",
-		Slogan:           "The world's most widely used content management system, self-hosted with its own database.",
-		Category:         "Applications",
-		DocumentationURL: "https://wordpress.org/documentation/",
+		ID:                     "wordpress",
+		Name:                   "WordPress",
+		Slogan:                 "The world's most widely used content management system, self-hosted with its own database.",
+		Category:               "Applications",
+		DocumentationURL:       "https://wordpress.org/documentation/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   wordpress:
     image: wordpress:6.6-apache
@@ -231,6 +292,11 @@ var Templates = []Template{
       WORDPRESS_DB_NAME: wordpress
     volumes:
       - wordpress_data:/var/www/html
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: mysql:8.4
     environment:
@@ -243,11 +309,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "nextcloud",
-		Name:             "Nextcloud",
-		Slogan:           "Self-hosted file sync, sharing, and collaboration, a full private alternative to consumer cloud drives.",
-		Category:         "Applications",
-		DocumentationURL: "https://docs.nextcloud.com",
+		ID:                     "nextcloud",
+		Name:                   "Nextcloud",
+		Slogan:                 "Self-hosted file sync, sharing, and collaboration, a full private alternative to consumer cloud drives.",
+		Category:               "Applications",
+		DocumentationURL:       "https://docs.nextcloud.com",
+		RecommendedMemoryBytes: 1610612736, // 1536Mi
 		Compose: `services:
   nextcloud:
     image: nextcloud:29.0.4-apache
@@ -257,14 +324,20 @@ var Templates = []Template{
       NEXTCLOUD_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
     volumes:
       - nextcloud_data:/var/www/html
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/status.php || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "umami",
-		Name:             "Umami",
-		Slogan:           "Simple, privacy-focused website analytics without tracking cookies or ad-tech.",
-		Category:         "Analytics",
-		DocumentationURL: "https://umami.is/docs",
+		ID:                     "umami",
+		Name:                   "Umami",
+		Slogan:                 "Simple, privacy-focused website analytics without tracking cookies or ad-tech.",
+		Category:               "Analytics",
+		DocumentationURL:       "https://umami.is/docs",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   umami:
     image: ghcr.io/umami-software/umami:postgresql-v2.15.0
@@ -273,6 +346,11 @@ var Templates = []Template{
       DATABASE_TYPE: postgresql
       DATABASE_URL: postgresql://umami:$SERVICE_PASSWORD_DB@db:5432/umami
       APP_SECRET: $SERVICE_HEX_64_APPSECRET
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/heartbeat || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -284,11 +362,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "code-server",
-		Name:             "code-server",
-		Slogan:           "Run VS Code in the browser, on your own hardware, from any device with a tab open.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://coder.com/docs/code-server",
+		ID:                     "code-server",
+		Name:                   "code-server",
+		Slogan:                 "Run VS Code in the browser, on your own hardware, from any device with a tab open.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://coder.com/docs/code-server",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   code-server:
     image: codercom/code-server:4.93.1
@@ -297,14 +376,20 @@ var Templates = []Template{
       PASSWORD: $SERVICE_PASSWORD_CODE
     volumes:
       - code_server_data:/home/coder/project
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "homepage",
-		Name:             "Homepage",
-		Slogan:           "A fast, static, highly customizable start page for all your self-hosted services.",
-		Category:         "Dashboard",
-		DocumentationURL: "https://gethomepage.dev/latest/",
+		ID:                     "homepage",
+		Name:                   "Homepage",
+		Slogan:                 "A fast, static, highly customizable start page for all your self-hosted services.",
+		Category:               "Dashboard",
+		DocumentationURL:       "https://gethomepage.dev/latest/",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Less certain than the other tags here that this exact patch
 		// version is a real published tag for this fast-moving project;
 		// the image repository and major line are correct.
@@ -314,14 +399,20 @@ var Templates = []Template{
     ports: ["3000:3000"]
     volumes:
       - homepage_config:/app/config
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "ghost",
-		Name:             "Ghost",
-		Slogan:           "A fast, modern publishing platform for blogs and newsletters, with built-in memberships.",
-		Category:         "Applications",
-		DocumentationURL: "https://ghost.org/docs/",
+		ID:                     "ghost",
+		Name:                   "Ghost",
+		Slogan:                 "A fast, modern publishing platform for blogs and newsletters, with built-in memberships.",
+		Category:               "Applications",
+		DocumentationURL:       "https://ghost.org/docs/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   ghost:
     image: ghost:5
@@ -335,6 +426,11 @@ var Templates = []Template{
       url: ${SERVICE_FQDN_GHOST:-http://localhost:2368}
     volumes:
       - ghost_data:/var/lib/ghost/content
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/2368' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: mysql:8.4
     environment:
@@ -347,11 +443,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "gitea",
-		Name:             "Gitea",
-		Slogan:           "A lightweight, self-hosted Git service with issues, pull requests, and a package registry.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://docs.gitea.com",
+		ID:                     "gitea",
+		Name:                   "Gitea",
+		Slogan:                 "A lightweight, self-hosted Git service with issues, pull requests, and a package registry.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://docs.gitea.com",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository and major line are correct.
 		Compose: `services:
@@ -366,6 +463,11 @@ var Templates = []Template{
       GITEA__database__PASSWD: $SERVICE_PASSWORD_DB
     volumes:
       - gitea_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: mariadb:11
     environment:
@@ -378,11 +480,12 @@ var Templates = []Template{
 `,
 	},
 	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "plausible",
-		Name:             "Plausible Analytics",
-		Slogan:           "Lightweight, privacy-friendly, cookie-free web analytics with no consent banner required.",
-		Category:         "Analytics",
-		DocumentationURL: "https://plausible.io/docs/self-hosting",
+		ID:                     "plausible",
+		Name:                   "Plausible Analytics",
+		Slogan:                 "Lightweight, privacy-friendly, cookie-free web analytics with no consent banner required.",
+		Category:               "Analytics",
+		DocumentationURL:       "https://plausible.io/docs/self-hosting",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		Compose: `services:
   plausible:
     image: ghcr.io/plausible/community-edition:v3.0.1
@@ -392,6 +495,11 @@ var Templates = []Template{
       SECRET_KEY_BASE: $SERVICE_BASE64_64_SECRETKEYBASE
       DATABASE_URL: postgres://plausible:$SERVICE_PASSWORD_DB@db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://clickhouse:8123/plausible
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -407,11 +515,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "mealie",
-		Name:             "Mealie",
-		Slogan:           "A self-hosted recipe manager and meal planner with a clean web UI and API.",
-		Category:         "Productivity",
-		DocumentationURL: "https://docs.mealie.io",
+		ID:                     "mealie",
+		Name:                   "Mealie",
+		Slogan:                 "A self-hosted recipe manager and meal planner with a clean web UI and API.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docs.mealie.io",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   mealie:
     image: ghcr.io/mealie-recipes/mealie:3.17.0
@@ -420,14 +529,20 @@ var Templates = []Template{
       BASE_URL: ${SERVICE_FQDN_MEALIE:-http://localhost:9925}
     volumes:
       - mealie_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/9000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "miniflux",
-		Name:             "Miniflux",
-		Slogan:           "A minimalist, fast RSS/Atom feed reader with no bloat and a keyboard-driven UI.",
-		Category:         "Productivity",
-		DocumentationURL: "https://miniflux.app/docs/",
+		ID:                     "miniflux",
+		Name:                   "Miniflux",
+		Slogan:                 "A minimalist, fast RSS/Atom feed reader with no bloat and a keyboard-driven UI.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://miniflux.app/docs/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository and major line are correct.
 		Compose: `services:
@@ -439,6 +554,11 @@ var Templates = []Template{
       RUN_MIGRATIONS: "1"
       ADMIN_USERNAME: $SERVICE_USER_ADMIN
       ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/healthcheck || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -450,11 +570,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "firefly-iii",
-		Name:             "Firefly III",
-		Slogan:           "A self-hosted personal finance manager for tracking budgets, bills, and spending.",
-		Category:         "Finance",
-		DocumentationURL: "https://docs.firefly-iii.org",
+		ID:                     "firefly-iii",
+		Name:                   "Firefly III",
+		Slogan:                 "A self-hosted personal finance manager for tracking budgets, bills, and spending.",
+		Category:               "Finance",
+		DocumentationURL:       "https://docs.firefly-iii.org",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository and major line are correct.
 		Compose: `services:
@@ -471,6 +592,11 @@ var Templates = []Template{
       APP_URL: ${SERVICE_FQDN_FIREFLY:-http://localhost:8080}
     volumes:
       - firefly_upload_data:/var/www/html/storage/upload
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: mariadb:11
     environment:
@@ -483,11 +609,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "bookstack",
-		Name:             "BookStack",
-		Slogan:           "A simple, self-hosted platform for organizing documentation into books, chapters, and pages.",
-		Category:         "Productivity",
-		DocumentationURL: "https://www.bookstackapp.com/docs/",
+		ID:                     "bookstack",
+		Name:                   "BookStack",
+		Slogan:                 "A simple, self-hosted platform for organizing documentation into books, chapters, and pages.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://www.bookstackapp.com/docs/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
@@ -502,6 +629,11 @@ var Templates = []Template{
       DB_PASSWORD: $SERVICE_PASSWORD_DB
     volumes:
       - bookstack_data:/config
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: mariadb:11
     environment:
@@ -514,11 +646,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "jellyfin",
-		Name:             "Jellyfin",
-		Slogan:           "A free media server for streaming your own movies, shows, and music to any device.",
-		Category:         "Media",
-		DocumentationURL: "https://jellyfin.org/docs/",
+		ID:                     "jellyfin",
+		Name:                   "Jellyfin",
+		Slogan:                 "A free media server for streaming your own movies, shows, and music to any device.",
+		Category:               "Media",
+		DocumentationURL:       "https://jellyfin.org/docs/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Jellyfin normally plays back files from a bind-mounted media
 		// library; this template still starts with an empty named
 		// volume, since a template can't know an operator's real host
@@ -533,14 +666,20 @@ var Templates = []Template{
     volumes:
       - jellyfin_config:/config
       - jellyfin_media:/data/media
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8096/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "listmonk",
-		Name:             "Listmonk",
-		Slogan:           "A self-hosted newsletter and mailing list manager with a fast, dependency-light core.",
-		Category:         "Communication",
-		DocumentationURL: "https://listmonk.app/docs/",
+		ID:                     "listmonk",
+		Name:                   "Listmonk",
+		Slogan:                 "A self-hosted newsletter and mailing list manager with a fast, dependency-light core.",
+		Category:               "Communication",
+		DocumentationURL:       "https://listmonk.app/docs/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   listmonk:
     image: listmonk/listmonk:v6.0.0
@@ -552,6 +691,11 @@ var Templates = []Template{
       LISTMONK_db__user: listmonk
       LISTMONK_db__password: $SERVICE_PASSWORD_DB
       LISTMONK_db__database: listmonk
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:9000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -563,11 +707,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "rocketchat",
-		Name:             "Rocket.Chat",
-		Slogan:           "A full-featured, self-hosted team chat platform with video calls and app integrations.",
-		Category:         "Communication",
-		DocumentationURL: "https://docs.rocket.chat",
+		ID:                     "rocketchat",
+		Name:                   "Rocket.Chat",
+		Slogan:                 "A full-featured, self-hosted team chat platform with video calls and app integrations.",
+		Category:               "Communication",
+		DocumentationURL:       "https://docs.rocket.chat",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		Compose: `services:
   rocketchat:
     image: registry.rocket.chat/rocketchat/rocket.chat:8.0.1
@@ -576,6 +721,11 @@ var Templates = []Template{
       MONGO_URL: mongodb://mongo:27017/rocketchat
       MONGO_OPLOG_URL: mongodb://mongo:27017/local
       ROOT_URL: ${SERVICE_FQDN_ROCKETCHAT:-http://localhost:3000}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/info || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   mongo:
     image: mongo:7
     volumes:
@@ -583,11 +733,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "nocodb",
-		Name:             "NocoDB",
-		Slogan:           "Turn any database into a smart spreadsheet, with a real-time collaborative grid UI.",
-		Category:         "Database Tools",
-		DocumentationURL: "https://docs.nocodb.com",
+		ID:                     "nocodb",
+		Name:                   "NocoDB",
+		Slogan:                 "Turn any database into a smart spreadsheet, with a real-time collaborative grid UI.",
+		Category:               "Database Tools",
+		DocumentationURL:       "https://docs.nocodb.com",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
@@ -596,14 +747,20 @@ var Templates = []Template{
     ports: ["8080:8080"]
     volumes:
       - nocodb_data:/usr/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "directus",
-		Name:             "Directus",
-		Slogan:           "An open-source headless CMS and instant REST/GraphQL API layer over your own database.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://docs.directus.io",
+		ID:                     "directus",
+		Name:                   "Directus",
+		Slogan:                 "An open-source headless CMS and instant REST/GraphQL API layer over your own database.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://docs.directus.io",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   directus:
     image: directus/directus:11
@@ -623,6 +780,11 @@ var Templates = []Template{
       REDIS: redis://redis:6379
     volumes:
       - directus_uploads:/directus/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8055/server/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -638,25 +800,32 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "trilium",
-		Name:             "TriliumNext Notes",
-		Slogan:           "A hierarchical, self-hosted note-taking application built for large personal knowledge bases.",
-		Category:         "Productivity",
-		DocumentationURL: "https://triliumnext.github.io/Docs/",
+		ID:                     "trilium",
+		Name:                   "TriliumNext Notes",
+		Slogan:                 "A hierarchical, self-hosted note-taking application built for large personal knowledge bases.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://triliumnext.github.io/Docs/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   trilium:
     image: ghcr.io/triliumnext/trilium:stable
     ports: ["8080:8080"]
     volumes:
       - trilium_data:/home/node/trilium-data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "shlink",
-		Name:             "Shlink",
-		Slogan:           "A self-hosted URL shortener with a full REST API for creating and tracking short links.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://shlink.io/documentation/",
+		ID:                     "shlink",
+		Name:                   "Shlink",
+		Slogan:                 "A self-hosted URL shortener with a full REST API for creating and tracking short links.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://shlink.io/documentation/",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		Compose: `services:
   shlink:
     image: shlinkio/shlink:stable
@@ -666,14 +835,20 @@ var Templates = []Template{
       IS_HTTPS_ENABLED: "false"
     volumes:
       - shlink_data:/etc/shlink/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/rest/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "changedetection",
-		Name:             "Changedetection.io",
-		Slogan:           "Monitor any webpage for changes and get notified the moment content updates.",
-		Category:         "Monitoring",
-		DocumentationURL: "https://github.com/dgtlmoon/changedetection.io/wiki",
+		ID:                     "changedetection",
+		Name:                   "Changedetection.io",
+		Slogan:                 "Monitor any webpage for changes and get notified the moment content updates.",
+		Category:               "Monitoring",
+		DocumentationURL:       "https://github.com/dgtlmoon/changedetection.io/wiki",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
@@ -682,14 +857,20 @@ var Templates = []Template{
     ports: ["5000:5000"]
     volumes:
       - changedetection_data:/datastore
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/5000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "stirling-pdf",
-		Name:             "Stirling PDF",
-		Slogan:           "A self-hosted, all-in-one toolkit for merging, splitting, converting, and editing PDFs.",
-		Category:         "Productivity",
-		DocumentationURL: "https://docs.stirlingpdf.com",
+		ID:                     "stirling-pdf",
+		Name:                   "Stirling PDF",
+		Slogan:                 "A self-hosted, all-in-one toolkit for merging, splitting, converting, and editing PDFs.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docs.stirlingpdf.com",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
@@ -698,14 +879,20 @@ var Templates = []Template{
     ports: ["8080:8080"]
     volumes:
       - stirling_pdf_data:/usr/share/tessdata
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "filebrowser",
-		Name:             "File Browser",
-		Slogan:           "A simple web UI for browsing, uploading, and sharing files from your own storage.",
-		Category:         "Storage",
-		DocumentationURL: "https://filebrowser.org",
+		ID:                     "filebrowser",
+		Name:                   "File Browser",
+		Slogan:                 "A simple web UI for browsing, uploading, and sharing files from your own storage.",
+		Category:               "Storage",
+		DocumentationURL:       "https://filebrowser.org",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct. Filebrowser normally serves
 		// a bind-mounted host directory; this template still starts
@@ -722,14 +909,20 @@ var Templates = []Template{
     volumes:
       - filebrowser_data:/srv
       - filebrowser_db:/database
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "syncthing",
-		Name:             "Syncthing",
-		Slogan:           "Continuous, peer-to-peer file synchronization between your own devices, no cloud in between.",
-		Category:         "Storage",
-		DocumentationURL: "https://docs.syncthing.net",
+		ID:                     "syncthing",
+		Name:                   "Syncthing",
+		Slogan:                 "Continuous, peer-to-peer file synchronization between your own devices, no cloud in between.",
+		Category:               "Storage",
+		DocumentationURL:       "https://docs.syncthing.net",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct. Syncthing normally syncs a
 		// bind-mounted host directory; this template still starts
@@ -746,14 +939,20 @@ var Templates = []Template{
     volumes:
       - syncthing_config:/config
       - syncthing_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8384/rest/noauth/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "ntfy",
-		Name:             "ntfy",
-		Slogan:           "A simple pub-sub push notification service you can send alerts to from any script or app.",
-		Category:         "Communication",
-		DocumentationURL: "https://docs.ntfy.sh",
+		ID:                     "ntfy",
+		Name:                   "ntfy",
+		Slogan:                 "A simple pub-sub push notification service you can send alerts to from any script or app.",
+		Category:               "Communication",
+		DocumentationURL:       "https://docs.ntfy.sh",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct. No command: override needed:
 		// the upstream image's own default CMD is already "serve".
@@ -764,14 +963,20 @@ var Templates = []Template{
     volumes:
       - ntfy_cache:/var/cache/ntfy
       - ntfy_data:/etc/ntfy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/v1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "healthchecks",
-		Name:             "Healthchecks",
-		Slogan:           "Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in.",
-		Category:         "Monitoring",
-		DocumentationURL: "https://healthchecks.io/docs/self_hosted/",
+		ID:                     "healthchecks",
+		Name:                   "Healthchecks",
+		Slogan:                 "Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in.",
+		Category:               "Monitoring",
+		DocumentationURL:       "https://healthchecks.io/docs/self_hosted/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   healthchecks:
     image: healthchecks/healthchecks:v4.2
@@ -784,6 +989,11 @@ var Templates = []Template{
       DB_PASSWORD: $SERVICE_PASSWORD_DB
       SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
       ALLOWED_HOSTS: "*"
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -795,11 +1005,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "pgadmin",
-		Name:             "pgAdmin",
-		Slogan:           "A full-featured web GUI for administering and querying PostgreSQL databases.",
-		Category:         "Database Tools",
-		DocumentationURL: "https://www.pgadmin.org/docs/",
+		ID:                     "pgadmin",
+		Name:                   "pgAdmin",
+		Slogan:                 "A full-featured web GUI for administering and querying PostgreSQL databases.",
+		Category:               "Database Tools",
+		DocumentationURL:       "https://www.pgadmin.org/docs/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
@@ -811,14 +1022,20 @@ var Templates = []Template{
       PGADMIN_DEFAULT_PASSWORD: $SERVICE_PASSWORD_ADMIN
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "qbittorrent",
-		Name:             "qBittorrent",
-		Slogan:           "A free, self-hosted BitTorrent client with a full web UI for remote download management.",
-		Category:         "Media",
-		DocumentationURL: "https://github.com/qbittorrent/qBittorrent/wiki",
+		ID:                     "qbittorrent",
+		Name:                   "qBittorrent",
+		Slogan:                 "A free, self-hosted BitTorrent client with a full web UI for remote download management.",
+		Category:               "Media",
+		DocumentationURL:       "https://github.com/qbittorrent/qBittorrent/wiki",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
@@ -828,14 +1045,20 @@ var Templates = []Template{
     volumes:
       - qbittorrent_config:/config
       - qbittorrent_downloads:/downloads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "home-assistant",
-		Name:             "Home Assistant",
-		Slogan:           "Open-source home automation that puts local control and privacy first.",
-		Category:         "IoT",
-		DocumentationURL: "https://www.home-assistant.io/docs/",
+		ID:                     "home-assistant",
+		Name:                   "Home Assistant",
+		Slogan:                 "Open-source home automation that puts local control and privacy first.",
+		Category:               "IoT",
+		DocumentationURL:       "https://www.home-assistant.io/docs/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Home Assistant usually runs on host networking to discover
 		// local devices; this template runs it on the platform's normal
 		// bridge networking instead, so device auto-discovery won't
@@ -847,14 +1070,20 @@ var Templates = []Template{
     ports: ["8123:8123"]
     volumes:
       - home_assistant_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8123/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "paperless-ngx",
-		Name:             "Paperless-ngx",
-		Slogan:           "Scan, index, and archive your paper documents into a searchable digital library.",
-		Category:         "Productivity",
-		DocumentationURL: "https://docs.paperless-ngx.com",
+		ID:                     "paperless-ngx",
+		Name:                   "Paperless-ngx",
+		Slogan:                 "Scan, index, and archive your paper documents into a searchable digital library.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docs.paperless-ngx.com",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct. Runs against its own
 		// embedded SQLite database rather than a separate Postgres
@@ -870,6 +1099,11 @@ var Templates = []Template{
     volumes:
       - paperless_data:/usr/src/paperless/data
       - paperless_media:/usr/src/paperless/media
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   redis:
     image: redis:7.4
     volumes:
@@ -877,11 +1111,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "immich",
-		Name:             "Immich",
-		Slogan:           "Self-hosted photo and video backup with mobile apps, facial recognition, and timeline search.",
-		Category:         "Media",
-		DocumentationURL: "https://immich.app/docs",
+		ID:                     "immich",
+		Name:                   "Immich",
+		Slogan:                 "Self-hosted photo and video backup with mobile apps, facial recognition, and timeline search.",
+		Category:               "Media",
+		DocumentationURL:       "https://immich.app/docs",
+		RecommendedMemoryBytes: 1610612736, // 1536Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository and major line are correct. Pins to a
 		// specific release rather than upstream's own floating
@@ -899,6 +1134,11 @@ var Templates = []Template{
       REDIS_HOSTNAME: redis
     volumes:
       - immich_upload_data:/usr/src/app/upload
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:2283/api/server/ping || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   immich-machine-learning:
     image: ghcr.io/immich-app/immich-machine-learning:v1.126.1
     volumes:
@@ -916,11 +1156,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "freshrss",
-		Name:             "FreshRSS",
-		Slogan:           "A lightweight, self-hosted RSS aggregator with multi-user support and a mobile-friendly API.",
-		Category:         "Productivity",
-		DocumentationURL: "https://freshrss.github.io/FreshRSS/",
+		ID:                     "freshrss",
+		Name:                   "FreshRSS",
+		Slogan:                 "A lightweight, self-hosted RSS aggregator with multi-user support and a mobile-friendly API.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://freshrss.github.io/FreshRSS/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
@@ -935,6 +1176,11 @@ var Templates = []Template{
       DB_BASE: freshrss
     volumes:
       - freshrss_data:/var/www/FreshRSS/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: mariadb:11
     environment:
@@ -947,11 +1193,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "joplin-server",
-		Name:             "Joplin Server",
-		Slogan:           "A self-hosted sync target for the Joplin note-taking app, replacing Dropbox or OneDrive sync.",
-		Category:         "Productivity",
-		DocumentationURL: "https://joplinapp.org/help/api/server_config/",
+		ID:                     "joplin-server",
+		Name:                   "Joplin Server",
+		Slogan:                 "A self-hosted sync target for the Joplin note-taking app, replacing Dropbox or OneDrive sync.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://joplinapp.org/help/api/server_config/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
@@ -965,6 +1212,11 @@ var Templates = []Template{
       POSTGRES_DATABASE: joplin
       POSTGRES_USER: joplin
       POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/22300' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16
     environment:
@@ -976,25 +1228,32 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "gotenberg",
-		Name:             "Gotenberg",
-		Slogan:           "A stateless API for converting HTML, Markdown, Office, and PDF documents in the background.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://gotenberg.dev/docs/getting-started/introduction",
+		ID:                     "gotenberg",
+		Name:                   "Gotenberg",
+		Slogan:                 "A stateless API for converting HTML, Markdown, Office, and PDF documents in the background.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://gotenberg.dev/docs/getting-started/introduction",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
   gotenberg:
     image: gotenberg/gotenberg:8.15
     ports: ["3000:3000"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{ //nolint:gosec // MM_SQLSETTINGS_DATASOURCE below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "mattermost",
-		Name:             "Mattermost",
-		Slogan:           "An open-source, self-hosted alternative to Slack for team messaging and collaboration.",
-		Category:         "Communication",
-		DocumentationURL: "https://docs.mattermost.com",
+		ID:                     "mattermost",
+		Name:                   "Mattermost",
+		Slogan:                 "An open-source, self-hosted alternative to Slack for team messaging and collaboration.",
+		Category:               "Communication",
+		DocumentationURL:       "https://docs.mattermost.com",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		Compose: `services:
   mattermost:
     image: mattermost/mattermost-team-edition:release-10
@@ -1005,6 +1264,11 @@ var Templates = []Template{
       MM_SERVICESETTINGS_SITEURL: ${SERVICE_FQDN_MATTERMOST:-http://localhost:8065}
     volumes:
       - mattermost_data:/mattermost/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8065/api/v4/system/ping || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -1016,25 +1280,32 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "grocy",
-		Name:             "Grocy",
-		Slogan:           "A self-hosted ERP for your household: groceries, chores, and a shopping list that stays in sync.",
-		Category:         "Productivity",
-		DocumentationURL: "https://grocy.info/en/docs",
+		ID:                     "grocy",
+		Name:                   "Grocy",
+		Slogan:                 "A self-hosted ERP for your household: groceries, chores, and a shopping list that stays in sync.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://grocy.info/en/docs",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   grocy:
     image: lscr.io/linuxserver/grocy:4.6.0
     ports: ["8080:80"]
     volumes:
       - grocy_data:/config
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "kimai",
-		Name:             "Kimai",
-		Slogan:           "A self-hosted time tracking tool for freelancers and teams, with invoicing and reporting.",
-		Category:         "Productivity",
-		DocumentationURL: "https://www.kimai.org/documentation/",
+		ID:                     "kimai",
+		Name:                   "Kimai",
+		Slogan:                 "A self-hosted time tracking tool for freelancers and teams, with invoicing and reporting.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://www.kimai.org/documentation/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   kimai:
     image: kimai/kimai2:apache
@@ -1045,6 +1316,11 @@ var Templates = []Template{
       ADMINPASS: $SERVICE_PASSWORD_ADMIN
     volumes:
       - kimai_data:/opt/kimai/var
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8001' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: mysql:8
     environment:
@@ -1057,11 +1333,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "activepieces",
-		Name:             "Activepieces",
-		Slogan:           "An open-source, no-code automation tool for connecting apps and building AI-powered workflows.",
-		Category:         "Automation",
-		DocumentationURL: "https://www.activepieces.com/docs",
+		ID:                     "activepieces",
+		Name:                   "Activepieces",
+		Slogan:                 "An open-source, no-code automation tool for connecting apps and building AI-powered workflows.",
+		Category:               "Automation",
+		DocumentationURL:       "https://www.activepieces.com/docs",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   activepieces:
     image: ghcr.io/activepieces/activepieces:0.75.0
@@ -1075,6 +1352,11 @@ var Templates = []Template{
       AP_POSTGRES_USERNAME: activepieces
       AP_POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
       AP_REDIS_HOST: redis
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -1090,11 +1372,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "appsmith",
-		Name:             "Appsmith",
-		Slogan:           "A low-code platform for building internal tools and admin panels on top of your own data.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://docs.appsmith.com",
+		ID:                     "appsmith",
+		Name:                   "Appsmith",
+		Slogan:                 "A low-code platform for building internal tools and admin panels on top of your own data.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://docs.appsmith.com",
+		RecommendedMemoryBytes: 2147483648, // 2048Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
@@ -1103,14 +1386,20 @@ var Templates = []Template{
     ports: ["8080:80"]
     volumes:
       - appsmith_data:/appsmith-stacks
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "invoice-ninja",
-		Name:             "Invoice Ninja",
-		Slogan:           "Self-hosted invoicing, quotes, and payments for freelancers and small businesses.",
-		Category:         "Finance",
-		DocumentationURL: "https://invoiceninja.github.io",
+		ID:                     "invoice-ninja",
+		Name:                   "Invoice Ninja",
+		Slogan:                 "Self-hosted invoicing, quotes, and payments for freelancers and small businesses.",
+		Category:               "Finance",
+		DocumentationURL:       "https://invoiceninja.github.io",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   invoiceninja:
     image: invoiceninja/invoiceninja:5
@@ -1125,6 +1414,11 @@ var Templates = []Template{
       REDIS_HOST: redis
     volumes:
       - invoiceninja_data:/var/www/app/storage
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: mariadb:11
     environment:
@@ -1141,25 +1435,32 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "excalidraw",
-		Name:             "Excalidraw",
-		Slogan:           "A self-hosted virtual whiteboard for sketching diagrams that feel hand-drawn.",
-		Category:         "Productivity",
-		DocumentationURL: "https://github.com/excalidraw/excalidraw#docker",
+		ID:                     "excalidraw",
+		Name:                   "Excalidraw",
+		Slogan:                 "A self-hosted virtual whiteboard for sketching diagrams that feel hand-drawn.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://github.com/excalidraw/excalidraw#docker",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
   excalidraw:
     image: excalidraw/excalidraw:0.17.6
     ports: ["8080:80"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "wikijs",
-		Name:             "Wiki.js",
-		Slogan:           "A modern, extensible wiki engine with Markdown, visual editing, and fine-grained page permissions.",
-		Category:         "Productivity",
-		DocumentationURL: "https://docs.requarks.io",
+		ID:                     "wikijs",
+		Name:                   "Wiki.js",
+		Slogan:                 "A modern, extensible wiki engine with Markdown, visual editing, and fine-grained page permissions.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docs.requarks.io",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   wiki:
     image: ghcr.io/requarks/wiki:2
@@ -1171,6 +1472,11 @@ var Templates = []Template{
       DB_USER: wikijs
       DB_PASS: $SERVICE_PASSWORD_DB
       DB_NAME: wikijs
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -1182,11 +1488,12 @@ var Templates = []Template{
 `,
 	},
 	{ //nolint:gosec // CORE_DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "zipline",
-		Name:             "Zipline",
-		Slogan:           "A self-hosted file and screenshot host with a share-first upload flow and its own URL shortener.",
-		Category:         "Storage",
-		DocumentationURL: "https://zipline.diced.sh/docs",
+		ID:                     "zipline",
+		Name:                   "Zipline",
+		Slogan:                 "A self-hosted file and screenshot host with a share-first upload flow and its own URL shortener.",
+		Category:               "Storage",
+		DocumentationURL:       "https://zipline.diced.sh/docs",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
@@ -1199,6 +1506,11 @@ var Templates = []Template{
       CORE_SECRET: $SERVICE_HEX_64_SECRET
     volumes:
       - zipline_uploads:/zipline/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -1210,25 +1522,32 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "memos",
-		Name:             "Memos",
-		Slogan:           "A lightweight, privacy-first note-taking service for jotting down quick thoughts.",
-		Category:         "Productivity",
-		DocumentationURL: "https://www.usememos.com/docs",
+		ID:                     "memos",
+		Name:                   "Memos",
+		Slogan:                 "A lightweight, privacy-first note-taking service for jotting down quick thoughts.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://www.usememos.com/docs",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		Compose: `services:
   memos:
     image: neosmemo/memos:stable
     ports: ["5230:5230"]
     volumes:
       - memos_data:/var/opt/memos
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/5230' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "dashy",
-		Name:             "Dashy",
-		Slogan:           "A feature-rich, self-hosted start page with widgets, status checks, and full visual customization.",
-		Category:         "Dashboard",
-		DocumentationURL: "https://dashy.to/docs",
+		ID:                     "dashy",
+		Name:                   "Dashy",
+		Slogan:                 "A feature-rich, self-hosted start page with widgets, status checks, and full visual customization.",
+		Category:               "Dashboard",
+		DocumentationURL:       "https://dashy.to/docs",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
@@ -1237,14 +1556,20 @@ var Templates = []Template{
     ports: ["8080:8080"]
     volumes:
       - dashy_config:/app/user-data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "glance",
-		Name:             "Glance",
-		Slogan:           "A fast, self-hosted dashboard that pulls RSS, weather, and other widgets onto one page.",
-		Category:         "Dashboard",
-		DocumentationURL: "https://github.com/glanceapp/glance/blob/main/docs/configuration.md",
+		ID:                     "glance",
+		Name:                   "Glance",
+		Slogan:                 "A fast, self-hosted dashboard that pulls RSS, weather, and other widgets onto one page.",
+		Category:               "Dashboard",
+		DocumentationURL:       "https://github.com/glanceapp/glance/blob/main/docs/configuration.md",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
@@ -1253,28 +1578,40 @@ var Templates = []Template{
     ports: ["8080:8080"]
     volumes:
       - glance_config:/app/config
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "it-tools",
-		Name:             "IT Tools",
-		Slogan:           "A collection of handy online tools for developers: converters, generators, formatters, and more.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://it-tools.tech",
+		ID:                     "it-tools",
+		Name:                   "IT Tools",
+		Slogan:                 "A collection of handy online tools for developers: converters, generators, formatters, and more.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://it-tools.tech",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
   it-tools:
     image: corentinth/it-tools:2024.10.22-7ca5933
     ports: ["8080:80"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "meilisearch",
-		Name:             "Meilisearch",
-		Slogan:           "A fast, typo-tolerant search engine API you can drop into any app's search bar.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://www.meilisearch.com/docs",
+		ID:                     "meilisearch",
+		Name:                   "Meilisearch",
+		Slogan:                 "A fast, typo-tolerant search engine API you can drop into any app's search bar.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://www.meilisearch.com/docs",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   meilisearch:
     image: getmeili/meilisearch:v1.11.1
@@ -1284,14 +1621,20 @@ var Templates = []Template{
       MEILI_NO_ANALYTICS: "true"
     volumes:
       - meilisearch_data:/meili_data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:7700/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "docmost",
-		Name:             "Docmost",
-		Slogan:           "An open-source, Notion-style collaborative wiki and documentation workspace.",
-		Category:         "Productivity",
-		DocumentationURL: "https://docmost.com/docs",
+		ID:                     "docmost",
+		Name:                   "Docmost",
+		Slogan:                 "An open-source, Notion-style collaborative wiki and documentation workspace.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docmost.com/docs",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
 		Compose: `services:
@@ -1305,6 +1648,11 @@ var Templates = []Template{
       REDIS_URL: redis://redis:6379
     volumes:
       - docmost_data:/app/data/storage
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -1320,11 +1668,12 @@ var Templates = []Template{
 `,
 	},
 	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "glitchtip",
-		Name:             "GlitchTip",
-		Slogan:           "A lightweight, self-hosted error tracking service compatible with the Sentry SDK.",
-		Category:         "Monitoring",
-		DocumentationURL: "https://glitchtip.com/documentation",
+		ID:                     "glitchtip",
+		Name:                   "GlitchTip",
+		Slogan:                 "A lightweight, self-hosted error tracking service compatible with the Sentry SDK.",
+		Category:               "Monitoring",
+		DocumentationURL:       "https://glitchtip.com/documentation",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   glitchtip:
     image: glitchtip/glitchtip:6.0
@@ -1335,6 +1684,11 @@ var Templates = []Template{
       REDIS_URL: redis://redis:6379
       GLITCHTIP_DOMAIN: ${SERVICE_FQDN_GLITCHTIP:-http://localhost:8080}
       DEFAULT_FROM_EMAIL: admin@example.com
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -1350,11 +1704,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "audiobookshelf",
-		Name:             "Audiobookshelf",
-		Slogan:           "A self-hosted server for your audiobooks and podcasts, with sync across every device.",
-		Category:         "Media",
-		DocumentationURL: "https://www.audiobookshelf.org/docs",
+		ID:                     "audiobookshelf",
+		Name:                   "Audiobookshelf",
+		Slogan:                 "A self-hosted server for your audiobooks and podcasts, with sync across every device.",
+		Category:               "Media",
+		DocumentationURL:       "https://www.audiobookshelf.org/docs",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   audiobookshelf:
     image: ghcr.io/advplyr/audiobookshelf:2.34.0
@@ -1366,14 +1721,20 @@ var Templates = []Template{
       - audiobookshelf_metadata:/metadata
       - audiobookshelf_audiobooks:/audiobooks
       - audiobookshelf_podcasts:/podcasts
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/healthcheck || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "calcom",
-		Name:             "Cal.com",
-		Slogan:           "Open-source scheduling infrastructure for booking meetings without the back-and-forth.",
-		Category:         "Productivity",
-		DocumentationURL: "https://cal.com/docs/self-hosting/installation",
+		ID:                     "calcom",
+		Name:                   "Cal.com",
+		Slogan:                 "Open-source scheduling infrastructure for booking meetings without the back-and-forth.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://cal.com/docs/self-hosting/installation",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		// calcom/cal.com's own registry doesn't publish a clean semver
 		// tag list; this tag's exact string couldn't be verified against
 		// a live registry in this environment.
@@ -1388,6 +1749,11 @@ var Templates = []Template{
       CALENDSO_ENCRYPTION_KEY: $SERVICE_BASE64_ENCRYPTIONKEY
       DATABASE_URL: postgresql://calcom:$SERVICE_PASSWORD_DB@db:5432/calcom
       CALCOM_TELEMETRY_DISABLED: "1"
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -1399,11 +1765,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "calibre-web",
-		Name:             "Calibre-Web",
-		Slogan:           "A clean web interface for browsing, reading, and downloading your existing Calibre ebook library.",
-		Category:         "Media",
-		DocumentationURL: "https://github.com/janeczku/calibre-web/wiki",
+		ID:                     "calibre-web",
+		Name:                   "Calibre-Web",
+		Slogan:                 "A clean web interface for browsing, reading, and downloading your existing Calibre ebook library.",
+		Category:               "Media",
+		DocumentationURL:       "https://github.com/janeczku/calibre-web/wiki",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// linuxserver only publishes this image under a rolling :latest
 		// tag; this pinned version couldn't be verified against a live
 		// registry in this environment.
@@ -1418,14 +1785,20 @@ var Templates = []Template{
     volumes:
       - calibreweb_config:/config
       - calibreweb_books:/books
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8083' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "convertx",
-		Name:             "ConvertX",
-		Slogan:           "A self-hosted file converter that handles well over a thousand image, document, and media formats.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://github.com/C4illin/ConvertX",
+		ID:                     "convertx",
+		Name:                   "ConvertX",
+		Slogan:                 "A self-hosted file converter that handles well over a thousand image, document, and media formats.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://github.com/C4illin/ConvertX",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -1439,14 +1812,20 @@ var Templates = []Template{
       HTTP_ALLOWED: "true"
     volumes:
       - convertx_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "diun",
-		Name:             "Diun",
-		Slogan:           "Watches your running containers and notifies you the moment a new image tag is published.",
-		Category:         "Monitoring",
-		DocumentationURL: "https://crazymax.dev/diun/",
+		ID:                     "diun",
+		Name:                   "Diun",
+		Slogan:                 "Watches your running containers and notifies you the moment a new image tag is published.",
+		Category:               "Monitoring",
+		DocumentationURL:       "https://crazymax.dev/diun/",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment. Diun's Docker provider normally watches
@@ -1466,14 +1845,20 @@ var Templates = []Template{
       DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT: "true"
     volumes:
       - diun_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep diun || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "duplicati",
-		Name:             "Duplicati",
-		Slogan:           "Scheduled, encrypted backups of your files to local storage, network shares, or cloud storage.",
-		Category:         "Storage",
-		DocumentationURL: "https://duplicati.readthedocs.io",
+		ID:                     "duplicati",
+		Name:                   "Duplicati",
+		Slogan:                 "Scheduled, encrypted backups of your files to local storage, network shares, or cloud storage.",
+		Category:               "Storage",
+		DocumentationURL:       "https://duplicati.readthedocs.io",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// linuxserver only publishes this image under a rolling :latest
 		// tag; this pinned version couldn't be verified against a live
 		// registry in this environment.
@@ -1490,14 +1875,20 @@ var Templates = []Template{
     volumes:
       - duplicati_config:/config
       - duplicati_backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8200' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "formbricks",
-		Name:             "Formbricks",
-		Slogan:           "An open-source survey and experience-management platform you run on your own infrastructure.",
-		Category:         "Productivity",
-		DocumentationURL: "https://formbricks.com/docs/self-hosting/setup/docker",
+		ID:                     "formbricks",
+		Name:                   "Formbricks",
+		Slogan:                 "An open-source survey and experience-management platform you run on your own infrastructure.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://formbricks.com/docs/self-hosting/setup/docker",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   formbricks:
     image: ghcr.io/formbricks/formbricks:4.5.0
@@ -1512,6 +1903,11 @@ var Templates = []Template{
       REDIS_URL: redis://redis:6379
     volumes:
       - formbricks_uploads:/apps/web/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: pgvector/pgvector:pg16
     environment:
@@ -1527,11 +1923,12 @@ var Templates = []Template{
 `,
 	},
 	{ //nolint:gosec // DB_CONNECTION_URI below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "infisical",
-		Name:             "Infisical",
-		Slogan:           "An open-source secrets manager to centralize API keys, database credentials, and app config.",
-		Category:         "Security",
-		DocumentationURL: "https://infisical.com/docs/self-hosting/overview",
+		ID:                     "infisical",
+		Name:                   "Infisical",
+		Slogan:                 "An open-source secrets manager to centralize API keys, database credentials, and app config.",
+		Category:               "Security",
+		DocumentationURL:       "https://infisical.com/docs/self-hosting/overview",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   infisical:
     image: infisical/infisical:v0.154.6
@@ -1542,6 +1939,11 @@ var Templates = []Template{
       AUTH_SECRET: $SERVICE_REALBASE64_64_AUTHSECRET
       DB_CONNECTION_URI: postgres://infisical:$SERVICE_PASSWORD_DB@db:5432/infisical
       REDIS_URL: redis://redis:6379
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/api/status || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -1557,11 +1959,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "leantime",
-		Name:             "Leantime",
-		Slogan:           "A goals-focused project management tool built for people who aren't professional project managers.",
-		Category:         "Productivity",
-		DocumentationURL: "https://docs.leantime.io",
+		ID:                     "leantime",
+		Name:                   "Leantime",
+		Slogan:                 "A goals-focused project management tool built for people who aren't professional project managers.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docs.leantime.io",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -1581,6 +1984,11 @@ var Templates = []Template{
     volumes:
       - leantime_userfiles:/var/www/html/userfiles
       - leantime_public_userfiles:/var/www/html/public/userfiles
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: mysql:8.4
     environment:
@@ -1597,11 +2005,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "librespeed",
-		Name:             "LibreSpeed",
-		Slogan:           "A lightweight, self-hosted internet speed test with no ads, tracking, or Flash required.",
-		Category:         "Monitoring",
-		DocumentationURL: "https://github.com/librespeed/speedtest",
+		ID:                     "librespeed",
+		Name:                   "LibreSpeed",
+		Slogan:                 "A lightweight, self-hosted internet speed test with no ads, tracking, or Flash required.",
+		Category:               "Monitoring",
+		DocumentationURL:       "https://github.com/librespeed/speedtest",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -1613,14 +2022,20 @@ var Templates = []Template{
       MODE: standalone
       TELEMETRY: "false"
       WEBPORT: "82"
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/82' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "navidrome",
-		Name:             "Navidrome",
-		Slogan:           "Stream your own music collection from a Subsonic-compatible server to any device, anywhere.",
-		Category:         "Media",
-		DocumentationURL: "https://www.navidrome.org/docs/",
+		ID:                     "navidrome",
+		Name:                   "Navidrome",
+		Slogan:                 "Stream your own music collection from a Subsonic-compatible server to any device, anywhere.",
+		Category:               "Media",
+		DocumentationURL:       "https://www.navidrome.org/docs/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -1634,14 +2049,20 @@ var Templates = []Template{
     volumes:
       - navidrome_data:/data
       - navidrome_music:/music
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/4533' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "osticket",
-		Name:             "osTicket",
-		Slogan:           "A widely used open-source support ticket system for teams handling customer requests.",
-		Category:         "Productivity",
-		DocumentationURL: "https://docs.osticket.com/en/latest/",
+		ID:                     "osticket",
+		Name:                   "osTicket",
+		Slogan:                 "A widely used open-source support ticket system for teams handling customer requests.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docs.osticket.com/en/latest/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -1660,6 +2081,11 @@ var Templates = []Template{
       ADMIN_PASS: $SERVICE_PASSWORD_ADMIN
     volumes:
       - osticket_data:/www/osticket
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: mariadb:11
     environment:
@@ -1672,11 +2098,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "overseerr",
-		Name:             "Overseerr",
-		Slogan:           "Lets your Plex users request new movies and TV shows straight from a shared web UI.",
-		Category:         "Media",
-		DocumentationURL: "https://docs.overseerr.dev",
+		ID:                     "overseerr",
+		Name:                   "Overseerr",
+		Slogan:                 "Lets your Plex users request new movies and TV shows straight from a shared web UI.",
+		Category:               "Media",
+		DocumentationURL:       "https://docs.overseerr.dev",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -1688,14 +2115,20 @@ var Templates = []Template{
       TZ: "Etc/UTC"
     volumes:
       - overseerr_config:/app/config
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:5055/api/v1/status || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "passbolt",
-		Name:             "Passbolt",
-		Slogan:           "An open-source password manager built for teams, compatible with the usual browser extensions.",
-		Category:         "Security",
-		DocumentationURL: "https://www.passbolt.com/docs",
+		ID:                     "passbolt",
+		Name:                   "Passbolt",
+		Slogan:                 "An open-source password manager built for teams, compatible with the usual browser extensions.",
+		Category:               "Security",
+		DocumentationURL:       "https://www.passbolt.com/docs",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Only published under a rolling :latest-ce tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -1713,6 +2146,11 @@ var Templates = []Template{
     volumes:
       - passbolt_gpg:/etc/passbolt/gpg
       - passbolt_jwt:/etc/passbolt/jwt
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: mariadb:11
     environment:
@@ -1725,15 +2163,21 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "penpot",
-		Name:             "Penpot",
-		Slogan:           "An open-source design and prototyping platform, a self-hosted alternative to Figma.",
-		Category:         "Productivity",
-		DocumentationURL: "https://help.penpot.app",
+		ID:                     "penpot",
+		Name:                   "Penpot",
+		Slogan:                 "An open-source design and prototyping platform, a self-hosted alternative to Figma.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://help.penpot.app",
+		RecommendedMemoryBytes: 2147483648, // 2048Mi
 		Compose: `services:
   frontend:
     image: penpotapp/frontend:2.11.1
     ports: ["8080:8080"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   backend:
     image: penpotapp/backend:2.11.1
     environment:
@@ -1769,11 +2213,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "prowlarr",
-		Name:             "Prowlarr",
-		Slogan:           "An indexer manager that syncs your torrent and Usenet indexers across the whole Arr stack.",
-		Category:         "Media",
-		DocumentationURL: "https://wiki.servarr.com/prowlarr",
+		ID:                     "prowlarr",
+		Name:                   "Prowlarr",
+		Slogan:                 "An indexer manager that syncs your torrent and Usenet indexers across the whole Arr stack.",
+		Category:               "Media",
+		DocumentationURL:       "https://wiki.servarr.com/prowlarr",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// linuxserver only publishes this image under a rolling :latest
 		// tag; this pinned version couldn't be verified against a live
 		// registry in this environment.
@@ -1787,14 +2232,20 @@ var Templates = []Template{
       TZ: "Etc/UTC"
     volumes:
       - prowlarr_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/9696' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "radarr",
-		Name:             "Radarr",
-		Slogan:           "Watches your favorite indexers for movies and automatically grabs, sorts, and renames them.",
-		Category:         "Media",
-		DocumentationURL: "https://wiki.servarr.com/radarr",
+		ID:                     "radarr",
+		Name:                   "Radarr",
+		Slogan:                 "Watches your favorite indexers for movies and automatically grabs, sorts, and renames them.",
+		Category:               "Media",
+		DocumentationURL:       "https://wiki.servarr.com/radarr",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// linuxserver only publishes this image under a rolling :latest
 		// tag; this pinned version couldn't be verified against a live
 		// registry in this environment.
@@ -1808,14 +2259,20 @@ var Templates = []Template{
       TZ: "Etc/UTC"
     volumes:
       - radarr_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/7878' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "redisinsight",
-		Name:             "RedisInsight",
-		Slogan:           "A GUI for browsing keys, running commands, and profiling performance on any Redis instance.",
-		Category:         "Database Tools",
-		DocumentationURL: "https://redis.io/docs/latest/operate/redisinsight/",
+		ID:                     "redisinsight",
+		Name:                   "RedisInsight",
+		Slogan:                 "A GUI for browsing keys, running commands, and profiling performance on any Redis instance.",
+		Category:               "Database Tools",
+		DocumentationURL:       "https://redis.io/docs/latest/operate/redisinsight/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   redisinsight:
     image: redis/redisinsight:2.70
@@ -1826,14 +2283,20 @@ var Templates = []Template{
       RI_ENCRYPTION_KEY: $SERVICE_HEX_64_ENCRYPTIONKEY
     volumes:
       - redisinsight_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/5540' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "soketi",
-		Name:             "Soketi",
-		Slogan:           "A simple, fast, Pusher-protocol-compatible WebSockets server for real-time app features.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://docs.soketi.app",
+		ID:                     "soketi",
+		Name:                   "Soketi",
+		Slogan:                 "A simple, fast, Pusher-protocol-compatible WebSockets server for real-time app features.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://docs.soketi.app",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   soketi:
     image: quay.io/soketi/soketi:1.6-16-debian
@@ -1843,14 +2306,20 @@ var Templates = []Template{
       SOKETI_DEFAULT_APP_KEY: $SERVICE_REALBASE64_64_APPKEY
       SOKETI_DEFAULT_APP_SECRET: $SERVICE_REALBASE64_64_APPSECRET
       SOKETI_PUSHER_SCHEME: https
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/6001' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "sonarr",
-		Name:             "Sonarr",
-		Slogan:           "Watches your favorite indexers for new TV episodes and automatically grabs, sorts, and renames them.",
-		Category:         "Media",
-		DocumentationURL: "https://wiki.servarr.com/sonarr",
+		ID:                     "sonarr",
+		Name:                   "Sonarr",
+		Slogan:                 "Watches your favorite indexers for new TV episodes and automatically grabs, sorts, and renames them.",
+		Category:               "Media",
+		DocumentationURL:       "https://wiki.servarr.com/sonarr",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// linuxserver only publishes this image under a rolling :latest
 		// tag; this pinned version couldn't be verified against a live
 		// registry in this environment.
@@ -1864,14 +2333,20 @@ var Templates = []Template{
       TZ: "Etc/UTC"
     volumes:
       - sonarr_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8989' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "tolgee",
-		Name:             "Tolgee",
-		Slogan:           "A localization management platform where developers and translators work in one shared UI.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://tolgee.io/platform",
+		ID:                     "tolgee",
+		Name:                   "Tolgee",
+		Slogan:                 "A localization management platform where developers and translators work in one shared UI.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://tolgee.io/platform",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -1890,6 +2365,11 @@ var Templates = []Template{
       SPRING_DATASOURCE_PASSWORD: $SERVICE_PASSWORD_DB
     volumes:
       - tolgee_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -1901,11 +2381,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "weblate",
-		Name:             "Weblate",
-		Slogan:           "A continuous localization system for translating software with a web-based editor and review flow.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://docs.weblate.org",
+		ID:                     "weblate",
+		Name:                   "Weblate",
+		Slogan:                 "A continuous localization system for translating software with a web-based editor and review flow.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://docs.weblate.org",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment. Weblate's redis normally needs --requirepass
@@ -1931,6 +2412,11 @@ var Templates = []Template{
     volumes:
       - weblate_data:/app/data
       - weblate_cache:/app/cache
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -1948,11 +2434,12 @@ var Templates = []Template{
 `,
 	},
 	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "rallly",
-		Name:             "Rallly",
-		Slogan:           "Find a time that works for everyone with polls for scheduling meetings and events.",
-		Category:         "Productivity",
-		DocumentationURL: "https://support.rallly.co/self-hosting/introduction",
+		ID:                     "rallly",
+		Name:                   "Rallly",
+		Slogan:                 "Find a time that works for everyone with polls for scheduling meetings and events.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://support.rallly.co/self-hosting/introduction",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -1964,6 +2451,11 @@ var Templates = []Template{
       DATABASE_URL: postgres://$SERVICE_USER_DB:$SERVICE_PASSWORD_DB@db:5432/rallly
       SECRET_PASSWORD: $SERVICE_HEX_64_SECRET
       NEXT_PUBLIC_BASE_URL: ${SERVICE_FQDN_RALLLY:-http://localhost:3000}
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -1975,11 +2467,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "grist",
-		Name:             "Grist",
-		Slogan:           "A modern relational spreadsheet that combines spreadsheet flexibility with database structure.",
-		Category:         "Productivity",
-		DocumentationURL: "https://support.getgrist.com",
+		ID:                     "grist",
+		Name:                   "Grist",
+		Slogan:                 "A modern relational spreadsheet that combines spreadsheet flexibility with database structure.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://support.getgrist.com",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -1997,6 +2490,11 @@ var Templates = []Template{
       GRIST_SESSION_SECRET: $SERVICE_REALBASE64_64_SESSIONSECRET
     volumes:
       - grist_data:/persist
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8484' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -2012,11 +2510,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "readeck",
-		Name:             "Readeck",
-		Slogan:           "Save the readable content of web pages you want to keep, free of ads and clutter.",
-		Category:         "Productivity",
-		DocumentationURL: "https://readeck.org/en/docs/",
+		ID:                     "readeck",
+		Name:                   "Readeck",
+		Slogan:                 "Save the readable content of web pages you want to keep, free of ads and clutter.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://readeck.org/en/docs/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -2026,14 +2525,20 @@ var Templates = []Template{
     ports: ["8000:8000"]
     volumes:
       - readeck_data:/readeck
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "linkding",
-		Name:             "Linkding",
-		Slogan:           "A minimal, fast bookmark manager built for keeping a personal link archive.",
-		Category:         "Productivity",
-		DocumentationURL: "https://linkding.link",
+		ID:                     "linkding",
+		Name:                   "Linkding",
+		Slogan:                 "A minimal, fast bookmark manager built for keeping a personal link archive.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://linkding.link",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -2046,14 +2551,20 @@ var Templates = []Template{
       LD_SUPERUSER_PASSWORD: $SERVICE_PASSWORD_ADMIN
     volumes:
       - linkding_data:/etc/linkding/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/9090' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{ //nolint:gosec // CMD_DB_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "hedgedoc",
-		Name:             "HedgeDoc",
-		Slogan:           "Real-time collaborative markdown notes you can host yourself.",
-		Category:         "Productivity",
-		DocumentationURL: "https://docs.hedgedoc.org",
+		ID:                     "hedgedoc",
+		Name:                   "HedgeDoc",
+		Slogan:                 "Real-time collaborative markdown notes you can host yourself.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docs.hedgedoc.org",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -2068,6 +2579,11 @@ var Templates = []Template{
       CMD_SESSION_SECRET: $SERVICE_HEX_64_SESSIONSECRET
     volumes:
       - hedgedoc_uploads:/hedgedoc/public/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -2079,25 +2595,32 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "databasus",
-		Name:             "Databasus",
-		Slogan:           "A free, self-hosted backup tool for Postgres, MySQL, and MongoDB databases.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://databasus.com/installation",
+		ID:                     "databasus",
+		Name:                   "Databasus",
+		Slogan:                 "A free, self-hosted backup tool for Postgres, MySQL, and MongoDB databases.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://databasus.com/installation",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   databasus:
     image: databasus/databasus:v3.16.2
     ports: ["4005:4005"]
     volumes:
       - databasus_data:/databasus-data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/4005' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "wakapi",
-		Name:             "Wakapi",
-		Slogan:           "A self-hosted, WakaTime-compatible backend for tracking coding time and stats.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://wakapi.dev",
+		ID:                     "wakapi",
+		Name:                   "Wakapi",
+		Slogan:                 "A self-hosted, WakaTime-compatible backend for tracking coding time and stats.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://wakapi.dev",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -2114,6 +2637,11 @@ var Templates = []Template{
       WAKAPI_SECURITY_PASSWORD_SALT: $SERVICE_BASE64_64_PASSWORDSALT
     volumes:
       - wakapi_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -2125,11 +2653,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "transmission",
-		Name:             "Transmission",
-		Slogan:           "A fast, lightweight BitTorrent client with a simple web interface.",
-		Category:         "Media",
-		DocumentationURL: "https://docs.linuxserver.io/images/docker-transmission/",
+		ID:                     "transmission",
+		Name:                   "Transmission",
+		Slogan:                 "A fast, lightweight BitTorrent client with a simple web interface.",
+		Category:               "Media",
+		DocumentationURL:       "https://docs.linuxserver.io/images/docker-transmission/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -2146,14 +2675,20 @@ var Templates = []Template{
       - transmission_config:/config
       - transmission_downloads:/downloads
       - transmission_watch:/watch
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/9091' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "grimmory",
-		Name:             "Grimmory",
-		Slogan:           "Organize, read, annotate, and sync your entire book collection from one place.",
-		Category:         "Media",
-		DocumentationURL: "https://github.com/grimmory-tools/grimmory",
+		ID:                     "grimmory",
+		Name:                   "Grimmory",
+		Slogan:                 "Organize, read, annotate, and sync your entire book collection from one place.",
+		Category:               "Media",
+		DocumentationURL:       "https://github.com/grimmory-tools/grimmory",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   grimmory:
     image: grimmory/grimmory:nightly-20260403-3a371f7
@@ -2165,6 +2700,11 @@ var Templates = []Template{
     volumes:
       - grimmory_data:/app/data
       - grimmory_books:/books
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: mariadb:11
     environment:
@@ -2177,11 +2717,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "chatwoot",
-		Name:             "Chatwoot",
-		Slogan:           "An open-source customer support platform for live chat, email, and social messaging.",
-		Category:         "Communication",
-		DocumentationURL: "https://www.chatwoot.com/docs/self-hosted/",
+		ID:                     "chatwoot",
+		Name:                   "Chatwoot",
+		Slogan:                 "An open-source customer support platform for live chat, email, and social messaging.",
+		Category:               "Communication",
+		DocumentationURL:       "https://www.chatwoot.com/docs/self-hosted/",
+		RecommendedMemoryBytes: 1610612736, // 1536Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment. The real stack also runs a sidekiq worker for
@@ -2204,6 +2745,11 @@ var Templates = []Template{
       REDIS_URL: redis://redis:6379
     volumes:
       - chatwoot_data:/app/storage
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -2219,11 +2765,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "keycloak",
-		Name:             "Keycloak",
-		Slogan:           "An open-source identity and access management server with SSO, OAuth2, and SAML support.",
-		Category:         "Security",
-		DocumentationURL: "https://www.keycloak.org/documentation",
+		ID:                     "keycloak",
+		Name:                   "Keycloak",
+		Slogan:                 "An open-source identity and access management server with SSO, OAuth2, and SAML support.",
+		Category:               "Security",
+		DocumentationURL:       "https://www.keycloak.org/documentation",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		// The real image needs a "start" or "start-dev" command argument
 		// to actually serve; the compose subset here doesn't parse
 		// command:, so it's included for a human reader but has no
@@ -2240,14 +2787,20 @@ var Templates = []Template{
       KC_HEALTH_ENABLED: "true"
     volumes:
       - keycloak_data:/opt/keycloak/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "pocket-id",
-		Name:             "Pocket ID",
-		Slogan:           "A simple, secure OIDC provider that authenticates with passkeys instead of passwords.",
-		Category:         "Security",
-		DocumentationURL: "https://pocket-id.org/docs/setup/installation",
+		ID:                     "pocket-id",
+		Name:                   "Pocket ID",
+		Slogan:                 "A simple, secure OIDC provider that authenticates with passkeys instead of passwords.",
+		Category:               "Security",
+		DocumentationURL:       "https://pocket-id.org/docs/setup/installation",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		Compose: `services:
   pocket-id:
     image: ghcr.io/pocket-id/pocket-id:v1.13
@@ -2257,14 +2810,20 @@ var Templates = []Template{
       TRUST_PROXY: "true"
     volumes:
       - pocket_id_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/1411' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "privatebin",
-		Name:             "PrivateBin",
-		Slogan:           "A minimalist, encrypted pastebin where the server has zero knowledge of what you paste.",
-		Category:         "Security",
-		DocumentationURL: "https://github.com/PrivateBin/PrivateBin/blob/master/doc/README.md",
+		ID:                     "privatebin",
+		Name:                   "PrivateBin",
+		Slogan:                 "A minimalist, encrypted pastebin where the server has zero knowledge of what you paste.",
+		Category:               "Security",
+		DocumentationURL:       "https://github.com/PrivateBin/PrivateBin/blob/master/doc/README.md",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -2274,14 +2833,20 @@ var Templates = []Template{
     ports: ["8080:8080"]
     volumes:
       - privatebin_data:/srv/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "qdrant",
-		Name:             "Qdrant",
-		Slogan:           "A vector similarity search engine for storing, searching, and managing embeddings.",
-		Category:         "Database Tools",
-		DocumentationURL: "https://qdrant.tech/documentation/",
+		ID:                     "qdrant",
+		Name:                   "Qdrant",
+		Slogan:                 "A vector similarity search engine for storing, searching, and managing embeddings.",
+		Category:               "Database Tools",
+		DocumentationURL:       "https://qdrant.tech/documentation/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -2293,14 +2858,20 @@ var Templates = []Template{
       QDRANT__SERVICE__API_KEY: $SERVICE_HEX_64_APIKEY
     volumes:
       - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:6333/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "influxdb",
-		Name:             "InfluxDB",
-		Slogan:           "An open-source time-series database for metrics, events, and IoT analytics.",
-		Category:         "Database Tools",
-		DocumentationURL: "https://docs.influxdata.com/influxdb/",
+		ID:                     "influxdb",
+		Name:                   "InfluxDB",
+		Slogan:                 "An open-source time-series database for metrics, events, and IoT analytics.",
+		Category:               "Database Tools",
+		DocumentationURL:       "https://docs.influxdata.com/influxdb/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   influxdb:
     image: influxdb:2.7-alpine
@@ -2315,14 +2886,20 @@ var Templates = []Template{
     volumes:
       - influxdb_data:/var/lib/influxdb2
       - influxdb_config:/etc/influxdb2
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8086/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "rabbitmq",
-		Name:             "RabbitMQ",
-		Slogan:           "A widely used open-source message broker supporting AMQP, MQTT, and STOMP.",
-		Category:         "Infrastructure",
-		DocumentationURL: "https://www.rabbitmq.com/documentation.html",
+		ID:                     "rabbitmq",
+		Name:                   "RabbitMQ",
+		Slogan:                 "A widely used open-source message broker supporting AMQP, MQTT, and STOMP.",
+		Category:               "Infrastructure",
+		DocumentationURL:       "https://www.rabbitmq.com/documentation.html",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Upstream only publishes a floating "3-management" major tag for
 		// this variant; this pinned version couldn't be verified against
 		// a live registry in this environment.
@@ -2335,14 +2912,20 @@ var Templates = []Template{
       RABBITMQ_DEFAULT_PASS: $SERVICE_PASSWORD_ADMIN
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/15672' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "glances",
-		Name:             "Glances",
-		Slogan:           "A cross-platform system monitor showing CPU, memory, disk, and network at a glance.",
-		Category:         "Monitoring",
-		DocumentationURL: "https://nicolargo.github.io/glances/",
+		ID:                     "glances",
+		Name:                   "Glances",
+		Slogan:                 "A cross-platform system monitor showing CPU, memory, disk, and network at a glance.",
+		Category:               "Monitoring",
+		DocumentationURL:       "https://nicolargo.github.io/glances/",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Real Glances setups bind-mount the host Docker socket to also
 		// show per-container stats; this platform's compose subset only
 		// supports named volumes (no bind mounts), so only host-level
@@ -2355,14 +2938,20 @@ var Templates = []Template{
     ports: ["61208:61208"]
     environment:
       GLANCES_OPT: "-w"
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/61208' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "statusnook",
-		Name:             "Statusnook",
-		Slogan:           "Deploy a status page and start monitoring endpoints in minutes.",
-		Category:         "Monitoring",
-		DocumentationURL: "https://statusnook.com",
+		ID:                     "statusnook",
+		Name:                   "Statusnook",
+		Slogan:                 "Deploy a status page and start monitoring endpoints in minutes.",
+		Category:               "Monitoring",
+		DocumentationURL:       "https://statusnook.com",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
@@ -2372,14 +2961,20 @@ var Templates = []Template{
     ports: ["8000:8000"]
     volumes:
       - statusnook_data:/app/statusnook-data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "searxng",
-		Name:             "SearXNG",
-		Slogan:           "A privacy-respecting metasearch engine that aggregates results from dozens of search services.",
-		Category:         "Applications",
-		DocumentationURL: "https://docs.searxng.org",
+		ID:                     "searxng",
+		Name:                   "SearXNG",
+		Slogan:                 "A privacy-respecting metasearch engine that aggregates results from dozens of search services.",
+		Category:               "Applications",
+		DocumentationURL:       "https://docs.searxng.org",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Real SearXNG setups mount a custom settings.yml; this platform's
 		// compose subset has no bind-mount support, so it boots on the
 		// image's own default settings instead. Only published under a
@@ -2392,6 +2987,11 @@ var Templates = []Template{
     environment:
       SEARXNG_SECRET: $SERVICE_HEX_64_SECRET
       SEARXNG_REDIS_URL: redis://redis:6379/0
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   redis:
     image: redis:7-alpine
     volumes:
@@ -2399,11 +2999,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "pi-hole",
-		Name:             "Pi-hole",
-		Slogan:           "Network-wide ad blocking that works as a DNS sinkhole for your whole network.",
-		Category:         "Infrastructure",
-		DocumentationURL: "https://docs.pi-hole.net",
+		ID:                     "pi-hole",
+		Name:                   "Pi-hole",
+		Slogan:                 "Network-wide ad blocking that works as a DNS sinkhole for your whole network.",
+		Category:               "Infrastructure",
+		DocumentationURL:       "https://docs.pi-hole.net",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		// Real Pi-hole setups also expose DNS on 53/tcp+udp; this
 		// platform tracks a single container port per service, so only
 		// the web admin UI is reachable here, not DNS resolution. Only
@@ -2418,14 +3019,20 @@ var Templates = []Template{
       FTLCONF_webserver_api_password: $SERVICE_PASSWORD_ADMIN
     volumes:
       - pihole_data:/etc/pihole
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "gitlab-ce",
-		Name:             "GitLab CE",
-		Slogan:           "A complete DevOps platform for source control, code review, issues, and CI/CD in one place.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://docs.gitlab.com/install/docker/installation/",
+		ID:                     "gitlab-ce",
+		Name:                   "GitLab CE",
+		Slogan:                 "A complete DevOps platform for source control, code review, issues, and CI/CD in one place.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://docs.gitlab.com/install/docker/installation/",
+		RecommendedMemoryBytes: 4294967296, // 4096Mi
 		// GitLab's omnibus image also serves SSH git access on 22 and
 		// HTTPS on 443; this platform tracks a single container port per
 		// service, so only the web UI on 80 is reachable here.
@@ -2440,14 +3047,20 @@ var Templates = []Template{
       - gitlab_config:/etc/gitlab
       - gitlab_logs:/var/log/gitlab
       - gitlab_data:/var/opt/gitlab
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/-/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "beszel",
-		Name:             "Beszel",
-		Slogan:           "A lightweight server monitoring hub with historical stats for CPU, memory, disk, and network.",
-		Category:         "Monitoring",
-		DocumentationURL: "https://beszel.dev/guide/getting-started",
+		ID:                     "beszel",
+		Name:                   "Beszel",
+		Slogan:                 "A lightweight server monitoring hub with historical stats for CPU, memory, disk, and network.",
+		Category:               "Monitoring",
+		DocumentationURL:       "https://beszel.dev/guide/getting-started",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		Compose: `services:
   beszel:
     image: henrygd/beszel:0.19.0
@@ -2456,14 +3069,20 @@ var Templates = []Template{
       APP_URL: ${SERVICE_FQDN_BESZEL:-http://localhost:8090}
     volumes:
       - beszel_data:/beszel_data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8090' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{ //nolint:gosec // MATOMO_DATABASE_PASSWORD below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "matomo",
-		Name:             "Matomo",
-		Slogan:           "A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership.",
-		Category:         "Analytics",
-		DocumentationURL: "https://matomo.org/faq/how-to-install/install-matomo-with-docker/",
+		ID:                     "matomo",
+		Name:                   "Matomo",
+		Slogan:                 "A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership.",
+		Category:               "Analytics",
+		DocumentationURL:       "https://matomo.org/faq/how-to-install/install-matomo-with-docker/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   matomo:
     image: matomo:5.13.0-apache
@@ -2475,6 +3094,11 @@ var Templates = []Template{
       MATOMO_DATABASE_DBNAME: matomo
     volumes:
       - matomo_data:/var/www/html
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: mariadb:10.11
     environment:
@@ -2487,11 +3111,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "photoprism",
-		Name:             "PhotoPrism",
-		Slogan:           "An AI-powered photo management app that indexes and organizes your library as you own it.",
-		Category:         "Media",
-		DocumentationURL: "https://docs.photoprism.app/getting-started/docker-compose/",
+		ID:                     "photoprism",
+		Name:                   "PhotoPrism",
+		Slogan:                 "An AI-powered photo management app that indexes and organizes your library as you own it.",
+		Category:               "Media",
+		DocumentationURL:       "https://docs.photoprism.app/getting-started/docker-compose/",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		// PhotoPrism's official releases use a date-based tag scheme
 		// (YYMMDD) rather than semver.
 		Compose: `services:
@@ -2505,14 +3130,20 @@ var Templates = []Template{
     volumes:
       - photoprism_originals:/photoprism/originals
       - photoprism_storage:/photoprism/storage
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/2342' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "planka",
-		Name:             "Planka",
-		Slogan:           "A Trello-style kanban board for visualizing and tracking work across a team.",
-		Category:         "Productivity",
-		DocumentationURL: "https://docs.planka.cloud/docs/installation/docker/",
+		ID:                     "planka",
+		Name:                   "Planka",
+		Slogan:                 "A Trello-style kanban board for visualizing and tracking work across a team.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docs.planka.cloud/docs/installation/docker/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   planka:
     image: ghcr.io/plankanban/planka:2.2.1
@@ -2523,6 +3154,11 @@ var Templates = []Template{
       DATABASE_URL: postgresql://postgres:$SERVICE_PASSWORD_DB@db/planka
     volumes:
       - planka_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/1337' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -2533,11 +3169,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "baserow",
-		Name:             "Baserow",
-		Slogan:           "A no-code database and spreadsheet hybrid you can build internal tools and apps on top of.",
-		Category:         "Database Tools",
-		DocumentationURL: "https://baserow.io/docs/installation%2Finstall-with-docker",
+		ID:                     "baserow",
+		Name:                   "Baserow",
+		Slogan:                 "A no-code database and spreadsheet hybrid you can build internal tools and apps on top of.",
+		Category:               "Database Tools",
+		DocumentationURL:       "https://baserow.io/docs/installation%2Finstall-with-docker",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		Compose: `services:
   baserow:
     image: baserow/baserow:2.3.3
@@ -2546,14 +3183,20 @@ var Templates = []Template{
       BASEROW_PUBLIC_URL: ${SERVICE_FQDN_BASEROW:-http://localhost}
     volumes:
       - baserow_data:/baserow/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "clickhouse",
-		Name:             "ClickHouse",
-		Slogan:           "A columnar database built for fast analytical queries over large datasets.",
-		Category:         "Database Tools",
-		DocumentationURL: "https://hub.docker.com/r/clickhouse/clickhouse-server",
+		ID:                     "clickhouse",
+		Name:                   "ClickHouse",
+		Slogan:                 "A columnar database built for fast analytical queries over large datasets.",
+		Category:               "Database Tools",
+		DocumentationURL:       "https://hub.docker.com/r/clickhouse/clickhouse-server",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		Compose: `services:
   clickhouse:
     image: clickhouse/clickhouse-server:26.3-alpine
@@ -2562,14 +3205,20 @@ var Templates = []Template{
       CLICKHOUSE_PASSWORD: $SERVICE_PASSWORD_ADMIN
     volumes:
       - clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8123/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "kavita",
-		Name:             "Kavita",
-		Slogan:           "A fast, feature-rich reader server for manga, comics, and ebooks.",
-		Category:         "Media",
-		DocumentationURL: "https://wiki.kavitareader.com/installation/docker/",
+		ID:                     "kavita",
+		Name:                   "Kavita",
+		Slogan:                 "A fast, feature-rich reader server for manga, comics, and ebooks.",
+		Category:               "Media",
+		DocumentationURL:       "https://wiki.kavitareader.com/installation/docker/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   kavita:
     image: jvmilazz0/kavita:0.9.1
@@ -2577,14 +3226,20 @@ var Templates = []Template{
     volumes:
       - kavita_config:/kavita/config
       - kavita_data:/manga
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/5000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "komga",
-		Name:             "Komga",
-		Slogan:           "A media server for comics, manga, and digital books with a clean reading interface.",
-		Category:         "Media",
-		DocumentationURL: "https://komga.org/docs/installation/docker",
+		ID:                     "komga",
+		Name:                   "Komga",
+		Slogan:                 "A media server for comics, manga, and digital books with a clean reading interface.",
+		Category:               "Media",
+		DocumentationURL:       "https://komga.org/docs/installation/docker",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   komga:
     image: gotson/komga:1.26.3
@@ -2592,26 +3247,38 @@ var Templates = []Template{
     volumes:
       - komga_config:/config
       - komga_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/25600' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "adminer",
-		Name:             "Adminer",
-		Slogan:           "A single-file database admin tool for MySQL, PostgreSQL, SQLite, and more.",
-		Category:         "Database Tools",
-		DocumentationURL: "https://www.adminer.org",
+		ID:                     "adminer",
+		Name:                   "Adminer",
+		Slogan:                 "A single-file database admin tool for MySQL, PostgreSQL, SQLite, and more.",
+		Category:               "Database Tools",
+		DocumentationURL:       "https://www.adminer.org",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		Compose: `services:
   adminer:
     image: adminer:5
     ports: ["8080:8080"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "typesense",
-		Name:             "Typesense",
-		Slogan:           "A fast, typo-tolerant search engine API built as a lighter alternative to Elasticsearch.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://typesense.org/docs/guide/install-typesense.html",
+		ID:                     "typesense",
+		Name:                   "Typesense",
+		Slogan:                 "A fast, typo-tolerant search engine API built as a lighter alternative to Elasticsearch.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://typesense.org/docs/guide/install-typesense.html",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   typesense:
     image: typesense/typesense:30.2
@@ -2621,14 +3288,20 @@ var Templates = []Template{
       TYPESENSE_DATA_DIR: /data
     volumes:
       - typesense_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8108/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "kanboard",
-		Name:             "Kanboard",
-		Slogan:           "A minimalist, keyboard-friendly kanban board for personal and team task tracking.",
-		Category:         "Productivity",
-		DocumentationURL: "https://docs.kanboard.org",
+		ID:                     "kanboard",
+		Name:                   "Kanboard",
+		Slogan:                 "A minimalist, keyboard-friendly kanban board for personal and team task tracking.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docs.kanboard.org",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   kanboard:
     image: kanboard/kanboard:v1.2.54
@@ -2636,14 +3309,20 @@ var Templates = []Template{
     volumes:
       - kanboard_data:/var/www/app/data
       - kanboard_plugins:/var/www/app/plugins
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "wallabag",
-		Name:             "Wallabag",
-		Slogan:           "A read-it-later app that saves web articles in a clean, distraction-free format.",
-		Category:         "Productivity",
-		DocumentationURL: "https://doc.wallabag.org",
+		ID:                     "wallabag",
+		Name:                   "Wallabag",
+		Slogan:                 "A read-it-later app that saves web articles in a clean, distraction-free format.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://doc.wallabag.org",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   wallabag:
     image: wallabag/wallabag:2.6.14
@@ -2654,42 +3333,60 @@ var Templates = []Template{
     volumes:
       - wallabag_data:/var/www/wallabag/data
       - wallabag_images:/var/www/wallabag/web/assets/images
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "libretranslate",
-		Name:             "LibreTranslate",
-		Slogan:           "A free and open machine translation API that runs entirely on your own hardware.",
-		Category:         "Developer Tools",
-		DocumentationURL: "https://github.com/LibreTranslate/LibreTranslate",
+		ID:                     "libretranslate",
+		Name:                   "LibreTranslate",
+		Slogan:                 "A free and open machine translation API that runs entirely on your own hardware.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://github.com/LibreTranslate/LibreTranslate",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   libretranslate:
     image: libretranslate/libretranslate:v1.9.6
     ports: ["5000:5000"]
     volumes:
       - libretranslate_data:/home/libretranslate/.local
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/5000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "node-red",
-		Name:             "Node-RED",
-		Slogan:           "A flow-based visual editor for wiring together hardware, APIs, and online services.",
-		Category:         "Automation",
-		DocumentationURL: "https://nodered.org/docs/getting-started/docker",
+		ID:                     "node-red",
+		Name:                   "Node-RED",
+		Slogan:                 "A flow-based visual editor for wiring together hardware, APIs, and online services.",
+		Category:               "Automation",
+		DocumentationURL:       "https://nodered.org/docs/getting-started/docker",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   nodered:
     image: nodered/node-red:4.1.15-22
     ports: ["1880:1880"]
     volumes:
       - nodered_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/1880' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "tandoor-recipes",
-		Name:             "Tandoor Recipes",
-		Slogan:           "A recipe manager and meal planner with shopping lists and shared cookbooks.",
-		Category:         "Productivity",
-		DocumentationURL: "https://docs.tandoor.dev/install/docker/",
+		ID:                     "tandoor-recipes",
+		Name:                   "Tandoor Recipes",
+		Slogan:                 "A recipe manager and meal planner with shopping lists and shared cookbooks.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docs.tandoor.dev/install/docker/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   tandoor:
     image: vabene1111/recipes:2.6.15
@@ -2706,6 +3403,11 @@ var Templates = []Template{
     volumes:
       - tandoor_data:/opt/recipes/mediafiles
       - tandoor_static:/opt/recipes/staticfiles
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -2717,11 +3419,12 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "homebox",
-		Name:             "Homebox",
-		Slogan:           "A home inventory and organization system for tracking what you own and where it is.",
-		Category:         "Productivity",
-		DocumentationURL: "https://homebox.software/en/quick-start/install/",
+		ID:                     "homebox",
+		Name:                   "Homebox",
+		Slogan:                 "A home inventory and organization system for tracking what you own and where it is.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://homebox.software/en/quick-start/install/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   homebox:
     image: ghcr.io/sysadminsmedia/homebox:0.11.1
@@ -2730,14 +3433,20 @@ var Templates = []Template{
       HBOX_OPTIONS_ALLOW_REGISTRATION: "true"
     volumes:
       - homebox_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/7745' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "bytebase",
-		Name:             "Bytebase",
-		Slogan:           "A database schema change and migration tool with review workflows built in.",
-		Category:         "Database Tools",
-		DocumentationURL: "https://docs.bytebase.com/get-started/step-by-step/deploy-with-docker",
+		ID:                     "bytebase",
+		Name:                   "Bytebase",
+		Slogan:                 "A database schema change and migration tool with review workflows built in.",
+		Category:               "Database Tools",
+		DocumentationURL:       "https://docs.bytebase.com/get-started/step-by-step/deploy-with-docker",
+		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   bytebase:
     image: bytebase/bytebase:3.9.2
@@ -2745,14 +3454,20 @@ var Templates = []Template{
     ports: ["8080:8080"]
     volumes:
       - bytebase_data:/var/opt/bytebase
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "open-webui",
-		Name:             "Open WebUI",
-		Slogan:           "A self-hosted chat interface for running local large language models through Ollama.",
-		Category:         "AI",
-		DocumentationURL: "https://docs.openwebui.com",
+		ID:                     "open-webui",
+		Name:                   "Open WebUI",
+		Slogan:                 "A self-hosted chat interface for running local large language models through Ollama.",
+		Category:               "AI",
+		DocumentationURL:       "https://docs.openwebui.com",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		Compose: `services:
   ollama:
     image: ollama/ollama:0.33.3
@@ -2766,14 +3481,20 @@ var Templates = []Template{
       WEBUI_SECRET_KEY: $SERVICE_HEX_32_SECRETKEY
     volumes:
       - openwebui_data:/app/backend/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{ //nolint:gosec // DATABASE_URL below is a compose magic-var token ($SERVICE_PASSWORD_DB), not a real credential
-		ID:               "linkwarden",
-		Name:             "Linkwarden",
-		Slogan:           "A bookmark manager that archives full page snapshots, not just links, so pages stay readable.",
-		Category:         "Productivity",
-		DocumentationURL: "https://docs.linkwarden.app/self-hosting/setup",
+		ID:                     "linkwarden",
+		Name:                   "Linkwarden",
+		Slogan:                 "A bookmark manager that archives full page snapshots, not just links, so pages stay readable.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docs.linkwarden.app/self-hosting/setup",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		Compose: `services:
   linkwarden:
     image: ghcr.io/linkwarden/linkwarden:v2.9.3
@@ -2786,6 +3507,11 @@ var Templates = []Template{
       MEILI_HOST: http://meilisearch:7700
     volumes:
       - linkwarden_data:/data/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3000' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   db:
     image: postgres:16-alpine
     environment:
@@ -2803,25 +3529,32 @@ var Templates = []Template{
 `,
 	},
 	{
-		ID:               "actual-budget",
-		Name:             "Actual Budget",
-		Slogan:           "A local-first, envelope-style budgeting app with optional multi-device sync.",
-		Category:         "Finance",
-		DocumentationURL: "https://actualbudget.org/docs/install/docker/",
+		ID:                     "actual-budget",
+		Name:                   "Actual Budget",
+		Slogan:                 "A local-first, envelope-style budgeting app with optional multi-device sync.",
+		Category:               "Finance",
+		DocumentationURL:       "https://actualbudget.org/docs/install/docker/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   actual:
     image: actualbudget/actual-server:26.9.0
     ports: ["5006:5006"]
     volumes:
       - actual_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/5006' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "redlib",
-		Name:             "Redlib",
-		Slogan:           "A private, lightweight front-end for browsing Reddit without tracking or ads.",
-		Category:         "Applications",
-		DocumentationURL: "https://github.com/redlib-org/redlib",
+		ID:                     "redlib",
+		Name:                   "Redlib",
+		Slogan:                 "A private, lightweight front-end for browsing Reddit without tracking or ads.",
+		Category:               "Applications",
+		DocumentationURL:       "https://github.com/redlib-org/redlib",
+		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Upstream only publishes a rolling "latest" tag plus per-commit
 		// "sha-*" builds, no semver releases; pinned to a specific
 		// commit-built image instead.
@@ -2829,20 +3562,31 @@ var Templates = []Template{
   redlib:
     image: quay.io/redlib/redlib:sha-a4d36e9
     ports: ["8080:8080"]
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
-		ID:               "ollama",
-		Name:             "Ollama",
-		Slogan:           "A local LLM runtime with an HTTP API. Pull any model yourself once it's running.",
-		Category:         "AI",
-		DocumentationURL: "https://github.com/ollama/ollama",
+		ID:                     "ollama",
+		Name:                   "Ollama",
+		Slogan:                 "A local LLM runtime with an HTTP API. Pull any model yourself once it's running.",
+		Category:               "AI",
+		DocumentationURL:       "https://github.com/ollama/ollama",
+		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		Compose: `services:
   ollama:
     image: ollama/ollama:0.33.3
     ports: ["11434:11434"]
     volumes:
       - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:11434/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	// The five ollama-* entries pin an explicit parameter-size tag, not
@@ -2865,6 +3609,11 @@ var Templates = []Template{
     volumes:
       - ollama_data:/root/.ollama
     command: "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull mistral:7b-instruct-v0.3; wait"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:11434/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
@@ -2881,6 +3630,11 @@ var Templates = []Template{
     volumes:
       - ollama_data:/root/.ollama
     command: "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull llama3:8b; wait"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:11434/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
@@ -2897,6 +3651,11 @@ var Templates = []Template{
     volumes:
       - ollama_data:/root/.ollama
     command: "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull qwen2.5:7b; wait"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:11434/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
@@ -2913,6 +3672,11 @@ var Templates = []Template{
     volumes:
       - ollama_data:/root/.ollama
     command: "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull phi3:3.8b; wait"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:11434/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 	{
@@ -2929,6 +3693,11 @@ var Templates = []Template{
     volumes:
       - ollama_data:/root/.ollama
     command: "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull deepseek-r1:7b; wait"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:11434/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 `,
 	},
 }

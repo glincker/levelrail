@@ -32,6 +32,10 @@ func TestTemplates_ComposeParsesAndValidates(t *testing.T) {
 				t.Errorf("template %q: empty DocumentationURL", tpl.ID)
 			}
 
+			if tpl.RecommendedMemoryBytes <= 0 {
+				t.Errorf("template %q: RecommendedMemoryBytes must be set to a positive value", tpl.ID)
+			}
+
 			f, err := compose.Parse([]byte(tpl.Compose))
 			if err != nil {
 				t.Fatalf("template %q: compose.Parse() error = %v", tpl.ID, err)
@@ -42,8 +46,21 @@ func TestTemplates_ComposeParsesAndValidates(t *testing.T) {
 			if _, _, err := compose.ToDesiredServices("test", f); err != nil {
 				t.Fatalf("template %q: compose.ToDesiredServices() error = %v", tpl.ID, err)
 			}
+
+			if !anyServiceHasHealthcheck(f) {
+				t.Errorf("template %q: no service declares a healthcheck: block", tpl.ID)
+			}
 		})
 	}
+}
+
+func anyServiceHasHealthcheck(f *compose.File) bool {
+	for _, svc := range f.Services {
+		if svc.Healthcheck != nil && len(svc.Healthcheck.Test) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func TestTemplates_MinimumCatalogSize(t *testing.T) {
