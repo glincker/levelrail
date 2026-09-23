@@ -154,15 +154,28 @@ function DeployApprovalsPage() {
       </div>
 
       {approvals.length === 0 ? (
-        <EmptyState
-          icon={<GavelIcon className="size-5" />}
-          title="No matching approvals"
-          description={
-            status === 'pending'
-              ? 'Nothing is waiting on approval right now.'
-              : 'No approvals match this filter yet.'
-          }
-        />
+        status === 'pending' ? (
+          <EmptyState
+            icon={<GavelIcon className="size-5" />}
+            title="Nothing pending"
+            description="No deploy or promote is waiting on approval right now."
+          />
+        ) : (
+          <EmptyState
+            icon={<GavelIcon className="size-5" />}
+            title="No approvals match this filter"
+            description={`No ${status} approvals to show.`}
+            action={
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setStatus('pending')}
+              >
+                Clear filter
+              </Button>
+            }
+          />
+        )
       ) : (
         <Table>
           <TableHeader>
