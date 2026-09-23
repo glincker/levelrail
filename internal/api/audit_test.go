@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -543,5 +544,72 @@ func TestHandleListAuditLog_InvalidBefore(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/audit-log?before=not-a-timestamp", ""))
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+}
+
+type mockAuditStore struct {
+	deleteEntries func(ctx context.Context, cutoff time.Time) (int64, error)
+}
+
+func (m *mockAuditStore) SaveAuditEntry(ctx context.Context, e store.AuditEntry) error {
+	return nil
+}
+
+func (m *mockAuditStore) ListAuditEntries(ctx context.Context, limit int, before *time.Time, filter store.AuditEntryFilter) ([]store.AuditEntry, error) {
+	return nil, nil
+}
+
+func (m *mockAuditStore) DeleteAuditEntriesOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
+	if m.deleteEntries != nil {
+		return m.deleteEntries(ctx, cutoff)
+	}
+	return 0, nil
+}
+
+func TestHandlePurgeAuditLog_Error(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	// Swap out the actual audit log store with a mock that returns an error
+	rt.auditLog = &mockAuditStore{
+		deleteEntries: func(ctx context.Context, cutoff time.Time) (int64, error) {
+			return 0, errors.New("mock db error")
+		},
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/audit-log/purge", ""))
+
+	// Given that the handler uses internalError, which writes a 500 status code
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
+	}
+}
+
+func TestHandlePurgeAuditLog_Success(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	// Swap out the actual audit log store with a mock that returns success
+	rt.auditLog = &mockAuditStore{
+		deleteEntries: func(ctx context.Context, cutoff time.Time) (int64, error) {
+			return 42, nil
+		},
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/audit-log/purge", ""))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	var got purgeAuditLogResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode purge response: %v", err)
+	}
+
+	if got.Deleted != 42 {
+		t.Fatalf("Deleted = %d, want 42", got.Deleted)
 	}
 }
