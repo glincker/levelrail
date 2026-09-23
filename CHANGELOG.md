@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0-beta.10](https://github.com/glincker/levelrail/compare/v0.2.0-beta.9...v0.2.0-beta.10) (2026-09-23)
+
+
+### Bug Fixes
+
+* correct Vikunja and Keycloak catalog templates so they boot ([#615](https://github.com/glincker/levelrail/issues/615)) ([faac7e2](https://github.com/glincker/levelrail/commit/faac7e2ef9dcb6f7312a135729377a33b15ff33a))
+
 ## [0.2.0-beta.9](https://github.com/glincker/levelrail/compare/v0.2.0-beta.8...v0.2.0-beta.9) (2026-09-23)
 
 
