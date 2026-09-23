@@ -1,4 +1,6 @@
 import { Link } from '@tanstack/react-router'
+import { TemplateLogo } from './TemplateLogo'
+import { logoIdForImage } from '../lib/imageLogo'
 import {
   PackageIcon,
   CaretRightIcon,
@@ -41,7 +43,11 @@ export function AppRow({ app }: { app: AppListEntry }) {
       className={`${APP_LIST_GRID} h-full w-full border-b border-border px-4 py-3 transition-colors hover:bg-muted/60`}
     >
       <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-        <PackageIcon className="size-4" aria-hidden="true" />
+        <TemplateLogo
+          id={logoIdForImage(app.image) ?? ''}
+          className="size-4"
+          fallback={<PackageIcon className="size-4" aria-hidden="true" />}
+        />
       </span>
 
       <span className="flex min-w-0 flex-col justify-center gap-0.5">
