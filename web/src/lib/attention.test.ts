@@ -67,4 +67,17 @@ describe('buildAttentionItems', () => {
     ])
     expect(items.filter((i) => i.severity === 'critical')).toHaveLength(4)
   })
+
+  it('flags disk pressure', () => {
+    const items = buildAttentionItems({
+      disk: {
+        level: 'critical',
+        freePercent: 3,
+        freeBytes: 3e9,
+        reclaimableBytes: 1e9,
+      },
+    })
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({ id: 'disk', severity: 'critical' })
+  })
 })

@@ -2,6 +2,8 @@ import type { AppListEntry } from '../types/appDetail'
 import type { NodeResource } from '../types/nodeDetail'
 import type { CertificateStatus } from '../queries/certificates'
 import type { DoctorReport } from '../queries/systemDoctor'
+import type { DiskPressure } from './diskPressure'
+import { formatBytes } from './format'
 
 export type AttentionSeverity = 'critical' | 'warning'
 
@@ -24,13 +26,26 @@ export function buildAttentionItems({
   nodes = [],
   certs = [],
   doctor,
+  disk,
 }: {
   apps?: AppListEntry[]
   nodes?: NodeResource[]
   certs?: CertificateStatus[]
   doctor?: DoctorReport
+  disk?: DiskPressure
 }): AttentionItem[] {
   const items: AttentionItem[] = []
+
+  if (disk && disk.level !== 'ok') {
+    items.push({
+      id: 'disk',
+      severity: disk.level === 'critical' ? 'critical' : 'warning',
+      title:
+        disk.level === 'critical' ? 'Disk almost full' : 'Disk space is low',
+      detail: `${formatBytes(disk.freeBytes)} free (${disk.freePercent.toFixed(1)}%), ${formatBytes(disk.reclaimableBytes)} reclaimable`,
+      target: { kind: 'system' },
+    })
+  }
 
   for (const app of apps) {
     if (app.status.variant === 'destructive') {

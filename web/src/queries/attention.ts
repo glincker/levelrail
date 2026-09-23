@@ -3,7 +3,9 @@ import { buildAttentionItems } from '../lib/attention'
 import { appListQueryOptions } from './apps'
 import { certificatesQueryOptions } from './certificates'
 import { nodeListQueryOptions } from './nodes'
+import { assessDiskPressure } from '../lib/diskPressure'
 import { systemDoctorQueryOptions } from './systemDoctor'
+import { systemStatusQueryOptions } from './systemStatus'
 
 const REFRESH_MS = 30_000
 
@@ -15,6 +17,7 @@ export function useAttentionItems() {
   const nodes = useQuery({ ...nodeListQueryOptions(), ...opts })
   const certs = useQuery({ ...certificatesQueryOptions(), ...opts })
   const doctor = useQuery({ ...systemDoctorQueryOptions(), ...opts })
+  const status = useQuery({ ...systemStatusQueryOptions(), ...opts })
 
   return {
     items: buildAttentionItems({
@@ -22,6 +25,7 @@ export function useAttentionItems() {
       nodes: nodes.data,
       certs: certs.data,
       doctor: doctor.data,
+      disk: status.data ? assessDiskPressure(status.data) : undefined,
     }),
     isLoading:
       apps.isLoading || nodes.isLoading || certs.isLoading || doctor.isLoading,
