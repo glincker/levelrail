@@ -3,26 +3,15 @@ package spec
 import "testing"
 
 func TestValidateBindMountHostPath(t *testing.T) {
-	tests := []struct {
-		name     string
-		hostPath string
-		wantErr  bool
-	}{
-		{name: "valid absolute path", hostPath: "/srv/myapp/data", wantErr: false},
-		{name: "relative path rejected", hostPath: "data", wantErr: true},
-		{name: "root rejected", hostPath: "/", wantErr: true},
-		{name: "exact forbidden path rejected", hostPath: "/etc", wantErr: true},
-		{name: "forbidden path prefix rejected", hostPath: "/etc/passwd", wantErr: true},
-		{name: "docker socket rejected", hostPath: "/var/run/docker.sock", wantErr: true},
-		{name: "var run prefix rejected", hostPath: "/var/run/anything", wantErr: true},
-		{name: "similar but distinct path allowed", hostPath: "/etcetera/data", wantErr: false},
+	// validateBindMountHostPath delegates to bindmount.ValidateHostPath,
+	// so we only do a minimal sanity check here to verify delegation
+	// and avoid duplicating bindmount_test.go logic.
+
+	if err := validateBindMountHostPath("/srv/myapp/data"); err != nil {
+		t.Errorf("validateBindMountHostPath(/srv/myapp/data) expected no error, got %v", err)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateBindMountHostPath(tt.hostPath)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("validateBindMountHostPath(%q) error = %v, wantErr %v", tt.hostPath, err, tt.wantErr)
-			}
-		})
+
+	if err := validateBindMountHostPath("/etc"); err == nil {
+		t.Errorf("validateBindMountHostPath(/etc) expected error, got nil")
 	}
 }
