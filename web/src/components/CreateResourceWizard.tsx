@@ -145,12 +145,17 @@ function OptionCard({
 export function CreateResourceWizard({
   trigger,
   scope,
+  initialSelected,
 }: {
   trigger: React.ReactElement
   scope?: 'applications' | 'databases'
+  /** Opens straight to step 2 on this option instead of step 1's picker, e.g. "browse-templates" for a "Start from a template" entry point. */
+  initialSelected?: FixedWizardOption
 }) {
   const [open, setOpen] = useState(false)
-  const [selected, setSelected] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string | null>(
+    initialSelected ?? null,
+  )
   // Presentation only, independent of `selected`: toggling this must
   // never remount step 2's form (that's what `key={selected}` below is
   // actually keyed on), so it lives as its own piece of state. Starts
@@ -162,7 +167,9 @@ export function CreateResourceWizard({
   // is showing.
   const [fullscreen, setFullscreen] = useState(true)
   const [search, setSearch] = useState('')
-  const [category, setCategory] = useState<'all' | 'applications' | 'databases'>('all')
+  const [category, setCategory] = useState<
+    'all' | 'applications' | 'databases'
+  >('all')
   // A scoped wizard has nothing to switch between, so the tabs never
   // render and the active category is just the fixed scope.
   const activeCategory = scope ?? category
@@ -197,21 +204,26 @@ export function CreateResourceWizard({
   const filteredApplications =
     activeCategory === 'databases'
       ? []
-      : applicationOptions.filter((option) => matchesSearch(option, normalizedSearch))
+      : applicationOptions.filter((option) =>
+          matchesSearch(option, normalizedSearch),
+        )
   const filteredDatabases =
     activeCategory === 'applications'
       ? []
-      : databaseOptions.filter((option) => matchesSearch(option, normalizedSearch))
+      : databaseOptions.filter((option) =>
+          matchesSearch(option, normalizedSearch),
+        )
   const hasResults =
     filteredApplications.length > 0 || filteredDatabases.length > 0
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
-      // A fresh step 1 next time the dialog opens; the field components
-      // below already reset their own local form state off this same
-      // `open` prop.
-      setSelected(null)
+      // A fresh step 1 next time the dialog opens (or back to
+      // initialSelected, for a caller that always opens straight to
+      // step 2); the field components below already reset their own
+      // local form state off this same `open` prop.
+      setSelected(initialSelected ?? null)
       setFullscreen(true)
       setSearch('')
       setCategory('all')

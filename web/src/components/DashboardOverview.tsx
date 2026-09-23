@@ -236,14 +236,20 @@ function WelcomeEmptyState() {
           create one directly if you already have a built image.
         </p>
       </div>
-      <CreateResourceWizard
-        trigger={
-          <Button>
-            <PlusIcon />
-            Create app
-          </Button>
-        }
-      />
+      <div className="flex items-center gap-2">
+        <CreateResourceWizard
+          trigger={
+            <Button>
+              <PlusIcon />
+              Create app
+            </Button>
+          }
+        />
+        <CreateResourceWizard
+          initialSelected="browse-templates"
+          trigger={<Button variant="outline">Start from a template</Button>}
+        />
+      </div>
     </div>
   )
 }

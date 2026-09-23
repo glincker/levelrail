@@ -137,6 +137,17 @@ function AppListPage() {
               }
             />
           }
+          secondaryAction={
+            <CreateResourceWizard
+              scope="applications"
+              initialSelected="browse-templates"
+              trigger={
+                <Button size="sm" variant="outline">
+                  Start from a template
+                </Button>
+              }
+            />
+          }
         />
       ) : filteredApps.length === 0 ? (
         <EmptyState

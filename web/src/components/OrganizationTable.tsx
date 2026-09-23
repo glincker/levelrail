@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { BuildingsIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -24,8 +25,10 @@ function formatDate(iso: string): string {
 // targets.
 export function OrganizationTable({
   organizations,
+  action,
 }: {
   organizations: OrganizationResource[]
+  action?: ReactNode
 }) {
   if (organizations.length === 0) {
     return (
@@ -34,6 +37,7 @@ export function OrganizationTable({
         icon={<BuildingsIcon className="size-5" />}
         title="No organizations yet"
         description="Group related projects under an organization. A project with no organization is just as valid."
+        action={action}
       />
     )
   }

@@ -9,6 +9,7 @@ import {
 } from './ui/table'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
+import { EmptyState } from './ui/empty-state'
 import { RemoveUserDialog } from './RemoveUserDialog'
 import { EditUserAbilitiesDialog } from './EditUserAbilitiesDialog'
 import { useAuthUsername } from '../hooks/useAuthUsername'
@@ -36,12 +37,11 @@ export function UserTable({ users }: { users: UserResource[] }) {
 
   if (users.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
-        <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <UserIcon className="size-5" />
-        </div>
-        <p className="text-sm text-muted-foreground">No users found.</p>
-      </div>
+      <EmptyState
+        icon={<UserIcon className="size-5" />}
+        title="No users found"
+        description="Invite a teammate or create a user from the actions above."
+      />
     )
   }
 
@@ -81,7 +81,11 @@ export function UserTable({ users }: { users: UserResource[] }) {
                 <TableCell>{authMethods(user)}</TableCell>
                 <TableCell>
                   {user.role ? (
-                    <Badge variant={user.role === 'admin' ? 'destructive' : 'outline'}>
+                    <Badge
+                      variant={
+                        user.role === 'admin' ? 'destructive' : 'outline'
+                      }
+                    >
                       {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                     </Badge>
                   ) : (
@@ -91,7 +95,10 @@ export function UserTable({ users }: { users: UserResource[] }) {
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {user.abilities.map((ability) => (
-                      <Badge key={ability} variant={ABILITY_BADGE_VARIANT[ability]}>
+                      <Badge
+                        key={ability}
+                        variant={ABILITY_BADGE_VARIANT[ability]}
+                      >
                         {ability}
                       </Badge>
                     ))}
@@ -105,7 +112,12 @@ export function UserTable({ users }: { users: UserResource[] }) {
                         400 (handleUpdateUserAbilities's self-lockout
                         guard) after a wasted round trip. */}
                     {isSelf ? (
-                      <Button variant="outline" size="sm" disabled title="You cannot edit your own abilities">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled
+                        title="You cannot edit your own abilities"
+                      >
                         Edit abilities
                       </Button>
                     ) : (

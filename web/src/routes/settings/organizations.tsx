@@ -1,6 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr'
-import { organizationListQueryOptions, useOrganizations } from '../../queries/organizations'
+import {
+  organizationListQueryOptions,
+  useOrganizations,
+} from '../../queries/organizations'
 import { OrganizationTable } from '../../components/OrganizationTable'
 import { CreateOrganizationDialog } from '../../components/CreateOrganizationDialog'
 import { TableSkeleton } from '../../components/ui/table-skeleton'
@@ -31,14 +34,17 @@ function OrganizationsPage() {
               Organizations
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Group related projects under an organization. File a project
-              into one from the project&apos;s own detail page.
+              Group related projects under an organization. File a project into
+              one from the project&apos;s own detail page.
             </p>
           </div>
         </div>
         <CreateOrganizationDialog />
       </div>
-      <OrganizationTable organizations={organizations} />
+      <OrganizationTable
+        organizations={organizations}
+        action={<CreateOrganizationDialog />}
+      />
     </div>
   )
 }
@@ -49,9 +55,7 @@ function OrganizationsPage() {
 function OrganizationsPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">
-        Organizations
-      </h1>
+      <h1 className="text-lg font-semibold text-foreground">Organizations</h1>
       <TableSkeleton columnCount={3} />
     </div>
   )
