@@ -4,12 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 
+	dockercontainer "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	dockerclient "github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
 	bkclient "github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/solver/pb"
 	"google.golang.org/protobuf/proto"
@@ -40,9 +45,14 @@ func TestGenerateRailpackPlan(t *testing.T) {
 			wantProvider: "java",
 		},
 		{
-			name:      "unsupported: python detected but out of scope",
+			name:         "django fixture detected as python",
+			req:          RailpackRequest{SourceDir: "testdata/railpack-python", Tag: "levelrail-railpack:python"},
+			wantProvider: "python",
+		},
+		{
+			name:      "unsupported: ruby detected but out of scope",
 			req:       RailpackRequest{SourceDir: "testdata/railpack-unsupported", Tag: "levelrail-railpack:unsupported"},
-			wantUnsup: "python",
+			wantUnsup: "ruby",
 		},
 		{
 			name:    "missing source dir fails before touching the filesystem",
@@ -72,7 +82,7 @@ func TestGenerateRailpackPlan(t *testing.T) {
 				return
 			}
 
-			if tt.name == "unsupported: python detected but out of scope" {
+			if tt.name == "unsupported: ruby detected but out of scope" {
 				var unsupported *UnsupportedProviderError
 				if !errors.As(err, &unsupported) {
 					t.Fatalf("generateRailpackPlan() err = %v, want *UnsupportedProviderError", err)
@@ -115,6 +125,7 @@ func TestNewRailpackSolveOpt(t *testing.T) {
 		{name: "node plan", dir: "testdata/railpack-node", tag: "levelrail-railpack:node"},
 		{name: "go plan", dir: "testdata/railpack-go", tag: "levelrail-railpack:go"},
 		{name: "java plan", dir: "testdata/railpack-java-spring-boot", tag: "levelrail-railpack:java"},
+		{name: "python plan", dir: "testdata/railpack-python", tag: "levelrail-railpack:python"},
 	}
 
 	for _, tt := range tests {
@@ -176,6 +187,7 @@ func TestNewRailpackSolveOpt_NoMergeOp(t *testing.T) {
 		{name: "node plan", dir: "testdata/railpack-node", tag: "levelrail-railpack:node"},
 		{name: "go plan", dir: "testdata/railpack-go", tag: "levelrail-railpack:go"},
 		{name: "java plan", dir: "testdata/railpack-java-spring-boot", tag: "levelrail-railpack:java"},
+		{name: "python plan", dir: "testdata/railpack-python", tag: "levelrail-railpack:python"},
 	}
 
 	for _, tt := range tests {
@@ -330,6 +342,131 @@ func TestClient_BuildRailpack_Live_Java(t *testing.T) {
 	}
 	if inspect.ID == "" {
 		t.Error("inspected image has an empty ID")
+	}
+}
+
+// TestClient_BuildRailpack_Live_Python is TestClient_BuildRailpack_Live_Node's
+// twin for the python provider: builds testdata/railpack-python, a real
+// Django app, through Railpack's own detection and BuildKit's Go client,
+// then goes one step further than the other three live tests by
+// actually running the built image and making an HTTP request against
+// it, so this proves the container boots and serves, not just that the
+// image landed in the local store.
+func TestClient_BuildRailpack_Live_Python(t *testing.T) {
+	docker, bk := liveRailpackClient(t)
+
+	tag := "levelrail-railpack-spike:python-test"
+	t.Cleanup(func() {
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_, _ = docker.ImageRemove(cleanupCtx, tag, image.RemoveOptions{Force: true})
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	progress := &collectProgress{}
+	res, err := bk.BuildRailpack(ctx, RailpackRequest{
+		SourceDir: "testdata/railpack-python",
+		Tag:       tag,
+	}, progress.fn())
+	if err != nil {
+		t.Fatalf("BuildRailpack() error = %v", err)
+	}
+	if res.Tag != tag {
+		t.Errorf("Result.Tag = %q, want %q", res.Tag, tag)
+	}
+	if progress.count() == 0 {
+		t.Error("expected at least one ProgressEvent from a real build, got none")
+	}
+
+	inspect, err := docker.ImageInspect(ctx, tag)
+	if err != nil {
+		t.Fatalf("image %q not found after BuildRailpack(): %v", tag, err)
+	}
+	if inspect.ID == "" {
+		t.Error("inspected image has an empty ID")
+	}
+
+	assertContainerServes(ctx, t, docker, tag, "8000", "levelrail railpack python django fixture")
+}
+
+// assertContainerServes runs image as a container with containerPort
+// published to a random host port, polls it until it answers or ctx
+// expires, and asserts the response body contains want. It is the "run
+// it, don't just inspect it" step TestClient_BuildRailpack_Live_Python
+// needs that the other providers' fixtures don't (they print and exit
+// rather than serve HTTP).
+func assertContainerServes(ctx context.Context, t *testing.T, docker *dockerclient.Client, imageRef, containerPort, want string) {
+	t.Helper()
+
+	exposedPort, err := nat.NewPort("tcp", containerPort)
+	if err != nil {
+		t.Fatalf("nat.NewPort(%q): %v", containerPort, err)
+	}
+
+	created, err := docker.ContainerCreate(ctx,
+		&dockercontainer.Config{
+			Image:        imageRef,
+			ExposedPorts: nat.PortSet{exposedPort: struct{}{}},
+		},
+		&dockercontainer.HostConfig{
+			PortBindings: nat.PortMap{exposedPort: []nat.PortBinding{{HostIP: "127.0.0.1", HostPort: "0"}}},
+		},
+		nil, nil, "",
+	)
+	if err != nil {
+		t.Fatalf("ContainerCreate(%q): %v", imageRef, err)
+	}
+	t.Cleanup(func() {
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_ = docker.ContainerRemove(cleanupCtx, created.ID, dockercontainer.RemoveOptions{Force: true})
+	})
+
+	if err := docker.ContainerStart(ctx, created.ID, dockercontainer.StartOptions{}); err != nil {
+		t.Fatalf("ContainerStart(%q): %v", created.ID, err)
+	}
+
+	inspect, err := docker.ContainerInspect(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("ContainerInspect(%q): %v", created.ID, err)
+	}
+	bindings := inspect.NetworkSettings.Ports[exposedPort]
+	if len(bindings) == 0 {
+		t.Fatalf("container %q has no host binding for %s", created.ID, exposedPort)
+	}
+	url := fmt.Sprintf("http://127.0.0.1:%s/", bindings[0].HostPort)
+
+	var body []byte
+	deadline := time.Now().Add(90 * time.Second)
+	var lastErr error
+	for time.Now().Before(deadline) {
+		resp, reqErr := http.Get(url) //nolint:gosec // url is a loopback address this test built itself, not external input
+		if reqErr == nil {
+			body, lastErr = io.ReadAll(resp.Body)
+			_ = resp.Body.Close()
+			if lastErr == nil && resp.StatusCode == http.StatusOK {
+				break
+			}
+			lastErr = fmt.Errorf("status %d", resp.StatusCode)
+		} else {
+			lastErr = reqErr
+		}
+		time.Sleep(1 * time.Second)
+	}
+	if lastErr != nil && !strings.Contains(string(body), want) {
+		logsReader, logErr := docker.ContainerLogs(ctx, created.ID, dockercontainer.LogsOptions{ShowStdout: true, ShowStderr: true})
+		var logs string
+		if logErr == nil {
+			logBytes, _ := io.ReadAll(logsReader)
+			_ = logsReader.Close()
+			logs = string(logBytes)
+		}
+		t.Fatalf("container %q at %s never served %q, last error: %v\ncontainer logs:\n%s", created.ID, url, want, lastErr, logs)
+	}
+	if !strings.Contains(string(body), want) {
+		t.Errorf("response body = %q, want it to contain %q", body, want)
 	}
 }
 

@@ -890,7 +890,7 @@ func TestPipeline_Deploy_Railpack_SaveFailure(t *testing.T) {
 // failure, matching validateEnv's own tone for unsupported env
 // resolution.
 func TestPipeline_Deploy_Railpack_UnsupportedProvider_ExplicitMessage(t *testing.T) {
-	builder := &fakeBuilder{railpackErr: &build.UnsupportedProviderError{Provider: "python"}}
+	builder := &fakeBuilder{railpackErr: &build.UnsupportedProviderError{Provider: "ruby"}}
 	svcStore := &fakeServiceStore{}
 	p := New(builder, svcStore)
 
@@ -900,7 +900,7 @@ func TestPipeline_Deploy_Railpack_UnsupportedProvider_ExplicitMessage(t *testing
 	if err == nil {
 		t.Fatal("Deploy() error = nil, want the unsupported provider to be rejected")
 	}
-	want := `deploy: service "web": railpack detected provider "python", only node and golang are supported yet`
+	want := `deploy: service "web": railpack detected provider "ruby", only node, golang, java, and python are supported yet`
 	if err.Error() != want {
 		t.Errorf("error = %q, want %q", err.Error(), want)
 	}
@@ -922,7 +922,7 @@ func TestPipeline_Deploy_Railpack_NoProviderDetected_ExplicitMessage(t *testing.
 	if err == nil {
 		t.Fatal("Deploy() error = nil, want the unsupported provider to be rejected")
 	}
-	want := `deploy: service "web": railpack detected provider "(none detected)", only node and golang are supported yet`
+	want := `deploy: service "web": railpack detected provider "(none detected)", only node, golang, java, and python are supported yet`
 	if err.Error() != want {
 		t.Errorf("error = %q, want %q", err.Error(), want)
 	}

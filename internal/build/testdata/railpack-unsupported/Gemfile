@@ -1,0 +1,6 @@
+# Fixture for the internal/build Railpack integration: Railpack detects
+# and plans this as ruby, which stays outside supportedRailpackProviders,
+# exercising UnsupportedProviderError's real path.
+source "https://rubygems.org"
+
+gem "sinatra"

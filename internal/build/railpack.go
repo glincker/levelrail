@@ -22,8 +22,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// This file: the Railpack integration, scoped to node, golang,
-// and java (see supportedRailpackProviders). Railpack
+// This file: the Railpack integration, scoped to node, golang, java,
+// and python (see supportedRailpackProviders). Railpack
 // (github.com/railwayapp/railpack) is a real, embeddable Go library, not
 // a CLI wrapped by exec.Command: core.GenerateBuildPlan inspects a source
 // directory and returns Railpack's own build IR (a graph of named steps,
@@ -81,24 +81,17 @@ func (r RailpackRequest) Validate() error {
 }
 
 // supportedRailpackProviders is this slice's entire scope: Node.js, Go,
-// and Java: node/golang was the original recommendation, with Java added
-// to unblock a Spring Boot guided-picker option in the frontend. Verified against
-// testdata/railpack-java-spring-boot, a real Spring Boot Maven project:
-// Railpack's own detection and GenerateBuildPlan/ConvertPlanToLLB both
-// confirmed correct for it (TestGenerateRailpackPlan/
-// TestNewRailpackSolveOpt). A real live Docker build of that fixture
-// was not completed in this codebase's own CI/dev environment (the
-// same shared-daemon contention that also affects the pre-existing
-// node/golang live tests, not a Java-specific failure), so this rests
-// on the offline plan/LLB verification, not an end-to-end build.
-// Every other provider Railpack itself supports (python, ruby, php,
-// rust, deno, elixir, gleam, dotnet, cpp, staticfile, ...) is
-// deliberately deferred, not silently accepted: see
-// UnsupportedProviderError.
+// Java, and Python. Python is verified against testdata/railpack-python
+// (a Django app) with a real live Docker build and run
+// (TestClient_BuildRailpack_Live_Python), not just plan generation.
+// Every other provider Railpack itself supports (ruby, php, rust, deno,
+// elixir, gleam, dotnet, cpp, staticfile, ...) is deliberately deferred,
+// not silently accepted: see UnsupportedProviderError.
 var supportedRailpackProviders = map[string]bool{
 	"node":   true,
 	"golang": true,
 	"java":   true,
+	"python": true,
 }
 
 // UnsupportedProviderError is returned when Railpack's own detection
@@ -121,7 +114,7 @@ func (e *UnsupportedProviderError) Error() string {
 	if provider == "" {
 		provider = "(none detected)"
 	}
-	return fmt.Sprintf("build: railpack: detected provider %q, only node and golang are supported yet", provider)
+	return fmt.Sprintf("build: railpack: detected provider %q, only node, golang, java, and python are supported yet", provider)
 }
 
 // generateRailpackPlan runs Railpack's own build-plan generation against
