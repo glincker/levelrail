@@ -6,6 +6,9 @@ WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci --ignore-scripts
 COPY web/ ./
+# vite-plugins/docsManifest.ts reads ../../docs (repo root) to bundle
+# the in-app help pages, so the sibling docs/ dir must exist here too.
+COPY docs/ /src/docs/
 RUN npm run build
 
 FROM golang:1.26-alpine AS build
