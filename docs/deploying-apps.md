@@ -138,6 +138,18 @@ levelrail-cli apps create --name NAME --port PORT --repo URL --image-repo REPO
 levelrail-cli apps create --file app.yaml --service KEY
 ```
 
+**Railpack providers:** when `build.type` is `railpack` (no Dockerfile), Railpack detects the framework from the repo itself and Levelrail rejects anything it hasn't verified end to end. Supported today: Node.js, Go, Java (Spring Boot), and Python. Everything else Railpack itself can detect (Ruby, PHP, Rust, Deno, .NET, ...) is deliberately rejected with a clear error rather than silently attempted, until it's verified the same way.
+
+A minimal Python/Django app needs nothing beyond what `django-admin startproject` already generates, plus a `requirements.txt`:
+
+```
+requirements.txt:
+  django==5.1.6
+  gunicorn==23.0.0
+```
+
+Railpack detects `manage.py` plus a Django dependency, runs `python manage.py migrate` on container start, and serves with `gunicorn` bound to `$PORT`, the same pattern Vercel, Railway, and Render all converge on for buildpack-style Python deploys: no Dockerfile required, but the framework's own production server (never the Django dev server) fronts real traffic.
+
 **Disk-space preflight:** before BuildKit starts solving, the control plane checks free space on the build's context directory (and its local cache directory, when `WithCacheDir` is configured) and fails fast with a clear "N bytes free, need at least M bytes" error rather than letting the build run until it hits a raw out-of-space error mid-solve. The minimum is configurable via `APP_MIN_BUILD_DISK_MB` (default `1024`, i.e. 1GiB). An unreadable path (for example a filesystem that doesn't support the check) is treated as unknown, not a failure, and the build proceeds.
 
 ### 3. Docker Compose
