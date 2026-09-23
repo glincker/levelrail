@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
-import { docsManifestPlugin } from './vite-plugins/docsManifest.mjs'
+import { docsManifestPlugin } from './vite-plugins/docsManifest.js'
 
 // Deliberately not vite.config.ts's own tanstackRouter plugin: that
 // plugin generates routeTree.gen.ts from src/routes at build time, which

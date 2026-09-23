@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { visualizer } from 'rollup-plugin-visualizer'
-import { docsManifestPlugin } from './vite-plugins/docsManifest.mjs'
+import { docsManifestPlugin } from './vite-plugins/docsManifest.js'
 
 // https://vite.dev/config/
 export default defineConfig({

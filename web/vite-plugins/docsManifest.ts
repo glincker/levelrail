@@ -10,6 +10,12 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { Plugin } from 'vite'
+import type {
+  DocCategory,
+  DocPageMeta,
+  DocsManifest,
+} from '../src/types/docs.js'
 
 const docsDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -17,7 +23,7 @@ const docsDir = path.resolve(
 )
 
 // Must match web/src/lib/slugify.ts exactly.
-function slugify(text) {
+function slugify(text: string): string {
   return text
     .toLowerCase()
     .trim()
@@ -27,7 +33,7 @@ function slugify(text) {
     .replace(/^-|-$/g, '')
 }
 
-function uniqueSlug(text, seen) {
+function uniqueSlug(text: string, seen: Map<string, number>): string {
   const base = slugify(text)
   const count = seen.get(base) ?? 0
   seen.set(base, count + 1)
@@ -35,13 +41,13 @@ function uniqueSlug(text, seen) {
 }
 
 // Must match web/src/lib/docsPaths.ts exactly.
-function filePathToRoutePath(relFile) {
+function filePathToRoutePath(relFile: string): string {
   if (relFile === 'README.md') return '/'
   return `/${relFile.replace(/\.md$/, '')}`
 }
 
-function listMarkdownFiles(dir, base = '') {
-  const out = []
+function listMarkdownFiles(dir: string, base = ''): string[] {
+  const out: string[] = []
   for (const entry of readdirSync(dir)) {
     if (entry.startsWith('.')) continue
     const full = path.join(dir, entry)
@@ -55,7 +61,7 @@ function listMarkdownFiles(dir, base = '') {
   return out
 }
 
-function stripFrontmatter(text) {
+function stripFrontmatter(text: string): string {
   if (!text.startsWith('---\n') && !text.startsWith('---\r\n')) return text
   const end = text.indexOf('\n---', 4)
   if (end === -1) return text
@@ -63,22 +69,22 @@ function stripFrontmatter(text) {
   return rest.startsWith('\n') ? rest.slice(1) : rest
 }
 
-function extractPage(relFile) {
+function extractPage(relFile: string): DocPageMeta {
   const raw = readFileSync(path.join(docsDir, relFile), 'utf8')
   const body = stripFrontmatter(raw)
   const lines = body.split('\n')
-  let title
-  const headings = []
-  const seen = new Map()
+  let title: string | undefined
+  const headings: DocPageMeta['headings'] = []
+  const seen = new Map<string, number>()
   for (const line of lines) {
     const h1 = /^#\s+(.+)$/.exec(line)
     if (h1 && !title) {
-      title = h1[1].trim()
+      title = h1[1]?.trim()
       continue
     }
     const h = /^(#{2,3})\s+(.+)$/.exec(line)
-    if (h) {
-      const level = h[1].length
+    if (h?.[1] && h[2]) {
+      const level = h[1].length as 2 | 3
       const text = h[2].trim()
       headings.push({ id: uniqueSlug(text, seen), text, level })
     }
@@ -86,23 +92,25 @@ function extractPage(relFile) {
   return { file: relFile, title: title ?? relFile, headings }
 }
 
-function extractCategories(readmeText, pagesByPath) {
+function extractCategories(
+  readmeText: string,
+  pagesByPath: Map<string, DocPageMeta>,
+): DocCategory[] {
   const body = stripFrontmatter(readmeText)
   const lines = body.split('\n')
-  const categories = []
-  let current = null
+  const categories: DocCategory[] = []
+  let current: DocCategory | null = null
   for (const line of lines) {
     const heading = /^###\s+(.+)$/.exec(line)
-    if (heading) {
+    if (heading?.[1]) {
       current = { name: heading[1].trim(), docs: [] }
       categories.push(current)
       continue
     }
     if (!current) continue
     const link = /\[([^\]]+)\]\(([^)]+?)\)/.exec(line)
-    if (!link) continue
-    const [, , target] = link
-    if (!target.endsWith('.md')) continue
+    const target = link?.[2]
+    if (!target?.endsWith('.md')) continue
     const relFile = path.posix.normalize(target)
     const routePath = filePathToRoutePath(relFile)
     const page = pagesByPath.get(routePath)
@@ -115,10 +123,10 @@ function extractCategories(readmeText, pagesByPath) {
   return categories
 }
 
-export function buildDocsManifest() {
+export function buildDocsManifest(): DocsManifest {
   const files = listMarkdownFiles(docsDir).filter((f) => f !== 'index.md')
 
-  const pages = {}
+  const pages: Record<string, DocPageMeta> = {}
   for (const relFile of files) {
     pages[filePathToRoutePath(relFile)] = extractPage(relFile)
   }
@@ -140,7 +148,7 @@ const RESOLVED_PATH_INDEX_ID = `\0${PATH_INDEX_ID}`
 // everywhere: HelpLink/AppSidebar import the tiny path-index eagerly,
 // while /help's own routes load the full manifest through a dynamic
 // import, keeping it out of the always-loaded main bundle.
-export function docsManifestPlugin() {
+export function docsManifestPlugin(): Plugin {
   return {
     name: 'docs-manifest',
     resolveId(id) {
