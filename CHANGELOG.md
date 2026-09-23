@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0-beta.11](https://github.com/glincker/levelrail/compare/v0.2.0-beta.10...v0.2.0-beta.11) (2026-09-23)
+
+
+### Bug Fixes
+
+* sort install.sh release list by created_at, not API order ([#619](https://github.com/glincker/levelrail/issues/619)) ([0a14993](https://github.com/glincker/levelrail/commit/0a149931e43e9ffd53c59b5740b3ce36fe6fa035))
+
 ## [0.2.0-beta.10](https://github.com/glincker/levelrail/compare/v0.2.0-beta.9...v0.2.0-beta.10) (2026-09-23)
 
 
