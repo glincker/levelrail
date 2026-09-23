@@ -102,10 +102,10 @@ describe('resolveDocLink', () => {
       '../adr/005-caddy-embedded-ingress.md',
       'installing.md',
       manifest,
-      'https://levelrail.glinr.com',
+      'https://glinr.com/levelrail',
     )
     expect(result).toEqual({
-      href: 'https://levelrail.glinr.com/adr/005-caddy-embedded-ingress',
+      href: 'https://glinr.com/levelrail/adr/005-caddy-embedded-ingress',
       external: true,
       linkable: true,
     })

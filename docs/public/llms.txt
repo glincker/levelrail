@@ -13,44 +13,44 @@ Apache 2.0 licensed. Source at https://github.com/glincker/levelrail.
 
 ## Tutorials
 
-- [Getting started](https://levelrail.glinr.com/getting-started): install Levelrail and deploy your first app end to end.
+- [Getting started](https://glinr.com/levelrail/getting-started): install Levelrail and deploy your first app end to end.
 
 ## How-to guides
 
-- [Installing](https://levelrail.glinr.com/installing): install the control plane and node agent on a Linux server.
-- [Troubleshooting](https://levelrail.glinr.com/troubleshooting): fixes for the most common deploy, login, and node problems.
-- [Docker](https://levelrail.glinr.com/docker): how Levelrail talks to the Docker Engine API directly.
-- [Domains and ingress](https://levelrail.glinr.com/domains-and-ingress): custom domains, TLS, maintenance mode, redirects, WAF, and the embedded Caddy ingress.
-- [ACME verification runbook](https://levelrail.glinr.com/acme-verification-runbook): diagnose and fix failed TLS certificate issuance.
-- [Feature flags](https://levelrail.glinr.com/feature-flags): enable half-built or experimental features safely.
-- [Master key rotation](https://levelrail.glinr.com/master-key-rotation): rotate the envelope-encryption master key used for secrets.
-- [Migrating from Coolify, Dokploy, or CapRover](https://levelrail.glinr.com/migrating-from-coolify-dokploy-and-caprover): move an existing deployment to Levelrail.
-- [Deploying from GitHub Actions](https://levelrail.glinr.com/github-actions): trigger Levelrail deploys from CI.
-- [Deploying apps](https://levelrail.glinr.com/deploying-apps): app.yaml, build strategies, rolling/blue-green/recreate deploys, and rollback.
-- [Managing databases](https://levelrail.glinr.com/managing-databases): managed Postgres, Redis, MySQL, MongoDB, and other engines.
-- [Observability](https://levelrail.glinr.com/observability): metrics, log search, alerting, and deploy markers.
-- [Multi-node](https://levelrail.glinr.com/multi-node): add servers, the WireGuard mesh, and node placement.
-- [Projects and organizations](https://levelrail.glinr.com/projects-and-organizations): grouping apps and databases, environments.
-- [Identity and access](https://levelrail.glinr.com/identity-and-access): users, IAM policies, API tokens, and audit logs.
-- [Git integrations](https://levelrail.glinr.com/git-integrations): GitHub/GitLab/Bitbucket app installs and webhook deploys.
-- [Backups and storage](https://levelrail.glinr.com/backups-and-storage): scheduled backups, restore, and S3-compatible storage targets.
-- [Templates and registry](https://levelrail.glinr.com/templates-and-registry): the curated one-click service catalog.
-- [Screenshots](https://levelrail.glinr.com/screenshots): a visual tour of the dashboard.
+- [Installing](https://glinr.com/levelrail/installing): install the control plane and node agent on a Linux server.
+- [Troubleshooting](https://glinr.com/levelrail/troubleshooting): fixes for the most common deploy, login, and node problems.
+- [Docker](https://glinr.com/levelrail/docker): how Levelrail talks to the Docker Engine API directly.
+- [Domains and ingress](https://glinr.com/levelrail/domains-and-ingress): custom domains, TLS, maintenance mode, redirects, WAF, and the embedded Caddy ingress.
+- [ACME verification runbook](https://glinr.com/levelrail/acme-verification-runbook): diagnose and fix failed TLS certificate issuance.
+- [Feature flags](https://glinr.com/levelrail/feature-flags): enable half-built or experimental features safely.
+- [Master key rotation](https://glinr.com/levelrail/master-key-rotation): rotate the envelope-encryption master key used for secrets.
+- [Migrating from Coolify, Dokploy, or CapRover](https://glinr.com/levelrail/migrating-from-coolify-dokploy-and-caprover): move an existing deployment to Levelrail.
+- [Deploying from GitHub Actions](https://glinr.com/levelrail/github-actions): trigger Levelrail deploys from CI.
+- [Deploying apps](https://glinr.com/levelrail/deploying-apps): app.yaml, build strategies, rolling/blue-green/recreate deploys, and rollback.
+- [Managing databases](https://glinr.com/levelrail/managing-databases): managed Postgres, Redis, MySQL, MongoDB, and other engines.
+- [Observability](https://glinr.com/levelrail/observability): metrics, log search, alerting, and deploy markers.
+- [Multi-node](https://glinr.com/levelrail/multi-node): add servers, the WireGuard mesh, and node placement.
+- [Projects and organizations](https://glinr.com/levelrail/projects-and-organizations): grouping apps and databases, environments.
+- [Identity and access](https://glinr.com/levelrail/identity-and-access): users, IAM policies, API tokens, and audit logs.
+- [Git integrations](https://glinr.com/levelrail/git-integrations): GitHub/GitLab/Bitbucket app installs and webhook deploys.
+- [Backups and storage](https://glinr.com/levelrail/backups-and-storage): scheduled backups, restore, and S3-compatible storage targets.
+- [Templates and registry](https://glinr.com/levelrail/templates-and-registry): the curated one-click service catalog.
+- [Screenshots](https://glinr.com/levelrail/screenshots): a visual tour of the dashboard.
 
 ## Reference
 
-- [App spec reference](https://levelrail.glinr.com/app-spec-reference): the full app.yaml schema.
-- [Feature catalog](https://levelrail.glinr.com/feature-catalog): every shipped feature, one line each.
-- [CLI reference](https://levelrail.glinr.com/cli-reference): every `levelrail-cli` command and flag.
-- [API reference](https://levelrail.glinr.com/api-reference): the HTTP API the dashboard, CLI, and MCP server all run on.
+- [App spec reference](https://glinr.com/levelrail/app-spec-reference): the full app.yaml schema.
+- [Feature catalog](https://glinr.com/levelrail/feature-catalog): every shipped feature, one line each.
+- [CLI reference](https://glinr.com/levelrail/cli-reference): every `levelrail-cli` command and flag.
+- [API reference](https://glinr.com/levelrail/api-reference): the HTTP API the dashboard, CLI, and MCP server all run on.
 
 ## Explanation
 
-- [Architecture](https://levelrail.glinr.com/architecture): the reconciler pattern, agent transport, and why each major dependency was chosen.
-- [Security overview](https://levelrail.glinr.com/security): secrets, sessions, TLS, and access control, with links to the detailed page for each.
-- [Comparison](https://levelrail.glinr.com/comparison): how Levelrail differs from Coolify, Dokploy, CapRover, and Dokku.
+- [Architecture](https://glinr.com/levelrail/architecture): the reconciler pattern, agent transport, and why each major dependency was chosen.
+- [Security overview](https://glinr.com/levelrail/security): secrets, sessions, TLS, and access control, with links to the detailed page for each.
+- [Comparison](https://glinr.com/levelrail/comparison): how Levelrail differs from Coolify, Dokploy, CapRover, and Dokku.
 
 ## Optional
 
-- [Roadmap](https://levelrail.glinr.com/roadmap): phased build plan and current status.
-- [Git provider integrations design proposal](https://levelrail.glinr.com/design/git-provider-integrations): a design document, not yet shipped behavior.
+- [Roadmap](https://glinr.com/levelrail/roadmap): phased build plan and current status.
+- [Git provider integrations design proposal](https://glinr.com/levelrail/design/git-provider-integrations): a design document, not yet shipped behavior.

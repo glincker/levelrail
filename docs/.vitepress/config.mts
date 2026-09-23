@@ -6,7 +6,7 @@ const description =
   'A self-hosted deployment platform whose agent talks to Docker’s own Engine API directly, ' +
   'no SSH or CLI shelling, with metrics and log storage built into the core.'
 
-const siteUrl = 'https://levelrail.glinr.com'
+const siteUrl = 'https://glinr.com/levelrail'
 
 // Defined once and reused for both the sidebar itself and
 // pageToSection below (canonicalUrl/BreadcrumbList in transformHead),
@@ -108,7 +108,7 @@ export default withMermaid({
   // TODO: revisit once glinr.com/levelrail (a path, not this subdomain)
   // becomes possible, per the root CLAUDE.md's stated long-term target.
   sitemap: {
-    hostname: siteUrl,
+    hostname: 'https://glinr.com', transformItems: (items) => items.map(item => ({ ...item, url: 'levelrail/' + item.url })),
   },
 
   head: [
@@ -150,6 +150,7 @@ export default withMermaid({
     ],
   ],
 
+  base: '/levelrail/',
   cleanUrls: true,
   appearance: 'dark',
 

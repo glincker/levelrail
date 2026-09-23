@@ -320,7 +320,7 @@ write_brand() {
 		binary_name: levelrail
 		domain: glinr.com/levelrail
 		support_url: https://github.com/GLINCKER/levelrail/issues
-		docs_url: https://levelrail.glinr.com
+		docs_url: https://glinr.com/levelrail
 		primary_color: ""
 		logo_svg: ""
 	EOF

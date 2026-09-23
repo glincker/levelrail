@@ -10,9 +10,9 @@
 [![Discussions](https://img.shields.io/github/discussions/glincker/levelrail)](https://github.com/glincker/levelrail/discussions)
 [![Discord](https://img.shields.io/discord/829168897080557579?style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2)](https://discord.gg/Ar5pcaZB99)
 [![Status: pre-release](https://img.shields.io/badge/status-pre--release-orange.svg)](#status)
-[![Docs](https://img.shields.io/badge/docs-levelrail.glinr.com-f59e0b.svg)](https://levelrail.glinr.com)
+[![Docs](https://img.shields.io/badge/docs-glinr.com/levelrail-f59e0b.svg)](https://glinr.com/levelrail)
 
-**[Read the docs at levelrail.glinr.com](https://levelrail.glinr.com)**
+**[Read the docs at glinr.com/levelrail](https://glinr.com/levelrail)**
 
 Levelrail is a self-hosted, open-source PaaS: an alternative to Heroku,
 Vercel, and Railway for teams who'd rather run their own deployment
@@ -283,7 +283,7 @@ commit conventions, and how to run tests and the linter locally.
 
 ## Docs and community
 
-- [levelrail.glinr.com](https://levelrail.glinr.com) -- the hosted docs site: getting started, architecture, app spec reference, roadmap, full index
+- [glinr.com/levelrail](https://glinr.com/levelrail) -- the hosted docs site: getting started, architecture, app spec reference, roadmap, full index
 - [docs/](docs/README.md) -- the same content as plain Markdown, for browsing directly on GitHub
 - [GitHub Discussions](https://github.com/glincker/levelrail/discussions) -- questions, ideas, show and tell
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99) -- live chat with maintainers and other users, with a dedicated `#levelrail` forum channel for questions and support
