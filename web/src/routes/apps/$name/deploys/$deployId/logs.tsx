@@ -4,10 +4,13 @@ import {
   TerminalIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { useLogStream, type LogLine } from '../../../../../hooks/useLogStream'
+import { useDeployStepStream } from '../../../../../hooks/useDeployStepStream'
 import {
   buildDeployLogStreamUrl,
   deployLogDownloadURL,
 } from '../../../../../queries/deployLogs'
+import { buildDeployStepStreamUrl } from '../../../../../queries/deploySteps'
+import { DeployStepFeed } from '../../../../../components/DeployStepFeed'
 import { buttonVariants } from '../../../../../components/ui/button'
 import { deployAttemptsQueryOptions } from '../../../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../../../hooks/useDeployProgress'
@@ -62,6 +65,9 @@ function DeployLogsPage() {
   const { name, deployId } = Route.useParams()
   const url = buildDeployLogStreamUrl(name, deployId)
   const { lines, connectionState, isPaused, pause, resume } = useLogStream(url)
+  const { steps } = useDeployStepStream(
+    buildDeployStepStreamUrl(name, deployId),
+  )
   const { attempts, conditions } = useDeployProgress(name)
   const { data: app } = useApp(name)
   // Non-suspense: most apps have no git source connected, the common
@@ -121,6 +127,11 @@ function DeployLogsPage() {
               }
             >
               <div className="space-y-2">
+                {!noBuildStep && steps.length > 0 ? (
+                  <div className="rounded-lg border border-border p-3">
+                    <DeployStepFeed steps={steps} />
+                  </div>
+                ) : null}
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Build output

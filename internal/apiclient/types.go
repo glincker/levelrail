@@ -2300,6 +2300,10 @@ type DeployAttemptResource struct {
 	StartedAt   time.Time  `json:"started_at"`
 	FinishedAt  *time.Time `json:"finished_at,omitempty"`
 	Error       string     `json:"error,omitempty"`
+	// DetectedFramework is the wizard's pre-flight detection result for
+	// this build, e.g. "Node.js"; empty when detection was skipped
+	// (a CLI or webhook-triggered build) or found nothing buildable.
+	DetectedFramework string `json:"detected_framework,omitempty"`
 }
 
 // CertificateResource mirrors internal/api's certificateStatus

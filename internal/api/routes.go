@@ -325,6 +325,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// as the deploy-attempts list above.
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/logs", rt.requireAbility(AbilityRead, rt.handleDeployLogStream))
 
+	// Deploy-attempt step stream (deploy_steps.go): SSE, named
+	// pipeline-phase transitions (detecting/building/pushing/deploying)
+	// rather than raw log lines, for a checklist-style progress view.
+	// Same AbilityRead boundary as the log stream above.
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/steps", rt.requireAbility(AbilityRead, rt.handleDeployStepStream))
+
 	// Deploy-attempt log download (deploy_log_download.go): the same
 	// attempt's full log as a plain-text attachment instead of an SSE
 	// stream, mirroring /apps/{name}/logs/download for runtime logs.
@@ -367,6 +373,11 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// listing what a repo could be built from is a strict subset of
 	// actually triggering that build.
 	mux.HandleFunc("POST /api/v1/git/branches", rt.requireAbility(AbilityDeploy, rt.handleListGitBranches))
+
+	// Framework pre-flight detection (handleDetectFramework's own doc
+	// comment): also not scoped to an existing app, same AbilityDeploy
+	// boundary as the branch listing above.
+	mux.HandleFunc("POST /api/v1/build/detect", rt.requireAbility(AbilityDeploy, rt.handleDetectFramework))
 
 	// Previously-built image tags for this app's repo, so the deploy
 	// trigger form can offer a dropdown instead of a hand-typed tag

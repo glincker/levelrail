@@ -58,6 +58,13 @@ type DeployAttempt struct {
 	// DesiredService the trigger handler already has in hand. Zero value
 	// for every attempt recorded before that migration.
 	Snapshot DeployAttemptSnapshot
+
+	// DetectedFramework is the human-readable framework name (migrations/
+	// 0119) the create-app-from-git wizard's pre-flight detection
+	// reported, e.g. "Node.js". Empty for any attempt that skipped that
+	// step (the CLI, a git-push webhook, or an attempt recorded before
+	// this column existed).
+	DetectedFramework string
 }
 
 // DeployAttemptEnvKind classifies one env var key captured in a
@@ -261,9 +268,9 @@ func (db *DB) SaveDeployAttempt(ctx context.Context, a DeployAttempt) error {
 		return fmt.Errorf("store: save deploy attempt %q: marshal snapshot: %w", a.ID, err)
 	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO deploy_attempts (id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot)
-		VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?)
-	`, a.ID, a.ServiceName, a.Image, a.CommitSHA, a.Source, a.Status, a.StartedAt.UTC().Format(time.RFC3339Nano), string(snapshotJSON))
+		INSERT INTO deploy_attempts (id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework)
+		VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?)
+	`, a.ID, a.ServiceName, a.Image, a.CommitSHA, a.Source, a.Status, a.StartedAt.UTC().Format(time.RFC3339Nano), string(snapshotJSON), a.DetectedFramework)
 	if err != nil {
 		return fmt.Errorf("store: save deploy attempt %q: %w", a.ID, err)
 	}
@@ -354,7 +361,7 @@ func (db *DB) FailOrphanedDeployAttempts(ctx context.Context, finishedAt time.Ti
 // (serve a full persisted replay), see that handler's own doc comment.
 func (db *DB) GetDeployAttempt(ctx context.Context, id string) (*DeployAttempt, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot
+		SELECT id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework
 		FROM deploy_attempts WHERE id = ?
 	`, id)
 	a, err := scanDeployAttempt(row.Scan)
@@ -377,7 +384,7 @@ func (db *DB) GetDeployAttempt(ctx context.Context, id string) (*DeployAttempt, 
 // here.
 func (db *DB) ListDeployAttempts(ctx context.Context, serviceName string) ([]DeployAttempt, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot
+		SELECT id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework
 		FROM deploy_attempts
 		WHERE service_name = ?
 		ORDER BY started_at DESC
@@ -408,7 +415,7 @@ func scanDeployAttempt(scan func(dest ...any) error) (*DeployAttempt, error) {
 		finishedAt, errString sql.NullString
 		snapshotJSON          string
 	)
-	if err := scan(&a.ID, &a.ServiceName, &a.Image, &a.CommitSHA, &a.Source, &a.Status, &startedAt, &finishedAt, &errString, &snapshotJSON); err != nil {
+	if err := scan(&a.ID, &a.ServiceName, &a.Image, &a.CommitSHA, &a.Source, &a.Status, &startedAt, &finishedAt, &errString, &snapshotJSON, &a.DetectedFramework); err != nil {
 		return nil, err
 	}
 	if snapshotJSON != "" {

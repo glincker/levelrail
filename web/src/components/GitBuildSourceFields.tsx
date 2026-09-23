@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Controller,
   useFieldArray,
@@ -13,10 +13,12 @@ import {
   WarningIcon,
   SpinnerIcon,
   PlusIcon,
+  SparkleIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Field,
   FieldDescription,
@@ -34,10 +36,20 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { useGitBranches } from '../queries/gitBranches'
+import {
+  useDetectFramework,
+  type DetectFrameworkResult,
+} from '../queries/buildDetect'
 import { gitHostIconName } from '../lib/gitHost'
 import { BrandIcon } from './BrandIcon'
 import type { FormInput, FormOutput } from './CreateAppFromGitFields'
 import { RegistryImagePicker } from './RegistryImagePicker'
+
+// How long a repo URL/ref pair must sit unchanged before firing
+// POST /api/v1/build/detect: see GitBuildSourceFields' own doc comment
+// on why a hand-edited field needs a debounce here, unlike the
+// branch-load button's on-click trigger.
+const DETECT_DEBOUNCE_MS = 500
 
 // GitBuildSourceFields is CreateAppFromGitFields' git-source input
 // group: repository URL, a real branch picker backed by
@@ -76,6 +88,7 @@ export function GitBuildSourceFields({
   setValue,
   watch,
   disabled,
+  onDetected,
 }: {
   control: Control<FormInput, unknown, FormOutput>
   register: UseFormRegister<FormInput>
@@ -84,6 +97,12 @@ export function GitBuildSourceFields({
   setValue: UseFormSetValue<FormInput>
   watch: UseFormWatch<FormInput>
   disabled: boolean
+  /** Called every time a repo/ref pre-flight detection settles (success
+   *  or "nothing detected"), null once repo/ref no longer both resolve
+   *  to a real pair worth detecting against (e.g. buildType switched to
+   *  "image"). CreateAppFromGitFields stores the latest result so it can
+   *  be sent along with the build trigger. */
+  onDetected: (result: DetectFrameworkResult | null) => void
 }) {
   const buildType = watch('buildType')
   // null until "Load branches" is clicked: see useGitBranches's own doc
@@ -97,6 +116,55 @@ export function GitBuildSourceFields({
   const branchesQuery = useGitBranches(loadedRepoUrl)
   const branches = branchesQuery.data ?? []
   const hostIcon = gitHostIconName(watch('repoUrl'))
+
+  const repoUrl = watch('repoUrl').trim()
+  const ref = watch('ref').trim()
+  const detectMutation = useDetectFramework()
+  // Fires POST /api/v1/build/detect once a repo URL and a branch/ref
+  // have both settled (DETECT_DEBOUNCE_MS of no further change), keyed
+  // on that exact pair so switching back to a combination already
+  // checked this session doesn't re-fire. The debounce matters because
+  // Repository URL/Branch stay directly editable after a
+  // GitRepoSourcePicker pick (see this component's own doc comment):
+  // without it, every keystroke of a hand-edit would fire its own
+  // request. Not tied to the "Load branches" button either: a caller
+  // who already knows their branch (skipping that picker entirely)
+  // should still get a detection result.
+  const detectedForRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (buildType === 'image' || !repoUrl || !ref) {
+      onDetected(null)
+      return
+    }
+    const key = `${repoUrl}@${ref}`
+    if (detectedForRef.current === key) return
+
+    const timer = setTimeout(() => {
+      detectedForRef.current = key
+      detectMutation.mutate(
+        { repoUrl, ref },
+        {
+          onSuccess: (result) => {
+            onDetected(result)
+          },
+          onError: () => {
+            // Detection is a pre-flight nicety, never a blocker: a failed
+            // call (network hiccup, unusual repo) just leaves the manual
+            // build-type picker exactly as it already was.
+            onDetected(null)
+          },
+        },
+      )
+    }, DETECT_DEBOUNCE_MS)
+    return () => {
+      clearTimeout(timer)
+    }
+    // onDetected is a fresh closure every render (CreateAppFromGitFields
+    // doesn't memoize it) but is only ever called from inside this
+    // effect's own mutate callbacks, so it doesn't need to be a
+    // dependency for this effect to stay correct.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildType, repoUrl, ref])
 
   return (
     <>
@@ -200,7 +268,15 @@ export function GitBuildSourceFields({
       ) : null}
 
       <Field>
-        <FieldLabel htmlFor="git-app-build-type">Build pack</FieldLabel>
+        <div className="flex items-center justify-between gap-2">
+          <FieldLabel htmlFor="git-app-build-type">Build pack</FieldLabel>
+          {buildType !== 'image' ? (
+            <DetectionStatus
+              pending={detectMutation.isPending}
+              result={detectMutation.data}
+            />
+          ) : null}
+        </div>
         <Controller
           control={control}
           name="buildType"
@@ -396,6 +472,36 @@ export function GitBuildSourceFields({
       ) : null}
     </>
   )
+}
+
+// DetectionStatus is the inline "Detected: Next.js" (or "nothing
+// detected") indicator next to the build-pack label: never blocks or
+// hides the tabs below it, since railpack is already the default tab
+// either way (see BUILD_TYPES' own default in CreateAppFromGitFields).
+function DetectionStatus({
+  pending,
+  result,
+}: {
+  pending: boolean
+  result: DetectFrameworkResult | undefined
+}) {
+  if (pending) {
+    return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <SpinnerIcon className="size-3.5 animate-spin" aria-hidden="true" />
+        Detecting...
+      </span>
+    )
+  }
+  if (result?.detected && result.frameworkName) {
+    return (
+      <Badge variant="muted" className="gap-1">
+        <SparkleIcon className="size-3" aria-hidden="true" />
+        Detected: {result.frameworkName}
+      </Badge>
+    )
+  }
+  return null
 }
 
 // BuildArgsFields is GitBuildSourceFields' Dockerfile-build-args editor,

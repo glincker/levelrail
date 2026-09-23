@@ -110,7 +110,7 @@ func TestListRemoteBranches_Live_UnreachableRepo(t *testing.T) {
 // TestListRemoteBranches_SchemeRejected is the live proof for this
 // task's SSRF/local-file finding: go-git's transport client registry
 // registers a "file" transport unconditionally (see
-// errRepoURLSchemeNotAllowed's own doc comment in git_branches.go), so
+// build.ValidatePublicRepoURL's own doc comment), so
 // without the scheme gate a file:// repoURL really does read a local
 // git repository on this host, and an http(s):// repoURL against an
 // internal address really does fire a request. This proves the gate

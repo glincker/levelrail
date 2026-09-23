@@ -201,10 +201,16 @@ describe('CreateAppFromGitFields', () => {
   // it can assert on the resulting navigation/toast without also
   // exercising the retry path.
   let failFirstBuild: boolean
+  // Overridable per test: what POST /api/v1/build/detect responds with,
+  // 'reject' simulating a network failure/timeout. Defaults to "nothing
+  // detected" so every test that doesn't care about detection still
+  // gets a harmless, resolved response.
+  let detectResponse: { detected: boolean; framework_name?: string } | 'reject'
 
   beforeEach(() => {
     buildAttempts = 0
     failFirstBuild = false
+    detectResponse = { detected: false }
     fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrlOf(input)
       const method = init?.method ?? 'GET'
@@ -297,6 +303,12 @@ describe('CreateAppFromGitFields', () => {
             201,
           ),
         )
+      }
+      if (url === '/api/v1/build/detect' && method === 'POST') {
+        if (detectResponse === 'reject') {
+          return Promise.reject(new Error('network error'))
+        }
+        return Promise.resolve(fakeJsonResponse(detectResponse, 200))
       }
       if (url === '/api/v1/apps/demo-app/builds' && method === 'POST') {
         buildAttempts += 1
@@ -539,5 +551,80 @@ describe('CreateAppFromGitFields', () => {
       callsTo(fetchMock, '/api/v1/apps', 'POST')[0]?.init?.body as string,
     ) as { health?: unknown }
     expect(body.health).toBeUndefined()
+  })
+
+  it('shows the detected framework once repo and branch resolve, and sends it with the build trigger', async () => {
+    detectResponse = { detected: true, framework_name: 'Node.js' }
+    const user = userEvent.setup()
+    renderForm()
+
+    await screen.findByLabelText('Name')
+    await user.type(screen.getByLabelText('Name'), 'demo-app')
+    await user.type(screen.getByLabelText('Port'), '3000')
+    await user.type(
+      screen.getByLabelText('Repository URL'),
+      'https://github.com/example/private-repo.git',
+    )
+    await user.type(screen.getByLabelText(/Branch, tag, or commit/), 'main')
+
+    await screen.findByText('Detected: Node.js')
+
+    await user.click(screen.getByRole('button', { name: 'Build and deploy' }))
+
+    await waitFor(() => {
+      expect(
+        callsTo(fetchMock, '/api/v1/apps/demo-app/builds', 'POST'),
+      ).toHaveLength(1)
+    })
+    const body = JSON.parse(
+      callsTo(fetchMock, '/api/v1/apps/demo-app/builds', 'POST')[0]?.init
+        ?.body as string,
+    ) as { detected_framework?: string }
+    expect(body.detected_framework).toBe('Node.js')
+  })
+
+  it('falls back to the manual picker with no error state when nothing is detected', async () => {
+    detectResponse = { detected: false }
+    const user = userEvent.setup()
+    renderForm()
+
+    await screen.findByLabelText('Name')
+    await user.type(
+      screen.getByLabelText('Repository URL'),
+      'https://github.com/example/unsupported-repo.git',
+    )
+    await user.type(screen.getByLabelText(/Branch, tag, or commit/), 'main')
+
+    await waitFor(() => {
+      expect(callsTo(fetchMock, '/api/v1/build/detect', 'POST')).toHaveLength(1)
+    })
+    expect(screen.queryByText(/^Detected:/)).not.toBeInTheDocument()
+    // The manual build-type tabs are still there and usable, "Auto-detect"
+    // (railpack) still selected by default.
+    expect(screen.getByRole('tab', { name: 'Auto-detect' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+  })
+
+  it('degrades gracefully when the detect call itself fails or times out', async () => {
+    detectResponse = 'reject'
+    const user = userEvent.setup()
+    renderForm()
+
+    await screen.findByLabelText('Name')
+    await user.type(
+      screen.getByLabelText('Repository URL'),
+      'https://github.com/example/slow-repo.git',
+    )
+    await user.type(screen.getByLabelText(/Branch, tag, or commit/), 'main')
+
+    await waitFor(() => {
+      expect(callsTo(fetchMock, '/api/v1/build/detect', 'POST')).toHaveLength(1)
+    })
+    // No crash, no lingering error banner, no detected badge: the wizard
+    // stays exactly as usable as it was before detection ran.
+    expect(screen.queryByText(/^Detected:/)).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Repository URL')).not.toBeDisabled()
   })
 })
