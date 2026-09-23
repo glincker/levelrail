@@ -375,6 +375,22 @@ type logsResponse struct {
 	Entries []LogEntryResource `json:"entries"`
 }
 
+// SlowQueryEntryResource mirrors internal/api's slowQueryEntryResource
+// (internal/api/database_slow_queries.go).
+type SlowQueryEntryResource struct {
+	Timestamp    time.Time `json:"timestamp"`
+	DurationMs   float64   `json:"duration_ms"`
+	Query        string    `json:"query"`
+	RowsExamined int64     `json:"rows_examined,omitempty"`
+}
+
+// slowQueriesResponse mirrors internal/api's slowQueriesResponse
+// (internal/api/database_slow_queries.go).
+type slowQueriesResponse struct {
+	Entries []SlowQueryEntryResource `json:"entries"`
+	Total   int                      `json:"total"`
+}
+
 // ExecRequest mirrors internal/api's execRequest (internal/api/exec.go).
 // Command is required server-side and is never shell-interpreted: a
 // caller who wants shell features (pipes, redirection, env expansion)
