@@ -8,6 +8,7 @@ package agent
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -24,9 +25,13 @@ const readUntilTimeout = 20 * time.Second
 
 // liveRemoteTransport stands up the whole agent stack against a real
 // Docker daemon and returns a Transport reaching it, plus the ID of a
-// running container to exec into.
-func liveRemoteTransport(t *testing.T, containerName string) (Transport, string) {
+// running container to exec into. containerNamePrefix gets a unique
+// suffix per call so a concurrently running test process (same daemon,
+// same fixed name otherwise) can never collide with this container.
+func liveRemoteTransport(t *testing.T, containerNamePrefix string) (Transport, string) {
 	t.Helper()
+
+	containerName := fmt.Sprintf("%s-%d", containerNamePrefix, time.Now().UnixNano())
 
 	rt, err := docker.NewClient()
 	if err != nil {

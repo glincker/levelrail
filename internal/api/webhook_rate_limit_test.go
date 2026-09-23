@@ -40,12 +40,22 @@ func postWrongSecretWebhook(t *testing.T, rt *Router, remoteAddr string) *httpte
 	return rec
 }
 
-func TestHandleGitPushWebhook_RateLimit_BlocksAfterBudgetExhausted(t *testing.T) {
+// setupWebhookRateLimitTest is the fixture every scenario below starts
+// from: a router with WithWebhookRateLimit(perMinute) applied, app "web"
+// seeded, and its git source connected, before the test exercises its
+// own rate-limit-specific behavior.
+func setupWebhookRateLimitTest(t *testing.T, perMinute int) (*Router, *store.DB, *http.Cookie) {
+	t.Helper()
 	secrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitSourceSecretsAndWebhookRateLimit(t, secrets, 2)
+	rt, db := newTestRouterWithGitSourceSecretsAndWebhookRateLimit(t, secrets, perMinute)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
 	connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
+	return rt, db, cookie
+}
+
+func TestHandleGitPushWebhook_RateLimit_BlocksAfterBudgetExhausted(t *testing.T) {
+	rt, _, _ := setupWebhookRateLimitTest(t, 2)
 
 	for i := 0; i < 2; i++ {
 		rec := postWrongSecretWebhook(t, rt, "203.0.113.10:1234")
@@ -79,11 +89,7 @@ func TestHandleGitPushWebhook_RateLimit_BlocksAfterBudgetExhausted(t *testing.T)
 // writing any response (success or failure) once past the rate-limit
 // check.
 func TestHandleGitPushWebhook_RateLimit_SkipsExpensivePath(t *testing.T) {
-	secrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitSourceSecretsAndWebhookRateLimit(t, secrets, 1)
-	cookie := loginTestSession(t, rt, db)
-	seedApp(t, db, "web")
-	connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
+	rt, db, _ := setupWebhookRateLimitTest(t, 1)
 
 	if rec := postWrongSecretWebhook(t, rt, "203.0.113.20:1234"); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("first attempt: status = %d, want %d", rec.Code, http.StatusUnauthorized)
@@ -103,12 +109,8 @@ func TestHandleGitPushWebhook_RateLimit_SkipsExpensivePath(t *testing.T) {
 }
 
 func TestHandleGitPushWebhook_RateLimit_KeyedPerAppName(t *testing.T) {
-	secrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitSourceSecretsAndWebhookRateLimit(t, secrets, 1)
-	cookie := loginTestSession(t, rt, db)
-	seedApp(t, db, "web")
+	rt, db, cookie := setupWebhookRateLimitTest(t, 1)
 	seedApp(t, db, "other")
-	connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/other/git-source", `{"repo_url":"https://github.com/org/other.git","branch":"main"}`))
 	if rec.Code != http.StatusCreated {
@@ -134,11 +136,7 @@ func TestHandleGitPushWebhook_RateLimit_KeyedPerAppName(t *testing.T) {
 }
 
 func TestHandleGitPushWebhook_RateLimit_KeyedPerIP(t *testing.T) {
-	secrets := newFakeGitSourceSecrets()
-	rt, db := newTestRouterWithGitSourceSecretsAndWebhookRateLimit(t, secrets, 1)
-	cookie := loginTestSession(t, rt, db)
-	seedApp(t, db, "web")
-	connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
+	rt, _, _ := setupWebhookRateLimitTest(t, 1)
 
 	if rec := postWrongSecretWebhook(t, rt, "203.0.113.40:1234"); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("first IP: status = %d, want %d", rec.Code, http.StatusUnauthorized)
