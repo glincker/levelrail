@@ -15,12 +15,38 @@ import (
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
+// seedSlowQueriesDatabase saves a desired database or fails the test,
+// the one-line fixture every scenario below needs before exercising
+// handleQueryDatabaseSlowQueries.
+func seedSlowQueriesDatabase(t *testing.T, db *store.DB, name, engine, version string) {
+	t.Helper()
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: name, Engine: engine, Version: version}); err != nil {
+		t.Fatalf("seed database: %v", err)
+	}
+}
+
+// getSlowQueries issues the GET and decodes a 200 response into
+// slowQueriesResponse, failing the test on a non-200 status or an
+// undecodable body: the shared happy-path assertion every scenario that
+// expects success below builds on.
+func getSlowQueries(t *testing.T, rt *Router, cookie *http.Cookie, url string) slowQueriesResponse {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, url, ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var got slowQueriesResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	return got
+}
+
 func TestHandleQueryDatabaseSlowQueries_NotConfigured(t *testing.T) {
 	rt, db := newTestRouter(t) // no WithTelemetryQuerier
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedSlowQueriesDatabase(t, db, "main", store.EnginePostgres, "16")
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/slow-queries", ""))
@@ -43,9 +69,7 @@ func TestHandleQueryDatabaseSlowQueries_DatabaseNotFound(t *testing.T) {
 func TestHandleQueryDatabaseSlowQueries_UnsupportedEngine(t *testing.T) {
 	rt, db, _ := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "cache", Engine: store.EngineRedis, Version: "7"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedSlowQueriesDatabase(t, db, "cache", store.EngineRedis, "7")
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/cache/slow-queries", ""))
@@ -57,9 +81,7 @@ func TestHandleQueryDatabaseSlowQueries_UnsupportedEngine(t *testing.T) {
 func TestHandleQueryDatabaseSlowQueries_Postgres_ParsesAndSortsByDuration(t *testing.T) {
 	rt, db, tdb := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
-		t.Fatalf("seed database: %v", err)
-	}
+	seedSlowQueriesDatabase(t, db, "main", store.EnginePostgres, "16")
 
 	now := time.Now().UTC().Truncate(time.Second)
 	err := tdb.WriteLogBatch(context.Background(), []telemetry.LogEntry{
@@ -73,17 +95,8 @@ func TestHandleQueryDatabaseSlowQueries_Postgres_ParsesAndSortsByDuration(t *tes
 		t.Fatalf("seed log entries: %v", err)
 	}
 
-	rec := httptest.NewRecorder()
 	url := "/api/v1/databases/main/slow-queries?from=" + now.Add(-time.Hour).Format(time.RFC3339) + "&to=" + now.Add(time.Minute).Format(time.RFC3339)
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, url, ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
-	}
-
-	var got slowQueriesResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	got := getSlowQueries(t, rt, cookie, url)
 	if got.Total != 2 {
 		t.Fatalf("Total = %d, want 2", got.Total)
 	}
@@ -113,25 +126,14 @@ func TestHandleQueryDatabaseSlowQueries_MySQL_ExecsAndParsesMultiLineBlocks(t *t
 	}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}); err != nil {
-		t.Fatalf("seed database: %v", err)
-	}
+	seedSlowQueriesDatabase(t, db, "main", store.EngineMySQL, "8")
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/slow-queries", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
-	}
+	got := getSlowQueries(t, rt, cookie, "/api/v1/databases/main/slow-queries")
 	if fake.execCalls != 1 {
 		t.Fatalf("execCalls = %d, want 1", fake.execCalls)
 	}
 	if fake.gotContainerID != "container-1" {
 		t.Errorf("gotContainerID = %q, want %q", fake.gotContainerID, "container-1")
-	}
-
-	var got slowQueriesResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
 	}
 	if len(got.Entries) != 1 {
 		t.Fatalf("Entries = %d, want 1", len(got.Entries))
@@ -159,20 +161,9 @@ func TestHandleQueryDatabaseSlowQueries_MySQL_NoLogFileYet(t *testing.T) {
 	}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}); err != nil {
-		t.Fatalf("seed database: %v", err)
-	}
+	seedSlowQueriesDatabase(t, db, "main", store.EngineMySQL, "8")
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/slow-queries", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
-	}
-
-	var got slowQueriesResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	got := getSlowQueries(t, rt, cookie, "/api/v1/databases/main/slow-queries")
 	if got.Total != 0 || len(got.Entries) != 0 {
 		t.Errorf("got %+v, want an empty response", got)
 	}
@@ -181,9 +172,7 @@ func TestHandleQueryDatabaseSlowQueries_MySQL_NoLogFileYet(t *testing.T) {
 func TestHandleQueryDatabaseSlowQueries_MySQL_ExecNotConfigured(t *testing.T) {
 	rt, db := newTestRouter(t) // no WithExecRuntime
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedSlowQueriesDatabase(t, db, "main", store.EngineMySQL, "8")
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/slow-queries", ""))
@@ -196,9 +185,7 @@ func TestHandleQueryDatabaseSlowQueries_MySQL_NoRunningContainer(t *testing.T) {
 	fake := &fakeExecAppRuntime{inspectState: &docker.ContainerState{ID: "container-1", Running: false}}
 	rt, db := newTestRouterWithExecRuntime(t, fake)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EngineMySQL, Version: "8"}); err != nil {
-		t.Fatalf("seed: %v", err)
-	}
+	seedSlowQueriesDatabase(t, db, "main", store.EngineMySQL, "8")
 
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/main/slow-queries", ""))
@@ -210,9 +197,7 @@ func TestHandleQueryDatabaseSlowQueries_MySQL_NoRunningContainer(t *testing.T) {
 func TestHandleQueryDatabaseSlowQueries_LimitAndOffset(t *testing.T) {
 	rt, db, tdb := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
-	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
-		t.Fatalf("seed database: %v", err)
-	}
+	seedSlowQueriesDatabase(t, db, "main", store.EnginePostgres, "16")
 
 	now := time.Now().UTC().Truncate(time.Second)
 	var entries []telemetry.LogEntry
@@ -228,17 +213,8 @@ func TestHandleQueryDatabaseSlowQueries_LimitAndOffset(t *testing.T) {
 		t.Fatalf("seed log entries: %v", err)
 	}
 
-	rec := httptest.NewRecorder()
 	url := "/api/v1/databases/main/slow-queries?limit=2&offset=1&from=" + now.Add(-time.Hour).Format(time.RFC3339) + "&to=" + now.Add(time.Minute).Format(time.RFC3339)
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, url, ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
-	}
-
-	var got slowQueriesResponse
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
+	got := getSlowQueries(t, rt, cookie, url)
 	if got.Total != 5 {
 		t.Fatalf("Total = %d, want 5", got.Total)
 	}

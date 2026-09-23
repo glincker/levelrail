@@ -9,15 +9,14 @@ import { useDatabase } from '../queries/databases'
 import { useDatabaseSlowQueries } from '../queries/databaseSlowQueries'
 import {
   DEFAULT_TIME_RANGE_KEY,
-  TIME_RANGE_PRESETS,
   resolveTimeRange,
   type TimeRangeKey,
 } from '../lib/timeRange'
 import type { SlowQueryEntry } from '../types/slowQueries'
-import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { EmptyState } from './ui/empty-state'
 import { Skeleton } from './ui/skeleton'
+import { TimeRangeControls } from './TimeRangeControls'
 import {
   Table,
   TableHeader,
@@ -134,41 +133,13 @@ export function DatabaseSlowQueriesPanel({
           </p>
         </div>
         {supported ? (
-          <div className="flex items-center gap-2">
-            <div
-              role="group"
-              aria-label="Time range"
-              className="inline-flex rounded-md border border-border"
-            >
-              {TIME_RANGE_PRESETS.map((preset) => (
-                <button
-                  key={preset.key}
-                  type="button"
-                  onClick={() => {
-                    setRangeKey(preset.key)
-                  }}
-                  aria-pressed={rangeKey === preset.key}
-                  className={`px-2.5 py-1 text-xs font-medium first:rounded-l-md last:rounded-r-md ${
-                    rangeKey === preset.key
-                      ? 'bg-foreground text-background'
-                      : 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setRefreshNonce((n) => n + 1)
-              }}
-            >
-              Refresh
-            </Button>
-          </div>
+          <TimeRangeControls
+            rangeKey={rangeKey}
+            onRangeChange={setRangeKey}
+            onRefresh={() => {
+              setRefreshNonce((n) => n + 1)
+            }}
+          />
         ) : null}
       </div>
 

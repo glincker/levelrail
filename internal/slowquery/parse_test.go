@@ -111,35 +111,41 @@ func TestParseMySQL_NoQueryTimeHeader(t *testing.T) {
 	}
 }
 
-func TestParseMySQL_SkipsUseDBContextLine(t *testing.T) {
-	ts := time.Now()
-	lines := []LogLine{
-		{Timestamp: ts, Message: "# Query_time: 2.300919  Lock_time: 0.000000 Rows_sent: 1  Rows_examined: 1"},
-		{Timestamp: ts, Message: "use sq-mysql-test;"},
-		{Timestamp: ts, Message: "SET timestamp=1790106791;"},
-		{Timestamp: ts, Message: "SELECT SLEEP(2.3);"},
-	}
+// assertParseMySQLSingleEntry runs ParseMySQL against lines and asserts
+// exactly one entry comes back with the given query: the shared shape
+// TestParseMySQL_SkipsUseDBContextLine and
+// TestParseMySQL_TrailingEntryFlushedAtEndOfInput both need.
+func assertParseMySQLSingleEntry(t *testing.T, lines []LogLine, wantQuery string) {
+	t.Helper()
 	got := ParseMySQL(lines)
 	if len(got) != 1 {
 		t.Fatalf("ParseMySQL() returned %d entries, want 1: %+v", len(got), got)
 	}
-	if got[0].Query != "SELECT SLEEP(2.3)" {
-		t.Errorf("Query = %q, want %q (the \"use <db>;\" context line must not leak into it)", got[0].Query, "SELECT SLEEP(2.3)")
+	if got[0].Query != wantQuery {
+		t.Errorf("entry Query = %q, want %q", got[0].Query, wantQuery)
 	}
 }
 
+// TestParseMySQL_SkipsUseDBContextLine proves a "use <db>;" context line
+// between the query-time header and the SET timestamp line never leaks
+// into the captured query text.
+func TestParseMySQL_SkipsUseDBContextLine(t *testing.T) {
+	ts := time.Now()
+	assertParseMySQLSingleEntry(t, []LogLine{
+		{Timestamp: ts, Message: "# Query_time: 2.300919  Lock_time: 0.000000 Rows_sent: 1  Rows_examined: 1"},
+		{Timestamp: ts, Message: "use sq-mysql-test;"},
+		{Timestamp: ts, Message: "SET timestamp=1790106791;"},
+		{Timestamp: ts, Message: "SELECT SLEEP(2.3);"},
+	}, "SELECT SLEEP(2.3)")
+}
+
+// TestParseMySQL_TrailingEntryFlushedAtEndOfInput proves the last block
+// is flushed even with no following header to trigger it.
 func TestParseMySQL_TrailingEntryFlushedAtEndOfInput(t *testing.T) {
 	ts := time.Now()
-	lines := []LogLine{
+	assertParseMySQLSingleEntry(t, []LogLine{
 		{Timestamp: ts, Message: "# Query_time: 1.000000  Lock_time: 0.000000 Rows_sent: 1  Rows_examined: 10"},
 		{Timestamp: ts, Message: "SET timestamp=1704110400;"},
 		{Timestamp: ts, Message: "SELECT 1;"},
-	}
-	got := ParseMySQL(lines)
-	if len(got) != 1 {
-		t.Fatalf("ParseMySQL() returned %d entries, want 1 (last block must flush without a following header): %+v", len(got), got)
-	}
-	if got[0].Query != "SELECT 1" {
-		t.Errorf("entry Query = %q, want %q", got[0].Query, "SELECT 1")
-	}
+	}, "SELECT 1")
 }
