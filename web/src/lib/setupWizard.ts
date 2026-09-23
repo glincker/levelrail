@@ -107,6 +107,15 @@ export function normalizeDomain(raw: string): string {
   return DOMAIN_PATTERN.test(d) ? d : ''
 }
 
+/** httpsOrigin returns "https://<domain>" for a valid hostname, else null, so only an https origin with a real host is ever linked to. */
+export function httpsOrigin(domain: string): string | null {
+  if (!DOMAIN_PATTERN.test(domain)) return null
+  const url = new URL(`https://${domain}`)
+  return url.protocol === 'https:' && url.hostname === domain
+    ? url.origin
+    : null
+}
+
 export type SubStepState = 'pending' | 'waiting' | 'ok' | 'error'
 
 export interface DomainProgress {

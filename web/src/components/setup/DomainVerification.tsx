@@ -3,7 +3,7 @@ import {
   ArrowsClockwiseIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
-import type { DomainProgress } from '../../lib/setupWizard'
+import { httpsOrigin, type DomainProgress } from '../../lib/setupWizard'
 import { CopyValue, SubStepRow } from './StepChrome'
 import { DashboardUrlAction } from './DashboardUrlAction'
 
@@ -22,7 +22,7 @@ export function DomainVerification({
   onRecheck: () => void
 }) {
   const recordType = publicIp?.includes(':') ? 'AAAA' : 'A'
-  const httpsUrl = `https://${domain}`
+  const httpsUrl = httpsOrigin(domain)
   const finished = progress.cert === 'ok'
 
   return (
@@ -91,7 +91,7 @@ export function DomainVerification({
         </div>
       ) : null}
 
-      {finished ? (
+      {finished && httpsUrl ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-green-50 p-2.5 dark:bg-green-950/40">
           <p className="text-xs text-foreground">
             {httpsUrl} is ready. Sign in there and this wizard picks up where

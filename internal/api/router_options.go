@@ -543,6 +543,12 @@ func WithDBPinger(p DBPinger) Option {
 	return func(rt *Router) { rt.dbPinger = p }
 }
 
+// WithAgentCAFingerprint sets the agent CA fingerprint returned with each
+// new node join token, so the enrollment command can pin it.
+func WithAgentCAFingerprint(fp string) Option {
+	return func(rt *Router) { rt.agentCAFingerprint = fp }
+}
+
 // WithIngressPortOwner lets GET /api/v1/system/doctor's port_<n>
 // checks recognize a bind failure caused by this control plane's own
 // embedded ingress (internal/ingress.Driver) as expected rather than a

@@ -40,6 +40,21 @@ Evaluation order, the full ability list, and policy examples: [Identity and acce
 - HSTS (`Strict-Transport-Security`) is opt-in, not on by default, because turning it on for a domain that later loses TLS locks users out until the header expires. See [Domains and ingress](domains-and-ingress.md#tls).
 - WAF mode and rate limiting are configurable per domain, with a detect-only mode for testing rules before enforcing them. See [Domains and ingress](domains-and-ingress.md#waf-and-rate-limiting).
 - The node agent dials **out** to the control plane. No inbound ports need to be open on a managed server for enrollment or day-to-day operation.
+- **Agent enrollment pins the control plane CA.** A join token is shown together with the agent CA's SHA-256 fingerprint; with `APP_CA_FINGERPRINT` set, the agent checks the control plane's certificate against that CA before it sends the token, so an attacker in the network path cannot capture the token or pose as the control plane. Without the fingerprint the agent falls back to trust on first use and logs a warning. After enrollment every connection is mutual TLS against the saved CA.
+
+## Outbound requests to user-supplied URLs
+
+Alert rules, deploy notifications, and notification channels post to URLs an operator types in. To keep those from being pointed at the control plane's own network (cloud metadata at `169.254.169.254`, the Docker API, databases on a private subnet), every notification request refuses to connect to loopback, private (RFC 1918, `fc00::/7`), link-local, CGNAT, multicast, and other reserved addresses. The check runs on the IP actually dialed, after DNS resolution and on every redirect hop, so a hostname that resolves (or later re-resolves) to an internal address is caught too. Proxy environment variables are ignored for these requests for the same reason.
+
+If you run a notification receiver on your own network (a self-hosted Mattermost, Gotify, or ntfy on a private IP, for example), set:
+
+```bash
+APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true
+```
+
+on the control plane. This re-allows every internal address for notification requests, so only enable it when every user who can create alert rules or notification channels is trusted with access to that network.
+
+Email notifications are separate: recipient addresses must be a single plain address, and subjects are MIME-encoded, so user input cannot add mail headers.
 
 ## Fresh-box hardening checklist
 

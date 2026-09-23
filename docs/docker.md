@@ -56,11 +56,12 @@ docker run -d \
   -v levelrail-agent-identity:/var/lib/levelrail-agent \
   -e APP_CONTROL_PLANE_ADDR=control-plane-host:9443 \
   -e APP_JOIN_TOKEN=your-one-time-join-token \
+  -e APP_CA_FINGERPRINT=control-plane-ca-fingerprint \
   -e APP_AGENT_IDENTITY_FILE=/var/lib/levelrail-agent/identity.json \
   ghcr.io/glincker/levelrail-agent:beta
 ```
 
-**`APP_JOIN_TOKEN`** is only needed for first enrollment. After that, the agent saves its mTLS identity to `APP_AGENT_IDENTITY_FILE`. Mount that path on a named volume, or the agent will have to re-enroll on every container restart.
+**`APP_JOIN_TOKEN`** and **`APP_CA_FINGERPRINT`** are only needed for first enrollment (the fingerprint is printed next to the token, see [Multi-node](multi-node.md)). After that, the agent saves its mTLS identity to `APP_AGENT_IDENTITY_FILE`. Mount that path on a named volume, or the agent will have to re-enroll on every container restart.
 
 **`APP_NODE_NAME`** is optional and defaults to the container's hostname (which Docker randomizes). Set it explicitly for a recognizable name in the dashboard.
 

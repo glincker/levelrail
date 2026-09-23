@@ -183,6 +183,23 @@ func TestHandleCreateInvite_MissingEmail(t *testing.T) {
 	}
 }
 
+func TestHandleCreateInvite_RejectsHeaderInjectionEmail(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	for _, body := range []string{
+		`{"email":"victim@example.com\r\nBcc: attacker@evil.com","role":"viewer"}`,
+		`{"email":"victim@example.com, attacker@evil.com","role":"viewer"}`,
+		`{"email":"not-an-address","role":"viewer"}`,
+	} {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/invites", body))
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("body %s: status = %d, want %d", body, rec.Code, http.StatusBadRequest)
+		}
+	}
+}
+
 func TestHandleListInvites_ExcludesRevoked(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

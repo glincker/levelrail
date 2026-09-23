@@ -14,7 +14,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 // ErrUnsafeContextPath is returned by UntarContext for an entry whose
@@ -101,13 +100,17 @@ func TarContext(ctx context.Context, dir string, w io.Writer) error {
 // UntarContext extracts a TarContext stream into dir, which must already
 // exist. Entry names that escape dir fail the whole extraction with
 // ErrUnsafeContextPath rather than being skipped: a context that cannot
-// be reproduced faithfully must not be built.
+// be reproduced faithfully must not be built. Every write goes through
+// an os.Root, so even a symlink the checks below miss cannot redirect a
+// write outside dir.
 func UntarContext(ctx context.Context, r io.Reader, dir string) error {
-	root, err := filepath.Abs(dir)
+	root, err := os.OpenRoot(dir)
 	if err != nil {
-		return fmt.Errorf("build: resolve build context destination %q: %w", dir, err)
+		return fmt.Errorf("build: open build context destination %q: %w", dir, err)
 	}
+	defer func() { _ = root.Close() }()
 
+	symlinks := map[string]bool{}
 	tr := tar.NewReader(r)
 	for {
 		if ctxErr := ctx.Err(); ctxErr != nil {
@@ -122,55 +125,51 @@ func UntarContext(ctx context.Context, r io.Reader, dir string) error {
 			return fmt.Errorf("build: read build context stream: %w", err)
 		}
 
-		target, err := safeContextPath(root, header.Name)
-		if err != nil {
-			return err
+		name := filepath.Clean(filepath.FromSlash(header.Name))
+		if header.Name == "" || !filepath.IsLocal(name) || underSymlink(symlinks, name) {
+			return fmt.Errorf("%w: %q", ErrUnsafeContextPath, header.Name)
 		}
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(target, os.FileMode(header.Mode).Perm()|0o700); err != nil { //nolint:gosec // header.Mode is masked to permission bits
+			if err := root.MkdirAll(name, os.FileMode(header.Mode).Perm()|0o700); err != nil { //nolint:gosec // header.Mode is masked to permission bits
 				return fmt.Errorf("build: create build context dir: %w", err)
 			}
 		case tar.TypeSymlink:
-			if err := writeContextSymlink(root, target, header.Linkname); err != nil {
+			if err := writeContextSymlink(root, name, header.Linkname); err != nil {
 				return err
 			}
+			symlinks[name] = true
 		case tar.TypeReg:
-			if err := writeContextFile(target, tr, os.FileMode(header.Mode).Perm()); err != nil { //nolint:gosec // header.Mode is masked to permission bits
+			if err := writeContextFile(root, name, tr, os.FileMode(header.Mode).Perm()); err != nil { //nolint:gosec // header.Mode is masked to permission bits
 				return err
 			}
 		default:
-			// TarContext never produces anything else; anything that shows
-			// up here is not a build input worth reproducing.
+			// TarContext never produces anything else (hard links
+			// included); anything that shows up here is not a build input
+			// worth reproducing.
 			continue
 		}
 	}
 }
 
-// safeContextPath resolves name against root, rejecting anything that
-// would land outside it (absolute paths, "..", a symlinked parent).
-func safeContextPath(root, name string) (string, error) {
-	if name == "" {
-		return "", fmt.Errorf("%w: empty entry name", ErrUnsafeContextPath)
+// underSymlink reports whether any parent of name is a symlink extracted
+// earlier. TarContext never emits such an entry, and allowing one would
+// make the lexical checks here disagree with where the write really lands.
+func underSymlink(symlinks map[string]bool, name string) bool {
+	for dir := filepath.Dir(name); dir != "." && dir != string(filepath.Separator); dir = filepath.Dir(dir) {
+		if symlinks[dir] {
+			return true
+		}
 	}
-	clean := filepath.Clean(filepath.FromSlash(name))
-	if filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
-		return "", fmt.Errorf("%w: %q", ErrUnsafeContextPath, name)
-	}
-
-	target := filepath.Join(root, clean)
-	if target != root && !strings.HasPrefix(target, root+string(filepath.Separator)) {
-		return "", fmt.Errorf("%w: %q", ErrUnsafeContextPath, name)
-	}
-	return target, nil
+	return false
 }
 
-func writeContextFile(target string, r io.Reader, mode os.FileMode) error {
-	if err := os.MkdirAll(filepath.Dir(target), 0o750); err != nil {
+func writeContextFile(root *os.Root, name string, r io.Reader, mode os.FileMode) error {
+	if err := root.MkdirAll(filepath.Dir(name), 0o750); err != nil {
 		return fmt.Errorf("build: create build context dir: %w", err)
 	}
-	f, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mode) //nolint:gosec // target is validated by safeContextPath
+	f, err := root.OpenFile(name, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mode)
 	if err != nil {
 		return fmt.Errorf("build: create build context file: %w", err)
 	}
@@ -185,20 +184,16 @@ func writeContextFile(target string, r io.Reader, mode os.FileMode) error {
 	return nil
 }
 
-// writeContextSymlink refuses a link whose target escapes the context
-// root, so a later write through that link cannot either.
-func writeContextSymlink(root, target, linkname string) error {
-	resolved := linkname
-	if !filepath.IsAbs(resolved) {
-		resolved = filepath.Join(filepath.Dir(target), linkname)
-	}
-	if resolved != root && !strings.HasPrefix(resolved, root+string(filepath.Separator)) {
+// writeContextSymlink refuses an absolute link or one whose target,
+// resolved from the link's own directory, leaves the context root.
+func writeContextSymlink(root *os.Root, name, linkname string) error {
+	if linkname == "" || filepath.IsAbs(linkname) || !filepath.IsLocal(filepath.Join(filepath.Dir(name), filepath.FromSlash(linkname))) {
 		return fmt.Errorf("%w: symlink to %q", ErrUnsafeContextPath, linkname)
 	}
-	if err := os.MkdirAll(filepath.Dir(target), 0o750); err != nil {
+	if err := root.MkdirAll(filepath.Dir(name), 0o750); err != nil {
 		return fmt.Errorf("build: create build context dir: %w", err)
 	}
-	if err := os.Symlink(linkname, target); err != nil {
+	if err := root.Symlink(linkname, name); err != nil {
 		return fmt.Errorf("build: create build context symlink: %w", err)
 	}
 	return nil

@@ -8,32 +8,19 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
-// ExpandBuildService reads and parses the compose file svc.Build.Path
-// points at (resolved relative to sourceDir, the same git checkout root
-// every other build.type already resolves its own paths against), and
-// returns one spec.Service per compose service it declares: a
-// build:-bearing compose service becomes an ordinary build.type:
-// dockerfile entry, an image:-only one becomes build.type: image. The
-// caller (Pipeline.DeploySpec) is expected to splice these entries into
-// its own Services map in svc's place and fan out exactly as it already
-// does for any other declared service, no reconciler or build-pipeline
-// change needed: every compose-declared service converges through the
-// exact same one-container-per-service path every other service does.
-//
-// svc.Build.Type must be spec.BuildCompose; anything else is a caller
-// bug, not a user-facing error.
-//
-// warnings carries one message per expanded service whose healthcheck:
-// is a real, non-HTTP check (see resolveHealthcheck): the caller is
-// expected to surface these to the operator, since that service's health
-// is deliberately left unset rather than guessed.
+// ExpandBuildService parses the compose file at svc.Build.Path (relative
+// to sourceDir) and returns one spec.Service per compose service, plus a
+// warning for each non-HTTP healthcheck left untranslated.
 func ExpandBuildService(svc spec.Service, sourceDir string) (services map[string]spec.Service, warnings []string, err error) {
 	if svc.Build.Type != spec.BuildCompose {
 		return nil, nil, fmt.Errorf("compose: expand: build.type is %q, not %q", svc.Build.Type, spec.BuildCompose)
 	}
 
+	if !filepath.IsLocal(svc.Build.Path) {
+		return nil, nil, fmt.Errorf("compose: build.path %q must be a relative path inside the repository", svc.Build.Path)
+	}
 	composePath := filepath.Join(sourceDir, svc.Build.Path)
-	data, err := os.ReadFile(composePath) //nolint:gosec // svc.Build.Path is app.yaml-declared, resolved against a real git checkout, the same trust boundary every other build.type's own Path already has
+	data, err := os.ReadFile(composePath) //nolint:gosec // build.path is checked with filepath.IsLocal above
 	if err != nil {
 		return nil, nil, fmt.Errorf("compose: read %q: %w", svc.Build.Path, err)
 	}

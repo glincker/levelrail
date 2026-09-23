@@ -10,10 +10,13 @@ package agent
 
 import (
 	"context"
+	"crypto/subtle"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -68,27 +71,39 @@ type Identity struct {
 	CACertPEM     []byte
 }
 
+// ErrCAFingerprintMismatch is returned by DialEnroll when the control
+// plane's CA does not match the pinned fingerprint.
+var ErrCAFingerprintMismatch = errors.New("agent: control plane CA does not match the pinned fingerprint")
+
+// EnrollOption configures DialEnroll.
+type EnrollOption func(*enrollConfig)
+
+type enrollConfig struct {
+	caFingerprint string
+}
+
+// WithPinnedCAFingerprint makes DialEnroll refuse any control plane whose
+// CA certificate's SHA-256 (hex, colons optional) is not fingerprint.
+func WithPinnedCAFingerprint(fingerprint string) EnrollOption {
+	return func(c *enrollConfig) { c.caFingerprint = normalizeFingerprint(fingerprint) }
+}
+
+func normalizeFingerprint(fp string) string {
+	return strings.ToLower(strings.ReplaceAll(strings.TrimSpace(fp), ":", ""))
+}
+
 // DialEnroll connects to addr and exchanges joinToken for an Identity.
-//
-// The connection for this one call is not verified against any CA
-// (InsecureSkipVerify): there is no CA certificate to verify against
-// yet, obtaining one is what this call is for. Trust here rests
-// entirely on joinToken's own secrecy, a trust-on-first-use model (the
-// same one k3s and Nomad's own join-token bootstrapping use), not on
-// TLS server verification: a real, deliberate tradeoff, not an
-// oversight. An attacker able to both intercept this one connection and
-// obtain a valid, unexpired, not-yet-used join token could complete a
-// fraudulent enrollment; the join token being a genuine secret (minted
-// server-side, shown once, single-use) is what actually
-// carries the security weight here, not this connection's transport.
-// Every connection after this one (RunSession below, and any future
-// re-enrollment once an Identity already exists) verifies the server
-// certificate against the CA this call returns, closing that window to
-// this one bootstrap step only.
-func DialEnroll(ctx context.Context, addr, joinToken, nodeName string) (*Identity, error) {
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(
-		credentials.NewTLS(&tls.Config{InsecureSkipVerify: true, NextProtos: []string{"h2"}}), //nolint:gosec // TOFU bootstrap, see doc comment above
-	))
+// There is no CA on disk yet, so the server is verified against the
+// pinned CA fingerprint when one is given (see ADR 003), and trusted on
+// first use otherwise. Every later connection verifies against the
+// returned CA.
+func DialEnroll(ctx context.Context, addr, joinToken, nodeName string, opts ...EnrollOption) (*Identity, error) {
+	var cfg enrollConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(credentials.NewTLS(enrollTrustConfig(cfg.caFingerprint))))
 	if err != nil {
 		return nil, fmt.Errorf("agent: dial %q for enrollment: %w", addr, err)
 	}
@@ -102,12 +117,59 @@ func DialEnroll(ctx context.Context, addr, joinToken, nodeName string) (*Identit
 		return nil, fmt.Errorf("agent: enroll: %w", err)
 	}
 
+	if cfg.caFingerprint != "" {
+		got, err := certFingerprintFromPEM(resp.GetCaCertPem())
+		if err != nil {
+			return nil, fmt.Errorf("agent: enroll: %w", err)
+		}
+		if subtle.ConstantTimeCompare([]byte(got), []byte(cfg.caFingerprint)) != 1 {
+			return nil, fmt.Errorf("%w: enroll response carries CA %s", ErrCAFingerprintMismatch, got)
+		}
+	}
+
 	return &Identity{
 		NodeID:        resp.GetNodeId(),
 		ClientCertPEM: resp.GetClientCertPem(),
 		ClientKeyPEM:  resp.GetClientKeyPem(),
 		CACertPEM:     resp.GetCaCertPem(),
 	}, nil
+}
+
+// enrollTrustConfig builds the enrollment TLS config. Go's built-in
+// verification is skipped because there is no root to give it yet;
+// with a pin, verifyPinnedChain replaces it.
+func enrollTrustConfig(caFingerprint string) *tls.Config {
+	cfg := &tls.Config{InsecureSkipVerify: true, NextProtos: []string{"h2"}} //nolint:gosec // replaced by verifyPinnedChain when a CA fingerprint is pinned, TOFU otherwise (see DialEnroll)
+	if caFingerprint != "" {
+		cfg.VerifyConnection = func(cs tls.ConnectionState) error {
+			return verifyPinnedChain(cs.PeerCertificates, caFingerprint)
+		}
+	}
+	return cfg
+}
+
+// verifyPinnedChain accepts the connection only if the presented chain
+// includes the pinned CA and the leaf is a valid server certificate
+// signed by it. Hostnames are not checked: the pin is the trust anchor.
+func verifyPinnedChain(chain []*x509.Certificate, caFingerprint string) error {
+	if len(chain) == 0 {
+		return fmt.Errorf("%w: server presented no certificate", ErrCAFingerprintMismatch)
+	}
+	roots := x509.NewCertPool()
+	pinned := false
+	for _, c := range chain[1:] {
+		if subtle.ConstantTimeCompare([]byte(CertFingerprint(c.Raw)), []byte(caFingerprint)) == 1 {
+			roots.AddCert(c)
+			pinned = true
+		}
+	}
+	if !pinned {
+		return fmt.Errorf("%w: server did not present the pinned CA", ErrCAFingerprintMismatch)
+	}
+	if _, err := chain[0].Verify(x509.VerifyOptions{Roots: roots, KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}}); err != nil {
+		return fmt.Errorf("%w: %w", ErrCAFingerprintMismatch, err)
+	}
+	return nil
 }
 
 // agentClientStream is the narrow surface serveSession needs from the

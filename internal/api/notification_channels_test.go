@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/netguard"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -341,6 +342,7 @@ func TestHandleDeleteNotificationChannel_ClearsAttachedAppTarget(t *testing.T) {
 }
 
 func TestHandleTestNotificationChannel_Success(t *testing.T) {
+	t.Setenv(netguard.AllowPrivateEnv, "true") // receiver is an httptest server on loopback
 	rt, db, _ := newTestRouterWithNotificationChannels(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -399,6 +401,7 @@ func TestHandleTestNotificationChannel_ValidationFailures(t *testing.T) {
 }
 
 func TestHandleTestExistingNotificationChannel_Success(t *testing.T) {
+	t.Setenv(netguard.AllowPrivateEnv, "true") // receiver is an httptest server on loopback
 	rt, db, adb := newTestRouterWithNotificationChannels(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -436,6 +439,7 @@ func TestHandleTestExistingNotificationChannel_NotFound(t *testing.T) {
 // row, not just a log line: the CLI/UI's own "when did this last work"
 // question depends on that write actually happening.
 func TestHandleTestExistingNotificationChannel_RecordsDelivery(t *testing.T) {
+	t.Setenv(netguard.AllowPrivateEnv, "true") // receiver is an httptest server on loopback
 	rt, db, adb := newTestRouterWithNotificationChannels(t)
 	cookie := loginTestSession(t, rt, db)
 

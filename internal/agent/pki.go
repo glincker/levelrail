@@ -119,6 +119,12 @@ func (ca *CA) CertPEM() []byte {
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: ca.certDER})
 }
 
+// Fingerprint returns the hex SHA-256 of the CA certificate's DER, the
+// value an agent pins at enrollment (APP_CA_FINGERPRINT).
+func (ca *CA) Fingerprint() string {
+	return CertFingerprint(ca.certDER)
+}
+
 // KeyPEM returns the CA's own private key, PEM-encoded, PKCS#8: the
 // other half LoadCA needs. Never sent over the wire to an agent, only
 // ever persisted locally by the control plane's own startup code.

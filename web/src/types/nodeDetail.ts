@@ -72,6 +72,8 @@ export interface NodeAlertStatusResource {
 export interface NodeJoinTokenResponse {
   token: string
   expires_at: string
+  // SHA-256 of the agent CA, pinned by the agent during enrollment.
+  ca_fingerprint?: string
 }
 
 // Response body for POST /api/v1/nodes/{id}/drain

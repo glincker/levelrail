@@ -58,23 +58,10 @@ func WithStaticRootDir(dir string) Option {
 	return func(p *Pipeline) { p.staticRootDir = dir }
 }
 
-// deployStatic copies req.Service.Build.Path (relative to
-// req.Service.Build.BaseDirectory under req.SourceDir, or that build
-// root itself when Build.Path is empty) into
-// "<staticRootDir>/<req.ServiceName>/<req.CommitSHA>", then saves that
-// directory plus req.Service.Domains as a store.StaticSite. Unlike
-// deployDockerfile, there is no image, no build.ProgressEvent to forward
-// (progress is accepted for signature symmetry with the other
-// deployXxx methods but never invoked), and no container for the
-// application controller to converge to: the returned string is the
-// directory now being served, not an image tag.
-//
-// The copy must land under p.staticRootDir, never serve directly from
-// req.SourceDir: internal/webhook's Handler defers removing the checkout
-// directory the instant Deploy returns (a real git checkout is temporary
-// by design, see cloneAndCheckout's own doc comment), so anything Caddy
-// needs to keep serving after this call returns has to already live
-// somewhere durable by the time it does.
+// deployStatic copies the static build output into
+// "<staticRootDir>/<ServiceName>/<CommitSHA>" and saves it as a
+// store.StaticSite. The copy is required because the webhook checkout is
+// removed as soon as Deploy returns. Returns the directory now served.
 func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error) {
 	if p.staticSites == nil {
 		return "", fmt.Errorf("deploy: service %q: build.type %q needs a static site store configured (WithStaticSiteStore)", req.ServiceName, spec.BuildStatic)
@@ -89,8 +76,11 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error
 	}
 
 	srcDir := buildRoot
-	if req.Service.Build.Path != "" {
-		srcDir = filepath.Join(buildRoot, req.Service.Build.Path)
+	if buildPath := req.Service.Build.Path; buildPath != "" {
+		if !filepath.IsLocal(buildPath) {
+			return "", fmt.Errorf("deploy: service %q: build.path %q must be a relative path inside the build root", req.ServiceName, buildPath)
+		}
+		srcDir = filepath.Join(buildRoot, buildPath)
 	}
 	info, err := os.Stat(srcDir)
 	if err != nil {
@@ -100,7 +90,10 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error
 		return "", fmt.Errorf("deploy: service %q: static source path %q is not a directory", req.ServiceName, srcDir)
 	}
 
-	destDir := filepath.Join(p.staticRootDir, req.ServiceName, req.CommitSHA)
+	destDir, err := staticDestDir(p.staticRootDir, req.ServiceName, req.CommitSHA)
+	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
 
 	start := time.Now()
 	if err := copyStaticDir(srcDir, destDir); err != nil {
@@ -127,6 +120,23 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error
 	}
 
 	return destDir, nil
+}
+
+// staticDestDir joins service and commit under root, refusing any value
+// that could leave root: destDir is removed before the copy, so an
+// escaping value would delete a directory outside it. commit may be
+// empty or a ref with slashes, matching what callers already pass.
+func staticDestDir(root, service, commit string) (string, error) {
+	if !filepath.IsLocal(service) || filepath.Base(service) != service {
+		return "", fmt.Errorf("static site service name %q must be a single relative name", service)
+	}
+	if commit == "" {
+		return filepath.Join(root, service), nil
+	}
+	if !filepath.IsLocal(commit) {
+		return "", fmt.Errorf("static site commit %q must be a relative name", commit)
+	}
+	return filepath.Join(root, service, commit), nil
 }
 
 // copyStaticDir replaces dest's entire contents with a copy of every

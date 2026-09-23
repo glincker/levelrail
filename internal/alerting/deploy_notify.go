@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/netguard"
 )
 
 // This file is deploy-outcome notifications: a ping fired once,
@@ -237,7 +238,7 @@ type deployGenericPayload struct {
 // so a notification still goes out somewhere.
 func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Sender, t DeployTarget, ev DeployOutcome) error {
 	if client == nil {
-		client = http.DefaultClient
+		client = netguard.NewClient()
 	}
 
 	switch t.NotifyKind {
@@ -373,7 +374,7 @@ type DeployDispatcher struct {
 // with a clear "not configured" error).
 func NewDeployDispatcher(db *DB, client *http.Client, sender email.Sender, logger *slog.Logger) *DeployDispatcher {
 	if client == nil {
-		client = http.DefaultClient
+		client = netguard.NewClient()
 	}
 	if logger == nil {
 		logger = slog.Default()

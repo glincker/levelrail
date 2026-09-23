@@ -34,22 +34,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { useGitBranches } from '../queries/gitBranches'
-import { BrandIcon, type BrandIconName } from './BrandIcon'
+import { gitHostIconName } from '../lib/gitHost'
+import { BrandIcon } from './BrandIcon'
 import type { FormInput, FormOutput } from './CreateAppFromGitFields'
 import { RegistryImagePicker } from './RegistryImagePicker'
-
-// Purely a URL-string match, not framework/build detection: which git
-// host a pasted repo URL looks like, so the field can show that host's
-// mark once it recognizes one. `null` (no icon) for anything else,
-// including a self-hosted GitLab/Bitbucket instance under a different
-// domain.
-function gitHostIconName(repoUrl: string): BrandIconName | null {
-  const value = repoUrl.trim().toLowerCase()
-  if (value.includes('github.com')) return 'github'
-  if (value.includes('gitlab.com')) return 'gitlab'
-  if (value.includes('bitbucket.org')) return 'bitbucket'
-  return null
-}
 
 // GitBuildSourceFields is CreateAppFromGitFields' git-source input
 // group: repository URL, a real branch picker backed by
@@ -289,7 +277,10 @@ export function GitBuildSourceFields({
           <RegistryImagePicker
             disabled={disabled}
             onSelect={(imageRef) => {
-              setValue('image', imageRef, { shouldValidate: true, shouldDirty: true })
+              setValue('image', imageRef, {
+                shouldValidate: true,
+                shouldDirty: true,
+              })
             }}
           />
           <Field>

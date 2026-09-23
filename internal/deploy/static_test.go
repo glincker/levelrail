@@ -252,6 +252,46 @@ func TestPipeline_DeployStatic_BaseDirectory_Traversal_Rejected(t *testing.T) {
 	}
 }
 
+func TestPipeline_DeployStatic_EscapingPaths_Rejected(t *testing.T) {
+	tests := []struct {
+		name, service, commit, buildPath string
+	}{
+		{name: "build.path traversal", service: "docs", commit: "abc1234", buildPath: "../../etc"},
+		{name: "absolute build.path", service: "docs", commit: "abc1234", buildPath: "/etc"},
+		{name: "commit traversal", service: "docs", commit: "../../victim"},
+		{name: "absolute commit", service: "docs", commit: "/tmp/victim"},
+		{name: "service traversal", service: "..", commit: "abc1234"},
+		{name: "service with separator", service: "a/../..", commit: "abc1234"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parent := t.TempDir()
+			staticRoot := filepath.Join(parent, "static")
+			victim := filepath.Join(parent, "victim")
+			if err := os.MkdirAll(victim, 0o750); err != nil {
+				t.Fatal(err)
+			}
+			staticStore := &fakeStaticSiteStore{}
+			p := New(&fakeBuilder{}, &fakeServiceStore{}, WithStaticSiteStore(staticStore), WithStaticRootDir(staticRoot))
+
+			svc := staticService("docs.example.com")
+			svc.Build.Path = tt.buildPath
+			_, err := p.Deploy(context.Background(), Request{
+				ServiceName: tt.service, Service: svc, SourceDir: t.TempDir(), CommitSHA: tt.commit,
+			}, nil)
+			if err == nil {
+				t.Fatal("Deploy() error = nil, want a rejection")
+			}
+			if staticStore.saveCalls != 0 {
+				t.Errorf("SaveStaticSite called %d times, want 0", staticStore.saveCalls)
+			}
+			if _, err := os.Stat(victim); err != nil {
+				t.Errorf("directory outside the static root was touched: %v", err)
+			}
+		})
+	}
+}
+
 func TestPipeline_DeployStatic_SourceDirMissing_Errors(t *testing.T) {
 	builder := &fakeBuilder{}
 	staticStore := &fakeStaticSiteStore{}

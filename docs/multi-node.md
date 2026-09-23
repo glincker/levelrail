@@ -55,12 +55,14 @@ This calls `POST /api/v1/nodes/join-tokens`:
 ```bash
 APP_CONTROL_PLANE_ADDR=controlplane.example.com:9443 \
 APP_JOIN_TOKEN=<token from step 1> \
+APP_CA_FINGERPRINT=<ca fingerprint from step 1> \
 ./levelrail-agent
 ```
 
 **Environment variables:**
 - `APP_CONTROL_PLANE_ADDR`: Control plane gRPC listener (default `:9443`).
 - `APP_JOIN_TOKEN`: The token from step 1 (single-use).
+- `APP_CA_FINGERPRINT`: The control plane's CA fingerprint, shown next to the token in step 1. Recommended: the agent refuses to enroll (and never sends the token) unless the control plane's certificate chains to this CA. Without it, the agent trusts whatever answers at `APP_CONTROL_PLANE_ADDR` on first use.
 - `APP_NODE_NAME`: Optional, defaults to machine hostname.
 - `APP_AGENT_IDENTITY_FILE`: Where to save the identity (default `./levelrail-agent-identity.json`, mode `0600`).
 

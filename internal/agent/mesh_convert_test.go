@@ -141,6 +141,14 @@ func TestNodeIdentityRoundTrip(t *testing.T) {
 	}
 }
 
+func TestNodeIdentityToPB_OutOfRangePort_ReportsZero(t *testing.T) {
+	for _, port := range []int{-1, 65536, 1<<32 + 51820} {
+		if got := nodeIdentityToPB(network.NodeIdentity{ListenPort: port}).GetListenPort(); got != 0 {
+			t.Errorf("ListenPort %d converted to %d, want 0", port, got)
+		}
+	}
+}
+
 func TestNodeIdentityFromPB_MalformedPublicKey_ReturnsError(t *testing.T) {
 	pb := &agentpb.NodeIdentity{PublicKey: "not-a-key"}
 	if _, err := nodeIdentityFromPB(pb); err == nil {

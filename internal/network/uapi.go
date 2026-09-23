@@ -152,11 +152,11 @@ func ParseUAPIStatus(raw string, nodeIDs map[Key]string) (Status, error) {
 			st.PublicKey = pub
 
 		case "listen_port":
-			n, err := strconv.Atoi(value)
+			n, err := strconv.ParseUint(value, 10, 16)
 			if err != nil {
 				return Status{}, fmt.Errorf("network: parse uapi status: listen_port %q: %w", value, err)
 			}
-			st.ListenPort = n
+			st.ListenPort = int(n)
 
 		case "public_key":
 			flushPeer()
