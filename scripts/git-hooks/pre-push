@@ -11,7 +11,7 @@
 # that isn't actually available.
 #
 # No -race here, matching CI's own PR-lane precedent (ci.yml's
-# test-api/test-rest jobs both skip -race deliberately, calling out
+# Go test lanes all skip -race deliberately, calling out
 # internal/api as "the slowest package by far" even without it): race
 # detection can turn that same package into tens of minutes locally.
 # nightly.yml's full, no-short, -race sweep is the actual safety net

@@ -20,6 +20,9 @@
 - name: "type/test"
   color: "bfd4f2"
   description: Tests and fixtures
+- name: "flaky-test"
+  color: "d93f0b"
+  description: Test that failed and passed on the same commit
 - name: "type/chore"
   color: "cccccc"
   description: Tooling, CI, release plumbing

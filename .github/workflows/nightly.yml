@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+env:
+  GOTESTSUM_VERSION: v1.13.0
+
 jobs:
   check-activity:
     name: Check for recent commits
@@ -36,12 +39,25 @@ jobs:
             echo "has-commits=$([ "$count" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           fi
 
+  # Same lanes as ci.yml, plus -race, -shuffle=on (order dependence) and no
+  # -short. internal/api is split four ways: as one job it outgrew the 40m
+  # test timeout under -race.
   full-test:
-    name: Full test suite (race, no -short)
+    name: Full test suite (${{ matrix.lane }})
     needs: check-activity
     if: needs.check-activity.outputs.has-commits == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {lane: api-1, group: api, shard: 1/4, flags: -race -shuffle=on -timeout=40m}
+          - {lane: api-2, group: api, shard: 2/4, flags: -race -shuffle=on -timeout=40m}
+          - {lane: api-3, group: api, shard: 3/4, flags: -race -shuffle=on -timeout=40m}
+          - {lane: api-4, group: api, shard: 4/4, flags: -race -shuffle=on -timeout=40m}
+          - {lane: docker, group: docker, flags: -race -shuffle=on -p 2 -timeout=45m}
+          - {lane: rest, group: rest, flags: -race -shuffle=on -timeout=50m}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -51,6 +67,9 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Install gotestsum
+        run: go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION}"
+
       # Same reasoning as ci.yml's identical step: the BuildKit-dependent
       # tests need the daemon on containerd-backed storage.
       - name: Enable containerd image store for BuildKit's docker exporter
@@ -59,8 +78,135 @@ jobs:
           echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
           sudo systemctl restart docker
 
-      - name: go test (race detector, full suite)
-        run: go test ./... -race -timeout=40m
+      - name: go test
+        env:
+          GO_TEST_FLAGS: ${{ matrix.flags }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          pkgs="$(scripts/go-test-groups.sh '${{ matrix.group }}')"
+          mapfile -t packages <<<"$pkgs"
+          scripts/ci-go-test.sh '${{ matrix.lane }}' "${packages[@]}"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-${{ matrix.lane }}
+          path: test-results/
+          retention-days: 14
+          overwrite: true
+
+  # Repeats the packages with a flake history, shuffled, with no reruns, so
+  # an intermittent failure shows up here before it shows up on a PR.
+  # Non-blocking: its job is to file issues, not to go red.
+  flake-sweep:
+    name: Flake sweep (-count=3)
+    needs: check-activity
+    if: needs.check-activity.outputs.has-commits == 'true'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 75
+    env:
+      FLAKE_SWEEP_PACKAGES: ./internal/agent/ ./internal/backup/ ./test/e2e/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install gotestsum
+        run: go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION}"
+
+      - name: Enable containerd image store for BuildKit's docker exporter
+        run: |
+          sudo mkdir -p /etc/docker
+          echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+      - name: go test (repeated, shuffled)
+        env:
+          GO_TEST_FLAGS: -shuffle=on -count=3 -p 1 -timeout=70m
+          RERUNS: '0'
+        run: |
+          read -r -a packages <<<"$FLAKE_SWEEP_PACKAGES"
+          scripts/ci-go-test.sh sweep "${packages[@]}"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-sweep
+          path: test-results/
+          retention-days: 14
+          overwrite: true
+
+  quarantined:
+    name: Quarantined tests (non-blocking)
+    needs: check-activity
+    if: needs.check-activity.outputs.has-commits == 'true'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install gotestsum
+        run: go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION}"
+
+      - name: Enable containerd image store for BuildKit's docker exporter
+        run: |
+          sudo mkdir -p /etc/docker
+          echo '{"features":{"containerd-snapshotter":true}}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+      - name: Quarantine list, entries past 14 days fail here
+        run: scripts/check-flaky-tests.sh
+
+      - name: go test (quarantined only)
+        if: always()
+        env:
+          GO_TEST_FLAGS: -race -timeout=20m
+          QUARANTINE: only
+          RERUNS: '0'
+        run: scripts/ci-go-test.sh quarantined ./...
+
+  flake-report:
+    name: File flaky-test issues
+    needs: [check-activity, full-test, flake-sweep]
+    if: always() && needs.check-activity.outputs.has-commits == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: test-results
+          merge-multiple: true
+
+      - name: Open or update flaky-test issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          files=(test-results/*/flaky.txt)
+          [ "${#files[@]}" -gt 0 ] || exit 0
+          scripts/report-flaky-tests.sh "${files[@]}"
 
   install-sh:
     name: install.sh (${{ matrix.image }})

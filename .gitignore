@@ -51,3 +51,6 @@ CLAUDE.md
 .idea/
 .vscode/
 *.swp
+
+# CI test lane output (scripts/ci-go-test.sh)
+test-results/
