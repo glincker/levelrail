@@ -24,6 +24,8 @@ func TestIsPullRequestEvent(t *testing.T) {
 		{"gitlab push", headerWith("X-Gitlab-Event", "Push Hook"), false},
 		{"bitbucket created", headerWith("X-Event-Key", "pullrequest:created"), true},
 		{"bitbucket push", headerWith("X-Event-Key", "repo:push"), false},
+		{"gitea pull_request", headerWith("X-Gitea-Event-Type", "pull_request"), true},
+		{"gitea push", headerWith("X-Gitea-Event-Type", "push"), false},
 		{"no headers", http.Header{}, false},
 	}
 	for _, tt := range tests {
@@ -240,6 +242,86 @@ func TestParsePullRequestEventForProvider_BitbucketUpdatedFulfilledAndRejected(t
 				t.Errorf("ParsePullRequestEventForProvider() = %+v, want %+v", got, want)
 			}
 		})
+	}
+}
+
+// giteaPullRequestFixture builds a pull_request event payload shaped
+// like Gitea's own structs.PullRequestPayload
+// (modules/structs/hook.go): a top-level "action"/"number" plus a
+// nested "pull_request" object carrying head/base branch info, the
+// same GitHub-shaped nesting githubPullRequestPayload uses, including a
+// representative sample of the surrounding fields (repository, sender)
+// a real delivery always includes.
+func giteaPullRequestFixture(action string, number int, headRef, headSHA, baseRef string) []byte {
+	return []byte(fmt.Sprintf(`{
+		"action": %q,
+		"number": %d,
+		"pull_request": {
+			"number": %d,
+			"head": {"label": %q, "ref": %q, "sha": %q},
+			"base": {"label": %q, "ref": %q}
+		},
+		"repository": {"full_name": "acme/widgets"},
+		"sender": {"login": "ada"}
+	}`, action, number, number, headRef, headRef, headSHA, baseRef, baseRef))
+}
+
+// TestParsePullRequestEventForProvider_Gitea covers "opened", the
+// action Gitea fires when a pull request is created.
+func TestParsePullRequestEventForProvider_Gitea(t *testing.T) {
+	body := giteaPullRequestFixture("opened", 5, "feature-w", "mno345", "main")
+	got, err := ParsePullRequestEventForProvider(body, headerWith("X-Gitea-Event-Type", "pull_request"))
+	if err != nil {
+		t.Fatalf("ParsePullRequestEventForProvider() error = %v", err)
+	}
+	want := PullRequestEvent{Action: PullRequestOpened, Number: 5, HeadRef: "feature-w", HeadSHA: "mno345", BaseRef: "main"}
+	if got != want {
+		t.Errorf("ParsePullRequestEventForProvider() = %+v, want %+v", got, want)
+	}
+}
+
+// TestParsePullRequestEventForProvider_GiteaSynchronizedReopenAndClosed
+// covers Gitea's own HookIssueAction values relevant to a pull request's
+// lifecycle: "synchronized" (new commits pushed, spelled differently
+// from GitHub's "synchronize" but normalized to the same
+// PullRequestSynchronize), "reopened", and "closed".
+func TestParsePullRequestEventForProvider_GiteaSynchronizedReopenAndClosed(t *testing.T) {
+	tests := []struct {
+		action string
+		want   PullRequestAction
+	}{
+		{"synchronized", PullRequestSynchronize},
+		{"reopened", PullRequestOpened},
+		{"closed", PullRequestClosed},
+	}
+	for _, tt := range tests {
+		t.Run(tt.action, func(t *testing.T) {
+			body := giteaPullRequestFixture(tt.action, 11, "fix-w", "pqr678", "develop")
+			got, err := ParsePullRequestEventForProvider(body, headerWith("X-Gitea-Event-Type", "pull_request"))
+			if err != nil {
+				t.Fatalf("ParsePullRequestEventForProvider() error = %v", err)
+			}
+			want := PullRequestEvent{Action: tt.want, Number: 11, HeadRef: "fix-w", HeadSHA: "pqr678", BaseRef: "develop"}
+			if got != want {
+				t.Errorf("ParsePullRequestEventForProvider() = %+v, want %+v", got, want)
+			}
+		})
+	}
+}
+
+// TestParsePullRequestEventForProvider_GiteaReviewActionIgnored
+// documents current, deliberate behavior for an action value Gitea's
+// pull_request event can send that this package has no use for
+// ("review_requested", fired when a reviewer is requested, not a code
+// change): normalizePullRequestAction has no case for it, the same
+// "not a lifecycle event this package acts on" outcome
+// TestParsePullRequestEventForProvider_GitLabApprovalActionIgnored
+// documents for GitLab's own approval events.
+func TestParsePullRequestEventForProvider_GiteaReviewActionIgnored(t *testing.T) {
+	body := giteaPullRequestFixture("review_requested", 11, "fix-w", "pqr678", "develop")
+	_, err := ParsePullRequestEventForProvider(body, headerWith("X-Gitea-Event-Type", "pull_request"))
+	if err != ErrPullRequestEventFieldsMissing {
+		t.Fatalf("ParsePullRequestEventForProvider() error = %v, want ErrPullRequestEventFieldsMissing", err)
 	}
 }
 

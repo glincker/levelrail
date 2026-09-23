@@ -93,6 +93,32 @@ type fakeBitbucketAppClient struct {
 	createHookURL  string
 	createHookTok  string
 	createHookCall bool
+
+	commentErr   error
+	commentCalls []fakeBitbucketPRComment
+
+	statusErr   error
+	statusCalls []fakeBitbucketBuildStatus
+}
+
+// fakeBitbucketPRComment records one
+// fakeBitbucketAppClient.CreatePullRequestComment call, mirroring
+// fakeIssueComment (github_app_test.go).
+type fakeBitbucketPRComment struct {
+	fullName string
+	prID     int
+	body     string
+}
+
+// fakeBitbucketBuildStatus records one
+// fakeBitbucketAppClient.CreateCommitBuildStatus call, mirroring
+// fakeCommitStatus (github_app_test.go).
+type fakeBitbucketBuildStatus struct {
+	fullName, commit string
+	state            bitbucketapp.BuildStatusState
+	targetURL        string
+	description      string
+	key              string
 }
 
 func (f *fakeBitbucketAppClient) ExchangeCode(_ context.Context, _, _, code string) (bitbucketapp.Tokens, error) {
@@ -122,6 +148,18 @@ func (f *fakeBitbucketAppClient) CreateRepoWebhook(_ context.Context, _, _, hook
 	f.createHookURL = hookURL
 	f.createHookTok = secret
 	return f.createHookErr
+}
+
+func (f *fakeBitbucketAppClient) CreatePullRequestComment(_ context.Context, _, fullName string, prID int, body string) error {
+	f.commentCalls = append(f.commentCalls, fakeBitbucketPRComment{fullName: fullName, prID: prID, body: body})
+	return f.commentErr
+}
+
+func (f *fakeBitbucketAppClient) CreateCommitBuildStatus(_ context.Context, _, fullName, commit string, state bitbucketapp.BuildStatusState, targetURL, description, key string) error {
+	f.statusCalls = append(f.statusCalls, fakeBitbucketBuildStatus{
+		fullName: fullName, commit: commit, state: state, targetURL: targetURL, description: description, key: key,
+	})
+	return f.statusErr
 }
 
 func newTestRouterWithBitbucketApp(t *testing.T, secrets BitbucketAppSecrets, client BitbucketAppClient) (*Router, *store.DB) {

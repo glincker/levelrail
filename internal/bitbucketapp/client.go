@@ -18,6 +18,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -333,4 +334,63 @@ func (c *Client) CreateRepoWebhook(ctx context.Context, accessToken, fullName, h
 	}
 	u := c.apiBaseURL() + repositoriesAPI + fullName + "/hooks"
 	return c.do(ctx, http.MethodPost, u, bearerPrefix+accessToken, bytes.NewReader(body), nil)
+}
+
+type createPRCommentContent struct {
+	Raw string `json:"raw"`
+}
+
+type createPRCommentRequest struct {
+	Content createPRCommentContent `json:"content"`
+}
+
+// CreatePullRequestComment posts a new comment on pull request prID of
+// fullName ("workspace/repo_slug"), authenticated with an OAuth access
+// token the same way CreateRepoWebhook is.
+func (c *Client) CreatePullRequestComment(ctx context.Context, accessToken, fullName string, prID int, body string) error {
+	payload, err := json.Marshal(createPRCommentRequest{Content: createPRCommentContent{Raw: body}})
+	if err != nil {
+		return fmt.Errorf("bitbucketapp: marshal pull request comment request: %w", err)
+	}
+	u := c.apiBaseURL() + repositoriesAPI + fullName + "/pullrequests/" + strconv.Itoa(prID) + "/comments"
+	return c.do(ctx, http.MethodPost, u, bearerPrefix+accessToken, bytes.NewReader(payload), nil)
+}
+
+// BuildStatusState is Bitbucket's own documented "state" enum for
+// POST .../commit/{commit}/statuses/build.
+type BuildStatusState string
+
+const (
+	// BuildStatusInProgress marks a build status as still in progress.
+	BuildStatusInProgress BuildStatusState = "INPROGRESS"
+	// BuildStatusSuccessful marks a build status as succeeded.
+	BuildStatusSuccessful BuildStatusState = "SUCCESSFUL"
+	// BuildStatusFailed marks a build status as failed.
+	BuildStatusFailed BuildStatusState = "FAILED"
+)
+
+type createBuildStatusRequest struct {
+	Key         string `json:"key"`
+	State       string `json:"state"`
+	URL         string `json:"url"`
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+// CreateCommitBuildStatus sets a build status on commit of fullName
+// ("workspace/repo_slug"), authenticated the same way
+// CreatePullRequestComment is. key identifies this status distinctly
+// from any other build system posting to the same commit
+// (support.atlassian.com/bitbucket-cloud/docs/build-status-for-commits),
+// the same role GitHub's own "context" plays; repeat calls with the same
+// key update the existing status rather than adding a new one.
+func (c *Client) CreateCommitBuildStatus(ctx context.Context, accessToken, fullName, commit string, state BuildStatusState, targetURL, description, key string) error {
+	payload, err := json.Marshal(createBuildStatusRequest{
+		Key: key, State: string(state), URL: targetURL, Name: key, Description: description,
+	})
+	if err != nil {
+		return fmt.Errorf("bitbucketapp: marshal build status request: %w", err)
+	}
+	u := c.apiBaseURL() + repositoriesAPI + fullName + "/commit/" + url.PathEscape(commit) + "/statuses/build"
+	return c.do(ctx, http.MethodPost, u, bearerPrefix+accessToken, bytes.NewReader(payload), nil)
 }

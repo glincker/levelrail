@@ -152,11 +152,11 @@ func TestHandlePullRequestWebhook_PostPRComments_Teardown_PostsComment(t *testin
 	}
 }
 
-// TestTruncateForGitHubStatus proves the cap at
+// TestTruncateStatusDescription_GitHubLimit proves the cap at
 // githubStatusDescriptionMax, GitHub's own hard limit for a commit
 // status description: a string within the limit is returned unchanged,
 // one over it is cut down to exactly the limit with a trailing "...".
-func TestTruncateForGitHubStatus(t *testing.T) {
+func TestTruncateStatusDescription_GitHubLimit(t *testing.T) {
 	tests := []struct {
 		name   string
 		reason string
@@ -169,18 +169,18 @@ func TestTruncateForGitHubStatus(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := truncateForGitHubStatus(tt.reason)
+			got := truncateStatusDescription(tt.reason, githubStatusDescriptionMax)
 			if len(tt.reason) <= githubStatusDescriptionMax {
 				if got != tt.reason {
-					t.Errorf("truncateForGitHubStatus(%d chars) = %q, want unchanged", len(tt.reason), got)
+					t.Errorf("truncateStatusDescription(%d chars) = %q, want unchanged", len(tt.reason), got)
 				}
 				return
 			}
 			if len(got) != githubStatusDescriptionMax {
-				t.Errorf("truncateForGitHubStatus(%d chars) len = %d, want %d", len(tt.reason), len(got), githubStatusDescriptionMax)
+				t.Errorf("truncateStatusDescription(%d chars) len = %d, want %d", len(tt.reason), len(got), githubStatusDescriptionMax)
 			}
 			if !strings.HasSuffix(got, "...") {
-				t.Errorf("truncateForGitHubStatus(%d chars) = %q, want a \"...\" suffix", len(tt.reason), got)
+				t.Errorf("truncateStatusDescription(%d chars) = %q, want a \"...\" suffix", len(tt.reason), got)
 			}
 		})
 	}

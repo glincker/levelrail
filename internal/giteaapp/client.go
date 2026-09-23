@@ -249,19 +249,25 @@ type createWebhookRequest struct {
 	Active bool               `json:"active"`
 }
 
-// CreateRepoWebhook registers a push webhook on fullName ("owner/repo")
-// pointed at hookURL, with secret set as the value Gitea signs each
-// delivery's X-Gitea-Signature header with (HMAC-SHA256, hex digest, no
-// prefix). Gitea also sends X-Hub-Signature-256 in GitHub's own
-// "sha256=<hex>" format for compatibility
-// (docs.gitea.com/usage/webhooks), which is the header
+// CreateRepoWebhook registers a push and pull_request webhook on
+// fullName ("owner/repo") pointed at hookURL, with secret set as the
+// value Gitea signs each delivery's X-Gitea-Signature header with
+// (HMAC-SHA256, hex digest, no prefix). Gitea also sends
+// X-Hub-Signature-256 in GitHub's own "sha256=<hex>" format for
+// compatibility (docs.gitea.com/usage/webhooks), which is the header
 // verifyGitPushWebhookAuth (internal/api/git_webhook.go) actually
 // checks, so this package needs no signature-parsing code of its own.
+// pull_request must be requested explicitly: without it Gitea never
+// delivers the event internal/webhook's Gitea pull-request parsing
+// expects, so preview environments would silently never trigger for a
+// connected repo, the same reasoning GitLab's and Bitbucket's own
+// CreateProjectWebhook/CreateRepoWebhook already give for their own
+// merge/pull-request event keys.
 func (c *Client) CreateRepoWebhook(ctx context.Context, instanceURL, accessToken, fullName, hookURL, secret string) error {
 	body, err := json.Marshal(createWebhookRequest{ //nolint:gosec // secret is sent to Gitea to configure delivery signing, not a leaked credential
 		Type:   "gitea",
 		Config: giteaWebhookConfig{URL: hookURL, ContentType: "json", Secret: secret},
-		Events: []string{"push"},
+		Events: []string{"push", "pull_request"},
 		Active: true,
 	})
 	if err != nil {
@@ -269,4 +275,55 @@ func (c *Client) CreateRepoWebhook(ctx context.Context, instanceURL, accessToken
 	}
 	u := apiBaseURL(instanceURL) + "/repos/" + fullName + "/hooks"
 	return c.do(ctx, http.MethodPost, u, "Bearer "+accessToken, bytes.NewReader(body), nil)
+}
+
+type createIssueCommentRequest struct {
+	Body string `json:"body"`
+}
+
+// CreateIssueComment posts a new comment on issue/pull request number of
+// fullName ("owner/repo"), authenticated with an OAuth access token the
+// same way CreateRepoWebhook is. Gitea's REST API has no distinct "pull
+// request comment" endpoint: a PR is also an issue, the same shape
+// GitHub's own CreateIssueComment documents.
+func (c *Client) CreateIssueComment(ctx context.Context, instanceURL, accessToken, fullName string, number int, body string) error {
+	payload, err := json.Marshal(createIssueCommentRequest{Body: body})
+	if err != nil {
+		return fmt.Errorf("giteaapp: marshal issue comment request: %w", err)
+	}
+	u := fmt.Sprintf("%s/repos/%s/issues/%d/comments", apiBaseURL(instanceURL), fullName, number)
+	return c.do(ctx, http.MethodPost, u, "Bearer "+accessToken, bytes.NewReader(payload), nil)
+}
+
+// CommitStatusState is Gitea's own documented "state" enum for
+// POST .../statuses/{sha}.
+type CommitStatusState string
+
+const (
+	// CommitStatusPending marks a commit status as still in progress.
+	CommitStatusPending CommitStatusState = "pending"
+	// CommitStatusSuccess marks a commit status as succeeded.
+	CommitStatusSuccess CommitStatusState = "success"
+	// CommitStatusFailure marks a commit status as failed.
+	CommitStatusFailure CommitStatusState = "failure"
+)
+
+type createCommitStatusRequest struct {
+	State       string `json:"state"`
+	TargetURL   string `json:"target_url,omitempty"`
+	Description string `json:"description,omitempty"`
+	Context     string `json:"context,omitempty"`
+}
+
+// CreateCommitStatus sets a commit status on sha of fullName
+// ("owner/repo"), authenticated the same way CreateIssueComment is.
+func (c *Client) CreateCommitStatus(ctx context.Context, instanceURL, accessToken, fullName, sha string, state CommitStatusState, targetURL, description, statusContext string) error {
+	payload, err := json.Marshal(createCommitStatusRequest{
+		State: string(state), TargetURL: targetURL, Description: description, Context: statusContext,
+	})
+	if err != nil {
+		return fmt.Errorf("giteaapp: marshal commit status request: %w", err)
+	}
+	u := fmt.Sprintf("%s/repos/%s/statuses/%s", apiBaseURL(instanceURL), fullName, url.PathEscape(sha))
+	return c.do(ctx, http.MethodPost, u, "Bearer "+accessToken, bytes.NewReader(payload), nil)
 }

@@ -94,6 +94,32 @@ type fakeGiteaAppClient struct {
 	createHookURL  string
 	createHookTok  string
 	createHookCall bool
+
+	commentErr   error
+	commentCalls []fakeGiteaIssueComment
+
+	statusErr   error
+	statusCalls []fakeGiteaCommitStatus
+}
+
+// fakeGiteaIssueComment records one
+// fakeGiteaAppClient.CreateIssueComment call, mirroring
+// fakeIssueComment (github_app_test.go).
+type fakeGiteaIssueComment struct {
+	fullName string
+	number   int
+	body     string
+}
+
+// fakeGiteaCommitStatus records one
+// fakeGiteaAppClient.CreateCommitStatus call, mirroring
+// fakeCommitStatus (github_app_test.go).
+type fakeGiteaCommitStatus struct {
+	fullName, sha string
+	state         giteaapp.CommitStatusState
+	targetURL     string
+	description   string
+	context       string
 }
 
 func (f *fakeGiteaAppClient) ExchangeCode(_ context.Context, _, _, _, _, code string) (giteaapp.Tokens, error) {
@@ -123,6 +149,18 @@ func (f *fakeGiteaAppClient) CreateRepoWebhook(_ context.Context, _, _, _, hookU
 	f.createHookURL = hookURL
 	f.createHookTok = secret
 	return f.createHookErr
+}
+
+func (f *fakeGiteaAppClient) CreateIssueComment(_ context.Context, _, _, fullName string, number int, body string) error {
+	f.commentCalls = append(f.commentCalls, fakeGiteaIssueComment{fullName: fullName, number: number, body: body})
+	return f.commentErr
+}
+
+func (f *fakeGiteaAppClient) CreateCommitStatus(_ context.Context, _, _, fullName, sha string, state giteaapp.CommitStatusState, targetURL, description, statusContext string) error {
+	f.statusCalls = append(f.statusCalls, fakeGiteaCommitStatus{
+		fullName: fullName, sha: sha, state: state, targetURL: targetURL, description: description, context: statusContext,
+	})
+	return f.statusErr
 }
 
 func newTestRouterWithGiteaApp(t *testing.T, secrets GiteaAppSecrets, client GiteaAppClient) (*Router, *store.DB) {

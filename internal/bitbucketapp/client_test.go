@@ -178,3 +178,83 @@ func TestClient_CreateRepoWebhook_ErrorResponse(t *testing.T) {
 		t.Fatal("CreateRepoWebhook() error = nil, want an error for a 403 response")
 	}
 }
+
+func TestClient_CreatePullRequestComment(t *testing.T) {
+	var gotBody createPRCommentRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repositories/acme/widgets/pullrequests/42/comments" {
+			t.Errorf("path = %q, want /repositories/acme/widgets/pullrequests/42/comments", r.URL.Path)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer srv.Close()
+
+	c := &Client{HTTP: srv.Client(), APIBaseURL: srv.URL}
+	err := c.CreatePullRequestComment(context.Background(), "tok", "acme/widgets", 42, "preview deployed")
+	if err != nil {
+		t.Fatalf("CreatePullRequestComment() error = %v", err)
+	}
+	if gotBody.Content.Raw != "preview deployed" {
+		t.Errorf("content.raw = %q, want %q", gotBody.Content.Raw, "preview deployed")
+	}
+}
+
+func TestClient_CreatePullRequestComment_ErrorResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":{"message":"not found"}}`))
+	}))
+	defer srv.Close()
+
+	c := &Client{HTTP: srv.Client(), APIBaseURL: srv.URL}
+	err := c.CreatePullRequestComment(context.Background(), "tok", "acme/widgets", 42, "body")
+	if err == nil {
+		t.Fatal("CreatePullRequestComment() error = nil, want an error for a 404 response")
+	}
+}
+
+func TestClient_CreateCommitBuildStatus(t *testing.T) {
+	var gotBody createBuildStatusRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repositories/acme/widgets/commit/sha1/statuses/build" {
+			t.Errorf("path = %q, want /repositories/acme/widgets/commit/sha1/statuses/build", r.URL.Path)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer srv.Close()
+
+	c := &Client{HTTP: srv.Client(), APIBaseURL: srv.URL}
+	err := c.CreateCommitBuildStatus(context.Background(), "tok", "acme/widgets", "sha1", BuildStatusSuccessful, "https://preview.example.com", "Preview deployed", "levelrail/preview")
+	if err != nil {
+		t.Fatalf("CreateCommitBuildStatus() error = %v", err)
+	}
+	if gotBody.State != "SUCCESSFUL" {
+		t.Errorf("state = %q, want SUCCESSFUL", gotBody.State)
+	}
+	if gotBody.Key != "levelrail/preview" {
+		t.Errorf("key = %q, want levelrail/preview", gotBody.Key)
+	}
+	if gotBody.URL != "https://preview.example.com" {
+		t.Errorf("url = %q, want https://preview.example.com", gotBody.URL)
+	}
+}
+
+func TestClient_CreateCommitBuildStatus_ErrorResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":{"message":"not found"}}`))
+	}))
+	defer srv.Close()
+
+	c := &Client{HTTP: srv.Client(), APIBaseURL: srv.URL}
+	err := c.CreateCommitBuildStatus(context.Background(), "tok", "acme/widgets", "sha1", BuildStatusFailed, "", "failed", "levelrail/preview")
+	if err == nil {
+		t.Fatal("CreateCommitBuildStatus() error = nil, want an error for a 404 response")
+	}
+}

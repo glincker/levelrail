@@ -53,12 +53,12 @@ func previewAppName(appName string, prNumber int) string {
 // counterpart: routes an opened/synchronize event to
 // deployPreviewEnvironment and a closed event (merged or not, same
 // teardown either way) to teardownPullRequestPreview. gs.PreviewEnabled
-// gates the whole thing, off by default: a GitLab or Bitbucket source's
-// webhook is registered with merge-request/pull-request events
+// gates the whole thing, off by default: a GitLab, Bitbucket, or Gitea
+// source's webhook is registered with merge-request/pull-request events
 // unconditionally (gitlabapp.CreateProjectWebhook,
-// bitbucketapp.CreateRepoWebhook), regardless of whether the app has
-// opted into previews, so this check is what actually makes the
-// feature opt-in for those providers.
+// bitbucketapp.CreateRepoWebhook, giteaapp.CreateRepoWebhook), regardless
+// of whether the app has opted into previews, so this check is what
+// actually makes the feature opt-in for those providers.
 func (rt *Router) handlePullRequestWebhookEvent(ctx context.Context, appName string, gs store.GitSource, ev webhook.PullRequestEvent) (status int, message string) {
 	if !gs.PreviewEnabled {
 		return http.StatusOK, fmt.Sprintf("ignored: preview environments are not enabled for %q\n", appName)
