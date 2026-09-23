@@ -58,15 +58,28 @@ func NewLocalFederator(db *DB) *Federator {
 // caller can log or surface as a partial-result warning, not use to
 // discard everything.
 func (f *Federator) QueryMetrics(ctx context.Context, resourceID, metric string, from, to time.Time) ([]Sample, error) {
+	type result struct {
+		samples []Sample
+		err     error
+	}
+	ch := make(chan result, len(f.metrics))
+
+	for _, src := range f.metrics {
+		go func(s MetricsSource) {
+			got, err := s.Query(ctx, resourceID, metric, from, to)
+			ch <- result{got, err}
+		}(src)
+	}
+
 	var all []Sample
 	var errs []error
-	for _, src := range f.metrics {
-		got, err := src.Query(ctx, resourceID, metric, from, to)
-		if err != nil {
-			errs = append(errs, err)
+	for range f.metrics {
+		res := <-ch
+		if res.err != nil {
+			errs = append(errs, res.err)
 			continue
 		}
-		all = append(all, got...)
+		all = append(all, res.samples...)
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].Timestamp.Before(all[j].Timestamp) })
 	return all, errors.Join(errs...)
@@ -75,15 +88,28 @@ func (f *Federator) QueryMetrics(ctx context.Context, resourceID, metric string,
 // QueryLogs is QueryMetrics' log-query equivalent, merged and sorted by
 // timestamp ascending the same way.
 func (f *Federator) QueryLogs(ctx context.Context, resourceID string, from, to time.Time, query string) ([]LogEntry, error) {
+	type result struct {
+		entries []LogEntry
+		err     error
+	}
+	ch := make(chan result, len(f.logs))
+
+	for _, src := range f.logs {
+		go func(s LogsSource) {
+			got, err := s.QueryLogs(ctx, resourceID, from, to, query)
+			ch <- result{got, err}
+		}(src)
+	}
+
 	var all []LogEntry
 	var errs []error
-	for _, src := range f.logs {
-		got, err := src.QueryLogs(ctx, resourceID, from, to, query)
-		if err != nil {
-			errs = append(errs, err)
+	for range f.logs {
+		res := <-ch
+		if res.err != nil {
+			errs = append(errs, res.err)
 			continue
 		}
-		all = append(all, got...)
+		all = append(all, res.entries...)
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].Timestamp.Before(all[j].Timestamp) })
 	return all, errors.Join(errs...)
@@ -96,15 +122,28 @@ func (f *Federator) QueryLogs(ctx context.Context, resourceID string, from, to t
 // report a same-named resource) should never happen in practice, so
 // "newest wins" is a defensive tie-break, not a real merge strategy.
 func (f *Federator) LatestByMetric(ctx context.Context, metric string) ([]Sample, error) {
+	type result struct {
+		samples []Sample
+		err     error
+	}
+	ch := make(chan result, len(f.metrics))
+
+	for _, src := range f.metrics {
+		go func(s MetricsSource) {
+			got, err := s.LatestByMetric(ctx, metric)
+			ch <- result{got, err}
+		}(src)
+	}
+
 	latest := make(map[string]Sample)
 	var errs []error
-	for _, src := range f.metrics {
-		got, err := src.LatestByMetric(ctx, metric)
-		if err != nil {
-			errs = append(errs, err)
+	for range f.metrics {
+		res := <-ch
+		if res.err != nil {
+			errs = append(errs, res.err)
 			continue
 		}
-		for _, s := range got {
+		for _, s := range res.samples {
 			if existing, ok := latest[s.ResourceID]; !ok || s.Timestamp.After(existing.Timestamp) {
 				latest[s.ResourceID] = s
 			}
