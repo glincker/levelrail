@@ -7,6 +7,17 @@ import "net/http"
 // integrations, and audit. See routes.go's own doc comment for why the
 // split.
 func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
+	rt.registerPlatformAppRoutes(mux)
+	rt.registerPlatformProjectRoutes(mux)
+	rt.registerPlatformProjectRoutesPart2(mux)
+	rt.registerPlatformSettingsRoutes(mux)
+	rt.registerPlatformIntegrationRoutes(mux)
+	rt.registerPlatformMiscRoutes(mux)
+	rt.registerPlatformVolumeRoutes(mux)
+	rt.registerPlatformAuditRoutes(mux)
+}
+
+func (rt *Router) registerPlatformAppRoutes(mux *http.ServeMux) {
 	// Secrets. Set-only: there is deliberately no GET,
 	// returning a value (even to its own owner over an authenticated
 	// session) is exactly the kind of exposure envelope encryption
@@ -111,6 +122,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteScheduledTask))
 	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks/{id}/run", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRunScheduledTaskNow))
 
+}
+
+func (rt *Router) registerPlatformProjectRoutes(mux *http.ServeMux) {
 	// Feature flags (feature_flags.go): a boolean plus optional gradual
 	// rollout percentage a running app's own code reads live via the
 	// evaluate route below, never baked into a container at create time.
@@ -221,6 +235,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/organizations/{id}/env/secrets/{key}", rt.requireAbility(AbilityWrite, rt.handleSetOrganizationEnvSecret))
 	mux.HandleFunc("DELETE /api/v1/organizations/{id}/env/secrets/{key}", rt.requireAbility(AbilityWrite, rt.handleDeleteOrganizationEnvSecret))
 
+}
+
+func (rt *Router) registerPlatformProjectRoutesPart2(mux *http.ServeMux) {
 	// Environments (environments.go): staging/production-style labels
 	// scoped to a project, tagged onto a service via its own app route.
 	mux.HandleFunc("GET /api/v1/projects/{id}/environments", rt.requireAbility(AbilityRead, rt.handleListEnvironments))
@@ -336,6 +353,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// series, same AbilityRoot boundary as every other node route.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/patch-status", rt.requireAbility(AbilityRoot, rt.handleGetNodePatchStatus))
 
+}
+
+func (rt *Router) registerPlatformSettingsRoutes(mux *http.ServeMux) {
 	// Certificates (TLS renewal visibility): this project treats
 	// "a cert renewal fails silently at 3am" as its central
 	// risk to catch before it bites a real user, and until now nothing
@@ -446,6 +466,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/error-pages", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainErrorPage))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/error-pages", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearDomainErrorPages))
 
+}
+
+func (rt *Router) registerPlatformIntegrationRoutes(mux *http.ServeMux) {
 	// Email settings: same precedent as ingress settings just above.
 	// GET is AbilityRead; PUT is AbilityRoot, real infrastructure config.
 	mux.HandleFunc("GET /api/v1/settings/email", rt.requireAbility(AbilityRead, rt.handleGetEmailSettings))
@@ -547,6 +570,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// handleListGitProviders's own doc comment.
 	mux.HandleFunc("GET /api/v1/git-providers", rt.requireAbility(AbilityReadSensitive, rt.handleListGitProviders))
 
+}
+
+func (rt *Router) registerPlatformMiscRoutes(mux *http.ServeMux) {
 	// GitHub App connection: the manifest-based registration flow,
 	// installation, and repo/branch browsing through it
 	// (internal/api/github_app.go, github_app_register.go,
@@ -657,6 +683,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// See handleDownloadBackup's own doc comment for the full reasoning.
 	mux.HandleFunc("GET /api/v1/databases/{name}/backups/{historyId}/download", rt.requireAbility(AbilityReadSensitive, rt.handleDownloadBackup))
 
+}
+
+func (rt *Router) registerPlatformVolumeRoutes(mux *http.ServeMux) {
 	// Delete one specific archived backup on demand, rather than waiting
 	// for retention (BackupRetain/BackupRetainDays above) to age it out.
 	// AbilityWriteSensitive, matching the manual trigger route above: this
@@ -770,6 +799,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore-as-new", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleCloneRestore))
 	mux.HandleFunc("GET /api/v1/databases/{name}/clone-restores", rt.requireAbility(AbilityRead, rt.handleListCloneRestores))
 
+}
+
+func (rt *Router) registerPlatformAuditRoutes(mux *http.ServeMux) {
 	// Object-storage attachment, per app (apps_storage.go): which
 	// connected backup_targets bucket (the same S3-compatible connection
 	// a database's scheduled backups can already point at, reused rather
@@ -864,4 +896,5 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/ai/sessions/{id}", rt.requireAbility(AbilityRoot, rt.handleGetAIChatSession))
 	mux.HandleFunc("POST /api/v1/ai/sessions/{id}/messages", rt.requireAbility(AbilityRoot, rt.handleCreateAIChatMessage))
 	mux.HandleFunc("POST /api/v1/ai/sessions/{id}/confirmations/{confirmation_id}", rt.requireAbility(AbilityRoot, rt.handleResolveAIChatConfirmation))
+
 }
