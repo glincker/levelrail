@@ -164,6 +164,8 @@ type Router struct {
 	// a hard lockout, so this stays opt-in (APP_ENABLE_HSTS) rather than
 	// inferred. Set via WithHSTS.
 	hstsEnabled bool
+	// allowInsecureLogin disables the plain-HTTP login refusal (APP_ALLOW_INSECURE_LOGIN).
+	allowInsecureLogin bool
 	// lookupHost resolves a hostname's A/AAAA addresses for
 	// handleCheckDomain; always non-nil, defaulted to defaultLookupHost
 	// (a thin net.DefaultResolver.LookupHost wrapper) in NewRouter,

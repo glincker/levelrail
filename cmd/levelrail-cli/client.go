@@ -239,6 +239,7 @@ type (
 	updateOAuthProviderSettingsRequest = apiclient.UpdateOAuthProviderSettingsRequest
 	emailSettingsResource              = apiclient.EmailSettingsResource
 	ingressSettingsResource            = apiclient.IngressSettingsResource
+	dashboardURLResource               = apiclient.DashboardURLResource
 	aiAssistantSettingsResource        = apiclient.AIAssistantSettingsResource
 	updateAIAssistantSettingsRequest   = apiclient.UpdateAIAssistantSettingsRequest
 	appStorageResource                 = apiclient.AppStorageResource

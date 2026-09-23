@@ -279,6 +279,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "setup-token" {
+		if err := runSetupToken(context.Background(), os.Stdout, openStore); err != nil {
+			logger.Error("setup-token failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
 
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
 		if err := runHealthcheck(context.Background(), os.Stdout); err != nil {
@@ -352,11 +359,6 @@ func run(logger *slog.Logger) error {
 	}
 
 	if err := bootstrapAdmin(ctx, db); err != nil {
-		// Not fatal: the control plane still starts and serves the public
-		// /api/v1/brand endpoint. Every auth-required route just stays
-		// inaccessible until an operator sets APP_ADMIN_USERNAME and
-		// APP_ADMIN_PASSWORD and restarts, which is discoverable from this
-		// log line rather than a startup crash.
 		logger.Warn("admin account not bootstrapped", slog.String("error", err.Error()))
 	}
 
@@ -369,6 +371,8 @@ func run(logger *slog.Logger) error {
 	if err := api.MaybeBootstrapDevAdmin(ctx, db, logger); err != nil {
 		logger.Warn("dev admin account not bootstrapped", slog.String("error", err.Error()))
 	}
+
+	ensureSetupToken(ctx, logger, db)
 
 	// Also a no-op unless APP_DEV_MODE=1 (same gate as the dev admin
 	// account above). A missing dev-fixtures.yml is not an error: it is
@@ -902,7 +906,7 @@ func openStore(ctx context.Context) (*store.DB, error) {
 	if err := os.MkdirAll(dataDir, 0o750); err != nil { //nolint:gosec // operator-controlled startup config, not user input
 		return nil, err
 	}
-	return store.Open(ctx, filepath.Join(dataDir, "levelrail.db"))
+	return store.Open(ctx, filepath.Join(dataDir, storeFilename))
 }
 
 // openTelemetryStore opens the metrics store on its own
@@ -1920,6 +1924,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
 		api.WithHSTS(hstsEnabled(logger)),
+		api.WithAllowInsecureLogin(allowInsecureLogin(logger)),
 		api.WithAPIRateLimit(apiRateLimitReadRPM(logger), apiRateLimitWriteRPM(logger)),
 		api.WithWebhookRateLimit(webhookRateLimitRPM(logger)),
 		api.WithDataDir(dataDir),
@@ -3248,15 +3253,17 @@ func resolveNodeTransport(local docker.Runtime, registry *agent.Registry, nodeID
 	return registry.Get(nodeID)
 }
 
-// bootstrapAdmin creates the single admin account from
-// APP_ADMIN_USERNAME/APP_ADMIN_PASSWORD if none exists yet. See
-// api.BootstrapAdmin's doc comment for why this is safe to call on every
-// startup.
+// bootstrapAdmin creates the first admin from APP_ADMIN_USERNAME and
+// APP_ADMIN_PASSWORD when no user exists yet. Without a password it does
+// nothing and the setup-token flow (ensureSetupToken) takes over.
 func bootstrapAdmin(ctx context.Context, db *store.DB) error {
 	username := os.Getenv("APP_ADMIN_USERNAME")
 	if username == "" {
 		username = "admin"
 	}
 	password := os.Getenv("APP_ADMIN_PASSWORD")
+	if password == "" {
+		return nil
+	}
 	return api.BootstrapAdmin(ctx, db, username, password)
 }

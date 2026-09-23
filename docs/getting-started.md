@@ -97,7 +97,7 @@ The full spec, with domains, health checks, resource limits, env, replicas, and 
 
 Before you can deploy anything, the control plane needs an admin account. Choose one of three options:
 
-1. Register through the frontend on first run.
+1. Register through the frontend on first run, using the one-time setup token the control plane logs on first start (or print it with `levelrail setup-token`).
 2. Set `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` before starting.
 3. Start the control plane with `APP_DEV_MODE=1` (dev mode only, never production).
 

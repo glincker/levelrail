@@ -43,9 +43,10 @@ in [docs/installing.md](docs/installing.md).
 curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
 ```
 
-Installs the binary, installs Docker if it's missing, sets up a
-systemd unit, and waits for the control plane to report healthy before
-declaring success. Safe to re-run later as an upgrade.
+Checks the host first, installs Docker if it's missing, sets up a
+systemd unit, waits for the control plane to report healthy, then
+prints the dashboard URLs and a one-time setup token for creating the
+first admin. `sh -s upgrade` and `sh -s uninstall` do what they say.
 
 **Already running everything as containers:**
 
