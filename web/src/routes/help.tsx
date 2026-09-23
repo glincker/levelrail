@@ -6,12 +6,13 @@ import {
 } from '@tanstack/react-router'
 import { QuestionIcon } from '@phosphor-icons/react/dist/ssr'
 import { HelpSearchBox } from '../components/HelpSearchBox'
+import { loadDocsManifest } from '../lib/docsManifestLoader'
 
 // Bundled help layout: every page under it renders from /docs, imported
-// at build time (see lib/docsContent.ts and generated/docsManifest.ts),
+// at build time (see lib/docsContent.ts and vite-plugins/docsManifest.mjs),
 // so this works fully offline, the same requirement self-hosted install
-// already has to meet. Sidebar categories come straight from
-// docsManifest, generated from docs/README.md's own index, so it never
+// already has to meet. Sidebar categories come straight from the
+// manifest, generated from docs/README.md's own index, so it never
 // drifts from that file by hand.
 //
 // The manifest is loaded via the loader's own dynamic import rather than
@@ -20,7 +21,7 @@ import { HelpSearchBox } from '../components/HelpSearchBox'
 // here would pull all 32 pages' headings into the main bundle instead of
 // /help's own lazy chunk.
 export const Route = createFileRoute('/help')({
-  loader: () => import('../generated/docsManifest').then((m) => m.default),
+  loader: () => loadDocsManifest(),
   component: HelpLayout,
 })
 

@@ -10,3 +10,10 @@ export function routePathToFilePath(routePath: string): string {
   if (routePath === '/' || routePath === '') return 'README.md'
   return `${routePath.replace(/^\//, '')}.md`
 }
+
+/** Splits "path#anchor" into ["path", "#anchor"] (empty string when there's no anchor). */
+export function splitHash(path: string): [base: string, hash: string] {
+  const hashIndex = path.indexOf('#')
+  if (hashIndex === -1) return [path, '']
+  return [path.slice(0, hashIndex), path.slice(hashIndex)]
+}

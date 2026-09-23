@@ -10,7 +10,8 @@ import {
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useBrand } from '../hooks/useBrand'
-import docsPathIndex from '../generated/docsPathIndex'
+import { splitHash } from '../lib/docsPaths'
+import docsPathIndex from 'virtual:docs-path-index'
 
 interface HelpLinkProps {
   /**
@@ -39,9 +40,7 @@ function resolveHelpLink(
   path: string,
   docsUrl: string,
 ): ResolvedHelpLink | null {
-  const hashIndex = path.indexOf('#')
-  const basePath = hashIndex === -1 ? path : path.slice(0, hashIndex)
-  const hash = hashIndex === -1 ? '' : path.slice(hashIndex)
+  const [basePath, hash] = splitHash(path)
 
   if (docsPathIndex.has(basePath)) {
     return { href: `/help${basePath}${hash}`, external: false }

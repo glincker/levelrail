@@ -1,5 +1,5 @@
 import type { DocsManifest } from '../types/docs'
-import { filePathToRoutePath } from './docsPaths'
+import { filePathToRoutePath, splitHash } from './docsPaths'
 
 export interface ResolvedDocLink {
   href: string
@@ -46,9 +46,7 @@ export function resolveDocLink(
     return { href, external: true, linkable: true }
   }
 
-  const hashIndex = href.indexOf('#')
-  const targetPath = hashIndex === -1 ? href : href.slice(0, hashIndex)
-  const hash = hashIndex === -1 ? '' : href.slice(hashIndex)
+  const [targetPath, hash] = splitHash(href)
 
   // Anything with a non-".md" extension (an image, a CNAME file) is an
   // asset link, not a doc link: leave it alone rather than guess.

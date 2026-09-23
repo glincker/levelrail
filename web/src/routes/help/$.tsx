@@ -3,16 +3,15 @@ import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { PageSpinner } from '@/components/ui/page-spinner'
 import { DocsRenderer } from '../../components/DocsRenderer'
 import { loadDocContent } from '../../lib/docsContent'
+import { loadDocsManifest } from '../../lib/docsManifestLoader'
 import { useBrand } from '../../hooks/useBrand'
-import type { DocsManifest } from '../../types/docs'
 
 // Splat route: catches every doc path at any depth ("/help/troubleshooting",
 // "/help/design/git-provider-integrations") in one file, since every
 // bundled doc is reachable the same way regardless of nesting.
 export const Route = createFileRoute('/help/$')({
   loader: async ({ params }) => {
-    const manifest: DocsManifest =
-      await import('../../generated/docsManifest').then((m) => m.default)
+    const manifest = await loadDocsManifest()
     const routePath = `/${params._splat ?? ''}`
     const page = manifest.pages[routePath]
     if (!page) return { routePath, manifest, page: null, content: null }

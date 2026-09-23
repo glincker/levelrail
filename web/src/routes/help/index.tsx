@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { LifebuoyIcon } from '@phosphor-icons/react/dist/ssr'
+import { loadDocsManifest } from '../../lib/docsManifestLoader'
 
 export const Route = createFileRoute('/help/')({
-  loader: () => import('../../generated/docsManifest').then((m) => m.default),
+  loader: () => loadDocsManifest(),
   component: HelpIndexPage,
 })
 

@@ -1,6 +1,5 @@
-// Wire shape for src/generated/docsManifest.json, produced by
-// scripts/build-docs-manifest.mjs from /docs at commit time (not at
-// runtime: see that script's own header comment). Titles and headings
+// Shape of the 'virtual:docs-manifest' module (vite-plugins/docsManifest.
+// mjs builds it from /docs at build/dev/test time). Titles and headings
 // only, never full page bodies, so this stays small enough to import
 // eagerly from HelpLink and the /help layout alike.
 export interface DocHeading {
