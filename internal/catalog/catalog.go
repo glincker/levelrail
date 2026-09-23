@@ -225,6 +225,7 @@ var Templates = []Template{
     ports: ["3456:3456"]
     environment:
       VIKUNJA_SERVICE_JWTSECRET: $SERVICE_HEX_64_JWTSECRET
+      VIKUNJA_SERVICE_PUBLICURL: ${SERVICE_FQDN_VIKUNJA:-http://localhost:3456}
       # Vikunja's image runs as a fixed non-root uid with no chown step
       # of its own, so sqlite's default db path on a fresh named volume
       # is never writable; postgres avoids that entirely.
@@ -234,6 +235,9 @@ var Templates = []Template{
       VIKUNJA_DATABASE_PASSWORD: $SERVICE_PASSWORD_DB
       VIKUNJA_DATABASE_DATABASE: vikunja
     volumes:
+      # Persists across restarts, but attachment uploads still fail with
+      # "permission denied" (verified live): same fixed-uid problem as
+      # above, and this platform has no per-service user override yet.
       - vikunja_data:/app/vikunja/files
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3456/api/v1/info || exit 1"]
@@ -2817,17 +2821,22 @@ var Templates = []Template{
 		Compose: `services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.1
-    command: ["start-dev"]
+    command: ["start"]
     ports: ["8080:8080"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: $SERVICE_USER_ADMIN
       KC_BOOTSTRAP_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
-      # Keycloak 26 moved /health/ready to a separate management port
-      # (9000); this keeps it on the main port since a probe here can
-      # only reach the service's own declared port.
+      # Keycloak 26 moves /health/ready to a separate management port
+      # (9000) in start as well as start-dev; this keeps it on the main
+      # port so this platform's single-port probe can still reach it.
       KC_LEGACY_OBSERVABILITY_INTERFACE: "true"
+      KC_HOSTNAME: ${SERVICE_FQDN_KEYCLOAK:-http://localhost:8080}
+      # Production mode (start) requires a configured hostname and
+      # rejects its own TLS assumptions; this platform's Caddy ingress
+      # terminates TLS in front, so Keycloak trusts its proxy headers.
+      KC_PROXY_HEADERS: xforwarded
     volumes:
       - keycloak_data:/opt/keycloak/data
     healthcheck:
