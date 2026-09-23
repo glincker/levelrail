@@ -25,8 +25,10 @@
 package compose
 
 import (
+	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/bindmount"
 	"gopkg.in/yaml.v3"
@@ -253,9 +255,11 @@ func sortedServiceNames(f *File) []string {
 }
 
 func joinErrors(errs []error) error {
-	msg := fmt.Sprintf("%d service(s) failed validation:", len(errs))
+	var b strings.Builder
+	fmt.Fprintf(&b, "%d service(s) failed validation:", len(errs))
 	for _, err := range errs {
-		msg += "\n  - " + err.Error()
+		b.WriteString("\n  - ")
+		b.WriteString(err.Error())
 	}
-	return fmt.Errorf("%s", msg)
+	return errors.New(b.String())
 }
