@@ -34,6 +34,15 @@ Check whether public access is actually enabled for that database. It's off by d
 
 ::: details "docker: permission denied" when the control plane starts
 The control plane needs access to the Docker socket. Add the user running it to the `docker` group, or run it as root if that's your deployment model. See [Docker](docker.md) for the exact socket path and permission model.
+
+Running via the committed `docker-compose.yml`, the same error (visible in `docker compose logs`, e.g. `permission denied while trying to connect to the Docker daemon socket`) means `DOCKER_GID` doesn't match your host's actual docker group. Fix it:
+
+```bash
+export DOCKER_GID=$(getent group docker | cut -d: -f3)
+docker compose up -d
+```
+
+The compose file falls back to `999` (the common Debian/Ubuntu default) if `DOCKER_GID` is unset, which is wrong on any host where the docker group has a different GID.
 :::
 
 ::: details The data directory isn't writable
@@ -42,6 +51,24 @@ The control plane needs access to the Docker socket. Add the user running it to 
 
 ::: details Port 80 or 443 is already in use
 `levelrail-cli doctor`'s `port_80`/`port_443` checks fail when something other than this control plane's own embedded ingress already has the port bound. Find the culprit with `sudo ss -ltnp | grep -E ':80|:443'` (or `sudo lsof -i :80`). Common holders: an existing nginx, Apache, or standalone Caddy installation; a previous non-Docker install of this same platform still running; or a leftover process from a crashed prior instance. Stop or reconfigure that process, or move it off port 80/443, then re-run the check. This is a different problem from the port being blocked from the *outside*; see [Domains and ingress: firewall](domains-and-ingress.md#firewall-ports-80-and-443) for that case.
+:::
+
+::: details Ports 80/443 are open on the server but blocked by a firewall
+`install.sh`'s own reachability self-test, and doctor's `external_reachability_80`/`external_reachability_443` checks, both warn rather than fail here, since a host firewall looks the same from outside as a closed port. Open both ports:
+
+```bash
+# ufw (Ubuntu/Debian)
+sudo ufw allow 80/tcp && sudo ufw allow 443/tcp
+
+# firewalld (RHEL/Fedora/Rocky)
+sudo firewall-cmd --permanent --add-service=http --add-service=https && sudo firewall-cmd --reload
+```
+
+Then also check your cloud provider's firewall or security group rules; a host firewall being open doesn't mean the provider's edge is. `install.sh` can configure `ufw` for you on install with `LEVELRAIL_CONFIGURE_UFW=1`.
+:::
+
+::: details My domain won't resolve, or the setup wizard's DNS check stays red
+Create an A (or AAAA for IPv6) record pointing the domain at your server's public IP, then check it actually propagated: `dig +short yourdomain.com` from your own machine, or [dnschecker.org](https://dnschecker.org/) to see it from multiple regions at once. A record you just created can take a few minutes to show up everywhere. If it never resolves, double check you edited the zone your domain's registrar actually uses, not a leftover one. See [Domains and ingress: setting up DNS](domains-and-ingress.md#setting-up-dns). No domain yet? Use the zero-config `sslip.io` URL the dashboard already shows instead.
 :::
 
 ::: details A rollback target is missing
