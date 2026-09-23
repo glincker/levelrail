@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0-beta.7](https://github.com/glincker/levelrail/compare/v0.2.0-beta.6...v0.2.0-beta.7) (2026-09-23)
+
+
+### Features
+
+* setup wizard with live server, domain, git, and first app verification ([#587](https://github.com/glincker/levelrail/issues/587)) ([1fe5d39](https://github.com/glincker/levelrail/commit/1fe5d3974d4225c5ff3ad75329a177e60ee7f426))
+
+
+### Bug Fixes
+
+* bump dependencies for security advisories ([#583](https://github.com/glincker/levelrail/issues/583)) ([3520017](https://github.com/glincker/levelrail/commit/35200177faea600fb3b831b22a4c13b13314f9a4))
+
 ## [0.2.0-beta.6](https://github.com/glincker/levelrail/compare/v0.2.0-beta.5...v0.2.0-beta.6) (2026-09-23)
 
 
