@@ -387,6 +387,33 @@ func (c *Client) ClearAppPreviewEnvOverride(ctx context.Context, name, key strin
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/preview-env/"+PathEscape(key), nil, nil)
 }
 
+// ListAppBranchEnv calls GET /api/v1/apps/{name}/branch-env: every
+// branch-scoped env var override declared for name, across every
+// branch pattern.
+func (c *Client) ListAppBranchEnv(ctx context.Context, name string) ([]AppBranchEnvOverride, error) {
+	var out []AppBranchEnvOverride
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/branch-env", nil, &out)
+	return out, err
+}
+
+// SetAppBranchEnv calls POST /api/v1/apps/{name}/branch-env: declares
+// (or, for the same branchPattern+key, replaces) one env var's value
+// for name, applied only when a preview built from a matching branch is
+// deployed.
+func (c *Client) SetAppBranchEnv(ctx context.Context, name, branchPattern, key, value string, secret bool) (AppBranchEnvOverride, error) {
+	var out AppBranchEnvOverride
+	req := setAppBranchEnvRequest{BranchPattern: branchPattern, Key: key, Value: value, Secret: secret}
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/branch-env", req, &out)
+	return out, err
+}
+
+// DeleteAppBranchEnv calls DELETE /api/v1/apps/{name}/branch-env/{id}:
+// id is the override's own id (from ListAppBranchEnv or SetAppBranchEnv),
+// not a branch name or env var key.
+func (c *Client) DeleteAppBranchEnv(ctx context.Context, name, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/branch-env/"+PathEscape(id), nil, nil)
+}
+
 // DeployCompose calls POST /api/v1/apps/{name}/compose with composeYAML
 // as the raw request body. Unlike every other Client method, this
 // doesn't go through do(): handleDeployCompose (internal/api/apps_compose.go)

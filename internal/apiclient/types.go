@@ -187,6 +187,27 @@ type AppPreviewEnvOverride struct {
 	Value string `json:"value"`
 }
 
+// setAppBranchEnvRequest mirrors internal/api's own
+// setAppBranchEnvRequest, the POST .../branch-env request body.
+type setAppBranchEnvRequest struct {
+	BranchPattern string `json:"branch_pattern"`
+	Key           string `json:"key"`
+	Value         string `json:"value"`
+	Secret        bool   `json:"secret"`
+}
+
+// AppBranchEnvOverride mirrors internal/api's branchEnvOverrideResource:
+// one branch-scoped env var override. Value is always "" for a
+// secret-marked entry, never echoed back once saved.
+type AppBranchEnvOverride struct {
+	ID            string `json:"id"`
+	BranchPattern string `json:"branch_pattern"`
+	Key           string `json:"key"`
+	Value         string `json:"value"`
+	Secret        bool   `json:"secret"`
+	UpdatedAt     string `json:"updated_at"`
+}
+
 // AppVolumeResource mirrors internal/api's appVolumeResource
 // (app_volumes.go): one of an app's named Docker volumes, identified by
 // its logical name (what an operator wrote in app.yaml), not the

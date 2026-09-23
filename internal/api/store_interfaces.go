@@ -136,6 +136,15 @@ type AppStore interface {
 	UpdateServiceEgressPolicy(ctx context.Context, name string, policy *store.ServiceEgressPolicy) error
 	// UpdateServiceHealth backs PUT /api/v1/apps/{name}/health (apps_health.go).
 	UpdateServiceHealth(ctx context.Context, name string, health *store.ServiceHealth) error
+	// SetServiceBranchEnvOverride, DeleteServiceBranchEnvOverride, and
+	// ListServiceBranchEnvOverrides back POST/DELETE/GET
+	// /api/v1/apps/{name}/branch-env (apps_branch_env.go): a narrower,
+	// branch-pattern-matched sibling of SetServicePreviewEnvOverride
+	// above, applied only when a preview's own branch matches, see
+	// store.SetServiceBranchEnvOverride's own doc comment.
+	SetServiceBranchEnvOverride(ctx context.Context, serviceName, branchPattern, key, value string, secret bool) (string, error)
+	DeleteServiceBranchEnvOverride(ctx context.Context, serviceName, id string) error
+	ListServiceBranchEnvOverrides(ctx context.Context, serviceName string) ([]store.ServiceBranchEnvOverride, error)
 }
 
 // AppGroupLister is the store surface GET /api/v1/apps/{name}/group

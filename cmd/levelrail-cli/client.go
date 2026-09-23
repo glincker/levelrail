@@ -49,6 +49,7 @@ type (
 	appEgressPolicyResource          = apiclient.AppEgressPolicyResource
 	setAppEgressPolicyRequest        = apiclient.SetAppEgressPolicyRequest
 	appPreviewEnvOverride            = apiclient.AppPreviewEnvOverride
+	appBranchEnvOverride             = apiclient.AppBranchEnvOverride
 	registrySettingsResource         = apiclient.RegistrySettingsResource
 	updateRegistrySettingsRequest    = apiclient.UpdateRegistrySettingsRequest
 	registryRepositoriesResource     = apiclient.RegistryRepositoriesResource

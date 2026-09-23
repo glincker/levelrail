@@ -8,6 +8,7 @@ import { EnvDevView } from '../../../components/EnvDevView'
 import { SecretsEditor } from '../../../components/SecretsEditor'
 import { VaultEnvEditor } from '../../../components/VaultEnvEditor'
 import { PreviewEnvOverridesEditor } from '../../../components/PreviewEnvOverridesEditor'
+import { BranchEnvOverridesEditor } from '../../../components/BranchEnvOverridesEditor'
 import { HelpLink } from '../../../components/HelpLink'
 import { Button } from '@/components/ui/button'
 
@@ -63,6 +64,7 @@ function EnvironmentSection() {
         appName={app.name}
         overrides={app.preview_env_overrides}
       />
+      <BranchEnvOverridesEditor appName={app.name} />
     </div>
   )
 }
