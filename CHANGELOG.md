@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0-beta.8](https://github.com/glincker/levelrail/compare/v0.2.0-beta.7...v0.2.0-beta.8) (2026-09-23)
+
+
+### Features
+
+* https, redirect, status-range and exec health probes; active checks for 71 catalog templates ([#610](https://github.com/glincker/levelrail/issues/610)) ([790496b](https://github.com/glincker/levelrail/commit/790496b6a22d2adb859fbd0c6f57ca60c4eb804e))
+* rich release notes, release announcements, and an SEO changelog on the docs site ([#607](https://github.com/glincker/levelrail/issues/607)) ([a324be0](https://github.com/glincker/levelrail/commit/a324be0362e345e91aefad92c7a7eaec7ca94c4b))
+
+
+### Bug Fixes
+
+* correct install/compose docs and fix doctor port_80 false fail ([#591](https://github.com/glincker/levelrail/issues/591)) ([09c7d6d](https://github.com/glincker/levelrail/commit/09c7d6dd74d9e4da9d3326d9f28be41c1788e5ef))
+* resolve high and critical CodeQL alerts (SSRF, email injection, zip slip, path injection, enrollment CA pin) ([#609](https://github.com/glincker/levelrail/issues/609)) ([cd3487c](https://github.com/glincker/levelrail/commit/cd3487cbb42f6601b21933c990e61b17cb6dae26))
+
 ## [0.2.0-beta.7](https://github.com/glincker/levelrail/compare/v0.2.0-beta.6...v0.2.0-beta.7) (2026-09-23)
 
 
