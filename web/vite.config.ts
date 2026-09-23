@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { docsManifestPlugin } from './vite-plugins/docsManifest.js'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -45,6 +46,7 @@ export default defineConfig({
     }),
     react(),
     tailwindcss(),
+    docsManifestPlugin(),
     // Emits web/dist/stats.html, a treemap of final chunk sizes. Gated
     // behind ANALYZE so it doesn't run on every plain `npm run build`, only
     // an explicit `ANALYZE=true npm run build`. The actual budget

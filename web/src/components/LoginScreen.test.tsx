@@ -26,6 +26,7 @@ const brand: Brand = {
   PrimaryColor: '',
   LogoSVG: '',
   DocsURL: '',
+  DiscussionsURL: '',
 }
 
 function mockFetch(needsSetup: boolean) {

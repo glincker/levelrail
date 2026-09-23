@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { HelpLink } from '../../components/HelpLink'
 import { formatBytes, formatDate } from '../../lib/format'
 import { useBackupTargetsOptional } from '../../queries/backupTargets'
 import {
@@ -162,8 +163,14 @@ function AllBackupsPage() {
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <CloudArrowUpIcon className="size-4" aria-hidden="true" />
         </div>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Backups</h1>
+        <div className="flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-lg font-semibold text-foreground">Backups</h1>
+            <HelpLink
+              path="/backups-and-storage"
+              label="Backups and storage guide"
+            />
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">
             Every backup attempt across every database and app volume, newest
             first. Manage a database's or app's own schedule and targets from

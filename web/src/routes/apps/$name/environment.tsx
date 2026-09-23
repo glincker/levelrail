@@ -8,6 +8,7 @@ import { EnvDevView } from '../../../components/EnvDevView'
 import { SecretsEditor } from '../../../components/SecretsEditor'
 import { VaultEnvEditor } from '../../../components/VaultEnvEditor'
 import { PreviewEnvOverridesEditor } from '../../../components/PreviewEnvOverridesEditor'
+import { HelpLink } from '../../../components/HelpLink'
 import { Button } from '@/components/ui/button'
 
 // Former "environment" tab, now a real deep-linkable route. Reads app
@@ -25,7 +26,11 @@ function EnvironmentSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <HelpLink
+          path="/deploying-apps#managing-encrypted-secrets"
+          label="Secrets guide"
+        />
         <Button
           type="button"
           variant="outline"

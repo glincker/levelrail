@@ -7,6 +7,7 @@ import { useFleetResourceUsage } from '../../queries/fleetResourceUsage'
 import { NODE_LIST_GRID, NodeRow, RowSkeleton } from '../../components/NodeRow'
 import { AddNodeDialog } from '../../components/AddNodeDialog'
 import { EmptyState } from '../../components/ui/empty-state'
+import { HelpLink } from '../../components/HelpLink'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useNodes() (suspense), mirroring routes/databases/index.tsx
@@ -64,7 +65,10 @@ function NodeListPage() {
   return (
     <div>
       <div className="mb-4 flex items-baseline justify-between gap-3">
-        <h1 className="text-lg font-semibold text-foreground">Nodes</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-semibold text-foreground">Nodes</h1>
+          <HelpLink path="/multi-node" label="Multi-node guide" />
+        </div>
         <div className="flex items-baseline gap-3">
           {nodes.length > 0 ? (
             <span className="text-sm text-muted-foreground">

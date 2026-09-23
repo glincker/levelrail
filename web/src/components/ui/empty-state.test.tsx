@@ -13,6 +13,7 @@ const baseBrand: Brand = {
   PrimaryColor: '#000000',
   LogoSVG: '',
   DocsURL: 'https://test.example/docs',
+  DiscussionsURL: '',
 }
 
 vi.mock('../../hooks/useBrand', () => ({

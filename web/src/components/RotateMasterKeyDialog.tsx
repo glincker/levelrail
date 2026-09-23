@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { HelpLink } from './HelpLink'
 import { useRotateMasterKey } from '../queries/masterKey'
 import type { RotateMasterKeyResult } from '../queries/masterKey'
 
@@ -73,7 +74,10 @@ export function RotateMasterKeyDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-1.5">
-                <CheckCircleIcon className="size-4 text-green-600 dark:text-green-400" aria-hidden="true" />
+                <CheckCircleIcon
+                  className="size-4 text-green-600 dark:text-green-400"
+                  aria-hidden="true"
+                />
                 Master key rotated
               </DialogTitle>
               <DialogDescription>
@@ -121,18 +125,16 @@ export function RotateMasterKeyDialog() {
               </DialogTitle>
               <DialogDescription>
                 Re-wraps every stored secret (app env vars, SMTP credentials,
-                git provider app secrets, backup target credentials, and
-                more) under a new master key, live, without a restart. Keep
-                the current key available until this succeeds: a rotation
-                that fails partway through needs it to retry. See{' '}
-                <a
-                  href="https://github.com/glincker/levelrail/blob/main/docs/master-key-rotation.md"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline underline-offset-2"
-                >
-                  the rotation guide
-                </a>{' '}
+                git provider app secrets, backup target credentials, and more)
+                under a new master key, live, without a restart. Keep the
+                current key available until this succeeds: a rotation that fails
+                partway through needs it to retry. See{' '}
+                <HelpLink
+                  path="/master-key-rotation"
+                  label="the rotation guide"
+                  variant="inline"
+                  className="text-sm"
+                />{' '}
                 before doing this for the first time.
               </DialogDescription>
             </DialogHeader>

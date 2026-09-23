@@ -21,10 +21,15 @@ import {
   GearIcon,
   MagnifyingGlassIcon,
   PackageIcon,
+  QuestionIcon,
   ArrowCircleUpIcon,
   ClockCounterClockwiseIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { DialogPortal, DialogOverlay, DialogTitle } from '@/components/ui/dialog'
+import {
+  DialogPortal,
+  DialogOverlay,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { appListQueryOptions } from '../queries/apps'
@@ -40,27 +45,160 @@ interface ResultItem {
 }
 
 const STATIC_ENTRIES: ResultItem[] = [
-  { key: 'nav-dashboard', label: 'Dashboard', group: 'Navigate', icon: <GaugeIcon />, to: '/' },
-  { key: 'nav-apps', label: 'Apps', group: 'Navigate', icon: <StackIcon />, to: '/apps' },
-  { key: 'nav-databases', label: 'Databases', group: 'Navigate', icon: <DatabaseIcon />, to: '/databases' },
-  { key: 'nav-projects', label: 'Projects', group: 'Navigate', icon: <FolderIcon />, to: '/projects' },
-  { key: 'nav-nodes', label: 'Nodes', group: 'Navigate', icon: <HardDrivesIcon />, to: '/nodes' },
-  { key: 'nav-domains', label: 'Domains', group: 'Navigate', icon: <GlobeIcon />, to: '/domains' },
-  { key: 'settings-hub', label: 'Settings', group: 'Settings', icon: <GearIcon />, to: '/settings' },
-  { key: 'settings-account', label: 'Account', group: 'Settings', icon: <UserIcon />, to: '/settings/account' },
-  { key: 'settings-security', label: 'Security', group: 'Settings', icon: <ShieldIcon />, to: '/settings/security' },
-  { key: 'settings-tokens', label: 'API tokens', group: 'Settings', icon: <KeyIcon />, to: '/settings/tokens' },
-  { key: 'settings-backup-targets', label: 'Backup targets', group: 'Settings', icon: <CloudArrowUpIcon />, to: '/settings/backup-targets' },
-  { key: 'settings-registry-credentials', label: 'Registry credentials', group: 'Settings', icon: <PackageIcon />, to: '/settings/registry-credentials' },
-  { key: 'settings-notification-channels', label: 'Notification channels', group: 'Settings', icon: <WebhooksLogoIcon />, to: '/settings/notification-channels' },
-  { key: 'settings-github-app', label: 'GitHub App', group: 'Settings', icon: <GithubLogoIcon />, to: '/settings/github-app' },
-  { key: 'settings-oauth', label: 'OAuth sign-in', group: 'Settings', icon: <KeyIcon />, to: '/settings/oauth' },
-  { key: 'settings-organizations', label: 'Organizations', group: 'Settings', icon: <BuildingsIcon />, to: '/settings/organizations' },
-  { key: 'settings-users', label: 'Users', group: 'Settings', icon: <UsersIcon />, to: '/settings/users' },
-  { key: 'settings-email', label: 'Email', group: 'Settings', icon: <EnvelopeIcon />, to: '/settings/email' },
-  { key: 'settings-general', label: 'General', group: 'Settings', icon: <GearIcon />, to: '/settings/general' },
-  { key: 'settings-updates', label: 'Updates', group: 'Settings', icon: <ArrowCircleUpIcon />, to: '/settings/updates' },
-  { key: 'settings-audit-log', label: 'Audit log', group: 'Settings', icon: <ClockCounterClockwiseIcon />, to: '/settings/audit-log' },
+  {
+    key: 'nav-dashboard',
+    label: 'Dashboard',
+    group: 'Navigate',
+    icon: <GaugeIcon />,
+    to: '/',
+  },
+  {
+    key: 'nav-apps',
+    label: 'Apps',
+    group: 'Navigate',
+    icon: <StackIcon />,
+    to: '/apps',
+  },
+  {
+    key: 'nav-databases',
+    label: 'Databases',
+    group: 'Navigate',
+    icon: <DatabaseIcon />,
+    to: '/databases',
+  },
+  {
+    key: 'nav-projects',
+    label: 'Projects',
+    group: 'Navigate',
+    icon: <FolderIcon />,
+    to: '/projects',
+  },
+  {
+    key: 'nav-nodes',
+    label: 'Nodes',
+    group: 'Navigate',
+    icon: <HardDrivesIcon />,
+    to: '/nodes',
+  },
+  {
+    key: 'nav-domains',
+    label: 'Domains',
+    group: 'Navigate',
+    icon: <GlobeIcon />,
+    to: '/domains',
+  },
+  {
+    key: 'settings-hub',
+    label: 'Settings',
+    group: 'Settings',
+    icon: <GearIcon />,
+    to: '/settings',
+  },
+  {
+    key: 'settings-account',
+    label: 'Account',
+    group: 'Settings',
+    icon: <UserIcon />,
+    to: '/settings/account',
+  },
+  {
+    key: 'settings-security',
+    label: 'Security',
+    group: 'Settings',
+    icon: <ShieldIcon />,
+    to: '/settings/security',
+  },
+  {
+    key: 'settings-tokens',
+    label: 'API tokens',
+    group: 'Settings',
+    icon: <KeyIcon />,
+    to: '/settings/tokens',
+  },
+  {
+    key: 'settings-backup-targets',
+    label: 'Backup targets',
+    group: 'Settings',
+    icon: <CloudArrowUpIcon />,
+    to: '/settings/backup-targets',
+  },
+  {
+    key: 'settings-registry-credentials',
+    label: 'Registry credentials',
+    group: 'Settings',
+    icon: <PackageIcon />,
+    to: '/settings/registry-credentials',
+  },
+  {
+    key: 'settings-notification-channels',
+    label: 'Notification channels',
+    group: 'Settings',
+    icon: <WebhooksLogoIcon />,
+    to: '/settings/notification-channels',
+  },
+  {
+    key: 'settings-github-app',
+    label: 'GitHub App',
+    group: 'Settings',
+    icon: <GithubLogoIcon />,
+    to: '/settings/github-app',
+  },
+  {
+    key: 'settings-oauth',
+    label: 'OAuth sign-in',
+    group: 'Settings',
+    icon: <KeyIcon />,
+    to: '/settings/oauth',
+  },
+  {
+    key: 'settings-organizations',
+    label: 'Organizations',
+    group: 'Settings',
+    icon: <BuildingsIcon />,
+    to: '/settings/organizations',
+  },
+  {
+    key: 'settings-users',
+    label: 'Users',
+    group: 'Settings',
+    icon: <UsersIcon />,
+    to: '/settings/users',
+  },
+  {
+    key: 'settings-email',
+    label: 'Email',
+    group: 'Settings',
+    icon: <EnvelopeIcon />,
+    to: '/settings/email',
+  },
+  {
+    key: 'settings-general',
+    label: 'General',
+    group: 'Settings',
+    icon: <GearIcon />,
+    to: '/settings/general',
+  },
+  {
+    key: 'settings-updates',
+    label: 'Updates',
+    group: 'Settings',
+    icon: <ArrowCircleUpIcon />,
+    to: '/settings/updates',
+  },
+  {
+    key: 'settings-audit-log',
+    label: 'Audit log',
+    group: 'Settings',
+    icon: <ClockCounterClockwiseIcon />,
+    to: '/settings/audit-log',
+  },
+  {
+    key: 'nav-help',
+    label: 'Help',
+    group: 'Navigate',
+    icon: <QuestionIcon />,
+    to: '/help',
+  },
 ]
 
 function ResultRow({
@@ -82,7 +220,9 @@ function ResultRow({
       onClick={onSelect}
       className={cn(
         'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm outline-none',
-        active ? 'bg-muted text-foreground' : 'text-foreground/90 hover:bg-muted/60',
+        active
+          ? 'bg-muted text-foreground'
+          : 'text-foreground/90 hover:bg-muted/60',
       )}
     >
       <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground [&_svg]:size-4">
@@ -119,7 +259,10 @@ export function CommandPalette({
   const navigate = useNavigate()
 
   const appsQuery = useQuery({ ...appListQueryOptions(), enabled: open })
-  const databasesQuery = useQuery({ ...databaseListQueryOptions(), enabled: open })
+  const databasesQuery = useQuery({
+    ...databaseListQueryOptions(),
+    enabled: open,
+  })
 
   React.useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -205,7 +348,9 @@ export function CommandPalette({
   function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActiveIndex((i) => (results.length === 0 ? 0 : (i + 1) % results.length))
+      setActiveIndex((i) =>
+        results.length === 0 ? 0 : (i + 1) % results.length,
+      )
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setActiveIndex((i) =>

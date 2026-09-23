@@ -15,6 +15,7 @@ const baseBrand: Brand = {
   PrimaryColor: '#000000',
   LogoSVG: '',
   DocsURL: 'https://test.example/docs',
+  DiscussionsURL: '',
 }
 
 vi.mock('../hooks/useBrand', () => ({
@@ -24,15 +25,15 @@ vi.mock('../hooks/useBrand', () => ({
 import { useBrand } from '../hooks/useBrand'
 
 describe('HelpLink', () => {
-  it('renders nothing when no docs URL is configured', () => {
+  it('renders nothing when the path is neither bundled nor backed by a docs URL', () => {
     vi.mocked(useBrand).mockReturnValue({ ...baseBrand, DocsURL: '' })
     const { container } = render(
-      <HelpLink path="/troubleshooting" label="Troubleshooting guide" />,
+      <HelpLink path="/not-a-real-doc" label="Nowhere" />,
     )
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('never hardcodes a domain: the href is always brand.DocsURL + path', () => {
+  it('prefers the bundled in-app page over the hosted docs URL', () => {
     vi.mocked(useBrand).mockReturnValue(baseBrand)
     render(
       <HelpLink
@@ -42,19 +43,23 @@ describe('HelpLink', () => {
       />,
     )
     const link = screen.getByRole('link', { name: /Troubleshooting guide/ })
-    expect(link).toHaveAttribute(
-      'href',
-      'https://test.example/docs/troubleshooting',
-    )
-    expect(link).toHaveAttribute('target', '_blank')
-    expect(link).toHaveAttribute('rel', 'noreferrer')
+    expect(link).toHaveAttribute('href', '/help/troubleshooting')
+    expect(link).not.toHaveAttribute('target')
+    expect(link).not.toHaveAttribute('rel')
   })
 
-  it('respects a different configured docs base and relative path, including an anchor', () => {
-    vi.mocked(useBrand).mockReturnValue({
-      ...baseBrand,
-      DocsURL: 'https://docs.example.org',
-    })
+  it('links to the bundled in-app page even with no docs URL configured', () => {
+    vi.mocked(useBrand).mockReturnValue({ ...baseBrand, DocsURL: '' })
+    render(
+      <HelpLink path="/security" label="Security guide" variant="inline" />,
+    )
+    expect(
+      screen.getByRole('link', { name: /Security guide/ }),
+    ).toHaveAttribute('href', '/help/security')
+  })
+
+  it('preserves an anchor when linking to a bundled in-app page', () => {
+    vi.mocked(useBrand).mockReturnValue(baseBrand)
     render(
       <HelpLink
         path="/master-key-rotation#how-to-rotate"
@@ -64,10 +69,22 @@ describe('HelpLink', () => {
     )
     expect(
       screen.getByRole('link', { name: /Rotation guide/ }),
-    ).toHaveAttribute(
+    ).toHaveAttribute('href', '/help/master-key-rotation#how-to-rotate')
+  })
+
+  it('falls back to the hosted docs URL when the path is not bundled', () => {
+    vi.mocked(useBrand).mockReturnValue({
+      ...baseBrand,
+      DocsURL: 'https://docs.example.org',
+    })
+    render(<HelpLink path="/changelog#v2" label="Changelog" variant="inline" />)
+    const link = screen.getByRole('link', { name: /Changelog/ })
+    expect(link).toHaveAttribute(
       'href',
-      'https://docs.example.org/master-key-rotation#how-to-rotate',
+      'https://docs.example.org/changelog#v2',
     )
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noreferrer')
   })
 
   it('icon variant exposes the label as an accessible name', () => {

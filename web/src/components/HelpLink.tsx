@@ -10,12 +10,14 @@ import {
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useBrand } from '../hooks/useBrand'
+import { splitHash } from '../lib/docsPaths'
+import docsPathIndex from 'virtual:docs-path-index'
 
 interface HelpLinkProps {
   /**
-   * Path relative to this instance's docs site root (brand.DocsURL), e.g.
-   * "/troubleshooting" or "/security#fresh-box-hardening-checklist". Must
-   * point at a real page; never invent one.
+   * Path relative to a docs site root, e.g. "/troubleshooting" or
+   * "/security#fresh-box-hardening-checklist". Must point at a real
+   * page; never invent one.
    */
   path: string
   /** Accessible name, also the tooltip text (icon variant) or link text (inline variant). */
@@ -25,11 +27,34 @@ interface HelpLinkProps {
   className?: string
 }
 
-// Reusable contextual-help affordance for linking out to this instance's
-// own hosted docs (brand.DocsURL, configurable per APP_BRAND_DOCS_URL,
-// never a hardcoded domain). Renders nothing when no docs site is
-// configured, the same "no invented URL" rule AppSidebar/tokens.tsx/
-// general.tsx already follow for their own brand.DocsURL links.
+interface ResolvedHelpLink {
+  href: string
+  external: boolean
+}
+
+// Prefers the bundled in-app page (works offline, no brand.DocsURL
+// needed) and only falls back to the hosted docs site when this path
+// isn't bundled under /docs. Returns null when neither exists, so this
+// never renders a link with nothing real behind it.
+function resolveHelpLink(
+  path: string,
+  docsUrl: string,
+): ResolvedHelpLink | null {
+  const [basePath, hash] = splitHash(path)
+
+  if (docsPathIndex.has(basePath)) {
+    return { href: `/help${basePath}${hash}`, external: false }
+  }
+  if (docsUrl) {
+    return { href: `${docsUrl}${path}`, external: true }
+  }
+  return null
+}
+
+// Reusable contextual-help affordance: links to the bundled in-app /help
+// page when one exists for this path, otherwise to this instance's
+// hosted docs (brand.DocsURL, configurable per APP_BRAND_DOCS_URL, never
+// a hardcoded domain), otherwise renders nothing.
 export function HelpLink({
   path,
   label,
@@ -37,22 +62,23 @@ export function HelpLink({
   className,
 }: HelpLinkProps) {
   const brand = useBrand()
-  if (!brand.DocsURL) return null
-  const href = `${brand.DocsURL}${path}`
+  const resolved = resolveHelpLink(path, brand.DocsURL)
+  if (!resolved) return null
+  const { href, external } = resolved
+  const externalProps = external ? { target: '_blank', rel: 'noreferrer' } : {}
 
   if (variant === 'inline') {
     return (
       <a
         href={href}
-        target="_blank"
-        rel="noreferrer"
+        {...externalProps}
         className={cn(
           'inline-flex items-center gap-1 text-sm text-primary underline underline-offset-4 hover:no-underline',
           className,
         )}
       >
         {label}
-        <ArrowSquareOutIcon className="size-3.5" />
+        {external ? <ArrowSquareOutIcon className="size-3.5" /> : null}
       </a>
     )
   }
@@ -63,8 +89,7 @@ export function HelpLink({
         render={
           <a
             href={href}
-            target="_blank"
-            rel="noreferrer"
+            {...externalProps}
             aria-label={label}
             className={cn(
               buttonVariants({ variant: 'ghost', size: 'icon-xs' }),

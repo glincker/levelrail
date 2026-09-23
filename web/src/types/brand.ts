@@ -16,4 +16,5 @@ export interface Brand {
   PrimaryColor: string
   LogoSVG: string
   DocsURL: string
+  DiscussionsURL: string
 }

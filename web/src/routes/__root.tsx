@@ -13,6 +13,7 @@ import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
 import { CommandPalette } from '../components/CommandPalette'
 import { DockerHealthBanner } from '../components/DockerHealthBanner'
+import { HelpMenu } from '../components/HelpMenu'
 import { InsecureConnectionBanner } from '../components/InsecureConnectionBanner'
 import { NotificationBell } from '../components/NotificationBell'
 import { ThemeProvider } from '../components/ThemeProvider'
@@ -124,6 +125,7 @@ function AppShell() {
           </Button>
           <div className="ml-auto flex items-center gap-2">
             <NotificationBell />
+            <HelpMenu />
             <ThemeToggle />
           </div>
         </header>
