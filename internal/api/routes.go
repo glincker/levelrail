@@ -58,11 +58,11 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// AbilityWrite (SecretSetter's own gate for a single app's values).
 	mux.HandleFunc("POST /api/v1/system/master-key/rotate", rt.requireAbility(AbilityRoot, rt.handleRotateMasterKey))
 
-	// First-run onboarding state: AbilityRead to check it, AbilityWrite to
-	// dismiss/complete it, same tier as any other low-blast-radius
-	// per-instance flag (not AbilityRoot, unlike ingress settings).
+	// Setup wizard state. Completing stays AbilityWrite so creating a first
+	// app any other way can dismiss it; step progress is admin-only.
 	mux.HandleFunc("GET /api/v1/onboarding", rt.requireAbility(AbilityRead, rt.handleGetOnboardingState))
 	mux.HandleFunc("POST /api/v1/onboarding/complete", rt.requireAbility(AbilityWrite, rt.handleCompleteOnboarding))
+	mux.HandleFunc("PUT /api/v1/onboarding/progress", rt.requireAbility(AbilityRoot, rt.handleUpdateOnboardingProgress))
 
 	// Updates (Settings > Updates page): running version vs. GitHub's
 	// latest published release, AbilityRead like system/status above.

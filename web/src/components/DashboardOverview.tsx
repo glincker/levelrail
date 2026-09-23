@@ -13,12 +13,14 @@ import type { AppListEntry } from '../types/appDetail'
 import { useBrand } from '../hooks/useBrand'
 import { STATUS_DOT_COLOR } from '../lib/appStatus'
 import { CreateResourceWizard } from './CreateResourceWizard'
-import { OnboardingFlow } from './OnboardingFlow'
+import { SetupWizard } from './setup/SetupWizard'
 import { AlertingQuickSetupPrompt } from './AlertingQuickSetupPrompt'
 import { FleetResourceChart } from './FleetResourceChart'
 import { FleetUtilizationSummary } from './FleetUtilizationSummary'
 import { TopResourceConsumers } from './TopResourceConsumers'
 import { useCompleteOnboarding } from '../queries/onboarding'
+import type { OnboardingState } from '../queries/onboarding'
+import { useIsRoot } from '../hooks/useIsRoot'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -37,29 +39,32 @@ function bucketApps(apps: AppListEntry[]) {
 
 export function DashboardOverview({
   apps,
-  onboardingCompleted,
+  onboarding,
 }: {
   apps: AppListEntry[]
-  onboardingCompleted: boolean
+  onboarding: OnboardingState
 }) {
-  // Belt-and-suspenders: a first app created some way other than the
-  // onboarding checklist's own "Deploy an app" button (the CLI, the API
-  // directly, or the ordinary "New app" button) still needs to mark
-  // onboarding complete, so the checklist doesn't reappear if every app
-  // later gets deleted back down to zero. OnboardingFlow's own "Skip
-  // setup" button covers the other way this flag gets set.
+  // A first app created outside the wizard (CLI, API, "New app") still
+  // dismisses onboarding; once the wizard has started it owns completion.
   const completeOnboarding = useCompleteOnboarding()
+  const isRoot = useIsRoot()
   const hasApps = apps.length > 0
+  const wizardStarted = onboarding.current_step !== ''
+  const onboardingCompleted = onboarding.completed
   const { mutate: markOnboardingComplete } = completeOnboarding
   useEffect(() => {
-    if (hasApps && !onboardingCompleted) {
+    if (hasApps && !onboardingCompleted && !wizardStarted) {
       markOnboardingComplete()
     }
-  }, [hasApps, onboardingCompleted, markOnboardingComplete])
+  }, [hasApps, onboardingCompleted, wizardStarted, markOnboardingComplete])
+
+  if (isRoot && !onboardingCompleted && (!hasApps || wizardStarted)) {
+    return <SetupWizard />
+  }
 
   const [firstApp] = apps
   if (!firstApp) {
-    return onboardingCompleted ? <WelcomeEmptyState /> : <OnboardingFlow />
+    return <WelcomeEmptyState />
   }
 
   const { healthy, attention, building } = bucketApps(apps)

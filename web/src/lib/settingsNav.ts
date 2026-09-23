@@ -25,6 +25,7 @@ import {
   StackIcon,
   HardDrivesIcon,
   RobotIcon,
+  SparkleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
 export interface SettingsNavItem {
@@ -189,6 +190,12 @@ export const settingsNavSections: SettingsNavSection[] = [
   {
     heading: 'Platform',
     items: [
+      {
+        to: '/settings/setup-wizard',
+        icon: SparkleIcon,
+        title: 'Setup wizard',
+        description: 'Server checks, dashboard domain, git, and a first app.',
+      },
       {
         to: '/settings/general',
         icon: GearIcon,

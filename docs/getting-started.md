@@ -103,6 +103,18 @@ Before you can deploy anything, the control plane needs an admin account. Choose
 
 Dev mode bootstraps a fixed `dev`/`dev` admin account and fixed API tokens from `dev-fixtures.yml` at the repo root. This lets you skip the register-then-mint-a-token steps. A release build (`-tags embedweb`) ignores `APP_DEV_MODE` outright, so it cannot run in dev mode.
 
+### The setup wizard
+
+The first time an admin signs in to a fresh instance, the dashboard opens a setup wizard instead of an empty app list:
+
+1. **Server check** runs the same checks as `levelrail-cli doctor` and **Settings, System status**. Every failing check shows a copyable fix command and a docs link. Only a hard failure (Docker, the database, or the data directory) blocks you; warnings do not.
+2. **Dashboard domain** (optional, recommended) asks for a domain and an email for certificate notices, shows the exact A or AAAA record to create using the server's detected public IP, then watches DNS resolve and the HTTPS certificate get issued. Continue stays disabled with the reason spelled out until both are green, or you can skip it.
+3. **Git provider** (optional) links to each provider's connect flow in a new tab and notices when one connects.
+4. **First app** deploys a one-click sample (`nginx:alpine` with a health check), a template, or your own repo, and waits until it is healthy. If it fails, the wizard shows the automatic diagnosis and a link to the logs.
+5. **Done** summarizes what you set up and links to alerts, backup targets, and inviting users.
+
+Progress is saved on the server, so reloading or signing in from another browser picks up where you left off. **Dismiss setup** hides it for good; reopen it any time from **Settings, Setup wizard**. Only admins see the wizard.
+
 ### Creating an app from the CLI
 
 With the control plane running in dev mode and `levelrail-cli` built, create and deploy an app in one command:
