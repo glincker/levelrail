@@ -105,7 +105,8 @@ Request rate, response time percentiles, error rate, container restart count, an
 - `/databases/$name/logs` - The same live/search pair (LiveDatabaseLogViewer, DatabaseLogSearchPanel) for managed databases.
 
 **Overview and alerts:**
-- **Dashboard home** - Two cards: `TopResourceConsumers` ranks every app by latest CPU/memory/network reading (backed by `GET /api/v1/apps/resource-usage`). `FleetResourceChart` shows a 30-minute rolling history of total CPU and memory usage across all apps, polled every 30 seconds from the same resource-usage endpoint. Both cards render nothing when telemetry is unconfigured or no samples exist.
+- **Dashboard home** - `FleetUtilizationSummary` shows a compact fleet-wide CPU/memory/disk card (backed by `GET /api/v1/nodes/resource-usage`, polled every 30 seconds), above `TopResourceConsumers` (ranks every app by latest CPU/memory/network reading, backed by `GET /api/v1/apps/resource-usage`) and `FleetResourceChart` (a 30-minute rolling history of total CPU and memory usage across all apps, polled every 30 seconds from the same app resource-usage endpoint). All three render nothing when telemetry is unconfigured or no samples exist.
+- **Nodes list** (`/nodes`) - CPU/Memory/Disk columns read the same `GET /api/v1/nodes/resource-usage` snapshot, keyed by node ID.
 - `/apps/$name/alerts` - `AlertRulesPanel` lists, creates, edits, and deletes alert rules. Shows each rule's current firing state.
 - **Settings -> Notification channels** - `NotificationChannelTable` to connect, edit, delete, test, and view delivery history for channels.
 
@@ -150,6 +151,14 @@ The response includes:
 - Every app that exists, including ones with no telemetry samples yet (freshly deployed apps appear as zero-usage rows, not missing).
 - Each field (`cpu_percent`, `memory_usage_bytes`, `memory_limit_bytes`, `network_rx_bytes`, `network_tx_bytes`) present only when a sample has been recorded.
 - One `LatestByMetric` call per metric, not one query per app.
+
+## Fleet utilization
+
+`GET /api/v1/nodes/resource-usage` answers "how full are my servers" in one call: the node-scoped counterpart to `apps/resource-usage` above, read by both the node list's CPU/memory/disk columns and the dashboard's fleet summary card.
+
+The response is `{ "nodes": [...], "fleet": {...} }`:
+- Each node row's `cpu_percent`/`memory_usage_bytes` is the sum of every placed service's latest sample, the same "sum of containers, not a true host read" contract `apps/{id}/metrics` documents above. `memory_total_bytes`/`disk_used_bytes`/`disk_total_bytes` are real host reads, but (today) only ever populated for the node running the control plane itself, since no other node has a host-metrics collector yet (see "Missing node metrics" below). A field is absent, not zero, when nothing has reported it.
+- The `fleet` rollup sums every node's numbers. `total_cpu_percent` is a raw sum, not a percentage of fleet capacity (no node reports its core count anywhere in this codebase). `memory_used_percent`/`disk_used_percent` are only computed from nodes that actually reported a capacity figure; `nodes_with_memory_capacity`/`nodes_with_disk_capacity` say how many of `node_count` that covers, so a 3-node fleet where only 1 node has host metrics reads as "1/3 nodes reporting," never as if the percentage covered the whole fleet.
 
 ## Alert rules
 
@@ -324,6 +333,7 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 | `GET` | `/api/v1/databases/{name}/metrics` | `read` |
 | `GET` | `/api/v1/nodes/{id}/metrics` | `root` |
 | `GET` | `/api/v1/apps/resource-usage` | `read` |
+| `GET` | `/api/v1/nodes/resource-usage` | `root` |
 | `GET` | `/api/v1/apps/{name}/logs?from=...&to=...&q=...` | `read` |
 | `GET` | `/api/v1/apps/{name}/logs/stream` (SSE) | `read` |
 | `GET` | `/api/v1/apps/{name}/logs/download` | `read` |
@@ -351,6 +361,7 @@ levelrail-cli apps metrics <name> --metric NAME [--since 1h | --from RFC3339 --t
 levelrail-cli databases metrics <name> --metric NAME [--since 1h | --from ... --to ...] [--step 60s]
 levelrail-cli nodes metrics <id> --metric NAME [--since 1h | --from ... --to ...] [--step 60s]
 levelrail-cli apps resource-usage
+levelrail-cli nodes resource-usage
 
 levelrail-cli apps logs <name> [--since 1h | --from ... --to ...] [--q PHRASE] [--tail N]
 levelrail-cli apps logs <name> --follow
@@ -390,7 +401,8 @@ levelrail-cli channels deliveries <id> [--limit N]
 - Request rate, response-time percentiles, error rate, container restart count, and build duration. Section 4.8 requires these, but only 7 of 12 are collected. The first three need ingress-layer hooks the embedded Caddy doesn't expose. Deploy frequency is computed client-side from deploy-attempt history.
 
 **Missing node metrics:**
-- True host-level readings (real free/total CPU or memory). `GET /api/v1/nodes/{id}/metrics` sums already-collected per-container samples. `internal/agent` has no `/proc` reads today.
+- True host-level readings (real free/total CPU or memory) for any node other than the one running the control plane. `GET /api/v1/nodes/{id}/metrics` and `GET /api/v1/nodes/resource-usage` both sum already-collected per-container samples for CPU/memory usage; `internal/agent` has no `/proc` reads today, so a remote node's `memory_total_bytes`/`disk_used_bytes`/`disk_total_bytes` stay absent rather than wrong. A future per-node agent writing host samples under the same `node:<id>` resource-ID format would show up in both endpoints automatically, no handler change needed.
+- No node reports its own CPU core count anywhere in this codebase, so `nodes/resource-usage`'s fleet-wide `total_cpu_percent` is a raw sum across nodes, not a percentage of fleet CPU capacity the way `memory_used_percent`/`disk_used_percent` are.
 - Database placement contribution to node-level sums. Databases placed on a node don't appear in summed CPU/memory metrics.
 
 **Missing CLI and API features:**

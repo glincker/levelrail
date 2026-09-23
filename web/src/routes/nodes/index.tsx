@@ -3,6 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef } from 'react'
 import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import { nodeListQueryOptions, useNodes } from '../../queries/nodes'
+import { useFleetResourceUsage } from '../../queries/fleetResourceUsage'
 import { NODE_LIST_GRID, NodeRow, RowSkeleton } from '../../components/NodeRow'
 import { AddNodeDialog } from '../../components/AddNodeDialog'
 import { EmptyState } from '../../components/ui/empty-state'
@@ -34,6 +35,9 @@ function ListHeader() {
       <span>Name</span>
       <span>Status</span>
       <span>Address</span>
+      <span>CPU</span>
+      <span>Memory</span>
+      <span>Disk</span>
       <span>Last seen</span>
       <span aria-hidden="true" />
     </div>
@@ -42,6 +46,12 @@ function ListHeader() {
 
 function NodeListPage() {
   const { data: nodes } = useNodes()
+  // Plain (non-suspense) query: a 501 (telemetry not configured) is a
+  // real, common state, and the node list itself must render either way
+  // (see useFleetResourceUsage's own doc comment); usageByNodeId is then
+  // just empty and every row's utilization cells fall back to "-".
+  const { data: usage } = useFleetResourceUsage()
+  const usageByNodeId = new Map((usage?.nodes ?? []).map((n) => [n.node_id, n]))
   const parentRef = useRef<HTMLDivElement>(null)
 
   const virtualizer = useVirtualizer({
@@ -101,7 +111,7 @@ function NodeListPage() {
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
-                  <NodeRow node={node} />
+                  <NodeRow node={node} usage={usageByNodeId.get(node.id)} />
                 </div>
               )
             })}

@@ -1,7 +1,13 @@
 import { Link } from '@tanstack/react-router'
 import { CaretRightIcon, HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import type { NodeResource, NodeStatus } from '../types/nodeDetail'
+import type { NodeResourceUsage } from '../types/fleetResourceUsage'
 import { DeleteNodeDialog } from './DeleteNodeDialog'
+import {
+  NodeCPUCell,
+  NodeDiskCell,
+  NodeMemoryCell,
+} from './NodeUtilizationCells'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { VariantProps } from 'class-variance-authority'
@@ -12,14 +18,19 @@ import type { VariantProps } from 'class-variance-authority'
 // column is wider than the original single-badge version to fit two
 // badges side by side (connectivity + schedulable, see the comment on
 // STATUS_BADGE_VARIANT below for why these are two separate signals).
-// Unlike DatabaseRow/AppRow the row itself is not a whole-row Link:
-// cordon/drain/health now genuinely justify a detail route
-// (routes/nodes/$id.tsx), but the trailing column holds a "Manage" link
-// and the delete action as sibling controls rather than nesting a Link
-// around the whole row, which would otherwise nest DeleteNodeDialog's
-// own interactive Dialog trigger inside another interactive element.
+// CPU/Memory/Disk are GET /api/v1/nodes/resource-usage's fleet-wide
+// snapshot (queries/fleetResourceUsage.ts), narrower than Address/Last
+// seen since a "-" placeholder or a short number is the common case for
+// a remote node with no host-metrics collector yet (see
+// NodeMemoryCell/NodeDiskCell's own doc comments). Unlike DatabaseRow/
+// AppRow the row itself is not a whole-row Link: cordon/drain/health now
+// genuinely justify a detail route (routes/nodes/$id.tsx), but the
+// trailing column holds a "Manage" link and the delete action as sibling
+// controls rather than nesting a Link around the whole row, which would
+// otherwise nest DeleteNodeDialog's own interactive Dialog trigger
+// inside another interactive element.
 export const NODE_LIST_GRID =
-  'grid grid-cols-[2rem_minmax(0,1.5fr)_minmax(9rem,auto)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3'
+  'grid grid-cols-[2rem_minmax(0,1.3fr)_minmax(9rem,auto)_minmax(0,0.9fr)_minmax(4rem,0.6fr)_minmax(6rem,0.9fr)_minmax(6rem,0.9fr)_minmax(0,0.8fr)_auto] items-center gap-3'
 
 // Connectivity (Status) and cordon (Schedulable) are two independent
 // axes, not one merged state: internal/store/nodes.go's own doc comment
@@ -61,7 +72,19 @@ function formatNodeDate(iso?: string): string {
   return new Date(iso).toLocaleString()
 }
 
-export function NodeRow({ node }: { node: NodeResource }) {
+export function NodeRow({
+  node,
+  usage,
+}: {
+  node: NodeResource
+  // usage is undefined both while queries/fleetResourceUsage.ts is still
+  // loading and when telemetry isn't configured on this control plane
+  // (a 501, treated as "nothing to show" by useFleetResourceUsage): the
+  // three utilization cells already render a plain "-" for that case,
+  // the same graceful-degradation shape the rest of this row already
+  // gives node.address/node.last_seen_at when unset.
+  usage?: NodeResourceUsage
+}) {
   return (
     <div
       className={`${NODE_LIST_GRID} h-full w-full border-b border-border px-4 py-3`}
@@ -84,6 +107,10 @@ export function NodeRow({ node }: { node: NodeResource }) {
       <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
         {node.address ?? 'Not set'}
       </span>
+
+      <NodeCPUCell usage={usage} />
+      <NodeMemoryCell usage={usage} />
+      <NodeDiskCell usage={usage} />
 
       <span className="min-w-0 truncate text-xs text-muted-foreground">
         {formatNodeDate(node.last_seen_at)}
@@ -115,6 +142,9 @@ export function RowSkeleton() {
       <div className="h-4 w-32 animate-pulse rounded bg-muted" />
       <div className="h-4 w-16 animate-pulse rounded bg-muted" />
       <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+      <div className="h-4 w-10 animate-pulse rounded bg-muted" />
+      <div className="h-4 w-16 animate-pulse rounded bg-muted" />
+      <div className="h-4 w-16 animate-pulse rounded bg-muted" />
       <div className="h-4 w-24 animate-pulse rounded bg-muted" />
       <div className="h-6 w-28 animate-pulse justify-self-end rounded bg-muted" />
     </div>

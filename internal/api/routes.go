@@ -47,6 +47,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// gate handleDrainNode uses for its own fleet-wide, no-undo action,
 	// not AbilityWrite (which a narrower, single-app token could hold).
 	mux.HandleFunc("POST /api/v1/system/prune", rt.requireAbility(AbilityRoot, rt.handleSystemPrune))
+	// Orphaned named volumes: detection is a read (AbilityRead), the
+	// cleanup that actually deletes one is the same AbilityRoot,
+	// fleet-wide, no-undo tier system/prune sits behind, not
+	// AbilityWrite.
+	mux.HandleFunc("GET /api/v1/system/volumes/orphaned", rt.requireAbility(AbilityRead, rt.handleListOrphanedVolumes))
+	mux.HandleFunc("POST /api/v1/system/volumes/orphaned/cleanup", rt.requireAbility(AbilityRoot, rt.handleCleanupOrphanedVolumes))
 	// Master key rotation re-wraps every stored DEK live: AbilityRoot,
 	// the same fleet-wide-blast-radius tier as prune above, not
 	// AbilityWrite (SecretSetter's own gate for a single app's values).
