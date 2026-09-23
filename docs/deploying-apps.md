@@ -170,6 +170,7 @@ Currently supported, matching the Railpack build path itself:
 | Node.js | `Node.js` |
 | Go | `Go` |
 | Java (Maven/Gradle, Spring Boot) | `Java (Spring Boot)` |
+| Python (Django) | `Python (Django)` |
 
 A repository Railpack can't place into one of these (or can't clone at all, e.g. private/unreachable) responds `{"detected": false}`, never an error: the wizard falls back to its normal manual build-type tabs (Auto-detect/Dockerfile/Static site/Prebuilt image), which stay fully usable and overridable regardless of what detection found.
 

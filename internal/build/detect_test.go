@@ -115,12 +115,13 @@ func TestDetectUnchecked(t *testing.T) {
 	}{
 		{name: "node", fixture: "testdata/railpack-node", wantProvider: "node", wantFramework: "Node.js"},
 		{name: "go", fixture: "testdata/railpack-go", wantProvider: "golang", wantFramework: "Go"},
-		// Railpack itself detects a real provider here (python), just one
+		{name: "python", fixture: "testdata/railpack-python", wantProvider: "python", wantFramework: "Python (Django)"},
+		// Railpack itself detects a real provider here (ruby), just one
 		// outside supportedRailpackProviders: Provider still reports what
 		// Railpack found, FrameworkName stays empty so the wizard falls
 		// back to manual build-type selection rather than claiming a name
 		// for a stack it can't actually build yet.
-		{name: "unsupported provider reports raw provider, no framework name", fixture: "testdata/railpack-unsupported", wantProvider: "python", wantFramework: ""},
+		{name: "unsupported provider reports raw provider, no framework name", fixture: "testdata/railpack-unsupported", wantProvider: "ruby", wantFramework: ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
