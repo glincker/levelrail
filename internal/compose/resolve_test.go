@@ -328,6 +328,30 @@ services:
 	if err == nil {
 		t.Fatal("ResolveMagicVars() error = nil, want an error propagated from generate")
 	}
+
+	_, _, err = ResolveMagicVars(f, func(_, _ string, _ int) (string, error) {
+		return "secret", nil
+	}, func(svcKey, envKey, value string) error {
+		return fmt.Errorf("persist failed")
+	})
+	if err == nil {
+		t.Fatal("ResolveMagicVars() error = nil, want an error propagated from persist")
+	}
+
+	f2, _ := Parse([]byte(`
+services:
+  app:
+    image: app:latest
+    environment:
+      SECRET: $SERVICE_INVALIDKIND_X
+`))
+	_, _, err = ResolveMagicVars(f2, func(kind, _ string, _ int) (string, error) {
+		return GenerateValue(kind, 0)
+	}, failPersist(t))
+	if err != nil {
+		t.Fatalf("ResolveMagicVars() error = %v, want no error for invalid kind", err)
+	}
+
 }
 
 func TestResolveMagicVars_Command(t *testing.T) {
@@ -381,6 +405,17 @@ services:
 `,
 			wantCommand:    []string{"sh", "-c", "curl https://app.example.com/health -H x-key:$SERVICE_PASSWORD_API"},
 			wantUnresolved: []UnresolvedVar{{Service: "app", EnvKey: "command[2]", Token: "$SERVICE_PASSWORD_API"}},
+		},
+		{
+			name: "Command FQDN missing resolves to unresolved",
+			yaml: `
+services:
+  app:
+    image: app:latest
+    command: ["sh", "-c", "echo ${SERVICE_FQDN_APP}"]
+`,
+			wantCommand:    []string{"sh", "-c", "echo ${SERVICE_FQDN_APP}"},
+			wantUnresolved: []UnresolvedVar{{Service: "app", EnvKey: "command[2]", Token: "${SERVICE_FQDN_APP}"}},
 		},
 	}
 
@@ -526,200 +561,6 @@ func failPersist(t *testing.T) func(string, string, string) error {
 		return nil
 	}
 }
-func TestResolveMagicVars_EmbeddedGenerateErrorPropagates(t *testing.T) {
-	f, err := Parse([]byte(`
-services:
-  app:
-    image: app:latest
-    environment:
-      URL: "postgres://user:$SERVICE_PASSWORD_DB@db/app"
-`))
-	if err != nil {
-		t.Fatalf("Parse() error = %v", err)
-	}
-
-	_, _, err = ResolveMagicVars(f, func(_, _ string, _ int) (string, error) {
-		return "", fmt.Errorf("no secrets manager configured")
-	}, failPersist(t))
-	if err == nil {
-		t.Fatal("ResolveMagicVars() error = nil, want an error propagated from generate")
-	}
-}
-
-func TestResolveMagicVars_PersistErrorPropagates(t *testing.T) {
-	f, err := Parse([]byte(`
-services:
-  app:
-    image: app:latest
-    environment:
-      SECRET: $SERVICE_PASSWORD_X
-`))
-	if err != nil {
-		t.Fatalf("Parse() error = %v", err)
-	}
-
-	_, _, err = ResolveMagicVars(f, func(_, _ string, _ int) (string, error) {
-		return "secret", nil
-	}, func(svcKey, envKey, value string) error {
-		return fmt.Errorf("persist failed")
-	})
-	if err == nil {
-		t.Fatal("ResolveMagicVars() error = nil, want an error propagated from persist")
-	}
-}
-
-func TestResolveMagicVars_EmbeddedPersistErrorPropagates(t *testing.T) {
-	f, err := Parse([]byte(`
-services:
-  app:
-    image: app:latest
-    environment:
-      URL: "postgres://user:$SERVICE_PASSWORD_DB@db/app"
-`))
-	if err != nil {
-		t.Fatalf("Parse() error = %v", err)
-	}
-
-	_, _, err = ResolveMagicVars(f, func(_, _ string, _ int) (string, error) {
-		return "secret", nil
-	}, func(svcKey, envKey, value string) error {
-		return fmt.Errorf("persist failed")
-	})
-	if err == nil {
-		t.Fatal("ResolveMagicVars() error = nil, want an error propagated from persist")
-	}
-}
-
-func TestUnresolvedVar_String(t *testing.T) {
-	u := UnresolvedVar{Service: "app", EnvKey: "URL", Token: "$SERVICE_UNKNOWN"}
-	want := "service \"app\": env \"URL\": $SERVICE_UNKNOWN"
-	if got := u.String(); got != want {
-		t.Errorf("String() = %q, want %q", got, want)
-	}
-}
-
-func TestResolveMagicVars_CommandFQDNMissing(t *testing.T) {
-	tests := []struct {
-		name           string
-		yaml           string
-		wantCommand    []string
-		wantUnresolved []UnresolvedVar
-	}{
-		{
-			name: "Command FQDN missing resolves to unresolved",
-			yaml: `
-services:
-  app:
-    image: app:latest
-    command: ["sh", "-c", "echo ${SERVICE_FQDN_APP}"]
-`,
-			wantCommand:    []string{"sh", "-c", "echo ${SERVICE_FQDN_APP}"},
-			wantUnresolved: []UnresolvedVar{{Service: "app", EnvKey: "command[2]", Token: "${SERVICE_FQDN_APP}"}},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			f, err := Parse([]byte(tt.yaml))
-			if err != nil {
-				t.Fatalf("Parse() error = %v", err)
-			}
-
-			_, unresolved, err := ResolveMagicVars(f, failGenerate(t), failPersist(t))
-			if err != nil {
-				t.Fatalf("ResolveMagicVars() error = %v", err)
-			}
-
-			if len(unresolved) != len(tt.wantUnresolved) {
-				t.Fatalf("unresolved = %+v, want %+v", unresolved, tt.wantUnresolved)
-			}
-			for i, want := range tt.wantUnresolved {
-				if unresolved[i] != want {
-					t.Errorf("unresolved[%d] = %+v, want %+v", i, unresolved[i], want)
-				}
-			}
-
-			if tt.wantCommand != nil {
-				got := []string(f.Services["app"].Command)
-				if len(got) != len(tt.wantCommand) {
-					t.Fatalf("Command = %v, want %v", got, tt.wantCommand)
-				}
-				for i, want := range tt.wantCommand {
-					if got[i] != want {
-						t.Errorf("Command[%d] = %q, want %q", i, got[i], want)
-					}
-				}
-			}
-		})
-	}
-}
-
-func TestResolveMagicVars_SingleVarFQDNMissing(t *testing.T) {
-	f, err := Parse([]byte(`
-services:
-  app:
-    image: app:latest
-    environment:
-      FRONTEND_URL: ${SERVICE_FQDN_APP}
-`))
-	if err != nil {
-		t.Fatalf("Parse() error = %v", err)
-	}
-
-	_, unresolved, err := ResolveMagicVars(f, failGenerate(t), failPersist(t))
-	if err != nil {
-		t.Fatalf("ResolveMagicVars() error = %v", err)
-	}
-	if len(unresolved) != 1 {
-		t.Fatalf("unresolved = %+v, want exactly one entry", unresolved)
-	}
-	if unresolved[0].Token != "${SERVICE_FQDN_APP}" {
-		t.Errorf("unresolved[0].Token = %q, want ${SERVICE_FQDN_APP}", unresolved[0].Token)
-	}
-}
-
-func TestResolveMagicVars_GenerateErrorPropagatesForInvalidKind(t *testing.T) {
-	f, err := Parse([]byte(`
-services:
-  app:
-    image: app:latest
-    environment:
-      SECRET: $SERVICE_INVALIDKIND_X
-`))
-	if err != nil {
-		t.Fatalf("Parse() error = %v", err)
-	}
-
-	_, _, err = ResolveMagicVars(f, func(kind, _ string, _ int) (string, error) {
-		return GenerateValue(kind, 0)
-	}, failPersist(t))
-	if err != nil {
-		t.Fatalf("ResolveMagicVars() error = %v, want no error for invalid kind", err)
-	}
-}
-
-func TestResolveMagicVars_EmbeddedGenerateErrorPropagatesForInvalidKind(t *testing.T) {
-	f, err := Parse([]byte(`
-services:
-  app:
-    image: app:latest
-    environment:
-      URL: "postgres://user:$SERVICE_INVALIDKIND_X@db/app"
-`))
-	if err != nil {
-		t.Fatalf("Parse() error = %v", err)
-	}
-
-	_, unresolved, err := ResolveMagicVars(f, func(kind, _ string, _ int) (string, error) {
-		return GenerateValue(kind, 0)
-	}, failPersist(t))
-	if err != nil {
-		t.Fatalf("ResolveMagicVars() error = %v, want no error for invalid kind", err)
-	}
-	if len(unresolved) != 1 {
-		t.Fatalf("unresolved = %+v, want exactly one entry", unresolved)
-	}
-}
 
 func TestResolveMagicVars_NoVars(t *testing.T) {
 	f, err := Parse([]byte(`
@@ -742,5 +583,55 @@ services:
 	}
 	if got := f.Services["app"].Environment["NORMAL_ENV"]; got != "just-a-value" {
 		t.Errorf("NORMAL_ENV = %q, want just-a-value", got)
+	}
+}
+
+func TestUnresolvedVar_String(t *testing.T) {
+	u := UnresolvedVar{Service: "app", EnvKey: "URL", Token: "$SERVICE_UNKNOWN"}
+	want := "service \"app\": env \"URL\": $SERVICE_UNKNOWN"
+	if got := u.String(); got != want {
+		t.Errorf("String() = %q, want %q", got, want)
+	}
+}
+
+func TestResolveMagicVars_EmbeddedGenerateAndPersistError(t *testing.T) {
+    // Generate Error
+	f, err := Parse([]byte(`
+services:
+  app:
+    image: app:latest
+    environment:
+      URL: "postgres://user:$SERVICE_PASSWORD_DB@db/app"
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	_, _, err = ResolveMagicVars(f, func(_, _ string, _ int) (string, error) {
+		return "", fmt.Errorf("generate failed")
+	}, failPersist(t))
+	if err == nil {
+		t.Fatal("ResolveMagicVars() error = nil, want an error propagated from generate")
+	}
+
+    // Persist Error
+    f2, err := Parse([]byte(`
+services:
+  app:
+    image: app:latest
+    environment:
+      URL: "postgres://user:$SERVICE_PASSWORD_DB@db/app"
+`))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	_, _, err = ResolveMagicVars(f2, func(_, _ string, _ int) (string, error) {
+		return "secret", nil
+	}, func(svcKey, envKey, value string) error {
+		return fmt.Errorf("persist failed")
+	})
+	if err == nil {
+		t.Fatal("ResolveMagicVars() error = nil, want an error propagated from persist")
 	}
 }

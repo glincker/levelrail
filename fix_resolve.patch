@@ -1,0 +1,75 @@
+--- internal/compose/resolve_test.go
++++ internal/compose/resolve_test.go
+@@ -382,6 +382,15 @@
+			wantCommand:    []string{"sh", "-c", "curl https://app.example.com/health -H x-key:$SERVICE_PASSWORD_API"},
+			wantUnresolved: []UnresolvedVar{{Service: "app", EnvKey: "command[2]", Token: "$SERVICE_PASSWORD_API"}},
+		},
++		{
++			name: "Command FQDN missing resolves to unresolved",
++			yaml: `
++services:
++  app:
++    image: app:latest
++    command: ["sh", "-c", "echo ${SERVICE_FQDN_APP}"]
++`,
++			wantCommand:    []string{"sh", "-c", "echo ${SERVICE_FQDN_APP}"},
++			wantUnresolved: []UnresolvedVar{{Service: "app", EnvKey: "command[2]", Token: "${SERVICE_FQDN_APP}"}},
++		},
+	}
+
+	for _, tt := range tests {
+@@ -330,6 +339,26 @@
+		if err == nil {
+			t.Fatal("ResolveMagicVars() error = nil, want an error propagated from generate")
+		}
++
++        // Check persist error
++        _, _, err = ResolveMagicVars(f, func(_, _ string, _ int) (string, error) {
++			return "secret", nil
++		}, func(svcKey, envKey, value string) error {
++			return fmt.Errorf("persist failed")
++		})
++		if err == nil {
++			t.Fatal("ResolveMagicVars() error = nil, want an error propagated from persist")
++		}
++
++        // Check invalid kind propagation (no error)
++        f2, _ := Parse([]byte(`services:\n  app:\n    image: app:latest\n    environment:\n      SECRET: $SERVICE_INVALIDKIND_X`))
++        _, _, err = ResolveMagicVars(f2, func(kind, _ string, _ int) (string, error) {
++			return GenerateValue(kind, 0)
++		}, failPersist(t))
++		if err != nil {
++			t.Fatalf("ResolveMagicVars() error = %v, want no error for invalid kind", err)
++		}
+	}
+
+	func TestResolveMagicVars_Command(t *testing.T) {
+@@ -530,6 +559,25 @@
+		if err == nil {
+			t.Fatal("ResolveMagicVars() error = nil, want an error propagated from generate")
+		}
++
++        // Check persist error
++        _, _, err = ResolveMagicVars(f, func(_, _ string, _ int) (string, error) {
++			return "secret", nil
++		}, func(svcKey, envKey, value string) error {
++			return fmt.Errorf("persist failed")
++		})
++		if err == nil {
++			t.Fatal("ResolveMagicVars() error = nil, want an error propagated from persist")
++		}
++
++        // Check invalid kind propagation (no error)
++        f2, _ := Parse([]byte(`services:\n  app:\n    image: app:latest\n    environment:\n      URL: "postgres://user:$SERVICE_INVALIDKIND_X@db/app"`))
++        _, unresolved, err := ResolveMagicVars(f2, func(kind, _ string, _ int) (string, error) {
++			return GenerateValue(kind, 0)
++		}, failPersist(t))
++		if err != nil {
++			t.Fatalf("ResolveMagicVars() error = %v, want no error for invalid kind", err)
++		}
++        if len(unresolved) != 1 {
++		    t.Fatalf("unresolved = %+v, want exactly one entry", unresolved)
++	    }
+	}
+
+	func TestUnresolvedVar_String(t *testing.T) {

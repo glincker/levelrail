@@ -1,0 +1,1693 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>compose: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+
+				<option value="file0">github.com/GLINCKER/levelrail/internal/compose/compose.go (98.3%)</option>
+
+				<option value="file1">github.com/GLINCKER/levelrail/internal/compose/expand.go (96.1%)</option>
+
+				<option value="file2">github.com/GLINCKER/levelrail/internal/compose/healthcheck.go (95.4%)</option>
+
+				<option value="file3">github.com/GLINCKER/levelrail/internal/compose/magicvars.go (87.0%)</option>
+
+				<option value="file4">github.com/GLINCKER/levelrail/internal/compose/notices.go (100.0%)</option>
+
+				<option value="file5">github.com/GLINCKER/levelrail/internal/compose/resolve.go (98.0%)</option>
+
+				<option value="file6">github.com/GLINCKER/levelrail/internal/compose/translate.go (96.8%)</option>
+
+				<option value="file7">github.com/GLINCKER/levelrail/internal/compose/yaml.go (81.4%)</option>
+
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+
+			</div>
+		</div>
+		<div id="content">
+
+		<pre class="file" id="file0" style="display: none">// Package compose parses a Docker Compose file into Levelrail's own
+// desired-state model, in two shapes depending on the caller. The
+// direct-import path (ToDesiredServices, via Validate) is deliberately
+// narrow: every service needs a pre-built image (no build:), since
+// there is no build context to build one from (a pasted file, no git
+// checkout). The git-sourced expand path (ExpandBuildService, via
+// ValidateForBuild) allows build: for exactly that reason: it always
+// has a real checkout. Both paths share the same narrow scope
+// otherwise: environment/ports/volumes accept both Compose's short and
+// long forms (see yaml.go), but only the fields Levelrail's own model
+// has room for: no port ranges, no UDP, no tmpfs/npipe mounts.
+// restart:, networks:, and depends_on: all parse and are
+// surfaced as non-blocking Notices instead of being silently dropped or
+// translated: see Notices for why none of the three has a real
+// translation onto how Levelrail runs a service (depends_on: in
+// particular is never used to sequence container startup order, that's
+// reconciler-level work out of scope here). command: and
+// entrypoint: both parse and translate into store.DesiredService's own
+// Command and Entrypoint fields. volumes: additionally accepts an
+// absolute host path on the left side as a bind mount (ValidateForBuild
+// rejects one; see that method's own doc comment for why), gated at the
+// HTTP layer to AbilityRoot and, even then, against
+// internal/bindmount's own forbidden-path list (see
+// validateBindMountHostPath).
+package compose
+
+import (
+        "fmt"
+        "sort"
+
+        "github.com/GLINCKER/levelrail/internal/bindmount"
+        "gopkg.in/yaml.v3"
+)
+
+// File is a parsed compose.yaml.
+type File struct {
+        Version  string
+        Services map[string]Service
+        // Domains maps a service key to the real domain it should be
+        // reachable at, from the top-level x-levelrail-domains extension
+        // (Compose's own reserved x- prefix for tool-specific keys). Used
+        // both to set that service's own store.DesiredService.Domains (real
+        // ingress routing) and to resolve any ${SERVICE_FQDN_*} reference
+        // within that same service's environment (ResolveMagicVars).
+        Domains map[string]string
+        // Networks lists this file's own top-level networks: names, sorted.
+        // Only used by Notices to detect that custom networks were declared
+        // at all; Levelrail doesn't create per-network isolation from this.
+        Networks []string
+}
+
+// Service is one entry under services:.
+type Service struct {
+        Image       string
+        Build       *rawBuild
+        Environment Environment
+        Ports       []Port
+        Volumes     []Volume
+        Labels      map[string]string
+        Networks    Networks
+        Restart     string
+        Healthcheck *Healthcheck
+        // DependsOn is depends_on:, never used to sequence container startup
+        // order (see Notices); kept only so Notices can tell it was declared.
+        DependsOn DependsOn
+        // Command overrides the image's own default CMD
+        // (store.DesiredService.Command), parsed from command:'s own
+        // string-or-list union (Command's own UnmarshalYAML in yaml.go): a
+        // plain string is shell-wrapped as ["/bin/sh", "-c", "&lt;string&gt;"],
+        // matching Compose's own documented behavior for that form.
+        Command Command
+        // Entrypoint overrides the image's own default ENTRYPOINT
+        // (store.DesiredService.Entrypoint), parsed with the same
+        // string-or-list union as Command.
+        Entrypoint Command
+        // PullPolicy is pull_policy:, normalized by normalizePullPolicy into
+        // exactly the two states store.DesiredService.PullPolicy
+        // distinguishes: PullPolicyAlways forces a fresh pull even when the
+        // image is already present locally, empty means today's existing
+        // pull-if-absent behavior. Real Compose's other recognized spellings
+        // ("missing", "if_not_present", an unset field) all normalize to
+        // empty too; "never" and "build" are rejected, see
+        // normalizePullPolicy.
+        PullPolicy string
+}
+
+// PullPolicyAlways is pull_policy: always, the only non-default value
+// this package supports.
+const PullPolicyAlways = "always"
+
+// normalizePullPolicy maps pull_policy:'s recognized spellings onto the
+// two states store.DesiredService.PullPolicy actually distinguishes.
+// "never" and "build" are rejected outright: neither has a real
+// translation onto docker.Client's own pull-if-absent/force-pull model.
+func normalizePullPolicy(raw string) (string, error) <span class="cov8" title="1">{
+        switch raw </span>{
+        case "", "missing", "if_not_present":<span class="cov8" title="1">
+                return "", nil</span>
+        case PullPolicyAlways:<span class="cov8" title="1">
+                return PullPolicyAlways, nil</span>
+        default:<span class="cov8" title="1">
+                return "", fmt.Errorf("pull_policy: %q is not supported, use %q or leave it unset", raw, PullPolicyAlways)</span>
+        }
+}
+
+// Volume is one short-form "name:/container/path" entry, either a named
+// Docker volume (Name set, HostPath empty) or a bind mount of a real
+// host directory (HostPath set, Name empty): exactly one of the two is
+// ever set, see Volume.UnmarshalYAML (yaml.go) for how the left side of
+// the entry decides which.
+type Volume struct {
+        Name          string
+        HostPath      string
+        ContainerPath string
+        // ReadOnly mounts read-only inside the container, from an optional
+        // trailing ":ro" on the short-form entry.
+        ReadOnly bool
+}
+
+// Port is one short-form ports: entry. ContainerPort is what
+// store.DesiredService.Port (a single container port, not a
+// host:container pair) actually uses.
+type Port struct {
+        HostPort      int
+        ContainerPort int
+}
+
+// rawBuild exists so Parse can detect and reject build:; never
+// populated into a translated Service.
+type rawBuild struct {
+        Context    string
+        Dockerfile string
+}
+
+// Parse decodes a compose.yaml document.
+func Parse(data []byte) (*File, error) <span class="cov8" title="1">{
+        var raw rawFile
+        if err := yaml.Unmarshal(data, &amp;raw); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("compose: parse: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">f := &amp;File{Version: raw.Version, Services: make(map[string]Service, len(raw.Services)), Domains: raw.Domains}
+        for name, svc := range raw.Services </span><span class="cov8" title="1">{
+                f.Services[name] = Service(svc)
+        }</span>
+        <span class="cov8" title="1">if len(raw.Networks) &gt; 0 </span><span class="cov8" title="1">{
+                f.Networks = make([]string, 0, len(raw.Networks))
+                for name := range raw.Networks </span><span class="cov8" title="1">{
+                        f.Networks = append(f.Networks, name)
+                }</span>
+                <span class="cov8" title="1">sort.Strings(f.Networks)</span>
+        }
+        <span class="cov8" title="1">return f, nil</span>
+}
+
+// Validate reports every unsupported-shape problem across all
+// services, not just the first, so a template author can fix them in
+// one pass. Used by the direct-import path (ToDesiredServices), which
+// has no build context (no git checkout, just a pasted file) to build
+// a build: block from, so it rejects one outright. See ValidateForBuild
+// for the git-sourced deploy-spec path, which does have one.
+func (f *File) Validate() error <span class="cov8" title="1">{
+        return f.validate(false, true)
+}</span>
+
+// ValidateForBuild is Validate, except a service's build: block is
+// allowed rather than rejected: used only by the git-sourced
+// expand-a-compose-file-into-services path (ExpandBuildService), which
+// has a real checkout to resolve a build context against, unlike the
+// direct-import path Validate itself still guards. Bind mounts stay
+// rejected on this path even though Validate now allows them: the
+// expanded result is a spec.Service (toSpecService, expand.go), and
+// spec.Volume has no host-path concept to carry one into, so allowing
+// one through here would either drop it silently or produce a
+// nonsensical empty-named volume downstream.
+func (f *File) ValidateForBuild() error <span class="cov8" title="1">{
+        return f.validate(true, false)
+}</span>
+
+func (f *File) validate(allowBuild, allowBindMounts bool) error <span class="cov8" title="1">{
+        if len(f.Services) == 0 </span><span class="cov8" title="1">{
+                return fmt.Errorf("compose: no services declared")
+        }</span>
+
+        <span class="cov8" title="1">errs := validateComposeServices(f, allowBuild, allowBindMounts)
+        errs = append(errs, validateComposeDomainRefs(f)...)
+
+        if len(errs) == 0 </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">return joinErrors(errs)</span>
+}
+
+// validateBindMountHostPath delegates to internal/bindmount, shared with
+// internal/spec (see that package's own bindmount.go for why neither
+// compose nor spec can hold this directly without an import cycle).
+func validateBindMountHostPath(hostPath string) error <span class="cov8" title="1">{
+        return bindmount.ValidateHostPath(hostPath)
+}</span>
+
+// validateComposeServices checks each service's own build:/image:
+// declaration and volume names, split out of validate purely to keep
+// that function's own cognitive complexity low.
+func validateComposeServices(f *File, allowBuild, allowBindMounts bool) []error <span class="cov8" title="1">{
+        var errs []error
+        for _, name := range sortedServiceNames(f) </span><span class="cov8" title="1">{
+                svc := f.Services[name]
+                if svc.Build != nil &amp;&amp; !allowBuild </span><span class="cov8" title="1">{
+                        errs = append(errs, fmt.Errorf("service %q: build: is not supported, declare a pre-built image: instead", name))
+                }</span>
+                <span class="cov8" title="1">if svc.Image == "" &amp;&amp; svc.Build == nil </span><span class="cov8" title="1">{
+                        errs = append(errs, fmt.Errorf("service %q: image is required", name))
+                }</span>
+                <span class="cov8" title="1">for _, v := range svc.Volumes </span><span class="cov8" title="1">{
+                        if v.HostPath != "" </span><span class="cov8" title="1">{
+                                if !allowBindMounts </span><span class="cov8" title="1">{
+                                        errs = append(errs, fmt.Errorf("service %q: bind-mount volume %q is not supported here, use a named volume instead", name, v.ContainerPath))
+                                        continue</span>
+                                }
+                                <span class="cov8" title="1">if err := validateBindMountHostPath(v.HostPath); err != nil </span><span class="cov8" title="1">{
+                                        errs = append(errs, fmt.Errorf("service %q: %w", name, err))
+                                }</span>
+                                <span class="cov8" title="1">continue</span>
+                        }
+                        <span class="cov8" title="1">if v.Name == "" </span><span class="cov0" title="0">{
+                                errs = append(errs, fmt.Errorf("service %q: volume mounted at %q must be a named volume (\"name:/path\") or an absolute bind-mount path", name, v.ContainerPath))
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return errs</span>
+}
+
+// validateComposeDomainRefs checks that every x-levelrail-domains key
+// names a real service in this file, split out of validate for the
+// same reason validateComposeServices's own doc comment gives.
+func validateComposeDomainRefs(f *File) []error <span class="cov8" title="1">{
+        var errs []error
+        for svcKey := range f.Domains </span><span class="cov8" title="1">{
+                if _, ok := f.Services[svcKey]; !ok </span><span class="cov8" title="1">{
+                        errs = append(errs, fmt.Errorf("x-levelrail-domains: %q is not a service in this file", svcKey))
+                }</span>
+        }
+        <span class="cov8" title="1">return errs</span>
+}
+
+func sortedServiceNames(f *File) []string <span class="cov8" title="1">{
+        names := make([]string, 0, len(f.Services))
+        for name := range f.Services </span><span class="cov8" title="1">{
+                names = append(names, name)
+        }</span>
+        <span class="cov8" title="1">sort.Strings(names)
+        return names</span>
+}
+
+func joinErrors(errs []error) error <span class="cov8" title="1">{
+        msg := fmt.Sprintf("%d service(s) failed validation:", len(errs))
+        for _, err := range errs </span><span class="cov8" title="1">{
+                msg += "\n  - " + err.Error()
+        }</span>
+        <span class="cov8" title="1">return fmt.Errorf("%s", msg)</span>
+}
+</pre>
+
+		<pre class="file" id="file1" style="display: none">package compose
+
+import (
+        "fmt"
+        "os"
+        "path/filepath"
+
+        "github.com/GLINCKER/levelrail/internal/spec"
+)
+
+// ExpandBuildService parses the compose file at svc.Build.Path (relative
+// to sourceDir) and returns one spec.Service per compose service, plus a
+// warning for each healthcheck left untranslated.
+func ExpandBuildService(svc spec.Service, sourceDir string) (services map[string]spec.Service, warnings []string, err error) <span class="cov8" title="1">{
+        if svc.Build.Type != spec.BuildCompose </span><span class="cov8" title="1">{
+                return nil, nil, fmt.Errorf("compose: expand: build.type is %q, not %q", svc.Build.Type, spec.BuildCompose)
+        }</span>
+
+        <span class="cov8" title="1">if !filepath.IsLocal(svc.Build.Path) </span><span class="cov8" title="1">{
+                return nil, nil, fmt.Errorf("compose: build.path %q must be a relative path inside the repository", svc.Build.Path)
+        }</span>
+        <span class="cov8" title="1">composePath := filepath.Join(sourceDir, svc.Build.Path)
+        data, err := os.ReadFile(composePath) //nolint:gosec // build.path is checked with filepath.IsLocal above
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, nil, fmt.Errorf("compose: read %q: %w", svc.Build.Path, err)
+        }</span>
+
+        <span class="cov8" title="1">f, err := Parse(data)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, nil, err
+        }</span>
+        <span class="cov8" title="1">if err := f.ValidateForBuild(); err != nil </span><span class="cov8" title="1">{
+                return nil, nil, err
+        }</span>
+
+        // composeDir is the directory a compose service's own build.context
+        // is relative to, per Compose's own semantics: the compose file's
+        // own directory, not sourceDir (the outer git checkout root), so a
+        // compose file that isn't at the repo root (e.g.
+        // services/api/docker-compose.yml) still resolves its services'
+        // build contexts correctly.
+        <span class="cov8" title="1">composeDir := filepath.Dir(svc.Build.Path)
+
+        out := make(map[string]spec.Service, len(f.Services))
+        for _, key := range sortedServiceNames(f) </span><span class="cov8" title="1">{
+                csvc := f.Services[key]
+                expanded, warning, err := toSpecService(key, csvc, f.Domains[key], composeDir)
+                if err != nil </span><span class="cov8" title="1">{
+                        return nil, nil, err
+                }</span>
+                <span class="cov8" title="1">if warning != "" </span><span class="cov0" title="0">{
+                        warnings = append(warnings, warning)
+                }</span>
+                <span class="cov8" title="1">out[key] = expanded</span>
+        }
+        <span class="cov8" title="1">return out, warnings, nil</span>
+}
+
+// toSpecService converts one compose.Service, already validated by
+// ValidateForBuild, into the spec.Service ExpandBuildService returns
+// for it, plus a non-empty warning when its healthcheck: has to be left
+// untranslated (see resolveHealthcheck).
+func toSpecService(key string, csvc Service, domain string, composeDir string) (spec.Service, string, error) <span class="cov8" title="1">{
+        for envKey, v := range csvc.Environment </span><span class="cov8" title="1">{
+                if vars := FindMagicVars(v); len(vars) &gt; 0 </span><span class="cov8" title="1">{
+                        // Magic vars (SERVICE_PASSWORD_*, SERVICE_FQDN_*, ...) need
+                        // generation and secret persistence (ResolveMagicVars),
+                        // meaningful for the direct-import path's own deploy flow
+                        // (internal/api's compose-import handler already wires that
+                        // up). This build-from-source path has no equivalent wiring
+                        // yet: passing the token through unresolved would silently
+                        // start a container with a literal "${SERVICE_...}" string
+                        // in its env, a worse failure than rejecting it loudly here.
+                        return spec.Service{}, "", fmt.Errorf("compose: service %q: env %q: magic var %q is not supported for build.type: compose, use a literal value or a real secret instead", key, envKey, vars[0].Token)
+                }</span>
+        }
+
+        <span class="cov8" title="1">var build spec.Build
+        if csvc.Build != nil </span><span class="cov8" title="1">{
+                build = spec.Build{
+                        Type:          spec.BuildDockerfile,
+                        BaseDirectory: filepath.Join(composeDir, buildContext(csvc.Build.Context)),
+                        Path:          csvc.Build.Dockerfile,
+                }
+        }</span> else<span class="cov8" title="1"> {
+                build = spec.Build{Type: spec.BuildImage, Image: csvc.Image}
+        }</span>
+
+        // csvc.Command is not carried through: spec.Service (app.yaml) has no
+        // command field yet, unlike store.DesiredService.Command, which the
+        // direct-import path (ToDesiredServices) does populate.
+        <span class="cov8" title="1">s := spec.Service{
+                Build:  build,
+                Labels: csvc.Labels,
+        }
+        if domain != "" </span><span class="cov8" title="1">{
+                s.Domains = []string{domain}
+        }</span>
+        <span class="cov8" title="1">for _, p := range csvc.Ports </span><span class="cov8" title="1">{
+                s.Port = p.ContainerPort
+                break</span>
+        }
+        <span class="cov8" title="1">if len(csvc.Environment) &gt; 0 </span><span class="cov8" title="1">{
+                s.Env = make(map[string]spec.EnvVar, len(csvc.Environment))
+                for k, v := range csvc.Environment </span><span class="cov8" title="1">{
+                        s.Env[k] = spec.EnvVar{Value: v}
+                }</span>
+        }
+        <span class="cov8" title="1">for _, v := range csvc.Volumes </span><span class="cov8" title="1">{
+                s.Volumes = append(s.Volumes, spec.Volume{Name: v.Name, Path: v.ContainerPath})
+        }</span>
+
+        <span class="cov8" title="1">health, warning, err := resolveHealthcheck(key, csvc.Healthcheck)
+        if err != nil </span><span class="cov0" title="0">{
+                return spec.Service{}, "", err
+        }</span>
+        <span class="cov8" title="1">s.Health = health.toSpecHealth()
+
+        return s, warning, nil</span>
+}
+
+// buildContext defaults an unset build.context (Compose's own rule: a
+// bare "build:" with only a dockerfile: field, or a scalar "build: ."
+// already sets Context explicitly) to ".", the compose file's own
+// directory, matching real Docker Compose's default.
+func buildContext(context string) string <span class="cov8" title="1">{
+        if context == "" </span><span class="cov8" title="1">{
+                return "."
+        }</span>
+        <span class="cov8" title="1">return context</span>
+}
+</pre>
+
+		<pre class="file" id="file2" style="display: none">package compose
+
+import (
+        "fmt"
+        "net/url"
+        "regexp"
+        "strings"
+        "time"
+
+        probepkg "github.com/GLINCKER/levelrail/internal/probe"
+        "github.com/GLINCKER/levelrail/internal/spec"
+        "github.com/GLINCKER/levelrail/internal/store"
+)
+
+// healthcheckURLPattern locates an http(s):// URL embedded in a
+// CMD/CMD-SHELL healthcheck command string, the shape a curl or wget
+// based check declares its target in.
+var healthcheckURLPattern = regexp.MustCompile(`https?://[^\s"']+`)
+
+// composeHealth is a compose healthcheck: block resolved into this
+// platform's readiness probe shape.
+type composeHealth struct {
+        store.ServiceProbe
+        ReadyTimeout time.Duration
+}
+
+// tcpOnlyPattern matches the bash-only "&lt; /dev/tcp/host/port" connect
+// check: it proves nothing an HTTP or exec probe could not, and fails
+// outright under the busybox/dash shells most images ship.
+var tcpOnlyPattern = regexp.MustCompile(`/dev/tcp/`)
+
+// resolveHealthcheck interprets serviceKey's healthcheck: block. A nil hc,
+// an empty test, or "NONE" mean no check: (nil, "", nil). A curl/wget
+// command becomes an HTTP(S) probe honoring its redirect, TLS and -f
+// flags; any other command becomes an exec probe run inside the
+// container, except a bare /dev/tcp connect check, which is left unset
+// with a warning. err is only for a structurally broken block.
+func resolveHealthcheck(serviceKey string, hc *Healthcheck) (*composeHealth, string, error) <span class="cov8" title="1">{
+        if hc == nil || len(hc.Test) == 0 </span><span class="cov8" title="1">{
+                return nil, "", nil
+        }</span>
+
+        <span class="cov8" title="1">command, argv, disabled, err := healthcheckCommand(serviceKey, hc.Test)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, "", err
+        }</span>
+        <span class="cov8" title="1">if disabled </span><span class="cov8" title="1">{
+                return nil, "", nil
+        }</span>
+
+        <span class="cov8" title="1">probe, ok := httpProbeFromCommand(command)
+        if !ok </span><span class="cov8" title="1">{
+                if tcpOnlyPattern.MatchString(command) </span><span class="cov8" title="1">{
+                        warning := fmt.Sprintf("service %q: healthcheck command %q is a bare TCP connect check, which has no readiness equivalent here; deploy it with an app.yaml health: block (HTTP path or exec) if one is needed", serviceKey, command)
+                        return nil, warning, nil
+                }</span>
+                <span class="cov8" title="1">probe = store.ServiceProbe{Exec: argv}</span>
+        }
+
+        <span class="cov8" title="1">interval, err := parseComposeDuration(hc.Interval)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, "", fmt.Errorf("service %q: healthcheck.interval: %w", serviceKey, err)
+        }</span>
+        <span class="cov8" title="1">timeout, err := parseComposeDuration(hc.Timeout)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, "", fmt.Errorf("service %q: healthcheck.timeout: %w", serviceKey, err)
+        }</span>
+        <span class="cov8" title="1">startPeriod, err := parseComposeDuration(hc.StartPeriod)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, "", fmt.Errorf("service %q: healthcheck.start_period: %w", serviceKey, err)
+        }</span>
+        <span class="cov8" title="1">probe.Interval, probe.Timeout, probe.Failures = interval, timeout, hc.Retries
+
+        out := &amp;composeHealth{ServiceProbe: probe}
+        if startPeriod &gt; 0 </span><span class="cov8" title="1">{
+                // Docker's own budget: failures inside start_period don't count,
+                // then retries consecutive failures at interval mark it unhealthy.
+                out.ReadyTimeout = startPeriod + interval*time.Duration(max(hc.Retries, 1))
+        }</span>
+        <span class="cov8" title="1">return out, "", nil</span>
+}
+
+// healthcheckCommand normalizes test into a shell command string (for
+// matching) and the argv an exec probe would run. CMD keeps its argv;
+// CMD-SHELL, and a list with no recognized prefix (Compose's own
+// leniency), run through /bin/sh -c.
+func healthcheckCommand(serviceKey string, test []string) (command string, argv []string, disabled bool, err error) <span class="cov8" title="1">{
+        switch test[0] </span>{
+        case "NONE":<span class="cov8" title="1">
+                return "", nil, true, nil</span>
+        case "CMD-SHELL":<span class="cov8" title="1">
+                if len(test) &lt; 2 </span><span class="cov8" title="1">{
+                        return "", nil, false, fmt.Errorf("service %q: healthcheck: CMD-SHELL requires a command string", serviceKey)
+                }</span>
+                <span class="cov8" title="1">return test[1], probepkg.ShellCommand(test[1]), false, nil</span>
+        case "CMD":<span class="cov8" title="1">
+                if len(test) &lt; 2 </span><span class="cov0" title="0">{
+                        return "", nil, false, fmt.Errorf("service %q: healthcheck: CMD requires a command", serviceKey)
+                }</span>
+                <span class="cov8" title="1">return strings.Join(test[1:], " "), test[1:], false, nil</span>
+        default:<span class="cov8" title="1">
+                joined := strings.Join(test, " ")
+                return joined, probepkg.ShellCommand(joined), false, nil</span>
+        }
+}
+
+// httpProbeFromCommand maps a curl/wget command onto an HTTP probe with
+// the same semantics: curl follows redirects only with -L and accepts any
+// status below 400 with -f; wget follows redirects by default; -k and
+// --no-check-certificate skip TLS verification. ok is false for anything
+// that is not a curl/wget call to a URL.
+func httpProbeFromCommand(command string) (store.ServiceProbe, bool) <span class="cov8" title="1">{
+        fields := strings.Fields(command)
+        var tool string
+        for _, f := range fields </span><span class="cov8" title="1">{
+                base := f[strings.LastIndex(f, "/")+1:]
+                if base == "curl" || base == "wget" </span><span class="cov8" title="1">{
+                        tool = base
+                        break</span>
+                }
+        }
+        <span class="cov8" title="1">if tool == "" </span><span class="cov8" title="1">{
+                return store.ServiceProbe{}, false
+        }</span>
+        <span class="cov8" title="1">match := healthcheckURLPattern.FindString(command)
+        if match == "" </span><span class="cov0" title="0">{
+                return store.ServiceProbe{}, false
+        }</span>
+        <span class="cov8" title="1">u, err := url.Parse(match)
+        if err != nil </span><span class="cov0" title="0">{
+                return store.ServiceProbe{}, false
+        }</span>
+
+        <span class="cov8" title="1">p := store.ServiceProbe{Path: u.Path}
+        if p.Path == "" </span><span class="cov8" title="1">{
+                p.Path = "/"
+        }</span>
+        <span class="cov8" title="1">if u.Scheme == probepkg.SchemeHTTPS </span><span class="cov8" title="1">{
+                p.Scheme = probepkg.SchemeHTTPS
+        }</span>
+        <span class="cov8" title="1">if tool == "curl" </span><span class="cov8" title="1">{
+                follow := hasFlag(fields, "-L", "--location", 'L')
+                p.FollowRedirects = &amp;follow
+                if hasFlag(fields, "-f", "--fail", 'f') || hasFlag(fields, "", "--fail-with-body", 0) </span><span class="cov8" title="1">{
+                        p.ExpectedStatus = "200-399"
+                }</span>
+                <span class="cov8" title="1">p.TLSSkipVerify = p.Scheme == probepkg.SchemeHTTPS &amp;&amp; hasFlag(fields, "-k", "--insecure", 'k')</span>
+        } else<span class="cov8" title="1"> {
+                p.TLSSkipVerify = p.Scheme == probepkg.SchemeHTTPS &amp;&amp; hasFlag(fields, "", "--no-check-certificate", 0)
+        }</span>
+        <span class="cov8" title="1">return p, true</span>
+}
+
+// hasFlag reports whether fields carries short, long, or letter inside a
+// combined short-flag group such as -fsSL.
+func hasFlag(fields []string, short, long string, letter byte) bool <span class="cov8" title="1">{
+        for _, f := range fields </span><span class="cov8" title="1">{
+                if (short != "" &amp;&amp; f == short) || f == long </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+                <span class="cov8" title="1">if letter != 0 &amp;&amp; len(f) &gt; 1 &amp;&amp; f[0] == '-' &amp;&amp; f[1] != '-' &amp;&amp; strings.IndexByte(f[1:], letter) &gt;= 0 </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+        }
+        <span class="cov8" title="1">return false</span>
+}
+
+// parseComposeDuration treats "" as "not specified", matching
+// internal/deploy's own parseDurationOrZero for app.yaml's health config.
+// Compose's own duration suffixes (h/m/s/ms/us) are the same shape Go's
+// time.ParseDuration accepts, so no separate parser is needed.
+func parseComposeDuration(s string) (time.Duration, error) <span class="cov8" title="1">{
+        if s == "" </span><span class="cov8" title="1">{
+                return 0, nil
+        }</span>
+        <span class="cov8" title="1">d, err := time.ParseDuration(s)
+        if err != nil </span><span class="cov8" title="1">{
+                return 0, fmt.Errorf("invalid duration %q: %w", s, err)
+        }</span>
+        <span class="cov8" title="1">return d, nil</span>
+}
+
+// toStoreHealth converts h into the shape ToDesiredServices stores.
+func (h *composeHealth) toStoreHealth() *store.ServiceHealth <span class="cov8" title="1">{
+        if h == nil </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">p := h.ServiceProbe
+        return &amp;store.ServiceHealth{Readiness: &amp;p, ReadyTimeout: h.ReadyTimeout}</span>
+}
+
+// toSpecHealth converts h into app.yaml's string-duration shape for
+// ExpandBuildService's git-sourced path.
+func (h *composeHealth) toSpecHealth() *spec.Health <span class="cov8" title="1">{
+        if h == nil </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">return &amp;spec.Health{
+                Readiness: &amp;spec.Probe{
+                        Path:            h.Path,
+                        Scheme:          h.Scheme,
+                        TLSSkipVerify:   h.TLSSkipVerify,
+                        FollowRedirects: h.FollowRedirects,
+                        ExpectedStatus:  spec.StatusCodes(h.ExpectedStatus),
+                        Exec:            spec.ExecCommand(h.Exec),
+                        Interval:        durationToSpecString(h.Interval),
+                        Timeout:         durationToSpecString(h.Timeout),
+                        Failures:        h.Failures,
+                },
+                ReadyTimeout: durationToSpecString(h.ReadyTimeout),
+        }</span>
+}
+
+func durationToSpecString(d time.Duration) string <span class="cov8" title="1">{
+        if d &lt;= 0 </span><span class="cov8" title="1">{
+                return ""
+        }</span>
+        <span class="cov8" title="1">return d.String()</span>
+}
+</pre>
+
+		<pre class="file" id="file3" style="display: none">package compose
+
+import (
+        "crypto/rand"
+        "encoding/base64"
+        "encoding/hex"
+        "fmt"
+        "regexp"
+        "strconv"
+        "strings"
+)
+
+// generationKinds are the SERVICE_&lt;KIND&gt;_... prefixes a real template
+// catalog's own convention uses for "auto-generate this at deploy
+// time" (a random password, username, or encoded secret). Every other
+// SERVICE_ name (FQDN, or an arbitrary third-party credential name) is
+// either satisfied by its own bash-style ${...:-default} or left
+// unresolved for the caller to reject.
+var generationKinds = map[string]bool{
+        "PASSWORD":   true,
+        "USER":       true,
+        "BASE64":     true,
+        "HEX":        true,
+        "REALBASE64": true,
+}
+
+var magicVarPattern = regexp.MustCompile(`\$\{SERVICE_([A-Za-z0-9_]+?)(?::-([^}]*))?\}|\$SERVICE_([A-Za-z0-9_]+)`)
+
+// MagicVar is one parsed SERVICE_ placeholder found in an env value.
+type MagicVar struct {
+        Token       string
+        Kind        string
+        Key         string
+        Length      int
+        Default     string
+        HasDefault  bool
+        Generatable bool
+}
+
+// FindMagicVars returns every SERVICE_ token in s, in encounter order,
+// including duplicates.
+func FindMagicVars(s string) []MagicVar <span class="cov8" title="1">{
+        matches := magicVarPattern.FindAllStringSubmatch(s, -1)
+        out := make([]MagicVar, 0, len(matches))
+        for _, m := range matches </span><span class="cov8" title="1">{
+                name := m[1]
+                if name == "" </span><span class="cov8" title="1">{
+                        name = m[3]
+                }</span>
+                <span class="cov8" title="1">kind, key, length := splitMagicVarName(name)
+                out = append(out, MagicVar{
+                        Token:       m[0],
+                        Kind:        kind,
+                        Key:         key,
+                        Length:      length,
+                        Default:     m[2],
+                        HasDefault:  strings.Contains(m[0], ":-"),
+                        Generatable: generationKinds[kind],
+                })</span>
+        }
+        <span class="cov8" title="1">return out</span>
+}
+
+// splitMagicVarName splits "PASSWORD_64_APIKEY" into ("PASSWORD", 64,
+// "APIKEY"), or "FQDN_ACTIVEPIECES" into ("FQDN", 0, "ACTIVEPIECES").
+// The length segment only applies to generatable kinds: "DB_NAME"
+// stays ("DB", 0, "NAME"), not misread as a length hint.
+func splitMagicVarName(name string) (kind, key string, length int) <span class="cov8" title="1">{
+        kind, rest, found := strings.Cut(name, "_")
+        if !found </span><span class="cov0" title="0">{
+                return kind, "", 0
+        }</span>
+        <span class="cov8" title="1">if generationKinds[kind] </span><span class="cov8" title="1">{
+                if lenPart, keyPart, found := strings.Cut(rest, "_"); found </span><span class="cov8" title="1">{
+                        if n, err := strconv.Atoi(lenPart); err == nil </span><span class="cov8" title="1">{
+                                return kind, keyPart, n
+                        }</span>
+                } else<span class="cov8" title="1"> if n, err := strconv.Atoi(rest); err == nil </span><span class="cov0" title="0">{
+                        return kind, "", n
+                }</span>
+        }
+        <span class="cov8" title="1">return kind, rest, 0</span>
+}
+
+const (
+        defaultPasswordLength = 32
+        defaultUsernameLength = 16
+        defaultHexLength      = 64
+        defaultBase64Length   = 32
+)
+
+// GenerateValue produces a real value for a generatable MagicVar kind.
+// length &lt;= 0 uses each kind's own sane default.
+func GenerateValue(kind string, length int) (string, error) <span class="cov8" title="1">{
+        switch kind </span>{
+        case "PASSWORD":<span class="cov8" title="1">
+                return randomString(alphanumeric, orDefault(length, defaultPasswordLength))</span>
+        case "USER":<span class="cov8" title="1">
+                return randomString(lowerAlphanumeric, orDefault(length, defaultUsernameLength))</span>
+        case "HEX":<span class="cov8" title="1">
+                return randomHex(orDefault(length, defaultHexLength))</span>
+        case "BASE64", "REALBASE64":<span class="cov8" title="1">
+                return randomBase64(orDefault(length, defaultBase64Length))</span>
+        default:<span class="cov8" title="1">
+                return "", fmt.Errorf("compose: %q is not a generatable magic-var kind", kind)</span>
+        }
+}
+
+func orDefault(length, def int) int <span class="cov8" title="1">{
+        if length &lt;= 0 </span><span class="cov8" title="1">{
+                return def
+        }</span>
+        <span class="cov8" title="1">return length</span>
+}
+
+const (
+        alphanumeric      = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        lowerAlphanumeric = "abcdefghijklmnopqrstuvwxyz0123456789"
+)
+
+func randomString(alphabet string, length int) (string, error) <span class="cov8" title="1">{
+        buf := make([]byte, length)
+        if _, err := rand.Read(buf); err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("compose: generate random string: %w", err)
+        }</span>
+        <span class="cov8" title="1">out := make([]byte, length)
+        for i, b := range buf </span><span class="cov8" title="1">{
+                out[i] = alphabet[int(b)%len(alphabet)]
+        }</span>
+        <span class="cov8" title="1">return string(out), nil</span>
+}
+
+func randomHex(length int) (string, error) <span class="cov8" title="1">{
+        buf := make([]byte, (length+1)/2)
+        if _, err := rand.Read(buf); err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("compose: generate random hex: %w", err)
+        }</span>
+        <span class="cov8" title="1">return hex.EncodeToString(buf)[:length], nil</span>
+}
+
+// randomBase64 generates enough random bytes that URL-safe,
+// unpadded base64 encoding produces at least length characters, then
+// trims to exactly length: the exact byte/char ratio doesn't need to
+// match any particular convention, only "long enough to be a real
+// secret."
+func randomBase64(length int) (string, error) <span class="cov8" title="1">{
+        buf := make([]byte, length)
+        if _, err := rand.Read(buf); err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("compose: generate random base64: %w", err)
+        }</span>
+        <span class="cov8" title="1">enc := base64.RawURLEncoding.EncodeToString(buf)
+        if len(enc) &lt; length </span><span class="cov0" title="0">{
+                return enc, nil
+        }</span>
+        <span class="cov8" title="1">return enc[:length], nil</span>
+}
+</pre>
+
+		<pre class="file" id="file4" style="display: none">package compose
+
+import "fmt"
+
+// NoticeLevel distinguishes a purely informational Notice from an
+// operator-facing Warning about a semantic gap. Neither ever fails
+// Validate: both describe compose keywords that parsed successfully but
+// don't behave the way they would under real Docker Compose.
+type NoticeLevel string
+
+// The two NoticeLevel values Notices ever produces.
+const (
+        NoticeLevelNote    NoticeLevel = "note"
+        NoticeLevelWarning NoticeLevel = "warning"
+)
+
+// Notice is one non-blocking observation about a parsed compose file.
+type Notice struct {
+        Level   NoticeLevel
+        Message string
+}
+
+// Notices reports every non-blocking observation across f:
+//
+//   - restart: (NoticeLevelNote): Levelrail's reconciler, not Docker's
+//     native restart policy, is the sole authority on keeping a
+//     container running (see docker.ContainerSpec's own doc comment on
+//     why every container it creates gets Docker's "no" restart
+//     policy). A declared restart: policy other than "no" parses but
+//     has no effect, so this is surfaced as a note rather than
+//     fabricating a translation that wouldn't be true.
+//   - networks: (NoticeLevelWarning): every service in an app already
+//     shares one flat Docker network (internal/reconcile/application's
+//     NetworkName, one per app, not per compose network), so a compose
+//     file's custom networks: can't isolate services from each other
+//     here the way they would under real Compose. That's a real
+//     semantic gap for a file that expressed isolation intent, worth a
+//     warning rather than a silent drop.
+//   - depends_on: (NoticeLevelWarning): parsed but never used to
+//     sequence container startup order, so a service can start before
+//     what it depends on is ready. A real semantic gap, worth a warning
+//     so an operator whose service crashloops on startup isn't left
+//     guessing why.
+func (f *File) Notices() []Notice <span class="cov8" title="1">{
+        var notices []Notice
+        for _, name := range sortedServiceNames(f) </span><span class="cov8" title="1">{
+                svc := f.Services[name]
+                if svc.Restart != "" &amp;&amp; svc.Restart != "no" </span><span class="cov8" title="1">{
+                        notices = append(notices, Notice{
+                                Level:   NoticeLevelNote,
+                                Message: fmt.Sprintf("service %q: restart: %q is parsed but not applied; Levelrail's reconciler keeps containers running, not Docker's native restart policy", name, svc.Restart),
+                        })
+                }</span>
+        }
+        <span class="cov8" title="1">if f.declaresCustomNetworks() </span><span class="cov8" title="1">{
+                notices = append(notices, Notice{
+                        Level:   NoticeLevelWarning,
+                        Message: "networks: is declared but not enforced; every service in this app shares one network and can already reach every other service, regardless of any networks: assignment",
+                })
+        }</span>
+        <span class="cov8" title="1">if f.declaresDependsOn() </span><span class="cov8" title="1">{
+                notices = append(notices, Notice{
+                        Level:   NoticeLevelWarning,
+                        Message: "depends_on: is parsed but not enforced; the reconciler doesn't sequence container startup order, so a dependent service may start before what it depends on is ready",
+                })
+        }</span>
+        <span class="cov8" title="1">return notices</span>
+}
+
+func (f *File) declaresCustomNetworks() bool <span class="cov8" title="1">{
+        if len(f.Networks) &gt; 0 </span><span class="cov8" title="1">{
+                return true
+        }</span>
+        <span class="cov8" title="1">for _, name := range sortedServiceNames(f) </span><span class="cov8" title="1">{
+                if len(f.Services[name].Networks) &gt; 0 </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+        }
+        <span class="cov8" title="1">return false</span>
+}
+
+func (f *File) declaresDependsOn() bool <span class="cov8" title="1">{
+        for _, name := range sortedServiceNames(f) </span><span class="cov8" title="1">{
+                if len(f.Services[name].DependsOn) &gt; 0 </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+        }
+        <span class="cov8" title="1">return false</span>
+}
+</pre>
+
+		<pre class="file" id="file5" style="display: none">package compose
+
+import (
+        "fmt"
+        "strings"
+)
+
+// UnresolvedVar is one SERVICE_ token ResolveMagicVars couldn't resolve:
+// not a generatable kind, and no bash-style ${...:-default} fallback.
+type UnresolvedVar struct {
+        Service string
+        EnvKey  string
+        Token   string
+}
+
+func (u UnresolvedVar) String() string <span class="cov8" title="1">{
+        return fmt.Sprintf("service %q: env %q: %s", u.Service, u.EnvKey, u.Token)
+}</span>
+
+// ResolveMagicVars scans every service's environment and command for
+// SERVICE_ placeholders, mutating f in place: a token with a bash-style
+// default substitutes that default as a literal value; a generatable
+// token (PASSWORD/USER/BASE64/HEX/REALBASE64) found in Environment is
+// removed from it entirely and returned via secretEnv instead, since its
+// real value belongs in secret storage, not a literal desired-state
+// column. Command has no equivalent secret-storage indirection (a
+// Command entry can't be swapped for a decrypted-at-create-time secret
+// the way an env var can), so a generatable token found there is always
+// reported as unresolved instead, same as a default-less non-generatable
+// token.
+//
+// generate is called once per unique (kind, key) pair even when
+// referenced by several services, so they all resolve to the same
+// value (e.g. an app service's DB_PASSWORD and its sibling postgres
+// service's own POSTGRES_PASSWORD both referencing SERVICE_PASSWORD_DB).
+// persist is then called once per (service, env key) that ended up
+// secret-backed, since secret storage is keyed per real service, not
+// per magic-var key: the caller is expected to write that same value
+// into whichever per-service secret store its later container-create
+// step reads from.
+//
+// A magic-var token embedded inside a larger string (not the entire env
+// value, e.g. a composite DATABASE_URL) can still splice in a
+// generated value: the whole assembled string is then secret-backed
+// (persisted and added to secretEnv), the same as a whole-value
+// generatable token, since it now contains one. A default-less,
+// non-generatable token in that position is unresolved.
+func ResolveMagicVars(
+        f *File,
+        generate func(kind, key string, length int) (string, error),
+        persist func(serviceKey, envKey, value string) error,
+) (secretEnv map[string][]string, unresolved []UnresolvedVar, err error) <span class="cov8" title="1">{
+        secretEnv = make(map[string][]string)
+        generated := make(map[string]string)
+
+        for _, svcKey := range sortedServiceNames(f) </span><span class="cov8" title="1">{
+                svc := f.Services[svcKey]
+                changed := false
+
+                if len(svc.Command) &gt; 0 </span><span class="cov8" title="1">{
+                        newCommand := make(Command, len(svc.Command))
+                        for i, entry := range svc.Command </span><span class="cov8" title="1">{
+                                resolved, entryUnresolved := resolveCommandEntry(f, svcKey, i, entry)
+                                newCommand[i] = resolved
+                                unresolved = append(unresolved, entryUnresolved...)
+                        }</span>
+                        <span class="cov8" title="1">svc.Command = newCommand
+                        changed = true</span>
+                }
+
+                <span class="cov8" title="1">if len(svc.Environment) == 0 </span><span class="cov8" title="1">{
+                        if changed </span><span class="cov8" title="1">{
+                                f.Services[svcKey] = svc
+                        }</span>
+                        <span class="cov8" title="1">continue</span>
+                }
+                <span class="cov8" title="1">newEnv := make(Environment, len(svc.Environment))
+                for envKey, value := range svc.Environment </span><span class="cov8" title="1">{
+                        vars := FindMagicVars(value)
+                        if len(vars) == 0 </span><span class="cov8" title="1">{
+                                newEnv[envKey] = value
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">if len(vars) == 1 &amp;&amp; vars[0].Token == value </span><span class="cov8" title="1">{
+                                v := vars[0]
+                                if v.Kind == "FQDN" </span><span class="cov8" title="1">{
+                                        if url, ok := resolveFQDN(f, svcKey); ok </span><span class="cov8" title="1">{
+                                                newEnv[envKey] = url
+                                                continue</span>
+                                        }
+                                }
+                                <span class="cov8" title="1">if v.Generatable </span><span class="cov8" title="1">{
+                                        val, genErr := resolveGenerated(generated, v, generate)
+                                        if genErr != nil </span><span class="cov8" title="1">{
+                                                return nil, nil, fmt.Errorf("service %q: env %q: %w", svcKey, envKey, genErr)
+                                        }</span>
+                                        <span class="cov8" title="1">if err := persist(svcKey, envKey, val); err != nil </span><span class="cov8" title="1">{
+                                                return nil, nil, fmt.Errorf("service %q: env %q: persist secret: %w", svcKey, envKey, err)
+                                        }</span>
+                                        <span class="cov8" title="1">secretEnv[svcKey] = append(secretEnv[svcKey], envKey)
+                                        continue</span>
+                                }
+                                <span class="cov8" title="1">if v.HasDefault </span><span class="cov8" title="1">{
+                                        newEnv[envKey] = v.Default
+                                        continue</span>
+                                }
+                                <span class="cov8" title="1">unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: envKey, Token: v.Token})
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">resolved := value
+                        hasSecret := false
+                        for _, v := range vars </span><span class="cov8" title="1">{
+                                if v.Kind == "FQDN" </span><span class="cov8" title="1">{
+                                        if url, ok := resolveFQDN(f, svcKey); ok </span><span class="cov8" title="1">{
+                                                resolved = strings.Replace(resolved, v.Token, url, 1)
+                                                continue</span>
+                                        }
+                                }
+                                <span class="cov8" title="1">if v.Generatable </span><span class="cov8" title="1">{
+                                        val, genErr := resolveGenerated(generated, v, generate)
+                                        if genErr != nil </span><span class="cov0" title="0">{
+                                                return nil, nil, fmt.Errorf("service %q: env %q: %w", svcKey, envKey, genErr)
+                                        }</span>
+                                        <span class="cov8" title="1">resolved = strings.Replace(resolved, v.Token, val, 1)
+                                        hasSecret = true
+                                        continue</span>
+                                }
+                                <span class="cov8" title="1">if v.HasDefault </span><span class="cov8" title="1">{
+                                        resolved = strings.Replace(resolved, v.Token, v.Default, 1)
+                                        continue</span>
+                                }
+                                <span class="cov8" title="1">unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: envKey, Token: v.Token})</span>
+                        }
+                        <span class="cov8" title="1">if hasSecret </span><span class="cov8" title="1">{
+                                if err := persist(svcKey, envKey, resolved); err != nil </span><span class="cov0" title="0">{
+                                        return nil, nil, fmt.Errorf("service %q: env %q: persist secret: %w", svcKey, envKey, err)
+                                }</span>
+                                <span class="cov8" title="1">secretEnv[svcKey] = append(secretEnv[svcKey], envKey)
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">newEnv[envKey] = resolved</span>
+                }
+                <span class="cov8" title="1">svc.Environment = newEnv
+                f.Services[svcKey] = svc</span>
+        }
+        <span class="cov8" title="1">return secretEnv, unresolved, nil</span>
+}
+
+// resolveFQDN resolves ${SERVICE_FQDN_*} to the referencing service's
+// own assigned domain (x-levelrail-domains), ignoring the token's own
+// key suffix: FQDN almost always means "my own public URL," and that's
+// a per-service fact, not a value shared across services the way a
+// generated secret's (kind, key) is.
+func resolveFQDN(f *File, svcKey string) (string, bool) <span class="cov8" title="1">{
+        domain, ok := f.Domains[svcKey]
+        if !ok || domain == "" </span><span class="cov8" title="1">{
+                return "", false
+        }</span>
+        <span class="cov8" title="1">return "https://" + domain, true</span>
+}
+
+// resolveCommandEntry resolves every magic var in one Command entry the
+// same way an embedded Environment token resolves (FQDN and
+// bash-default tokens substitute in place), except a generatable-kind
+// token: Command has no secret-storage indirection to land a generated
+// value in (see ResolveMagicVars), so it's reported as unresolved
+// instead of generated.
+func resolveCommandEntry(f *File, svcKey string, index int, entry string) (string, []UnresolvedVar) <span class="cov8" title="1">{
+        vars := FindMagicVars(entry)
+        if len(vars) == 0 </span><span class="cov8" title="1">{
+                return entry, nil
+        }</span>
+
+        <span class="cov8" title="1">location := fmt.Sprintf("command[%d]", index)
+        resolved := entry
+        var unresolved []UnresolvedVar
+        for _, v := range vars </span><span class="cov8" title="1">{
+                if v.Kind == "FQDN" </span><span class="cov8" title="1">{
+                        if url, ok := resolveFQDN(f, svcKey); ok </span><span class="cov8" title="1">{
+                                resolved = strings.Replace(resolved, v.Token, url, 1)
+                                continue</span>
+                        }
+                }
+                <span class="cov8" title="1">if v.Generatable </span><span class="cov8" title="1">{
+                        unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: location, Token: v.Token})
+                        continue</span>
+                }
+                <span class="cov8" title="1">if v.HasDefault </span><span class="cov8" title="1">{
+                        resolved = strings.Replace(resolved, v.Token, v.Default, 1)
+                        continue</span>
+                }
+                <span class="cov8" title="1">unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: location, Token: v.Token})</span>
+        }
+        <span class="cov8" title="1">return resolved, unresolved</span>
+}
+
+func resolveGenerated(cache map[string]string, v MagicVar, generate func(kind, key string, length int) (string, error)) (string, error) <span class="cov8" title="1">{
+        cacheKey := v.Kind + ":" + v.Key
+        if val, ok := cache[cacheKey]; ok </span><span class="cov8" title="1">{
+                return val, nil
+        }</span>
+        <span class="cov8" title="1">val, err := generate(v.Kind, v.Key, v.Length)
+        if err != nil </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("generate %s: %w", v.Token, err)
+        }</span>
+        <span class="cov8" title="1">cache[cacheKey] = val
+        return val, nil</span>
+}
+</pre>
+
+		<pre class="file" id="file6" style="display: none">package compose
+
+import (
+        "fmt"
+
+        "github.com/GLINCKER/levelrail/internal/spec"
+        "github.com/GLINCKER/levelrail/internal/store"
+)
+
+// ToDesiredServices translates f into one store.DesiredService per
+// compose service, named "&lt;appName&gt;-&lt;serviceKey&gt;" and linked to
+// appName as their AppID (matching the naming convention
+// internal/deploy's own multi-service fan-out uses). Runs Validate
+// first, so a caller only needs to call this one function.
+//
+// warnings carries one message per service whose healthcheck: could not
+// be translated (see resolveHealthcheck), for the caller to surface.
+//
+// A bind-mount volumes: entry (compose.go's own doc comment) becomes a
+// store.ServiceBindMount, not a store.ServiceVolume: the caller must
+// require AbilityRoot before persisting a result carrying any
+// BindMounts, this package has no notion of a caller's abilities.
+func ToDesiredServices(appName string, f *File) (services []store.DesiredService, warnings []string, err error) <span class="cov8" title="1">{
+        if err := f.Validate(); err != nil </span><span class="cov8" title="1">{
+                return nil, nil, err
+        }</span>
+
+        <span class="cov8" title="1">names := sortedServiceNames(f)
+        out := make([]store.DesiredService, 0, len(names))
+        for _, key := range names </span><span class="cov8" title="1">{
+                svc := f.Services[key]
+                if err := spec.ValidateLabels(svc.Labels); err != nil </span><span class="cov8" title="1">{
+                        return nil, nil, fmt.Errorf("service %q: %w", key, err)
+                }</span>
+                <span class="cov8" title="1">pullPolicy, err := normalizePullPolicy(svc.PullPolicy)
+                if err != nil </span><span class="cov8" title="1">{
+                        return nil, nil, fmt.Errorf("service %q: %w", key, err)
+                }</span>
+
+                <span class="cov8" title="1">d := store.DesiredService{
+                        Name:       appName + "-" + key,
+                        AppID:      appName,
+                        Image:      svc.Image,
+                        Env:        map[string]string(svc.Environment),
+                        Labels:     svc.Labels,
+                        Command:    svc.Command,
+                        Entrypoint: svc.Entrypoint,
+                        PullPolicy: pullPolicy,
+                }
+                for _, p := range svc.Ports </span><span class="cov8" title="1">{
+                        d.Port = p.ContainerPort
+                        break</span>
+                }
+                <span class="cov8" title="1">if domain := f.Domains[key]; domain != "" </span><span class="cov8" title="1">{
+                        d.Domains = []string{domain}
+                }</span>
+                <span class="cov8" title="1">for _, v := range svc.Volumes </span><span class="cov8" title="1">{
+                        if v.HostPath != "" </span><span class="cov8" title="1">{
+                                d.BindMounts = append(d.BindMounts, store.ServiceBindMount{
+                                        HostPath:      v.HostPath,
+                                        ContainerPath: v.ContainerPath,
+                                        ReadOnly:      v.ReadOnly,
+                                })
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">d.Volumes = append(d.Volumes, store.ServiceVolume{
+                                Name:          volumeName(appName, key, v.Name),
+                                ContainerPath: v.ContainerPath,
+                        })</span>
+                }
+
+                <span class="cov8" title="1">health, warning, err := resolveHealthcheck(key, svc.Healthcheck)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, nil, err
+                }</span>
+                <span class="cov8" title="1">if warning != "" </span><span class="cov8" title="1">{
+                        warnings = append(warnings, warning)
+                }</span>
+                <span class="cov8" title="1">d.Health = health.toStoreHealth()
+
+                out = append(out, d)</span>
+        }
+        <span class="cov8" title="1">return out, warnings, nil</span>
+}
+
+// volumeName gives a compose service's own logical volume name a
+// platform-prefixed, globally-unique Docker volume name, mirroring
+// internal/deploy's own volumeName convention one level up (app +
+// service scoped, since two compose files can each declare a "data"
+// volume).
+func volumeName(appName, serviceKey, logicalName string) string <span class="cov8" title="1">{
+        return "app-" + appName + "-" + serviceKey + "-" + logicalName
+}</span>
+</pre>
+
+		<pre class="file" id="file7" style="display: none">package compose
+
+import (
+        "fmt"
+        "strconv"
+        "strings"
+
+        "gopkg.in/yaml.v3"
+)
+
+type rawFile struct {
+        Version  string                `yaml:"version"`
+        Services map[string]rawService `yaml:"services"`
+        Domains  map[string]string     `yaml:"x-levelrail-domains"`
+        // Networks is top-level networks:, decoded down to just its keys
+        // (a network's driver/config body decodes into the zero-field
+        // struct{} and is discarded): Notices only needs to know whether
+        // custom networks were declared at all, not their configuration.
+        Networks map[string]struct{} `yaml:"networks"`
+}
+
+type rawService struct {
+        Image       string            `yaml:"image"`
+        Build       *rawBuild         `yaml:"build"`
+        Environment Environment       `yaml:"environment"`
+        Ports       []Port            `yaml:"ports"`
+        Volumes     []Volume          `yaml:"volumes"`
+        Labels      map[string]string `yaml:"labels"`
+        Networks    Networks          `yaml:"networks"`
+        Restart     string            `yaml:"restart"`
+        Healthcheck *Healthcheck      `yaml:"healthcheck"`
+        DependsOn   DependsOn         `yaml:"depends_on"`
+        Command     Command           `yaml:"command"`
+        Entrypoint  Command           `yaml:"entrypoint"`
+        PullPolicy  string            `yaml:"pull_policy"`
+}
+
+// Healthcheck is one service's healthcheck: block, Docker Compose's own
+// command-based health check schema (test/interval/timeout/retries/
+// start_period). Docker never runs it: resolveHealthcheck (healthcheck.go)
+// translates it into this platform's own readiness probe.
+type Healthcheck struct {
+        Test        healthcheckTest `yaml:"test"`
+        Interval    string          `yaml:"interval"`
+        Timeout     string          `yaml:"timeout"`
+        Retries     int             `yaml:"retries"`
+        StartPeriod string          `yaml:"start_period"`
+}
+
+// healthcheckTest is healthcheck.test's string-or-list union: a bare
+// string is Compose's own shorthand for ["CMD-SHELL", "&lt;string&gt;"].
+type healthcheckTest []string
+
+// UnmarshalYAML implements the union described above.
+func (t *healthcheckTest) UnmarshalYAML(node *yaml.Node) error <span class="cov8" title="1">{
+        switch node.Kind </span>{
+        case yaml.ScalarNode:<span class="cov8" title="1">
+                *t = []string{"CMD-SHELL", node.Value}
+                return nil</span>
+        case yaml.SequenceNode:<span class="cov8" title="1">
+                var items []string
+                if err := node.Decode(&amp;items); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("healthcheck: test: %w", err)
+                }</span>
+                <span class="cov8" title="1">*t = items
+                return nil</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("healthcheck: test: must be a string or a list")</span>
+        }
+}
+
+// Environment is environment:'s string-or-list union: a KEY: VALUE map,
+// or a list of "KEY=VALUE" strings (a bare "KEY" means "inherit from
+// the host shell" in real Compose, decoded here as an empty value
+// since there's no host shell to inherit from).
+type Environment map[string]string
+
+// UnmarshalYAML implements the map-or-list union described above.
+func (e *Environment) UnmarshalYAML(node *yaml.Node) error <span class="cov8" title="1">{
+        switch node.Kind </span>{
+        case yaml.MappingNode:<span class="cov8" title="1">
+                var m map[string]string
+                if err := node.Decode(&amp;m); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("environment: %w", err)
+                }</span>
+                <span class="cov8" title="1">*e = m
+                return nil</span>
+        case yaml.SequenceNode:<span class="cov8" title="1">
+                var items []string
+                if err := node.Decode(&amp;items); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("environment: %w", err)
+                }</span>
+                <span class="cov8" title="1">m := make(map[string]string, len(items))
+                for _, item := range items </span><span class="cov8" title="1">{
+                        key, value, _ := strings.Cut(item, "=")
+                        m[key] = value
+                }</span>
+                <span class="cov8" title="1">*e = m
+                return nil</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("environment: must be a mapping or a list of KEY=VALUE strings")</span>
+        }
+}
+
+// Networks is a service's own networks:'s list-or-map union: a plain
+// list of network names, or a map of name to per-network config
+// (aliases, ipv4_address, ...) this decodes down to just the name,
+// same reasoning as rawFile.Networks above.
+type Networks []string
+
+// UnmarshalYAML implements the list-or-map union described above.
+func (n *Networks) UnmarshalYAML(node *yaml.Node) error <span class="cov8" title="1">{
+        switch node.Kind </span>{
+        case yaml.SequenceNode:<span class="cov8" title="1">
+                var items []string
+                if err := node.Decode(&amp;items); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("networks: %w", err)
+                }</span>
+                <span class="cov8" title="1">*n = items
+                return nil</span>
+        case yaml.MappingNode:<span class="cov8" title="1">
+                names := make([]string, 0, len(node.Content)/2)
+                for i := 0; i &lt; len(node.Content); i += 2 </span><span class="cov8" title="1">{
+                        names = append(names, node.Content[i].Value)
+                }</span>
+                <span class="cov8" title="1">*n = names
+                return nil</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("networks: must be a list or map of network names")</span>
+        }
+}
+
+// DependsOn is a service's own depends_on:'s list-or-map union, the same
+// shape as Networks: either a plain list of service names, or a map of
+// name to per-dependency config (condition, restart, ...) decoded down
+// to just the names.
+type DependsOn []string
+
+// UnmarshalYAML implements the list-or-map union described above.
+func (d *DependsOn) UnmarshalYAML(node *yaml.Node) error <span class="cov8" title="1">{
+        switch node.Kind </span>{
+        case yaml.SequenceNode:<span class="cov8" title="1">
+                var items []string
+                if err := node.Decode(&amp;items); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("depends_on: %w", err)
+                }</span>
+                <span class="cov8" title="1">*d = items
+                return nil</span>
+        case yaml.MappingNode:<span class="cov8" title="1">
+                names := make([]string, 0, len(node.Content)/2)
+                for i := 0; i &lt; len(node.Content); i += 2 </span><span class="cov8" title="1">{
+                        names = append(names, node.Content[i].Value)
+                }</span>
+                <span class="cov8" title="1">*d = names
+                return nil</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("depends_on: must be a list or map of service names")</span>
+        }
+}
+
+// UnmarshalYAML supports both of ports:'s forms: the short scalar form
+// ("container" or "host:container") and the long mapping form
+// (target/published/protocol/mode keys). mode: is accepted but ignored,
+// since Levelrail has no host-vs-ingress publishing distinction to
+// carry it onto.
+func (p *Port) UnmarshalYAML(node *yaml.Node) error <span class="cov8" title="1">{
+        switch node.Kind </span>{
+        case yaml.ScalarNode:<span class="cov8" title="1">
+                return p.parsePortShortForm(node.Value)</span>
+        case yaml.MappingNode:<span class="cov8" title="1">
+                return p.parsePortLongForm(node)</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("ports: entry must be a string (short form) or a mapping (long form)")</span>
+        }
+}
+
+func (p *Port) parsePortShortForm(raw string) error <span class="cov8" title="1">{
+        parts := strings.Split(raw, ":")
+        switch len(parts) </span>{
+        case 1:<span class="cov8" title="1">
+                port, err := parsePort(parts[0])
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("ports: %w", err)
+                }</span>
+                <span class="cov8" title="1">p.ContainerPort = port
+                return nil</span>
+        case 2:<span class="cov8" title="1">
+                host, err := parsePort(parts[0])
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("ports: host port: %w", err)
+                }</span>
+                <span class="cov8" title="1">container, err := parsePort(parts[1])
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("ports: container port: %w", err)
+                }</span>
+                <span class="cov8" title="1">p.HostPort = host
+                p.ContainerPort = container
+                return nil</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("ports: %q: an IP-bound form (\"ip:host:container\") is not supported", raw)</span>
+        }
+}
+
+// rawLongPort is ports:'s long mapping form. Target and Published use
+// yamlScalarString rather than int, since real Compose allows either
+// spelling (target: 80 or target: "80") for both keys.
+type rawLongPort struct {
+        Target    yamlScalarString `yaml:"target"`
+        Published yamlScalarString `yaml:"published"`
+        Protocol  string           `yaml:"protocol"`
+        Mode      string           `yaml:"mode"`
+}
+
+func (p *Port) parsePortLongForm(node *yaml.Node) error <span class="cov8" title="1">{
+        var raw rawLongPort
+        if err := node.Decode(&amp;raw); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("ports: %w", err)
+        }</span>
+        <span class="cov8" title="1">if raw.Target == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("ports: target is required")
+        }</span>
+        <span class="cov8" title="1">target, err := parsePort(string(raw.Target))
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("ports: target: %w", err)
+        }</span>
+        <span class="cov8" title="1">switch raw.Protocol </span>{
+        case "", "tcp":<span class="cov8" title="1"></span>
+        default:<span class="cov8" title="1">
+                return fmt.Errorf("ports: target %d: protocol %q is not supported, only tcp is", target, raw.Protocol)</span>
+        }
+        <span class="cov8" title="1">p.ContainerPort = target
+        if raw.Published == "" </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">if strings.Contains(string(raw.Published), "-") </span><span class="cov8" title="1">{
+                return fmt.Errorf("ports: target %d: a published port range is not supported, publish a single port", target)
+        }</span>
+        <span class="cov8" title="1">host, err := parsePort(string(raw.Published))
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("ports: target %d: published: %w", target, err)
+        }</span>
+        <span class="cov8" title="1">p.HostPort = host
+        return nil</span>
+}
+
+// yamlScalarString decodes any YAML scalar (string or number) into its
+// raw text, so a long-form key written as an unquoted number (target:
+// 80) and one written as a string (target: "80") both parse the same.
+type yamlScalarString string
+
+func (s *yamlScalarString) UnmarshalYAML(node *yaml.Node) error <span class="cov8" title="1">{
+        if node.Kind != yaml.ScalarNode </span><span class="cov0" title="0">{
+                return fmt.Errorf("must be a string or a number")
+        }</span>
+        <span class="cov8" title="1">*s = yamlScalarString(node.Value)
+        return nil</span>
+}
+
+func parsePort(s string) (int, error) <span class="cov8" title="1">{
+        n, err := strconv.Atoi(s)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("%q is not a valid port number", s)
+        }</span>
+        <span class="cov8" title="1">if n &lt;= 0 || n &gt; 65535 </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("%q is out of range for a port number", s)
+        }</span>
+        <span class="cov8" title="1">return n, nil</span>
+}
+
+// UnmarshalYAML supports both of volumes:'s forms: the short scalar
+// form ("name:/path", optionally with a trailing ":ro"/":rw") and the
+// long mapping form (type/source/target/read_only keys). See
+// parseVolumeShortForm and parseVolumeLongForm.
+func (v *Volume) UnmarshalYAML(node *yaml.Node) error <span class="cov8" title="1">{
+        switch node.Kind </span>{
+        case yaml.ScalarNode:<span class="cov8" title="1">
+                return v.parseVolumeShortForm(node.Value)</span>
+        case yaml.MappingNode:<span class="cov8" title="1">
+                return v.parseVolumeLongForm(node)</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("volumes: entry must be a string (short form) or a mapping (long form)")</span>
+        }
+}
+
+// parseVolumeShortForm parses "name:/path", optionally with a trailing
+// ":ro"/":rw". The left side is a bind mount (HostPath set, Name left
+// empty) when it starts with "/", a real Docker Compose absolute host
+// path; one starting with "." is rejected outright, since there's no
+// defined working directory here to resolve a relative path against
+// (real Compose resolves it against the compose file's own directory,
+// which this package's direct-import path, unlike the git-sourced
+// expand path, doesn't have). Anything else is a named volume,
+// unchanged from before bind mounts existed.
+func (v *Volume) parseVolumeShortForm(raw string) error <span class="cov8" title="1">{
+        parts := strings.SplitN(raw, ":", 3)
+        if len(parts) &lt; 2 </span><span class="cov0" title="0">{
+                return fmt.Errorf("volumes: %q must be \"name:/path\"", raw)
+        }</span>
+        <span class="cov8" title="1">left, path := parts[0], parts[1]
+        if strings.HasPrefix(left, ".") </span><span class="cov8" title="1">{
+                return fmt.Errorf("volumes: %q: relative bind-mount paths are not supported, use an absolute path", raw)
+        }</span>
+        <span class="cov8" title="1">if strings.HasPrefix(left, "/") </span><span class="cov8" title="1">{
+                v.HostPath = left
+        }</span> else<span class="cov8" title="1"> {
+                v.Name = left
+        }</span>
+        <span class="cov8" title="1">v.ContainerPath = path
+        if len(parts) == 3 </span><span class="cov8" title="1">{
+                v.ReadOnly = parts[2] == "ro"
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// rawLongVolume is volumes:'s long mapping form. tmpfs and npipe
+// (real Compose's other two type: values) have no equivalent in
+// store.ServiceVolume/store.ServiceBindMount, so parseVolumeLongForm
+// rejects them rather than silently dropping the mount.
+type rawLongVolume struct {
+        Type     string `yaml:"type"`
+        Source   string `yaml:"source"`
+        Target   string `yaml:"target"`
+        ReadOnly bool   `yaml:"read_only"`
+}
+
+func (v *Volume) parseVolumeLongForm(node *yaml.Node) error <span class="cov8" title="1">{
+        var raw rawLongVolume
+        if err := node.Decode(&amp;raw); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("volumes: %w", err)
+        }</span>
+        <span class="cov8" title="1">if raw.Target == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("volumes: target is required")
+        }</span>
+        <span class="cov8" title="1">switch raw.Type </span>{
+        case "", "volume":<span class="cov8" title="1">
+                if raw.Source == "" </span><span class="cov8" title="1">{
+                        return fmt.Errorf("volumes: target %q must be a named volume (set source:) or use type: bind with an absolute source path", raw.Target)
+                }</span>
+                <span class="cov8" title="1">if strings.HasPrefix(raw.Source, "/") || strings.HasPrefix(raw.Source, ".") </span><span class="cov0" title="0">{
+                        return fmt.Errorf("volumes: target %q: source %q looks like a path, set type: bind instead", raw.Target, raw.Source)
+                }</span>
+                <span class="cov8" title="1">v.Name = raw.Source</span>
+        case "bind":<span class="cov8" title="1">
+                if raw.Source == "" </span><span class="cov0" title="0">{
+                        return fmt.Errorf("volumes: target %q: type: bind requires source", raw.Target)
+                }</span>
+                <span class="cov8" title="1">if strings.HasPrefix(raw.Source, ".") </span><span class="cov8" title="1">{
+                        return fmt.Errorf("volumes: target %q: relative bind-mount paths are not supported, use an absolute path", raw.Target)
+                }</span>
+                <span class="cov8" title="1">if !strings.HasPrefix(raw.Source, "/") </span><span class="cov0" title="0">{
+                        return fmt.Errorf("volumes: target %q: type: bind requires an absolute source path", raw.Target)
+                }</span>
+                <span class="cov8" title="1">v.HostPath = raw.Source</span>
+        default:<span class="cov8" title="1">
+                return fmt.Errorf("volumes: target %q: type: %q is not supported, use \"volume\" or \"bind\"", raw.Target, raw.Type)</span>
+        }
+        <span class="cov8" title="1">v.ContainerPath = raw.Target
+        v.ReadOnly = raw.ReadOnly
+        return nil</span>
+}
+
+// Command is command:'s and entrypoint:'s shared string-or-list union: a
+// list passes through as exec-form args, a bare string is Compose's own
+// shorthand for shell form, wrapped here as ["/bin/sh", "-c", "&lt;string&gt;"]
+// to match Docker's own documented interpretation of a string CMD or
+// ENTRYPOINT.
+type Command []string
+
+// UnmarshalYAML implements the string-or-list union described above.
+func (c *Command) UnmarshalYAML(node *yaml.Node) error <span class="cov8" title="1">{
+        switch node.Kind </span>{
+        case yaml.ScalarNode:<span class="cov8" title="1">
+                *c = []string{"/bin/sh", "-c", node.Value}
+                return nil</span>
+        case yaml.SequenceNode:<span class="cov8" title="1">
+                var items []string
+                if err := node.Decode(&amp;items); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("command: %w", err)
+                }</span>
+                <span class="cov8" title="1">*c = items
+                return nil</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("command: must be a string or a list")</span>
+        }
+}
+
+// UnmarshalYAML supports build:'s string-or-object union, just enough
+// to detect it's present; Validate rejects build: outright.
+func (b *rawBuild) UnmarshalYAML(node *yaml.Node) error <span class="cov8" title="1">{
+        if node.Kind == yaml.ScalarNode </span><span class="cov8" title="1">{
+                b.Context = node.Value
+                return nil
+        }</span>
+        <span class="cov8" title="1">var obj struct {
+                Context    string `yaml:"context"`
+                Dockerfile string `yaml:"dockerfile"`
+        }
+        if err := node.Decode(&amp;obj); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("build: %w", err)
+        }</span>
+        <span class="cov8" title="1">b.Context, b.Dockerfile = obj.Context, obj.Dockerfile
+        return nil</span>
+}
+</pre>
+
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
