@@ -35,6 +35,7 @@ import {
 } from '../../queries/certificates'
 import type { CertificateStatus } from '../../queries/certificates'
 import { CleanUpDockerDialog } from '../../components/CleanUpDockerDialog'
+import { OrphanedVolumesCard } from '../../components/OrphanedVolumesCard'
 import { RotateMasterKeyDialog } from '../../components/RotateMasterKeyDialog'
 import { HelpLink } from '@/components/HelpLink'
 import { PageSpinner } from '@/components/ui/page-spinner'
@@ -435,6 +436,8 @@ function GeneralSettingsPage() {
       {status.docker_disk_usage ? (
         <DockerDiskUsageCard usage={status.docker_disk_usage} />
       ) : null}
+
+      <OrphanedVolumesCard />
 
       <CertificatesCard />
 

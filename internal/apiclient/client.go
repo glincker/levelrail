@@ -2236,6 +2236,16 @@ func (c *Client) ListNodes(ctx context.Context) ([]NodeResource, error) {
 	return out, err
 }
 
+// GetFleetResourceUsage calls GET /api/v1/nodes/resource-usage
+// (internal/api/node_resource_usage.go's handleFleetResourceUsage): the
+// latest CPU/memory/disk reading for every node plus a fleet-wide
+// rollup, the node-scoped counterpart to ListAppResourceUsage.
+func (c *Client) GetFleetResourceUsage(ctx context.Context) (FleetResourceUsageResource, error) {
+	var out FleetResourceUsageResource
+	err := c.do(ctx, http.MethodGet, nodesCollectionPath()+"/resource-usage", nil, &out)
+	return out, err
+}
+
 // GetNode calls GET /api/v1/nodes/{id}.
 func (c *Client) GetNode(ctx context.Context, id string) (NodeResource, error) {
 	var out NodeResource
@@ -2378,6 +2388,25 @@ func (c *Client) ListContainers(ctx context.Context) ([]ContainerResource, error
 func (c *Client) PruneSystem(ctx context.Context) (SystemPruneResult, error) {
 	var out SystemPruneResult
 	err := c.do(ctx, http.MethodPost, "/api/v1/system/prune", nil, &out)
+	return out, err
+}
+
+// ListOrphanedVolumes calls GET /api/v1/system/volumes/orphaned: every
+// named Docker volume this instance created that current desired state
+// no longer references.
+func (c *Client) ListOrphanedVolumes(ctx context.Context) ([]OrphanedVolumeResource, error) {
+	var out []OrphanedVolumeResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/system/volumes/orphaned", nil, &out)
+	return out, err
+}
+
+// CleanupOrphanedVolumes calls POST
+// /api/v1/system/volumes/orphaned/cleanup: removes exactly the named
+// volumes, after the control plane re-confirms each one is still
+// genuinely orphaned.
+func (c *Client) CleanupOrphanedVolumes(ctx context.Context, names []string) (CleanupOrphanedVolumesResult, error) {
+	var out CleanupOrphanedVolumesResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/system/volumes/orphaned/cleanup", CleanupOrphanedVolumesRequest{Names: names}, &out)
 	return out, err
 }
 

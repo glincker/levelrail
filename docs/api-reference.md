@@ -1,10 +1,10 @@
 ---
-description: Complete HTTP API reference for the control plane, organized by resource group with 298 endpoints.
+description: Complete HTTP API reference for the control plane, organized by resource group with 300 endpoints.
 ---
 
 # REST API Reference
 
-Exhaustive route inventory (298 routes total) for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.
+Exhaustive route inventory (300 routes total) for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.
 
 ## System
 
@@ -22,6 +22,8 @@ System endpoints for:
 | GET | /api/v1/system/doctor | AbilityRead | handleSystemDoctor |
 | GET | /api/v1/system/containers | AbilityRead | handleListContainers |
 | POST | /api/v1/system/prune | AbilityRoot | handleSystemPrune |
+| GET | /api/v1/system/volumes/orphaned | AbilityRead | handleListOrphanedVolumes |
+| POST | /api/v1/system/volumes/orphaned/cleanup | AbilityRoot | handleCleanupOrphanedVolumes |
 | POST | /api/v1/system/master-key/rotate | AbilityRoot | handleRotateMasterKey |
 | GET | /api/v1/onboarding | AbilityRead | handleGetOnboardingState |
 | POST | /api/v1/onboarding/complete | AbilityWrite | handleCompleteOnboarding |
