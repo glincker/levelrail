@@ -509,6 +509,7 @@ type Store interface {
 	ScheduledTaskStore
 	FeatureFlagStore
 	TagStore
+	AppIntegrationStore
 	OnboardingStore
 	WebhookDeliveryStore
 	PolicyStore
@@ -541,6 +542,11 @@ type SecretSetter interface {
 	// only ever writing a caller-supplied plaintext the way
 	// SetValueGuarded's other callers do.
 	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+	// DeleteAll permanently removes every value stored under a
+	// namespace, used by handleDetachAppIntegration to clear one
+	// attached integration's field values in the same request that
+	// removes its app_integrations row.
+	DeleteAll(ctx context.Context, serviceName string) error
 }
 
 // MasterKeyRotator is the surface POST /api/v1/system/master-key/rotate

@@ -35,6 +35,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/integrations"
 	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
@@ -137,6 +138,14 @@ type EnvironmentEnvLister interface {
 	ListEnvironmentEnvVars(ctx context.Context, environmentID string) (map[string]string, error)
 }
 
+// AppIntegrationStore is the narrow surface this controller needs to
+// resolve this service's attached internal/integrations catalog entries
+// (resolveIntegrationEnv) into env vars, one list read. *store.DB
+// satisfies this structurally.
+type AppIntegrationStore interface {
+	ListAppIntegrationsForService(ctx context.Context, serviceName string) ([]store.AppIntegration, error)
+}
+
 // DeployRecorder is the narrow surface this controller needs to record
 // the deploy-frequency metric. *telemetry.DB satisfies this
 // structurally; not imported directly, same reasoning ServiceStore/
@@ -196,28 +205,29 @@ const (
 // from ServiceStore on every Reconcile, never cached) to a running
 // container.
 type Controller struct {
-	serviceName    string
-	store          ServiceStore
-	runtime        docker.Runtime
-	httpClient     *http.Client
-	probeLimits    probe.Limits
-	readyBudget    time.Duration
-	secretResolver SecretResolver          // nil is valid: a service with no secret-backed env vars never needs one
-	deployRecorder DeployRecorder          // nil is valid: deploy frequency just isn't recorded
-	meshDNSAddr    string                  // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
-	storageTargets StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
-	projectEnv     ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
-	orgEnv         OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
-	environmentEnv EnvironmentEnvLister    // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
-	networkPrefix  string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
-	registryCreds  RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
-	databases      DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
-	vaultSettings  VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
-	vaultResolver  VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
-	hookRuns       HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
-	hookTimeout    time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
-	liveness       *LivenessTracker        // per-container liveness failure counts, in memory only, see LivenessTracker
-	instanceID     string                  // empty means no instance-ownership check, see WithInstanceID
+	serviceName     string
+	store           ServiceStore
+	runtime         docker.Runtime
+	httpClient      *http.Client
+	probeLimits     probe.Limits
+	readyBudget     time.Duration
+	secretResolver  SecretResolver          // nil is valid: a service with no secret-backed env vars never needs one
+	deployRecorder  DeployRecorder          // nil is valid: deploy frequency just isn't recorded
+	meshDNSAddr     string                  // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	storageTargets  StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
+	projectEnv      ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
+	orgEnv          OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
+	environmentEnv  EnvironmentEnvLister    // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
+	appIntegrations AppIntegrationStore     // nil is valid: attached-integration env vars are just skipped, see WithAppIntegrations
+	networkPrefix   string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
+	registryCreds   RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
+	databases       DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
+	vaultSettings   VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
+	vaultResolver   VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
+	hookRuns        HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
+	hookTimeout     time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
+	liveness        *LivenessTracker        // per-container liveness failure counts, in memory only, see LivenessTracker
+	instanceID      string                  // empty means no instance-ownership check, see WithInstanceID
 	// egressReadyBudget/egressReadyPollInterval override
 	// defaultEgressReadyBudget/defaultEgressReadyPollInterval (egress.go);
 	// zero means "use the default", see effectiveEgressReadyBudget and
@@ -361,6 +371,16 @@ func WithOrganizationEnv(s OrganizationEnvStore) Option {
 // does not fail Reconcile, environment vars are just silently skipped.
 func WithEnvironmentEnv(s EnvironmentEnvLister) Option {
 	return func(ctrl *Controller) { ctrl.environmentEnv = s }
+}
+
+// WithAppIntegrations enables resolving this service's attached
+// internal/integrations catalog entries as resolveEnv's own layer, at
+// the same tier as WithProjectEnv/WithOrganizationEnv/WithEnvironmentEnv:
+// applied below the service's own Env, so an operator's own same-named
+// env var always wins over an integration's default. A service with no
+// AppIntegrationStore configured just skips this layer entirely.
+func WithAppIntegrations(s AppIntegrationStore) Option {
+	return func(ctrl *Controller) { ctrl.appIntegrations = s }
 }
 
 // WithNetworkPrefix sets the Docker network naming prefix
@@ -1002,12 +1022,18 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 // the project layer, so an environment default overrides a same-named
 // project default, and before this service's own Env, so the service
 // still overrides a same-named environment default.
+//
+// Attached internal/integrations (WithAppIntegrations) resolve at that
+// same "default the service's own Env can override" tier, applied last
+// among the shared-env-style layers, right before this service's own
+// Env.
 func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredService) (map[string]string, error) {
 	hasProjectEnv := desired.ProjectID != "" && c.projectEnv != nil
 	hasOrgEnv := desired.ProjectID != "" && c.orgEnv != nil
 	hasEnvironmentEnv := desired.EnvironmentID != "" && c.environmentEnv != nil
+	hasAppIntegrations := c.appIntegrations != nil
 	hasDatabaseEnv := len(desired.DatabaseEnv) > 0 || desired.DatabaseAttachment != nil
-	if len(desired.SecretEnv) == 0 && len(desired.VaultEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv && !hasOrgEnv && !hasEnvironmentEnv && !hasDatabaseEnv {
+	if len(desired.SecretEnv) == 0 && len(desired.VaultEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv && !hasOrgEnv && !hasEnvironmentEnv && !hasAppIntegrations && !hasDatabaseEnv {
 		return desired.Env, nil
 	}
 
@@ -1039,6 +1065,16 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 			return nil, fmt.Errorf("resolve environment env vars: %w", err)
 		}
 		for k, v := range environmentVars {
+			env[k] = v
+		}
+	}
+
+	if hasAppIntegrations {
+		integrationVars, err := c.resolveIntegrationEnv(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("resolve integration env: %w", err)
+		}
+		for k, v := range integrationVars {
 			env[k] = v
 		}
 	}
@@ -1099,6 +1135,67 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 	}
 
 	return env, nil
+}
+
+// resolveIntegrationEnv resolves every internal/integrations catalog
+// entry attached to this service into its declared env vars. A field
+// with no stored value falls back to its catalog Default (if any)
+// rather than failing the reconcile: unlike SecretEnv/VaultEnv, an
+// attached integration missing an optional field is a normal, expected
+// state, not a misconfiguration. A field with no secret resolver
+// configured and no Default is silently skipped, the same "everything
+// except secret resolution still works" shape sharedenv.Resolver's own
+// nil-secretsManager case already establishes.
+func (c *Controller) resolveIntegrationEnv(ctx context.Context) (map[string]string, error) {
+	attached, err := c.appIntegrations.ListAppIntegrationsForService(ctx, c.serviceName)
+	if err != nil {
+		return nil, fmt.Errorf("list attached integrations: %w", err)
+	}
+	if len(attached) == 0 {
+		return nil, nil
+	}
+
+	env := make(map[string]string)
+	for _, row := range attached {
+		def, ok := integrations.Get(row.IntegrationKey)
+		if !ok {
+			continue
+		}
+		namespace := store.AppIntegrationSecretsKey(c.serviceName, row.IntegrationKey)
+		for _, field := range def.EnvVars {
+			value, ok, err := c.resolveIntegrationField(ctx, namespace, field)
+			if err != nil {
+				return nil, fmt.Errorf("resolve integration %q field %q: %w", row.IntegrationKey, field.Name, err)
+			}
+			if ok {
+				env[field.Name] = value
+			}
+		}
+	}
+	return env, nil
+}
+
+// resolveIntegrationField resolves one integration env var: a stored
+// value under namespace wins, otherwise field.Default (if set), else
+// ok=false so the caller leaves it unset entirely.
+func (c *Controller) resolveIntegrationField(ctx context.Context, namespace string, field integrations.EnvVar) (string, bool, error) {
+	if c.secretResolver != nil {
+		exists, err := c.secretResolver.Exists(ctx, namespace, field.Name)
+		if err != nil {
+			return "", false, err
+		}
+		if exists {
+			value, err := c.secretResolver.Resolve(ctx, namespace, field.Name)
+			if err != nil {
+				return "", false, err
+			}
+			return value, true, nil
+		}
+	}
+	if field.Default != "" {
+		return field.Default, true, nil
+	}
+	return "", false, nil
 }
 
 // resolveVaultEnv resolves every entry in vaultEnv against a live read to

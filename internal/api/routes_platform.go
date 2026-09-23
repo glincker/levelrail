@@ -142,6 +142,17 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/tags", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleAttachAppTag))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/tags/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDetachAppTag))
 
+	// Integrations (app_integrations.go): the curated internal/integrations
+	// catalog (PostHog, Sentry, etc), env-var injection only. The catalog
+	// itself is global and read-only (AbilityRead, no store involved,
+	// same shape service-templates uses); attach/detach store a field
+	// value through the app's own secrets namespace, AbilityWriteSensitive
+	// like PUT .../secrets/{key} above.
+	mux.HandleFunc("GET /api/v1/integrations", rt.requireAbility(AbilityRead, rt.handleListIntegrationCatalog))
+	mux.HandleFunc("GET /api/v1/apps/{name}/integrations", rt.requireAbility(AbilityRead, rt.handleListAppIntegrations))
+	mux.HandleFunc("POST /api/v1/apps/{name}/integrations", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleAttachAppIntegration))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/integrations/{id}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDetachAppIntegration))
+
 	// Deploy-outcome notifications (wave-2 roadmap item #5): a Slack/
 	// Discord/Telegram/generic-webhook/email ping fired once per deploy
 	// attempt reaching a terminal state, distinct from the threshold/

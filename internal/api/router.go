@@ -323,6 +323,7 @@ type Router struct {
 	scheduledTaskRunner            ScheduledTaskRunner              // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
 	featureFlags                   FeatureFlagStore                 // always set, same "core Store interface" shape as scheduledTasks above
 	tags                           TagStore                         // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
+	appIntegrations                AppIntegrationStore              // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)
 	bitbucketApp                   BitbucketAppStore                // always set, same "core Store interface" shape as gitlabApp above
 	bitbucketAppSecrets            BitbucketAppSecrets              // nil is valid: every bitbucket-app route that needs it returns 501, same shape as gitlabAppSecrets above
 	bitbucketAppClient             BitbucketAppClient               // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
@@ -476,6 +477,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		scheduledTasks:              s,
 		featureFlags:                s,
 		tags:                        s,
+		appIntegrations:             s,
 		bitbucketApp:                s,
 		bitbucketAppClient:          bitbucketapp.NewClient(),
 		bitbucketAppState:           newPendingState(),
