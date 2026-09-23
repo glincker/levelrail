@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -58,35 +59,71 @@ func NewLocalFederator(db *DB) *Federator {
 // caller can log or surface as a partial-result warning, not use to
 // discard everything.
 func (f *Federator) QueryMetrics(ctx context.Context, resourceID, metric string, from, to time.Time) ([]Sample, error) {
+	n := len(f.metrics)
+	if n == 0 {
+		return nil, nil
+	}
+
+	results := make([][]Sample, n)
+	errs := make([]error, n)
+
+	var wg sync.WaitGroup
+	wg.Add(n)
+	for i, src := range f.metrics {
+		go func(i int, src MetricsSource) {
+			defer wg.Done()
+			results[i], errs[i] = src.Query(ctx, resourceID, metric, from, to)
+		}(i, src)
+	}
+	wg.Wait()
+
 	var all []Sample
-	var errs []error
-	for _, src := range f.metrics {
-		got, err := src.Query(ctx, resourceID, metric, from, to)
-		if err != nil {
-			errs = append(errs, err)
+	var finalErrs []error
+	for i := 0; i < n; i++ {
+		if errs[i] != nil {
+			finalErrs = append(finalErrs, errs[i])
 			continue
 		}
-		all = append(all, got...)
+		all = append(all, results[i]...)
 	}
+
 	sort.Slice(all, func(i, j int) bool { return all[i].Timestamp.Before(all[j].Timestamp) })
-	return all, errors.Join(errs...)
+	return all, errors.Join(finalErrs...)
 }
 
 // QueryLogs is QueryMetrics' log-query equivalent, merged and sorted by
 // timestamp ascending the same way.
 func (f *Federator) QueryLogs(ctx context.Context, resourceID string, from, to time.Time, query string) ([]LogEntry, error) {
+	n := len(f.logs)
+	if n == 0 {
+		return nil, nil
+	}
+
+	results := make([][]LogEntry, n)
+	errs := make([]error, n)
+
+	var wg sync.WaitGroup
+	wg.Add(n)
+	for i, src := range f.logs {
+		go func(i int, src LogsSource) {
+			defer wg.Done()
+			results[i], errs[i] = src.QueryLogs(ctx, resourceID, from, to, query)
+		}(i, src)
+	}
+	wg.Wait()
+
 	var all []LogEntry
-	var errs []error
-	for _, src := range f.logs {
-		got, err := src.QueryLogs(ctx, resourceID, from, to, query)
-		if err != nil {
-			errs = append(errs, err)
+	var finalErrs []error
+	for i := 0; i < n; i++ {
+		if errs[i] != nil {
+			finalErrs = append(finalErrs, errs[i])
 			continue
 		}
-		all = append(all, got...)
+		all = append(all, results[i]...)
 	}
+
 	sort.Slice(all, func(i, j int) bool { return all[i].Timestamp.Before(all[j].Timestamp) })
-	return all, errors.Join(errs...)
+	return all, errors.Join(finalErrs...)
 }
 
 // LatestByMetric is LatestByMetric's federated equivalent: fans out to
@@ -96,26 +133,45 @@ func (f *Federator) QueryLogs(ctx context.Context, resourceID string, from, to t
 // report a same-named resource) should never happen in practice, so
 // "newest wins" is a defensive tie-break, not a real merge strategy.
 func (f *Federator) LatestByMetric(ctx context.Context, metric string) ([]Sample, error) {
+	n := len(f.metrics)
+	if n == 0 {
+		return nil, nil
+	}
+
+	results := make([][]Sample, n)
+	errs := make([]error, n)
+
+	var wg sync.WaitGroup
+	wg.Add(n)
+	for i, src := range f.metrics {
+		go func(i int, src MetricsSource) {
+			defer wg.Done()
+			results[i], errs[i] = src.LatestByMetric(ctx, metric)
+		}(i, src)
+	}
+	wg.Wait()
+
 	latest := make(map[string]Sample)
-	var errs []error
-	for _, src := range f.metrics {
-		got, err := src.LatestByMetric(ctx, metric)
-		if err != nil {
-			errs = append(errs, err)
+	var finalErrs []error
+
+	for i := 0; i < n; i++ {
+		if errs[i] != nil {
+			finalErrs = append(finalErrs, errs[i])
 			continue
 		}
-		for _, s := range got {
+		for _, s := range results[i] {
 			if existing, ok := latest[s.ResourceID]; !ok || s.Timestamp.After(existing.Timestamp) {
 				latest[s.ResourceID] = s
 			}
 		}
 	}
+
 	out := make([]Sample, 0, len(latest))
 	for _, s := range latest {
 		out = append(out, s)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ResourceID < out[j].ResourceID })
-	return out, errors.Join(errs...)
+	return out, errors.Join(finalErrs...)
 }
 
 // AggregatedPoint is one bucketed value from Aggregate.
