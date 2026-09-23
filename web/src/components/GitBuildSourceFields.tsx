@@ -34,40 +34,21 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { useGitBranches } from '../queries/gitBranches'
+import { useAutoDetectFramework } from '../hooks/useAutoDetectFramework'
+import type { DetectFrameworkResult } from '../queries/buildDetect'
 import { gitHostIconName } from '../lib/gitHost'
 import { BrandIcon } from './BrandIcon'
+import { DetectionStatus } from './DetectionStatus'
 import type { FormInput, FormOutput } from './CreateAppFromGitFields'
 import { RegistryImagePicker } from './RegistryImagePicker'
 
 // GitBuildSourceFields is CreateAppFromGitFields' git-source input
-// group: repository URL, a real branch picker backed by
-// GET-equivalent POST /api/v1/git/branches, the build pack choice, and
-// (dockerfile only) the Dockerfile path. Split out once the parent
-// form crossed a comfortable single-file size with this addition,
-// mirroring HealthCheckEditor.tsx's own ProbeFields split: a
-// sub-component that takes register/control/formState as explicit
-// props typed against the owning form's exact value shape, not a
-// FormProvider/context split (no component in this codebase uses one).
-//
-// The Dockerfile-path field only appears for build.type: dockerfile.
-// build.type: static also has a meaningful build.path server-side
-// (internal/deploy/static.go's deployStatic: the built output
-// subdirectory to serve, relative to the checkout root), but this form
-// deliberately doesn't expose it yet: a static site with output at the
-// checkout root (no build step) is the common case this wizard targets
-// first, and adding a second, differently-labeled path field for one
-// build pack is a real scope expansion this pass didn't take. A static
-// site whose output lives in a subdirectory still deploys fine through
-// app.yaml, just not through this manual-trigger wizard yet.
-// build.type: railpack has no build.path concept at all
-// (build.RailpackRequest carries no path field, and
-// handleTriggerBuild rejects one being set), so it never shows the
-// field either.
-//
-// The base-directory field is different: it scopes the whole build
-// context to a subdirectory (for a monorepo) and is meaningful for
-// dockerfile, railpack, and static alike, so it shows for all three,
-// unlike Dockerfile path and image name.
+// group: repository URL, a branch picker, the build pack choice, a
+// framework pre-flight detection status, and (build-type-dependent)
+// Dockerfile path / base directory / build args. Dockerfile path only
+// applies to build.type dockerfile; railpack has no path concept at
+// all. Base directory applies to dockerfile, railpack, and static
+// alike, since it scopes the whole build context for a monorepo.
 export function GitBuildSourceFields({
   control,
   register,
@@ -76,6 +57,7 @@ export function GitBuildSourceFields({
   setValue,
   watch,
   disabled,
+  onDetected,
 }: {
   control: Control<FormInput, unknown, FormOutput>
   register: UseFormRegister<FormInput>
@@ -84,6 +66,10 @@ export function GitBuildSourceFields({
   setValue: UseFormSetValue<FormInput>
   watch: UseFormWatch<FormInput>
   disabled: boolean
+  /** Called each time framework pre-flight detection settles or resets
+   *  to null; CreateAppFromGitFields stores the latest result to send
+   *  with the build trigger. */
+  onDetected: (result: DetectFrameworkResult | null) => void
 }) {
   const buildType = watch('buildType')
   // null until "Load branches" is clicked: see useGitBranches's own doc
@@ -97,6 +83,15 @@ export function GitBuildSourceFields({
   const branchesQuery = useGitBranches(loadedRepoUrl)
   const branches = branchesQuery.data ?? []
   const hostIcon = gitHostIconName(watch('repoUrl'))
+
+  const repoUrl = watch('repoUrl').trim()
+  const ref = watch('ref').trim()
+  const detection = useAutoDetectFramework({
+    enabled: buildType !== 'image',
+    repoUrl,
+    ref,
+    onDetected,
+  })
 
   return (
     <>
@@ -200,7 +195,15 @@ export function GitBuildSourceFields({
       ) : null}
 
       <Field>
-        <FieldLabel htmlFor="git-app-build-type">Build pack</FieldLabel>
+        <div className="flex items-center justify-between gap-2">
+          <FieldLabel htmlFor="git-app-build-type">Build pack</FieldLabel>
+          {buildType !== 'image' ? (
+            <DetectionStatus
+              pending={detection.isPending}
+              result={detection.result}
+            />
+          ) : null}
+        </div>
         <Controller
           control={control}
           name="buildType"

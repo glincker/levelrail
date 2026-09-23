@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"regexp"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
@@ -381,24 +381,12 @@ func (rt *Router) decodeUseAsSourceRequest(w http.ResponseWriter, r *http.Reques
 }
 
 // requireHTTPOrHTTPSScheme rejects any repoURL scheme go-git's client
-// registry would otherwise happily dial (notably "file", per
-// errRepoURLSchemeNotAllowed's own doc comment in git_branches.go): a
-// connected git source is control-plane-initiated I/O (both the clone
-// this package performs on every matching push, and go-git's registry
-// dependency this scheme check exists to guard against) the same way
-// listRemoteBranches's own repoURL already is, so it gets the identical
-// restriction, reusing that function's own sentinel error.
+// registry would otherwise happily dial (notably "file", see
+// build.ValidatePublicRepoURL's own doc comment): a connected git source
+// is control-plane-initiated I/O the same way listRemoteBranches's own
+// repoURL already is, so it gets the identical restriction.
 func requireHTTPOrHTTPSScheme(repoURL string) error {
-	parsed, err := url.Parse(repoURL)
-	if err != nil {
-		return fmt.Errorf("api: parse repo_url %q: %w", repoURL, err)
-	}
-	switch parsed.Scheme {
-	case "http", "https":
-		return nil
-	default:
-		return errRepoURLSchemeNotAllowed
-	}
+	return build.ValidatePublicRepoURL(repoURL)
 }
 
 // randomWebhookSecret generates a 256-bit HMAC key, URL-safe base64

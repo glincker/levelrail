@@ -78,6 +78,18 @@ type Event struct {
 	Stream string
 }
 
+// StepEvent is one named, coarse-grained deploy-pipeline phase
+// transition (e.g. "building" -> running, then done or failed), the
+// counterpart to Event at a much lower rate: a handful of events per
+// attempt, not one per output line. Never persisted (see Step's own doc
+// comment); purely an in-memory, live observability layer, same as the
+// rest of this package.
+type StepEvent struct {
+	Step      string
+	Status    string // "running", "done", or "failed"
+	Timestamp time.Time
+}
+
 // attemptState is one active (Start called, Finish not yet called)
 // attempt's in-memory bookkeeping: every line seen so far (so a new
 // Snapshot caller, connecting mid-build, gets full context rather than
@@ -87,6 +99,9 @@ type attemptState struct {
 	lines []Event                    // every line so far, for Snapshot's replay slice
 	buf   []telemetry.DeployLogEntry // not yet written to store
 	subs  []chan Event
+
+	steps    []StepEvent // every step transition so far, for SnapshotSteps' replay slice
+	stepSubs []chan StepEvent
 }
 
 // Recorder turns one attempt's build.ProgressEvent stream into both a
@@ -187,6 +202,77 @@ func (r *Recorder) Progress(attemptID string) func(build.ProgressEvent) {
 	}
 }
 
+// Step records one named pipeline-phase transition for attemptID and
+// fans it out to every currently-registered live step subscriber. A
+// no-op if attemptID was never Start()ed or has already Finish()ed, the
+// same tolerant-of-a-caller-bug shape Start's own doc comment describes
+// for Progress.
+//
+// Unlike Progress's log lines, step events are never persisted to
+// LogStore: they are a coarse, in-memory-only observability layer over
+// the same handful of pipeline phases every build already goes through
+// synchronously, not a replayable history. A viewer that connects after
+// Finish sees only the two-point synthesis SnapshotSteps' caller falls
+// back to (see internal/api/deploy_steps.go), not this attempt's full
+// step-by-step timeline.
+func (r *Recorder) Step(attemptID, step, status string) {
+	ev := StepEvent{Step: step, Status: status, Timestamp: time.Now()}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	st, ok := r.active[attemptID]
+	if !ok {
+		return
+	}
+	st.steps = append(st.steps, ev)
+	for _, ch := range st.stepSubs {
+		select {
+		case ch <- ev:
+		default:
+			// Same slow-subscriber drop policy as Progress: see
+			// subscriberBufferSize's own doc comment.
+		}
+	}
+}
+
+// SnapshotSteps is Snapshot's step-event counterpart: every step
+// recorded so far for attemptID, plus a channel receiving every
+// subsequent one, registered atomically so no event is missed or
+// duplicated. ok is false when attemptID isn't currently active; see
+// Snapshot's own doc comment for the fallback that implies.
+func (r *Recorder) SnapshotSteps(attemptID string) (steps []StepEvent, live <-chan StepEvent, unsubscribe func(), ok bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	st, ok := r.active[attemptID]
+	if !ok {
+		return nil, nil, func() {}, false
+	}
+
+	stepsCopy := make([]StepEvent, len(st.steps))
+	copy(stepsCopy, st.steps)
+
+	ch := make(chan StepEvent, subscriberBufferSize)
+	st.stepSubs = append(st.stepSubs, ch)
+
+	unsubscribe = func() {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		st2, ok := r.active[attemptID]
+		if !ok {
+			return
+		}
+		for i, c := range st2.stepSubs {
+			if c == ch {
+				st2.stepSubs = append(st2.stepSubs[:i], st2.stepSubs[i+1:]...)
+				break
+			}
+		}
+	}
+
+	return stepsCopy, ch, unsubscribe, true
+}
+
 func (r *Recorder) flush(attemptID string, entries []telemetry.DeployLogEntry) {
 	if r.store == nil || len(entries) == 0 {
 		return
@@ -224,6 +310,7 @@ func (r *Recorder) Finish(ctx context.Context, attemptID string) {
 	}
 	toFlush := st.buf
 	subs := st.subs
+	stepSubs := st.stepSubs
 	delete(r.active, attemptID)
 	r.mu.Unlock()
 
@@ -234,6 +321,9 @@ func (r *Recorder) Finish(ctx context.Context, attemptID string) {
 		}
 	}
 	for _, ch := range subs {
+		close(ch)
+	}
+	for _, ch := range stepSubs {
 		close(ch)
 	}
 }

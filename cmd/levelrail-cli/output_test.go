@@ -161,3 +161,49 @@ func TestFormatSecretAge(t *testing.T) {
 		})
 	}
 }
+
+func TestPrintDeployAttemptsHuman(t *testing.T) {
+	var buf bytes.Buffer
+	started := time.Date(2026, 9, 23, 12, 0, 0, 0, time.UTC)
+	printDeployAttemptsHuman(&buf, []deployAttemptResource{
+		{
+			ID: "dep_1", Image: "levelrail/web:abc1234", Source: "manual",
+			Status: "succeeded", StartedAt: started,
+			DetectedFramework: "Node.js",
+		},
+		{
+			ID: "dep_2", Image: "levelrail/web:def5678", Source: "webhook",
+			Status: "failed", StartedAt: started, Error: "build failed",
+		},
+	})
+
+	out := buf.String()
+	if !strings.Contains(out, "FRAMEWORK") {
+		t.Errorf("output missing FRAMEWORK header: %q", out)
+	}
+	if !strings.Contains(out, "Node.js") {
+		t.Errorf("output missing detected framework for dep_1: %q", out)
+	}
+	// dep_2 never went through the wizard's pre-flight detection: the
+	// column falls back to "-", not a blank cell that could be mistaken
+	// for a rendering bug.
+	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("got %d lines, want a header plus two rows: %q", len(lines), out)
+	}
+	// tabwriter renders columns as space-padded, not literal tabs, so
+	// compare by field position rather than substring.
+	fields := strings.Fields(lines[2])
+	const frameworkColumn = 4 // ID IMAGE SOURCE STATUS FRAMEWORK ...
+	if len(fields) <= frameworkColumn || fields[frameworkColumn] != "-" {
+		t.Errorf("dep_2 row = %q, want the FRAMEWORK column to read '-'", lines[2])
+	}
+}
+
+func TestPrintDeployAttemptsHuman_Empty(t *testing.T) {
+	var buf bytes.Buffer
+	printDeployAttemptsHuman(&buf, nil)
+	if !strings.Contains(buf.String(), "no deploy attempts recorded yet") {
+		t.Errorf("output = %q, want the empty-state message", buf.String())
+	}
+}

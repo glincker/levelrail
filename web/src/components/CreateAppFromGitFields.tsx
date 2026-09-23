@@ -188,7 +188,10 @@ const DEFAULT_VALUES: FormInput = {
 // is sent for every non-image build type: the backend accepts it for
 // dockerfile, railpack, and static alike. build.args is dockerfile-only,
 // same restriction handleTriggerBuild enforces server-side.
-function buildInputFrom(values: FormOutput): TriggerBuildInput {
+function buildInputFrom(
+  values: FormOutput,
+  detectedFramework: string | undefined,
+): TriggerBuildInput {
   if (values.buildType === 'image') {
     return {
       repoUrl: '',
@@ -214,6 +217,7 @@ function buildInputFrom(values: FormOutput): TriggerBuildInput {
       values.buildType === 'dockerfile'
         ? buildArgsRecord(values.buildArgs)
         : undefined,
+    detectedFramework,
   }
 }
 
@@ -473,6 +477,14 @@ export function CreateAppFromGitFields({
   // comment for how a stale value here (the form fields hand-edited after
   // a pick) gets detected and ignored.
   const [source, setSource] = useState<GitRepoSourceValue | null>(null)
+  // The latest POST /api/v1/build/detect result for whatever repo/ref is
+  // currently in the form (see GitBuildSourceFields' own onDetected doc
+  // comment), sent along with the build trigger purely to be stored on
+  // the resulting deploy attempt. undefined whenever nothing was
+  // detected, detection hasn't run yet, or buildType is "image".
+  const [detectedFramework, setDetectedFramework] = useState<
+    string | undefined
+  >(undefined)
   // See this component's own doc comment for why this wraps
   // queries/builds.ts's triggerBuild() directly instead of using that
   // module's useTriggerBuild(appName) hook.
@@ -530,6 +542,7 @@ export function CreateAppFromGitFields({
       connectSourceMutation.reset()
       buildMutation.reset()
       setSource(null)
+      setDetectedFramework(undefined)
     }
     // Only reacting to the dialog's open transition, not to reset/
     // createApp/connectSourceMutation/buildMutation identity churn on
@@ -553,7 +566,7 @@ export function CreateAppFromGitFields({
 
   function runBuild(name: string, values: FormOutput) {
     buildMutation.mutate(
-      { name, input: buildInputFrom(values) },
+      { name, input: buildInputFrom(values, detectedFramework) },
       {
         onSuccess: (result) => {
           clearDraft()
@@ -708,6 +721,11 @@ export function CreateAppFromGitFields({
           setValue={setValue}
           watch={watch}
           disabled={buildFieldsLocked}
+          onDetected={(result) => {
+            setDetectedFramework(
+              result?.detected ? result.frameworkName : undefined,
+            )
+          }}
         />
       </div>
 

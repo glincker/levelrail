@@ -123,6 +123,24 @@ function useOverallDuration(
   return formatDurationMs(endMs - startMs) ?? 'Unknown'
 }
 
+// frameworkSummary builds the "Next.js app, built in 42s, image
+// levelrail/web:abc1234" headline this task's own framework-aware
+// deploy summary calls for, reusing data this card already has (the
+// attempt's own detected_framework, image, and computed duration): no
+// new metrics collection, per this task's own scope note. undefined
+// (rendering nothing) whenever detection didn't run for this attempt, or
+// the deploy hasn't actually reached a finished state yet, since "built
+// in 42s" implies a completed build, not one still in progress.
+function frameworkSummary(
+  attempt: DeployAttempt,
+  status: OverallStatus,
+  duration: string,
+): string | undefined {
+  if (!attempt.detected_framework) return undefined
+  if (status.spinning) return undefined
+  return `${attempt.detected_framework} app, built in ${duration}, image ${attempt.image}`
+}
+
 // The "Deployment Details" metadata grid: status, live duration,
 // trigger, when it started, the domain(s) it's reachable at, and the
 // exact source it built from. Branch is shown only for a webhook-
@@ -145,10 +163,14 @@ export function DeployMetaCard({
   const status = deriveOverallStatus(attempt, stages)
   const StatusIcon = status.icon
   const duration = useOverallDuration(attempt, stages)
+  const summary = frameworkSummary(attempt, status, duration)
 
   return (
     <Card>
       <CardContent>
+        {summary ? (
+          <p className="mb-3 text-sm text-foreground">{summary}</p>
+        ) : null}
         <dl className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3">
           <MetaField label="Status">
             <Badge variant={status.badgeVariant} className="rounded-full">

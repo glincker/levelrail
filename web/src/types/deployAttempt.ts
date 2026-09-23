@@ -27,4 +27,8 @@ export interface DeployAttempt {
   started_at: string
   finished_at?: string
   error?: string
+  /** The create-app-from-git wizard's pre-flight detection result for
+   *  this build, e.g. "Node.js". Absent when detection was skipped or
+   *  found nothing buildable. */
+  detected_framework?: string
 }

@@ -152,6 +152,52 @@ Railpack detects `manage.py` plus a Django dependency, runs `python manage.py mi
 
 **Disk-space preflight:** before BuildKit starts solving, the control plane checks free space on the build's context directory (and its local cache directory, when `WithCacheDir` is configured) and fails fast with a clear "N bytes free, need at least M bytes" error rather than letting the build run until it hits a raw out-of-space error mid-solve. The minimum is configurable via `APP_MIN_BUILD_DISK_MB` (default `1024`, i.e. 1GiB). An unreadable path (for example a filesystem that doesn't support the check) is treated as unknown, not a failure, and the build proceeds.
 
+#### Framework pre-flight detection
+
+Before you pick a build type, the "Deploy from git" wizard checks what Railpack would actually detect for the repository and branch you picked, without running a build:
+
+```bash
+POST /api/v1/build/detect
+{ "repo_url": "https://github.com/you/app.git", "ref": "main" }
+```
+
+The control plane shallow-clones (`depth: 1`, single branch) the repo into a temporary directory with a 20-second timeout and a checkout-size cap, runs Railpack's own provider detection against it, and discards the checkout. Nothing is built, nothing is pushed, and no code from the repository is ever executed: detection only reads files like `package.json`, `go.mod`, or `pom.xml` to decide a provider.
+
+Currently supported, matching the Railpack build path itself:
+
+| Provider | Framework name shown |
+| --- | --- |
+| Node.js | `Node.js` |
+| Go | `Go` |
+| Java (Maven/Gradle, Spring Boot) | `Java (Spring Boot)` |
+| Python (Django) | `Python (Django)` |
+
+A repository Railpack can't place into one of these (or can't clone at all, e.g. private/unreachable) responds `{"detected": false}`, never an error: the wizard falls back to its normal manual build-type tabs (Auto-detect/Dockerfile/Static site/Prebuilt image), which stay fully usable and overridable regardless of what detection found.
+
+The detected framework name, once known, is stored on the resulting `deploy_attempts` row (`detected_framework`) and shown back on the deploy detail page once the deploy finishes, as a one-line summary above the usual metadata grid, e.g. "Node.js app, built in 42s, image levelrail/web:a1b2c3d", built entirely from data already on that row (framework name, computed duration, image tag), not a new metrics collection. It's also visible in `levelrail-cli apps deploys list` (a `FRAMEWORK` column) and in `--output json` for either the deploy-attempts list or a single build's response.
+
+#### Live deploy view
+
+Once a build is triggered, the deploy detail page (`/apps/{name}/deploys/{deployId}/logs`) shows a checklist of named pipeline steps above the raw build log, rather than only a scrolling terminal:
+
+```
+✓ Detecting framework
+● Building
+○ Loading image
+○ Deploying
+```
+
+Backed by an SSE stream:
+
+```bash
+GET /api/v1/apps/{name}/deploys/{deployId}/steps
+Accept: text/event-stream
+```
+
+Each event is `{ "step": string, "status": "running" | "done" | "failed", "timestamp": string }`. The raw log terminal underneath is unchanged and still shows every build output line; the step list is a coarser, at-a-glance summary of where in the pipeline a build currently is, not a replacement for it. Reconnects (a dropped wifi connection, a laptop waking up) are handled the same way the log stream already is: `EventSource` reconnects on its own, and a step event is safe to receive twice since the UI keeps only the latest status per named step.
+
+This stream is a pure observability layer: it reads the same build-trigger flow the control plane already runs and reports on it, and never feeds back into the reconciler, which stays level-triggered and unaware the stream exists.
+
 ### 3. Docker Compose
 
 Deploy from a `compose.yaml` file. Each compose service becomes its own `DesiredService` under one app in one synchronous call.
@@ -764,11 +810,13 @@ The request dispatches from a detached background goroutine and returns `202 Acc
 | `POST` | `/api/v1/apps/{name}/compose` | `deploy` (+ `root` if the compose file bind-mounts a host directory) |
 | `POST` | `/api/v1/apps/{name}/deploy-spec` | `deploy` (+ `root` if any service bind-mounts a host directory) |
 | `POST` | `/api/v1/apps/{name}/builds` | `deploy` |
+| `POST` | `/api/v1/build/detect` | `deploy` |
 | `POST` | `/api/v1/apps/{name}/deploys` | `deploy` |
 | `GET` | `/api/v1/apps/{name}/deploys` | `read` |
 | `GET` | `/api/v1/apps/{name}/deploy-attempts` | `read` |
 | `GET` | `/api/v1/apps/{name}/deploys/compare?from=ID[&to=ID]` | `read` |
 | `GET` | `/api/v1/apps/{name}/deploys/{deployId}/logs` | `read` |
+| `GET` | `/api/v1/apps/{name}/deploys/{deployId}/steps` | `read` |
 | `GET` | `/api/v1/apps/{name}/promote/preview?to=ENV_ID[&target=NAME]` | `read` |
 | `POST` | `/api/v1/apps/{name}/promote` | `deploy` |
 | `POST` | `/api/v1/apps/{name}/restart` | `deploy` |

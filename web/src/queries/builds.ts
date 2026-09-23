@@ -37,6 +37,12 @@ export interface TriggerBuildInput {
   /** Dockerfile build-time ARG values. Only meaningful when buildType
    *  is "dockerfile". */
   buildArgs?: Record<string, string>
+  /** The wizard's own pre-flight POST /api/v1/build/detect result for
+   *  this exact repo/ref, e.g. "Node.js", passed through purely to be
+   *  stored on the resulting deploy attempt (see
+   *  internal/api/builds.go's triggerBuildRequest.DetectedFramework).
+   *  This call never re-runs detection itself. */
+  detectedFramework?: string
 }
 
 // TriggerBuildResult mirrors internal/api/builds.go's own
@@ -78,6 +84,9 @@ export async function triggerBuild(
         ...(input.ref ? { ref: input.ref } : {}),
         ...(input.imageRepo ? { image_repo: input.imageRepo } : {}),
         ...(Object.keys(build).length > 0 ? { build } : {}),
+        ...(input.detectedFramework
+          ? { detected_framework: input.detectedFramework }
+          : {}),
       }),
     },
   )

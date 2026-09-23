@@ -50,7 +50,7 @@ import (
 // image always matches the tag actually built: a rollback deploys that
 // image by name. Callers that already hold a full SHA (the webhook
 // paths) never call it.
-func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Request, svc store.DesiredService, source string) (id string, progress func(build.ProgressEvent), finish func(deployErr error), setCommit func(ctx context.Context, commit string)) {
+func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Request, svc store.DesiredService, source, detectedFramework string) (id string, progress func(build.ProgressEvent), finish func(deployErr error), setCommit func(ctx context.Context, commit string)) {
 	noop := func(error) {}
 	noopCommit := func(context.Context, string) {}
 	fallback := build.SlogProgress(rt.logger)
@@ -73,7 +73,8 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		ID: id, ServiceName: req.ServiceName, Image: image,
 		CommitSHA: req.CommitSHA, Source: source,
 		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
-		Snapshot: store.NewDeployAttemptSnapshot(svc),
+		Snapshot:          store.NewDeployAttemptSnapshot(svc),
+		DetectedFramework: detectedFramework,
 	}); err != nil {
 		rt.logger.Error("api: trigger build: save deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
 		if rt.deployRecorder != nil {
@@ -121,30 +122,43 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 	return id, rt.deployRecorder.Progress(id), finish, setCommit
 }
 
+// emitStep records one named pipeline-phase transition for id (see
+// deploylog.Recorder.Step), a no-op if no recorder is configured. Kept
+// as a Router method so call sites (builds.go) don't need to nil-check
+// rt.deployRecorder themselves.
+func (rt *Router) emitStep(id, step, status string) {
+	if rt.deployRecorder == nil || id == "" {
+		return
+	}
+	rt.deployRecorder.Step(id, step, status)
+}
+
 // deployAttemptResource is the wire shape for one deploy attempt.
 type deployAttemptResource struct {
-	ID          string     `json:"id"`
-	ServiceName string     `json:"service_name"`
-	Image       string     `json:"image"`
-	CommitSHA   string     `json:"commit_sha,omitempty"`
-	Source      string     `json:"source,omitempty"`
-	Status      string     `json:"status"`
-	StartedAt   time.Time  `json:"started_at"`
-	FinishedAt  *time.Time `json:"finished_at,omitempty"`
-	Error       string     `json:"error,omitempty"`
+	ID                string     `json:"id"`
+	ServiceName       string     `json:"service_name"`
+	Image             string     `json:"image"`
+	CommitSHA         string     `json:"commit_sha,omitempty"`
+	Source            string     `json:"source,omitempty"`
+	Status            string     `json:"status"`
+	StartedAt         time.Time  `json:"started_at"`
+	FinishedAt        *time.Time `json:"finished_at,omitempty"`
+	Error             string     `json:"error,omitempty"`
+	DetectedFramework string     `json:"detected_framework,omitempty"`
 }
 
 func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
 	return deployAttemptResource{
-		ID:          a.ID,
-		ServiceName: a.ServiceName,
-		Image:       a.Image,
-		CommitSHA:   a.CommitSHA,
-		Source:      a.Source,
-		Status:      a.Status,
-		StartedAt:   a.StartedAt,
-		FinishedAt:  a.FinishedAt,
-		Error:       a.Error,
+		ID:                a.ID,
+		ServiceName:       a.ServiceName,
+		Image:             a.Image,
+		CommitSHA:         a.CommitSHA,
+		Source:            a.Source,
+		Status:            a.Status,
+		StartedAt:         a.StartedAt,
+		FinishedAt:        a.FinishedAt,
+		Error:             a.Error,
+		DetectedFramework: a.DetectedFramework,
 	}
 }
 

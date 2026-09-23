@@ -169,6 +169,12 @@ type triggerBuildRequest struct {
 	// a per-app image repo naming policy today.
 	ImageRepo string                 `json:"image_repo,omitempty"`
 	Build     triggerBuildBuildInput `json:"build,omitempty"`
+	// DetectedFramework is the human-readable framework name the wizard's
+	// own pre-flight call to POST /api/v1/build/detect already reported
+	// for this exact repo/ref, passed through here purely to be stored on
+	// the resulting deploy_attempts row (see handleDetectFramework's own
+	// doc comment): this handler never re-runs detection itself.
+	DetectedFramework string `json:"detected_framework,omitempty"`
 }
 
 // triggerBuildResponse is POST /api/v1/apps/{name}/builds's success
@@ -344,7 +350,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		ImageRepo:   imageRepo,
 	}
 
-	id, progress, finishAttempt, setCommit := rt.beginBuildDeployAttempt(r.Context(), buildReq, *existing, store.DeployAttemptSourceManual)
+	id, progress, finishAttempt, setCommit := rt.beginBuildDeployAttempt(r.Context(), buildReq, *existing, store.DeployAttemptSourceManual, req.DetectedFramework)
 
 	// AbilityDeploy alone (this route's own gate) is not enough to
 	// authorize minting a live GitHub App installation token: repoURL is
@@ -361,6 +367,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	go func() { //nolint:gosec // deliberately not r.Context(): it is cancelled the moment this handler returns, which would abort the fetch and build within microseconds of starting them; see this handler's own doc comment
 		ctx := context.Background()
 		if buildType != spec.BuildImage {
+			rt.emitStep(id, "detecting", "running")
 			var token string
 			if allowPrivateRepoAuth {
 				token = rt.tokenForRepo(ctx, repoURL)
@@ -368,6 +375,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			sourceDir, commit, cleanup, err := rt.fetch(ctx, repoURL, ref, token)
 			if err != nil {
 				rt.logger.Error("api: trigger build: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref))
+				rt.emitStep(id, "detecting", "failed")
 				finishAttempt(err)
 				return
 			}
@@ -381,9 +389,24 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 				buildReq.CommitSHA = commit
 				setCommit(ctx, commit)
 			}
+			rt.emitStep(id, "detecting", "done")
 		}
 
+		rt.emitStep(id, "building", "running")
 		tag, err := rt.builder.Deploy(ctx, buildReq, progress)
+		if err != nil {
+			rt.emitStep(id, "building", "failed")
+		} else {
+			rt.emitStep(id, "building", "done")
+			// No separate registry push exists yet for a single-node
+			// control plane (the built image is loaded straight into the
+			// local Docker Engine, see internal/build.Client.Build): this
+			// step is reported alongside "building" rather than measured
+			// on its own, and is honest about that rather than inventing a
+			// timing split BuildKit never actually observed.
+			rt.emitStep(id, "pushing", "done")
+			rt.emitStep(id, "deploying", "done")
+		}
 		finishAttempt(err)
 		if err != nil {
 			// Non-leaky, matching internal/webhook.Handler.ServeHTTP's own

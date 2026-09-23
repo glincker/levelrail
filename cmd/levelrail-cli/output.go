@@ -408,14 +408,18 @@ func printDeployAttemptsHuman(out io.Writer, attempts []deployAttemptResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tIMAGE\tSOURCE\tSTATUS\tSTARTED\tFINISHED\tERROR")
+	_, _ = fmt.Fprintln(tw, "ID\tIMAGE\tSOURCE\tSTATUS\tFRAMEWORK\tSTARTED\tFINISHED\tERROR")
 	for _, a := range attempts {
 		finished := "-"
 		if a.FinishedAt != nil {
 			finished = a.FinishedAt.Format(time.RFC3339)
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			a.ID, a.Image, a.Source, a.Status, a.StartedAt.Format(time.RFC3339), finished, a.Error)
+		framework := a.DetectedFramework
+		if framework == "" {
+			framework = "-"
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			a.ID, a.Image, a.Source, a.Status, framework, a.StartedAt.Format(time.RFC3339), finished, a.Error)
 	}
 	_ = tw.Flush()
 }
