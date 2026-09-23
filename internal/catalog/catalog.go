@@ -225,14 +225,29 @@ var Templates = []Template{
     ports: ["3456:3456"]
     environment:
       VIKUNJA_SERVICE_JWTSECRET: $SERVICE_HEX_64_JWTSECRET
-      VIKUNJA_DATABASE_TYPE: sqlite
+      # Vikunja's image runs as a fixed non-root uid with no chown step
+      # of its own, so sqlite's default db path on a fresh named volume
+      # is never writable; postgres avoids that entirely.
+      VIKUNJA_DATABASE_TYPE: postgres
+      VIKUNJA_DATABASE_HOST: db
+      VIKUNJA_DATABASE_USER: vikunja
+      VIKUNJA_DATABASE_PASSWORD: $SERVICE_PASSWORD_DB
+      VIKUNJA_DATABASE_DATABASE: vikunja
     volumes:
       - vikunja_data:/app/vikunja/files
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/3456' || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3456/api/v1/info || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vikunja
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: vikunja
+    volumes:
+      - vikunja_db_data:/var/lib/postgresql/data
 `,
 	},
 	{
@@ -2799,24 +2814,24 @@ var Templates = []Template{
 		Category:               "Security",
 		DocumentationURL:       "https://www.keycloak.org/documentation",
 		RecommendedMemoryBytes: 1073741824, // 1024Mi
-		// The real image needs a "start" or "start-dev" command argument
-		// to actually serve; the compose subset here doesn't parse
-		// command:, so it's included for a human reader but has no
-		// effect on the desired-state translation yet.
 		Compose: `services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.1
-    command: ["start"]
+    command: ["start-dev"]
     ports: ["8080:8080"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: $SERVICE_USER_ADMIN
       KC_BOOTSTRAP_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
+      # Keycloak 26 moved /health/ready to a separate management port
+      # (9000); this keeps it on the main port since a probe here can
+      # only reach the service's own declared port.
+      KC_LEGACY_OBSERVABILITY_INTERFACE: "true"
     volumes:
       - keycloak_data:/opt/keycloak/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c ': < /dev/tcp/127.0.0.1/8080' || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/health/ready || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
