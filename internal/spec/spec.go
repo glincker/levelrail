@@ -212,12 +212,19 @@ type Health struct {
 	ReadyTimeout string `yaml:"readyTimeout,omitempty"`
 }
 
-// Probe is a single HTTP health check.
+// Probe is a single health check: an HTTP(S) request to Path, or a
+// command run inside the container when Exec is set.
 type Probe struct {
-	Path     string `yaml:"path"`
-	Interval string `yaml:"interval,omitempty"`
-	Timeout  string `yaml:"timeout,omitempty"`
-	Failures int    `yaml:"failures,omitempty"`
+	Path            string      `yaml:"path,omitempty"`
+	Scheme          string      `yaml:"scheme,omitempty" json:"scheme,omitempty"`
+	Host            string      `yaml:"host,omitempty" json:"host,omitempty"`
+	TLSSkipVerify   bool        `yaml:"tls_skip_verify,omitempty" json:"tls_skip_verify,omitempty"`
+	FollowRedirects *bool       `yaml:"follow_redirects,omitempty" json:"follow_redirects,omitempty"`
+	ExpectedStatus  StatusCodes `yaml:"expected_status,omitempty" json:"expected_status,omitempty"`
+	Exec            ExecCommand `yaml:"exec,omitempty" json:"exec,omitempty"`
+	Interval        string      `yaml:"interval,omitempty"`
+	Timeout         string      `yaml:"timeout,omitempty"`
+	Failures        int         `yaml:"failures,omitempty"`
 }
 
 // Resources holds a service's resource limits.

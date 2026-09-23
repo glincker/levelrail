@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -164,7 +163,7 @@ func (t *LivenessTracker) entry(name string) *livenessEntry {
 // deadlocks after passing readiness is never checked again.
 //
 // Fully opt-in, exactly like readiness: a service with no
-// health.liveness block, or no port to probe, is never probed at all.
+// health.liveness block, or an HTTP probe but no port, is never probed.
 func (c *Controller) checkLiveness(ctx context.Context, targets []string, desired *store.DesiredService) livenessOutcome {
 	cfg := livenessProbeFor(desired)
 	if cfg == nil {
@@ -193,13 +192,6 @@ func (c *Controller) checkLiveness(ctx context.Context, targets []string, desire
 	return worst
 }
 
-func livenessProbeFor(desired *store.DesiredService) *store.ServiceProbe {
-	if desired.Health == nil || desired.Health.Liveness == nil || desired.Port == 0 {
-		return nil
-	}
-	return desired.Health.Liveness
-}
-
 func (c *Controller) checkReplicaLiveness(ctx context.Context, target string, cfg store.ServiceProbe, interval time.Duration, threshold int, now time.Time) livenessOutcome {
 	if !c.liveness.due(target, now, interval) {
 		return livenessOutcome{}
@@ -217,12 +209,12 @@ func (c *Controller) checkReplicaLiveness(ctx context.Context, target string, cf
 		return livenessOutcome{}
 	}
 
-	addr, err := primaryAddr(state)
+	at, err := probeTarget(state, cfg)
 	if err != nil {
 		return livenessOutcome{severity: livenessProbeUnavailable, err: fmt.Errorf("liveness probe: %w", err)}
 	}
 
-	probeErr := probe.Check(ctx, c.httpClient, addr, probe.Config{Path: cfg.Path, Timeout: cfg.Timeout})
+	probeErr := c.prober().Check(ctx, at, cfg.ProbeConfig())
 	if probeErr == nil {
 		c.liveness.recordSuccess(target, now)
 		return livenessOutcome{}

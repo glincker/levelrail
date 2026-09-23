@@ -306,10 +306,16 @@ func toServiceProbe(p spec.Probe) (store.ServiceProbe, error) {
 		return store.ServiceProbe{}, fmt.Errorf("timeout: %w", err)
 	}
 	return store.ServiceProbe{
-		Path:     p.Path,
-		Interval: interval,
-		Timeout:  timeout,
-		Failures: p.Failures,
+		Path:            p.Path,
+		Scheme:          p.Scheme,
+		Host:            p.Host,
+		TLSSkipVerify:   p.TLSSkipVerify,
+		FollowRedirects: p.FollowRedirects,
+		ExpectedStatus:  string(p.ExpectedStatus),
+		Exec:            []string(p.Exec),
+		Interval:        interval,
+		Timeout:         timeout,
+		Failures:        p.Failures,
 	}, nil
 }
 

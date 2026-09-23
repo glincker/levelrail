@@ -816,6 +816,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/egress-policy", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppEgressPolicy))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/egress-policy", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppEgressPolicy))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/egress-policy", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleClearAppEgressPolicy))
+	mux.HandleFunc("GET /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppHealth))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppHealth))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleClearAppHealth))
 	// Read-only, not scoped to any one app: the static list of env var
 	// names attaching storage can inject, backed by
 	// application.StorageEnvKeys rather than a hardcoded list, see

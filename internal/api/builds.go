@@ -540,13 +540,18 @@ func specHealthFromStore(h store.ServiceHealth) *spec.Health {
 	return out
 }
 
-// specProbeFromStore reverses internal/deploy's own toServiceProbe:
-// time.Duration's own String method (e.g. 5*time.Second -> "5s") is a
-// real inverse of time.ParseDuration, which is exactly what
-// internal/deploy/translate.go's parseDurationOrZero parses this string
-// back through on the next forward pass.
+// specProbeFromStore reverses internal/deploy's toServiceProbe.
 func specProbeFromStore(p store.ServiceProbe) spec.Probe {
-	out := spec.Probe{Path: p.Path, Failures: p.Failures}
+	out := spec.Probe{
+		Path:            p.Path,
+		Scheme:          p.Scheme,
+		Host:            p.Host,
+		TLSSkipVerify:   p.TLSSkipVerify,
+		FollowRedirects: p.FollowRedirects,
+		ExpectedStatus:  spec.StatusCodes(p.ExpectedStatus),
+		Exec:            spec.ExecCommand(p.Exec),
+		Failures:        p.Failures,
+	}
 	if p.Interval > 0 {
 		out.Interval = p.Interval.String()
 	}

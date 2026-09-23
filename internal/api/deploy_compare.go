@@ -330,7 +330,26 @@ func diffDeployCompareProbe(field string, from, to *store.ServiceProbe) []deploy
 	if f.Failures != t.Failures {
 		changes = append(changes, deployCompareField{Field: field + ".failures", From: strconv.Itoa(f.Failures), To: strconv.Itoa(t.Failures)})
 	}
+	for _, sub := range []struct{ name, from, to string }{
+		{"scheme", f.Scheme, t.Scheme},
+		{"host", f.Host, t.Host},
+		{"tls_skip_verify", strconv.FormatBool(f.TLSSkipVerify), strconv.FormatBool(t.TLSSkipVerify)},
+		{"follow_redirects", optionalBool(f.FollowRedirects), optionalBool(t.FollowRedirects)},
+		{"expected_status", f.ExpectedStatus, t.ExpectedStatus},
+		{"exec", strings.Join(f.Exec, " "), strings.Join(t.Exec, " ")},
+	} {
+		if sub.from != sub.to {
+			changes = append(changes, deployCompareField{Field: field + "." + sub.name, From: sub.from, To: sub.to})
+		}
+	}
 	return changes
+}
+
+func optionalBool(b *bool) string {
+	if b == nil {
+		return ""
+	}
+	return strconv.FormatBool(*b)
 }
 
 func probeOrZero(p *store.ServiceProbe) store.ServiceProbe {

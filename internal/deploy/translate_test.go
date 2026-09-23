@@ -134,6 +134,37 @@ func TestToServiceProbe(t *testing.T) {
 	}
 }
 
+func TestToServiceProbe_CarriesHTTPSAndExecFields(t *testing.T) {
+	follow := false
+	tests := []struct {
+		name string
+		in   spec.Probe
+		want store.ServiceProbe
+	}{
+		{
+			name: "https",
+			in:   spec.Probe{Path: "/h", Scheme: "https", Host: "a.example.com", TLSSkipVerify: true, FollowRedirects: &follow, ExpectedStatus: "200-399"},
+			want: store.ServiceProbe{Path: "/h", Scheme: "https", Host: "a.example.com", TLSSkipVerify: true, FollowRedirects: &follow, ExpectedStatus: "200-399"},
+		},
+		{
+			name: "exec",
+			in:   spec.Probe{Exec: spec.ExecCommand{"pg_isready"}, Timeout: "5s"},
+			want: store.ServiceProbe{Exec: []string{"pg_isready"}, Timeout: 5 * time.Second},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := toServiceProbe(tt.in)
+			if err != nil {
+				t.Fatalf("toServiceProbe() error = %v", err)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toServiceProbe() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestToServiceHealth_NilFieldsStayNil(t *testing.T) {
 	got, err := toServiceHealth(spec.Health{})
 	if err != nil {

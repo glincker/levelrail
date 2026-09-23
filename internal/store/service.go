@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/probe"
 )
 
 // ServiceResources caps a service's memory and CPU, in the same units
@@ -30,11 +32,35 @@ type ServiceResources struct {
 
 // ServiceProbe is one readiness or liveness check.
 type ServiceProbe struct {
-	Path     string        `json:"path"`
-	Interval time.Duration `json:"interval,omitempty"`
-	Timeout  time.Duration `json:"timeout,omitempty"`
-	Failures int           `json:"failures,omitempty"`
+	Path            string        `json:"path"`
+	Scheme          string        `json:"scheme,omitempty"`
+	Host            string        `json:"host,omitempty"`
+	TLSSkipVerify   bool          `json:"tls_skip_verify,omitempty"`
+	FollowRedirects *bool         `json:"follow_redirects,omitempty"`
+	ExpectedStatus  string        `json:"expected_status,omitempty"`
+	Exec            []string      `json:"exec,omitempty"`
+	Interval        time.Duration `json:"interval,omitempty"`
+	Timeout         time.Duration `json:"timeout,omitempty"`
+	Failures        int           `json:"failures,omitempty"`
 }
+
+// ProbeConfig converts p into the shape internal/probe runs.
+func (p ServiceProbe) ProbeConfig() probe.Config {
+	return probe.Config{
+		Path:            p.Path,
+		Scheme:          p.Scheme,
+		Host:            p.Host,
+		TLSSkipVerify:   p.TLSSkipVerify,
+		FollowRedirects: p.FollowRedirects,
+		ExpectedStatus:  p.ExpectedStatus,
+		Exec:            p.Exec,
+		Interval:        p.Interval,
+		Timeout:         p.Timeout,
+	}
+}
+
+// NeedsPort reports whether p can only run against a published port.
+func (p ServiceProbe) NeedsPort() bool { return len(p.Exec) == 0 }
 
 // ServiceHealth holds a service's probe configuration.
 type ServiceHealth struct {
@@ -771,27 +797,33 @@ func (db *DB) UpdateServiceStorageTarget(ctx context.Context, name, storageTarge
 }
 
 // UpdateServiceEgressPolicy replaces svc's egress allowlist as a whole
-// (policy nil clears it, back to unrestricted egress), the narrow,
-// full-column write PUT/DELETE /api/v1/apps/{name}/egress-policy needs
-// without going through SaveDesiredService's full-record-replace, the
-// same "own endpoint, own narrow update" shape UpdateServiceStorageTarget
-// already establishes. Unlike UpdateServiceStorageTarget's single scalar,
-// egress_policy is a JSON blob (like health/hooks), so this marshals the
-// whole policy rather than passing a bare column value.
+// (policy nil clears it), without SaveDesiredService's full-record replace.
 func (db *DB) UpdateServiceEgressPolicy(ctx context.Context, name string, policy *ServiceEgressPolicy) error {
-	egressJSON, err := json.Marshal(policy)
-	if err != nil {
-		return fmt.Errorf("store: update egress policy for service %q: marshal: %w", name, err)
-	}
-	res, err := db.ExecContext(ctx, `
+	return db.updateServiceJSONColumn(ctx, name, "egress policy", `
 		UPDATE desired_services SET egress_policy = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
-	`, string(egressJSON), name)
+	`, policy)
+}
+
+// UpdateServiceHealth replaces svc's readiness/liveness config as a whole
+// (health nil clears it), without SaveDesiredService's full-record replace.
+func (db *DB) UpdateServiceHealth(ctx context.Context, name string, health *ServiceHealth) error {
+	return db.updateServiceJSONColumn(ctx, name, "health", `
+		UPDATE desired_services SET health = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, health)
+}
+
+func (db *DB) updateServiceJSONColumn(ctx context.Context, name, what, query string, value any) error {
+	encoded, err := json.Marshal(value)
 	if err != nil {
-		return fmt.Errorf("store: update egress policy for service %q: %w", name, err)
+		return fmt.Errorf("store: update %s for service %q: marshal: %w", what, name, err)
+	}
+	res, err := db.ExecContext(ctx, query, string(encoded), name)
+	if err != nil {
+		return fmt.Errorf("store: update %s for service %q: %w", what, name, err)
 	}
 	n, err := res.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("store: update egress policy for service %q: rows affected: %w", name, err)
+		return fmt.Errorf("store: update %s for service %q: rows affected: %w", what, name, err)
 	}
 	if n == 0 {
 		return ErrServiceNotFound

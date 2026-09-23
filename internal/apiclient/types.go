@@ -23,10 +23,16 @@ type ServiceResources struct {
 // ServiceProbe mirrors one of AppResource.Health's two probes (readiness
 // or liveness).
 type ServiceProbe struct {
-	Path     string `json:"path"`
-	Interval int64  `json:"interval,omitempty"`
-	Timeout  int64  `json:"timeout,omitempty"`
-	Failures int    `json:"failures,omitempty"`
+	Path            string   `json:"path"`
+	Scheme          string   `json:"scheme,omitempty"`
+	Host            string   `json:"host,omitempty"`
+	TLSSkipVerify   bool     `json:"tls_skip_verify,omitempty"`
+	FollowRedirects *bool    `json:"follow_redirects,omitempty"`
+	ExpectedStatus  string   `json:"expected_status,omitempty"`
+	Exec            []string `json:"exec,omitempty"`
+	Interval        int64    `json:"interval,omitempty"`
+	Timeout         int64    `json:"timeout,omitempty"`
+	Failures        int      `json:"failures,omitempty"`
 }
 
 // ServiceHealth mirrors internal/api's appResource.Health field.

@@ -40,6 +40,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/netguard"
+	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
@@ -3116,6 +3117,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithNetworkPrefix(deps.networkPrefix),
 		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),
+		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
 	}
 	if deps.secretsManager != nil {
 		appOpts = append(appOpts, application.WithSecretResolver(deps.secretsManager))

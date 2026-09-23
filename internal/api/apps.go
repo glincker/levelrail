@@ -391,6 +391,9 @@ func validateAppResource(a appResource) error {
 	if err := spec.ValidateLabels(a.Labels); err != nil {
 		return err
 	}
+	if err := validateHealth(a.Health); err != nil {
+		return err
+	}
 	for key, value := range a.Secrets {
 		if key == "" {
 			return errors.New("secrets: key must not be empty")
