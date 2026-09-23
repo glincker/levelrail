@@ -1,8 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useMemo, useRef } from 'react'
 import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
+import { appListQueryOptions } from '../../queries/apps'
 import { certificatesQueryOptions } from '../../queries/certificates'
 import { cloudflareDnsSettingsQueryOptions } from '../../queries/cloudflareDns'
 import { route53DnsSettingsQueryOptions } from '../../queries/route53Dns'
@@ -18,6 +19,7 @@ import {
 import { CloudflareDnsCard } from '../../components/CloudflareDnsCard'
 import { Route53DnsCard } from '../../components/Route53DnsCard'
 import { IngressSettingsCard } from '../../components/IngressSettingsCard'
+import { Button } from '../../components/ui/button'
 import { EmptyState } from '../../components/ui/empty-state'
 
 // Centralized domains page: every domain currently claimed by an app
@@ -37,6 +39,7 @@ export const Route = createFileRoute('/domains/')({
       queryClient.ensureQueryData(ingressSettingsQueryOptions()),
       queryClient.ensureQueryData(cloudflareDnsSettingsQueryOptions()),
       queryClient.ensureQueryData(route53DnsSettingsQueryOptions()),
+      queryClient.ensureQueryData(appListQueryOptions()),
     ]),
   component: DomainsPage,
   pendingComponent: DomainsPending,
@@ -66,6 +69,7 @@ function DomainsPage() {
   const { data: route53Dns } = useSuspenseQuery(
     route53DnsSettingsQueryOptions(),
   )
+  const { data: apps } = useSuspenseQuery(appListQueryOptions())
   const parentRef = useRef<HTMLDivElement>(null)
 
   // Certificates are keyed by domain string (certificateStatus.domain,
@@ -123,11 +127,28 @@ function DomainsPage() {
         </div>
 
         {domains.length === 0 ? (
-          <EmptyState
-            icon={<GlobeIcon className="size-5" />}
-            title="No app domains yet"
-            description="Add a domain from an app's Domains tab to route traffic to it over HTTPS."
-          />
+          apps.length === 0 ? (
+            <EmptyState
+              icon={<GlobeIcon className="size-5" />}
+              title="No apps to route yet"
+              description="A domain routes traffic to an app. Deploy an app first, then add a domain from its Domains tab."
+              action={
+                <Button
+                  size="sm"
+                  render={<Link to="/apps" />}
+                  nativeButton={false}
+                >
+                  Deploy an app first
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon={<GlobeIcon className="size-5" />}
+              title="No app domains yet"
+              description="Add a domain from an app's Domains tab to route traffic to it over HTTPS."
+            />
+          )
         ) : (
           <div
             ref={parentRef}
