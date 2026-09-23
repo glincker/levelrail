@@ -2649,3 +2649,13 @@ func (e *APIError) Error() string {
 	}
 	return fmt.Sprintf("server returned %d: %s", e.StatusCode, e.Message)
 }
+
+// AppStatusEntry is one row of GET /api/v1/apps reduced to its name and
+// status rollup (internal/api's appStatusSummary).
+type AppStatusEntry struct {
+	Name   string `json:"name"`
+	Status struct {
+		Label   string `json:"label"`
+		Variant string `json:"variant"`
+	} `json:"status"`
+}

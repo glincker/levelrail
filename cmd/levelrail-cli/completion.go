@@ -137,6 +137,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"version":                  nil,
 	"audit-log":                nil,
 	"audit-purge":              nil,
+	"attention":                nil,
 	"doctor":                   nil,
 	"containers":               nil,
 	"system-prune":             nil,

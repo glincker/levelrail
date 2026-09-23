@@ -181,6 +181,14 @@ func (c *Client) ListApps(ctx context.Context) ([]AppResource, error) {
 	return out, err
 }
 
+// ListAppStatuses calls GET /api/v1/apps and keeps only each app's name
+// and rolled-up status summary.
+func (c *Client) ListAppStatuses(ctx context.Context) ([]AppStatusEntry, error) {
+	var out []AppStatusEntry
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps", nil, &out)
+	return out, err
+}
+
 // CloneApp calls POST /api/v1/apps/{name}/clone: duplicates name's
 // desired state under newName. Domains, secret values, and node
 // placement are never copied (see internal/api/apps_clone.go's own doc
