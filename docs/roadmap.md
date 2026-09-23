@@ -313,8 +313,9 @@ flowchart LR
   stop/restart from this surface, since a reconciler-managed container
   would just be recreated out from under an operator who stopped it
   here.
-- Onboarding: a one-shot `/api/v1/onboarding` completion flag plus a
-  frontend wizard shown on first run.
+- Onboarding: a resumable setup wizard (server check, dashboard domain
+  with live DNS and certificate verification, git provider, first app
+  polled until healthy) with server-side progress at `/api/v1/onboarding`.
 - `levelrail-cli completion bash|zsh|fish`: shell completion covering
   every command and subcommand plus the global flags.
 - `levelrail-cli version` and a maintained `CHANGELOG.md`.

@@ -1047,7 +1047,9 @@ type AppVolumeMoveResource struct {
 // OnboardingStateResource mirrors internal/api's onboardingStateResource
 // (internal/api/onboarding.go).
 type OnboardingStateResource struct {
-	Completed bool `json:"completed"`
+	Completed   bool              `json:"completed"`
+	CurrentStep string            `json:"current_step,omitempty"`
+	Steps       map[string]string `json:"steps,omitempty"`
 }
 
 // SessionInfoResource mirrors internal/api's sessionInfoResponse

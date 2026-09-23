@@ -1669,6 +1669,11 @@ const docsManifest: DocsManifest = {
           level: 3,
         },
         {
+          id: 'the-setup-wizard',
+          text: 'The setup wizard',
+          level: 3,
+        },
+        {
           id: 'creating-an-app-from-the-cli',
           text: 'Creating an app from the CLI',
           level: 3,

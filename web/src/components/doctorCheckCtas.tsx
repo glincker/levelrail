@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { HelpLink } from '@/components/HelpLink'
-import type { DoctorCheck } from '../../queries/systemDoctor'
+import type { DoctorCheck } from '../queries/systemDoctor'
 
 export interface CheckCta {
   message: string
