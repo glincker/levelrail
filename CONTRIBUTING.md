@@ -48,6 +48,41 @@ the overall number still passes.
 Frontend tests live alongside components in `web/`; see `web/README.md`
 for how to run them.
 
+## Flaky tests
+
+CI reruns a failed Go test at most twice (`scripts/ci-go-test.sh`, via
+gotestsum) and a failed vitest test at most twice (CI only). A retry is
+not a pass: every test that needed one is listed under "Passed only on
+retry" or "Flaky Tests" in the job summary, gets a warning annotation,
+and on `main` and in the nightly run opens or updates a GitHub issue
+labeled `flaky-test`. A test that fails every attempt still fails the
+build. Reruns stop entirely when more than 5 tests fail, since that is a
+real breakage, and never happen after a data race.
+
+When a test flakes:
+
+1. Fix it if you can. Most flakes are timing: wait on a condition
+   (`findBy*`, `waitFor`, a readiness probe, a polled status with a
+   deadline) instead of sleeping, and use fake timers instead of real
+   ones.
+2. If it blocks unrelated work and can't be fixed quickly, quarantine
+   it: add a line to `.github/flaky-tests.txt` with its package, test
+   name, an open issue URL, and today's date. Quarantined tests are
+   skipped in the required lanes and run in a non-blocking lane instead.
+3. A quarantined test must be fixed or deleted within 14 days. Overdue
+   entries warn on every PR and fail the nightly quarantine job.
+
+The nightly run (`nightly.yml`) also runs everything with `-race` and
+`-shuffle=on` to expose order dependence, and repeats the packages with
+a flake history (`FLAKE_SWEEP_PACKAGES`) with `-count=3` and no reruns.
+To reproduce a shuffled failure, take the `-test.shuffle <seed>` line
+from the lane's `events.json` (in its `test-results-*` artifact) and run
+`go test -shuffle=<seed> ./internal/pkg/`.
+
+Docker-backed packages (any `*_live_test.go`, `test/e2e`) run in their
+own CI job with `-p 2`, so live containers don't compete for the
+runner's memory with each other and with the rest of the suite.
+
 ## Running the linter
 
 ```
