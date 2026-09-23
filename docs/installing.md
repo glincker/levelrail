@@ -120,20 +120,31 @@ Both are published for `linux/amd64` and `linux/arm64`, multi-arch, under three 
 
 `:latest` and `:vX.Y` only ever move on a stable tag; `:beta` and `:edge` move continuously, so pin an exact `:vX.Y.Z` tag for anything you care about staying still.
 
+::: warning No stable release yet
+No non-prerelease tag has shipped as of this writing, so `:latest` currently
+points at an old beta build, not the newest one. **Use `:beta` until the
+first stable release ships**, then switch to `:latest`.
+:::
+
 ### Verifying image signatures
 
-Every image is signed keylessly with [cosign](https://docs.sigstore.dev/cosign/overview/) via GitHub Actions OIDC (no long-lived signing key), with an SBOM attached as a signed attestation. Verify a pulled image against this repository's release workflow:
+Every image is signed keylessly with [cosign](https://docs.sigstore.dev/cosign/overview/) via GitHub Actions OIDC (no long-lived signing key). Verify a pulled image against this repository's release workflow:
 
 ```bash
-cosign verify ghcr.io/glincker/levelrail:latest \
+cosign verify ghcr.io/glincker/levelrail:beta \
   --certificate-identity-regexp 'https://github.com/glincker/levelrail/\.github/workflows/release\.yml@.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-Swap in `levelrail-agent` and any tag from the table above. To inspect the attached SBOM:
+Swap in `levelrail-agent` and any tag from the table above.
+
+SBOM (SPDX) and provenance (SLSA) are attached as build attestations, not
+the older `cosign attach-sbom` format, so `cosign download sbom` does not
+find them. Read them with `docker buildx imagetools inspect` instead:
 
 ```bash
-cosign download sbom ghcr.io/glincker/levelrail:latest
+docker buildx imagetools inspect ghcr.io/glincker/levelrail:beta --format '{{ json .SBOM }}'
+docker buildx imagetools inspect ghcr.io/glincker/levelrail:beta --format '{{ json .Provenance }}'
 ```
 
 ::: tip
@@ -201,7 +212,7 @@ curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh 
 Pull the new tag and recreate the container:
 
 ```bash
-docker pull ghcr.io/glincker/levelrail:latest
+docker pull ghcr.io/glincker/levelrail:beta
 docker compose up -d
 ```
 

@@ -71,12 +71,12 @@ create an app (existing image, git build, --file, or --interactive)
 ```
 levelrail apps database set <name> --database-name NAME [flags]
 ```
-attach an already-created managed database to <name> as its connection-env-var source
+attach an already-created managed database to `<name>` as its connection-env-var source
 
 ```
 levelrail apps database clear <name> [flags]
 ```
-detach the database <name> currently resolves its connection env var from
+detach the database `<name>` currently resolves its connection env var from
 
 ```
 levelrail apps delete <name> [flags]
@@ -209,7 +209,7 @@ levelrail apps metrics <name> --metric NAME [flags]
 ```
 levelrail apps moves list <name> [flags]
 ```
-list every node-to-node move attempt for <name>, newest first
+list every node-to-node move attempt for `<name>`, newest first
 
 ```
 levelrail apps moves get <name> <id> [flags]

@@ -27,7 +27,7 @@ docker run -d \
   -e APP_DATA_DIR=/var/lib/levelrail-data \
   -e APP_ADMIN_USERNAME=admin \
   -e APP_ADMIN_PASSWORD=change-me \
-  ghcr.io/glincker/levelrail:latest
+  ghcr.io/glincker/levelrail:beta
 ```
 
 A [`docker-compose.yml`](../docker-compose.yml) is committed at the repo root and does the same thing. Before running it, find your host's docker group GID and export it, since the container's nonroot user needs to be added to that group to reach the socket:
@@ -57,7 +57,7 @@ docker run -d \
   -e APP_CONTROL_PLANE_ADDR=control-plane-host:9443 \
   -e APP_JOIN_TOKEN=your-one-time-join-token \
   -e APP_AGENT_IDENTITY_FILE=/var/lib/levelrail-agent/identity.json \
-  ghcr.io/glincker/levelrail-agent:latest
+  ghcr.io/glincker/levelrail-agent:beta
 ```
 
 **`APP_JOIN_TOKEN`** is only needed for first enrollment. After that, the agent saves its mTLS identity to `APP_AGENT_IDENTITY_FILE`. Mount that path on a named volume, or the agent will have to re-enroll on every container restart.
