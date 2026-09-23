@@ -15,15 +15,11 @@ import (
 // commit status's description field.
 const gitLabStatusDescriptionMax = 255
 
-// previewGitLabTarget resolves what CreateMergeRequestNote/
-// CreateCommitStatus need to notify GitLab about gs's preview: an OAuth
-// access token and gs's own URL-encoded project path. ok is false, and
-// every caller here treats that as a silent no-op, whenever
-// gs.PostPRComments is off, no GitLab OAuth application is connected and
-// authorized, or gs.RepoURL isn't actually hosted on the connected
-// instance: posting a comment or status is cosmetic to the preview it
-// annotates, the same "logged, not fatal" shape previewGitHubTarget
-// already establishes.
+// previewGitLabTarget resolves an access token and gs's own
+// URL-encoded project path. ok is false, treated as a silent no-op by
+// every caller, whenever gs.PostPRComments is off, no GitLab OAuth
+// application is authorized, or gs.RepoURL isn't hosted on the
+// connected instance (mirrors previewGitHubTarget).
 func (rt *Router) previewGitLabTarget(ctx context.Context, appName string, gs store.GitSource) (instanceURL, accessToken, projectPath string, ok bool) {
 	if !gs.PostPRComments || rt.gitlabAppSecrets == nil {
 		return "", "", "", false

@@ -11,13 +11,11 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// previewGiteaTarget resolves what CreateIssueComment/CreateCommitStatus
-// need to notify Gitea about gs's preview: an OAuth access token and
-// gs's own owner/repo. ok is false, and every caller here treats that
-// as a silent no-op, whenever gs.PostPRComments is off, no Gitea OAuth2
-// application is connected and authorized, or gs.RepoURL isn't actually
-// hosted on the connected instance: the same "logged, not fatal" shape
-// previewGitHubTarget already establishes.
+// previewGiteaTarget resolves an access token and gs's own owner/repo.
+// ok is false, treated as a silent no-op by every caller, whenever
+// gs.PostPRComments is off, no Gitea OAuth2 application is authorized,
+// or gs.RepoURL isn't hosted on the connected instance (mirrors
+// previewGitHubTarget).
 func (rt *Router) previewGiteaTarget(ctx context.Context, appName string, gs store.GitSource) (instanceURL, accessToken, fullName string, ok bool) {
 	if !gs.PostPRComments || rt.giteaAppSecrets == nil {
 		return "", "", "", false

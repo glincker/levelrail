@@ -11,15 +11,11 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// previewBitbucketTarget resolves what CreatePullRequestComment/
-// CreateCommitBuildStatus need to notify Bitbucket about gs's preview:
-// an OAuth access token and gs's own "workspace/repo_slug" full name. ok
-// is false, and every caller here treats that as a silent no-op,
-// whenever gs.PostPRComments is off, no Bitbucket OAuth consumer is
-// connected and authorized, or gs.RepoURL isn't hosted on bitbucket.org
-// (Bitbucket Cloud only, see internal/bitbucketapp's own doc comment):
-// the same "logged, not fatal" shape previewGitHubTarget already
-// establishes.
+// previewBitbucketTarget resolves an access token and gs's own
+// "workspace/repo_slug" full name. ok is false, treated as a silent
+// no-op by every caller, whenever gs.PostPRComments is off, no
+// Bitbucket OAuth consumer is authorized, or gs.RepoURL isn't hosted on
+// bitbucket.org (Cloud only, mirrors previewGitHubTarget).
 func (rt *Router) previewBitbucketTarget(ctx context.Context, appName string, gs store.GitSource) (accessToken, fullName string, ok bool) {
 	if !gs.PostPRComments || rt.bitbucketAppSecrets == nil {
 		return "", "", false
