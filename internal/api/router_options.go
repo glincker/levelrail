@@ -821,3 +821,17 @@ func WithLogBroadcaster(b *telemetry.LogBroadcaster) Option {
 func WithAPIRateLimit(readPerMinute, writePerMinute int) Option {
 	return func(rt *Router) { rt.apiRateLimit = newAPIRateLimit(readPerMinute, writePerMinute) }
 }
+
+// WithWebhookRateLimit enables a per-(client IP, app name) budget on
+// POST /api/v1/webhooks/github/{name} (git_webhook.go), checked before
+// that route's DB lookup, secret resolution, and delivery-history write:
+// a request rejected here never reaches any of that work. perMinute <= 0
+// disables it, the same "nil is valid" shape WithAPIRateLimit's own
+// absence establishes; without this option (the default), the route is
+// unthrottled. cmd/levelrail/main.go reads
+// APP_WEBHOOK_RATE_LIMIT_RPM and calls this unconditionally with its
+// resolved (env-or-default) value, so the real control plane is always
+// protected even when an operator never sets the env var.
+func WithWebhookRateLimit(perMinute int) Option {
+	return func(rt *Router) { rt.webhookRateLimit = newAPIRateLimiter(perMinute) }
+}

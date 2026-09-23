@@ -17,21 +17,24 @@ export interface MetricSeries {
   points: MetricPoint[]
 }
 
-// The 7 metrics internal/telemetry's collector actually writes samples
-// for, matching internal/api/metrics.go's `metric` query param
-// one-to-one.
+// The 9 metrics internal/telemetry actually writes samples for,
+// matching internal/api/metrics.go's `metric` query param one-to-one.
+// 7 come from a Docker stats poll (internal/telemetry/collector.go's
+// sampleValues); container_restart_count and build_duration_seconds are
+// discrete events, each recorded once, at the moment it happens, by its
+// own caller (internal/alerting.RestartTracker for a real container
+// restart, internal/deploy for a completed build), the same shape
+// deploy_count already established in internal/telemetry/
+// deploy_metrics.go before either of these two existed.
 //
-// Request rate, response time percentiles, error rate, container
-// restart count, build duration, and deploy frequency are also required
-// per-app metrics that must exist without configuration. None of those
-// six exist here: restart count/build duration/deploy frequency were
-// explicitly deferred as their own follow-up, and request
-// rate/response time/error rate need ingress-layer instrumentation that
-// doesn't exist yet either (the embedded Caddy driver has no
-// request-metrics hook wired up). Do not add a MetricName for any of
+// Request rate, response time percentiles, and error rate are also
+// required per-app metrics that must exist without configuration, but
+// none of those three exist here: they need ingress-layer
+// instrumentation that doesn't exist yet (the embedded Caddy driver has
+// no request-metrics hook wired up). Do not add a MetricName for any of
 // those until a real collector backs it. MetricsDashboard.tsx shows a
-// clearly labeled "not yet collected" list for this gap instead of
-// rendering an empty or fabricated chart.
+// clearly labeled "not yet collected" list for this remaining gap
+// instead of rendering an empty or fabricated chart.
 export type MetricName =
   | 'cpu_percent'
   | 'memory_usage_bytes'
@@ -40,3 +43,5 @@ export type MetricName =
   | 'network_tx_bytes'
   | 'disk_read_bytes'
   | 'disk_write_bytes'
+  | 'container_restart_count'
+  | 'build_duration_seconds'

@@ -32,6 +32,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from '@/components/ui/toast'
+import { EmptyState } from '@/components/ui/empty-state'
 import { appListQueryOptions } from '../queries/apps'
 import {
   useBitbucketAppRepos,
@@ -65,8 +66,8 @@ export function BitbucketAppReposCard() {
           <div>
             <CardTitle>Repositories</CardTitle>
             <CardDescription>
-              Connect a Bitbucket repository as an app&apos;s git source, with
-              a push webhook registered automatically.
+              Connect a Bitbucket repository as an app&apos;s git source, with a
+              push webhook registered automatically.
             </CardDescription>
           </div>
         </div>
@@ -111,11 +112,21 @@ export function BitbucketAppReposCard() {
             </Button>
           </div>
         ))}
-        {!repos.isLoading && !repos.isError && (repos.data ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground">No accessible repositories found.</p>
+        {!repos.isLoading &&
+        !repos.isError &&
+        (repos.data ?? []).length === 0 ? (
+          <EmptyState
+            className="py-12"
+            icon={<GitBranchIcon className="size-5" />}
+            title="No accessible repositories"
+            description="The authorized Bitbucket App has no repositories it can see yet. Grant it access to a repository from Bitbucket to connect it here."
+          />
         ) : null}
       </CardContent>
-      <UseAsSourceDialog repo={target} onOpenChange={(open) => !open && setTarget(null)} />
+      <UseAsSourceDialog
+        repo={target}
+        onOpenChange={(open) => !open && setTarget(null)}
+      />
     </Card>
   )
 }
@@ -204,7 +215,9 @@ function UseAsSourceDialog({
             >
               <SelectTrigger id="bb-use-app" className="w-full">
                 <SelectValue
-                  placeholder={apps.isLoading ? 'Loading apps...' : 'Select an app'}
+                  placeholder={
+                    apps.isLoading ? 'Loading apps...' : 'Select an app'
+                  }
                 />
               </SelectTrigger>
               <SelectContent>

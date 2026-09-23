@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import {
   PaperPlaneTiltIcon,
   WebhooksLogoIcon,
@@ -71,8 +72,10 @@ function TestButton({ channel }: { channel: NotificationChannel }) {
 
 export function NotificationChannelTable({
   channels,
+  action,
 }: {
   channels: NotificationChannel[]
+  action?: ReactNode
 }) {
   if (channels.length === 0) {
     return (
@@ -81,6 +84,7 @@ export function NotificationChannelTable({
         icon={<WebhooksLogoIcon className="size-5" />}
         title="No notification channels connected"
         description="Connect Slack, Discord, Telegram, a generic webhook, or email once here, then attach it from any app instead of retyping a URL."
+        action={action}
       />
     )
   }

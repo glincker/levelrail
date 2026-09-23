@@ -32,6 +32,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from '@/components/ui/toast'
+import { EmptyState } from '@/components/ui/empty-state'
 import { appListQueryOptions } from '../queries/apps'
 import {
   useGiteaAppRepos,
@@ -114,9 +115,12 @@ export function GiteaAppReposCard() {
         {!repos.isLoading &&
         !repos.isError &&
         (repos.data ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No accessible repositories found.
-          </p>
+          <EmptyState
+            className="py-12"
+            icon={<GitBranchIcon className="size-5" />}
+            title="No accessible repositories"
+            description="The authorized Gitea App has no repositories it can see yet. Grant it access to a repository from Gitea to connect it here."
+          />
         ) : null}
       </CardContent>
       <UseAsSourceDialog
