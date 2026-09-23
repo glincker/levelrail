@@ -65,6 +65,7 @@ Or with the [committed `docker-compose.yml`](docker-compose.yml):
 
 ```
 curl -fsSLO https://raw.githubusercontent.com/glincker/levelrail/main/docker-compose.yml
+export DOCKER_GID=$(getent group docker | cut -d: -f3)
 docker compose up -d
 ```
 
