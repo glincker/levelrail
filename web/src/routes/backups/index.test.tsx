@@ -4,6 +4,23 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { allBackupHistoryQueryOptions } from '../../queries/allBackupHistory'
 import { shouldPromptForBackupTarget, Route } from './index'
+import type { Brand } from '../../types/brand'
+
+// The page now renders a HelpLink (brand.DocsURL/useBrand), same mock
+// shape empty-state.test.tsx already uses for its own HelpLink coverage.
+vi.mock('../../hooks/useBrand', () => ({
+  useBrand: (): Brand => ({
+    Name: 'Test Brand',
+    ShortName: 'testbrand',
+    BinaryName: 'testbrand',
+    Domain: 'test.example',
+    SupportURL: '',
+    PrimaryColor: '#000000',
+    LogoSVG: '',
+    DocsURL: '',
+    DiscussionsURL: '',
+  }),
+}))
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>()

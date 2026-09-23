@@ -21,6 +21,7 @@ import { Route53DnsCard } from '../../components/Route53DnsCard'
 import { IngressSettingsCard } from '../../components/IngressSettingsCard'
 import { Button } from '../../components/ui/button'
 import { EmptyState } from '../../components/ui/empty-state'
+import { HelpLink } from '../../components/HelpLink'
 
 // Centralized domains page: every domain currently claimed by an app
 // (GET /api/v1/domains, service_domains) merged client-side with
@@ -94,12 +95,18 @@ function DomainsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Domains</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Every domain routed through this platform, and the ingress settings
-          that decide how their certificates are issued.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-semibold text-foreground">Domains</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Every domain routed through this platform, and the ingress settings
+            that decide how their certificates are issued.
+          </p>
+        </div>
+        <HelpLink
+          path="/domains-and-ingress"
+          label="Domains and ingress guide"
+        />
       </div>
 
       <IngressSettingsCard

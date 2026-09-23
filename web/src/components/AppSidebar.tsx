@@ -249,23 +249,16 @@ export function AppSidebar() {
                       <span>Settings</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  {brand.DocsURL ? (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        render={
-                          <a
-                            href={brand.DocsURL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          />
-                        }
-                        tooltip="Documentation"
-                      >
-                        <BookOpenIcon />
-                        <span>Documentation</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ) : null}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/help" />}
+                      isActive={pathname.startsWith('/help')}
+                      tooltip="Documentation"
+                    >
+                      <BookOpenIcon />
+                      <span>Documentation</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

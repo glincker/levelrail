@@ -14,6 +14,7 @@ vi.mock('../hooks/useBrand', () => ({
     PrimaryColor: '#000000',
     LogoSVG: '',
     DocsURL: 'https://test.example/docs',
+    DiscussionsURL: '',
   }),
 }))
 
@@ -153,9 +154,7 @@ describe('CreateRegistryCredentialDialog', () => {
     expect(hostInput.placeholder).toBe(
       '123456789012.dkr.ecr.us-east-1.amazonaws.com',
     )
-    expect(
-      screen.getByText(/Per-AWS-account hostname/),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/Per-AWS-account hostname/)).toBeInTheDocument()
 
     fireEvent.change(hostInput, {
       target: { value: '999999999999.dkr.ecr.eu-west-1.amazonaws.com' },
@@ -173,7 +172,9 @@ describe('CreateRegistryCredentialDialog', () => {
     ) as HTMLInputElement
     expect(hostInput).not.toHaveAttribute('readonly')
 
-    fireEvent.change(hostInput, { target: { value: 'registry.internal.example' } })
+    fireEvent.change(hostInput, {
+      target: { value: 'registry.internal.example' },
+    })
     expect(hostInput.value).toBe('registry.internal.example')
   })
 
@@ -190,12 +191,16 @@ describe('CreateRegistryCredentialDialog', () => {
     renderDialog()
     await openDialog()
 
-    await pickOption('registry-credential-host-preset', 'GitHub Container Registry (GHCR)', () => {
-      const hostInput = document.querySelector(
-        '#registry-credential-host',
-      ) as HTMLInputElement
-      expect(hostInput.value).toBe('ghcr.io')
-    })
+    await pickOption(
+      'registry-credential-host-preset',
+      'GitHub Container Registry (GHCR)',
+      () => {
+        const hostInput = document.querySelector(
+          '#registry-credential-host',
+        ) as HTMLInputElement
+        expect(hostInput.value).toBe('ghcr.io')
+      },
+    )
 
     fireEvent.change(screen.getByLabelText('Name'), {
       target: { value: 'ghcr-bot' },

@@ -20,6 +20,10 @@ type Brand struct {
 	PrimaryColor string `yaml:"primary_color"`
 	LogoSVG      string `yaml:"logo_svg"`
 	DocsURL      string `yaml:"docs_url"`
+	// DiscussionsURL is the "ask the community" destination (a GitHub
+	// Discussions board or equivalent). Optional, same "empty means
+	// don't render the link" rule as DocsURL and SupportURL.
+	DiscussionsURL string `yaml:"discussions_url"`
 }
 
 const envPrefix = "APP_BRAND_"
@@ -62,6 +66,7 @@ func (b *Brand) applyEnvOverrides() {
 	override(&b.PrimaryColor, envPrefix+"PRIMARY_COLOR")
 	override(&b.LogoSVG, envPrefix+"LOGO_SVG")
 	override(&b.DocsURL, envPrefix+"DOCS_URL")
+	override(&b.DiscussionsURL, envPrefix+"DISCUSSIONS_URL")
 }
 
 func override(field *string, envVar string) {

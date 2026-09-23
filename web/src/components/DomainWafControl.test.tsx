@@ -18,6 +18,7 @@ vi.mock('../hooks/useBrand', () => ({
     PrimaryColor: '#000000',
     LogoSVG: '',
     DocsURL: 'https://test.example/docs',
+    DiscussionsURL: '',
   }),
 }))
 

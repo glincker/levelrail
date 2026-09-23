@@ -25,7 +25,7 @@ export function EmptyState({
   secondaryAction?: ReactNode
   /** Short note pointing at an unmet prerequisite, e.g. why the primary action is a link to a different page. */
   hint?: ReactNode
-  /** Docs path passed straight through to HelpLink; renders nothing without a configured docs URL. */
+  /** Docs path passed straight through to HelpLink; renders nothing if it resolves to neither a bundled page nor a configured docs URL. */
   helpPath?: string
   helpLabel?: string
   className?: string
