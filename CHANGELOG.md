@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0-beta.14](https://github.com/glincker/levelrail/compare/v0.2.0-beta.13...v0.2.0-beta.14) (2026-09-23)
+
+
+### Bug Fixes
+
+* resolve three-way migration 0119 collision and a test fake left stale after a parallel merge ([#659](https://github.com/glincker/levelrail/issues/659)) ([25e9ea5](https://github.com/glincker/levelrail/commit/25e9ea5259178e4a69ac132eda53dea58593db85))
+
 ## [0.2.0-beta.13](https://github.com/glincker/levelrail/compare/v0.2.0-beta.12...v0.2.0-beta.13) (2026-09-23)
 
 
