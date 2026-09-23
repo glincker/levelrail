@@ -2180,6 +2180,50 @@ type NodeMetricsResource struct {
 	ResourceCount int                   `json:"resource_count"`
 }
 
+// NodeResourceUsageResource mirrors internal/api's
+// nodeResourceUsageResource (internal/api/node_resource_usage.go): one
+// node's latest known CPU/memory/disk reading. CPUPercent/
+// MemoryUsageBytes are the sum of every placed service's latest sample,
+// not a true host read; MemoryTotalBytes/DiskUsedBytes/DiskTotalBytes
+// are real host reads but (today) only ever populated for the node
+// running the control plane itself. A nil field means no data yet, not
+// zero usage.
+type NodeResourceUsageResource struct {
+	NodeID           string   `json:"node_id"`
+	Name             string   `json:"name"`
+	IsLocal          bool     `json:"is_local"`
+	CPUPercent       *float64 `json:"cpu_percent,omitempty"`
+	MemoryUsageBytes *float64 `json:"memory_usage_bytes,omitempty"`
+	MemoryTotalBytes *float64 `json:"memory_total_bytes,omitempty"`
+	DiskUsedBytes    *float64 `json:"disk_used_bytes,omitempty"`
+	DiskTotalBytes   *float64 `json:"disk_total_bytes,omitempty"`
+}
+
+// FleetResourceUsageRollup mirrors internal/api's
+// fleetResourceUsageRollup: fleet-wide sums, with *Percent fields only
+// computed from nodes that actually reported a capacity figure (see
+// NodesWithMemoryCapacity/NodesWithDiskCapacity).
+type FleetResourceUsageRollup struct {
+	NodeCount               int      `json:"node_count"`
+	TotalCPUPercent         *float64 `json:"total_cpu_percent,omitempty"`
+	TotalMemoryUsageBytes   *float64 `json:"total_memory_usage_bytes,omitempty"`
+	TotalMemoryBytes        *float64 `json:"total_memory_bytes,omitempty"`
+	MemoryUsedPercent       *float64 `json:"memory_used_percent,omitempty"`
+	NodesWithMemoryCapacity int      `json:"nodes_with_memory_capacity"`
+	TotalDiskUsedBytes      *float64 `json:"total_disk_used_bytes,omitempty"`
+	TotalDiskBytes          *float64 `json:"total_disk_bytes,omitempty"`
+	DiskUsedPercent         *float64 `json:"disk_used_percent,omitempty"`
+	NodesWithDiskCapacity   int      `json:"nodes_with_disk_capacity"`
+}
+
+// FleetResourceUsageResource mirrors internal/api's
+// fleetResourceUsageResponse: one row per node plus the fleet-wide
+// rollup, GET /api/v1/nodes/resource-usage's full body.
+type FleetResourceUsageResource struct {
+	Nodes []NodeResourceUsageResource `json:"nodes"`
+	Fleet FleetResourceUsageRollup    `json:"fleet"`
+}
+
 // AuditLogEntryResource mirrors internal/api's auditLogEntryResource
 // (internal/api/audit.go).
 type AuditLogEntryResource struct {
