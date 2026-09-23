@@ -18,9 +18,6 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  GOTESTSUM_VERSION: v1.13.0
-
 jobs:
   # No `needs`, no path filter: runs immediately alongside `changes` so a
   # migration version collision fails in seconds, not after the full
@@ -144,9 +141,13 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
 
+      # Version and checksums locked by tools/go.mod and tools/go.sum.
       - name: Install gotestsum
-        run: go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION}"
+        run: go -C tools install gotest.tools/gotestsum
 
       # BuildKit's docker exporter needs the daemon on containerd-backed
       # storage, off by default on the runner's stock Docker install.
@@ -186,6 +187,44 @@ jobs:
           retention-days: 7
           overwrite: true
 
+  # Branch protection requires these two exact check names from before the
+  # lanes were split; each passes only if its lanes in test-go passed.
+  test-api:
+    name: Test (internal/api)
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    needs: [changes, test-go]
+    if: always() && needs.changes.outputs.backend == 'true'
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check lanes api-1, api-2
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/check-lane-results.sh "Test (api-1)" "Test (api-2)"
+
+  test-rest:
+    name: Test (everything else)
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    needs: [changes, test-go]
+    if: always() && needs.changes.outputs.backend == 'true'
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check lanes docker, rest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/check-lane-results.sh "Test (docker)" "Test (rest)"
+
   # Non-blocking: runs only the tests in .github/flaky-tests.txt, so a
   # quarantined test keeps producing signal without gating merges.
   test-quarantined:
@@ -205,9 +244,13 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
 
+      # Version and checksums locked by tools/go.mod and tools/go.sum.
       - name: Install gotestsum
-        run: go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION}"
+        run: go -C tools install gotest.tools/gotestsum
 
       - name: go test (quarantined only)
         env:
@@ -417,7 +460,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [migration-versions, changes, build-vet, test-go, coverage-gate, lint, web-check, install-sh]
+    needs: [migration-versions, changes, build-vet, test-go, test-api, test-rest, coverage-gate, lint, web-check, install-sh]
     if: always()
     timeout-minutes: 3
     steps:
@@ -443,6 +486,8 @@ jobs:
           }
           check "build-vet" "${{ needs.build-vet.result }}" "$backend"
           check "test-go" "${{ needs.test-go.result }}" "$backend"
+          check "test-api" "${{ needs.test-api.result }}" "$backend"
+          check "test-rest" "${{ needs.test-rest.result }}" "$backend"
           check "coverage-gate" "${{ needs.coverage-gate.result }}" "$backend"
           check "lint" "${{ needs.lint.result }}" "$backend"
           check "web-check" "${{ needs.web-check.result }}" "$frontend"

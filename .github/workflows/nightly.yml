@@ -11,9 +11,6 @@ on:
 permissions:
   contents: read
 
-env:
-  GOTESTSUM_VERSION: v1.13.0
-
 jobs:
   check-activity:
     name: Check for recent commits
@@ -66,9 +63,13 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
 
+      # Version and checksums locked by tools/go.mod and tools/go.sum.
       - name: Install gotestsum
-        run: go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION}"
+        run: go -C tools install gotest.tools/gotestsum
 
       # Same reasoning as ci.yml's identical step: the BuildKit-dependent
       # tests need the daemon on containerd-backed storage.
@@ -116,9 +117,13 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
 
+      # Version and checksums locked by tools/go.mod and tools/go.sum.
       - name: Install gotestsum
-        run: go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION}"
+        run: go -C tools install gotest.tools/gotestsum
 
       - name: Enable containerd image store for BuildKit's docker exporter
         run: |
@@ -158,9 +163,13 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
 
+      # Version and checksums locked by tools/go.mod and tools/go.sum.
       - name: Install gotestsum
-        run: go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION}"
+        run: go -C tools install gotest.tools/gotestsum
 
       - name: Enable containerd image store for BuildKit's docker exporter
         run: |
