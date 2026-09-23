@@ -295,6 +295,9 @@ func (svc *Service) EffectiveReplicas() int {
 // since it's easier to get right than rolling with a single replica)
 // if unset.
 func (svc *Service) EffectiveStrategy() string {
+	if svc == nil {
+		return StrategyBlueGreen
+	}
 	if svc.Strategy == "" {
 		return StrategyBlueGreen
 	}
