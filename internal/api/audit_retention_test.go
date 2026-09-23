@@ -31,110 +31,91 @@ func (m *mockAuditStore) ListAuditEntries(ctx context.Context, limit int, before
 }
 
 func TestPurgeOldAuditEntries(t *testing.T) {
-	mock := &mockAuditStore{returnedDeleted: 42}
-
-	rt := &Router{
-		auditLog:          mock,
-		auditLogRetention: 24 * time.Hour,
+	tests := []struct {
+		name              string
+		retention         time.Duration
+		expectedRetention time.Duration
+		returnedDeleted   int64
+	}{
+		{
+			name:              "CustomRetention",
+			retention:         24 * time.Hour,
+			expectedRetention: 24 * time.Hour,
+			returnedDeleted:   42,
+		},
+		{
+			name:              "DefaultRetention",
+			retention:         0,
+			expectedRetention: defaultAuditLogRetention,
+			returnedDeleted:   7,
+		},
 	}
 
-	before := time.Now().UTC()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := &mockAuditStore{returnedDeleted: tt.returnedDeleted}
+			rt := &Router{
+				auditLog:          mock,
+				auditLogRetention: tt.retention,
+			}
 
-	n, err := rt.PurgeOldAuditEntries(context.Background())
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if n != 42 {
-		t.Errorf("deleted = %d, want 42", n)
-	}
+			before := time.Now().UTC()
+			n, err := rt.PurgeOldAuditEntries(context.Background())
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if n != tt.returnedDeleted {
+				t.Errorf("deleted = %d, want %d", n, tt.returnedDeleted)
+			}
+			after := time.Now().UTC()
 
-	after := time.Now().UTC()
+			expectedMin := before.Add(-tt.expectedRetention)
+			expectedMax := after.Add(-tt.expectedRetention)
 
-	expectedMin := before.Add(-24 * time.Hour)
-	expectedMax := after.Add(-24 * time.Hour)
-
-	if mock.deletedOlderThan.Before(expectedMin) || mock.deletedOlderThan.After(expectedMax) {
-		t.Errorf("cutoff = %v, want between %v and %v", mock.deletedOlderThan, expectedMin, expectedMax)
-	}
-}
-
-func TestPurgeOldAuditEntries_DefaultRetention(t *testing.T) {
-	mock := &mockAuditStore{returnedDeleted: 7}
-
-	rt := &Router{
-		auditLog: mock,
-	}
-
-	before := time.Now().UTC()
-
-	n, err := rt.PurgeOldAuditEntries(context.Background())
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if n != 7 {
-		t.Errorf("deleted = %d, want 7", n)
-	}
-
-	after := time.Now().UTC()
-
-	expectedMin := before.Add(-defaultAuditLogRetention)
-	expectedMax := after.Add(-defaultAuditLogRetention)
-
-	if mock.deletedOlderThan.Before(expectedMin) || mock.deletedOlderThan.After(expectedMax) {
-		t.Errorf("cutoff = %v, want between %v and %v", mock.deletedOlderThan, expectedMin, expectedMax)
+			if mock.deletedOlderThan.Before(expectedMin) || mock.deletedOlderThan.After(expectedMax) {
+				t.Errorf("cutoff = %v, want between %v and %v", mock.deletedOlderThan, expectedMin, expectedMax)
+			}
+		})
 	}
 }
 
 func TestRunAuditLogSweeper(t *testing.T) {
-	mock := &mockAuditStore{returnedDeleted: 1}
-	rt := &Router{
-		auditLog: mock,
-		logger:   discardLogger(),
+	tests := []struct {
+		name          string
+		returnedError error
+	}{
+		{"Success", nil},
+		{"Error", errors.New("mock error")},
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := &mockAuditStore{
+				returnedDeleted: 1,
+				returnedError:   tt.returnedError,
+			}
+			rt := &Router{
+				auditLog: mock,
+				logger:   discardLogger(),
+			}
 
-	errCh := make(chan error, 1)
-	go func() {
-		errCh <- rt.RunAuditLogSweeper(ctx, 5*time.Millisecond)
-	}()
+			ctx, cancel := context.WithCancel(context.Background())
+			errCh := make(chan error, 1)
+			go func() {
+				errCh <- rt.RunAuditLogSweeper(ctx, 5*time.Millisecond)
+			}()
 
-	time.Sleep(20 * time.Millisecond)
-	cancel()
+			time.Sleep(20 * time.Millisecond)
+			cancel()
 
-	err := <-errCh
-	if err != context.Canceled {
-		t.Errorf("expected context.Canceled, got %v", err)
-	}
+			err := <-errCh
+			if err != context.Canceled {
+				t.Errorf("expected context.Canceled, got %v", err)
+			}
 
-	if mock.callCount == 0 {
-		t.Errorf("expected DeleteAuditEntriesOlderThan to be called at least once")
-	}
-}
-
-func TestRunAuditLogSweeper_Error(t *testing.T) {
-	mock := &mockAuditStore{returnedError: errors.New("mock error")}
-	rt := &Router{
-		auditLog: mock,
-		logger:   discardLogger(),
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	errCh := make(chan error, 1)
-	go func() {
-		errCh <- rt.RunAuditLogSweeper(ctx, 5*time.Millisecond)
-	}()
-
-	time.Sleep(20 * time.Millisecond)
-	cancel()
-
-	err := <-errCh
-	if err != context.Canceled {
-		t.Errorf("expected context.Canceled, got %v", err)
-	}
-
-	if mock.callCount == 0 {
-		t.Errorf("expected DeleteAuditEntriesOlderThan to be called at least once")
+			if mock.callCount == 0 {
+				t.Errorf("expected DeleteAuditEntriesOlderThan to be called at least once")
+			}
+		})
 	}
 }
