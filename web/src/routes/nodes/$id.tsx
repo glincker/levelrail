@@ -17,6 +17,7 @@ import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
+import { NodeEventsCard } from '../../components/NodeEventsCard'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
@@ -249,6 +250,7 @@ function NodeDetailPage() {
       <NodeMeshCard nodeId={id} nodeName={node.name} />
 
       <NodePatchStatusCard nodeId={id} />
+      <NodeEventsCard nodeId={id} />
 
       <NodeMetricsDashboard nodeId={id} />
 

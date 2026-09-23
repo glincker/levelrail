@@ -2659,3 +2659,10 @@ type AppStatusEntry struct {
 		Variant string `json:"variant"`
 	} `json:"status"`
 }
+
+// NodeStatusEventResource mirrors internal/api's nodeStatusEventResource.
+type NodeStatusEventResource struct {
+	FromStatus string    `json:"from_status"`
+	ToStatus   string    `json:"to_status"`
+	CreatedAt  time.Time `json:"created_at"`
+}

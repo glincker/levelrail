@@ -298,3 +298,55 @@ func TestTouchNodeLastSeen(t *testing.T) {
 		t.Errorf("got.LastSeenAt = %v, want at or after %v", got.LastSeenAt, before)
 	}
 }
+
+func TestUpdateNodeStatus_RecordsTransitionsOnly(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveNode(ctx, testNode("node_ev", "worker-ev")); err != nil {
+		t.Fatalf("SaveNode() error = %v", err)
+	}
+
+	for _, s := range []NodeStatus{NodeStatusOnline, NodeStatusOnline, NodeStatusOffline} {
+		if err := db.UpdateNodeStatus(ctx, "node_ev", s); err != nil {
+			t.Fatalf("UpdateNodeStatus(%s) error = %v", s, err)
+		}
+	}
+
+	got, err := db.ListNodeStatusEvents(ctx, "node_ev", 10)
+	if err != nil {
+		t.Fatalf("ListNodeStatusEvents() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("got %d events, want 2 (repeat online must not record): %+v", len(got), got)
+	}
+	if got[0].FromStatus != NodeStatusOnline || got[0].ToStatus != NodeStatusOffline {
+		t.Errorf("newest event = %s -> %s, want online -> offline", got[0].FromStatus, got[0].ToStatus)
+	}
+	if got[1].FromStatus != NodeStatusPending || got[1].ToStatus != NodeStatusOnline {
+		t.Errorf("oldest event = %s -> %s, want pending -> online", got[1].FromStatus, got[1].ToStatus)
+	}
+}
+
+func TestUpdateNodeStatus_TrimsToCap(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveNode(ctx, testNode("node_cap", "worker-cap")); err != nil {
+		t.Fatalf("SaveNode() error = %v", err)
+	}
+	for i := 0; i < maxNodeStatusEventsPerNode+10; i++ {
+		s := NodeStatusOnline
+		if i%2 == 1 {
+			s = NodeStatusOffline
+		}
+		if err := db.UpdateNodeStatus(ctx, "node_cap", s); err != nil {
+			t.Fatalf("UpdateNodeStatus() error = %v", err)
+		}
+	}
+	got, err := db.ListNodeStatusEvents(ctx, "node_cap", 1000)
+	if err != nil {
+		t.Fatalf("ListNodeStatusEvents() error = %v", err)
+	}
+	if len(got) != maxNodeStatusEventsPerNode {
+		t.Errorf("got %d events, want cap %d", len(got), maxNodeStatusEventsPerNode)
+	}
+}

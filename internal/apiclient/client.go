@@ -2416,6 +2416,18 @@ func (c *Client) GetNodePatchStatus(ctx context.Context, id string) (NodePatchSt
 	return out, err
 }
 
+// ListNodeEvents calls GET /api/v1/nodes/{id}/events: the node's recent
+// status transitions, newest first. limit <= 0 uses the server default.
+func (c *Client) ListNodeEvents(ctx context.Context, id string, limit int) ([]NodeStatusEventResource, error) {
+	path := nodePath(id) + "/events"
+	if limit > 0 {
+		path += "?limit=" + strconv.Itoa(limit)
+	}
+	var out []NodeStatusEventResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
 // GetMeshStatus calls GET /api/v1/mesh: this node's live WireGuard mesh
 // state, every peer it currently knows about, and its own most recent
 // key rotation if any. Returns a 501-wrapping error when mesh networking

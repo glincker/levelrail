@@ -16,7 +16,7 @@ const usage = {
 describe('assessDiskPressure', () => {
   it.each([
     { name: 'plenty of space', free: 50, level: 'ok' },
-    { name: 'below warn', free: 10, level: 'warning' },
+    { name: 'below warn', free: 8, level: 'warning' },
     { name: 'below critical', free: 3, level: 'critical' },
   ])('$name', ({ free, level }) => {
     const got = assessDiskPressure({

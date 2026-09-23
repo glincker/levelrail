@@ -871,6 +871,10 @@ levelrail nodes patch-status <id> [flags]
 ```
 
 ```
+levelrail nodes events <id> [--limit N] [flags]
+```
+
+```
 levelrail nodes workloads <id> --accepts-app=BOOL --accepts-build=BOOL [flags]
 ```
 

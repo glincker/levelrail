@@ -23,6 +23,7 @@ import type {
   DrainNodeResponse,
   NodeJoinTokenResponse,
   NodePatchStatusResource,
+  NodeStatus,
   NodeResource,
 } from '../types/nodeDetail'
 import type { ReconcileCondition } from '../types/deploy'
@@ -37,6 +38,7 @@ export const nodeKeys = {
   health: (id: string) => [...nodeKeys.detail(id), 'health'] as const,
   patchStatus: (id: string) =>
     [...nodeKeys.detail(id), 'patch-status'] as const,
+  events: (id: string) => [...nodeKeys.detail(id), 'events'] as const,
 }
 
 // Fetches every node from the control plane API. GET /api/v1/nodes
@@ -172,6 +174,32 @@ export function nodePatchStatusQueryOptions(id: string) {
 
 export function useNodePatchStatus(id: string) {
   return useQuery({ ...nodePatchStatusQueryOptions(id), retry: false })
+}
+
+export interface NodeStatusEvent {
+  from_status: NodeStatus
+  to_status: NodeStatus
+  created_at: string
+}
+
+export async function fetchNodeEvents(id: string): Promise<NodeStatusEvent[]> {
+  const res = await fetch(`/api/v1/nodes/${encodeURIComponent(id)}/events`)
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `fetch node events failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as NodeStatusEvent[]
+}
+
+export function useNodeEvents(id: string) {
+  return useQuery({
+    queryKey: nodeKeys.events(id),
+    queryFn: () => fetchNodeEvents(id),
+    retry: false,
+    refetchInterval: 30_000,
+  })
 }
 
 // POST /api/v1/nodes/join-tokens (internal/api/nodes.go's

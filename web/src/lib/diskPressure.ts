@@ -14,9 +14,10 @@ function envPercent(raw: string | undefined, fallback: number): number {
   return raw && Number.isFinite(n) && n > 0 && n < 100 ? n : fallback
 }
 
+// 10% free matches the server's node_disk_space default (90% used).
 const WARN_FREE_PERCENT = envPercent(
   import.meta.env.VITE_DISK_WARN_FREE_PERCENT as string | undefined,
-  15,
+  10,
 )
 const CRITICAL_FREE_PERCENT = envPercent(
   import.meta.env.VITE_DISK_CRITICAL_FREE_PERCENT as string | undefined,
