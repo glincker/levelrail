@@ -579,6 +579,42 @@ func WithDoctorDiskWarningBytes(n int64) Option {
 	return func(rt *Router) { rt.doctorDiskWarningBytes = n }
 }
 
+// WithDoctorNetworkTimeout overrides the bounded overall timeout GET
+// /api/v1/system/doctor's network checks (public_ip,
+// external_reachability_*, acme_reachability, clock_skew) share, the
+// same "no hardcoded thresholds" shape as WithDoctorDiskWarningBytes.
+// Zero keeps defaultDoctorNetworkTimeout.
+func WithDoctorNetworkTimeout(d time.Duration) Option {
+	return func(rt *Router) { rt.doctorNetworkTimeout = d }
+}
+
+// WithDoctorPublicIPEndpoint overrides the plain-text-IP endpoint the
+// public_ip check queries, in place of defaultDoctorPublicIPEndpoint.
+// Lets an operator behind an egress proxy, or one who simply distrusts a
+// third-party default, point this at their own endpoint.
+func WithDoctorPublicIPEndpoint(url string) Option {
+	return func(rt *Router) { rt.doctorPublicIPEndpoint = url }
+}
+
+// WithDoctorClockSkewWarnAge overrides how far this host's clock may
+// drift from the remote HTTP Date header the clock_skew check compares
+// against before it warns. Zero keeps defaultDoctorClockSkewWarnAge.
+func WithDoctorClockSkewWarnAge(d time.Duration) Option {
+	return func(rt *Router) { rt.doctorClockSkewWarnAge = d }
+}
+
+// WithDoctorMinRAMBytes overrides the recommended-minimum total memory
+// the ram check warns below. Zero keeps defaultDoctorMinRAMBytes.
+func WithDoctorMinRAMBytes(n int64) Option {
+	return func(rt *Router) { rt.doctorMinRAMBytes = n }
+}
+
+// WithDoctorMinCPUCount overrides the recommended-minimum CPU core count
+// the cpu check warns below. Zero keeps defaultDoctorMinCPUCount.
+func WithDoctorMinCPUCount(n int) Option {
+	return func(rt *Router) { rt.doctorMinCPUCount = n }
+}
+
 // WithDockerPruner enables POST /api/v1/system/prune. Without one
 // configured (the default), that route returns 501, the same
 // "not configured" shape WithBuilder's own absence produces.

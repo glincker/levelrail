@@ -71,6 +71,14 @@ func parseMemInfoLineKB(line string) (int64, error) {
 	return value, nil
 }
 
+// HostMemoryBytes reads this host's total and available memory from
+// /proc/meminfo, the same read HostMemoryCollector.CollectOnce performs
+// on a poll tick. Exported for a one-shot caller (internal/api's ram
+// doctor check) that has no running collector to read back from.
+func HostMemoryBytes() (totalBytes, availableBytes int64, err error) {
+	return hostMemoryBytes("/proc/meminfo")
+}
+
 // hostMemoryBytes reads a host's total and available memory from a
 // /proc/meminfo-shaped file at path.
 func hostMemoryBytes(path string) (totalBytes, availableBytes int64, err error) {

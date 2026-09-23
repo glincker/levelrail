@@ -356,6 +356,29 @@ type Router struct {
 	// to disable it, the same "this package never reads the environment
 	// directly" convention WithSessionTTL's own doc comment establishes.
 	autoPlacementEnabled bool
+
+	// doctorHTTPClient is the http.Client method surface GET
+	// /api/v1/system/doctor's network checks (public_ip,
+	// external_reachability_*, acme_reachability, clock_skew) use to
+	// reach the outside world. nil means "use http.DefaultClient", the
+	// real default; tests inject a fake so no doctor test performs a
+	// real outbound request.
+	doctorHTTPClient doctorHTTPDoer
+	// doctorDialContext dials a raw TCP connection for
+	// external_reachability_*. nil means "use
+	// (&net.Dialer{}).DialContext", the real default.
+	doctorDialContext doctorDialContextFunc
+	// doctorNumCPU reports this host's CPU core count for the cpu check.
+	// nil means "use runtime.NumCPU".
+	doctorNumCPU func() int
+	// doctorHostMemory reads this host's total/available memory for the
+	// ram check. nil means "use telemetry.HostMemoryBytes".
+	doctorHostMemory       func() (totalBytes, availableBytes int64, err error)
+	doctorNetworkTimeout   time.Duration // 0 means "use defaultDoctorNetworkTimeout", set via WithDoctorNetworkTimeout
+	doctorPublicIPEndpoint string        // "" means "use defaultDoctorPublicIPEndpoint", set via WithDoctorPublicIPEndpoint
+	doctorClockSkewWarnAge time.Duration // 0 means "use defaultDoctorClockSkewWarnAge", set via WithDoctorClockSkewWarnAge
+	doctorMinRAMBytes      int64         // 0 means "use defaultDoctorMinRAMBytes", set via WithDoctorMinRAMBytes
+	doctorMinCPUCount      int           // 0 means "use defaultDoctorMinCPUCount", set via WithDoctorMinCPUCount
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.

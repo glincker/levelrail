@@ -710,10 +710,30 @@ func printSystemDoctorHuman(out io.Writer, d systemDoctorResource) {
 	}
 	_ = tw.Flush()
 
+	printSystemDoctorFixes(out, d.Checks)
+
 	if d.OK {
 		_, _ = fmt.Fprintln(out, "\nAll checks passed.")
 	} else {
 		_, _ = fmt.Fprintln(out, "\nOne or more checks failed. See above.")
+	}
+}
+
+// printSystemDoctorFixes prints each check's concrete Fix command below
+// the summary table, the same information system-status.tsx renders as
+// a copyable code block: an operator running the CLI headless has no
+// dashboard to see that block in.
+func printSystemDoctorFixes(out io.Writer, checks []doctorCheckResource) {
+	var printedHeader bool
+	for _, c := range checks {
+		if c.Fix == "" {
+			continue
+		}
+		if !printedHeader {
+			_, _ = fmt.Fprintln(out, "\nFixes:")
+			printedHeader = true
+		}
+		_, _ = fmt.Fprintf(out, "  %s:\n    %s\n", c.Name, c.Fix)
 	}
 }
 

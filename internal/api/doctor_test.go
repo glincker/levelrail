@@ -10,10 +10,12 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func TestSystemDoctorRoute_RequiresAuth(t *testing.T) {
-	rt, _ := newTestRouter(t)
+	rt, _ := newDoctorTestRouter(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/system/doctor", nil)
 	rec := httptest.NewRecorder()
@@ -34,8 +36,39 @@ func doctorCheckByCode(t *testing.T, checks []doctorCheckResource, code string) 
 	return doctorCheckResource{}
 }
 
-func TestHandleSystemDoctor_NothingConfigured(t *testing.T) {
+// fakeDoctorOfflineDoer/fakeDoctorOfflineDialContext simulate a host
+// with no outbound network access at all: the default every test in
+// this file runs under, so no doctor test ever depends on this
+// machine's real internet access (or lack of it) to pass.
+type fakeDoctorOfflineDoer struct{}
+
+func (fakeDoctorOfflineDoer) Do(*http.Request) (*http.Response, error) {
+	return nil, errors.New("network disabled in tests")
+}
+
+func fakeDoctorOfflineDialContext(context.Context, string, string) (net.Conn, error) {
+	return nil, errors.New("network disabled in tests")
+}
+
+// newDoctorTestRouter wraps newTestRouter with the offline network
+// fakes above, so a bare "the rest of this router is unconfigured"
+// test doesn't also depend on real network access for its network
+// checks.
+func newDoctorTestRouter(t *testing.T) (*Router, *store.DB) {
+	t.Helper()
 	rt, db := newTestRouter(t)
+	withOfflineDoctorNetwork(rt)
+	return rt, db
+}
+
+func withOfflineDoctorNetwork(rt *Router) *Router {
+	rt.doctorHTTPClient = fakeDoctorOfflineDoer{}
+	rt.doctorDialContext = fakeDoctorOfflineDialContext
+	return rt
+}
+
+func TestHandleSystemDoctor_NothingConfigured(t *testing.T) {
+	rt, db := newDoctorTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
@@ -48,19 +81,25 @@ func TestHandleSystemDoctor_NothingConfigured(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got.Checks) != 9 {
-		t.Fatalf("len(Checks) = %d, want 9", len(got.Checks))
+	if len(got.Checks) != 16 {
+		t.Fatalf("len(Checks) = %d, want 16", len(got.Checks))
 	}
-	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable", "master_key_rotation", "stale_secrets"} {
+	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable", "master_key_rotation", "stale_secrets", "public_ip", "external_reachability_80", "external_reachability_443", "clock_skew"} {
 		if c := doctorCheckByCode(t, got.Checks, code); c.Status != doctorStatusUnknown {
-			t.Errorf("%s status = %q, want %q (nothing configured)", code, c.Status, doctorStatusUnknown)
+			t.Errorf("%s status = %q, want %q (nothing configured / offline)", code, c.Status, doctorStatusUnknown)
 		}
+	}
+	// acme_reachability degrades to warn, not unknown, when offline: ACME
+	// is disabled by default (ingress_settings' own seeded row), so an
+	// unreachable directory URL is a heads-up, not a real problem.
+	if c := doctorCheckByCode(t, got.Checks, "acme_reachability"); c.Status != doctorStatusWarn {
+		t.Errorf("acme_reachability status = %q, want %q (offline, but ACME isn't enabled)", c.Status, doctorStatusWarn)
 	}
 }
 
 func TestHandleSystemDoctor_DockerFailing(t *testing.T) {
 	db := openTestDB(t)
-	rt := NewRouter(nil, testBrand(), db, WithDockerPinger(&fakeDockerPinger{err: errors.New("unreachable")}))
+	rt := withOfflineDoctorNetwork(NewRouter(nil, testBrand(), db, WithDockerPinger(&fakeDockerPinger{err: errors.New("unreachable")})))
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
@@ -80,7 +119,7 @@ func TestHandleSystemDoctor_DockerFailing(t *testing.T) {
 
 func TestHandleSystemDoctor_DockerHealthy(t *testing.T) {
 	db := openTestDB(t)
-	rt := NewRouter(nil, testBrand(), db, WithDockerPinger(&fakeDockerPinger{}))
+	rt := withOfflineDoctorNetwork(NewRouter(nil, testBrand(), db, WithDockerPinger(&fakeDockerPinger{})))
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
@@ -97,7 +136,7 @@ func TestHandleSystemDoctor_DockerHealthy(t *testing.T) {
 
 func TestHandleSystemDoctor_DatabaseHealthy(t *testing.T) {
 	db := openTestDB(t)
-	rt := NewRouter(nil, testBrand(), db, WithDBPinger(db))
+	rt := withOfflineDoctorNetwork(NewRouter(nil, testBrand(), db, WithDBPinger(db)))
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
@@ -115,7 +154,7 @@ func TestHandleSystemDoctor_DatabaseHealthy(t *testing.T) {
 func TestHandleSystemDoctor_DataDirConfigured(t *testing.T) {
 	dir := t.TempDir()
 	db := openTestDB(t)
-	rt := NewRouter(nil, testBrand(), db, WithDataDir(dir))
+	rt := withOfflineDoctorNetwork(NewRouter(nil, testBrand(), db, WithDataDir(dir)))
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
@@ -136,7 +175,7 @@ func TestHandleSystemDoctor_DataDirConfigured(t *testing.T) {
 func TestHandleSystemDoctor_DiskWarningThreshold(t *testing.T) {
 	dir := t.TempDir()
 	db := openTestDB(t)
-	rt := NewRouter(nil, testBrand(), db, WithDataDir(dir), WithDoctorDiskWarningBytes(1<<62))
+	rt := withOfflineDoctorNetwork(NewRouter(nil, testBrand(), db, WithDataDir(dir), WithDoctorDiskWarningBytes(1<<62)))
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
@@ -186,10 +225,10 @@ func TestWithIngressPortOwner(t *testing.T) {
 func TestWithDoctorIngressPorts(t *testing.T) {
 	db := openTestDB(t)
 	owner := &fakeIngressPortOwner{owned: map[int]bool{8080: true, 8443: true}}
-	rt := NewRouter(discardLogger(), testBrand(), db,
+	rt := withOfflineDoctorNetwork(NewRouter(discardLogger(), testBrand(), db,
 		WithIngressPortOwner(owner),
 		WithDoctorIngressPorts(8080, 8443),
-	)
+	))
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
@@ -219,7 +258,7 @@ func TestWithDoctorIngressPorts(t *testing.T) {
 // never called) still produces the original port_80/port_443 checks,
 // the same "0 means unset" shape WithDoctorDiskWarningBytes already has.
 func TestWithDoctorIngressPorts_ZeroKeepsDefaults(t *testing.T) {
-	rt, db := newTestRouter(t)
+	rt, db := newDoctorTestRouter(t)
 	if rt.doctorHTTPPort != 0 || rt.doctorHTTPSPort != 0 {
 		t.Fatalf("doctorHTTPPort/doctorHTTPSPort = %d/%d, want 0/0 (unset)", rt.doctorHTTPPort, rt.doctorHTTPSPort)
 	}
@@ -295,7 +334,7 @@ func TestDoctorCheckPort(t *testing.T) {
 			port, release := tt.usePort(t)
 			defer release()
 
-			rt, _ := newTestRouter(t)
+			rt, _ := newDoctorTestRouter(t)
 			if !tt.noOwner {
 				rt.ingressPortOwner = &fakeIngressPortOwner{owned: map[int]bool{port: tt.ownsIt}}
 			}
@@ -340,7 +379,7 @@ func TestDoctorCheckMasterKeyRotation_StaleWarns(t *testing.T) {
 }
 
 func TestDoctorCheckMasterKeyRotation_NotConfigured(t *testing.T) {
-	rt, _ := newTestRouter(t)
+	rt, _ := newDoctorTestRouter(t)
 	c := rt.doctorCheckMasterKeyRotation(context.Background())
 	if c.Status != doctorStatusUnknown {
 		t.Errorf("status = %q, want %q (no master key configured)", c.Status, doctorStatusUnknown)
@@ -348,7 +387,7 @@ func TestDoctorCheckMasterKeyRotation_NotConfigured(t *testing.T) {
 }
 
 func TestDoctorCheckStaleSecrets_NotConfigured(t *testing.T) {
-	rt, _ := newTestRouter(t) // no WithStaleSecretCounter
+	rt, _ := newDoctorTestRouter(t) // no WithStaleSecretCounter
 	c := rt.doctorCheckStaleSecrets(context.Background())
 	if c.Status != doctorStatusUnknown {
 		t.Errorf("status = %q, want %q (no stale secret counter configured)", c.Status, doctorStatusUnknown)

@@ -79,6 +79,31 @@ func TestRun_Doctor_WarnDoesNotAffectExitCode(t *testing.T) {
 	}
 }
 
+func TestRun_Doctor_PrintsFixCommands(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(systemDoctorResource{
+			OK: true,
+			Checks: []doctorCheckResource{
+				{Code: "clock_skew", Name: "Clock skew", Status: "warn", Message: "off by 1h", Fix: "sudo systemctl enable --now systemd-timesyncd"},
+				{Code: "docker", Name: "Docker daemon", Status: "ok", Message: "reachable"},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"doctor", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "Fixes:") {
+		t.Errorf("stdout = %q, want a Fixes section", stdout)
+	}
+	if !strings.Contains(stdout, "sudo systemctl enable --now systemd-timesyncd") {
+		t.Errorf("stdout = %q, want the clock_skew fix command", stdout)
+	}
+	if strings.Count(stdout, "Docker daemon") != 1 {
+		t.Errorf("stdout = %q, want Docker daemon (which has no Fix) only in the table, not the Fixes section", stdout)
+	}
+}
+
 func TestRun_Doctor_JSON(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

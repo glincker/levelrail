@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import {
   HeartbeatIcon,
@@ -8,6 +9,9 @@ import {
   ArrowsClockwiseIcon,
   StackIcon,
   ShieldCheckIcon,
+  GlobeIcon,
+  CopyIcon,
+  CheckIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import type { VariantProps } from 'class-variance-authority'
@@ -62,15 +66,26 @@ const STATUS_META: Record<
 // locked down), not a distinction the API itself makes. Any check code
 // the backend adds later that isn't listed here still renders, just
 // under "Other checks" rather than being silently dropped.
-const INFRASTRUCTURE_CODES = ['docker', 'disk_space', 'data_dir_writable']
+const INFRASTRUCTURE_CODES = [
+  'docker',
+  'disk_space',
+  'data_dir_writable',
+  'ram',
+  'cpu',
+]
 const INFRASTRUCTURE_CODES_AFTER_PORTS = ['database']
 const SECURITY_CODES = ['firewall', 'master_key_rotation', 'stale_secrets']
+const NETWORK_CODES = ['public_ip', 'acme_reachability', 'clock_skew']
 
 // PORT_CHECK_CODE matches port_<n> for whatever ports this instance's
 // ingress is actually configured on (APP_INGRESS_HTTP_ADDR/
 // APP_INGRESS_HTTPS_ADDR), not just the literal port_80/port_443 codes
 // a default-port instance reports.
 const PORT_CHECK_CODE = /^port_\d+$/
+// EXTERNAL_REACHABILITY_CODE matches external_reachability_<n> the same
+// way PORT_CHECK_CODE matches port_<n>, for whatever ports this
+// instance's ingress is configured on.
+const EXTERNAL_REACHABILITY_CODE = /^external_reachability_\d+$/
 
 function groupChecks(checks: DoctorCheck[]) {
   const byCode = new Map(checks.map((c) => [c.code, c]))
@@ -79,20 +94,69 @@ function groupChecks(checks: DoctorCheck[]) {
       .map((code) => byCode.get(code))
       .filter((c): c is DoctorCheck => Boolean(c))
   const portChecks = checks.filter((c) => PORT_CHECK_CODE.test(c.code))
+  const externalReachabilityChecks = checks.filter((c) =>
+    EXTERNAL_REACHABILITY_CODE.test(c.code),
+  )
   const infrastructure = [
     ...take(INFRASTRUCTURE_CODES),
     ...portChecks,
     ...take(INFRASTRUCTURE_CODES_AFTER_PORTS),
   ]
   const security = take(SECURITY_CODES)
+  const network = [
+    ...take(['public_ip']),
+    ...externalReachabilityChecks,
+    ...take(['acme_reachability', 'clock_skew']),
+  ]
   const seen = new Set([
     ...INFRASTRUCTURE_CODES,
     ...INFRASTRUCTURE_CODES_AFTER_PORTS,
     ...SECURITY_CODES,
+    ...NETWORK_CODES,
     ...portChecks.map((c) => c.code),
+    ...externalReachabilityChecks.map((c) => c.code),
   ])
   const other = checks.filter((c) => !seen.has(c.code))
-  return { infrastructure, security, other }
+  return { infrastructure, security, network, other }
+}
+
+// FixCommand renders a check's backend-supplied Fix as a copyable code
+// block plus a HelpLink to its DocsPath, the CLI's own printSystemDoctorFixes
+// (cmd/levelrail-cli/output.go) rendered as a table row instead: same
+// two fields, different surface.
+function FixCommand({ fix, docsPath }: { fix: string; docsPath?: string }) {
+  const [copied, setCopied] = useState(false)
+
+  function copyFix() {
+    void navigator.clipboard.writeText(fix).then(() => {
+      setCopied(true)
+    })
+  }
+
+  return (
+    <div className="mt-2 rounded-md bg-muted/50 p-2.5">
+      <div className="flex items-start gap-2">
+        <code className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-all text-xs">
+          {fix}
+        </code>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="shrink-0"
+          onClick={copyFix}
+        >
+          {copied ? <CheckIcon /> : <CopyIcon />}
+          {copied ? 'Copied' : 'Copy'}
+        </Button>
+      </div>
+      {docsPath ? (
+        <div className="mt-1.5">
+          <HelpLink path={docsPath} label="Learn more" variant="inline" />
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
 function CheckRow({ check }: { check: DoctorCheck }) {
@@ -118,6 +182,9 @@ function CheckRow({ check }: { check: DoctorCheck }) {
           <p className="text-xs text-muted-foreground">{cta.message}</p>
           <div className="mt-1.5">{cta.action}</div>
         </div>
+      ) : null}
+      {check.fix ? (
+        <FixCommand fix={check.fix} docsPath={check.docs_path} />
       ) : null}
     </div>
   )
@@ -187,7 +254,7 @@ function SummaryBanner({ ok, checks }: { ok: boolean; checks: DoctorCheck[] }) {
 
 function SystemStatusPage() {
   const { data, isFetching, refetch } = useSystemDoctor()
-  const { infrastructure, security, other } = groupChecks(data.checks)
+  const { infrastructure, security, network, other } = groupChecks(data.checks)
 
   return (
     <div className="space-y-6">
@@ -202,7 +269,8 @@ function SystemStatusPage() {
               <HelpLink path="/troubleshooting" label="Troubleshooting guide" />
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Preflight checks: Docker, disk, ports, database, and firewall.
+              Preflight checks: Docker, disk, ports, database, firewall, and
+              outbound network reachability.
             </p>
           </div>
         </div>
@@ -232,6 +300,12 @@ function SystemStatusPage() {
         description="Hardening checks: firewall status and secret rotation age."
         icon={ShieldCheckIcon}
         checks={security}
+      />
+      <CheckGroupCard
+        title="Network and reachability"
+        description="Outbound network access and whether the internet can reach this box."
+        icon={GlobeIcon}
+        checks={network}
       />
       <CheckGroupCard
         title="Other checks"

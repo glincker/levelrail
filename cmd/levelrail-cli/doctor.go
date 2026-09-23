@@ -46,7 +46,9 @@ func doctorUsage(prog string) string {
 
 Runs a local preflight health check: Docker daemon reachability, disk
 space and write access on the data directory, port 80/443 availability
-for the embedded ingress, and control plane database reachability.
+for the embedded ingress, control plane database reachability, RAM/CPU
+against the recommended minimums, firewall status, and outbound network
+reachability (public IP, external port reachability, ACME, clock skew).
 
 Exit code is 0 if every check is ok or warn, 1 if any check fails.
 

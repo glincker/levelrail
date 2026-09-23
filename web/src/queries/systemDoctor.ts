@@ -16,6 +16,10 @@ export interface DoctorCheck {
   name: string
   status: DoctorCheckStatus
   message: string
+  /** A copy-pasteable shell command that resolves this check, when there is one. */
+  fix?: string
+  /** Path relative to this instance's docs root (brand.DocsURL), paired with fix. */
+  docs_path?: string
 }
 
 export interface DoctorReport {

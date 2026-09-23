@@ -53,6 +53,16 @@ type doctorCheckResource struct {
 	Name    string `json:"name"`
 	Status  string `json:"status"`
 	Message string `json:"message"`
+	// Fix is a concrete, copy-pasteable shell command that resolves this
+	// check when it isn't ok, or empty when there's no single command
+	// that would (a database ping failing needs investigation, not a
+	// command). Rendered as a code block by both the CLI and the
+	// dashboard.
+	Fix string `json:"fix,omitempty"`
+	// DocsPath is a path relative to this instance's docs site root
+	// (brand.DocsURL), e.g. "/troubleshooting#clock-skew", surfaced as a
+	// HelpLink alongside Fix. Empty when Fix is empty.
+	DocsPath string `json:"docs_path,omitempty"`
 }
 
 type systemDoctorResponse struct {
@@ -87,7 +97,10 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		rt.doctorCheckMasterKeyRotation(ctx),
 		rt.doctorCheckStaleSecrets(ctx),
 		doctorCheckFirewallCtx(ctx),
+		rt.doctorCheckRAM(),
+		rt.doctorCheckCPU(),
 	}
+	checks = append(checks, rt.doctorRunNetworkChecks(ctx, httpPort, httpsPort)...)
 
 	ok := true
 	for _, c := range checks {

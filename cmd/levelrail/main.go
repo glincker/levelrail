@@ -1912,6 +1912,11 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDoctorDiskWarningBytes(doctorDiskWarningBytes(logger)),
 		api.WithIngressPortOwner(ingressDriver),
 		api.WithDoctorIngressPorts(ingressPortFromAddr(ingressHTTPAddr()), ingressPortFromAddr(ingressHTTPSAddr())),
+		api.WithDoctorNetworkTimeout(doctorNetworkTimeout(logger)),
+		api.WithDoctorPublicIPEndpoint(os.Getenv("APP_DOCTOR_PUBLIC_IP_ENDPOINT")),
+		api.WithDoctorClockSkewWarnAge(doctorClockSkewWarnAge(logger)),
+		api.WithDoctorMinRAMBytes(doctorMinRAMBytes(logger)),
+		api.WithDoctorMinCPUCount(doctorMinCPUCount(logger)),
 		api.WithExecRuntime(func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)
 		}),
@@ -2754,6 +2759,75 @@ func doctorMasterKeyRotationWarnAge(logger *slog.Logger) time.Duration {
 		return 0
 	}
 	return time.Duration(days) * 24 * time.Hour
+}
+
+// doctorNetworkTimeout reads APP_DOCTOR_NETWORK_TIMEOUT as a Go duration
+// string, applied to api.WithDoctorNetworkTimeout (the bounded overall
+// timeout GET /api/v1/system/doctor's network checks share). Returns 0
+// (api's own signal to fall back to its internal default,
+// api.defaultDoctorNetworkTimeout) when unset or unparseable.
+func doctorNetworkTimeout(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_DOCTOR_NETWORK_TIMEOUT")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_DOCTOR_NETWORK_TIMEOUT, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// doctorClockSkewWarnAge reads APP_DOCTOR_CLOCK_SKEW_WARN as a Go
+// duration string, applied to api.WithDoctorClockSkewWarnAge. Returns 0
+// (api's own signal to fall back to its internal default) when unset or
+// unparseable.
+func doctorClockSkewWarnAge(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_DOCTOR_CLOCK_SKEW_WARN")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_DOCTOR_CLOCK_SKEW_WARN, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// doctorMinRAMBytes reads APP_DOCTOR_MIN_RAM_BYTES, the same
+// env-var-with-default shape doctorDiskWarningBytes above uses for
+// api.WithDoctorDiskWarningBytes, applied here to
+// api.WithDoctorMinRAMBytes. Returns 0 (api's own signal to fall back to
+// its internal default) when unset or unparseable.
+func doctorMinRAMBytes(logger *slog.Logger) int64 {
+	raw := os.Getenv("APP_DOCTOR_MIN_RAM_BYTES")
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		logger.Warn("invalid APP_DOCTOR_MIN_RAM_BYTES, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return n
+}
+
+// doctorMinCPUCount reads APP_DOCTOR_MIN_CPU_COUNT, applied to
+// api.WithDoctorMinCPUCount. Returns 0 (api's own signal to fall back to
+// its internal default) when unset or unparseable.
+func doctorMinCPUCount(logger *slog.Logger) int {
+	raw := os.Getenv("APP_DOCTOR_MIN_CPU_COUNT")
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil {
+		logger.Warn("invalid APP_DOCTOR_MIN_CPU_COUNT, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return n
 }
 
 // apiRateLimitReadRPM/apiRateLimitWriteRPM read

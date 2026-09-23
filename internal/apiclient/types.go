@@ -1884,12 +1884,15 @@ type SystemStatusResource struct {
 
 // DoctorCheckResource mirrors internal/api's doctorCheckResource: one
 // preflight check's result (Status is "ok", "warn", "fail", or
-// "unknown").
+// "unknown"). Fix/DocsPath are empty when the check is ok or has no
+// single actionable command.
 type DoctorCheckResource struct {
-	Code    string `json:"code"`
-	Name    string `json:"name"`
-	Status  string `json:"status"`
-	Message string `json:"message"`
+	Code     string `json:"code"`
+	Name     string `json:"name"`
+	Status   string `json:"status"`
+	Message  string `json:"message"`
+	Fix      string `json:"fix,omitempty"`
+	DocsPath string `json:"docs_path,omitempty"`
 }
 
 // SystemDoctorResource mirrors internal/api's systemDoctorResponse
