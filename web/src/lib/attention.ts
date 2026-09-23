@@ -3,6 +3,7 @@ import type { NodeResource } from '../types/nodeDetail'
 import type { CertificateStatus } from '../queries/certificates'
 import type { DoctorReport } from '../queries/systemDoctor'
 import type { DiskPressure } from './diskPressure'
+import { certExpiryLabel } from './certStatus'
 import { formatBytes } from './format'
 
 export type AttentionSeverity = 'critical' | 'warning'
@@ -82,7 +83,7 @@ export function buildAttentionItems({
       id: `cert:${cert.domain}`,
       severity: expired ? 'critical' : 'warning',
       title: `Certificate for ${cert.domain} ${expired ? 'has expired' : 'expires soon'}`,
-      detail: `Valid until ${cert.not_after}`,
+      detail: certExpiryLabel(cert.not_after),
       target: { kind: 'domain' },
     })
   }
