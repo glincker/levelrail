@@ -55,6 +55,9 @@ func (f *fakeSecretResolver) ListKeys(context.Context, string) ([]store.SecretKe
 func (f *fakeSecretResolver) SetLocked(context.Context, string, string, bool) error {
 	return errors.New("not implemented")
 }
+func (f *fakeSecretResolver) DeleteAll(context.Context, string) error {
+	return errors.New("not implemented")
+}
 func (f *fakeSecretResolver) Exists(context.Context, string, string) (bool, error) {
 	return false, errors.New("not implemented")
 }
