@@ -90,18 +90,23 @@ github_api() {
 		-H "Accept: application/vnd.github+json" "https://api.github.com/repos/${REPO}/$1" 2>/dev/null
 }
 
-# list_releases prints "<tag> <prerelease> <has-asset>" per release, newest
-# first, where has-asset is 1 when the release ships asset $1.
+# list_releases prints "<tag> <prerelease> <has-asset> <created-at>" per
+# release, where has-asset is 1 when the release ships asset $1. Sorted by
+# created_at here because the API's own list order is not reliable.
 list_releases() {
 	github_api "releases?per_page=30" | awk -v asset="\"name\": \"$1\"" '
 		/"tag_name":/ {
-			if (tag != "") print tag, pre, has
+			if (tag != "") print tag, pre, has, created
 			tag = $0; sub(/.*"tag_name": *"/, "", tag); sub(/".*/, "", tag)
-			pre = "false"; has = 0
+			pre = "false"; has = 0; created = ""
 		}
 		/"prerelease": *true/ { pre = "true" }
+		/"created_at":/ && created == "" {
+			created = $0
+			sub(/.*"created_at": *"/, "", created); sub(/".*/, "", created)
+		}
 		index($0, asset) { has = 1 }
-		END { if (tag != "") print tag, pre, has }'
+		END { if (tag != "") print tag, pre, has, created }' | sort -k4,4r
 }
 
 # resolve_version picks the newest release on the channel that actually
