@@ -96,6 +96,10 @@ jobs:
       - name: go vet
         run: go vet ./...
 
+      # tools/ is its own module, so ./... above does not reach it.
+      - name: Release notes generator
+        run: go -C tools vet ./releasenotes/ && go -C tools test ./releasenotes/
+
       - name: Quarantine list (.github/flaky-tests.txt)
         env:
           QUARANTINE_AGE: warn

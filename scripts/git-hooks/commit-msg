@@ -13,7 +13,7 @@ subject="$(head -1 "$msg_file")"
 fail=0
 
 echo "commit-msg: conventional commit format"
-if ! echo "$subject" | grep -qE '^(feat|fix|perf|refactor|docs|test|chore|ci)(\([a-z0-9-]+\))?: .+'; then
+if ! echo "$subject" | grep -qE '^(feat|fix|perf|refactor|docs|test|chore|ci)(\([a-z0-9-]+\))?!?: .+'; then
 	echo "commit subject must match '<type>(<scope>): <description>'"
 	echo "  allowed types: feat fix perf refactor docs test chore ci"
 	echo "  got: $subject"
@@ -21,7 +21,8 @@ if ! echo "$subject" | grep -qE '^(feat|fix|perf|refactor|docs|test|chore|ci)(\(
 fi
 
 echo "commit-msg: em dash / en dash sweep"
-if echo "$msg" | grep -q "—\|–"; then
+dashes="$(printf '\342\200\224')\\|$(printf '\342\200\223')"
+if echo "$msg" | grep -q "$dashes"; then
 	echo "em dash or en dash found in commit message."
 	echo "No em dashes or en dashes anywhere. Use commas, periods, parentheses, or colons."
 	fail=1

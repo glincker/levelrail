@@ -440,3 +440,36 @@ jobs:
         run: |
           digest="sha256:$(docker buildx imagetools inspect ghcr.io/glincker/levelrail-agent:${{ needs.image-channel.outputs.primary_tag }} --raw | sha256sum | cut -d' ' -f1)"
           cosign sign --yes "ghcr.io/glincker/levelrail-agent@${digest}"
+
+  release-notes:
+    name: Write release notes
+    if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    needs: [release, merge-image-levelrail, merge-image-levelrail-agent]
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: read
+      discussions: write
+      actions: write
+    steps:
+      # Default ref (main) on purpose: the generator is tooling, not part of
+      # the release being built, and older tags predate it.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: tools/go.mod
+          cache-dependency-path: tools/go.sum
+
+      - name: Generate and publish notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: scripts/release-notes.sh "$RELEASE_TAG"
+
+      - name: Rebuild docs changelog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy-docs.yml --repo "${{ github.repository }}" --ref main

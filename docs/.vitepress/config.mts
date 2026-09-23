@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
+import { buildEnd, changelogHead, changelogPageData } from './changelog.mts'
 
 const description =
   'A self-hosted deployment platform whose agent talks to Docker’s own Engine API directly, ' +
@@ -77,7 +78,10 @@ const sidebarGroups = [
   },
   {
     text: 'Status',
-    items: [{ text: 'Roadmap', link: '/roadmap' }],
+    items: [
+      { text: 'Roadmap', link: '/roadmap' },
+      { text: 'Changelog', link: '/changelog/' },
+    ],
   },
   {
     text: 'Docs index',
@@ -108,11 +112,6 @@ export default withMermaid({
   },
 
   head: [
-    ['meta', { name: 'description', content: description }],
-    ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: 'Levelrail' }],
-    ['meta', { property: 'og:description', content: description }],
-    ['meta', { property: 'og:url', content: `${siteUrl}/` }],
     [
       'meta',
       {
@@ -121,8 +120,6 @@ export default withMermaid({
       },
     ],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
-    ['meta', { name: 'twitter:title', content: 'Levelrail' }],
-    ['meta', { name: 'twitter:description', content: description }],
     [
       'meta',
       {
@@ -171,6 +168,7 @@ export default withMermaid({
       { text: 'Compare', link: '/comparison' },
       { text: 'Troubleshooting', link: '/troubleshooting' },
       { text: 'Roadmap', link: '/roadmap' },
+      { text: 'Changelog', link: '/changelog/' },
     ],
 
     sidebar: sidebarGroups,
@@ -198,11 +196,26 @@ export default withMermaid({
   // either by default. Skips index.md (the home layout has no
   // meaningful breadcrumb) and any page pageToSection doesn't
   // recognize (docs/README.md, ADRs reached via ../adr, etc.).
+  transformPageData(pageData) {
+    return changelogPageData(pageData)
+  },
+
+  buildEnd: (config) => buildEnd(config, siteUrl),
+
   transformHead({ pageData }) {
-    const path = pageData.relativePath.replace(/\.md$/, '').replace(/^index$/, '')
+    const path = pageData.relativePath.replace(/\.md$/, '').replace(/(^|\/)index$/, '$1')
     const canonicalUrl = `${siteUrl}/${path}`
+    const title = pageData.frontmatter.title || pageData.title || 'Levelrail'
+    const pageDescription = pageData.frontmatter.description || pageData.description || description
     const head: [string, Record<string, string>, string?][] = [
       ['link', { rel: 'canonical', href: canonicalUrl }],
+      ['meta', { property: 'og:type', content: pageData.params?.tag ? 'article' : 'website' }],
+      ['meta', { property: 'og:title', content: title }],
+      ['meta', { property: 'og:description', content: pageDescription }],
+      ['meta', { property: 'og:url', content: canonicalUrl }],
+      ['meta', { name: 'twitter:title', content: title }],
+      ['meta', { name: 'twitter:description', content: pageDescription }],
+      ...changelogHead(pageData, siteUrl),
     ]
 
     const section = pageToSection.get(path)

@@ -156,3 +156,11 @@
   color: "e4e669"
 - name: "question"
   color: "d876e3"
+
+# ---- release notes (read by tools/releasenotes) ------------------------
+- name: "highlight"
+  color: "f59e0b"
+  description: Lead the release notes with this change
+- name: "breaking-change"
+  color: "b60205"
+  description: Needs an upgrade note in the release
