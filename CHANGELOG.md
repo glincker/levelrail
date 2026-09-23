@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.2.0-beta.6](https://github.com/glincker/levelrail/compare/v0.2.0-beta.5...v0.2.0-beta.6) (2026-09-23)
+
+
+### Features
+
+* actionable CTAs on System Status, reusable docs help links ([#551](https://github.com/glincker/levelrail/issues/551)) ([fa92d67](https://github.com/glincker/levelrail/commit/fa92d67b14f7188ba6f12a3d3c1df08035b78990))
+* add container restart count and build duration metrics ([#560](https://github.com/glincker/levelrail/issues/560)) ([1b278fa](https://github.com/glincker/levelrail/commit/1b278fa3aaba484695ebb97b7f66af4548d0805b))
+* clone a whole environment's app set into a new environment ([#562](https://github.com/glincker/levelrail/issues/562)) ([652f31f](https://github.com/glincker/levelrail/commit/652f31f8bd97e31141949ad2a82d8a0b84dfa61a))
+* configurable ingress HTTP/HTTPS listen ports ([#556](https://github.com/glincker/levelrail/issues/556)) ([695a603](https://github.com/glincker/levelrail/commit/695a603ff2d9c14b8e2681f12b60ba1348989792))
+* detect and clean up orphaned named Docker volumes ([#569](https://github.com/glincker/levelrail/issues/569)) ([84d4fe1](https://github.com/glincker/levelrail/commit/84d4fe1740f2e240f4808545ddb497ad37bc0e31))
+* distribute WireGuard mesh config to remote nodes over gRPC ([#564](https://github.com/glincker/levelrail/issues/564)) ([f3c3e67](https://github.com/glincker/levelrail/commit/f3c3e67ad012b9cac6a9ae6911dbb9a93a85734d))
+* doctor network, resource, and multi-firewall checks ([#581](https://github.com/glincker/levelrail/issues/581)) ([6cb895a](https://github.com/glincker/levelrail/commit/6cb895a3b4fb563b2a1cbdc766af077d50375767))
+* egress allowlist UI on the app network page ([#545](https://github.com/glincker/levelrail/issues/545)) ([80a1c8e](https://github.com/glincker/levelrail/commit/80a1c8e8494d8bc94b9f8581d292abc0444846aa))
+* empty states with prerequisite hints and template CTA ([#579](https://github.com/glincker/levelrail/issues/579)) ([73984e2](https://github.com/glincker/levelrail/commit/73984e2079c7d2c7406496c63ea577567d68e79a))
+* fleet-wide node CPU/memory/disk utilization view ([#575](https://github.com/glincker/levelrail/issues/575)) ([798b102](https://github.com/glincker/levelrail/commit/798b1024e93fad886ba10d478c6d78ee77d03cab))
+* Gitea as a fourth git provider ([#553](https://github.com/glincker/levelrail/issues/553)) ([826df52](https://github.com/glincker/levelrail/commit/826df5242aa09fe2a4b62bf618f39f3e4fd64e52))
+* healthchecks and memory advisories for all 129 catalog templates ([#576](https://github.com/glincker/levelrail/issues/576)) ([bbf49b6](https://github.com/glincker/levelrail/commit/bbf49b69ca6909024eb400177c71003d3cb70c1b))
+* install works end to end (setup token, HTTP login, installer preflight) ([#582](https://github.com/glincker/levelrail/issues/582)) ([4fc0d1c](https://github.com/glincker/levelrail/commit/4fc0d1cd1348faaea667a206d9cea79186b26370))
+* per-app exec/shell access opt-out, defaults enabled ([#542](https://github.com/glincker/levelrail/issues/542)) ([ce7e148](https://github.com/glincker/levelrail/commit/ce7e1487021bb0f6f62084b4f049d87e15c24109))
+* per-app outbound network allowlist (egress gateway) ([#543](https://github.com/glincker/levelrail/issues/543)) ([77007eb](https://github.com/glincker/levelrail/commit/77007eba7a1fd85deb3fccf4095954a20d83e142))
+* point-in-time restore for Postgres databases ([#566](https://github.com/glincker/levelrail/issues/566)) ([389910c](https://github.com/glincker/levelrail/commit/389910c27c9986eac71117803ea3367c8f2555b7))
+* secret age tracking and rotation reminders ([#563](https://github.com/glincker/levelrail/issues/563)) ([afd4b9e](https://github.com/glincker/levelrail/commit/afd4b9e70ef2da812ada7534d5dcd03cfaedce9f))
+* slow query log for Postgres/MySQL databases ([#565](https://github.com/glincker/levelrail/issues/565)) ([a27598a](https://github.com/glincker/levelrail/commit/a27598adc2900f15c925846cd83983398112b1a5))
+* two-person approval gate for deploys into protected environments ([#567](https://github.com/glincker/levelrail/issues/567)) ([dd6d8dd](https://github.com/glincker/levelrail/commit/dd6d8ddc4503f969ab2bc70b66e019175f358489))
+* WireGuard mesh key rotation and peer status visibility ([#561](https://github.com/glincker/levelrail/issues/561)) ([1c59abd](https://github.com/glincker/levelrail/commit/1c59abd4c64262bb03c737f49deacb3d4bf850cc))
+
+
+### Bug Fixes
+
+* app status rollup, compose service pruning, and group lookup by app name ([#552](https://github.com/glincker/levelrail/issues/552)) ([1d6315f](https://github.com/glincker/levelrail/commit/1d6315f3579fdb17a69e4a4437cf9ab8491433bb))
+* confirm detach actions and surface missing success toasts ([#546](https://github.com/glincker/levelrail/issues/546)) ([53f24ea](https://github.com/glincker/levelrail/commit/53f24ea3eda8f0223a094052e9aa7e38ccb16507))
+* detect frozen agent processes via heartbeat frames and gRPC keepalive ([#558](https://github.com/glincker/levelrail/issues/558)) ([718b732](https://github.com/glincker/levelrail/commit/718b73282de075b8692d1f96ed579d7bcc796fe9))
+* doctor's disk space check shows raw byte counts, not human-readable ([#550](https://github.com/glincker/levelrail/issues/550)) ([7f920ab](https://github.com/glincker/levelrail/commit/7f920abdd55afdfa82413859d31b6f157e85b61f))
+* live resource updates fail silently when only memory is set, no swap ([#548](https://github.com/glincker/levelrail/issues/548)) ([a58f2d9](https://github.com/glincker/levelrail/commit/a58f2d91b9dd51627f199a544fc04acd501015cc))
+* rate limit the unauthenticated git webhook receiver ([#574](https://github.com/glincker/levelrail/issues/574)) ([81c7b2c](https://github.com/glincker/levelrail/commit/81c7b2c7b459575439fe4b79120a14bc918922ef))
+* retry transient SMTP failures for email notification channel ([#559](https://github.com/glincker/levelrail/issues/559)) ([59e4888](https://github.com/glincker/levelrail/commit/59e488803ef68fafe3538efe86bdf7a1e78035f3))
+* stop doctor's port 80/443 check from false-failing on its own ingress ([#547](https://github.com/glincker/levelrail/issues/547)) ([7d7649a](https://github.com/glincker/levelrail/commit/7d7649a66181ca722dfb92195c2a6588ef8e397e))
+* stop treating unlabeled Docker networks as this instance's own ([#557](https://github.com/glincker/levelrail/issues/557)) ([59144fd](https://github.com/glincker/levelrail/commit/59144fdb55424aeee53150aa7986f83e08c6ec49))
+* type errors blocking the real production build (npm run build) ([#549](https://github.com/glincker/levelrail/issues/549)) ([adbf184](https://github.com/glincker/levelrail/commit/adbf1840ed7c634068b55b261a3a6e5a2c489f53))
+* wire Bitbucket App secrets manager, OAuth connect was permanently broken ([#555](https://github.com/glincker/levelrail/issues/555)) ([d4d0588](https://github.com/glincker/levelrail/commit/d4d0588ac95871263cbddd459a81079a7bb2702d))
+
 ## [0.2.0-beta.5](https://github.com/glincker/levelrail/compare/v0.2.0-beta.4...v0.2.0-beta.5) (2026-09-21)
 
 
