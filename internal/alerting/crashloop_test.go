@@ -32,6 +32,85 @@ func TestRestartTracker_SubsequentStarts_CountAsRestarts(t *testing.T) {
 	}
 }
 
+// fakeRestartRecorder is a RestartRecorder test double: it just remembers
+// every (serviceName, at) pair it was asked to persist, optionally
+// returning a canned error so Observe's "log and continue" behavior on a
+// failed write can be exercised too.
+type fakeRestartRecorder struct {
+	calls []fakeRestartRecord
+	err   error
+}
+
+type fakeRestartRecord struct {
+	serviceName string
+	at          time.Time
+}
+
+func (f *fakeRestartRecorder) RecordContainerRestart(_ context.Context, serviceName string, at time.Time) error {
+	f.calls = append(f.calls, fakeRestartRecord{serviceName: serviceName, at: at})
+	return f.err
+}
+
+func TestRestartTracker_WithRecorder_PersistsEachRealRestart(t *testing.T) {
+	recorder := &fakeRestartRecorder{}
+	tr := NewRestartTracker().WithRecorder(recorder, nil)
+	base := time.Now()
+
+	tr.Observe("service:web", "web-abc12345", base)                    // first start: not a restart, not recorded
+	tr.Observe("service:web", "web-abc12345", base.Add(time.Minute))   // restart 1
+	tr.Observe("service:web", "web-abc12345", base.Add(2*time.Minute)) // restart 2
+
+	if len(recorder.calls) != 2 {
+		t.Fatalf("recorder.calls = %+v, want 2 (one per real restart, first start excluded)", recorder.calls)
+	}
+	if recorder.calls[0].serviceName != "web" || !recorder.calls[0].at.Equal(base.Add(time.Minute)) {
+		t.Errorf("recorder.calls[0] = %+v, want {web, %v}", recorder.calls[0], base.Add(time.Minute))
+	}
+	if recorder.calls[1].serviceName != "web" || !recorder.calls[1].at.Equal(base.Add(2*time.Minute)) {
+		t.Errorf("recorder.calls[1] = %+v, want {web, %v}", recorder.calls[1], base.Add(2*time.Minute))
+	}
+
+	// The tracker's own in-memory crashloop bookkeeping is unaffected by
+	// having a recorder attached.
+	if got := tr.CountSince("service:web", base.Add(-time.Hour)); got != 2 {
+		t.Errorf("CountSince() = %d, want 2", got)
+	}
+}
+
+func TestRestartTracker_NoRecorder_ObserveStillWorks(t *testing.T) {
+	// Every other test in this file constructs NewRestartTracker() with
+	// no WithRecorder call at all; this just makes that "nil recorder is
+	// safe" contract explicit rather than only implied by every other
+	// test happening to pass.
+	tr := NewRestartTracker()
+	base := time.Now()
+	tr.Observe("service:web", "web-abc12345", base)
+	tr.Observe("service:web", "web-abc12345", base.Add(time.Minute))
+
+	if got := tr.CountSince("service:web", base.Add(-time.Hour)); got != 1 {
+		t.Errorf("CountSince() = %d, want 1", got)
+	}
+}
+
+func TestRestartTracker_WithRecorder_RecordFailure_DoesNotBlockObserve(t *testing.T) {
+	recorder := &fakeRestartRecorder{err: errors.New("telemetry store unreachable")}
+	tr := NewRestartTracker().WithRecorder(recorder, nil)
+	base := time.Now()
+
+	tr.Observe("service:web", "web-abc12345", base)
+	tr.Observe("service:web", "web-abc12345", base.Add(time.Minute))
+
+	if len(recorder.calls) != 1 {
+		t.Fatalf("recorder.calls = %+v, want 1 (the write was attempted despite the canned error)", recorder.calls)
+	}
+	// A failed persistence write must not stop this tracker's own
+	// in-memory count from updating: crashloop detection stays correct
+	// even if telemetry is down.
+	if got := tr.CountSince("service:web", base.Add(-time.Hour)); got != 1 {
+		t.Errorf("CountSince() = %d, want 1 (in-memory tracking unaffected by the recorder failure)", got)
+	}
+}
+
 func TestRestartTracker_NewContainerName_FirstStartNotCounted(t *testing.T) {
 	// A redeploy produces a new container name (different image hash):
 	// its first start must not be counted as a restart, even though the
