@@ -46,6 +46,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      installer: ${{ steps.filter.outputs.installer }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -65,6 +66,11 @@ jobs:
             frontend:
               - 'web/**'
               - '.github/workflows/**'
+            installer:
+              - 'install.sh'
+              - 'scripts/test-install-sh.sh'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/nightly.yml'
 
   build-vet:
     name: Build, vet
@@ -303,6 +309,38 @@ jobs:
         working-directory: web
         run: npm test
 
+  # Runs install.sh end to end (install, re-run, upgrade, uninstall) in
+  # systemd containers against a binary built from this commit.
+  install-sh:
+    name: install.sh (${{ matrix.image }})
+    needs: changes
+    if: needs.changes.outputs.installer == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['ubuntu:24.04', 'debian:12']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Build control plane binary
+        run: CGO_ENABLED=0 go build -o levelrail-linux-amd64 ./cmd/levelrail
+
+      - name: shellcheck
+        run: shellcheck -s sh install.sh scripts/test-install-sh.sh
+
+      - name: Run install.sh in a systemd container
+        run: scripts/test-install-sh.sh '${{ matrix.image }}' ./levelrail-linux-amd64
+
   # The one check branch protection requires: a skipped job can't be
   # required directly (blocks forever), so this always runs and passes
   # only if every job that was supposed to run for this PR did.
@@ -311,7 +349,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [migration-versions, changes, build-vet, test-api, test-rest, coverage-gate, lint, web-check]
+    needs: [migration-versions, changes, build-vet, test-api, test-rest, coverage-gate, lint, web-check, install-sh]
     if: always()
     timeout-minutes: 3
     steps:
@@ -327,6 +365,7 @@ jobs:
           fi
           backend="${{ needs.changes.outputs.backend }}"
           frontend="${{ needs.changes.outputs.frontend }}"
+          installer="${{ needs.changes.outputs.installer }}"
           fail=0
           check() {
             if [ "$3" = "true" ] && [ "$2" != "success" ]; then
@@ -340,5 +379,6 @@ jobs:
           check "coverage-gate" "${{ needs.coverage-gate.result }}" "$backend"
           check "lint" "${{ needs.lint.result }}" "$backend"
           check "web-check" "${{ needs.web-check.result }}" "$frontend"
+          check "install-sh" "${{ needs.install-sh.result }}" "$installer"
           [ "$fail" -eq 0 ] || exit 1
           echo "all required jobs for this PR passed"

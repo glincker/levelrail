@@ -22,6 +22,15 @@ func TestRunSetupToken(t *testing.T) {
 		return store.Open(context.Background(), filepath.Join(dataDir, "levelrail.db"))
 	}
 
+	if err := runSetupToken(context.Background(), &bytes.Buffer{}, openFresh); err == nil {
+		t.Fatal("runSetupToken() with no database = nil, want an error pointing at APP_DATA_DIR")
+	}
+	initDB, err := openFresh(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = initDB.Close()
+
 	var first bytes.Buffer
 	if err := runSetupToken(context.Background(), &first, openFresh); err != nil {
 		t.Fatalf("runSetupToken() error = %v", err)

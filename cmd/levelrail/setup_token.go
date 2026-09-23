@@ -8,11 +8,14 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+const storeFilename = "levelrail.db"
 
 var errAdminExists = errors.New("an admin account already exists, so there is no setup token; use recover-admin to regain access")
 
@@ -62,6 +65,10 @@ func ensureSetupToken(ctx context.Context, logger *slog.Logger, db *store.DB) {
 // runSetupToken is the setup-token subcommand: it prints the current
 // first-admin setup token, creating one if the file is missing.
 func runSetupToken(ctx context.Context, stdout io.Writer, openStore func(context.Context) (*store.DB, error)) error {
+	dbPath := filepath.Join(dataDirFromEnv(), storeFilename)
+	if _, err := os.Stat(dbPath); err != nil {
+		return fmt.Errorf("no control plane database at %s; set APP_DATA_DIR to the control plane's data directory: %w", dbPath, err)
+	}
 	db, err := openStore(ctx)
 	if err != nil {
 		return fmt.Errorf("open store: %w", err)

@@ -87,7 +87,8 @@ export function RegisterForm({
               <code className="font-mono">
                 sudo {brand.BinaryName} setup-token
               </code>{' '}
-              on the server to see it again.
+              on the server, with APP_DATA_DIR set to its data directory, to see
+              it again.
             </FieldDescription>
           )}
         </Field>

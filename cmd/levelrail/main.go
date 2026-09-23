@@ -905,7 +905,7 @@ func openStore(ctx context.Context) (*store.DB, error) {
 	if err := os.MkdirAll(dataDir, 0o750); err != nil { //nolint:gosec // operator-controlled startup config, not user input
 		return nil, err
 	}
-	return store.Open(ctx, filepath.Join(dataDir, "levelrail.db"))
+	return store.Open(ctx, filepath.Join(dataDir, storeFilename))
 }
 
 // openTelemetryStore opens the metrics store on its own

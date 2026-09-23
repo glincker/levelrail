@@ -61,3 +61,28 @@ jobs:
 
       - name: go test (race detector, full suite)
         run: go test ./... -race -timeout=40m
+
+  install-sh:
+    name: install.sh (${{ matrix.image }})
+    needs: check-activity
+    if: needs.check-activity.outputs.has-commits == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['ubuntu:24.04', 'debian:12']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Build control plane binary
+        run: CGO_ENABLED=0 go build -o levelrail-linux-amd64 ./cmd/levelrail
+
+      - name: Run install.sh in a systemd container
+        run: scripts/test-install-sh.sh '${{ matrix.image }}' ./levelrail-linux-amd64

@@ -16,11 +16,11 @@ Confirm these before you provision a server.
 
 **Supported OS**
 
-Linux, `amd64` or `arm64`. `install.sh` checks `uname -s` and exits on anything else, and requires `systemctl` since it writes a systemd unit. No specific distro is enforced beyond that, and Docker itself is installed automatically via `get.docker.com` if it's missing. Windows and non-Linux nodes aren't supported, by design (see the root `CLAUDE.md`'s non-goals).
+Linux, `amd64` or `arm64`, with systemd as the init system. `install.sh` runs a preflight table (root, architecture, OS, systemd, curl, Docker 24 or newer, RAM, free disk, ports 80/443/8080) and stops on a failed check unless you pass `--force`. It is tested in CI on Ubuntu 24.04 and Debian 12; other distros should work but aren't tested. Docker is installed automatically via `get.docker.com` if it's missing. Windows and non-Linux nodes aren't supported, by design (see the root `CLAUDE.md`'s non-goals).
 
 **RAM, CPU, and disk**
 
-Nothing in `install.sh` or the control plane checks a minimum. `levelrail-cli doctor` (`GET /api/v1/system/doctor`) checks Docker reachability, free disk space (warns below 1 GiB by default), and data-directory writability, not a memory or CPU floor, and no official minimum has been benchmarked or published either; that measurement is Phase 5 work per the [roadmap](roadmap.md).
+`install.sh` warns below 1 GB of RAM (`LEVELRAIL_MIN_RAM_MB`) and fails below 10 GB of free disk on the data directory's filesystem (`LEVELRAIL_MIN_DISK_GB`); the control plane itself checks no minimum. `levelrail-cli doctor` (`GET /api/v1/system/doctor`) checks Docker reachability, free disk space (warns below 1 GiB by default), and data-directory writability, not a memory or CPU floor, and no official minimum has been benchmarked or published either; that measurement is Phase 5 work per the [roadmap](roadmap.md).
 
 As a practical starting point, not a hard requirement: 1 vCPU / 1 GB RAM / 10 GB disk is enough to boot Docker and the control plane on a small single-node instance. BuildKit builds and whatever apps you deploy need headroom of their own on top of that, so 2 vCPU / 2 GB RAM / 20 GB disk is more comfortable in practice. Scale up from there based on what you actually run.
 
@@ -36,27 +36,44 @@ As a practical starting point, not a hard requirement: 1 vCPU / 1 GB RAM / 10 GB
 curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
 ```
 
-This is the same script linked from the root [README](../README.md). It handles the full setup automatically:
+This is the same script linked from the root [README](../README.md). It:
 
-- Downloads the right `linux/amd64` or `linux/arm64` binary from the [latest GitHub release](https://github.com/glincker/levelrail/releases)
-- Verifies the checksum
+- Runs the preflight table and stops on a failed check (`--force` continues anyway)
 - Installs Docker via `get.docker.com` if missing
-- Writes a `levelrail.service` systemd unit
-- Starts the service
-- Waits up to 60 seconds for the control plane to answer `GET /api/v1/brand`
+- Downloads the newest release for `linux/amd64` or `linux/arm64` and verifies its checksum. While no stable release exists yet, it installs the newest pre-release; pick explicitly with `LEVELRAIL_CHANNEL=stable|beta`
+- Writes a `levelrail.service` systemd unit and starts it, then waits for `GET /healthz`
+- Checks that ports 80 and 443 answer on the server's public IP, and prints the `ufw`/`firewalld` commands to open them if not (some providers never route a server's own public IP back to itself, so treat a failure there as a hint, not proof)
+- Prints every dashboard URL, the one-time **setup token** for creating the first admin, and a reminder to back up `<data dir>/master.key`
 
 Requires `curl`, `systemd`, and root access.
 
-::: details Optional environment variables
+### First sign-in
 
-The `install.sh` script reads these environment variables, all optional:
+Open one of the printed `http://<ip>:8080/login?setup=<token>` links. The login page switches to "Set up the admin account" on its own and the token is pre-filled. Lost the summary? Print the token again on the server:
+
+```bash
+sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
+```
+
+The dashboard shows a "connection is not encrypted" banner until you point a domain at the server (Domains page, primary domain plus ACME) and set an `https://` **dashboard URL**. After that, sign-in over plain HTTP is refused. To recover if the https URL breaks, add `APP_ALLOW_INSECURE_LOGIN=true` with `sudo systemctl edit levelrail` (`[Service]` then `Environment=APP_ALLOW_INSECURE_LOGIN=true`) and restart.
+
+To skip the setup token and create the admin non-interactively, set `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` in the unit (again via `systemctl edit levelrail`) before the first start.
+
+::: details Optional environment variables
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `LEVELRAIL_VERSION` | latest release | Pin a specific release tag instead of resolving the newest one |
+| `LEVELRAIL_VERSION` | newest release | Pin a specific release tag |
+| `LEVELRAIL_CHANNEL` | stable, else newest pre-release | `stable` or `beta` |
 | `LEVELRAIL_INSTALL_DIR` | `/usr/local/bin` | Where the `levelrail` binary is installed |
-| `LEVELRAIL_DATA_DIR` | `/var/lib/levelrail-data` | Control plane data directory (SQLite database, generated `brand.yaml`) |
-| `LEVELRAIL_CONFIGURE_UFW` | unset (off) | Set to `1` to have the script configure `ufw`: allow SSH, then 80/443, then enable it if it wasn't already active. Off by default, the script never touches your firewall otherwise. |
+| `LEVELRAIL_DATA_DIR` | `/var/lib/levelrail-data` | Control plane data directory (SQLite database, master key, setup token, generated `brand.yaml`) |
+| `LEVELRAIL_BINARY_FILE` | unset | Install a local binary instead of downloading one |
+| `LEVELRAIL_BINARY_URL` | unset | Download the binary from this URL instead (no checksum verification) |
+| `LEVELRAIL_PUBLIC_IP` | discovered | Public IP used for the reachability test and summary |
+| `LEVELRAIL_SKIP_REACHABILITY` | unset | Set to `1` to skip the port 80/443 test |
+| `LEVELRAIL_MIN_RAM_MB` / `LEVELRAIL_MIN_DISK_GB` / `LEVELRAIL_MIN_DOCKER_MAJOR` | `1024` / `10` / `24` | Preflight thresholds |
+| `LEVELRAIL_HEALTH_WAIT` | `60` | Seconds to wait for the service to become healthy |
+| `LEVELRAIL_CONFIGURE_UFW` | unset (off) | Set to `1` to allow SSH, then 80/443, then enable `ufw` if it wasn't already active. The script never touches your firewall otherwise. |
 
 :::
 
@@ -65,12 +82,7 @@ Common scenarios:
 ::: code-group
 ```bash [Pin a specific release]
 curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
-  | sudo LEVELRAIL_VERSION=v0.1.0 sh
-```
-
-```bash [Custom install directory]
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
-  | sudo LEVELRAIL_INSTALL_DIR=/opt/levelrail/bin sh
+  | sudo LEVELRAIL_VERSION=v0.2.0-beta.5 sh
 ```
 
 ```bash [Custom data directory]
@@ -83,8 +95,9 @@ curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh 
   | sudo LEVELRAIL_CONFIGURE_UFW=1 sh
 ```
 
-```bash [Multiple overrides]
-sudo LEVELRAIL_VERSION=v0.1.0 LEVELRAIL_DATA_DIR=/data/levelrail sh
+```bash [Ignore a failed preflight check]
+curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+  | sudo sh -s -- --force
 ```
 :::
 
@@ -135,13 +148,16 @@ who wants to run an unreleased commit rather than a tagged version.
 
 ## Verifying the install
 
-`install.sh` already fails loudly if the control plane doesn't come up healthy within 60 seconds. You can re-check the installation at any time:
+`install.sh` already fails loudly if the control plane doesn't come up healthy within 60 seconds (`LEVELRAIL_HEALTH_WAIT`). You can re-check the installation at any time:
 
 **Quick checks (unauthenticated):**
 
 ```bash
 # Health check the control plane responds
-curl -fsS http://127.0.0.1:8080/api/v1/brand
+curl -fsS http://127.0.0.1:8080/healthz
+
+# true until the first admin account exists
+curl -fsS http://127.0.0.1:8080/api/v1/auth/setup-status
 
 # Check systemd service status
 systemctl status levelrail
@@ -165,11 +181,13 @@ Both commands talk to the control plane's API (`GET /api/v1/updates` and `GET /a
 
 **If you used install.sh:**
 
-Re-run the same one-liner. It's safe to re-run: it overwrites the binary and unit file, then restarts the service.
+Run the `upgrade` subcommand. It replaces the binary with the newest release, keeps your unit file (and any `systemctl edit` overrides) and data, restarts the service, and waits for it to come back healthy.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
+curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh -s upgrade
 ```
+
+Re-running the installer without arguments also works: it repairs the installation and rewrites the unit file.
 
 To pin a specific release instead of the latest:
 
@@ -198,22 +216,18 @@ The named volume holding `/var/lib/levelrail-data` persists across recreation.
 
 ## Uninstalling
 
-There is no uninstall script today.
-
 **If you used install.sh:**
 
 ```bash
-sudo systemctl stop levelrail
-sudo systemctl disable levelrail
-sudo rm /etc/systemd/system/levelrail.service
-sudo systemctl daemon-reload
+# removes the service, unit file, and binary; keeps /var/lib/levelrail-data
+curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh -s uninstall
 
-sudo rm "$(command -v levelrail)"        # or your LEVELRAIL_INSTALL_DIR path
-sudo rm -rf /var/lib/levelrail-data      # or your LEVELRAIL_DATA_DIR path
+# also deletes the data directory (database, master key, certificates)
+curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh -s uninstall --purge
 ```
 
 ::: warning
-Removing `/var/lib/levelrail-data` deletes all app and deploy state.
+`--purge` deletes all app and deploy state, and the master key every stored secret is encrypted with.
 :::
 
 This does not touch Docker itself or any containers, images, or volumes Levelrail created for your deployed apps. Remove those separately if needed.
