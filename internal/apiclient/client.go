@@ -1394,6 +1394,38 @@ func (c *Client) SetSecretLock(ctx context.Context, name, key string, locked boo
 	return c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/secrets/"+PathEscape(key)+"/lock", SetSecretLockRequest{Locked: locked}, nil)
 }
 
+// ListIntegrationCatalog calls GET /api/v1/integrations: the full
+// internal/integrations.Catalog, global and read-only.
+func (c *Client) ListIntegrationCatalog(ctx context.Context) ([]IntegrationCatalogEntryResource, error) {
+	var out []IntegrationCatalogEntryResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/integrations", nil, &out)
+	return out, err
+}
+
+// ListAppIntegrations calls GET /api/v1/apps/{name}/integrations: every
+// catalog integration attached to name.
+func (c *Client) ListAppIntegrations(ctx context.Context, name string) ([]AppIntegrationResource, error) {
+	var out []AppIntegrationResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/integrations", nil, &out)
+	return out, err
+}
+
+// AttachAppIntegration calls POST /api/v1/apps/{name}/integrations:
+// attaches integrationKey with the given field values, storing them
+// through the same envelope encryption every other app secret uses.
+func (c *Client) AttachAppIntegration(ctx context.Context, name, integrationKey string, fields map[string]string) (AppIntegrationResource, error) {
+	var out AppIntegrationResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/integrations", AttachAppIntegrationRequest{IntegrationKey: integrationKey, Fields: fields}, &out)
+	return out, err
+}
+
+// DetachAppIntegration calls DELETE /api/v1/apps/{name}/integrations/{id}:
+// id is the attachment's own ID (from ListAppIntegrations), not the
+// catalog key.
+func (c *Client) DetachAppIntegration(ctx context.Context, name, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/integrations/"+PathEscape(id), nil, nil)
+}
+
 // GetGitSource calls GET /api/v1/apps/{name}/git-source.
 func (c *Client) GetGitSource(ctx context.Context, name string) (GitSourceResource, error) {
 	var out GitSourceResource

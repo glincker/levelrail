@@ -213,6 +213,9 @@ type (
 	gitSourceResource   = apiclient.GitSourceResource
 	setGitSourceRequest = apiclient.SetGitSourceRequest
 
+	integrationCatalogEntryResource = apiclient.IntegrationCatalogEntryResource
+	appIntegrationResource          = apiclient.AppIntegrationResource
+
 	sharedEnvVarResource = apiclient.SharedEnvVarResource
 
 	webhookDeliveryResource     = apiclient.WebhookDeliveryResource

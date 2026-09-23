@@ -57,6 +57,9 @@ type fakeSecretSetter struct {
 	// "no value set" behavior, not a generic error.
 	resolveValues map[string]string
 	resolveErr    error
+	// deletedNamespaces records every DeleteAll call, in order.
+	deletedNamespaces []string
+	deleteAllErr      error
 }
 
 func (f *fakeSecretSetter) Exists(_ context.Context, serviceName, envKey string) (bool, error) {
@@ -98,6 +101,14 @@ func (f *fakeSecretSetter) Resolve(_ context.Context, serviceName, envKey string
 		return "", secrets.ErrValueNotFound
 	}
 	return v, nil
+}
+
+func (f *fakeSecretSetter) DeleteAll(_ context.Context, serviceName string) error {
+	if f.deleteAllErr != nil {
+		return f.deleteAllErr
+	}
+	f.deletedNamespaces = append(f.deletedNamespaces, serviceName)
+	return nil
 }
 
 func (f *fakeSecretSetter) SetLocked(_ context.Context, _, envKey string, locked bool) error {

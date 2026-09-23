@@ -1213,6 +1213,47 @@ type SetSecretLockRequest struct {
 	Locked bool `json:"locked"`
 }
 
+// IntegrationCatalogEnvVarResource mirrors internal/api's
+// integrationCatalogEnvVar (internal/api/app_integrations.go).
+type IntegrationCatalogEnvVarResource struct {
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Required    bool   `json:"required"`
+	Default     string `json:"default,omitempty"`
+	Placeholder string `json:"placeholder,omitempty"`
+}
+
+// IntegrationCatalogEntryResource mirrors internal/api's
+// integrationCatalogEntry: one internal/integrations.Catalog entry, GET
+// /api/v1/integrations' wire shape.
+type IntegrationCatalogEntryResource struct {
+	Key         string                             `json:"key"`
+	Name        string                             `json:"name"`
+	Description string                             `json:"description"`
+	DocsURL     string                             `json:"docs_url"`
+	EnvVars     []IntegrationCatalogEnvVarResource `json:"env_vars"`
+	Frameworks  []string                           `json:"frameworks,omitempty"`
+}
+
+// AppIntegrationResource mirrors internal/api's appIntegrationResource:
+// one app's attached integration. Field values are never included here,
+// the same "names only" shape SecretKeyResource already establishes.
+type AppIntegrationResource struct {
+	ID             string `json:"id"`
+	AppName        string `json:"app_name,omitempty"`
+	IntegrationKey string `json:"integration_key"`
+	Name           string `json:"name"`
+	CreatedAt      string `json:"created_at,omitempty"`
+	UpdatedAt      string `json:"updated_at,omitempty"`
+}
+
+// AttachAppIntegrationRequest mirrors internal/api's
+// attachAppIntegrationRequest.
+type AttachAppIntegrationRequest struct {
+	IntegrationKey string            `json:"integration_key"`
+	Fields         map[string]string `json:"fields"`
+}
+
 // SharedEnvVarResource mirrors internal/api's sharedEnvVarResource
 // (internal/api/shared_env_secrets.go): one shared env var at the
 // project/organization/environment tier. Value is always "" for a
