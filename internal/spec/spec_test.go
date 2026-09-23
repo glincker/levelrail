@@ -414,6 +414,28 @@ databases:
 	}
 }
 
+func TestService_EffectiveStrategy(t *testing.T) {
+	t.Run("nil receiver", func(t *testing.T) {
+		var svc *Service
+		if got := svc.EffectiveStrategy(); got != StrategyBlueGreen {
+			t.Errorf("EffectiveStrategy() = %q, want %q", got, StrategyBlueGreen)
+		}
+	})
+
+	t.Run("default when empty", func(t *testing.T) {
+		svc := &Service{}
+		if got := svc.EffectiveStrategy(); got != StrategyBlueGreen {
+			t.Errorf("EffectiveStrategy() = %q, want %q", got, StrategyBlueGreen)
+		}
+	})
+	t.Run("returns configured value", func(t *testing.T) {
+		svc := &Service{Strategy: StrategyRolling}
+		if got := svc.EffectiveStrategy(); got != StrategyRolling {
+			t.Errorf("EffectiveStrategy() = %q, want %q", got, StrategyRolling)
+		}
+	})
+}
+
 func TestParse_ValidMinimal_Defaults(t *testing.T) {
 	s, err := Parse(readTestdata(t, "valid_minimal.yaml"))
 	if err != nil {
@@ -1029,6 +1051,19 @@ func TestValidateLabels(t *testing.T) {
 			labels:        map[string]string{"key": strings.Repeat("v", MaxLabelValueLength+1)},
 			wantErr:       true,
 			wantErrSubstr: "exceeds",
+		},
+
+		{
+			name: "too many labels rejected",
+			labels: func() map[string]string {
+				m := make(map[string]string)
+				for i := 0; i <= MaxLabels; i++ {
+					m[string(rune('a'+i))] = "val"
+				}
+				return m
+			}(),
+			wantErr:       true,
+			wantErrSubstr: "at most",
 		},
 	}
 	for _, tt := range tests {
