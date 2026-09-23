@@ -13,6 +13,7 @@ package agent
 
 import (
 	"fmt"
+	"math"
 	"net/netip"
 	"time"
 
@@ -110,11 +111,16 @@ func peerConfigFromPB(p *agentpb.PeerConfig) (network.PeerConfig, error) {
 }
 
 // nodeIdentityToPB converts what a node reports back about itself after
-// applying a config.
+// applying a config. An out-of-range listen port is reported as 0
+// (unknown) rather than wrapped into a different, wrong port.
 func nodeIdentityToPB(id network.NodeIdentity) *agentpb.NodeIdentity {
+	var port int32
+	if id.ListenPort > 0 && id.ListenPort <= math.MaxUint16 {
+		port = int32(id.ListenPort)
+	}
 	return &agentpb.NodeIdentity{
 		PublicKey:  id.PublicKey.String(),
-		ListenPort: int32(id.ListenPort), //nolint:gosec // a UDP listen port fits int32 by construction (0-65535)
+		ListenPort: port,
 		Endpoint:   id.Endpoint,
 	}
 }

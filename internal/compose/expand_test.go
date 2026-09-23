@@ -83,6 +83,24 @@ services:
 	}
 }
 
+func TestExpandBuildService_EscapingPath_Rejected(t *testing.T) {
+	parent := t.TempDir()
+	checkout := filepath.Join(parent, "checkout")
+	if err := os.Mkdir(checkout, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(parent, "compose.yaml")
+	if err := os.WriteFile(outside, []byte("services:\n  web:\n    image: nginx\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range []string{"../compose.yaml", outside, ""} {
+		svc := spec.Service{Build: spec.Build{Type: spec.BuildCompose, Path: p}}
+		if _, _, err := ExpandBuildService(svc, checkout); err == nil {
+			t.Errorf("ExpandBuildService(path %q) error = nil, want a rejection", p)
+		}
+	}
+}
+
 func TestExpandBuildService_ShortFormBuild_DefaultsContextAndDockerfile(t *testing.T) {
 	sourceDir := t.TempDir()
 	writeComposeFile(t, sourceDir, "docker-compose.yml", `

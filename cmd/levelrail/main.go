@@ -609,7 +609,7 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
-	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, emailSender, scheduledTaskRunner, engine, ingressDriver)
+	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
 		Handler:           apiHandler,
@@ -1909,7 +1909,7 @@ func buildNodeSource(db *store.DB, agentRegistry *agent.Registry) build.NodeSour
 // calling rootHandler): api.WithIngressPortOwner wires it in
 // unconditionally so GET /system/doctor can tell this control plane's
 // own ingress apart from an unrelated process on ports 80/443.
-func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner, engine *reconcile.Engine, ingressDriver *ingressdriver.Driver) (http.Handler, *api.Router) {
+func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, alertingDB *alerting.DB, secretsManager *secrets.Manager, masterKeyFilePath string, webhookHandler http.Handler, client *docker.Client, builder *deploy.Pipeline, deployRecorder *deploylog.Recorder, logBroadcaster *telemetry.LogBroadcaster, deployDispatcher *alerting.DeployDispatcher, backupRunner *backup.Runner, backupVerifyRunner *backup.VerifyRunner, agentRegistry *agent.Registry, agentCAFingerprint string, emailSender email.Sender, scheduledTaskRunner *scheduledtask.Runner, engine *reconcile.Engine, ingressDriver *ingressdriver.Driver) (http.Handler, *api.Router) {
 	dataDir := os.Getenv("APP_DATA_DIR")
 	if dataDir == "" {
 		dataDir = defaultDataDir
@@ -1938,6 +1938,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithOrphanedVolumeManager(client),
 		api.WithRegistryAuthTester(client),
 		api.WithDBPinger(db),
+		api.WithAgentCAFingerprint(agentCAFingerprint),
 		api.WithSecretRotationWarnAge(secretRotationWarnAge(logger)),
 		api.WithDoctorDiskWarningBytes(doctorDiskWarningBytes(logger)),
 		api.WithIngressPortOwner(ingressDriver),

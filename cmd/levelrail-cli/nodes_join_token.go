@@ -31,6 +31,9 @@ func runNodesJoinToken(prog string, args []string, stdout, stderr io.Writer, loo
 	if err := renderResult(stdout, of.Format, of.Query, created, func() {
 		_, _ = fmt.Fprintf(stdout, "join token value (shown once, not recoverable again): %s\n", created.Token)
 		_, _ = fmt.Fprintf(stdout, "expires at: %s\n", created.ExpiresAt.Format("2006-01-02T15:04:05Z07:00"))
+		if created.CAFingerprint != "" {
+			_, _ = fmt.Fprintf(stdout, "control plane CA fingerprint (set APP_CA_FINGERPRINT on the agent): %s\n", created.CAFingerprint)
+		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)

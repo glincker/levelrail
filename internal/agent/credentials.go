@@ -44,6 +44,9 @@ func NewServerCredentials(ca *CA, hosts []string, validFor time.Duration) (crede
 	if err != nil {
 		return nil, fmt.Errorf("agent: parse server certificate: %w", err)
 	}
+	// Sending the CA too lets an enrolling agent check it against a
+	// pinned fingerprint before it has the CA on disk.
+	cert.Certificate = append(cert.Certificate, ca.certDER)
 	pool := x509.NewCertPool()
 	if !pool.AppendCertsFromPEM(ca.CertPEM()) {
 		return nil, fmt.Errorf("agent: load CA certificate into client cert pool")

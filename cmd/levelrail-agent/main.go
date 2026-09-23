@@ -221,8 +221,14 @@ func loadOrEnroll(ctx context.Context, addr, path string, logger *slog.Logger) (
 		nodeName = h
 	}
 
+	var enrollOpts []agent.EnrollOption
+	if fp := os.Getenv("APP_CA_FINGERPRINT"); fp != "" {
+		enrollOpts = append(enrollOpts, agent.WithPinnedCAFingerprint(fp))
+	} else {
+		logger.Warn("APP_CA_FINGERPRINT is not set: trusting the control plane's certificate on first use for enrollment")
+	}
 	logger.Info("enrolling with control plane", slog.String("addr", addr), slog.String("node_name", nodeName))
-	id, err = agent.DialEnroll(ctx, addr, token, nodeName)
+	id, err = agent.DialEnroll(ctx, addr, token, nodeName, enrollOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("enroll: %w", err)
 	}

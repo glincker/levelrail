@@ -548,16 +548,14 @@ func (rt *Router) handleGetNodeHealth(w http.ResponseWriter, r *http.Request) {
 // in plaintext, the same "shown once, never recoverable again" shape
 // createTokenResponse (tokens.go) already established for API tokens.
 type createNodeJoinTokenResponse struct {
-	Token     string    `json:"token"`
-	ExpiresAt time.Time `json:"expires_at"`
+	Token         string    `json:"token"`
+	ExpiresAt     time.Time `json:"expires_at"`
+	CAFingerprint string    `json:"ca_fingerprint,omitempty"`
 }
 
 // handleCreateNodeJoinToken handles POST /api/v1/nodes/join-tokens:
-// mints a one-time token an operator pastes into a new
-// node's enrollment command (`cmd/levelrail-agent`, not
-// built yet, is what will eventually exchange this token for a client
-// certificate). Nothing in this codebase redeems a token yet; this
-// handler only mints and persists the hash.
+// mints a one-time token an agent redeems at enrollment, returned with
+// the agent CA fingerprint the agent should pin.
 func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Request) {
 	plaintext, err := randomToken()
 	if err != nil {
@@ -585,7 +583,7 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, createNodeJoinTokenResponse{Token: plaintext, ExpiresAt: rec.ExpiresAt})
+	writeJSON(w, http.StatusCreated, createNodeJoinTokenResponse{Token: plaintext, ExpiresAt: rec.ExpiresAt, CAFingerprint: rt.agentCAFingerprint})
 }
 
 // randomNodeJoinTokenID generates a short, URL-safe, non-secret

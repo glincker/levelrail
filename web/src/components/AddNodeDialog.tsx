@@ -58,7 +58,16 @@ export function AddNodeDialog() {
   // rule: no product name string hardcoded anywhere under /web.
   const agentBinaryName = `${brand.BinaryName}-agent`
   const enrollCommand = created
-    ? `APP_CONTROL_PLANE_ADDR=${controlPlaneAddr} APP_JOIN_TOKEN=${created.token} ./${agentBinaryName}`
+    ? [
+        `APP_CONTROL_PLANE_ADDR=${controlPlaneAddr}`,
+        `APP_JOIN_TOKEN=${created.token}`,
+        created.ca_fingerprint
+          ? `APP_CA_FINGERPRINT=${created.ca_fingerprint}`
+          : null,
+        `./${agentBinaryName}`,
+      ]
+        .filter(Boolean)
+        .join(' ')
     : ''
 
   function handleOpenChange(next: boolean) {

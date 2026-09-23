@@ -8,6 +8,7 @@ import {
   liveUrl,
   nextStep,
   normalizeDomain,
+  httpsOrigin,
   pickTrackedApp,
   pollInterval,
   publicIpFromDoctor,
@@ -150,6 +151,19 @@ describe('normalizeDomain', () => {
     ['localhost', ''],
   ])('%s -> %s', (raw, want) => {
     expect(normalizeDomain(raw)).toBe(want)
+  })
+})
+
+describe('httpsOrigin', () => {
+  it.each([
+    ['dash.example.com', 'https://dash.example.com'],
+    ['javascript:alert(1)', null],
+    ['evil.test/"><script>', null],
+    ['dash.example.com@evil.test', null],
+    ['dash.example.com/path', null],
+    ['', null],
+  ])('%s -> %s', (domain, want) => {
+    expect(httpsOrigin(domain)).toBe(want)
   })
 })
 
