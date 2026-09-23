@@ -1094,3 +1094,15 @@ func TestNodeRoutes_RootToken_Succeeds(t *testing.T) {
 func (f *fakeDrainAppStore) UpdateServiceHealth(context.Context, string, *store.ServiceHealth) error {
 	return nil
 }
+
+func (f *fakeDrainAppStore) SetServiceBranchEnvOverride(context.Context, string, string, string, string, bool) (string, error) {
+	return "", nil
+}
+
+func (f *fakeDrainAppStore) DeleteServiceBranchEnvOverride(context.Context, string, string) error {
+	return nil
+}
+
+func (f *fakeDrainAppStore) ListServiceBranchEnvOverrides(context.Context, string) ([]store.ServiceBranchEnvOverride, error) {
+	return nil, nil
+}

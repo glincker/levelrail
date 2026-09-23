@@ -804,6 +804,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// the next time a preview environment is created from this app.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-env/{key}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppPreviewEnvOverride))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/preview-env/{key}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleClearAppPreviewEnvOverride))
+	// Branch-scoped env var overrides (apps_branch_env.go): a narrower,
+	// pattern-matched sibling of PUT/DELETE .../preview-env just above,
+	// only applied when a preview's own branch matches. POST can carry a
+	// secret-marked value, so it's gated at AbilityWriteSensitive, the
+	// same tier PUT .../secrets/{key} uses; GET and DELETE never expose
+	// or require a value, so they stay at AbilityRead/AbilityWrite.
+	mux.HandleFunc("GET /api/v1/apps/{name}/branch-env", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppBranchEnv))
+	mux.HandleFunc("POST /api/v1/apps/{name}/branch-env", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppBranchEnv))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/branch-env/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteAppBranchEnv))
 	// Outbound network allowlist, per app (apps_egress.go): AbilityWriteSensitive
 	// for PUT/DELETE, the same tier PUT/DELETE .../storage above uses,
 	// since this changes an app's own network-exfiltration surface, the

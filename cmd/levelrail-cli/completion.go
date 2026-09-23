@@ -80,6 +80,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"moves":              {subs: map[string]*cmdNode{"list": nil, "get": nil}},
 		"vault-env":          {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 		"preview-env":        {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
+		"branch-env":         {subs: map[string]*cmdNode{"list": nil, "set": nil, "clear": nil}},
 		"tag":                nil,
 		"untag":              nil,
 		"egress":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},

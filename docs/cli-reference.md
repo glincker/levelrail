@@ -272,6 +272,21 @@ levelrail apps preview-env clear <name> <key> [flags]
 remove a preview-specific env var override
 
 ```
+levelrail apps branch-env list <name> [flags]
+```
+list an app's branch-scoped env var overrides
+
+```
+levelrail apps branch-env set <name> <key> --branch PATTERN --value VALUE [--secret] [flags]
+```
+declare (or replace) a branch-scoped env var override, applied only when a preview's own branch matches PATTERN
+
+```
+levelrail apps branch-env clear <name> <id> [flags]
+```
+remove one branch-scoped override by its id (from `list` or `set`)
+
+```
 levelrail apps previews list <app-name> [flags]
 ```
 list active previews for an app

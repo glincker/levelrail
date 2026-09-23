@@ -385,3 +385,15 @@ func TestHandleStopProject_PartialFailure(t *testing.T) {
 func (f *fakeProjectLifecycleAppStore) UpdateServiceHealth(context.Context, string, *store.ServiceHealth) error {
 	return nil
 }
+
+func (f *fakeProjectLifecycleAppStore) SetServiceBranchEnvOverride(context.Context, string, string, string, string, bool) (string, error) {
+	return "", nil
+}
+
+func (f *fakeProjectLifecycleAppStore) DeleteServiceBranchEnvOverride(context.Context, string, string) error {
+	return nil
+}
+
+func (f *fakeProjectLifecycleAppStore) ListServiceBranchEnvOverrides(context.Context, string) ([]store.ServiceBranchEnvOverride, error) {
+	return nil, nil
+}

@@ -149,7 +149,7 @@ func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, 
 	if len(gs.Services) > 0 {
 		usedDomain, domainConflict, deployErr = rt.deployPreviewMulti(ctx, previewName, gs, sourceDir, ev.HeadSHA, wantDomain)
 	} else {
-		usedDomain, domainConflict, deployErr = rt.deployPreviewSingle(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain)
+		usedDomain, domainConflict, deployErr = rt.deployPreviewSingle(ctx, appName, previewName, gs, sourceDir, ev.HeadRef, ev.HeadSHA, wantDomain)
 	}
 	if deployErr != nil {
 		rt.logger.Error("api: pull request webhook: deploy failed", slog.String("error", deployErr.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
@@ -244,7 +244,7 @@ func applyPreviewEnvOverrides(svcSpec *spec.Service, overrides map[string]string
 // host:port is strictly more useful than no preview, and returns
 // domainConflict=true so the caller can record why the preview has no
 // domain instead of silently swallowing it.
-func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName string, gs store.GitSource, sourceDir, headSHA, wantDomain string) (usedDomain string, domainConflict bool, err error) {
+func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName string, gs store.GitSource, sourceDir, branch, headSHA, wantDomain string) (usedDomain string, domainConflict bool, err error) {
 	prod, err := rt.apps.GetDesiredService(ctx, appName)
 	if err != nil {
 		return "", false, fmt.Errorf("load production service %q: %w", appName, err)
@@ -252,6 +252,13 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 
 	svcSpec := specServiceFromDesired(*prod, spec.Build{Type: gs.BuildType, Path: gs.BuildPath})
 	applyPreviewEnvOverrides(&svcSpec, prod.PreviewEnvOverrides)
+	branchOverrides, err := rt.apps.ListServiceBranchEnvOverrides(ctx, appName)
+	if err != nil {
+		return "", false, fmt.Errorf("load branch env overrides for %q: %w", appName, err)
+	}
+	if err := applyBranchEnvOverrides(ctx, &svcSpec, appName, branch, branchOverrides, rt.secrets); err != nil {
+		return "", false, fmt.Errorf("apply branch env overrides for %q: %w", appName, err)
+	}
 	svcSpec.Domains = domainSlice(wantDomain)
 	req := deploy.Request{ServiceName: previewName, Service: svcSpec, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepo: previewName}
 

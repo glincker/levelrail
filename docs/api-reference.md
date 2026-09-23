@@ -1,10 +1,10 @@
 ---
-description: Complete HTTP API reference for the control plane, organized by resource group with 300 endpoints.
+description: Complete HTTP API reference for the control plane, organized by resource group with 303 endpoints.
 ---
 
 # REST API Reference
 
-Exhaustive route inventory (300 routes total) for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.
+Exhaustive route inventory (303 routes total) for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.
 
 ## System
 
@@ -365,6 +365,9 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/vault-env/{key} | AbilityWrite | handleClearAppVaultEnv |
 | PUT | /api/v1/apps/{name}/preview-env/{key} | AbilityWrite | handleSetAppPreviewEnvOverride |
 | DELETE | /api/v1/apps/{name}/preview-env/{key} | AbilityWrite | handleClearAppPreviewEnvOverride |
+| GET | /api/v1/apps/{name}/branch-env | AbilityRead | handleListAppBranchEnv |
+| POST | /api/v1/apps/{name}/branch-env | AbilityWriteSensitive | handleSetAppBranchEnv |
+| DELETE | /api/v1/apps/{name}/branch-env/{id} | AbilityWrite | handleDeleteAppBranchEnv |
 
 :::
 

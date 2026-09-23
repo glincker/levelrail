@@ -408,6 +408,32 @@ levelrail-cli apps preview-env clear storefront DATABASE_URL
 - Parent redeploys never wipe them
 - Single-service preview path only (multi-service `services:` fan-out does not support them yet)
 
+### Branch-scoped env overrides
+
+A narrower sibling of the override above: instead of applying to every preview unconditionally, a branch-scoped override only takes effect when the preview's own head branch matches a pattern you declare, an exact branch name or a shell glob like `release/*` (`*` matches any run of non-`/` characters, so `release/*` matches `release/1.0` but not `release/1.0/hotfix`).
+
+Resolution order at preview deploy time: branch-scoped override (if the branch matches) > the unscoped preview-env override above > this app's own env. Only the single-service preview path applies these, the same limitation the unscoped override has.
+
+Values can be marked `--secret`, envelope-encrypted the same way `apps secrets set` encrypts a per-app secret: the plaintext is never stored on the override row and never returned by `list` once saved.
+
+**CLI:**
+```bash
+levelrail-cli apps branch-env set storefront DATABASE_URL --branch "release/*" --value postgres://release-only/db
+levelrail-cli apps branch-env set storefront API_KEY --branch main --value sk-live-real --secret
+levelrail-cli apps branch-env list storefront
+levelrail-cli apps branch-env clear storefront <id>
+```
+
+`clear` takes the override's own `id` (from `list` or `set`'s own output), not a branch name or key: a branch pattern can contain `/`, which can't safely be a URL path segment on its own.
+
+**Dashboard:** **Branch env overrides** card on the app's Environment tab, below **Preview env overrides**.
+
+**Behavior:**
+- Setting the same branch pattern and key again replaces the existing override in place (upsert), it does not create a duplicate
+- When two overrides for the same key both match the branch (e.g. an exact `release/1.0` and a glob `release/*`), the exact match wins
+- Never touch the parent app's own running deploy or its own env
+- Single-service preview path only, the same limitation the unscoped override above has
+
 ### Manual teardown and the TTL sweep
 
 **Manual teardown:**
@@ -482,6 +508,9 @@ Or click the "Sweep stale previews" button (appears once at least one preview is
 | `POST` | `/api/v1/previews/sweep` | `deploy` |
 | `PUT` | `/api/v1/apps/{name}/preview-env/{key}` | `write` |
 | `DELETE` | `/api/v1/apps/{name}/preview-env/{key}` | `write` |
+| `GET` | `/api/v1/apps/{name}/branch-env` | `read` |
+| `POST` | `/api/v1/apps/{name}/branch-env` | `write:sensitive` |
+| `DELETE` | `/api/v1/apps/{name}/branch-env/{id}` | `write` |
 
 ### Permission tiers
 
@@ -549,6 +578,14 @@ levelrail-cli apps previews sweep
 ```bash
 levelrail-cli apps preview-env set <app-name> <key> --value VALUE
 levelrail-cli apps preview-env clear <app-name> <key>
+```
+
+### Branch-scoped env overrides
+
+```bash
+levelrail-cli apps branch-env list <app-name>
+levelrail-cli apps branch-env set <app-name> <key> --branch PATTERN --value VALUE [--secret]
+levelrail-cli apps branch-env clear <app-name> <id>
 ```
 
 ::: warning
