@@ -114,6 +114,8 @@ func TestUntarContext_RejectsUnsafePaths(t *testing.T) {
 		{name: "absolute path", entry: tar.Header{Name: "/etc/escaped", Typeflag: tar.TypeReg, Mode: 0o644}},
 		{name: "empty name", entry: tar.Header{Name: "", Typeflag: tar.TypeReg, Mode: 0o644}},
 		{name: "escaping symlink", entry: tar.Header{Name: "link", Linkname: "../outside", Typeflag: tar.TypeSymlink, Mode: 0o777}},
+		{name: "nested escaping symlink", entry: tar.Header{Name: "a/b/link", Linkname: "../../../outside", Typeflag: tar.TypeSymlink, Mode: 0o777}},
+		{name: "absolute symlink", entry: tar.Header{Name: "link", Linkname: "/etc/passwd", Typeflag: tar.TypeSymlink, Mode: 0o777}},
 	}
 
 	for _, tt := range tests {
@@ -134,6 +136,75 @@ func TestUntarContext_RejectsUnsafePaths(t *testing.T) {
 				t.Fatalf("UntarContext() err = %v, want %v", err, ErrUnsafeContextPath)
 			}
 		})
+	}
+}
+
+// TestUntarContext_RejectsSymlinkChainEscape covers a zip-slip variant
+// the lexical checks alone would pass: a symlink to "." makes a second
+// link's "../x" target resolve one level above the root on disk.
+func TestUntarContext_RejectsSymlinkChainEscape(t *testing.T) {
+	parent := t.TempDir()
+	dst := filepath.Join(parent, "ctx")
+	if err := os.Mkdir(dst, 0o750); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	for _, h := range []tar.Header{
+		{Name: "p", Linkname: ".", Typeflag: tar.TypeSymlink, Mode: 0o777},
+		{Name: "p/q", Linkname: "../escaped", Typeflag: tar.TypeSymlink, Mode: 0o777},
+		{Name: "p/q/owned", Typeflag: tar.TypeReg, Mode: 0o644},
+	} {
+		if err := tw.WriteHeader(&h); err != nil {
+			t.Fatalf("writing crafted header: %v", err)
+		}
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatalf("closing crafted tar: %v", err)
+	}
+
+	if err := UntarContext(t.Context(), &buf, dst); !errors.Is(err, ErrUnsafeContextPath) {
+		t.Fatalf("UntarContext() err = %v, want %v", err, ErrUnsafeContextPath)
+	}
+	if _, err := os.Lstat(filepath.Join(parent, "escaped")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("something was written outside the context root: %v", err)
+	}
+}
+
+// TestUntarContext_PreexistingEscapingSymlinkCannotRedirectWrite covers
+// the os.Root backstop: a link already in the destination is not trusted.
+func TestUntarContext_PreexistingEscapingSymlinkCannotRedirectWrite(t *testing.T) {
+	parent := t.TempDir()
+	dst := filepath.Join(parent, "ctx")
+	outside := filepath.Join(parent, "outside")
+	for _, d := range []string{dst, outside} {
+		if err := os.Mkdir(d, 0o750); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Symlink(outside, filepath.Join(dst, "dir")); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	content := []byte("owned")
+	if err := tw.WriteHeader(&tar.Header{Name: "dir/owned", Typeflag: tar.TypeReg, Mode: 0o644, Size: int64(len(content))}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tw.Write(content); err != nil {
+		t.Fatal(err)
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UntarContext(t.Context(), &buf, dst); err == nil {
+		t.Fatal("UntarContext() error = nil, want the write through an escaping symlink refused")
+	}
+	if _, err := os.Lstat(filepath.Join(outside, "owned")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("file was written outside the context root: %v", err)
 	}
 }
 

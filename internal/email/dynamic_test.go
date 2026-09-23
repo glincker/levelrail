@@ -47,29 +47,57 @@ func TestDynamicSender_Send_RejectsBeforeLoadingConfig(t *testing.T) {
 	}
 }
 
-func TestSMTPSender_RawMessage_HeaderInjectionWouldOtherwiseSucceed(t *testing.T) {
-	// Documents why smtpSender.Send needs its own defense, not just
-	// DynamicSender.Send's: net/smtp.SendMail has no header-aware
-	// validation of its own, so a raw CRLF-carrying "to" reaching this
-	// naive message construction unmodified would inject a real extra
-	// header.
-	to := "victim@example.com\r\nBcc: attacker@evil.com"
-	msg := "To: " + to + "\r\nFrom: a@example.com\r\nSubject: hi\r\n\r\nbody\r\n"
-	if !strings.Contains(msg, "Bcc: attacker@evil.com") {
-		t.Fatal("expected the naive message construction to demonstrate the injected header")
+func TestBuildSMTPMessage_NoInjectedHeaders(t *testing.T) {
+	tests := []struct {
+		name, to, subject string
+	}{
+		{"crlf in to", "victim@example.com\r\nBcc: attacker@evil.com", "hi"},
+		{"lf in subject", "victim@example.com", "hi\nBcc: attacker@evil.com"},
+		{"two recipients", "victim@example.com, attacker@evil.com", "hi"},
+		{"not an address", "not an address", "hi"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, _, err := buildSMTPMessage("a@example.com", tt.to, tt.subject, "body"); err == nil {
+				t.Fatalf("buildSMTPMessage(%q, %q) error = nil, want a rejection", tt.to, tt.subject)
+			}
+		})
 	}
 }
 
-func TestCRLFReplacer_StripsInjectedHeader(t *testing.T) {
-	to := crlfReplacer.Replace("victim@example.com\r\nBcc: attacker@evil.com")
-	if strings.ContainsAny(to, "\r\n") {
-		t.Fatalf("crlfReplacer left a CR or LF in %q", to)
+func TestBuildSMTPMessage_EncodesSubjectAndNormalizesTo(t *testing.T) {
+	rcpt, msg, err := buildSMTPMessage("Ops <ops@example.com>", "Victim <victim@example.com>", "Deploy \u00e9chou\u00e9", "line one\nBcc: not-a-header@evil.com")
+	if err != nil {
+		t.Fatalf("buildSMTPMessage() error = %v", err)
 	}
-	msg := "To: " + to + "\r\nFrom: a@example.com\r\nSubject: hi\r\n\r\nbody\r\n"
-	// A real injected header line requires a CRLF immediately before
-	// it; with the CR/LF stripped, "Bcc: ..." is stuck onto the end of
-	// the To header's own value instead of starting a new line.
-	if strings.Contains(msg, "\r\nBcc:") {
-		t.Fatal("sanitized value still produced a real extra header line")
+	if rcpt != "victim@example.com" {
+		t.Errorf("rcpt = %q, want the bare parsed address", rcpt)
+	}
+	head, _, ok := strings.Cut(string(msg), "\r\n\r\n")
+	if !ok {
+		t.Fatalf("message has no header/body separator: %q", msg)
+	}
+	want := []string{
+		"To: <victim@example.com>",
+		`From: "Ops" <ops@example.com>`,
+		"Subject: =?utf-8?q?Deploy_=C3=A9chou=C3=A9?=",
+		"MIME-Version: 1.0",
+		"Content-Type: text/plain; charset=utf-8",
+	}
+	if got := strings.Split(head, "\r\n"); strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Errorf("headers = %q, want %q", got, want)
+	}
+}
+
+func TestValidateAddress(t *testing.T) {
+	for _, ok := range []string{"a@example.com", "first.last+tag@sub.example.org"} {
+		if err := ValidateAddress(ok); err != nil {
+			t.Errorf("ValidateAddress(%q) = %v, want nil", ok, err)
+		}
+	}
+	for _, bad := range []string{"", "admin", "Name <a@example.com>", "a@example.com, b@example.com", "a@example.com\r\nBcc: b@example.com"} {
+		if err := ValidateAddress(bad); err == nil {
+			t.Errorf("ValidateAddress(%q) = nil, want an error", bad)
+		}
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/netguard"
 )
 
 // NotificationChannel is a global, connect-once notify destination
@@ -138,7 +139,7 @@ func scanNotificationChannel(scan func(dest ...any) error) (*NotificationChannel
 // kind, reusing sendDeployOutcome's own per-channel payload logic.
 func sendTestNotification(ctx context.Context, client *http.Client, sender email.Sender, kind NotifyKind, notifyURL string) error {
 	if client == nil {
-		client = http.DefaultClient
+		client = netguard.NewClient()
 	}
 	const testText = "Levelrail test notification. If you can see this, the connection works."
 

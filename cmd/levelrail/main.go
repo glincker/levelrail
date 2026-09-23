@@ -39,6 +39,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/netguard"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
@@ -507,7 +508,8 @@ func run(logger *slog.Logger) error {
 	// resolves email_settings (falling back to APP_SMTP_* env vars)
 	// fresh on every send, deferring "not configured" to send time.
 	emailSender := email.NewDynamicSender(emailConfigLoader(db, secretsManager, smtpConfigFromEnv()))
-	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, nil, emailSender, logger)
+	notifyClient := netguard.NewClient()
+	deployDispatcher := alerting.NewDeployDispatcher(alertingDB, notifyClient, emailSender, logger)
 
 	// backupRunner is constructed once, here in run(), not inside
 	// rootHandler where it used to live: wave-2 roadmap item 6
@@ -746,7 +748,7 @@ func run(logger *slog.Logger) error {
 	}()
 
 	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
-	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier { return alerting.NewNotifier(nil, emailSender, r) }
+	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier { return alerting.NewNotifier(notifyClient, emailSender, r) }
 	// db (the same *store.DB every other cert-storage reader in this
 	// function uses) satisfies alerting.CertSource structurally, so a
 	// kind=cert_expiry rule reads the exact same certificate storage GET

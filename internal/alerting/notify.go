@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/netguard"
 )
 
 // Event is what a firing (or resolved) rule hands to a Notifier: enough
@@ -98,7 +99,7 @@ func (n httpNotifier) Notify(ctx context.Context, ev Event) error {
 // fails with a clear "not configured" error.
 func NewNotifier(client *http.Client, sender email.Sender, r Rule) Notifier {
 	if client == nil {
-		client = http.DefaultClient
+		client = netguard.NewClient()
 	}
 	if r.NotifyKind == NotifyEmail {
 		return emailNotifier{sender: sender, to: r.NotifyURL}

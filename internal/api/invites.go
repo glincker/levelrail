@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -102,6 +103,10 @@ func (rt *Router) handleCreateInvite(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Email == "" {
 		writeError(w, http.StatusBadRequest, "email is required")
+		return
+	}
+	if err := email.ValidateAddress(req.Email); err != nil {
+		writeError(w, http.StatusBadRequest, "email must be a single valid email address")
 		return
 	}
 	abilities, err := resolveAbilities(req.Role, req.Abilities)

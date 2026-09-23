@@ -14,15 +14,43 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/netguard"
 )
 
 // TestMain shrinks notifyRetryBaseDelay to keep every test in this
 // package fast: without this, TestNotify_ReceiverErrorStatus_Errors and
 // the retry-specific tests below would each take upward of a second and
 // a half waiting out postJSONWithAuth's real backoff between attempts.
+// It also opts into internal addresses, since every receiver here is an
+// httptest server on loopback; TestNewNotifier_DefaultClient_BlocksInternal
+// turns that back off.
 func TestMain(m *testing.M) {
 	notifyRetryBaseDelay = time.Millisecond
+	if err := os.Setenv(netguard.AllowPrivateEnv, "true"); err != nil {
+		panic(err)
+	}
 	os.Exit(m.Run())
+}
+
+func TestNewNotifier_DefaultClient_BlocksInternal(t *testing.T) {
+	t.Setenv(netguard.AllowPrivateEnv, "false")
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hits.Add(1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	for _, target := range []string{srv.URL, "http://169.254.169.254/latest/meta-data/"} {
+		r := Rule{ID: "r1", Name: "x", NotifyURL: target}
+		err := NewNotifier(nil, nil, r).Notify(context.Background(), Event{Rule: r})
+		if !errors.Is(err, netguard.ErrBlockedAddress) {
+			t.Fatalf("Notify(%s) error = %v, want netguard.ErrBlockedAddress", target, err)
+		}
+	}
+	if hits.Load() != 0 {
+		t.Fatalf("internal receiver got %d requests, want 0", hits.Load())
+	}
 }
 
 func TestNotifyGeneric_PostsExpectedPayload(t *testing.T) {
