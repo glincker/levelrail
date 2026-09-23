@@ -123,17 +123,36 @@ func (d *Driver) OwnsPort(port int) bool {
 // listen on. Non-numeric or unparseable Listen entries are skipped rather
 // than erroring: this is a best-effort signal for a doctor check, not a
 // config validator.
+//
+// Any server without automatic_https.disable_redirects also binds
+// cfg.Apps.HTTP.HTTPPort (Caddy's default 80) implicitly for its
+// HTTP->HTTPS redirect, even with zero explicit Listen entries on that
+// port: confirmed live, a fresh install with no domains configured still
+// holds port 80 for this reason, which made doctor's port_80 check
+// report a false "in use by another process" on every install.
 func listenPortsOf(cfg *Config) map[int]bool {
 	ports := make(map[int]bool)
 	if cfg.Apps.HTTP == nil {
 		return ports
 	}
+	redirects := false
 	for _, server := range cfg.Apps.HTTP.Servers {
 		for _, addr := range server.Listen {
 			if port, ok := listenAddrPort(addr); ok {
 				ports[port] = true
 			}
 		}
+		auto := server.AutomaticHTTPS
+		if auto == nil || (!auto.Disabled && !auto.DisableRedir) {
+			redirects = true
+		}
+	}
+	if redirects {
+		httpPort := cfg.Apps.HTTP.HTTPPort
+		if httpPort == 0 {
+			httpPort = 80
+		}
+		ports[httpPort] = true
 	}
 	return ports
 }

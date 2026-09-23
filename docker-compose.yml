@@ -1,6 +1,9 @@
 services:
   levelrail:
-    image: ghcr.io/glincker/levelrail:latest
+    # :latest only moves on a stable (non-prerelease) tag, and none has
+    # shipped yet, so it currently points at an old, stale beta build.
+    # Use :beta until the first stable release, then switch to :latest.
+    image: ghcr.io/glincker/levelrail:beta
     restart: unless-stopped
     ports:
       - "80:80"

@@ -220,7 +220,9 @@ func TestListenPortsOf(t *testing.T) {
 			cfg: &Config{Apps: Apps{HTTP: &HTTPApp{Servers: map[string]*Server{
 				"main": {Listen: []string{":443"}},
 			}}}},
-			want: map[int]bool{443: true},
+			// automatic_https defaults to enabled with redirects, so the
+			// implicit HTTP->HTTPS redirect server on port 80 counts too.
+			want: map[int]bool{443: true, 80: true},
 		},
 		{
 			name: "multiple servers, multiple listen addrs",
@@ -229,6 +231,28 @@ func TestListenPortsOf(t *testing.T) {
 				"b": {Listen: []string{":80"}},
 			}}}},
 			want: map[int]bool{443: true, 8443: true, 80: true},
+		},
+		{
+			name: "redirects disabled, no implicit port 80",
+			cfg: &Config{Apps: Apps{HTTP: &HTTPApp{Servers: map[string]*Server{
+				"main": {Listen: []string{":443"}, AutomaticHTTPS: &AutoHTTPSConfig{DisableRedir: true}},
+			}}}},
+			want: map[int]bool{443: true},
+		},
+		{
+			name: "automatic https fully disabled, no implicit port 80",
+			cfg: &Config{Apps: Apps{HTTP: &HTTPApp{Servers: map[string]*Server{
+				"main": {Listen: []string{":443"}, AutomaticHTTPS: &AutoHTTPSConfig{Disabled: true}},
+			}}}},
+			want: map[int]bool{443: true},
+		},
+		{
+			name: "custom http_port used for the implicit redirect",
+			cfg: &Config{Apps: Apps{HTTP: &HTTPApp{
+				Servers:  map[string]*Server{"main": {Listen: []string{":8443"}}},
+				HTTPPort: 8080,
+			}}},
+			want: map[int]bool{8443: true, 8080: true},
 		},
 	}
 	for _, tt := range tests {

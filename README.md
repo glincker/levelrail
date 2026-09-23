@@ -34,7 +34,9 @@ the same thing find it.
 
 ## Quickstart
 
-Pick whichever fits how you run things. Full details, env var
+Needs a Linux server (`amd64` or `arm64`) with systemd, root access,
+and ports 80/443/8080 free. Docker is installed for you if it's
+missing. Pick whichever fits how you run things. Full details, env var
 overrides, verifying the install, upgrading, and uninstalling are all
 in [docs/installing.md](docs/installing.md).
 
@@ -46,20 +48,31 @@ curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh 
 
 Checks the host first, installs Docker if it's missing, sets up a
 systemd unit, waits for the control plane to report healthy, then
-prints the dashboard URLs and a one-time setup token for creating the
-first admin. `sh -s upgrade` and `sh -s uninstall` do what they say.
+prints a dashboard URL and a one-time setup token for creating the
+first admin. Open that URL, paste the token (it's pre-filled if you
+click the printed link), pick a password, and the setup wizard walks
+you through a domain, git provider, and your first app. `sh -s upgrade`
+and `sh -s uninstall` do what they say.
 
 **Already running everything as containers:**
 
 ```
 docker run -d -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock \
-  -v levelrail-data:/var/lib/levelrail-data ghcr.io/glincker/levelrail:latest
+  -v levelrail-data:/var/lib/levelrail-data ghcr.io/glincker/levelrail:beta
+```
+
+Or with the [committed `docker-compose.yml`](docker-compose.yml):
+
+```
+curl -fsSLO https://raw.githubusercontent.com/glincker/levelrail/main/docker-compose.yml
+docker compose up -d
 ```
 
 `ghcr.io/glincker/levelrail` and `ghcr.io/glincker/levelrail-agent` are
-published for `linux/amd64` and `linux/arm64` on every tagged release;
-see [docs/docker.md](docs/docker.md) for a full `docker run` and
-`docker-compose.yml` example (including the node agent).
+published for `linux/amd64` and `linux/arm64` on every tagged release
+under `:beta` (use this until a stable release ships), `:edge`, and,
+once one ships, `:latest`; see [docs/docker.md](docs/docker.md) for the
+full `docker run` and compose examples, including the node agent.
 
 **Building from source:**
 
