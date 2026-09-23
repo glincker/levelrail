@@ -2154,6 +2154,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// nil-interface hazard, the GitLab-shaped self-hosted
 			// counterpart just above.
 			api.WithGiteaAppSecrets(secretsManager),
+			// Bitbucket App connection: same secretsManager, same
+			// nil-interface hazard, the third OAuth-consumer counterpart
+			// alongside the GitHub and GitLab App connections above.
+			api.WithBitbucketAppSecrets(secretsManager),
 			// BYOK LLM API key for the embedded AI assistant: same
 			// secretsManager, same nil-interface hazard as everything
 			// else in this block.
