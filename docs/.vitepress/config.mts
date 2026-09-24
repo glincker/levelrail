@@ -81,6 +81,7 @@ const sidebarGroups = [
     text: 'Status',
     items: [
       { text: 'Roadmap', link: '/roadmap' },
+      { text: 'Performance', link: '/performance' },
       { text: 'Changelog', link: '/changelog/' },
     ],
   },

@@ -489,11 +489,18 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	// same containers-only teardown removeStale already performs after a
 	// deploy, just with keep=nil instead of the new replica set.
 	if desired.Suspended {
-		if err := c.removeStale(ctx, nil); err != nil {
+		// One container listing serves both teardowns: this runs for every
+		// suspended app on every resync.
+		all, err := c.runtime.ListByPrefix(ctx, c.serviceName+"-")
+		if err != nil {
+			err = fmt.Errorf("list containers for %s: %w", c.serviceName, err)
+			return notReady("SuspendFailed", err), fmt.Errorf("application/%s: suspend: remove containers: %w", c.serviceName, err)
+		}
+		if err := c.removeContainers(ctx, c.filterStale(all, nil)); err != nil {
 			return notReady("SuspendFailed", err), fmt.Errorf("application/%s: suspend: remove containers: %w", c.serviceName, err)
 		}
 		result := unknownResult("Suspended")
-		result.Conditions = append(result.Conditions, c.reconcileEgress(ctx, nil, desired))
+		result.Conditions = append(result.Conditions, c.reconcileEgressWith(ctx, c.filterEgressSidecars(all), nil, desired))
 		return result, nil
 	}
 
@@ -1846,7 +1853,11 @@ func (c *Controller) staleContainers(ctx context.Context, keep []string) ([]dock
 	if err != nil {
 		return nil, fmt.Errorf("list containers for %s: %w", c.serviceName, err)
 	}
+	return c.filterStale(all, keep), nil
+}
 
+// filterStale is staleContainers' pure filtering half.
+func (c *Controller) filterStale(all []docker.ContainerState, keep []string) []docker.ContainerState {
 	keepSet := make(map[string]bool, len(keep))
 	for _, name := range keep {
 		keepSet[name] = true
@@ -1859,7 +1870,7 @@ func (c *Controller) staleContainers(ctx context.Context, keep []string) ([]dock
 		}
 		stale = append(stale, cs)
 	}
-	return stale, nil
+	return stale
 }
 
 // ownsInstance reports whether cs was created by this same control-plane
