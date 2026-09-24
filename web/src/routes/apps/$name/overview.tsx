@@ -5,6 +5,7 @@ import { useDeployProgress } from '../../../hooks/useDeployProgress'
 import { computeDeployStages } from '../../../lib/deployStages'
 import { AppOverviewHero } from '../../../components/AppOverviewHero'
 import { AppQuickStats } from '../../../components/AppQuickStats'
+import { AppHealthTimeline } from '../../../components/AppHealthTimeline'
 import { AppOverview } from '../../../components/AppOverview'
 import { DeployInProgressBanner } from '../../../components/DeployInProgressBanner'
 import { ConditionsPanel } from '../../../components/ConditionsPanel'
@@ -54,7 +55,9 @@ function OverviewSection() {
   // "still building" and "built, but roll-out hasn't converged yet."
   const stillInProgress =
     latestAttempt !== undefined &&
-    computeDeployStages(latestAttempt, conditions, true).some((s) => s.status === 'running')
+    computeDeployStages(latestAttempt, conditions, true).some(
+      (s) => s.status === 'running',
+    )
 
   return (
     <div className="space-y-6">
@@ -72,6 +75,7 @@ function OverviewSection() {
         latestAttemptStatus={latestAttempt?.status}
       />
       <AppQuickStats appName={name} />
+      <AppHealthTimeline appName={name} />
       <AppOverview app={app} />
       <ConditionsPanel conditions={conditions} />
     </div>
