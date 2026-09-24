@@ -47,6 +47,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// gate handleDrainNode uses for its own fleet-wide, no-undo action,
 	// not AbilityWrite (which a narrower, single-app token could hold).
 	mux.HandleFunc("POST /api/v1/system/prune", rt.requireAbility(AbilityRoot, rt.handleSystemPrune))
+	// Control plane self-backups hold every stored secret ciphertext and
+	// token hash, so every verb is AbilityRoot, including the read ones.
+	mux.HandleFunc("POST /api/v1/system/backups", rt.requireAbility(AbilityRoot, rt.handleCreateControlPlaneBackup))
+	mux.HandleFunc("GET /api/v1/system/backups", rt.requireAbility(AbilityRoot, rt.handleListControlPlaneBackups))
+	mux.HandleFunc("GET /api/v1/system/backups/{name}/download", rt.requireAbility(AbilityRoot, rt.handleDownloadControlPlaneBackup))
+	mux.HandleFunc("DELETE /api/v1/system/backups/{name}", rt.requireAbility(AbilityRoot, rt.handleDeleteControlPlaneBackup))
 	// Orphaned named volumes: detection is a read (AbilityRead), the
 	// cleanup that actually deletes one is the same AbilityRoot,
 	// fleet-wide, no-undo tier system/prune sits behind, not

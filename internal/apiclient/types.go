@@ -1990,6 +1990,15 @@ type SystemDoctorResource struct {
 	Checks []DoctorCheckResource `json:"checks"`
 }
 
+// ControlPlaneBackup mirrors internal/cpbackup.Info: one control plane
+// database snapshot.
+type ControlPlaneBackup struct {
+	Name      string `json:"name"`
+	SizeBytes int64  `json:"size_bytes"`
+	CreatedAt string `json:"created_at"`
+	SHA256    string `json:"sha256"`
+}
+
 // SystemPruneResult mirrors internal/api's systemPruneResponse
 // (internal/api/system_prune.go): everything POST /system/prune removed
 // and how much space came back, per resource kind, plus any per-stage

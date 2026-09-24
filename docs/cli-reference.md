@@ -954,6 +954,23 @@ state, fleet-wide. Never touches a named volume (an app's storage
 attachment, a database's data volume), even one that's actually
 orphaned: see Orphaned Volumes below for those.
 
+### Control Plane Backups
+
+```
+levelrail control-plane-backups list [flags]
+levelrail control-plane-backups create [flags]
+levelrail control-plane-backups download <name> [--out FILE] [flags]
+levelrail control-plane-backups delete <name> [flags]
+```
+
+Snapshots of the control plane's own database, stored under
+`<data dir>/control-plane-backups/`. `create` takes one now (manual
+snapshots are never auto-deleted), `download` saves one to `--out FILE`
+(or raw bytes to stdout), `delete` removes one. Snapshots never contain
+the master key. Restore is an offline server command, `levelrail
+restore-db <file>`; see [Control plane backup and
+restore](/control-plane-backup).
+
 ### Orphaned Volumes
 
 ```

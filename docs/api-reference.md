@@ -22,6 +22,10 @@ System endpoints for:
 | GET | /api/v1/system/doctor | AbilityRead | handleSystemDoctor |
 | GET | /api/v1/system/containers | AbilityRead | handleListContainers |
 | POST | /api/v1/system/prune | AbilityRoot | handleSystemPrune |
+| POST | /api/v1/system/backups | AbilityRoot | handleCreateControlPlaneBackup |
+| GET | /api/v1/system/backups | AbilityRoot | handleListControlPlaneBackups |
+| GET | /api/v1/system/backups/{name}/download | AbilityRoot | handleDownloadControlPlaneBackup |
+| DELETE | /api/v1/system/backups/{name} | AbilityRoot | handleDeleteControlPlaneBackup |
 | GET | /api/v1/system/volumes/orphaned | AbilityRead | handleListOrphanedVolumes |
 | POST | /api/v1/system/volumes/orphaned/cleanup | AbilityRoot | handleCleanupOrphanedVolumes |
 | POST | /api/v1/system/master-key/rotate | AbilityRoot | handleRotateMasterKey |

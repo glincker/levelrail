@@ -92,7 +92,7 @@ func checkNoDuplicateVersions(migrations []migration) error {
 // already committed in prior calls stay applied, matching forward-only
 // semantics (there's nothing to roll back to except "run again after
 // fixing the new migration").
-func (db *DB) migrate(ctx context.Context) error {
+func (db *DB) migrate(ctx context.Context, preMigrate PreMigrateHook) error {
 	if _, err := db.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS schema_migrations (
 			version    INTEGER PRIMARY KEY,
@@ -111,6 +111,16 @@ func (db *DB) migrate(ctx context.Context) error {
 	migrations, err := loadMigrations()
 	if err != nil {
 		return err
+	}
+
+	if len(migrations) > 0 {
+		latest := migrations[len(migrations)-1].version
+		if current > latest {
+			return fmt.Errorf("%w: database is at version %d, this binary supports up to %d; run a newer release or restore a backup taken by this version", ErrSchemaNewer, current, latest)
+		}
+		if current > 0 && current < latest && preMigrate != nil {
+			preMigrate(ctx, db, current, latest)
+		}
 	}
 
 	for _, m := range migrations {
