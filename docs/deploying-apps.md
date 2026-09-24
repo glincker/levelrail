@@ -200,6 +200,12 @@ Each event is `{ "step": string, "status": "running" | "done" | "failed", "times
 
 This stream is a pure observability layer: it reads the same build-trigger flow the control plane already runs and reports on it, and never feeds back into the reconciler, which stays level-triggered and unaware the stream exists.
 
+#### "What went wrong" on a failed deploy
+
+When an attempt fails (a failed build, or a roll out that never became ready), the deploy detail page opens with a "What went wrong" card: the failing stage, the recorded error (trimmed, with Show more), a likely cause and suggested fix, and three actions: View full logs (jumps to the failing stage), Retry deploy, and Roll back to last good (only shown when an earlier attempt succeeded).
+
+The cause is a heuristic match, not a diagnosis. The error text and failing reconcile conditions are checked first, then the newest build log lines, against a fixed rule table covering: missing environment variable, port mismatch, container killed for memory (OOMKilled or exit 137), registry auth, image or tag not found, health check timeout, wrong Dockerfile path, dependency install failure, plus the older npm, pip, heap, disk and permission rules. It never changes the attempt's real status. Everything runs in the browser over data the page already loads.
+
 ### 3. Docker Compose
 
 Deploy from a `compose.yaml` file. Each compose service becomes its own `DesiredService` under one app in one synchronous call.
