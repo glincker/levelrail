@@ -2937,6 +2937,14 @@ func (c *Client) DownloadControlPlaneBackup(ctx context.Context, name string) ([
 	return c.downloadRaw(ctx, "/api/v1/system/backups/"+PathEscape(name)+"/download")
 }
 
+// VerifyControlPlaneBackup calls POST /api/v1/system/backups/{name}/verify.
+// A failed check is a normal response with ok false, not an error.
+func (c *Client) VerifyControlPlaneBackup(ctx context.Context, name string) (ControlPlaneBackupVerification, error) {
+	var out ControlPlaneBackupVerification
+	err := c.do(ctx, http.MethodPost, "/api/v1/system/backups/"+PathEscape(name)+"/verify", nil, &out)
+	return out, err
+}
+
 // DeleteControlPlaneBackup calls DELETE /api/v1/system/backups/{name}.
 func (c *Client) DeleteControlPlaneBackup(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/system/backups/"+PathEscape(name), nil, nil)

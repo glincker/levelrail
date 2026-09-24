@@ -1999,6 +1999,21 @@ type ControlPlaneBackup struct {
 	SHA256    string `json:"sha256"`
 }
 
+// ControlPlaneBackupCheck is one step of a backup verification.
+type ControlPlaneBackupCheck struct {
+	Name   string `json:"name"`
+	OK     bool   `json:"ok"`
+	Detail string `json:"detail"`
+}
+
+// ControlPlaneBackupVerification mirrors internal/cpbackup.VerifyResult.
+type ControlPlaneBackupVerification struct {
+	Name       string                    `json:"name"`
+	OK         bool                      `json:"ok"`
+	Checks     []ControlPlaneBackupCheck `json:"checks"`
+	VerifiedAt string                    `json:"verified_at"`
+}
+
 // SystemPruneResult mirrors internal/api's systemPruneResponse
 // (internal/api/system_prune.go): everything POST /system/prune removed
 // and how much space came back, per resource kind, plus any per-stage
