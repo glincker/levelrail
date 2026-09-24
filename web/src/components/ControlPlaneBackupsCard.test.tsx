@@ -105,7 +105,7 @@ describe('ControlPlaneBackupsCard', () => {
       await screen.findByRole('button', { name: /^delete$/i }),
     )
     const buttons = await screen.findAllByRole('button', { name: /^delete$/i })
-    await userEvent.click(buttons[buttons.length - 1])
+    await userEvent.click(buttons.at(-1) as HTMLElement)
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         `/api/v1/system/backups/${backup.name}`,
