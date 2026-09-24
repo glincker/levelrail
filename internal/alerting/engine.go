@@ -80,6 +80,9 @@ type Engine struct {
 	domainHealthCheckInterval   time.Duration
 	domainHealthThrottle        *domainHealthThrottle
 	backupMissingGracePeriod    time.Duration
+
+	cpBackups      ControlPlaneBackupSource
+	cpBackupMaxAge time.Duration
 }
 
 // NewEngine builds an Engine. newNotifier defaults to a Notifier with no
@@ -159,6 +162,14 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 func (e *Engine) SetAutoRollback(st AutoRollbackStore, nudger deploy.ReconcileNudger) {
 	e.autoRollback = st
 	e.autoRollbackNudger = nudger
+}
+
+// SetControlPlaneBackups enables kind=control_plane_backup_stale rules. It is
+// left unset when scheduled control plane backups are disabled, so those
+// rules stay quiet. maxAge <= 0 falls back to DefaultControlPlaneBackupMaxAge.
+func (e *Engine) SetControlPlaneBackups(src ControlPlaneBackupSource, maxAge time.Duration) {
+	e.cpBackups = src
+	e.cpBackupMaxAge = maxAge
 }
 
 // Tick evaluates every enabled rule once. Errors from individual rules
@@ -272,6 +283,16 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindControlPlaneBackupStale:
+			if e.cpBackups == nil {
+				// Scheduled backups are disabled: nothing to be stale.
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateControlPlaneBackupStale(e.cpBackups, r, e.cpBackupMaxAge, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		default:
 			e.logger.Warn("alerting: rule has unknown kind, skipping", slog.String("rule_id", r.ID), slog.String("kind", string(r.Kind)))
 			continue
@@ -353,7 +374,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if r.Kind == KindDomainHealth && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if r.Kind == KindBackupMissing && !resolved {
+	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 

@@ -23,9 +23,33 @@ func newControlPlaneBackupsServer(t *testing.T) *httptest.Server {
 	mux.HandleFunc("GET /api/v1/system/backups/"+name+"/download", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("SQLite format 3\x00"))
 	})
+	mux.HandleFunc("POST /api/v1/system/backups/"+name+"/verify", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"name":"` + name + `","ok":true,"checks":[{"name":"checksum","ok":true,"detail":"match"}],"verified_at":"2026-01-01T00:00:00Z"}`))
+	})
+	mux.HandleFunc("POST /api/v1/system/backups/levelrail-20260202T000000Z.db/verify", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"name":"levelrail-20260202T000000Z.db","ok":false,"checks":[{"name":"checksum","ok":false,"detail":"sha256 mismatch"}],"verified_at":"2026-01-01T00:00:00Z"}`))
+	})
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 	return srv
+}
+
+func TestRun_ControlPlaneBackups_Verify(t *testing.T) {
+	srv := newControlPlaneBackupsServer(t)
+
+	stdout, _ := runCLIExpectOK(t, []string{"control-plane-backups", "verify", "levelrail-20260101T000000Z.db", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "verified") {
+		t.Errorf("verify stdout = %q", stdout)
+	}
+
+	var out, errOut strings.Builder
+	args := []string{"control-plane-backups", "verify", "levelrail-20260202T000000Z.db", "--api-url", srv.URL}
+	if got := run("levelrail-cli-test", args, &out, &errOut, envMap()); got != exitCheckFailed {
+		t.Fatalf("exit = %d, want %d (stderr %q)", got, exitCheckFailed, errOut.String())
+	}
+	if !strings.Contains(out.String(), "FAIL") {
+		t.Errorf("failed verify stdout = %q", out.String())
+	}
 }
 
 func TestRun_ControlPlaneBackups_ListCreate(t *testing.T) {

@@ -3,6 +3,7 @@ import {
   DatabaseIcon,
   DownloadSimpleIcon,
   KeyIcon,
+  SealCheckIcon,
   TrashIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -28,8 +29,22 @@ import {
   useControlPlaneBackups,
   useCreateControlPlaneBackup,
   useDeleteControlPlaneBackup,
+  useVerifyControlPlaneBackup,
 } from '../queries/controlPlaneBackups'
 import type { ControlPlaneBackup } from '../queries/controlPlaneBackups'
+
+function VerifiedBadge({ backup }: { backup: ControlPlaneBackup }) {
+  if (backup.verified_at === undefined) {
+    return <span> · never verified</span>
+  }
+  const ok = backup.verified_ok === true
+  return (
+    <span className={ok ? undefined : 'text-destructive'}>
+      {' · '}
+      {ok ? 'verified' : 'verification failed'} {formatAge(backup.verified_at)}
+    </span>
+  )
+}
 
 function BackupRow({
   backup,
@@ -38,6 +53,7 @@ function BackupRow({
   backup: ControlPlaneBackup
   onDelete: (name: string) => void
 }) {
+  const verify = useVerifyControlPlaneBackup()
   return (
     <div className="flex items-center justify-between gap-3 py-2">
       <div className="min-w-0">
@@ -47,9 +63,36 @@ function BackupRow({
         <p className="text-xs text-muted-foreground">
           {formatBytes(backup.size_bytes)} · {formatAge(backup.created_at)} ·
           sha256 <span className="font-mono">{backup.sha256.slice(0, 12)}</span>
+          <VerifiedBadge backup={backup} />
         </p>
       </div>
       <div className="flex shrink-0 gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={verify.isPending}
+          onClick={() => {
+            verify.mutate(backup.name, {
+              onSuccess: (r) => {
+                const failed = r.checks.filter((c) => !c.ok)
+                toast.add(
+                  r.ok
+                    ? { title: 'Backup verified.', type: 'success' }
+                    : {
+                        title: `Verification failed: ${failed.map((c) => c.detail).join('; ')}`,
+                        type: 'error',
+                      },
+                )
+              },
+              onError: (e) => {
+                toast.add({ title: e.message, type: 'error' })
+              },
+            })
+          }}
+        >
+          <SealCheckIcon className="size-3.5" aria-hidden="true" />
+          {verify.isPending ? 'Verifying...' : 'Verify'}
+        </Button>
         <Button
           variant="outline"
           size="sm"

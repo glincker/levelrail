@@ -71,7 +71,7 @@ describe('AlertingQuickSetupPrompt', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('creates all five platform-wide rules against the carrier app and then hides itself', async () => {
+  it('creates all six platform-wide rules against the carrier app and then hides itself', async () => {
     const user = userEvent.setup()
     const fetchMock = vi.fn<(input: RequestInfo | URL) => Promise<Response>>(
       (input) => {
@@ -128,7 +128,7 @@ describe('AlertingQuickSetupPrompt', () => {
     const ruleCreateCalls = fetchMock.mock.calls.filter(
       (call) => requestUrlOf(call[0]) === '/api/v1/apps/demo-app/alerts',
     )
-    expect(ruleCreateCalls).toHaveLength(5)
+    expect(ruleCreateCalls).toHaveLength(6)
     const kinds = ruleCreateCalls.map((call) => {
       const init = (call as unknown[])[1] as RequestInit
       return (JSON.parse(init.body as string) as { kind: string }).kind
@@ -139,6 +139,7 @@ describe('AlertingQuickSetupPrompt', () => {
       'node_disk_space',
       'node_resource_usage',
       'node_offline',
+      'control_plane_backup_stale',
     ])
 
     expect(

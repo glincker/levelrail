@@ -6,6 +6,21 @@ export interface ControlPlaneBackup {
   size_bytes: number
   created_at: string
   sha256: string
+  verified_at?: string
+  verified_ok?: boolean
+}
+
+export interface ControlPlaneBackupCheck {
+  name: string
+  ok: boolean
+  detail: string
+}
+
+export interface ControlPlaneBackupVerification {
+  name: string
+  ok: boolean
+  checks: ControlPlaneBackupCheck[]
+  verified_at: string
 }
 
 export const controlPlaneBackupKeys = {
@@ -53,6 +68,30 @@ export async function deleteControlPlaneBackup(name: string): Promise<void> {
       await readErrorMessage(res, `delete backup failed: ${res.status}`),
     )
   }
+}
+
+export async function verifyControlPlaneBackup(
+  name: string,
+): Promise<ControlPlaneBackupVerification> {
+  const res = await fetch(`${BASE}/${encodeURIComponent(name)}/verify`, {
+    method: 'POST',
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `verify backup failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as ControlPlaneBackupVerification
+}
+
+export function useVerifyControlPlaneBackup() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: verifyControlPlaneBackup,
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: controlPlaneBackupKeys.all }),
+  })
 }
 
 export function useControlPlaneBackups() {

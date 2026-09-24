@@ -57,7 +57,7 @@ and `sh -s uninstall` do what they say.
 **Already running everything as containers:**
 
 ```
-docker run -d -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock \
+docker run -d -p 127.0.0.1:8080:8080 -v /var/run/docker.sock:/var/run/docker.sock \
   -v levelrail-data:/var/lib/levelrail-data ghcr.io/glincker/levelrail:beta
 ```
 

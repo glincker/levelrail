@@ -197,6 +197,9 @@ type Router struct {
 	// nil is valid, the same "unset means unthrottled" shape apiRateLimit
 	// above establishes. Set via WithWebhookRateLimit.
 	webhookRateLimit *apiRateLimiter
+	// tokenRedeemRateLimit throttles the unauthenticated token-redeeming
+	// routes (reset-password, invite accept) per client IP. nil means unthrottled.
+	tokenRedeemRateLimit *apiRateLimiter
 	// fetchLatestRelease is handleGetUpdates' GitHub Releases lookup;
 	// always non-nil, defaulted to defaultFetchLatestRelease in
 	// NewRouter, overridable in tests the same way lookupHost is above.

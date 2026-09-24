@@ -40,7 +40,7 @@ This is the same script linked from the root [README](../README.md). It:
 
 - Runs the preflight table and stops on a failed check (`--force` continues anyway)
 - Installs Docker via `get.docker.com` if missing
-- Downloads the newest release for `linux/amd64` or `linux/arm64` and verifies its checksum. While no stable release exists yet, it installs the newest pre-release; pick explicitly with `LEVELRAIL_CHANNEL=stable|beta`. A release that ships no binary for your architecture is skipped with a warning
+- Downloads the newest release for `linux/amd64` or `linux/arm64` and verifies its SHA-256 checksum (a missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECKSUM=1`). While no stable release exists yet, it installs the newest pre-release; pick explicitly with `LEVELRAIL_CHANNEL=stable|beta`. A release that ships no binary for your architecture is skipped with a warning
 - Writes a `levelrail.service` systemd unit and starts it, then waits for `GET /healthz`
 - Checks that ports 80 and 443 answer on the server's public IP, and prints the `ufw`/`firewalld` commands to open them if not (some providers never route a server's own public IP back to itself, so treat a failure there as a hint, not proof)
 - Prints every dashboard URL, the one-time **setup token** for creating the first admin, and a reminder to back up `<data dir>/master.key`
@@ -69,6 +69,7 @@ To skip the setup token and create the admin non-interactively, set `APP_ADMIN_U
 | `LEVELRAIL_DATA_DIR` | `/var/lib/levelrail-data` | Control plane data directory (SQLite database, master key, setup token, generated `brand.yaml`) |
 | `LEVELRAIL_BINARY_FILE` | unset | Install a local binary instead of downloading one |
 | `LEVELRAIL_BINARY_URL` | unset | Download the binary from this URL instead (no checksum verification) |
+| `LEVELRAIL_SKIP_CHECKSUM` | unset | Set to `1` to install even when the release publishes no `checksums.txt` (or omits the binary from it). Without it the installer stops instead of installing an unverified binary |
 | `LEVELRAIL_PUBLIC_IP` | discovered | Public IP used for the reachability test and summary |
 | `LEVELRAIL_SKIP_REACHABILITY` | unset | Set to `1` to skip the port 80/443 test |
 | `LEVELRAIL_MIN_RAM_MB` / `LEVELRAIL_MIN_DISK_GB` / `LEVELRAIL_MIN_DOCKER_MAJOR` | `1024` / `10` / `24` | Preflight thresholds |

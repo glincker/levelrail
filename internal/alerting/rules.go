@@ -39,7 +39,10 @@ const (
 	KindNodeResourceUsage    Kind = "node_resource_usage"
 	KindDomainHealth         Kind = "domain_health"
 	KindBackupMissing        Kind = "backup_missing"
-	KindNodeOffline          Kind = "node_offline"
+
+	// KindControlPlaneBackupStale is platform-wide: it watches the newest control plane snapshot's age.
+	KindControlPlaneBackupStale Kind = "control_plane_backup_stale"
+	KindNodeOffline             Kind = "node_offline"
 )
 
 // Comparator is how a threshold Rule compares the latest sample value

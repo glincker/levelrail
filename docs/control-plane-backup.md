@@ -42,6 +42,16 @@ Manual snapshots (created from the CLI or API) and pre-upgrade snapshots are nev
 
 `levelrail-cli doctor` and the dashboard Status page include a `control_plane_backup` check. It warns when the newest snapshot is older than 3 days (the fix is `levelrail-cli control-plane-backups create`), is ok when a recent one exists, and reports unknown when scheduled snapshots are disabled with `APP_CONTROL_PLANE_BACKUP_INTERVAL=0`. It never fails. See [troubleshooting](/troubleshooting#control-plane-backup-is-stale).
 
+### Stale backup alert
+
+The doctor check only helps when someone looks. To be notified instead, create an alert rule of kind `control_plane_backup_stale`:
+
+```bash
+levelrail-cli apps alerts create <app> --name "Control plane backup stale" --kind control_plane_backup_stale --channel-id CHANNEL
+```
+
+It fires once the newest snapshot is older than 3 days and sends a resolved notice after the next snapshot lands. Set `--for-duration` (for example `48h`) to change the maximum age. The rule is platform-wide (the app only decides where it is listed), stays quiet when `APP_CONTROL_PLANE_BACKUP_INTERVAL=0`, and also stays quiet before the first snapshot exists. The dashboard's alert rule dialog and the alerting quick setup prompt offer it too. See [observability](/observability#alerting).
+
 ### Before an upgrade
 
 When the server starts on an existing database and this release carries schema migrations that have not been applied yet, it takes a snapshot first. A brand new database is skipped. If that snapshot fails (for example the disk is full), the failure is logged and the migration still proceeds.
@@ -56,6 +66,7 @@ If the database has a schema version newer than the binary understands, the serv
 levelrail-cli control-plane-backups create
 levelrail-cli control-plane-backups list
 levelrail-cli control-plane-backups download <name> --out backup.db
+levelrail-cli control-plane-backups verify <name>
 levelrail-cli control-plane-backups delete <name>
 ```
 
@@ -66,7 +77,24 @@ Without `--out`, `download` writes the raw bytes to stdout. The same operations 
 | `POST` | `/api/v1/system/backups` |
 | `GET` | `/api/v1/system/backups` |
 | `GET` | `/api/v1/system/backups/{name}/download` |
+| `POST` | `/api/v1/system/backups/{name}/verify` |
 | `DELETE` | `/api/v1/system/backups/{name}` |
+
+## Verifying a backup
+
+A backup you have never checked is a hope, not a backup. Verification proves a snapshot is still intact without restoring anything:
+
+1. **checksum**: the file's SHA-256 is recomputed and compared with the checksum recorded when the snapshot was taken. Snapshots from before checksums were recorded pass this check with a note.
+2. **integrity**: SQLite opens the file read-only and runs `integrity_check`.
+3. **schema_version**: the snapshot's schema version must not be newer than this binary supports, otherwise a restore would be refused.
+
+```
+levelrail-cli control-plane-backups verify levelrail-20260101T000000Z.db
+```
+
+The command exits `0` when every check passes and `1` when any fails, so it fits in a cron job or a monitoring script. Over the API the response is `{"name", "ok", "checks": [{"name", "ok", "detail"}], "verified_at"}`; a failed check is still a `200` with `"ok": false`.
+
+The last result is kept in a small file next to the snapshot (no database change) and shows up as `verified_at` and `verified_ok` on each entry of the list response. The dashboard shows a Verify button and a last-verified badge per backup. Deleting a snapshot removes its verification record too.
 
 ## Restoring
 

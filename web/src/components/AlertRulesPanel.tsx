@@ -131,6 +131,9 @@ function formatCondition(rule: AlertRule): string {
     const forPart = rule.for_duration ? ` for ${rule.for_duration}` : ''
     return `any of this app's own domains not resolving correctly or pointing elsewhere${forPart}`
   }
+  if (rule.kind === 'control_plane_backup_stale') {
+    return `control plane's newest snapshot older than ${rule.for_duration || '3d (default)'} (platform-wide)`
+  }
   if (rule.kind === 'backup_missing') {
     const target =
       rule.backup_resource_kind === 'volume'
@@ -176,6 +179,9 @@ function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'domain_health') {
     return `${rule.last_value} domain(s) unhealthy`
+  }
+  if (rule.kind === 'control_plane_backup_stale') {
+    return `${rule.last_value.toFixed(1)}h since newest control plane snapshot`
   }
   if (rule.kind === 'backup_missing') {
     return `${rule.last_value.toFixed(1)}h since last successful backup`
