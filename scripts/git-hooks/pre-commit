@@ -33,6 +33,16 @@ if [ -n "$staged_migrations" ]; then
 	fi
 fi
 
+echo "pre-commit: gitleaks (staged changes)"
+if command -v gitleaks >/dev/null; then
+	if ! gitleaks protect --staged --redact --no-banner -c .gitleaks.toml; then
+		echo "possible secret staged, commit aborted. If it is a false positive, extend .gitleaks.toml."
+		fail=1
+	fi
+else
+	echo "gitleaks not installed, skipping (install: brew install gitleaks)"
+fi
+
 echo "pre-commit: go vet"
 if ! go vet ./... 2>&1; then
 	fail=1

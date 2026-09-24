@@ -1,0 +1,13 @@
+title = "levelrail gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Intentionally public dev-mode fixture tokens and test fixtures"
+paths = [
+  '''^dev-fixtures\.yml$''',
+  '''^scripts/smoke\.sh$''',
+  '''_test\.go$''',
+  '''^test/fixtures/''',
+]
