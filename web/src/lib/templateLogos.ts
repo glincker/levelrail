@@ -1,4 +1,4 @@
-import type { ComponentType, SVGProps } from 'react'
+import { createElement, type ComponentType, type SVGProps } from 'react'
 
 export type LogoComponent = ComponentType<SVGProps<SVGSVGElement>>
 
@@ -114,4 +114,34 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   bun: () => import('@thesvg/react/bun'),
   nextdotjs: () => import('@thesvg/react/nextdotjs'),
   ubuntu: () => import('@thesvg/react/ubuntu'),
+  go: () =>
+    import('@thesvg/react/go').then((m) => ({
+      default: (props: SVGProps<SVGSVGElement>) =>
+        createElement(m.default, { ...props, variant: 'mono' }),
+    })),
+  django: () => import('@thesvg/react/django'),
+  'ruby-on-rails': () => import('@thesvg/react/ruby-on-rails'),
+  laravel: () => import('@thesvg/react/laravel'),
+  flask: () => import('@thesvg/react/flask'),
+  fastapi: () => import('@thesvg/react/fastapi'),
+  express: () => import('@thesvg/react/express'),
+  nuxt: () => import('@thesvg/react/nuxt'),
+  remix: () => import('@thesvg/react/remix'),
+  astro: () => import('@thesvg/react/astro'),
+  svelte: () => import('@thesvg/react/svelte'),
+  react: () => import('@thesvg/react/react'),
+  vue: () => import('@thesvg/react/vue'),
+  angular: () => import('@thesvg/react/angular'),
+  vite: () => import('@thesvg/react/vite'),
+  sentry: () => import('@thesvg/react/sentry'),
+  posthog: () => import('@thesvg/react/posthog'),
+  datadog: () => import('@thesvg/react/datadog'),
+  axiom: () => import('@thesvg/react/axiom'),
+  'better-stack': () => import('@thesvg/react/better-stack'),
+  bugsnag: () => import('@thesvg/react/bugsnag'),
+  'new-relic': () => import('@thesvg/react/new-relic'),
+  'aws-s3': () => import('@thesvg/react/aws-amazon-simple-storage-service'),
+  cloudflare: () => import('@thesvg/react/cloudflare'),
+  backblaze: () => import('@thesvg/react/backblaze'),
+  'google-cloud-storage': () => import('@thesvg/react/google-cloud-storage'),
 }

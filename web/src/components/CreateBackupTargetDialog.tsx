@@ -32,6 +32,8 @@ import { toast } from '@/components/ui/toast'
 import { ApiError } from '../lib/apiError'
 import { useCreateBackupTarget } from '../queries/backupTargets'
 import { PROVIDER_LABEL } from './backupTargetProvider'
+import { BrandLogoBadge } from './BrandLogoBadge'
+import { logoIdForBackupTarget } from '../lib/brandLogos'
 import type { BackupProvider } from '../types/backupTarget'
 
 // Mirrors validateCreateBackupTargetRequest (internal/api/
@@ -241,7 +243,13 @@ export function CreateBackupTargetDialog() {
                         {(Object.keys(PROVIDER_LABEL) as BackupProvider[]).map(
                           (provider) => (
                             <SelectItem key={provider} value={provider}>
-                              {PROVIDER_LABEL[provider]}
+                              <span className="flex items-center gap-2">
+                                <BrandLogoBadge
+                                  logoId={logoIdForBackupTarget(provider)}
+                                  className="size-5 p-0.5"
+                                />
+                                {PROVIDER_LABEL[provider]}
+                              </span>
                             </SelectItem>
                           ),
                         )}
@@ -276,7 +284,16 @@ export function CreateBackupTargetDialog() {
               {watchedProvider === 'aws' ? null : (
                 <Field>
                   <FieldLabel htmlFor="backup-target-endpoint">
-                    Endpoint
+                    <span className="flex items-center gap-2">
+                      Endpoint
+                      <BrandLogoBadge
+                        logoId={logoIdForBackupTarget(
+                          watchedProvider,
+                          watch('endpoint'),
+                        )}
+                        className="size-5 p-0.5"
+                      />
+                    </span>
                   </FieldLabel>
                   <Input
                     id="backup-target-endpoint"

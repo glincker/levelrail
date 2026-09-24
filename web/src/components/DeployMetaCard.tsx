@@ -22,6 +22,8 @@ import {
 } from '../lib/deployAttemptPresentation'
 import { formatDurationMs } from '../lib/deployDuration'
 import { useNowTick } from '../hooks/useNowTick'
+import { BrandLogoBadge } from './BrandLogoBadge'
+import { logoIdForFramework } from '../lib/brandLogos'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 
@@ -169,7 +171,13 @@ export function DeployMetaCard({
     <Card>
       <CardContent>
         {summary ? (
-          <p className="mb-3 text-sm text-foreground">{summary}</p>
+          <p className="mb-3 flex items-center gap-2 text-sm text-foreground">
+            <BrandLogoBadge
+              logoId={logoIdForFramework(attempt.detected_framework)}
+              className="size-6"
+            />
+            {summary}
+          </p>
         ) : null}
         <dl className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3">
           <MetaField label="Status">

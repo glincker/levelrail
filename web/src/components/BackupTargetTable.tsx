@@ -17,6 +17,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
 import { DeleteBackupTargetDialog } from './DeleteBackupTargetDialog'
 import { PROVIDER_LABEL } from './backupTargetProvider'
+import { BrandLogoBadge } from './BrandLogoBadge'
+import { logoIdForBackupTarget } from '../lib/brandLogos'
 import { useTestBackupTarget } from '../queries/backupTargets'
 import type { BackupTarget } from '../types/backupTarget'
 
@@ -104,7 +106,14 @@ export function BackupTargetTable({
                 {target.name}
               </TableCell>
               <TableCell>
-                <Badge variant="outline">
+                <Badge variant="outline" className="gap-1.5">
+                  <BrandLogoBadge
+                    logoId={logoIdForBackupTarget(
+                      target.provider,
+                      target.endpoint,
+                    )}
+                    className="size-4 p-px"
+                  />
                   {PROVIDER_LABEL[target.provider]}
                 </Badge>
               </TableCell>
