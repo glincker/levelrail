@@ -54,3 +54,6 @@ CLAUDE.md
 
 # CI test lane output (scripts/ci-go-test.sh)
 test-results/
+
+# AI tool scratch notes must never be committed
+.jules/
