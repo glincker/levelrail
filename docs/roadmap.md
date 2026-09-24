@@ -433,6 +433,10 @@ flowchart LR
   per-line level tags, level chips (All, Errors, Warnings, Info, Debug),
   click-to-expand rows with pretty-printed JSON, "Jump to first error",
   and copy and download. Detection is client side over loaded lines.
+- Audit log search: `GET /api/v1/audit-log` accepts `q` (substring match)
+  and `status=failed`, honored by CSV export, the `audit-log --search` and
+  `--failed` flags, and the dashboard audit log page (server-side, with
+  debounced search).
 - Brand logos (thesvg marks) on catalog template cards, app list rows,
   the detected framework on deploy attempts, the app integrations card,
   and backup targets, with icon fallbacks and lazy-loaded per-logo
