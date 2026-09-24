@@ -73,6 +73,7 @@ package api
 
 import (
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
@@ -279,6 +280,7 @@ type Router struct {
 	appVolumeMoves                 AppVolumeMoveStore               // always set, same "core Store interface" shape as backupHistory above
 	volumeCloneRestoreRunner       VolumeCloneRestoreRunner         // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new returns 501, same shape as cloneRestoreRunner above
 	deployAttempts                 DeployAttemptStore               // always set, same "core Store interface" shape as certs/staticSites above
+	buildStartMu                   sync.Mutex                       // serializes the running-attempt check and row insert in handleTriggerBuild
 	deployLogStore                 DeployLogQuerier                 // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
 	deployRecorder                 *deploylog.Recorder              // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
 	logBroadcaster                 *telemetry.LogBroadcaster        // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above

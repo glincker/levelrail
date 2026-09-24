@@ -127,6 +127,8 @@ POST /api/v1/apps/{name}/builds
 ```
 which replaces the placeholder with the real tag once it succeeds.
 
+Only one manual build per app runs at a time: a second `POST .../builds` while one is still running returns `409 Conflict` ("a deploy for this app is already running") instead of starting a parallel build. If the control plane is restarted mid-build, the orphaned attempt is marked failed on the next startup, so it never blocks new builds.
+
 **Dashboard:** "Deploy from git" wizard card (`CreateAppFromGitFields.tsx`)
 
 **CLI:**
