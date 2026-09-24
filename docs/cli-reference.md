@@ -908,6 +908,18 @@ levelrail audit-purge [flags]
 
 :::
 
+::: details Attention (troubleshooting)
+
+### Attention
+
+```
+levelrail attention [flags]
+```
+
+Lists everything that needs attention right now: failing apps, offline nodes, expired or expiring certificates, and doctor warnings or failures, critical first. It is the CLI side of the dashboard's Status page (`/status`). Exit code is 1 if any item is critical, 0 otherwise, so it works as a script gate. Supports `--json`, `--output json|table|text`, and `--query`.
+
+:::
+
 ::: details Doctor (troubleshooting)
 
 ### Doctor

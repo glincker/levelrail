@@ -14,6 +14,10 @@ Start here for a fast fix. Each entry links to the full page if you need more de
 5. Still stuck: [Deploying apps](deploying-apps.md#health-checks) covers the full health check contract.
 :::
 
+::: details Something is wrong but I don't know what
+Open the Status page (`/status`, with a badge in the sidebar) or run `levelrail-cli attention`. Both list failing apps, offline nodes, expired or expiring certificates, and doctor warnings or failures, critical first. The CLI exits 1 when any item is critical. A node listed as offline has a connection history: `levelrail-cli nodes events <id>`.
+:::
+
 ::: details TLS certificate won't issue
 This has its own dedicated runbook: [ACME verification runbook](acme-verification-runbook.md). Start there; it covers DNS propagation, rate limits, and staging-vs-production ACME directories.
 

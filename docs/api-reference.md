@@ -1,10 +1,10 @@
 ---
-description: Complete HTTP API reference for the control plane, organized by resource group with 303 endpoints.
+description: Complete HTTP API reference for the control plane, organized by resource group.
 ---
 
 # REST API Reference
 
-Exhaustive route inventory (303 routes total) for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.
+Route inventory for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.
 
 ## System
 

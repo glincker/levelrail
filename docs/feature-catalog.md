@@ -82,7 +82,7 @@ stub, the substance lives in the imported component.
 - Cloudflare Tunnel
 - Vault (external secrets)
 - Email
-- System status (doctor bundle), plus a Status page (`/status`) and an `attention` CLI command listing everything failing right now
+- System status (doctor bundle), plus a Status page (`/status`) and an `attention` CLI command listing everything failing right now (failing apps, offline nodes, bad certificates, doctor findings; the page also shows disk pressure)
 - Containers
 - Updates
 
@@ -130,7 +130,7 @@ All command groups available:
 
 **nodes**
 
-`list`, `get`, `delete`, `join-token`, `cordon`, `uncordon`, `drain`, `workloads`, `health`, `patch-status`, `metrics`.
+`list`, `get`, `delete`, `join-token`, `cordon`, `uncordon`, `drain`, `workloads`, `health`, `patch-status`, `metrics`, `events` (connection history).
 
 **iam**
 
@@ -150,7 +150,7 @@ Support for migrating from `coolify`, `dokploy`, or `caprover`.
 
 **domains**
 
-`list`, `cloudflare-dns`, `route53-dns`, `basic-auth`, `maintenance`, `tls-cert`, `certificates`, `error-pages`.
+`list`, `cloudflare-dns`, `route53-dns`, `basic-auth`, `maintenance`, `tls-cert`, `certificates` (with a RENEWAL column), `error-pages`.
 
 **settings**
 
@@ -197,6 +197,6 @@ instead of leaving it listed as both done and gapped.
 
 ## See also
 
-- [API reference](api-reference.md) - Detailed method/path/ability for all 300 routes
+- [API reference](api-reference.md) - Method/path/ability listing for the API routes (the control plane registers roughly 390 handlers in `routes.go` and `routes_platform.go`; the listing does not yet cover every one)
 - [Roadmap](roadmap.md) - Current status and what's in progress
 - [Getting started](getting-started.md) - Your first deploy walkthrough
