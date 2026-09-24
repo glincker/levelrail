@@ -49,9 +49,6 @@ func TestWebhook_Live_PushToRunningContainer(t *testing.T) {
 	const imageRepo = "levelrail/test-webhook-push"
 	const helloBody = "hello from levelrail webhook e2e"
 
-	cleanupContainers(context.Background(), t, runtime, serviceName)
-	t.Cleanup(func() { cleanupContainers(context.Background(), t, runtime, serviceName) })
-
 	// A real local repo, built by go-git itself, the same pattern
 	// internal/webhook/clone_live_test.go uses: webhook.Config.RepoURL
 	// treats a filesystem path exactly like any other git remote.
@@ -90,6 +87,11 @@ func TestWebhook_Live_PushToRunningContainer(t *testing.T) {
 		defer cleanupCancel()
 		_, _ = rawCli.ImageRemove(cleanupCtx, builtTag, image.RemoveOptions{Force: true})
 	})
+
+	// Registered after the image cleanup so it runs first (t.Cleanup is
+	// LIFO): an image still used by a running container cannot be removed.
+	cleanupContainers(context.Background(), t, runtime, serviceName)
+	t.Cleanup(func() { cleanupContainers(context.Background(), t, runtime, serviceName) })
 
 	db := openLiveStore(t)
 
