@@ -399,7 +399,8 @@ type Router struct {
 	doctorMinRAMBytes      int64         // 0 means "use defaultDoctorMinRAMBytes", set via WithDoctorMinRAMBytes
 	doctorMinCPUCount      int           // 0 means "use defaultDoctorMinCPUCount", set via WithDoctorMinCPUCount
 
-	cpBackups ControlPlaneBackupManager // nil is valid: /system/backups routes return 501
+	cpBackups           ControlPlaneBackupManager // nil is valid: /system/backups routes return 501
+	cpBackupScheduleOff bool                      // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.

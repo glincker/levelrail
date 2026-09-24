@@ -3764,4 +3764,284 @@ var Templates = []Template{
       retries: 3
 `,
 	},
+	{
+		ID:                     "forgejo",
+		Name:                   "Forgejo",
+		Slogan:                 "A lightweight, community-governed Git forge with issues, pull requests, and CI runners.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://forgejo.org/docs/latest/admin/installation-docker/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
+		Compose: `services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:9.0.3
+    ports: ["3000:3000"]
+    environment:
+      FORGEJO__server__ROOT_URL: ${SERVICE_FQDN_FORGEJO:-http://localhost:3000}
+      FORGEJO__security__SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
+    volumes:
+      - forgejo_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/api/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+`,
+	},
+	{
+		ID:                     "mailpit",
+		Name:                   "Mailpit",
+		Slogan:                 "A local SMTP server and web inbox for catching and inspecting outgoing email during development.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://mailpit.axllent.org/docs/",
+		RecommendedMemoryBytes: 134217728, // 128Mi
+		Compose: `services:
+  mailpit:
+    image: axllent/mailpit:v1.21.8
+    ports: ["8025:8025"]
+    volumes:
+      - mailpit_data:/data
+    environment:
+      MP_DATABASE: /data/mailpit.db
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8025/livez || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+`,
+	},
+	{
+		ID:                     "pocketbase",
+		Name:                   "PocketBase",
+		Slogan:                 "An open-source backend in one file: embedded database, auth, file storage, and realtime API.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://pocketbase.io/docs/",
+		RecommendedMemoryBytes: 134217728, // 128Mi
+		Compose: `services:
+  pocketbase:
+    image: ghcr.io/muchobien/pocketbase:0.22.27
+    ports: ["8090:8090"]
+    volumes:
+      - pocketbase_data:/pb_data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8090/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+`,
+	},
+	{
+		ID:                     "adguard-home",
+		Name:                   "AdGuard Home",
+		Slogan:                 "Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard.",
+		Category:               "Infrastructure",
+		DocumentationURL:       "https://github.com/AdguardTeam/AdGuardHome/wiki/Docker",
+		RecommendedMemoryBytes: 134217728, // 128Mi
+		Compose: `services:
+  adguard:
+    image: adguard/adguardhome:v0.107.55
+    ports: ["3000:3000"]
+    volumes:
+      - adguard_work:/opt/adguardhome/work
+      - adguard_conf:/opt/adguardhome/conf
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+`,
+	},
+	{
+		ID:                     "nginx-proxy-manager",
+		Name:                   "Nginx Proxy Manager",
+		Slogan:                 "A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates.",
+		Category:               "Infrastructure",
+		DocumentationURL:       "https://nginxproxymanager.com/guide/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
+		Compose: `services:
+  npm:
+    image: jc21/nginx-proxy-manager:2.12.3
+    ports: ["81:81"]
+    environment:
+      DB_SQLITE_FILE: /data/database.sqlite
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:81/api/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+`,
+	},
+	{
+		ID:                     "lidarr",
+		Name:                   "Lidarr",
+		Slogan:                 "Watches your indexers for new albums from artists you follow and automatically grabs and organizes them.",
+		Category:               "Media",
+		DocumentationURL:       "https://wiki.servarr.com/lidarr",
+		RecommendedMemoryBytes: 268435456, // 256Mi
+		Compose: `services:
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:2.9.6
+    ports: ["8686:8686"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+    volumes:
+      - lidarr_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8686/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+`,
+	},
+	{
+		ID:                     "bazarr",
+		Name:                   "Bazarr",
+		Slogan:                 "Companion to Sonarr and Radarr that finds and downloads subtitles for your media library.",
+		Category:               "Media",
+		DocumentationURL:       "https://wiki.bazarr.media",
+		RecommendedMemoryBytes: 268435456, // 256Mi
+		Compose: `services:
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:1.5.1
+    ports: ["6767:6767"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+    volumes:
+      - bazarr_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:6767/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+`,
+	},
+	{
+		ID:                     "tautulli",
+		Name:                   "Tautulli",
+		Slogan:                 "Monitors your Plex server and shows who watched what, with history, stats, and notifications.",
+		Category:               "Monitoring",
+		DocumentationURL:       "https://docs.tautulli.com",
+		RecommendedMemoryBytes: 268435456, // 256Mi
+		Compose: `services:
+  tautulli:
+    image: lscr.io/linuxserver/tautulli:2.15.0
+    ports: ["8181:8181"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+    volumes:
+      - tautulli_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8181/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+`,
+	},
+	{
+		ID:                     "heimdall",
+		Name:                   "Heimdall",
+		Slogan:                 "An application dashboard that gathers links to all your self-hosted services on one start page.",
+		Category:               "Dashboard",
+		DocumentationURL:       "https://github.com/linuxserver/Heimdall",
+		RecommendedMemoryBytes: 134217728, // 128Mi
+		Compose: `services:
+  heimdall:
+    image: lscr.io/linuxserver/heimdall:2.6.3
+    ports: ["80:80"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+    volumes:
+      - heimdall_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+`,
+	},
+	{
+		ID:                     "dokuwiki",
+		Name:                   "DokuWiki",
+		Slogan:                 "A simple, database-free wiki that stores pages as plain text files, easy to back up.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://www.dokuwiki.org/manual",
+		RecommendedMemoryBytes: 134217728, // 128Mi
+		Compose: `services:
+  dokuwiki:
+    image: lscr.io/linuxserver/dokuwiki:2024-02-06b
+    ports: ["80:80"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+    volumes:
+      - dokuwiki_config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+`,
+	},
+	{
+		ID:                     "sftpgo",
+		Name:                   "SFTPGo",
+		Slogan:                 "An SFTP, FTP/S, and WebDAV server with a web admin UI and per-user storage backends.",
+		Category:               "Storage",
+		DocumentationURL:       "https://docs.sftpgo.com/latest/",
+		RecommendedMemoryBytes: 134217728, // 128Mi
+		Compose: `services:
+  sftpgo:
+    image: drakkan/sftpgo:v2.6.6
+    ports: ["8080:8080"]
+    volumes:
+      - sftpgo_data:/srv/sftpgo
+      - sftpgo_home:/var/lib/sftpgo
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+`,
+	},
+	{
+		ID:                     "answer",
+		Name:                   "Apache Answer",
+		Slogan:                 "A Q&A platform for building a community knowledge base, in the style of a self-hosted Stack Overflow.",
+		Category:               "Communication",
+		DocumentationURL:       "https://answer.apache.org/docs/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
+		Compose: `services:
+  answer:
+    image: apache/answer:1.4.2
+    ports: ["9080:80"]
+    volumes:
+      - answer_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+`,
+	},
 }

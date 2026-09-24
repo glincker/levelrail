@@ -4,64 +4,22 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sort"
 	"text/tabwriter"
 
-	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/attention"
 )
 
 const (
-	attentionCritical = "critical"
-	attentionWarning  = "warning"
+	attentionCritical = attention.Critical
+	attentionWarning  = attention.Warning
 )
 
-type attentionItem struct {
-	Severity string `json:"severity"`
-	Kind     string `json:"kind"`
-	Subject  string `json:"subject"`
-	Detail   string `json:"detail"`
-}
+type (
+	attentionItem  = attention.Item
+	attentionInput = attention.Input
+)
 
-// buildAttentionItems mirrors web/src/lib/attention.ts: failing apps,
-// offline nodes, bad certificates, and doctor warnings or failures,
-// critical first.
-func buildAttentionItems(apps []apiclient.AppStatusEntry, nodes []nodeResource, certs []apiclient.CertificateResource, doctor systemDoctorResource) []attentionItem {
-	items := []attentionItem{}
-	for _, a := range apps {
-		if a.Status.Variant == "destructive" {
-			items = append(items, attentionItem{attentionCritical, "app", a.Name, a.Status.Label})
-		}
-	}
-	for _, n := range nodes {
-		if n.Status == "offline" {
-			detail := "never reported in"
-			if n.LastSeenAt != nil {
-				detail = "last seen " + n.LastSeenAt.Format("2006-01-02 15:04 MST")
-			}
-			items = append(items, attentionItem{attentionCritical, "node", n.Name, detail})
-		}
-	}
-	for _, c := range certs {
-		switch c.Status {
-		case "expired":
-			items = append(items, attentionItem{attentionCritical, "certificate", c.Domain, "expired " + c.NotAfter.Format("2006-01-02")})
-		case "expiring_soon":
-			items = append(items, attentionItem{attentionWarning, "certificate", c.Domain, "expires " + c.NotAfter.Format("2006-01-02")})
-		}
-	}
-	for _, c := range doctor.Checks {
-		switch c.Status {
-		case "fail":
-			items = append(items, attentionItem{attentionCritical, "doctor", c.Name, c.Message})
-		case "warn":
-			items = append(items, attentionItem{attentionWarning, "doctor", c.Name, c.Message})
-		}
-	}
-	sort.SliceStable(items, func(i, j int) bool {
-		return items[i].Severity == attentionCritical && items[j].Severity != attentionCritical
-	})
-	return items
-}
+func buildAttentionItems(in attentionInput) []attentionItem { return attention.Build(in) }
 
 // runAttention implements "attention": the CLI side of the dashboard's
 // Status page. Exit code is 1 when any item is critical.
@@ -74,26 +32,11 @@ func runAttention(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitCode
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	ctx := context.Background()
 
-	apps, err := client.ListAppStatuses(ctx)
+	items, err := attention.Collect(context.Background(), client)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list apps: %w", err))
+		return reportError(stdout, stderr, jsonOut, err)
 	}
-	nodes, err := client.ListNodes(ctx)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list nodes: %w", err))
-	}
-	certs, err := client.ListCertificates(ctx)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list certificates: %w", err))
-	}
-	doctor, err := client.GetSystemDoctor(ctx)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get system doctor report: %w", err))
-	}
-
-	items := buildAttentionItems(apps, nodes, certs, doctor)
 	if err := renderResult(stdout, of.Format, of.Query, items, func() { printAttentionHuman(stdout, items) }); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
@@ -123,8 +66,10 @@ func attentionUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s attention [flags]
 
-Lists everything that needs attention right now: failing apps, offline
-nodes, expired or expiring certificates, and doctor warnings or failures.
+Lists everything that needs attention right now: failing apps, failed
+deploys from the last 24 hours, low disk space (warn under 10 percent free,
+critical under 5), offline nodes, expired or expiring certificates, and
+doctor warnings or failures.
 Exit code is 1 if any item is critical, 0 otherwise.
 
 Flags:

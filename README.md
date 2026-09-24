@@ -228,7 +228,7 @@ matrix.
   `database:name`, or `*`) ship in the free, Apache 2.0 core. Dokploy's
   comparable granularity sits behind a paid enterprise license.
 
-One real gap, stated plainly: the template catalog is 123 curated
+One real gap, stated plainly: the template catalog is 141 curated
 entries against Coolify's 371 (an intentional curation-over-count bet,
 see [ADR 015](adr/015-service-template-catalog-reversal.md)), the one
 row in that matrix this project doesn't lead.

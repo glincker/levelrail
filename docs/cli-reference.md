@@ -641,6 +641,11 @@ levelrail backups restore-as-new <database> --backup ID --new-name NAME [flags]
 ```
 
 ```
+levelrail backups restores <database> [flags]
+```
+list restore attempt history for a database
+
+```
 levelrail backups schedule set <database> --target ID --cron EXPR [flags]
 ```
  configure a recurring backup
@@ -673,6 +678,11 @@ levelrail app-volume-backups restore-as-new <app> <volume> --backup ID [--new-vo
 ```
 
 ```
+levelrail app-volume-backups restores <app> <volume> [flags]
+```
+list restore attempt history for an app's named volume
+
+```
 levelrail app-volume-backups schedule set <app> <volume> --target ID --cron EXPR [flags]
 ```
  configure a recurring backup
@@ -688,6 +698,25 @@ levelrail app-volume-backups verifications <app> <volume> --backup ID [flags]
 ```
 levelrail app-volume-backups verify <app> <volume> --backup ID [flags]
 ```
+
+## PITR Restores
+
+```
+levelrail pitr restores <database> [flags]
+```
+list point-in-time restore attempts for a database (base backup, target time, status, error)
+
+## Build
+
+```
+levelrail build detect --repo-url URL [--ref REF] [flags]
+```
+show which framework the builder detects for a public repo, without running a build. Prints `no framework detected` (exit 0) when nothing matches.
+
+```
+levelrail build branches --repo-url URL [flags]
+```
+list the branches a public repo advertises. Private or unreachable repos fail with an API error.
 
 ## Cloudflare Tunnel
 

@@ -22,9 +22,13 @@ export function NodeEventsCard({ nodeId }: { nodeId: string }) {
       </CardHeader>
       <CardContent>
         {isPending ? (
-          <div className="h-16 animate-pulse rounded bg-muted" />
+          <div
+            role="status"
+            aria-label="Loading connection history"
+            className="h-16 animate-pulse rounded bg-muted motion-reduce:animate-none"
+          />
         ) : isError ? (
-          <p className="text-sm text-muted-foreground">
+          <p role="alert" className="text-sm text-muted-foreground">
             History is unavailable right now.
           </p>
         ) : data.length === 0 ? (
@@ -33,15 +37,15 @@ export function NodeEventsCard({ nodeId }: { nodeId: string }) {
           </p>
         ) : (
           <ul className="space-y-2">
-            {data.map((event) => (
+            {data.map((event, i) => (
               <li
-                key={`${event.created_at}-${event.to_status}`}
+                key={`${event.created_at}-${event.to_status}-${i}`}
                 className="flex flex-wrap items-center gap-2 text-sm"
               >
                 <Badge variant={STATUS_VARIANT[event.from_status]}>
                   {event.from_status}
                 </Badge>
-                <span aria-hidden="true">to</span>
+                <span>to</span>
                 <Badge variant={STATUS_VARIANT[event.to_status]}>
                   {event.to_status}
                 </Badge>

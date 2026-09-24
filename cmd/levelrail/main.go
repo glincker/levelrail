@@ -1948,6 +1948,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithWebhookRateLimit(webhookRateLimitRPM(logger)),
 		api.WithDataDir(dataDir),
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
+		api.WithControlPlaneBackupScheduleDisabled(controlPlaneBackupInterval(logger) == 0),
 		api.WithDockerPinger(client),
 		api.WithImageLister(client),
 		api.WithContainerLister(client),

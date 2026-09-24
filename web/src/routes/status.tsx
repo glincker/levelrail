@@ -10,11 +10,66 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
 import { useAttentionItems } from '../queries/attention'
 import { useRestartApp } from '../queries/apps'
+import { useTriggerDeploy } from '../queries/deploys'
 import type { AttentionItem } from '../lib/attention'
 
 export const Route = createFileRoute('/status')({
   component: StatusPage,
 })
+
+function FailedDeployActions({
+  app,
+  image,
+  lastGoodImage,
+}: {
+  app: string
+  image: string
+  lastGoodImage?: string
+}) {
+  const deploy = useTriggerDeploy(app)
+  const run = (target: string, label: string) => {
+    deploy.mutate(
+      { image: target },
+      {
+        onSuccess: () => {
+          toast.add({ title: `${label} ${app}`, type: 'success' })
+        },
+        onError: (err) => {
+          toast.add({ title: err.message, type: 'error' })
+        },
+      },
+    )
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={deploy.isPending}
+        onClick={() => run(image, 'Redeploying')}
+      >
+        Redeploy
+      </Button>
+      {lastGoodImage ? (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={deploy.isPending}
+          onClick={() => run(lastGoodImage, 'Rolling back')}
+        >
+          Rollback
+        </Button>
+      ) : null}
+      <Button
+        size="sm"
+        variant="outline"
+        render={<Link to="/apps/$name/deploys" params={{ name: app }} />}
+      >
+        Deploys
+      </Button>
+    </div>
+  )
+}
 
 function ItemActions({ item }: { item: AttentionItem }) {
   const restart = useRestartApp()
@@ -27,6 +82,7 @@ function ItemActions({ item }: { item: AttentionItem }) {
           size="sm"
           variant="outline"
           disabled={restart.isPending}
+          aria-label={`Restart ${target.name}`}
           onClick={() => {
             restart.mutate(target.name, {
               onSuccess: () => {
@@ -46,6 +102,7 @@ function ItemActions({ item }: { item: AttentionItem }) {
         <Button
           size="sm"
           variant="outline"
+          aria-label={`View logs for ${target.name}`}
           render={<Link to="/apps/$name/logs" params={{ name: target.name }} />}
         >
           View logs
@@ -53,6 +110,7 @@ function ItemActions({ item }: { item: AttentionItem }) {
         <Button
           size="sm"
           variant="outline"
+          aria-label={`Deploys for ${target.name}`}
           render={
             <Link to="/apps/$name/deploys" params={{ name: target.name }} />
           }
@@ -62,11 +120,21 @@ function ItemActions({ item }: { item: AttentionItem }) {
       </div>
     )
   }
+  if (target.kind === 'deploy') {
+    return (
+      <FailedDeployActions
+        app={target.app}
+        image={target.image}
+        lastGoodImage={target.lastGoodImage}
+      />
+    )
+  }
   if (target.kind === 'node') {
     return (
       <Button
         size="sm"
         variant="outline"
+        aria-label={`Open node ${target.id}`}
         render={<Link to="/nodes/$id" params={{ id: target.id }} />}
       >
         Open node
@@ -91,7 +159,7 @@ function ItemActions({ item }: { item: AttentionItem }) {
   )
 }
 
-function StatusPage() {
+export function StatusPage() {
   const { items, isLoading } = useAttentionItems()
 
   return (
@@ -104,12 +172,16 @@ function StatusPage() {
       </div>
 
       {isLoading ? (
-        <div className="h-24 animate-pulse rounded-lg bg-muted" />
+        <div
+          role="status"
+          aria-label="Loading status"
+          className="h-24 animate-pulse rounded-lg bg-muted motion-reduce:animate-none"
+        />
       ) : items.length === 0 ? (
         <EmptyState
           icon={<CheckCircleIcon className="size-5" />}
           title="All systems healthy"
-          description="No failing apps, offline nodes, or expiring certificates."
+          description="No failing apps or deploys, offline nodes, low disk, or expiring certificates."
         />
       ) : (
         <ul className="space-y-2">

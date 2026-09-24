@@ -107,15 +107,15 @@ var cliCommandTree = map[string]*cmdNode{
 		"error-pages":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 	}},
 	"backups": {subs: map[string]*cmdNode{
-		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
+		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
 	"pitr": {subs: map[string]*cmdNode{
-		"enable": nil, "disable": nil, "status": nil, "restore": nil,
+		"enable": nil, "disable": nil, "status": nil, "restore": nil, "restores": nil,
 		"base-backups": {subs: map[string]*cmdNode{"list": nil, "trigger": nil}},
 	}},
 	"app-volume-backups": {subs: map[string]*cmdNode{
-		"list": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "verify": nil, "verifications": nil,
+		"list": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
 	"control-plane-backups": {subs: map[string]*cmdNode{"list": nil, "create": nil, "download": nil, "delete": nil}},
@@ -176,6 +176,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"templates":        {subs: map[string]*cmdNode{"list": nil, "get": nil, "deploy": nil}},
 	"static-sites":     {subs: map[string]*cmdNode{"list": nil}},
 	"deploy-approvals": {subs: map[string]*cmdNode{"list": nil, "get": nil, "approve": nil, "reject": nil}},
+	"build":            {subs: map[string]*cmdNode{"detect": nil, "branches": nil}},
 }
 
 // globalFlags lists the flags apiFlagSet registers on nearly every

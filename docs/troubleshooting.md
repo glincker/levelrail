@@ -93,6 +93,10 @@ The `external_reachability_80`/`external_reachability_443` checks dial this host
 
 The `ram`/`cpu` checks warn when this host is below the recommended minimums (`APP_DOCTOR_MIN_RAM_BYTES`/`APP_DOCTOR_MIN_CPU_COUNT`, defaults 1GiB and 2 cores). This is a heads-up, not a hard requirement: a single small app can run fine below it. If you're seeing real slowness or OOM kills, add RAM/CPU or reduce the number of apps and concurrent builds on this box.
 
+## Control plane backup is stale
+
+The `control_plane_backup` check warns when the newest control plane snapshot is more than 3 days old. Scheduled snapshots may be failing (check the server log for `scheduled control plane backup failed`, often a full disk) or the server restarts more often than `APP_CONTROL_PLANE_BACKUP_INTERVAL` (default 24h). Take one now with `levelrail-cli control-plane-backups create`. See [Control plane backup and restore](/control-plane-backup).
+
 ## Still stuck?
 
 Open a [GitHub Discussion](https://github.com/glincker/levelrail/discussions) with your `app.yaml`, the relevant log output, and what you already tried. For anything that looks like a real bug, [file an issue](https://github.com/glincker/levelrail/issues) instead.

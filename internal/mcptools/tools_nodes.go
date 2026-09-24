@@ -41,6 +41,22 @@ func registerNodeTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, conditions, nil
 	})
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "get_node_status_history",
+		Description: "List a node's recent status transitions (from, to, timestamp), newest first. Read-only; use get_node_health for current conditions.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in nodeEventsInput) (*mcp.CallToolResult, []apiclient.NodeStatusEventResource, error) {
+		events, err := client.ListNodeEvents(ctx, in.ID, in.Limit)
+		if err != nil {
+			return nil, nil, fmt.Errorf("list status history for node %q: %w", in.ID, err)
+		}
+		return nil, events, nil
+	})
+}
+
+type nodeEventsInput struct {
+	ID    string `json:"id" jsonschema:"the node's id, from list_nodes"`
+	Limit int    `json:"limit,omitempty" jsonschema:"max events to return, default the server's own default"`
 }
 
 type nodeIDInput struct {

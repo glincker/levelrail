@@ -231,7 +231,7 @@ func startMinio(ctx context.Context, t *testing.T, rt docker.Runtime, name strin
 	t.Helper()
 	id, err := rt.Create(ctx, docker.ContainerSpec{
 		Name:  name,
-		Image: "quay.io/minio/minio:latest",
+		Image: "minio/minio:RELEASE.2024-10-13T13-34-11Z",
 		Env: map[string]string{
 			"MINIO_ROOT_USER":     "minioadmin",
 			"MINIO_ROOT_PASSWORD": "minioadmin",
@@ -242,6 +242,10 @@ func startMinio(ctx context.Context, t *testing.T, rt docker.Runtime, name strin
 		},
 	})
 	if err != nil {
+		// A registry outage or auth failure is not a regression in this code.
+		if strings.Contains(err.Error(), "pull image") {
+			t.Skipf("minio image unavailable, skipping: %v", err)
+		}
 		t.Fatalf("create minio container: %v", err)
 	}
 	if err := rt.Start(ctx, id); err != nil {

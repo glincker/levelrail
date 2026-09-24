@@ -82,7 +82,7 @@ stub, the substance lives in the imported component.
 - Cloudflare Tunnel
 - Vault (external secrets)
 - Email
-- System status (doctor bundle), plus a Status page (`/status`) and an `attention` CLI command listing everything failing right now (failing apps, offline nodes, bad certificates, doctor findings; the page also shows disk pressure)
+- System status (doctor bundle), plus a Status page (`/status`) and an `attention` CLI command listing everything failing right now (failing apps, failed deploys from the last 24 hours with Redeploy and Rollback buttons on the Status page, disk pressure under 10 percent free as a warning and under 5 percent as critical, offline nodes, bad certificates, doctor findings)
 - Containers
 - Updates
 

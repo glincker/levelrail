@@ -37,6 +37,8 @@ func runAppVolumeBackups(prog string, args []string, stdout, stderr io.Writer, l
 		return runAppVolumeBackupsRestoreAsNew(prog, args[1:], stdout, stderr, lookupEnv)
 	case "schedule":
 		return runAppVolumeBackupsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
+	case "restores":
+		return runAppVolumeBackupsRestores(prog, args[1:], stdout, stderr, lookupEnv)
 	case "verify":
 		return runAppVolumeBackupsVerify(prog, args[1:], stdout, stderr, lookupEnv)
 	case "verifications":
@@ -58,7 +60,8 @@ func appVolumeBackupsUsage(prog string) string {
   %[1]s app-volume-backups restore-as-new <app> <volume> --backup ID [flags]           restore a backup into a brand-new, standalone volume (non-destructive)
   %[1]s app-volume-backups schedule set <app> <volume> --target ID --cron EXPR [flags]   configure a recurring backup
   %[1]s app-volume-backups schedule clear <app> <volume> [flags]                       remove a recurring backup
-  %[1]s app-volume-backups verify <app> <volume> --backup ID [flags]                   verify a backup is intact (no live restore)
+  %[1]s app-volume-backups restores <app> <volume> [flags]                         list restore attempt history for a volume
+  %[1]s app-volume-backups verify<app> <volume> --backup ID [flags]                   verify a backup is intact (no live restore)
   %[1]s app-volume-backups verifications <app> <volume> --backup ID [flags]            list past verification attempts for a backup
 
 <volume> is a logical volume name declared in <app>'s app.yaml (see

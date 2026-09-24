@@ -7,10 +7,12 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -81,10 +83,10 @@ func TestHandleSystemDoctor_NothingConfigured(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got.Checks) != 16 {
-		t.Fatalf("len(Checks) = %d, want 16", len(got.Checks))
+	if len(got.Checks) != 17 {
+		t.Fatalf("len(Checks) = %d, want 17", len(got.Checks))
 	}
-	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable", "master_key_rotation", "stale_secrets", "public_ip", "external_reachability_80", "external_reachability_443", "clock_skew"} {
+	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable", "master_key_rotation", "stale_secrets", "control_plane_backup", "public_ip", "external_reachability_80", "external_reachability_443", "clock_skew"} {
 		if c := doctorCheckByCode(t, got.Checks, code); c.Status != doctorStatusUnknown {
 			t.Errorf("%s status = %q, want %q (nothing configured / offline)", code, c.Status, doctorStatusUnknown)
 		}
@@ -434,5 +436,48 @@ func TestDoctorCheckStaleSecrets_WarnsWhenOverThreshold(t *testing.T) {
 	}
 	if !strings.Contains(c.Message, "1 secret") {
 		t.Errorf("message = %q, want it to mention the 1 stale secret found", c.Message)
+	}
+}
+
+type fakeCPBackups struct {
+	list []cpbackup.Info
+	err  error
+}
+
+func (f fakeCPBackups) Create(context.Context) (cpbackup.Info, error) { return cpbackup.Info{}, nil }
+func (f fakeCPBackups) List() ([]cpbackup.Info, error)                { return f.list, f.err }
+func (f fakeCPBackups) Open(string) (*os.File, cpbackup.Info, error) {
+	return nil, cpbackup.Info{}, cpbackup.ErrNotFound
+}
+func (f fakeCPBackups) Delete(string) error { return nil }
+
+func TestDoctorCheckControlPlaneBackup(t *testing.T) {
+	recent := cpbackup.Info{Name: "a", CreatedAt: time.Now().Add(-2 * time.Hour)}
+	old := cpbackup.Info{Name: "b", CreatedAt: time.Now().Add(-4 * 24 * time.Hour)}
+	tests := []struct {
+		name    string
+		mgr     ControlPlaneBackupManager
+		off     bool
+		want    string
+		wantFix bool
+	}{
+		{"not configured", nil, false, doctorStatusUnknown, false},
+		{"disabled", fakeCPBackups{}, true, doctorStatusUnknown, false},
+		{"list error", fakeCPBackups{err: errors.New("boom")}, false, doctorStatusUnknown, false},
+		{"none yet", fakeCPBackups{}, false, doctorStatusOK, false},
+		{"recent", fakeCPBackups{list: []cpbackup.Info{recent}}, false, doctorStatusOK, false},
+		{"stale", fakeCPBackups{list: []cpbackup.Info{old}}, false, doctorStatusWarn, true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rt := &Router{cpBackups: tc.mgr, cpBackupScheduleOff: tc.off}
+			c := rt.doctorCheckControlPlaneBackup()
+			if c.Status != tc.want {
+				t.Errorf("status = %q, want %q (%s)", c.Status, tc.want, c.Message)
+			}
+			if (c.Fix != "" && c.DocsPath != "") != tc.wantFix {
+				t.Errorf("fix/docs = %q/%q, want present=%v", c.Fix, c.DocsPath, tc.wantFix)
+			}
+		})
 	}
 }

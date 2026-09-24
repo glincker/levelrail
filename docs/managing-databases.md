@@ -408,10 +408,9 @@ and a "Restore to timestamp" dialog with a datetime picker bounded to
 the actual recoverable window (anything outside it can't even be typed
 in).
 
-**No CLI history listing for individual restore attempts today.**
-`GET /api/v1/databases/{name}/pitr-restores` exists for scripting, but
-only the dashboard reads it, the same gap this doc already documents for
-`GET .../clone-restores`.
+List past point-in-time restore attempts with
+`levelrail pitr restores <database>` (`GET /api/v1/databases/{name}/pitr-restores`).
+Ordinary restore attempts are listed with `levelrail backups restores <database>`.
 
 ### Backup verification: re-download and re-hash
 
@@ -656,9 +655,6 @@ database's own Overview and Resources tabs once it exists.
 
 - **No automatic scheduling for PITR base backups**
   Ordinary logical backups can run on a cron (`backups schedule set`). Physical base backups for point-in-time restore are manual-trigger only today (`pitr base-backups trigger`), dashboard button or CLI/API call. The longer you go without taking a fresh one, the more WAL a restore has to replay to reach a recent timestamp. Take one periodically yourself until this gets its own schedule.
-
-- **No CLI list command for PITR restore history**
-  Same gap as clone-restore history above: `GET .../pitr-restores` exists for scripting, only the dashboard reads it today.
 
 :::
 

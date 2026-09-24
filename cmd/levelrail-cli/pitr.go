@@ -7,10 +7,7 @@ import (
 )
 
 // runPITR dispatches "pitr <verb> <database> [flags]": point-in-time
-// restore (internal/api/pitr.go), Postgres only today. Deliberately no
-// "pitr restores" list subcommand: GET .../pitr-restores exists for
-// scripting, but only the dashboard reads it today, the same gap
-// docs/managing-databases.md already documents for GET .../clone-restores.
+// restore (internal/api/pitr.go), Postgres only today.
 func runPITR(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, pitrUsage(prog))
@@ -29,6 +26,8 @@ func runPITR(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runPITRStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "base-backups":
 		return runPITRBaseBackups(prog, args[1:], stdout, stderr, lookupEnv)
+	case "restores":
+		return runPITRRestores(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restore":
 		return runPITRRestore(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	default:
@@ -45,6 +44,7 @@ func pitrUsage(prog string) string {
   %[1]s pitr status <database> [flags]                                             show whether PITR is enabled and the current recoverable window
   %[1]s pitr base-backups list <database> [flags]                                  list physical base backup attempts
   %[1]s pitr base-backups trigger <database> --target ID [flags]                   trigger a manual physical base backup
+  %[1]s pitr restores <database> [flags]                                           list point-in-time restore attempts
   %[1]s pitr restore <database> --base-backup ID --target-time RFC3339 [--confirm NAME] [flags]
                                                                                      restore a database to an exact point in time (destructive)
 
