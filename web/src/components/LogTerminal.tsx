@@ -200,12 +200,16 @@ export function LogTerminal({
       <div
         ref={parentRef}
         onScroll={handleScroll}
-        className={`${isFullscreen ? 'h-full' : heightClassName} overflow-auto rounded-lg border border-neutral-800 bg-neutral-950 font-mono text-xs leading-5 text-neutral-200`}
+        role="region"
+        aria-label="Log output"
+        tabIndex={0}
+        className={`${isFullscreen ? 'h-full' : heightClassName} overflow-auto rounded-lg border border-neutral-800 bg-neutral-950 font-mono text-xs leading-5 text-neutral-200 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none`}
       >
         {lines.length === 0 ? (
-          <p className="flex items-center gap-2 px-3 py-2 text-neutral-500">
+          <p className="flex items-center gap-2 px-3 py-2 text-neutral-400">
             <span
-              className={`size-1.5 rounded-full bg-neutral-500 ${emptyStatePulse ? 'animate-pulse' : ''}`}
+              aria-hidden="true"
+              className={`size-1.5 rounded-full bg-neutral-500 ${emptyStatePulse ? 'animate-pulse motion-reduce:animate-none' : ''}`}
             />
             {emptyStateMessage}
           </p>
@@ -248,7 +252,7 @@ export function LogTerminal({
           setIsFullscreen((prev) => !prev)
         }}
         aria-label={isFullscreen ? 'Exit fullscreen' : 'View fullscreen'}
-        className="absolute top-12 right-2 rounded p-1 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
+        className="absolute top-12 right-2 rounded p-2 text-neutral-400 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none hover:bg-neutral-800 hover:text-neutral-100"
       >
         {isFullscreen ? (
           <ArrowsInIcon className="size-3.5" aria-hidden="true" />
@@ -261,7 +265,7 @@ export function LogTerminal({
         <button
           type="button"
           onClick={handleResumeClick}
-          className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1 text-xs font-medium text-neutral-100 shadow-lg hover:bg-neutral-700"
+          className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-100 shadow-lg focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:outline-none hover:bg-neutral-700"
         >
           <ArrowDownIcon className="size-3.5" aria-hidden="true" />
           Resume auto-scroll
