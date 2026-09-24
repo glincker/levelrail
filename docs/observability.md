@@ -99,6 +99,9 @@ Request rate, response time percentiles, error rate, container restart count, an
 - `/databases/$name/metrics` - `DatabaseMetricsDashboard` shows the same charts scoped to a managed database.
 - Node metrics - `NodeMetricsDashboard` shows the sum-across-placed-services view plus real disk/patch readings.
 
+**App health timeline:**
+- `/apps/$name/overview` - `AppHealthTimeline` is a compact 24h/7d strip answering "what happened to this app, and when". It plots deploy markers (green succeeded, red failed, blue running), container restarts (amber, bucketed so a burst reads as one marker with a count), and shaded error windows (a failed deploy from start to finish, or a crashloop of 3 or more restarts with under 15 minutes between them). Markers are keyboard focusable with aria labels and show details on hover or focus; Enter or click opens the deploy's logs (deploys) or the app's logs (restarts). It reads only existing data (`GET /api/v1/apps/{name}/deploy-attempts` and the `container_restart_count` metric), so there is no new API or CLI surface: the same data is available from `levelrail apps deploys list` and the metrics API. If telemetry is not configured, only deploys are shown.
+
 **Logs:**
 - `/apps/$name/logs` - Two tabs: `Live` (LiveLogViewer, default) and `Search` (LogSearchPanel for historical full-text search). Scoped to the app's running container(s).
 - Separate from `/apps/$name/deploys/$deployId/logs`, which tails a specific deploy attempt's output.
