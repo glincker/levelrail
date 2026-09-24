@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	dockerclient "github.com/docker/docker/client"
 
 	"github.com/GLINCKER/levelrail/internal/api"
@@ -128,3 +129,16 @@ func postJSON(t *testing.T, client *http.Client, url, body string) (status int, 
 // test in this package uses for real HTTP calls against a loopback
 // server.
 const e2eHTTPTimeout = 10 * time.Second
+
+// removeContainerAndVolumes force-removes the named container along with
+// its anonymous volumes (docker.Runtime.Remove leaves those behind), then
+// deletes any extra named volumes. Every step ignores "not found", so it is
+// safe to call before a run and again from t.Cleanup.
+func removeContainerAndVolumes(cli *dockerclient.Client, containerName string, namedVolumes ...string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	_ = cli.ContainerRemove(ctx, containerName, container.RemoveOptions{Force: true, RemoveVolumes: true})
+	for _, name := range namedVolumes {
+		_ = cli.VolumeRemove(ctx, name, true)
+	}
+}

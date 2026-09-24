@@ -47,34 +47,19 @@ func TestPITR_Live_HTTPRoundTrip_RestoresBeforeMarkerNotAfterMarker(t *testing.T
 	env := newLiveBuildEnv(t)
 	runtime := env.Runtime
 
-	// A random per-run suffix, not a fixed name: docker.Runtime has no
-	// exported RemoveVolume (dataVolumeName's own doc comment,
-	// internal/reconcile/database/controller.go, explains why volumes
-	// are deliberately never removed in production), so a rerun against
-	// a fixed name would attach to a previous run's already-populated
-	// data volume instead of a genuinely fresh database, the same fix
-	// internal/backup/pitr_live_test.go's own doc comment applies for
-	// its identical concern.
+	// A random per-run suffix keeps a volume left by a crashed run from
+	// being reused as a "fresh" Postgres data directory.
 	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
 	dbName := "levelrail-test-e2e-pitr-postgres-" + suffix
 	target := "db-" + dbName
 	minioName := "levelrail-test-e2e-pitr-minio-" + suffix
 	const bucket = "pitr-e2e"
 
-	cleanupDB := func() {
-		ctx := context.Background()
-		if state, err := runtime.InspectByName(ctx, target); err == nil && state != nil {
-			_ = runtime.Stop(ctx, state.ID, 5*time.Second)
-			_ = runtime.Remove(ctx, state.ID, true)
-		}
-	}
-	cleanupMinio := func() {
-		ctx := context.Background()
-		if state, err := runtime.InspectByName(ctx, minioName); err == nil && state != nil {
-			_ = runtime.Stop(ctx, state.ID, 5*time.Second)
-			_ = runtime.Remove(ctx, state.ID, true)
-		}
-	}
+	// Volume names mirror internal/reconcile/database's unexported
+	// dataVolumeName and walArchiveVolumeName.
+	dataVol, walVol := target+"-data", target+"-wal-archive"
+	cleanupDB := func() { removeContainerAndVolumes(env.DockerCli, target, dataVol, walVol) }
+	cleanupMinio := func() { removeContainerAndVolumes(env.DockerCli, minioName) }
 	cleanupDB()
 	cleanupMinio()
 	t.Cleanup(cleanupDB)

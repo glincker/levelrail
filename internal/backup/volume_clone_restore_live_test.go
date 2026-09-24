@@ -52,6 +52,7 @@ func TestVolumeCloneRestore_Live_NewVolumeGetsData_SourceUntouched(t *testing.T)
 	rt := liveRuntime(t)
 	ctx := context.Background()
 
+	removeVolumeAfterTest(t, rt, testVolumeCloneSourceName, testVolumeCloneNewName)
 	if err := rt.EnsureVolume(ctx, testVolumeCloneSourceName); err != nil {
 		t.Fatalf("EnsureVolume(source) error = %v", err)
 	}
