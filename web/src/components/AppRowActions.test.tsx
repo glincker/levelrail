@@ -132,7 +132,9 @@ describe('AppRowActions', () => {
     await waitFor(() =>
       expect(calls(fetchMock)).toContain('POST /api/v1/apps/web/deploys'),
     )
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    const init = (
+      fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    )[1]
     expect(JSON.parse(init.body as string)).toMatchObject({
       image: 'nginx:1.27',
     })
