@@ -1,16 +1,22 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { safeReturnPath } from '../lib/connectionState'
 import { getStoredUsername } from '../lib/authStore'
 import { brandQueryOptions } from '../queries/brand'
 import { LoginScreen } from '../components/LoginScreen'
 
 interface LoginSearch {
   setup?: string
+  redirect?: string
 }
 
 // Plain function rather than zod so validateSearch stays out of the eagerly loaded bundle.
 function validateLoginSearch(search: Record<string, unknown>): LoginSearch {
   const { setup } = search
-  return typeof setup === 'string' && setup !== '' ? { setup } : {}
+  const redirectTo = safeReturnPath(search.redirect)
+  return {
+    ...(typeof setup === 'string' && setup !== '' ? { setup } : {}),
+    ...(redirectTo ? { redirect: redirectTo } : {}),
+  }
 }
 
 export const Route = createFileRoute('/login')({

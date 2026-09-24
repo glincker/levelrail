@@ -97,6 +97,16 @@ The `ram`/`cpu` checks warn when this host is below the recommended minimums (`A
 
 The `control_plane_backup` check warns when the newest control plane snapshot is more than 3 days old. Scheduled snapshots may be failing (check the server log for `scheduled control plane backup failed`, often a full disk) or the server restarts more often than `APP_CONTROL_PLANE_BACKUP_INTERVAL` (default 24h). Take one now with `levelrail-cli control-plane-backups create`. See [Control plane backup and restore](/control-plane-backup).
 
+## "Can't reach the control plane" banner
+
+The dashboard shows a red banner at the top when the API stops answering: network errors, or 502/503/504 responses from a reverse proxy, on two or more requests within 10 seconds. While it is showing, the dashboard pauses its 30 second polling so it does not pile up failing requests.
+
+It probes the unauthenticated `GET /healthz` on its own with exponential backoff (2s, 4s, 8s, up to 30s). Press **Retry now** to probe immediately. When the probe succeeds, the banner disappears, a "Reconnected" toast appears and every query refetches. The banner can be dismissed with the X and returns on the next outage.
+
+Common causes: the control plane restarted (check `systemctl status` or `docker logs`), your reverse proxy lost its upstream, or your own network dropped. If `/healthz` answers from the server itself but not through your proxy, the proxy is the problem.
+
+An expired session is different: a 401 sends you to the login page, and after signing in you land back on the page you were on.
+
 ## Still stuck?
 
 Open a [GitHub Discussion](https://github.com/glincker/levelrail/discussions) with your `app.yaml`, the relevant log output, and what you already tried. For anything that looks like a real bug, [file an issue](https://github.com/glincker/levelrail/issues) instead.
