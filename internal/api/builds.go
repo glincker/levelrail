@@ -350,7 +350,14 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		ImageRepo:   imageRepo,
 	}
 
+	rt.buildStartMu.Lock()
+	if rt.hasRunningDeployAttempt(r.Context(), name) {
+		rt.buildStartMu.Unlock()
+		writeError(w, http.StatusConflict, "a deploy for this app is already running")
+		return
+	}
 	id, progress, finishAttempt, setCommit := rt.beginBuildDeployAttempt(r.Context(), buildReq, *existing, store.DeployAttemptSourceManual, req.DetectedFramework)
+	rt.buildStartMu.Unlock()
 
 	// AbilityDeploy alone (this route's own gate) is not enough to
 	// authorize minting a live GitHub App installation token: repoURL is
@@ -582,4 +589,21 @@ func specProbeFromStore(p store.ServiceProbe) spec.Probe {
 		out.Timeout = p.Timeout.String()
 	}
 	return out
+}
+
+// hasRunningDeployAttempt reports whether name already has a deploy
+// attempt in flight. A history read failure counts as "none running" so a
+// broken history table never blocks deploys.
+func (rt *Router) hasRunningDeployAttempt(ctx context.Context, name string) bool {
+	attempts, err := rt.deployAttempts.ListDeployAttempts(ctx, name)
+	if err != nil {
+		rt.logger.Error("api: trigger build: list deploy attempts failed", slog.String("error", err.Error()), slog.String("name", name))
+		return false
+	}
+	for _, a := range attempts {
+		if a.Status == store.DeployAttemptStatusRunning {
+			return true
+		}
+	}
+	return false
 }
