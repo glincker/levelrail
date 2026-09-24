@@ -308,6 +308,9 @@ var errInvalidOrExpiredInvite = errors.New("invalid or expired invite")
 // with the abilities that were fixed at creation, not whatever the
 // caller sends.
 func (rt *Router) handleAcceptInvite(w http.ResponseWriter, r *http.Request) {
+	if !rt.allowTokenRedeem(w, r, "invite-accept") {
+		return
+	}
 	if rt.refuseInsecureLogin(w, r) {
 		return
 	}

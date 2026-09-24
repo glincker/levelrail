@@ -888,6 +888,13 @@ func WithWebhookRateLimit(perMinute int) Option {
 	return func(rt *Router) { rt.webhookRateLimit = newAPIRateLimiter(perMinute) }
 }
 
+// WithTokenRedeemRateLimit enables a per-client-IP budget on the
+// unauthenticated POST /api/v1/auth/reset-password and
+// POST /api/v1/invites/accept routes. perMinute <= 0 disables it.
+func WithTokenRedeemRateLimit(perMinute int) Option {
+	return func(rt *Router) { rt.tokenRedeemRateLimit = newAPIRateLimiter(perMinute) }
+}
+
 // WithAllowInsecureLogin permits plain-HTTP sign-in even when an https dashboard URL is configured.
 func WithAllowInsecureLogin(allow bool) Option {
 	return func(rt *Router) { rt.allowInsecureLogin = allow }
