@@ -8,6 +8,7 @@ import {
   ArrowsClockwiseIcon,
   SparkleIcon,
   PlusIcon,
+  GitBranchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { AppListEntry } from '../types/appDetail'
 import { useBrand } from '../hooks/useBrand'
@@ -252,8 +253,16 @@ function WelcomeEmptyState() {
         />
         <CreateResourceWizard
           initialSelected="browse-templates"
-          trigger={<Button variant="outline">Start from a template</Button>}
+          trigger={<Button variant="outline">Browse templates</Button>}
         />
+        <Button
+          variant="outline"
+          render={<Link to="/settings/github-app" />}
+          nativeButton={false}
+        >
+          <GitBranchIcon />
+          Connect Git
+        </Button>
       </div>
     </div>
   )
