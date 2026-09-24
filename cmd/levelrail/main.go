@@ -33,6 +33,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -277,6 +278,13 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "recover-admin" {
 		if err := runRecoverAdmin(context.Background(), logger, os.Args[2:], os.Stdout, openStore); err != nil {
 			logger.Error("recover-admin failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "restore-db" {
+		if err := runRestoreDB(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdout); err != nil {
+			logger.Error("restore-db failed", slog.String("error", err.Error()))
 			os.Exit(1)
 		}
 		return
@@ -825,6 +833,14 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	if interval := controlPlaneBackupInterval(logger); interval > 0 {
+		cpBackups := cpbackup.NewManager(db, agentDataDir)
+		retain := controlPlaneBackupRetain(logger)
+		go cpBackups.Run(ctx, interval, retain, logger)
+	} else {
+		logger.Info("scheduled control plane backups disabled (APP_CONTROL_PLANE_BACKUP_INTERVAL=0)")
+	}
+
 	// Preview environment TTL sweep (api.Router.RunPreviewSweeper,
 	// internal/api/preview_environments_sweep.go): the fallback for a
 	// pull-request-closed webhook delivery that never arrived, tearing
@@ -909,7 +925,7 @@ func openStore(ctx context.Context) (*store.DB, error) {
 	if err := os.MkdirAll(dataDir, 0o750); err != nil { //nolint:gosec // operator-controlled startup config, not user input
 		return nil, err
 	}
-	return store.Open(ctx, filepath.Join(dataDir, storeFilename))
+	return store.Open(ctx, filepath.Join(dataDir, storeFilename), store.WithPreMigrateHook(preMigrateSnapshotHook(dataDir)))
 }
 
 // openTelemetryStore opens the metrics store on its own
@@ -1931,6 +1947,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithAPIRateLimit(apiRateLimitReadRPM(logger), apiRateLimitWriteRPM(logger)),
 		api.WithWebhookRateLimit(webhookRateLimitRPM(logger)),
 		api.WithDataDir(dataDir),
+		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
 		api.WithDockerPinger(client),
 		api.WithImageLister(client),
 		api.WithContainerLister(client),

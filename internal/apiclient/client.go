@@ -2911,6 +2911,31 @@ func (c *Client) DownloadVolumeBackup(ctx context.Context, name, volume, history
 	return c.downloadRaw(ctx, path)
 }
 
+// ListControlPlaneBackups calls GET /api/v1/system/backups, newest first.
+func (c *Client) ListControlPlaneBackups(ctx context.Context) ([]ControlPlaneBackup, error) {
+	var out []ControlPlaneBackup
+	err := c.do(ctx, http.MethodGet, "/api/v1/system/backups", nil, &out)
+	return out, err
+}
+
+// CreateControlPlaneBackup calls POST /api/v1/system/backups.
+func (c *Client) CreateControlPlaneBackup(ctx context.Context) (ControlPlaneBackup, error) {
+	var out ControlPlaneBackup
+	err := c.do(ctx, http.MethodPost, "/api/v1/system/backups", nil, &out)
+	return out, err
+}
+
+// DownloadControlPlaneBackup calls GET /api/v1/system/backups/{name}/download
+// and returns the raw SQLite file.
+func (c *Client) DownloadControlPlaneBackup(ctx context.Context, name string) ([]byte, error) {
+	return c.downloadRaw(ctx, "/api/v1/system/backups/"+PathEscape(name)+"/download")
+}
+
+// DeleteControlPlaneBackup calls DELETE /api/v1/system/backups/{name}.
+func (c *Client) DeleteControlPlaneBackup(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/system/backups/"+PathEscape(name), nil, nil)
+}
+
 // ListCertificates calls GET /api/v1/certificates: every certificate
 // currently in this control plane's certmagic storage, healthy or not.
 // An empty slice means no certificate has ever been issued, not an

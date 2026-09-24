@@ -22,7 +22,11 @@ type DB struct {
 // pragmas, and runs every pending migration. path is a plain filesystem
 // path, not a DSN; Open builds the DSN itself so callers never need to
 // know the pragma query-string format.
-func Open(ctx context.Context, path string) (*DB, error) {
+func Open(ctx context.Context, path string, opts ...OpenOption) (*DB, error) {
+	var cfg openConfig
+	for _, o := range opts {
+		o(&cfg)
+	}
 	dsn := dsn(path)
 
 	sqlDB, err := sql.Open("sqlite", dsn)
@@ -43,7 +47,7 @@ func Open(ctx context.Context, path string) (*DB, error) {
 		return nil, fmt.Errorf("store: ping %s: %w", path, err)
 	}
 
-	if err := db.migrate(ctx); err != nil {
+	if err := db.migrate(ctx, cfg.preMigrate); err != nil {
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("store: migrate %s: %w", path, err)
 	}
@@ -57,4 +61,21 @@ func dsn(path string) string {
 	q.Add("_pragma", "journal_mode(WAL)")
 	q.Add("_pragma", "foreign_keys(ON)")
 	return "file:" + path + "?" + q.Encode()
+}
+
+type openConfig struct {
+	preMigrate PreMigrateHook
+}
+
+// OpenOption customizes Open.
+type OpenOption func(*openConfig)
+
+// PreMigrateHook runs before pending migrations are applied to an existing
+// database, with the current and target schema versions.
+type PreMigrateHook func(ctx context.Context, db *DB, from, to int)
+
+// WithPreMigrateHook registers a hook that runs only when an existing
+// database has migrations pending (never for a brand new one).
+func WithPreMigrateHook(h PreMigrateHook) OpenOption {
+	return func(c *openConfig) { c.preMigrate = h }
 }

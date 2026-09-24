@@ -109,6 +109,7 @@ the exact method/path/ability of every one), grouped by resource:
 | DB backups/restore/clone-restore | 17 | `/databases/{name}/backups*`, `/restore-as-new`, `/backup-schedule`, `/backups` |
 | DB point-in-time restore (PITR, postgres only) | 7 | `/databases/{name}/pitr*`, `/base-backups*`, `/pitr-restore*` |
 | App volume backups/restore | 11 | `/apps/{name}/volumes/{volume}/backups*` |
+| Control plane self-backup (SQLite snapshots, scheduled and pre-upgrade; offline `restore-db`) | 4 | `/system/backups*` |
 | App storage/database attach | 5 | `/apps/{name}/storage`, `/apps/{name}/database` |
 | Audit log / log-drain | 5 | `/audit-log`, `/audit-log/purge` |
 
@@ -116,7 +117,7 @@ the exact method/path/ability of every one), grouped by resource:
 
 All command groups available:
 
-`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `pitr`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `attention`, `containers`, `system-prune`, `volumes-orphaned`, `volumes-orphaned-cleanup`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `gitea-app`, `templates`, `static-sites`, `tags`, `shared-env`.
+`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `pitr`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `attention`, `containers`, `system-prune`, `control-plane-backups`, `volumes-orphaned`, `volumes-orphaned-cleanup`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `gitea-app`, `templates`, `static-sites`, `tags`, `shared-env`.
 
 ### Key command groups
 

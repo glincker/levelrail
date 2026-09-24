@@ -27,6 +27,7 @@ const sidebarGroups = [
       { text: 'ACME verification runbook', link: '/acme-verification-runbook' },
       { text: 'Feature flags', link: '/feature-flags' },
       { text: 'Master key rotation', link: '/master-key-rotation' },
+      { text: 'Control plane backup', link: '/control-plane-backup' },
       {
         text: 'Migrating from Coolify, Dokploy, or CapRover',
         link: '/migrating-from-coolify-dokploy-and-caprover',
