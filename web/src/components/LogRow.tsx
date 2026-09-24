@@ -10,7 +10,7 @@ const LEVEL_TAG: Record<LogLevel, { label: string; className: string }> = {
   error: { label: 'ERR', className: 'text-red-400/80' },
   warn: { label: 'WRN', className: 'text-amber-400/80' },
   info: { label: 'INF', className: 'text-sky-400/70' },
-  debug: { label: 'DBG', className: 'text-neutral-500' },
+  debug: { label: 'DBG', className: 'text-neutral-400' },
 }
 
 export function LogRow({
@@ -61,7 +61,7 @@ export function LogRow({
         onClick={onToggle}
         aria-expanded={expanded}
         style={{ height: LOG_ROW_HEIGHT_PX }}
-        className={`flex w-full items-center gap-2 border-l-2 px-3 text-left whitespace-pre ${
+        className={`flex w-full items-center gap-2 border-l-2 px-3 text-left whitespace-pre focus-visible:bg-neutral-900 focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none focus-visible:ring-inset ${
           isStderr
             ? 'border-red-500 bg-red-950/30 text-red-400'
             : 'border-transparent text-neutral-200 hover:bg-neutral-900'
@@ -70,7 +70,8 @@ export function LogRow({
         <span
           className={`w-7 shrink-0 text-[10px] font-semibold ${tag?.className ?? ''}`}
         >
-          {tag?.label ?? ''}
+          <span aria-hidden="true">{tag?.label ?? ''}</span>
+          {level ? <span className="sr-only">{level}</span> : null}
         </span>
         <span className="truncate">{text}</span>
       </button>
@@ -82,7 +83,7 @@ export function LogRow({
           <button
             type="button"
             onClick={handleCopy}
-            className="mt-1 flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
+            className="mt-1 flex min-h-6 items-center gap-1 rounded px-1.5 py-0.5 text-[11px] focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
           >
             {copied ? (
               <CheckIcon className="size-3" aria-hidden="true" />
@@ -91,6 +92,9 @@ export function LogRow({
             )}
             {copied ? 'Copied' : 'Copy line'}
           </button>
+          <span role="status" className="sr-only">
+            {copied ? 'Line copied' : ''}
+          </span>
         </div>
       ) : null}
     </div>

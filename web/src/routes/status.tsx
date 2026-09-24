@@ -27,6 +27,7 @@ function ItemActions({ item }: { item: AttentionItem }) {
           size="sm"
           variant="outline"
           disabled={restart.isPending}
+          aria-label={`Restart ${target.name}`}
           onClick={() => {
             restart.mutate(target.name, {
               onSuccess: () => {
@@ -46,6 +47,7 @@ function ItemActions({ item }: { item: AttentionItem }) {
         <Button
           size="sm"
           variant="outline"
+          aria-label={`View logs for ${target.name}`}
           render={<Link to="/apps/$name/logs" params={{ name: target.name }} />}
         >
           View logs
@@ -53,6 +55,7 @@ function ItemActions({ item }: { item: AttentionItem }) {
         <Button
           size="sm"
           variant="outline"
+          aria-label={`Deploys for ${target.name}`}
           render={
             <Link to="/apps/$name/deploys" params={{ name: target.name }} />
           }
@@ -67,6 +70,7 @@ function ItemActions({ item }: { item: AttentionItem }) {
       <Button
         size="sm"
         variant="outline"
+        aria-label={`Open node ${target.id}`}
         render={<Link to="/nodes/$id" params={{ id: target.id }} />}
       >
         Open node
@@ -91,7 +95,7 @@ function ItemActions({ item }: { item: AttentionItem }) {
   )
 }
 
-function StatusPage() {
+export function StatusPage() {
   const { items, isLoading } = useAttentionItems()
 
   return (
@@ -104,7 +108,11 @@ function StatusPage() {
       </div>
 
       {isLoading ? (
-        <div className="h-24 animate-pulse rounded-lg bg-muted" />
+        <div
+          role="status"
+          aria-label="Loading status"
+          className="h-24 animate-pulse rounded-lg bg-muted motion-reduce:animate-none"
+        />
       ) : items.length === 0 ? (
         <EmptyState
           icon={<CheckCircleIcon className="size-5" />}

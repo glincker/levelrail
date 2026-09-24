@@ -63,7 +63,11 @@ export function LogToolbar({
           className="h-7 pl-7 text-xs"
         />
       </div>
-      <div className="flex items-center gap-1" role="group" aria-label="Level">
+      <div
+        className="flex items-center gap-1"
+        role="group"
+        aria-label="Log level"
+      >
         {LEVEL_CHIPS.map((chip) => (
           <Button
             key={chip.value}
@@ -104,11 +108,18 @@ export function LogToolbar({
         <DownloadSimpleIcon aria-hidden="true" />
         Download
       </Button>
-      {shown !== total ? (
-        <span className="text-xs text-muted-foreground" aria-live="polite">
-          {shown.toLocaleString()} of {total.toLocaleString()} lines
-        </span>
-      ) : null}
+      <span
+        role="status"
+        className={
+          shown !== total ? 'text-xs text-muted-foreground' : 'sr-only'
+        }
+      >
+        {shown !== total
+          ? `${shown.toLocaleString()} of ${total.toLocaleString()} lines`
+          : copied
+            ? 'Copied to clipboard'
+            : ''}
+      </span>
     </div>
   )
 }
