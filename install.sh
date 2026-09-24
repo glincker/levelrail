@@ -22,6 +22,8 @@
 #   LEVELRAIL_BINARY_FILE    install this local binary instead of downloading
 #   LEVELRAIL_BINARY_URL     download the binary from this URL instead of a
 #                            GitHub release (no checksum verification)
+#   LEVELRAIL_SKIP_CHECKSUM=1  install even when checksums.txt is missing or
+#                            does not list the binary (unverified; opt-out only)
 #   LEVELRAIL_PUBLIC_IP      skip public IP discovery
 #   LEVELRAIL_SKIP_REACHABILITY=1  skip the external port 80/443 self-test
 #   LEVELRAIL_MIN_RAM_MB     RAM warning threshold (default: 1024)
@@ -295,11 +297,19 @@ fetch_binary() {
 			[ "$expected" = "$actual" ] || fatal "checksum mismatch for ${asset}: expected ${expected}, got ${actual}"
 			log "Checksum verified."
 		else
-			warn "${asset} not listed in checksums.txt, skipping verification"
+			checksum_unavailable "${asset} is not listed in checksums.txt for ${VERSION}"
 		fi
 	else
-		warn "no checksums.txt published for ${VERSION}, skipping verification"
+		checksum_unavailable "no checksums.txt published for ${VERSION}"
 	fi
+}
+
+checksum_unavailable() {
+	if [ "${LEVELRAIL_SKIP_CHECKSUM:-}" = "1" ]; then
+		warn "$1, skipping verification because LEVELRAIL_SKIP_CHECKSUM=1"
+		return 0
+	fi
+	fatal "$1, refusing to install an unverified binary. Pick another release with LEVELRAIL_VERSION, or set LEVELRAIL_SKIP_CHECKSUM=1 to install without verification."
 }
 
 install_binary() {

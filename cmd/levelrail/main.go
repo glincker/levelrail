@@ -270,6 +270,10 @@ const (
 	// pushes or a force-push retry storm against one app, so only a
 	// client deliberately hammering this unauthenticated route hits it.
 	defaultWebhookRateLimitRPM = 60
+
+	// defaultTokenRedeemRateLimitRPM is the per-IP budget for reset-password
+	// and invite-accept when APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM is unset.
+	defaultTokenRedeemRateLimitRPM = 10
 )
 
 func main() {
@@ -1946,6 +1950,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithAllowInsecureLogin(allowInsecureLogin(logger)),
 		api.WithAPIRateLimit(apiRateLimitReadRPM(logger), apiRateLimitWriteRPM(logger)),
 		api.WithWebhookRateLimit(webhookRateLimitRPM(logger)),
+		api.WithTokenRedeemRateLimit(apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", defaultTokenRedeemRateLimitRPM)),
 		api.WithDataDir(dataDir),
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
 		api.WithControlPlaneBackupScheduleDisabled(controlPlaneBackupInterval(logger) == 0),

@@ -168,6 +168,9 @@ var errInvalidOrExpiredResetToken = errors.New("invalid or expired reset token")
 // Revokes every session with no exception, since the requester was never
 // authenticated by one in the first place.
 func (rt *Router) handleResetPassword(w http.ResponseWriter, r *http.Request) {
+	if !rt.allowTokenRedeem(w, r, "reset-password") {
+		return
+	}
 	var req resetPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
