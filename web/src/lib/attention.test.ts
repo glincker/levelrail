@@ -121,6 +121,6 @@ describe('buildAttentionItems', () => {
         lastGoodImage: c.wantLastGood,
       },
     })
-    expect(items[0].detail).toContain(c.wantDetail)
+    expect(items[0]?.detail).toContain(c.wantDetail)
   })
 })
