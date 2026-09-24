@@ -19,12 +19,14 @@ func TestBuildAttentionItems(t *testing.T) {
 	t.Parallel()
 	notAfter := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
 	tests := []struct {
-		name  string
-		apps  []apiclient.AppStatusEntry
-		nodes []nodeResource
-		certs []apiclient.CertificateResource
-		doc   systemDoctorResource
-		want  []string
+		name   string
+		apps   []apiclient.AppStatusEntry
+		nodes  []nodeResource
+		certs  []apiclient.CertificateResource
+		doc    systemDoctorResource
+		failed []apiclient.FailedDeployResource
+		status apiclient.SystemStatusResource
+		want   []string
 	}{
 		{name: "healthy", apps: []apiclient.AppStatusEntry{appEntry("a", "success")}, want: []string{}},
 		{
@@ -42,11 +44,32 @@ func TestBuildAttentionItems(t *testing.T) {
 			}},
 			want: []string{"critical:web", "critical:n1", "critical:b.io", "critical:Docker", "warning:a.io", "warning:Disk"},
 		},
+		{
+			name:   "failed deploy and critical disk sort first",
+			failed: []apiclient.FailedDeployResource{{DeployAttemptResource: apiclient.DeployAttemptResource{ServiceName: "api", Error: "build failed"}}},
+			status: apiclient.SystemStatusResource{DataDirTotalBytes: 100, DataDirFreeBytes: 4},
+			want:   []string{"critical:data dir", "critical:api"},
+		},
+		{
+			name:   "warning disk at 8 percent free",
+			status: apiclient.SystemStatusResource{DataDirTotalBytes: 100, DataDirFreeBytes: 8},
+			want:   []string{"warning:data dir"},
+		},
+		{
+			name:   "disk at 10 percent free is fine",
+			status: apiclient.SystemStatusResource{DataDirTotalBytes: 100, DataDirFreeBytes: 10},
+			want:   []string{},
+		},
+		{
+			name:   "unknown disk size is ignored",
+			status: apiclient.SystemStatusResource{},
+			want:   []string{},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			got := buildAttentionItems(tc.apps, tc.nodes, tc.certs, tc.doc)
+			got := buildAttentionItems(attentionInput{Apps: tc.apps, Nodes: tc.nodes, Certs: tc.certs, Doctor: tc.doc, Failed: tc.failed, Status: tc.status})
 			if len(got) != len(tc.want) {
 				t.Fatalf("got %d items, want %d: %+v", len(got), len(tc.want), got)
 			}

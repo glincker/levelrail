@@ -134,6 +134,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/exec | AbilityRoot | handleExecApp |
 | GET | /api/v1/apps/{name}/terminal | AbilityRoot | handleAppTerminal |
 | GET | /api/v1/apps/{name}/deploy-attempts | AbilityRead | handleListDeployAttempts |
+| GET | /api/v1/deploys/failed | AbilityRead | handleListFailedDeploys |
 | GET | /api/v1/apps/{name}/deploys/compare | AbilityRead | handleCompareDeploys |
 | GET | /api/v1/apps/{name}/promote/preview | AbilityRead | handlePromotePreview |
 | POST | /api/v1/apps/{name}/promote | AbilityDeploy | handlePromoteApp |

@@ -209,6 +209,7 @@ type DeployAttemptStore interface {
 	FinishDeployAttempt(ctx context.Context, id, status string, finishedAt time.Time, errMsg string) error
 	GetDeployAttempt(ctx context.Context, id string) (*store.DeployAttempt, error)
 	ListDeployAttempts(ctx context.Context, serviceName string) ([]store.DeployAttempt, error)
+	ListFailedDeploysSince(ctx context.Context, since time.Time) ([]store.FailedDeploy, error)
 }
 
 // WebhookDeliveryStore is the store surface real inbound webhook

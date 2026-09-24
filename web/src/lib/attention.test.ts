@@ -80,4 +80,47 @@ describe('buildAttentionItems', () => {
     expect(items).toHaveLength(1)
     expect(items[0]).toMatchObject({ id: 'disk', severity: 'critical' })
   })
+
+  it.each([
+    {
+      name: 'with a rollback target',
+      last_good_image: 'web:1',
+      error: 'build failed',
+      wantDetail: 'build failed',
+      wantLastGood: 'web:1',
+    },
+    {
+      name: 'without a rollback target or error',
+      last_good_image: undefined,
+      error: undefined,
+      wantDetail: 'No error recorded',
+      wantLastGood: undefined,
+    },
+  ])('flags a failed deploy $name', (c) => {
+    const items = buildAttentionItems({
+      failedDeploys: [
+        {
+          id: 'dep_2',
+          service_name: 'web',
+          image: 'web:2',
+          status: 'failed',
+          started_at: new Date().toISOString(),
+          error: c.error,
+          last_good_image: c.last_good_image,
+        },
+      ],
+    })
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({
+      id: 'deploy:web',
+      severity: 'critical',
+      target: {
+        kind: 'deploy',
+        app: 'web',
+        image: 'web:2',
+        lastGoodImage: c.wantLastGood,
+      },
+    })
+    expect(items[0].detail).toContain(c.wantDetail)
+  })
 })

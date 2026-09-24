@@ -4,6 +4,7 @@ import { appListQueryOptions } from './apps'
 import { certificatesQueryOptions } from './certificates'
 import { nodeListQueryOptions } from './nodes'
 import { assessDiskPressure } from '../lib/diskPressure'
+import { failedDeploysQueryOptions } from './failedDeploys'
 import { systemDoctorQueryOptions } from './systemDoctor'
 import { systemStatusQueryOptions } from './systemStatus'
 
@@ -17,6 +18,7 @@ export function useAttentionItems() {
   const nodes = useQuery({ ...nodeListQueryOptions(), ...opts })
   const certs = useQuery({ ...certificatesQueryOptions(), ...opts })
   const doctor = useQuery({ ...systemDoctorQueryOptions(), ...opts })
+  const failed = useQuery({ ...failedDeploysQueryOptions(), ...opts })
   const status = useQuery({ ...systemStatusQueryOptions(), ...opts })
 
   return {
@@ -25,6 +27,7 @@ export function useAttentionItems() {
       nodes: nodes.data,
       certs: certs.data,
       doctor: doctor.data,
+      failedDeploys: failed.data,
       disk: status.data ? assessDiskPressure(status.data) : undefined,
     }),
     isLoading:
