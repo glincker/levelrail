@@ -1959,6 +1959,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// for their own always-non-nil dependencies.
 		api.WithScheduledTaskRunner(scheduledTaskRunner),
 		api.WithCertExpiryWarningWindow(certExpiryWarningWindow(logger)),
+		api.WithCertRenewalTracking(alertingDB, certRenewalStalledThreshold(logger)),
 		api.WithNodeAlertThresholds(
 			patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
 			nodeCPUThreshold(logger), nodeMemoryThreshold(logger),

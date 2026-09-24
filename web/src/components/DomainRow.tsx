@@ -7,7 +7,12 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { certExpiryLabel, certStatusMeta } from '../lib/certStatus'
+import {
+  CERT_RENEWAL_STALLED_HINT,
+  certExpiryLabel,
+  certRenewalBadge,
+  certStatusMeta,
+} from '../lib/certStatus'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import type { CertificateStatus } from '../queries/certificates'
 import type { Domain } from '../queries/domains'
@@ -97,6 +102,11 @@ export function DomainRow({
             <Badge variant={certStatusMeta[cert.status].variant}>
               {certStatusMeta[cert.status].label}
             </Badge>
+            {certRenewalBadge(cert) ? (
+              <Badge variant="destructive" title={CERT_RENEWAL_STALLED_HINT}>
+                {certRenewalBadge(cert)?.label}
+              </Badge>
+            ) : null}
             <span
               className="truncate text-[11px] text-muted-foreground"
               title={cert.not_after}

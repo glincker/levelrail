@@ -15,7 +15,11 @@ import { DomainMaintenanceControl } from './DomainMaintenanceControl'
 import { DomainRedirectControl } from './DomainRedirectControl'
 import { DomainTLSCertControl } from './DomainTLSCertControl'
 import { DomainWafControl } from './DomainWafControl'
-import { certStatusMeta } from '../lib/certStatus'
+import {
+  CERT_RENEWAL_STALLED_HINT,
+  certRenewalBadge,
+  certStatusMeta,
+} from '../lib/certStatus'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -176,11 +180,23 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <span>TLS certificate:</span>
                               {cert ? (
-                                <Badge
-                                  variant={certStatusMeta[cert.status].variant}
-                                >
-                                  {certStatusMeta[cert.status].label}
-                                </Badge>
+                                <>
+                                  <Badge
+                                    variant={
+                                      certStatusMeta[cert.status].variant
+                                    }
+                                  >
+                                    {certStatusMeta[cert.status].label}
+                                  </Badge>
+                                  {certRenewalBadge(cert) ? (
+                                    <Badge
+                                      variant="destructive"
+                                      title={CERT_RENEWAL_STALLED_HINT}
+                                    >
+                                      {certRenewalBadge(cert)?.label}
+                                    </Badge>
+                                  ) : null}
+                                </>
                               ) : (
                                 <Badge variant="muted">Provisioning</Badge>
                               )}

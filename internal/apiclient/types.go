@@ -2378,6 +2378,8 @@ type CertificateResource struct {
 	NotBefore time.Time `json:"not_before"`
 	NotAfter  time.Time `json:"not_after"`
 	Status    string    `json:"status"`
+	// Renewal is "ok" or "stalled".
+	Renewal string `json:"renewal"`
 }
 
 // OAuthProviderSettingsResource mirrors internal/api's

@@ -12,6 +12,19 @@ export const certStatusMeta: Record<
   expired: { label: 'Expired', variant: 'destructive' },
 }
 
+export const CERT_RENEWAL_STALLED_HINT =
+  'Renewal appears stalled: this certificate is expired, or has been expiring with no renewal for hours. Check that the domain resolves to this server and that ports 80 and 443 are reachable, then look at the ingress logs.'
+
+// certRenewalBadge returns badge props only for a stalled renewal, so a
+// healthy certificate keeps its single status badge.
+export function certRenewalBadge(
+  cert: Pick<CertificateStatus, 'renewal'>,
+): { label: string; hint: string } | null {
+  return cert.renewal === 'stalled'
+    ? { label: 'Renewal stalled', hint: CERT_RENEWAL_STALLED_HINT }
+    : null
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000
 
 export function certExpiryLabel(notAfter: string, now = new Date()): string {
