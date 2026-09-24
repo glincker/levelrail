@@ -5,7 +5,7 @@ description: Status of Levelrail by phase - what is shipped, in progress, and pl
 
 # Roadmap
 
-Status as of 2026-09-22 (refreshed against current `main`), not the aspirational plan. See `/adr` for the phase-by-phase architectural decisions behind this build order.
+Status as of 2026-09-24 (refreshed against current `main`), not the aspirational plan. See `/adr` for the phase-by-phase architectural decisions behind this build order.
 
 The build has moved further and less linearly than the phase plan implies: parts of Phase 3 (multi-node, the WireGuard mesh) ship while some Phase 1 items (real public ACME against a live domain) remain open. This page describes what is actually true today.
 
@@ -411,7 +411,32 @@ flowchart LR
 - Per-node OS package-update status via a periodic collector, surfaced
   on the node detail page and via `levelrail nodes patch-status`. Not an
   automatic patcher.
-- TLS certificate renewal visibility in the UI.
+- TLS certificate renewal visibility in the UI, including a `renewal`
+  state (`ok` or `stalled`) on `GET /api/v1/certificates`, a RENEWAL
+  column in `domains certificates`, and a "Renewal stalled" badge on
+  domain rows. Domain rows also show an expiry countdown ("expires in 12
+  days").
+- Status page (`/status`) and a sidebar badge listing everything that
+  needs attention: failing apps, offline nodes, expired or expiring
+  certificates, doctor warnings and failures, and disk pressure, each with
+  a direct action. The CLI equivalent is `attention`, which exits 1 on any
+  critical item (disk pressure is dashboard-only for now).
+- Disk pressure banner in the dashboard: warns below 10% free and turns
+  critical below 5%, with the reclaimable size and the one-click cleanup
+  dialog. Thresholds are build-time overrides
+  (`VITE_DISK_WARN_FREE_PERCENT`, `VITE_DISK_CRITICAL_FREE_PERCENT`).
+- Node connection history: every node status change is recorded (capped at
+  200 per node), shown as a card on the node detail page, served by
+  `GET /api/v1/nodes/{id}/events`, and available as `nodes events <id>`.
+  Node lists and the status page show a relative "last seen".
+- Log viewer controls (live app logs and deploy build logs): text filter,
+  per-line level tags, level chips (All, Errors, Warnings, Info, Debug),
+  click-to-expand rows with pretty-printed JSON, "Jump to first error",
+  and copy and download. Detection is client side over loaded lines.
+- Brand logos (thesvg marks) on catalog template cards, app list rows,
+  the detected framework on deploy attempts, the app integrations card,
+  and backup targets, with icon fallbacks and lazy-loaded per-logo
+  chunks.
 - Docker image and volume pruning from the dashboard.
 - Control-plane data-directory disk usage (total/free bytes) in Settings
   > General, alongside Docker's image/volume/build-cache accounting.
@@ -664,6 +689,19 @@ flowchart LR
   Response-only in the API/CLI, the same boundary as `command:`/`entrypoint:`.
   Set through compose import, surfaced read-only in `apps get` and app
   detail page.
+
+## Developer workflow
+
+- Fast pre-push lane: compiles everything, then tests only the packages
+  the branch edited. `LEVELRAIL_PUSH_SCOPE=affected` restores the slower
+  run with dependents and the changed-line coverage gate.
+- `scripts/smoke.sh -- <cli command> -- <cli command>` boots a real
+  dev-mode control plane in a throwaway data directory (no Docker
+  needed) and runs the CLI against it. See the "Fast dev loop" section
+  of `CONTRIBUTING.md`.
+- Secret scanning with gitleaks in the pre-commit hook and in CI.
+- `branch-cleanup.yml` deletes a PR's branch once it merges and sweeps
+  stale branches weekly.
 
 ## In progress
 

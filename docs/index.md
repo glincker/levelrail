@@ -25,10 +25,12 @@ features:
     details: Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse, with scheduled backups, restore, and automatic post-backup verification.
   - title: Multi-node from day one
     details: WireGuard mesh, internal DNS across nodes, cordon and drain, no inbound ports required on any managed server.
+  - title: Know what needs attention
+    details: A Status page and an attention CLI command list failing apps, offline nodes, expiring certificates, and doctor findings, with a disk pressure banner and stalled certificate renewal detection.
   - title: Resource-scoped IAM
     details: AWS-IAM-shaped Allow/Deny policies scoped to a specific app or database, with a full audit log and CSV export, in the free Apache 2.0 core.
   - title: AI-ready API
-    details: 56 MCP tools backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a crashloop directly.
+    details: Over 70 MCP tools backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a crashloop directly.
 ---
 
 <div class="vp-doc" style="max-width: 1152px; margin: 0 auto; padding: 0 24px 64px;">

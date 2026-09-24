@@ -68,6 +68,14 @@ backstop instead of running it all by hand.
 Dependents, `test/e2e`, and the coverage gate run in CI, and the full
 `-race` sweep runs nightly.
 
+## Branch cleanup
+
+`.github/workflows/branch-cleanup.yml` deletes a pull request's branch
+when the PR merges, and a weekly sweep removes branches whose PR merged
+or was closed unmerged more than 30 days ago. Branches with an open PR
+are never touched, and branches with no PR are only listed in the job
+summary.
+
 ## Secret scanning
 
 [gitleaks](https://github.com/gitleaks/gitleaks) scans for committed

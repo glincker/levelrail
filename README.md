@@ -126,6 +126,11 @@ nine rule kinds and seventeen notification channels, a self-service
 team invite flow, and eight managed database engines with
 backup/restore/verification are also shipped
 (see [docs/roadmap.md](docs/roadmap.md) for the full, current list).
+Day-to-day operation is covered too: a Status page and `attention` CLI
+command that list everything needing action, a disk pressure banner,
+certificate expiry countdowns and stalled-renewal detection, node
+connection history, and a log viewer with level filters and expandable
+rows.
 There is no stable release yet and the project is not ready for
 production workloads. APIs, the app spec format, and the on-disk data
 layout can all still change without notice.
@@ -214,7 +219,7 @@ matrix.
   taking it: Coolify checks only that the dump file is non-empty,
   Dokploy and CapRover do no check at all, and Dokku and Kamal have no
   built-in backup feature in the first place.
-- **AI-agent surface.** 59 MCP tools (`cmd/levelrail-mcp`), against
+- **AI-agent surface.** over 70 MCP tools (`cmd/levelrail-mcp`), against
   Coolify's roughly 45, the only other project in this set with one at
   all.
 - **Notification channels.** 17 kinds against Dokploy's 12, the next
