@@ -5,17 +5,17 @@ import {
   ArrowsInIcon,
   ArrowsOutIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { stripAnsiCodes } from '../lib/ansi'
 import type { LogLine } from '../hooks/useLogStream'
 import {
   filterLogLines,
+  findFirstErrorIndex,
   logLinesToText,
   type LogFilter,
 } from '../lib/logFilter'
+import { LogRow, LOG_ROW_HEIGHT_PX as ROW_HEIGHT_PX } from './LogRow'
 import { LogToolbar } from './LogToolbar'
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
 
-const ROW_HEIGHT_PX = 20
 // How close to the bottom (px) still counts as "at the bottom" for
 // auto-scroll purposes. scrollHeight/clientHeight are subject to
 // sub-pixel rounding, so an exact-zero comparison would flap.
@@ -67,9 +67,11 @@ export function LogTerminal({
   isFinished?: boolean
 }) {
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
   const [filter, setFilter] = useState<LogFilter>({
     text: '',
     stderrOnly: false,
+    level: 'all',
   })
   const lines = useMemo(
     () => filterLogLines(allLines, filter),
@@ -154,6 +156,15 @@ export function LogTerminal({
 
   const virtualItems = virtualizer.getVirtualItems()
 
+  const handleJumpToError = useCallback(() => {
+    const idx = findFirstErrorIndex(lines)
+    if (idx < 0) {
+      return
+    }
+    pause()
+    virtualizer.scrollToIndex(idx, { align: 'center' })
+  }, [lines, pause, virtualizer])
+
   const handleCopy = useCallback(
     () => navigator.clipboard.writeText(logLinesToText(lines)),
     [lines],
@@ -184,6 +195,7 @@ export function LogTerminal({
         total={allLines.length}
         onCopy={handleCopy}
         onDownload={handleDownload}
+        onJumpToError={handleJumpToError}
       />
       <div
         ref={parentRef}
@@ -206,28 +218,23 @@ export function LogTerminal({
           >
             {virtualItems.map((virtualRow) => {
               const logLine = lines[virtualRow.index]
-              const isStderr = logLine?.stream === 'stderr'
+              if (!logLine) {
+                return null
+              }
               return (
-                <div
+                <LogRow
                   key={virtualRow.key}
-                  data-index={virtualRow.index}
-                  ref={virtualizer.measureElement}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: ROW_HEIGHT_PX,
-                    transform: `translateY(${virtualRow.start}px)`,
+                  logLine={logLine}
+                  index={virtualRow.index}
+                  start={virtualRow.start}
+                  expanded={expandedId === logLine.id}
+                  onToggle={() => {
+                    setExpandedId((prev) =>
+                      prev === logLine.id ? null : logLine.id,
+                    )
                   }}
-                  className={`truncate border-l-2 px-3 whitespace-pre ${
-                    isStderr
-                      ? 'border-red-500 bg-red-950/30 text-red-400'
-                      : 'border-transparent text-neutral-200'
-                  }`}
-                >
-                  {logLine ? stripAnsiCodes(logLine.line) : ''}
-                </div>
+                  measure={virtualizer.measureElement}
+                />
               )
             })}
           </div>
