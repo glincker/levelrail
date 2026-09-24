@@ -26,6 +26,12 @@ func WithControlPlaneBackups(m ControlPlaneBackupManager) Option {
 	return func(rt *Router) { rt.cpBackups = m }
 }
 
+// WithControlPlaneBackupScheduleDisabled tells the doctor check that
+// scheduled snapshots are switched off, so it reports unknown, not a warning.
+func WithControlPlaneBackupScheduleDisabled(disabled bool) Option {
+	return func(rt *Router) { rt.cpBackupScheduleOff = disabled }
+}
+
 func (rt *Router) cpBackupsOrNotImplemented(w http.ResponseWriter) (ControlPlaneBackupManager, bool) {
 	if rt.cpBackups == nil {
 		writeError(w, http.StatusNotImplemented, "control plane backups are not configured")

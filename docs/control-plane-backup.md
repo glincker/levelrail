@@ -38,6 +38,10 @@ Snapshots sit on the same disk as the database. To survive losing the machine, d
 
 Manual snapshots (created from the CLI or API) and pre-upgrade snapshots are never deleted automatically.
 
+### Doctor check
+
+`levelrail-cli doctor` and the dashboard Status page include a `control_plane_backup` check. It warns when the newest snapshot is older than 3 days (the fix is `levelrail-cli control-plane-backups create`), is ok when a recent one exists, and reports unknown when scheduled snapshots are disabled with `APP_CONTROL_PLANE_BACKUP_INTERVAL=0`. It never fails. See [troubleshooting](/troubleshooting#control-plane-backup-is-stale).
+
 ### Before an upgrade
 
 When the server starts on an existing database and this release carries schema migrations that have not been applied yet, it takes a snapshot first. A brand new database is skipped. If that snapshot fails (for example the disk is full), the failure is logged and the migration still proceeds.

@@ -98,6 +98,7 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		rt.doctorCheckDatabase(ctx),
 		rt.doctorCheckMasterKeyRotation(ctx),
 		rt.doctorCheckStaleSecrets(ctx),
+		rt.doctorCheckControlPlaneBackup(),
 		doctorCheckFirewallCtx(ctx),
 		rt.doctorCheckRAM(),
 		rt.doctorCheckCPU(),
@@ -246,6 +247,40 @@ func (rt *Router) doctorCheckMasterKeyRotation(ctx context.Context) doctorCheckR
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusWarn, Message: fmt.Sprintf("last rotated %s ago, consider rotating again", age.Round(time.Hour))}
 	}
 	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("last rotated %s ago", age.Round(time.Hour))}
+}
+
+// doctorControlPlaneBackupWarnAge is how old the newest control plane
+// snapshot may get before the doctor warns.
+const doctorControlPlaneBackupWarnAge = 3 * 24 * time.Hour
+
+// doctorCheckControlPlaneBackup warns when the newest control plane
+// snapshot is stale. Never fails: a missing backup is advice, not an outage.
+func (rt *Router) doctorCheckControlPlaneBackup() doctorCheckResource {
+	const code, name = "control_plane_backup", "Control plane backup"
+	if rt.cpBackups == nil {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "control plane backups are not configured"}
+	}
+	if rt.cpBackupScheduleOff {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "scheduled backups are disabled (APP_CONTROL_PLANE_BACKUP_INTERVAL=0)"}
+	}
+	list, err := rt.cpBackups.List()
+	if err != nil {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: fmt.Sprintf("could not list backups: %s", err)}
+	}
+	if len(list) == 0 {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "no snapshot yet, the first scheduled one is taken after the backup interval"}
+	}
+	newest := list[0]
+	age := time.Since(newest.CreatedAt)
+	if age > doctorControlPlaneBackupWarnAge {
+		return doctorCheckResource{
+			Code: code, Name: name, Status: doctorStatusWarn,
+			Message:  fmt.Sprintf("newest snapshot is %d days old", int(age/(24*time.Hour))),
+			Fix:      "levelrail-cli control-plane-backups create",
+			DocsPath: "/control-plane-backup#automatic-snapshots",
+		}
+	}
+	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("newest snapshot is %s old", age.Round(time.Minute))}
 }
 
 // doctorCheckStaleSecrets surfaces how many secret-backed values (per-app
