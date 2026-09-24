@@ -1,0 +1,80 @@
+name: Branch cleanup
+
+on:
+  pull_request:
+    types: [closed]
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "List what would be deleted without deleting"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  delete-merged-head:
+    name: Delete merged PR branch
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete head branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          case "$BRANCH" in
+            main | release-please--*) echo "keeping $BRANCH"; exit 0 ;;
+          esac
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$BRANCH" || echo "already gone: $BRANCH"
+
+  sweep:
+    name: Weekly stale branch sweep
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sweep
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+          STALE_DAYS: "30"
+        run: |
+          set -euo pipefail
+          gh pr list --repo "$GITHUB_REPOSITORY" --state all --limit 5000 \
+            --json headRefName,state,isCrossRepository \
+            --jq '.[] | select(.isCrossRepository == false) | [.headRefName, .state] | @tsv' > prs.tsv
+          gh api --paginate "repos/$GITHUB_REPOSITORY/branches?per_page=100" \
+            --jq '.[] | select(.protected == false) | .name' > branches.txt
+          cutoff=$(date -u -d "-${STALE_DAYS} days" +%s)
+          deleted=0; report=""
+          while read -r b; do
+            case "$b" in main | release-please--*) continue ;; esac
+            states=$(awk -F'\t' -v b="$b" '$1 == b { print $2 }' prs.tsv | sort -u | tr '\n' ' ')
+            reason=""
+            case "$states" in
+              *OPEN*) continue ;;
+              *MERGED*) reason="merged PR" ;;
+              "") report="$report\n- no PR: $b"; continue ;;
+              *)
+                last=$(gh api "repos/$GITHUB_REPOSITORY/branches/$(printf %s "$b" | jq -sRr @uri)" --jq '.commit.commit.committer.date')
+                if [ "$(date -u -d "$last" +%s)" -lt "$cutoff" ]; then reason="closed unmerged, idle over ${STALE_DAYS} days"; else continue; fi ;;
+            esac
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "would delete $b ($reason)"
+            else
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$b" >/dev/null && echo "deleted $b ($reason)"
+            fi
+            deleted=$((deleted + 1))
+          done < branches.txt
+          {
+            echo "### Branch sweep"
+            echo "Dry run: $DRY_RUN. Branches ${DRY_RUN/true/that would be }deleted: $deleted"
+            [ -n "$report" ] && printf 'Left alone (no PR, review by hand):%b\n' "$report"
+          } >> "$GITHUB_STEP_SUMMARY"
