@@ -308,6 +308,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// response shape. AbilityRead, matching every other passive view of
 	// an app's own state.
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-attempts", rt.requireAbility(AbilityRead, rt.handleListDeployAttempts))
+	mux.HandleFunc("GET /api/v1/deploys/failed", rt.requireAbility(AbilityRead, rt.handleListFailedDeploys))
 
 	// Deploy comparison (deploy_compare.go): a before/after diff between
 	// two attempts, or one attempt against the app's current live state

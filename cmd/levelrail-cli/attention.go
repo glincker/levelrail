@@ -22,11 +22,55 @@ type attentionItem struct {
 	Detail   string `json:"detail"`
 }
 
-// buildAttentionItems mirrors web/src/lib/attention.ts: failing apps,
-// offline nodes, bad certificates, and doctor warnings or failures,
-// critical first.
-func buildAttentionItems(apps []apiclient.AppStatusEntry, nodes []nodeResource, certs []apiclient.CertificateResource, doctor systemDoctorResource) []attentionItem {
+const (
+	diskWarnFreePercent     = 10.0
+	diskCriticalFreePercent = 5.0
+)
+
+// attentionInput is everything buildAttentionItems reads; any field may be
+// zero when its endpoint was unavailable.
+type attentionInput struct {
+	Apps   []apiclient.AppStatusEntry
+	Nodes  []nodeResource
+	Certs  []apiclient.CertificateResource
+	Doctor systemDoctorResource
+	Failed []apiclient.FailedDeployResource
+	Status apiclient.SystemStatusResource
+}
+
+// diskAttentionItem mirrors web/src/lib/diskPressure.ts: warn below 10
+// percent free, critical below 5 percent.
+func diskAttentionItem(s apiclient.SystemStatusResource) (attentionItem, bool) {
+	if s.DataDirTotalBytes <= 0 {
+		return attentionItem{}, false
+	}
+	pct := float64(s.DataDirFreeBytes) / float64(s.DataDirTotalBytes) * 100
+	detail := fmt.Sprintf("%.1f%% free (%d of %d bytes)", pct, s.DataDirFreeBytes, s.DataDirTotalBytes)
+	switch {
+	case pct < diskCriticalFreePercent:
+		return attentionItem{attentionCritical, "disk", "data dir", detail}, true
+	case pct < diskWarnFreePercent:
+		return attentionItem{attentionWarning, "disk", "data dir", detail}, true
+	}
+	return attentionItem{}, false
+}
+
+// buildAttentionItems mirrors web/src/lib/attention.ts: disk pressure,
+// failing apps, recent failed deploys, offline nodes, bad certificates,
+// and doctor warnings or failures, critical first.
+func buildAttentionItems(in attentionInput) []attentionItem {
+	apps, nodes, certs, doctor := in.Apps, in.Nodes, in.Certs, in.Doctor
 	items := []attentionItem{}
+	if it, ok := diskAttentionItem(in.Status); ok {
+		items = append(items, it)
+	}
+	for _, f := range in.Failed {
+		detail := f.Error
+		if detail == "" {
+			detail = "deploy failed"
+		}
+		items = append(items, attentionItem{attentionCritical, "deploy", f.ServiceName, detail})
+	}
 	for _, a := range apps {
 		if a.Status.Variant == "destructive" {
 			items = append(items, attentionItem{attentionCritical, "app", a.Name, a.Status.Label})
@@ -93,7 +137,12 @@ func runAttention(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get system doctor report: %w", err))
 	}
 
-	items := buildAttentionItems(apps, nodes, certs, doctor)
+	// Disk and failed deploys are optional sources: a failure drops only
+	// its own items, matching the dashboard.
+	failed, _ := client.ListFailedDeploys(ctx, "24h")
+	status, _ := client.GetSystemStatus(ctx)
+
+	items := buildAttentionItems(attentionInput{Apps: apps, Nodes: nodes, Certs: certs, Doctor: doctor, Failed: failed, Status: status})
 	if err := renderResult(stdout, of.Format, of.Query, items, func() { printAttentionHuman(stdout, items) }); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
@@ -123,8 +172,10 @@ func attentionUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s attention [flags]
 
-Lists everything that needs attention right now: failing apps, offline
-nodes, expired or expiring certificates, and doctor warnings or failures.
+Lists everything that needs attention right now: failing apps, failed
+deploys from the last 24 hours, low disk space (warn under 10 percent free,
+critical under 5), offline nodes, expired or expiring certificates, and
+doctor warnings or failures.
 Exit code is 1 if any item is critical, 0 otherwise.
 
 Flags:

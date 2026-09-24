@@ -3,6 +3,7 @@ import type { NodeResource } from '../types/nodeDetail'
 import type { CertificateStatus } from '../queries/certificates'
 import type { DoctorReport } from '../queries/systemDoctor'
 import type { DiskPressure } from './diskPressure'
+import type { FailedDeploy } from '../queries/failedDeploys'
 import { certExpiryLabel } from './certStatus'
 import { formatAge, formatBytes } from './format'
 
@@ -10,6 +11,7 @@ export type AttentionSeverity = 'critical' | 'warning'
 
 export type AttentionTarget =
   | { kind: 'app'; name: string }
+  | { kind: 'deploy'; app: string; image: string; lastGoodImage?: string }
   | { kind: 'node'; id: string }
   | { kind: 'domain' }
   | { kind: 'system' }
@@ -28,12 +30,14 @@ export function buildAttentionItems({
   certs = [],
   doctor,
   disk,
+  failedDeploys = [],
 }: {
   apps?: AppListEntry[]
   nodes?: NodeResource[]
   certs?: CertificateStatus[]
   doctor?: DoctorReport
   disk?: DiskPressure
+  failedDeploys?: FailedDeploy[]
 }): AttentionItem[] {
   const items: AttentionItem[] = []
 
@@ -58,6 +62,21 @@ export function buildAttentionItems({
         target: { kind: 'app', name: app.name },
       })
     }
+  }
+
+  for (const d of failedDeploys) {
+    items.push({
+      id: `deploy:${d.service_name}`,
+      severity: 'critical',
+      title: `Deploy of ${d.service_name} failed`,
+      detail: `${d.error || 'No error recorded'} (${formatAge(d.finished_at ?? d.started_at)})`,
+      target: {
+        kind: 'deploy',
+        app: d.service_name,
+        image: d.image,
+        lastGoodImage: d.last_good_image,
+      },
+    })
   }
 
   for (const node of nodes) {
