@@ -47,6 +47,21 @@ func removeContainerIfExists(ctx context.Context, t *testing.T, rt docker.Runtim
 	_ = rt.Remove(ctx, state.ID, true)
 }
 
+// removeVolumeAfterTest registers a cleanup deleting the named volumes,
+// ignoring errors so an already-removed volume never fails the test.
+// Register it before the container cleanup: t.Cleanup is LIFO and a
+// volume still in use cannot be removed.
+func removeVolumeAfterTest(t *testing.T, c *docker.Client, names ...string) {
+	t.Helper()
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		for _, name := range names {
+			_ = c.RemoveVolume(ctx, name)
+		}
+	})
+}
+
 // waitReady re-runs probe via rt.Exec against containerName until it
 // exits zero or timeout elapses, the same "poll a real exec'd command
 // until the daemon inside the container is actually ready to serve"

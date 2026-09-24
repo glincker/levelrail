@@ -110,13 +110,14 @@ type Router struct {
 	alertRules             AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
 	sessions               *sessionStore
 	logins                 *loginLimiter
-	recoveryCodes          RecoveryCodeStore      // always set, same "core Store interface" shape as auth above
-	twoFactorSecrets       TwoFactorSecrets       // nil is valid: POST /api/v1/auth/2fa/setup (and confirm/disable/regenerate) return 501, same "not configured" shape as githubAppSecrets above
-	mfaPending             *mfaPendingStore       // always set, same "always present, not an Option" shape sessions itself has
-	mfaVerify              *loginLimiter          // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
-	sessionTTL             time.Duration          // 0 means "use defaultSessionTTL", set via WithSessionTTL
-	dataDir                string                 // "" means "don't report disk usage", set via WithDataDir
-	localNodeID            string                 // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
+	recoveryCodes          RecoveryCodeStore // always set, same "core Store interface" shape as auth above
+	twoFactorSecrets       TwoFactorSecrets  // nil is valid: POST /api/v1/auth/2fa/setup (and confirm/disable/regenerate) return 501, same "not configured" shape as githubAppSecrets above
+	mfaPending             *mfaPendingStore  // always set, same "always present, not an Option" shape sessions itself has
+	mfaVerify              *loginLimiter     // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
+	sessionTTL             time.Duration     // 0 means "use defaultSessionTTL", set via WithSessionTTL
+	dataDir                string            // "" means "don't report disk usage", set via WithDataDir
+	localNodeID            string            // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
+	readiness              ReadinessProbes
 	dockerPinger           DockerPinger           // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
 	images                 ImageLister            // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
 	containers             ContainerLister        // nil is valid: GET /api/v1/system/containers returns 501, same shape as execRuntime above

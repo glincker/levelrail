@@ -188,6 +188,9 @@ func extractDispatchedVerbs(t *testing.T) map[string]bool {
 }
 
 func isArgsZero(expr ast.Expr) bool {
+	if id, ok := expr.(*ast.Ident); ok && id.Name == "sub" {
+		return true
+	}
 	idx, ok := expr.(*ast.IndexExpr)
 	if !ok {
 		return false

@@ -53,6 +53,7 @@ func NewServer(client *apiclient.Client) *mcp.Server {
 	registerDeployApprovalTools(server, client)
 	registerAttentionTools(server, client)
 	registerControlPlaneBackupTools(server, client)
+	registerFailedDeployTools(server, client)
 
 	return server
 }

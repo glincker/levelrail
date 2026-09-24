@@ -42,6 +42,8 @@ func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runBackupsRestoreAsNew(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restores":
 		return runBackupsRestores(prog, args[1:], stdout, stderr, lookupEnv)
+	case "clone-restores":
+		return runBackupsCloneRestores(prog, args[1:], stdout, stderr, lookupEnv)
 	case "schedule":
 		return runBackupsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
 	case "verify":
@@ -65,6 +67,7 @@ func backupsUsage(prog string) string {
   %[1]s backups restore <database> --backup ID --confirm NAME [flags]   restore a database from a backup (destructive)
   %[1]s backups restore-as-new <database> --backup ID --new-name NAME [flags] restore a backup into a brand-new database (non-destructive)
   %[1]s backups restores <database> [flags]                                list restore attempt history for a database
+  %[1]s backups clone-restores <database> [flags]                          list restore-as-new attempt history for a database
   %[1]s backups schedule set<database> --target ID --cron EXPR [flags] configure a recurring backup
   %[1]s backups schedule clear <database> [flags]                       remove a recurring backup
   %[1]s backups verify <database> --backup ID [flags]                   verify a backup is intact (no live restore)

@@ -57,15 +57,10 @@ func TestContainerVolumeArchiver_Restorer_RoundTrip_Live(t *testing.T) {
 	rt := liveRuntime(t)
 	ctx := context.Background()
 
+	removeVolumeAfterTest(t, rt, testVolumeName)
 	if err := rt.EnsureVolume(ctx, testVolumeName); err != nil {
 		t.Fatalf("EnsureVolume() error = %v", err)
 	}
-	// No RemoveVolume on docker.Runtime today (only docker.Client's own
-	// unexported SDK handle can remove a volume, internal/docker's own
-	// live tests do this via c.cli.VolumeRemove directly, not available
-	// from this package): the volume is left behind after this test, the
-	// same small, honest gap left open rather than reaching for a raw
-	// docker CLI shell-out this codebase's own rules forbid.
 	runInVolume(ctx, t, rt, []string{"sh", "-c",
 		"rm -rf " + volumeMountPath + "/* " + volumeMountPath + "/.[!.]* 2>/dev/null; mkdir -p " + volumeMountPath + "/sub && echo original-file > " + volumeMountPath + "/file.txt && echo original-nested > " + volumeMountPath + "/sub/nested.txt && echo original-dotfile > " + volumeMountPath + "/.hidden",
 	})

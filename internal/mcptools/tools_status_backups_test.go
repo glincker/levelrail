@@ -131,3 +131,40 @@ func TestControlPlaneBackups(t *testing.T) {
 		t.Errorf("created = %+v", created)
 	}
 }
+
+func TestVerifyControlPlaneBackupAndFailedDeploysTools(t *testing.T) {
+	session := newTestSession(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/system/backups/snap-1.db/verify":
+			_, _ = w.Write([]byte(`{"name":"snap-1.db","ok":false,"checks":[{"name":"integrity","ok":false,"detail":"bad page"}],"verified_at":"2026-09-24T00:00:00Z"}`))
+		case r.URL.Path == "/api/v1/deploys/failed":
+			if r.URL.Query().Get("since") != "6h" {
+				t.Errorf("since = %q, want 6h", r.URL.Query().Get("since"))
+			}
+			_, _ = w.Write([]byte(`[{"service_name":"api","error":"build failed","last_good_image":"img:1"}]`))
+		default:
+			t.Errorf("unexpected %s %q", r.Method, r.URL.Path)
+		}
+	})
+
+	res, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "verify_control_plane_backup", Arguments: map[string]any{"name": "snap-1.db"}})
+	if err != nil {
+		t.Fatalf("verify CallTool error = %v", err)
+	}
+	var ver apiclient.ControlPlaneBackupVerification
+	decodeStructured(t, res, &ver)
+	if ver.OK || len(ver.Checks) != 1 || ver.Checks[0].Detail != "bad page" {
+		t.Fatalf("verification = %+v", ver)
+	}
+
+	res, err = session.CallTool(context.Background(), &mcp.CallToolParams{Name: "list_failed_deploys", Arguments: map[string]any{"since": "6h"}})
+	if err != nil {
+		t.Fatalf("failed deploys CallTool error = %v", err)
+	}
+	var out failedDeploysOutput
+	decodeStructured(t, res, &out)
+	if len(out.Deploys) != 1 || out.Deploys[0].LastGoodImage != "img:1" {
+		t.Fatalf("deploys = %+v", out.Deploys)
+	}
+}
