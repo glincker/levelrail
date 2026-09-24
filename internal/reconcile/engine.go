@@ -10,6 +10,7 @@ import (
 	"context"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -65,6 +66,8 @@ type Engine struct {
 	// of Nudge calls between two Run passes collapses into the one
 	// ReconcileAll that was already going to happen anyway.
 	nudge chan struct{}
+
+	started atomic.Bool
 }
 
 // Source dynamically supplies the current set of controllers to reconcile,
@@ -95,6 +98,9 @@ func NewEngine(logger *slog.Logger, controllers ...Controller) *Engine {
 		nudge:       make(chan struct{}, 1),
 	}
 }
+
+// Started reports whether Run has begun; it stays true after Run returns.
+func (e *Engine) Started() bool { return e.started.Load() }
 
 // Nudge requests an immediate ReconcileAll pass on the next Run
 // iteration, instead of waiting for the next Docker event or
@@ -204,6 +210,7 @@ func (e *Engine) LastResult(name string) (Result, error) {
 // safe: nothing here holds a lock across a reconcile, so the next Run
 // (or a fresh process) picks up wherever observed state actually is.
 func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInterval time.Duration) error {
+	e.started.Store(true)
 	e.logger.Info("reconcile engine starting",
 		slog.Int("controllers", len(e.controllers)),
 		slog.Duration("resync_interval", resyncInterval),

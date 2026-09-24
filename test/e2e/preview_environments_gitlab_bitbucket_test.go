@@ -84,9 +84,6 @@ func newLivePreviewFixture(t *testing.T, appName string, prNumber int, adminUser
 	dockerCli, buildClient, runtime := env.DockerCli, env.BuildClient, env.Runtime
 
 	previewName := fmt.Sprintf("%s-pr-%d", appName, prNumber)
-	cleanupContainers(context.Background(), t, runtime, previewName)
-	t.Cleanup(func() { cleanupContainers(context.Background(), t, runtime, previewName) })
-
 	svcStore := openLiveStore(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	t.Cleanup(cancel)
@@ -101,6 +98,11 @@ func newLivePreviewFixture(t *testing.T, appName string, prNumber int, adminUser
 		_, _ = dockerCli.ImageRemove(cleanupCtx, tagA, image.RemoveOptions{Force: true})
 		_, _ = dockerCli.ImageRemove(cleanupCtx, tagB, image.RemoveOptions{Force: true})
 	})
+
+	// Registered after the image cleanup so it runs first (t.Cleanup is
+	// LIFO): an image still used by a running container cannot be removed.
+	cleanupContainers(context.Background(), t, runtime, previewName)
+	t.Cleanup(func() { cleanupContainers(context.Background(), t, runtime, previewName) })
 
 	if err := svcStore.SaveDesiredService(ctx, store.DesiredService{
 		Name: appName, Image: appName + ":source", Port: 8080,

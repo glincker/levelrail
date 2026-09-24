@@ -2685,6 +2685,12 @@ func (c *Client) StreamDeployLog(ctx context.Context, name, deployID string, onE
 // meant to run indefinitely until the caller's own context is canceled
 // (e.g. Ctrl+C).
 func (c *Client) streamLogEvents(ctx context.Context, path string, onEntry func(LogStreamEntry) error) error {
+	return streamSSE(ctx, c, path, onEntry)
+}
+
+// streamSSE is the shared SSE scanner: it decodes each "data: " line as a T
+// and calls onEvent in arrival order. Lines that do not decode are skipped.
+func streamSSE[T any](ctx context.Context, c *Client, path string, onEvent func(T) error) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
@@ -2716,11 +2722,11 @@ func (c *Client) streamLogEvents(ctx context.Context, path string, onEntry func(
 			// SSE events, neither of which carries a payload.
 			continue
 		}
-		var entry LogStreamEntry
+		var entry T
 		if err := json.Unmarshal([]byte(data), &entry); err != nil {
 			continue
 		}
-		if err := onEntry(entry); err != nil {
+		if err := onEvent(entry); err != nil {
 			return err
 		}
 	}
@@ -2929,6 +2935,14 @@ func (c *Client) CreateControlPlaneBackup(ctx context.Context) (ControlPlaneBack
 // and returns the raw SQLite file.
 func (c *Client) DownloadControlPlaneBackup(ctx context.Context, name string) ([]byte, error) {
 	return c.downloadRaw(ctx, "/api/v1/system/backups/"+PathEscape(name)+"/download")
+}
+
+// VerifyControlPlaneBackup calls POST /api/v1/system/backups/{name}/verify.
+// A failed check is a normal response with ok false, not an error.
+func (c *Client) VerifyControlPlaneBackup(ctx context.Context, name string) (ControlPlaneBackupVerification, error) {
+	var out ControlPlaneBackupVerification
+	err := c.do(ctx, http.MethodPost, "/api/v1/system/backups/"+PathEscape(name)+"/verify", nil, &out)
+	return out, err
 }
 
 // DeleteControlPlaneBackup calls DELETE /api/v1/system/backups/{name}.

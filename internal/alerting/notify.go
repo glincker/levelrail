@@ -47,6 +47,9 @@ type Event struct {
 	// threshold, from EvaluateNodeDiskSpace. Nil for every other rule
 	// kind and for resolved events.
 	DiskSpaceNotices []string
+	// NodeOfflineNotices is populated only for a firing node_offline
+	// event: one line per offline node, from EvaluateNodeOffline.
+	NodeOfflineNotices []string
 	// ResourceUsageNotices is populated only for a firing (not resolved)
 	// node_resource_usage event: one line per node over its CPU and/or
 	// memory threshold, from EvaluateNodeResourceUsage. Nil for every
@@ -159,6 +162,7 @@ type genericPayload struct {
 	PatchNotices         []string   `json:"patch_notices,omitempty"`
 	DiskSpaceNotices     []string   `json:"disk_space_notices,omitempty"`
 	ResourceUsageNotices []string   `json:"resource_usage_notices,omitempty"`
+	NodeOfflineNotices   []string   `json:"node_offline_notices,omitempty"`
 	TaskFailureNotice    string     `json:"task_failure_notice,omitempty"`
 	DomainHealthNotices  []string   `json:"domain_health_notices,omitempty"`
 	BackupMissingNotice  string     `json:"backup_missing_notice,omitempty"`
@@ -171,6 +175,7 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		Firing: ev.Rule.Firing, FiringSince: ev.Rule.FiringSince, LogLines: ev.LogLines,
 		CertNotices: ev.CertNotices, PatchNotices: ev.PatchNotices, DiskSpaceNotices: ev.DiskSpaceNotices,
 		ResourceUsageNotices: ev.ResourceUsageNotices,
+		NodeOfflineNotices:   ev.NodeOfflineNotices,
 		TaskFailureNotice:    ev.TaskFailureNotice,
 		DomainHealthNotices:  ev.DomainHealthNotices,
 		BackupMissingNotice:  ev.BackupMissingNotice,
@@ -630,6 +635,9 @@ func summaryText(ev Event) string {
 	}
 	if len(ev.DiskSpaceNotices) > 0 {
 		fmt.Fprintf(&b, "\nDisk space:\n- %s", strings.Join(ev.DiskSpaceNotices, "\n- "))
+	}
+	if len(ev.NodeOfflineNotices) > 0 {
+		fmt.Fprintf(&b, "\nOffline nodes:\n- %s", strings.Join(ev.NodeOfflineNotices, "\n- "))
 	}
 	if len(ev.ResourceUsageNotices) > 0 {
 		fmt.Fprintf(&b, "\nResource usage:\n- %s", strings.Join(ev.ResourceUsageNotices, "\n- "))

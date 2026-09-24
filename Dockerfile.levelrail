@@ -47,5 +47,5 @@ COPY --from=build --chown=nonroot:nonroot /data/levelrail /var/lib/levelrail-dat
 USER nonroot:nonroot
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD ["/app/levelrail", "healthcheck"]
+    CMD ["/app/levelrail", "healthcheck", "--ready"]
 ENTRYPOINT ["/app/levelrail"]

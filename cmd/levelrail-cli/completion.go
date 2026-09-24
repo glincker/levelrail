@@ -41,7 +41,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"status":                  nil,
 		"diagnose":                nil,
 		"resource-recommendation": nil,
-		"deploys":                 {subs: map[string]*cmdNode{"list": nil, "compare": nil, "logs": nil}},
+		"deploys":                 {subs: map[string]*cmdNode{"list": nil, "compare": nil, "logs": nil, "failed": nil, "steps": nil}},
 		"promote":                 nil,
 		"network":                 nil,
 		"logs":                    nil,
@@ -69,6 +69,7 @@ var cliCommandTree = map[string]*cmdNode{
 			"list": nil, "teardown": nil, "enable": nil, "disable": nil, "sweep": nil,
 			"pr-status": {subs: map[string]*cmdNode{"enable": nil, "disable": nil}},
 		}},
+		"env":                {subs: map[string]*cmdNode{"import": nil, "export": nil}},
 		"secrets":            {subs: map[string]*cmdNode{"list": nil, "set": nil, "lock": nil}},
 		"git-source":         {subs: map[string]*cmdNode{"get": nil, "set": nil, "delete": nil}},
 		"webhook-deliveries": {subs: map[string]*cmdNode{"list": nil, "replay": nil}},
@@ -87,7 +88,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"health":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"integrations":       {subs: map[string]*cmdNode{"catalog": nil, "list": nil, "add": nil, "remove": nil}},
 	}},
-	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "logs": nil, "slow-queries": nil, "set-project": nil, "clear-project": nil, "set-node": nil, "clear-node": nil, "set-resources": nil, "public-access": {subs: map[string]*cmdNode{"set": nil, "clear": nil}}}},
+	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "status": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "logs": nil, "slow-queries": nil, "set-project": nil, "clear-project": nil, "set-node": nil, "clear-node": nil, "set-resources": nil, "public-access": {subs: map[string]*cmdNode{"set": nil, "clear": nil}}}},
 	"auth": {subs: map[string]*cmdNode{"login": nil, "whoami": nil, "2fa": {subs: map[string]*cmdNode{
 		"status": nil, "setup": nil, "enable": nil, "disable": nil, "recovery-codes": nil,
 	}}}},
@@ -107,7 +108,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"error-pages":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 	}},
 	"backups": {subs: map[string]*cmdNode{
-		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "verify": nil, "verifications": nil,
+		"list": nil, "list-all": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "clone-restores": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
 	"pitr": {subs: map[string]*cmdNode{
@@ -115,7 +116,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"base-backups": {subs: map[string]*cmdNode{"list": nil, "trigger": nil}},
 	}},
 	"app-volume-backups": {subs: map[string]*cmdNode{
-		"list": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "verify": nil, "verifications": nil,
+		"list": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "clone-restores": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
 	"control-plane-backups": {subs: map[string]*cmdNode{"list": nil, "create": nil, "download": nil, "delete": nil}},

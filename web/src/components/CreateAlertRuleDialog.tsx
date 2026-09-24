@@ -117,6 +117,7 @@ const KIND_OPTIONS: {
   },
   { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
   { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
+  { value: 'node_offline', label: 'Node offline', Icon: HardDriveIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -145,6 +146,7 @@ const createAlertRuleSchema = z
       'node_resource_usage',
       'domain_health',
       'backup_missing',
+      'node_offline',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -169,7 +171,8 @@ const createAlertRuleSchema = z
       data.kind === 'cert_expiry' ||
       data.kind === 'patch_status' ||
       data.kind === 'node_disk_space' ||
-      data.kind === 'node_resource_usage'
+      data.kind === 'node_resource_usage' ||
+      data.kind === 'node_offline'
     ) {
       return
     }
@@ -493,6 +496,12 @@ export function CreateAlertRuleDialog({
               {DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT}% used (the control
               plane&apos;s configured threshold, overridable via
               APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
+            </p>
+          ) : kind === 'node_offline' ? (
+            <p className="text-sm text-muted-foreground">
+              Watches every node on the whole control plane and fires as soon as
+              any node is marked offline (its agent stopped heartbeating). It
+              resolves when every node is back online.
             </p>
           ) : kind === 'node_resource_usage' ? (
             <p className="text-sm text-muted-foreground">
