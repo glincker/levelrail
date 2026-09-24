@@ -16,44 +16,47 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitUsage
 	}
 
-	switch args[0] {
+	sub, rest := args[0], args[1:]
+	switch sub {
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, databasesUsage(prog))
 		return exitOK
 	case "create":
-		return runDatabasesCreate(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+		return runDatabasesCreate(prog, rest, stdout, stderr, lookupEnv, os.Stdin)
 	case "list":
-		return runDatabasesList(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesList(prog, rest, stdout, stderr, lookupEnv)
 	case "get":
-		return runDatabasesGet(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesGet(prog, rest, stdout, stderr, lookupEnv)
 	case "delete":
-		return runDatabasesDelete(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesDelete(prog, rest, stdout, stderr, lookupEnv)
+	case "status":
+		return runDatabasesStatus(prog, rest, stdout, stderr, lookupEnv)
 	case "stop":
-		return runDatabasesStop(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesStop(prog, rest, stdout, stderr, lookupEnv)
 	case "start":
-		return runDatabasesStart(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesStart(prog, rest, stdout, stderr, lookupEnv)
 	case "resource-recommendation":
-		return runDatabasesResourceRecommendation(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesResourceRecommendation(prog, rest, stdout, stderr, lookupEnv)
 	case "metrics":
-		return runDatabasesMetrics(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesMetrics(prog, rest, stdout, stderr, lookupEnv)
 	case "logs":
-		return runDatabasesLogs(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesLogs(prog, rest, stdout, stderr, lookupEnv)
 	case "slow-queries":
-		return runDatabasesSlowQueries(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesSlowQueries(prog, rest, stdout, stderr, lookupEnv)
 	case "set-project":
-		return runDatabasesSetProject(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesSetProject(prog, rest, stdout, stderr, lookupEnv)
 	case "clear-project":
-		return runDatabasesClearProject(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesClearProject(prog, rest, stdout, stderr, lookupEnv)
 	case "set-node":
-		return runDatabasesSetNode(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesSetNode(prog, rest, stdout, stderr, lookupEnv)
 	case "clear-node":
-		return runDatabasesClearNode(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesClearNode(prog, rest, stdout, stderr, lookupEnv)
 	case "public-access":
-		return runDatabasesPublicAccess(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesPublicAccess(prog, rest, stdout, stderr, lookupEnv)
 	case "set-resources":
-		return runDatabasesSetResources(prog, args[1:], stdout, stderr, lookupEnv)
+		return runDatabasesSetResources(prog, rest, stdout, stderr, lookupEnv)
 	default:
-		_, _ = fmt.Fprintf(stderr, "%s: unknown databases subcommand %q\n\n", prog, args[0])
+		_, _ = fmt.Fprintf(stderr, "%s: unknown databases subcommand %q\n\n", prog, sub)
 		_, _ = fmt.Fprint(stderr, databasesUsage(prog))
 		return exitUsage
 	}
@@ -65,6 +68,7 @@ func databasesUsage(prog string) string {
   %[1]s databases create --interactive  guided, step-by-step creation
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
+  %[1]s databases status <name> [flags]   show a database's current reconcile conditions
   %[1]s databases delete <name> [flags]  remove a database's desired state
   %[1]s databases stop <name> [flags]     stop a database's container, keep its data
   %[1]s databases start <name> [flags]    bring a stopped database's container back
