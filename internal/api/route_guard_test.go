@@ -13,6 +13,7 @@ import (
 // credential exchange).
 var publicRoutes = map[string]string{ //nolint:gosec // route patterns, not credentials
 	"GET /healthz":                               "liveness probe",
+	"GET /readyz":                                "readiness probe, reports only component health",
 	"GET /api/v1/brand":                          "login screen branding",
 	"GET /api/v1/dev-mode":                       "dev-mode banner flag",
 	"POST /api/v1/auth/login":                    "credential exchange, rate limited",
