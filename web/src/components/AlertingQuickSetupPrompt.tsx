@@ -34,6 +34,7 @@ const RECOMMENDED_RULES: { kind: AlertRuleKind; name: string }[] = [
   { kind: 'patch_status', name: 'Node patch status' },
   { kind: 'node_disk_space', name: 'Node disk space' },
   { kind: 'node_resource_usage', name: 'Node CPU/memory usage' },
+  { kind: 'node_offline', name: 'Node offline' },
   { kind: 'control_plane_backup_stale', name: 'Control plane backup stale' },
 ]
 
@@ -56,7 +57,7 @@ function writeDismissed(): void {
 
 // Dismissible dashboard nudge for the platform-wide alert kinds
 // (cert_expiry, patch_status, node_disk_space, node_resource_usage,
-// control_plane_backup_stale),
+// node_offline, control_plane_backup_stale),
 // none of which are seeded by default and none of which the setup wizard
 // ever mentions. Shown once at least one app exists rather than as an
 // onboarding step: a platform-wide rule still has to be created through
@@ -125,8 +126,8 @@ export function AlertingQuickSetupPrompt({
         Certificate expiry, node patch status, node disk space, and node
         CPU/memory usage have no alert rule watching them yet.{' '}
         {channels.length === 0
-          ? 'Connect a notification channel first, then come back here to enable all five with one click.'
-          : `Enable all five with sensible defaults, notified through ${
+          ? 'Connect a notification channel first, then come back here to enable all six with one click.'
+          : `Enable all six with sensible defaults, notified through ${
               channels.length > 1 ? 'the channel below' : channels[0]?.name
             }.`}
       </AlertDescription>

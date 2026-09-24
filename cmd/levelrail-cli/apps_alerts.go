@@ -46,6 +46,7 @@ func appsAlertsUsage(prog string) string {
   %[1]s apps alerts create <app> --kind scheduled_task_failure --scheduled-task-id ID --restart-count-threshold N [flags]
   %[1]s apps alerts create <app> --kind node_disk_space [flags]
   %[1]s apps alerts create <app> --kind node_resource_usage [flags]
+  %[1]s apps alerts create <app> --kind node_offline [flags]
   %[1]s apps alerts create <app> --kind domain_health [flags]
   %[1]s apps alerts create <app> --kind control_plane_backup_stale [flags]
   %[1]s apps alerts create <app> --kind backup_missing --backup-resource-kind database --backup-database-name NAME [flags]
@@ -138,6 +139,8 @@ func alertRuleCondition(r alertRuleResource) string {
 		return "any certificate expiring soon or expired (platform-wide)"
 	case "patch_status":
 		return "any node over its pending security-patch threshold (platform-wide)"
+	case "node_offline":
+		return "any node offline (platform-wide)"
 	case "node_disk_space":
 		return "any node over its disk-usage percentage threshold (platform-wide)"
 	case "node_resource_usage":
@@ -202,7 +205,7 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 		if restartWindow == "" {
 			return newValidationError("--restart-window is required for --kind crashloop")
 		}
-	case "cert_expiry", "patch_status", "node_disk_space", "node_resource_usage":
+	case "cert_expiry", "patch_status", "node_disk_space", "node_resource_usage", "node_offline":
 		// No kind-specific flags: a cert_expiry rule watches every
 		// certificate on the control plane, a patch_status rule watches
 		// every node's pending OS security patches, a node_disk_space rule
@@ -235,9 +238,9 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 			return newValidationError("--backup-resource-kind must be \"database\" or \"volume\" for --kind backup_missing")
 		}
 	case "":
-		return newValidationError("--kind is required (threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, or control_plane_backup_stale)")
+		return newValidationError("--kind is required (threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, or control_plane_backup_stale)")
 	default:
-		return newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, or control_plane_backup_stale", kind)
+		return newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, or control_plane_backup_stale", kind)
 	}
 	return nil
 }
@@ -288,7 +291,7 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
-	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, control_plane_backup_stale (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, control_plane_backup_stale (required)")
 	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
 	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
 	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold only)")
@@ -382,7 +385,7 @@ backup trails that schedule's own expected interval by more than
 
 Flags:
   --name string                        display name for the rule (required)
-  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, or control_plane_backup_stale (required)
+  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, or control_plane_backup_stale (required)
   --metric string                      metric name (--kind threshold only)
   --comparator string                  >, <, >=, or <= (--kind threshold only)
   --threshold float                    threshold value (--kind threshold only)
@@ -425,7 +428,7 @@ func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, l
 		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
-	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, control_plane_backup_stale (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, control_plane_backup_stale (required)")
 	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
 	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
 	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold only)")
@@ -505,7 +508,7 @@ help for what each kind needs.
 
 Flags:
   --name string                        display name for the rule (required)
-  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, or control_plane_backup_stale (required)
+  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, or control_plane_backup_stale (required)
   --metric string                      metric name (--kind threshold only)
   --comparator string                  >, <, >=, or <= (--kind threshold only)
   --threshold float                    threshold value (--kind threshold only)

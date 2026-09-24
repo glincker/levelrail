@@ -18,6 +18,7 @@ System endpoints for:
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
 | GET | /healthz | Public | handleHealthz |
+| GET | /readyz | Public | handleReadyz |
 | GET | /api/v1/brand | Public | handleBrand |
 | GET | /api/v1/dev-mode | Public | handleDevMode |
 | GET | /api/v1/system/status | AbilityRead | handleSystemStatus |

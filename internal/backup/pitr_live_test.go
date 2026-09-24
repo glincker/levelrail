@@ -30,16 +30,8 @@ func TestPITR_Postgres_Live_RestoresBeforeMarkerNotAfterMarker(t *testing.T) {
 	rt := liveRuntime(t)
 	ctx := context.Background()
 
-	// Docker's own volume-remove API has no exported wrapper on
-	// docker.Runtime today (dataVolumeName's own doc comment,
-	// internal/reconcile/database/controller.go, explains why: volumes
-	// are deliberately never removed in production, only ever reused
-	// across replacements). A random per-run suffix, rather than trying
-	// to clean up the named volumes this test creates, sidesteps that
-	// gap the same way: each run gets its own dataVol/walVol, so a
-	// previous run's leftover volume (a real Postgres data directory,
-	// never safe to silently reuse for a fresh CREATE TABLE) can never
-	// collide with this one.
+	// A random per-run suffix keeps a volume left by a crashed run from
+	// being reused as a "fresh" Postgres data directory.
 	suffix, err := randomHelperSuffix()
 	if err != nil {
 		t.Fatalf("generate test suffix: %v", err)
@@ -47,6 +39,7 @@ func TestPITR_Postgres_Live_RestoresBeforeMarkerNotAfterMarker(t *testing.T) {
 	name := "levelrail-test-pitr-postgres-" + suffix
 	dataVol := name + "-data"
 	walVol := name + "-wal-archive"
+	removeVolumeAfterTest(t, rt, dataVol, walVol)
 	removeContainerIfExists(ctx, t, rt, name)
 	t.Cleanup(func() { removeContainerIfExists(context.Background(), t, rt, name) })
 

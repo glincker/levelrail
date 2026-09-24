@@ -35,6 +35,7 @@ export type AlertRuleKind =
   | 'domain_health'
   | 'backup_missing'
   | 'control_plane_backup_stale'
+  | 'node_offline'
 
 export type BackupResourceKind = 'database' | 'volume'
 

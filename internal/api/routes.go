@@ -12,6 +12,7 @@ import "net/http"
 func (rt *Router) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", rt.handleHealthz)
+	mux.HandleFunc("GET /readyz", rt.handleReadyz)
 	rt.registerCoreRoutes(mux)
 	rt.registerPlatformRoutes(mux)
 

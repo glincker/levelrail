@@ -189,7 +189,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 	for _, r := range rules {
 		var next Rule
-		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices []string
+		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeOfflineNotices []string
 		var taskFailureNotice, backupMissingNoticeText string
 		switch r.Kind {
 		case KindThreshold:
@@ -236,6 +236,16 @@ func (e *Engine) Tick(ctx context.Context) error {
 				continue
 			}
 			next, diskSpaceNotices, err = EvaluateNodeDiskSpace(ctx, e.nodes, e.metrics, r, e.nodeDiskSpaceThreshold, now, e.logger)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindNodeOffline:
+			if e.nodes == nil {
+				e.logger.Warn("alerting: node_offline rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			next, nodeOfflineNotices, err = EvaluateNodeOffline(ctx, e.nodes, r, now)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -299,12 +309,12 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 		switch {
 		case becameFiring:
-			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, taskFailureNotice, backupMissingNoticeText)
+			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeOfflineNotices, taskFailureNotice, backupMissingNoticeText)
 			if r.Kind == KindCrashloop && e.autoRollback != nil {
 				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
 			}
 		case becameResolved:
-			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, "", "")
+			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, nil, "", "")
 		case stillFiring:
 			// No dispatch here: a rule that's still firing sends no repeat
 			// notification (see dispatch's own doc comment on why). But a
@@ -331,7 +341,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 // persisted successfully before dispatch is called, so a lost
 // notification doesn't leave the rule's stored state inconsistent with
 // reality, only the operator momentarily uninformed.
-func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices []string, taskFailureNotice, backupMissingNotice string) {
+func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeOfflineNotices []string, taskFailureNotice, backupMissingNotice string) {
 	// r.Enabled is already resolved against its attached channel
 	// (scanRule): a disabled channel silences the rule the same way
 	// DeployDispatcher.Dispatch skips a target with a disabled channel.
@@ -351,6 +361,9 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	}
 	if r.Kind == KindNodeDiskSpace && !resolved {
 		ev.DiskSpaceNotices = diskSpaceNotices
+	}
+	if r.Kind == KindNodeOffline && !resolved {
+		ev.NodeOfflineNotices = nodeOfflineNotices
 	}
 	if r.Kind == KindNodeResourceUsage && !resolved {
 		ev.ResourceUsageNotices = resourceUsageNotices

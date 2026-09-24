@@ -9,6 +9,7 @@ import { projectEnvQueryOptions } from '../queries/projectEnv'
 import { environmentEnvQueryOptions } from '../queries/environmentEnv'
 import { computeInheritedEnv, inheritedOnlyEnv } from '../lib/envProvenance'
 import { useSharedEnvAll } from '../queries/sharedEnv'
+import { useSecretKeys } from '../queries/secrets'
 import { EnvVarsForm, type SharedEnvVarOption } from './EnvVarsForm'
 import { EnvActivityPanel } from './EnvActivityPanel'
 import { Badge } from '@/components/ui/badge'
@@ -21,6 +22,11 @@ import { Badge } from '@/components/ui/badge'
 export function EnvEditor({ app }: { app: AppDetail }) {
   const updateApp = useUpdateApp(app.name)
   const notifyRestartRequired = useRestartRequiredToast()
+  const secretKeysQuery = useSecretKeys(app.name)
+  const exportSecretKeys = useMemo(
+    () => (secretKeysQuery.data ?? []).map((s) => s.key),
+    [secretKeysQuery.data],
+  )
 
   const projectId = app.project_id
   const environmentId = app.environment_id
@@ -115,6 +121,8 @@ export function EnvEditor({ app }: { app: AppDetail }) {
         }}
         inheritedRows={inheritedRows}
         availableSharedVars={availableSharedVars}
+        exportFilename={`${app.name}.env`}
+        exportSecretKeys={exportSecretKeys}
         onSave={(env) => {
           updateApp.mutate(
             { ...app, env },
