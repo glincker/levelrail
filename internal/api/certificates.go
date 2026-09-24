@@ -55,6 +55,16 @@ type certificateStatus struct {
 	// read-only endpoint only ever reports the current bucket, not that
 	// stronger signal, since it has no notion of "across two reads."
 	Status string `json:"status"`
+	// Renewal is "ok" or "stalled". Stalled means the certificate is
+	// expired, or has sat in expiring_soon with an unchanged NotAfter past
+	// the stalled threshold (alerting.CertRenewalStates).
+	Renewal string `json:"renewal"`
+}
+
+// CertObservationSource lists the expiry observations kind=cert_expiry
+// rules record; *alerting.DB satisfies it.
+type CertObservationSource interface {
+	ListAllCertExpiryObservations(ctx context.Context) ([]alerting.CertExpiryObservation, error)
 }
 
 // handleListCertificates handles GET /api/v1/certificates: every
@@ -78,6 +88,16 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	var obs []alerting.CertExpiryObservation
+	if rt.certObservations != nil {
+		var obsErr error
+		if obs, obsErr = rt.certObservations.ListAllCertExpiryObservations(r.Context()); obsErr != nil {
+			rt.logger.Warn("api: list cert expiry observations failed, reporting renewal from expiry only", slog.String("error", obsErr.Error()))
+			obs = nil
+		}
+	}
+	renewal := alerting.CertRenewalStates(infos, obs, rt.certRenewalStalledThreshold, time.Now())
+
 	out := make([]certificateStatus, 0, len(infos))
 	for _, info := range infos {
 		out = append(out, certificateStatus{
@@ -87,6 +107,7 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 			NotBefore: info.NotBefore,
 			NotAfter:  info.NotAfter,
 			Status:    info.Status,
+			Renewal:   renewal[info.Domain],
 		})
 	}
 	writeJSON(w, http.StatusOK, out)

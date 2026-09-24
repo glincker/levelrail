@@ -1,5 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { certExpiryLabel } from './certStatus'
+import {
+  CERT_RENEWAL_STALLED_HINT,
+  certExpiryLabel,
+  certRenewalBadge,
+} from './certStatus'
+
+describe('certRenewalBadge', () => {
+  it('flags a stalled renewal with the hint', () => {
+    expect(certRenewalBadge({ renewal: 'stalled' })).toEqual({
+      label: 'Renewal stalled',
+      hint: CERT_RENEWAL_STALLED_HINT,
+    })
+  })
+  it.each([['ok' as const], [undefined]])('is null for %s', (renewal) => {
+    expect(certRenewalBadge({ renewal })).toBeNull()
+  })
+})
 
 const now = new Date('2026-09-23T12:00:00Z')
 

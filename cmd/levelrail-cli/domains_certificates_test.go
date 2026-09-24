@@ -11,7 +11,8 @@ func TestRun_DomainsCertificates_List(t *testing.T) {
 	var gotPath string
 	notAfter := time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)
 	srv := newListEchoServer(t, &gotPath, []certificateResource{
-		{Domain: "example.com", Issuer: "Let's Encrypt", Status: "healthy", NotAfter: notAfter},
+		{Domain: "example.com", Issuer: "Let's Encrypt", Status: "healthy", Renewal: "ok", NotAfter: notAfter},
+		{Domain: "old.example.com", Status: "expired", Renewal: "stalled", NotAfter: notAfter},
 	})
 	defer srv.Close()
 
@@ -22,6 +23,9 @@ func TestRun_DomainsCertificates_List(t *testing.T) {
 	}
 	if !strings.Contains(stdout, "example.com") || !strings.Contains(stdout, "healthy") {
 		t.Errorf("stdout = %q, want example.com/healthy listed", stdout)
+	}
+	if !strings.Contains(stdout, "RENEWAL") || !strings.Contains(stdout, "stalled") {
+		t.Errorf("stdout = %q, want the RENEWAL column with a stalled row", stdout)
 	}
 }
 

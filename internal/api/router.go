@@ -208,6 +208,9 @@ type Router struct {
 	// passes the same resolved value to both). 0 means "use the
 	// default", set via WithCertExpiryWarningWindow.
 	certExpiryWarningWindow time.Duration
+
+	certObservations            CertObservationSource
+	certRenewalStalledThreshold time.Duration
 	// nodeAlertThresholds are the same four kind-specific thresholds
 	// cmd/levelrail/main.go passes to alerting.NewEngine, mirrored here so
 	// GET /api/v1/nodes/{id} can live-evaluate one node's own current

@@ -27,6 +27,7 @@ export interface CertificateStatus {
   not_before: string
   not_after: string
   status: 'healthy' | 'expiring_soon' | 'expired'
+  renewal?: 'ok' | 'stalled'
 }
 
 export async function fetchCertificates(): Promise<CertificateStatus[]> {

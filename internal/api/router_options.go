@@ -672,6 +672,16 @@ func WithCertExpiryWarningWindow(d time.Duration) Option {
 	return func(rt *Router) { rt.certExpiryWarningWindow = d }
 }
 
+// WithCertRenewalTracking lets GET /api/v1/certificates report a stalled
+// renewal from the observations kind=cert_expiry rules record. A zero
+// threshold falls back to alerting.DefaultCertRenewalStalledThreshold.
+func WithCertRenewalTracking(src CertObservationSource, stalledThreshold time.Duration) Option {
+	return func(rt *Router) {
+		rt.certObservations = src
+		rt.certRenewalStalledThreshold = stalledThreshold
+	}
+}
+
 // nodeAlertThresholds mirrors the four threshold arguments
 // alerting.NewEngine takes for its node-scoped rules (patch_status,
 // node_disk_space, node_resource_usage's CPU and memory signals), so GET

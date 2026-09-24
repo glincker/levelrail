@@ -121,6 +121,13 @@ func TestHandleListCertificates_StatusBuckets(t *testing.T) {
 		if c.Status != tt.want {
 			t.Errorf("domain %q: status = %q, want %q", tt.domain, c.Status, tt.want)
 		}
+		wantRenewal := alerting.CertRenewalOK
+		if tt.want == "expired" {
+			wantRenewal = alerting.CertRenewalStalled
+		}
+		if c.Renewal != wantRenewal {
+			t.Errorf("domain %q: renewal = %q, want %q", tt.domain, c.Renewal, wantRenewal)
+		}
 		if c.NotAfter.IsZero() {
 			t.Errorf("domain %q: NotAfter is zero", tt.domain)
 		}
