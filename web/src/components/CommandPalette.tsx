@@ -6,6 +6,7 @@ import {
   ArrowClockwiseIcon,
   ClockCounterClockwiseIcon,
   DatabaseIcon,
+  KeyboardIcon,
   MagnifyingGlassIcon,
   RocketLaunchIcon,
   StackIcon,
@@ -44,9 +45,11 @@ const NEXT_THEME: Record<Theme, Theme> = {
 export function CommandPalette({
   open: openProp,
   onOpenChange,
+  onShowShortcuts,
 }: {
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  onShowShortcuts?: () => void
 } = {}) {
   const [internalOpen, setInternalOpen] = React.useState(false)
   const open = openProp ?? internalOpen
@@ -119,6 +122,15 @@ export function CommandPalette({
       ...THEME_ACTION,
       run: () => setTheme(NEXT_THEME[theme]),
     })
+    if (onShowShortcuts) {
+      items.push({
+        key: 'action-shortcuts',
+        label: 'Keyboard shortcuts',
+        group: 'Actions',
+        icon: <KeyboardIcon />,
+        run: onShowShortcuts,
+      })
+    }
     for (const app of appsQuery.data ?? []) {
       items.push({
         key: `app-${app.name}`,
@@ -138,7 +150,14 @@ export function CommandPalette({
       })
     }
     return items
-  }, [navigate, setTheme, theme, appsQuery.data, databasesQuery.data])
+  }, [
+    navigate,
+    setTheme,
+    theme,
+    appsQuery.data,
+    databasesQuery.data,
+    onShowShortcuts,
+  ])
 
   const groups = React.useMemo(() => {
     const q = query.trim()
