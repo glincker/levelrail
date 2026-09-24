@@ -12,6 +12,8 @@ import { brandQueryOptions } from '../queries/brand'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
 import { CommandPalette } from '../components/CommandPalette'
+import { ShortcutsDialog } from '../components/ShortcutsDialog'
+import { useShortcuts } from '../hooks/useShortcuts'
 import { DockerHealthBanner } from '../components/DockerHealthBanner'
 import { DiskPressureBanner } from '../components/DiskPressureBanner'
 import { HelpMenu } from '../components/HelpMenu'
@@ -95,6 +97,9 @@ function RootLayout() {
 function AppShell() {
   const username = useAuthUsername()
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = React.useState(false)
+  const openShortcuts = React.useCallback(() => setShortcutsOpen(true), [])
+  useShortcuts({ onHelp: openShortcuts })
 
   if (!username) {
     return <Outlet />
@@ -106,7 +111,9 @@ function AppShell() {
       <CommandPalette
         open={commandPaletteOpen}
         onOpenChange={setCommandPaletteOpen}
+        onShowShortcuts={openShortcuts}
       />
+      <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <SidebarInset>
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
           <SidebarTrigger className="-ml-1" />
@@ -137,6 +144,11 @@ function AppShell() {
           <div className="mx-auto w-full max-w-6xl">
             <Outlet />
           </div>
+          <p className="mx-auto mt-8 w-full max-w-6xl text-xs text-muted-foreground">
+            Press{' '}
+            <kbd className="rounded border border-border bg-muted px-1">?</kbd>{' '}
+            for keyboard shortcuts
+          </p>
         </main>
       </SidebarInset>
     </SidebarProvider>

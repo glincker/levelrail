@@ -3,27 +3,14 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
-  GaugeIcon,
-  StackIcon,
-  DatabaseIcon,
-  FolderIcon,
-  BuildingsIcon,
-  HardDrivesIcon,
-  GlobeIcon,
-  UserIcon,
-  ShieldIcon,
-  KeyIcon,
-  CloudArrowUpIcon,
-  WebhooksLogoIcon,
-  GithubLogoIcon,
-  UsersIcon,
-  EnvelopeIcon,
-  GearIcon,
-  MagnifyingGlassIcon,
-  PackageIcon,
-  QuestionIcon,
-  ArrowCircleUpIcon,
+  ArrowClockwiseIcon,
   ClockCounterClockwiseIcon,
+  DatabaseIcon,
+  KeyboardIcon,
+  MagnifyingGlassIcon,
+  RocketLaunchIcon,
+  StackIcon,
+  TerminalWindowIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   DialogPortal,
@@ -31,206 +18,25 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
+import { fuzzyFilter } from '@/lib/fuzzy'
+import { loadRecentKeys, pushRecentKey } from '@/lib/recentItems'
+import { usePaletteAppActions } from '../hooks/usePaletteAppActions'
 import { appListQueryOptions } from '../queries/apps'
 import { databaseListQueryOptions } from '../queries/databases'
+import { useTheme, type Theme } from './ThemeProvider'
+import {
+  GROUP_ORDER,
+  ROUTE_ENTRIES,
+  THEME_ACTION,
+  type PaletteItem,
+} from './commandPaletteData'
+import { PaletteFooter, ResultRow } from './commandPaletteEntries'
 
-interface ResultItem {
-  key: string
-  label: string
-  group: string
-  icon: React.ReactNode
-  to: string
-  params?: Record<string, string>
-}
-
-const STATIC_ENTRIES: ResultItem[] = [
-  {
-    key: 'nav-dashboard',
-    label: 'Dashboard',
-    group: 'Navigate',
-    icon: <GaugeIcon />,
-    to: '/',
-  },
-  {
-    key: 'nav-apps',
-    label: 'Apps',
-    group: 'Navigate',
-    icon: <StackIcon />,
-    to: '/apps',
-  },
-  {
-    key: 'nav-databases',
-    label: 'Databases',
-    group: 'Navigate',
-    icon: <DatabaseIcon />,
-    to: '/databases',
-  },
-  {
-    key: 'nav-projects',
-    label: 'Projects',
-    group: 'Navigate',
-    icon: <FolderIcon />,
-    to: '/projects',
-  },
-  {
-    key: 'nav-nodes',
-    label: 'Nodes',
-    group: 'Navigate',
-    icon: <HardDrivesIcon />,
-    to: '/nodes',
-  },
-  {
-    key: 'nav-domains',
-    label: 'Domains',
-    group: 'Navigate',
-    icon: <GlobeIcon />,
-    to: '/domains',
-  },
-  {
-    key: 'settings-hub',
-    label: 'Settings',
-    group: 'Settings',
-    icon: <GearIcon />,
-    to: '/settings',
-  },
-  {
-    key: 'settings-account',
-    label: 'Account',
-    group: 'Settings',
-    icon: <UserIcon />,
-    to: '/settings/account',
-  },
-  {
-    key: 'settings-security',
-    label: 'Security',
-    group: 'Settings',
-    icon: <ShieldIcon />,
-    to: '/settings/security',
-  },
-  {
-    key: 'settings-tokens',
-    label: 'API tokens',
-    group: 'Settings',
-    icon: <KeyIcon />,
-    to: '/settings/tokens',
-  },
-  {
-    key: 'settings-backup-targets',
-    label: 'Backup targets',
-    group: 'Settings',
-    icon: <CloudArrowUpIcon />,
-    to: '/settings/backup-targets',
-  },
-  {
-    key: 'settings-registry-credentials',
-    label: 'Registry credentials',
-    group: 'Settings',
-    icon: <PackageIcon />,
-    to: '/settings/registry-credentials',
-  },
-  {
-    key: 'settings-notification-channels',
-    label: 'Notification channels',
-    group: 'Settings',
-    icon: <WebhooksLogoIcon />,
-    to: '/settings/notification-channels',
-  },
-  {
-    key: 'settings-github-app',
-    label: 'GitHub App',
-    group: 'Settings',
-    icon: <GithubLogoIcon />,
-    to: '/settings/github-app',
-  },
-  {
-    key: 'settings-oauth',
-    label: 'OAuth sign-in',
-    group: 'Settings',
-    icon: <KeyIcon />,
-    to: '/settings/oauth',
-  },
-  {
-    key: 'settings-organizations',
-    label: 'Organizations',
-    group: 'Settings',
-    icon: <BuildingsIcon />,
-    to: '/settings/organizations',
-  },
-  {
-    key: 'settings-users',
-    label: 'Users',
-    group: 'Settings',
-    icon: <UsersIcon />,
-    to: '/settings/users',
-  },
-  {
-    key: 'settings-email',
-    label: 'Email',
-    group: 'Settings',
-    icon: <EnvelopeIcon />,
-    to: '/settings/email',
-  },
-  {
-    key: 'settings-general',
-    label: 'General',
-    group: 'Settings',
-    icon: <GearIcon />,
-    to: '/settings/general',
-  },
-  {
-    key: 'settings-updates',
-    label: 'Updates',
-    group: 'Settings',
-    icon: <ArrowCircleUpIcon />,
-    to: '/settings/updates',
-  },
-  {
-    key: 'settings-audit-log',
-    label: 'Audit log',
-    group: 'Settings',
-    icon: <ClockCounterClockwiseIcon />,
-    to: '/settings/audit-log',
-  },
-  {
-    key: 'nav-help',
-    label: 'Help',
-    group: 'Navigate',
-    icon: <QuestionIcon />,
-    to: '/help',
-  },
-]
-
-function ResultRow({
-  item,
-  active,
-  onSelect,
-}: {
-  item: ResultItem
-  active: boolean
-  onSelect: () => void
-}) {
-  return (
-    <button
-      type="button"
-      id={`command-palette-option-${item.key}`}
-      role="option"
-      aria-selected={active}
-      data-active={active}
-      onClick={onSelect}
-      className={cn(
-        'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm outline-none',
-        active
-          ? 'bg-muted text-foreground'
-          : 'text-foreground/90 hover:bg-muted/60',
-      )}
-    >
-      <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground [&_svg]:size-4">
-        {item.icon}
-      </span>
-      <span className="truncate">{item.label}</span>
-    </button>
-  )
+const MAX_APP_MATCHES = 3
+const NEXT_THEME: Record<Theme, Theme> = {
+  light: 'dark',
+  dark: 'system',
+  system: 'light',
 }
 
 // Command palette: Cmd+K (Mac) / Ctrl+K (elsewhere) opens it from anywhere
@@ -239,9 +45,11 @@ function ResultRow({
 export function CommandPalette({
   open: openProp,
   onOpenChange,
+  onShowShortcuts,
 }: {
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  onShowShortcuts?: () => void
 } = {}) {
   const [internalOpen, setInternalOpen] = React.useState(false)
   const open = openProp ?? internalOpen
@@ -255,9 +63,14 @@ export function CommandPalette({
 
   const [query, setQuery] = React.useState('')
   const [activeIndex, setActiveIndex] = React.useState(0)
+  const [recentKeys, setRecentKeys] = React.useState<string[]>(loadRecentKeys)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
+  const { theme, setTheme } = useTheme()
+  const { restartApp, redeployApp } = usePaletteAppActions()
 
+  // Both lists come from the shared query cache: they only refetch when
+  // stale on open, never per keystroke (filtering is client-side).
   const appsQuery = useQuery({ ...appListQueryOptions(), enabled: open })
   const databasesQuery = useQuery({
     ...databaseListQueryOptions(),
@@ -276,14 +89,14 @@ export function CommandPalette({
   }, [open, setOpen])
 
   // Reset filter state at the moment `open` flips, computed during render
-  // (not an effect) per React's "adjusting state on prop change" pattern,
-  // since setState-in-effect would cascade an extra render for no benefit.
+  // (not an effect) per React's "adjusting state on prop change" pattern.
   const [prevOpen, setPrevOpen] = React.useState(open)
   if (open !== prevOpen) {
     setPrevOpen(open)
     if (open) {
       setQuery('')
       setActiveIndex(0)
+      setRecentKeys(loadRecentKeys())
     }
   }
 
@@ -295,54 +108,147 @@ export function CommandPalette({
     return undefined
   }, [open])
 
-  const results = React.useMemo<ResultItem[]>(() => {
-    const dynamic: ResultItem[] = []
+  const baseItems = React.useMemo<PaletteItem[]>(() => {
+    const go = (to: string, params?: Record<string, string>) => () =>
+      void navigate({ to, params })
+    const items: PaletteItem[] = ROUTE_ENTRIES.map((e) => ({
+      key: e.key,
+      label: e.label,
+      group: e.group,
+      icon: e.icon,
+      run: go(e.to),
+    }))
+    items.push({
+      ...THEME_ACTION,
+      run: () => setTheme(NEXT_THEME[theme]),
+    })
+    if (onShowShortcuts) {
+      items.push({
+        key: 'action-shortcuts',
+        label: 'Keyboard shortcuts',
+        group: 'Actions',
+        icon: <KeyboardIcon />,
+        run: onShowShortcuts,
+      })
+    }
     for (const app of appsQuery.data ?? []) {
-      dynamic.push({
+      items.push({
         key: `app-${app.name}`,
         label: app.name,
         group: 'Apps',
         icon: <StackIcon />,
-        to: '/apps/$name',
-        params: { name: app.name },
+        run: go('/apps/$name', { name: app.name }),
       })
     }
     for (const db of databasesQuery.data ?? []) {
-      dynamic.push({
+      items.push({
         key: `db-${db.name}`,
         label: db.name,
         group: 'Databases',
         icon: <DatabaseIcon />,
-        to: '/databases/$name',
-        params: { name: db.name },
+        run: go('/databases/$name', { name: db.name }),
       })
     }
-    const all = [...STATIC_ENTRIES, ...dynamic]
-    const q = query.trim().toLowerCase()
-    if (!q) return all
-    return all.filter((item) => item.label.toLowerCase().includes(q))
-  }, [query, appsQuery.data, databasesQuery.data])
+    return items
+  }, [
+    navigate,
+    setTheme,
+    theme,
+    appsQuery.data,
+    databasesQuery.data,
+    onShowShortcuts,
+  ])
 
   const groups = React.useMemo(() => {
-    const order: string[] = []
-    const byGroup = new Map<string, ResultItem[]>()
-    for (const item of results) {
-      if (!byGroup.has(item.group)) {
-        byGroup.set(item.group, [])
-        order.push(item.group)
+    const q = query.trim()
+    const byGroup = new Map<string, PaletteItem[]>()
+
+    if (!q) {
+      const byKey = new Map(baseItems.map((i) => [i.key, i]))
+      const recent = recentKeys.flatMap((k) => {
+        const item = byKey.get(k)
+        return item
+          ? [{ ...item, key: `recent-${item.key}`, group: 'Recent' }]
+          : []
+      })
+      if (recent.length > 0) byGroup.set('Recent', recent)
+      for (const item of baseItems) {
+        byGroup.set(item.group, [...(byGroup.get(item.group) ?? []), item])
       }
-      byGroup.get(item.group)?.push(item)
+    } else {
+      const apps = fuzzyFilter(appsQuery.data ?? [], q, (a) => a.name)
+      const matches = q.length >= 2 ? apps : []
+      const appActions: PaletteItem[] = []
+      for (const app of matches.slice(0, MAX_APP_MATCHES)) {
+        const n = app.name
+        const act = (
+          id: string,
+          label: string,
+          icon: React.ReactNode,
+          run: () => void,
+        ): PaletteItem => ({
+          key: `app-action-${id}-${n}`,
+          label: `${label} ${n}`,
+          group: 'App actions',
+          icon,
+          run,
+        })
+        appActions.push(
+          act('restart', 'Restart', <ArrowClockwiseIcon />, () =>
+            restartApp(n),
+          ),
+          act('redeploy', 'Redeploy', <RocketLaunchIcon />, () =>
+            redeployApp(n, app.image),
+          ),
+          act(
+            'logs',
+            'Open logs for',
+            <TerminalWindowIcon />,
+            () =>
+              void navigate({ to: '/apps/$name/logs', params: { name: n } }),
+          ),
+          act(
+            'deploys',
+            'Open deploys for',
+            <ClockCounterClockwiseIcon />,
+            () =>
+              void navigate({ to: '/apps/$name/deploys', params: { name: n } }),
+          ),
+        )
+      }
+      if (appActions.length > 0) byGroup.set('App actions', appActions)
+      for (const item of fuzzyFilter(baseItems, q, (i) => i.label)) {
+        byGroup.set(item.group, [...(byGroup.get(item.group) ?? []), item])
+      }
     }
-    return order.map((group) => ({ group, items: byGroup.get(group) ?? [] }))
-  }, [results])
+
+    return GROUP_ORDER.flatMap((group) => {
+      const items = byGroup.get(group)
+      return items && items.length > 0 ? [{ group, items }] : []
+    })
+  }, [
+    query,
+    baseItems,
+    recentKeys,
+    appsQuery.data,
+    navigate,
+    restartApp,
+    redeployApp,
+  ])
+
+  const results = React.useMemo(() => groups.flatMap((g) => g.items), [groups])
 
   const select = React.useCallback(
-    (item: ResultItem) => {
-      void navigate({ to: item.to, params: item.params })
+    (item: PaletteItem) => {
+      const originalKey = item.key.replace(/^recent-/, '')
+      if (!originalKey.startsWith('app-action-')) {
+        setRecentKeys(pushRecentKey(originalKey))
+      }
+      item.run()
       setOpen(false)
       setQuery('')
     },
-    [navigate, setOpen],
+    [setOpen],
   )
 
   function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -366,6 +272,8 @@ export function CommandPalette({
     }
   }
 
+  const optionId = (item: PaletteItem) => `command-palette-option-${item.key}`
+  const activeItem = results[activeIndex]
   let flatIndex = -1
 
   return (
@@ -381,18 +289,18 @@ export function CommandPalette({
           data-slot="command-palette"
           className="fixed top-24 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 gap-0 overflow-hidden rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
-          <DialogTitle className="sr-only">Search</DialogTitle>
+          <DialogTitle className="sr-only">Command palette</DialogTitle>
           <div className="flex items-center gap-2 border-b border-border px-3">
             <MagnifyingGlassIcon className="size-4 shrink-0 text-muted-foreground" />
             <Input
               ref={inputRef}
               role="combobox"
+              aria-label="Search commands"
               aria-expanded={open}
               aria-controls="command-palette-listbox"
+              aria-autocomplete="list"
               aria-activedescendant={
-                results[activeIndex]
-                  ? `command-palette-option-${results[activeIndex].key}`
-                  : undefined
+                activeItem ? optionId(activeItem) : undefined
               }
               value={query}
               onChange={(e) => {
@@ -400,7 +308,7 @@ export function CommandPalette({
                 setActiveIndex(0)
               }}
               onKeyDown={handleInputKeyDown}
-              placeholder="Search apps, databases, settings..."
+              placeholder="Search apps, actions, settings..."
               className="h-11 border-none px-0 shadow-none focus-visible:ring-0"
             />
           </div>
@@ -416,8 +324,16 @@ export function CommandPalette({
               </p>
             ) : (
               groups.map(({ group, items }) => (
-                <div key={group} className="mb-2 last:mb-0">
-                  <p className="px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                <div
+                  key={group}
+                  role="group"
+                  aria-label={group}
+                  className="mb-2 last:mb-0"
+                >
+                  <p
+                    aria-hidden="true"
+                    className="px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                  >
                     {group}
                   </p>
                   {items.map((item) => {
@@ -427,6 +343,7 @@ export function CommandPalette({
                       <ResultRow
                         key={item.key}
                         item={item}
+                        optionId={optionId(item)}
                         active={index === activeIndex}
                         onSelect={() => select(item)}
                       />
@@ -436,6 +353,7 @@ export function CommandPalette({
               ))
             )}
           </div>
+          <PaletteFooter />
         </DialogPrimitive.Popup>
       </DialogPortal>
     </DialogPrimitive.Root>
