@@ -84,7 +84,9 @@ echo "pre-commit: web (tsc, eslint, prettier)"
 staged_web_files=$(git diff --cached --name-only --diff-filter=ACM -- 'web/*.ts' 'web/*.tsx')
 if [ -n "$staged_web_files" ]; then
 	rel_web_files=$(echo "$staged_web_files" | sed 's#^web/##')
-	if ! ( cd web && npx tsc --noEmit ); then
+	# tsc -b, not tsc --noEmit: the root tsconfig only holds project
+	# references, so --noEmit checks nothing. -b is what CI runs.
+	if ! ( cd web && npx tsc -b ); then
 		fail=1
 	fi
 	# shellcheck disable=SC2086

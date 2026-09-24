@@ -12,7 +12,7 @@
 # up or any command exits non-zero. Set SMOKE_KEEP=1 to leave the server
 # running (prints its URL) for manual poking, or SMOKE_PORT to pick a port.
 #
-# Web-only change? Skip this and run: cd web && npx tsc --noEmit && npx vitest run --changed
+# Web-only change? Skip this and run: cd web && npx tsc -b && npx vitest run --changed
 
 set -uo pipefail
 

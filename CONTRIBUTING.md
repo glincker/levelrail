@@ -41,7 +41,7 @@ backstop instead of running it all by hand.
 1. **While coding**: test only what you touched, not the whole tree.
    `scripts/affected-tests.sh` runs the changed packages plus their
    dependents; for a single package use `go test -short ./internal/foo`.
-   Web: `cd web && npx tsc --noEmit && npx vitest run --changed`.
+   Web: `cd web && npx tsc -b && npx vitest run --changed`.
 2. **Prove it works for real**: unit tests can pass on a feature that does
    not work. Boot the actual control plane from your tree and drive it with
    the CLI:
