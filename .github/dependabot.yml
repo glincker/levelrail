@@ -4,10 +4,19 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     labels: ["type/chore", "area/ci"]
     commit-message:
       prefix: "chore"
+    groups:
+      go-deps:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      # cel-go 0.29 breaks caddy v2.11.x (interpreter.NewCall signature).
+      # Drop this once a caddy release supports it.
+      - dependency-name: "github.com/google/cel-go"
+        update-types: ["version-update:semver-minor"]
 
   - package-ecosystem: "gomod"
     directory: "/tools"
@@ -17,21 +26,31 @@ updates:
     labels: ["type/chore", "area/ci"]
     commit-message:
       prefix: "chore"
+    groups:
+      go-tools:
+        patterns: ["*"]
 
   - package-ecosystem: "npm"
     directory: "/web"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     labels: ["type/chore", "area/ci"]
     commit-message:
       prefix: "chore"
+    groups:
+      npm-deps:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     labels: ["type/chore", "area/ci"]
     commit-message:
       prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]
