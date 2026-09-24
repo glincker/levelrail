@@ -89,6 +89,16 @@ positive rather than editing real code. Never commit a real credential:
 if one leaks, rotate it, since removing it from history does not
 un-expose it.
 
+## CI at a glance
+
+A PR shows one gate that matters: **CI required**. It always runs and
+passes only if every job that applies to your change passed, so docs-only
+PRs are not blocked by skipped backend jobs. Under it, jobs run in parallel
+and only for the areas you touched (backend, web, installer). Also on every
+PR: **PR hygiene** (labels, size, description and commit rules, one job) and
+the third-party review bots, which are not required. Flaky-test issues are
+filed by a separate workflow after CI finishes on `main`, not on PRs.
+
 ## Running tests
 
 ```
