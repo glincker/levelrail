@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   ArrowDownIcon,
@@ -7,6 +7,12 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { stripAnsiCodes } from '../lib/ansi'
 import type { LogLine } from '../hooks/useLogStream'
+import {
+  filterLogLines,
+  logLinesToText,
+  type LogFilter,
+} from '../lib/logFilter'
+import { LogToolbar } from './LogToolbar'
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
 
 const ROW_HEIGHT_PX = 20
@@ -33,7 +39,7 @@ const BOTTOM_THRESHOLD_PX = 32
 // the stream's data, render and scroll-follow it) is the actual
 // boundary, not "owns everything log-stream-related."
 export function LogTerminal({
-  lines,
+  lines: allLines,
   isPaused,
   pause,
   resume,
@@ -61,6 +67,14 @@ export function LogTerminal({
   isFinished?: boolean
 }) {
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [filter, setFilter] = useState<LogFilter>({
+    text: '',
+    stderrOnly: false,
+  })
+  const lines = useMemo(
+    () => filterLogLines(allLines, filter),
+    [allLines, filter],
+  )
   const parentRef = useRef<HTMLDivElement>(null)
   // The toggle button unmounts and remounts as a fresh DOM node across
   // the fullscreen transition (the Dialog portals `body` elsewhere
@@ -140,14 +154,37 @@ export function LogTerminal({
 
   const virtualItems = virtualizer.getVirtualItems()
 
+  const handleCopy = useCallback(
+    () => navigator.clipboard.writeText(logLinesToText(lines)),
+    [lines],
+  )
+  const handleDownload = useCallback(() => {
+    const url = URL.createObjectURL(
+      new Blob([logLinesToText(lines)], { type: 'text/plain' }),
+    )
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `logs-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [lines])
+
   const body = (
     <div
       className={
         isFullscreen
-          ? 'relative flex min-h-0 flex-1 flex-col'
-          : 'relative flex-1'
+          ? 'relative flex min-h-0 flex-1 flex-col gap-2'
+          : 'relative flex flex-1 flex-col gap-2'
       }
     >
+      <LogToolbar
+        filter={filter}
+        onFilterChange={setFilter}
+        shown={lines.length}
+        total={allLines.length}
+        onCopy={handleCopy}
+        onDownload={handleDownload}
+      />
       <div
         ref={parentRef}
         onScroll={handleScroll}
@@ -204,7 +241,7 @@ export function LogTerminal({
           setIsFullscreen((prev) => !prev)
         }}
         aria-label={isFullscreen ? 'Exit fullscreen' : 'View fullscreen'}
-        className="absolute top-2 right-2 rounded p-1 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
+        className="absolute top-12 right-2 rounded p-1 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
       >
         {isFullscreen ? (
           <ArrowsInIcon className="size-3.5" aria-hidden="true" />

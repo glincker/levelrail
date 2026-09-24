@@ -82,7 +82,7 @@ stub, the substance lives in the imported component.
 - Cloudflare Tunnel
 - Vault (external secrets)
 - Email
-- System status (doctor bundle)
+- System status (doctor bundle), plus a Status page (`/status`) and an `attention` CLI command listing everything failing right now
 - Containers
 - Updates
 
@@ -116,7 +116,7 @@ the exact method/path/ability of every one), grouped by resource:
 
 All command groups available:
 
-`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `pitr`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `containers`, `system-prune`, `volumes-orphaned`, `volumes-orphaned-cleanup`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `gitea-app`, `templates`, `static-sites`, `tags`, `shared-env`.
+`apps`, `databases`, `auth`, `profile`, `tokens`, `domains`, `backups`, `pitr`, `app-volume-backups`, `cloudflare-tunnel`, `channels`, `backup-targets`, `registry-credentials`, `registry`, `flags`, `nodes`, `status`, `version`, `audit-log`, `audit-purge`, `doctor`, `attention`, `containers`, `system-prune`, `volumes-orphaned`, `volumes-orphaned-cleanup`, `firewall`, `users`, `iam`, `secrets`, `migrate`, `completion`, `settings`, `github-app`, `gitlab-app`, `bitbucket-app`, `gitea-app`, `templates`, `static-sites`, `tags`, `shared-env`.
 
 ### Key command groups
 

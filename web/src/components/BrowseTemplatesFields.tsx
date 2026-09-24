@@ -28,6 +28,7 @@ import {
   WifiHighIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
+import { TemplateLogo } from './TemplateLogo'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -119,7 +120,11 @@ function TemplateCard({
       className="flex flex-col items-start gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <div className="flex w-full items-center justify-between gap-2">
-        <CategoryIcon className="size-6 text-muted-foreground" />
+        <TemplateLogo
+          id={template.id}
+          className="size-6"
+          fallback={<CategoryIcon className="size-6 text-muted-foreground" />}
+        />
         <Badge variant="outline">{template.category}</Badge>
       </div>
       <span className="text-sm font-medium text-foreground">

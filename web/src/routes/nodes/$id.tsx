@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { formatAge } from '../../lib/format'
 import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   nodeDetailQueryOptions,
@@ -16,6 +17,7 @@ import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
+import { NodeEventsCard } from '../../components/NodeEventsCard'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
@@ -152,8 +154,11 @@ function NodeDetailPage() {
               <dt className="text-xs text-muted-foreground uppercase">
                 Last seen
               </dt>
-              <dd className="mt-1 text-sm text-foreground">
-                {formatNodeDate(node.last_seen_at)}
+              <dd
+                className="mt-1 text-sm text-foreground"
+                title={formatNodeDate(node.last_seen_at)}
+              >
+                {formatAge(node.last_seen_at, 'Never')}
               </dd>
             </div>
           </dl>
@@ -245,6 +250,7 @@ function NodeDetailPage() {
       <NodeMeshCard nodeId={id} nodeName={node.name} />
 
       <NodePatchStatusCard nodeId={id} />
+      <NodeEventsCard nodeId={id} />
 
       <NodeMetricsDashboard nodeId={id} />
 

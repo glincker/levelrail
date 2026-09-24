@@ -181,6 +181,14 @@ func (c *Client) ListApps(ctx context.Context) ([]AppResource, error) {
 	return out, err
 }
 
+// ListAppStatuses calls GET /api/v1/apps and keeps only each app's name
+// and rolled-up status summary.
+func (c *Client) ListAppStatuses(ctx context.Context) ([]AppStatusEntry, error) {
+	var out []AppStatusEntry
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps", nil, &out)
+	return out, err
+}
+
 // CloneApp calls POST /api/v1/apps/{name}/clone: duplicates name's
 // desired state under newName. Domains, secret values, and node
 // placement are never copied (see internal/api/apps_clone.go's own doc
@@ -2405,6 +2413,18 @@ func (c *Client) GetNodeHealth(ctx context.Context, id string) ([]ConditionResou
 func (c *Client) GetNodePatchStatus(ctx context.Context, id string) (NodePatchStatusResource, error) {
 	var out NodePatchStatusResource
 	err := c.do(ctx, http.MethodGet, nodePath(id)+"/patch-status", nil, &out)
+	return out, err
+}
+
+// ListNodeEvents calls GET /api/v1/nodes/{id}/events: the node's recent
+// status transitions, newest first. limit <= 0 uses the server default.
+func (c *Client) ListNodeEvents(ctx context.Context, id string, limit int) ([]NodeStatusEventResource, error) {
+	path := nodePath(id) + "/events"
+	if limit > 0 {
+		path += "?limit=" + strconv.Itoa(limit)
+	}
+	var out []NodeStatusEventResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
 

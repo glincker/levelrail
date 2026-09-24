@@ -13,6 +13,7 @@ import {
   CloudArrowUpIcon,
   RobotIcon,
   GavelIcon,
+  HeartbeatIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -31,6 +32,7 @@ import { Button } from '@/components/ui/button'
 import { useBrand } from '../hooks/useBrand'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { useLogout } from '../queries/auth'
+import { useAttentionItems } from '../queries/attention'
 import { useDeployApprovalsOptional } from '../queries/deployApprovals'
 
 // Lazy: exactly one of these three renders at a time (mutually exclusive
@@ -91,6 +93,7 @@ export function AppSidebar() {
   // state of its own.
   const pendingApprovals = useDeployApprovalsOptional('pending')
   const pendingApprovalCount = pendingApprovals.data?.length ?? 0
+  const attentionCount = useAttentionItems().items.length
 
   return (
     <Sidebar collapsible="icon" variant="floating">
@@ -141,6 +144,21 @@ export function AppSidebar() {
                     >
                       <GaugeIcon />
                       <span>Dashboard</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/status" />}
+                      isActive={pathname.startsWith('/status')}
+                      tooltip="Status"
+                    >
+                      <HeartbeatIcon />
+                      <span>Status</span>
+                      {attentionCount > 0 ? (
+                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white group-data-[collapsible=icon]:hidden">
+                          {attentionCount}
+                        </span>
+                      ) : null}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>

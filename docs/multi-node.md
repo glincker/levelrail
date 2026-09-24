@@ -215,6 +215,16 @@ levelrail-cli nodes patch-status <id>
 
 `GET /api/v1/nodes/{id}/patch-status` reads the latest patch sample from `HostPatchCollector`.
 
+### Connection history
+
+Every node status change (online, offline, cordoned) is recorded, the newest 200 per node. See it on the node detail page's "Connection history" card, or from the CLI:
+
+```
+levelrail-cli nodes events <id> [--limit N]
+```
+
+`GET /api/v1/nodes/{id}/events?limit=N` returns the same list, newest first.
+
 **Collection details:**
 - Interval: `APP_OS_PATCH_CHECK_INTERVAL` (default 1 hour).
 - Lookback: Up to 48 hours (handles slow or just-restarted collectors).
@@ -383,6 +393,7 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 | `POST` | `/api/v1/nodes/{id}/drain?target_node_id=` | `root` |
 | `GET` | `/api/v1/nodes/{id}/metrics?metric=&from=&to=&step=` | `root` |
 | `GET` | `/api/v1/nodes/{id}/patch-status` | `root` |
+| `GET` | `/api/v1/nodes/{id}/events` | `root` |
 | `POST` | `/api/v1/nodes/{id}/mesh/rotate-key` | `root` |
 | `GET` | `/api/v1/mesh` | `root` |
 | `PUT` | `/api/v1/apps/{name}/node` | `root` |

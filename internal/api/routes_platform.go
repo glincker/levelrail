@@ -346,6 +346,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// HostPatchCollector), a single current fact rather than a time
 	// series, same AbilityRoot boundary as every other node route.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/patch-status", rt.requireAbility(AbilityRoot, rt.handleGetNodePatchStatus))
+	mux.HandleFunc("GET /api/v1/nodes/{id}/events", rt.requireAbility(AbilityRoot, rt.handleListNodeEvents))
 
 	// Certificates (TLS renewal visibility): this project treats
 	// "a cert renewal fails silently at 3am" as its central

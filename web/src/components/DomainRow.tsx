@@ -1,8 +1,13 @@
 import { Link } from '@tanstack/react-router'
-import { CheckIcon, CopyIcon, GlobeIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  CheckIcon,
+  CopyIcon,
+  GlobeIcon,
+  CaretRightIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { certStatusMeta } from '../lib/certStatus'
+import { certExpiryLabel, certStatusMeta } from '../lib/certStatus'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import type { CertificateStatus } from '../queries/certificates'
 import type { Domain } from '../queries/domains'
@@ -74,7 +79,11 @@ export function DomainRow({
           }}
           aria-label={copied ? 'Domain copied' : 'Copy domain'}
         >
-          {copied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />}
+          {copied ? (
+            <CheckIcon className="size-3.5" />
+          ) : (
+            <CopyIcon className="size-3.5" />
+          )}
         </Button>
       </span>
 
@@ -84,9 +93,17 @@ export function DomainRow({
 
       <span className="min-w-0">
         {cert ? (
-          <Badge variant={certStatusMeta[cert.status].variant}>
-            {certStatusMeta[cert.status].label}
-          </Badge>
+          <span className="flex min-w-0 flex-col items-start gap-0.5">
+            <Badge variant={certStatusMeta[cert.status].variant}>
+              {certStatusMeta[cert.status].label}
+            </Badge>
+            <span
+              className="truncate text-[11px] text-muted-foreground"
+              title={cert.not_after}
+            >
+              {certExpiryLabel(cert.not_after)}
+            </span>
+          </span>
         ) : (
           <span className="text-xs text-muted-foreground/60 italic">
             no cert yet

@@ -306,6 +306,7 @@ Endpoints for:
 | POST | /api/v1/nodes/{id}/drain | AbilityRoot | handleDrainNode |
 | GET | /api/v1/nodes/{id}/metrics | AbilityRoot | handleQueryNodeMetrics |
 | GET | /api/v1/nodes/{id}/patch-status | AbilityRoot | handleGetNodePatchStatus |
+| GET | /api/v1/nodes/{id}/events | AbilityRoot | handleListNodeEvents |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 

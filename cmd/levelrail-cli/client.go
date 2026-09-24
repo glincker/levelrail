@@ -159,6 +159,7 @@ type (
 	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse
 	drainNodeResponse           = apiclient.DrainNodeResponse
 	nodePatchStatusResource     = apiclient.NodePatchStatusResource
+	nodeStatusEventResource     = apiclient.NodeStatusEventResource
 	nodeAlertStatusResource     = apiclient.NodeAlertStatusResource
 	meshStatusResource          = apiclient.MeshStatusResource
 	meshPeerResource            = apiclient.MeshPeerResource

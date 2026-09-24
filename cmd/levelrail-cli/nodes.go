@@ -42,6 +42,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesHealth(prog, args[1:], stdout, stderr, lookupEnv)
 	case "patch-status":
 		return runNodesPatchStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "events":
+		return runNodesEvents(prog, args[1:], stdout, stderr, lookupEnv)
 	case "metrics":
 		return runNodesMetrics(prog, args[1:], stdout, stderr, lookupEnv)
 	case "resource-usage":
@@ -69,6 +71,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes workloads <id> --accepts-app --accepts-build [flags]   set a node's accepted workload kinds
   %[1]s nodes health <id> [flags]                                    show a node's current reconcile conditions
   %[1]s nodes patch-status <id> [flags]                              show a node's latest available-OS-updates reading
+  %[1]s nodes events <id> [--limit N] [flags]                        show a node's recent online/offline/cordon transitions
   %[1]s nodes metrics <id> --metric NAME [flags]                     query a node's metric time series
   %[1]s nodes resource-usage [flags]                                 show every node's latest CPU/memory/disk usage, plus a fleet rollup
   %[1]s nodes mesh [flags]                                           show this control plane's live WireGuard mesh state and peers

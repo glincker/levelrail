@@ -192,24 +192,90 @@ func (db *DB) DeleteNode(ctx context.Context, id string) error {
 	return nil
 }
 
-// UpdateNodeStatus sets a node's status. Returns ErrNodeNotFound if no
-// such node exists, the same "distinguish real failure from a no-op"
-// rigor RevokeAPIToken applies to its own conditional UPDATE.
+// maxNodeStatusEventsPerNode bounds node_status_events so a flapping
+// node cannot grow the table without limit.
+const maxNodeStatusEventsPerNode = 200
+
+// UpdateNodeStatus sets a node's status and, when it actually changed,
+// records the transition in node_status_events. Returns ErrNodeNotFound
+// if no such node exists.
 func (db *DB) UpdateNodeStatus(ctx context.Context, id string, status NodeStatus) error {
-	res, err := db.ExecContext(ctx, `
-		UPDATE nodes SET status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
-	`, string(status), id)
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
+		return fmt.Errorf("store: update status for node %q: begin: %w", id, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var old string
+	if err := tx.QueryRowContext(ctx, `SELECT status FROM nodes WHERE id = ?`, id).Scan(&old); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNodeNotFound
+		}
+		return fmt.Errorf("store: update status for node %q: read current: %w", id, err)
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE nodes SET status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
+	`, string(status), id); err != nil {
 		return fmt.Errorf("store: update status for node %q: %w", id, err)
 	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("store: update status for node %q: rows affected: %w", id, err)
+	if old != string(status) {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO node_status_events (node_id, from_status, to_status) VALUES (?, ?, ?)
+		`, id, old, string(status)); err != nil {
+			return fmt.Errorf("store: record status event for node %q: %w", id, err)
+		}
+		if _, err := tx.ExecContext(ctx, `
+			DELETE FROM node_status_events WHERE node_id = ? AND id NOT IN (
+				SELECT id FROM node_status_events WHERE node_id = ? ORDER BY id DESC LIMIT ?
+			)
+		`, id, id, maxNodeStatusEventsPerNode); err != nil {
+			return fmt.Errorf("store: trim status events for node %q: %w", id, err)
+		}
 	}
-	if n == 0 {
-		return ErrNodeNotFound
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: update status for node %q: commit: %w", id, err)
 	}
 	return nil
+}
+
+// NodeStatusEvent is one recorded node status transition.
+type NodeStatusEvent struct {
+	ID         int64
+	NodeID     string
+	FromStatus NodeStatus
+	ToStatus   NodeStatus
+	CreatedAt  time.Time
+}
+
+// ListNodeStatusEvents returns a node's most recent status transitions,
+// newest first.
+func (db *DB) ListNodeStatusEvents(ctx context.Context, nodeID string, limit int) ([]NodeStatusEvent, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT id, node_id, from_status, to_status, created_at
+		FROM node_status_events WHERE node_id = ? ORDER BY id DESC LIMIT ?
+	`, nodeID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("store: list status events for node %q: %w", nodeID, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	events := []NodeStatusEvent{}
+	for rows.Next() {
+		var e NodeStatusEvent
+		var from, to, created string
+		if err := rows.Scan(&e.ID, &e.NodeID, &from, &to, &created); err != nil {
+			return nil, fmt.Errorf("store: scan status event for node %q: %w", nodeID, err)
+		}
+		e.FromStatus, e.ToStatus = NodeStatus(from), NodeStatus(to)
+		if e.CreatedAt, err = time.Parse(time.RFC3339Nano, created); err != nil {
+			return nil, fmt.Errorf("store: parse status event time for node %q: %w", nodeID, err)
+		}
+		events = append(events, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: list status events for node %q: %w", nodeID, err)
+	}
+	return events, nil
 }
 
 // UpdateNodeWorkloads sets a node's workload capability flags.

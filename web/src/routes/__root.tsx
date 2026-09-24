@@ -13,6 +13,7 @@ import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
 import { CommandPalette } from '../components/CommandPalette'
 import { DockerHealthBanner } from '../components/DockerHealthBanner'
+import { DiskPressureBanner } from '../components/DiskPressureBanner'
 import { HelpMenu } from '../components/HelpMenu'
 import { InsecureConnectionBanner } from '../components/InsecureConnectionBanner'
 import { NotificationBell } from '../components/NotificationBell'
@@ -131,6 +132,7 @@ function AppShell() {
         </header>
         <InsecureConnectionBanner />
         <DockerHealthBanner />
+        <DiskPressureBanner />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="mx-auto w-full max-w-6xl">
             <Outlet />
