@@ -25,6 +25,7 @@ System endpoints for:
 | POST | /api/v1/system/backups | AbilityRoot | handleCreateControlPlaneBackup |
 | GET | /api/v1/system/backups | AbilityRoot | handleListControlPlaneBackups |
 | GET | /api/v1/system/backups/{name}/download | AbilityRoot | handleDownloadControlPlaneBackup |
+| POST | /api/v1/system/backups/{name}/verify | AbilityRoot | handleVerifyControlPlaneBackup |
 | DELETE | /api/v1/system/backups/{name} | AbilityRoot | handleDeleteControlPlaneBackup |
 | GET | /api/v1/system/volumes/orphaned | AbilityRead | handleListOrphanedVolumes |
 | POST | /api/v1/system/volumes/orphaned/cleanup | AbilityRoot | handleCleanupOrphanedVolumes |

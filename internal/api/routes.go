@@ -52,6 +52,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/system/backups", rt.requireAbility(AbilityRoot, rt.handleCreateControlPlaneBackup))
 	mux.HandleFunc("GET /api/v1/system/backups", rt.requireAbility(AbilityRoot, rt.handleListControlPlaneBackups))
 	mux.HandleFunc("GET /api/v1/system/backups/{name}/download", rt.requireAbility(AbilityRoot, rt.handleDownloadControlPlaneBackup))
+	mux.HandleFunc("POST /api/v1/system/backups/{name}/verify", rt.requireAbility(AbilityRoot, rt.handleVerifyControlPlaneBackup))
 	mux.HandleFunc("DELETE /api/v1/system/backups/{name}", rt.requireAbility(AbilityRoot, rt.handleDeleteControlPlaneBackup))
 	// Orphaned named volumes: detection is a read (AbilityRead), the
 	// cleanup that actually deletes one is the same AbilityRoot,

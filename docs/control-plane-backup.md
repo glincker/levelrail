@@ -56,6 +56,7 @@ If the database has a schema version newer than the binary understands, the serv
 levelrail-cli control-plane-backups create
 levelrail-cli control-plane-backups list
 levelrail-cli control-plane-backups download <name> --out backup.db
+levelrail-cli control-plane-backups verify <name>
 levelrail-cli control-plane-backups delete <name>
 ```
 
@@ -66,7 +67,24 @@ Without `--out`, `download` writes the raw bytes to stdout. The same operations 
 | `POST` | `/api/v1/system/backups` |
 | `GET` | `/api/v1/system/backups` |
 | `GET` | `/api/v1/system/backups/{name}/download` |
+| `POST` | `/api/v1/system/backups/{name}/verify` |
 | `DELETE` | `/api/v1/system/backups/{name}` |
+
+## Verifying a backup
+
+A backup you have never checked is a hope, not a backup. Verification proves a snapshot is still intact without restoring anything:
+
+1. **checksum**: the file's SHA-256 is recomputed and compared with the checksum recorded when the snapshot was taken. Snapshots from before checksums were recorded pass this check with a note.
+2. **integrity**: SQLite opens the file read-only and runs `integrity_check`.
+3. **schema_version**: the snapshot's schema version must not be newer than this binary supports, otherwise a restore would be refused.
+
+```
+levelrail-cli control-plane-backups verify levelrail-20260101T000000Z.db
+```
+
+The command exits `0` when every check passes and `1` when any fails, so it fits in a cron job or a monitoring script. Over the API the response is `{"name", "ok", "checks": [{"name", "ok", "detail"}], "verified_at"}`; a failed check is still a `200` with `"ok": false`.
+
+The last result is kept in a small file next to the snapshot (no database change) and shows up as `verified_at` and `verified_ok` on each entry of the list response. The dashboard shows a Verify button and a last-verified badge per backup. Deleting a snapshot removes its verification record too.
 
 ## Restoring
 

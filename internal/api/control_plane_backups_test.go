@@ -64,6 +64,15 @@ func TestControlPlaneBackups_Lifecycle(t *testing.T) {
 		t.Fatalf("download status = %d headers = %v", rec.Code, rec.Header())
 	}
 
+	rec = do(http.MethodPost, "/api/v1/system/backups/"+created.Name+"/verify")
+	var ver cpbackup.VerifyResult
+	if err := json.Unmarshal(rec.Body.Bytes(), &ver); rec.Code != http.StatusOK || err != nil || !ver.OK || ver.Name != created.Name || len(ver.Checks) != 3 {
+		t.Fatalf("verify status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	if rec = do(http.MethodPost, "/api/v1/system/backups/levelrail-20200101T000000Z.db/verify"); rec.Code != http.StatusNotFound {
+		t.Fatalf("verify missing status = %d, want 404", rec.Code)
+	}
+
 	if rec = do(http.MethodDelete, "/api/v1/system/backups/"+created.Name); rec.Code != http.StatusNoContent {
 		t.Fatalf("delete status = %d", rec.Code)
 	}
@@ -96,6 +105,7 @@ func TestControlPlaneBackups_RequireRoot(t *testing.T) {
 		{http.MethodPost, "/api/v1/system/backups"},
 		{http.MethodGet, "/api/v1/system/backups"},
 		{http.MethodGet, "/api/v1/system/backups/levelrail-20200101T000000Z.db/download"},
+		{http.MethodPost, "/api/v1/system/backups/levelrail-20200101T000000Z.db/verify"},
 		{http.MethodDelete, "/api/v1/system/backups/levelrail-20200101T000000Z.db"},
 	} {
 		req := httptest.NewRequest(c.method, c.target, nil)

@@ -29,6 +29,8 @@ func runControlPlaneBackups(prog string, args []string, stdout, stderr io.Writer
 		return runControlPlaneBackupsCreate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "download":
 		return runControlPlaneBackupsDownload(prog, args[1:], stdout, stderr, lookupEnv)
+	case "verify":
+		return runControlPlaneBackupsVerify(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runControlPlaneBackupsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -43,6 +45,7 @@ func controlPlaneBackupsUsage(prog string) string {
   %[1]s control-plane-backups list [flags]                    list control plane database snapshots, newest first
   %[1]s control-plane-backups create [flags]                  take a snapshot now (manual snapshots are never auto-deleted)
   %[1]s control-plane-backups download <name> [--out FILE]    save a snapshot (default: raw bytes to stdout)
+  %[1]s control-plane-backups verify <name> [flags]           check a snapshot's checksum, integrity and schema (exit 1 if not ok)
   %[1]s control-plane-backups delete <name> [flags]           delete one snapshot
 
 Snapshots hold the control plane database only, never the master key.
@@ -159,6 +162,49 @@ func runControlPlaneBackupsDownload(prog string, args []string, stdout, stderr i
 	}
 	_, _ = fmt.Fprintf(stderr, "saved %s (%d bytes) to %s\n", rest[0], len(data), outFile)
 	return exitOK
+}
+
+func runControlPlaneBackupsVerify(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenP, urlP, profileP, jsonP, outP, queryP := apiFlagSet(prog, "control-plane-backups verify", "print the verification result as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprint(stderr, controlPlaneBackupFlagsUsage(prog, "verify <name>", "Re-checks a snapshot's sha256 against the recorded one, runs SQLite's\nintegrity_check and confirms its schema is not newer than this binary.\nNothing is restored. Exits 1 when any check fails."))
+	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, urlP, profileP, jsonP, outP, queryP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	rest, ok := requireArgs(fs, stderr, prog, "control-plane-backups verify", "a backup name", 1)
+	if !ok {
+		return exitUsage
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	res, err := client.VerifyControlPlaneBackup(context.Background(), rest[0])
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("verify control plane backup %q: %w", rest[0], err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, res, func() { printControlPlaneBackupVerification(stdout, res) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	if !res.OK {
+		return exitCheckFailed
+	}
+	return exitOK
+}
+
+func printControlPlaneBackupVerification(out io.Writer, res apiclient.ControlPlaneBackupVerification) {
+	for _, c := range res.Checks {
+		status := "ok"
+		if !c.OK {
+			status = "FAIL"
+		}
+		_, _ = fmt.Fprintf(out, "%-4s  %s: %s\n", status, c.Name, c.Detail)
+	}
+	if res.OK {
+		_, _ = fmt.Fprintf(out, "backup %s verified\n", res.Name)
+	} else {
+		_, _ = fmt.Fprintf(out, "backup %s FAILED verification\n", res.Name)
+	}
 }
 
 func runControlPlaneBackupsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

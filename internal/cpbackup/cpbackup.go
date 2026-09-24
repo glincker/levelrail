@@ -22,6 +22,8 @@ const DirName = "control-plane-backups"
 const (
 	nameLayout      = "20060102T150405Z"
 	scheduledSuffix = ".scheduled"
+	checksumSuffix  = ".sha256"
+	verifiedSuffix  = ".verified"
 )
 
 var namePattern = regexp.MustCompile(`^levelrail-(\d{8}T\d{6}Z)\.db$`)
@@ -39,6 +41,9 @@ type Info struct {
 	SizeBytes int64     `json:"size_bytes"`
 	CreatedAt time.Time `json:"created_at"`
 	SHA256    string    `json:"sha256"`
+	// VerifiedAt and VerifiedOK describe the last verification, if any.
+	VerifiedAt *time.Time `json:"verified_at,omitempty"`
+	VerifiedOK *bool      `json:"verified_ok,omitempty"`
 }
 
 // Snapshotter is the slice of *store.DB the manager needs.
@@ -92,6 +97,9 @@ func (m *Manager) create(ctx context.Context, scheduled bool) (Info, error) {
 	if err := os.Chmod(path, 0o600); err != nil {
 		return Info{}, fmt.Errorf("chmod backup: %w", err)
 	}
+	if err := os.WriteFile(path+checksumSuffix, []byte(sum), 0o600); err != nil {
+		return Info{}, fmt.Errorf("record backup checksum: %w", err)
+	}
 	if scheduled {
 		if err := os.WriteFile(path+scheduledSuffix, nil, 0o600); err != nil {
 			return Info{}, fmt.Errorf("mark backup scheduled: %w", err)
@@ -133,7 +141,11 @@ func (m *Manager) stat(name string) (Info, error) {
 	if err != nil {
 		return Info{}, fmt.Errorf("parse backup name %q: %w", name, err)
 	}
-	return Info{Name: name, SizeBytes: size, CreatedAt: created.UTC(), SHA256: sum}, nil
+	info := Info{Name: name, SizeBytes: size, CreatedAt: created.UTC(), SHA256: sum}
+	if rec, ok := m.readVerification(name); ok {
+		info.VerifiedAt, info.VerifiedOK = &rec.VerifiedAt, &rec.OK
+	}
+	return info, nil
 }
 
 // Open returns the backup file for reading.
@@ -168,7 +180,9 @@ func (m *Manager) Delete(name string) error {
 		}
 		return fmt.Errorf("delete backup: %w", err)
 	}
-	_ = os.Remove(path + scheduledSuffix)
+	for _, suffix := range []string{scheduledSuffix, checksumSuffix, verifiedSuffix} {
+		_ = os.Remove(path + suffix)
+	}
 	return nil
 }
 

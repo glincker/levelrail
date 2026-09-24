@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { toast } from '@/components/ui/toast'
 import { ControlPlaneBackupsCard } from './ControlPlaneBackupsCard'
 
 vi.mock('@/components/ui/toast', () => ({
@@ -52,6 +53,65 @@ describe('ControlPlaneBackupsCard', () => {
     expect(link.getAttribute('href')).toBe(
       `/api/v1/system/backups/${backup.name}/download`,
     )
+  })
+
+  it('shows never verified, then verifies with POST and toasts the result', async () => {
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) =>
+      Promise.resolve(
+        init?.method === 'POST'
+          ? json({
+              name: backup.name,
+              ok: true,
+              checks: [{ name: 'checksum', ok: true, detail: 'match' }],
+              verified_at: '2026-09-24T00:00:00Z',
+            })
+          : json([backup]),
+      ),
+    )
+    renderCard()
+    expect(await screen.findByText(/never verified/i)).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: /^verify$/i }))
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        `/api/v1/system/backups/${backup.name}/verify`,
+        { method: 'POST' },
+      )
+    })
+    await waitFor(() => {
+      expect(toast.add).toHaveBeenCalledWith({
+        title: 'Backup verified.',
+        type: 'success',
+      })
+    })
+  })
+
+  it('shows a failed verification badge and toasts the failing detail', async () => {
+    const failed = {
+      ...backup,
+      verified_at: '2026-09-24T00:00:00Z',
+      verified_ok: false,
+    }
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) =>
+      Promise.resolve(
+        init?.method === 'POST'
+          ? json({
+              name: backup.name,
+              ok: false,
+              checks: [{ name: 'checksum', ok: false, detail: 'mismatch' }],
+              verified_at: '2026-09-24T00:00:00Z',
+            })
+          : json([failed]),
+      ),
+    )
+    renderCard()
+    expect(await screen.findByText(/verification failed/i)).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: /^verify$/i }))
+    await waitFor(() => {
+      expect(toast.add).toHaveBeenCalledWith({
+        title: 'Verification failed: mismatch',
+        type: 'error',
+      })
+    })
   })
 
   it('shows the empty state', async () => {
