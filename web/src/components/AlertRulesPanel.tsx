@@ -128,6 +128,9 @@ function formatCondition(rule: AlertRule): string {
     const forPart = rule.for_duration ? ` for ${rule.for_duration}` : ''
     return `any of this app's own domains not resolving correctly or pointing elsewhere${forPart}`
   }
+  if (rule.kind === 'control_plane_backup_stale') {
+    return `control plane's newest snapshot older than ${rule.for_duration || '3d (default)'} (platform-wide)`
+  }
   if (rule.kind === 'backup_missing') {
     const target =
       rule.backup_resource_kind === 'volume'
@@ -170,6 +173,9 @@ function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'domain_health') {
     return `${rule.last_value} domain(s) unhealthy`
+  }
+  if (rule.kind === 'control_plane_backup_stale') {
+    return `${rule.last_value.toFixed(1)}h since newest control plane snapshot`
   }
   if (rule.kind === 'backup_missing') {
     return `${rule.last_value.toFixed(1)}h since last successful backup`
@@ -265,7 +271,11 @@ function RuleRow({
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
-          <EditAlertRuleDialog appName={appName} rule={rule} volumes={volumes} />
+          <EditAlertRuleDialog
+            appName={appName}
+            rule={rule}
+            volumes={volumes}
+          />
           <DeleteAlertRuleDialog appName={appName} rule={rule} />
         </div>
       </TableCell>
@@ -322,11 +332,10 @@ export function AlertRulesPanel({
             Alert rules
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Threshold, crashloop, certificate expiry, scheduled task
-            failure, domain health, and missing backup rules over this
-            app&apos;s metrics, restarts, jobs, domains, and backup
-            schedules. Notifies via webhook, Slack, or Discord on a
-            firing/resolved transition.
+            Threshold, crashloop, certificate expiry, scheduled task failure,
+            domain health, and missing backup rules over this app&apos;s
+            metrics, restarts, jobs, domains, and backup schedules. Notifies via
+            webhook, Slack, or Discord on a firing/resolved transition.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -345,7 +354,9 @@ export function AlertRulesPanel({
             icon={<BellRingingIcon className="size-5" />}
             title="No alert rules yet"
             description="Get notified the moment a metric crosses a threshold or a container starts crashlooping, via webhook, Slack, or Discord."
-            action={<CreateAlertRuleDialog appName={appName} volumes={volumes} />}
+            action={
+              <CreateAlertRuleDialog appName={appName} volumes={volumes} />
+            }
           />
         ) : (
           <div className="rounded-lg border border-border">

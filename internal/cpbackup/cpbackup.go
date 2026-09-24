@@ -124,6 +124,33 @@ func (m *Manager) List() ([]Info, error) {
 	return out, nil
 }
 
+// Newest returns the creation time of the most recent backup, read from file
+// names alone (no checksumming), and false when there is none.
+func (m *Manager) Newest() (time.Time, bool, error) {
+	entries, err := os.ReadDir(m.dir)
+	if os.IsNotExist(err) {
+		return time.Time{}, false, nil
+	}
+	if err != nil {
+		return time.Time{}, false, fmt.Errorf("read backup dir: %w", err)
+	}
+	var newest time.Time
+	for _, e := range entries {
+		match := namePattern.FindStringSubmatch(e.Name())
+		if e.IsDir() || match == nil {
+			continue
+		}
+		ts, err := time.Parse(nameLayout, match[1])
+		if err != nil {
+			continue
+		}
+		if ts.After(newest) {
+			newest = ts
+		}
+	}
+	return newest.UTC(), !newest.IsZero(), nil
+}
+
 func (m *Manager) stat(name string) (Info, error) {
 	size, sum, err := store.FileSHA256(filepath.Join(m.dir, name))
 	if err != nil {

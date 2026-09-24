@@ -117,6 +117,11 @@ const KIND_OPTIONS: {
   },
   { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
   { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
+  {
+    value: 'control_plane_backup_stale',
+    label: 'Control plane backup stale',
+    Icon: ArchiveIcon,
+  },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -145,6 +150,7 @@ const createAlertRuleSchema = z
       'node_resource_usage',
       'domain_health',
       'backup_missing',
+      'control_plane_backup_stale',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -169,7 +175,8 @@ const createAlertRuleSchema = z
       data.kind === 'cert_expiry' ||
       data.kind === 'patch_status' ||
       data.kind === 'node_disk_space' ||
-      data.kind === 'node_resource_usage'
+      data.kind === 'node_resource_usage' ||
+      data.kind === 'control_plane_backup_stale'
     ) {
       return
     }
@@ -338,14 +345,11 @@ export function CreateAlertRuleDialog({
   const scheduledTasks = scheduledTasksQuery.data ?? []
   const databasesQuery = useDatabases()
   const databases = databasesQuery.data ?? []
-  const { control, register, handleSubmit, formState, reset, watch } = useForm<
-    CreateAlertRuleFormInput,
-    unknown,
-    CreateAlertRuleFormOutput
-  >({
-    resolver: zodResolver(createAlertRuleSchema),
-    defaultValues: DEFAULT_VALUES,
-  })
+  const { control, register, handleSubmit, formState, reset, watch, setValue } =
+    useForm<CreateAlertRuleFormInput, unknown, CreateAlertRuleFormOutput>({
+      resolver: zodResolver(createAlertRuleSchema),
+      defaultValues: DEFAULT_VALUES,
+    })
   const kind = watch('kind')
   const backupResourceKind = watch('backupResourceKind')
 
@@ -375,7 +379,10 @@ export function CreateAlertRuleDialog({
     } else if (values.kind === 'scheduled_task_failure') {
       req.scheduled_task_id = values.scheduledTaskId
       req.restart_count_threshold = values.restartCountThreshold
-    } else if (values.kind === 'domain_health') {
+    } else if (
+      values.kind === 'domain_health' ||
+      values.kind === 'control_plane_backup_stale'
+    ) {
       req.for_duration = values.forDuration.trim() || undefined
     } else if (values.kind === 'backup_missing') {
       req.backup_resource_kind = values.backupResourceKind || undefined
@@ -451,7 +458,15 @@ export function CreateAlertRuleDialog({
               control={control}
               name="kind"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select
+                  value={field.value}
+                  onValueChange={(next) => {
+                    field.onChange(next)
+                    if (next === 'control_plane_backup_stale') {
+                      setValue('forDuration', '72h')
+                    }
+                  }}
+                >
                   <SelectTrigger id="rule-kind" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -506,6 +521,37 @@ export function CreateAlertRuleDialog({
               node-capacity percentage to compare against today, so unlike CPU
               it&apos;s an absolute floor, not a proportion.
             </p>
+          ) : kind === 'control_plane_backup_stale' ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Watches the control plane&apos;s own newest self-backup snapshot
+                and fires when it gets too old. Stays quiet when scheduled
+                control plane backups are disabled
+                (APP_CONTROL_PLANE_BACKUP_INTERVAL=0).
+              </p>
+              <Field>
+                <FieldLabel htmlFor="rule-cp-backup-max-age">
+                  Maximum age (optional)
+                </FieldLabel>
+                <Controller
+                  control={control}
+                  name="forDuration"
+                  render={({ field }) => (
+                    <DurationInput
+                      id="rule-cp-backup-max-age"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+                <FieldDescription>
+                  Fire once the newest snapshot is older than this. Leave blank
+                  for 3 days.
+                </FieldDescription>
+                <FieldError errors={[formState.errors.forDuration]} />
+              </Field>
+            </>
           ) : kind === 'domain_health' ? (
             <>
               <p className="text-sm text-muted-foreground">

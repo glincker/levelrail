@@ -182,11 +182,11 @@ The response is `{ "nodes": [...], "fleet": {...} }`:
 
 ## Alert rules
 
-There are nine rule kinds, all stored in one table (`alert_rules`). The evaluation loop (`internal/alerting.Engine`) runs every 30 seconds (`alertEvaluationInterval`, fixed, not env-configurable).
+There are ten rule kinds, all stored in one table (`alert_rules`). The evaluation loop (`internal/alerting.Engine`) runs every 30 seconds (`alertEvaluationInterval`, fixed, not env-configurable).
 
 Each rule tracks its own pending/firing state and notifies only on transitions (firing or resolved), never on every tick a rule stays in the same state. This prevents channels from being trained to ignore repeated alerts.
 
-::: details Nine rule kinds and their configuration
+::: details Ten rule kinds and their configuration
 
 | Kind | Scope | What it watches | Key fields |
 | --- | --- | --- | --- |
@@ -199,10 +199,11 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 | `scheduled_task_failure` | one app's own scheduled task | consecutive failed runs of one task | `scheduled_task_id`, `restart_count_threshold` (reused as the failure-count threshold) |
 | `domain_health` | one app's own domains | a DNS check gone bad (not resolving, or resolving somewhere else) on any of the app's configured domains | `for_duration` (optional debounce) |
 | `backup_missing` | one database (platform-wide) or one app's own volume | last successful backup trailing its own cron schedule's expected interval by more than a grace period | `backup_resource_kind` (`database` or `volume`), `backup_database_name` or `backup_service_name`/`backup_volume_name`, `for_duration` (reused as the overdue grace period, default 6h) |
+| `control_plane_backup_stale` | platform-wide | the newest control plane self-backup snapshot (see [control plane backup](/control-plane-backup)) being older than a maximum age; quiet when scheduled backups are disabled or no snapshot exists yet | `for_duration` (reused as the maximum age, default 3d) |
 
 :::
 
-**Platform-wide rule kinds** (`cert_expiry`, `patch_status`, `node_disk_space`, `node_resource_usage`)
+**Platform-wide rule kinds** (`cert_expiry`, `patch_status`, `node_disk_space`, `node_resource_usage`, `control_plane_backup_stale`)
 
 These are created through an app's `/apps/{name}/alerts` URL, but that URL only decides where the rule appears in that app's list. The rule evaluates every certificate, node, or disk across the entire control plane regardless of which app created it.
 
@@ -402,6 +403,7 @@ levelrail-cli apps alerts create <app> --name NAME --kind node_disk_space
 levelrail-cli apps alerts create <app> --name NAME --kind node_resource_usage
 levelrail-cli apps alerts create <app> --name NAME --kind scheduled_task_failure --scheduled-task-id ID --restart-count-threshold N
 levelrail-cli apps alerts create <app> --name NAME --kind domain_health [--for-duration 2m]
+levelrail-cli apps alerts create <app> --name NAME --kind control_plane_backup_stale [--for-duration 72h]
 levelrail-cli apps alerts update <app> <id> --name NAME --kind KIND [flags]
 levelrail-cli apps alerts delete <app> <id>
 

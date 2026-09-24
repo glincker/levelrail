@@ -90,6 +90,11 @@ const KIND_OPTIONS: {
   },
   { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
   { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
+  {
+    value: 'control_plane_backup_stale',
+    label: 'Control plane backup stale',
+    Icon: ArchiveIcon,
+  },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -116,6 +121,7 @@ const editAlertRuleSchema = z
       'node_resource_usage',
       'domain_health',
       'backup_missing',
+      'control_plane_backup_stale',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -135,7 +141,8 @@ const editAlertRuleSchema = z
       data.kind === 'cert_expiry' ||
       data.kind === 'patch_status' ||
       data.kind === 'node_disk_space' ||
-      data.kind === 'node_resource_usage'
+      data.kind === 'node_resource_usage' ||
+      data.kind === 'control_plane_backup_stale'
     ) {
       return
     }
@@ -340,7 +347,10 @@ export function EditAlertRuleDialog({
     } else if (values.kind === 'scheduled_task_failure') {
       req.scheduled_task_id = values.scheduledTaskId
       req.restart_count_threshold = values.restartCountThreshold
-    } else if (values.kind === 'domain_health') {
+    } else if (
+      values.kind === 'domain_health' ||
+      values.kind === 'control_plane_backup_stale'
+    ) {
       req.for_duration = values.forDuration.trim() || undefined
     } else if (values.kind === 'backup_missing') {
       req.backup_resource_kind = values.backupResourceKind || undefined
@@ -436,6 +446,25 @@ export function EditAlertRuleDialog({
               This kind watches every certificate or node on the whole control
               plane platform-wide, needing no metric or threshold of its own.
             </p>
+          ) : kind === 'control_plane_backup_stale' ? (
+            <Field>
+              <FieldLabel htmlFor="edit-rule-cp-backup-max-age">
+                Maximum age (optional)
+              </FieldLabel>
+              <Controller
+                control={control}
+                name="forDuration"
+                render={({ field }) => (
+                  <DurationInput
+                    id="edit-rule-cp-backup-max-age"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
+                )}
+              />
+              <FieldError errors={[formState.errors.forDuration]} />
+            </Field>
           ) : kind === 'domain_health' ? (
             <Field>
               <FieldLabel htmlFor="edit-rule-domain-health-for-duration">
