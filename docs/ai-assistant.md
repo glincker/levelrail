@@ -12,6 +12,13 @@ description: Run levelrail-mcp over stdio for a locally spawning client or over 
 
 Tools cover apps, deploys, databases, nodes, domains, certificates, backups, templates, registry credentials, IAM, organizations, alerts, metrics, diagnostics, feature flags, and more, one tool per REST capability. See `docs/api-reference.md` for the underlying routes; every MCP tool maps to one of them.
 
+Notable read-oriented tools for day-2 operation:
+
+- `get_attention`: everything that needs attention now (failing apps, offline nodes, bad certificates, doctor warnings), critical first. Same list as `levelrail-cli attention`.
+- `get_node_status_history`: a node's recent status transitions (`GET /api/v1/nodes/{id}/events`).
+- `list_audit_log`: supports `q` (text search) and `status=failed` to find rejected requests.
+- `list_control_plane_backups` and `create_control_plane_backup`: snapshots of the control plane's own database. The create tool writes a backup file, so give an assistant that should not do that a `read`-only token.
+
 ## Two ways to run it
 
 ### stdio, for a client that spawns it locally
