@@ -1,11 +1,15 @@
-name: PR Quality
+name: PR hygiene
 
+# One job (one line in the PR checks list) instead of three: labels, size
+# label, and the anti-slop description/commit check. Runs on
+# pull_request_target so it can label fork PRs; it never checks out PR code.
 on:
   pull_request_target:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
 
 jobs:
-  anti-slop:
+  hygiene:
+    name: PR hygiene
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -13,7 +17,19 @@ jobs:
       issues: read
       pull-requests: write
     steps:
-      - uses: peakoss/anti-slop@57858eead489d08b255fab2af45a506c2ca6eab2 # v0.3.0
+      - uses: actions/labeler@v7
+        with:
+          configuration-path: .github/labeler.yml
+          sync-labels: true
+
+      - uses: pascalgn/size-label-action@56b489b027932ec0cf60438a1a5f1a19c8fc71ff # v0.5.7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # The description and commit rules only need checking once, when the
+      # PR opens, not on every push.
+      - if: github.event.action != 'synchronize'
+        uses: peakoss/anti-slop@57858eead489d08b255fab2af45a506c2ca6eab2 # v0.3.0
         with:
           max-failures: 4
           require-conventional-title: true

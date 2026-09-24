@@ -1,0 +1,40 @@
+name: Flaky test report
+
+# Runs after CI finishes on main, so it never appears in a PR's checks list.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  flake-report:
+    name: File flaky-test issues
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: test-results
+          merge-multiple: true
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Open or update flaky-test issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          files=(test-results/*/flaky.txt)
+          [ "${#files[@]}" -gt 0 ] || exit 0
+          scripts/report-flaky-tests.sh "${files[@]}"

@@ -311,36 +311,6 @@ jobs:
         if: github.event_name == 'pull_request'
         run: scripts/check-changed-file-coverage.sh coverage.out "origin/${{ github.event.pull_request.base.ref }}" internal/ 70
 
-  # Push to main only: PR flakes may be the PR's own doing, main's are not.
-  flake-report:
-    name: File flaky-test issues
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
-    needs: [changes, test-go]
-    if: always() && github.event_name == 'push' && needs.changes.outputs.backend == 'true'
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Download test results
-        uses: actions/download-artifact@v4
-        with:
-          pattern: test-results-*
-          path: test-results
-          merge-multiple: true
-
-      - name: Open or update flaky-test issues
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          shopt -s nullglob
-          files=(test-results/*/flaky.txt)
-          [ "${#files[@]}" -gt 0 ] || exit 0
-          scripts/report-flaky-tests.sh "${files[@]}"
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
