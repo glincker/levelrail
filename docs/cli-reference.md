@@ -139,6 +139,16 @@ levelrail apps deploys logs <name> <deploy-id> [flags]
 one deploy attempt's full build/log output, printed to stdout (redirect to a file to save it)
 
 ```
+levelrail apps deploys failed [--since 24h] [flags]
+```
+every app's latest failed deploy in the window (default set by the server), with the image of its newest good deploy as a rollback target
+
+```
+levelrail apps deploys steps <name> <deploy-id> [flags]
+```
+stream one deploy attempt's pipeline steps (detecting, building, pushing, deploying) until it ends; exits non-zero if a step failed. An already-finished attempt replays only a short two-point summary
+
+```
 levelrail deploy-approvals list [--status pending|all|approved|rejected|expired] [--service NAME] [flags]
 ```
 list deploy approvals (status defaults to pending)
@@ -482,6 +492,11 @@ levelrail databases create [flags]
 create a managed database
 
 ```
+levelrail databases status <name> [flags]
+```
+show a database's current reconcile conditions (useful when it exists but is not running yet)
+
+```
 levelrail databases delete <name> [flags]
 ```
 
@@ -646,6 +661,11 @@ levelrail backups restores <database> [flags]
 list restore attempt history for a database
 
 ```
+levelrail backups clone-restores <database> [flags]
+```
+list restore-as-new attempt history for a database
+
+```
 levelrail backups schedule set <database> --target ID --cron EXPR [flags]
 ```
  configure a recurring backup
@@ -681,6 +701,11 @@ levelrail app-volume-backups restore-as-new <app> <volume> --backup ID [--new-vo
 levelrail app-volume-backups restores <app> <volume> [flags]
 ```
 list restore attempt history for an app's named volume
+
+```
+levelrail app-volume-backups clone-restores <app> <volume> [flags]
+```
+list restore-as-new attempt history for an app's named volume
 
 ```
 levelrail app-volume-backups schedule set <app> <volume> --target ID --cron EXPR [flags]

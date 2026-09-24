@@ -2685,6 +2685,12 @@ func (c *Client) StreamDeployLog(ctx context.Context, name, deployID string, onE
 // meant to run indefinitely until the caller's own context is canceled
 // (e.g. Ctrl+C).
 func (c *Client) streamLogEvents(ctx context.Context, path string, onEntry func(LogStreamEntry) error) error {
+	return streamSSE(ctx, c, path, onEntry)
+}
+
+// streamSSE is the shared SSE scanner: it decodes each "data: " line as a T
+// and calls onEvent in arrival order. Lines that do not decode are skipped.
+func streamSSE[T any](ctx context.Context, c *Client, path string, onEvent func(T) error) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
@@ -2716,11 +2722,11 @@ func (c *Client) streamLogEvents(ctx context.Context, path string, onEntry func(
 			// SSE events, neither of which carries a payload.
 			continue
 		}
-		var entry LogStreamEntry
+		var entry T
 		if err := json.Unmarshal([]byte(data), &entry); err != nil {
 			continue
 		}
-		if err := onEntry(entry); err != nil {
+		if err := onEvent(entry); err != nil {
 			return err
 		}
 	}

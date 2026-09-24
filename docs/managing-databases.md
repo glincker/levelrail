@@ -302,7 +302,7 @@ Past attempts show in their own history tables on the same card (`RestoreHistory
 
 **CLI**
 
-The CLI has no `clone-restores` list subcommand today, only the trigger. However, `GET /api/v1/databases/{name}/clone-restores` exists for scripting.
+List past attempts with `levelrail backups clone-restores <database>` (`GET /api/v1/databases/{name}/clone-restores`).
 
 ### Point-in-time restore (PITR): Postgres only
 
@@ -637,9 +637,6 @@ database's own Overview and Resources tabs once it exists.
 
 - **No CLI download command**
   `GET .../backups/{historyId}/download` works from the dashboard and from any HTTP client with a bearer token. There is no `backups download` subcommand.
-
-- **No CLI list command for clone-restore history**
-  `backups restore-as-new` triggers a clone-restore. `GET .../clone-restores` exists to list past attempts, but only the dashboard's `CloneRestoreHistoryTable` reads it today.
 
 - **Delete does not stop the running container**
   `DELETE /api/v1/databases/{name}` removes desired state only, the same gap as `DELETE /api/v1/apps/{name}`. A container can outlive its desired-state row until something else tears it down.

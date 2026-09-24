@@ -25,6 +25,8 @@ type (
 	buildTriggerRequestBuild         = apiclient.BuildTriggerRequestBuild
 	buildTriggerResponse             = apiclient.BuildTriggerResponse
 	conditionResource                = apiclient.ConditionResource
+	deployStepEvent                  = apiclient.DeployStepEvent
+	failedDeployResource             = apiclient.FailedDeployResource
 	deployAttemptResource            = apiclient.DeployAttemptResource
 	networkResource                  = apiclient.NetworkResource
 	logEntryResource                 = apiclient.LogEntryResource
