@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from 'react'
 import {
   PackageIcon,
   DatabaseIcon,
+  GitBranchIcon,
   PlusIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { appListQueryOptions } from '../../queries/apps'
@@ -138,15 +139,26 @@ function AppListPage() {
             />
           }
           secondaryAction={
-            <CreateResourceWizard
-              scope="applications"
-              initialSelected="browse-templates"
-              trigger={
-                <Button size="sm" variant="outline">
-                  Start from a template
-                </Button>
-              }
-            />
+            <div className="flex items-center gap-2">
+              <CreateResourceWizard
+                scope="applications"
+                initialSelected="browse-templates"
+                trigger={
+                  <Button size="sm" variant="outline">
+                    Browse templates
+                  </Button>
+                }
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                render={<Link to="/settings/github-app" />}
+                nativeButton={false}
+              >
+                <GitBranchIcon />
+                Connect Git
+              </Button>
+            </div>
           }
         />
       ) : filteredApps.length === 0 ? (

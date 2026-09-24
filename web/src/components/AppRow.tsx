@@ -1,11 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import { TemplateLogo } from './TemplateLogo'
 import { logoIdForImage } from '../lib/imageLogo'
-import {
-  PackageIcon,
-  CaretRightIcon,
-  GlobeIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { PackageIcon, GlobeIcon } from '@phosphor-icons/react/dist/ssr'
+import { AppRowActions } from './AppRowActions'
 import { Badge } from '@/components/ui/badge'
 import type { AppListEntry, AppStatusSummary } from '../types/appDetail'
 import { STATUS_DOT_COLOR } from '../lib/appStatus'
@@ -16,7 +13,7 @@ import { STATUS_DOT_COLOR } from '../lib/appStatus'
 // same width numbers twice. Icon avatar, name, image, domain, port,
 // trailing chevron, in that order.
 export const APP_LIST_GRID =
-  'grid grid-cols-[2rem_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,1.3fr)_4.5rem_1rem] items-center gap-3'
+  'grid grid-cols-[2rem_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,1.3fr)_4.5rem_2rem] items-center gap-3'
 
 // Links by app.name, not a separate id: the detail route
 // (routes/apps/$name.tsx) and its backing API (GET /api/v1/apps/{name})
@@ -37,10 +34,8 @@ export function AppRow({ app }: { app: AppListEntry }) {
   const extraDomains = (app.domains?.length ?? 0) - 1
 
   return (
-    <Link
-      to="/apps/$name"
-      params={{ name: app.name }}
-      className={`${APP_LIST_GRID} h-full w-full border-b border-border px-4 py-3 transition-colors hover:bg-muted/60`}
+    <div
+      className={`${APP_LIST_GRID} relative h-full w-full border-b border-border px-4 py-3 transition-colors hover:bg-muted/60`}
     >
       <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
         <TemplateLogo
@@ -53,7 +48,13 @@ export function AppRow({ app }: { app: AppListEntry }) {
       <span className="flex min-w-0 flex-col justify-center gap-0.5">
         <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
           <StatusDot status={app.status} />
-          <span className="truncate">{app.name}</span>
+          <Link
+            to="/apps/$name"
+            params={{ name: app.name }}
+            className="truncate after:absolute after:inset-0"
+          >
+            {app.name}
+          </Link>
         </span>
         {app.tags && app.tags.length > 0 ? (
           <span className="flex flex-wrap items-center gap-1 pl-4">
@@ -109,11 +110,8 @@ export function AppRow({ app }: { app: AppListEntry }) {
         :{app.port}
       </Badge>
 
-      <CaretRightIcon
-        className="size-4 shrink-0 justify-self-end text-muted-foreground/50"
-        aria-hidden="true"
-      />
-    </Link>
+      <AppRowActions app={app} />
+    </div>
   )
 }
 

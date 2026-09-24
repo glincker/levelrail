@@ -17,6 +17,7 @@ import { DeleteAppDialog } from '../../components/DeleteAppDialog'
 import { DeployTriggerForm } from '../../components/DeployTriggerForm'
 import { PendingDeployApprovalBanner } from '../../components/PendingDeployApprovalBanner'
 import { PromoteAppDialog } from '../../components/PromoteAppDialog'
+import { RedeployAppButton } from '../../components/RedeployAppButton'
 import { RestartAppButton } from '../../components/RestartAppButton'
 import { StopStartAppButton } from '../../components/StopStartAppButton'
 import { ConvergenceIndicator } from '../../components/ConvergenceIndicator'
@@ -134,6 +135,7 @@ function AppDetailLayout() {
         <div className="flex items-center gap-2">
           <StopStartAppButton name={app.name} suspended={app.suspended} />
           <RestartAppButton name={app.name} />
+          <RedeployAppButton name={app.name} image={app.image} />
           <PromoteAppDialog appName={app.name} projectId={app.project_id} />
           <CloneAppDialog name={app.name} />
           <DeleteAppDialog name={app.name} />
