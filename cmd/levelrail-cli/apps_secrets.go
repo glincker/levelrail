@@ -151,50 +151,6 @@ func runAppsSecretsSetEnvFile(client *Client, name, path string, overwriteLocked
 	return exitOK
 }
 
-// envFileEntry is one parsed key/value pair from a .env-format file.
-type envFileEntry struct {
-	Key   string
-	Value string
-}
-
-// parseEnvFileBytes parses .env-format text into ordered key/value entries,
-// mirroring web/src/lib/envParse.ts's parseEnvBlock semantics: blank lines
-// and #-comments are skipped, a leading "export " is stripped, and a value
-// wrapped in matching quotes has them removed. Lines without "=" are
-// skipped rather than erroring, and a later duplicate key wins by simply
-// being applied after the earlier one, matching real .env semantics.
-func parseEnvFileBytes(data []byte) []envFileEntry {
-	var entries []envFileEntry
-	for _, rawLine := range strings.Split(string(data), "\n") {
-		line := strings.TrimSpace(rawLine)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		withoutExport := strings.TrimPrefix(line, "export ")
-
-		eqIdx := strings.Index(withoutExport, "=")
-		if eqIdx == -1 {
-			continue
-		}
-
-		key := strings.TrimSpace(withoutExport[:eqIdx])
-		if key == "" {
-			continue
-		}
-
-		value := strings.TrimSpace(withoutExport[eqIdx+1:])
-		isDoubleQuoted := strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`)
-		isSingleQuoted := strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")
-		if len(value) >= 2 && (isDoubleQuoted || isSingleQuoted) {
-			value = value[1 : len(value)-1]
-		}
-
-		entries = append(entries, envFileEntry{Key: key, Value: value})
-	}
-	return entries
-}
-
 func runAppsSecretsLock(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, _, _, _ := apiFlagSet(prog, "apps secrets lock", "unused for this subcommand", stderr)
 	var locked bool

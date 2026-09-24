@@ -127,6 +127,8 @@ POST /api/v1/apps/{name}/builds
 ```
 which replaces the placeholder with the real tag once it succeeds.
 
+Only one manual build per app runs at a time: a second `POST .../builds` while one is still running returns `409 Conflict` ("a deploy for this app is already running") instead of starting a parallel build. If the control plane is restarted mid-build, the orphaned attempt is marked failed on the next startup, so it never blocks new builds.
+
 **Dashboard:** "Deploy from git" wizard card (`CreateAppFromGitFields.tsx`)
 
 **CLI:**
@@ -197,6 +199,12 @@ Accept: text/event-stream
 Each event is `{ "step": string, "status": "running" | "done" | "failed", "timestamp": string }`. The raw log terminal underneath is unchanged and still shows every build output line; the step list is a coarser, at-a-glance summary of where in the pipeline a build currently is, not a replacement for it. Reconnects (a dropped wifi connection, a laptop waking up) are handled the same way the log stream already is: `EventSource` reconnects on its own, and a step event is safe to receive twice since the UI keeps only the latest status per named step.
 
 This stream is a pure observability layer: it reads the same build-trigger flow the control plane already runs and reports on it, and never feeds back into the reconciler, which stays level-triggered and unaware the stream exists.
+
+#### "What went wrong" on a failed deploy
+
+When an attempt fails (a failed build, or a roll out that never became ready), the deploy detail page opens with a "What went wrong" card: the failing stage, the recorded error (trimmed, with Show more), a likely cause and suggested fix, and three actions: View full logs (jumps to the failing stage), Retry deploy, and Roll back to last good (only shown when an earlier attempt succeeded).
+
+The cause is a heuristic match, not a diagnosis. The error text and failing reconcile conditions are checked first, then the newest build log lines, against a fixed rule table covering: missing environment variable, port mismatch, container killed for memory (OOMKilled or exit 137), registry auth, image or tag not found, health check timeout, wrong Dockerfile path, dependency install failure, plus the older npm, pip, heap, disk and permission rules. It never changes the attempt's real status. Everything runs in the browser over data the page already loads.
 
 ### 3. Docker Compose
 
@@ -298,6 +306,22 @@ Apps created directly (not from `app.yaml`) can add or remove a Vault-sourced en
 - API: `PUT`/`DELETE /api/v1/apps/{name}/vault-env/{key}`
 
 This never touches any other field on the app, unlike the general update endpoint.
+
+## Importing and exporting plain env vars
+
+Plain (non-secret) env vars can be bulk-loaded from a `.env` file and exported back out.
+
+```bash
+levelrail-cli apps env import <name> --file local.env --dry-run   # preview only
+levelrail-cli apps env import <name> --file local.env             # apply
+levelrail-cli apps env export <name> --out backup.env             # or stdout without --out
+```
+
+- The parser handles comments, an `export ` prefix, single and double quotes, multiline quoted values, inline ` # comments` on unquoted values, `=` inside values, empty values and Windows line endings. When a key appears twice, the last one wins.
+- Import prints each key as new (`+`), changed (`~`), unchanged (`=`) or skipped (`!`). Pass `--keep-existing` to leave keys that already have a different value alone. Changes apply on the next restart.
+- A key that is already a secret is skipped on import: use `apps secrets set` for those.
+- Export never includes secret values. Secret keys are written empty, preceded by a `# secret, value not exported` comment.
+- Dashboard: app Environment tab. "Paste .env" (or dropping a file) shows a preview table of new, changed and unchanged keys with an overwrite or keep-existing choice before anything is staged. A summary of unsaved additions, changes and removals appears above "Save variables", and "Export .env" downloads the saved variables with the same secret-safe rule.
 
 ## Managing encrypted secrets
 

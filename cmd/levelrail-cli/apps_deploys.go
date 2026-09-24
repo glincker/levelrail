@@ -29,6 +29,10 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsDeploysCompare(prog, args[1:], stdout, stderr, lookupEnv)
 	case "logs":
 		return runAppsDeploysLogs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "failed":
+		return runAppsDeploysFailed(prog, args[1:], stdout, stderr, lookupEnv)
+	case "steps":
+		return runAppsDeploysSteps(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps deploys subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsDeploysUsage(prog))
@@ -41,6 +45,8 @@ func appsDeploysUsage(prog string) string {
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
   %[1]s apps deploys logs <name> <deploy-id> [flags]              one deploy attempt's full build/log output
+  %[1]s apps deploys failed [--since 24h] [flags]                 every app's latest failed deploy in the window, fleet-wide
+  %[1]s apps deploys steps <name> <deploy-id> [flags]             one deploy attempt's pipeline steps, live until it ends
 
 Run "%[1]s apps deploys <subcommand> -h" for a subcommand's own flags.
 `, prog)

@@ -97,6 +97,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsClearNode(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "previews":
 		return runAppsPreviews(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "env":
+		return runAppsEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "secrets":
 		return runAppsSecrets(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "git-source":
@@ -182,6 +184,7 @@ func appsUsage(prog string) string {
   %[1]s apps clear-node <name> [--with-volumes] [flags]   move an app back to this control plane's own local node
   %[1]s apps previews <verb> [flags]   manage preview environments per pull request
   %[1]s apps secrets <verb> [flags]   manage an app's encrypted secret values
+  %[1]s apps env <verb> [flags]   import a .env file into, or export (secret-free) from, an app's plain env vars
   %[1]s apps git-source <verb> [flags]   connect a repo for auto-deploy-on-push
   %[1]s apps webhook-deliveries <verb> [flags]   inspect and replay recent inbound git webhook requests
   %[1]s apps clone <name> <new-name> [flags]   duplicate an app's desired state under a new name

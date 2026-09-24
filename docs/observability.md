@@ -99,6 +99,9 @@ Request rate, response time percentiles, error rate, container restart count, an
 - `/databases/$name/metrics` - `DatabaseMetricsDashboard` shows the same charts scoped to a managed database.
 - Node metrics - `NodeMetricsDashboard` shows the sum-across-placed-services view plus real disk/patch readings.
 
+**App health timeline:**
+- `/apps/$name/overview` - `AppHealthTimeline` is a compact 24h/7d strip answering "what happened to this app, and when". It plots deploy markers (green succeeded, red failed, blue running), container restarts (amber, bucketed so a burst reads as one marker with a count), and shaded error windows (a failed deploy from start to finish, or a crashloop of 3 or more restarts with under 15 minutes between them). Markers are keyboard focusable with aria labels and show details on hover or focus; Enter or click opens the deploy's logs (deploys) or the app's logs (restarts). It reads only existing data (`GET /api/v1/apps/{name}/deploy-attempts` and the `container_restart_count` metric), so there is no new API or CLI surface: the same data is available from `levelrail apps deploys list` and the metrics API. If telemetry is not configured, only deploys are shown.
+
 **Logs:**
 - `/apps/$name/logs` - Two tabs: `Live` (LiveLogViewer, default) and `Search` (LogSearchPanel for historical full-text search). Scoped to the app's running container(s).
 - Separate from `/apps/$name/deploys/$deployId/logs`, which tails a specific deploy attempt's output.
@@ -179,11 +182,11 @@ The response is `{ "nodes": [...], "fleet": {...} }`:
 
 ## Alert rules
 
-There are nine rule kinds, all stored in one table (`alert_rules`). The evaluation loop (`internal/alerting.Engine`) runs every 30 seconds (`alertEvaluationInterval`, fixed, not env-configurable).
+There are ten rule kinds, all stored in one table (`alert_rules`). The evaluation loop (`internal/alerting.Engine`) runs every 30 seconds (`alertEvaluationInterval`, fixed, not env-configurable).
 
 Each rule tracks its own pending/firing state and notifies only on transitions (firing or resolved), never on every tick a rule stays in the same state. This prevents channels from being trained to ignore repeated alerts.
 
-::: details Nine rule kinds and their configuration
+::: details Ten rule kinds and their configuration
 
 | Kind | Scope | What it watches | Key fields |
 | --- | --- | --- | --- |
@@ -192,14 +195,16 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 | `cert_expiry` | platform-wide | every stored TLS certificate approaching or past expiry, or stuck mid-renewal | none required |
 | `patch_status` | platform-wide | every node's pending OS security patch count | none required (threshold is a control-plane default/env var, not a rule field) |
 | `node_disk_space` | platform-wide | every node's disk-used percentage | none required |
+| `node_offline` | platform-wide | any node whose status is offline (agent stopped heartbeating); resolves when all are back | none required |
 | `node_resource_usage` | platform-wide | every node's summed placed-container CPU and memory | none required |
 | `scheduled_task_failure` | one app's own scheduled task | consecutive failed runs of one task | `scheduled_task_id`, `restart_count_threshold` (reused as the failure-count threshold) |
 | `domain_health` | one app's own domains | a DNS check gone bad (not resolving, or resolving somewhere else) on any of the app's configured domains | `for_duration` (optional debounce) |
 | `backup_missing` | one database (platform-wide) or one app's own volume | last successful backup trailing its own cron schedule's expected interval by more than a grace period | `backup_resource_kind` (`database` or `volume`), `backup_database_name` or `backup_service_name`/`backup_volume_name`, `for_duration` (reused as the overdue grace period, default 6h) |
+| `control_plane_backup_stale` | platform-wide | the newest control plane self-backup snapshot (see [control plane backup](/control-plane-backup)) being older than a maximum age; quiet when scheduled backups are disabled or no snapshot exists yet | `for_duration` (reused as the maximum age, default 3d) |
 
 :::
 
-**Platform-wide rule kinds** (`cert_expiry`, `patch_status`, `node_disk_space`, `node_resource_usage`)
+**Platform-wide rule kinds** (`cert_expiry`, `patch_status`, `node_disk_space`, `node_resource_usage`, `node_offline`, `control_plane_backup_stale`)
 
 These are created through an app's `/apps/{name}/alerts` URL, but that URL only decides where the rule appears in that app's list. The rule evaluates every certificate, node, or disk across the entire control plane regardless of which app created it.
 
@@ -397,8 +402,10 @@ levelrail-cli apps alerts create <app> --name NAME --kind cert_expiry
 levelrail-cli apps alerts create <app> --name NAME --kind patch_status
 levelrail-cli apps alerts create <app> --name NAME --kind node_disk_space
 levelrail-cli apps alerts create <app> --name NAME --kind node_resource_usage
+levelrail-cli apps alerts create <app> --name NAME --kind node_offline
 levelrail-cli apps alerts create <app> --name NAME --kind scheduled_task_failure --scheduled-task-id ID --restart-count-threshold N
 levelrail-cli apps alerts create <app> --name NAME --kind domain_health [--for-duration 2m]
+levelrail-cli apps alerts create <app> --name NAME --kind control_plane_backup_stale [--for-duration 72h]
 levelrail-cli apps alerts update <app> <id> --name NAME --kind KIND [flags]
 levelrail-cli apps alerts delete <app> <id>
 

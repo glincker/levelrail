@@ -97,6 +97,19 @@ func (l *loginLimiter) recordSuccess(key string) {
 	l.mu.Unlock()
 }
 
+// allowTokenRedeem applies the per-IP token-redeem budget, writing the
+// 429 itself and returning false when the caller is over it.
+func (rt *Router) allowTokenRedeem(w http.ResponseWriter, r *http.Request, route string) bool {
+	if rt.tokenRedeemRateLimit == nil {
+		return true
+	}
+	allowed, retryAfter := rt.tokenRedeemRateLimit.allow(route + "|" + clientIP(r))
+	if !allowed {
+		writeRateLimited(w, retryAfter)
+	}
+	return allowed
+}
+
 // loginLimiterKey combines the client IP and the attempted username, so
 // a single misbehaving IP can't lock a legitimate account out from a
 // different IP by deliberately failing logins for it, and an attacker

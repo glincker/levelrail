@@ -6,15 +6,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AlertingQuickSetupPrompt } from './AlertingQuickSetupPrompt'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('@tanstack/react-router')>()
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
   return {
     ...actual,
     Link: ({
       children,
       to,
       ...rest
-    }: { children?: ReactNode; to?: string } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    }: {
+      children?: ReactNode
+      to?: string
+    } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
       <a href={to} {...rest}>
         {children}
       </a>
@@ -69,7 +71,7 @@ describe('AlertingQuickSetupPrompt', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('creates all four platform-wide rules against the carrier app and then hides itself', async () => {
+  it('creates all six platform-wide rules against the carrier app and then hides itself', async () => {
     const user = userEvent.setup()
     const fetchMock = vi.fn<(input: RequestInfo | URL) => Promise<Response>>(
       (input) => {
@@ -91,15 +93,18 @@ describe('AlertingQuickSetupPrompt', () => {
         }
         if (url === '/api/v1/apps/demo-app/alerts') {
           return Promise.resolve(
-            fakeJsonResponse({
-              id: 'rule_1',
-              name: 'rule',
-              kind: 'cert_expiry',
-              resource_id: 'app:demo-app',
-              threshold: 0,
-              restart_count_threshold: 0,
-              enabled: true,
-            }, 201),
+            fakeJsonResponse(
+              {
+                id: 'rule_1',
+                name: 'rule',
+                kind: 'cert_expiry',
+                resource_id: 'app:demo-app',
+                threshold: 0,
+                restart_count_threshold: 0,
+                enabled: true,
+              },
+              201,
+            ),
           )
         }
         throw new Error(`unexpected fetch: ${url}`)
@@ -123,7 +128,7 @@ describe('AlertingQuickSetupPrompt', () => {
     const ruleCreateCalls = fetchMock.mock.calls.filter(
       (call) => requestUrlOf(call[0]) === '/api/v1/apps/demo-app/alerts',
     )
-    expect(ruleCreateCalls).toHaveLength(4)
+    expect(ruleCreateCalls).toHaveLength(6)
     const kinds = ruleCreateCalls.map((call) => {
       const init = (call as unknown[])[1] as RequestInit
       return (JSON.parse(init.body as string) as { kind: string }).kind
@@ -133,11 +138,13 @@ describe('AlertingQuickSetupPrompt', () => {
       'patch_status',
       'node_disk_space',
       'node_resource_usage',
+      'node_offline',
+      'control_plane_backup_stale',
     ])
 
-    expect(window.localStorage.getItem('dashboard-alerting-quick-setup-dismissed')).toBe(
-      '1',
-    )
+    expect(
+      window.localStorage.getItem('dashboard-alerting-quick-setup-dismissed'),
+    ).toBe('1')
   })
 
   it('dismisses and does not reappear on remount', async () => {

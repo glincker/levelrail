@@ -18,6 +18,7 @@ type ControlPlaneBackupManager interface {
 	List() ([]cpbackup.Info, error)
 	Open(name string) (*os.File, cpbackup.Info, error)
 	Delete(name string) error
+	Verify(ctx context.Context, name string) (cpbackup.VerifyResult, error)
 }
 
 // WithControlPlaneBackups enables the /api/v1/system/backups routes.
@@ -93,6 +94,19 @@ func (rt *Router) handleDownloadControlPlaneBackup(w http.ResponseWriter, r *htt
 	if _, err := io.Copy(w, f); err != nil {
 		rt.logger.Error("api: stream control plane backup failed", slog.String("error", err.Error()))
 	}
+}
+
+func (rt *Router) handleVerifyControlPlaneBackup(w http.ResponseWriter, r *http.Request) {
+	m, ok := rt.cpBackupsOrNotImplemented(w)
+	if !ok {
+		return
+	}
+	res, err := m.Verify(r.Context(), r.PathValue("name"))
+	if err != nil {
+		rt.writeCPBackupError(w, "verify", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 func (rt *Router) handleDeleteControlPlaneBackup(w http.ResponseWriter, r *http.Request) {

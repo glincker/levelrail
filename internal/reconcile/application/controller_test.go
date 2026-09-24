@@ -42,6 +42,7 @@ func (f *fakeStore) GetDesiredService(_ context.Context, _ string) (*store.Desir
 type fakeRuntime struct {
 	mu         sync.Mutex
 	containers map[string]*docker.ContainerState
+	listCalls  int // ListByPrefix invocations
 	// exitStates backs InspectExitState (docker.ExitStateInspector),
 	// keyed by container name; absent means "no exit info recorded yet,"
 	// distinct from a zero-value *docker.ExitState. crashContainer sets
@@ -333,6 +334,7 @@ func (f *fakeRuntime) Remove(_ context.Context, id string, _ bool) error {
 func (f *fakeRuntime) ListByPrefix(_ context.Context, prefix string) ([]docker.ContainerState, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.listCalls++
 	var out []docker.ContainerState
 	for name, cs := range f.containers {
 		if strings.HasPrefix(name, prefix) {
@@ -1233,6 +1235,19 @@ func TestController_Reconcile_Suspended_NoContainers_NoOp(t *testing.T) {
 	}
 	if names := rt.names(); len(names) != 0 {
 		t.Errorf("containers after suspend = %v, want none", names)
+	}
+}
+
+func TestController_Reconcile_Suspended_ListsContainersOnce(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Suspended: true}
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if rt.listCalls != 1 {
+		t.Errorf("ListByPrefix calls = %d, want 1", rt.listCalls)
 	}
 }
 

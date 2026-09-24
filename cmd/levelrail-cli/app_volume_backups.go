@@ -37,6 +37,8 @@ func runAppVolumeBackups(prog string, args []string, stdout, stderr io.Writer, l
 		return runAppVolumeBackupsRestoreAsNew(prog, args[1:], stdout, stderr, lookupEnv)
 	case "schedule":
 		return runAppVolumeBackupsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
+	case "clone-restores":
+		return runAppVolumeBackupsCloneRestores(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restores":
 		return runAppVolumeBackupsRestores(prog, args[1:], stdout, stderr, lookupEnv)
 	case "verify":
@@ -61,6 +63,7 @@ func appVolumeBackupsUsage(prog string) string {
   %[1]s app-volume-backups schedule set <app> <volume> --target ID --cron EXPR [flags]   configure a recurring backup
   %[1]s app-volume-backups schedule clear <app> <volume> [flags]                       remove a recurring backup
   %[1]s app-volume-backups restores <app> <volume> [flags]                         list restore attempt history for a volume
+  %[1]s app-volume-backups clone-restores <app> <volume> [flags]                   list restore-as-new attempt history for a volume
   %[1]s app-volume-backups verify<app> <volume> --backup ID [flags]                   verify a backup is intact (no live restore)
   %[1]s app-volume-backups verifications <app> <volume> --backup ID [flags]            list past verification attempts for a backup
 

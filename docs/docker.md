@@ -20,7 +20,7 @@ Both images run as a non-root user (distroless's `nonroot`, uid/gid 65532). The 
 ```bash
 docker run -d \
   --name levelrail \
-  -p 80:80 -p 443:443 -p 8080:8080 \
+  -p 80:80 -p 443:443 -p 127.0.0.1:8080:8080 \
   -v /var/run/docker.sock:/var/run/docker.sock \
   --group-add $(stat -c '%g' /var/run/docker.sock) \
   -v levelrail-data:/var/lib/levelrail-data \
@@ -37,9 +37,11 @@ export DOCKER_GID=$(getent group docker | cut -d: -f3)
 docker compose up -d
 ```
 
+Port 8080 is the plain-HTTP dashboard and API, so both the `docker run` example and the compose file bind it to `127.0.0.1` only. For the first sign-in, either tunnel to it (`ssh -L 8080:127.0.0.1:8080 user@host`, then open `http://127.0.0.1:8080`) or preset the admin with `APP_ADMIN_USERNAME`/`APP_ADMIN_PASSWORD`. Print the setup token with `docker compose exec levelrail levelrail setup-token`. Once a domain and `https://` dashboard URL are configured, the dashboard is served over 80/443 by the embedded Caddy. To publish 8080 on every interface anyway (for example on a private network), set `LEVELRAIL_HTTP_BIND=0.0.0.0` in the environment or `.env` file; for `docker run`, drop the `127.0.0.1:` prefix.
+
 If `DOCKER_GID` is unset, the compose file falls back to `999`, the common default on Debian/Ubuntu, but always check with `getent group docker` first since it varies per system.
 
-The image ships a Docker `HEALTHCHECK` (`levelrail healthcheck`, a GET against its own `/api/v1/brand`), so `docker ps` and `docker compose ps` show a real health status without extra compose config. Distroless has no shell or `curl`/`wget`, which is why this is a dedicated subcommand on the binary itself rather than a shell one-liner.
+The image ships a Docker `HEALTHCHECK` (`levelrail healthcheck --ready`, a GET against its own [`/readyz`](/troubleshooting#readiness-readyz)), so `docker ps` and `docker compose ps` show a real health status without extra compose config. Distroless has no shell or `curl`/`wget`, which is why this is a dedicated subcommand on the binary itself rather than a shell one-liner.
 
 ::: warning
 Granting access to `/var/run/docker.sock` allows this container to control every other container on the host, including starting privileged ones. This is not a new risk specific to Docker: it's the same trust level that `install.sh`'s systemd install already uses, because that's what's required to manage containers on your behalf (see [architecture.md](architecture.md)). Only run this image on a host you already trust with that level of access.

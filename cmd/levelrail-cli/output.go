@@ -21,6 +21,7 @@ import (
 const (
 	exitOK            = 0
 	exitUsage         = 1 // unknown command, missing positional argument, bad flag syntax
+	exitCheckFailed   = 1 // "control-plane-backups verify": the call worked but a check failed
 	exitValidation    = 2 // well-formed flags/file, but the request they describe is invalid
 	exitNetwork       = 3 // could not reach the API at all (connection refused, DNS, timeout)
 	exitAPIError      = 4 // the API was reached and returned a non-2xx response

@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
@@ -165,13 +171,17 @@ describe('CreateAlertRuleDialog', () => {
 
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(
-        (c) => requestUrlOf(c[0] as RequestInfo | URL) === '/api/v1/apps/demo-app/alerts',
+        (c) =>
+          requestUrlOf(c[0] as RequestInfo | URL) ===
+          '/api/v1/apps/demo-app/alerts',
       )
       expect(call).toBeDefined()
     })
 
     const call = fetchMock.mock.calls.find(
-      (c) => requestUrlOf(c[0] as RequestInfo | URL) === '/api/v1/apps/demo-app/alerts',
+      (c) =>
+        requestUrlOf(c[0] as RequestInfo | URL) ===
+        '/api/v1/apps/demo-app/alerts',
     )!
     const body = JSON.parse((call[1] as RequestInit).body as string) as {
       metric?: string
@@ -179,5 +189,46 @@ describe('CreateAlertRuleDialog', () => {
     }
     expect(body.metric).toBe('memory_usage_bytes')
     expect(body.for_duration).toBe('10m')
+  })
+
+  it('creates a control_plane_backup_stale rule with no kind-specific required fields', async () => {
+    const fetchMock = mockFetchRoutes({
+      'GET /api/v1/notification-channels': jsonRoute([]),
+      'GET /api/v1/apps/demo-app/scheduled-tasks': jsonRoute([]),
+      'POST /api/v1/apps/demo-app/alerts': jsonRoute(
+        {
+          id: 'rule_2',
+          name: 'cp-backup',
+          kind: 'control_plane_backup_stale',
+          resource_id: 'app:demo-app',
+          restart_count_threshold: 0,
+          enabled: true,
+        },
+        201,
+      ),
+    })
+    renderDialog()
+    const popup = await openDialog()
+
+    fireEvent.change(within(popup).getByLabelText('Name'), {
+      target: { value: 'cp-backup' },
+    })
+    await pickOption(popup, 'rule-kind', 'Control plane backup stale')
+    fireEvent.click(within(popup).getByRole('button', { name: 'Create rule' }))
+
+    await waitFor(() => {
+      const call = fetchMock.mock.calls.find(
+        (c) =>
+          requestUrlOf(c[0] as RequestInfo | URL) ===
+          '/api/v1/apps/demo-app/alerts',
+      )
+      expect(call).toBeDefined()
+      const body = JSON.parse((call![1] as RequestInit).body as string) as {
+        kind: string
+        for_duration?: string
+      }
+      expect(body.kind).toBe('control_plane_backup_stale')
+      expect(body.for_duration).toBe('72h')
+    })
   })
 })
