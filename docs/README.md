@@ -90,6 +90,7 @@ noted per-document since these move between draft, proposed, accepted
 | Doc | Covers |
 | --- | --- |
 | [roadmap.md](roadmap.md) | What's Done, In progress, and explicitly out of scope, kept current against `main` |
+| [performance.md](performance.md) | Measured idle CPU, memory, and API latency at 0, 100, and 500 apps, and how to reproduce it |
 
 ## Support and contributing
 

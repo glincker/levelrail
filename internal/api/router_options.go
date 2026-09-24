@@ -532,7 +532,7 @@ func WithContainerLister(l ContainerLister) Option {
 // field is simply omitted, the same "optional signal, absence is not an
 // error" shape WithDockerPinger's own absence already has.
 func WithDockerDiskUsager(u DockerDiskUsager) Option {
-	return func(rt *Router) { rt.dockerDiskUsage = u }
+	return func(rt *Router) { rt.dockerDiskUsage = newCachedDiskUsager(u, defaultDiskUsageCacheTTL) }
 }
 
 // WithDBPinger enables the database check on GET /api/v1/system/doctor.
