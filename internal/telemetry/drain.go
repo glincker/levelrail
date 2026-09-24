@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"time"
 )
 
@@ -70,14 +71,14 @@ type DrainForwarder struct {
 // newSyslogSink); callers pass brand.Brand.ShortName, following the same
 // "resolve brand outside this package" convention
 // internal/reconcile/application.WithNetworkPrefix already establishes.
-func NewDrainForwarder(broadcaster *LogBroadcaster, logger *slog.Logger, programTag string) *DrainForwarder {
+func NewDrainForwarder(broadcaster *LogBroadcaster, httpClient *http.Client, logger *slog.Logger, programTag string) *DrainForwarder {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	return &DrainForwarder{
 		broadcaster: broadcaster,
 		logger:      logger,
-		buildSink:   func(cfg DrainConfig) (DrainSink, error) { return buildDrainSink(cfg, programTag) },
+		buildSink:   func(cfg DrainConfig) (DrainSink, error) { return buildDrainSink(cfg, httpClient, programTag) },
 	}
 }
 
@@ -194,13 +195,13 @@ func (f *DrainForwarder) forwardOne(ctx context.Context, cfg DrainConfig) {
 // buildDrainSink is DrainForwarder's default sink factory, overridable
 // in tests via the buildSink field. programTag is only used by the
 // syslog sink; see newSyslogSink.
-func buildDrainSink(cfg DrainConfig, programTag string) (DrainSink, error) {
+func buildDrainSink(cfg DrainConfig, httpClient *http.Client, programTag string) (DrainSink, error) {
 	switch cfg.Type {
 	case DrainSinkHTTP:
 		if cfg.Target == "" {
 			return nil, errors.New("telemetry: http log drain requires a target URL")
 		}
-		return NewHTTPSink(cfg.Target, nil), nil
+		return NewHTTPSink(cfg.Target, httpClient), nil
 	case DrainSinkSyslog:
 		return newSyslogSink(cfg.Target, programTag)
 	default:
