@@ -5,6 +5,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
 import { AttachIntegrationDialog } from './AttachIntegrationDialog'
+import { BrandLogoBadge } from './BrandLogoBadge'
+import { logoIdForIntegration } from '../lib/brandLogos'
 import { DisconnectConnectionDialog } from './ConnectionCard'
 import {
   useAppIntegrations,
@@ -73,9 +75,15 @@ export function AppIntegrationsCard({ appName }: { appName: string }) {
                 className="flex items-center justify-between gap-4 rounded-lg border border-border bg-card p-2.5"
               >
                 <div className="flex items-center gap-2">
-                  <PlugsConnectedIcon
-                    className="size-4 shrink-0 text-muted-foreground"
-                    aria-hidden="true"
+                  <BrandLogoBadge
+                    logoId={logoIdForIntegration(integration.integration_key)}
+                    className="size-6"
+                    fallback={
+                      <PlugsConnectedIcon
+                        className="size-4 shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                    }
                   />
                   <span className="text-sm font-medium text-foreground">
                     {integration.name}

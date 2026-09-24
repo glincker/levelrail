@@ -24,6 +24,8 @@ import {
   useIntegrationCatalog,
 } from '../queries/appIntegrations'
 import type { IntegrationCatalogEntry } from '../types/appIntegrations'
+import { BrandLogoBadge } from './BrandLogoBadge'
+import { logoIdForIntegration } from '../lib/brandLogos'
 
 function matchesSearch(entry: IntegrationCatalogEntry, query: string): boolean {
   if (!query) return true
@@ -253,7 +255,11 @@ export function AttachIntegrationDialog({
                     }}
                     className="flex flex-col items-start gap-1 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
-                    <span className="text-sm font-medium text-foreground">
+                    <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <BrandLogoBadge
+                        logoId={logoIdForIntegration(entry.key)}
+                        className="size-6"
+                      />
                       {entry.name}
                     </span>
                     <span className="text-xs text-muted-foreground">
