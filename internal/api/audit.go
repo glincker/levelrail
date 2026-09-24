@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -188,6 +189,15 @@ func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, befo
 		Path:       r.URL.Query().Get("path"),
 		Method:     r.URL.Query().Get("method"),
 		ClientKind: r.URL.Query().Get("client_kind"),
+		Search:     strings.TrimSpace(r.URL.Query().Get("q")),
+	}
+	switch status := r.URL.Query().Get("status"); status {
+	case "":
+	case "failed":
+		filter.FailedOnly = true
+	default:
+		writeError(w, http.StatusBadRequest, `status must be "failed"`)
+		return 0, nil, store.AuditEntryFilter{}, false
 	}
 	return limit, before, filter, true
 }
@@ -199,7 +209,9 @@ func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, befo
 // maxAuditLogLimit. ?path and ?method narrow to one resource's own
 // trail (e.g. an app's config-change history), both exact match.
 // ?client_kind narrows to one caller surface (cli/dashboard/mcp/api), also
-// exact match. ?format=csv returns the same rows as a CSV download instead of JSON,
+// exact match. ?q is a case-insensitive substring search across actor
+// name, ability, method, path and remote address; ?status=failed keeps only
+// status_code >= 400. ?format=csv returns the same rows as a CSV download instead of JSON,
 // for compliance/record-keeping export; the row shape is identical to
 // auditLogEntryResource, so it can never leak a field the JSON view
 // doesn't already expose.

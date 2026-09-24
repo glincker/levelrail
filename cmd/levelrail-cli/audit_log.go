@@ -16,12 +16,15 @@ import (
 func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "audit-log", "print audit log entries as a JSON array to stdout and nothing else", stderr)
 	var limitFlag int
-	var beforeFlag, pathFlag, methodFlag, clientKindFlag, formatFlag, outputFileFlag string
+	var failedFlag bool
+	var searchFlag, beforeFlag, pathFlag, methodFlag, clientKindFlag, formatFlag, outputFileFlag string
 	fs.IntVar(&limitFlag, "limit", 0, "max entries to return (default: server default)")
 	fs.StringVar(&beforeFlag, "before", "", "only show entries created before this RFC3339 timestamp (page backward using the TIME column of a prior run)")
 	fs.StringVar(&pathFlag, "path", "", "only show entries for this exact request path")
 	fs.StringVar(&methodFlag, "method", "", "only show entries for this exact HTTP method")
 	fs.StringVar(&clientKindFlag, "client-kind", "", `only show entries from this caller surface: "cli", "dashboard", "mcp", or "api"`)
+	fs.StringVar(&searchFlag, "search", "", "case-insensitive substring match across actor, ability, method, path and remote address")
+	fs.BoolVar(&failedFlag, "failed", false, "only show failed requests (status code 400 or higher)")
 	fs.StringVar(&formatFlag, "format", "", `output format: "csv" exports entries as CSV instead of the default table/--json/--output output`)
 	fs.StringVar(&outputFileFlag, "output-file", "", "write the csv export to this file instead of stdout (only meaningful with --format csv; not to be confused with --output, which picks json/table/text rendering)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, auditLogUsage(prog)) }
@@ -43,7 +46,7 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	opts := listAuditLogOptions{Limit: limitFlag, Before: beforeFlag, Path: pathFlag, Method: methodFlag, ClientKind: clientKindFlag}
+	opts := listAuditLogOptions{Limit: limitFlag, Before: beforeFlag, Path: pathFlag, Method: methodFlag, ClientKind: clientKindFlag, Search: searchFlag, FailedOnly: failedFlag}
 
 	if formatFlag == "csv" {
 		return runAuditLogExportCSV(context.Background(), client, opts, outputFileFlag, stdout, stderr, of)
@@ -124,6 +127,8 @@ Flags:
   --path string             only show entries for this exact request path
   --method string          only show entries for this exact HTTP method
   --client-kind string    only show entries from this caller surface: "cli", "dashboard", "mcp", or "api"
+  --search string          case-insensitive substring match across actor, ability, method, path and remote address
+  --failed                  only show failed requests (status code 400 or higher)
   --format string          "csv" exports entries as CSV instead of the default table/--json/--output output
   --output-file string     write the csv export to this file instead of stdout (requires --format csv)
   --output string          output format: json, table, or text (default table)

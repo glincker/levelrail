@@ -2340,6 +2340,8 @@ type ListAuditLogOptions struct {
 	Path       string
 	Method     string
 	ClientKind string
+	Search     string // case-insensitive substring across actor, ability, method, path, remote addr
+	FailedOnly bool   // only entries with status_code >= 400
 }
 
 // PurgeAuditLogResult is POST /api/v1/audit-log/purge's response shape

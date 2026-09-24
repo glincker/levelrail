@@ -3,7 +3,12 @@
 // cursor-paginated by `before` (an RFC3339 timestamp) rather than an
 // offset, so a large table never gets slower to page through.
 
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export interface AuditLogEntry {
@@ -22,7 +27,8 @@ export interface AuditLogEntry {
 
 export const auditLogKeys = {
   all: ['audit-log'] as const,
-  list: (before?: string) => [...auditLogKeys.all, 'list', before ?? null] as const,
+  list: (before?: string) =>
+    [...auditLogKeys.all, 'list', before ?? null] as const,
   scoped: (path: string, method: string) =>
     [...auditLogKeys.all, 'scoped', path, method] as const,
 }
@@ -33,19 +39,26 @@ export interface AuditLogQueryOptions {
   path?: string
   method?: string
   clientKind?: string
+  search?: string
+  failedOnly?: boolean
 }
 
 // buildAuditLogParams is the one place that turns AuditLogQueryOptions
 // into GET /api/v1/audit-log's query string, shared by fetchAuditLog and
 // auditLogExportURL so the CSV export can't drift from the JSON list's
 // own filter params.
-function buildAuditLogParams(opts: AuditLogQueryOptions): URLSearchParams {
+export function buildAuditLogParams(
+  opts: AuditLogQueryOptions,
+): URLSearchParams {
   const params = new URLSearchParams()
   if (opts.limit) params.set('limit', String(opts.limit))
   if (opts.before) params.set('before', opts.before)
   if (opts.path) params.set('path', opts.path)
   if (opts.method) params.set('method', opts.method)
   if (opts.clientKind) params.set('client_kind', opts.clientKind)
+  const search = opts.search?.trim()
+  if (search) params.set('q', search)
+  if (opts.failedOnly) params.set('status', 'failed')
   return params
 }
 
