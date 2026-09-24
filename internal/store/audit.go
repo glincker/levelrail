@@ -86,7 +86,15 @@ type AuditEntryFilter struct {
 	Path       string
 	Method     string
 	ClientKind string
+	// Search is a case-insensitive substring matched across actor_name,
+	// ability, method, path and remote_addr.
+	Search string
+	// FailedOnly restricts results to status_code >= 400.
+	FailedOnly bool
 }
+
+// auditLikeEscaper escapes LIKE wildcards so Search is a literal substring.
+var auditLikeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
 // ListAuditEntries returns up to limit audit log rows, newest first.
 // before, when non-nil, restricts the result to entries strictly older
@@ -120,6 +128,14 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 	if filter.ClientKind != "" {
 		conditions = append(conditions, "client_kind = ?")
 		args = append(args, filter.ClientKind)
+	}
+	if filter.Search != "" {
+		pattern := "%" + auditLikeEscaper.Replace(filter.Search) + "%"
+		conditions = append(conditions, `(actor_name LIKE ? ESCAPE '\' OR ability LIKE ? ESCAPE '\' OR method LIKE ? ESCAPE '\' OR path LIKE ? ESCAPE '\' OR remote_addr LIKE ? ESCAPE '\')`)
+		args = append(args, pattern, pattern, pattern, pattern, pattern)
+	}
+	if filter.FailedOnly {
+		conditions = append(conditions, "status_code >= 400")
 	}
 	if len(conditions) > 0 {
 		query += "WHERE " + strings.Join(conditions, " AND ") + "\n"

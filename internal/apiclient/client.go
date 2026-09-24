@@ -2750,6 +2750,12 @@ func auditLogQuery(opts ListAuditLogOptions) url.Values {
 	if opts.ClientKind != "" {
 		q.Set("client_kind", opts.ClientKind)
 	}
+	if opts.Search != "" {
+		q.Set("q", opts.Search)
+	}
+	if opts.FailedOnly {
+		q.Set("status", "failed")
+	}
 	return q
 }
 

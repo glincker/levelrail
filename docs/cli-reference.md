@@ -898,6 +898,8 @@ levelrail version [flags]
 levelrail audit-log [flags]
 ```
 
+Filter with `--search <text>` (case-insensitive substring across actor, ability, method, path and remote address) and `--failed` (status 400 or higher). Both are applied server side and carry into `--format csv` exports.
+
 ### Audit Purge
 
 ```
