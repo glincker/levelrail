@@ -188,7 +188,7 @@ The catalog is a hardcoded Go slice shipped with the binary. Adding, editing, or
 
 **No third-party catalog import**
 
-ADR 015 leaves open whether a full third-party dataset gets imported verbatim. Today's 129-entry catalog is Levelrail's own curated set, not an import.
+ADR 015 leaves open whether a full third-party dataset gets imported verbatim. Today's 141-entry catalog is Levelrail's own curated set, not an import.
 
 **No static site creation or delete surface beyond git push**
 
