@@ -60,12 +60,77 @@ const RULES: BuildLogHintRule[] = [
     hint: 'Free disk space on the build node, or reduce build cache/context size.',
   },
   {
+    id: 'registry-auth',
+    pattern:
+      /pull access denied|requested access to the resource is denied|unauthorized: (authentication required|incorrect username)|no basic auth credentials|failed to authorize/i,
+    title: 'Container registry rejected credentials',
+    hint: 'Check the registry credential attached to this app and that its token has pull (and, for pushes, write) access.',
+  },
+  {
+    id: 'image-not-found',
+    pattern:
+      /manifest unknown|manifest for \S+ not found|repository does not exist|no such image|failed to resolve source metadata.{0,120}not found/i,
+    title: 'Image or tag not found',
+    hint: 'Confirm the image name and tag exist in the registry (a typo in a FROM line or a tag that was never pushed).',
+  },
+  {
+    id: 'dockerfile-path',
+    pattern:
+      /failed to read dockerfile|open Dockerfile: no such file|dockerfile\S* (was )?(not found|does not exist)|unable to prepare context.{0,80}(no such file|not found)/i,
+    title: 'Dockerfile or build context not found',
+    hint: 'Check the Dockerfile path and build context directory in app.yaml (paths are relative to the repo root).',
+  },
+  {
+    id: 'oom-killed',
+    pattern:
+      /OOMKilled|exit(ed with)? code:? ?137|signal: killed|out of memory: kill/i,
+    title: 'Container was killed for running out of memory',
+    hint: 'Raise the memory limit in app.yaml (resources.memory) or reduce the process memory use at startup.',
+  },
+  {
+    id: 'missing-env-var',
+    pattern:
+      /(environment variable|env var)s?\b.{0,60}\b(required|missing|not set|undefined|not defined)|\b(missing|undefined|unset)\b.{0,30}\b(environment variable|env var)|KeyError: ['"][A-Z][A-Z0-9_]{2,}['"]/i,
+    title: 'A required environment variable is missing',
+    hint: 'Add the variable on the Environment page (or mark it required in app.yaml), then redeploy.',
+  },
+  {
+    id: 'port-mismatch',
+    pattern:
+      /EADDRINUSE|address already in use|(connection refused|not (listening|open)).{0,60}port|port \d+.{0,40}(not (listening|open|reachable)|refused)|did not (open|listen on) port/i,
+    title: 'Port mismatch',
+    hint: 'Make sure the app listens on the port declared in app.yaml (and on 0.0.0.0, not 127.0.0.1), and that nothing else binds it.',
+  },
+  {
+    id: 'health-check-timeout',
+    pattern:
+      /ReadinessFailed|readiness (probe|check)?\s?(failed|timed out|timeout)|health ?check.{0,40}(failed|timed out|timeout)|did not become (ready|healthy)/i,
+    title: 'Health check never passed',
+    hint: 'Check that the readiness path returns 2xx quickly after start, and raise the timeout if the app boots slowly.',
+  },
+  {
+    id: 'dependency-install',
+    pattern:
+      /npm ERR!\s*(code )?(ERESOLVE|ETIMEDOUT|ENOTFOUND)|ERESOLVE|error Command failed with exit code|no matching distribution found|failed building wheel|cannot find module providing package|go: .{0,80}unrecognized import|failed to run custom build command|error: failed to (download|fetch)/i,
+    title: 'Dependency install failed',
+    hint: 'Check the lockfile and package versions, and that the build node can reach the package registry.',
+  },
+  {
     id: 'permission-denied',
     pattern: /permission denied/i,
     title: 'A build step hit a permission error',
     hint: 'Check file ownership/permissions and any USER instruction in the Dockerfile.',
   },
 ]
+
+// matchHintForText returns the first rule matching one piece of text
+// (an attempt error, a condition message or a single log line).
+export function matchHintForText(
+  text: string,
+): Pick<BuildLogHintMatch, 'id' | 'title' | 'hint'> | undefined {
+  const rule = RULES.find((r) => r.pattern.test(text))
+  return rule ? { id: rule.id, title: rule.title, hint: rule.hint } : undefined
+}
 
 // matchBuildLogHints scans lines once and returns at most one match per
 // rule (its first occurrence), newest-seen-pattern-first is not

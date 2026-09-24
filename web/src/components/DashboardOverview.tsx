@@ -16,6 +16,7 @@ import { STATUS_DOT_COLOR } from '../lib/appStatus'
 import { CreateResourceWizard } from './CreateResourceWizard'
 import { SetupWizard } from './setup/SetupWizard'
 import { AlertingQuickSetupPrompt } from './AlertingQuickSetupPrompt'
+import { SetupChecklistCard } from './SetupChecklistCard'
 import { FleetResourceChart } from './FleetResourceChart'
 import { FleetUtilizationSummary } from './FleetUtilizationSummary'
 import { TopResourceConsumers } from './TopResourceConsumers'
@@ -83,6 +84,8 @@ export function DashboardOverview({
           }
         />
       </div>
+
+      {isRoot ? <SetupChecklistCard firstAppName={firstApp.name} /> : null}
 
       <AlertingQuickSetupPrompt carrierAppName={firstApp.name} />
 

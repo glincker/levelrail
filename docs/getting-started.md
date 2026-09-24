@@ -270,6 +270,20 @@ levelrail-cli completion fish > ~/.config/fish/completions/levelrail-cli.fish
 
 Run `levelrail-cli completion -h` for the same instructions from the CLI itself.
 
+## The "Get set up" checklist
+
+After your first login, the dashboard shows a "Get set up" card that walks you to a safe production setup. Each row reads live state from the control plane and links to the right page:
+
+- Connect a Git provider
+- Deploy your first app
+- Add a custom domain with a valid certificate
+- Add a backup target and create a control plane backup (`levelrail-cli control-plane-backups create`)
+- Create a notification channel and an alert rule
+- Enable two-factor authentication on the admin account
+- Set the dashboard URL
+
+A row that your account cannot see (for example a 403 or 404 from its endpoint) is shown as unavailable and left out of the progress bar. Dismiss the card with the X button (remembered in your browser), or let it hide itself once every available step is done. It is shown to root accounts only.
+
 ## See also
 
 - [app-spec-reference.md](app-spec-reference.md) - full `app.yaml` schema with all fields and options

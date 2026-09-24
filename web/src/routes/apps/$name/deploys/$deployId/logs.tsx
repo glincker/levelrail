@@ -28,6 +28,8 @@ import { LogConnectionBadge } from '../../../../../components/LogConnectionBadge
 import { LogTerminal } from '../../../../../components/LogTerminal'
 import { BuildLogHints } from '../../../../../components/BuildLogHints'
 import { DeploySection } from '../../../../../components/DeploySection'
+import { DeployFailureSummaryCard } from '../../../../../components/DeployFailureSummaryCard'
+import { deployStageAnchorId } from '../../../../../lib/deployFailureSummary'
 import { DeployMetaCard } from '../../../../../components/DeployMetaCard'
 import { DeployQuickLinks } from '../../../../../components/DeployQuickLinks'
 import { DeployStageTimeline } from '../../../../../components/DeployStageTimeline'
@@ -118,76 +120,98 @@ function DeployLogsPage() {
             }
           />
 
-          <div className="space-y-3">
-            <DeploySection
-              stage={stages[0]}
-              summary={buildStageSummary(stages[0], lines)}
-              defaultOpen={
-                stages[0].status === 'running' || stages[0].status === 'failed'
-              }
-            >
-              <div className="space-y-2">
-                {!noBuildStep && steps.length > 0 ? (
-                  <div className="rounded-lg border border-border p-3">
-                    <DeployStepFeed steps={steps} />
-                  </div>
-                ) : null}
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Build output
-                  </h3>
-                  <div className="flex items-center gap-3">
-                    <p className="text-xs text-muted-foreground">
-                      {lines.length > 0
-                        ? `${lines.length.toLocaleString()} lines`
-                        : ''}
-                    </p>
-                    {!noBuildStep && (
-                      <a
-                        href={deployLogDownloadURL(name, deployId)}
-                        download
-                        className={buttonVariants({
-                          variant: 'outline',
-                          size: 'sm',
-                        })}
-                      >
-                        <DownloadSimpleIcon
-                          className="size-3.5"
-                          aria-hidden="true"
-                        />
-                        Download
-                      </a>
-                    )}
-                  </div>
-                </div>
-                <BuildLogHints lines={lines} />
-                <LogTerminal
-                  lines={lines}
-                  isPaused={isPaused}
-                  pause={pause}
-                  resume={resume}
-                  heightClassName="h-[40vh]"
-                  emptyStateMessage={
-                    noBuildStep ? NO_BUILD_STEP_MESSAGE : undefined
-                  }
-                  emptyStatePulse={!noBuildStep}
-                  isFinished={attempt.status !== 'running'}
-                />
-              </div>
-            </DeploySection>
+          <DeployFailureSummaryCard
+            appName={name}
+            attempt={attempt}
+            attempts={attempts}
+            stages={stages}
+            conditions={conditions}
+            lines={lines}
+          />
 
-            <DeploySection
-              stage={stages[1]}
-              summary={rolloutStageSummary(stages[1], conditions)}
-              defaultOpen={stages[1].status === 'failed'}
+          <div className="space-y-3">
+            <div
+              id={deployStageAnchorId('build')}
+              tabIndex={-1}
+              className="outline-none"
             >
-              <div className="space-y-3">
-                {rolloutSubStages ? (
-                  <DeployStageTimeline stages={rolloutSubStages} />
-                ) : null}
-                <ConditionsPanel conditions={conditions} />
-              </div>
-            </DeploySection>
+              <DeploySection
+                stage={stages[0]}
+                summary={buildStageSummary(stages[0], lines)}
+                defaultOpen={
+                  stages[0].status === 'running' ||
+                  stages[0].status === 'failed'
+                }
+              >
+                <div className="space-y-2">
+                  {!noBuildStep && steps.length > 0 ? (
+                    <div className="rounded-lg border border-border p-3">
+                      <DeployStepFeed steps={steps} />
+                    </div>
+                  ) : null}
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Build output
+                    </h3>
+                    <div className="flex items-center gap-3">
+                      <p className="text-xs text-muted-foreground">
+                        {lines.length > 0
+                          ? `${lines.length.toLocaleString()} lines`
+                          : ''}
+                      </p>
+                      {!noBuildStep && (
+                        <a
+                          href={deployLogDownloadURL(name, deployId)}
+                          download
+                          className={buttonVariants({
+                            variant: 'outline',
+                            size: 'sm',
+                          })}
+                        >
+                          <DownloadSimpleIcon
+                            className="size-3.5"
+                            aria-hidden="true"
+                          />
+                          Download
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <BuildLogHints lines={lines} />
+                  <LogTerminal
+                    lines={lines}
+                    isPaused={isPaused}
+                    pause={pause}
+                    resume={resume}
+                    heightClassName="h-[40vh]"
+                    emptyStateMessage={
+                      noBuildStep ? NO_BUILD_STEP_MESSAGE : undefined
+                    }
+                    emptyStatePulse={!noBuildStep}
+                    isFinished={attempt.status !== 'running'}
+                  />
+                </div>
+              </DeploySection>
+            </div>
+
+            <div
+              id={deployStageAnchorId('rollout')}
+              tabIndex={-1}
+              className="outline-none"
+            >
+              <DeploySection
+                stage={stages[1]}
+                summary={rolloutStageSummary(stages[1], conditions)}
+                defaultOpen={stages[1].status === 'failed'}
+              >
+                <div className="space-y-3">
+                  {rolloutSubStages ? (
+                    <DeployStageTimeline stages={rolloutSubStages} />
+                  ) : null}
+                  <ConditionsPanel conditions={conditions} />
+                </div>
+              </DeploySection>
+            </div>
           </div>
 
           <DeployQuickLinks appName={name} />
