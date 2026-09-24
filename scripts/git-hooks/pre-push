@@ -50,8 +50,41 @@ if [ "$fail" -eq 0 ] && command -v jq >/dev/null 2>&1; then
 	fi
 fi
 
+push_scope="${LEVELRAIL_PUSH_SCOPE:-fast}"
+
 if [ "$fail" -eq 0 ] && [ "$scope" = "NONE" ]; then
 	echo "pre-push: go test skipped, no Go-affecting changes vs origin/main"
+elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
+	# Fast lane (default): test only the packages this branch edited, never
+	# their dependents, and skip test/e2e. internal/api is the slowest
+	# package by far (minutes), so it runs only the tests declared in test
+	# files this branch touched. The compile check above already caught any
+	# dependent that no longer builds; dependents' behavior and the coverage
+	# gate are CI's job (ci.yml) and nightly.yml's. Set
+	# LEVELRAIL_PUSH_SCOPE=affected to get the old dependents-included run.
+	changed_files="$(git diff --name-only origin/main...HEAD -- '*.go' 2>/dev/null)"
+	fast_pkgs=""
+	for d in $(printf '%s\n' "$changed_files" | xargs -n1 dirname 2>/dev/null | sort -u); do
+		case "$d" in test/e2e* | internal/api) continue ;; esac
+		if ls "$d"/*_test.go >/dev/null 2>&1; then
+			fast_pkgs="$fast_pkgs ./$d"
+		fi
+	done
+	if [ -n "$fast_pkgs" ]; then
+		echo "pre-push: go test -short (fast lane):$fast_pkgs"
+		# shellcheck disable=SC2086
+		if ! go test $fast_pkgs -short 2>&1; then
+			fail=1
+		fi
+	fi
+	api_tests="$(printf '%s\n' "$changed_files" | grep '^internal/api/.*_test\.go$' | while read -r f; do grep -ho '^func Test[A-Za-z0-9_]*' "$f" 2>/dev/null | sed 's/^func //'; done | sort -u | paste -sd'|' -)"
+	if [ "$fail" -eq 0 ] && [ -n "$api_tests" ]; then
+		echo "pre-push: go test -short ./internal/api, only tests from changed test files"
+		if ! go test ./internal/api -short -run "^($api_tests)\$" 2>&1; then
+			fail=1
+		fi
+	fi
+	echo "pre-push: fast lane skips dependents, test/e2e and the coverage gate (CI runs them)"
 elif [ "$fail" -eq 0 ]; then
 	# -short skips the tests marked testing.Short() (flaky under load,
 	# covered by nightly.yml instead).
