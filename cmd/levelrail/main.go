@@ -784,6 +784,9 @@ func run(logger *slog.Logger) error {
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
 		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
+	if controlPlaneBackupInterval(logger) > 0 {
+		alertingEngine.SetControlPlaneBackups(cpbackup.NewManager(db, agentDataDir), 0)
+	}
 	// db satisfies alerting.AutoRollbackStore structurally (it already
 	// satisfies deploy.ImageDeployStore, plus GetDesiredService/
 	// ListDeployAttempts); engine (the reconcile engine, already passed
