@@ -8,7 +8,10 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
+      # Plain-HTTP dashboard/API. Loopback only by default; reach it for first
+      # sign-in with `ssh -L 8080:127.0.0.1:8080 <host>`, or set
+      # LEVELRAIL_HTTP_BIND=0.0.0.0 to expose it on all interfaces.
+      - "${LEVELRAIL_HTTP_BIND:-127.0.0.1}:8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - levelrail-data:/var/lib/levelrail-data

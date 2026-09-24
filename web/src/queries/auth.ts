@@ -16,8 +16,9 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useRouter } from '@tanstack/react-router'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { safeReturnPath } from '../lib/connectionState'
 import { setStoredUsername, clearStoredUsername } from '../lib/authStore'
 
 export interface AuthUser {
@@ -184,8 +185,24 @@ export function setupStatusQueryOptions() {
 // call-level onSuccess (passed to .mutate) is what switches it to the
 // second-step UI, this hook has no navigation to do until that second
 // step succeeds too.
+// Returns to the path a 401 bounced the user from (?redirect=), else home.
+function goAfterLogin(
+  navigate: ReturnType<typeof useNavigate>,
+  router: ReturnType<typeof useRouter>,
+): void {
+  const back = safeReturnPath(
+    new URLSearchParams(window.location.search).get('redirect'),
+  )
+  if (back) {
+    void router.navigate({ href: back })
+    return
+  }
+  void navigate({ to: '/' })
+}
+
 export function useLogin() {
   const navigate = useNavigate()
+  const router = useRouter()
   return useMutation<LoginResult, ApiError, Credentials>({
     mutationFn: ({ username, password }) => login(username, password),
     onSuccess: (result) => {
@@ -193,18 +210,19 @@ export function useLogin() {
         return
       }
       setStoredUsername(result.username)
-      void navigate({ to: '/' })
+      goAfterLogin(navigate, router)
     },
   })
 }
 
 export function useVerifyTwoFactor() {
   const navigate = useNavigate()
+  const router = useRouter()
   return useMutation<AuthUser, ApiError, VerifyTwoFactorRequest>({
     mutationFn: verifyTwoFactor,
     onSuccess: (user) => {
       setStoredUsername(user.username)
-      void navigate({ to: '/' })
+      goAfterLogin(navigate, router)
     },
   })
 }

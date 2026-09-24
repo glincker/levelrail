@@ -21,7 +21,9 @@
 // optionally debounces a single check. backup_missing watches one
 // database (platform-wide, like cert_expiry) or one of this app's own
 // volumes' scheduled backup cadence, reusing for_duration as its overdue
-// grace period.
+// grace period. control_plane_backup_stale is platform-wide too: it watches
+// the control plane's own newest snapshot and reuses for_duration as the
+// maximum allowed age (default 3d).
 export type AlertRuleKind =
   | 'threshold'
   | 'crashloop'
@@ -32,6 +34,8 @@ export type AlertRuleKind =
   | 'node_resource_usage'
   | 'domain_health'
   | 'backup_missing'
+  | 'control_plane_backup_stale'
+  | 'node_offline'
 
 export type BackupResourceKind = 'database' | 'volume'
 

@@ -270,6 +270,10 @@ const (
 	// pushes or a force-push retry storm against one app, so only a
 	// client deliberately hammering this unauthenticated route hits it.
 	defaultWebhookRateLimitRPM = 60
+
+	// defaultTokenRedeemRateLimitRPM is the per-IP budget for reset-password
+	// and invite-accept when APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM is unset.
+	defaultTokenRedeemRateLimitRPM = 10
 )
 
 func main() {
@@ -298,7 +302,7 @@ func main() {
 	}
 
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
-		if err := runHealthcheck(context.Background(), os.Stdout); err != nil {
+		if err := runHealthcheck(context.Background(), os.Stdout, len(os.Args) > 2 && os.Args[2] == "--ready"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -780,6 +784,9 @@ func run(logger *slog.Logger) error {
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
 		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
+	if controlPlaneBackupInterval(logger) > 0 {
+		alertingEngine.SetControlPlaneBackups(cpbackup.NewManager(db, agentDataDir), 0)
+	}
 	// db satisfies alerting.AutoRollbackStore structurally (it already
 	// satisfies deploy.ImageDeployStore, plus GetDesiredService/
 	// ListDeployAttempts); engine (the reconcile engine, already passed
@@ -1933,6 +1940,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 	opts := []api.Option{
 		api.WithReconcileNudger(engine),
+		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
 		api.WithAlertRules(alertingDB),
 		api.WithDeployNotifyTargets(alertingDB),
@@ -1946,6 +1954,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithAllowInsecureLogin(allowInsecureLogin(logger)),
 		api.WithAPIRateLimit(apiRateLimitReadRPM(logger), apiRateLimitWriteRPM(logger)),
 		api.WithWebhookRateLimit(webhookRateLimitRPM(logger)),
+		api.WithTokenRedeemRateLimit(apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", defaultTokenRedeemRateLimitRPM)),
 		api.WithDataDir(dataDir),
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
 		api.WithControlPlaneBackupScheduleDisabled(controlPlaneBackupInterval(logger) == 0),
@@ -2257,6 +2266,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler http.Handler) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/healthz", apiHandler)
+	mux.Handle("/readyz", apiHandler)
 	mux.Handle("/api/", apiHandler)
 	if webhookHandler != nil {
 		mux.Handle("POST /webhook", webhookHandler)

@@ -532,7 +532,7 @@ func WithContainerLister(l ContainerLister) Option {
 // field is simply omitted, the same "optional signal, absence is not an
 // error" shape WithDockerPinger's own absence already has.
 func WithDockerDiskUsager(u DockerDiskUsager) Option {
-	return func(rt *Router) { rt.dockerDiskUsage = u }
+	return func(rt *Router) { rt.dockerDiskUsage = newCachedDiskUsager(u, defaultDiskUsageCacheTTL) }
 }
 
 // WithDBPinger enables the database check on GET /api/v1/system/doctor.
@@ -886,6 +886,13 @@ func WithAPIRateLimit(readPerMinute, writePerMinute int) Option {
 // protected even when an operator never sets the env var.
 func WithWebhookRateLimit(perMinute int) Option {
 	return func(rt *Router) { rt.webhookRateLimit = newAPIRateLimiter(perMinute) }
+}
+
+// WithTokenRedeemRateLimit enables a per-client-IP budget on the
+// unauthenticated POST /api/v1/auth/reset-password and
+// POST /api/v1/invites/accept routes. perMinute <= 0 disables it.
+func WithTokenRedeemRateLimit(perMinute int) Option {
+	return func(rt *Router) { rt.tokenRedeemRateLimit = newAPIRateLimiter(perMinute) }
 }
 
 // WithAllowInsecureLogin permits plain-HTTP sign-in even when an https dashboard URL is configured.

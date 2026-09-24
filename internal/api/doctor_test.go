@@ -450,6 +450,9 @@ func (f fakeCPBackups) Open(string) (*os.File, cpbackup.Info, error) {
 	return nil, cpbackup.Info{}, cpbackup.ErrNotFound
 }
 func (f fakeCPBackups) Delete(string) error { return nil }
+func (f fakeCPBackups) Verify(context.Context, string) (cpbackup.VerifyResult, error) {
+	return cpbackup.VerifyResult{}, nil
+}
 
 func TestDoctorCheckControlPlaneBackup(t *testing.T) {
 	recent := cpbackup.Info{Name: "a", CreatedAt: time.Now().Add(-2 * time.Hour)}

@@ -230,6 +230,11 @@ func (c *Controller) egressSidecars(ctx context.Context) ([]docker.ContainerStat
 	if err != nil {
 		return nil, fmt.Errorf("list containers for %s: %w", c.serviceName, err)
 	}
+	return c.filterEgressSidecars(all), nil
+}
+
+// filterEgressSidecars is egressSidecars' pure filtering half.
+func (c *Controller) filterEgressSidecars(all []docker.ContainerState) []docker.ContainerState {
 	var out []docker.ContainerState
 	for _, cs := range all {
 		if _, ok := isEgressSidecarName(c.serviceName, cs.Name); !ok || !c.ownsInstance(cs) {
@@ -237,7 +242,7 @@ func (c *Controller) egressSidecars(ctx context.Context) ([]docker.ContainerStat
 		}
 		out = append(out, cs)
 	}
-	return out, nil
+	return out
 }
 
 // appendEgressCondition runs egress reconciliation and appends its
@@ -270,7 +275,11 @@ func (c *Controller) reconcileEgress(ctx context.Context, targets []string, desi
 	if err != nil {
 		return egressNotReady("PolicyApplyFailed", err)
 	}
+	return c.reconcileEgressWith(ctx, existing, targets, desired)
+}
 
+// reconcileEgressWith is reconcileEgress given an already-listed sidecar set.
+func (c *Controller) reconcileEgressWith(ctx context.Context, existing []docker.ContainerState, targets []string, desired *store.DesiredService) reconcile.Condition {
 	allowlisted := desired.Egress != nil && desired.Egress.Mode == store.EgressModeAllowlist
 
 	wanted := make(map[string]bool, len(targets))

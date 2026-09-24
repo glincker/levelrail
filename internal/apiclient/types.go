@@ -1997,6 +1997,24 @@ type ControlPlaneBackup struct {
 	SizeBytes int64  `json:"size_bytes"`
 	CreatedAt string `json:"created_at"`
 	SHA256    string `json:"sha256"`
+	// VerifiedAt and VerifiedOK are set once the snapshot has been verified.
+	VerifiedAt string `json:"verified_at,omitempty"`
+	VerifiedOK *bool  `json:"verified_ok,omitempty"`
+}
+
+// ControlPlaneBackupCheck is one step of a backup verification.
+type ControlPlaneBackupCheck struct {
+	Name   string `json:"name"`
+	OK     bool   `json:"ok"`
+	Detail string `json:"detail"`
+}
+
+// ControlPlaneBackupVerification mirrors internal/cpbackup.VerifyResult.
+type ControlPlaneBackupVerification struct {
+	Name       string                    `json:"name"`
+	OK         bool                      `json:"ok"`
+	Checks     []ControlPlaneBackupCheck `json:"checks"`
+	VerifiedAt string                    `json:"verified_at"`
 }
 
 // SystemPruneResult mirrors internal/api's systemPruneResponse
