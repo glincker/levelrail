@@ -298,7 +298,7 @@ func main() {
 	}
 
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
-		if err := runHealthcheck(context.Background(), os.Stdout); err != nil {
+		if err := runHealthcheck(context.Background(), os.Stdout, len(os.Args) > 2 && os.Args[2] == "--ready"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -1933,6 +1933,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 	opts := []api.Option{
 		api.WithReconcileNudger(engine),
+		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
 		api.WithAlertRules(alertingDB),
 		api.WithDeployNotifyTargets(alertingDB),
@@ -2257,6 +2258,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler http.Handler) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/healthz", apiHandler)
+	mux.Handle("/readyz", apiHandler)
 	mux.Handle("/api/", apiHandler)
 	if webhookHandler != nil {
 		mux.Handle("POST /webhook", webhookHandler)

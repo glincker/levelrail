@@ -170,3 +170,23 @@ func (db *DB) applyMigration(ctx context.Context, m migration) error {
 
 	return nil
 }
+
+// MigrationsCurrent returns an error unless every embedded migration has
+// been applied to this database.
+func (db *DB) MigrationsCurrent(ctx context.Context) error {
+	current, err := db.currentVersion(ctx)
+	if err != nil {
+		return err
+	}
+	migrations, err := loadMigrations()
+	if err != nil {
+		return err
+	}
+	if len(migrations) == 0 {
+		return nil
+	}
+	if latest := migrations[len(migrations)-1].version; current != latest {
+		return fmt.Errorf("schema at version %d, want %d", current, latest)
+	}
+	return nil
+}

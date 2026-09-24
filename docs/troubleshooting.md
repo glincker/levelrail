@@ -97,6 +97,10 @@ The `ram`/`cpu` checks warn when this host is below the recommended minimums (`A
 
 The `control_plane_backup` check warns when the newest control plane snapshot is more than 3 days old. Scheduled snapshots may be failing (check the server log for `scheduled control plane backup failed`, often a full disk) or the server restarts more often than `APP_CONTROL_PLANE_BACKUP_INTERVAL` (default 24h). Take one now with `levelrail-cli control-plane-backups create`. See [Control plane backup and restore](/control-plane-backup).
 
+## Readiness (`/readyz`)
+
+`GET /healthz` is a bare liveness check. `GET /readyz` is unauthenticated and cheap, and returns `200 {"ready":true,"checks":[...]}` only when the control plane can serve: the database answers a query, every migration is applied, and the reconcile engine has started. Otherwise it returns `503` and the failing check has `"status":"failing"`. A Docker daemon outage shows as `"status":"degraded"` on the `docker` check but keeps `ready` true, so the dashboard stays reachable to show it. `levelrail healthcheck --ready` runs the same probe from inside the container (the shipped image uses it for its `HEALTHCHECK`); it exits non-zero on 503. During startup the engine check fails for a moment, which is what the image's `--start-period` absorbs.
+
 ## Still stuck?
 
 Open a [GitHub Discussion](https://github.com/glincker/levelrail/discussions) with your `app.yaml`, the relevant log output, and what you already tried. For anything that looks like a real bug, [file an issue](https://github.com/glincker/levelrail/issues) instead.
