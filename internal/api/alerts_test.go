@@ -232,6 +232,19 @@ func TestHandleCreateAlertRule_NodeResourceUsageSuccess(t *testing.T) {
 	}
 }
 
+func TestHandleCreateAlertRule_NodeOfflineSuccess(t *testing.T) {
+	rt, db, _ := newTestRouterWithAlerting(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	body := `{"name":"node offline","kind":"node_offline","notify_url":"https://example.com/hook","enabled":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/alerts", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+}
+
 // TestHandleCreateAlertRule_ScheduledTaskFailureSuccess checks that a
 // kind=scheduled_task_failure rule requires and accepts a
 // scheduled_task_id belonging to this app, reusing

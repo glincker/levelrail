@@ -183,7 +183,7 @@ There are nine rule kinds, all stored in one table (`alert_rules`). The evaluati
 
 Each rule tracks its own pending/firing state and notifies only on transitions (firing or resolved), never on every tick a rule stays in the same state. This prevents channels from being trained to ignore repeated alerts.
 
-::: details Nine rule kinds and their configuration
+::: details Ten rule kinds and their configuration
 
 | Kind | Scope | What it watches | Key fields |
 | --- | --- | --- | --- |
@@ -192,6 +192,7 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 | `cert_expiry` | platform-wide | every stored TLS certificate approaching or past expiry, or stuck mid-renewal | none required |
 | `patch_status` | platform-wide | every node's pending OS security patch count | none required (threshold is a control-plane default/env var, not a rule field) |
 | `node_disk_space` | platform-wide | every node's disk-used percentage | none required |
+| `node_offline` | platform-wide | any node whose status is offline (agent stopped heartbeating); resolves when all are back | none required |
 | `node_resource_usage` | platform-wide | every node's summed placed-container CPU and memory | none required |
 | `scheduled_task_failure` | one app's own scheduled task | consecutive failed runs of one task | `scheduled_task_id`, `restart_count_threshold` (reused as the failure-count threshold) |
 | `domain_health` | one app's own domains | a DNS check gone bad (not resolving, or resolving somewhere else) on any of the app's configured domains | `for_duration` (optional debounce) |
@@ -199,7 +200,7 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 
 :::
 
-**Platform-wide rule kinds** (`cert_expiry`, `patch_status`, `node_disk_space`, `node_resource_usage`)
+**Platform-wide rule kinds** (`cert_expiry`, `patch_status`, `node_disk_space`, `node_resource_usage`, `node_offline`)
 
 These are created through an app's `/apps/{name}/alerts` URL, but that URL only decides where the rule appears in that app's list. The rule evaluates every certificate, node, or disk across the entire control plane regardless of which app created it.
 
@@ -397,6 +398,7 @@ levelrail-cli apps alerts create <app> --name NAME --kind cert_expiry
 levelrail-cli apps alerts create <app> --name NAME --kind patch_status
 levelrail-cli apps alerts create <app> --name NAME --kind node_disk_space
 levelrail-cli apps alerts create <app> --name NAME --kind node_resource_usage
+levelrail-cli apps alerts create <app> --name NAME --kind node_offline
 levelrail-cli apps alerts create <app> --name NAME --kind scheduled_task_failure --scheduled-task-id ID --restart-count-threshold N
 levelrail-cli apps alerts create <app> --name NAME --kind domain_health [--for-duration 2m]
 levelrail-cli apps alerts update <app> <id> --name NAME --kind KIND [flags]

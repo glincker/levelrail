@@ -90,6 +90,7 @@ const KIND_OPTIONS: {
   },
   { value: 'domain_health', label: 'Domain health', Icon: GlobeIcon },
   { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
+  { value: 'node_offline', label: 'Node offline', Icon: HardDriveIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -116,6 +117,7 @@ const editAlertRuleSchema = z
       'node_resource_usage',
       'domain_health',
       'backup_missing',
+      'node_offline',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -135,7 +137,8 @@ const editAlertRuleSchema = z
       data.kind === 'cert_expiry' ||
       data.kind === 'patch_status' ||
       data.kind === 'node_disk_space' ||
-      data.kind === 'node_resource_usage'
+      data.kind === 'node_resource_usage' ||
+      data.kind === 'node_offline'
     ) {
       return
     }
@@ -431,7 +434,8 @@ export function EditAlertRuleDialog({
           {kind === 'cert_expiry' ||
           kind === 'patch_status' ||
           kind === 'node_disk_space' ||
-          kind === 'node_resource_usage' ? (
+          kind === 'node_resource_usage' ||
+          kind === 'node_offline' ? (
             <p className="text-sm text-muted-foreground">
               This kind watches every certificate or node on the whole control
               plane platform-wide, needing no metric or threshold of its own.

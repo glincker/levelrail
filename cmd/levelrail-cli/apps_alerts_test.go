@@ -93,6 +93,10 @@ func TestRun_AppsAlertsCreate_NodeResourceUsage_NoExtraFieldsRequired(t *testing
 	testAppsAlertsCreateSimpleKind(t, "node_resource_usage", "node-load-watch", "alr_5")
 }
 
+func TestRun_AppsAlertsCreate_NodeOffline_NoExtraFieldsRequired(t *testing.T) {
+	testAppsAlertsCreateSimpleKind(t, "node_offline", "node-offline-watch", "alr_7")
+}
+
 func TestRun_AppsAlertsCreate_DomainHealth_NoExtraFieldsRequired(t *testing.T) {
 	testAppsAlertsCreateSimpleKind(t, "domain_health", "domain-watch", "alr_6")
 }
