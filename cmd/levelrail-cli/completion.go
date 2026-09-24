@@ -69,6 +69,7 @@ var cliCommandTree = map[string]*cmdNode{
 			"list": nil, "teardown": nil, "enable": nil, "disable": nil, "sweep": nil,
 			"pr-status": {subs: map[string]*cmdNode{"enable": nil, "disable": nil}},
 		}},
+		"env":                {subs: map[string]*cmdNode{"import": nil, "export": nil}},
 		"secrets":            {subs: map[string]*cmdNode{"list": nil, "set": nil, "lock": nil}},
 		"git-source":         {subs: map[string]*cmdNode{"get": nil, "set": nil, "delete": nil}},
 		"webhook-deliveries": {subs: map[string]*cmdNode{"list": nil, "replay": nil}},

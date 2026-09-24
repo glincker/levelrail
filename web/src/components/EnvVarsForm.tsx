@@ -1,15 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMemo, useRef, useState, type DragEvent } from 'react'
+import { useMemo } from 'react'
 import { useFieldArray, useForm, useWatch, type Control } from 'react-hook-form'
 import { z } from 'zod'
 import {
-  ClipboardTextIcon,
   PlusIcon,
   BracketsCurlyIcon,
-  UploadSimpleIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { parseEnvBlock } from '../lib/envParse'
+import { EnvExportButton } from './EnvExportButton'
+import { EnvPasteDialog } from './EnvPasteDialog'
+import { EnvPendingDiff } from './EnvPendingDiff'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,15 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { Field, FieldError, FieldGroup } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -37,8 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { cn } from '@/lib/utils'
 
 const envSchema = z
   .object({
@@ -109,6 +98,10 @@ export interface EnvVarsFormProps {
   // so this exists purely so a user overriding one for just this app
   // doesn't have to retype its key name from memory.
   availableSharedVars?: SharedEnvVarOption[]
+  // When exportFilename is set an Export .env button is shown; keys in
+  // exportSecretKeys are exported empty, never with a value.
+  exportFilename?: string
+  exportSecretKeys?: string[]
 }
 
 // Wraps a single row's key badge in its own component so only that
@@ -144,6 +137,8 @@ export function EnvVarsForm({
   renderKeyBadge,
   inheritedRows,
   availableSharedVars,
+  exportFilename,
+  exportSecretKeys,
 }: EnvVarsFormProps) {
   // Memoized on the values prop itself, not recreated on every render:
   // react-hook-form's own values-sync effect re-runs whenever this object's
@@ -161,15 +156,11 @@ export function EnvVarsForm({
       values: syncedValues,
       resetOptions: { keepDirtyValues: true },
     })
+  const watchedVars = useWatch({ control, name: 'vars' })
   const { fields, append, remove, replace, update } = useFieldArray({
     control,
     name: 'vars',
   })
-  const [pasteOpen, setPasteOpen] = useState(false)
-  const [pasteText, setPasteText] = useState('')
-  const [isDragging, setIsDragging] = useState(false)
-  const [fileError, setFileError] = useState<string | undefined>()
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const onSubmit = handleSubmit((formValues) => {
     const vars: Record<string, string> = {}
@@ -204,12 +195,6 @@ export function EnvVarsForm({
     replace(currentVars)
   }
 
-  const handleImportPaste = () => {
-    stageParsedEntries(parseEnvBlock(pasteText))
-    setPasteText('')
-    setPasteOpen(false)
-  }
-
   // Picking a shared var appends (or, if already present, updates) a
   // row for it: a secret's value is always left blank (never sent to
   // the browser to prefill), a plain var's current value is prefilled
@@ -230,38 +215,6 @@ export function EnvVarsForm({
     } else {
       update(existingIndex, newRow)
     }
-  }
-
-  const importEnvFile = (file: File) => {
-    setFileError(undefined)
-    const reader = new FileReader()
-    reader.onload = () => {
-      const text = typeof reader.result === 'string' ? reader.result : ''
-      const parsed = parseEnvBlock(text)
-      if (parsed.length === 0) {
-        setFileError(`No key=value pairs found in ${file.name}.`)
-        return
-      }
-      stageParsedEntries(parsed)
-      setPasteOpen(false)
-    }
-    reader.onerror = () => {
-      setFileError(`Could not read ${file.name}.`)
-    }
-    reader.readAsText(file)
-  }
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) importEnvFile(file)
-    e.target.value = ''
-  }
-
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) importEnvFile(file)
   }
 
   return (
@@ -355,7 +308,8 @@ export function EnvVarsForm({
               </div>
             </div>
           ) : null}
-          <div className="flex items-center gap-2 pt-1">
+          <EnvPendingDiff saved={values ?? {}} vars={watchedVars} />
+          <div className="flex flex-wrap items-center gap-2 pt-1">
             <Button
               type="button"
               variant="outline"
@@ -390,107 +344,22 @@ export function EnvVarsForm({
                 </SelectContent>
               </Select>
             ) : null}
-            <Dialog
-              open={pasteOpen}
-              onOpenChange={(open) => {
-                setPasteOpen(open)
-                if (!open) {
-                  setFileError(undefined)
-                  setIsDragging(false)
-                }
+            <EnvPasteDialog
+              placeholder={pastePlaceholder}
+              getCurrent={() => {
+                const current: Record<string, string> = {}
+                for (const v of getValues('vars')) current[v.key] = v.value
+                return current
               }}
-            >
-              <DialogTrigger
-                render={<Button type="button" variant="outline" size="sm" />}
-              >
-                <ClipboardTextIcon />
-                Paste .env
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Paste .env</DialogTitle>
-                  <DialogDescription>
-                    Paste raw .env-format text or import a .env file. Comments
-                    and blank lines are skipped, and quoted values are
-                    unwrapped. This only stages rows, click Save variables
-                    afterward to apply them.
-                  </DialogDescription>
-                </DialogHeader>
-                <div
-                  data-testid="env-file-dropzone"
-                  className={cn(
-                    'flex flex-col items-center gap-2 rounded-md border border-dashed p-4 text-center transition-colors',
-                    isDragging ? 'border-primary bg-accent' : 'border-border',
-                  )}
-                  onDragOver={(e) => {
-                    e.preventDefault()
-                    setIsDragging(true)
-                  }}
-                  onDragLeave={() => {
-                    setIsDragging(false)
-                  }}
-                  onDrop={handleDrop}
-                >
-                  <UploadSimpleIcon className="size-5 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Drag and drop a .env file here, or
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      fileInputRef.current?.click()
-                    }}
-                  >
-                    Browse file
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".env,text/plain"
-                    className="sr-only"
-                    aria-label="Upload .env file"
-                    onChange={handleFileInputChange}
-                  />
-                </div>
-                {fileError ? (
-                  <Alert variant="destructive">
-                    <AlertDescription>{fileError}</AlertDescription>
-                  </Alert>
-                ) : null}
-                <Textarea
-                  value={pasteText}
-                  onChange={(e) => {
-                    setPasteText(e.target.value)
-                  }}
-                  className="min-h-40 font-mono"
-                  placeholder={pastePlaceholder}
-                  aria-label="Paste .env content"
-                  autoFocus
-                />
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setPasteText('')
-                      setFileError(undefined)
-                      setPasteOpen(false)
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleImportPaste}
-                    disabled={pasteText.trim().length === 0}
-                  >
-                    Import
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+              onApply={stageParsedEntries}
+            />
+            {exportFilename ? (
+              <EnvExportButton
+                env={values ?? {}}
+                secretKeys={exportSecretKeys ?? []}
+                filename={exportFilename}
+              />
+            ) : null}
             <Button type="submit" size="sm" disabled={isPending}>
               {isPending ? 'Saving...' : 'Save variables'}
             </Button>
