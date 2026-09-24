@@ -161,6 +161,15 @@ describe('EnvVarsForm', () => {
 
     await user.upload(fileInput, file)
 
+    // The file is previewed first, nothing is staged until Import.
+    await waitFor(() => {
+      expect(
+        screen.getByRole('table', { name: 'Import preview' }),
+      ).toBeInTheDocument()
+    })
+    expect(screen.queryByDisplayValue('UPLOADED_KEY')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Import' }))
+
     await waitFor(() => {
       expect(screen.getByDisplayValue('UPLOADED_KEY')).toBeInTheDocument()
     })
@@ -191,5 +200,71 @@ describe('EnvVarsForm', () => {
     expect(
       screen.getByRole('heading', { name: 'Paste .env' }),
     ).toBeInTheDocument()
+  })
+
+  it('previews new, changed and unchanged rows and honours keep-existing', async () => {
+    const user = userEvent.setup()
+    renderForm({ values: { FOO: 'bar', SAME: 's' } })
+
+    await user.click(screen.getByRole('button', { name: 'Paste .env' }))
+    fireEvent.change(screen.getByLabelText('Paste .env content'), {
+      target: { value: 'FOO=changed\nSAME=s\nFRESH=f\n' },
+    })
+
+    const table = screen.getByRole('table', { name: 'Import preview' })
+    expect(table).toHaveTextContent('FRESH')
+    expect(table).toHaveTextContent('Changed')
+    expect(table).toHaveTextContent('Unchanged')
+
+    await user.click(screen.getByLabelText('Keep existing values'))
+    expect(table).toHaveTextContent('Kept existing')
+    await user.click(screen.getByRole('button', { name: 'Import' }))
+
+    expect(screen.getByDisplayValue('FRESH')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('bar')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('changed')).not.toBeInTheDocument()
+  })
+
+  it('shows a diff of unsaved changes and hides it when nothing changed', async () => {
+    const user = userEvent.setup()
+    renderForm({ values: { FOO: 'bar', GONE: 'x' } })
+    expect(screen.queryByTestId('env-pending-diff')).not.toBeInTheDocument()
+
+    await user.clear(screen.getAllByLabelText('Variable value')[0]!)
+    await user.type(screen.getAllByLabelText('Variable value')[0]!, 'baz')
+    await user.click(
+      screen.getAllByRole('button', { name: 'Remove variable' })[1]!,
+    )
+    await user.click(screen.getByRole('button', { name: 'Add variable' }))
+    await user.type(screen.getAllByLabelText('Variable name')[1]!, 'NEW')
+
+    const diff = await screen.findByTestId('env-pending-diff')
+    expect(diff).toHaveTextContent('Added 1')
+    expect(diff).toHaveTextContent('Changed 1')
+    expect(diff).toHaveTextContent('Removed 1')
+  })
+
+  it('exports without secret values', async () => {
+    const user = userEvent.setup()
+    let exported = ''
+    const createObjectURL = vi.fn((blob: Blob) => {
+      void blob.text().then((t) => {
+        exported = t
+      })
+      return 'blob:x'
+    })
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() })
+    renderForm({
+      values: { FOO: 'bar', API_KEY: 'leaky' },
+      exportFilename: 'web.env',
+      exportSecretKeys: ['API_KEY'],
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Export .env' }))
+    await waitFor(() => {
+      expect(exported).toContain('FOO=bar')
+    })
+    expect(exported).toContain('# secret, value not exported\nAPI_KEY=\n')
+    expect(exported).not.toContain('leaky')
   })
 })

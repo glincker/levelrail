@@ -299,6 +299,22 @@ Apps created directly (not from `app.yaml`) can add or remove a Vault-sourced en
 
 This never touches any other field on the app, unlike the general update endpoint.
 
+## Importing and exporting plain env vars
+
+Plain (non-secret) env vars can be bulk-loaded from a `.env` file and exported back out.
+
+```bash
+levelrail-cli apps env import <name> --file local.env --dry-run   # preview only
+levelrail-cli apps env import <name> --file local.env             # apply
+levelrail-cli apps env export <name> --out backup.env             # or stdout without --out
+```
+
+- The parser handles comments, an `export ` prefix, single and double quotes, multiline quoted values, inline ` # comments` on unquoted values, `=` inside values, empty values and Windows line endings. When a key appears twice, the last one wins.
+- Import prints each key as new (`+`), changed (`~`), unchanged (`=`) or skipped (`!`). Pass `--keep-existing` to leave keys that already have a different value alone. Changes apply on the next restart.
+- A key that is already a secret is skipped on import: use `apps secrets set` for those.
+- Export never includes secret values. Secret keys are written empty, preceded by a `# secret, value not exported` comment.
+- Dashboard: app Environment tab. "Paste .env" (or dropping a file) shows a preview table of new, changed and unchanged keys with an overwrite or keep-existing choice before anything is staged. A summary of unsaved additions, changes and removals appears above "Save variables", and "Export .env" downloads the saved variables with the same secret-safe rule.
+
 ## Managing encrypted secrets
 
 Apps with `{ secret: true }` env vars store encrypted values locally. After an app is created, update secrets individually or in bulk.

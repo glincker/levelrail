@@ -377,6 +377,16 @@ levelrail apps scheduled-tasks update <app> <id> --schedule CRON [--disabled] --
 ```
 
 ```
+levelrail apps env import <name> --file .env [--dry-run] [--keep-existing] [flags]
+```
+merge a .env file into an app's plain env vars, printing which keys are new, changed or unchanged (keys that are secrets are skipped)
+
+```
+levelrail apps env export <name> [--out FILE] [flags]
+```
+write an app's env vars as .env text; secret keys are written empty with a comment, never with a value
+
+```
 levelrail apps secrets list <name> [flags]
 ```
 list an app's secret keys and their locked state
