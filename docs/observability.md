@@ -136,6 +136,12 @@ These are three different reads over the same underlying log store, not separate
 - Use resource ID prefix `database:` instead of `service:`.
 - No download endpoint for databases yet, only apps.
 
+**Reading lines in the log viewer** (client side, no API change)
+- Each row gets a subtle level tag (ERR, WRN, INF, DBG) detected from JSON `level`/`severity` keys, `level=WARN` style key/value pairs, or a leading `ERROR`/`WARN`/`INFO`/`DEBUG` prefix.
+- The level chips (All, Errors, Warnings, Info, Debug) filter by detected level. Errors also includes every stderr line, matching the old "Errors only" toggle.
+- Click a row to expand it: JSON lines are pretty printed, other lines wrap in full, and Copy line copies the raw text.
+- "Jump to first error" scrolls to the first error or stderr line in the current view.
+
 ## Database slow query log
 
 `GET /api/v1/databases/{name}/slow-queries` returns structured slow-query entries (timestamp, duration, query text, rows examined where the engine reports it) for Postgres and MySQL. The two engines get their data differently:

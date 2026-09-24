@@ -21,10 +21,46 @@ function renderTerminal() {
   const pause = vi.fn()
   const resume = vi.fn()
   render(
-    <LogTerminal lines={lines} isPaused={false} pause={pause} resume={resume} />,
+    <LogTerminal
+      lines={lines}
+      isPaused={false}
+      pause={pause}
+      resume={resume}
+    />,
   )
   return { pause, resume }
 }
+
+describe('LogTerminal level chips', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('Errors chip keeps the stderr behavior and All restores everything', async () => {
+    const user = userEvent.setup()
+    renderTerminal()
+
+    await user.click(screen.getByRole('button', { name: 'Errors' }))
+    expect(screen.getByText('1 of 2 lines')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Errors' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Warnings' }))
+    expect(screen.getByText('0 of 2 lines')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'All' }))
+    expect(screen.queryByText(/of 2 lines/)).not.toBeInTheDocument()
+  })
+
+  it('renders the jump to first error button', () => {
+    renderTerminal()
+    expect(
+      screen.getByRole('button', { name: 'Jump to first error' }),
+    ).toBeInTheDocument()
+  })
+})
 
 describe('LogTerminal fullscreen toggle', () => {
   afterEach(() => {

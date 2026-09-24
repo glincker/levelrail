@@ -3,11 +3,20 @@ import {
   CopyIcon,
   DownloadSimpleIcon,
   MagnifyingGlassIcon,
+  WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { useState } from 'react'
-import type { LogFilter } from '../lib/logFilter'
+import type { LogFilter, LogLevelFilter } from '../lib/logFilter'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
+
+const LEVEL_CHIPS: { value: LogLevelFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'errors', label: 'Errors' },
+  { value: 'warnings', label: 'Warnings' },
+  { value: 'info', label: 'Info' },
+  { value: 'debug', label: 'Debug' },
+]
 
 export function LogToolbar({
   filter,
@@ -16,6 +25,7 @@ export function LogToolbar({
   total,
   onCopy,
   onDownload,
+  onJumpToError,
 }: {
   filter: LogFilter
   onFilterChange: (next: LogFilter) => void
@@ -23,7 +33,9 @@ export function LogToolbar({
   total: number
   onCopy: () => Promise<void>
   onDownload: () => void
+  onJumpToError: () => void
 }) {
+  const activeLevel = filter.level ?? 'all'
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -51,16 +63,29 @@ export function LogToolbar({
           className="h-7 pl-7 text-xs"
         />
       </div>
-      <Button
-        type="button"
-        size="xs"
-        variant={filter.stderrOnly ? 'default' : 'outline'}
-        aria-pressed={filter.stderrOnly}
-        onClick={() => {
-          onFilterChange({ ...filter, stderrOnly: !filter.stderrOnly })
-        }}
-      >
-        Errors only
+      <div className="flex items-center gap-1" role="group" aria-label="Level">
+        {LEVEL_CHIPS.map((chip) => (
+          <Button
+            key={chip.value}
+            type="button"
+            size="xs"
+            variant={activeLevel === chip.value ? 'default' : 'outline'}
+            aria-pressed={activeLevel === chip.value}
+            onClick={() => {
+              onFilterChange({
+                ...filter,
+                stderrOnly: false,
+                level: chip.value,
+              })
+            }}
+          >
+            {chip.label}
+          </Button>
+        ))}
+      </div>
+      <Button type="button" size="xs" variant="outline" onClick={onJumpToError}>
+        <WarningCircleIcon aria-hidden="true" />
+        Jump to first error
       </Button>
       <Button
         type="button"
