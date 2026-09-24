@@ -4044,4 +4044,284 @@ var Templates = []Template{
       start_period: 30s
 `,
 	},
+	{
+		ID:                     "homarr",
+		Name:                   "Homarr",
+		Slogan:                 "A customizable start page dashboard for your self-hosted services with drag-and-drop widgets.",
+		Category:               "Dashboard",
+		DocumentationURL:       "https://homarr.dev/docs/getting-started/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
+		Compose: `services:
+  homarr:
+    image: ghcr.io/ajnart/homarr:0.15.10
+    ports: ["7575:7575"]
+    environment:
+      TZ: "Etc/UTC"
+    volumes:
+      - homarr_configs:/app/data/configs
+      - homarr_icons:/app/public/icons
+      - homarr_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:7575/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+`,
+	},
+	{
+		ID:                     "homer",
+		Name:                   "Homer",
+		Slogan:                 "A dead simple static start page for your services, configured with a single YAML file.",
+		Category:               "Dashboard",
+		DocumentationURL:       "https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md",
+		RecommendedMemoryBytes: 134217728, // 128Mi
+		Compose: `services:
+  homer:
+    image: b4bz/homer:v24.05.1
+    ports: ["8080:8080"]
+    environment:
+      INIT_ASSETS: "1"
+    volumes:
+      - homer_assets:/www/assets
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+`,
+	},
+	{
+		ID:                     "flame",
+		Name:                   "Flame",
+		Slogan:                 "A self-hosted start page with an app launcher, bookmarks, and Docker label integration.",
+		Category:               "Dashboard",
+		DocumentationURL:       "https://github.com/pawelmalak/flame#readme",
+		RecommendedMemoryBytes: 134217728, // 128Mi
+		Compose: `services:
+  flame:
+    image: pawelmalak/flame:v2.3.1
+    ports: ["5005:5005"]
+    environment:
+      PASSWORD: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - flame_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5005/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+`,
+	},
+	{
+		ID:                     "etherpad",
+		Name:                   "Etherpad",
+		Slogan:                 "A real-time collaborative editor for documents, with plugins and a clean export story.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://docs.etherpad.org",
+		RecommendedMemoryBytes: 268435456, // 256Mi
+		Compose: `services:
+  etherpad:
+    image: etherpad/etherpad:2.2.4
+    ports: ["9001:9001"]
+    environment:
+      ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      DEFAULT_PAD_TEXT: "Welcome to Etherpad."
+    volumes:
+      - etherpad_data:/opt/etherpad-lite/var
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:9001/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+`,
+	},
+	{
+		ID:                     "cyberchef",
+		Name:                   "CyberChef",
+		Slogan:                 "The cyber swiss army knife: encode, decode, hash, and analyse data in the browser.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://github.com/gchq/CyberChef/wiki",
+		RecommendedMemoryBytes: 134217728, // 128Mi
+		Compose: `services:
+  cyberchef:
+    image: ghcr.io/gchq/cyberchef:10.19.4
+    ports: ["8000:80"]
+    volumes:
+      - cyberchef_cache:/var/cache/nginx
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+`,
+	},
+	{
+		ID:                     "gotify",
+		Name:                   "Gotify",
+		Slogan:                 "A simple push notification server with a REST API and web UI, for sending messages to your devices.",
+		Category:               "Communication",
+		DocumentationURL:       "https://gotify.net/docs/",
+		RecommendedMemoryBytes: 134217728, // 128Mi
+		Compose: `services:
+  gotify:
+    image: gotify/server:2.6.1
+    ports: ["8080:80"]
+    environment:
+      TZ: "Etc/UTC"
+      GOTIFY_DEFAULTUSER_NAME: admin
+      GOTIFY_DEFAULTUSER_PASS: $SERVICE_PASSWORD_ADMIN
+    volumes:
+      - gotify_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+`,
+	},
+	{
+		ID:                     "registry",
+		Name:                   "Docker Registry",
+		Slogan:                 "The official open source registry for storing and distributing your own container images.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://distribution.github.io/distribution/",
+		RecommendedMemoryBytes: 268435456, // 256Mi
+		Compose: `services:
+  registry:
+    image: registry:2.8.3
+    ports: ["5000:5000"]
+    volumes:
+      - registry_data:/var/lib/registry
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5000/v2/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+`,
+	},
+	{
+		ID:                     "verdaccio",
+		Name:                   "Verdaccio",
+		Slogan:                 "A lightweight private npm proxy registry with caching and local package publishing.",
+		Category:               "Developer Tools",
+		DocumentationURL:       "https://verdaccio.org/docs/installation",
+		RecommendedMemoryBytes: 268435456, // 256Mi
+		Compose: `services:
+  verdaccio:
+    image: verdaccio/verdaccio:5.31.1
+    ports: ["4873:4873"]
+    environment:
+      VERDACCIO_PORT: "4873"
+    volumes:
+      - verdaccio_storage:/verdaccio/storage
+      - verdaccio_conf:/verdaccio/conf
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:4873/-/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+`,
+	},
+	{
+		ID:                     "jackett",
+		Name:                   "Jackett",
+		Slogan:                 "A proxy that translates queries from your media apps into torrent tracker searches.",
+		Category:               "Media",
+		DocumentationURL:       "https://github.com/Jackett/Jackett#readme",
+		RecommendedMemoryBytes: 268435456, // 256Mi
+		Compose: `services:
+  jackett:
+    image: lscr.io/linuxserver/jackett:0.22.1
+    ports: ["9117:9117"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Etc/UTC"
+    volumes:
+      - jackett_config:/config
+      - jackett_downloads:/downloads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:9117/UI/Dashboard"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+`,
+	},
+	{
+		ID:                     "cloudbeaver",
+		Name:                   "CloudBeaver",
+		Slogan:                 "A web-based database manager for browsing and querying Postgres, MySQL, SQLite and more.",
+		Category:               "Database Tools",
+		DocumentationURL:       "https://dbeaver.com/docs/cloudbeaver/",
+		RecommendedMemoryBytes: 536870912, // 512Mi
+		Compose: `services:
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:24.1.0
+    ports: ["8978:8978"]
+    volumes:
+      - cloudbeaver_workspace:/opt/cloudbeaver/workspace
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8978/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+`,
+	},
+	{
+		ID:                     "shiori",
+		Name:                   "Shiori",
+		Slogan:                 "A simple bookmark manager with offline archiving, built as a single Go binary.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://github.com/go-shiori/shiori/tree/master/docs",
+		RecommendedMemoryBytes: 134217728, // 128Mi
+		Compose: `services:
+  shiori:
+    image: ghcr.io/go-shiori/shiori:v1.7.1
+    ports: ["8080:8080"]
+    volumes:
+      - shiori_data:/shiori
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+`,
+	},
+	{
+		ID:                     "flatnotes",
+		Name:                   "flatnotes",
+		Slogan:                 "A database-less note-taking app that keeps notes as plain Markdown files.",
+		Category:               "Productivity",
+		DocumentationURL:       "https://github.com/dullage/flatnotes/wiki",
+		RecommendedMemoryBytes: 134217728, // 128Mi
+		Compose: `services:
+  flatnotes:
+    image: dullage/flatnotes:v4.1.1
+    ports: ["8080:8080"]
+    environment:
+      FLATNOTES_AUTH_TYPE: "password"
+      FLATNOTES_USERNAME: admin
+      FLATNOTES_PASSWORD: $SERVICE_PASSWORD_ADMIN
+      FLATNOTES_SECRET_KEY: $SERVICE_PASSWORD_SECRET
+    volumes:
+      - flatnotes_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+`,
+	},
 }
