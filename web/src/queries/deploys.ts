@@ -17,6 +17,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import type { AppDetail } from '../types/appDetail'
 import type { ReconcileCondition } from '../types/deploy'
 import type { DeployApprovalResource } from '../types/deployApproval'
@@ -132,24 +133,27 @@ export async function triggerDeploy(
 // none of that applies yet: nothing deployed, so only the approvals
 // queue itself is invalidated, letting the app detail page's own
 // pending-approval banner (PendingDeployApprovalBanner.tsx) pick it up.
+export function applyTriggerDeployResult(
+  queryClient: QueryClient,
+  appName: string,
+  result: TriggerDeployResult,
+) {
+  if (isPendingApproval(result)) {
+    void queryClient.invalidateQueries({ queryKey: deployApprovalKeys.all })
+    return
+  }
+  queryClient.setQueryData(appKeys.detail(appName), result)
+  void queryClient.invalidateQueries({ queryKey: deployKeys.status(appName) })
+  void queryClient.invalidateQueries({
+    queryKey: deployAttemptKeys.list(appName),
+  })
+}
+
 export function useTriggerDeploy(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: TriggerDeployInput) => triggerDeploy(appName, input),
-    onSuccess: (result) => {
-      if (isPendingApproval(result)) {
-        void queryClient.invalidateQueries({
-          queryKey: deployApprovalKeys.all,
-        })
-        return
-      }
-      queryClient.setQueryData(appKeys.detail(appName), result)
-      void queryClient.invalidateQueries({
-        queryKey: deployKeys.status(appName),
-      })
-      void queryClient.invalidateQueries({
-        queryKey: deployAttemptKeys.list(appName),
-      })
-    },
+    onSuccess: (result) =>
+      applyTriggerDeployResult(queryClient, appName, result),
   })
 }
