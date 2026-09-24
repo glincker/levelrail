@@ -798,6 +798,10 @@ The request dispatches from a detached background goroutine and returns `202 Acc
 | `forbid` | Skips the new run and records a distinct `skipped_concurrency` history status instead of silently doing nothing. |
 | `replace` | Cancels the in-flight run (recorded as `replaced`) before starting the new one. Cancellation is a best-effort signal (closing the exec stream), not a hard kill, since Docker Engine API has no "kill this exec" call. |
 
+## Quick actions from the dashboard
+
+Each row on the Apps list has an actions menu (the three dots at the right edge) with Restart, Stop or Start, Redeploy, View logs, View deploys, and Open domain (only when the app has a domain). Stop asks for confirmation first. Redeploy re-triggers a deploy of the app's current image tag, and if the environment requires approval it lands in the approvals queue instead. The app detail header exposes the same Restart, Stop or Start, and Redeploy buttons. The empty Apps list and the welcome screen offer Create app, Browse templates, and Connect Git.
+
 ## API reference
 
 | Method | Path | Ability |
