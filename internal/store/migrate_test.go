@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -144,5 +145,19 @@ func TestCheckMigrationVersionsScript_RealEmbeddedFiles(t *testing.T) {
 	cmd.Dir = repoRoot
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("check-migration-versions.sh failed: %v\n%s", err, out)
+	}
+}
+
+func TestMigrationsCurrent(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.MigrationsCurrent(ctx); err != nil {
+		t.Fatalf("fresh db: %v", err)
+	}
+	if _, err := db.ExecContext(ctx, `DELETE FROM schema_migrations WHERE version = (SELECT MAX(version) FROM schema_migrations)`); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.MigrationsCurrent(ctx); err == nil {
+		t.Fatal("want error with latest migration unapplied")
 	}
 }
