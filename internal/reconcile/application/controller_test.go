@@ -68,6 +68,10 @@ type fakeRuntime struct {
 	// itself: the "broken container, but recreating it works" scenario,
 	// distinct from startErr's "every Start fails" shape.
 	startErrOnce error
+	// createErrOnCall fails exactly the Nth (1-based) Create call, for
+	// mid-rollout failures (the second replica of a rolling deploy).
+	createErrOnCall error
+	createErrCallNo int
 
 	createCalls          int
 	removeCalls          int
@@ -248,6 +252,9 @@ func (f *fakeRuntime) Create(_ context.Context, spec docker.ContainerSpec) (stri
 	f.lastCreateEnv = spec.Env
 	f.lastCreateSpec = spec
 	f.callOrder = append(f.callOrder, "create:"+spec.Name)
+	if f.createErrCallNo != 0 && f.createCalls == f.createErrCallNo {
+		return "", f.createErrOnCall
+	}
 	if f.createErr != nil {
 		return "", f.createErr
 	}
