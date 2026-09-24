@@ -10,6 +10,12 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import './index.css'
 import { isUnauthorized } from './lib/apiError'
 import { clearStoredUsername } from './lib/authStore'
+import {
+  attachConnectionClient,
+  reportError,
+  reportSuccess,
+} from './lib/connectionStore'
+import { safeReturnPath } from './lib/connectionState'
 import { RouteErrorFallback } from './components/RouteErrorFallback'
 import { PageSpinner } from './components/ui/page-spinner'
 
@@ -38,6 +44,7 @@ let navigateToLogin: (() => void) | null = null
 // boundary (AppDetailError and friends keep working exactly as before,
 // since onError here only acts on 401).
 function handleQueryError(error: unknown): void {
+  reportError(error)
   if (isUnauthorized(error)) {
     clearStoredUsername()
     navigateToLogin?.()
@@ -45,9 +52,13 @@ function handleQueryError(error: unknown): void {
 }
 
 const queryClient = new QueryClient({
-  queryCache: new QueryCache({ onError: handleQueryError }),
+  queryCache: new QueryCache({
+    onError: handleQueryError,
+    onSuccess: reportSuccess,
+  }),
   mutationCache: new MutationCache({ onError: handleQueryError }),
 })
+attachConnectionClient(queryClient)
 
 // Router context carries the QueryClient (see routes/__root.tsx) so every
 // route loader can prime the Query cache without a module-level import
@@ -72,7 +83,13 @@ navigateToLogin = () => {
   if (router.state.location.pathname === '/login') {
     return
   }
-  void router.navigate({ to: '/login' })
+  const here = safeReturnPath(
+    router.state.location.pathname + router.state.location.searchStr,
+  )
+  void router.navigate({
+    to: '/login',
+    search: here && here !== '/' ? { redirect: here } : {},
+  })
 }
 
 declare module '@tanstack/react-router' {

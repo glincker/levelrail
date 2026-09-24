@@ -12,6 +12,7 @@ import { brandQueryOptions } from '../queries/brand'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
 import { CommandPalette } from '../components/CommandPalette'
+import { ConnectionBanner } from '../components/ConnectionBanner'
 import { DockerHealthBanner } from '../components/DockerHealthBanner'
 import { DiskPressureBanner } from '../components/DiskPressureBanner'
 import { HelpMenu } from '../components/HelpMenu'
@@ -130,6 +131,7 @@ function AppShell() {
             <ThemeToggle />
           </div>
         </header>
+        <ConnectionBanner />
         <InsecureConnectionBanner />
         <DockerHealthBanner />
         <DiskPressureBanner />
