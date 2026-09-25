@@ -196,6 +196,7 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 | `patch_status` | platform-wide | every node's pending OS security patch count | none required (threshold is a control-plane default/env var, not a rule field) |
 | `node_disk_space` | platform-wide | every node's disk-used percentage | none required |
 | `node_offline` | platform-wide | any node whose status is offline (agent stopped heartbeating); resolves when all are back | none required |
+| `node_cert_expiring` | platform-wide | any node's agent certificate inside the warning window (renewal failing) or expired; revoked nodes are left out (see [agent certificates](/multi-node#agent-certificates-renewal-and-re-enrollment)) | `for_duration` (optional, overrides `APP_NODE_CERT_EXPIRY_WARNING`, default 21 days) |
 | `node_resource_usage` | platform-wide | every node's summed placed-container CPU and memory | none required |
 | `scheduled_task_failure` | one app's own scheduled task | consecutive failed runs of one task | `scheduled_task_id`, `restart_count_threshold` (reused as the failure-count threshold) |
 | `domain_health` | one app's own domains | a DNS check gone bad (not resolving, or resolving somewhere else) on any of the app's configured domains | `for_duration` (optional debounce) |
@@ -205,7 +206,7 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 
 :::
 
-**Platform-wide rule kinds** (`cert_expiry`, `patch_status`, `node_disk_space`, `node_resource_usage`, `node_offline`, `control_plane_backup_stale`, `log_archive_stale`)
+**Platform-wide rule kinds** (`cert_expiry`, `patch_status`, `node_disk_space`, `node_resource_usage`, `node_offline`, `node_cert_expiring`, `control_plane_backup_stale`, `log_archive_stale`)
 
 These are created through an app's `/apps/{name}/alerts` URL, but that URL only decides where the rule appears in that app's list. The rule evaluates every certificate, node, or disk across the entire control plane regardless of which app created it.
 
