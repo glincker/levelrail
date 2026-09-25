@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
 
 func randomID() string {
@@ -70,8 +69,6 @@ func parseMemory(s string) (int64, error) {
 	}
 	return n * mult, nil
 }
-
-func timePtr(t time.Time) *time.Time { return &t }
 
 const maxLineBytes = 64 * 1024
 

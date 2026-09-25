@@ -263,6 +263,13 @@ func (e *Engine) cancelJobs(ctx context.Context, run store.PipelineRun, jobs []s
 		if j.Status == store.PipelineStatusRunning || j.Status == store.PipelineStatusWaitingApproval {
 			e.removeJobContainers(ctx, run, j)
 		}
+		for _, s := range j.Steps {
+			if s.Status == store.PipelineStatusRunning || s.Status == store.PipelineStatusWaitingApproval {
+				if err := e.cfg.Store.SetPipelineStepStatus(ctx, j.ID, s.Index, store.PipelineStatusCancelled, "run cancelled", nil, s.Attempt, nil, &now); err != nil {
+					e.cfg.Logger.Warn("pipeline: mark step cancelled failed", slog.String("job_id", j.ID), slog.String("error", err.Error()))
+				}
+			}
+		}
 		if err := e.cfg.Store.SetPipelineJobStatus(ctx, j.ID, store.PipelineStatusCancelled, "run cancelled", "", j.Attempt, nil, &now); err != nil {
 			e.cfg.Logger.Warn("pipeline: mark job cancelled failed", slog.String("job_id", j.ID), slog.String("error", err.Error()))
 		}
