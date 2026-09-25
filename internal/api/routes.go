@@ -337,13 +337,13 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// web/src/hooks/useDeployLogStream.ts was built against. AbilityRead:
 	// this is a read of one attempt's own output, the same sensitivity
 	// as the deploy-attempts list above.
-	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/logs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDeployLogStream))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/logs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.withStreamReauth(appResourceFromPath, rt.handleDeployLogStream)))
 
 	// Deploy-attempt step stream (deploy_steps.go): SSE, named
 	// pipeline-phase transitions (detecting/building/pushing/deploying)
 	// rather than raw log lines, for a checklist-style progress view.
 	// Same AbilityRead boundary as the log stream above.
-	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/steps", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDeployStepStream))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/steps", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.withStreamReauth(appResourceFromPath, rt.handleDeployStepStream)))
 
 	// Deploy-attempt log download (deploy_log_download.go): the same
 	// attempt's full log as a plain-text attachment instead of an SSE
@@ -434,7 +434,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// hand-copied duplicate.
 	mux.HandleFunc("GET /api/v1/databases/{name}/metrics", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseMetrics))
 	mux.HandleFunc("GET /api/v1/databases/{name}/logs", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseLogs))
-	mux.HandleFunc("GET /api/v1/databases/{name}/logs/stream", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleLiveDatabaseLogStream))
+	mux.HandleFunc("GET /api/v1/databases/{name}/logs/stream", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.withStreamReauth(databaseResourceFromPath, rt.handleLiveDatabaseLogStream)))
 
 	// Slow query log, Postgres/MySQL only (database_slow_queries.go's own
 	// doc comment explains why Redis and every other engine return 400):

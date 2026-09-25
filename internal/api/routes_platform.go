@@ -82,7 +82,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// passive-visibility boundary as every other view of telemetry data
 	// in this router, including the deploy-log stream at
 	// GET .../deploys/{deployId}/logs above.
-	mux.HandleFunc("GET /api/v1/apps/{name}/logs/stream", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleLiveLogStream))
+	mux.HandleFunc("GET /api/v1/apps/{name}/logs/stream", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.withStreamReauth(appResourceFromPath, rt.handleLiveLogStream)))
 	// Log export (a plain-text attachment of a bounded window, see
 	// logs_download.go): same AbilityRead boundary as the query/stream
 	// routes above, since it reads the same store through the same
