@@ -3,6 +3,7 @@ import { useApp } from '../../../queries/apps'
 import { PortEditor } from '../../../components/PortEditor'
 import { DeployStrategyEditor } from '../../../components/DeployStrategyEditor'
 import { HooksEditor } from '../../../components/HooksEditor'
+import { BuildCacheCard } from '../../../components/BuildCacheCard'
 
 // Former Overview-page cards, split out here since both control how a
 // deploy actually rolls out: the port a new container listens on, and
@@ -20,6 +21,7 @@ function DeploySettingsSection() {
       <PortEditor app={app} />
       <DeployStrategyEditor app={app} />
       <HooksEditor app={app} />
+      <BuildCacheCard appName={name} />
     </div>
   )
 }
