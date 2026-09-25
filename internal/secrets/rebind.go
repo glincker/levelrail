@@ -22,29 +22,29 @@ var (
 
 // BindingStatus counts stored values by envelope format.
 type BindingStatus struct {
-	Total  int `json:"total"`
-	Bound  int `json:"bound"`
-	Legacy int `json:"legacy"`
+	Total  int
+	Bound  int
+	Legacy int
 }
 
 // RebindFailure names one slot Rebind could not bind, never its value.
 type RebindFailure struct {
-	Owner  string `json:"owner"`
-	Key    string `json:"key"`
-	Reason string `json:"reason"`
+	Owner  string
+	Key    string
+	Reason string
 }
 
 // RebindResult reports one Rebind run.
 type RebindResult struct {
-	Scanned      int `json:"scanned"`
-	Rebound      int `json:"rebound"`
-	AlreadyBound int `json:"alreadyBound"`
+	Scanned      int
+	Rebound      int
+	AlreadyBound int
 	// Changed counts rows rewritten by someone else mid-run; a concurrent
 	// SetValue always writes the bound format, so nothing is lost.
-	Changed     int             `json:"changed"`
-	FailedCount int             `json:"failedCount"`
-	Failed      []RebindFailure `json:"failed,omitempty"`
-	Remaining   int             `json:"remaining"`
+	Changed     int
+	FailedCount int
+	Failed      []RebindFailure
+	Remaining   int
 }
 
 // BindingStatus reports how many stored values still use the legacy

@@ -141,6 +141,7 @@ type Router struct {
 	domainRedirect         DomainRedirectStore    // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainErrorPages       DomainErrorPagesStore  // always set, same "core Store interface" shape as domainWAF above; no secrets dependency either
 	masterKeyRotator       MasterKeyRotator       // nil is valid: POST /system/master-key/rotate returns 501, same shape as domainBasicAuthSecrets above
+	secretBinder           SecretBinder           // nil is valid: the secrets binding routes return 501
 	// masterKeyFilePath is where the currently active master key came
 	// from on disk, "" if it was sourced from APP_MASTER_KEY instead
 	// (see cmd/levelrail/main.go's loadSecretsManager). A successful

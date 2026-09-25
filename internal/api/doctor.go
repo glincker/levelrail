@@ -97,6 +97,7 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		rt.doctorCheckPort(httpsPort),
 		rt.doctorCheckDatabase(ctx),
 		rt.doctorCheckMasterKeyRotation(ctx),
+		rt.doctorCheckSecretBinding(ctx),
 		rt.doctorCheckStaleSecrets(ctx),
 		rt.doctorCheckControlPlaneBackup(),
 		doctorCheckFirewallCtx(ctx),

@@ -37,6 +37,8 @@ System endpoints for:
 | POST | /api/v1/onboarding/complete | AbilityWrite | handleCompleteOnboarding |
 | PUT | /api/v1/onboarding/progress | AbilityRoot | handleUpdateOnboardingProgress |
 | GET | /api/v1/updates | AbilityRead | handleGetUpdates |
+| GET | /api/v1/system/secrets/binding | AbilityRead | handleGetSecretBinding |
+| POST | /api/v1/system/secrets/rebind | AbilityRoot | handleRebindSecrets |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
