@@ -32,8 +32,8 @@ export const pipelineKeys = {
     [...pipelineKeys.all(app), 'runs', pipeline ?? ''] as const,
   run: (app: string, id: string) =>
     [...pipelineKeys.all(app), 'run', id] as const,
-  logs: (app: string, id: string, job: string) =>
-    [...pipelineKeys.all(app), 'logs', id, job] as const,
+  logs: (app: string, id: string, job: string, step?: number) =>
+    [...pipelineKeys.all(app), 'logs', id, job, step ?? 'all'] as const,
   sync: (app: string) => [...pipelineKeys.all(app), 'sync'] as const,
   triggers: (app: string) => [...pipelineKeys.all(app), 'triggers'] as const,
 }
@@ -131,13 +131,15 @@ export function usePipelineRunLogs(
   id: string,
   job: string,
   live = false,
+  step?: number,
 ) {
+  const stepParam = step === undefined ? '' : `&step=${step}`
   return useQuery({
     refetchInterval: live ? 2000 : false,
-    queryKey: pipelineKeys.logs(app, id, job),
+    queryKey: pipelineKeys.logs(app, id, job, step),
     queryFn: () =>
       requestJson<PipelineLogLine[]>(
-        `${base(app)}/pipeline-runs/${encodeURIComponent(id)}/logs?limit=5000&job=${encodeURIComponent(job)}`,
+        `${base(app)}/pipeline-runs/${encodeURIComponent(id)}/logs?limit=5000&job=${encodeURIComponent(job)}${stepParam}`,
         'fetch pipeline logs',
       ),
   })

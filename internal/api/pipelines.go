@@ -28,6 +28,7 @@ type PipelineStore interface {
 	GetPipelineRun(ctx context.Context, id string) (store.PipelineRun, error)
 	ListPipelineJobs(ctx context.Context, runID string) ([]store.PipelineJob, error)
 	ListPipelineLogs(ctx context.Context, runID, jobKey string, afterID int64, limit int) ([]store.PipelineLogLine, error)
+	ListPipelineStepLogs(ctx context.Context, runID, jobKey string, step *int, afterID int64, limit int) ([]store.PipelineLogLine, error)
 	ListPipelineApprovals(ctx context.Context, runID string) ([]store.PipelineApproval, error)
 	DecidePipelineApproval(ctx context.Context, id int64, decision, by, comment string, now time.Time) (bool, error)
 	ListPipelineTriggerLog(ctx context.Context, app string, limit int) ([]store.PipelineTriggerLog, error)
@@ -595,7 +596,16 @@ func (rt *Router) handleListPipelineRunLogs(w http.ResponseWriter, r *http.Reque
 	}
 	after, _ := strconv.ParseInt(r.URL.Query().Get("after"), 10, 64)
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	lines, err := rt.pipelineStore.ListPipelineLogs(r.Context(), run.ID, r.URL.Query().Get("job"), after, limit)
+	var step *int
+	if raw := r.URL.Query().Get("step"); raw != "" {
+		n, perr := strconv.Atoi(raw)
+		if perr != nil || n < 0 {
+			writeError(w, http.StatusBadRequest, "step must be a non-negative integer")
+			return
+		}
+		step = &n
+	}
+	lines, err := rt.pipelineStore.ListPipelineStepLogs(r.Context(), run.ID, r.URL.Query().Get("job"), step, after, limit)
 	if err != nil {
 		rt.internalError(w, "api: list pipeline logs failed", err)
 		return
