@@ -57,6 +57,7 @@ func NewServer(client *apiclient.Client) *mcp.Server {
 	registerLogArchiveTools(server, client)
 	registerPipelineTools(server, client)
 	registerModelTools(server, client)
+	registerLoadBalancerTools(server, client)
 
 	return server
 }

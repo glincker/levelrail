@@ -24,6 +24,7 @@ const sidebarGroups = [
       { text: 'Troubleshooting', link: '/troubleshooting' },
       { text: 'Docker', link: '/docker' },
       { text: 'Domains and ingress', link: '/domains-and-ingress' },
+      { text: 'Load balancing', link: '/load-balancing' },
       { text: 'ACME verification runbook', link: '/acme-verification-runbook' },
       { text: 'Feature flags', link: '/feature-flags' },
       { text: 'Master key rotation', link: '/master-key-rotation' },

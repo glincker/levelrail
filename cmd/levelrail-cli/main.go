@@ -108,6 +108,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runTags(prog, args[1:], stdout, stderr, lookupEnv)
 	case "pipelines":
 		return runPipelines(prog, args[1:], stdout, stderr, lookupEnv)
+	case "lb":
+		return runLB(prog, args[1:], stdout, stderr, lookupEnv)
 	case "nodes":
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
@@ -204,6 +206,7 @@ Usage:
   %[1]s flags create|list|get|set|delete [flags]              manage feature flags, read live by a running app via GET /api/v1/flags/evaluate/{key}
   %[1]s pipelines list|validate|save|delete|run|runs|logs|cancel|approve [flags]   CI/CD pipelines: run, watch, approve, cancel
   %[1]s tags list|create|delete|apps [flags]                  manage tags, always identified by name, arbitrary labels for organizing and filtering apps
+  %[1]s lb show|set|clear|status|export|import <app> [flags]  load balancer across an app's replicas: config, live upstreams, terraform/cdk/cloudformation/caddy export
   %[1]s apps tag <name> <tag> [flags]                          attach a tag (by name) to an app
   %[1]s apps untag <name> <tag> [flags]                        detach a tag (by name) from an app
   %[1]s nodes list|get|delete [flags]                        manage nodes

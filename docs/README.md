@@ -45,6 +45,7 @@ Four main types, plus two Levelrail-specific categories:
 | [migrating-from-coolify-dokploy-and-caprover.md](migrating-from-coolify-dokploy-and-caprover.md) | Move apps off a live Coolify, Dokploy, or CapRover instance with `levelrail-cli migrate` |
 | [github-actions.md](github-actions.md) | Deploy from a GitHub Actions workflow with the bundled composite Action |
 | [pipelines.md](pipelines.md) | Test, build, approve, and deploy with YAML pipelines: triggers, matrix, secrets, and approvals |
+| [load-balancing.md](load-balancing.md) | Balance traffic across replicas and nodes with health checks, sticky sessions, weights and graceful cutovers, and export the setup as Terraform, CDK, CloudFormation or Caddy |
 | [domains-and-ingress.md](domains-and-ingress.md) | Why there's no reverse proxy to install, how `app.yaml` domains route to containers, and TLS's current honest status |
 | [acme-verification-runbook.md](acme-verification-runbook.md) | Verify real ACME certificate issuance against a live domain, step by step |
 | [deploying-apps.md](deploying-apps.md) | An app's lifecycle: create, deploy, roll back, promote, health checks, resource limits, exec, and scheduled tasks |

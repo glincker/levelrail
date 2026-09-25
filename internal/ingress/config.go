@@ -149,6 +149,11 @@ type ReverseProxyHandler struct {
 	// replace a backend-returned status like 404 or 500 with a custom
 	// body while keeping the same status code.
 	HandleResponse []ResponseHandler `json:"handle_response,omitempty"`
+
+	LoadBalancing    *LoadBalancing `json:"load_balancing,omitempty"`
+	HealthChecks     *HealthChecks  `json:"health_checks,omitempty"`
+	Transport        *HTTPTransport `json:"transport,omitempty"`
+	StreamCloseDelay string         `json:"stream_close_delay,omitempty"`
 }
 
 // ResponseMatcher mirrors Caddy's reverse_proxy response matcher: a

@@ -1,0 +1,34 @@
+{
+  "match": [
+    {
+      "host": [
+        "c.example.com"
+      ]
+    }
+  ],
+  "handle": [
+    {
+      "handler": "reverse_proxy",
+      "upstreams": [
+        {
+          "dial": "10.0.1.1:9000"
+        },
+        {
+          "dial": "10.0.1.2:9000"
+        }
+      ],
+      "load_balancing": {
+        "selection_policy": {
+          "policy": "weighted_round_robin",
+          "weights": [
+            9,
+            1
+          ]
+        }
+      }
+    }
+  ]
+}
+
+# warnings
+# slow_start is applied by the platform reconciler and has no Caddy JSON equivalent

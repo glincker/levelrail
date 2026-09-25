@@ -67,11 +67,13 @@ import (
 	"log/slog"
 	"net"
 	"strconv"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -322,6 +324,10 @@ type Controller struct {
 	// unchanged from this controller's behavior before this feature
 	// existed.
 	publicHost string
+
+	lbSource      LoadBalancerSource // nil disables load balancing
+	lbRegistry    *loadbalancer.Registry
+	nodeUpstreams NodeUpstreamResolver
 }
 
 // Option configures optional Controller behavior.
@@ -487,6 +493,7 @@ func New(svcStore ServiceStore, runtime docker.Runtime, driver Applier, opts ...
 		listenAddr:     defaultListenAddr,
 		httpListenAddr: defaultHTTPListenAddr,
 		adminListen:    defaultAdminListen,
+		lbRegistry:     loadbalancer.NewRegistry(),
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -570,6 +577,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain error pages: %w", err)
 	}
+	lbConfigs, err := c.loadBalancerConfigs(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancers: %w", err)
+	}
+	var lbPlans []lbPlan
+	now := time.Now()
 
 	var routes []ingress.ProxyRoute
 	var maintenanceRoutes []ingress.MaintenanceRoute
@@ -651,14 +664,29 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			continue
 		}
 
-		dial, ok := c.dialForService(ctx, svc)
+		var lb *ingress.LBRoute
+		var dial string
+		var ok bool
+		if lbCfg, balanced := lbConfigs[svc.Name]; balanced {
+			plan := c.planLoadBalancer(ctx, svc, lbCfg, now)
+			lbPlans = append(lbPlans, plan)
+			if lb, ok = plan.route, plan.route != nil; ok {
+				dial = lb.Upstreams[0]
+			}
+		} else {
+			dial, ok = c.dialForService(ctx, svc)
+		}
 		if !ok {
 			continue
 		}
 		for _, host := range activeHosts {
 			claimedHosts[host] = svc.Name
 		}
-		routes = append(routes, c.routesForService(ctx, activeHosts, dial, authByDomain, wafByDomain, errorPagesByDomain)...)
+		svcRoutes := c.routesForService(ctx, activeHosts, dial, authByDomain, wafByDomain, errorPagesByDomain)
+		for i := range svcRoutes {
+			svcRoutes[i].LB = lb
+		}
+		routes = append(routes, svcRoutes...)
 	}
 
 	var staticRoutes []ingress.StaticRoute
@@ -764,14 +792,20 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return notReady("ApplyFailed", err), fmt.Errorf("ingress: apply config: %w", err)
 	}
 
+	c.recordLoadBalancers(lbPlans, lbConfigs)
+
 	total := len(routes) + len(staticRoutes) + len(maintenanceRoutes) + len(redirectRoutes)
 	reason := fmt.Sprintf("Routed%dServices", total)
-	return reconcile.Result{Conditions: []reconcile.Condition{{
+	conditions := []reconcile.Condition{{
 		Type:    "Ready",
 		Status:  reconcile.ConditionTrue,
 		Reason:  reason,
 		Message: fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly, %d in maintenance mode, %d redirected)", total, len(routes), len(staticRoutes), len(maintenanceRoutes), len(redirectRoutes)),
-	}}}, nil
+	}}
+	if cond := lbCondition(lbPlans); cond != nil {
+		conditions = append(conditions, *cond)
+	}
+	return reconcile.Result{Conditions: conditions}, nil
 }
 
 // httpPortFromAddr extracts the numeric port from addr (a Caddy-style

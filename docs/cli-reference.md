@@ -526,6 +526,37 @@ levelrail pipelines cancel <app> <run-id> [flags]
 ```
 levelrail pipelines approve <app> <run-id> [--reject] [--comment TEXT] [--approval ID] [flags]
 ```
+## Lb
+
+```
+levelrail lb show <app> [flags]
+```
+show an app's load balancer config
+
+```
+levelrail lb set <app> [--algorithm ...] [flags]
+```
+create or change the load balancer, only the flags you pass change
+
+```
+levelrail lb clear <app> [flags]
+```
+remove the load balancer, back to a single upstream
+
+```
+levelrail lb status <app> [flags]
+```
+live upstream table: state, weight, active requests, failures
+
+```
+levelrail lb export <app> --format terraform|cdk|cloudformation|caddy|caddy-json [--out FILE]
+```
+generate an infrastructure-as-code definition, no cloud API calls
+
+```
+levelrail lb import <app> --file app.yaml [--service S] [flags]
+```
+load the `loadbalancer:` block of an app.yaml
 
 ## Databases
 
