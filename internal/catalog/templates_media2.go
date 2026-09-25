@@ -164,7 +164,7 @@ var media2Templates = []Template{
 		RecommendedMemoryBytes: 268435456, // 256Mi
 		Compose: `services:
   jackett:
-    image: lscr.io/linuxserver/jackett:0.22.1
+    image: lscr.io/linuxserver/jackett:0.24.2663
     ports: ["9117:9117"]
     environment:
       PUID: "1000"

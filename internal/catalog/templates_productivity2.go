@@ -147,6 +147,7 @@ var productivity2Templates = []Template{
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
+		// Tag unverified: registry returned 401.
 		Compose: `services:
   osticket:
     image: tiredofit/osticket:1.18.2
@@ -282,6 +283,7 @@ var productivity2Templates = []Template{
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
+		// Tag unverified: codeberg.org returned 401.
 		Compose: `services:
   readeck:
     image: codeberg.org/readeck/readeck:0.19.1

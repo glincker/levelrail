@@ -13,7 +13,7 @@ var devtools2Templates = []Template{
 		// this environment.
 		Compose: `services:
   tolgee:
-    image: tolgee/tolgee:3.92.0
+    image: tolgee/tolgee:v3.224.7
     ports: ["8080:8080"]
     environment:
       TOLGEE_AUTHENTICATION_ENABLED: "true"
@@ -59,7 +59,7 @@ var devtools2Templates = []Template{
 		// password below still passes through unenforced for now.
 		Compose: `services:
   weblate:
-    image: weblate/weblate:5.9.2
+    image: weblate/weblate:5.15
     ports: ["8080:8080"]
     environment:
       WEBLATE_SITE_DOMAIN: ${SERVICE_FQDN_WEBLATE:-localhost}
@@ -108,7 +108,7 @@ var devtools2Templates = []Template{
 		// this environment.
 		Compose: `services:
   rallly:
-    image: lukevella/rallly:3.20.0
+    image: lukevella/rallly:4.15.2
     ports: ["3000:3000"]
     environment:
       DATABASE_URL: postgres://$SERVICE_USER_DB:$SERVICE_PASSWORD_DB@db:5432/rallly
@@ -266,6 +266,7 @@ var devtools2Templates = []Template{
 		Category:               "Developer Tools",
 		DocumentationURL:       "https://forgejo.org/docs/latest/admin/installation-docker/",
 		RecommendedMemoryBytes: 536870912, // 512Mi
+		// Tag unverified: codeberg.org returned 401.
 		Compose: `services:
   forgejo:
     image: codeberg.org/forgejo/forgejo:9.0.3

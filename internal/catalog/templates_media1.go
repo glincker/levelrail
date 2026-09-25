@@ -251,7 +251,7 @@ var media1Templates = []Template{
 		// registry in this environment.
 		Compose: `services:
   prowlarr:
-    image: lscr.io/linuxserver/prowlarr:1.22.1
+    image: lscr.io/linuxserver/prowlarr:2.6.5
     ports: ["9696:9696"]
     environment:
       PUID: "1000"
@@ -278,7 +278,7 @@ var media1Templates = []Template{
 		// registry in this environment.
 		Compose: `services:
   radarr:
-    image: lscr.io/linuxserver/radarr:5.16.2
+    image: lscr.io/linuxserver/radarr:6.4.4
     ports: ["7878:7878"]
     environment:
       PUID: "1000"

@@ -226,7 +226,7 @@ var devtools1Templates = []Template{
 		// the image repository is correct.
 		Compose: `services:
   appsmith:
-    image: appsmith/appsmith-ce:1.72
+    image: appsmith/appsmith-ce:v2.4.2
     ports: ["8080:80"]
     volumes:
       - appsmith_data:/appsmith-stacks
@@ -292,7 +292,7 @@ var devtools1Templates = []Template{
 		// the image repository is correct.
 		Compose: `services:
   docmost:
-    image: docmost/docmost:0.13.2
+    image: docmost/docmost:0.96.0
     ports: ["3000:3000"]
     environment:
       APP_URL: ${SERVICE_FQDN_DOCMOST:-http://localhost:3000}
@@ -368,9 +368,10 @@ var devtools1Templates = []Template{
 		// Only published under a rolling :latest tag upstream; this
 		// pinned version couldn't be verified against a live registry in
 		// this environment.
+		// Upstream publishes no release tags on ghcr.
 		Compose: `services:
   convertx:
-    image: ghcr.io/c4illin/convertx:0.19.0
+    image: ghcr.io/c4illin/convertx:latest
     ports: ["3000:3000"]
     environment:
       JWT_SECRET: $SERVICE_PASSWORD_JWTSECRET

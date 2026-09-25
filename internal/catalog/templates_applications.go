@@ -140,7 +140,7 @@ var applicationsTemplates = []Template{
 		// verified against a live registry in this environment.
 		Compose: `services:
   searxng:
-    image: searxng/searxng:2024.10.20
+    image: searxng/searxng:2026.9.23-3cd69d30e
     ports: ["8080:8080"]
     environment:
       SEARXNG_SECRET: $SERVICE_HEX_64_SECRET

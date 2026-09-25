@@ -35,7 +35,7 @@ var dashboardTemplates = []Template{
 		// the image repository is correct.
 		Compose: `services:
   dashy:
-    image: lissy93/dashy:3.1.1
+    image: lissy93/dashy:4.7.8
     ports: ["8080:8080"]
     volumes:
       - dashy_config:/app/user-data
@@ -150,7 +150,7 @@ var dashboardTemplates = []Template{
 		RecommendedMemoryBytes: 134217728, // 128Mi
 		Compose: `services:
   flame:
-    image: pawelmalak/flame:v2.3.1
+    image: pawelmalak/flame:2.3.1
     ports: ["5005:5005"]
     environment:
       PASSWORD: $SERVICE_PASSWORD_ADMIN

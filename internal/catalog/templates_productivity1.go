@@ -91,7 +91,7 @@ var productivity1Templates = []Template{
 		RecommendedMemoryBytes: 536870912, // 512Mi
 		Compose: `services:
   mealie:
-    image: ghcr.io/mealie-recipes/mealie:3.17.0
+    image: ghcr.io/mealie-recipes/mealie:v3.17.0
     ports: ["9925:9000"]
     environment:
       BASE_URL: ${SERVICE_FQDN_MEALIE:-http://localhost:9925}
@@ -301,7 +301,7 @@ var productivity1Templates = []Template{
 		// the image repository is correct.
 		Compose: `services:
   joplin:
-    image: joplin/server:3.3.4
+    image: joplin/server:3.7.2
     ports: ["22300:22300"]
     environment:
       APP_BASE_URL: ${SERVICE_FQDN_JOPLIN:-http://localhost:22300}
@@ -389,9 +389,10 @@ var productivity1Templates = []Template{
 		RecommendedMemoryBytes: 134217728, // 128Mi
 		// Tag not verified against a live registry in this environment;
 		// the image repository is correct.
+		// Upstream publishes only latest and sha tags.
 		Compose: `services:
   excalidraw:
-    image: excalidraw/excalidraw:0.17.6
+    image: excalidraw/excalidraw:latest
     ports: ["8080:80"]
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/ || exit 1"]

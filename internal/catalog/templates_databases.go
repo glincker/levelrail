@@ -12,7 +12,7 @@ var databasesTemplates = []Template{
 		// the image repository is correct.
 		Compose: `services:
   nocodb:
-    image: nocodb/nocodb:0.263.5
+    image: nocodb/nocodb:2026.09.0
     ports: ["8080:8080"]
     volumes:
       - nocodb_data:/usr/app/data

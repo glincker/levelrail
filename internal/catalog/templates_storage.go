@@ -10,9 +10,10 @@ var storageTemplates = []Template{
 		RecommendedMemoryBytes: 536870912, // 512Mi
 		// Real MinIO images require a "server /data" style command to
 		// actually serve.
+		// Tag unverified: quay.io returns 401 anonymously. Docker Hub minio/minio is gone.
 		Compose: `services:
   minio:
-    image: minio/minio:RELEASE.2024-10-13T13-34-11Z
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     command: ["server", "/data", "--console-address", ":9001"]
     ports: ["9000:9000", "9001:9001"]
     environment:
@@ -99,7 +100,7 @@ var storageTemplates = []Template{
 		// registry in this environment.
 		Compose: `services:
   duplicati:
-    image: lscr.io/linuxserver/duplicati:2.1.1.0
+    image: lscr.io/linuxserver/duplicati:2.4.0
     ports: ["8200:8200"]
     environment:
       PUID: "1000"

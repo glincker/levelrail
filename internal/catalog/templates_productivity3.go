@@ -71,7 +71,7 @@ var productivity3Templates = []Template{
 		RecommendedMemoryBytes: 134217728, // 128Mi
 		Compose: `services:
   dokuwiki:
-    image: lscr.io/linuxserver/dokuwiki:2024-02-06b
+    image: lscr.io/linuxserver/dokuwiki:2026-07-14c-ls325
     ports: ["80:80"]
     environment:
       PUID: "1000"
@@ -141,7 +141,7 @@ var productivity3Templates = []Template{
 		RecommendedMemoryBytes: 134217728, // 128Mi
 		Compose: `services:
   flatnotes:
-    image: dullage/flatnotes:v4.1.1
+    image: dullage/flatnotes:v5.5.5
     ports: ["8080:8080"]
     environment:
       FLATNOTES_AUTH_TYPE: "password"

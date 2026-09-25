@@ -43,7 +43,7 @@ var communicationTemplates = []Template{
 		RecommendedMemoryBytes: 1073741824, // 1024Mi
 		Compose: `services:
   rocketchat:
-    image: registry.rocket.chat/rocketchat/rocket.chat:8.0.1
+    image: rocketchat/rocket.chat:8.0.1
     ports: ["3000:3000"]
     environment:
       MONGO_URL: mongodb://mongo:27017/rocketchat

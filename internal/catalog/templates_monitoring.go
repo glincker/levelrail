@@ -165,7 +165,7 @@ var monitoringTemplates = []Template{
 		// this environment.
 		Compose: `services:
   librespeed:
-    image: ghcr.io/librespeed/speedtest:5.4.5
+    image: ghcr.io/librespeed/speedtest:6.3.0
     ports: ["82:82"]
     environment:
       MODE: standalone
@@ -216,7 +216,7 @@ var monitoringTemplates = []Template{
 		// this environment.
 		Compose: `services:
   statusnook:
-    image: goksan/statusnook:1.4.0
+    image: goksan/statusnook:latest
     ports: ["8000:8000"]
     volumes:
       - statusnook_data:/app/statusnook-data

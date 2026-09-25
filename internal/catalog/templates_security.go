@@ -35,7 +35,7 @@ var securityTemplates = []Template{
 		// this environment.
 		Compose: `services:
   passbolt:
-    image: passbolt/passbolt:4.12.0-ce
+    image: passbolt/passbolt:5.16.0-1-ce
     ports: ["80:80"]
     environment:
       APP_FULL_BASE_URL: ${SERVICE_FQDN_PASSBOLT:-http://localhost}
