@@ -113,6 +113,9 @@ func TestModels_CreateGetListDeleteFlow(t *testing.T) {
 	if got.APIKeyPrefix != created.APIKey[:7] || got.Status.Reason != "Pending" {
 		t.Errorf("got = %+v", got)
 	}
+	if got.Limits != models.DefaultGatewayLimits().Summary() {
+		t.Errorf("limits = %+v, want the gateway defaults", got.Limits)
+	}
 
 	if err := db.UpsertConditions(context.Background(), models.ControllerName("chat"), []reconcile.Condition{{Type: "Ready", Status: reconcile.ConditionFalse, Reason: "Downloading", Message: "downloading llama3.1:8b: 12%"}}); err != nil {
 		t.Fatal(err)
