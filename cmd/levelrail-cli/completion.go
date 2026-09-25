@@ -128,6 +128,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"registry-credentials":  {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "repositories": nil, "tags": nil}},
 	"registry":              {subs: map[string]*cmdNode{"status": nil, "enable": nil, "disable": nil, "repositories": nil, "tags": nil}},
 	"flags":                 {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "set": nil, "delete": nil}},
+	"lb":                    {subs: map[string]*cmdNode{"show": nil, "set": nil, "clear": nil, "status": nil, "export": nil, "import": nil}},
 	"tags":                  {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil, "apps": nil}},
 	"nodes": {subs: map[string]*cmdNode{
 		"list": nil, "get": nil, "delete": nil, "join-token": nil,
