@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/diskspace"
+	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
 // Doctor check statuses. Warn never affects the response's overall OK
@@ -89,6 +90,7 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 	if httpsPort == 0 {
 		httpsPort = defaultDoctorHTTPSPort
 	}
+	hardeningCfg, hardeningErr := docker.HardeningFromEnv()
 	checks := []doctorCheckResource{
 		rt.doctorCheckDocker(ctx),
 		rt.doctorCheckDiskSpace(),
@@ -102,6 +104,7 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		doctorCheckFirewallCtx(ctx),
 		rt.doctorCheckRAM(),
 		rt.doctorCheckCPU(),
+		doctorCheckContainerHardening(hardeningCfg, hardeningErr),
 	}
 	checks = append(checks, rt.doctorRunNetworkChecks(ctx, httpPort, httpsPort)...)
 	checks = append(checks, rt.doctorCheckGPUs(ctx)...)
