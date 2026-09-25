@@ -9,7 +9,7 @@ import (
 )
 
 func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_domains",
 		Description: "List every domain routed by this control plane, across every app: domain name and which app owns it. The same data DomainEditor shows per-app, aggregated into one cross-app read. Read-only; does not connect, edit, or remove a domain.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.DomainResource, error) {
@@ -20,7 +20,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, domains, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_app_network",
 		Description: "Get an app's live traffic path: the container's declared port, the current Docker-assigned host port Caddy is actually proxying to, and whether the container is running. Useful for diagnosing why a domain isn't reaching an app. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.NetworkResource, error) {
@@ -31,7 +31,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, network, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_domain_maintenance_status",
 		Description: "Get whether one of an app's domains currently has maintenance mode enabled, showing a static page instead of proxying to the app's container. Read-only; does not enable or disable maintenance mode.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainMaintenanceResource, error) {
@@ -42,7 +42,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, status, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_domain_redirect",
 		Description: "Get whether one of an app's domains currently redirects to a target URL instead of proxying to the app's container, and if so, the target URL and status code (301 permanent or 302 temporary). Read-only; does not configure or clear the redirect. Note: if the same domain also has maintenance mode enabled, maintenance mode takes precedence and the redirect does not actually apply.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainRedirectResource, error) {
@@ -53,7 +53,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, status, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_domain_error_pages",
 		Description: "Get every custom error page currently configured for one of an app's domains: the status codes (404, 500, 502, 503) that have a custom HTML body, and that body's content. Served by the embedded Caddy ingress instead of Caddy's bare default error text or whatever the backend itself returned. Read-only; does not set or clear an error page.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainErrorPagesResource, error) {
@@ -64,7 +64,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, pages, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "check_domain_dns",
 		Description: "Run a real DNS lookup for one of an app's domains and report whether it currently resolves to this control plane's own advertised address: status is one of connected, not_resolving, resolves_elsewhere, or unconfigured (no APP_PUBLIC_HOST and no usable request host to infer one from). The concrete diagnose-why-this-isn't-working tool for a domain that isn't reaching its app. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainCheckResource, error) {

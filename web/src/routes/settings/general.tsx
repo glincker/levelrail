@@ -38,6 +38,7 @@ import { CleanUpDockerDialog } from '../../components/CleanUpDockerDialog'
 import { ControlPlaneBackupsCard } from '../../components/ControlPlaneBackupsCard'
 import { OrphanedVolumesCard } from '../../components/OrphanedVolumesCard'
 import { RotateMasterKeyDialog } from '../../components/RotateMasterKeyDialog'
+import { SecretBindingCard } from '../../components/SecretBindingCard'
 import { HelpLink } from '@/components/HelpLink'
 import { PageSpinner } from '@/components/ui/page-spinner'
 
@@ -445,6 +446,7 @@ function GeneralSettingsPage() {
       <CertificatesCard />
 
       {status.secrets_configured ? <MasterKeyCard /> : null}
+      {status.secrets_configured ? <SecretBindingCard /> : null}
 
       <Card>
         <CardHeader>

@@ -505,7 +505,7 @@ func run(logger *slog.Logger) error {
 	}()
 	defer agentGRPCServer.GracefulStop()
 
-	secretsManager, masterKeyFilePath, err := loadSecretsManager(db, agentDataDir)
+	secretsManager, masterKeyFilePath, err := loadSecretsManager(db, agentDataDir, secretsManagerOptions(logger)...)
 	if err != nil {
 		// Not fatal, the same choice bootstrapAdmin makes above: the
 		// control plane still starts. Every route and reconcile path
@@ -1517,36 +1517,23 @@ func devFixturesFile() string {
 	return path
 }
 
-// loadSecretsManager builds a secrets.Manager, sourcing the master key
-// from APP_MASTER_KEY when an operator has set one (the explicit-config
-// path production deployments managing their own secret store should
-// use), or loading/generating one persisted in dataDir otherwise, the
-// same loadOrGenerateAgentCA pattern just above: unlike Coolify's
-// separate install-script step (which writes its own key to disk before
-// the app process ever starts), this control plane ships as one binary
-// with no install step to run that generation in ahead of time, so the
-// binary does it itself on first boot instead. Regenerating on every
-// restart instead of persisting would make every previously-wrapped DEK
-// permanently unwrappable, the one thing this must never do.
-// loadSecretsManager returns masterKeyFilePath as "" when the key came
-// from APP_MASTER_KEY: api.WithMasterKeyRotation uses that to decide
-// whether a rotation can persist the new key to disk itself, or must
-// warn the operator to update the env var out of band instead (see
-// docs/master-key-rotation.md).
-func loadSecretsManager(db *store.DB, dataDir string) (mgr *secrets.Manager, masterKeyFilePath string, err error) {
+// loadSecretsManager builds a secrets.Manager from APP_MASTER_KEY, or a
+// key persisted in (or first generated into) dataDir. masterKeyFilePath
+// is "" for an env-sourced key, so rotation knows it cannot persist it.
+func loadSecretsManager(db *store.DB, dataDir string, opts ...secrets.ManagerOption) (mgr *secrets.Manager, masterKeyFilePath string, err error) {
 	if serialized := os.Getenv("APP_MASTER_KEY"); serialized != "" {
 		mk, err := secrets.LoadMasterKey(serialized)
 		if err != nil {
 			return nil, "", fmt.Errorf("load master key from APP_MASTER_KEY: %w", err)
 		}
-		return secrets.NewManager(db, mk), "", nil
+		return secrets.NewManager(db, mk, opts...), "", nil
 	}
 
 	mk, keyPath, err := loadOrGenerateMasterKey(dataDir)
 	if err != nil {
 		return nil, "", err
 	}
-	return secrets.NewManager(db, mk), keyPath, nil
+	return secrets.NewManager(db, mk, opts...), keyPath, nil
 }
 
 // loadOrGenerateMasterKey loads a previously persisted master key from
@@ -2023,6 +2010,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
 		opts = append(opts, api.WithMasterKeyRotation(secretsManager, masterKeyFilePath))
+		opts = append(opts, api.WithSecretBinding(secretsManager))
 		opts = append(opts, api.WithDoctorMasterKeyRotationWarnAge(doctorMasterKeyRotationWarnAge(logger)))
 		// The stale_secrets doctor check counts secret-marked rows across
 		// service_secret_values and the three shared-env tiers, all of

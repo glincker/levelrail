@@ -102,6 +102,33 @@ curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh 
 ```
 :::
 
+### Verifying release binaries
+
+Each release publishes `checksums.txt` (SHA-256 of every CLI, agent and control plane binary), a keyless [cosign](https://docs.sigstore.dev/cosign/overview/) signature bundle for it (`checksums.txt.sigstore.json`), and a GitHub build provenance attestation for the binaries. Releases cut before signing was added carry no bundle.
+
+`install.sh` always verifies the SHA-256 checksum and refuses to install on a mismatch. It also verifies the signature when `cosign` is installed and the release ships a bundle. Set `APP_INSTALL_VERIFY=require` to fail unless the signature verifies (no cosign, no bundle, or a bad signature all abort), or `APP_INSTALL_VERIFY=off` to skip only the signature step.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+  | sudo APP_INSTALL_VERIFY=require sh
+```
+
+To verify a download by hand:
+
+```bash
+V=v0.1.0   # the release tag
+BASE=https://github.com/glincker/levelrail/releases/download/$V
+curl -fsSLO $BASE/checksums.txt -O $BASE/checksums.txt.sigstore.json -O $BASE/levelrail-linux-amd64
+
+cosign verify-blob --bundle checksums.txt.sigstore.json \
+  --certificate-identity-regexp 'https://github.com/glincker/levelrail/\.github/workflows/release\.yml@.*' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  checksums.txt
+
+sha256sum --check --ignore-missing checksums.txt
+
+gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
+```
 
 ## Option 2: Docker
 

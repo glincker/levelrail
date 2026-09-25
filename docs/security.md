@@ -8,10 +8,12 @@ This page is a map, not a duplicate. Each topic below has its own detailed page;
 
 ## Secrets: envelope encryption
 
-Every secret (an app env var marked `secret: true`, email credentials, API tokens, and so on) gets its own random data encryption key (DEK). Every DEK is wrapped under one master key held in memory by the control plane, never written to disk in plaintext.
+Every owner of secrets (an app, a backup target, the email settings, and so on) gets its own random data encryption key (DEK), and each of its values (an app env var marked `secret: true`, email credentials, API tokens) is encrypted under that DEK with AES-256-GCM. Every DEK is wrapped under one master key held in memory by the control plane, never written to disk in plaintext.
+
+Each encrypted value is also bound to the slot it was written to: its owner and key name are sealed inside the ciphertext and checked on every read. Someone with write access to the database cannot copy one app's `DATABASE_URL` ciphertext into another app's `API_KEY` row and have it decrypt there; the read fails closed instead. Values written before this existed are "legacy" and should be bound once with `levelrail secrets rebind`, see [Binding secrets to their slot](master-key-rotation.md#binding-secrets-to-their-slot).
 
 ::: tip
-Rotating the master key re-wraps every DEK without ever exposing plaintext. See [Master key rotation](master-key-rotation.md) for the full procedure and failure modes.
+Rotating the master key re-wraps every DEK without ever exposing plaintext, then binds any legacy values. See [Master key rotation](master-key-rotation.md) for the full procedure and failure modes.
 :::
 
 Credentials for backup targets and registry integrations follow the same write-only pattern described in [Backups and storage](backups-and-storage.md#credentials-are-write-only): once saved, the plaintext is never returned by the API again, only a masked placeholder.
@@ -43,7 +45,7 @@ Evaluation order, the full ability list, and policy examples: [Identity and acce
 - The node agent dials **out** to the control plane. No inbound ports need to be open on a managed server for enrollment or day-to-day operation.
 - **Agent enrollment pins the control plane CA.** A join token is shown together with the agent CA's SHA-256 fingerprint; with `APP_CA_FINGERPRINT` set, the agent checks the control plane's certificate against that CA before it sends the token, so an attacker in the network path cannot capture the token or pose as the control plane. Without the fingerprint the agent falls back to trust on first use and logs a warning. After enrollment every connection is mutual TLS against the saved CA.
 - **Container installs bind plain HTTP to loopback.** The committed `docker-compose.yml` publishes `8080` on `127.0.0.1` only (override with `LEVELRAIL_HTTP_BIND`), see [Docker](docker.md#control-plane).
-- **`install.sh` fails closed on checksums.** A release without a usable `checksums.txt` aborts the install unless you pass `LEVELRAIL_SKIP_CHECKSUM=1`.
+- **`install.sh` fails closed on checksums.** A release without a usable `checksums.txt` aborts the install unless you pass `LEVELRAIL_SKIP_CHECKSUM=1`. Release checksums are cosign-signed; `APP_INSTALL_VERIFY=require` makes the installer insist on a valid signature, see [Verifying release binaries](installing.md#verifying-release-binaries).
 
 ## Outbound requests to user-supplied URLs
 
@@ -74,6 +76,27 @@ A short list for the server itself, independent of anything Levelrail configures
 
 Every mutating API call from an authenticated principal is recorded: who, what, when, and the outcome. The log is queryable and exportable as CSV. See [Identity and access](identity-and-access.md#audit-log).
 
+## Container hardening
+
+Every container Levelrail creates (apps, databases, catalogue services, helpers) can be created with secure defaults: all Linux capabilities dropped except a minimal set, `no-new-privileges`, and a per-container process limit. It is controlled by `APP_CONTAINER_HARDENING` on the control plane and on each agent:
+
+| Value | Behavior |
+| --- | --- |
+| `warn` (default) | Nothing is applied to containers. `GET /api/v1/system/doctor` (`levelrail doctor`) reports the exact settings `enforce` would apply. Cannot break existing deployments. |
+| `enforce` | Applies the settings below to every container created from then on. Running containers pick them up on their next recreate (redeploy or restart of the resource). |
+| `off` | Nothing applied, and the doctor warns that Docker's default capability set is in use. |
+
+`warn` cannot tell you which containers would fail, because the failure only shows when a container starts. Turn on `enforce` on a staging box or for one node first, and redeploy an app to try it.
+
+What `enforce` sets:
+
+- `CapDrop: ALL`, then `CapAdd`: `CHOWN`, `DAC_OVERRIDE`, `FOWNER`, `FSETID`, `KILL`, `NET_BIND_SERVICE`, `SETGID`, `SETUID`. This is what the stock nginx, postgres, mysql, redis, node and python images need for their entrypoints (chown a data dir, drop privileges to a service user, bind port 80 or 443). Docker's default set also grants `NET_RAW` (raw sockets, ping), `MKNOD`, `SETFCAP`, `SETPCAP`, `SYS_CHROOT` and `AUDIT_WRITE`, which are left out.
+- Capabilities a caller already asks for (the egress sidecar's `NET_ADMIN`) are kept.
+- `SecurityOpt: no-new-privileges`, so a process cannot gain privileges through setuid binaries.
+- `PidsLimit` from `APP_CONTAINER_PIDS_LIMIT` (default `4096`, `0` disables), which stops a fork bomb from exhausting the host.
+
+`APP_CONTAINER_HARDENING_CAP_ADD` (comma separated, for example `SYS_CHROOT,NET_RAW`) adds capabilities for every container on that host, for images that need more than the minimal set (SSH or FTP servers, tools using `ping`). It applies host-wide because a per-app override would need a new field carried to remote agents; a per-app `security` block in `app.yaml` is future work. Read-only root filesystems and privileged containers are never set by these defaults. The setting is read by the process that creates the container, so it applies to remote nodes when set on the agent, and the doctor reports the control plane's own value.
+
 ## Reporting a vulnerability
 
 Levelrail does not yet have a dedicated security disclosure address. Until one exists, open a private security advisory on the [GitHub repository](https://github.com/glincker/levelrail/security/advisories/new) rather than a public issue. The repository's [SECURITY.md](../SECURITY.md) has the full policy, including what to expect after reporting.
@@ -82,11 +105,12 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 
 - No SSO/SAML, only local password auth and OAuth sign-in.
 - No secret scanning of an app's own source repository.
-- No container-escape hardening beyond what Docker itself provides; rootless Docker and Podman support are open questions (see the root `CLAUDE.md`'s open decisions).
+- Container hardening is opt-in (`APP_CONTAINER_HARDENING=enforce`) and has no per-app override yet; rootless Docker and Podman support are open questions (see the root `CLAUDE.md`'s open decisions).
 
 ## See also
 
 - [Master key rotation](master-key-rotation.md) - How to rotate the encryption key that protects all secrets
 - [Identity and access](identity-and-access.md) - Users, tokens, roles, and IAM policies
 - [Domains and ingress](domains-and-ingress.md) - TLS certificates and domain configuration
+- [Threat model](threat-model.md) - Trust boundaries, mitigations with file references, and known gaps
 - [Architecture](architecture.md) - How security layers integrate with the core platform

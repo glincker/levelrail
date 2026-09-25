@@ -9,15 +9,10 @@ import (
 	"time"
 )
 
-// runSecrets dispatches "secrets <verb> [flags]", currently just
-// rotate-master-key. Distinct from "apps secrets" (apps.go), which
-// manages one app's own env-var secret values: this is the control
-// plane's single envelope-encryption master key, not scoped to any app.
-//
-// Deliberately has no cmd/levelrail-mcp tool: a botched or duplicate
-// rotation can leave every stored secret permanently unrecoverable, and
-// --new-key-file's whole design exists to keep key material out of
-// exactly the kind of process an MCP-driven agent runs in.
+// runSecrets dispatches "secrets <verb> [flags]": control-plane-wide
+// envelope encryption maintenance, distinct from "apps secrets".
+// Rotation deliberately has no MCP tool, to keep key material out of
+// agent processes; binding status reaches MCP through the doctor check.
 func runSecrets(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, secretsUsage(prog))
@@ -30,6 +25,10 @@ func runSecrets(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return exitOK
 	case "rotate-master-key":
 		return runSecretsRotateMasterKey(prog, args[1:], stdout, stderr, lookupEnv)
+	case "binding-status":
+		return runSecretsBindingStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rebind":
+		return runSecretsRebind(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown secrets subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, secretsUsage(prog))
@@ -40,13 +39,16 @@ func runSecrets(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 func secretsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s secrets rotate-master-key --new-key-file PATH [flags]
+  %[1]s secrets binding-status [flags]
+  %[1]s secrets rebind [flags]
 
-Rotates the control plane's envelope-encryption master key: every
-stored per-app data encryption key is re-wrapped under a new master key
-in one atomic step, live, while the control plane keeps serving.
-Read docs/master-key-rotation.md before running this in production.
+rotate-master-key re-wraps every stored data encryption key under a new
+master key in one atomic step, live, then binds any legacy values.
+binding-status counts secret values not yet bound to their slot, and
+rebind binds them. Read docs/master-key-rotation.md before running these
+in production.
 
-Run "%[1]s secrets rotate-master-key -h" for its own flags.
+Run "%[1]s secrets <command> -h" for its own flags.
 `, prog)
 }
 
@@ -132,6 +134,9 @@ func readSecretFileOrStdin(path string) (string, error) {
 func printRotateMasterKeyResultHuman(out io.Writer, r rotateMasterKeyResult) {
 	_, _ = fmt.Fprintf(out, "rotated_at:        %s\n", r.RotatedAt.Format(time.RFC3339))
 	_, _ = fmt.Fprintf(out, "persisted_to_file: %t\n", r.PersistedToFile)
+	if r.Rebind != nil {
+		_, _ = fmt.Fprintf(out, "rebound:           %d (remaining legacy: %d, failed: %d)\n", r.Rebind.Rebound, r.Rebind.Remaining, r.Rebind.FailedCount)
+	}
 	if r.Warning != "" {
 		_, _ = fmt.Fprintf(out, "\nWARNING: %s\n", r.Warning)
 	}

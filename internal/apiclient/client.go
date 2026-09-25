@@ -2527,6 +2527,22 @@ func (c *Client) RotateMasterKey(ctx context.Context, newMasterKey string) (Rota
 	return out, err
 }
 
+// GetSecretBinding calls GET /api/v1/system/secrets/binding: how many
+// stored secret values still use the legacy unbound format.
+func (c *Client) GetSecretBinding(ctx context.Context) (SecretBindingStatus, error) {
+	var out SecretBindingStatus
+	err := c.do(ctx, http.MethodGet, "/api/v1/system/secrets/binding", nil, &out)
+	return out, err
+}
+
+// RebindSecrets calls POST /api/v1/system/secrets/rebind: re-encrypts
+// every legacy secret value bound to its slot. Safe to repeat.
+func (c *Client) RebindSecrets(ctx context.Context) (SecretRebindResult, error) {
+	var out SecretRebindResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/system/secrets/rebind", nil, &out)
+	return out, err
+}
+
 // ListAlertRules calls GET /api/v1/apps/{name}/alerts: every alert rule
 // scoped to name, including disabled ones.
 func (c *Client) ListAlertRules(ctx context.Context, name string) ([]AlertRuleResource, error) {

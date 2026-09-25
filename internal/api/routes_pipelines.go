@@ -16,7 +16,7 @@ func (rt *Router) registerPipelineRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/pipeline-runs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListPipelineRuns))
 	mux.HandleFunc("GET /api/v1/apps/{name}/pipeline-runs/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetPipelineRun))
 	mux.HandleFunc("GET /api/v1/apps/{name}/pipeline-runs/{id}/logs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListPipelineRunLogs))
-	mux.HandleFunc("GET /api/v1/apps/{name}/pipeline-runs/{id}/logs/stream", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleStreamPipelineRunLogs))
+	mux.HandleFunc("GET /api/v1/apps/{name}/pipeline-runs/{id}/logs/stream", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.withStreamReauth(appResourceFromPath, rt.handleStreamPipelineRunLogs)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/pipeline-runs/{id}/cancel", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCancelPipelineRun))
 	mux.HandleFunc("POST /api/v1/apps/{name}/pipeline-runs/{id}/rerun", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRerunPipelineRun))
 	mux.HandleFunc("POST /api/v1/apps/{name}/pipeline-runs/{id}/approvals/{approval}", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDecidePipelineApproval))

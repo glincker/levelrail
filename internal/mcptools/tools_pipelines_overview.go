@@ -23,7 +23,7 @@ type allPipelineRunsOutput struct {
 }
 
 func registerPipelineOverviewTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_all_pipeline_runs",
 		Description: "List recent CI/CD pipeline runs across every app the caller can read, newest first, with app, pipeline, status, trigger, ref, short sha, duration, and whether a run is waiting on an approval or hold. Filter by status, app, pipeline, or trigger. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listAllPipelineRunsInput) (*mcp.CallToolResult, allPipelineRunsOutput, error) {

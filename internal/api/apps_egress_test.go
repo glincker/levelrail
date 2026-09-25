@@ -120,6 +120,24 @@ func TestHandleSetAppEgressPolicy_InvalidPort(t *testing.T) {
 	}
 }
 
+func TestHandleSetAppEgressPolicy_RejectsShellSignificantHosts(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedWebAppForTest(t, db)
+
+	for _, host := range []string{"a b", "a;reboot", "$(id)", "*", "-x", "a:80", "", "host\nname"} {
+		body, err := json.Marshal(map[string]any{"mode": "allowlist", "allow": []map[string]any{{"host": host, "port": 443}}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/egress-policy", string(body)))
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("host %q: status = %d, want 400", host, rec.Code)
+		}
+	}
+}
+
 func TestHandleSetAppEgressPolicy_AppNotFound(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

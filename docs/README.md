@@ -74,6 +74,7 @@ Four main types, plus two Levelrail-specific categories:
 | Doc | Covers |
 | --- | --- |
 | [architecture.md](architecture.md) | How Levelrail is actually built today: reconciler, ingress, builds, storage |
+| [threat-model.md](threat-model.md) | Trust boundaries, assets, attackers, mitigations with file references, known gaps, and how to report a vulnerability |
 | [comparison.md](comparison.md) | How Levelrail differs from Coolify, Dokploy, CapRover, Dokku, Kamal |
 
 ### Design proposals

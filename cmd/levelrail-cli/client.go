@@ -237,6 +237,8 @@ type (
 	purgeAuditLogResult   = apiclient.PurgeAuditLogResult
 
 	rotateMasterKeyResult = apiclient.RotateMasterKeyResult
+	secretBindingStatus   = apiclient.SecretBindingStatus
+	secretRebindResult    = apiclient.SecretRebindResult
 
 	systemPruneResult = apiclient.SystemPruneResult
 

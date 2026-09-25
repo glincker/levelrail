@@ -74,4 +74,39 @@ in_ct 'test -f /var/lib/levelrail-data/levelrail.db' || { echo "data dir should 
 in_ct 'sh /root/install.sh uninstall --purge'
 in_ct 'test ! -e /var/lib/levelrail-data' || { echo "--purge should delete the data dir"; exit 1; }
 
+echo "== release verification (mirror, no cosign in the container)"
+in_ct 'command -v cosign' >/dev/null 2>&1 && { echo "test expects no cosign in the container"; exit 1; }
+in_ct 'goarch=amd64; [ "$(uname -m)" = x86_64 ] || goarch=arm64
+	asset=levelrail-linux-$goarch
+	mkdir -p /srv/rel/v9.9.9/good /srv/rel/v9.9.9/tampered
+	for d in good tampered; do printf "#!/bin/sh\nexit 1\n" > /srv/rel/v9.9.9/$d/$asset; done
+	(cd /srv/rel/v9.9.9/good && sha256sum "$asset" > checksums.txt)
+	printf "%064d  %s\n" 0 "$asset" > /srv/rel/v9.9.9/tampered/checksums.txt
+	printf "#!/bin/sh\nexit 0\n" > /usr/local/bin/levelrail && chmod 755 /usr/local/bin/levelrail
+	nohup python3 -m http.server 8099 --bind 127.0.0.1 --directory /srv/rel >/dev/null 2>&1 &
+	sleep 1'
+
+mirror_upgrade() {
+	dir="$1"
+	shift
+	docker exec "$name" env LEVELRAIL_VERSION=v9.9.9 LEVELRAIL_RELEASE_BASE_URL="http://127.0.0.1:8099/v9.9.9/$dir" \
+		LEVELRAIL_INSECURE_MIRROR=1 LEVELRAIL_HEALTH_WAIT=1 "$@" sh /root/install.sh upgrade 2>&1 || true
+}
+
+out="$(mirror_upgrade tampered)"
+echo "$out" | grep -q "checksum mismatch" || { echo "tampered checksums.txt was not rejected: $out"; exit 1; }
+
+out="$(mirror_upgrade good APP_INSTALL_VERIFY=require)"
+echo "$out" | grep -q "APP_INSTALL_VERIFY=require but cosign is not installed" ||
+	{ echo "require mode without cosign did not fail closed: $out"; exit 1; }
+echo "$out" | grep -q "Checksum verified" && { echo "require mode must fail before trusting the checksum"; exit 1; }
+
+out="$(mirror_upgrade good)"
+echo "$out" | grep -q "Checksum verified" || { echo "good checksum was not accepted in auto mode: $out"; exit 1; }
+echo "$out" | grep -q "cosign not found" || { echo "auto mode should say the signature was not checked: $out"; exit 1; }
+
+out="$(mirror_upgrade good APP_INSTALL_VERIFY=bogus)"
+echo "$out" | grep -q "APP_INSTALL_VERIFY must be" || { echo "invalid APP_INSTALL_VERIFY accepted: $out"; exit 1; }
+in_ct 'sh /root/install.sh uninstall --purge' >/dev/null
+
 echo "install.sh passed on ${base_image}"

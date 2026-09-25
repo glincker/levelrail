@@ -370,6 +370,24 @@ func TestHandleTriggerBuild_MissingRepoURL(t *testing.T) {
 	fb.assertNotCalled(t)
 }
 
+func TestHandleTriggerBuild_RejectsNonHTTPRepoURL(t *testing.T) {
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fetch := &fakeFetch{}
+	rt, db := newTestRouterWithBuilder(t, fb, fetch)
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	for _, u := range []string{"file:///var/lib", "/var/lib/levelrail", "ssh://host/x.git", "git@host:x/y.git"} {
+		rec := httptest.NewRecorder()
+		body := `{"repo_url":"` + u + `","ref":"main"}`
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/builds", body))
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("repo_url %q: status = %d, want 400", u, rec.Code)
+		}
+	}
+	fb.assertNotCalled(t)
+}
+
 func TestHandleTriggerBuild_MissingRef(t *testing.T) {
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	rt, db := newTestRouterWithBuilder(t, fb, nil)

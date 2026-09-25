@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"text/tabwriter"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -95,6 +96,19 @@ func printModelHuman(out io.Writer, m apiclient.ModelResource) {
 		_, _ = fmt.Fprintf(out, "base url:    %s\n", m.EndpointURL)
 	}
 	_, _ = fmt.Fprintf(out, "api key:     %s... (shown once at deploy time)\n", m.APIKeyPrefix)
+	_, _ = fmt.Fprintf(out, "limits:      %s\n", modelLimitsSummary(m.Limits))
+}
+
+func modelLimitsSummary(l apiclient.ModelLimits) string {
+	val := func(n int64, unit string) string {
+		if n <= 0 {
+			return "off"
+		}
+		return strconv.FormatInt(n, 10) + unit
+	}
+	return fmt.Sprintf("body %s, n %s, max tokens %s, %s concurrent, header timeout %s, stream idle %s",
+		val(l.MaxBodyBytes, " bytes"), val(int64(l.MaxN), ""), val(int64(l.MaxTokens), ""), val(int64(l.MaxInflight), ""),
+		val(int64(l.ResponseHeaderTimeoutS), "s"), val(int64(l.StreamIdleTimeoutS), "s"))
 }
 
 func printGPUNodesTable(out io.Writer, nodes []apiclient.GPUNodeResource) {

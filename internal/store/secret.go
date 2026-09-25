@@ -319,3 +319,72 @@ func (db *DB) GetMasterKeyRotatedAt(ctx context.Context) (rotatedAt time.Time, o
 	}
 	return t, true, nil
 }
+
+// SecretCiphertext is one stored secret value row, ciphertext only.
+type SecretCiphertext struct {
+	ServiceName string
+	EnvKey      string
+	Ciphertext  []byte
+}
+
+// CountSecretValuesByPrefix returns how many secret values exist and how
+// many of those ciphertexts start with prefix.
+func (db *DB) CountSecretValuesByPrefix(ctx context.Context, prefix []byte) (total, withPrefix int, err error) {
+	err = db.QueryRowContext(ctx, `
+		SELECT COUNT(*), COALESCE(SUM(CASE WHEN substr(ciphertext, 1, ?) = ? THEN 1 ELSE 0 END), 0)
+		FROM service_secret_values
+	`, len(prefix), prefix).Scan(&total, &withPrefix)
+	if err != nil {
+		return 0, 0, fmt.Errorf("store: count secret values by prefix: %w", err)
+	}
+	return total, withPrefix, nil
+}
+
+// ListSecretCiphertexts returns up to limit rows ordered by (service_name,
+// env_key), strictly after (afterService, afterKey), for keyset
+// pagination that stays stable while rows are rewritten.
+func (db *DB) ListSecretCiphertexts(ctx context.Context, afterService, afterKey string, limit int) ([]SecretCiphertext, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT service_name, env_key, ciphertext FROM service_secret_values
+		WHERE service_name > ? OR (service_name = ? AND env_key > ?)
+		ORDER BY service_name, env_key
+		LIMIT ?
+	`, afterService, afterService, afterKey, limit)
+	if err != nil {
+		return nil, fmt.Errorf("store: list secret ciphertexts: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var out []SecretCiphertext
+	for rows.Next() {
+		var row SecretCiphertext
+		if err := rows.Scan(&row.ServiceName, &row.EnvKey, &row.Ciphertext); err != nil {
+			return nil, fmt.Errorf("store: scan secret ciphertext: %w", err)
+		}
+		out = append(out, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: list secret ciphertexts: %w", err)
+	}
+	return out, nil
+}
+
+// ReplaceSecretCiphertext rewrites one value's ciphertext only if it
+// still equals old, reporting whether it did. updated_at is left alone:
+// re-encrypting the same value is not a rotation of it.
+func (db *DB) ReplaceSecretCiphertext(ctx context.Context, serviceName, envKey string, old, replacement []byte) (bool, error) {
+	res, err := db.ExecContext(ctx, `
+		UPDATE service_secret_values SET ciphertext = ?
+		WHERE service_name = ? AND env_key = ? AND ciphertext = ?
+	`, replacement, serviceName, envKey, old)
+	if err != nil {
+		return false, fmt.Errorf("store: replace secret ciphertext for %q/%q: %w", serviceName, envKey, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("store: replace secret ciphertext for %q/%q: %w", serviceName, envKey, err)
+	}
+	return n == 1, nil
+}

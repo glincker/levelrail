@@ -4,7 +4,7 @@ description: Rotate the envelope-encryption master key without losing access to 
 
 # Master key rotation
 
-All secrets (app env vars marked `secret: true`, email credentials, tokens, etc.) are encrypted with envelope encryption. Each secret gets its own random data encryption key (DEK), and every DEK is wrapped under a master key held in memory. Rotating the master key means re-wrapping every DEK under a new key without ever exposing plaintext secrets.
+All secrets (app env vars marked `secret: true`, email credentials, tokens, etc.) are encrypted with envelope encryption. Each owner (an app, a backup target, the email settings) gets its own random data encryption key (DEK), and every DEK is wrapped under a master key held in memory. Rotating the master key means re-wrapping every DEK under a new key without ever exposing plaintext secrets.
 
 ## When to rotate
 
@@ -49,7 +49,7 @@ Always read the CLI's output (or the JSON response's `warning`/`persistedToFile`
    cat /path/to/new.key | levelrail-cli secrets rotate-master-key --new-key-file -
    ```
 
-4. Read the output carefully. You will see `rotated_at` and `persisted_to_file` fields. If a `WARNING` line appears, act on it immediately. Update `APP_MASTER_KEY` in your systemd unit or Docker config before the next restart.
+4. Read the output carefully. You will see `rotated_at` and `persisted_to_file` fields. If a `WARNING` line appears, act on it immediately. Update `APP_MASTER_KEY` in your systemd unit or Docker config before the next restart. A `rebound` line reports the slot-binding pass that runs right after the rotation (see [Binding secrets to their slot](#binding-secrets-to-their-slot)).
 
 5. Securely delete the temporary key file once you've confirmed the rotation succeeded (or keep it safe if you still need to update `APP_MASTER_KEY` manually).
 
@@ -68,6 +68,33 @@ The rotation itself succeeded (all DEKs are now wrapped under the new key and in
 ::: details `persistedToFile: false` with a warning about `APP_MASTER_KEY`
 Not a failure. This is the expected message when the master key is env-sourced (see above). It is the required follow-up step, not an error.
 :::
+
+## Binding secrets to their slot
+
+Every secret value is stored in a slot: an owner (an app name, or an internal owner such as a backup target) and a key name (`DATABASE_URL`). Values are encrypted with the slot sealed inside, and every read checks it. A ciphertext copied into another slot, for example by someone with write access to the database moving one app's `DATABASE_URL` row into another app's `API_KEY` row, fails to read with a "bound to a different slot" error instead of decrypting in the wrong place.
+
+Values written by releases before this check existed carry no slot and are called legacy. They still decrypt normally, but they are not protected against being copied. Bind them once:
+
+```sh
+levelrail-cli secrets binding-status   # total, bound, legacy
+levelrail-cli secrets rebind           # bind every legacy value
+```
+
+The same status and a **Bind now** button are on **Settings > General** under **Secret slot binding**, and `levelrail-cli doctor` warns with a `secret_binding` check while legacy values remain. A master key rotation also runs a rebind right after it commits, so rotating once binds everything as a side effect.
+
+What `rebind` guarantees:
+
+- **Idempotent.** Already-bound values are checked and left alone. Running it again when nothing is legacy changes nothing.
+- **Resumable.** Each value is rewritten on its own, and only if it has not changed since it was read. If a run stops partway (a restart, a disk error), the values it finished stay bound and the next run picks up the rest.
+- **Never clobbers a write.** A value someone sets while the rebind runs is reported as `changed` and kept; new writes are always bound.
+- **Never launders a swap.** A bound value that is already in the wrong slot is reported under `failed` and not touched. A value whose owner has no data encryption key, or whose key does not unwrap, is reported the same way.
+- **Does not bump a secret's age.** Re-encrypting the same value is not a rotation of it, so the stale-secrets check is unaffected.
+
+Rebinding cannot tell whether a legacy value was already swapped before it ran: it binds whatever is in each slot at that moment. If you suspect database tampering, set the affected secrets again rather than rebinding them.
+
+Once `binding-status` reports `legacy: 0`, you can set `APP_SECRETS_REQUIRE_BOUND=true` on the control plane. Reads then refuse any legacy value, so a ciphertext copied in from an old backup cannot be used either. Leave it unset (the default) until the rebind is complete, or unbound secrets will stop resolving.
+
+`POST /api/v1/system/secrets/rebind` requires the `root` ability, like rotation. `GET /api/v1/system/secrets/binding` only needs `read`. Neither ever returns a secret value.
 
 ## See also
 

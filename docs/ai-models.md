@@ -82,8 +82,40 @@ curl https://llm.example.com/v1/chat/completions \
 ```
 
 - The key is generated at deploy time and shown once. Only its SHA-256 hash is stored. Lost it? `levelrail models rotate-key <name>` issues a new one and invalidates the old one.
-- Only `/v1/` routes are served. Engine admin APIs (Ollama's pull and delete, for example) are never exposed.
+- Only an allowlist of OpenAI-compatible routes is served (see below). Engine admin APIs (Ollama's pull and delete, vLLM's runtime LoRA load and unload, llama.cpp's `/props` and `/lora-adapters`) are never exposed, even ones that live under `/v1/`.
 - The engine's port is published on loopback (local node) or the WireGuard mesh address (remote node), never on a public interface.
+
+### Served routes
+
+Matching is exact and case sensitive: trailing slashes, `//`, `..`, backslashes and encoded slashes (`%2F`) are rejected. Anything else returns a `404` OpenAI-style error before the API key is checked, and a wrong method returns `405` with an `Allow` header.
+
+| Route | Method | Ollama | vLLM | llama.cpp |
+| --- | --- | --- | --- | --- |
+| `/v1/models`, `/v1/models/{id}` | GET | yes | yes | yes |
+| `/v1/chat/completions` | POST | yes | yes | yes |
+| `/v1/completions` | POST | yes | yes | yes |
+| `/v1/embeddings` | POST | yes | yes | yes |
+| `/v1/responses` | POST | yes | yes | yes |
+| `/v1/audio/transcriptions`, `/v1/audio/translations` | POST | no | yes | no |
+
+Not served on purpose: vLLM's `/v1/load_lora_adapter`, `/v1/unload_lora_adapter`, `/v1/chat/completions/batch` and the `/render` routes; llama.cpp's `/v1/chat/completions/control` and its Anthropic-style `/v1/messages`; stateful `GET` and cancel on `/v1/responses/{id}`.
+
+### Limits
+
+Limits are global (every model) and set with environment variables on the control plane. `0` or a negative value disables a limit. The current values show on `GET /api/v1/models/{name}` (`limits`) and in `levelrail models get`.
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `APP_MODEL_GATEWAY_MAX_BODY_BYTES` | `33554432` (32 MiB) | Larger request bodies get `413`. |
+| `APP_MODEL_GATEWAY_MAX_N` | `16` | `n` or `best_of` above this gets `400`. |
+| `APP_MODEL_GATEWAY_MAX_GEN_LEN` | `32768` | `max_tokens`, `max_completion_tokens` or `max_output_tokens` above this, or negative (unlimited on llama.cpp), gets `400`. A request that sets none is passed through; the engine's context length bounds it. |
+| `APP_MODEL_GATEWAY_MAX_INFLIGHT` | `32` | Concurrent requests per model; more get `429` with `Retry-After`. Streams hold a slot until they end. |
+| `APP_MODEL_GATEWAY_RETRY_AFTER` | `5s` | The `Retry-After` value. |
+| `APP_MODEL_GATEWAY_DIAL_TIMEOUT` | `5s` | Connecting to the engine. |
+| `APP_MODEL_GATEWAY_HEADER_TIMEOUT` | `5m` | Waiting for the engine's response headers. A non-streaming completion sends none until it finishes, so keep this above your longest generation. Exceeded: `504`. |
+| `APP_MODEL_GATEWAY_IDLE_TIMEOUT` | `2m` | Longest gap between engine output on a response. It is a gap, not a total, so long streams that keep producing tokens are never cut. |
+
+JSON bodies are read up to the size cap so `n` and the token limits can be checked; the body is then forwarded unchanged. Audio uploads are size-capped but not parsed. Request and response bodies are never logged: each request logs only method, model, status, duration and bytes.
 
 ## GPU apps
 
@@ -126,7 +158,7 @@ Listing and reading models and GPUs needs the `read` ability. Deleting and resta
 
 ## Not in version 1
 
-AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, request rate limits at the gateway, and per-key usage accounting.
+AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, per-key rate limits at the gateway (only the per-model concurrency cap exists), per-model limit overrides, and per-key usage accounting.
 
 ## GPU in Compose templates
 

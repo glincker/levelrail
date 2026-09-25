@@ -3,11 +3,13 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -17,7 +19,6 @@ import (
 
 const (
 	gatewayCacheTTL = 3 * time.Second
-	openAIPrefix    = "/v1/"
 )
 
 // GatewayStore is the store surface the gateway reads.
@@ -27,12 +28,18 @@ type GatewayStore interface {
 
 // Gateway authenticates OpenAI-compatible requests addressed to a model's
 // host with the model's API key and reverse proxies them to the engine.
-// Only /v1/ paths are forwarded, so engine admin APIs (Ollama pull and
-// delete) are never exposed.
+// Only an allowlist of inference and listing routes is forwarded, so
+// engine admin APIs (Ollama pull and delete, vLLM LoRA loading) are never
+// exposed. Request size, generation length, concurrency and upstream
+// timeouts are bounded by GatewayLimits.
 type Gateway struct {
 	store  GatewayStore
 	hosts  *HostResolver
 	logger *slog.Logger
+
+	limits    GatewayLimits
+	transport *http.Transport
+	inflight  inflight
 
 	mu       sync.Mutex
 	loadedAt time.Time
@@ -45,7 +52,15 @@ func NewGateway(st GatewayStore, hosts *HostResolver, logger *slog.Logger) *Gate
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Gateway{store: st, hosts: hosts, logger: logger}
+	g := &Gateway{store: st, hosts: hosts, logger: logger}
+	g.SetLimits(LoadGatewayLimits())
+	return g
+}
+
+// SetLimits replaces the request limits. Call it before serving.
+func (g *Gateway) SetLimits(l GatewayLimits) {
+	g.limits = l
+	g.transport = newGatewayTransport(l)
 }
 
 func (g *Gateway) lookup(ctx context.Context, host string) (store.Model, bool) {
@@ -86,35 +101,100 @@ func (g *Gateway) Handle(w http.ResponseWriter, r *http.Request) bool {
 	if !ok {
 		return false
 	}
-	if !strings.HasPrefix(r.URL.Path, openAIPrefix) || hasDotSegment(r.URL.Path) {
-		writeOpenAIError(w, http.StatusNotFound, "not_found", "only OpenAI-compatible /v1/ routes are served")
-		return true
+	sw := &statusWriter{ResponseWriter: w}
+	start := time.Now()
+	defer func() {
+		g.logger.Info("models: gateway request", slog.String("method", r.Method), slog.String("model", m.Name),
+			slog.Int("status", sw.status), slog.Duration("duration", time.Since(start)), slog.Int64("bytes", sw.bytes))
+	}()
+	g.serve(sw, r, m)
+	return true
+}
+
+func (g *Gateway) serve(w http.ResponseWriter, r *http.Request, m store.Model) {
+	route, match := matchRoute(m.Engine, r.URL.Path, r.Method)
+	if hasEncodedSlash(r.URL.EscapedPath()) {
+		match = routeNotFound
+	}
+	switch match {
+	case routeNotFound:
+		writeOpenAIError(w, http.StatusNotFound, "not_found", "route not served")
+		return
+	case routeWrongMethod:
+		w.Header().Set("Allow", allowedMethods(m.Engine, r.URL.Path))
+		writeOpenAIError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed for this route")
+		return
+	case routeAllowed:
 	}
 	token, found := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
 	if !found || !KeyMatches(strings.TrimSpace(token), m.APIKeyHash) {
 		w.Header().Set("WWW-Authenticate", `Bearer realm="model"`)
 		writeOpenAIError(w, http.StatusUnauthorized, "invalid_api_key", "missing or invalid API key")
-		return true
+		return
 	}
 	if m.EndpointDial == "" {
 		writeOpenAIError(w, http.StatusServiceUnavailable, "model_not_ready", "model is not running yet")
-		return true
+		return
 	}
+	lim := g.limits
+	release, ok := g.inflight.acquire(m.Name, lim.MaxInflight)
+	if !ok {
+		w.Header().Set("Retry-After", strconv.Itoa(max(int(lim.RetryAfter/time.Second), 1)))
+		writeOpenAIError(w, http.StatusTooManyRequests, "rate_limit_exceeded", "too many concurrent requests for this model")
+		return
+	}
+	defer release()
+	if r.Method == http.MethodPost {
+		if rerr := lim.prepareBody(w, r, !route.multipart); rerr != nil {
+			writeOpenAIError(w, rerr.status, rerr.code, rerr.msg)
+			return
+		}
+	}
+	g.forward(w, r, m)
+}
+
+func (g *Gateway) forward(w http.ResponseWriter, r *http.Request, m store.Model) {
+	clientCtx := r.Context()
+	ctx, cancel := context.WithCancel(clientCtx)
+	defer cancel()
+	r = r.WithContext(ctx)
 	target := &url.URL{Scheme: "http", Host: m.EndpointDial}
 	proxy := &httputil.ReverseProxy{
+		Transport: g.transport,
 		Rewrite: func(pr *httputil.ProxyRequest) {
 			pr.SetURL(target)
 			pr.Out.Header.Del("Authorization")
 			pr.Out.Header.Del("X-Forwarded-For")
 		},
 		FlushInterval: -1,
+		ModifyResponse: func(resp *http.Response) error {
+			if g.limits.IdleTimeout > 0 {
+				resp.Body = newIdleBody(resp.Body, g.limits.IdleTimeout, cancel)
+			}
+			return nil
+		},
 		ErrorHandler: func(w http.ResponseWriter, _ *http.Request, err error) {
-			g.logger.Warn("models: gateway upstream failed", slog.String("model", m.Name), slog.String("error", err.Error()))
-			writeOpenAIError(w, http.StatusBadGateway, "upstream_error", "model engine is unreachable")
+			g.upstreamError(clientCtx, w, m.Name, err)
 		},
 	}
 	proxy.ServeHTTP(w, r)
-	return true
+}
+
+func (g *Gateway) upstreamError(clientCtx context.Context, w http.ResponseWriter, model string, err error) {
+	var mbe *http.MaxBytesError
+	var ne net.Error
+	switch {
+	case errors.As(err, &mbe):
+		writeOpenAIError(w, http.StatusRequestEntityTooLarge, "request_too_large", "request body exceeds the size limit")
+	case clientCtx.Err() != nil:
+		g.logger.Debug("models: gateway client went away", slog.String("model", model))
+	case errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &ne) && ne.Timeout()):
+		g.logger.Warn("models: gateway upstream timed out", slog.String("model", model), slog.String("error", err.Error()))
+		writeOpenAIError(w, http.StatusGatewayTimeout, "gateway_timeout", "model engine did not respond in time")
+	default:
+		g.logger.Warn("models: gateway upstream failed", slog.String("model", model), slog.String("error", err.Error()))
+		writeOpenAIError(w, http.StatusBadGateway, "upstream_error", "model engine is unreachable")
+	}
 }
 
 // hasDotSegment reports a "." or ".." path segment, which the proxy would
