@@ -422,7 +422,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// Resource-scoped, same reasoning as the apps routes above.
 	mux.HandleFunc("GET /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabase))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleDeleteDatabase))
-	mux.HandleFunc("GET /api/v1/databases/{name}/status", rt.requireAbility(AbilityRead, rt.handleDatabaseStatus))
+	mux.HandleFunc("GET /api/v1/databases/{name}/status", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleDatabaseStatus))
 
 	// Telemetry query, the database counterpart to
 	// GET /apps/{name}/metrics, /logs, /logs/stream above: same
@@ -432,20 +432,20 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// queryResourceLogs/streamResourceLogs (metrics.go/logs.go/
 	// live_logs.go), parameterized on a resourceLookup, not a
 	// hand-copied duplicate.
-	mux.HandleFunc("GET /api/v1/databases/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseMetrics))
-	mux.HandleFunc("GET /api/v1/databases/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseLogs))
-	mux.HandleFunc("GET /api/v1/databases/{name}/logs/stream", rt.requireAbility(AbilityRead, rt.handleLiveDatabaseLogStream))
+	mux.HandleFunc("GET /api/v1/databases/{name}/metrics", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseMetrics))
+	mux.HandleFunc("GET /api/v1/databases/{name}/logs", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseLogs))
+	mux.HandleFunc("GET /api/v1/databases/{name}/logs/stream", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleLiveDatabaseLogStream))
 
 	// Slow query log, Postgres/MySQL only (database_slow_queries.go's own
 	// doc comment explains why Redis and every other engine return 400):
 	// parses the same stored container log lines the routes above expose,
 	// rather than a new telemetry source.
-	mux.HandleFunc("GET /api/v1/databases/{name}/slow-queries", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseSlowQueries))
+	mux.HandleFunc("GET /api/v1/databases/{name}/slow-queries", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseSlowQueries))
 
 	// Resource right-sizing, the database counterpart to
 	// GET /apps/{name}/resource-recommendation above
 	// (database_resource_recommendation.go).
-	mux.HandleFunc("GET /api/v1/databases/{name}/resource-recommendation", rt.requireAbility(AbilityRead, rt.handleDatabaseResourceRecommendation))
+	mux.HandleFunc("GET /api/v1/databases/{name}/resource-recommendation", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleDatabaseResourceRecommendation))
 
 	// Placement, the database counterpart to
 	// PUT /apps/{name}/node above: same AbilityRoot gating.

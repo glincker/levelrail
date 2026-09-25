@@ -644,7 +644,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// creating or deleting the backup target itself already carries.
 	// History listing is ordinary AbilityRead.
 	mux.HandleFunc("POST /api/v1/databases/{name}/backups", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleTriggerBackup))
-	mux.HandleFunc("GET /api/v1/databases/{name}/backups", rt.requireAbility(AbilityRead, rt.handleListBackupHistory))
+	mux.HandleFunc("GET /api/v1/databases/{name}/backups", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListBackupHistory))
 
 	// Instance-wide backup history across every database and app volume,
 	// the aggregated counterpart of the per-resource routes above and
@@ -667,7 +667,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// gates scoped bearer/MCP tokens), so this choice mainly matters once
 	// Phase 4 mints scoped automation tokens against this ability tier.
 	// See handleDownloadBackup's own doc comment for the full reasoning.
-	mux.HandleFunc("GET /api/v1/databases/{name}/backups/{historyId}/download", rt.requireAbility(AbilityReadSensitive, rt.handleDownloadBackup))
+	mux.HandleFunc("GET /api/v1/databases/{name}/backups/{historyId}/download", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDownloadBackup))
 
 	// Delete one specific archived backup on demand, rather than waiting
 	// for retention (BackupRetain/BackupRetainDays above) to age it out.
@@ -686,7 +686,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// past attempts is ordinary AbilityRead, matching history listing
 	// above.
 	mux.HandleFunc("POST /api/v1/databases/{name}/backups/{historyId}/verify", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleVerifyBackup))
-	mux.HandleFunc("GET /api/v1/databases/{name}/backups/{historyId}/verifications", rt.requireAbility(AbilityRead, rt.handleListBackupVerifications))
+	mux.HandleFunc("GET /api/v1/databases/{name}/backups/{historyId}/verifications", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListBackupVerifications))
 
 	// Scheduled backup config, per database (wave-2 roadmap item 6):
 	// which backup target, cron schedule, and retention count
@@ -730,7 +730,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// ordinary AbilityRead, the same boundary the backup history route
 	// above already draws.
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleTriggerRestore))
-	mux.HandleFunc("GET /api/v1/databases/{name}/restores", rt.requireAbility(AbilityRead, rt.handleListRestoreHistory))
+	mux.HandleFunc("GET /api/v1/databases/{name}/restores", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListRestoreHistory))
 
 	// Point-in-time restore (pitr.go): enabling/disabling PITR is
 	// AbilityWriteSensitive, the same tier creating a backup target or
@@ -741,11 +741,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// overwrites a live database's actual data with no way back.
 	mux.HandleFunc("POST /api/v1/databases/{name}/pitr", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleEnablePITR))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/pitr", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleDisablePITR))
-	mux.HandleFunc("GET /api/v1/databases/{name}/pitr", rt.requireAbility(AbilityRead, rt.handleGetPITRStatus))
+	mux.HandleFunc("GET /api/v1/databases/{name}/pitr", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetPITRStatus))
 	mux.HandleFunc("POST /api/v1/databases/{name}/base-backups", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleTriggerBaseBackup))
-	mux.HandleFunc("GET /api/v1/databases/{name}/base-backups", rt.requireAbility(AbilityRead, rt.handleListBaseBackupHistory))
+	mux.HandleFunc("GET /api/v1/databases/{name}/base-backups", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListBaseBackupHistory))
 	mux.HandleFunc("POST /api/v1/databases/{name}/pitr-restore", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleTriggerPITRRestore))
-	mux.HandleFunc("GET /api/v1/databases/{name}/pitr-restores", rt.requireAbility(AbilityRead, rt.handleListPITRRestoreHistory))
+	mux.HandleFunc("GET /api/v1/databases/{name}/pitr-restores", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListPITRRestoreHistory))
 
 	// App service volume backups (app_volume_backups.go/
 	// app_volume_backup_download.go/app_volume_backup_verify.go): the
@@ -780,7 +780,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// restore route does. History listing is ordinary AbilityRead, the
 	// same boundary the in-place restore history route above draws.
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore-as-new", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleCloneRestore))
-	mux.HandleFunc("GET /api/v1/databases/{name}/clone-restores", rt.requireAbility(AbilityRead, rt.handleListCloneRestores))
+	mux.HandleFunc("GET /api/v1/databases/{name}/clone-restores", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListCloneRestores))
 
 	// Object-storage attachment, per app (apps_storage.go): which
 	// connected backup_targets bucket (the same S3-compatible connection
