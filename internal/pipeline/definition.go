@@ -101,7 +101,7 @@ type Definition struct {
 // Triggers lists what starts a run. A nil field means that trigger is off.
 type Triggers struct {
 	Push        *RefTrigger    `yaml:"push,omitempty" json:"push,omitempty"`
-	PullRequest *RefTrigger    `yaml:"pull_request,omitempty" json:"pull_request,omitempty"`
+	PullRequest *PRTrigger     `yaml:"pull_request,omitempty" json:"pull_request,omitempty"`
 	Tag         *TagTrigger    `yaml:"tag,omitempty" json:"tag,omitempty"`
 	Manual      *ManualTrigger `yaml:"manual,omitempty" json:"manual,omitempty"`
 	Schedule    []string       `yaml:"schedule,omitempty" json:"schedule,omitempty"`
@@ -111,6 +111,30 @@ type Triggers struct {
 // RefTrigger filters push and pull request events by branch glob.
 type RefTrigger struct {
 	Branches StringList `yaml:"branches,omitempty" json:"branches,omitempty"`
+}
+
+// Fork policies for pull requests whose source is another repository.
+const (
+	ForksBlock   = "block"
+	ForksApprove = "approve"
+	ForksAllow   = "allow"
+)
+
+// PRTrigger filters pull request events by target branch glob and sets
+// what happens to a pull request from a fork.
+type PRTrigger struct {
+	Branches StringList `yaml:"branches,omitempty" json:"branches,omitempty"`
+	// Forks is block (the default), approve (hold the run until an
+	// approver releases it), or allow.
+	Forks string `yaml:"forks,omitempty" json:"forks,omitempty"`
+}
+
+// ForkPolicy returns the effective fork policy, defaulting to block.
+func (t *PRTrigger) ForkPolicy() string {
+	if t == nil || t.Forks == "" {
+		return ForksBlock
+	}
+	return t.Forks
 }
 
 // TagTrigger filters tag pushes by glob.

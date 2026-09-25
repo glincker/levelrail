@@ -22,7 +22,7 @@ func (t *Triggers) UnmarshalYAML(n *yaml.Node) error {
 			t.Push = &RefTrigger{}
 			err = decodeUnlessNull(val, isNull, t.Push)
 		case "pull_request":
-			t.PullRequest = &RefTrigger{}
+			t.PullRequest = &PRTrigger{}
 			err = decodeUnlessNull(val, isNull, t.PullRequest)
 		case "tag":
 			t.Tag = &TagTrigger{}

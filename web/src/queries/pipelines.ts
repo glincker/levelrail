@@ -15,6 +15,9 @@ import type {
   PipelineSaveRequest,
   PipelineStartRequest,
   PipelineStatus,
+  PipelineSyncResult,
+  PipelineSyncStatus,
+  PipelineTriggerDecision,
   PipelineValidation,
 } from '../types/pipelines'
 import { appKeys } from './apps'
@@ -31,6 +34,8 @@ export const pipelineKeys = {
     [...pipelineKeys.all(app), 'run', id] as const,
   logs: (app: string, id: string, job: string) =>
     [...pipelineKeys.all(app), 'logs', id, job] as const,
+  sync: (app: string) => [...pipelineKeys.all(app), 'sync'] as const,
+  triggers: (app: string) => [...pipelineKeys.all(app), 'triggers'] as const,
 }
 
 const TERMINAL: PipelineStatus[] = ['succeeded', 'failed', 'cancelled']
@@ -121,8 +126,14 @@ export function usePipelineRun(app: string, id: string) {
   })
 }
 
-export function usePipelineRunLogs(app: string, id: string, job: string) {
+export function usePipelineRunLogs(
+  app: string,
+  id: string,
+  job: string,
+  live = false,
+) {
   return useQuery({
+    refetchInterval: live ? 2000 : false,
     queryKey: pipelineKeys.logs(app, id, job),
     queryFn: () =>
       requestJson<PipelineLogLine[]>(
@@ -257,6 +268,74 @@ export function useDecidePipelineApproval(app: string, runId: string) {
       ),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: pipelineKeys.run(app, runId) })
+    },
+  })
+}
+
+export function usePipelineSync(app: string) {
+  return useQuery({
+    queryKey: pipelineKeys.sync(app),
+    queryFn: () =>
+      requestJson<PipelineSyncStatus>(
+        `${base(app)}/pipeline-sync`,
+        'fetch pipeline sync',
+      ),
+    retry: false,
+  })
+}
+
+export function useSetPipelineRepoTruth(app: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (repoIsTruth: boolean) =>
+      requestJson<PipelineSyncStatus>(
+        `${base(app)}/pipeline-sync`,
+        'save pipeline sync settings',
+        jsonInit('PUT', { repo_is_truth: repoIsTruth }),
+      ),
+    onSuccess: (status) => {
+      qc.setQueryData(pipelineKeys.sync(app), status)
+    },
+  })
+}
+
+export function useRunPipelineSync(app: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      requestJson<PipelineSyncResult>(
+        `${base(app)}/pipeline-sync`,
+        'sync pipelines',
+        { method: 'POST' },
+      ),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: pipelineKeys.all(app) })
+    },
+  })
+}
+
+export function usePipelineTriggers(app: string) {
+  return useQuery({
+    queryKey: pipelineKeys.triggers(app),
+    queryFn: () =>
+      requestJson<PipelineTriggerDecision[]>(
+        `${base(app)}/pipeline-triggers?limit=30`,
+        'fetch pipeline triggers',
+      ),
+  })
+}
+
+export function useDecidePipelineRunHold(app: string, runId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (decision: 'approved' | 'rejected') =>
+      requestJson<unknown>(
+        `${base(app)}/pipeline-runs/${encodeURIComponent(runId)}/hold`,
+        'decide held run',
+        jsonInit('POST', { decision }),
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: pipelineKeys.all(app) })
     },
   })
 }

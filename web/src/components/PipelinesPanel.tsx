@@ -20,6 +20,8 @@ import {
 import type { Pipeline } from '../types/pipelines'
 import { PipelineRunsTable } from './PipelineRunsTable'
 import { PipelineStatusBadge } from './PipelineStatusBadge'
+import { PipelineSyncBar } from './PipelineSyncBar'
+import { PipelineTriggerLog } from './PipelineTriggerLog'
 import { RunPipelineDialog } from './RunPipelineDialog'
 
 function EnabledSwitch({
@@ -67,6 +69,19 @@ function PipelineRow({
               {t}
             </Badge>
           ))}
+          {pipeline.source === 'repo' ? (
+            <Badge variant="muted" title={pipeline.source_sha}>
+              repo {pipeline.source_sha?.slice(0, 7)}
+            </Badge>
+          ) : null}
+          {pipeline.diverged ? (
+            <Badge
+              variant="warning"
+              title="Edited after the last sync. The next sync keeps this version unless the repository is the source of truth."
+            >
+              edited since sync
+            </Badge>
+          ) : null}
           <span>{pipeline.jobs} jobs</span>
           {pipeline.last_run ? (
             <Link
@@ -147,7 +162,8 @@ export function PipelinesPanel({ appName }: { appName: string }) {
           </div>
           {newLink}
         </div>
-        <div className="mt-3">
+        <div className="mt-3 space-y-3">
+          <PipelineSyncBar appName={appName} />
           {isLoading ? (
             <TableSkeleton columnCount={4} rowCount={2} />
           ) : error ? (
@@ -174,6 +190,7 @@ export function PipelinesPanel({ appName }: { appName: string }) {
         </h2>
         <PipelineRunsTable appName={appName} />
       </section>
+      <PipelineTriggerLog appName={appName} />
     </div>
   )
 }

@@ -32,6 +32,8 @@ export interface Pipeline {
   last_run?: PipelineRunBrief
   created_at: string
   updated_at: string
+  source_sha?: string
+  diverged?: boolean
 }
 
 export interface PipelineStep {
@@ -94,6 +96,50 @@ export interface PipelineRun {
   finished_at?: string
   jobs?: PipelineJob[]
   approvals?: PipelineApproval[]
+  hold?: PipelineHold
+}
+
+export interface PipelineHold {
+  state: 'pending' | 'approved' | 'rejected'
+  reason: string
+  by?: string
+  at?: string
+}
+
+export interface PipelineSyncStatus {
+  connected: boolean
+  repo_is_truth: boolean
+  last_sha?: string
+  last_synced_at?: string
+  last_error?: string
+}
+
+export type PipelineSyncOutcome =
+  'created' | 'updated' | 'unchanged' | 'diverged' | 'invalid' | 'refused'
+
+export interface PipelineSyncItem {
+  file: string
+  name: string
+  outcome: PipelineSyncOutcome
+  message?: string
+}
+
+export interface PipelineSyncResult {
+  sha: string
+  dir?: string
+  items: PipelineSyncItem[]
+}
+
+export interface PipelineTriggerDecision {
+  id: number
+  pipeline?: string
+  event: string
+  ref?: string
+  sha?: string
+  decision: 'started' | 'held' | 'skipped' | 'failed'
+  reason: string
+  run_id?: string
+  created_at: string
 }
 
 export interface PipelineIssue {

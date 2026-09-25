@@ -33,6 +33,10 @@ func (f *fakePipelineRunner) Rerun(context.Context, string, string) (store.Pipel
 	return store.PipelineRun{ID: "run2", Number: 2, Status: store.PipelineStatusQueued, CreatedAt: time.Now()}, nil
 }
 
+func (f *fakePipelineRunner) DecideHold(context.Context, string, bool, string) (bool, error) {
+	return false, nil
+}
+
 func (f *fakePipelineRunner) Nudge() { f.nudges++ }
 
 const apiPipelineYAML = "version: 1\nname: ci\njobs:\n  t:\n    image: alpine\n    steps:\n      - run: echo hi\n"

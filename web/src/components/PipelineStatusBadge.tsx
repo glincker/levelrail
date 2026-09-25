@@ -14,9 +14,11 @@ import { Badge } from '@/components/ui/badge'
 export function PipelineStatusIcon({
   status,
   className,
+  spin = true,
 }: {
   status: PipelineStatus
   className?: string
+  spin?: boolean
 }) {
   switch (status) {
     case 'succeeded':
@@ -26,7 +28,11 @@ export function PipelineStatusIcon({
     case 'running':
       return (
         <CircleNotchIcon
-          className={`${className ?? ''} animate-spin motion-reduce:animate-none`}
+          className={
+            spin
+              ? `${className ?? ''} animate-spin motion-reduce:animate-none`
+              : className
+          }
           aria-hidden="true"
         />
       )

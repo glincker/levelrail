@@ -22,6 +22,8 @@ type PipelineResource struct {
 	LastRun   *RunBrief `json:"last_run,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	SourceSHA string    `json:"source_sha,omitempty"`
+	Diverged  bool      `json:"diverged,omitempty"`
 }
 
 // RunBrief is a pipeline's most recent run summary.
@@ -65,6 +67,7 @@ type PipelineRunResource struct {
 	FinishedAt   *time.Time         `json:"finished_at,omitempty"`
 	Jobs         []PipelineJobView  `json:"jobs,omitempty"`
 	Approvals    []PipelineApproval `json:"approvals,omitempty"`
+	Hold         *PipelineHold      `json:"hold,omitempty"`
 }
 
 // PipelineJobView is one job of a run with its steps.

@@ -526,6 +526,17 @@ levelrail pipelines cancel <app> <run-id> [flags]
 ```
 levelrail pipelines approve <app> <run-id> [--reject] [--comment TEXT] [--approval ID] [flags]
 ```
+decide approval gates, or release a run held for approval
+
+```
+levelrail pipelines sync <app> [--repo-truth=true|false] [flags]
+```
+sync pipeline files from the repository now, or set repository as source of truth
+
+```
+levelrail pipelines triggers <app> [flags]
+```
+why recent git events did or did not start runs
 ## Lb
 
 ```

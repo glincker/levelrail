@@ -106,8 +106,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 72 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 72 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 77 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 77 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -191,6 +191,11 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/loadbalancer/import | AbilityWrite | handleImportLoadBalancer |
 | GET | /api/v1/apps/{name}/loadbalancer/status | AbilityRead | handleLoadBalancerStatus |
 | GET | /api/v1/apps/{name}/loadbalancer/export | AbilityRead | handleExportLoadBalancer |
+| POST | /api/v1/apps/{name}/pipeline-runs/{id}/hold | AbilityDeploy | handleDecidePipelineRunHold |
+| GET | /api/v1/apps/{name}/pipeline-triggers | AbilityRead | handleListPipelineTriggers |
+| GET | /api/v1/apps/{name}/pipeline-sync | AbilityRead | handleGetPipelineSync |
+| PUT | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleSetPipelineSync |
+| POST | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleRunPipelineSync |
 
 :::
 

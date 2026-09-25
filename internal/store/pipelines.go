@@ -46,14 +46,19 @@ type Pipeline struct {
 	Enabled   bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	// SourceSHA is the commit a repo-sourced pipeline was synced from.
+	SourceSHA string
+	// SyncedHash is the SHA-256 of the YAML as synced; a different hash of
+	// the current YAML means the definition was edited afterwards.
+	SyncedHash string
 }
 
-const pipelineCols = `id, app_name, name, source, yaml, enabled, created_at, updated_at`
+const pipelineCols = `id, app_name, name, source, yaml, enabled, created_at, updated_at, source_sha, synced_hash`
 
 func scanPipeline(scan func(...any) error) (Pipeline, error) {
 	var p Pipeline
 	var created, updated string
-	if err := scan(&p.ID, &p.AppName, &p.Name, &p.Source, &p.YAML, &p.Enabled, &created, &updated); err != nil {
+	if err := scan(&p.ID, &p.AppName, &p.Name, &p.Source, &p.YAML, &p.Enabled, &created, &updated, &p.SourceSHA, &p.SyncedHash); err != nil {
 		return Pipeline{}, err
 	}
 	var err error
@@ -66,18 +71,19 @@ func scanPipeline(scan func(...any) error) (Pipeline, error) {
 	return p, nil
 }
 
-// SavePipeline inserts p, or replaces the YAML and enabled flag of the
-// existing pipeline with the same app and name. The stored row is returned.
+// SavePipeline inserts p, or replaces the YAML, enabled flag, and sync
+// bookkeeping of the existing pipeline with the same app and name. The stored row is returned.
 func (db *DB) SavePipeline(ctx context.Context, p Pipeline) (Pipeline, error) {
 	if p.Source == "" {
 		p.Source = "ui"
 	}
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO pipelines (id, app_name, name, source, yaml, enabled, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO pipelines (id, app_name, name, source, yaml, enabled, created_at, updated_at, source_sha, synced_hash)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (app_name, name) DO UPDATE SET
-			source = excluded.source, yaml = excluded.yaml, enabled = excluded.enabled, updated_at = excluded.updated_at
-	`, p.ID, p.AppName, p.Name, p.Source, p.YAML, p.Enabled, formatTime(p.CreatedAt), formatTime(p.UpdatedAt))
+			source = excluded.source, yaml = excluded.yaml, enabled = excluded.enabled, updated_at = excluded.updated_at,
+			source_sha = excluded.source_sha, synced_hash = excluded.synced_hash
+	`, p.ID, p.AppName, p.Name, p.Source, p.YAML, p.Enabled, formatTime(p.CreatedAt), formatTime(p.UpdatedAt), p.SourceSHA, p.SyncedHash)
 	if err != nil {
 		return Pipeline{}, fmt.Errorf("store: save pipeline %q: %w", p.Name, err)
 	}
