@@ -495,6 +495,26 @@ func (rt *Router) callerHasAbility(r *http.Request, ability string) bool {
 	return hasAbility(rec.Abilities, ability)
 }
 
+// callerPrincipal resolves the requesting principal's type, ID and abilities
+// for IAM policy filtering inside a list handler.
+func (rt *Router) callerPrincipal(r *http.Request) (principalType, principalID string, abilities []string, err error) {
+	if userID, ok := rt.currentSessionUserID(r); ok {
+		user, err := rt.auth.GetUserByID(r.Context(), userID)
+		if err != nil {
+			return "", "", nil, fmt.Errorf("api: load caller user %q: %w", userID, err)
+		}
+		return store.PrincipalTypeUser, userID, user.Abilities, nil
+	}
+	if token, ok := bearerToken(r); ok {
+		rec, err := rt.tokens.GetAPITokenByHash(r.Context(), hashToken(token))
+		if err != nil {
+			return "", "", nil, fmt.Errorf("api: load caller token: %w", err)
+		}
+		return store.PrincipalTypeToken, rec.ID, rec.Abilities, nil
+	}
+	return "", "", nil, errors.New("api: no authenticated principal on request")
+}
+
 // hasValidSession reports whether r carries a session cookie that
 // resolves to a live session. Factored out of requireAuth so
 // requireAbility can check it without duplicating the cookie-lookup

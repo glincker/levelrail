@@ -8,6 +8,13 @@ Set `replicas: 3` and the control plane starts three containers. A load balancer
 
 Without a load balancer, a domain routes to one container (the first replica). Turn it on and the domain routes to every running replica.
 
+## Where to find it
+
+- **Dashboard, all apps:** the **Load balancers** page in the sidebar lists every configured balancer with its state (`balancing`, `degraded`, `none`) and healthy upstream count. With none configured it offers a **Configure a load balancer** button that lets you pick an app.
+- **Dashboard, one app:** the **Load balancer** tab inside an app holds the settings, the live upstream table and the export.
+- **CLI:** `levelrail lb list` for the overview, `levelrail lb show|set|status <app>` per app.
+- **API and MCP:** `GET /api/v1/loadbalancers` and the `list_load_balancers` tool.
+
 ## Enable it
 
 Dashboard: open the app, then **Load balancer** in the sidebar, then **Set up load balancer**.

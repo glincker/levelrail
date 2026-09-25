@@ -24,6 +24,8 @@ func runLB(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, lbUsage(prog))
 		return exitOK
+	case "list":
+		return runLBList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "show":
 		return runLBShow(prog, args[1:], stdout, stderr, lookupEnv)
 	case "set":
@@ -45,6 +47,7 @@ func runLB(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 
 func lbUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
+  %[1]s lb list [--state S] [--search Q] [flags]       every load balancer across apps, with upstream health
   %[1]s lb show <app> [flags]                          show an app's load balancer config
   %[1]s lb set <app> [--algorithm ...] [flags]         create or change the load balancer (only the flags you pass change)
   %[1]s lb clear <app> [flags]                         remove the load balancer, back to a single upstream
