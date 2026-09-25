@@ -92,6 +92,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "shared-env":
 		return runSharedEnv(prog, args[1:], stdout, stderr, lookupEnv)
+	case "storage":
+		return runStorage(prog, args[1:], stdout, stderr, lookupEnv)
+	case "logs":
+		return runLogs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backup-targets":
 		return runBackupTargets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "registry-credentials":
@@ -188,6 +192,8 @@ Usage:
   %[1]s channels list|create|delete|test [flags]           manage notification channels (Slack, Discord, Telegram, email, Pushover, webhook)
   %[1]s shared-env list|set|delete --scope SCOPE --id ID [flags]   manage project/organization/environment-scoped shared env vars, plain or secret
   %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations
+  %[1]s storage providers|list|add|test|delete [flags]   manage S3-compatible storage destinations (AWS S3, R2, B2, MinIO, Wasabi, custom)
+  %[1]s logs archive set|status|remove, logs dump|ls|fetch [flags]   archive node-local logs to a storage destination
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s registry status|enable|disable [flags]                 manage Levelrail's own built-in container registry
   %[1]s flags create|list|get|set|delete [flags]              manage feature flags, read live by a running app via GET /api/v1/flags/evaluate/{key}
