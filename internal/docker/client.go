@@ -40,6 +40,9 @@ type Client struct {
 	// before instance labeling existed.
 	instanceLabelKey   string
 	instanceLabelValue string
+	// hardening is the policy Create applies; the zero value (plain
+	// &Client{} in tests) has no mode and applies nothing.
+	hardening HardeningConfig
 }
 
 // ClientOption configures optional Client behavior at construction time.
@@ -74,7 +77,9 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("docker: new client: %w", err)
 	}
-	c := &Client{cli: cli}
+	hardening, herr := HardeningFromEnv()
+	logHardeningEnv(herr)
+	c := &Client{cli: cli, hardening: hardening}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -288,6 +293,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 	}
 
 	hostConfig := buildHostConfig(spec, portBindings)
+	c.hardening.apply(hostConfig, spec)
 
 	resp, err := c.cli.ContainerCreate(ctx,
 		&container.Config{
