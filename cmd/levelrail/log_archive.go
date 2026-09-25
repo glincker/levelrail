@@ -22,6 +22,19 @@ func setupLogArchive(ctx context.Context, logger *slog.Logger, db *store.DB, tel
 	opts := objectstore.OptionsFromEnv(os.LookupEnv)
 	resolver := &objectstore.Resolver{Store: db, Secrets: secretsManager}
 	archiver := objectstore.NewArchiver(db, resolver, telemetryDB, logger, opts)
-	router.SetStorage(api.StorageDeps{Options: db, Archive: db, Clients: resolver, Archiver: archiver, ArchiveRoot: opts.Prefix})
+	buildCache := newBuildCache(logger, db, secretsManager)
+	router.SetStorage(api.StorageDeps{
+		Options: db, Archive: db, Clients: resolver, Archiver: archiver, ArchiveRoot: opts.Prefix,
+		BuildCache: buildCache, BuildCacheSettings: db,
+	})
 	go archiver.Run(ctx)
+}
+
+func newBuildCache(logger *slog.Logger, db *store.DB, secretsManager *secrets.Manager) *objectstore.BuildCache {
+	return &objectstore.BuildCache{
+		Store:    db,
+		Resolver: &objectstore.Resolver{Store: db, Secrets: secretsManager},
+		Options:  objectstore.BuildCacheOptionsFromEnv(os.LookupEnv),
+		Logger:   logger,
+	}
 }

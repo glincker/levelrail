@@ -116,10 +116,28 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		}
 	}
 
-	if rt.deployRecorder == nil {
-		return id, fallback, finish, setCommit
+	inner := fallback
+	if rt.deployRecorder != nil {
+		inner = rt.deployRecorder.Progress(id)
 	}
-	return id, rt.deployRecorder.Progress(id), finish, setCommit
+	return id, rt.recordCacheWarning(id, inner), finish, setCommit
+}
+
+// recordCacheWarning stores a build cache warning on the attempt row while
+// passing every event through.
+func (rt *Router) recordCacheWarning(id string, next func(build.ProgressEvent)) func(build.ProgressEvent) {
+	setter, ok := rt.deployAttempts.(cacheWarningSetter)
+	if !ok {
+		return next
+	}
+	return func(ev build.ProgressEvent) {
+		if ev.CacheWarning != "" {
+			if err := setter.SetDeployAttemptCacheWarning(context.Background(), id, ev.CacheWarning); err != nil {
+				rt.logger.Warn("api: record cache warning failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
+			}
+		}
+		next(ev)
+	}
 }
 
 // emitStep records one named pipeline-phase transition for id (see
@@ -145,6 +163,8 @@ type deployAttemptResource struct {
 	FinishedAt        *time.Time `json:"finished_at,omitempty"`
 	Error             string     `json:"error,omitempty"`
 	DetectedFramework string     `json:"detected_framework,omitempty"`
+	// CacheWarning is set when the build carried on without its remote cache.
+	CacheWarning string `json:"cache_warning,omitempty"`
 }
 
 func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
@@ -189,11 +209,29 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	var warnings map[string]string
+	if l, ok := rt.deployAttempts.(cacheWarningLister); ok {
+		if warnings, err = l.ListDeployAttemptCacheWarnings(r.Context(), name); err != nil {
+			rt.logger.Warn("api: list deploy attempt cache warnings failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
 	out := make([]deployAttemptResource, 0, len(attempts))
 	for _, a := range attempts {
-		out = append(out, toDeployAttemptResource(a))
+		res := toDeployAttemptResource(a)
+		res.CacheWarning = warnings[a.ID]
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// cacheWarningLister and cacheWarningSetter are optional deployAttempts
+// capabilities, so stores that predate build cache warnings keep working.
+type cacheWarningLister interface {
+	ListDeployAttemptCacheWarnings(ctx context.Context, serviceName string) (map[string]string, error)
+}
+
+type cacheWarningSetter interface {
+	SetDeployAttemptCacheWarning(ctx context.Context, id, warning string) error
 }
 
 // sseLogEvent is the exact JSON shape

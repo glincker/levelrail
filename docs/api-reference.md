@@ -665,6 +665,11 @@ Routes that do not fit an existing group.
 | GET | /api/v1/log-archive/runs | AbilityRead | handleListLogArchiveRuns |
 | GET | /api/v1/log-archive/objects | AbilityRead | handleListLogArchiveObjects |
 | GET | /api/v1/log-archive/objects/download | AbilityRead | handleDownloadLogArchiveObject |
+| GET | /api/v1/build-cache | AbilityRead | handleListBuildCache |
+| PUT | /api/v1/build-cache | AbilityWrite | handleSetBuildCache |
+| DELETE | /api/v1/build-cache | AbilityWrite | handleDeleteBuildCache |
+| GET | /api/v1/build-cache/stats | AbilityRead | handleBuildCacheStats |
+| POST | /api/v1/build-cache/clear | AbilityWrite | handleClearBuildCache |
 
 ## See also
 
