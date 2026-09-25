@@ -41,7 +41,9 @@ func pipelinesUsage(prog string) string {
   %[1]s pipelines runs <app> [<run-id>] [--pipeline N] [--limit N] [flags]   list runs, or show one run's jobs and steps
   %[1]s pipelines logs <app> <run-id> [--job KEY] [--follow] [flags]
   %[1]s pipelines cancel <app> <run-id> [flags]
-  %[1]s pipelines approve <app> <run-id> [--reject] [--comment TEXT] [--approval ID] [flags]
+  %[1]s pipelines approve <app> <run-id> [--reject] [--comment TEXT] [--approval ID] [flags]   decide approval gates, or release a run held for approval
+  %[1]s pipelines sync <app> [--repo-truth=true|false] [flags]   sync pipeline files from the repository now, or set repository as source of truth
+  %[1]s pipelines triggers <app> [flags]                   why recent git events did or did not start runs
 
 Pipelines live in the control plane per app, or in the repository under a
 pipeline directory. Run "%[1]s pipelines <subcommand> -h" for its flags.
@@ -76,6 +78,10 @@ func runPipelines(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runPipelinesCancel(prog, rest, stdout, stderr, lookupEnv)
 	case "approve":
 		return runPipelinesApprove(prog, rest, stdout, stderr, lookupEnv)
+	case "sync":
+		return runPipelinesSync(prog, rest, stdout, stderr, lookupEnv)
+	case "triggers":
+		return runPipelinesTriggers(prog, rest, stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "%s: unknown pipelines subcommand %q\n\n%s", prog, args[0], pipelinesUsage(prog))
 	return exitUsage
@@ -411,6 +417,14 @@ func runPipelinesApprove(prog string, args []string, stdout, stderr io.Writer, l
 	decision := "approved"
 	if *reject {
 		decision = "rejected"
+	}
+	if run.Hold != nil && run.Hold.State == "pending" && *only == 0 {
+		if err := client.DecidePipelineRunHold(ctx, pos[0], pos[1], decision); err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("decide hold on run %q: %w", pos[1], err))
+		}
+		return c.write(of, map[string]string{"decision": decision, "hold": run.Hold.Reason}, func() {
+			_, _ = fmt.Fprintf(stdout, "%s run %s held for approval (%s)\n", decision, pos[1], run.Hold.Reason)
+		})
 	}
 	var decided []int64
 	for _, a := range run.Approvals {
