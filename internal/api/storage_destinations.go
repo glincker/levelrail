@@ -57,6 +57,10 @@ func WithStorage(d StorageDeps) Option {
 	return func(rt *Router) { rt.storage = &d }
 }
 
+// SetStorage enables the storage routes after construction, for wiring that
+// needs the built Router first. Call it before the server starts serving.
+func (rt *Router) SetStorage(d StorageDeps) { rt.storage = &d }
+
 func (rt *Router) storageOrNotImplemented(w http.ResponseWriter) (*StorageDeps, bool) {
 	if rt.storage == nil {
 		writeError(w, http.StatusNotImplemented, "storage destinations are not configured on this control plane")
