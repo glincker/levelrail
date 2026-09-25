@@ -58,6 +58,7 @@ type Server struct {
 	store    EnrollStore
 	registry *Registry
 	logger   *slog.Logger
+	gpuSink  GPUSink // nil is valid: GPU reports are ignored
 }
 
 // Option configures optional Server behavior.
@@ -212,7 +213,7 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 	// collapses into it, which is fine, since all heartbeatLoop does with
 	// the signal is refresh a timestamp.
 	heartbeats := make(chan struct{}, 1)
-	m := newMux(stream, func() {
+	m := newMuxWithHandlers(stream, s.onGPUReport(nodeID), func() {
 		select {
 		case heartbeats <- struct{}{}:
 		default:
@@ -239,6 +240,23 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 
 	<-m.closed
 	return nil
+}
+
+// onGPUReport returns the mux callback persisting nodeID's GPU reports,
+// or nil when no sink is configured. It runs on the stream's recv
+// goroutine, so the write happens off it.
+func (s *Server) onGPUReport(nodeID string) func(*agentpb.GPUReport) {
+	if s.gpuSink == nil {
+		return nil
+	}
+	return func(r *agentpb.GPUReport) {
+		info := gpuInfoFromPB(r)
+		go func() {
+			if err := s.gpuSink.SetNodeGPU(context.Background(), nodeID, info); err != nil {
+				s.logger.Warn("agent: session: store gpu report failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
+			}
+		}()
+	}
 }
 
 // heartbeatLoop touches last_seen_at for nodeID every time a signal

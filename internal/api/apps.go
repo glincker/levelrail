@@ -818,6 +818,14 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	if msg, err := rt.gpuPlacementError(r.Context(), existing, req.NodeID); err != nil {
+		rt.logger.Error("api: set app node: gpu check failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	} else if msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
 	if err := rt.applyPlainNodeMove(r.Context(), name, existing.NodeID, req.NodeID); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return

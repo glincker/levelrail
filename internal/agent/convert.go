@@ -23,6 +23,7 @@ func portBindingToPB(p docker.PortBinding) *agentpb.PortBinding {
 		ContainerPort: int32(p.ContainerPort), //nolint:gosec // port numbers fit int32 by construction (0-65535)
 		HostPort:      int32(p.HostPort),      //nolint:gosec // same
 		Protocol:      p.Protocol,
+		HostIp:        p.HostIP,
 	}
 }
 
@@ -34,6 +35,7 @@ func portBindingFromPB(p *agentpb.PortBinding) docker.PortBinding {
 		ContainerPort: int(p.ContainerPort),
 		HostPort:      int(p.HostPort),
 		Protocol:      p.Protocol,
+		HostIP:        p.HostIp,
 	}
 }
 
@@ -107,16 +109,33 @@ func volumesFromPB(vs []*agentpb.VolumeMount) []docker.VolumeMount {
 
 func containerSpecToPB(s docker.ContainerSpec) *agentpb.ContainerSpec {
 	return &agentpb.ContainerSpec{
-		Name:        s.Name,
-		Image:       s.Image,
-		Ports:       portBindingsToPB(s.Ports),
-		Env:         s.Env,
-		Resources:   resourcesToPB(s.Resources),
-		Volumes:     volumesToPB(s.Volumes),
-		Dns:         s.DNS,
-		CapAdd:      s.CapAdd,
-		NetworkMode: s.NetworkMode,
+		Name:         s.Name,
+		Image:        s.Image,
+		Ports:        portBindingsToPB(s.Ports),
+		Env:          s.Env,
+		Resources:    resourcesToPB(s.Resources),
+		Volumes:      volumesToPB(s.Volumes),
+		Dns:          s.DNS,
+		CapAdd:       s.CapAdd,
+		NetworkMode:  s.NetworkMode,
+		Gpu:          gpuToPB(s.GPU),
+		Command:      s.Command,
+		ShmSizeBytes: s.ShmSizeBytes,
 	}
+}
+
+func gpuToPB(g *docker.GPURequest) *agentpb.GPURequest {
+	if g == nil {
+		return nil
+	}
+	return &agentpb.GPURequest{Count: int32(g.Count), DeviceIds: g.DeviceIDs} //nolint:gosec // GPU counts are single digits
+}
+
+func gpuFromPB(g *agentpb.GPURequest) *docker.GPURequest {
+	if g == nil {
+		return nil
+	}
+	return &docker.GPURequest{Count: int(g.GetCount()), DeviceIDs: g.GetDeviceIds()}
 }
 
 func containerSpecFromPB(s *agentpb.ContainerSpec) docker.ContainerSpec {
@@ -124,15 +143,18 @@ func containerSpecFromPB(s *agentpb.ContainerSpec) docker.ContainerSpec {
 		return docker.ContainerSpec{}
 	}
 	return docker.ContainerSpec{
-		Name:        s.Name,
-		Image:       s.Image,
-		Ports:       portBindingsFromPB(s.Ports),
-		Env:         s.Env,
-		Resources:   resourcesFromPB(s.Resources),
-		Volumes:     volumesFromPB(s.Volumes),
-		DNS:         s.Dns,
-		CapAdd:      s.CapAdd,
-		NetworkMode: s.NetworkMode,
+		Name:         s.Name,
+		Image:        s.Image,
+		Ports:        portBindingsFromPB(s.Ports),
+		Env:          s.Env,
+		Resources:    resourcesFromPB(s.Resources),
+		Volumes:      volumesFromPB(s.Volumes),
+		DNS:          s.Dns,
+		CapAdd:       s.CapAdd,
+		NetworkMode:  s.NetworkMode,
+		GPU:          gpuFromPB(s.Gpu),
+		Command:      s.Command,
+		ShmSizeBytes: s.ShmSizeBytes,
 	}
 }
 

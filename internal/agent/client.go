@@ -244,7 +244,7 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 		heartbeatInterval = cfg.heartbeatInterval
 	}
 
-	return serveSession(ctx, stream, rt, cfg.builder, cfg.mesh, cfg.meshNodeID, heartbeatInterval, logger)
+	return serveSession(ctx, stream, rt, cfg.builder, cfg.mesh, cfg.meshNodeID, heartbeatInterval, cfg.gpuProbe, logger)
 }
 
 // sessionConfig holds RunSession's optional wiring.
@@ -255,6 +255,7 @@ type sessionConfig struct {
 	heartbeatInterval time.Duration
 	keepaliveTime     time.Duration
 	keepaliveTimeout  time.Duration
+	gpuProbe          GPUProbe
 }
 
 // SessionOption configures optional RunSession behavior.
@@ -320,7 +321,7 @@ func WithKeepalive(pingTime, timeout time.Duration) SessionOption {
 // is not safe for concurrent Send calls, the identical reasoning mux.go's
 // own sendMu already documents for the control-plane side of this same
 // connection.
-func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runtime, builder BuildRunner, mesh MeshApplier, meshNodeID string, heartbeatInterval time.Duration, logger *slog.Logger) error {
+func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runtime, builder BuildRunner, mesh MeshApplier, meshNodeID string, heartbeatInterval time.Duration, gpuProbe GPUProbe, logger *slog.Logger) error {
 	var sendMu sync.Mutex
 	send := func(msg *agentpb.AgentMessage) {
 		sendMu.Lock()
@@ -342,6 +343,9 @@ func serveSession(ctx context.Context, stream agentClientStream, rt docker.Runti
 	heartbeatDone := make(chan struct{})
 	defer close(heartbeatDone)
 	go heartbeatLoop(send, heartbeatInterval, heartbeatDone)
+	if gpuProbe != nil {
+		go gpuReportLoop(ctx, send, gpuProbe, gpuReportInterval, heartbeatDone)
+	}
 
 	for {
 		msg, err := stream.Recv()

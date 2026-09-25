@@ -40,6 +40,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/netguard"
 	"github.com/GLINCKER/levelrail/internal/objectstore"
 	"github.com/GLINCKER/levelrail/internal/probe"
@@ -494,7 +495,7 @@ func run(logger *slog.Logger) error {
 			PermitWithoutStream: true,
 		}),
 	)
-	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger))
+	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger, agent.WithGPUSink(db)))
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
 		if err := agentGRPCServer.Serve(agentListener); err != nil {
@@ -685,11 +686,13 @@ func run(logger *slog.Logger) error {
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),
 		ingressHTTPAddr:              ingressHTTPAddr(),
+		models:                       newModelDeps(),
 	}))
+	startLocalGPUCollector(ctx, db, client, logger)
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
-		if err := collector.Run(ctx, telemetryTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
+		if err := collector.Run(ctx, withModelTelemetryTargets(telemetryTargets(db, client), db, client, b.ShortName)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("telemetry collector stopped", slog.String("error", err.Error()))
 		}
 	}()
@@ -2248,8 +2251,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
 
+	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
+	opts = append(opts, api.WithModels(modelSvc))
 	rt := api.NewRouter(logger, b, db, opts...)
-	return composeMux(rt.Handler(), webhookHandler, web.Handler()), rt
+	return modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, web.Handler())), rt
 }
 
 // composeMux wires the three top-level handlers rootHandler serves
@@ -3019,6 +3024,7 @@ type dynamicSourceDeps struct {
 	// host can run its ingress on non-default ports.
 	ingressHTTPSAddr string
 	ingressHTTPAddr  string
+	models           *modelDeps
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -3035,10 +3041,15 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		if err != nil {
 			return nil, fmt.Errorf("list nodes: %w", err)
 		}
+		modelRows, err := deps.db.ListModels(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list models: %w", err)
+		}
 
 		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+len(nodes)+2)
 		controllers = append(controllers, appControllersFor(deps, services)...)
 		controllers = append(controllers, databaseControllersFor(ctx, deps, databases)...)
+		controllers = append(controllers, modelControllersFor(deps, modelRows)...)
 		for _, n := range nodes {
 			controllers = append(controllers, nodehealth.New(n.ID, deps.db, deps.heartbeatTimeout))
 		}
@@ -3048,6 +3059,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithPublicHost(deps.publicHost),
 			ingressreconcile.WithListenAddr(deps.ingressHTTPSAddr),
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
+			ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}),
 		}
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial))
@@ -3152,6 +3164,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
+		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
 	}
 	if deps.secretsManager != nil {
 		appOpts = append(appOpts, application.WithSecretResolver(deps.secretsManager))

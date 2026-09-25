@@ -238,6 +238,9 @@ type Resources struct {
 	// CPUSet pins the container to specific host CPUs, Docker's own
 	// cpuset-cpus format (e.g. "0-3" or "0,2").
 	CPUSet string `yaml:"cpuSet,omitempty"`
+	// GPU requests NVIDIA GPUs; the service is placed only on a node
+	// with a usable GPU. nil means no GPU.
+	GPU *GPU `yaml:"gpu,omitempty"`
 }
 
 // Supported managed database engines: Postgres and Redis shipped as

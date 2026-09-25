@@ -165,7 +165,21 @@
         "memory": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
         "cpu": { "type": "number", "exclusiveMinimum": 0 },
         "swapMemory": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
-        "cpuSet": { "type": "string", "pattern": "^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$" }
+        "cpuSet": { "type": "string", "pattern": "^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$" },
+        "gpu": {
+          "oneOf": [
+            { "const": "all" },
+            { "type": "integer", "minimum": 1 },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "count": { "oneOf": [{ "const": "all" }, { "type": "integer", "minimum": 1 }] },
+                "devices": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+              }
+            }
+          ]
+        }
       }
     },
     "envValue": {

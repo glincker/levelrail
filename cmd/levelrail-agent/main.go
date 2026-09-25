@@ -32,6 +32,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/gpu"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
 
@@ -160,6 +161,11 @@ func runReconnectLoop(ctx context.Context, addr string, id *agent.Identity, rt d
 	}
 	if meshCfg != nil {
 		opts = append(opts, agent.WithMesh(id.NodeID, meshCfg.sink))
+	}
+	if rl, ok := rt.(gpu.RuntimeLister); ok {
+		opts = append(opts, agent.WithGPUProbe(func(ctx context.Context) gpu.Info {
+			return gpu.Detect(ctx, gpu.ExecRunner{}, rl)
+		}))
 	}
 	if d := heartbeatIntervalFromEnv(); d > 0 {
 		opts = append(opts, agent.WithHeartbeatInterval(d))

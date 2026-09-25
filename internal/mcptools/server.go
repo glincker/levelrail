@@ -56,6 +56,7 @@ func NewServer(client *apiclient.Client) *mcp.Server {
 	registerFailedDeployTools(server, client)
 	registerLogArchiveTools(server, client)
 	registerPipelineTools(server, client)
+	registerModelTools(server, client)
 
 	return server
 }

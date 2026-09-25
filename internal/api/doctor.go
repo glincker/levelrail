@@ -104,6 +104,7 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		rt.doctorCheckCPU(),
 	}
 	checks = append(checks, rt.doctorRunNetworkChecks(ctx, httpPort, httpsPort)...)
+	checks = append(checks, rt.doctorCheckGPUs(ctx)...)
 
 	ok := true
 	for _, c := range checks {

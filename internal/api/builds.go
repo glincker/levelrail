@@ -531,6 +531,9 @@ func specResourcesFromStore(r store.ServiceResources) *spec.Resources {
 		out.SwapMemory = formatMemoryBytes(r.SwapMemoryBytes)
 	}
 	out.CPUSet = r.CPUSetCPUs
+	if r.GPU != nil {
+		out.GPU = &spec.GPU{Count: r.GPU.Count, Devices: r.GPU.DeviceIDs}
+	}
 	return out
 }
 
