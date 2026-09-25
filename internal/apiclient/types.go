@@ -2137,6 +2137,8 @@ type DrainNodeResponse struct {
 	MovedDatabases []string `json:"moved_databases"`
 	Errors         []string `json:"errors,omitempty"`
 	AutoPlaced     bool     `json:"auto_placed,omitempty"`
+	// Warnings lists checks that could not run, so the drain may be incomplete.
+	Warnings []string `json:"warnings,omitempty"`
 	// Blocked names apps and models left on the node, with the reason.
 	Blocked []DrainBlockedResource `json:"blocked,omitempty"`
 }

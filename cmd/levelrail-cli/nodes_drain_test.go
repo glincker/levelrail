@@ -99,3 +99,24 @@ func TestRun_NodesDrain_Help(t *testing.T) {
 		t.Errorf("stderr = %q, want usage text", stderr)
 	}
 }
+
+func TestRun_NodesDrain_Warnings(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMultiStatus)
+		_ = json.NewEncoder(w).Encode(drainNodeResponse{
+			MovedServices: []string{"web"},
+			Warnings:      []string{"models on this node could not be checked: list models: db down"},
+		})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"nodes", "drain", "nd_1", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitAPIError {
+		t.Fatalf("exit = %d, want %d", got, exitAPIError)
+	}
+	if !strings.Contains(stdout.String(), "could not be checked") {
+		t.Errorf("stdout = %q, want the warning listed", stdout.String())
+	}
+}

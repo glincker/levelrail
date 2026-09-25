@@ -357,6 +357,9 @@ type drainNodeResponse struct {
 	MovedServices  []string `json:"moved_services"`
 	MovedDatabases []string `json:"moved_databases"`
 	Errors         []string `json:"errors,omitempty"`
+	// Warnings lists checks that could not run (e.g. models could not be
+	// listed), so a 207 with no errors still says the drain may be incomplete.
+	Warnings []string `json:"warnings,omitempty"`
 	// Blocked names apps left on the node because no GPU node can host
 	// them, with the per-node reason.
 	Blocked []drainBlocked `json:"blocked,omitempty"`
@@ -455,6 +458,7 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 			resp.Errors = append(resp.Errors, fmt.Sprintf("service %s: %s", svc.Name, err.Error()))
 			continue
 		}
+		placer.commit()
 		resp.MovedServices = append(resp.MovedServices, svc.Name)
 		rt.teardownServiceContainers(svc.Name, id)
 	}
@@ -470,17 +474,22 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 			resp.Errors = append(resp.Errors, fmt.Sprintf("database %s: %s", d.Name, err.Error()))
 			continue
 		}
+		placer.commit()
 		resp.MovedDatabases = append(resp.MovedDatabases, d.Name)
 		rt.teardownDatabaseContainer(d.Name, id)
 	}
 
 	resp.AutoPlaced = placer.autoPlaced
-	for _, b := range rt.drainModelBlocks(r.Context(), id) {
+	modelBlocks, modelErr := rt.drainModelBlocks(r.Context(), id)
+	if modelErr != nil {
+		resp.Warnings = append(resp.Warnings, "models on this node could not be checked: "+modelErr.Error())
+	}
+	for _, b := range modelBlocks {
 		resp.Blocked = append(resp.Blocked, b)
 		resp.Errors = append(resp.Errors, fmt.Sprintf("model %s: %s", b.Name, b.Reason))
 	}
 	status := http.StatusOK
-	if len(resp.Errors) > 0 {
+	if len(resp.Errors) > 0 || len(resp.Warnings) > 0 {
 		status = http.StatusMultiStatus
 	}
 	writeJSON(w, status, resp)

@@ -11,3 +11,7 @@ export function drainFailures(result: DrainNodeResponse): string[] {
     (e) => !blockedPrefixes.some((p) => e.startsWith(p)),
   )
 }
+
+export function drainWarnings(result: DrainNodeResponse): string[] {
+  return result.warnings ?? []
+}
