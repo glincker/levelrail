@@ -18,6 +18,7 @@ type PipelineJob struct {
 	NeedsJSON   string
 	MatrixJSON  string
 	NodeID      string
+	OutputsJSON string
 	Status      string
 	Reason      string
 	Attempt     int
@@ -119,7 +120,7 @@ func (db *DB) ListPipelineJobs(ctx context.Context, runID string) ([]PipelineJob
 
 func (db *DB) readPipelineJobs(ctx context.Context, runID string) ([]PipelineJob, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, run_id, job_key, display_name, stage, needs, matrix, node_id, status, reason, attempt, started_at, finished_at
+		SELECT id, run_id, job_key, display_name, stage, needs, matrix, node_id, outputs, status, reason, attempt, started_at, finished_at
 		FROM pipeline_jobs WHERE run_id = ? ORDER BY rowid
 	`, runID)
 	if err != nil {
@@ -131,7 +132,7 @@ func (db *DB) readPipelineJobs(ctx context.Context, runID string) ([]PipelineJob
 		var j PipelineJob
 		var started, finished sql.NullString
 		if err := rows.Scan(&j.ID, &j.RunID, &j.Key, &j.DisplayName, &j.Stage, &j.NeedsJSON, &j.MatrixJSON, &j.NodeID,
-			&j.Status, &j.Reason, &j.Attempt, &started, &finished); err != nil {
+			&j.OutputsJSON, &j.Status, &j.Reason, &j.Attempt, &started, &finished); err != nil {
 			return nil, fmt.Errorf("store: scan pipeline job: %w", err)
 		}
 		if j.StartedAt, err = parseTimePtr(started); err != nil {
@@ -187,6 +188,14 @@ func (db *DB) SetPipelineJobStatus(ctx context.Context, id, status, reason, node
 		WHERE id = ?
 	`, status, reason, nodeID, nodeID, attempt, formatTimePtr(started), formatTimePtr(finished), id); err != nil {
 		return fmt.Errorf("store: set pipeline job %q status: %w", id, err)
+	}
+	return nil
+}
+
+// SetPipelineJobOutputs stores a job's JSON-encoded outputs.
+func (db *DB) SetPipelineJobOutputs(ctx context.Context, id, outputsJSON string) error {
+	if _, err := db.ExecContext(ctx, `UPDATE pipeline_jobs SET outputs = ? WHERE id = ?`, outputsJSON, id); err != nil {
+		return fmt.Errorf("store: set pipeline job %q outputs: %w", id, err)
 	}
 	return nil
 }

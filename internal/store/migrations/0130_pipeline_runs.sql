@@ -40,6 +40,7 @@ CREATE TABLE pipeline_jobs (
     needs TEXT NOT NULL DEFAULT '[]',
     matrix TEXT NOT NULL DEFAULT '{}',
     node_id TEXT NOT NULL DEFAULT '',
+    outputs TEXT NOT NULL DEFAULT '{}',
     status TEXT NOT NULL,
     reason TEXT NOT NULL DEFAULT '',
     attempt INTEGER NOT NULL DEFAULT 0,
