@@ -14,6 +14,7 @@ import {
   RobotIcon,
   GavelIcon,
   HeartbeatIcon,
+  CpuIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -179,6 +180,16 @@ export function AppSidebar() {
                     >
                       <DatabaseIcon />
                       <span>Databases</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/models" />}
+                      isActive={pathname.startsWith('/models')}
+                      tooltip="AI models"
+                    >
+                      <CpuIcon />
+                      <span>AI models</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
