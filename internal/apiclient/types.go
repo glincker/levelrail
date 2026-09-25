@@ -2105,9 +2105,35 @@ type RotateMasterKeyRequest struct {
 // key is env-sourced (update APP_MASTER_KEY out of band) or the file
 // write itself failed (update the key file by hand).
 type RotateMasterKeyResult struct {
-	RotatedAt       time.Time `json:"rotatedAt"`
-	PersistedToFile bool      `json:"persistedToFile"`
-	Warning         string    `json:"warning,omitempty"`
+	RotatedAt       time.Time           `json:"rotatedAt"`
+	PersistedToFile bool                `json:"persistedToFile"`
+	Warning         string              `json:"warning,omitempty"`
+	Rebind          *SecretRebindResult `json:"rebind,omitempty"`
+}
+
+// SecretBindingStatus mirrors internal/api's secretBindingResponse.
+type SecretBindingStatus struct {
+	Total  int `json:"total"`
+	Bound  int `json:"bound"`
+	Legacy int `json:"legacy"`
+}
+
+// SecretRebindFailure names one slot a rebind could not bind.
+type SecretRebindFailure struct {
+	Owner  string `json:"owner"`
+	Key    string `json:"key"`
+	Reason string `json:"reason"`
+}
+
+// SecretRebindResult mirrors internal/api's secretRebindResponse.
+type SecretRebindResult struct {
+	Scanned      int                   `json:"scanned"`
+	Rebound      int                   `json:"rebound"`
+	AlreadyBound int                   `json:"alreadyBound"`
+	Changed      int                   `json:"changed"`
+	FailedCount  int                   `json:"failedCount"`
+	Failed       []SecretRebindFailure `json:"failed"`
+	Remaining    int                   `json:"remaining"`
 }
 
 // SetNodeWorkloadsRequest mirrors internal/api's setNodeWorkloadsRequest:

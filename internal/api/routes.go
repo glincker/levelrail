@@ -70,6 +70,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// the same fleet-wide-blast-radius tier as prune above, not
 	// AbilityWrite (SecretSetter's own gate for a single app's values).
 	mux.HandleFunc("POST /api/v1/system/master-key/rotate", rt.requireAbility(AbilityRoot, rt.handleRotateMasterKey))
+	mux.HandleFunc("GET /api/v1/system/secrets/binding", rt.requireAbility(AbilityRead, rt.handleGetSecretBinding))
+	mux.HandleFunc("POST /api/v1/system/secrets/rebind", rt.requireAbility(AbilityRoot, rt.handleRebindSecrets))
 
 	// Setup wizard state. Completing stays AbilityWrite so creating a first
 	// app any other way can dismiss it; step progress is admin-only.

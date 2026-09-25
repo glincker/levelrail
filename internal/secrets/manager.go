@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -11,17 +12,7 @@ import (
 )
 
 // Store is the narrow surface Manager needs from internal/store, so
-// tests can fake it without a real database. *store.DB satisfies this
-// structurally, the same "narrow interface at the boundary" shape every
-// other package here uses (application.ServiceStore, deploy.ServiceStore,
-// and so on). This does mean internal/secrets depends on internal/store,
-// unlike the rest of this package (the primitives in masterkey.go,
-// dek.go, value.go know nothing about storage): store.ErrServiceDEKNotFound
-// and store.ErrSecretValueNotFound are real sentinels this file checks
-// with errors.Is, and every other consumer package (internal/deploy,
-// internal/reconcile/application, internal/api) already imports
-// internal/store directly for exactly this reason. internal/store does
-// not import internal/secrets, so this stays one-directional, no cycle.
+// tests can fake it without a real database.
 type Store interface {
 	GetServiceDEK(ctx context.Context, serviceName string) ([]byte, error)
 	SaveServiceDEK(ctx context.Context, serviceName string, wrappedDEK []byte) error
@@ -32,64 +23,88 @@ type Store interface {
 	ListSecretKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
 	GetSecretKeyLocked(ctx context.Context, serviceName, envKey string) (exists, locked bool, err error)
 	SetSecretLocked(ctx context.Context, serviceName, envKey string, locked bool) error
-	// RotateServiceDEKs rewraps every stored DEK in one transaction:
-	// rewrap is called once per (serviceName, wrapped DEK) row, and any
-	// error it returns aborts and rolls back the whole rotation, never
-	// leaving some rows migrated and others not. See rotate.go.
+	// RotateServiceDEKs rewraps every stored DEK in one transaction; any
+	// rewrap error rolls the whole rotation back.
 	RotateServiceDEKs(ctx context.Context, rewrap func(serviceName string, wrapped []byte) ([]byte, error)) error
-	// GetMasterKeyRotatedAt returns the last time RotateServiceDEKs
-	// committed successfully, or ok=false if it never has.
 	GetMasterKeyRotatedAt(ctx context.Context) (rotatedAt time.Time, ok bool, err error)
+	CountSecretValuesByPrefix(ctx context.Context, prefix []byte) (total, withPrefix int, err error)
+	ListSecretCiphertexts(ctx context.Context, afterService, afterKey string, limit int) ([]store.SecretCiphertext, error)
+	// ReplaceSecretCiphertext swaps old for replacement only while the row
+	// still holds old, so a concurrent SetValue is never clobbered.
+	ReplaceSecretCiphertext(ctx context.Context, serviceName, envKey string, old, replacement []byte) (bool, error)
 }
 
+// ScopeServiceSecret is the Binding scope of every value Manager stores.
+const ScopeServiceSecret = "service_secret"
+
 // ErrValueNotFound means no secret value has been set for a given
-// (service, env key) pair, returned by Resolve regardless of whether
-// the underlying cause was a missing DEK (no value ever set for this
-// service) or a missing ciphertext (DEK exists, this particular key
-// doesn't): callers only need to know "nothing to resolve", not which.
+// (service, env key) pair, whether the DEK or the ciphertext is missing.
 var ErrValueNotFound = errors.New("secrets: value not found")
 
 // ErrSecretLocked is returned by SetValueGuarded when overwriting an
-// existing, locked value without overwriteLocked=true. Unlike
-// ErrValueNotFound this is not "nothing to do", it's "something exists
-// and refused to be replaced" -- callers (internal/api) should surface
-// it as a 409, not a generic 500.
+// existing, locked value without overwriteLocked=true; callers surface
+// it as a 409.
 var ErrSecretLocked = errors.New("secrets: value is locked")
 
+// ErrLegacyRejected is returned by Resolve for a legacy unbound
+// ciphertext when the Manager was built WithRequireBound(true).
+var ErrLegacyRejected = errors.New("secrets: legacy unbound ciphertext rejected")
+
 // Manager combines a MasterKey with a Store to provide per-app envelope
-// encryption end to end: generate-or-reuse a service's DEK, encrypt a
-// value under it, persist only ciphertext and a wrapped key, and
-// reverse all of that to get a plaintext value back. Callers never see
-// a raw DEK or handle wrapping/unwrapping themselves.
+// encryption end to end, binding every value to its (service, key) slot.
 type Manager struct {
 	store Store
-	// mu guards mk: RotateMasterKey takes the write lock for the whole
-	// rotation so no concurrent dekFor/Resolve call can read the old key
-	// or create a new DEK wrapped under it mid-rotation.
+	// mu guards mk: RotateMasterKey holds the write lock for the whole
+	// rotation so nothing reads or wraps under the old key mid-rotation.
 	mu sync.RWMutex
 	mk *MasterKey
+
+	logger       *slog.Logger
+	requireBound bool
+	legacySeen   sync.Map
+	rebindMu     sync.Mutex
 }
 
-// NewManager builds a Manager. mk is the control plane's master key,
-// held only in memory (every DEK is wrapped by a master key held only
-// by the control plane), sourced by the caller the same way
-// MasterKey.String/LoadMasterKey already document (file, env, or a
-// future KMS interface), never by this package.
-func NewManager(store Store, mk *MasterKey) *Manager {
-	return &Manager{store: store, mk: mk}
+// ManagerOption configures a Manager.
+type ManagerOption func(*Manager)
+
+// WithLogger sets the logger Manager uses for legacy-format notices.
+func WithLogger(l *slog.Logger) ManagerOption {
+	return func(m *Manager) {
+		if l != nil {
+			m.logger = l
+		}
+	}
+}
+
+// WithRequireBound makes Resolve reject legacy unbound ciphertexts.
+func WithRequireBound(require bool) ManagerOption {
+	return func(m *Manager) { m.requireBound = require }
+}
+
+// NewManager builds a Manager around mk, the control plane's in-memory
+// master key.
+func NewManager(store Store, mk *MasterKey, opts ...ManagerOption) *Manager {
+	m := &Manager{store: store, mk: mk, logger: slog.New(slog.DiscardHandler)}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+func slotBinding(serviceName, envKey string) Binding {
+	return Binding{Scope: ScopeServiceSecret, Owner: serviceName, Key: envKey}
 }
 
 // SetValue encrypts plaintext under serviceName's DEK, generating one on
-// first use, and persists only the ciphertext (and, on first use, the
-// wrapped DEK). The plaintext itself is never persisted anywhere by this
-// call.
+// first use, and persists only the ciphertext.
 func (m *Manager) SetValue(ctx context.Context, serviceName, envKey, plaintext string) error {
 	dek, err := m.dekFor(ctx, serviceName)
 	if err != nil {
 		return err
 	}
 
-	ciphertext, err := EncryptValue(dek, plaintext)
+	ciphertext, err := EncryptValue(dek, slotBinding(serviceName, envKey), plaintext)
 	if err != nil {
 		return fmt.Errorf("secrets: encrypt value for %q/%q: %w", serviceName, envKey, err)
 	}
@@ -100,14 +115,8 @@ func (m *Manager) SetValue(ctx context.Context, serviceName, envKey, plaintext s
 	return nil
 }
 
-// SetValueGuarded is SetValue with a reversible per-key overwrite guard:
-// if a value already exists for (serviceName, envKey) and is locked,
-// this returns ErrSecretLocked without writing anything, unless
-// overwriteLocked is true. Only the general app-secrets path
-// (internal/api's SecretSetter) needs this; every other secret-backed
-// feature (OAuth client secrets, email SMTP password, backup
-// credentials, git source tokens, database passwords, the GitHub App's
-// own secrets) keeps calling the plain SetValue above, unaffected.
+// SetValueGuarded is SetValue that refuses, with ErrSecretLocked, to
+// overwrite an existing locked value unless overwriteLocked is true.
 func (m *Manager) SetValueGuarded(ctx context.Context, serviceName, envKey, plaintext string, overwriteLocked bool) error {
 	exists, locked, err := m.store.GetSecretKeyLocked(ctx, serviceName, envKey)
 	if err != nil {
@@ -140,9 +149,9 @@ func (m *Manager) SetLocked(ctx context.Context, serviceName, envKey string, loc
 }
 
 // Resolve decrypts and returns the plaintext value for (serviceName,
-// envKey), or ErrValueNotFound if none was ever set. Callers (the
-// application controller, immediately before docker.Runtime.Create) must
-// never persist what this returns.
+// envKey), or ErrValueNotFound if none was ever set. A ciphertext bound
+// to any other slot fails with ErrBindingMismatch. Callers must never
+// persist what this returns.
 func (m *Manager) Resolve(ctx context.Context, serviceName, envKey string) (string, error) {
 	wrapped, err := m.store.GetServiceDEK(ctx, serviceName)
 	if errors.Is(err, store.ErrServiceDEKNotFound) {
@@ -165,17 +174,30 @@ func (m *Manager) Resolve(ctx context.Context, serviceName, envKey string) (stri
 		return "", fmt.Errorf("secrets: unwrap DEK for %q: %w", serviceName, err)
 	}
 
-	plaintext, err := DecryptValue(dek, ciphertext)
+	plaintext, legacy, err := DecryptValue(dek, slotBinding(serviceName, envKey), ciphertext)
 	if err != nil {
 		return "", fmt.Errorf("secrets: decrypt value for %q/%q: %w", serviceName, envKey, err)
+	}
+	if legacy {
+		if m.requireBound {
+			return "", fmt.Errorf("secrets: decrypt value for %q/%q: %w", serviceName, envKey, ErrLegacyRejected)
+		}
+		m.noteLegacy(serviceName, envKey)
 	}
 	return plaintext, nil
 }
 
+// noteLegacy logs a legacy read once per slot per process, not per read.
+func (m *Manager) noteLegacy(serviceName, envKey string) {
+	if _, seen := m.legacySeen.LoadOrStore(serviceName+"\x00"+envKey, struct{}{}); seen {
+		return
+	}
+	m.logger.Debug("secrets: read a legacy unbound ciphertext, run secrets rebind to bind it",
+		slog.String("scope", ScopeServiceSecret), slog.String("key", envKey))
+}
+
 // Exists reports whether a value has been set for (serviceName, envKey),
-// without decrypting it. internal/deploy uses this to fail a deploy
-// loudly when a { secret: true, required: true } env var has no value
-// yet, rather than deferring the check to container-create time.
+// without decrypting it.
 func (m *Manager) Exists(ctx context.Context, serviceName, envKey string) (bool, error) {
 	ok, err := m.store.HasSecretValue(ctx, serviceName, envKey)
 	if err != nil {
@@ -185,11 +207,7 @@ func (m *Manager) Exists(ctx context.Context, serviceName, envKey string) (bool,
 }
 
 // DeleteAll permanently removes every value and the wrapped DEK for
-// serviceName, so nothing set under it (via any past SetValue call) can
-// ever be decrypted again, even if the underlying ciphertext somehow
-// survives elsewhere. For a sentinel key like
-// store.GitHubAppSecretsKey() this deletes the whole logical secret
-// bundle at once, not one field at a time.
+// serviceName, so nothing set under it can ever be decrypted again.
 func (m *Manager) DeleteAll(ctx context.Context, serviceName string) error {
 	if err := m.store.DeleteServiceSecrets(ctx, serviceName); err != nil {
 		return fmt.Errorf("secrets: delete all values for %q: %w", serviceName, err)
@@ -198,10 +216,7 @@ func (m *Manager) DeleteAll(ctx context.Context, serviceName string) error {
 }
 
 // dekFor returns serviceName's raw DEK, generating and persisting a new
-// wrapped one on first use. A service's DEK is created at most once:
-// every value it ever encrypts is encrypted under the same key, so the
-// DEK is wrapped once and reused to encrypt many values fast, and this
-// never overwrites an existing wrapped DEK.
+// wrapped one on first use. An existing DEK is never replaced.
 func (m *Manager) dekFor(ctx context.Context, serviceName string) ([]byte, error) {
 	mk := m.masterKey()
 
@@ -223,28 +238,16 @@ func (m *Manager) dekFor(ctx context.Context, serviceName string) ([]byte, error
 	return raw, nil
 }
 
-// masterKey returns the currently active master key. Held only for the
-// duration of the read: RotateMasterKey takes the write lock for an
-// entire rotation, but a caller here only needs a stable pointer, not
-// the lock, for the crypto operation that follows.
 func (m *Manager) masterKey() *MasterKey {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.mk
 }
 
-// RotateMasterKey re-wraps every stored DEK from the manager's currently
-// active master key to newMasterKey (its serialized age identity
-// string), then swaps the active key on success. Held for the whole
-// operation is Manager's write lock, so no concurrent SetValue/Resolve
-// call can create a new DEK under the old key, or read one under it,
-// while rotation is in flight: dekFor/Resolve above are blocked, not
-// racing, for that window.
-//
-// Returns the rotation's timestamp on success. On any failure (a
-// corrupt stored DEK, most likely), nothing changes: the DB rotation
-// itself is transactional (Store.RotateServiceDEKs) and the in-memory
-// key is only swapped after that transaction commits.
+// RotateMasterKey re-wraps every stored DEK from the active master key to
+// newMasterKey (a serialized age identity), then swaps the active key. On
+// any failure nothing changes: the DB rotation is one transaction and
+// the in-memory key is only swapped after it commits.
 func (m *Manager) RotateMasterKey(ctx context.Context, newMasterKey string) (time.Time, error) {
 	newKey, err := LoadMasterKey(newMasterKey)
 	if err != nil {

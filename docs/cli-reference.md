@@ -1312,6 +1312,16 @@ levelrail iam policies update <id> --name NAME --document DOC [flags]
 levelrail secrets rotate-master-key --new-key-file PATH [flags]
 ```
 
+```
+levelrail secrets binding-status [flags]
+```
+count stored secret values not yet bound to their slot
+
+```
+levelrail secrets rebind [flags]
+```
+bind every legacy secret value to its slot, safe to rerun
+
 ::: details Migrate (one-time platform migration)
 
 ### Migrate
