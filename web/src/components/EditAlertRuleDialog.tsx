@@ -96,6 +96,7 @@ const KIND_OPTIONS: {
     label: 'Control plane backup stale',
     Icon: ArchiveIcon,
   },
+  { value: 'log_archive_stale', label: 'Log archive stale', Icon: ArchiveIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -124,6 +125,7 @@ const editAlertRuleSchema = z
       'backup_missing',
       'node_offline',
       'control_plane_backup_stale',
+      'log_archive_stale',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -145,7 +147,8 @@ const editAlertRuleSchema = z
       data.kind === 'node_disk_space' ||
       data.kind === 'node_resource_usage' ||
       data.kind === 'node_offline' ||
-      data.kind === 'control_plane_backup_stale'
+      data.kind === 'control_plane_backup_stale' ||
+      data.kind === 'log_archive_stale'
     ) {
       return
     }
@@ -352,7 +355,8 @@ export function EditAlertRuleDialog({
       req.restart_count_threshold = values.restartCountThreshold
     } else if (
       values.kind === 'domain_health' ||
-      values.kind === 'control_plane_backup_stale'
+      values.kind === 'control_plane_backup_stale' ||
+      values.kind === 'log_archive_stale'
     ) {
       req.for_duration = values.forDuration.trim() || undefined
     } else if (values.kind === 'backup_missing') {
@@ -450,7 +454,8 @@ export function EditAlertRuleDialog({
               This kind watches every certificate or node on the whole control
               plane platform-wide, needing no metric or threshold of its own.
             </p>
-          ) : kind === 'control_plane_backup_stale' ? (
+          ) : kind === 'control_plane_backup_stale' ||
+            kind === 'log_archive_stale' ? (
             <Field>
               <FieldLabel htmlFor="edit-rule-cp-backup-max-age">
                 Maximum age (optional)

@@ -49,6 +49,7 @@ func appsAlertsUsage(prog string) string {
   %[1]s apps alerts create <app> --kind node_offline [flags]
   %[1]s apps alerts create <app> --kind domain_health [flags]
   %[1]s apps alerts create <app> --kind control_plane_backup_stale [flags]
+  %[1]s apps alerts create <app> --kind log_archive_stale [flags]
   %[1]s apps alerts create <app> --kind backup_missing --backup-resource-kind database --backup-database-name NAME [flags]
   %[1]s apps alerts create <app> --kind backup_missing --backup-resource-kind volume --backup-volume-name NAME [flags]
   %[1]s apps alerts update <app> <id> --kind KIND [flags]
@@ -149,6 +150,8 @@ func alertRuleCondition(r alertRuleResource) string {
 		return fmt.Sprintf("task %s fails %d runs in a row", r.ScheduledTaskID, r.RestartCountThreshold)
 	case "control_plane_backup_stale":
 		return "the control plane's newest self-backup snapshot older than its age limit (platform-wide)"
+	case "log_archive_stale":
+		return "a log archive policy failed or has not succeeded within its age limit (platform-wide)"
 	case "domain_health":
 		return "any of this app's own domains not resolving correctly or pointing elsewhere"
 	case "backup_missing":
@@ -221,6 +224,8 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 		}
 	case "control_plane_backup_stale":
 		// Platform-wide; --for-duration optionally overrides the 3d age limit.
+	case "log_archive_stale":
+		// Platform-wide; --for-duration optionally overrides the per-policy age limit.
 	case "domain_health":
 		// No required flags: watches every domain already configured on
 		// this app. --for-duration is accepted but optional.
@@ -238,9 +243,9 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 			return newValidationError("--backup-resource-kind must be \"database\" or \"volume\" for --kind backup_missing")
 		}
 	case "":
-		return newValidationError("--kind is required (threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, or control_plane_backup_stale)")
+		return newValidationError("--kind is required (threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, control_plane_backup_stale, or log_archive_stale)")
 	default:
-		return newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, or control_plane_backup_stale", kind)
+		return newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, control_plane_backup_stale, or log_archive_stale", kind)
 	}
 	return nil
 }
@@ -291,7 +296,7 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
-	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, control_plane_backup_stale (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, control_plane_backup_stale, log_archive_stale (required)")
 	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
 	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
 	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold only)")
@@ -359,6 +364,7 @@ func appsAlertsCreateUsage(prog string) string {
   %[1]s apps alerts create <app> --name NAME --kind node_resource_usage [flags]
   %[1]s apps alerts create <app> --name NAME --kind domain_health [flags]
   %[1]s apps alerts create <app> --name NAME --kind control_plane_backup_stale [flags]
+  %[1]s apps alerts create <app> --name NAME --kind log_archive_stale [flags]
   %[1]s apps alerts create <app> --name NAME --kind backup_missing --backup-resource-kind database --backup-database-name NAME [flags]
   %[1]s apps alerts create <app> --name NAME --kind backup_missing --backup-resource-kind volume --backup-volume-name NAME [flags]
 
@@ -385,11 +391,11 @@ backup trails that schedule's own expected interval by more than
 
 Flags:
   --name string                        display name for the rule (required)
-  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, or control_plane_backup_stale (required)
+  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, control_plane_backup_stale, or log_archive_stale (required)
   --metric string                      metric name (--kind threshold only)
   --comparator string                  >, <, >=, or <= (--kind threshold only)
   --threshold float                    threshold value (--kind threshold only)
-  --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold or domain_health); overdue grace period, e.g. "6h" (--kind backup_missing, default 6h); max snapshot age (--kind control_plane_backup_stale, default 3d)
+  --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold or domain_health); overdue grace period, e.g. "6h" (--kind backup_missing, default 6h); max snapshot age (--kind control_plane_backup_stale, default 3d); max time since a successful archive (--kind log_archive_stale, default 3 intervals, at least 2h)
   --restart-count-threshold int        restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing
   --restart-window string              time window restarts are counted in, e.g. "5m" (--kind crashloop only)
   --scheduled-task-id string           which of <app>'s scheduled tasks to watch (--kind scheduled_task_failure only)
@@ -428,7 +434,7 @@ func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, l
 		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
-	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, control_plane_backup_stale (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, control_plane_backup_stale, log_archive_stale (required)")
 	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
 	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
 	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold only)")
@@ -508,11 +514,11 @@ help for what each kind needs.
 
 Flags:
   --name string                        display name for the rule (required)
-  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, or control_plane_backup_stale (required)
+  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, control_plane_backup_stale, or log_archive_stale (required)
   --metric string                      metric name (--kind threshold only)
   --comparator string                  >, <, >=, or <= (--kind threshold only)
   --threshold float                    threshold value (--kind threshold only)
-  --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold or domain_health); overdue grace period (--kind backup_missing, default 6h); max snapshot age (--kind control_plane_backup_stale, default 3d)
+  --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold or domain_health); overdue grace period (--kind backup_missing, default 6h); max snapshot age (--kind control_plane_backup_stale, default 3d); max time since a successful archive (--kind log_archive_stale, default 3 intervals, at least 2h)
   --restart-count-threshold int        restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing
   --restart-window string              time window restarts are counted in, e.g. "5m" (--kind crashloop only)
   --scheduled-task-id string           which of <app>'s scheduled tasks to watch (--kind scheduled_task_failure only)

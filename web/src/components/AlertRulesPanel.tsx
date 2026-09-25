@@ -131,6 +131,9 @@ function formatCondition(rule: AlertRule): string {
     const forPart = rule.for_duration ? ` for ${rule.for_duration}` : ''
     return `any of this app's own domains not resolving correctly or pointing elsewhere${forPart}`
   }
+  if (rule.kind === 'log_archive_stale') {
+    return `a log archive policy failing or not succeeding within ${rule.for_duration || 'its default age limit'} (platform-wide)`
+  }
   if (rule.kind === 'control_plane_backup_stale') {
     return `control plane's newest snapshot older than ${rule.for_duration || '3d (default)'} (platform-wide)`
   }
@@ -179,6 +182,9 @@ function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'domain_health') {
     return `${rule.last_value} domain(s) unhealthy`
+  }
+  if (rule.kind === 'log_archive_stale') {
+    return `${rule.last_value} log archive policy(ies) unhealthy`
   }
   if (rule.kind === 'control_plane_backup_stale') {
     return `${rule.last_value.toFixed(1)}h since newest control plane snapshot`

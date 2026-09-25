@@ -123,6 +123,7 @@ const KIND_OPTIONS: {
     label: 'Control plane backup stale',
     Icon: ArchiveIcon,
   },
+  { value: 'log_archive_stale', label: 'Log archive stale', Icon: ArchiveIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -153,6 +154,7 @@ const createAlertRuleSchema = z
       'backup_missing',
       'node_offline',
       'control_plane_backup_stale',
+      'log_archive_stale',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -179,7 +181,8 @@ const createAlertRuleSchema = z
       data.kind === 'node_disk_space' ||
       data.kind === 'node_resource_usage' ||
       data.kind === 'node_offline' ||
-      data.kind === 'control_plane_backup_stale'
+      data.kind === 'control_plane_backup_stale' ||
+      data.kind === 'log_archive_stale'
     ) {
       return
     }
@@ -384,7 +387,8 @@ export function CreateAlertRuleDialog({
       req.restart_count_threshold = values.restartCountThreshold
     } else if (
       values.kind === 'domain_health' ||
-      values.kind === 'control_plane_backup_stale'
+      values.kind === 'control_plane_backup_stale' ||
+      values.kind === 'log_archive_stale'
     ) {
       req.for_duration = values.forDuration.trim() || undefined
     } else if (values.kind === 'backup_missing') {
@@ -530,13 +534,13 @@ export function CreateAlertRuleDialog({
               node-capacity percentage to compare against today, so unlike CPU
               it&apos;s an absolute floor, not a proportion.
             </p>
-          ) : kind === 'control_plane_backup_stale' ? (
+          ) : kind === 'control_plane_backup_stale' ||
+            kind === 'log_archive_stale' ? (
             <>
               <p className="text-sm text-muted-foreground">
-                Watches the control plane&apos;s own newest self-backup snapshot
-                and fires when it gets too old. Stays quiet when scheduled
-                control plane backups are disabled
-                (APP_CONTROL_PLANE_BACKUP_INTERVAL=0).
+                {kind === 'log_archive_stale'
+                  ? 'Watches every log archive policy and fires when one fails or has not shipped logs successfully within its age limit.'
+                  : 'Watches the newest control plane self-backup snapshot and fires when it gets too old. Stays quiet when scheduled control plane backups are disabled (APP_CONTROL_PLANE_BACKUP_INTERVAL=0).'}
               </p>
               <Field>
                 <FieldLabel htmlFor="rule-cp-backup-max-age">
@@ -555,8 +559,9 @@ export function CreateAlertRuleDialog({
                   )}
                 />
                 <FieldDescription>
-                  Fire once the newest snapshot is older than this. Leave blank
-                  for 3 days.
+                  {kind === 'log_archive_stale'
+                    ? 'Fire once a policy has gone this long without a successful archive. Leave blank for three intervals (at least 2 hours).'
+                    : 'Fire once the newest snapshot is older than this. Leave blank for 3 days.'}
                 </FieldDescription>
                 <FieldError errors={[formState.errors.forDuration]} />
               </Field>
