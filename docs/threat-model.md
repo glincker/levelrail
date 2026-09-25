@@ -119,8 +119,8 @@ Stated plainly. Some are being worked on by other tracks and are listed as plann
 | Gap | Impact | Status |
 | --- | --- | --- |
 | Agent certificates are issued once and there is no scheduled renewal | A leaked agent key stays valid until the certificate expires or the node is re-enrolled | Planned: agent certificate renewal |
-| Containers get Docker's default profile: no dropped capabilities, no `no-new-privileges`, no read-only root filesystem, no PID limit are applied by Levelrail | A container escape has more surface than it needs | Planned: container hardening defaults |
-| Release binaries are covered by checksums only, not a signature | A compromised release host could publish matching checksums | Planned: signed releases and provenance for binaries |
+| Container hardening is opt-in: by default Levelrail applies no capability drop, `no-new-privileges` or PID limit | A container escape has more surface than needed | `APP_CONTAINER_HARDENING=enforce` drops all capabilities except a small documented set, sets `no-new-privileges` and a PID limit; default `warn` reports what it would change in `doctor`. Read-only root filesystem stays opt-in and per-app policy is future work |
+| Release signing has never run in a real release | A broken signing step would go unnoticed until a release | Release workflow signs `checksums.txt` with cosign and attests provenance; `install.sh` verifies the signature when cosign is present, and `APP_INSTALL_VERIFY=require` refuses unsigned releases. Untested against a real release |
 | Secret ciphertext is not bound to its context (app and key name) | A database writer could swap one secret's ciphertext for another's | Planned: secret context binding |
 | Only apps, databases and models have per-resource IAM. Nodes, projects, domains, registries and settings are ability-gated only | You cannot Deny one node or project to a token that has the ability | Open |
 | `repo_url` accepts any http or https host | A `deploy` caller can make the control plane fetch from an internal address (git protocol responses only, but it is a probe) | Open: apply `internal/netguard` to git fetches |
