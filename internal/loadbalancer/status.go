@@ -180,20 +180,19 @@ type ProbeResult struct {
 
 // Prober runs an active health check against one upstream.
 type Prober interface {
-	Probe(ctx context.Context, dial, path string, useTLS bool, timeout time.Duration) ProbeResult
+	Probe(ctx context.Context, dial, path string, tlsCfg *UpstreamTLS, timeout time.Duration) ProbeResult
 }
 
 // HTTPProber is the real Prober.
 type HTTPProber struct{}
 
 // Probe implements Prober.
-func (HTTPProber) Probe(ctx context.Context, dial, path string, useTLS bool, timeout time.Duration) ProbeResult {
+func (HTTPProber) Probe(ctx context.Context, dial, path string, upstreamTLS *UpstreamTLS, timeout time.Duration) ProbeResult {
 	scheme := "http"
 	client := &http.Client{Timeout: timeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
-	if useTLS {
+	if upstreamTLS != nil {
 		scheme = "https"
-		// Health probes hit bare upstream addresses, which never match a cert name.
-		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}} //nolint:gosec // probe only checks liveness
+		client.Transport = &http.Transport{TLSClientConfig: probeTLSConfig(upstreamTLS)}
 	}
 	res := ProbeResult{CheckedAt: time.Now()}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, scheme+"://"+dial+path, nil)
@@ -215,6 +214,12 @@ func (HTTPProber) Probe(ctx context.Context, dial, path string, useTLS bool, tim
 		res.Err = fmt.Sprintf("status %d", resp.StatusCode)
 	}
 	return res
+}
+
+// probeTLSConfig verifies the upstream certificate the same way the proxy
+// does: against server_name, unless the operator opted out for this balancer.
+func probeTLSConfig(u *UpstreamTLS) *tls.Config {
+	return &tls.Config{ServerName: u.ServerName, InsecureSkipVerify: u.InsecureSkipVerify, MinVersion: tls.VersionTLS12} //nolint:gosec // operator-set upstream_tls.insecure_skip_verify, mirrors the proxy
 }
 
 // UpstreamStatus is the live view of one upstream.
@@ -283,7 +288,7 @@ func classify(ctx context.Context, st UpstreamStatus, u UpstreamObservation, cfg
 	}
 	if h := cfg.ActiveHealth; h != nil && prober != nil {
 		timeout := ParseDuration(h.Timeout)
-		res := prober.Probe(ctx, u.Dial, h.Path, cfg.UpstreamTLS != nil, timeout)
+		res := prober.Probe(ctx, u.Dial, h.Path, cfg.UpstreamTLS, timeout)
 		checked := res.CheckedAt
 		st.LastCheck = &checked
 		st.LatencyMs = res.Latency.Milliseconds()

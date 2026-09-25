@@ -22,7 +22,7 @@ func (f fakeLBStats) UpstreamStats(context.Context) (map[string]loadbalancer.Sta
 
 type okProber struct{}
 
-func (okProber) Probe(context.Context, string, string, bool, time.Duration) loadbalancer.ProbeResult {
+func (okProber) Probe(context.Context, string, string, *loadbalancer.UpstreamTLS, time.Duration) loadbalancer.ProbeResult {
 	return loadbalancer.ProbeResult{OK: true, StatusCode: 200, CheckedAt: time.Now()}
 }
 

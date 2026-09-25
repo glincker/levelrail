@@ -50,7 +50,7 @@ const EMPTY: FormState = {
 }
 
 const ENDPOINT_HINT: Partial<Record<StoragePreset, string>> = {
-  minio: 'http://minio.internal:9000',
+  minio: 'https://minio.example.com:9000',
   custom: 'https://s3.example.com',
 }
 

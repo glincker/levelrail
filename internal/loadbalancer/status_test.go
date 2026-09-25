@@ -11,7 +11,7 @@ import (
 
 type fakeProber struct{ results map[string]ProbeResult }
 
-func (f fakeProber) Probe(_ context.Context, dial, _ string, _ bool, _ time.Duration) ProbeResult {
+func (f fakeProber) Probe(_ context.Context, dial, _ string, _ *UpstreamTLS, _ time.Duration) ProbeResult {
 	return f.results[dial]
 }
 
@@ -109,13 +109,37 @@ func TestHTTPProber(t *testing.T) {
 	defer srv.Close()
 	addr := strings.TrimPrefix(srv.URL, "http://")
 
-	if res := (HTTPProber{}).Probe(context.Background(), addr, "/ok", false, time.Second); !res.OK || res.StatusCode != 200 {
+	if res := (HTTPProber{}).Probe(context.Background(), addr, "/ok", nil, time.Second); !res.OK || res.StatusCode != 200 {
 		t.Errorf("ok probe = %+v", res)
 	}
-	if res := (HTTPProber{}).Probe(context.Background(), addr, "/bad", false, time.Second); res.OK || res.Err == "" {
+	if res := (HTTPProber{}).Probe(context.Background(), addr, "/bad", nil, time.Second); res.OK || res.Err == "" {
 		t.Errorf("bad probe = %+v", res)
 	}
-	if res := (HTTPProber{}).Probe(context.Background(), "127.0.0.1:1", "/", false, 200*time.Millisecond); res.OK || res.Err == "" {
+	if res := (HTTPProber{}).Probe(context.Background(), "127.0.0.1:1", "/", nil, 200*time.Millisecond); res.OK || res.Err == "" {
 		t.Errorf("refused probe = %+v", res)
+	}
+}
+
+func TestHTTPProberUpstreamTLS(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
+	defer srv.Close()
+	addr := strings.TrimPrefix(srv.URL, "https://")
+
+	tests := []struct {
+		name   string
+		tls    *UpstreamTLS
+		wantOK bool
+	}{
+		{"self-signed rejected by default", &UpstreamTLS{}, false},
+		{"self-signed accepted when operator opts out", &UpstreamTLS{InsecureSkipVerify: true}, true},
+		{"wrong server name rejected", &UpstreamTLS{ServerName: "other.example"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := (HTTPProber{}).Probe(context.Background(), addr, "/", tt.tls, time.Second)
+			if res.OK != tt.wantOK {
+				t.Fatalf("OK = %v (err %q), want %v", res.OK, res.Err, tt.wantOK)
+			}
+		})
 	}
 }
