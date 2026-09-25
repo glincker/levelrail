@@ -69,6 +69,8 @@ type ProxyRoute struct {
 	// (via a wrapping SubrouteHandler.Errors). Empty (the default)
 	// reproduces this package's prior behavior exactly.
 	ErrorPages []ErrorPage
+	// LB, if non-nil, replaces BackendDial with a multi-upstream pool.
+	LB *LBRoute
 }
 
 // ErrorPage is one status-code-to-body mapping for a domain
@@ -456,10 +458,16 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if len(r.Hosts) == 0 {
 			return nil, fmt.Errorf("ingress: build routes config: route %d has no hosts", i)
 		}
-		if r.BackendDial == "" {
+		if r.BackendDial == "" && (r.LB == nil || len(r.LB.Upstreams) == 0) {
 			return nil, fmt.Errorf("ingress: build routes config: route %d has no backend dial address", i)
 		}
 		handle := []any{NewReverseProxyHandler(r.BackendDial)}
+		if r.LB != nil && len(r.LB.Upstreams) > 0 {
+			handle = []any{NewLBReverseProxyHandler(r.LB)}
+			if r.LB.RateLimitRPS > 0 {
+				handle = append([]any{NewRateLimitHandler("lb-"+strings.Join(r.Hosts, "+"), r.LB.RateLimitRPS, r.LB.RateLimitBurst)}, handle...)
+			}
+		}
 		if r.BasicAuth != nil {
 			// Prepended, not appended: Caddy runs a route's handlers in
 			// order, so authentication must short-circuit with 401 before
