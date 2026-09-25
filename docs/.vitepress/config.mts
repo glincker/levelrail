@@ -38,6 +38,7 @@ const sidebarGroups = [
       { text: 'Managing databases', link: '/managing-databases' },
       { text: 'Observability', link: '/observability' },
       { text: 'Multi-node', link: '/multi-node' },
+      { text: 'AI models', link: '/ai-models' },
       {
         text: 'Projects and organizations',
         link: '/projects-and-organizations',
