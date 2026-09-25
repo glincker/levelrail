@@ -450,6 +450,62 @@ func TestRotateServiceDEKs_RollsBackEverythingOnAnyRowFailure(t *testing.T) {
 	}
 }
 
+func TestSecretCiphertexts_CountListReplace(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	prefix := []byte{0xB7, 0x1C}
+	for _, svc := range []string{"a", "b"} {
+		if err := db.SaveServiceDEK(ctx, svc, []byte("dek")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, row := range []SecretCiphertext{
+		{"a", "K1", append([]byte{0xB7, 0x1C}, 'x')},
+		{"a", "K2", []byte("legacy")},
+		{"b", "K1", []byte{0xB7}},
+	} {
+		if err := db.SaveSecretValue(ctx, row.ServiceName, row.EnvKey, row.Ciphertext); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	total, withPrefix, err := db.CountSecretValuesByPrefix(ctx, prefix)
+	if err != nil || total != 3 || withPrefix != 1 {
+		t.Fatalf("CountSecretValuesByPrefix() = (%d, %d, %v), want (3, 1, nil)", total, withPrefix, err)
+	}
+
+	page, err := db.ListSecretCiphertexts(ctx, "", "", 2)
+	if err != nil || len(page) != 2 || page[0].EnvKey != "K1" || page[1].EnvKey != "K2" {
+		t.Fatalf("ListSecretCiphertexts(first page) = (%+v, %v)", page, err)
+	}
+	rest, err := db.ListSecretCiphertexts(ctx, page[1].ServiceName, page[1].EnvKey, 2)
+	if err != nil || len(rest) != 1 || rest[0].ServiceName != "b" {
+		t.Fatalf("ListSecretCiphertexts(after a/K2) = (%+v, %v)", rest, err)
+	}
+
+	keysBefore, err := db.ListSecretKeys(ctx, "a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := db.ReplaceSecretCiphertext(ctx, "a", "K2", []byte("stale"), []byte("new")); err != nil || ok {
+		t.Fatalf("ReplaceSecretCiphertext(stale old) = (%t, %v), want (false, nil)", ok, err)
+	}
+	if ok, err := db.ReplaceSecretCiphertext(ctx, "a", "K2", []byte("legacy"), []byte("new")); err != nil || !ok {
+		t.Fatalf("ReplaceSecretCiphertext(current old) = (%t, %v), want (true, nil)", ok, err)
+	}
+	got, err := db.GetSecretValue(ctx, "a", "K2")
+	if err != nil || string(got) != "new" {
+		t.Fatalf("GetSecretValue after replace = (%q, %v)", got, err)
+	}
+	keysAfter, err := db.ListSecretKeys(ctx, "a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !keysAfter[1].UpdatedAt.Equal(keysBefore[1].UpdatedAt) {
+		t.Error("ReplaceSecretCiphertext bumped updated_at, re-encryption must not count as a rotation")
+	}
+}
+
 func TestGetMasterKeyRotatedAt_NeverRotated(t *testing.T) {
 	db := openTestDB(t)
 	if _, ok, err := db.GetMasterKeyRotatedAt(context.Background()); err != nil || ok {
