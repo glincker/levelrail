@@ -20,6 +20,11 @@ func (rt *Router) registerPipelineRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/pipeline-runs/{id}/cancel", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCancelPipelineRun))
 	mux.HandleFunc("POST /api/v1/apps/{name}/pipeline-runs/{id}/rerun", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRerunPipelineRun))
 	mux.HandleFunc("POST /api/v1/apps/{name}/pipeline-runs/{id}/approvals/{approval}", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDecidePipelineApproval))
+	mux.HandleFunc("POST /api/v1/apps/{name}/pipeline-runs/{id}/hold", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDecidePipelineRunHold))
+	mux.HandleFunc("GET /api/v1/apps/{name}/pipeline-triggers", rt.requireAbility(AbilityRead, rt.handleListPipelineTriggers))
+	mux.HandleFunc("GET /api/v1/apps/{name}/pipeline-sync", rt.requireAbility(AbilityRead, rt.handleGetPipelineSync))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/pipeline-sync", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetPipelineSync))
+	mux.HandleFunc("POST /api/v1/apps/{name}/pipeline-sync", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleRunPipelineSync))
 	mux.HandleFunc("POST /api/v1/pipelines/validate", rt.requireAbility(AbilityRead, rt.handleValidatePipeline))
 	mux.HandleFunc("GET /api/v1/pipelines/schema", rt.requireAbility(AbilityRead, rt.handlePipelineSchema))
 }

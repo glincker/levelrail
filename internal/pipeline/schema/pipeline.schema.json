@@ -54,12 +54,20 @@
       "additionalProperties": false,
       "properties": { "branches": { "$ref": "#/$defs/stringOrList" } }
     },
+    "prTrigger": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "branches": { "$ref": "#/$defs/stringOrList" },
+        "forks": { "enum": ["block", "approve", "allow"] }
+      }
+    },
     "triggers": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "push": { "$ref": "#/$defs/refTrigger" },
-        "pull_request": { "$ref": "#/$defs/refTrigger" },
+        "pull_request": { "$ref": "#/$defs/prTrigger" },
         "tag": {
           "type": ["object", "null"],
           "additionalProperties": false,
