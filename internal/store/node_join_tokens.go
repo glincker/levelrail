@@ -28,7 +28,17 @@ type NodeJoinToken struct {
 	// store.CreateUser's own doc comment documents for first-run
 	// registration.
 	UsedAt *time.Time
+	// Purpose is NodeJoinTokenPurposeEnroll (new node) or
+	// NodeJoinTokenPurposeReenroll (new certificate for NodeID).
+	Purpose string
+	NodeID  string
 }
+
+// Join token purposes.
+const (
+	NodeJoinTokenPurposeEnroll   = "enroll"
+	NodeJoinTokenPurposeReenroll = "reenroll"
+)
 
 // ErrNodeJoinTokenNotFound is returned by GetNodeJoinTokenByHash and
 // MarkNodeJoinTokenUsed when no token matches.
@@ -41,9 +51,9 @@ var ErrNodeJoinTokenAlreadyUsed = errors.New("store: node join token already use
 // SaveNodeJoinToken inserts a new join token row.
 func (db *DB) SaveNodeJoinToken(ctx context.Context, t NodeJoinToken) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO node_join_tokens (id, token_hash, created_at, expires_at)
-		VALUES (?, ?, ?, ?)
-	`, t.ID, t.TokenHash, formatTime(t.CreatedAt), formatTime(t.ExpiresAt))
+		INSERT INTO node_join_tokens (id, token_hash, created_at, expires_at, purpose, node_id)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, t.ID, t.TokenHash, formatTime(t.CreatedAt), formatTime(t.ExpiresAt), joinTokenPurposeOrDefault(t.Purpose), nullIfEmpty(t.NodeID))
 	if err != nil {
 		return fmt.Errorf("store: save node join token %q: %w", t.ID, err)
 	}
@@ -57,7 +67,7 @@ func (db *DB) SaveNodeJoinToken(ctx context.Context, t NodeJoinToken) error {
 // separation.
 func (db *DB) GetNodeJoinTokenByHash(ctx context.Context, hash string) (*NodeJoinToken, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, token_hash, created_at, expires_at, used_at
+		SELECT id, token_hash, created_at, expires_at, used_at, purpose, COALESCE(node_id, '')
 		FROM node_join_tokens WHERE token_hash = ?
 	`, hash)
 	t, err := scanNodeJoinToken(row.Scan)
@@ -107,7 +117,7 @@ func (db *DB) MarkNodeJoinTokenUsed(ctx context.Context, id string) error {
 
 func (db *DB) getNodeJoinTokenByID(ctx context.Context, id string) (*NodeJoinToken, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, token_hash, created_at, expires_at, used_at
+		SELECT id, token_hash, created_at, expires_at, used_at, purpose, COALESCE(node_id, '')
 		FROM node_join_tokens WHERE id = ?
 	`, id)
 	t, err := scanNodeJoinToken(row.Scan)
@@ -126,7 +136,7 @@ func scanNodeJoinToken(scan func(dest ...any) error) (*NodeJoinToken, error) {
 		createdAt, expires string
 		usedAt             sql.NullString
 	)
-	if err := scan(&t.ID, &t.TokenHash, &createdAt, &expires, &usedAt); err != nil {
+	if err := scan(&t.ID, &t.TokenHash, &createdAt, &expires, &usedAt, &t.Purpose, &t.NodeID); err != nil {
 		return nil, err
 	}
 	var err error
@@ -143,4 +153,15 @@ func scanNodeJoinToken(scan func(dest ...any) error) (*NodeJoinToken, error) {
 		return nil, fmt.Errorf("parse used_at: %w", err)
 	}
 	return &t, nil
+}
+
+func joinTokenPurposeOrDefault(p string) string {
+	if p == "" {
+		return NodeJoinTokenPurposeEnroll
+	}
+	return p
+}
+
+func nullIfEmpty(s string) sql.NullString {
+	return sql.NullString{String: s, Valid: s != ""}
 }
