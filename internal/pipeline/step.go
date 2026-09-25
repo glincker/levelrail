@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"maps"
 	"regexp"
 	"strings"
 	"time"
@@ -100,7 +101,7 @@ func (jr *jobRun) execContainerStep(ctx context.Context, k int, p plannedStep, s
 	if err != nil {
 		return nil, err
 	}
-	body, err := Interpolate(script, sc)
+	body, exprEnv, err := InterpolateScript(script, sc)
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +109,7 @@ func (jr *jobRun) execContainerStep(ctx context.Context, k int, p plannedStep, s
 	if err != nil {
 		return nil, err
 	}
+	maps.Copy(env, exprEnv)
 	cid, err := jr.ensureContainer(ctx)
 	if err != nil {
 		return nil, err

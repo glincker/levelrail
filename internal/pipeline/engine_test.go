@@ -456,8 +456,8 @@ func TestManualInputsValidated(t *testing.T) {
 	}
 	run := h.start(p, StartOptions{Inputs: map[string]string{"env": "prod"}})
 	h.done(run.ID)
-	if h.rt.ran("echo prod") != 1 {
-		t.Error("input not interpolated")
+	if h.rt.ran("export PIPELINE_EXPR_INPUTS_ENV='prod'") != 1 || h.rt.ran("echo ${PIPELINE_EXPR_INPUTS_ENV}") != 1 {
+		t.Error("input not passed to the script as an env var")
 	}
 }
 

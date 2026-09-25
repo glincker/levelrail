@@ -137,6 +137,12 @@ func (rt *Router) handleAppTerminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	stopWatch := rt.watchAuthorization(r, AbilityRoot, appResourceFromPath, func() {
+		rt.logger.Warn("api: terminal: caller lost access, ending session", slog.String("name", name))
+		cancel()
+	})
+	defer stopWatch()
+
 	rt.runTerminalSession(ctx, cancel, conn, sess, name)
 }
 

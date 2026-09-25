@@ -68,6 +68,7 @@ const sidebarGroups = [
     items: [
       { text: 'Architecture', link: '/architecture' },
       { text: 'Security overview', link: '/security' },
+      { text: 'Threat model', link: '/threat-model' },
       { text: 'Comparison', link: '/comparison' },
     ],
   },
