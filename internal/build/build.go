@@ -53,6 +53,9 @@ type ProgressEvent struct {
 	// docker-image-load phase (loadImage) has no equivalent stream
 	// signal from the Engine API, so it always reports "stdout".
 	Stream string
+	// CacheWarning is set when the remote build cache was skipped or failed and
+	// the build carried on without it. Log carries the same text.
+	CacheWarning string
 }
 
 // SlogProgress adapts a *slog.Logger into a progress func, for callers
@@ -103,6 +106,15 @@ func (c *Client) Build(ctx context.Context, req Request, progress func(ProgressE
 // so a build dispatched to this node from a control plane can export the
 // same tar onto the wire instead (SolveRemote, remote.go).
 func (c *Client) solveDockerfile(ctx context.Context, req Request, cache CacheConfig, out io.Writer, progress func(ProgressEvent)) (*Result, error) {
+	if req.S3Cache != nil {
+		cache.S3 = req.S3Cache
+	}
+	return solveFailOpen(ctx, cache, out, progress, func(cache CacheConfig, out io.Writer) (*Result, error) {
+		return c.runSolve(ctx, req, cache, out, progress)
+	})
+}
+
+func (c *Client) runSolve(ctx context.Context, req Request, cache CacheConfig, out io.Writer, progress func(ProgressEvent)) (*Result, error) {
 	start := time.Now()
 
 	solveOpt, err := newSolveOpt(req, cache, nopWriteCloser{out})

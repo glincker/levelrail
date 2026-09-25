@@ -30,6 +30,9 @@ type Request struct {
 
 	// NoCache disables BuildKit's cache for this build.
 	NoCache bool
+
+	// S3Cache adds BuildKit's s3 cache backend for this build. Nil means none.
+	S3Cache *S3Cache
 }
 
 // ErrContextDirRequired and ErrTagRequired are returned by Validate for
