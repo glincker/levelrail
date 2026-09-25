@@ -15,6 +15,10 @@ function node(overrides: Partial<GpuNode> = {}): GpuNode {
     total_vram_mib: 81920,
     used_vram_mib: 20480,
     model_count: 1,
+    reserved_gpus: 1,
+    free_gpus: 1,
+    reservations: ['model:chat'],
+    schedulable: true,
     devices: [
       {
         index: 0,
@@ -43,8 +47,9 @@ describe('GpuNodeCard', () => {
     render(<GpuNodeCard node={node()} />)
     expect(screen.getByLabelText('GPU node gpu-1')).toBeInTheDocument()
     expect(
-      screen.getByText(/2 GPUs, driver 550.54, 1 model/),
+      screen.getByText(/2 GPUs, 1 reserved, 1 free, driver 550.54, 1 model/),
     ).toBeInTheDocument()
+    expect(screen.getByText('model:chat')).toBeInTheDocument()
     expect(screen.getByText(/VRAM 20 GiB of 80 GiB/)).toBeInTheDocument()
     expect(screen.getByText(/GPU 0: A100/)).toBeInTheDocument()
     expect(screen.getByText(/GPU 1: A100/)).toBeInTheDocument()
@@ -75,6 +80,6 @@ describe('GpuNodeCard', () => {
 
   it('singularizes one GPU and one model', () => {
     render(<GpuNodeCard node={node({ gpu_count: 1, model_count: 1 })} />)
-    expect(screen.getByText(/1 GPU, driver/)).toBeInTheDocument()
+    expect(screen.getByText(/1 GPU, 1 reserved/)).toBeInTheDocument()
   })
 })

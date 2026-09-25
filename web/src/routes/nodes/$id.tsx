@@ -14,6 +14,7 @@ import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { CordonNodeDialog } from '../../components/CordonNodeDialog'
 import { DrainNodeDialog } from '../../components/DrainNodeDialog'
 import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
+import { NodeGpuCard } from '../../components/NodeGpuCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
@@ -246,6 +247,8 @@ function NodeDetailPage() {
       </Card>
 
       <NodeAlertStatusCard nodeId={id} />
+
+      <NodeGpuCard gpu={node.gpu} />
 
       <NodeMeshCard nodeId={id} nodeName={node.name} />
 

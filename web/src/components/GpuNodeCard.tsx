@@ -30,7 +30,8 @@ export function GpuNodeCard({ node }: { node: GpuNode }) {
             {node.is_local ? <Badge variant="outline">this host</Badge> : null}
           </h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {node.gpu_count} GPU{node.gpu_count === 1 ? '' : 's'}
+            {node.gpu_count} GPU{node.gpu_count === 1 ? '' : 's'},{' '}
+            {node.reserved_gpus} reserved, {node.free_gpus} free
             {node.driver_version ? `, driver ${node.driver_version}` : ''}
             {`, ${node.model_count} model${node.model_count === 1 ? '' : 's'}`}
           </p>
@@ -58,6 +59,15 @@ export function GpuNodeCard({ node }: { node: GpuNode }) {
         </ProgressLabel>
         <ProgressValue className="ml-auto text-xs text-muted-foreground" />
       </Progress>
+
+      {node.reservations.length > 0 ? (
+        <p className="mt-3 text-xs text-muted-foreground">
+          Reserved by{' '}
+          <span className="font-mono text-foreground">
+            {node.reservations.join(', ')}
+          </span>
+        </p>
+      ) : null}
 
       <ul className="mt-3 space-y-1.5">
         {node.devices.map((d) => (
