@@ -66,6 +66,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
 	case "databases":
 		return runDatabases(prog, args[1:], stdout, stderr, lookupEnv)
+	case "models":
+		return runModels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth":
 		return runAuth(prog, args[1:], stdout, stderr, lookupEnv)
 	case "profile":
@@ -179,6 +181,7 @@ Usage:
   %[1]s databases create [flags]     create a managed database
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
+  %[1]s models list|get|deploy|logs|delete|restart|rotate-key|gpus [flags]   AI models on GPU nodes
   %[1]s domains list [flags]           list every app's domains in one call
   %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
   %[1]s pitr enable|disable|status|base-backups|restore <database> [flags]   point-in-time restore (postgres only)

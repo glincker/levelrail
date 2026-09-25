@@ -540,6 +540,50 @@ levelrail databases start <name> [flags]
 levelrail databases stop <name> [flags]
 ```
 
+## Models
+
+```
+levelrail models list [flags]
+```
+list AI models with their status
+
+```
+levelrail models get <name> [flags]
+```
+show one model, its status and OpenAI-compatible base URL
+
+```
+levelrail models deploy --name NAME --engine ENGINE --model MODEL [flags]
+```
+deploy a model on a GPU node; prints the API key once. Flags: --node, --gpus, --gpu-devices, --context, --quantization, --domain, --hf-token-from-env
+
+```
+levelrail models logs <name> [flags]
+```
+search stored engine logs, or --follow to stream download and load progress live
+
+```
+levelrail models delete <name> [flags]
+```
+remove a model; the downloaded weights volume is kept
+
+```
+levelrail models restart <name> [flags]
+```
+recreate the engine container
+
+```
+levelrail models rotate-key <name> [flags]
+```
+issue a new API key, printed once
+
+```
+levelrail models gpus [flags]
+```
+list GPU nodes with driver, VRAM, usage and nvidia runtime status
+
+See [AI models](ai-models.md).
+
 ## Auth
 
 ```
