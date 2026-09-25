@@ -249,6 +249,12 @@ func (db *DB) CountPipelineLogs(ctx context.Context, runID string) (int, error) 
 // ListPipelineLogs returns a run's log lines with ID greater than afterID.
 // jobKey, when non-empty, filters to one job. limit <= 0 defaults to 1000.
 func (db *DB) ListPipelineLogs(ctx context.Context, runID, jobKey string, afterID int64, limit int) ([]PipelineLogLine, error) {
+	return db.ListPipelineStepLogs(ctx, runID, jobKey, nil, afterID, limit)
+}
+
+// ListPipelineStepLogs is ListPipelineLogs with an optional step filter
+// applied before the limit, so a late step is not crowded out by earlier ones.
+func (db *DB) ListPipelineStepLogs(ctx context.Context, runID, jobKey string, step *int, afterID int64, limit int) ([]PipelineLogLine, error) {
 	if limit <= 0 {
 		limit = 1000
 	}
@@ -257,6 +263,10 @@ func (db *DB) ListPipelineLogs(ctx context.Context, runID, jobKey string, afterI
 	if jobKey != "" {
 		q += ` AND job_key = ?`
 		args = append(args, jobKey)
+	}
+	if step != nil {
+		q += ` AND step_idx = ?`
+		args = append(args, *step)
 	}
 	rows, err := db.QueryContext(ctx, q+` ORDER BY id LIMIT ?`, append(args, limit)...)
 	if err != nil {

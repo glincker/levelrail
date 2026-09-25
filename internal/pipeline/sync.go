@@ -36,16 +36,23 @@ const (
 
 var syncNameRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`)
 
-// RepoFiles is the pipeline directory of a repository at a branch tip.
+// ErrSHAUnavailable means the requested commit could not be fetched, so the
+// definitions at that commit are unknown.
+var ErrSHAUnavailable = errors.New("pipeline sync: commit unavailable")
+
+// RepoFiles is the pipeline directory of a repository at one commit.
 type RepoFiles struct {
 	SHA   string
 	Dir   string
 	Files map[string][]byte
+	// Oversize lists files skipped for exceeding maxSyncFileSize, by size.
+	Oversize map[string]int64
 }
 
-// DirFetcher reads the first existing pipeline directory of a repository.
+// DirFetcher reads the first existing pipeline directory of a repository at
+// sha, or at the branch tip when sha is empty.
 type DirFetcher interface {
-	FetchFiles(ctx context.Context, url, token, branch string, dirs []string) (RepoFiles, error)
+	FetchFiles(ctx context.Context, url, token, branch, sha string, dirs []string) (RepoFiles, error)
 }
 
 // SyncStore is the persistence surface a Syncer needs. *store.DB satisfies it.
@@ -146,6 +153,10 @@ func decideSync(existing *store.Pipeline, hash string, repoIsTruth bool) syncAct
 // definitions it finds. The outcome, or the error, is recorded so the
 // dashboard can show it.
 func (s *Syncer) Sync(ctx context.Context, app string) (SyncResult, error) {
+	return s.sync(ctx, app, "")
+}
+
+func (s *Syncer) sync(ctx context.Context, app, sha string) (SyncResult, error) {
 	st := s.cfg.Store
 	gs, err := st.GetGitSource(ctx, app)
 	if errors.Is(err, store.ErrGitSourceNotFound) {
@@ -158,7 +169,7 @@ func (s *Syncer) Sync(ctx context.Context, app string) (SyncResult, error) {
 	if err != nil {
 		return SyncResult{}, fmt.Errorf("pipeline sync: %w", err)
 	}
-	res, err := s.run(ctx, app, gs, state.RepoIsTruth)
+	res, err := s.run(ctx, app, sha, gs, state.RepoIsTruth)
 	state.LastSyncAt = s.cfg.Now().UTC()
 	if err != nil {
 		state.LastError = err.Error()
@@ -171,9 +182,10 @@ func (s *Syncer) Sync(ctx context.Context, app string) (SyncResult, error) {
 	return res, err
 }
 
-// SyncOnPush syncs when ref is a push to the app's tracked branch. ran is
-// false for any other ref or an app with no repository.
-func (s *Syncer) SyncOnPush(ctx context.Context, app, ref string) (res SyncResult, ran bool, err error) {
+// SyncOnPush syncs the definitions at the pushed commit sha when ref is a push
+// to the app's tracked branch. ran is false for any other ref or an app with
+// no repository.
+func (s *Syncer) SyncOnPush(ctx context.Context, app, ref, sha string) (res SyncResult, ran bool, err error) {
 	branch, ok := strings.CutPrefix(ref, "refs/heads/")
 	if !ok {
 		return SyncResult{}, false, nil
@@ -188,16 +200,16 @@ func (s *Syncer) SyncOnPush(ctx context.Context, app, ref string) (res SyncResul
 	if gs.Branch != "" && gs.Branch != branch {
 		return SyncResult{}, false, nil
 	}
-	res, err = s.Sync(ctx, app)
+	res, err = s.sync(ctx, app, sha)
 	return res, true, err
 }
 
-func (s *Syncer) run(ctx context.Context, app string, gs *store.GitSource, repoIsTruth bool) (SyncResult, error) {
+func (s *Syncer) run(ctx context.Context, app, sha string, gs *store.GitSource, repoIsTruth bool) (SyncResult, error) {
 	url, token, err := s.cfg.Source.RepoInfo(ctx, app)
 	if err != nil {
 		return SyncResult{}, fmt.Errorf("pipeline sync: resolve repository: %w", err)
 	}
-	files, err := s.cfg.Fetcher.FetchFiles(ctx, url, token, gs.Branch, DiscoverDirs(s.cfg.BrandName))
+	files, err := s.cfg.Fetcher.FetchFiles(ctx, url, token, gs.Branch, sha, DiscoverDirs(s.cfg.BrandName))
 	if err != nil {
 		return SyncResult{}, fmt.Errorf("pipeline sync: read repository: %w", err)
 	}
@@ -211,6 +223,14 @@ func (s *Syncer) run(ctx context.Context, app string, gs *store.GitSource, repoI
 	}
 
 	res := SyncResult{SHA: files.SHA, Dir: files.Dir, Items: []SyncItem{}}
+	oversize := make([]string, 0, len(files.Oversize))
+	for f := range files.Oversize {
+		oversize = append(oversize, f)
+	}
+	sort.Strings(oversize)
+	for _, f := range oversize {
+		res.Items = append(res.Items, SyncItem{File: f, Outcome: SyncInvalid, Message: fmt.Sprintf("file is larger than %d KiB", maxSyncFileSize/1024)})
+	}
 	names := make([]string, 0, len(files.Files))
 	for f := range files.Files {
 		names = append(names, f)
