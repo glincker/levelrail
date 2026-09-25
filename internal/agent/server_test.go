@@ -43,6 +43,9 @@ type fakeEnrollStore struct {
 	touchMu       sync.Mutex
 	lastTouchedID string
 	touchCount    int
+
+	agentInfoMu sync.Mutex
+	agentInfo   map[string]store.NodeAgentInfo
 }
 
 func newFakeEnrollStore() *fakeEnrollStore {

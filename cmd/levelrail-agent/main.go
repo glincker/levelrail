@@ -18,12 +18,13 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -67,12 +68,16 @@ func run(logger *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	logger.Info("starting", slog.String("version", version.Version))
-
 	addr := os.Getenv("APP_CONTROL_PLANE_ADDR")
 	if addr == "" {
 		return fmt.Errorf("APP_CONTROL_PLANE_ADDR must be set (host:port of the control plane's agent gRPC listener)")
 	}
+
+	if len(os.Args) > 1 && os.Args[1] == "reenroll" {
+		return runReenroll(ctx, addr, identityFilePath(), logger)
+	}
+
+	logger.Info("starting", slog.String("version", version.Version))
 
 	id, err := loadOrEnroll(ctx, addr, identityFilePath(), logger)
 	if err != nil {
@@ -110,7 +115,10 @@ func run(logger *slog.Logger) error {
 		defer meshCfg.close()
 	}
 
-	runReconnectLoop(ctx, addr, id, client, builder, meshCfg, logger)
+	file := agent.NewIdentityFile(identityFilePath())
+	renewer := agent.NewRenewer(agent.NewIdentityHolder(id), file, agent.CheckIdentityAt(addr),
+		agent.RenewConfig{Fraction: floatFromEnv("APP_AGENT_CERT_RENEW_FRACTION")}, logger)
+	runReconnectLoop(ctx, addr, renewer, file, client, builder, meshCfg, logger)
 	return nil
 }
 
@@ -146,21 +154,17 @@ func loadBuildRunner(ctx context.Context, logger *slog.Logger) (agent.BuildRunne
 }
 
 // runReconnectLoop calls agent.RunSession repeatedly with exponential
-// backoff between attempts, until ctx is cancelled. No error return: it
-// never gives up permanently on its own, by design. ADR 003's own
-// Consequences section names reconnection as real, standing Phase 3
-// work ("real, tested" reconnection), not a footnote: a reverse-dialed
-// agent that gives up permanently on the first disconnect would be
-// strictly worse than the SSH-per-command tools ADR 003 rejected, which
-// at least retry by construction on the next invocation. Only ctx
-// cancellation (process shutdown) ends this loop.
-func runReconnectLoop(ctx context.Context, addr string, id *agent.Identity, rt docker.Runtime, builder agent.BuildRunner, meshCfg *meshAgentSetup, logger *slog.Logger) {
-	var opts []agent.SessionOption
+// backoff between attempts, until ctx is cancelled. It never gives up on
+// its own: a reverse-dialed agent that stops retrying would be worse than
+// the SSH-per-command tools ADR 003 rejected.
+func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, file *agent.IdentityFile, rt docker.Runtime, builder agent.BuildRunner, meshCfg *meshAgentSetup, logger *slog.Logger) {
+	holder := renewer.Holder()
+	opts := []agent.SessionOption{agent.WithRenewer(renewer)}
 	if builder != nil {
 		opts = append(opts, agent.WithBuildRunner(builder))
 	}
 	if meshCfg != nil {
-		opts = append(opts, agent.WithMesh(id.NodeID, meshCfg.sink))
+		opts = append(opts, agent.WithMesh(holder.Current().NodeID, meshCfg.sink))
 	}
 	if rl, ok := rt.(gpu.RuntimeLister); ok {
 		opts = append(opts, agent.WithGPUProbe(func(ctx context.Context) gpu.Info {
@@ -180,12 +184,27 @@ func runReconnectLoop(ctx context.Context, addr string, id *agent.Identity, rt d
 			return
 		}
 
-		err := agent.RunSession(ctx, addr, id, rt, logger, opts...)
+		var err error
+		if holder.Current().Expired(time.Now()) && !adoptIdentityFromDisk(holder, file, logger) {
+			err = errors.New("certificate expired")
+			delay = reconnectMaxDelay
+		} else {
+			err = agent.RunSession(ctx, addr, holder.Current(), rt, logger, opts...)
+		}
 		if ctx.Err() != nil {
 			return // shutting down: the session ending is expected, not a failure
 		}
-		logger.Warn("session ended, reconnecting",
-			slog.String("error", err.Error()), slog.Duration("delay", delay))
+		if agent.IsAuthRejection(err) || holder.Current().Expired(time.Now()) {
+			if adoptIdentityFromDisk(holder, file, logger) {
+				delay = reconnectBaseDelay
+				continue
+			}
+			logger.Error("control plane no longer accepts this node's certificate: generate a re-enroll token for this node in the dashboard or CLI, then run: "+reenrollCommandHint(),
+				slog.String("node_id", holder.Current().NodeID), slog.String("error", err.Error()))
+		} else {
+			logger.Warn("session ended, reconnecting",
+				slog.String("error", err.Error()), slog.Duration("delay", delay))
+		}
 
 		select {
 		case <-ctx.Done():
@@ -200,13 +219,65 @@ func runReconnectLoop(ctx context.Context, addr string, id *agent.Identity, rt d
 	}
 }
 
+// adoptIdentityFromDisk switches to the identity file's contents when it
+// holds a different, unexpired certificate, which is how a re-enrollment
+// run as a separate command reaches the running agent without a restart.
+func adoptIdentityFromDisk(holder *agent.IdentityHolder, file *agent.IdentityFile, logger *slog.Logger) bool {
+	onDisk, err := file.Load()
+	if err != nil || onDisk.Expired(time.Now()) || string(onDisk.ClientCertPEM) == string(holder.Current().ClientCertPEM) {
+		return false
+	}
+	holder.Set(onDisk)
+	logger.Info("picked up a new identity from disk", slog.String("node_id", onDisk.NodeID))
+	return true
+}
+
+func reenrollCommandHint() string {
+	return "APP_REENROLL_TOKEN=<token> " + filepath.Base(os.Args[0]) + " reenroll"
+}
+
+// runReenroll implements "<agent> reenroll": exchanges APP_REENROLL_TOKEN
+// for a new certificate for this node and saves it. A running agent picks
+// it up at its next reconnect.
+func runReenroll(ctx context.Context, addr, path string, logger *slog.Logger) error {
+	token := os.Getenv("APP_REENROLL_TOKEN")
+	if token == "" {
+		return fmt.Errorf("APP_REENROLL_TOKEN must be set to a re-enroll token generated for this node")
+	}
+	file := agent.NewIdentityFile(path)
+	var nodeID string
+	var opts []agent.EnrollOption
+	if fp := os.Getenv("APP_CA_FINGERPRINT"); fp != "" {
+		opts = append(opts, agent.WithPinnedCAFingerprint(fp))
+	}
+	if existing, err := file.Load(); err == nil {
+		nodeID = existing.NodeID
+		opts = append(opts, agent.WithTrustedCA(existing.CACertPEM))
+	} else if len(opts) == 0 {
+		logger.Warn("no identity file and APP_CA_FINGERPRINT is not set: trusting the control plane's certificate on first use")
+	}
+	id, err := agent.DialReenroll(ctx, addr, token, nodeID, opts...)
+	if err != nil {
+		return fmt.Errorf("re-enroll: %w", err)
+	}
+	if err := file.Save(id); err != nil {
+		return fmt.Errorf("persist identity to %s: %w", path, err)
+	}
+	if err := file.Confirm(); err != nil {
+		return err
+	}
+	logger.Info("re-enrolled: a running agent picks up the new certificate at its next reconnect, or start the agent now", slog.String("node_id", id.NodeID))
+	return nil
+}
+
 // loadOrEnroll loads a previously persisted identity from path, or, if
 // none exists yet, enrolls with the control plane using APP_JOIN_TOKEN
 // and persists the result. A node only ever enrolls once in its
 // lifetime; every subsequent run of this binary against the same
 // identity file just loads what's already there.
 func loadOrEnroll(ctx context.Context, addr, path string, logger *slog.Logger) (*agent.Identity, error) {
-	id, err := loadIdentity(path)
+	file := agent.NewIdentityFile(path)
+	id, err := file.ResolveStaged(ctx, agent.CheckIdentityAt(addr))
 	if err == nil {
 		return id, nil
 	}
@@ -238,57 +309,11 @@ func loadOrEnroll(ctx context.Context, addr, path string, logger *slog.Logger) (
 	if err != nil {
 		return nil, fmt.Errorf("enroll: %w", err)
 	}
-	if err := saveIdentity(path, id); err != nil {
+	if err := file.Save(id); err != nil {
 		return nil, fmt.Errorf("persist identity to %s: %w", path, err)
 	}
 	logger.Info("enrolled", slog.String("node_id", id.NodeID))
 	return id, nil
-}
-
-// identityFileFormat is identityFilePath's on-disk JSON shape.
-// []byte fields marshal as base64, so the PEM data (already ASCII) ends
-// up double-encoded; a real inefficiency for a file this small and
-// written once at enrollment, not worth a custom encoding to avoid.
-type identityFileFormat struct {
-	NodeID        string `json:"node_id"`
-	ClientCertPEM []byte `json:"client_cert_pem"`
-	ClientKeyPEM  []byte `json:"client_key_pem"`
-	CACertPEM     []byte `json:"ca_cert_pem"`
-}
-
-func loadIdentity(path string) (*agent.Identity, error) {
-	data, err := os.ReadFile(path) //nolint:gosec // operator-controlled config path, not user input
-	if err != nil {
-		return nil, err
-	}
-	var f identityFileFormat
-	if err := json.Unmarshal(data, &f); err != nil {
-		return nil, fmt.Errorf("parse identity file: %w", err)
-	}
-	return &agent.Identity{
-		NodeID:        f.NodeID,
-		ClientCertPEM: f.ClientCertPEM,
-		ClientKeyPEM:  f.ClientKeyPEM,
-		CACertPEM:     f.CACertPEM,
-	}, nil
-}
-
-func saveIdentity(path string, id *agent.Identity) error {
-	f := identityFileFormat{
-		NodeID:        id.NodeID,
-		ClientCertPEM: id.ClientCertPEM,
-		ClientKeyPEM:  id.ClientKeyPEM,
-		CACertPEM:     id.CACertPEM,
-	}
-	data, err := json.MarshalIndent(f, "", "  ")
-	if err != nil {
-		return fmt.Errorf("encode identity: %w", err)
-	}
-	// 0o600: this file contains the node's private key, the same
-	// "not world/group readable" requirement CA key persistence
-	// already applies control-plane-side (cmd/levelrail/main.go's
-	// loadOrGenerateAgentCA).
-	return os.WriteFile(path, data, 0o600)
 }
 
 func identityFilePath() string {
@@ -336,4 +361,14 @@ func keepaliveFromEnv() (t, timeout time.Duration) {
 		}
 	}
 	return t, timeout
+}
+
+// floatFromEnv returns name parsed as a float, or 0 when unset or invalid
+// so the caller's default applies.
+func floatFromEnv(name string) float64 {
+	v, err := strconv.ParseFloat(os.Getenv(name), 64)
+	if err != nil {
+		return 0
+	}
+	return v
 }

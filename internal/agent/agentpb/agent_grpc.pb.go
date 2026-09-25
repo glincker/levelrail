@@ -40,8 +40,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AgentService_Enroll_FullMethodName  = "/levelrail.agent.v1.AgentService/Enroll"
-	AgentService_Session_FullMethodName = "/levelrail.agent.v1.AgentService/Session"
+	AgentService_Enroll_FullMethodName        = "/levelrail.agent.v1.AgentService/Enroll"
+	AgentService_Session_FullMethodName       = "/levelrail.agent.v1.AgentService/Session"
+	AgentService_Renew_FullMethodName         = "/levelrail.agent.v1.AgentService/Renew"
+	AgentService_Reenroll_FullMethodName      = "/levelrail.agent.v1.AgentService/Reenroll"
+	AgentService_CheckIdentity_FullMethodName = "/levelrail.agent.v1.AgentService/CheckIdentity"
 )
 
 // AgentServiceClient is the client API for AgentService service.
@@ -62,6 +65,18 @@ type AgentServiceClient interface {
 	// relay ADR 003 calls out: "the agent streams Docker events up to
 	// the control plane rather than the control plane polling down").
 	Session(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AgentMessage, ControlMessage], error)
+	// Renew issues a fresh certificate for a CSR, authenticated by the
+	// caller's current mTLS certificate (or its previous one inside the
+	// overlap window). See ADR 021.
+	Renew(ctx context.Context, in *RenewRequest, opts ...grpc.CallOption) (*RenewResponse, error)
+	// Reenroll exchanges a one-time re-enrollment token bound to an existing
+	// node for a new certificate, keeping the node's identity and history.
+	// Like Enroll, it is called without a client certificate.
+	Reenroll(ctx context.Context, in *ReenrollRequest, opts ...grpc.CallOption) (*ReenrollResponse, error)
+	// CheckIdentity confirms the presented client certificate is accepted
+	// for its node, without opening a Session. The agent uses it to test a
+	// renewed certificate before discarding the old one.
+	CheckIdentity(ctx context.Context, in *CheckIdentityRequest, opts ...grpc.CallOption) (*CheckIdentityResponse, error)
 }
 
 type agentServiceClient struct {
@@ -95,6 +110,36 @@ func (c *agentServiceClient) Session(ctx context.Context, opts ...grpc.CallOptio
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type AgentService_SessionClient = grpc.BidiStreamingClient[AgentMessage, ControlMessage]
 
+func (c *agentServiceClient) Renew(ctx context.Context, in *RenewRequest, opts ...grpc.CallOption) (*RenewResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RenewResponse)
+	err := c.cc.Invoke(ctx, AgentService_Renew_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentServiceClient) Reenroll(ctx context.Context, in *ReenrollRequest, opts ...grpc.CallOption) (*ReenrollResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReenrollResponse)
+	err := c.cc.Invoke(ctx, AgentService_Reenroll_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentServiceClient) CheckIdentity(ctx context.Context, in *CheckIdentityRequest, opts ...grpc.CallOption) (*CheckIdentityResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckIdentityResponse)
+	err := c.cc.Invoke(ctx, AgentService_CheckIdentity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AgentServiceServer is the server API for AgentService service.
 // All implementations must embed UnimplementedAgentServiceServer
 // for forward compatibility.
@@ -113,6 +158,18 @@ type AgentServiceServer interface {
 	// relay ADR 003 calls out: "the agent streams Docker events up to
 	// the control plane rather than the control plane polling down").
 	Session(grpc.BidiStreamingServer[AgentMessage, ControlMessage]) error
+	// Renew issues a fresh certificate for a CSR, authenticated by the
+	// caller's current mTLS certificate (or its previous one inside the
+	// overlap window). See ADR 021.
+	Renew(context.Context, *RenewRequest) (*RenewResponse, error)
+	// Reenroll exchanges a one-time re-enrollment token bound to an existing
+	// node for a new certificate, keeping the node's identity and history.
+	// Like Enroll, it is called without a client certificate.
+	Reenroll(context.Context, *ReenrollRequest) (*ReenrollResponse, error)
+	// CheckIdentity confirms the presented client certificate is accepted
+	// for its node, without opening a Session. The agent uses it to test a
+	// renewed certificate before discarding the old one.
+	CheckIdentity(context.Context, *CheckIdentityRequest) (*CheckIdentityResponse, error)
 	mustEmbedUnimplementedAgentServiceServer()
 }
 
@@ -128,6 +185,15 @@ func (UnimplementedAgentServiceServer) Enroll(context.Context, *EnrollRequest) (
 }
 func (UnimplementedAgentServiceServer) Session(grpc.BidiStreamingServer[AgentMessage, ControlMessage]) error {
 	return status.Error(codes.Unimplemented, "method Session not implemented")
+}
+func (UnimplementedAgentServiceServer) Renew(context.Context, *RenewRequest) (*RenewResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Renew not implemented")
+}
+func (UnimplementedAgentServiceServer) Reenroll(context.Context, *ReenrollRequest) (*ReenrollResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Reenroll not implemented")
+}
+func (UnimplementedAgentServiceServer) CheckIdentity(context.Context, *CheckIdentityRequest) (*CheckIdentityResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckIdentity not implemented")
 }
 func (UnimplementedAgentServiceServer) mustEmbedUnimplementedAgentServiceServer() {}
 func (UnimplementedAgentServiceServer) testEmbeddedByValue()                      {}
@@ -175,6 +241,60 @@ func _AgentService_Session_Handler(srv interface{}, stream grpc.ServerStream) er
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type AgentService_SessionServer = grpc.BidiStreamingServer[AgentMessage, ControlMessage]
 
+func _AgentService_Renew_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RenewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).Renew(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_Renew_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).Renew(ctx, req.(*RenewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentService_Reenroll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReenrollRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).Reenroll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_Reenroll_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).Reenroll(ctx, req.(*ReenrollRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentService_CheckIdentity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckIdentityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).CheckIdentity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_CheckIdentity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).CheckIdentity(ctx, req.(*CheckIdentityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AgentService_ServiceDesc is the grpc.ServiceDesc for AgentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -185,6 +305,18 @@ var AgentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Enroll",
 			Handler:    _AgentService_Enroll_Handler,
+		},
+		{
+			MethodName: "Renew",
+			Handler:    _AgentService_Renew_Handler,
+		},
+		{
+			MethodName: "Reenroll",
+			Handler:    _AgentService_Reenroll_Handler,
+		},
+		{
+			MethodName: "CheckIdentity",
+			Handler:    _AgentService_CheckIdentity_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

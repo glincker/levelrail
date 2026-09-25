@@ -42,6 +42,21 @@ service AgentService {
   // relay ADR 003 calls out: "the agent streams Docker events up to
   // the control plane rather than the control plane polling down").
   rpc Session(stream AgentMessage) returns (stream ControlMessage);
+
+  // Renew issues a fresh certificate for a CSR, authenticated by the
+  // caller's current mTLS certificate (or its previous one inside the
+  // overlap window). See ADR 021.
+  rpc Renew(RenewRequest) returns (RenewResponse);
+
+  // Reenroll exchanges a one-time re-enrollment token bound to an existing
+  // node for a new certificate, keeping the node's identity and history.
+  // Like Enroll, it is called without a client certificate.
+  rpc Reenroll(ReenrollRequest) returns (ReenrollResponse);
+
+  // CheckIdentity confirms the presented client certificate is accepted
+  // for its node, without opening a Session. The agent uses it to test a
+  // renewed certificate before discarding the old one.
+  rpc CheckIdentity(CheckIdentityRequest) returns (CheckIdentityResponse);
 }
 
 message EnrollRequest {
@@ -51,6 +66,11 @@ message EnrollRequest {
   // (store.ErrNodeNameTaken) the same way it would for any other
   // SaveNode caller.
   string node_name = 2;
+  // csr_der is a PKCS#10 request for the agent's own key. When set the
+  // control plane signs it and never sees the private key; when empty
+  // (agents older than ADR 021) the control plane generates the key.
+  bytes csr_der = 3;
+  AgentInfo agent = 4;
 }
 
 message EnrollResponse {
@@ -73,6 +93,51 @@ message EnrollResponse {
   // a private, self-issued PKI for exactly this one relationship, not a
   // publicly-trusted certificate).
   bytes ca_cert_pem = 4;
+  // not_after is the issued certificate's expiry.
+  google.protobuf.Timestamp not_after = 5;
+}
+
+// AgentInfo is what an agent reports about its own build and platform.
+message AgentInfo {
+  string version = 1;
+  string commit = 2;
+  string os = 3;
+  string arch = 4;
+}
+
+message RenewRequest {
+  bytes csr_der = 1;
+}
+
+message RenewResponse {
+  bytes client_cert_pem = 1;
+  bytes ca_cert_pem = 2;
+  google.protobuf.Timestamp not_after = 3;
+}
+
+message ReenrollRequest {
+  string reenroll_token = 1;
+  // node_id is optional; when set it must match the node the token is
+  // bound to.
+  string node_id = 2;
+  bytes csr_der = 3;
+  AgentInfo agent = 4;
+}
+
+message ReenrollResponse {
+  string node_id = 1;
+  bytes client_cert_pem = 2;
+  bytes ca_cert_pem = 3;
+  google.protobuf.Timestamp not_after = 4;
+}
+
+message CheckIdentityRequest {}
+
+message CheckIdentityResponse {
+  string node_id = 1;
+  // current is false when the presented certificate is the previous one,
+  // still accepted inside the overlap window.
+  bool current = 2;
 }
 
 // AgentMessage is one frame the agent sends up the Session stream: a
@@ -103,6 +168,9 @@ message AgentMessage {
     // looking healthy for as long as the transport happens to stay up.
     Heartbeat heartbeat = 7;
     GPUReport gpu_report = 8;
+    // Hello is sent once, first, on every Session. Control planes that
+    // predate it ignore the frame.
+    AgentInfo hello = 9;
   }
 }
 

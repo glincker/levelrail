@@ -1875,6 +1875,10 @@ type NodeResource struct {
 	IsLocal bool `json:"is_local"`
 	// GPU is set when the node reported an NVIDIA GPU.
 	GPU *NodeGPUResource `json:"gpu,omitempty"`
+	// Cert and Agent mirror the node's agent certificate lifecycle and the
+	// agent's self-reported build (node_cert.go in this package).
+	Cert  *NodeCertResource  `json:"cert,omitempty"`
+	Agent *NodeAgentResource `json:"agent,omitempty"`
 }
 
 // NodeAlertStatusResource mirrors internal/api's nodeAlertStatusResource
