@@ -9,6 +9,9 @@ import { docsManifestPlugin } from './vite-plugins/docsManifest.js'
 // https://vite.dev/config/
 export default defineConfig({
   server: {
+    // src/lib/docsContent.ts imports ../../../docs/**/*.md; Vite 8 refuses
+    // to serve files outside this list, so the Help page 403s without it.
+    fs: { allow: [path.resolve(import.meta.dirname, '..')] },
     // Dev-server only: `vite build`'s output never reads this block, so
     // there's no risk of a hardcoded localhost target leaking into the
     // embedded production frontend. Without this, `npm run dev` has no
