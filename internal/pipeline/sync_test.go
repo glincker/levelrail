@@ -28,7 +28,7 @@ type fakeFetcher struct {
 	got   struct{ url, token, branch string }
 }
 
-func (f *fakeFetcher) FetchFiles(_ context.Context, url, token, branch string, _ []string) (RepoFiles, error) {
+func (f *fakeFetcher) FetchFiles(_ context.Context, url, token, branch, _ string, _ []string) (RepoFiles, error) {
 	f.calls++
 	f.got.url, f.got.token, f.got.branch = url, token, branch
 	return f.files, f.err
@@ -232,6 +232,25 @@ func TestSyncRecordsFetchError(t *testing.T) {
 	}
 }
 
+func TestSyncReportsOversizeFilesFromFetcher(t *testing.T) {
+	h := newSyncHarness(t, "main")
+	h.set("sha1", map[string]string{"ci.yaml": syncYAMLA})
+	h.fx.files.Oversize = map[string]int64{"huge.yaml": maxSyncFileSize + 1}
+	res, err := h.syn.Sync(context.Background(), "web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var found bool
+	for _, it := range res.Items {
+		if it.File == "huge.yaml" && it.Outcome == SyncInvalid {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("items = %+v, want huge.yaml invalid", res.Items)
+	}
+}
+
 func TestSyncOnPushOnlyForTrackedBranch(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -248,7 +267,7 @@ func TestSyncOnPushOnlyForTrackedBranch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := newSyncHarness(t, tt.branch)
 			h.set("sha1", map[string]string{"ci.yaml": syncYAMLA})
-			_, ran, err := h.syn.SyncOnPush(context.Background(), "web", tt.ref)
+			_, ran, err := h.syn.SyncOnPush(context.Background(), "web", tt.ref, "sha1")
 			if err != nil || ran != tt.wantRan {
 				t.Fatalf("ran=%v err=%v, want ran=%v", ran, err, tt.wantRan)
 			}
@@ -258,7 +277,7 @@ func TestSyncOnPushOnlyForTrackedBranch(t *testing.T) {
 		})
 	}
 	h := newSyncHarness(t, "main")
-	if _, ran, err := h.syn.SyncOnPush(context.Background(), "nogit", "refs/heads/main"); ran || err != nil {
+	if _, ran, err := h.syn.SyncOnPush(context.Background(), "nogit", "refs/heads/main", "sha1"); ran || err != nil {
 		t.Fatalf("app without repo: ran=%v err=%v", ran, err)
 	}
 }
@@ -294,7 +313,7 @@ func TestGitFetcherReadsPipelineDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := GitFetcher{}.FetchFiles(context.Background(), dir, "", "", []string{".ci/pipelines", ".pipelines"})
+	got, err := GitFetcher{}.FetchFiles(context.Background(), dir, "", "", "", []string{".ci/pipelines", ".pipelines"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -302,7 +321,7 @@ func TestGitFetcherReadsPipelineDir(t *testing.T) {
 		t.Fatalf("got = %+v", got)
 	}
 
-	none, err := GitFetcher{}.FetchFiles(context.Background(), dir, "", "", []string{".missing"})
+	none, err := GitFetcher{}.FetchFiles(context.Background(), dir, "", "", "", []string{".missing"})
 	if err != nil || len(none.Files) != 0 || none.SHA == "" {
 		t.Fatalf("no dir: %+v err %v", none, err)
 	}

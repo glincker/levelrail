@@ -19,7 +19,7 @@ const pipelineSyncTimeout = 2 * time.Minute
 // definitions. *pipeline.Syncer satisfies it.
 type PipelineSyncer interface {
 	Sync(ctx context.Context, app string) (pipeline.SyncResult, error)
-	SyncOnPush(ctx context.Context, app, ref string) (pipeline.SyncResult, bool, error)
+	SyncOnPush(ctx context.Context, app, ref, sha string) (pipeline.SyncResult, bool, error)
 }
 
 // PipelineSyncStore holds the per-app sync settings. *store.DB satisfies it.

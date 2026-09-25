@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -36,6 +37,7 @@ type fakeSyncer struct {
 	mu       sync.Mutex
 	syncs    int
 	pushRefs []string
+	pushSHAs []string
 	err      error
 	order    *[]string
 }
@@ -47,10 +49,11 @@ func (f *fakeSyncer) Sync(context.Context, string) (pipeline.SyncResult, error) 
 	return pipeline.SyncResult{SHA: "abc123", Dir: ".pipelines", Items: []pipeline.SyncItem{{File: "ci.yaml", Name: "ci", Outcome: pipeline.SyncCreated}}}, f.err
 }
 
-func (f *fakeSyncer) SyncOnPush(_ context.Context, _, ref string) (pipeline.SyncResult, bool, error) {
+func (f *fakeSyncer) SyncOnPush(_ context.Context, _, ref, sha string) (pipeline.SyncResult, bool, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.pushRefs = append(f.pushRefs, ref)
+	f.pushSHAs = append(f.pushSHAs, sha)
 	if f.order != nil {
 		*f.order = append(*f.order, "sync")
 	}
@@ -266,6 +269,9 @@ func TestFirePipelinePushSyncsBeforeTriggering(t *testing.T) {
 	if strings.Join(order, ",") != "sync,trigger" {
 		t.Fatalf("order = %v, want sync before trigger", order)
 	}
+	if len(syncer.pushSHAs) != 1 || syncer.pushSHAs[0] != "abc" {
+		t.Fatalf("sync must read the webhook commit, got %v", syncer.pushSHAs)
+	}
 
 	order = order[:0]
 	rt.firePipelinePush(context.Background(), "web", "refs/tags/v1", "abc")
@@ -285,5 +291,18 @@ func TestFirePipelinePushStillTriggersWhenSyncFails(t *testing.T) {
 	case <-events.done:
 	case <-time.After(5 * time.Second):
 		t.Fatal("a failed sync must not block triggers")
+	}
+}
+
+func TestFirePipelinePushTriggersWhenCommitUnavailable(t *testing.T) {
+	syncer := &fakeSyncer{err: fmt.Errorf("fetch: %w", pipeline.ErrSHAUnavailable)}
+	rt, _ := newSyncRouter(t, syncer)
+	events := &recordingEvents{done: make(chan struct{}, 1)}
+	rt.SetPipelineEvents(events)
+	rt.firePipelinePush(context.Background(), "web", "refs/heads/main", "abc")
+	select {
+	case <-events.done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("an unavailable commit must still trigger pipelines")
 	}
 }

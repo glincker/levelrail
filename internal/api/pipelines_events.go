@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"strings"
 
@@ -33,13 +34,15 @@ func (rt *Router) firePipelinePush(ctx context.Context, app, ref, sha string) {
 }
 
 // syncThenTriggerPush refreshes the app's repository-sourced definitions
-// before starting the pushed ref's pipelines, so a run uses the pushed
-// commit's pipeline files. It runs off the request goroutine because a
+// before starting the pushed ref's pipelines, reading the files at the pushed
+// commit so a run's SHA and definitions agree. It runs off the request goroutine because a
 // clone can outlast a git provider's webhook timeout.
 func (rt *Router) syncThenTriggerPush(ctx context.Context, app, ref, sha string) {
 	ctx, cancel := context.WithTimeout(ctx, pipelineSyncTimeout)
 	defer cancel()
-	if _, ran, err := rt.pipelineSync.syncer.SyncOnPush(ctx, app, ref); err != nil {
+	if _, ran, err := rt.pipelineSync.syncer.SyncOnPush(ctx, app, ref, sha); errors.Is(err, pipeline.ErrSHAUnavailable) {
+		rt.logger.Warn("api: pipeline sync skipped, pushed commit unavailable", slog.String("app", app), slog.String("ref", ref), slog.String("sha", sha), slog.String("error", err.Error()))
+	} else if err != nil {
 		rt.logger.Warn("api: pipeline sync on push failed", slog.String("app", app), slog.String("ref", ref), slog.String("error", err.Error()))
 	} else if ran {
 		rt.logger.Info("api: pipeline definitions synced on push", slog.String("app", app), slog.String("ref", ref))
