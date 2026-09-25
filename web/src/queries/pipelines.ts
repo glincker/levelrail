@@ -48,7 +48,7 @@ function base(app: string): string {
   return `/api/v1/apps/${encodeURIComponent(app)}`
 }
 
-async function requestJson<T>(
+export async function requestJson<T>(
   url: string,
   what: string,
   init?: RequestInit,
@@ -66,7 +66,7 @@ async function requestJson<T>(
   return (await res.json()) as T
 }
 
-function jsonInit(method: string, body?: unknown): RequestInit {
+export function jsonInit(method: string, body?: unknown): RequestInit {
   return {
     method,
     headers: { 'Content-Type': 'application/json' },

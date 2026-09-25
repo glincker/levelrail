@@ -39,6 +39,7 @@ func pipelinesUsage(prog string) string {
   %[1]s pipelines delete <app> <name> [flags]              delete a pipeline
   %[1]s pipelines run <app> <name> [--ref R] [--sha S] [--input k=v]... [--follow] [flags]
   %[1]s pipelines runs <app> [<run-id>] [--pipeline N] [--limit N] [flags]   list runs, or show one run's jobs and steps
+  %[1]s pipelines runs --all [--status S] [--app A] [--trigger T] [--pipeline N] [--limit N] [flags]   list runs across every app
   %[1]s pipelines logs <app> <run-id> [--job KEY] [--follow] [flags]
   %[1]s pipelines cancel <app> <run-id> [flags]
   %[1]s pipelines approve <app> <run-id> [--reject] [--comment TEXT] [--approval ID] [flags]   decide approval gates, or release a run held for approval
@@ -322,9 +323,22 @@ func runPipelinesRuns(prog string, args []string, stdout, stderr io.Writer, look
 	c := newPipelineCmd(prog, "pipelines runs", "print runs as JSON", stdout, stderr)
 	name := c.fs.String("pipeline", "", "only runs of this pipeline")
 	limit := c.fs.Int("limit", 20, "maximum runs to list")
-	client, pos, of, jsonOut, code, ok := c.parse(args, 1, 2, lookupEnv)
+	allFlags := addPipelineRunsAllFlags(c)
+	client, pos, of, jsonOut, code, ok := c.parse(args, 0, 2, lookupEnv)
 	if !ok {
 		return code
+	}
+	if *allFlags.all {
+		if len(pos) > 0 {
+			_, _ = fmt.Fprintf(stderr, "%s: pipelines runs --all takes no app argument, use --app to filter\n", prog)
+			return exitUsage
+		}
+		return c.listAllRuns(client, allFlags, *name, *limit, of, jsonOut)
+	}
+	if len(pos) == 0 {
+		_, _ = fmt.Fprintf(stderr, "%s: pipelines runs needs an app name, or --all for every app\n\n", prog)
+		c.fs.Usage()
+		return exitUsage
 	}
 	ctx := context.Background()
 	if len(pos) == 2 {
