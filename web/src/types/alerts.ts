@@ -36,6 +36,7 @@ export type AlertRuleKind =
   | 'backup_missing'
   | 'control_plane_backup_stale'
   | 'node_offline'
+  | 'node_cert_expiring'
   | 'log_archive_stale'
 
 export type BackupResourceKind = 'database' | 'volume'

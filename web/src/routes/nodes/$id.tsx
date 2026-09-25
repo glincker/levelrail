@@ -13,6 +13,7 @@ import type { NodeStatus } from '../../types/nodeDetail'
 import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { CordonNodeDialog } from '../../components/CordonNodeDialog'
 import { DrainNodeDialog } from '../../components/DrainNodeDialog'
+import { NodeAgentCard } from '../../components/NodeAgentCard'
 import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
 import { NodeGpuCard } from '../../components/NodeGpuCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
@@ -165,6 +166,8 @@ function NodeDetailPage() {
           </dl>
         </CardContent>
       </Card>
+
+      <NodeAgentCard node={node} />
 
       <Card>
         <CardHeader>
