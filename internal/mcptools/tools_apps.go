@@ -24,7 +24,7 @@ const (
 )
 
 func registerAppTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_apps",
 		Description: "List every app on the control plane: name, image, port, domains, and resource limits.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.AppResource, error) {
@@ -35,7 +35,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, apps, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_app",
 		Description: "Get one app's current desired state: image, port, domains, env, resources, health checks, command override, volumes, bind mounts.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
@@ -46,7 +46,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, app, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "deploy_app",
 		Description: "Point an existing app's desired image at a new tag. Asynchronous: returns once the desired state is saved, not once the new container is actually running; use get_app_status to watch it converge. Deploying an older, already-known tag is how a rollback is done. If the app is tagged with a protected environment, confirm true is required just to be accepted at all, and even then the result's pending_approval is set instead of the app actually deploying: a different, sufficiently privileged human must approve it (approve_deploy_approval) before it reaches a running container.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
@@ -57,7 +57,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, result, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "deploy_compose",
 		Description: "Deploy a Docker Compose YAML document as an app: one member service per compose service, all created in a single synchronous call.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployComposeInput) (*mcp.CallToolResult, apiclient.ComposeDeployResult, error) {
@@ -68,7 +68,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, result, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "rollback_app",
 		Description: "Point an existing app's desired image back at an older, already-built image tag. Identical request to deploy_app (there is no separate rollback endpoint server-side, matching how cmd/levelrail-cli's own 'apps rollback' and the web dashboard's 'Rollback to this build' button both work); given as its own tool so a rollback intent doesn't have to be expressed by re-purposing deploy_app. Asynchronous: use get_app_status to watch it converge. Subject to the same protected-environment approval gate deploy_app describes.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
@@ -79,7 +79,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, result, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "clone_app",
 		Description: "Duplicate an existing app's desired state (image, port, env, secret names, resources, health checks, strategy, replicas, project) under a new name, creating a new app. Domains and secret values never carry over: the clone starts domainless and with its secrets unset, and always starts on the local node regardless of where the source is pinned. Fails with a conflict if the new name already exists. This is a mutating, app-creating action, the same category deploy_app/restart_app already expose here.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneAppInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
@@ -90,7 +90,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, app, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_app_images",
 		Description: "List every locally-present image tag under an app's current image's repo, newest first. Useful for finding an exact tag to pass to deploy_app or rollback_app. Read-only; an empty list means nothing to suggest, not an error.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.ImageResource, error) {
@@ -101,7 +101,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, images, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "restart_app",
 		Description: "Force an app's running container to be recreated with no image change.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
@@ -112,7 +112,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, app, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_app_status",
 		Description: "Get an app's current stored reconcile conditions (type, status, reason, message) from the application controller. This is current status, not a historical log.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.ConditionResource, error) {
@@ -123,7 +123,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, conditions, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_deploys",
 		Description: "List an app's deploy/reconcile conditions. Same underlying data as get_app_status: the control plane has no separate deploy history log, only current reconcile conditions.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.ConditionResource, error) {
@@ -134,7 +134,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, conditions, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_app_logs",
 		Description: "Search an app's already-stored log entries in a time window. A bounded historical search, not a live tail: at most 200 entries are returned per call.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appLogsInput) (*mcp.CallToolResult, []apiclient.LogEntryResource, error) {
@@ -156,7 +156,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, tailLogEntries(entries, in.Tail), nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_deploy_attempts",
 		Description: "List an app's real deploy-attempt history: one row per actual trigger call (manual deploy, build, or webhook), newest first, with status, image, commit SHA, and timestamps. Additive to get_app_status/list_deploys' current reconcile conditions, not a replacement: this is a real log of what was tried, not just the latest state.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.DeployAttemptResource, error) {

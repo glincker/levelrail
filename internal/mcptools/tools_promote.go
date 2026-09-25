@@ -9,7 +9,7 @@ import (
 )
 
 func registerPromoteTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "preview_promote_app",
 		Description: "Show what promote_app would change, without applying it: the source and target apps, their current images, and the resulting image diff. Only the image tag is ever compared; env vars, ports, domains, and resource limits are the target app's own settings and are never part of this diff. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in promoteAppInput) (*mcp.CallToolResult, apiclient.PromotePreviewResource, error) {
@@ -20,7 +20,7 @@ func registerPromoteTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, preview, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "promote_app",
 		Description: "Point a sibling app's image at name's current image and redeploy it, through the same mechanism deploy_app uses. The sibling app is found in the same project as name: target names it explicitly, or it's auto-discovered when exactly one app tagged with the destination environment belongs to that project. Asynchronous: use get_app_status on the target app to watch it converge. Promoting into a protected environment requires confirm true just to be accepted at all, and even then the result's pending_approval is set instead of the promotion actually applying: a different, sufficiently privileged human must approve it (approve_deploy_approval) first.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in promoteAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {

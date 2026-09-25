@@ -41,7 +41,7 @@ type pipelineRunExplanation struct {
 }
 
 func registerPipelineTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_pipeline_runs",
 		Description: "List an app's CI/CD pipeline runs, newest first, with status, trigger, ref, and the reason string for each. Filter by pipeline name. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listPipelineRunsInput) (*mcp.CallToolResult, pipelineRunsOutput, error) {
@@ -55,7 +55,7 @@ func registerPipelineTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, pipelineRunsOutput{Runs: runs}, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "explain_pipeline_run",
 		Description: "Explain a pipeline run: its status and reason, the first failed job and step with exit code and the last lines of that step's output, any approval gates it is waiting on, and jobs that were skipped. Read-only; it reports what happened and never approves, cancels, or re-runs anything.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in pipelineRunInput) (*mcp.CallToolResult, pipelineRunExplanation, error) {

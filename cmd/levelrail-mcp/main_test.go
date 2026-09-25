@@ -40,7 +40,7 @@ func TestParseFlags(t *testing.T) {
 // nesting doesn't stack on top of this assertion logic's own branching.
 func assertParseFlagsCase(t *testing.T, tt parseFlagsTestCase) {
 	t.Helper()
-	token, apiURL, profile, transport, listen, err := parseFlags("levelrail-mcp", tt.args)
+	token, apiURL, profile, transport, listen, _, _, err := parseFlags("levelrail-mcp", tt.args)
 	if tt.wantErr {
 		if err == nil {
 			t.Fatalf("parseFlags() error = nil, want an error")
@@ -78,4 +78,25 @@ func TestNewServer_RegistersEveryTool(t *testing.T) {
 	// Full tool-call behavior (schema, dispatch, error mapping) is
 	// covered end-to-end in tools_test.go via the in-memory transport;
 	// this just confirms newServer builds without a live client.
+}
+
+func TestResolveOptions(t *testing.T) {
+	env := func(m map[string]string) func(string) (string, bool) {
+		return func(k string) (string, bool) { v, ok := m[k]; return v, ok }
+	}
+	opts, err := resolveOptions("", "", env(map[string]string{"APP_MCP_MODE": "read-only", "APP_MCP_TOOLSETS": "nodes,apps"}))
+	if err != nil || opts.Mode != "read-only" || len(opts.Toolsets) != 2 {
+		t.Fatalf("env resolution = %+v, %v", opts, err)
+	}
+	opts, err = resolveOptions("full", "", env(map[string]string{"APP_MCP_MODE": "read-only"}))
+	if err != nil || opts.Mode != "full" {
+		t.Fatalf("flag must win over env: %+v, %v", opts, err)
+	}
+	opts, err = resolveOptions("", "", env(nil))
+	if err != nil || opts.Mode != "standard" {
+		t.Fatalf("default mode = %+v, %v", opts, err)
+	}
+	if _, err = resolveOptions("bogus", "", env(nil)); err == nil {
+		t.Fatal("bogus mode must error")
+	}
 }

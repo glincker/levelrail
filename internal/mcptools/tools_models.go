@@ -38,7 +38,7 @@ type modelActionResult struct {
 }
 
 func registerModelTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_models",
 		Description: "List AI models deployed on GPU nodes: engine, model, node, and reconcile status (Downloading, Loading, ModelLoaded, NoGPUOnNode, and so on) with progress detail. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.ModelResource, error) {
@@ -49,7 +49,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, out, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_model",
 		Description: "Get one AI model: status with reason and progress message, OpenAI-compatible base URL, and API key prefix. The API key itself is never returned here.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelNameInput) (*mcp.CallToolResult, apiclient.ModelResource, error) {
@@ -60,7 +60,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, m, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_gpu_nodes",
 		Description: "List nodes that report NVIDIA GPUs: driver version, per-GPU VRAM total and used, utilization, whether Docker has the nvidia container runtime, the fix when it does not, how many models run there, and GPU reservations: reserved and free GPU counts plus which apps and models hold them (a workload only places on a node with enough free GPUs). Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.GPUNodeResource, error) {
@@ -71,7 +71,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, out, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_model_logs",
 		Description: "Search a model engine's already-stored logs in a time window; model download and load progress appears here. A bounded historical search, not a live tail: at most 200 entries per call.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelLogsInput) (*mcp.CallToolResult, []apiclient.LogEntryResource, error) {
@@ -91,7 +91,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, tailLogEntries(entries, in.Tail), nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "deploy_model",
 		Description: "Deploy an AI model as a container on a GPU node. Asynchronous: returns once saved, then the engine downloads weights into a persistent volume and loads the model; watch get_model until its status reason is ModelLoaded. The response carries the OpenAI-compatible base URL and a one-time API key that cannot be retrieved again (rotate_model_api_key issues a new one).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployModelInput) (*mcp.CallToolResult, apiclient.CreateModelResponse, error) {
@@ -106,7 +106,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, out, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "delete_model",
 		Description: "Delete an AI model. Its container is removed asynchronously; the downloaded weights volume is kept so a redeploy does not download again.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelNameInput) (*mcp.CallToolResult, modelActionResult, error) {
@@ -116,7 +116,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, modelActionResult{OK: true}, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "restart_model",
 		Description: "Recreate a model's engine container, for example after fixing the node's GPU runtime.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelNameInput) (*mcp.CallToolResult, modelActionResult, error) {
@@ -126,7 +126,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, modelActionResult{OK: true}, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "rotate_model_api_key",
 		Description: "Issue a new API key for a model, invalidating the old one immediately. The new key is returned once and cannot be retrieved again.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelNameInput) (*mcp.CallToolResult, apiclient.ModelAPIKeyResource, error) {

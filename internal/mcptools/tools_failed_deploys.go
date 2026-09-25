@@ -17,7 +17,7 @@ type failedDeploysOutput struct {
 }
 
 func registerFailedDeployTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_failed_deploys",
 		Description: "List each app's latest failed deploy attempt with its error and the image of its newest good deploy (last_good_image), so an agent can pick a rollback target. Filter with since (for example 24h). Read-only; use diagnose tools for the cause.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in failedDeploysInput) (*mcp.CallToolResult, failedDeploysOutput, error) {
