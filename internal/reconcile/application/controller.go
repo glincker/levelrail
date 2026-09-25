@@ -214,6 +214,7 @@ type Controller struct {
 	secretResolver  SecretResolver          // nil is valid: a service with no secret-backed env vars never needs one
 	deployRecorder  DeployRecorder          // nil is valid: deploy frequency just isn't recorded
 	meshDNSAddr     string                  // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	nodeGPU         NodeGPUChecker          // nil is valid: no GPU placement check, see WithNodeGPU
 	storageTargets  StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
 	projectEnv      ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
 	orgEnv          OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
@@ -510,6 +511,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	// broken deploy rather than one that has not happened yet.
 	if appspec.IsPendingImage(desired.Image) {
 		return unknownResult("AwaitingFirstBuild"), nil
+	}
+
+	if blocked := c.gpuPlacementBlock(ctx, desired); blocked != nil {
+		return *blocked, nil
 	}
 
 	// Defensive, not redundant: store.SaveDesiredService already
@@ -2117,6 +2122,9 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 			NanoCPUs:        desired.Resources.NanoCPUs,
 			SwapMemoryBytes: desired.Resources.SwapMemoryBytes,
 			CPUSetCPUs:      desired.Resources.CPUSetCPUs,
+		}
+		if g := desired.Resources.GPU; g != nil {
+			spec.GPU = &docker.GPURequest{Count: g.Count, DeviceIDs: g.DeviceIDs}
 		}
 	}
 	for _, v := range desired.Volumes {
