@@ -180,6 +180,8 @@ type Pipeline struct {
 	apps AppStore // nil is valid: every method except DeploySpec ignores it, see WithAppStore
 
 	loadBalancers LoadBalancerStore // nil is valid: the loadbalancer: block is then ignored
+
+	buildCache BuildCacheProvider // nil is valid: builds use only the local and registry caches
 }
 
 // New builds a Pipeline.
@@ -256,12 +258,15 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		dockerfilePath = filepath.Join(buildRoot, req.Service.Build.Path)
 	}
 
+	s3Cache, progress, cacheDone := p.prepareBuildCache(ctx, req.ServiceName, progress)
 	res, err := p.builder.Build(ctx, build.Request{
 		ContextDir:     buildRoot,
 		DockerfilePath: dockerfilePath,
 		Tag:            tag,
 		BuildArgs:      req.Service.Build.Args,
+		S3Cache:        s3Cache,
 	}, progress)
+	cacheDone()
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: build: %w", req.ServiceName, err)
 	}
