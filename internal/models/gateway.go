@@ -86,7 +86,7 @@ func (g *Gateway) Handle(w http.ResponseWriter, r *http.Request) bool {
 	if !ok {
 		return false
 	}
-	if !strings.HasPrefix(r.URL.Path, openAIPrefix) {
+	if !strings.HasPrefix(r.URL.Path, openAIPrefix) || hasDotSegment(r.URL.Path) {
 		writeOpenAIError(w, http.StatusNotFound, "not_found", "only OpenAI-compatible /v1/ routes are served")
 		return true
 	}
@@ -115,6 +115,17 @@ func (g *Gateway) Handle(w http.ResponseWriter, r *http.Request) bool {
 	}
 	proxy.ServeHTTP(w, r)
 	return true
+}
+
+// hasDotSegment reports a "." or ".." path segment, which the proxy would
+// forward uncleaned and let a /v1/ request reach the engine's admin routes.
+func hasDotSegment(p string) bool {
+	for _, seg := range strings.Split(p, "/") {
+		if seg == "." || seg == ".." {
+			return true
+		}
+	}
+	return false
 }
 
 // Middleware wraps next so requests for model hosts are handled by the
