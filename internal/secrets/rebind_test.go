@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"strings"
 	"testing"
@@ -233,6 +234,21 @@ func TestManager_RebindResumesAfterMidRunFailure(t *testing.T) {
 	}
 	for slot, v := range want {
 		mustResolve(t, m, slot[0], slot[1], v)
+	}
+}
+
+func TestManager_RebindPagesPastOnePage(t *testing.T) {
+	m, fs := testManager(t)
+	const n = rebindPageSize*2 + 7
+	for i := range n {
+		seedLegacy(t, m, fs, []string{"a", "b"}[i%2], fmt.Sprintf("K%04d", i), "v")
+	}
+	res, err := m.Rebind(context.Background())
+	if err != nil {
+		t.Fatalf("Rebind() error = %v", err)
+	}
+	if res.Scanned != n || res.Rebound != n || res.Remaining != 0 {
+		t.Fatalf("Rebind() = %+v, want all %d rebound across pages", res, n)
 	}
 }
 
