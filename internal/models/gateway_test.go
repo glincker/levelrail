@@ -59,7 +59,11 @@ func TestGateway(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPost, "http://"+tt.host+tt.path, nil)
+			method := http.MethodPost
+			if strings.HasSuffix(tt.path, "/v1/models") {
+				method = http.MethodGet
+			}
+			req := httptest.NewRequest(method, "http://"+tt.host+tt.path, nil)
 			if tt.auth != "" {
 				req.Header.Set("Authorization", tt.auth)
 			}
