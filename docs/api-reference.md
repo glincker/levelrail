@@ -106,7 +106,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 53 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 66 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -171,6 +171,19 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/egress-policy | AbilityRead | handleGetAppEgressPolicy |
 | PUT | /api/v1/apps/{name}/egress-policy | AbilityWriteSensitive | handleSetAppEgressPolicy |
 | DELETE | /api/v1/apps/{name}/egress-policy | AbilityWriteSensitive | handleClearAppEgressPolicy |
+| GET | /api/v1/apps/{name}/pipelines | AbilityRead | handleListPipelines |
+| POST | /api/v1/apps/{name}/pipelines | AbilityWrite | handleCreatePipeline |
+| GET | /api/v1/apps/{name}/pipelines/{pname} | AbilityRead | handleGetPipeline |
+| PUT | /api/v1/apps/{name}/pipelines/{pname} | AbilityWrite | handleUpdatePipeline |
+| DELETE | /api/v1/apps/{name}/pipelines/{pname} | AbilityWrite | handleDeletePipeline |
+| POST | /api/v1/apps/{name}/pipelines/{pname}/runs | AbilityDeploy | handleStartPipelineRun |
+| GET | /api/v1/apps/{name}/pipeline-runs | AbilityRead | handleListPipelineRuns |
+| GET | /api/v1/apps/{name}/pipeline-runs/{id} | AbilityRead | handleGetPipelineRun |
+| GET | /api/v1/apps/{name}/pipeline-runs/{id}/logs | AbilityRead | handleListPipelineRunLogs |
+| GET | /api/v1/apps/{name}/pipeline-runs/{id}/logs/stream | AbilityRead | handleStreamPipelineRunLogs |
+| POST | /api/v1/apps/{name}/pipeline-runs/{id}/cancel | AbilityDeploy | handleCancelPipelineRun |
+| POST | /api/v1/apps/{name}/pipeline-runs/{id}/rerun | AbilityDeploy | handleRerunPipelineRun |
+| POST | /api/v1/apps/{name}/pipeline-runs/{id}/approvals/{approval} | AbilityDeploy | handleDecidePipelineApproval |
 
 :::
 
@@ -590,6 +603,8 @@ Routes that do not fit an existing group.
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
 | POST | /api/v1/build/detect | AbilityDeploy | handleDetectFramework |
+| POST | /api/v1/pipelines/validate | AbilityRead | handleValidatePipeline |
+| GET | /api/v1/pipelines/schema | AbilityRead | handlePipelineSchema |
 | POST | /api/v1/tags | AbilityWrite | handleCreateTag |
 | GET | /api/v1/tags | AbilityRead | handleListTags |
 | DELETE | /api/v1/tags/{id} | AbilityWrite | handleDeleteTag |

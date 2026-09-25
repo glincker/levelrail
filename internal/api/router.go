@@ -332,6 +332,8 @@ type Router struct {
 	auditLog                       AuditStore                       // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
 	scheduledTasks                 ScheduledTaskStore               // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task needs no runner configuration, only actually running one does
 	scheduledTaskRunner            ScheduledTaskRunner              // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
+	pipelineStore                  PipelineStore                    // nil is valid: pipeline routes return 501 (WithPipelines)
+	pipelineRunner                 PipelineRunner                   // nil is valid: run/cancel/rerun return 501
 	featureFlags                   FeatureFlagStore                 // always set, same "core Store interface" shape as scheduledTasks above
 	tags                           TagStore                         // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
 	appIntegrations                AppIntegrationStore              // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)

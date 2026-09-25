@@ -15,6 +15,7 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /readyz", rt.handleReadyz)
 	rt.registerCoreRoutes(mux)
 	rt.registerPlatformRoutes(mux)
+	rt.registerPipelineRoutes(mux)
 
 	var h http.Handler = mux
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)

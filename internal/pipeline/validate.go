@@ -181,6 +181,13 @@ func checkWith(s Step, kind string) string {
 		}
 		return ""
 	}
+	if slices.Contains([]string{KindDeploy, KindPromote, KindRollback, KindNotify}, kind) {
+		for _, k := range []string{"service", "from", "to", "app"} {
+			if strings.Contains(s.With[k], "${{") {
+				return fmt.Sprintf("with.%s must be a literal name, not an expression", k)
+			}
+		}
+	}
 	switch kind {
 	case KindTest:
 		return need("command")
