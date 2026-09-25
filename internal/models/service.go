@@ -36,6 +36,8 @@ type ServiceStore interface {
 	GetConditionsForControllers(ctx context.Context, controllerNames []string) (map[string][]reconcile.Condition, error)
 	GetNode(ctx context.Context, id string) (*store.Node, error)
 	GetNodeGPU(ctx context.Context, nodeID string) (store.NodeGPU, bool, error)
+	ListNodes(ctx context.Context) ([]store.Node, error)
+	ListNodeGPUs(ctx context.Context) (map[string]store.NodeGPU, error)
 }
 
 // SecretWriter stores the HuggingFace token.
@@ -73,6 +75,13 @@ type Created struct {
 	APIKey string
 }
 
+// NodeGPU returns the GPU snapshot of nodeID ("" or the local node ID is
+// the control plane's host). known is false when the node has not
+// reported yet.
+func (s *Service) NodeGPU(ctx context.Context, nodeID string) (info gpu.Info, known bool, err error) {
+	return s.nodeGPU(ctx, nodeID)
+}
+
 func (s *Service) nodeGPU(ctx context.Context, nodeID string) (gpu.Info, bool, error) {
 	key := nodeID
 	if nodeID == "" || nodeID == s.localID {
@@ -81,6 +90,10 @@ func (s *Service) nodeGPU(ctx context.Context, nodeID string) (gpu.Info, bool, e
 	g, ok, err := s.store.GetNodeGPU(ctx, key)
 	return g.Info, ok, err
 }
+
+// SetLocalNodeID tells the service which node ID is the control plane's
+// own host. Call once at startup before serving requests.
+func (s *Service) SetLocalNodeID(id string) { s.localID = id }
 
 // Create validates and stores a new model, returning its one-time API key.
 func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
@@ -97,7 +110,10 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
 	if in.HFToken != "" && s.secrets == nil {
 		return Created{}, ErrSecretsUnavailable
 	}
-	if in.NodeID != "" && in.NodeID != s.localID {
+	if in.NodeID == s.localID {
+		in.NodeID = ""
+	}
+	if in.NodeID != "" {
 		if _, err := s.store.GetNode(ctx, in.NodeID); errors.Is(err, store.ErrNodeNotFound) {
 			return Created{}, ErrNodeNotFound
 		} else if err != nil {

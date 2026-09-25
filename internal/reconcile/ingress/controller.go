@@ -257,6 +257,8 @@ type Controller struct {
 	adminListen    string
 	storageDir     string
 
+	modelHosts ModelHostSource // nil is valid: no model routes, see WithModelHosts
+
 	// dashboardDial is the control plane's own dashboard bind address
 	// (see WithDashboardDial), reverse-proxied to whenever
 	// store.IngressSettings.PrimaryDomain is set. Empty means "no
@@ -729,6 +731,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			})
 		}
 	}
+
+	modelRoutes, err := c.modelRoutes(ctx, claimedHosts)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list model hosts: %w", err)
+	}
+	routes = append(routes, modelRoutes...)
 
 	cfg, err := ingress.BuildRoutesConfig(ingress.RoutesOptions{
 		ServerName:        c.serverName,

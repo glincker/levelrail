@@ -583,6 +583,23 @@ Endpoints for:
 
 `GET /api/v1/audit-log` accepts optional query params: `limit`, `before` (RFC3339 cursor), `path`, `method`, `client_kind` (exact match), `q` (case-insensitive substring across actor name, ability, method, path and remote address), `status=failed` (only `status_code >= 400`), and `format=csv`. All filters combine with AND and the CSV export honors them.
 
+## AI Models / GPUs
+
+AI model resources on GPU nodes and the GPU node snapshots they schedule against. Details: [AI models](/ai-models).
+
+| Method | Path | Ability | Handler |
+| --- | --- | --- | --- |
+| GET | /api/v1/models | AbilityRead | handleListModels |
+| POST | /api/v1/models | AbilityWriteSensitive | handleCreateModel |
+| GET | /api/v1/models/{name} | AbilityRead | handleGetModel |
+| DELETE | /api/v1/models/{name} | AbilityWrite | handleDeleteModel |
+| POST | /api/v1/models/{name}/restart | AbilityWrite | handleRestartModel |
+| POST | /api/v1/models/{name}/api-key | AbilityWriteSensitive | handleRotateModelAPIKey |
+| PUT | /api/v1/models/{name}/hf-token | AbilityWriteSensitive | handleSetModelHFToken |
+| GET | /api/v1/models/{name}/logs | AbilityRead | handleQueryModelLogs |
+| GET | /api/v1/models/{name}/logs/stream | AbilityRead | handleLiveModelLogStream |
+| GET | /api/v1/gpus | AbilityRead | handleListGPUNodes |
+
 ## Other
 
 Routes that do not fit an existing group.

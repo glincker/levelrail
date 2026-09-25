@@ -455,6 +455,9 @@ func WithDataDir(path string) Option {
 // time before the HTTP server starts accepting requests.
 func (rt *Router) SetLocalNodeID(id string) {
 	rt.localNodeID = id
+	if rt.models != nil {
+		rt.models.SetLocalNodeID(id)
+	}
 }
 
 // SetMesh wires GET /api/v1/mesh and POST /api/v1/nodes/{id}/mesh/rotate-key

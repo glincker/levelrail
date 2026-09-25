@@ -18,6 +18,10 @@ import (
 // has no nvidia runtime.
 const InstallHint = "Install nvidia-container-toolkit on the node (Ubuntu: add NVIDIA's apt repository, apt-get install -y nvidia-container-toolkit, then nvidia-ctk runtime configure --runtime=docker and systemctl restart docker)."
 
+// InstallCommand is the copy-pasteable fix for a missing nvidia runtime,
+// assuming NVIDIA's apt repository is already configured.
+const InstallCommand = "sudo apt-get install -y nvidia-container-toolkit && sudo nvidia-ctk runtime configure --runtime=docker && sudo systemctl restart docker"
+
 // DriverHint is the operator-facing remedy when no NVIDIA driver answers.
 const DriverHint = "No NVIDIA driver detected. On Ubuntu run ubuntu-drivers install (or apt-get install nvidia-driver-XXX), then reboot."
 
