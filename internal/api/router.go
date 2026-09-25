@@ -108,6 +108,7 @@ type Router struct {
 	composeSecrets         ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
 	alertRules             AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
+	lb                     lbDeps             // zero value is valid: load balancer routes return 501
 	sessions               *sessionStore
 	logins                 *loginLimiter
 	recoveryCodes          RecoveryCodeStore // always set, same "core Store interface" shape as auth above

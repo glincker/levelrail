@@ -40,6 +40,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/netguard"
 	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -641,6 +642,11 @@ func run(logger *slog.Logger) error {
 		IdleTimeout: 120 * time.Second,
 	}
 
+	lbRegistry := loadbalancer.NewRegistry()
+	lbStats := loadbalancer.CaddyAdminStats{Addr: ingressreconcile.DefaultAdminListen}
+	apiRouter.SetLoadBalancers(db, lbRegistry, lbStats)
+	go runLoadBalancerTelemetry(ctx, lbRegistry, lbStats, telemetryDB, metricsCollectionInterval, logger)
+
 	meshCfg, err := setupMesh(ctx, db, b, agentDataDir, agentRegistry, logger)
 	if err != nil {
 		// Not fatal: the same choice this function already makes for
@@ -682,6 +688,7 @@ func run(logger *slog.Logger) error {
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),
 		ingressHTTPAddr:              ingressHTTPAddr(),
+		lbRegistry:                   lbRegistry,
 	}))
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
@@ -3016,6 +3023,8 @@ type dynamicSourceDeps struct {
 	// host can run its ingress on non-default ports.
 	ingressHTTPSAddr string
 	ingressHTTPAddr  string
+	// lbRegistry is shared with the API so it can report live upstream status.
+	lbRegistry *loadbalancer.Registry
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -3075,6 +3084,10 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// registry being enabled with a Host set (WithRegistryDial's own
 		// doc comment).
 		ingressOpts = append(ingressOpts, ingressreconcile.WithRegistryDial(registryDialAddr()))
+		ingressOpts = append(ingressOpts,
+			ingressreconcile.WithLoadBalancers(deps.db, deps.lbRegistry),
+			ingressreconcile.WithNodeUpstreams(lbNodeUpstreams{db: deps.db, local: deps.runtime, registry: deps.agentRegistry}),
+		)
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 
 		// Local runtime unconditionally, same reasoning as the ingress

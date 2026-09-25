@@ -31,6 +31,10 @@ type NodeUpstreamResolver interface {
 
 const localUpstreamHost = "127.0.0.1"
 
+// DefaultAdminListen is where this controller binds Caddy's admin API unless
+// WithAdminListen overrides it.
+const DefaultAdminListen = defaultAdminListen
+
 // WithLoadBalancers turns on per-service load balancing. reg receives every
 // applied observation and may be shared with the API.
 func WithLoadBalancers(src LoadBalancerSource, reg *loadbalancer.Registry) Option {

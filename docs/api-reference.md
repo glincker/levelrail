@@ -106,7 +106,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 53 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 59 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -171,6 +171,12 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/egress-policy | AbilityRead | handleGetAppEgressPolicy |
 | PUT | /api/v1/apps/{name}/egress-policy | AbilityWriteSensitive | handleSetAppEgressPolicy |
 | DELETE | /api/v1/apps/{name}/egress-policy | AbilityWriteSensitive | handleClearAppEgressPolicy |
+| GET | /api/v1/apps/{name}/loadbalancer | AbilityRead | handleGetLoadBalancer |
+| PUT | /api/v1/apps/{name}/loadbalancer | AbilityWrite | handleSetLoadBalancer |
+| DELETE | /api/v1/apps/{name}/loadbalancer | AbilityWrite | handleDeleteLoadBalancer |
+| POST | /api/v1/apps/{name}/loadbalancer/import | AbilityWrite | handleImportLoadBalancer |
+| GET | /api/v1/apps/{name}/loadbalancer/status | AbilityRead | handleLoadBalancerStatus |
+| GET | /api/v1/apps/{name}/loadbalancer/export | AbilityRead | handleExportLoadBalancer |
 
 :::
 
