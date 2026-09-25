@@ -486,6 +486,47 @@ levelrail tags apps <name> [flags]
 ```
 list every app attached to a tag, identified by name
 
+## Pipelines
+
+```
+levelrail pipelines list <app> [flags]
+```
+
+```
+levelrail pipelines validate <file> [--json]
+```
+validate a pipeline file locally, no API call, exit status 2 when it has problems
+
+```
+levelrail pipelines save <app> <file-or-repo-dir> [--name N] [flags]
+```
+create or update pipelines from one file, or from every file in a repository's pipeline directory
+
+```
+levelrail pipelines delete <app> <name> [flags]
+```
+
+```
+levelrail pipelines run <app> <name> [--ref R] [--sha S] [--input k=v]... [--follow] [flags]
+```
+
+```
+levelrail pipelines runs <app> [<run-id>] [--pipeline N] [--limit N] [flags]
+```
+list runs, or show one run's jobs, steps, and approval gates
+
+```
+levelrail pipelines logs <app> <run-id> [--job KEY] [--follow] [flags]
+```
+
+```
+levelrail pipelines cancel <app> <run-id> [flags]
+```
+
+```
+levelrail pipelines approve <app> <run-id> [--reject] [--comment TEXT] [--approval ID] [flags]
+```
+
 ## Databases
 
 ```

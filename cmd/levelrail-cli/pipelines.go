@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -34,7 +35,7 @@ func pipelinesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s pipelines list <app> [flags]                       list an app's pipelines
   %[1]s pipelines validate <file> [--json]                 validate a pipeline file locally (no API call)
-  %[1]s pipelines save <app> <file> [--name N] [flags]     create or update a pipeline from a file
+  %[1]s pipelines save <app> <file-or-repo-dir> [--name N] [flags]   create or update pipelines from a file, or every file in a repo's pipeline directory
   %[1]s pipelines delete <app> <name> [flags]              delete a pipeline
   %[1]s pipelines run <app> <name> [--ref R] [--sha S] [--input k=v]... [--follow] [flags]
   %[1]s pipelines runs <app> [<run-id>] [--pipeline N] [--limit N] [flags]   list runs, or show one run's jobs and steps
@@ -182,37 +183,60 @@ func runPipelinesValidate(prog string, args []string, stdout, stderr io.Writer) 
 }
 
 func runPipelinesSave(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	c := newPipelineCmd(prog, "pipelines save", "print the saved pipeline as JSON", stdout, stderr)
-	name := c.fs.String("name", "", "pipeline name (default: the file's name field)")
+	c := newPipelineCmd(prog, "pipelines save", "print the saved pipelines as JSON", stdout, stderr)
+	name := c.fs.String("name", "", "pipeline name for a single file (default: the file's name field)")
 	client, pos, of, jsonOut, code, ok := c.parse(args, 2, 2, lookupEnv)
 	if !ok {
 		return code
 	}
-	data, err := os.ReadFile(pos[1])
+	ctx := context.Background()
+	files := []string{pos[1]}
+	if info, err := os.Stat(pos[1]); err == nil && info.IsDir() {
+		brandName, _ := client.BrandShortName(ctx)
+		found, derr := pipeline.Discover(pos[1], brandName)
+		if derr != nil || len(found) == 0 {
+			return reportError(stdout, stderr, jsonOut, newValidationError("no pipeline files found under %s", pos[1]))
+		}
+		files, *name = found, ""
+	}
+	var saved []apiclient.PipelineResource
+	for _, f := range files {
+		p, err := savePipelineFile(ctx, client, pos[0], f, *name, stderr)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		saved = append(saved, p)
+	}
+	return c.write(of, saved, func() {
+		for _, p := range saved {
+			_, _ = fmt.Fprintf(stdout, "pipeline %q saved for app %q\n", p.Name, pos[0])
+		}
+	})
+}
+
+func savePipelineFile(ctx context.Context, client *Client, app, path, nameOverride string, stderr io.Writer) (apiclient.PipelineResource, error) {
+	data, err := os.ReadFile(path) //nolint:gosec // operator-supplied CLI argument
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("read %s: %w", pos[1], err))
+		return apiclient.PipelineResource{}, fmt.Errorf("read %s: %w", path, err)
 	}
 	def, issues := pipeline.Validate(data)
 	if len(issues) > 0 {
 		for _, i := range issues {
-			_, _ = fmt.Fprintf(stderr, "%s:%s\n", pos[1], i)
+			_, _ = fmt.Fprintf(stderr, "%s:%s\n", path, i)
 		}
-		return exitValidation
+		return apiclient.PipelineResource{}, newValidationError("%s is not a valid pipeline", path)
 	}
-	pname := firstNonEmptyString(*name, def.Name)
-	if pname == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required when the file has no name field"))
-	}
-	ctx := context.Background()
+	stem := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+	pname := firstNonEmptyString(nameOverride, def.Name, stem)
 	req := apiclient.PipelineSaveRequest{Name: pname, YAML: string(data)}
-	saved, err := client.UpdatePipeline(ctx, pos[0], pname, req)
+	saved, err := client.UpdatePipeline(ctx, app, pname, req)
 	if err != nil && isNotFound(err) {
-		saved, err = client.CreatePipeline(ctx, pos[0], req)
+		saved, err = client.CreatePipeline(ctx, app, req)
 	}
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save pipeline %q: %w", pname, err))
+		return apiclient.PipelineResource{}, fmt.Errorf("save pipeline %q: %w", pname, err)
 	}
-	return c.write(of, saved, func() { _, _ = fmt.Fprintf(stdout, "pipeline %q saved for app %q\n", saved.Name, pos[0]) })
+	return saved, nil
 }
 
 func firstNonEmptyString(vals ...string) string {

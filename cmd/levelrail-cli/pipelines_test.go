@@ -85,3 +85,42 @@ func TestRun_PipelinesUnknownSubcommand(t *testing.T) {
 		t.Fatalf("exit = %d, want usage", got)
 	}
 }
+
+func TestRun_PipelinesSaveDirectory(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, ".brand", "pipelines")
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	body := "version: 1\nname: ci\njobs:\n  t:\n    image: alpine\n    steps:\n      - run: echo hi\n"
+	if err := os.WriteFile(filepath.Join(dir, "ci.yaml"), []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var created []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.URL.Path == "/api/v1/brand":
+			_, _ = w.Write([]byte(`{"ShortName":"brand"}`))
+		case r.Method == http.MethodPut:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"error":"pipeline not found"}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/apps/web/pipelines":
+			var req apiclient.PipelineSaveRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			created = append(created, req.Name)
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(apiclient.PipelineResource{Name: req.Name})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("cli", []string{"pipelines", "save", "web", root, "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitOK || len(created) != 1 || created[0] != "ci" {
+		t.Fatalf("exit %d created %v stderr %q", got, created, stderr.String())
+	}
+}

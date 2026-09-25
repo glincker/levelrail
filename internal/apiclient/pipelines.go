@@ -136,6 +136,18 @@ type PipelineStartRequest struct {
 	Inputs map[string]string `json:"inputs,omitempty"`
 }
 
+// BrandShortName reads the control plane's brand short name from the public
+// GET /api/v1/brand, used to find the branded pipeline directory in a repo.
+func (c *Client) BrandShortName(ctx context.Context) (string, error) {
+	var out struct {
+		ShortName string `json:"ShortName"`
+	}
+	if err := c.do(ctx, http.MethodGet, "/api/v1/brand", nil, &out); err != nil {
+		return "", err
+	}
+	return out.ShortName, nil
+}
+
 func pipelinePath(app string, parts ...string) string {
 	p := "/api/v1/apps/" + PathEscape(app)
 	for _, s := range parts {

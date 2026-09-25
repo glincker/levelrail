@@ -33,6 +33,7 @@ const sidebarGroups = [
         link: '/migrating-from-coolify-dokploy-and-caprover',
       },
       { text: 'Deploying from GitHub Actions', link: '/github-actions' },
+      { text: 'Pipelines', link: '/pipelines' },
       { text: 'Screenshots', link: '/screenshots' },
       { text: 'Deploying apps', link: '/deploying-apps' },
       { text: 'Managing databases', link: '/managing-databases' },
