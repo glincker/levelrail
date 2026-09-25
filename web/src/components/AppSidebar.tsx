@@ -13,6 +13,7 @@ import {
   CloudArrowUpIcon,
   RobotIcon,
   GavelIcon,
+  TreeStructureIcon,
   HeartbeatIcon,
   CpuIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -245,6 +246,17 @@ export function AppSidebar() {
                           {pendingApprovalCount}
                         </span>
                       ) : null}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {/* pipelines overview */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/pipelines" />}
+                      isActive={pathname.startsWith('/pipelines')}
+                      tooltip="Pipelines"
+                    >
+                      <TreeStructureIcon />
+                      <span>Pipelines</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>

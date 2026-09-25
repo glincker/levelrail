@@ -24,6 +24,7 @@ import {
   PlusIcon,
   SquaresFourIcon,
   CircleHalfIcon,
+  TreeStructureIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
 export interface PaletteItem {
@@ -75,6 +76,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
   nav('nav-dashboard', 'Dashboard', <GaugeIcon />, '/'),
   nav('nav-databases', 'Databases', <DatabaseIcon />, '/databases'),
   nav('nav-projects', 'Projects', <FolderIcon />, '/projects'),
+  nav('nav-pipelines', 'Pipelines', <TreeStructureIcon />, '/pipelines'),
   nav('nav-domains', 'Domains', <GlobeIcon />, '/domains'),
   nav('nav-help', 'Help', <QuestionIcon />, '/help'),
   nav('settings-hub', 'Settings', <GearIcon />, '/settings', 'Settings'),
