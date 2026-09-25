@@ -9,6 +9,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 )
 
+// egressHostLike restricts egress.allow hosts to a hostname or IPv4
+// literal, since the egress sidecar's shell script word-splits the list.
+var egressHostLike = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$`)
+
 // nameLike matches the pattern service and database keys must follow:
 // lowercase alphanumeric and hyphens, since these become components of
 // Docker container names, network names, and DNS-visible identifiers
@@ -118,8 +122,8 @@ func (svc *Service) validateEgress(name string) error {
 		return fmt.Errorf("spec: service %q: egress.mode: allowlist requires at least one entry in egress.allow", name)
 	}
 	for _, allow := range svc.Egress.Allow {
-		if allow.Host == "" {
-			return fmt.Errorf("spec: service %q: egress.allow entries require a non-empty host", name)
+		if !egressHostLike.MatchString(allow.Host) {
+			return fmt.Errorf("spec: service %q: egress.allow host %q must be a hostname or IPv4 address", name, allow.Host)
 		}
 		if allow.Port < 1 || allow.Port > 65535 {
 			return fmt.Errorf("spec: service %q: egress.allow host %q: port %d is not a valid port", name, allow.Host, allow.Port)
