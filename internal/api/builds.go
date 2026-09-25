@@ -314,6 +314,10 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "repo_url is required")
 			return
 		}
+		if err := requireHTTPOrHTTPSScheme(req.RepoURL); err != nil {
+			writeError(w, http.StatusBadRequest, "repo_url must use http or https")
+			return
+		}
 		if req.Ref == "" {
 			writeError(w, http.StatusBadRequest, "ref is required")
 			return
