@@ -104,6 +104,8 @@ export interface DrainNodeResponse {
   moved_services: string[]
   moved_databases: string[]
   errors?: string[]
+  // Checks that could not run, so the drain may be incomplete.
+  warnings?: string[]
   // Apps and models left on the node because no GPU node can host them.
   blocked?: DrainBlocked[]
 }
