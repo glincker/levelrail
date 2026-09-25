@@ -8,10 +8,12 @@ This page is a map, not a duplicate. Each topic below has its own detailed page;
 
 ## Secrets: envelope encryption
 
-Every secret (an app env var marked `secret: true`, email credentials, API tokens, and so on) gets its own random data encryption key (DEK). Every DEK is wrapped under one master key held in memory by the control plane, never written to disk in plaintext.
+Every owner of secrets (an app, a backup target, the email settings, and so on) gets its own random data encryption key (DEK), and each of its values (an app env var marked `secret: true`, email credentials, API tokens) is encrypted under that DEK with AES-256-GCM. Every DEK is wrapped under one master key held in memory by the control plane, never written to disk in plaintext.
+
+Each encrypted value is also bound to the slot it was written to: its owner and key name are sealed inside the ciphertext and checked on every read. Someone with write access to the database cannot copy one app's `DATABASE_URL` ciphertext into another app's `API_KEY` row and have it decrypt there; the read fails closed instead. Values written before this existed are "legacy" and should be bound once with `levelrail secrets rebind`, see [Binding secrets to their slot](master-key-rotation.md#binding-secrets-to-their-slot).
 
 ::: tip
-Rotating the master key re-wraps every DEK without ever exposing plaintext. See [Master key rotation](master-key-rotation.md) for the full procedure and failure modes.
+Rotating the master key re-wraps every DEK without ever exposing plaintext, then binds any legacy values. See [Master key rotation](master-key-rotation.md) for the full procedure and failure modes.
 :::
 
 Credentials for backup targets and registry integrations follow the same write-only pattern described in [Backups and storage](backups-and-storage.md#credentials-are-write-only): once saved, the plaintext is never returned by the API again, only a masked placeholder.
