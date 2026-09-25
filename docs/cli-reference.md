@@ -831,6 +831,56 @@ levelrail backup-targets test <id> [flags]
 levelrail backup-targets update <id> --name NAME --provider PROVIDER --bucket BUCKET [flags]
 ```
 
+## Storage
+
+```
+levelrail storage providers
+```
+list provider presets (aws, r2, b2, minio, wasabi, custom)
+
+```
+levelrail storage list
+```
+
+```
+levelrail storage add --name N --provider P --bucket B --access-key-id ID --secret-access-key KEY [flags]
+```
+
+```
+levelrail storage test <id>
+```
+write, read back and delete a probe object
+
+```
+levelrail storage delete <id>
+```
+
+## Logs
+
+```
+levelrail logs archive set --target ID [--app NAME] [--interval 1h] [--retention-days N] [--disable]
+```
+
+```
+levelrail logs archive status
+```
+
+```
+levelrail logs archive remove [--app NAME]
+```
+
+```
+levelrail logs dump --target ID --from TIME [--to TIME] [--app NAME] [--wait]
+```
+
+```
+levelrail logs ls --target ID [--app NAME]
+```
+
+```
+levelrail logs fetch --target ID --key KEY [--out FILE]
+```
+
 ## Registry Credentials
 
 ```

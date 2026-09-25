@@ -45,6 +45,7 @@ const sidebarGroups = [
       { text: 'Identity and access', link: '/identity-and-access' },
       { text: 'Git integrations', link: '/git-integrations' },
       { text: 'Backups and storage', link: '/backups-and-storage' },
+      { text: 'Object storage', link: '/object-storage' },
       { text: 'Templates and registry', link: '/templates-and-registry' },
     ],
   },
