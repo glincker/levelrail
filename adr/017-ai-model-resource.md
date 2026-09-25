@@ -67,7 +67,8 @@ set-node route rejects the move.
   `PortBinding.host_ip` and the `GPUReport` frame. `host_ip` also stops
   remote containers publishing a loopback-bound port on all interfaces.
 - vLLM gets an 8 GiB `/dev/shm` for tensor parallelism.
-- Scheduling is manual: the operator picks the node.
+- Scheduling is manual: the operator picks the node (see the addendum for
+  how GPU apps are now placed).
 
 ## Rejected alternatives
 
@@ -87,3 +88,32 @@ set-node route rejects the move.
 - **Deleting the weights volume with the model**: re-downloading tens of
   gigabytes on a redeploy is the expensive mistake; leaving the volume is
   cheap and reversible.
+
+## Addendum: GPU-aware scheduling (2026-09-25)
+
+Auto-spread, drain and set-node now consult GPU capacity instead of only
+checking that a GPU exists.
+
+**A per-node ledger of GPU reservations** (`internal/gpu.Ledger`) is
+derived from desired state on every read, not stored: no migration, no
+drift. Apps with `resources.gpu` and models each contribute a claim (a
+count, exact device IDs, or every GPU). A claim fits when the node reports
+a GPU, has the nvidia runtime, and has enough free GPUs, with device-ID
+overlap rejected. `models.Service.GPUNodes` attaches the claims to each
+node report, so the API, CLI, dashboard and MCP show the same numbers.
+
+**Drain reports instead of guessing.** A GPU app goes to the least loaded
+node that fits, reserving as it goes so later apps in the same drain see
+the taken GPUs. An app nothing can host stays put and appears under
+`blocked` with a per-node reason. Models have no move operation, so they
+are always reported as blocked.
+
+**Accounting, not isolation.** Docker lets containers share a GPU, so the
+ledger is never enforced against running workloads. The controllers keep
+their existing checks (`NoGPUOnNode`, `GPURuntimeMissing`,
+`InsufficientGPUs`), and an oversubscribed node only produces a doctor
+warning when nothing else can host the workload.
+
+Rejected: enforcing free GPUs in the app controller (an accounting error
+would stop a healthy container), and a stored reservation table (needs
+migrations and a reconciler to keep it honest).
