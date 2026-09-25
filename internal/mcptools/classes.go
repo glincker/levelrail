@@ -76,6 +76,8 @@ const (
 
 	// MetaSensitiveKey is the tool _meta key set on sensitive tools.
 	MetaSensitiveKey = "levelrail/sensitive"
+	// MetaUntrustedKey is the tool _meta key set on tools whose result carries untrusted text.
+	MetaUntrustedKey = "levelrail/untrusted-output"
 )
 
 // toolTable classifies every registered tool. TestEveryToolClassified
@@ -227,9 +229,15 @@ func annotationsFor(name string) (*mcp.ToolAnnotations, map[string]any) {
 		a.DestructiveHint = &destructive
 		a.IdempotentHint = strings.HasPrefix(name, "set_")
 	}
-	var meta map[string]any
+	meta := map[string]any{}
 	if m.Sensitive() {
-		meta = map[string]any{MetaSensitiveKey: true}
+		meta[MetaSensitiveKey] = true
+	}
+	if m.Untrusted() {
+		meta[MetaUntrustedKey] = true
+	}
+	if len(meta) == 0 {
+		meta = nil
 	}
 	return a, meta
 }
@@ -243,5 +251,8 @@ func titleFor(name string) string {
 // addTool registers a tool with annotations derived from toolTable.
 func addTool[In, Out any](s *mcp.Server, t *mcp.Tool, h mcp.ToolHandlerFor[In, Out]) {
 	t.Annotations, t.Meta = annotationsFor(t.Name)
+	if m, ok := toolTable[t.Name]; ok && m.Untrusted() {
+		h = wrapUntrustedResult(t.Name, h)
+	}
 	mcp.AddTool(s, t, h)
 }
