@@ -26,6 +26,7 @@ type ModelService interface {
 	SetHFToken(ctx context.Context, name, token string) error
 	GPUNodes(ctx context.Context) ([]models.GPUNode, error)
 	NodeGPU(ctx context.Context, nodeID string) (gpu.Info, bool, error)
+	UnplacedWorkloads(ctx context.Context) ([]models.Unplaced, error)
 	SetLocalNodeID(id string)
 }
 
@@ -120,6 +121,10 @@ type gpuNodeResource struct {
 	TotalVRAMMiB     int64               `json:"total_vram_mib"`
 	UsedVRAMMiB      int64               `json:"used_vram_mib"`
 	ModelCount       int                 `json:"model_count"`
+	ReservedGPUs     int                 `json:"reserved_gpus"`
+	FreeGPUs         int                 `json:"free_gpus"`
+	Reservations     []string            `json:"reservations"`
+	Schedulable      bool                `json:"schedulable"`
 	Hint             string              `json:"hint,omitempty"`
 	Devices          []gpuDeviceResource `json:"devices"`
 	UpdatedAt        time.Time           `json:"updated_at"`
@@ -132,6 +137,9 @@ func toGPUNodeResource(n models.GPUNode) gpuNodeResource {
 		TotalVRAMMiB: n.Info.TotalVRAMMiB(), ModelCount: n.ModelCount, Hint: n.Info.Hint(),
 		Devices: make([]gpuDeviceResource, 0, len(n.Info.Devices)), UpdatedAt: n.UpdatedAt,
 	}
+	l := n.Ledger("")
+	res.ReservedGPUs, res.FreeGPUs, res.Schedulable = l.Reserved(), l.Free(), n.Schedulable
+	res.Reservations = append([]string{}, l.Holders()...)
 	for _, d := range n.Info.Devices {
 		res.UsedVRAMMiB += d.VRAMUsedMiB
 		res.Devices = append(res.Devices, gpuDeviceResource{d.Index, d.UUID, d.Name, d.VRAMTotalMiB, d.VRAMUsedMiB, d.UtilizationPercent})
@@ -327,28 +335,6 @@ func (rt *Router) handleQueryModelLogs(w http.ResponseWriter, r *http.Request) {
 // handleLiveModelLogStream handles GET /api/v1/models/{name}/logs/stream.
 func (rt *Router) handleLiveModelLogStream(w http.ResponseWriter, r *http.Request) {
 	rt.streamResourceLogs(w, r, rt.lookupModelResource, "live model log stream", "model")
-}
-
-// gpuPlacementError explains why svc cannot move to nodeID, or returns ""
-// when the move is fine. A node that has not reported a GPU snapshot yet
-// is given the benefit of the doubt.
-func (rt *Router) gpuPlacementError(ctx context.Context, svc *store.DesiredService, nodeID string) (string, error) {
-	if rt.models == nil || svc.Resources == nil || svc.Resources.GPU == nil {
-		return "", nil
-	}
-	info, known, err := rt.models.NodeGPU(ctx, nodeID)
-	if err != nil {
-		return "", err
-	}
-	switch {
-	case !known:
-		return "", nil
-	case !info.Present:
-		return "this app requests a GPU (resources.gpu) and the target node has none", nil
-	case !info.RuntimeInstalled:
-		return "the target node has a GPU but Docker has no nvidia runtime. " + gpu.InstallHint, nil
-	}
-	return "", nil
 }
 
 // doctorCheckGPUs adds one doctor check per GPU node with a problem, or a
