@@ -1,0 +1,57 @@
+{
+  "match": [
+    {
+      "host": [
+        "api.example.com",
+        "api2.example.com"
+      ]
+    }
+  ],
+  "handle": [
+    {
+      "handler": "reverse_proxy",
+      "upstreams": [
+        {
+          "dial": "10.0.0.1:8080"
+        },
+        {
+          "dial": "10.0.0.2:8080"
+        }
+      ],
+      "load_balancing": {
+        "selection_policy": {
+          "policy": "least_conn"
+        },
+        "retries": 2,
+        "try_duration": "5s",
+        "try_interval": "250ms"
+      },
+      "health_checks": {
+        "active": {
+          "uri": "/healthz",
+          "interval": "10s",
+          "timeout": "3s",
+          "passes": 3,
+          "fails": 2,
+          "expect_status": 204
+        },
+        "passive": {
+          "fail_duration": "45s",
+          "max_fails": 3
+        }
+      },
+      "transport": {
+        "protocol": "http",
+        "tls": {
+          "server_name": "api.internal"
+        },
+        "response_header_timeout": "30s"
+      },
+      "stream_close_delay": "20s"
+    }
+  ]
+}
+
+# warnings
+# slow_start is applied by the platform reconciler and has no Caddy JSON equivalent
+# rate_limit is omitted from the route JSON, add a rate_limit handler ahead of reverse_proxy

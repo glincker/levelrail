@@ -1,0 +1,5 @@
+:80 {
+	reverse_proxy localhost:80 {
+		lb_policy cookie sid
+	}
+}
