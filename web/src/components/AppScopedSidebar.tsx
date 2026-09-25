@@ -5,6 +5,7 @@ import {
   ClockCounterClockwiseIcon,
   GlobeIcon,
   ShareNetworkIcon,
+  ArrowsSplitIcon,
   StackIcon,
   BracketsCurlyIcon,
   GitBranchIcon,
@@ -126,6 +127,18 @@ export function AppScopedSidebar({ name }: { name: string }) {
               >
                 <ShareNetworkIcon />
                 <span>Network</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link to="/apps/$name/loadbalancer" params={{ name }} />
+                }
+                isActive={pathname.endsWith('/loadbalancer')}
+                tooltip="Load balancer"
+              >
+                <ArrowsSplitIcon />
+                <span>Load balancer</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
