@@ -70,6 +70,7 @@ type BuildRequest struct {
 	App        string
 	Ref        string
 	SHA        string
+	Type       string
 	Context    string
 	Dockerfile string
 	Image      string

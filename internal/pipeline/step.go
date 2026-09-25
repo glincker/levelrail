@@ -278,7 +278,7 @@ func (jr *jobRun) execControlStep(ctx context.Context, k int, p plannedStep, ste
 	case KindBuild:
 		tag := firstNonEmpty(with["tag"], shortSHA(jr.run.CommitSHA), "run"+fmt.Sprint(jr.run.Number))
 		image, err := act.Build(ctx, BuildRequest{
-			App: app, Ref: jr.run.Ref, SHA: jr.run.CommitSHA, Context: firstNonEmpty(with["context"], "."), Dockerfile: with["dockerfile"],
+			App: app, Ref: jr.run.Ref, SHA: jr.run.CommitSHA, Type: with["type"], Context: with["context"], Dockerfile: with["dockerfile"],
 			Image: firstNonEmpty(with["image"], jr.e.cfg.NamePrefix+"/"+app), Tag: tag,
 		}, logf)
 		if err != nil {
