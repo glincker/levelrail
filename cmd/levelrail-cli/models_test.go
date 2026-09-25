@@ -194,3 +194,12 @@ func TestRun_ModelsUsage(t *testing.T) {
 		t.Errorf("help = %q", out)
 	}
 }
+
+func TestModelLimitsSummary(t *testing.T) {
+	got := modelLimitsSummary(apiclient.ModelLimits{MaxBodyBytes: 1024, MaxN: 4, MaxInflight: 2, StreamIdleTimeoutS: 60})
+	for _, want := range []string{"body 1024 bytes", "n 4", "max tokens off", "2 concurrent", "stream idle 60s", "header timeout off,"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("summary %q missing %q", got, want)
+		}
+	}
+}

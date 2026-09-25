@@ -14,6 +14,17 @@ type ModelStatusResource struct {
 	Message string `json:"message,omitempty"`
 }
 
+// ModelLimits mirrors internal/models' GatewayLimitsSummary. Zero means the
+// limit is disabled.
+type ModelLimits struct {
+	MaxBodyBytes           int64 `json:"max_body_bytes"`
+	MaxN                   int   `json:"max_n"`
+	MaxTokens              int   `json:"max_tokens"`
+	MaxInflight            int   `json:"max_inflight_requests"`
+	ResponseHeaderTimeoutS int   `json:"response_header_timeout_seconds"`
+	StreamIdleTimeoutS     int   `json:"stream_idle_timeout_seconds"`
+}
+
 // ModelResource mirrors internal/api's modelResource.
 type ModelResource struct {
 	Name          string              `json:"name"`
@@ -28,6 +39,7 @@ type ModelResource struct {
 	EndpointURL   string              `json:"endpoint_url,omitempty"`
 	APIKeyPrefix  string              `json:"api_key_prefix"`
 	HFTokenSet    bool                `json:"hf_token_set"`
+	Limits        ModelLimits         `json:"limits"`
 	Status        ModelStatusResource `json:"status"`
 	CreatedAt     time.Time           `json:"created_at"`
 	UpdatedAt     time.Time           `json:"updated_at"`

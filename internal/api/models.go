@@ -47,21 +47,22 @@ type modelStatusResource struct {
 }
 
 type modelResource struct {
-	Name          string              `json:"name"`
-	Engine        string              `json:"engine"`
-	Model         string              `json:"model"`
-	NodeID        string              `json:"node_id"`
-	GPUCount      int                 `json:"gpu_count"`
-	GPUDeviceIDs  []string            `json:"gpu_device_ids,omitempty"`
-	ContextLength int                 `json:"context_length,omitempty"`
-	Quantization  string              `json:"quantization,omitempty"`
-	Domain        string              `json:"domain,omitempty"`
-	EndpointURL   string              `json:"endpoint_url,omitempty"`
-	APIKeyPrefix  string              `json:"api_key_prefix"`
-	HFTokenSet    bool                `json:"hf_token_set"`
-	Status        modelStatusResource `json:"status"`
-	CreatedAt     time.Time           `json:"created_at"`
-	UpdatedAt     time.Time           `json:"updated_at"`
+	Name          string                      `json:"name"`
+	Engine        string                      `json:"engine"`
+	Model         string                      `json:"model"`
+	NodeID        string                      `json:"node_id"`
+	GPUCount      int                         `json:"gpu_count"`
+	GPUDeviceIDs  []string                    `json:"gpu_device_ids,omitempty"`
+	ContextLength int                         `json:"context_length,omitempty"`
+	Quantization  string                      `json:"quantization,omitempty"`
+	Domain        string                      `json:"domain,omitempty"`
+	EndpointURL   string                      `json:"endpoint_url,omitempty"`
+	APIKeyPrefix  string                      `json:"api_key_prefix"`
+	HFTokenSet    bool                        `json:"hf_token_set"`
+	Limits        models.GatewayLimitsSummary `json:"limits"`
+	Status        modelStatusResource         `json:"status"`
+	CreatedAt     time.Time                   `json:"created_at"`
+	UpdatedAt     time.Time                   `json:"updated_at"`
 }
 
 func toModelResource(v models.View) modelResource {
@@ -70,6 +71,7 @@ func toModelResource(v models.View) modelResource {
 		Name: m.Name, Engine: m.Engine, Model: m.ModelRef, NodeID: m.NodeID, GPUCount: m.GPUCount,
 		GPUDeviceIDs: m.GPUDeviceIDs, ContextLength: m.ContextLength, Quantization: m.Quantization,
 		Domain: m.Domain, EndpointURL: v.BaseURL, APIKeyPrefix: m.APIKeyPrefix, HFTokenSet: m.HFTokenSet,
+		Limits:    models.LoadGatewayLimits().Summary(),
 		Status:    modelStatusResource{Ready: v.Ready, Reason: v.Reason, Message: v.Message},
 		CreatedAt: m.CreatedAt, UpdatedAt: m.UpdatedAt,
 	}
