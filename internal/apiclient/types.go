@@ -1174,6 +1174,7 @@ type ServiceTemplateListItem struct {
 	Category               string `json:"category"`
 	DocumentationURL       string `json:"documentation_url"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
+	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
 }
 
 // ServiceTemplateDetail mirrors internal/api's serviceTemplateDetail:
@@ -1187,6 +1188,7 @@ type ServiceTemplateDetail struct {
 	DocumentationURL       string `json:"documentation_url"`
 	Compose                string `json:"compose"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
+	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
 }
 
 // SetSecretRequest mirrors internal/api's setSecretRequest

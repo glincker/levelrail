@@ -9,10 +9,16 @@ var aiml1Templates = []Template{
 		DocumentationURL:       "https://docs.vllm.ai",
 		RecommendedMemoryBytes: 8589934592,
 		RequiresGPU:            true,
-		// CPU defaults only: internal/compose has no deploy.resources.reservations.devices support, so NVIDIA GPU passthrough is not expressible yet.
 		Compose: `services:
   vllm:
     image: vllm/vllm-openai:v0.30.0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     command: ["--model", "Qwen/Qwen2.5-0.5B-Instruct", "--host", "0.0.0.0", "--port", "8000"]
     ports: ["8000:8000"]
     environment:
@@ -60,10 +66,16 @@ var aiml1Templates = []Template{
 		DocumentationURL:       "https://huggingface.co/docs/text-generation-inference",
 		RecommendedMemoryBytes: 8589934592,
 		RequiresGPU:            true,
-		// CPU defaults only: internal/compose has no deploy.resources.reservations.devices support, so NVIDIA GPU passthrough is not expressible yet.
 		Compose: `services:
   tgi:
     image: ghcr.io/huggingface/text-generation-inference:3.3.6
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     command: ["--model-id", "HuggingFaceTB/SmolLM2-360M-Instruct", "--port", "80"]
     ports: ["8080:80"]
     volumes:
@@ -106,10 +118,16 @@ var aiml1Templates = []Template{
 		DocumentationURL:       "https://docs.comfy.org",
 		RecommendedMemoryBytes: 8589934592,
 		RequiresGPU:            true,
-		// CPU defaults only: internal/compose has no deploy.resources.reservations.devices support, so NVIDIA GPU passthrough is not expressible yet. Rolling tag: the maintainer publishes no versioned tags.
 		Compose: `services:
   comfyui:
-    image: ghcr.io/ai-dock/comfyui:latest-cpu
+    image: ghcr.io/ai-dock/comfyui:latest-cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     ports: ["8188:8188"]
     environment:
       WEB_ENABLE_AUTH: "true"
@@ -133,10 +151,16 @@ var aiml1Templates = []Template{
 		DocumentationURL:       "https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki",
 		RecommendedMemoryBytes: 8589934592,
 		RequiresGPU:            true,
-		// CPU defaults only: internal/compose has no deploy.resources.reservations.devices support, so NVIDIA GPU passthrough is not expressible yet. Rolling tag: the maintainer publishes no versioned tags.
 		Compose: `services:
   sd-webui:
-    image: ghcr.io/ai-dock/stable-diffusion-webui:latest-cpu
+    image: ghcr.io/ai-dock/stable-diffusion-webui:latest-cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     ports: ["7860:7860"]
     environment:
       WEB_ENABLE_AUTH: "true"

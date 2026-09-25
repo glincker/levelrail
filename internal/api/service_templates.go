@@ -16,6 +16,7 @@ type serviceTemplateListItem struct {
 	Category               string `json:"category"`
 	DocumentationURL       string `json:"documentation_url"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
+	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
 }
 
 // serviceTemplateDetail is GET /api/v1/service-templates/{id}'s response
@@ -30,6 +31,7 @@ type serviceTemplateDetail struct {
 	DocumentationURL       string `json:"documentation_url"`
 	Compose                string `json:"compose"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
+	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
 }
 
 // handleListServiceTemplates handles GET /api/v1/service-templates: the
@@ -45,6 +47,7 @@ func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Requ
 			Category:               tpl.Category,
 			DocumentationURL:       tpl.DocumentationURL,
 			RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
+			RequiresGPU:            tpl.RequiresGPU,
 		})
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -64,6 +67,7 @@ func (rt *Router) handleGetServiceTemplate(w http.ResponseWriter, r *http.Reques
 				DocumentationURL:       tpl.DocumentationURL,
 				Compose:                tpl.Compose,
 				RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
+				RequiresGPU:            tpl.RequiresGPU,
 			})
 			return
 		}

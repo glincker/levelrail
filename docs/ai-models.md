@@ -96,3 +96,12 @@ Listing and reading models and GPUs needs the `read` ability. Deleting and resta
 ## Not in version 1
 
 AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node), request rate limits at the gateway, and per-key usage accounting.
+
+## GPU in Compose templates
+
+A Compose file can request NVIDIA GPUs with the standard
+`deploy.resources.reservations.devices` block. Levelrail reads `driver`
+(only `nvidia` or unset), `count` (a number or `all`, unset means all),
+`device_ids` and `capabilities: [gpu]`, and maps it onto `resources.gpu`.
+The service then only starts on a node with a working NVIDIA runtime.
+Catalogue entries that need a GPU carry a "Needs NVIDIA GPU" badge.

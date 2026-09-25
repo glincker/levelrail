@@ -83,10 +83,16 @@ var aiml2Templates = []Template{
 		DocumentationURL:       "https://github.com/iot-salzburg/gpu-jupyter",
 		RecommendedMemoryBytes: 4294967296,
 		RequiresGPU:            true,
-		// CPU defaults only: internal/compose has no deploy.resources.reservations.devices support, so NVIDIA GPU passthrough is not expressible yet.
 		Compose: `services:
   jupyter:
     image: cschranz/gpu-jupyter:v1.11_cuda-13.0_ubuntu-24.04_python-only
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     ports: ["8888:8888"]
     environment:
       JUPYTER_TOKEN: $SERVICE_PASSWORD_TOKEN

@@ -33,6 +33,7 @@ type rawService struct {
 	Command     Command           `yaml:"command"`
 	Entrypoint  Command           `yaml:"entrypoint"`
 	PullPolicy  string            `yaml:"pull_policy"`
+	Deploy      *Deploy           `yaml:"deploy"`
 }
 
 // Healthcheck is one service's healthcheck: block, Docker Compose's own

@@ -136,6 +136,11 @@ function TemplateCard({
           ~{formatBytes(template.recommended_memory_bytes)} RAM recommended
         </Badge>
       )}
+      {template.requires_gpu && (
+        <Badge variant="muted" className="text-xs">
+          Needs NVIDIA GPU
+        </Badge>
+      )}
     </button>
   )
 }

@@ -22,9 +22,8 @@ type Template struct {
 	// means none). Informational only, not checked against any node's
 	// real available memory.
 	RecommendedMemoryBytes int64
-	// RequiresGPU marks entries that are only practical with an NVIDIA GPU.
-	// The Compose body ships CPU defaults because internal/compose cannot
-	// yet express device reservations.
+	// RequiresGPU marks entries that reserve an NVIDIA GPU through
+	// deploy.resources.reservations.devices in their Compose body.
 	RequiresGPU bool
 }
 
