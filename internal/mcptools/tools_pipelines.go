@@ -41,6 +41,7 @@ type pipelineRunExplanation struct {
 }
 
 func registerPipelineTools(server *mcp.Server, client *apiclient.Client) {
+	registerPipelineOverviewTools(server, client)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_pipeline_runs",
 		Description: "List an app's CI/CD pipeline runs, newest first, with status, trigger, ref, and the reason string for each. Filter by pipeline name. Read-only.",
