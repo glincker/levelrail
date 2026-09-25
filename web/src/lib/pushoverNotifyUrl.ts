@@ -6,7 +6,10 @@
 
 const PUSHOVER_ENDPOINT = 'https://api.pushover.net/1/messages.json'
 
-export function buildPushoverNotifyUrl(userKey: string, apiToken: string): string {
+export function buildPushoverNotifyUrl(
+  userKey: string,
+  apiToken: string,
+): string {
   const params = new URLSearchParams({ token: apiToken, user: userKey })
   return `${PUSHOVER_ENDPOINT}?${params.toString()}`
 }

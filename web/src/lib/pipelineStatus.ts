@@ -43,3 +43,16 @@ export function formatDuration(start?: string, end?: string): string {
   const m = Math.floor(s / 60)
   return m < 60 ? `${m}m ${s % 60}s` : `${Math.floor(m / 60)}h ${m % 60}m`
 }
+
+// stepLink is the run page URL that opens a job, and one step of it when
+// given, so it can be pasted into a chat or a ticket.
+export function stepLink(pageUrl: string, job: string, step?: number): string {
+  const url = new URL(pageUrl)
+  url.search = ''
+  url.hash = ''
+  url.searchParams.set('job', job)
+  if (step !== undefined) {
+    url.searchParams.set('step', String(step))
+  }
+  return url.toString()
+}

@@ -1,5 +1,8 @@
 import { toast } from '@/components/ui/toast'
-import { LOCAL_NODE_VALUE, NO_PROJECT_VALUE } from '../components/PlacementFields'
+import {
+  LOCAL_NODE_VALUE,
+  NO_PROJECT_VALUE,
+} from '../components/PlacementFields'
 
 // resolveSubmittedProjectId converts a create-form's project field value
 // into what the create request should actually send: undefined for "no

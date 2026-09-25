@@ -121,8 +121,14 @@ export function usePipelineRun(app: string, id: string) {
   })
 }
 
-export function usePipelineRunLogs(app: string, id: string, job: string) {
+export function usePipelineRunLogs(
+  app: string,
+  id: string,
+  job: string,
+  live = false,
+) {
   return useQuery({
+    refetchInterval: live ? 2000 : false,
     queryKey: pipelineKeys.logs(app, id, job),
     queryFn: () =>
       requestJson<PipelineLogLine[]>(
