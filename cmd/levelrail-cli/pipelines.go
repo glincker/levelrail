@@ -197,7 +197,7 @@ func runPipelinesSave(prog string, args []string, stdout, stderr io.Writer, look
 	}
 	ctx := context.Background()
 	files := []string{pos[1]}
-	if info, err := os.Stat(pos[1]); err == nil && info.IsDir() {
+	if info, err := os.Stat(pos[1]); err == nil && info.IsDir() { //nolint:gosec // operator-supplied local path on their own CLI
 		brandName, _ := client.BrandShortName(ctx)
 		found, derr := pipeline.Discover(pos[1], brandName)
 		if derr != nil || len(found) == 0 {

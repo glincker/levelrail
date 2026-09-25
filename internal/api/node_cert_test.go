@@ -106,7 +106,7 @@ func TestHandleCreateNodeReenrollToken(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if got.Token == "" || got.NodeID != "n1" || got.CAFingerprint != "abc123" || !got.ExpiresAt.After(time.Now()) {
+	if got.Token == "" || got.NodeID != "n1" || got.CAFingerprint != "abc123" || got.AgentBinary != "testplatform-agent" || !got.ExpiresAt.After(time.Now()) {
 		t.Fatalf("response = %+v", got)
 	}
 	stored, err := db.GetNodeJoinTokenByHash(context.Background(), hashToken(got.Token))

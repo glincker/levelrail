@@ -1119,6 +1119,18 @@ levelrail nodes events <id> [--limit N] [flags]
 levelrail nodes workloads <id> --accepts-app=BOOL --accepts-build=BOOL [flags]
 ```
 
+```
+levelrail nodes reenroll-token <id> [flags]
+```
+mint a one-time token that re-issues a node's agent certificate, keeping its identity; prints the command to run on the node
+
+```
+levelrail nodes revoke-cert <id> [flags]
+```
+revoke a node's agent certificate and close its session; only a re-enroll token brings it back
+
+`nodes list` shows each node's certificate state and days left (CERT) and agent version (AGENT); `nodes get` adds expiry, last renewal, key origin, platform and commit.
+
 ## Status
 
 ```

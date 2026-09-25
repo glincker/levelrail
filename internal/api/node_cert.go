@@ -121,6 +121,9 @@ type reenrollTokenResponse struct {
 	NodeID        string    `json:"node_id"`
 	ExpiresAt     time.Time `json:"expires_at"`
 	CAFingerprint string    `json:"ca_fingerprint,omitempty"`
+	// AgentBinary is the agent executable's name, for building the
+	// "<agent> reenroll" command without hardcoding the product name.
+	AgentBinary string `json:"agent_binary"`
 }
 
 // handleCreateNodeReenrollToken handles POST /api/v1/nodes/{id}/reenroll-token:
@@ -159,7 +162,9 @@ func (rt *Router) handleCreateNodeReenrollToken(w http.ResponseWriter, r *http.R
 		return
 	}
 	rt.logger.Info("api: node re-enrollment token issued", slog.String("node_id", id))
-	writeJSON(w, http.StatusCreated, reenrollTokenResponse{Token: plaintext, NodeID: id, ExpiresAt: rec.ExpiresAt, CAFingerprint: rt.agentCAFingerprint})
+	writeJSON(w, http.StatusCreated, reenrollTokenResponse{
+		Token: plaintext, NodeID: id, ExpiresAt: rec.ExpiresAt, CAFingerprint: rt.agentCAFingerprint, AgentBinary: rt.brand.BinaryName + "-agent",
+	})
 }
 
 // handleRevokeNodeCert handles POST /api/v1/nodes/{id}/revoke-cert: the

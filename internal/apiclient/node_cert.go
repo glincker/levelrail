@@ -40,6 +40,7 @@ type NodeReenrollTokenResponse struct {
 	NodeID        string    `json:"node_id"`
 	ExpiresAt     time.Time `json:"expires_at"`
 	CAFingerprint string    `json:"ca_fingerprint,omitempty"`
+	AgentBinary   string    `json:"agent_binary"`
 }
 
 // CreateNodeReenrollToken calls POST /api/v1/nodes/{id}/reenroll-token.
