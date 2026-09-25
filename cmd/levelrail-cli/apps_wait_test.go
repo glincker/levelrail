@@ -147,7 +147,7 @@ func TestWaitForRollout_SucceedsOnASubsequentPoll(t *testing.T) {
 	var ticks int
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	outcome, err := waitForRollout(ctx, fake, "web", "", 5*time.Millisecond, func(rolloutOutcome) { ticks++ })
+	outcome, err := waitForRollout(ctx, fake, rolloutWaitConfig{Name: "web", AttemptID: "", PollInterval: 5 * time.Millisecond, OnTick: func(rolloutOutcome) { ticks++ }})
 	if err != nil {
 		t.Fatalf("waitForRollout() error = %v", err)
 	}
@@ -172,7 +172,7 @@ func TestWaitForRollout_SpecificAttemptID(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	outcome, err := waitForRollout(ctx, fake, "web", "dep_1", 5*time.Millisecond, nil)
+	outcome, err := waitForRollout(ctx, fake, rolloutWaitConfig{Name: "web", AttemptID: "dep_1", PollInterval: 5 * time.Millisecond})
 	if err != nil {
 		t.Fatalf("waitForRollout() error = %v", err)
 	}
@@ -185,7 +185,7 @@ func TestWaitForRollout_AttemptIDNotFound(t *testing.T) {
 	fake := &fakeDeployAttemptFetcher{
 		attempts: [][]deployAttemptResource{{{ID: "dep_1", Status: "succeeded"}}},
 	}
-	_, err := waitForRollout(context.Background(), fake, "web", "dep_ghost", time.Millisecond, nil)
+	_, err := waitForRollout(context.Background(), fake, rolloutWaitConfig{Name: "web", AttemptID: "dep_ghost", PollInterval: time.Millisecond})
 	if err == nil || !strings.Contains(err.Error(), "not found") {
 		t.Errorf("waitForRollout() error = %v, want a not-found error", err)
 	}
@@ -198,7 +198,7 @@ func TestWaitForRollout_ContextTimeout(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
-	outcome, err := waitForRollout(ctx, fake, "web", "", 5*time.Millisecond, nil)
+	outcome, err := waitForRollout(ctx, fake, rolloutWaitConfig{Name: "web", AttemptID: "", PollInterval: 5 * time.Millisecond})
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("waitForRollout() error = %v, want context.DeadlineExceeded", err)
 	}
@@ -209,7 +209,7 @@ func TestWaitForRollout_ContextTimeout(t *testing.T) {
 
 func TestWaitForRollout_ListError(t *testing.T) {
 	fake := &fakeDeployAttemptFetcher{err: errors.New("network down")}
-	_, err := waitForRollout(context.Background(), fake, "web", "", time.Millisecond, nil)
+	_, err := waitForRollout(context.Background(), fake, rolloutWaitConfig{Name: "web", AttemptID: "", PollInterval: time.Millisecond})
 	if err == nil || !strings.Contains(err.Error(), "network down") {
 		t.Errorf("waitForRollout() error = %v, want the underlying error wrapped", err)
 	}
