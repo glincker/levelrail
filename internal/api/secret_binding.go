@@ -114,7 +114,7 @@ func (rt *Router) doctorCheckSecretBinding(ctx context.Context) doctorCheckResou
 		return doctorCheckResource{
 			Code: code, Name: name, Status: doctorStatusWarn,
 			Message:  fmt.Sprintf("%d of %d secret values predate slot binding", status.Legacy, status.Total),
-			Fix:      "levelrail-cli secrets rebind",
+			Fix:      rt.cliName() + " secrets rebind",
 			DocsPath: "/master-key-rotation#binding-secrets-to-their-slot",
 		}
 	}

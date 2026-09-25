@@ -282,7 +282,7 @@ func (rt *Router) doctorCheckControlPlaneBackup() doctorCheckResource {
 		return doctorCheckResource{
 			Code: code, Name: name, Status: doctorStatusWarn,
 			Message:  fmt.Sprintf("newest snapshot is %d days old", int(age/(24*time.Hour))),
-			Fix:      "levelrail-cli control-plane-backups create",
+			Fix:      rt.cliName() + " control-plane-backups create",
 			DocsPath: "/control-plane-backup#automatic-snapshots",
 		}
 	}
@@ -315,4 +315,13 @@ func (rt *Router) doctorCheckStaleSecrets(ctx context.Context) doctorCheckResour
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusWarn, Message: fmt.Sprintf("%d secret(s) not rotated in over %d days, consider rotating them", n, thresholdDays)}
 	}
 	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("no secrets older than %d days", thresholdDays)}
+}
+
+// cliName is the operator-facing CLI command, derived from the brand so a
+// rename does not leave stale hints in doctor output.
+func (rt *Router) cliName() string {
+	if rt.brand == nil || rt.brand.BinaryName == "" {
+		return "cli"
+	}
+	return rt.brand.BinaryName + "-cli"
 }
