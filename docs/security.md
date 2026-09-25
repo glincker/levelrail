@@ -89,4 +89,5 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 - [Master key rotation](master-key-rotation.md) - How to rotate the encryption key that protects all secrets
 - [Identity and access](identity-and-access.md) - Users, tokens, roles, and IAM policies
 - [Domains and ingress](domains-and-ingress.md) - TLS certificates and domain configuration
+- [Threat model](threat-model.md) - Trust boundaries, mitigations with file references, and known gaps
 - [Architecture](architecture.md) - How security layers integrate with the core platform
