@@ -22,6 +22,8 @@ type Config struct {
 	AccessKeyID     string
 	SecretAccessKey string
 	PathStyle       bool
+	// MaxAttempts bounds SDK retries per request; zero means 3.
+	MaxAttempts int
 	// HTTPClient defaults to netguard.NewClient(), which refuses internal addresses.
 	HTTPClient *http.Client
 }
@@ -63,12 +65,16 @@ func New(cfg Config) (*Client, error) {
 	if httpClient == nil {
 		httpClient = netguard.NewClient()
 	}
+	attempts := cfg.MaxAttempts
+	if attempts <= 0 {
+		attempts = 3
+	}
 	opts := s3.Options{
 		Region:                     region,
 		Credentials:                credentials.NewStaticCredentialsProvider(cfg.AccessKeyID, cfg.SecretAccessKey, ""),
 		HTTPClient:                 httpClient,
 		UsePathStyle:               cfg.PathStyle,
-		RetryMaxAttempts:           3,
+		RetryMaxAttempts:           attempts,
 		RequestChecksumCalculation: aws.RequestChecksumCalculationWhenRequired,
 		ResponseChecksumValidation: aws.ResponseChecksumValidationWhenRequired,
 	}

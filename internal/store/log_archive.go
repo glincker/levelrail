@@ -71,7 +71,7 @@ func (db *DB) UpsertLogArchivePolicy(ctx context.Context, p LogArchivePolicy) er
 	return nil
 }
 
-// GetLogArchivePolicy returns the policy for an app scope (” is global).
+// GetLogArchivePolicy returns the policy for an app scope (empty means global).
 func (db *DB) GetLogArchivePolicy(ctx context.Context, appName string) (LogArchivePolicy, error) {
 	p, err := scanLogArchivePolicy(db.QueryRowContext(ctx,
 		`SELECT `+logArchivePolicyCols+` FROM log_archive_policies WHERE app_name = ?`, appName))

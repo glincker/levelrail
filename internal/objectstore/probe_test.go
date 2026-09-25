@@ -10,7 +10,7 @@ import (
 
 func newTestClient(t *testing.T, srv *objectstoretest.Server, bucket string) *Client {
 	t.Helper()
-	c, err := New(Config{Endpoint: srv.URL, Region: "auto", Bucket: bucket, AccessKeyID: "k", SecretAccessKey: "s", PathStyle: true})
+	c, err := New(Config{Endpoint: srv.URL, Region: "auto", Bucket: bucket, AccessKeyID: "k", SecretAccessKey: "s", PathStyle: true, MaxAttempts: 1})
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
