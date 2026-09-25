@@ -18,7 +18,23 @@ type exportLoadBalancerInput struct {
 	Format string `json:"format" jsonschema:"terraform, cdk, cloudformation, caddy or caddy-json"`
 }
 
+type listLoadBalancersInput struct {
+	State  string `json:"state,omitempty" jsonschema:"only balancers in this state: balancing, degraded or none"`
+	Search string `json:"search,omitempty" jsonschema:"only apps whose name contains this text"`
+}
+
 func registerLoadBalancerTools(server *mcp.Server, client *apiclient.Client) {
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "list_load_balancers",
+		Description: "List every configured load balancer across apps with algorithm, state (balancing, degraded, none) and healthy/total upstream counts. Cheap overview; use get_app_load_balancer_status for one app's live upstream table. Read-only.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listLoadBalancersInput) (*mcp.CallToolResult, apiclient.LoadBalancerList, error) {
+		res, err := client.ListLoadBalancers(ctx, apiclient.LoadBalancerListParams{State: in.State, Search: in.Search})
+		if err != nil {
+			return nil, apiclient.LoadBalancerList{}, fmt.Errorf("list load balancers: %w", err)
+		}
+		return nil, res, nil
+	})
+
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "get_app_load_balancer",
 		Description: "Get an app's load balancer config: algorithm, weights, health checks, retries, drain and slow start, rate limit, upstream TLS. Unconfigured means a single upstream. Read-only.",

@@ -320,7 +320,11 @@ export function BuildCacheCard({ appName }: { appName: string }) {
           </p>
         ) : null}
         <CacheForm
-          key={own?.updated_at ?? 'new'}
+          key={
+            own
+              ? `own:${own.updated_at}`
+              : `new:${inherited?.target_id}:${inherited?.mode}:${inherited?.updated_at}`
+          }
           appName={appName}
           destinations={destinations.data}
           own={own}

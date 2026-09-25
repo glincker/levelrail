@@ -41,7 +41,7 @@ func runNodesDrain(prog string, args []string, stdout, stderr io.Writer, lookupE
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
-	if len(result.Errors) > 0 {
+	if len(result.Errors) > 0 || len(result.Warnings) > 0 {
 		return exitAPIError
 	}
 	return exitOK
@@ -72,6 +72,12 @@ func printDrainNodeResultHuman(out io.Writer, id string, r drainNodeResponse) {
 		_, _ = fmt.Fprintln(out, "blocked (left on the node):")
 		for _, b := range r.Blocked {
 			_, _ = fmt.Fprintf(out, "  %s %s: %s\n", b.Kind, b.Name, b.Reason)
+		}
+	}
+	if len(r.Warnings) > 0 {
+		_, _ = fmt.Fprintln(out, "warnings (the drain may be incomplete):")
+		for _, w := range r.Warnings {
+			_, _ = fmt.Fprintf(out, "  %s\n", w)
 		}
 	}
 	if len(r.Errors) > len(r.Blocked) {

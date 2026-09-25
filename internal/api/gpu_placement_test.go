@@ -3,11 +3,13 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/gpu"
+	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -38,9 +40,9 @@ func seedGPUApp(t *testing.T, db *store.DB, name, nodeID string, g store.Service
 	}
 }
 
-func drain(t *testing.T, rt *Router, cookie *http.Cookie, target, query string) (int, drainNodeResponse) {
+func drainSrc(t *testing.T, rt *Router, cookie *http.Cookie, query string) (int, drainNodeResponse) {
 	t.Helper()
-	rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/nodes/"+target+"/drain"+query, "")
+	rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/nodes/src/drain"+query, "")
 	var got drainNodeResponse
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode drain: %v (%s)", err, rec.Body.String())
@@ -159,7 +161,7 @@ func TestDrain_GPUAware(t *testing.T) {
 			cookie := loginTestSession(t, rt, db)
 			tt.setup(t, db)
 
-			code, got := drain(t, rt, cookie, "src", tt.query)
+			code, got := drainSrc(t, rt, cookie, tt.query)
 			if code != tt.wantCode {
 				t.Fatalf("status = %d, want %d (%+v)", code, tt.wantCode, got)
 			}
@@ -189,9 +191,84 @@ func TestDrain_ReportsPinnedModels(t *testing.T) {
 	if err := db.SaveModel(context.Background(), store.Model{Name: "chat", Engine: "ollama", ModelRef: "m", NodeID: "src", GPUCount: 1}); err != nil {
 		t.Fatal(err)
 	}
-	code, got := drain(t, rt, cookie, "src", "")
+	code, got := drainSrc(t, rt, cookie, "")
 	if code != http.StatusMultiStatus || len(got.Blocked) != 1 || got.Blocked[0].Kind != "model" || got.Blocked[0].Name != "chat" {
 		t.Fatalf("code=%d blocked=%+v", code, got.Blocked)
+	}
+}
+
+type listFailModels struct{ ModelService }
+
+func (listFailModels) List(context.Context) ([]models.View, error) {
+	return nil, errors.New("db down")
+}
+
+type failMoveApps struct {
+	AppStore
+	fail map[string]bool
+}
+
+func (f failMoveApps) UpdateServiceNode(ctx context.Context, name, nodeID string) error {
+	if f.fail[name] {
+		return errors.New("write conflict")
+	}
+	return f.AppStore.UpdateServiceNode(ctx, name, nodeID)
+}
+
+func TestDrain_ModelListFailureIsReported(t *testing.T) {
+	tests := []struct {
+		name        string
+		failList    bool
+		wantCode    int
+		wantWarning bool
+	}{
+		{name: "list ok", wantCode: http.StatusOK},
+		{name: "list fails", failList: true, wantCode: http.StatusMultiStatus, wantWarning: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db := newModelsTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			seedGPUNode(t, db, "src", gpuInfoN(1, true))
+			if tt.failList {
+				rt.models = listFailModels{rt.models}
+			}
+			code, got := drainSrc(t, rt, cookie, "")
+			if code != tt.wantCode {
+				t.Fatalf("status = %d, want %d (%+v)", code, tt.wantCode, got)
+			}
+			if (len(got.Warnings) > 0) != tt.wantWarning {
+				t.Errorf("warnings = %v, want warning %v", got.Warnings, tt.wantWarning)
+			}
+		})
+	}
+}
+
+func TestDrain_FailedMoveDoesNotConsumeCapacity(t *testing.T) {
+	tests := []struct {
+		name      string
+		failFirst bool
+		wantNode  string
+	}{
+		{name: "first move succeeds, second is blocked", wantNode: "src"},
+		{name: "first move fails, second gets the GPU", failFirst: true, wantNode: "dst"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, db := newModelsTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			seedGPUNode(t, db, "src", gpuInfoN(2, true))
+			seedGPUNode(t, db, "dst", gpuInfoN(1, true))
+			seedGPUApp(t, db, "a", "src", store.ServiceGPU{Count: 1})
+			seedGPUApp(t, db, "b", "src", store.ServiceGPU{Count: 1})
+			if tt.failFirst {
+				rt.apps = failMoveApps{AppStore: rt.apps, fail: map[string]bool{"a": true}}
+			}
+			drainSrc(t, rt, cookie, "")
+			if n := nodeOf(t, db, "b"); n != tt.wantNode {
+				t.Errorf("b on %q, want %q", n, tt.wantNode)
+			}
+		})
 	}
 }
 

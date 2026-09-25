@@ -51,6 +51,19 @@ What happens on a push to `main`:
 3. `ship` pauses at the approval gate. Anyone holding the `deploy` ability can approve or reject it from the run page, the CLI, or the API.
 4. After approval, `deploy` points the app at the image `build` produced and waits until the app reports ready. `notify` then sends the message to the app's deploy notification targets.
 
+## Where to find it
+
+Open **Pipelines** in the main sidebar (or press the command palette and type "Pipelines") to see recent runs across every app you can read. The page shows how many runs are active, how many failed in the last 24 hours, how many wait for approval, and the 24 hour success rate. A "Needs attention" strip lists failed runs and runs waiting on an approval or a fork hold, with **Approve** and **Reject** buttons when you hold the required ability. The table below filters by status, app, pipeline name, and trigger, loads more on demand, and refreshes on its own while a run is active. Click a row to open the run. With no runs yet, the page shows a sample pipeline and a **Create a pipeline** button that asks for an app and opens its Pipelines tab.
+
+The same view is available from the CLI and API:
+
+```
+levelrail pipelines runs --all --status failed --app web --limit 20
+levelrail pipelines runs --all --json
+```
+
+`GET /api/v1/pipeline-runs` takes `status` (`running`, `failed`, `succeeded`, `cancelled`, `waiting_approval`, `held`), `app`, `pipeline`, `trigger`, `limit`, and a `cursor` from the previous page's `next_cursor`. `GET /api/v1/pipelines/summary` returns the counts. Both only include apps the caller may read.
+
 ## Where pipeline files live
 
 You can edit a pipeline in the dashboard, or keep it in your repository. A repository copy is synced automatically (see [Repository sync](#repository-sync)) and can also be loaded by hand with the CLI:
@@ -277,7 +290,7 @@ The run page in the dashboard draws the jobs as a dependency graph: columns by d
 
 Below the graph, every step shows its status and duration. Click a step to narrow the log to that step (click it again for the whole job). The log has a text filter, a stderr toggle, and a level filter. The link button on a step copies a URL that opens the run on that job and step (`?job=...&step=...`). The page streams a running job's output live and offers **Approve**, **Reject**, **Cancel**, and **Re-run**. Log lines are capped per job, and old runs are pruned to the newest 100 per pipeline.
 
-The MCP server exposes `list_pipeline_runs` and `explain_pipeline_run`. Both are read-only: the second reports the failed job and step, its exit code, the tail of its output, and any approval it is waiting on.
+The MCP server exposes `list_pipeline_runs`, `list_all_pipeline_runs` (runs across every app), and `explain_pipeline_run`. All are read-only: the second reports the failed job and step, its exit code, the tail of its output, and any approval it is waiting on.
 
 ## Permissions
 

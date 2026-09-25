@@ -540,6 +540,11 @@ why recent git events did or did not start runs
 ## Lb
 
 ```
+levelrail lb list [--state balancing|degraded|none] [--search Q] [flags]
+```
+every load balancer across apps with state and healthy upstream counts
+
+```
 levelrail lb show <app> [flags]
 ```
 show an app's load balancer config

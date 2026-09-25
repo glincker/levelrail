@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { drainFailures } from './drainResult'
+import { drainFailures, drainWarnings } from './drainResult'
 import type { DrainNodeResponse } from '../types/nodeDetail'
 
 const base: DrainNodeResponse = {
@@ -31,5 +31,14 @@ describe('drainFailures', () => {
       'service web: boom',
     ])
     expect(drainFailures(base)).toEqual([])
+  })
+})
+
+describe('drainWarnings', () => {
+  it('returns warnings, or an empty list when absent', () => {
+    expect(
+      drainWarnings({ ...base, warnings: ['models could not be checked'] }),
+    ).toEqual(['models could not be checked'])
+    expect(drainWarnings(base)).toEqual([])
   })
 })

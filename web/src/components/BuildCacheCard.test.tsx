@@ -153,4 +153,52 @@ describe('BuildCacheCard', () => {
       ).toBe(true)
     })
   })
+
+  it('re-seeds the form when the inherited setting arrives after mount', async () => {
+    const second = { ...destination, id: 'bkt_2', name: 'other-bucket' }
+    let settings: unknown[] = []
+    const fetchMock = mockFetch({
+      'GET /api/v1/storage/destinations': () =>
+        jsonResponse([destination, second]),
+      'GET /api/v1/build-cache': () => jsonResponse(settings),
+      'PUT /api/v1/build-cache': () => jsonResponse(setting),
+    })
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+    render(
+      <QueryClientProvider client={client}>
+        <BuildCacheCard appName="web" />
+      </QueryClientProvider>,
+    )
+    await screen.findByRole('button', { name: 'Save' })
+
+    settings = [
+      {
+        ...setting,
+        app_name: '',
+        target_id: 'bkt_2',
+        mode: 'min',
+        last_warning: '',
+        last_build_at: '',
+        updated_at: '2026-09-25T00:00:00Z',
+      },
+    ]
+    await client.invalidateQueries()
+    await screen.findByText(/Using the default build cache/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find(
+        ([, init]) => init?.method === 'PUT',
+      )
+      const rawBody = put?.[1]?.body
+      const body = JSON.parse(typeof rawBody === 'string' ? rawBody : '{}') as {
+        target_id: string
+        mode: string
+      }
+      expect(body.target_id).toBe('bkt_2')
+      expect(body.mode).toBe('min')
+    })
+  })
 })

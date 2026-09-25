@@ -40,14 +40,18 @@ function StoredLogs({
   step?: number
   live: boolean
 }) {
-  const { data, isLoading, error } = usePipelineRunLogs(app, runId, job, live)
+  const { data, isLoading, error } = usePipelineRunLogs(
+    app,
+    runId,
+    job,
+    live,
+    step,
+  )
   const [paused, setPaused] = useState(false)
   const lines = useMemo<LogLine[]>(
     () =>
-      (data ?? [])
-        .filter((l) => step === undefined || l.step === step)
-        .map((l) => ({ id: l.id, line: l.line, stream: l.stream })),
-    [data, step],
+      (data ?? []).map((l) => ({ id: l.id, line: l.line, stream: l.stream })),
+    [data],
   )
   if (error) {
     return <p className="text-sm text-destructive">{error.message}</p>
@@ -68,7 +72,7 @@ function StoredLogs({
 
 // A whole running job follows its output over SSE. A finished run, or one
 // step of any run (the stream carries no step filter), reads the stored
-// lines, polling while the run is live, so a completed page never holds an
+// lines filtered by the server, polling while the run is live, so a completed page never holds an
 // event stream open.
 export function PipelineRunLogs({
   app,

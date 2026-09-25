@@ -13,8 +13,10 @@ import {
   CloudArrowUpIcon,
   RobotIcon,
   GavelIcon,
+  TreeStructureIcon,
   HeartbeatIcon,
   CpuIcon,
+  ArrowsSplitIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -224,6 +226,16 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
+                      render={<Link to="/loadbalancers" />}
+                      isActive={pathname.startsWith('/loadbalancers')}
+                      tooltip="Load balancers"
+                    >
+                      <ArrowsSplitIcon />
+                      <span>Load balancers</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
                       render={<Link to="/backups" />}
                       isActive={pathname.startsWith('/backups')}
                       tooltip="Backups"
@@ -245,6 +257,17 @@ export function AppSidebar() {
                           {pendingApprovalCount}
                         </span>
                       ) : null}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {/* pipelines overview */}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/pipelines" />}
+                      isActive={pathname.startsWith('/pipelines')}
+                      tooltip="Pipelines"
+                    >
+                      <TreeStructureIcon />
+                      <span>Pipelines</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>

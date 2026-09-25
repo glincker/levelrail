@@ -92,37 +92,44 @@ type deployAttemptFetcher interface {
 	GetDeployStatus(ctx context.Context, name string) ([]conditionResource, error)
 }
 
+type rolloutWaitConfig struct {
+	Name         string
+	AttemptID    string
+	PollInterval time.Duration
+	OnTick       func(rolloutOutcome)
+}
+
 // waitForRollout polls client every pollInterval until name's target
 // attempt (attemptID, or the latest attempt if empty) converges, ctx is
 // done, or an API call fails. onTick, if non-nil, is called once per
 // poll with the current outcome (including "pending" ones), so a caller
 // can print live progress without waitForRollout itself owning any
 // output.
-func waitForRollout(ctx context.Context, client deployAttemptFetcher, name, attemptID string, pollInterval time.Duration, onTick func(rolloutOutcome)) (rolloutOutcome, error) {
-	ticker := time.NewTicker(pollInterval)
+func waitForRollout(ctx context.Context, client deployAttemptFetcher, config rolloutWaitConfig) (rolloutOutcome, error) {
+	ticker := time.NewTicker(config.PollInterval)
 	defer ticker.Stop()
 
 	for {
-		attempts, err := client.ListDeployAttempts(ctx, name)
+		attempts, err := client.ListDeployAttempts(ctx, config.Name)
 		if err != nil {
-			return rolloutOutcome{}, fmt.Errorf("list deploy attempts for app %q: %w", name, err)
+			return rolloutOutcome{}, fmt.Errorf("list deploy attempts for app %q: %w", config.Name, err)
 		}
-		attempt, found := findDeployAttempt(attempts, attemptID)
+		attempt, found := findDeployAttempt(attempts, config.AttemptID)
 		if !found {
-			if attemptID != "" {
-				return rolloutOutcome{}, fmt.Errorf("deploy attempt %q not found for app %q", attemptID, name)
+			if config.AttemptID != "" {
+				return rolloutOutcome{}, fmt.Errorf("deploy attempt %q not found for app %q", config.AttemptID, config.Name)
 			}
-			return rolloutOutcome{}, fmt.Errorf("app %q has no deploy attempts yet", name)
+			return rolloutOutcome{}, fmt.Errorf("app %q has no deploy attempts yet", config.Name)
 		}
 
-		conditions, err := client.GetDeployStatus(ctx, name)
+		conditions, err := client.GetDeployStatus(ctx, config.Name)
 		if err != nil {
-			return rolloutOutcome{}, fmt.Errorf("get deploy status for app %q: %w", name, err)
+			return rolloutOutcome{}, fmt.Errorf("get deploy status for app %q: %w", config.Name, err)
 		}
 
 		outcome := computeRolloutOutcome(attempt, conditions)
-		if onTick != nil {
-			onTick(outcome)
+		if config.OnTick != nil {
+			config.OnTick(outcome)
 		}
 		if outcome.state != "pending" {
 			return outcome, nil
@@ -187,10 +194,15 @@ func runAppsWait(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	outcome, err := waitForRollout(ctx, client, name, attemptID, pollInterval, func(o rolloutOutcome) {
-		if !jsonOut {
-			_, _ = fmt.Fprintf(stderr, "waiting for %q to converge... (%s)\n", name, o.state)
-		}
+	outcome, err := waitForRollout(ctx, client, rolloutWaitConfig{
+		Name:         name,
+		AttemptID:    attemptID,
+		PollInterval: pollInterval,
+		OnTick: func(o rolloutOutcome) {
+			if !jsonOut {
+				_, _ = fmt.Fprintf(stderr, "waiting for %q to converge... (%s)\n", name, o.state)
+			}
+		},
 	})
 
 	type waitResult struct {

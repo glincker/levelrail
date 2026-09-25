@@ -88,7 +88,7 @@ func TestSolveFailOpen(t *testing.T) {
 	}{
 		{name: "success no warning", wantCalls: 1},
 		{name: "cache error before output retries without s3", firstErr: cacheErr, wantCalls: 2, wantWarn: true},
-		{name: "cache error after output is not retried", firstErr: cacheErr, firstWrites: true, wantCalls: 1, wantWarn: true},
+		{name: "cache error after output fails instead of returning an unverified image", firstErr: cacheErr, firstWrites: true, wantErr: true, wantCalls: 1, wantWarn: true},
 		{name: "plain build error is not retried", firstErr: buildErr, wantErr: true, wantCalls: 1},
 		{name: "retry failure surfaces", firstErr: cacheErr, secondFailed: buildErr, wantErr: true, wantCalls: 2, wantWarn: true},
 	}
@@ -103,7 +103,7 @@ func TestSolveFailOpen(t *testing.T) {
 				}
 			}
 			cache := CacheConfig{S3: testS3()}
-			_, err := solveFailOpen(context.Background(), cache, &out, progress, func(c CacheConfig, w io.Writer) (*Result, error) {
+			res, err := solveFailOpen(context.Background(), cache, &out, progress, func(c CacheConfig, w io.Writer) (*Result, error) {
 				calls++
 				if calls == 1 {
 					if tt.firstWrites {
@@ -118,6 +118,9 @@ func TestSolveFailOpen(t *testing.T) {
 			})
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err == nil && res != nil && res.Tag == "" && tt.firstWrites {
+				t.Errorf("returned success with an empty image tag")
 			}
 			if calls != tt.wantCalls {
 				t.Errorf("calls = %d, want %d", calls, tt.wantCalls)

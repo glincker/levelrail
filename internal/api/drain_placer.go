@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -16,8 +17,8 @@ type drainBlocked struct {
 
 // drainPlacer resolves the destination of each resource in one drain: the
 // explicit target when given, else simple spread scheduling. GPU claims
-// are checked against free GPUs and every accepted claim is reserved so
-// later picks in the same drain see it.
+// are checked against free GPUs, and a claim is reserved only once the
+// caller confirms the move with commit.
 type drainPlacer struct {
 	rt       *Router
 	fromID   string
@@ -29,6 +30,16 @@ type drainPlacer struct {
 	counts     map[string]int
 	planner    *gpuPlanner
 	autoPlaced bool
+	pending    func()
+}
+
+// commit records the last next() pick as occupied. Call it only after the
+// placement update succeeded, so a failed move holds no capacity.
+func (p *drainPlacer) commit() {
+	if p.pending != nil {
+		p.pending()
+		p.pending = nil
+	}
 }
 
 func (p *drainPlacer) load(ctx context.Context) error {
@@ -50,6 +61,7 @@ func (p *drainPlacer) load(ctx context.Context) error {
 // next returns the node for one resource. claim is nil unless the
 // resource asks for GPUs; a *errNoGPUTarget means it must stay put.
 func (p *drainPlacer) next(ctx context.Context, claim *gpu.Claim) (string, error) {
+	p.pending = nil
 	if claim != nil && p.rt.models != nil {
 		return p.nextGPU(ctx, *claim)
 	}
@@ -64,8 +76,10 @@ func (p *drainPlacer) next(ctx context.Context, claim *gpu.Claim) (string, error
 	}
 	picked := selectLeastLoadedNodeExcluding(p.nodes, p.counts, p.fromID)
 	if picked != "" {
-		p.counts[picked]++
-		p.autoPlaced = true
+		p.pending = func() {
+			p.counts[picked]++
+			p.autoPlaced = true
+		}
 	}
 	return picked, nil
 }
@@ -76,6 +90,7 @@ func (p *drainPlacer) nextGPU(ctx context.Context, claim gpu.Claim) (string, err
 	}
 	var (
 		target string
+		auto   bool
 		err    error
 	)
 	switch {
@@ -93,23 +108,28 @@ func (p *drainPlacer) nextGPU(ctx context.Context, claim gpu.Claim) (string, err
 		if err != nil {
 			return "", err
 		}
-		p.counts[target]++
-		p.autoPlaced = p.autoPlaced || target != ""
+		auto = true
 	}
-	p.planner.reserve(target, claim)
+	p.pending = func() {
+		if auto {
+			p.counts[target]++
+			p.autoPlaced = p.autoPlaced || target != ""
+		}
+		p.planner.reserve(target, claim)
+	}
 	return target, nil
 }
 
 // drainModelBlocks lists models pinned to the node: a model has no move
 // operation, so a drain reports them instead of dropping them silently.
-func (rt *Router) drainModelBlocks(ctx context.Context, nodeID string) []drainBlocked {
+func (rt *Router) drainModelBlocks(ctx context.Context, nodeID string) ([]drainBlocked, error) {
 	if rt.models == nil {
-		return nil
+		return nil, nil
 	}
 	views, err := rt.models.List(ctx)
 	if err != nil {
 		rt.logger.Error("api: drain node: list models failed", "error", err.Error(), "node_id", nodeID)
-		return nil
+		return nil, fmt.Errorf("list models: %w", err)
 	}
 	var out []drainBlocked
 	for _, v := range views {
@@ -117,5 +137,5 @@ func (rt *Router) drainModelBlocks(ctx context.Context, nodeID string) []drainBl
 			out = append(out, drainBlocked{Kind: "model", Name: v.Model.Name, Reason: "models cannot be moved; delete it and deploy it on another GPU node with --node"})
 		}
 	}
-	return out
+	return out, nil
 }
