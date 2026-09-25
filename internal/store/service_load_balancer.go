@@ -68,3 +68,37 @@ func (db *DB) ListServiceLoadBalancers(ctx context.Context) (map[string]string, 
 	}
 	return out, nil
 }
+
+// LoadBalancerRow is one configured balancer joined to its app.
+type LoadBalancerRow struct {
+	Service   string
+	Config    string
+	UpdatedAt string
+}
+
+// ListLoadBalancerRows returns every configured balancer joined to its
+// desired service, ordered by service name, in a single query.
+func (db *DB) ListLoadBalancerRows(ctx context.Context) ([]LoadBalancerRow, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT s.name, l.config, l.updated_at
+		FROM service_load_balancers l
+		JOIN desired_services s ON s.name = l.service_name
+		ORDER BY s.name`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list load balancer rows: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []LoadBalancerRow
+	for rows.Next() {
+		var r LoadBalancerRow
+		if err := rows.Scan(&r.Service, &r.Config, &r.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("store: scan load balancer row: %w", err)
+		}
+		out = append(out, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate load balancer rows: %w", err)
+	}
+	return out, nil
+}

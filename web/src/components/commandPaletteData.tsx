@@ -24,6 +24,7 @@ import {
   PlusIcon,
   SquaresFourIcon,
   CircleHalfIcon,
+  ArrowsSplitIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
 export interface PaletteItem {
@@ -76,6 +77,12 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
   nav('nav-databases', 'Databases', <DatabaseIcon />, '/databases'),
   nav('nav-projects', 'Projects', <FolderIcon />, '/projects'),
   nav('nav-domains', 'Domains', <GlobeIcon />, '/domains'),
+  nav(
+    'nav-loadbalancers',
+    'Load balancers',
+    <ArrowsSplitIcon />,
+    '/loadbalancers',
+  ),
   nav('nav-help', 'Help', <QuestionIcon />, '/help'),
   nav('settings-hub', 'Settings', <GearIcon />, '/settings', 'Settings'),
   nav(

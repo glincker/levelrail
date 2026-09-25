@@ -15,6 +15,7 @@ import {
   GavelIcon,
   HeartbeatIcon,
   CpuIcon,
+  ArrowsSplitIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -220,6 +221,16 @@ export function AppSidebar() {
                     >
                       <GlobeIcon />
                       <span>Domains</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/loadbalancers" />}
+                      isActive={pathname.startsWith('/loadbalancers')}
+                      tooltip="Load balancers"
+                    >
+                      <ArrowsSplitIcon />
+                      <span>Load balancers</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>

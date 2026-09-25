@@ -23,6 +23,7 @@ type LoadBalancerStore interface {
 	GetServiceLoadBalancer(ctx context.Context, service string) (string, bool, error)
 	SetServiceLoadBalancer(ctx context.Context, service, configJSON string) error
 	DeleteServiceLoadBalancer(ctx context.Context, service string) error
+	ListLoadBalancerRows(ctx context.Context) ([]store.LoadBalancerRow, error)
 }
 
 type lbDeps struct {
