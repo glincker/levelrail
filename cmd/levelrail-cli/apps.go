@@ -73,6 +73,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsLogDrain(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "scheduled-tasks":
 		return runAppsScheduledTasks(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "build-cache":
+		return runAppsBuildCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "alerts":
 		return runAppsAlerts(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "deploy-notify-targets":
@@ -171,6 +173,7 @@ func appsUsage(prog string) string {
   %[1]s apps exec-access enable|disable|status <name> [flags]   opt an app into (or out of) shell/exec access, on by default
   %[1]s apps log-drain get|set|clear <name> [flags]   configure an external log drain
   %[1]s apps scheduled-tasks <verb> [flags]   manage cron-scheduled commands run inside the app's container
+  %[1]s apps build-cache <verb> [flags]   show/set/clear/remove the BuildKit remote cache on a storage destination
   %[1]s apps alerts <verb> [flags]   manage alert rules (threshold, crashloop, cert_expiry)
   %[1]s apps deploy-notify-targets <verb> [flags]   manage which notification channels get a deploy's outcome
   %[1]s apps organizations <verb> [flags]   manage organizations, which group projects

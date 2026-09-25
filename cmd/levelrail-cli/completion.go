@@ -85,6 +85,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"tag":                nil,
 		"untag":              nil,
 		"egress":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
+		"build-cache":        {subs: map[string]*cmdNode{"show": nil, "set": nil, "clear": nil, "remove": nil}},
 		"health":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"integrations":       {subs: map[string]*cmdNode{"catalog": nil, "list": nil, "add": nil, "remove": nil}},
 	}},
