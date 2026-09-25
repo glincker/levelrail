@@ -102,6 +102,7 @@ message AgentMessage {
     // last_seen_at the moment it stops actually running, rather than
     // looking healthy for as long as the transport happens to stay up.
     Heartbeat heartbeat = 7;
+    GPUReport gpu_report = 8;
   }
 }
 
@@ -233,6 +234,36 @@ message ContainerSpec {
   // above, or the default bridge network), unchanged from before this
   // field existed.
   string network_mode = 9;
+  // Gpu mirrors internal/docker.ContainerSpec.GPU. Unset means no GPU
+  // device request.
+  GPURequest gpu = 10;
+  // Command mirrors internal/docker.ContainerSpec.Command. Empty means the
+  // image's own default command.
+  repeated string command = 11;
+}
+
+message GPURequest {
+  // count -1 means every GPU on the node.
+  int32 count = 1;
+  repeated string device_ids = 2;
+}
+
+message GPUDevice {
+  int32 index = 1;
+  string uuid = 2;
+  string name = 3;
+  int64 vram_total_mib = 4;
+  int64 vram_used_mib = 5;
+  int32 utilization_percent = 6;
+}
+
+// GPUReport is the agent's own NVIDIA detection result, sent on connect
+// and periodically after. present=false with no devices is a valid report.
+message GPUReport {
+  bool present = 1;
+  string driver_version = 2;
+  repeated GPUDevice devices = 3;
+  bool runtime_installed = 4;
 }
 
 message ContainerState {

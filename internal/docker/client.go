@@ -403,6 +403,9 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 			CpusetCpus: spec.Resources.CPUSetCPUs,
 		}
 	}
+	if spec.GPU != nil {
+		hostConfig.DeviceRequests = []container.DeviceRequest{toDeviceRequest(*spec.GPU)}
+	}
 	if len(spec.DNS) > 0 {
 		hostConfig.DNS = spec.DNS
 	}
@@ -413,6 +416,34 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 		hostConfig.NetworkMode = container.NetworkMode(spec.NetworkMode)
 	}
 	return hostConfig
+}
+
+func toDeviceRequest(g GPURequest) container.DeviceRequest {
+	req := container.DeviceRequest{Driver: "nvidia", Capabilities: [][]string{{"gpu"}}}
+	if len(g.DeviceIDs) > 0 {
+		req.DeviceIDs = g.DeviceIDs
+		return req
+	}
+	req.Count = g.Count
+	if req.Count == 0 {
+		req.Count = -1
+	}
+	return req
+}
+
+// RuntimeNames returns the OCI runtimes the Docker daemon has registered,
+// used to detect whether the nvidia container runtime is installed.
+func (c *Client) RuntimeNames(ctx context.Context) ([]string, error) {
+	info, err := c.cli.Info(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("docker: info: %w", err)
+	}
+	names := make([]string, 0, len(info.Runtimes))
+	for name := range info.Runtimes {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names, nil
 }
 
 // BridgeGatewayIP returns the gateway IP of Docker's default "bridge"

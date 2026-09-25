@@ -116,7 +116,23 @@ func containerSpecToPB(s docker.ContainerSpec) *agentpb.ContainerSpec {
 		Dns:         s.DNS,
 		CapAdd:      s.CapAdd,
 		NetworkMode: s.NetworkMode,
+		Gpu:         gpuToPB(s.GPU),
+		Command:     s.Command,
 	}
+}
+
+func gpuToPB(g *docker.GPURequest) *agentpb.GPURequest {
+	if g == nil {
+		return nil
+	}
+	return &agentpb.GPURequest{Count: int32(g.Count), DeviceIds: g.DeviceIDs} //nolint:gosec // GPU counts are single digits
+}
+
+func gpuFromPB(g *agentpb.GPURequest) *docker.GPURequest {
+	if g == nil {
+		return nil
+	}
+	return &docker.GPURequest{Count: int(g.GetCount()), DeviceIDs: g.GetDeviceIds()}
 }
 
 func containerSpecFromPB(s *agentpb.ContainerSpec) docker.ContainerSpec {
@@ -133,6 +149,8 @@ func containerSpecFromPB(s *agentpb.ContainerSpec) docker.ContainerSpec {
 		DNS:         s.Dns,
 		CapAdd:      s.CapAdd,
 		NetworkMode: s.NetworkMode,
+		GPU:         gpuFromPB(s.Gpu),
+		Command:     s.Command,
 	}
 }
 
