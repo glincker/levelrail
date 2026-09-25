@@ -6,6 +6,7 @@ export const GO_TARGETS: Record<string, { to: string; label: string }> = {
   s: { to: '/status', label: 'Status' },
   d: { to: '/domains', label: 'Domains' },
   b: { to: '/backups', label: 'Backups' },
+  l: { to: '/loadbalancers', label: 'Load balancers' },
   t: { to: '/settings', label: 'Settings' },
 }
 
