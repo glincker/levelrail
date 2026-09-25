@@ -486,6 +486,78 @@ levelrail tags apps <name> [flags]
 ```
 list every app attached to a tag, identified by name
 
+## Pipelines
+
+```
+levelrail pipelines list <app> [flags]
+```
+
+```
+levelrail pipelines validate <file> [--json]
+```
+validate a pipeline file locally, no API call, exit status 2 when it has problems
+
+```
+levelrail pipelines save <app> <file-or-repo-dir> [--name N] [flags]
+```
+create or update pipelines from one file, or from every file in a repository's pipeline directory
+
+```
+levelrail pipelines delete <app> <name> [flags]
+```
+
+```
+levelrail pipelines run <app> <name> [--ref R] [--sha S] [--input k=v]... [--follow] [flags]
+```
+
+```
+levelrail pipelines runs <app> [<run-id>] [--pipeline N] [--limit N] [flags]
+```
+list runs, or show one run's jobs, steps, and approval gates
+
+```
+levelrail pipelines logs <app> <run-id> [--job KEY] [--follow] [flags]
+```
+
+```
+levelrail pipelines cancel <app> <run-id> [flags]
+```
+
+```
+levelrail pipelines approve <app> <run-id> [--reject] [--comment TEXT] [--approval ID] [flags]
+```
+## Lb
+
+```
+levelrail lb show <app> [flags]
+```
+show an app's load balancer config
+
+```
+levelrail lb set <app> [--algorithm ...] [flags]
+```
+create or change the load balancer, only the flags you pass change
+
+```
+levelrail lb clear <app> [flags]
+```
+remove the load balancer, back to a single upstream
+
+```
+levelrail lb status <app> [flags]
+```
+live upstream table: state, weight, active requests, failures
+
+```
+levelrail lb export <app> --format terraform|cdk|cloudformation|caddy|caddy-json [--out FILE]
+```
+generate an infrastructure-as-code definition, no cloud API calls
+
+```
+levelrail lb import <app> --file app.yaml [--service S] [flags]
+```
+load the `loadbalancer:` block of an app.yaml
+
 ## Databases
 
 ```
@@ -539,6 +611,50 @@ levelrail databases start <name> [flags]
 ```
 levelrail databases stop <name> [flags]
 ```
+
+## Models
+
+```
+levelrail models list [flags]
+```
+list AI models with their status
+
+```
+levelrail models get <name> [flags]
+```
+show one model, its status and OpenAI-compatible base URL
+
+```
+levelrail models deploy --name NAME --engine ENGINE --model MODEL [flags]
+```
+deploy a model on a GPU node; prints the API key once. Flags: --node, --gpus, --gpu-devices, --context, --quantization, --domain, --hf-token-from-env
+
+```
+levelrail models logs <name> [flags]
+```
+search stored engine logs, or --follow to stream download and load progress live
+
+```
+levelrail models delete <name> [flags]
+```
+remove a model; the downloaded weights volume is kept
+
+```
+levelrail models restart <name> [flags]
+```
+recreate the engine container
+
+```
+levelrail models rotate-key <name> [flags]
+```
+issue a new API key, printed once
+
+```
+levelrail models gpus [flags]
+```
+list GPU nodes with driver, VRAM, usage and nvidia runtime status
+
+See [AI models](ai-models.md).
 
 ## Auth
 
@@ -829,6 +945,56 @@ levelrail backup-targets test <id> [flags]
 
 ```
 levelrail backup-targets update <id> --name NAME --provider PROVIDER --bucket BUCKET [flags]
+```
+
+## Storage
+
+```
+levelrail storage providers
+```
+list provider presets (aws, r2, b2, minio, wasabi, custom)
+
+```
+levelrail storage list
+```
+
+```
+levelrail storage add --name N --provider P --bucket B --access-key-id ID --secret-access-key KEY [flags]
+```
+
+```
+levelrail storage test <id>
+```
+write, read back and delete a probe object
+
+```
+levelrail storage delete <id>
+```
+
+## Logs
+
+```
+levelrail logs archive set --target ID [--app NAME] [--interval 1h] [--retention-days N] [--disable]
+```
+
+```
+levelrail logs archive status
+```
+
+```
+levelrail logs archive remove [--app NAME]
+```
+
+```
+levelrail logs dump --target ID --from TIME [--to TIME] [--app NAME] [--wait]
+```
+
+```
+levelrail logs ls --target ID [--app NAME]
+```
+
+```
+levelrail logs fetch --target ID --key KEY [--out FILE]
 ```
 
 ## Registry Credentials

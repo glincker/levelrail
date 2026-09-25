@@ -40,7 +40,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/netguard"
+	"github.com/GLINCKER/levelrail/internal/objectstore"
 	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
@@ -493,7 +496,7 @@ func run(logger *slog.Logger) error {
 			PermitWithoutStream: true,
 		}),
 	)
-	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger))
+	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger, agent.WithGPUSink(db)))
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
 		if err := agentGRPCServer.Serve(agentListener); err != nil {
@@ -623,6 +626,8 @@ func run(logger *slog.Logger) error {
 	}()
 
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver)
+	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
+	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
 		Handler:           apiHandler,
@@ -640,6 +645,11 @@ func run(logger *slog.Logger) error {
 		ReadTimeout: 30 * time.Second,
 		IdleTimeout: 120 * time.Second,
 	}
+
+	lbRegistry := loadbalancer.NewRegistry()
+	lbStats := loadbalancer.CaddyAdminStats{Addr: ingressreconcile.DefaultAdminListen}
+	apiRouter.SetLoadBalancers(db, lbRegistry, lbStats)
+	go runLoadBalancerTelemetry(ctx, lbRegistry, lbStats, telemetryDB, metricsCollectionInterval, logger)
 
 	meshCfg, err := setupMesh(ctx, db, b, agentDataDir, agentRegistry, logger)
 	if err != nil {
@@ -682,11 +692,14 @@ func run(logger *slog.Logger) error {
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),
 		ingressHTTPAddr:              ingressHTTPAddr(),
+		models:                       newModelDeps(),
+		lbRegistry:                   lbRegistry,
 	}))
+	startLocalGPUCollector(ctx, db, client, logger)
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
-		if err := collector.Run(ctx, telemetryTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
+		if err := collector.Run(ctx, withModelTelemetryTargets(telemetryTargets(db, client), db, client, b.ShortName)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("telemetry collector stopped", slog.String("error", err.Error()))
 		}
 	}()
@@ -784,6 +797,7 @@ func run(logger *slog.Logger) error {
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
 		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
+	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	if controlPlaneBackupInterval(logger) > 0 {
 		alertingEngine.SetControlPlaneBackups(cpbackup.NewManager(db, agentDataDir), 0)
 	}
@@ -1647,6 +1661,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithStaticRootDir(staticSitesDir),
 		deploy.WithAppStore(db),
 		deploy.WithVaultConfigChecker(db),
+		deploy.WithLoadBalancerStore(db),
 	}
 	if secretsManager != nil {
 		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager))
@@ -2244,8 +2259,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
 
+	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
+	opts = append(opts, api.WithModels(modelSvc))
 	rt := api.NewRouter(logger, b, db, opts...)
-	return composeMux(rt.Handler(), webhookHandler, web.Handler()), rt
+	return modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, web.Handler())), rt
 }
 
 // composeMux wires the three top-level handlers rootHandler serves
@@ -3015,6 +3032,9 @@ type dynamicSourceDeps struct {
 	// host can run its ingress on non-default ports.
 	ingressHTTPSAddr string
 	ingressHTTPAddr  string
+	models           *modelDeps
+	// lbRegistry is shared with the API so it can report live upstream status.
+	lbRegistry *loadbalancer.Registry
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -3031,10 +3051,15 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		if err != nil {
 			return nil, fmt.Errorf("list nodes: %w", err)
 		}
+		modelRows, err := deps.db.ListModels(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list models: %w", err)
+		}
 
 		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+len(nodes)+2)
 		controllers = append(controllers, appControllersFor(deps, services)...)
 		controllers = append(controllers, databaseControllersFor(ctx, deps, databases)...)
+		controllers = append(controllers, modelControllersFor(deps, modelRows)...)
 		for _, n := range nodes {
 			controllers = append(controllers, nodehealth.New(n.ID, deps.db, deps.heartbeatTimeout))
 		}
@@ -3044,6 +3069,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithPublicHost(deps.publicHost),
 			ingressreconcile.WithListenAddr(deps.ingressHTTPSAddr),
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
+			ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}),
 		}
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial))
@@ -3074,6 +3100,10 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// registry being enabled with a Host set (WithRegistryDial's own
 		// doc comment).
 		ingressOpts = append(ingressOpts, ingressreconcile.WithRegistryDial(registryDialAddr()))
+		ingressOpts = append(ingressOpts,
+			ingressreconcile.WithLoadBalancers(deps.db, deps.lbRegistry),
+			ingressreconcile.WithNodeUpstreams(lbNodeUpstreams{db: deps.db, local: deps.runtime, registry: deps.agentRegistry}),
+		)
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 
 		// Local runtime unconditionally, same reasoning as the ingress
@@ -3148,6 +3178,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
+		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
 	}
 	if deps.secretsManager != nil {
 		appOpts = append(appOpts, application.WithSecretResolver(deps.secretsManager))

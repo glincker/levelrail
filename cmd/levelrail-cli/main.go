@@ -66,6 +66,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
 	case "databases":
 		return runDatabases(prog, args[1:], stdout, stderr, lookupEnv)
+	case "models":
+		return runModels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth":
 		return runAuth(prog, args[1:], stdout, stderr, lookupEnv)
 	case "profile":
@@ -92,6 +94,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "shared-env":
 		return runSharedEnv(prog, args[1:], stdout, stderr, lookupEnv)
+	case "storage":
+		return runStorage(prog, args[1:], stdout, stderr, lookupEnv)
+	case "logs":
+		return runLogs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backup-targets":
 		return runBackupTargets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "registry-credentials":
@@ -100,6 +106,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runFlags(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tags":
 		return runTags(prog, args[1:], stdout, stderr, lookupEnv)
+	case "pipelines":
+		return runPipelines(prog, args[1:], stdout, stderr, lookupEnv)
+	case "lb":
+		return runLB(prog, args[1:], stdout, stderr, lookupEnv)
 	case "nodes":
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
@@ -179,6 +189,7 @@ Usage:
   %[1]s databases create [flags]     create a managed database
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
+  %[1]s models list|get|deploy|logs|delete|restart|rotate-key|gpus [flags]   AI models on GPU nodes
   %[1]s domains list [flags]           list every app's domains in one call
   %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
   %[1]s pitr enable|disable|status|base-backups|restore <database> [flags]   point-in-time restore (postgres only)
@@ -188,10 +199,14 @@ Usage:
   %[1]s channels list|create|delete|test [flags]           manage notification channels (Slack, Discord, Telegram, email, Pushover, webhook)
   %[1]s shared-env list|set|delete --scope SCOPE --id ID [flags]   manage project/organization/environment-scoped shared env vars, plain or secret
   %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations
+  %[1]s storage providers|list|add|test|delete [flags]   manage S3-compatible storage destinations (AWS S3, R2, B2, MinIO, Wasabi, custom)
+  %[1]s logs archive set|status|remove, logs dump|ls|fetch [flags]   archive node-local logs to a storage destination
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s registry status|enable|disable [flags]                 manage Levelrail's own built-in container registry
   %[1]s flags create|list|get|set|delete [flags]              manage feature flags, read live by a running app via GET /api/v1/flags/evaluate/{key}
+  %[1]s pipelines list|validate|save|delete|run|runs|logs|cancel|approve [flags]   CI/CD pipelines: run, watch, approve, cancel
   %[1]s tags list|create|delete|apps [flags]                  manage tags, always identified by name, arbitrary labels for organizing and filtering apps
+  %[1]s lb show|set|clear|status|export|import <app> [flags]  load balancer across an app's replicas: config, live upstreams, terraform/cdk/cloudformation/caddy export
   %[1]s apps tag <name> <tag> [flags]                          attach a tag (by name) to an app
   %[1]s apps untag <name> <tag> [flags]                        detach a tag (by name) from an app
   %[1]s nodes list|get|delete [flags]                        manage nodes

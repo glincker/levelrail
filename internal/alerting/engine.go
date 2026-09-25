@@ -83,6 +83,8 @@ type Engine struct {
 
 	cpBackups      ControlPlaneBackupSource
 	cpBackupMaxAge time.Duration
+
+	logArchive LogArchiveSource
 }
 
 // NewEngine builds an Engine. newNotifier defaults to a Notifier with no
@@ -171,6 +173,9 @@ func (e *Engine) SetControlPlaneBackups(src ControlPlaneBackupSource, maxAge tim
 	e.cpBackups = src
 	e.cpBackupMaxAge = maxAge
 }
+
+// SetLogArchive enables kind=log_archive_stale rules.
+func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
 
 // Tick evaluates every enabled rule once. Errors from individual rules
 // (a metrics query failing, a notification failing to send) are
@@ -293,6 +298,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindLogArchiveStale:
+			if e.logArchive == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateLogArchiveStale(ctx, e.logArchive, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		default:
 			e.logger.Warn("alerting: rule has unknown kind, skipping", slog.String("rule_id", r.ID), slog.String("kind", string(r.Kind)))
 			continue
@@ -374,7 +388,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if r.Kind == KindDomainHealth && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale) && !resolved {
+	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 

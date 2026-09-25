@@ -28,6 +28,15 @@ type ServiceResources struct {
 	// CPUSetCPUs pins the container to specific host CPUs, Docker's own
 	// cpuset-cpus format (e.g. "0-3" or "0,2").
 	CPUSetCPUs string `json:"cpuset_cpus,omitempty"`
+	// GPU requests NVIDIA GPUs. nil means none.
+	GPU *ServiceGPU `json:"gpu,omitempty"`
+}
+
+// ServiceGPU is a service's GPU request: Count -1 means every GPU,
+// DeviceIDs (indexes or UUIDs) take precedence over Count.
+type ServiceGPU struct {
+	Count     int      `json:"count,omitempty"`
+	DeviceIDs []string `json:"device_ids,omitempty"`
 }
 
 // ServiceProbe is one readiness or liveness check.

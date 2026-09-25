@@ -147,6 +147,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         description: 'S3-compatible buckets for managed database backups.',
       },
       {
+        to: '/settings/storage',
+        icon: CloudArrowUpIcon,
+        title: 'Storage destinations',
+        description:
+          'AWS S3, R2, B2, MinIO, Wasabi buckets for log archives and backups.',
+      },
+      {
         to: '/settings/registry-credentials',
         icon: PackageIcon,
         title: 'Registry credentials',

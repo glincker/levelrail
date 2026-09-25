@@ -43,6 +43,9 @@ const (
 	// KindControlPlaneBackupStale is platform-wide: it watches the newest control plane snapshot's age.
 	KindControlPlaneBackupStale Kind = "control_plane_backup_stale"
 	KindNodeOffline             Kind = "node_offline"
+
+	// KindLogArchiveStale is platform-wide: it fires when a log archive policy fails or stops succeeding.
+	KindLogArchiveStale Kind = "log_archive_stale"
 )
 
 // Comparator is how a threshold Rule compares the latest sample value

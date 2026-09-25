@@ -54,7 +54,70 @@
           "items": { "type": "string" },
           "minItems": 1
         },
-        "egress": { "$ref": "#/$defs/egress" }
+        "egress": { "$ref": "#/$defs/egress" },
+        "loadbalancer": { "$ref": "#/$defs/loadbalancer" }
+      }
+    },
+    "loadbalancer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": { "enum": ["round_robin", "least_conn", "ip_hash", "uri_hash", "cookie", "weighted"] },
+        "cookie_name": { "type": "string", "minLength": 1 },
+        "weights": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1, "maximum": 100 }
+        },
+        "active_health": {
+          "type": "object",
+          "required": ["path"],
+          "additionalProperties": false,
+          "properties": {
+            "path": { "type": "string", "pattern": "^/" },
+            "interval": { "type": "string" },
+            "timeout": { "type": "string" },
+            "passes": { "type": "integer", "minimum": 0 },
+            "fails": { "type": "integer", "minimum": 0 },
+            "expect_status": { "type": "integer", "minimum": 100, "maximum": 599 }
+          }
+        },
+        "passive_health": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fail_duration": { "type": "string" },
+            "max_fails": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "retries": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "count": { "type": "integer", "minimum": 0, "maximum": 10 },
+            "try_duration": { "type": "string" },
+            "try_interval": { "type": "string" }
+          }
+        },
+        "slow_start": { "type": "string" },
+        "drain_timeout": { "type": "string" },
+        "request_timeout": { "type": "string" },
+        "rate_limit": {
+          "type": "object",
+          "required": ["rps"],
+          "additionalProperties": false,
+          "properties": {
+            "rps": { "type": "integer", "minimum": 1 },
+            "burst": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "upstream_tls": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "insecure_skip_verify": { "type": "boolean" },
+            "server_name": { "type": "string" }
+          }
+        }
       }
     },
     "egress": {
@@ -165,7 +228,21 @@
         "memory": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
         "cpu": { "type": "number", "exclusiveMinimum": 0 },
         "swapMemory": { "type": "string", "pattern": "^[0-9]+(Mi|Gi)$" },
-        "cpuSet": { "type": "string", "pattern": "^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$" }
+        "cpuSet": { "type": "string", "pattern": "^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$" },
+        "gpu": {
+          "oneOf": [
+            { "const": "all" },
+            { "type": "integer", "minimum": 1 },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "count": { "oneOf": [{ "const": "all" }, { "type": "integer", "minimum": 1 }] },
+                "devices": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+              }
+            }
+          ]
+        }
       }
     },
     "envValue": {

@@ -178,6 +178,8 @@ type Pipeline struct {
 	staticRootDir string
 
 	apps AppStore // nil is valid: every method except DeploySpec ignores it, see WithAppStore
+
+	loadBalancers LoadBalancerStore // nil is valid: the loadbalancer: block is then ignored
 }
 
 // New builds a Pipeline.
@@ -328,6 +330,9 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	if err := p.store.SaveDesiredService(ctx, desired); err != nil {
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
 	}
+	if err := p.saveLoadBalancer(ctx, req); err != nil {
+		return "", err
+	}
 
 	// Best-effort, secondary to the deploy itself: the build already
 	// succeeded and desired state is already saved by this point, so a
@@ -373,6 +378,9 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 	}
 	if err := p.store.SaveDesiredService(ctx, desired); err != nil {
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
+	}
+	if err := p.saveLoadBalancer(ctx, req); err != nil {
+		return "", err
 	}
 	return image, nil
 }

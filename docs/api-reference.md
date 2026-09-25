@@ -106,7 +106,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 53 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 72 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 72 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -171,6 +172,25 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/egress-policy | AbilityRead | handleGetAppEgressPolicy |
 | PUT | /api/v1/apps/{name}/egress-policy | AbilityWriteSensitive | handleSetAppEgressPolicy |
 | DELETE | /api/v1/apps/{name}/egress-policy | AbilityWriteSensitive | handleClearAppEgressPolicy |
+| GET | /api/v1/apps/{name}/pipelines | AbilityRead | handleListPipelines |
+| POST | /api/v1/apps/{name}/pipelines | AbilityWrite | handleCreatePipeline |
+| GET | /api/v1/apps/{name}/pipelines/{pname} | AbilityRead | handleGetPipeline |
+| PUT | /api/v1/apps/{name}/pipelines/{pname} | AbilityWrite | handleUpdatePipeline |
+| DELETE | /api/v1/apps/{name}/pipelines/{pname} | AbilityWrite | handleDeletePipeline |
+| POST | /api/v1/apps/{name}/pipelines/{pname}/runs | AbilityDeploy | handleStartPipelineRun |
+| GET | /api/v1/apps/{name}/pipeline-runs | AbilityRead | handleListPipelineRuns |
+| GET | /api/v1/apps/{name}/pipeline-runs/{id} | AbilityRead | handleGetPipelineRun |
+| GET | /api/v1/apps/{name}/pipeline-runs/{id}/logs | AbilityRead | handleListPipelineRunLogs |
+| GET | /api/v1/apps/{name}/pipeline-runs/{id}/logs/stream | AbilityRead | handleStreamPipelineRunLogs |
+| POST | /api/v1/apps/{name}/pipeline-runs/{id}/cancel | AbilityDeploy | handleCancelPipelineRun |
+| POST | /api/v1/apps/{name}/pipeline-runs/{id}/rerun | AbilityDeploy | handleRerunPipelineRun |
+| POST | /api/v1/apps/{name}/pipeline-runs/{id}/approvals/{approval} | AbilityDeploy | handleDecidePipelineApproval |
+| GET | /api/v1/apps/{name}/loadbalancer | AbilityRead | handleGetLoadBalancer |
+| PUT | /api/v1/apps/{name}/loadbalancer | AbilityWrite | handleSetLoadBalancer |
+| DELETE | /api/v1/apps/{name}/loadbalancer | AbilityWrite | handleDeleteLoadBalancer |
+| POST | /api/v1/apps/{name}/loadbalancer/import | AbilityWrite | handleImportLoadBalancer |
+| GET | /api/v1/apps/{name}/loadbalancer/status | AbilityRead | handleLoadBalancerStatus |
+| GET | /api/v1/apps/{name}/loadbalancer/export | AbilityRead | handleExportLoadBalancer |
 
 :::
 
@@ -583,6 +603,23 @@ Endpoints for:
 
 `GET /api/v1/audit-log` accepts optional query params: `limit`, `before` (RFC3339 cursor), `path`, `method`, `client_kind` (exact match), `q` (case-insensitive substring across actor name, ability, method, path and remote address), `status=failed` (only `status_code >= 400`), and `format=csv`. All filters combine with AND and the CSV export honors them.
 
+## AI Models / GPUs
+
+AI model resources on GPU nodes and the GPU node snapshots they schedule against. Details: [AI models](/ai-models).
+
+| Method | Path | Ability | Handler |
+| --- | --- | --- | --- |
+| GET | /api/v1/models | AbilityRead | handleListModels |
+| POST | /api/v1/models | AbilityWriteSensitive | handleCreateModel |
+| GET | /api/v1/models/{name} | AbilityRead | handleGetModel |
+| DELETE | /api/v1/models/{name} | AbilityWrite | handleDeleteModel |
+| POST | /api/v1/models/{name}/restart | AbilityWrite | handleRestartModel |
+| POST | /api/v1/models/{name}/api-key | AbilityWriteSensitive | handleRotateModelAPIKey |
+| PUT | /api/v1/models/{name}/hf-token | AbilityWriteSensitive | handleSetModelHFToken |
+| GET | /api/v1/models/{name}/logs | AbilityRead | handleQueryModelLogs |
+| GET | /api/v1/models/{name}/logs/stream | AbilityRead | handleLiveModelLogStream |
+| GET | /api/v1/gpus | AbilityRead | handleListGPUNodes |
+
 ## Other
 
 Routes that do not fit an existing group.
@@ -590,6 +627,8 @@ Routes that do not fit an existing group.
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
 | POST | /api/v1/build/detect | AbilityDeploy | handleDetectFramework |
+| POST | /api/v1/pipelines/validate | AbilityRead | handleValidatePipeline |
+| GET | /api/v1/pipelines/schema | AbilityRead | handlePipelineSchema |
 | POST | /api/v1/tags | AbilityWrite | handleCreateTag |
 | GET | /api/v1/tags | AbilityRead | handleListTags |
 | DELETE | /api/v1/tags/{id} | AbilityWrite | handleDeleteTag |
@@ -612,6 +651,20 @@ Routes that do not fit an existing group.
 | GET | /api/v1/ai/sessions/{id} | AbilityRoot | handleGetAIChatSession |
 | POST | /api/v1/ai/sessions/{id}/messages | AbilityRoot | handleCreateAIChatMessage |
 | POST | /api/v1/ai/sessions/{id}/confirmations/{confirmation_id} | AbilityRoot | handleResolveAIChatConfirmation |
+| GET | /api/v1/storage/providers | AbilityRead | handleListStorageProviders |
+| GET | /api/v1/storage/destinations | AbilityRead | handleListStorageDestinations |
+| POST | /api/v1/storage/destinations | AbilityWriteSensitive | handleCreateStorageDestination |
+| GET | /api/v1/storage/destinations/{id} | AbilityRead | handleGetStorageDestination |
+| PUT | /api/v1/storage/destinations/{id} | AbilityWriteSensitive | handleUpdateStorageDestination |
+| DELETE | /api/v1/storage/destinations/{id} | AbilityWriteSensitive | handleDeleteStorageDestination |
+| POST | /api/v1/storage/destinations/{id}/test | AbilityWriteSensitive | handleTestStorageDestination |
+| GET | /api/v1/log-archive/policies | AbilityRead | handleListLogArchivePolicies |
+| PUT | /api/v1/log-archive/policy | AbilityWrite | handleSetLogArchivePolicy |
+| DELETE | /api/v1/log-archive/policy | AbilityWrite | handleDeleteLogArchivePolicy |
+| POST | /api/v1/log-archive/dump | AbilityWrite | handleLogArchiveDump |
+| GET | /api/v1/log-archive/runs | AbilityRead | handleListLogArchiveRuns |
+| GET | /api/v1/log-archive/objects | AbilityRead | handleListLogArchiveObjects |
+| GET | /api/v1/log-archive/objects/download | AbilityRead | handleDownloadLogArchiveObject |
 
 ## See also
 

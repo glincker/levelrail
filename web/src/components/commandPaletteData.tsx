@@ -107,6 +107,13 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'Settings',
   ),
   nav(
+    'settings-storage',
+    'Storage destinations',
+    <CloudArrowUpIcon />,
+    '/settings/storage',
+    'Settings',
+  ),
+  nav(
     'settings-registry-credentials',
     'Registry credentials',
     <PackageIcon />,
