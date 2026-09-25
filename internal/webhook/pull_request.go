@@ -44,6 +44,22 @@ type PullRequestEvent struct {
 	// compared against Config.TargetRef: a pull request against any
 	// other branch is ignored.
 	BaseRef string
+	// HeadRepoFullName and BaseRepoFullName are the "owner/name" of the
+	// repositories the source and target branches live in. Empty when the
+	// payload carries none (for example a deleted fork).
+	HeadRepoFullName string
+	BaseRepoFullName string
+}
+
+// IsFork reports whether the pull request comes from a different
+// repository than it targets. It fails closed: an event that names no
+// head or base repository is treated as a fork, since code from an
+// unknown source must not be trusted with secrets.
+func (e PullRequestEvent) IsFork() bool {
+	if e.HeadRepoFullName == "" || e.BaseRepoFullName == "" {
+		return true
+	}
+	return !strings.EqualFold(e.HeadRepoFullName, e.BaseRepoFullName)
 }
 
 // ErrPullRequestEventFieldsMissing is returned by a provider-specific
@@ -108,6 +124,12 @@ func ParsePullRequestEventForProvider(body []byte, header http.Header) (PullRequ
 	return parseGitHubPullRequestEvent(body)
 }
 
+// repoInfo is the repository object each provider except GitLab attaches to
+// each side of a pull request; it is null when the source repository is gone.
+type repoInfo struct {
+	FullName string `json:"full_name"`
+}
+
 // githubPullRequestPayload is the subset of GitHub's pull_request event
 // payload this package needs.
 // https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request
@@ -116,11 +138,13 @@ type githubPullRequestPayload struct {
 	Number      int    `json:"number"`
 	PullRequest struct {
 		Head struct {
-			Ref string `json:"ref"`
-			SHA string `json:"sha"`
+			Ref  string   `json:"ref"`
+			SHA  string   `json:"sha"`
+			Repo repoInfo `json:"repo"`
 		} `json:"head"`
 		Base struct {
-			Ref string `json:"ref"`
+			Ref  string   `json:"ref"`
+			Repo repoInfo `json:"repo"`
 		} `json:"base"`
 	} `json:"pull_request"`
 }
@@ -137,7 +161,9 @@ func parseGitHubPullRequestEvent(body []byte) (PullRequestEvent, error) {
 	return PullRequestEvent{
 		Action: action, Number: p.Number,
 		HeadRef: p.PullRequest.Head.Ref, HeadSHA: p.PullRequest.Head.SHA,
-		BaseRef: p.PullRequest.Base.Ref,
+		BaseRef:          p.PullRequest.Base.Ref,
+		HeadRepoFullName: p.PullRequest.Head.Repo.FullName,
+		BaseRepoFullName: p.PullRequest.Base.Repo.FullName,
 	}, nil
 }
 
@@ -150,7 +176,13 @@ type gitlabPullRequestPayload struct {
 		Action       string `json:"action"`
 		SourceBranch string `json:"source_branch"`
 		TargetBranch string `json:"target_branch"`
-		LastCommit   struct {
+		Source       struct {
+			PathWithNamespace string `json:"path_with_namespace"`
+		} `json:"source"`
+		Target struct {
+			PathWithNamespace string `json:"path_with_namespace"`
+		} `json:"target"`
+		LastCommit struct {
 			ID string `json:"id"`
 		} `json:"last_commit"`
 	} `json:"object_attributes"`
@@ -168,7 +200,9 @@ func parseGitLabPullRequestEvent(body []byte) (PullRequestEvent, error) {
 	return PullRequestEvent{
 		Action: action, Number: p.ObjectAttributes.IID,
 		HeadRef: p.ObjectAttributes.SourceBranch, HeadSHA: p.ObjectAttributes.LastCommit.ID,
-		BaseRef: p.ObjectAttributes.TargetBranch,
+		BaseRef:          p.ObjectAttributes.TargetBranch,
+		HeadRepoFullName: p.ObjectAttributes.Source.PathWithNamespace,
+		BaseRepoFullName: p.ObjectAttributes.Target.PathWithNamespace,
 	}, nil
 }
 
@@ -185,11 +219,13 @@ type bitbucketPullRequestPayload struct {
 			Commit struct {
 				Hash string `json:"hash"`
 			} `json:"commit"`
+			Repository repoInfo `json:"repository"`
 		} `json:"source"`
 		Destination struct {
 			Branch struct {
 				Name string `json:"name"`
 			} `json:"branch"`
+			Repository repoInfo `json:"repository"`
 		} `json:"destination"`
 	} `json:"pullrequest"`
 }
@@ -206,7 +242,9 @@ func parseBitbucketPullRequestEvent(body []byte, eventKey string) (PullRequestEv
 	return PullRequestEvent{
 		Action: action, Number: p.PullRequest.ID,
 		HeadRef: p.PullRequest.Source.Branch.Name, HeadSHA: p.PullRequest.Source.Commit.Hash,
-		BaseRef: p.PullRequest.Destination.Branch.Name,
+		BaseRef:          p.PullRequest.Destination.Branch.Name,
+		HeadRepoFullName: p.PullRequest.Source.Repository.FullName,
+		BaseRepoFullName: p.PullRequest.Destination.Repository.FullName,
 	}, nil
 }
 
@@ -220,11 +258,13 @@ type giteaPullRequestPayload struct {
 	Number      int    `json:"number"`
 	PullRequest struct {
 		Head struct {
-			Ref string `json:"ref"`
-			SHA string `json:"sha"`
+			Ref  string   `json:"ref"`
+			SHA  string   `json:"sha"`
+			Repo repoInfo `json:"repo"`
 		} `json:"head"`
 		Base struct {
-			Ref string `json:"ref"`
+			Ref  string   `json:"ref"`
+			Repo repoInfo `json:"repo"`
 		} `json:"base"`
 	} `json:"pull_request"`
 }
@@ -241,6 +281,8 @@ func parseGiteaPullRequestEvent(body []byte) (PullRequestEvent, error) {
 	return PullRequestEvent{
 		Action: action, Number: p.Number,
 		HeadRef: p.PullRequest.Head.Ref, HeadSHA: p.PullRequest.Head.SHA,
-		BaseRef: p.PullRequest.Base.Ref,
+		BaseRef:          p.PullRequest.Base.Ref,
+		HeadRepoFullName: p.PullRequest.Head.Repo.FullName,
+		BaseRepoFullName: p.PullRequest.Base.Repo.FullName,
 	}, nil
 }
