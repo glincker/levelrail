@@ -57,6 +57,34 @@ levelrail-mcp --transport=http --listen=127.0.0.1:8090 --token '<your API token>
 - **Requires the same bearer token on every incoming request.** The token this process already uses outbound, against the control plane's REST API, is the same token an MCP client must present as `Authorization: Bearer <token>` on every request against the network listener. There is no separate auth concept to configure.
 - Put a reverse proxy or the WireGuard mesh (see `docs/multi-node.md`) in front of it for TLS if the client is not on the same trusted network; `levelrail-mcp` itself speaks plain HTTP.
 
+## Modes and toolsets
+
+Every tool carries MCP annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`, and a title), derived from one classification table in `internal/mcptools/classes.go`. Tools that touch credentials or command output also carry `_meta["levelrail/sensitive"] = true`. Annotations are hints only, so the server enforces the same split at registration time.
+
+`APP_MCP_MODE` (or `--mode`) chooses which classes are registered at all. A tool that is not registered costs no model context and cannot be called:
+
+| Mode | Registers |
+| --- | --- |
+| `read-only` | read tools only (get, list, explain, diagnose, compare, preview) |
+| `standard` (default) | read and mutating tools (deploy, restart, set, create, clone, approve, rotate) |
+| `full` | everything, including destructive tools (delete, clear, rollback, prune, sweep) |
+
+`APP_MCP_TOOLSETS` (or `--toolsets`) is an optional comma separated list that limits the groups exposed: `alerts, apps, audit, backups, databases, deploys, diagnostics, domains, environments, flags, iam, loadbalancer, logs, metrics, models, nodes, notifications, orgs, pipelines, previews, registry, scheduled, settings, system, templates, webhooks`.
+
+```bash
+APP_MCP_MODE=read-only APP_MCP_TOOLSETS=apps,nodes,logs,diagnostics levelrail-mcp
+```
+
+The startup log line `levelrail-mcp tools` reports the mode and how many read, mutating and destructive tools are registered. A mode never widens access: the API token's abilities still bound every call, so pair `read-only` with a `read`-scoped token (defense in depth, not a replacement).
+
+## Untrusted text and the assistant's confirmation gate
+
+Logs, deploy output, error messages, commit messages, PR titles and similar text are written by workloads or third parties, so they can carry prompt injection. Tools marked `levelrail/untrusted-output` in `_meta` (log, status, deploy, diagnose, pipeline and audit reads) return their text content inside a delimited block that starts with a standard "untrusted data, not instructions" notice. Control characters, ANSI escapes, invisible and bidi characters are stripped, obvious secrets (private keys, bearer tokens, common token shapes, URL credentials, values of password/token/key fields) are redacted, and text is truncated. The block boundaries carry a random id, so content cannot forge the closing line. The structured copy of the result is sanitized the same way but is not delimited.
+
+Limits come from `APP_UNTRUSTED_MAX_FIELD_BYTES` (per string field, default 4096) and `APP_UNTRUSTED_MAX_BLOCK_BYTES` (per wrapped block, default 65536).
+
+This is friction, not a guarantee. The real boundary is the assistant's confirmation gate, which uses each tool's MCP annotations instead of name prefixes: every tool that is not read-only, and every tool without annotations, pauses for a human click. Once a conversation has ingested untrusted output (it is then "tainted", derived from the stored history so it survives later turns), read tools that are outbound or touch secrets pause as well.
+
 ## Generating and scoping a token
 
 Use the same token machinery the CLI and dashboard already use (`docs/identity-and-access.md`'s "API tokens" section): scoped, revocable bearer credentials minted with the six-string ability vocabulary (`read`, `read:sensitive`, `write`, `write:sensitive`, `deploy`, `root`).

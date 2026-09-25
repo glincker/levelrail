@@ -185,7 +185,7 @@ func TestEngine_RunTurn_AutoExecutesReadOnlyTool(t *testing.T) {
 		{Text: "you have 2 apps", StopReason: StopReasonEndTurn},
 	}}
 	tools := &fakeToolExecutor{
-		tools:   []ToolSpec{{Name: "list_apps", Description: "list apps"}},
+		tools:   []ToolSpec{{Name: "list_apps", Description: "list apps", Traits: ToolTraits{Known: true, ReadOnly: true}}},
 		results: map[string]fakeToolResult{"list_apps": {text: `[{"name":"web"},{"name":"api"}]`}},
 	}
 	engine := NewEngine(db, &fakeSecrets{key: "sk-test", exists: true}, tools, fakeProviderFactory(fp), "")

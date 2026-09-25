@@ -9,7 +9,7 @@ import (
 )
 
 func registerVolumeBackupTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_app_volume_backups",
 		Description: "List an app service volume's backup history, newest first: status, size, target, and error for each attempt. The volume counterpart of a database's own backup history. Read-only; does not trigger a new backup.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in volumeBackupsInput) (*mcp.CallToolResult, []apiclient.BackupHistoryResource, error) {

@@ -9,7 +9,7 @@ import (
 )
 
 func registerServiceTemplateTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_service_templates",
 		Description: "List the service template catalog (id, name, category, slogan), without each entry's full Compose body. Use get_service_template for that.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.ServiceTemplateListItem, error) {
@@ -20,7 +20,7 @@ func registerServiceTemplateTools(server *mcp.Server, client *apiclient.Client) 
 		return nil, templates, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_service_template",
 		Description: "Get one service template catalog entry, including its full compose.yaml body, ready to pass to deploy_compose.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in serviceTemplateIDInput) (*mcp.CallToolResult, apiclient.ServiceTemplateDetail, error) {

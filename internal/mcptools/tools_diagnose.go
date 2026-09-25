@@ -9,7 +9,7 @@ import (
 )
 
 func registerDiagnosticTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "diagnose_app_failure",
 		Description: "Explain why an app's most recent deploy attempt failed, or why it's crashlooping: a deterministic pattern match over already-collected signals (deploy attempt error, reconcile conditions, crashloop state, recent logs), never a call to an external model. Read-only, changes nothing. Pass deploy_id to diagnose a specific past attempt instead of the newest one.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in diagnoseAppInput) (*mcp.CallToolResult, apiclient.DiagnosisResource, error) {

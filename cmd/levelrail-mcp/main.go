@@ -54,6 +54,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -76,7 +77,11 @@ func main() {
 }
 
 func run(prog string, args []string, lookupEnv func(string) (string, bool), logger *slog.Logger) error {
-	tokenFlag, apiURLFlag, profileFlag, transportFlag, listenFlag, err := parseFlags(prog, args)
+	tokenFlag, apiURLFlag, profileFlag, transportFlag, listenFlag, modeFlag, toolsetsFlag, err := parseFlags(prog, args)
+	if err != nil {
+		return err
+	}
+	opts, err := resolveOptions(modeFlag, toolsetsFlag, lookupEnv)
 	if err != nil {
 		return err
 	}
@@ -86,7 +91,18 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
 	client := apiclient.NewClient(apiURL, token, apiclient.WithUserAgent("levelrail-mcp/"+version.Version))
 
-	server := mcptools.NewServer(client)
+	server, summary := mcptools.NewServerWithOptions(client, opts)
+	logAttrs := []any{
+		slog.String("mode", string(summary.Mode)),
+		slog.Int("tools", summary.Total),
+		slog.Int("read", summary.Read),
+		slog.Int("mutating", summary.Mutate),
+		slog.Int("destructive", summary.Destruct),
+	}
+	if len(summary.Toolsets) > 0 {
+		logAttrs = append(logAttrs, slog.String("toolsets", strings.Join(summary.Toolsets, ",")))
+	}
+	logger.Info("levelrail-mcp tools", logAttrs...)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -113,6 +129,24 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 	}
 }
 
+func resolveOptions(modeFlag, toolsetsFlag string, lookupEnv func(string) (string, bool)) (mcptools.Options, error) {
+	if modeFlag == "" {
+		modeFlag, _ = lookupEnv(mcptools.EnvMode)
+	}
+	if toolsetsFlag == "" {
+		toolsetsFlag, _ = lookupEnv(mcptools.EnvToolsets)
+	}
+	mode, err := mcptools.ParseMode(modeFlag)
+	if err != nil {
+		return mcptools.Options{}, fmt.Errorf("resolve mcp mode: %w", err)
+	}
+	toolsets, err := mcptools.ParseToolsets(toolsetsFlag)
+	if err != nil {
+		return mcptools.Options{}, fmt.Errorf("resolve mcp toolsets: %w", err)
+	}
+	return mcptools.Options{Mode: mode, Toolsets: toolsets}, nil
+}
+
 const (
 	transportStdio = "stdio"
 	transportHTTP  = "http"
@@ -123,19 +157,21 @@ const (
 // an operator explicitly passes a different --listen address.
 const defaultListenAddr = "127.0.0.1:8090"
 
-func parseFlags(prog string, args []string) (token, apiURL, profile, transport, listen string, err error) {
+func parseFlags(prog string, args []string) (token, apiURL, profile, transport, listen, mode, toolsets string, err error) {
 	fs := flag.NewFlagSet(prog, flag.ContinueOnError)
 	fs.StringVar(&token, "token", "", "API token (overrides "+apiclient.EnvAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURL, "api-url", "", "control plane API base URL (overrides "+apiclient.EnvAPIURL+" and the credentials file, default "+apiclient.DefaultAPIURL+")")
 	fs.StringVar(&profile, "profile", "", "named credentials profile to read (overrides "+apiclient.EnvProfile+", default \""+apiclient.DefaultProfile+"\")")
 	fs.StringVar(&transport, "transport", "", "MCP transport: \""+transportStdio+"\" (default, spawn as a local subprocess) or \""+transportHTTP+"\" (network-reachable, requires an API token)")
 	fs.StringVar(&listen, "listen", "", "address to bind in --transport=http mode (default "+defaultListenAddr+", loopback only)")
+	fs.StringVar(&mode, "mode", "", "tool exposure: \"read-only\", \"standard\" (default, no destructive tools) or \"full\" (overrides "+mcptools.EnvMode+")")
+	fs.StringVar(&toolsets, "toolsets", "", "comma separated tool groups to expose, default all (overrides "+mcptools.EnvToolsets+")")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(fs.Output(), "%s: an MCP server exposing the control plane's REST API as tools over stdio or streamable HTTP.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	if parseErr := fs.Parse(args); parseErr != nil {
-		return "", "", "", "", "", parseErr
+		return "", "", "", "", "", "", "", parseErr
 	}
-	return token, apiURL, profile, transport, listen, nil
+	return token, apiURL, profile, transport, listen, mode, toolsets, nil
 }

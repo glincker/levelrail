@@ -38,7 +38,7 @@ type archivedLogsInput struct {
 }
 
 func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_storage_destinations",
 		Description: "List connected S3-compatible storage destinations (AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, custom): name, provider preset, bucket, region, and how many log archive policies use each. No credential fields, ever. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.StorageDestination, error) {
@@ -49,7 +49,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, out, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "test_storage_destination",
 		Description: "Write, read back and delete a small probe object in a storage destination's bucket to prove its stored credentials work. Returns per-step results and a stable failure reason (invalid_credentials, access_denied, bucket_not_found, region_mismatch, endpoint_blocked, tls_error, unreachable). Leaves no object behind.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in storageDestinationIDInput) (*mcp.CallToolResult, apiclient.StorageProbeResult, error) {
@@ -60,7 +60,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, out, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_log_archive_policies",
 		Description: "List log archive policies (which apps ship node-local logs to which storage destination, how often, retention) with each one's last success and last error. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.LogArchivePolicy, error) {
@@ -71,7 +71,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, out, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "set_log_archive_policy",
 		Description: "Create or replace the log archive policy for one app (or every app when app_name is omitted): ship node-local logs to a storage destination as gzip NDJSON on a schedule. Only new logs from now on are archived; use start_log_archive_dump for history.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in logArchivePolicyInput) (*mcp.CallToolResult, apiclient.LogArchivePolicy, error) {
@@ -84,7 +84,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, out, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "start_log_archive_dump",
 		Description: "Archive a past time range of an app's (or every app's) logs to a storage destination now. Returns immediately with a running run; poll list_log_archive_runs for the outcome.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in logArchiveDumpInput) (*mcp.CallToolResult, apiclient.LogArchiveRun, error) {
@@ -95,7 +95,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, out, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_log_archive_runs",
 		Description: "List recent log archive runs (scheduled and manual dumps) with status, object and line counts, and any error. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in logArchiveRunsInput) (*mcp.CallToolResult, []apiclient.LogArchiveRun, error) {
@@ -106,7 +106,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, out, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_archived_logs",
 		Description: "List archived log objects (key, size, modified time) in a storage destination, newest partitions last, optionally for one app. Read-only; use the CLI or dashboard to download an object.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in archivedLogsInput) (*mcp.CallToolResult, apiclient.LogArchiveObjects, error) {

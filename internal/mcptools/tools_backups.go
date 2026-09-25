@@ -9,7 +9,7 @@ import (
 )
 
 func registerBackupVerificationTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_backup_verifications",
 		Description: "List a database backup's verification attempt history, newest first: checksum match, size match, format validity for each attempt. Read-only; does not trigger a new verification.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in backupVerificationsInput) (*mcp.CallToolResult, []apiclient.BackupVerificationResource, error) {
@@ -20,7 +20,7 @@ func registerBackupVerificationTools(server *mcp.Server, client *apiclient.Clien
 		return nil, verifications, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_latest_backup_verification",
 		Description: "Get the most recent verification attempt for a database backup, or an empty result if none has ever been run. Read-only; does not trigger a new verification.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in backupVerificationsInput) (*mcp.CallToolResult, apiclient.BackupVerificationResource, error) {

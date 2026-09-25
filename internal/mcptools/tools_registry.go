@@ -9,7 +9,7 @@ import (
 )
 
 func registerRegistryCredentialTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_registry_credentials",
 		Description: "List every private image registry credential connected to the control plane: host, username, and an expiry_status of healthy/expiring_soon/expired when an expiry was set. No password field, ever. Read-only; does not create, edit, delete, or test a credential.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.RegistryCredentialResource, error) {
@@ -20,7 +20,7 @@ func registerRegistryCredentialTools(server *mcp.Server, client *apiclient.Clien
 		return nil, creds, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_registry_credential_repositories",
 		Description: "List every repository in the external registry a stored credential authenticates against, so an operator or agent can find an image reference for a direct-image app deploy without leaving the assistant. Read-only; resolves the credential's stored password server-side only to authenticate the upstream query, never returns it.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in registryCredentialIDInput) (*mcp.CallToolResult, apiclient.RegistryRepositoriesResource, error) {
@@ -31,7 +31,7 @@ func registerRegistryCredentialTools(server *mcp.Server, client *apiclient.Clien
 		return nil, repos, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_registry_credential_tags",
 		Description: "List every tag pushed for one repository in the external registry a stored credential authenticates against. Read-only, same credential-resolution boundary as list_registry_credential_repositories.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in registryCredentialTagsInput) (*mcp.CallToolResult, apiclient.RegistryTagsResource, error) {

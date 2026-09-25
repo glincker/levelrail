@@ -70,6 +70,7 @@ type ToolSpec struct {
 	Name        string
 	Description string
 	InputSchema json.RawMessage
+	Traits      ToolTraits
 }
 
 // ChatRequest is one call to Provider.Complete: the full conversation so

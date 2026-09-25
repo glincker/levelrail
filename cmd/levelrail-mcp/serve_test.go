@@ -96,7 +96,7 @@ func TestRun_HTTPTransportRefusesToStartWithoutToken(t *testing.T) {
 }
 
 func TestParseFlags_DefaultListenIsLoopback(t *testing.T) {
-	_, _, _, _, listen, err := parseFlags("levelrail-mcp", []string{"--transport", "http"})
+	_, _, _, _, listen, _, _, err := parseFlags("levelrail-mcp", []string{"--transport", "http"})
 	if err != nil {
 		t.Fatalf("parseFlags() error = %v", err)
 	}

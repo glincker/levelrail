@@ -18,6 +18,14 @@ import (
 // (mcp.NewInMemoryTransports), without spawning a real process or
 // touching stdio.
 func NewServer(client *apiclient.Client) *mcp.Server {
+	server, _ := NewServerWithOptions(client, Options{Mode: ModeFull})
+	return server
+}
+
+// NewServerWithOptions builds the MCP server and then unregisters every
+// tool the mode and toolsets exclude, so a hidden tool costs no model
+// context and cannot be called.
+func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, Summary) {
 	server := mcp.NewServer(&mcp.Implementation{Name: "levelrail-mcp", Version: version.Version}, nil)
 
 	registerAppTools(server, client)
@@ -60,5 +68,6 @@ func NewServer(client *apiclient.Client) *mcp.Server {
 	registerModelTools(server, client)
 	registerLoadBalancerTools(server, client)
 
-	return server
+	summary := applyOptions(server, opts)
+	return server, summary
 }
