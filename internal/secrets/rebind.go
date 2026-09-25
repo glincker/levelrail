@@ -50,7 +50,7 @@ type RebindResult struct {
 // BindingStatus reports how many stored values still use the legacy
 // unbound format, from a prefix count that never decrypts anything.
 func (m *Manager) BindingStatus(ctx context.Context) (BindingStatus, error) {
-	total, bound, err := m.store.CountSecretValuesByPrefix(ctx, BoundPrefix())
+	total, bound, err := m.store.CountSecretValuesByPrefix(ctx, boundPrefix())
 	if err != nil {
 		return BindingStatus{}, fmt.Errorf("secrets: binding status: %w", err)
 	}

@@ -49,7 +49,7 @@ func TestEncryptDecryptValue_RoundTrip(t *testing.T) {
 	if bytes.Contains(ciphertext, []byte("hunter2")) || bytes.Contains(ciphertext, []byte(testBinding.Key)) {
 		t.Fatal("ciphertext contains plaintext or binding bytes, encryption did not happen")
 	}
-	if !HasBoundPrefix(ciphertext) {
+	if !hasBoundPrefix(ciphertext) {
 		t.Fatal("new ciphertext lacks the bound envelope prefix")
 	}
 
@@ -127,7 +127,7 @@ func TestDecryptValue_LegacyNonceThatLooksLikePrefix(t *testing.T) {
 	nonce := make([]byte, gcm.NonceSize())
 	copy(nonce, envelopeV1)
 	ct := gcm.Seal(bytes.Clone(nonce), nonce, []byte("collide"), nil)
-	if !HasBoundPrefix(ct) {
+	if !hasBoundPrefix(ct) {
 		t.Fatal("fixture should start with the bound prefix")
 	}
 	got, legacy, err := DecryptValue(dek, testBinding, ct)

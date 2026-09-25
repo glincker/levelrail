@@ -37,15 +37,15 @@ var (
 // authentication instead of decrypting.
 var envelopeV1 = []byte{0xB7, 0x1C, 0xE5, 0x5A, 0x01}
 
-// HasBoundPrefix reports whether ciphertext carries the bound envelope
+// hasBoundPrefix reports whether ciphertext carries the bound envelope
 // prefix. A cheap format check only; DecryptValue is authoritative.
-func HasBoundPrefix(ciphertext []byte) bool {
+func hasBoundPrefix(ciphertext []byte) bool {
 	return bytes.HasPrefix(ciphertext, envelopeV1)
 }
 
-// BoundPrefix returns a copy of the bound envelope prefix, for storage
+// boundPrefix returns a copy of the bound envelope prefix, for storage
 // queries that count formats without decrypting.
-func BoundPrefix() []byte {
+func boundPrefix() []byte {
 	return bytes.Clone(envelopeV1)
 }
 
@@ -123,7 +123,7 @@ func DecryptValue(dek []byte, b Binding, ciphertext []byte) (plaintext string, l
 		return "", false, err
 	}
 
-	if HasBoundPrefix(ciphertext) {
+	if hasBoundPrefix(ciphertext) {
 		frame, boundErr := openGCM(gcm, ciphertext[len(envelopeV1):], envelopeV1)
 		if boundErr == nil {
 			value, err := checkBinding(frame, b)

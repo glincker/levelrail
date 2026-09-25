@@ -176,7 +176,7 @@ func TestManager_RebindIsIdempotent(t *testing.T) {
 	}
 	for slot, v := range want {
 		mustResolve(t, m, slot[0], slot[1], v)
-		if !HasBoundPrefix(fs.values[slot[0]][slot[1]]) {
+		if !hasBoundPrefix(fs.values[slot[0]][slot[1]]) {
 			t.Errorf("%v is not bound after Rebind", slot)
 		}
 	}
