@@ -114,10 +114,38 @@ levelrail logs archive remove --app web
 
 Intervals run from 5 minutes to 24 hours.
 
+## Build cache
+
+BuildKit can keep its layer cache in a storage destination, so a rebuild skips unchanged steps even after the build host's local cache is gone. It uses BuildKit's `s3` cache backend, so it works with every provider above.
+
+Dashboard: an app's **Settings, Deploy settings, Build cache** card, or **Settings, Storage destinations, Build cache for all apps** for a default that every app without its own setting inherits. Pick a destination and an export mode, and save.
+
+CLI:
+
+```
+levelrail apps build-cache set web --target bkt_1 --mode max
+levelrail apps build-cache set --global --target bkt_1
+levelrail apps build-cache show web
+levelrail apps build-cache clear web
+levelrail apps build-cache remove web
+```
+
+How it behaves:
+
+- **Per-app prefix.** Layers live under `build-cache/<app>/` (change the root with `APP_BUILD_CACHE_PREFIX`), so apps never share cache and one app can be cleared without touching another. An app can opt out of the global default by saving a setting with the cache disabled (`--disable`).
+- **Mode.** `max` caches every layer and gives the fastest rebuilds, `min` caches only the final image layers and keeps the bucket smaller.
+- **Credentials.** They come from the destination's encrypted secrets, are passed to BuildKit for the one build, and are never logged, stored in build logs, or returned by the API. Warnings recorded on a build have any key material removed.
+- **Fails open.** If the cache cannot be read or written (bad credentials, bucket gone, network), the build carries on without it. The reason is written to the build log as a warning, shown on the deploy attempt (`cache_warning`), and kept on the setting as the last build result. A build that genuinely fails is still a failed build.
+- **Private endpoints.** BuildKit dials the bucket itself, so the SSRF guard is applied to a custom endpoint before each build: an endpoint that resolves to an internal address is skipped with a warning unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true`.
+- **Remote build nodes.** A build dispatched to a dedicated build node does not receive bucket credentials, so it runs without the s3 cache and records a warning. Local builds on the control plane use it. Railpack builds do not use the s3 cache yet; Dockerfile builds do.
+- **Hygiene.** The app card and `build-cache show` list the app's prefix (bounded to `APP_BUILD_CACHE_STATS_MAX_OBJECTS`, default 2000) for object count, size and last export time, plus the last build outcome. **Clear cache** deletes the prefix in pages, at most `APP_BUILD_CACHE_CLEAR_MAX_OBJECTS` (default 5000) objects per call; when it reports more remaining, run it again. Removing a setting stops using the cache but leaves the objects, so clear first if you want the space back, or add a bucket lifecycle rule on `build-cache/`.
+
+Pipeline artifacts still use the per-node volume; they do not use a storage destination yet.
+
 ## Alerting
 
 Create a `log_archive_stale` alert rule (dashboard: Alerts, or `levelrail apps alerts create <app> --kind log_archive_stale`). It fires when any enabled policy's last run failed, or when a policy has gone longer than the rule's `for_duration` without a success (default: three intervals, at least two hours). It notifies through the same channels as every other rule.
 
 ## API and MCP
 
-REST routes live under `/api/v1/storage` and `/api/v1/log-archive` (see the [API reference](/api-reference)). Reads need the `read` ability, policy changes and dumps need `write`, and anything that handles credentials needs `write:sensitive`. The MCP server exposes read and control tools (`list_storage_destinations`, `test_storage_destination`, `list_log_archive_policies`, `set_log_archive_policy`, `start_log_archive_dump`, `list_log_archive_runs`, `list_archived_logs`) but deliberately has no tool that accepts bucket credentials.
+REST routes live under `/api/v1/storage`, `/api/v1/log-archive` and `/api/v1/build-cache` (see the [API reference](/api-reference)). Reads need the `read` ability, policy changes and dumps need `write`, and anything that handles credentials needs `write:sensitive`. The MCP server exposes read and control tools (`list_storage_destinations`, `test_storage_destination`, `list_log_archive_policies`, `set_log_archive_policy`, `start_log_archive_dump`, `list_log_archive_runs`, `list_archived_logs`, `get_build_cache`, `set_build_cache`) but deliberately has no tool that accepts bucket credentials.
