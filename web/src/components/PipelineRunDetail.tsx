@@ -20,6 +20,7 @@ import {
 import type { PipelineApproval, PipelineRun } from '../types/pipelines'
 import { formatDuration } from '../lib/pipelineStatus'
 import { PipelineRunGraph } from './PipelineRunGraph'
+import { PipelineHoldGate } from './PipelineHoldGate'
 import { PipelineRunLogs } from './PipelineRunLogs'
 import { PipelineStatusBadge } from './PipelineStatusBadge'
 import { PipelineStepList } from './PipelineStepList'
@@ -188,6 +189,9 @@ export function PipelineRunDetail({
         </Link>
       </p>
       <RunHeader app={app} run={run} />
+      {run.hold && run.hold.state === 'pending' ? (
+        <PipelineHoldGate app={app} runId={run.id} hold={run.hold} />
+      ) : null}
       {pending.map((a) => (
         <ApprovalGate key={a.id} app={app} runId={run.id} approval={a} />
       ))}
