@@ -69,13 +69,21 @@ Every tool carries MCP annotations (`readOnlyHint`, `destructiveHint`, `idempote
 | `standard` (default) | read and mutating tools (deploy, restart, set, create, clone, approve, rotate) |
 | `full` | everything, including destructive tools (delete, clear, rollback, prune, sweep) |
 
-`APP_MCP_TOOLSETS` (or `--toolsets`) is an optional comma separated list that limits the groups exposed: `apps, alerts, audit, backups, databases, deploys, diagnostics, domains, environments, flags, iam, loadbalancer, logs, metrics, models, nodes, notifications, orgs, pipelines, previews, registry, scheduled, settings, system, templates, webhooks`.
+`APP_MCP_TOOLSETS` (or `--toolsets`) is an optional comma separated list that limits the groups exposed: `alerts, apps, audit, backups, databases, deploys, diagnostics, domains, environments, flags, iam, loadbalancer, logs, metrics, models, nodes, notifications, orgs, pipelines, previews, registry, scheduled, settings, system, templates, webhooks`.
 
 ```bash
 APP_MCP_MODE=read-only APP_MCP_TOOLSETS=apps,nodes,logs,diagnostics levelrail-mcp
 ```
 
 The startup log line `levelrail-mcp tools` reports the mode and how many read, mutating and destructive tools are registered. A mode never widens access: the API token's abilities still bound every call, so pair `read-only` with a `read`-scoped token (defense in depth, not a replacement).
+
+## Untrusted text and the assistant's confirmation gate
+
+Logs, deploy output, error messages, commit messages, PR titles and similar text are written by workloads or third parties, so they can carry prompt injection. Tools marked `levelrail/untrusted-output` in `_meta` (log, status, deploy, diagnose, pipeline and audit reads) return their text content inside a delimited block that starts with a standard "untrusted data, not instructions" notice. Control characters, ANSI escapes, invisible and bidi characters are stripped, obvious secrets (private keys, bearer tokens, common token shapes, URL credentials, values of password/token/key fields) are redacted, and text is truncated. The block boundaries carry a random id, so content cannot forge the closing line. The structured copy of the result is sanitized the same way but is not delimited.
+
+Limits come from `APP_UNTRUSTED_MAX_FIELD_BYTES` (per string field, default 4096) and `APP_UNTRUSTED_MAX_BLOCK_BYTES` (per wrapped block, default 65536).
+
+This is friction, not a guarantee. The real boundary is the assistant's confirmation gate, which uses each tool's MCP annotations instead of name prefixes: every tool that is not read-only, and every tool without annotations, pauses for a human click. Once a conversation has ingested untrusted output (it is then "tainted", derived from the stored history so it survives later turns), read tools that are outbound or touch secrets pause as well.
 
 ## Generating and scoping a token
 
