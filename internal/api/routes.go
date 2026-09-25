@@ -16,6 +16,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerCoreRoutes(mux)
 	rt.registerPlatformRoutes(mux)
 	rt.registerStorageRoutes(mux)
+	rt.registerPipelineRoutes(mux)
 
 	var h http.Handler = mux
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)

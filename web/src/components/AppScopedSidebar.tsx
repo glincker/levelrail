@@ -18,6 +18,7 @@ import {
   BellIcon,
   TerminalIcon,
   ClockCountdownIcon,
+  TreeStructureIcon,
   FlagIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -230,6 +231,16 @@ export function AppScopedSidebar({ name }: { name: string }) {
               >
                 <ClockCountdownIcon />
                 <span>Scheduled tasks</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link to="/apps/$name/pipelines" params={{ name }} />}
+                isActive={pathname.includes('/pipelines')}
+                tooltip="Pipelines"
+              >
+                <TreeStructureIcon />
+                <span>Pipelines</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

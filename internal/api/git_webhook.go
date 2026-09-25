@@ -234,6 +234,7 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 			rt.logger.Warn("api: git push webhook: malformed pull request payload", slog.String("error", err.Error()), slog.String("name", name))
 			return http.StatusBadRequest, "malformed payload"
 		}
+		rt.firePipelinePullRequest(ctx, name, prEv)
 		return rt.handlePullRequestWebhookEvent(ctx, name, gs, prEv)
 	}
 
@@ -246,6 +247,8 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		rt.logger.Warn("api: git push webhook: malformed payload", slog.String("error", err.Error()), slog.String("name", name))
 		return http.StatusBadRequest, "malformed payload"
 	}
+
+	rt.firePipelinePush(ctx, name, ev.Ref, ev.After)
 
 	triggered, ignoredMsg := gitSourceTriggerMatchesPush(gs, ev.Ref)
 	if !triggered {
