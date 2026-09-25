@@ -7,6 +7,15 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+func TestBuildHostConfig_ShmSize(t *testing.T) {
+	if got := buildHostConfig(ContainerSpec{}, nat.PortMap{}).ShmSize; got != 0 {
+		t.Errorf("default ShmSize = %d, want 0", got)
+	}
+	if got := buildHostConfig(ContainerSpec{ShmSizeBytes: 1 << 30}, nat.PortMap{}).ShmSize; got != 1<<30 {
+		t.Errorf("ShmSize = %d, want %d", got, 1<<30)
+	}
+}
+
 func TestBuildHostConfig_GPU(t *testing.T) {
 	tests := []struct {
 		name    string

@@ -123,7 +123,7 @@ func newBuildHarness(t *testing.T, runner BuildRunner) (*GRPCTransport, *loopbac
 	l := newLoopback()
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
-		_ = serveSession(ctx, agentSide{l}, newExecRuntime(), runner, nil, "", time.Hour, testLogger())
+		_ = serveSession(ctx, agentSide{l}, newExecRuntime(), runner, nil, "", time.Hour, nil, testLogger())
 	}()
 
 	t.Cleanup(func() {

@@ -403,6 +403,9 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 			CpusetCpus: spec.Resources.CPUSetCPUs,
 		}
 	}
+	if spec.ShmSizeBytes > 0 {
+		hostConfig.ShmSize = spec.ShmSizeBytes
+	}
 	if spec.GPU != nil {
 		hostConfig.DeviceRequests = []container.DeviceRequest{toDeviceRequest(*spec.GPU)}
 	}

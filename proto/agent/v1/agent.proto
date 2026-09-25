@@ -202,6 +202,9 @@ message PortBinding {
   int32 container_port = 1;
   int32 host_port = 2;
   string protocol = 3;
+  // host_ip mirrors internal/docker.PortBinding.HostIP. Empty means Docker's
+  // default (all interfaces).
+  string host_ip = 4;
 }
 
 message Resources {
@@ -240,6 +243,9 @@ message ContainerSpec {
   // Command mirrors internal/docker.ContainerSpec.Command. Empty means the
   // image's own default command.
   repeated string command = 11;
+  // shm_size_bytes mirrors internal/docker.ContainerSpec.ShmSizeBytes. Zero
+  // means Docker's default /dev/shm.
+  int64 shm_size_bytes = 12;
 }
 
 message GPURequest {

@@ -147,6 +147,8 @@ type ContainerSpec struct {
 	// GPU, when non-nil, attaches NVIDIA GPUs through the nvidia
 	// container runtime. nil means no GPU device request.
 	GPU *GPURequest
+	// ShmSizeBytes sizes /dev/shm. 0 keeps Docker's default.
+	ShmSizeBytes int64
 	// Volumes are named Docker volumes to mount at create time. A
 	// database controller is the first caller; ordinary
 	// application containers leave this nil.

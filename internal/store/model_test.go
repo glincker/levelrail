@@ -5,7 +5,6 @@ import (
 	"errors"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gpu"
 )
@@ -96,10 +95,6 @@ func TestModelCRUD(t *testing.T) {
 func TestNodeGPURoundTrip(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
-	now := time.Date(2026, 9, 24, 0, 0, 0, 0, time.UTC)
-	if err := db.SaveNode(ctx, Node{ID: "n1", Name: "gpu-1", Status: NodeStatusOnline, CreatedAt: now, UpdatedAt: now}); err != nil {
-		t.Fatalf("SaveNode: %v", err)
-	}
 	if _, ok, err := db.GetNodeGPU(ctx, "n1"); ok || err != nil {
 		t.Fatalf("GetNodeGPU before report = ok %v err %v", ok, err)
 	}

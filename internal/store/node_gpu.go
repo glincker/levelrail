@@ -11,6 +11,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/gpu"
 )
 
+// LocalNodeGPUKey is the node_gpus key of the control plane's own host.
+const LocalNodeGPUKey = "local"
+
 // NodeGPU is a node's stored GPU snapshot.
 type NodeGPU struct {
 	NodeID    string

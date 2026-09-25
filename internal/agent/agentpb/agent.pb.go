@@ -1288,6 +1288,9 @@ type PortBinding struct {
 	ContainerPort int32                  `protobuf:"varint,1,opt,name=container_port,json=containerPort,proto3" json:"container_port,omitempty"`
 	HostPort      int32                  `protobuf:"varint,2,opt,name=host_port,json=hostPort,proto3" json:"host_port,omitempty"`
 	Protocol      string                 `protobuf:"bytes,3,opt,name=protocol,proto3" json:"protocol,omitempty"`
+	// host_ip mirrors internal/docker.PortBinding.HostIP. Empty means Docker's
+	// default (all interfaces).
+	HostIp        string `protobuf:"bytes,4,opt,name=host_ip,json=hostIp,proto3" json:"host_ip,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1339,6 +1342,13 @@ func (x *PortBinding) GetHostPort() int32 {
 func (x *PortBinding) GetProtocol() string {
 	if x != nil {
 		return x.Protocol
+	}
+	return ""
+}
+
+func (x *PortBinding) GetHostIp() string {
+	if x != nil {
+		return x.HostIp
 	}
 	return ""
 }
@@ -1487,7 +1497,10 @@ type ContainerSpec struct {
 	Gpu *GPURequest `protobuf:"bytes,10,opt,name=gpu,proto3" json:"gpu,omitempty"`
 	// Command mirrors internal/docker.ContainerSpec.Command. Empty means the
 	// image's own default command.
-	Command       []string `protobuf:"bytes,11,rep,name=command,proto3" json:"command,omitempty"`
+	Command []string `protobuf:"bytes,11,rep,name=command,proto3" json:"command,omitempty"`
+	// shm_size_bytes mirrors internal/docker.ContainerSpec.ShmSizeBytes. Zero
+	// means Docker's default /dev/shm.
+	ShmSizeBytes  int64 `protobuf:"varint,12,opt,name=shm_size_bytes,json=shmSizeBytes,proto3" json:"shm_size_bytes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1597,6 +1610,13 @@ func (x *ContainerSpec) GetCommand() []string {
 		return x.Command
 	}
 	return nil
+}
+
+func (x *ContainerSpec) GetShmSizeBytes() int64 {
+	if x != nil {
+		return x.ShmSizeBytes
+	}
+	return 0
 }
 
 type GPURequest struct {
@@ -4870,11 +4890,12 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x0frotate_mesh_key\x18\f \x01(\v2).levelrail.agent.v1.RotateMeshKeyResponseH\x00R\rrotateMeshKeyB\b\n" +
 	"\x06result\"\a\n" +
 	"\x05Empty\"\v\n" +
-	"\tHeartbeat\"m\n" +
+	"\tHeartbeat\"\x86\x01\n" +
 	"\vPortBinding\x12%\n" +
 	"\x0econtainer_port\x18\x01 \x01(\x05R\rcontainerPort\x12\x1b\n" +
 	"\thost_port\x18\x02 \x01(\x05R\bhostPort\x12\x1a\n" +
-	"\bprotocol\x18\x03 \x01(\tR\bprotocol\"\x98\x01\n" +
+	"\bprotocol\x18\x03 \x01(\tR\bprotocol\x12\x17\n" +
+	"\ahost_ip\x18\x04 \x01(\tR\x06hostIp\"\x98\x01\n" +
 	"\tResources\x12!\n" +
 	"\fmemory_bytes\x18\x01 \x01(\x03R\vmemoryBytes\x12\x1b\n" +
 	"\tnano_cpus\x18\x02 \x01(\x03R\bnanoCpus\x12*\n" +
@@ -4883,7 +4904,7 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"cpusetCpus\"H\n" +
 	"\vVolumeMount\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12%\n" +
-	"\x0econtainer_path\x18\x02 \x01(\tR\rcontainerPath\"\xf8\x03\n" +
+	"\x0econtainer_path\x18\x02 \x01(\tR\rcontainerPath\"\x9e\x04\n" +
 	"\rContainerSpec\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05image\x18\x02 \x01(\tR\x05image\x125\n" +
@@ -4896,7 +4917,8 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\fnetwork_mode\x18\t \x01(\tR\vnetworkMode\x120\n" +
 	"\x03gpu\x18\n" +
 	" \x01(\v2\x1e.levelrail.agent.v1.GPURequestR\x03gpu\x12\x18\n" +
-	"\acommand\x18\v \x03(\tR\acommand\x1a6\n" +
+	"\acommand\x18\v \x03(\tR\acommand\x12$\n" +
+	"\x0eshm_size_bytes\x18\f \x01(\x03R\fshmSizeBytes\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"A\n" +

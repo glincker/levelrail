@@ -177,6 +177,11 @@ func (db *DB) RotateModelAPIKey(ctx context.Context, name, hash, prefix string) 
 	return db.execModelUpdate(ctx, name, "rotate key of", `UPDATE models SET api_key_hash = ?, api_key_prefix = ?, updated_at = ? WHERE name = ?`, hash, prefix)
 }
 
+// SetModelHFTokenSet records whether a HuggingFace token secret exists.
+func (db *DB) SetModelHFTokenSet(ctx context.Context, name string, set bool) error {
+	return db.execModelUpdate(ctx, name, "set hf token flag of", `UPDATE models SET hf_token_set = ?, updated_at = ? WHERE name = ?`, boolToInt(set))
+}
+
 // RestartModel bumps the restart nonce so the controller recreates the
 // container.
 func (db *DB) RestartModel(ctx context.Context, name string) error {
