@@ -1,32 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { PipelineJob } from '../types/pipelines'
-import { baseJobName, formatDuration, layoutJobs } from './pipelineStatus'
-
-function job(key: string, needs: string[] = []): PipelineJob {
-  return { key, name: key, needs, status: 'pending', attempt: 0, steps: [] }
-}
-
-describe('layoutJobs', () => {
-  it('places jobs one column right of their deepest dependency', () => {
-    const cols = layoutJobs([
-      job('test[go=1.22]'),
-      job('test[go=1.23]'),
-      job('lint'),
-      job('build', ['test', 'lint']),
-      job('deploy', ['build']),
-    ])
-    expect(cols.map((c) => c.map((j) => j.key))).toEqual([
-      ['test[go=1.22]', 'test[go=1.23]', 'lint'],
-      ['build'],
-      ['deploy'],
-    ])
-  })
-
-  it('does not loop forever on a cycle', () => {
-    const cols = layoutJobs([job('a', ['b']), job('b', ['a'])])
-    expect(cols.flat()).toHaveLength(2)
-  })
-})
+import { baseJobName, formatDuration } from './pipelineStatus'
 
 describe('baseJobName', () => {
   it('strips the matrix suffix', () => {

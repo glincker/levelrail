@@ -1,4 +1,4 @@
-import type { PipelineJob, PipelineStatus } from '../types/pipelines'
+import type { PipelineStatus } from '../types/pipelines'
 
 export type BadgeVariant =
   'default' | 'outline' | 'destructive' | 'muted' | 'success' | 'warning'
@@ -28,41 +28,6 @@ export const STATUS_VARIANT: Record<PipelineStatus, BadgeVariant> = {
 export function baseJobName(key: string): string {
   const i = key.indexOf('[')
   return i >= 0 ? key.slice(0, i) : key
-}
-
-// layoutJobs groups jobs into columns by dependency depth: a job sits one
-// column right of the deepest job it needs, so the columns read left to
-// right as the order the pipeline runs in.
-export function layoutJobs(jobs: PipelineJob[]): PipelineJob[][] {
-  const byBase = new Map<string, PipelineJob[]>()
-  for (const j of jobs) {
-    const base = baseJobName(j.key)
-    byBase.set(base, [...(byBase.get(base) ?? []), j])
-  }
-  const depth = new Map<string, number>()
-  const resolve = (base: string, seen: Set<string>): number => {
-    const known = depth.get(base)
-    if (known !== undefined) {
-      return known
-    }
-    if (seen.has(base)) {
-      return 0
-    }
-    seen.add(base)
-    const needs = byBase.get(base)?.[0]?.needs ?? []
-    const d =
-      needs.length === 0
-        ? 0
-        : 1 + Math.max(...needs.map((n) => resolve(n, seen)))
-    depth.set(base, d)
-    return d
-  }
-  const columns: PipelineJob[][] = []
-  for (const j of jobs) {
-    const d = resolve(baseJobName(j.key), new Set())
-    columns[d] = [...(columns[d] ?? []), j]
-  }
-  return columns.filter((c): c is PipelineJob[] => c !== undefined)
 }
 
 export function formatDuration(start?: string, end?: string): string {
