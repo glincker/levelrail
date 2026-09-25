@@ -675,6 +675,8 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/build-cache | AbilityWrite | handleDeleteBuildCache |
 | GET | /api/v1/build-cache/stats | AbilityRead | handleBuildCacheStats |
 | POST | /api/v1/build-cache/clear | AbilityWrite | handleClearBuildCache |
+| GET | /api/v1/pipeline-runs | AbilityRead | handleListAllPipelineRuns |
+| GET | /api/v1/pipelines/summary | AbilityRead | handleGetPipelineSummary |
 
 ## See also
 
