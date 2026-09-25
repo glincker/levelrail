@@ -44,6 +44,10 @@ const (
 	KindControlPlaneBackupStale Kind = "control_plane_backup_stale"
 	KindNodeOffline             Kind = "node_offline"
 
+	// KindNodeCertExpiring is platform-wide: it fires while any node's agent
+	// certificate is close to expiry or expired (node_cert_expiring.go).
+	KindNodeCertExpiring Kind = "node_cert_expiring"
+
 	// KindLogArchiveStale is platform-wide: it fires when a log archive policy fails or stops succeeding.
 	KindLogArchiveStale Kind = "log_archive_stale"
 )

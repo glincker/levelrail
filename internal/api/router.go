@@ -101,6 +101,7 @@ type Router struct {
 	tokens                 TokenStore
 	nodes                  NodeStore
 	agentCAFingerprint     string // empty: join tokens are returned without a CA pin
+	nodeCerts              nodeCertConfig
 	projects               ProjectStore
 	organizations          OrganizationStore
 	environments           EnvironmentStore
