@@ -22,6 +22,10 @@ type Template struct {
 	// means none). Informational only, not checked against any node's
 	// real available memory.
 	RecommendedMemoryBytes int64
+	// RequiresGPU marks entries that are only practical with an NVIDIA GPU.
+	// The Compose body ships CPU defaults because internal/compose cannot
+	// yet express device reservations.
+	RequiresGPU bool
 }
 
 // Templates is the full catalog, served by GET /api/v1/service-templates
@@ -46,6 +50,11 @@ var Templates = concat(
 	communicationTemplates,
 	databasesTemplates,
 	iotTemplates,
+	aiml1Templates,
+	aiml2Templates,
+	selfhosted1Templates,
+	selfhosted2Templates,
+	selfhosted3Templates,
 	aiTemplates,
 )
 
