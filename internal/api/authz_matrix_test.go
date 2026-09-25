@@ -30,7 +30,7 @@ var (
 // publicRoutes are the only routes allowed to answer an anonymous caller
 // with something other than 401. Adding a route here needs a reason a
 // reviewer can challenge.
-var publicRoutes = map[string]string{
+var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credentials
 	"GET /healthz":                               "liveness probe for systemd and load balancers",
 	"GET /readyz":                                "readiness probe, no data beyond ready/not ready",
 	"GET /api/v1/brand":                          "login screen needs branding before a session exists",
