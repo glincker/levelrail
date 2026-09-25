@@ -30,6 +30,7 @@ type PipelineStore interface {
 	ListPipelineLogs(ctx context.Context, runID, jobKey string, afterID int64, limit int) ([]store.PipelineLogLine, error)
 	ListPipelineApprovals(ctx context.Context, runID string) ([]store.PipelineApproval, error)
 	DecidePipelineApproval(ctx context.Context, id int64, decision, by, comment string, now time.Time) (bool, error)
+	ListPipelineTriggerLog(ctx context.Context, app string, limit int) ([]store.PipelineTriggerLog, error)
 }
 
 // PipelineRunner starts, cancels, and re-runs pipeline runs. *pipeline.Engine
@@ -38,6 +39,8 @@ type PipelineRunner interface {
 	Start(ctx context.Context, p store.Pipeline, opt pipeline.StartOptions) (store.PipelineRun, error)
 	Cancel(ctx context.Context, runID string) error
 	Rerun(ctx context.Context, runID, actor string) (store.PipelineRun, error)
+	// DecideHold releases or rejects a run held for approval.
+	DecideHold(ctx context.Context, runID string, approved bool, by string) (bool, error)
 	Nudge()
 }
 
@@ -55,6 +58,10 @@ type pipelineResource struct {
 	LastRun   *runBrief `json:"last_run,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	// SourceSHA is the commit a repo-sourced definition was synced from, and
+	// Diverged is true when it was edited after that sync.
+	SourceSHA string `json:"source_sha,omitempty"`
+	Diverged  bool   `json:"diverged,omitempty"`
 }
 
 type runBrief struct {
@@ -82,6 +89,15 @@ type pipelineRunResource struct {
 	Jobs         []pipelineJobView  `json:"jobs,omitempty"`
 	Approvals    []pipelineApproval `json:"approvals,omitempty"`
 	Issues       []pipeline.Issue   `json:"issues,omitempty"`
+	Hold         *pipelineHold      `json:"hold,omitempty"`
+}
+
+// pipelineHold is a run held for approval, such as a pull request from a fork.
+type pipelineHold struct {
+	State  string     `json:"state"`
+	Reason string     `json:"reason"`
+	By     string     `json:"by,omitempty"`
+	At     *time.Time `json:"at,omitempty"`
 }
 
 type pipelineJobView struct {
@@ -182,7 +198,8 @@ func (rt *Router) pipelineActor(r *http.Request) string {
 }
 
 func toPipelineResource(p store.Pipeline, withYAML bool) pipelineResource {
-	res := pipelineResource{ID: p.ID, App: p.AppName, Name: p.Name, Source: p.Source, Enabled: p.Enabled, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt}
+	res := pipelineResource{ID: p.ID, App: p.AppName, Name: p.Name, Source: p.Source, Enabled: p.Enabled, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
+		SourceSHA: p.SourceSHA, Diverged: pipeline.Diverged(p)}
 	if withYAML {
 		res.YAML = p.YAML
 	}
@@ -223,6 +240,9 @@ func toRunResource(r store.PipelineRun, pipelineName string) pipelineRunResource
 		CreatedAt: r.CreatedAt, StartedAt: r.StartedAt, FinishedAt: r.FinishedAt,
 	}
 	_ = json.Unmarshal([]byte(r.InputsJSON), &res.Inputs)
+	if r.HoldState != "" {
+		res.Hold = &pipelineHold{State: r.HoldState, Reason: r.HoldReason, By: r.HoldBy, At: r.HoldAt}
+	}
 	return res
 }
 

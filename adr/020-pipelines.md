@@ -70,3 +70,42 @@ expressions.
   `docs/pipelines.md`, not hidden.
 - Deploys to protected environments are refused until pipelines can
   participate in that approval flow.
+
+## Addendum: repository sync, fork policy, and trigger decisions
+
+Status: Accepted, 2026-09-25. Extends the decision above; nothing in it is
+reversed.
+
+**Repository sync.** Definitions can be sourced from the repository's
+pipeline directory (`DiscoverDirs`). A push to the tracked branch reads the
+directory with a depth-1 in-memory clone (no disk, no checkout) using the
+git source's existing token, then upserts definitions. Each synced row
+records the commit (`source_sha`) and the SHA-256 of the YAML as synced
+(`synced_hash`); a definition is *diverged* when its current YAML hashes
+differently. A sync never overwrites a diverged or dashboard-created
+definition unless the per-app `repo_is_truth` setting is on, and it never
+saves a definition whose steps act on another app, since that requires the
+`root` ability at save time and a push must not be a way around it. The
+push's own pipelines start only after the sync finishes, off the webhook
+request goroutine, so a run uses the pushed commit's files.
+
+**Fork pull requests are untrusted by default.** `on.pull_request.forks` is
+`block` (default), `approve`, or `allow`. Fork detection fails closed: a
+payload naming no head or base repository counts as a fork. `approve`
+creates the run with a run-level hold (`hold_state = pending`) instead of a
+per-job approval row, because a job-level gate only exists after jobs are
+materialized and a held run must resolve no secret and create no container
+at all. A pending hold never occupies a concurrency group.
+
+**Trigger decision log.** Every git event records, per pipeline, whether it
+started a run, held one, or was skipped and why, in a bounded per-app table.
+Skips that are expected (a pipeline with no trigger of that kind) are not
+recorded individually; one row says that no pipeline listens.
+
+**Considered and rejected.** Resuming failed jobs inside a finished run:
+approvals are unique per (run, job, step) and would replay their old
+decision, the per-run artifact volume is deleted when the run finishes, and
+run and job timestamps cannot be cleared. A new run from the start is the
+supported path until those are reworked. Reading pipeline files through each
+provider's contents API: it would need four clients for one directory
+listing, while the git transport already exists for every provider.

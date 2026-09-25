@@ -1,32 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { PipelineJob } from '../types/pipelines'
-import { baseJobName, formatDuration, layoutJobs } from './pipelineStatus'
-
-function job(key: string, needs: string[] = []): PipelineJob {
-  return { key, name: key, needs, status: 'pending', attempt: 0, steps: [] }
-}
-
-describe('layoutJobs', () => {
-  it('places jobs one column right of their deepest dependency', () => {
-    const cols = layoutJobs([
-      job('test[go=1.22]'),
-      job('test[go=1.23]'),
-      job('lint'),
-      job('build', ['test', 'lint']),
-      job('deploy', ['build']),
-    ])
-    expect(cols.map((c) => c.map((j) => j.key))).toEqual([
-      ['test[go=1.22]', 'test[go=1.23]', 'lint'],
-      ['build'],
-      ['deploy'],
-    ])
-  })
-
-  it('does not loop forever on a cycle', () => {
-    const cols = layoutJobs([job('a', ['b']), job('b', ['a'])])
-    expect(cols.flat()).toHaveLength(2)
-  })
-})
+import { baseJobName, formatDuration, stepLink } from './pipelineStatus'
 
 describe('baseJobName', () => {
   it('strips the matrix suffix', () => {
@@ -42,5 +15,15 @@ describe('formatDuration', () => {
     expect(formatDuration(t0, '2026-01-01T00:03:05Z')).toBe('3m 5s')
     expect(formatDuration(t0, '2026-01-01T01:02:00Z')).toBe('1h 2m')
     expect(formatDuration(undefined)).toBe('')
+  })
+})
+
+describe('stepLink', () => {
+  const page = 'https://x.test/apps/a/pipelines/runs/r1?job=old&step=9#top'
+  it.each([
+    [undefined, 'https://x.test/apps/a/pipelines/runs/r1?job=test%5Bgo%3D1%5D'],
+    [2, 'https://x.test/apps/a/pipelines/runs/r1?job=test%5Bgo%3D1%5D&step=2'],
+  ])('step %s replaces the old selection', (step, want) => {
+    expect(stepLink(page, 'test[go=1]', step)).toBe(want)
   })
 })

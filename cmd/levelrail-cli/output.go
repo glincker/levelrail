@@ -833,6 +833,7 @@ func printNodeHuman(out io.Writer, n nodeResource) {
 		_, _ = fmt.Fprintf(out, "  node disk space:       %s\n", n.AlertStatus.NodeDiskSpace)
 		_, _ = fmt.Fprintf(out, "  node resource usage:   %s\n", n.AlertStatus.NodeResourceUsage)
 	}
+	printNodeGPUHuman(out, n.GPU)
 }
 
 // printNodesTable prints a compact, aligned table of nodes ("nodes list"
@@ -843,9 +844,9 @@ func printNodesTable(out io.Writer, nodes []nodeResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tADDRESS\tSTATUS\tSCHEDULABLE\tCREATED")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tADDRESS\tSTATUS\tSCHEDULABLE\tGPU\tCREATED")
 	for _, n := range nodes {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%t\t%s\n", n.ID, n.Name, n.Address, n.Status, n.Schedulable, n.CreatedAt.Format(time.RFC3339))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%t\t%s\t%s\n", n.ID, n.Name, n.Address, n.Status, n.Schedulable, nodeGPUColumn(n.GPU), n.CreatedAt.Format(time.RFC3339))
 	}
 	_ = tw.Flush()
 }

@@ -106,8 +106,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 72 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 72 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 77 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 77 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -191,6 +191,11 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/loadbalancer/import | AbilityWrite | handleImportLoadBalancer |
 | GET | /api/v1/apps/{name}/loadbalancer/status | AbilityRead | handleLoadBalancerStatus |
 | GET | /api/v1/apps/{name}/loadbalancer/export | AbilityRead | handleExportLoadBalancer |
+| POST | /api/v1/apps/{name}/pipeline-runs/{id}/hold | AbilityDeploy | handleDecidePipelineRunHold |
+| GET | /api/v1/apps/{name}/pipeline-triggers | AbilityRead | handleListPipelineTriggers |
+| GET | /api/v1/apps/{name}/pipeline-sync | AbilityRead | handleGetPipelineSync |
+| PUT | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleSetPipelineSync |
+| POST | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleRunPipelineSync |
 
 :::
 
@@ -665,6 +670,11 @@ Routes that do not fit an existing group.
 | GET | /api/v1/log-archive/runs | AbilityRead | handleListLogArchiveRuns |
 | GET | /api/v1/log-archive/objects | AbilityRead | handleListLogArchiveObjects |
 | GET | /api/v1/log-archive/objects/download | AbilityRead | handleDownloadLogArchiveObject |
+| GET | /api/v1/build-cache | AbilityRead | handleListBuildCache |
+| PUT | /api/v1/build-cache | AbilityWrite | handleSetBuildCache |
+| DELETE | /api/v1/build-cache | AbilityWrite | handleDeleteBuildCache |
+| GET | /api/v1/build-cache/stats | AbilityRead | handleBuildCacheStats |
+| POST | /api/v1/build-cache/clear | AbilityWrite | handleClearBuildCache |
 
 ## See also
 

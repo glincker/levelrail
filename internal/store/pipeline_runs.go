@@ -29,18 +29,32 @@ type PipelineRun struct {
 	CreatedAt        time.Time
 	StartedAt        *time.Time
 	FinishedAt       *time.Time
+	// HoldState is "" for a normal run, or pending/approved/rejected for a
+	// run created held for approval. A pending run starts no job.
+	HoldState  string
+	HoldReason string
+	HoldBy     string
+	HoldAt     *time.Time
 }
 
+// Run hold states.
+const (
+	HoldPending  = "pending"
+	HoldApproved = "approved"
+	HoldRejected = "rejected"
+)
+
 const pipelineRunCols = `id, pipeline_id, app_name, number, trigger_kind, trigger_actor, ref, commit_sha, inputs, definition,
-	concurrency_group, cancel_in_progress, status, reason, cancel_requested, created_at, started_at, finished_at`
+	concurrency_group, cancel_in_progress, status, reason, cancel_requested, created_at, started_at, finished_at,
+	hold_state, hold_reason, hold_by, hold_at`
 
 func scanPipelineRun(scan func(...any) error) (PipelineRun, error) {
 	var r PipelineRun
 	var created string
-	var started, finished sql.NullString
+	var started, finished, holdAt sql.NullString
 	if err := scan(&r.ID, &r.PipelineID, &r.AppName, &r.Number, &r.TriggerKind, &r.TriggerActor, &r.Ref, &r.CommitSHA,
 		&r.InputsJSON, &r.Definition, &r.ConcurrencyGroup, &r.CancelInProgress, &r.Status, &r.Reason, &r.CancelRequested,
-		&created, &started, &finished); err != nil {
+		&created, &started, &finished, &r.HoldState, &r.HoldReason, &r.HoldBy, &holdAt); err != nil {
 		return PipelineRun{}, err
 	}
 	var err error
@@ -52,6 +66,9 @@ func scanPipelineRun(scan func(...any) error) (PipelineRun, error) {
 	}
 	if r.FinishedAt, err = parseTimePtr(finished); err != nil {
 		return PipelineRun{}, fmt.Errorf("parse finished_at: %w", err)
+	}
+	if r.HoldAt, err = parseTimePtr(holdAt); err != nil {
+		return PipelineRun{}, fmt.Errorf("parse hold_at: %w", err)
 	}
 	return r, nil
 }
@@ -73,10 +90,10 @@ func (db *DB) CreatePipelineRun(ctx context.Context, r PipelineRun) (PipelineRun
 	r.Status = PipelineStatusQueued
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO pipeline_runs (id, pipeline_id, app_name, number, trigger_kind, trigger_actor, ref, commit_sha, inputs, definition,
-			concurrency_group, cancel_in_progress, status, reason, cancel_requested, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+			concurrency_group, cancel_in_progress, status, reason, cancel_requested, created_at, hold_state, hold_reason)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
 	`, r.ID, r.PipelineID, r.AppName, r.Number, r.TriggerKind, r.TriggerActor, r.Ref, r.CommitSHA, r.InputsJSON, r.Definition,
-		r.ConcurrencyGroup, r.CancelInProgress, r.Status, r.Reason, formatTime(r.CreatedAt)); err != nil {
+		r.ConcurrencyGroup, r.CancelInProgress, r.Status, r.Reason, formatTime(r.CreatedAt), r.HoldState, r.HoldReason); err != nil {
 		return PipelineRun{}, fmt.Errorf("store: insert pipeline run: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -135,8 +152,26 @@ func (db *DB) ListActivePipelineRuns(ctx context.Context) ([]PipelineRun, error)
 }
 
 // ListPipelineRunsInGroup returns active runs sharing a concurrency group.
+// Runs held for approval are left out so an unapproved fork pull request
+// can never keep a trusted run waiting.
 func (db *DB) ListPipelineRunsInGroup(ctx context.Context, group string) ([]PipelineRun, error) {
-	return db.queryPipelineRuns(ctx, `WHERE concurrency_group = ? AND status IN ('queued', 'running') ORDER BY created_at, number`, group)
+	return db.queryPipelineRuns(ctx, `WHERE concurrency_group = ? AND status IN ('queued', 'running') AND hold_state != 'pending' ORDER BY created_at, number`, group)
+}
+
+// DecidePipelineRunHold records an approver's decision on a held run. It
+// reports false when the run is not pending a decision.
+func (db *DB) DecidePipelineRunHold(ctx context.Context, id string, approved bool, by string, now time.Time) (bool, error) {
+	state := HoldRejected
+	if approved {
+		state = HoldApproved
+	}
+	res, err := db.ExecContext(ctx, `UPDATE pipeline_runs SET hold_state = ?, hold_by = ?, hold_at = ? WHERE id = ? AND hold_state = 'pending'`,
+		state, by, formatTime(now), id)
+	if err != nil {
+		return false, fmt.Errorf("store: decide pipeline run %q hold: %w", id, err)
+	}
+	n, _ := res.RowsAffected()
+	return n > 0, nil
 }
 
 // SetPipelineRunStatus moves a run to status with a reason. started and

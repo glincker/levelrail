@@ -113,3 +113,39 @@ export interface LogArchiveObjectsPage {
   objects: LogArchiveObject[]
   next?: string
 }
+
+export type BuildCacheMode = 'min' | 'max'
+
+// Matches internal/api/build_cache.go. No credentials, ever.
+export interface BuildCacheSetting {
+  app_name: string
+  target_id: string
+  enabled: boolean
+  mode: BuildCacheMode
+  key_prefix?: string
+  last_build_at?: string
+  last_result?: string
+  last_warning?: string
+  last_cleared_at?: string
+  updated_at: string
+}
+
+export interface SetBuildCacheRequest {
+  app_name: string
+  target_id: string
+  mode: BuildCacheMode
+  enabled: boolean
+}
+
+export interface BuildCacheStats {
+  prefix: string
+  objects: number
+  bytes: number
+  last_modified?: string
+  truncated: boolean
+}
+
+export interface BuildCacheClearResult {
+  deleted: number
+  more: boolean
+}

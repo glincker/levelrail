@@ -64,6 +64,10 @@ export interface GpuNode {
   total_vram_mib: number
   used_vram_mib: number
   model_count: number
+  reserved_gpus: number
+  free_gpus: number
+  reservations: string[]
+  schedulable: boolean
   hint?: string
   devices: GpuDevice[]
   updated_at: string

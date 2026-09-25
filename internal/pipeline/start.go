@@ -21,6 +21,12 @@ type StartOptions struct {
 	Ref     string
 	SHA     string
 	Inputs  map[string]string
+	// BaseBranch is a pull request's target branch, which trigger filters
+	// match against instead of the source branch in Ref.
+	BaseBranch string
+	// Hold, when set, creates the run held for approval with this reason:
+	// no job starts and no secret is read until an approver releases it.
+	Hold string
 }
 
 // ErrInvalidInput marks a run request the pipeline's declared inputs reject.
@@ -33,8 +39,11 @@ func (e *Engine) Start(ctx context.Context, p store.Pipeline, opt StartOptions) 
 	if len(issues) > 0 {
 		return store.PipelineRun{}, fmt.Errorf("pipeline: %q is invalid: %s", p.Name, issues[0])
 	}
-	if !def.On.Matches(Event{Kind: opt.Trigger, Branch: strings.TrimPrefix(opt.Ref, "refs/heads/"), Tag: strings.TrimPrefix(opt.Ref, "refs/tags/")}) &&
-		opt.Trigger != TriggerSchedule {
+	ev := Event{Kind: opt.Trigger, Branch: strings.TrimPrefix(opt.Ref, "refs/heads/"), Tag: strings.TrimPrefix(opt.Ref, "refs/tags/")}
+	if opt.Trigger == TriggerPullRequest && opt.BaseBranch != "" {
+		ev.Branch = opt.BaseBranch
+	}
+	if !def.On.Matches(ev) && opt.Trigger != TriggerSchedule {
 		return store.PipelineRun{}, fmt.Errorf("pipeline: %q does not accept %s triggers", p.Name, opt.Trigger)
 	}
 	inputs, err := resolveInputs(def, opt.Inputs)
@@ -46,6 +55,9 @@ func (e *Engine) Start(ctx context.Context, p store.Pipeline, opt StartOptions) 
 	run := store.PipelineRun{
 		ID: e.cfg.NewID(), PipelineID: p.ID, AppName: p.AppName, TriggerKind: opt.Trigger, TriggerActor: opt.Actor,
 		Ref: opt.Ref, CommitSHA: opt.SHA, InputsJSON: string(inputsJSON), Definition: p.YAML, CreatedAt: e.cfg.Now(),
+	}
+	if opt.Hold != "" {
+		run.HoldState, run.HoldReason, run.Reason = store.HoldPending, opt.Hold, holdReason(opt.Hold)
 	}
 	if def.Concurrency != nil {
 		group, err := Interpolate(def.Concurrency.Group, Scope{Vars: runVars(run, def)})
@@ -129,33 +141,6 @@ func (e *Engine) Rerun(ctx context.Context, runID, actor string) (store.Pipeline
 		}
 	}
 	return e.Start(ctx, p, StartOptions{Trigger: trig, Actor: actor, Ref: old.Ref, SHA: old.CommitSHA, Inputs: inputs})
-}
-
-// TriggerEvent starts a run of every enabled pipeline of app that accepts
-// ev. Failures to start one pipeline are logged and never block the rest.
-func (e *Engine) TriggerEvent(ctx context.Context, app string, ev Event, ref, sha, actor string) []store.PipelineRun {
-	pipes, err := e.cfg.Store.ListPipelines(ctx, app)
-	if err != nil {
-		e.cfg.Logger.Warn("pipeline: list pipelines for event failed", slog.String("app", app), slog.String("error", err.Error()))
-		return nil
-	}
-	var started []store.PipelineRun
-	for _, p := range pipes {
-		if !p.Enabled {
-			continue
-		}
-		def, issues := Validate([]byte(p.YAML))
-		if len(issues) > 0 || !def.On.Matches(ev) {
-			continue
-		}
-		run, err := e.Start(ctx, p, StartOptions{Trigger: ev.Kind, Actor: actor, Ref: ref, SHA: sha})
-		if err != nil {
-			e.cfg.Logger.Warn("pipeline: start from event failed", slog.String("pipeline", p.Name), slog.String("error", err.Error()))
-			continue
-		}
-		started = append(started, run)
-	}
-	return started
 }
 
 // Scheduler starts pipelines whose `on.schedule` cron expressions come due.

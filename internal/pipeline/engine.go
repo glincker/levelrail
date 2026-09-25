@@ -108,6 +108,15 @@ func (e *Engine) advance(ctx context.Context, run store.PipelineRun) error {
 		if run.CancelRequested {
 			return e.finishRun(ctx, run, store.PipelineStatusCancelled, "cancelled before start")
 		}
+		switch run.HoldState {
+		case store.HoldPending:
+			if run.Reason != holdReason(run.HoldReason) {
+				return st.SetPipelineRunStatus(ctx, run.ID, store.PipelineStatusQueued, holdReason(run.HoldReason), nil, nil)
+			}
+			return nil
+		case store.HoldRejected:
+			return e.finishRun(ctx, run, store.PipelineStatusCancelled, "rejected by "+run.HoldBy)
+		}
 		ok, reason, err := e.admit(ctx, run)
 		if err != nil {
 			return err

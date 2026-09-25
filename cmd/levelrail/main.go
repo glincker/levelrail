@@ -1664,7 +1664,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithLoadBalancerStore(db),
 	}
 	if secretsManager != nil {
-		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager))
+		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager), deploy.WithBuildCache(newBuildCache(logger, db, secretsManager)))
 	}
 
 	router := build.NewRouter(buildClient, buildNodeSource(db, agentRegistry), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger))

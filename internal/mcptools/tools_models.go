@@ -62,7 +62,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_gpu_nodes",
-		Description: "List nodes that report NVIDIA GPUs: driver version, per-GPU VRAM total and used, utilization, whether Docker has the nvidia container runtime, the fix when it does not, and how many models run there. Read-only.",
+		Description: "List nodes that report NVIDIA GPUs: driver version, per-GPU VRAM total and used, utilization, whether Docker has the nvidia container runtime, the fix when it does not, how many models run there, and GPU reservations: reserved and free GPU counts plus which apps and models hold them (a workload only places on a node with enough free GPUs). Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.GPUNodeResource, error) {
 		out, err := client.ListGPUNodes(ctx)
 		if err != nil {

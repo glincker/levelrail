@@ -152,6 +152,7 @@ Effects:
 **Behavior:**
 - Only changes desired placement immediately. The reconciler actually relocates containers on its next pass.
 - One resource failing to move does not stop the rest.
+- GPU apps (`resources.gpu`) only move to a node with a working nvidia runtime and enough free GPUs. An app no node can host stays where it is and is listed under `blocked` with a per-node reason (`no GPU node available (gpu-2: not enough free GPUs: needs 2, 1 free of 2)`). Models cannot be moved, so any model on the node is always listed as blocked. See [GPU scheduling](ai-models.md#gpu-scheduling).
 - Response: `200` on full success, `207 Multi-Status` when some resources failed (lists exactly what moved and what didn't). Never a bare `500` for a partial result.
 
 ### Deleting a node
@@ -246,6 +247,8 @@ When you create an app or database without specifying a node, the server decides
 - `APP_AUTO_PLACEMENT` (default: enabled): If `false`, always place on local node.
 - If enabled: `autoPlaceNode` picks the schedulable, online node with the fewest resources (apps + databases). Tie broken by lexicographically smallest node ID.
 - With no eligible remote node: Falls back to local node.
+
+**GPU apps:** a new app with `resources.gpu` is only auto-placed on a node with a working nvidia runtime and enough free GPUs (least loaded among those), falling back to the local host if it fits. If none fits, the create is refused with `409` and the reason per node; pass `node_id` to override. See [GPU scheduling](ai-models.md#gpu-scheduling).
 
 **Important:** This is simple spread counting, not bin-packing. It counts resources only, never CPU, memory, or disk headroom. See CLAUDE.md non-goals for v1.
 

@@ -305,6 +305,19 @@ func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (p
 	}
 
 	progress = h.recorder.Progress(id)
+	if setter, ok := h.attempts.(interface {
+		SetDeployAttemptCacheWarning(ctx context.Context, id, warning string) error
+	}); ok {
+		recorded := progress
+		progress = func(ev build.ProgressEvent) {
+			if ev.CacheWarning != "" {
+				if err := setter.SetDeployAttemptCacheWarning(context.Background(), id, ev.CacheWarning); err != nil {
+					h.log.Warn("webhook: record cache warning failed", "attempt_id", id, "error", err)
+				}
+			}
+			recorded(ev)
+		}
+	}
 	finish = func(_ string, deployErr error) {
 		// Background, not ctx: must still flush and finish even if the
 		// triggering request's own context is on its way out.

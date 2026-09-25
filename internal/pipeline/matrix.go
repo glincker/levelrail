@@ -98,6 +98,10 @@ type Event struct {
 	Kind   string
 	Branch string
 	Tag    string
+	// Fork marks a pull request whose source is another repository.
+	Fork bool
+	// HeadRepo is that source repository's full name, for the trigger log.
+	HeadRepo string
 }
 
 // Matches reports whether the definition should run for ev.

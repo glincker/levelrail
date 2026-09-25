@@ -75,6 +75,9 @@ func startPipelines(ctx context.Context, logger *slog.Logger, b *brand.Brand, db
 	engine := pipeline.New(cfg)
 	apiRouter.SetPipelines(db, engine)
 	apiRouter.SetPipelineEvents(engine)
+	apiRouter.SetPipelineSync(pipeline.NewSyncer(pipeline.SyncConfig{
+		Store: db, Source: acts, Fetcher: pipeline.GitFetcher{}, BrandName: b.ShortName, Logger: logger,
+	}), db)
 
 	go func() {
 		if err := engine.Run(ctx, envDuration("APP_PIPELINE_TICK_INTERVAL", 2*time.Second)); err != nil && !errors.Is(err, context.Canceled) {

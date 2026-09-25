@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { CreateStorageDestinationDialog } from '../../components/CreateStorageDestinationDialog'
 import { StorageDestinationTable } from '../../components/StorageDestinationTable'
 import { LogArchivePanel } from '../../components/LogArchivePanel'
+import { BuildCacheCard } from '../../components/BuildCacheCard'
 
 export const Route = createFileRoute('/settings/storage')({
   loader: ({ context: { queryClient } }) =>
@@ -73,6 +74,12 @@ function StoragePage() {
               their own policy (app Logs, Archive tab) are kept separate.
             </p>
             <LogArchivePanel appName="" />
+          </div>
+          <div className="space-y-3">
+            <h2 className="text-base font-semibold text-foreground">
+              Build cache for all apps
+            </h2>
+            <BuildCacheCard appName="" />
           </div>
         </>
       ) : null}

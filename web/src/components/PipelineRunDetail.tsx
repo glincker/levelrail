@@ -17,15 +17,13 @@ import {
   usePipelineRun,
   useRerunPipelineRun,
 } from '../queries/pipelines'
-import type {
-  PipelineApproval,
-  PipelineJob,
-  PipelineRun,
-} from '../types/pipelines'
+import type { PipelineApproval, PipelineRun } from '../types/pipelines'
 import { formatDuration } from '../lib/pipelineStatus'
 import { PipelineRunGraph } from './PipelineRunGraph'
+import { PipelineHoldGate } from './PipelineHoldGate'
 import { PipelineRunLogs } from './PipelineRunLogs'
-import { PipelineStatusBadge, PipelineStatusIcon } from './PipelineStatusBadge'
+import { PipelineStatusBadge } from './PipelineStatusBadge'
+import { PipelineStepList } from './PipelineStepList'
 
 function ApprovalGate({
   app,
@@ -77,28 +75,6 @@ function ApprovalGate({
         Reject
       </Button>
     </div>
-  )
-}
-
-function StepList({ job }: { job: PipelineJob }) {
-  return (
-    <ol className="divide-y divide-border rounded-lg border border-border text-sm">
-      {job.steps.map((s) => (
-        <li key={s.index} className="flex items-center gap-2 px-3 py-1.5">
-          <PipelineStatusIcon status={s.status} className="size-4 shrink-0" />
-          <span className="truncate text-foreground">{s.name}</span>
-          <span className="text-xs text-muted-foreground">{s.kind}</span>
-          {s.reason ? (
-            <span className="truncate text-xs text-muted-foreground">
-              {s.reason}
-            </span>
-          ) : null}
-          <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
-            {formatDuration(s.started_at, s.finished_at)}
-          </span>
-        </li>
-      ))}
-    </ol>
   )
 }
 
@@ -169,12 +145,17 @@ function RunHeader({ app, run }: { app: string; run: PipelineRun }) {
 export function PipelineRunDetail({
   app,
   runId,
+  job: picked = '',
+  step,
+  onPick,
 }: {
   app: string
   runId: string
+  job?: string
+  step?: number
+  onPick: (job: string, step?: number) => void
 }) {
   const { data: run, isLoading, error } = usePipelineRun(app, runId)
-  const [picked, setPicked] = useState('')
 
   if (isLoading) {
     return <Skeleton className="h-64 w-full" />
@@ -208,6 +189,9 @@ export function PipelineRunDetail({
         </Link>
       </p>
       <RunHeader app={app} run={run} />
+      {run.hold && run.hold.state === 'pending' ? (
+        <PipelineHoldGate app={app} runId={run.id} hold={run.hold} />
+      ) : null}
       {pending.map((a) => (
         <ApprovalGate key={a.id} app={app} runId={run.id} approval={a} />
       ))}
@@ -215,21 +199,32 @@ export function PipelineRunDetail({
         <PipelineRunGraph
           jobs={jobs}
           selected={selectedKey}
-          onSelect={setPicked}
+          onSelect={(key) => onPick(key)}
         />
       ) : (
         <p className="text-sm text-muted-foreground">Waiting to start.</p>
       )}
       {selected ? (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">
+          <h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold text-foreground">
             {selected.key}
+            <PipelineStatusBadge status={selected.status} />
+            {selected.started_at ? (
+              <span className="text-xs font-normal tabular-nums text-muted-foreground">
+                {formatDuration(selected.started_at, selected.finished_at)}
+              </span>
+            ) : null}
           </h3>
-          <StepList job={selected} />
+          <PipelineStepList
+            job={selected}
+            step={step}
+            onPickStep={(next) => onPick(selected.key, next)}
+          />
           <PipelineRunLogs
             app={app}
             runId={run.id}
             job={selected.key}
+            step={step}
             live={!isTerminalStatus(run.status)}
           />
         </div>

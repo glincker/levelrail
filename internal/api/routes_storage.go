@@ -19,6 +19,12 @@ func (rt *Router) registerStorageRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/storage/destinations/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteStorageDestination))
 	mux.HandleFunc("POST /api/v1/storage/destinations/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestStorageDestination))
 
+	mux.HandleFunc("GET /api/v1/build-cache", rt.requireAbility(AbilityRead, rt.handleListBuildCache))
+	mux.HandleFunc("PUT /api/v1/build-cache", rt.requireAbility(AbilityWrite, rt.handleSetBuildCache))
+	mux.HandleFunc("DELETE /api/v1/build-cache", rt.requireAbility(AbilityWrite, rt.handleDeleteBuildCache))
+	mux.HandleFunc("GET /api/v1/build-cache/stats", rt.requireAbility(AbilityRead, rt.handleBuildCacheStats))
+	mux.HandleFunc("POST /api/v1/build-cache/clear", rt.requireAbility(AbilityWrite, rt.handleClearBuildCache))
+
 	mux.HandleFunc("GET /api/v1/log-archive/policies", rt.requireAbility(AbilityRead, rt.handleListLogArchivePolicies))
 	mux.HandleFunc("PUT /api/v1/log-archive/policy", rt.requireAbility(AbilityWrite, rt.handleSetLogArchivePolicy))
 	mux.HandleFunc("DELETE /api/v1/log-archive/policy", rt.requireAbility(AbilityWrite, rt.handleDeleteLogArchivePolicy))

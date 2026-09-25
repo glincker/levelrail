@@ -30,6 +30,8 @@ type Store interface {
 	CreatePipelineApproval(ctx context.Context, a store.PipelineApproval) error
 	ListPipelineApprovals(ctx context.Context, runID string) ([]store.PipelineApproval, error)
 	PrunePipelineRuns(ctx context.Context, keep int) (int64, error)
+	AddPipelineTriggerLog(ctx context.Context, e store.PipelineTriggerLog) error
+	DecidePipelineRunHold(ctx context.Context, id string, approved bool, by string, now time.Time) (bool, error)
 }
 
 // Runtime is the slice of docker.Runtime a job needs, so tests can fake it

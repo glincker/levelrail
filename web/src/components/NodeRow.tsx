@@ -103,6 +103,11 @@ export function NodeRow({
           {STATUS_LABEL[node.status]}
         </Badge>
         {node.schedulable ? null : <Badge variant="warning">Cordoned</Badge>}
+        {node.gpu?.present ? (
+          <Badge variant={node.gpu.runtime_installed ? 'outline' : 'warning'}>
+            GPU {node.gpu.free_gpus}/{node.gpu.gpu_count} free
+          </Badge>
+        ) : null}
       </span>
 
       <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">

@@ -31,17 +31,23 @@ function StoredLogs({
   app,
   runId,
   job,
+  step,
+  live,
 }: {
   app: string
   runId: string
   job: string
+  step?: number
+  live: boolean
 }) {
-  const { data, isLoading, error } = usePipelineRunLogs(app, runId, job)
+  const { data, isLoading, error } = usePipelineRunLogs(app, runId, job, live)
   const [paused, setPaused] = useState(false)
   const lines = useMemo<LogLine[]>(
     () =>
-      (data ?? []).map((l) => ({ id: l.id, line: l.line, stream: l.stream })),
-    [data],
+      (data ?? [])
+        .filter((l) => step === undefined || l.step === step)
+        .map((l) => ({ id: l.id, line: l.line, stream: l.stream })),
+    [data, step],
   )
   if (error) {
     return <p className="text-sm text-destructive">{error.message}</p>
@@ -55,27 +61,41 @@ function StoredLogs({
       heightClassName="h-96"
       emptyStateMessage={isLoading ? 'Loading logs...' : 'No output recorded.'}
       emptyStatePulse={false}
-      isFinished
+      isFinished={!live}
     />
   )
 }
 
-// Follows a running job's output over SSE; a finished run reads the stored
-// lines once, so a completed page never holds an event stream open.
+// A whole running job follows its output over SSE. A finished run, or one
+// step of any run (the stream carries no step filter), reads the stored
+// lines, polling while the run is live, so a completed page never holds an
+// event stream open.
 export function PipelineRunLogs({
   app,
   runId,
   job,
+  step,
   live,
 }: {
   app: string
   runId: string
   job: string
+  step?: number
   live: boolean
 }) {
-  return live ? (
-    <LiveLogs key={`${runId}/${job}`} app={app} runId={runId} job={job} />
-  ) : (
-    <StoredLogs key={`${runId}/${job}`} app={app} runId={runId} job={job} />
+  if (live && step === undefined) {
+    return (
+      <LiveLogs key={`${runId}/${job}`} app={app} runId={runId} job={job} />
+    )
+  }
+  return (
+    <StoredLogs
+      key={`${runId}/${job}/${step ?? 'all'}`}
+      app={app}
+      runId={runId}
+      job={job}
+      step={step}
+      live={live}
+    />
   )
 }

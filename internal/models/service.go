@@ -38,6 +38,7 @@ type ServiceStore interface {
 	GetNodeGPU(ctx context.Context, nodeID string) (store.NodeGPU, bool, error)
 	ListNodes(ctx context.Context) ([]store.Node, error)
 	ListNodeGPUs(ctx context.Context) (map[string]store.NodeGPU, error)
+	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 }
 
 // SecretWriter stores the HuggingFace token.

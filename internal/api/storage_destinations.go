@@ -49,6 +49,10 @@ type StorageDeps struct {
 	Clients     ObjectClientResolver
 	Archiver    LogArchiver
 	ArchiveRoot string
+
+	// BuildCache and BuildCacheSettings enable /api/v1/build-cache; nil answers 501.
+	BuildCache         BuildCacheService
+	BuildCacheSettings BuildCacheSettingsStore
 }
 
 // WithStorage enables the /api/v1/storage and /api/v1/log-archive routes.

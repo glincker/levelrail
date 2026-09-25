@@ -28,6 +28,14 @@ Backups already had connected S3-compatible buckets (`backup_targets`, credentia
 - **Reusing `backup.S3Uploader`.** It builds an unguarded client and is shaped around multipart streaming of dumps. Left alone so backup behavior does not change; unifying the two clients is a follow-up.
 - **A search index over archived objects.** Out of scope: objects are plain gzip NDJSON so any external tool can query them.
 
+## Addendum: build cache export
+
+BuildKit remote cache uses the same destinations. `build_cache_settings` (migration 0132) points an app, or the global default, at a destination with a min or max export mode; deploy attempts gain a `cache_warning` column (0133). The control plane hands BuildKit its own `type=s3` cache entries (per-app prefix `build-cache/<app>/`) using the destination's decrypted credentials for that one solve, rather than routing cache blobs through `objectstore.Client`.
+
+Three consequences of that choice. BuildKit dials the bucket itself, so netguard cannot wrap the connection; the endpoint is checked against the same policy before each build instead. Cache is fail-open: a cache-looking solve error before any image output retries once without the s3 entries, and a cache error after output is a warning, never a failed build. Builds dispatched to build nodes do not carry bucket credentials over the agent wire, so they skip the s3 cache with a warning; extending the agent protocol is deferred until nodes need it.
+
+Rejected: a separate cache credential set (duplicates the destination), and storing cache as OCI registry refs on the bucket (needs a registry in front of it). Pipeline artifacts stay on the per-node volume: those steps are `cp` commands inside job containers, so a bucket backend needs an engine-side transfer path, not a small change.
+
 ## Consequences
 
 Backups still use their own S3 client (no SSRF guard, HeadBucket test). Build artifact and cache export can reuse `objectstore.Client` and the same destinations, but is not part of this change.

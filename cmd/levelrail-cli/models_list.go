@@ -103,13 +103,13 @@ func printGPUNodesTable(out io.Writer, nodes []apiclient.GPUNodeResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "NODE\tGPUS\tVRAM USED/TOTAL\tDRIVER\tRUNTIME\tMODELS")
+	_, _ = fmt.Fprintln(tw, "NODE\tGPUS\tRESERVED\tVRAM USED/TOTAL\tDRIVER\tRUNTIME\tMODELS")
 	for _, n := range nodes {
 		runtime := "ok"
 		if n.Present && !n.RuntimeInstalled {
 			runtime = "nvidia runtime missing"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%d\t%d/%d MiB\t%s\t%s\t%d\n", n.Name, n.GPUCount, n.UsedVRAMMiB, n.TotalVRAMMiB, n.DriverVersion, runtime, n.ModelCount)
+		_, _ = fmt.Fprintf(tw, "%s\t%d\t%d/%d\t%d/%d MiB\t%s\t%s\t%d\n", n.Name, n.GPUCount, n.ReservedGPUs, n.GPUCount, n.UsedVRAMMiB, n.TotalVRAMMiB, n.DriverVersion, runtime, n.ModelCount)
 	}
 	_ = tw.Flush()
 	for _, n := range nodes {
