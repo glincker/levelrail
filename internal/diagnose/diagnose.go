@@ -9,7 +9,11 @@
 // matches, Diagnose returns the fallback response rather than a guess.
 package diagnose
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/untrusted"
+)
 
 // Confidence levels Result.Confidence can hold.
 const (
@@ -243,7 +247,10 @@ func excerptFor(ts textSource, pattern string) string {
 	return truncate(strings.TrimSpace(ts.text))
 }
 
+// truncate cleans and redacts an excerpt of workload-authored text before
+// it leaves this package, then caps its length.
 func truncate(s string) string {
+	s = untrusted.Redact(untrusted.Clean(s))
 	if len(s) <= maxExcerptLen {
 		return s
 	}
