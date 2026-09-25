@@ -1,5 +1,0 @@
-What: Add an index on `started_at` in the `backup_history` table.
-Why: The `ListAllBackupHistory` method heavily scans `backup_history` and orders by `started_at`, resulting in a temp B-Tree sort locally without an index. We measured a benchmark execution doing this without an index on 10k rows taking ~2.62 ms/op.
-Impact: The same benchmark executes in ~0.28 ms/op (almost 10x faster) without SQLite requiring a temp B-Tree sort step.
-Verify: `go test -bench=BenchmarkListAllBackupHistory -benchmem ./internal/store` with 10000 seeded rows locally.
-Rotation: Friday
