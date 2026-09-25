@@ -1,4 +1,4 @@
-package loadbalancer
+package lbexport
 
 import (
 	"flag"
@@ -6,35 +6,37 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 )
 
 var update = flag.Bool("update", false, "rewrite golden files")
 
 func exportCases() map[string]ExportInput {
 	return map[string]ExportInput{
-		"minimal": {Service: "web", Port: 3000, Domains: []string{"app.example.com"}, Config: Config{}},
+		"minimal": {Service: "web", Port: 3000, Domains: []string{"app.example.com"}, Config: loadbalancer.Config{}},
 		"full": {
 			Service: "api", Port: 8080, Domains: []string{"api.example.com", "api2.example.com"},
 			Upstreams: []string{"10.0.0.1:8080", "10.0.0.2:8080"},
-			Config: Config{
-				Algorithm:      AlgoLeastConn,
-				ActiveHealth:   &ActiveHealth{Path: "/healthz", Interval: "10s", Timeout: "3s", Passes: 3, Fails: 2, ExpectStatus: 204},
-				PassiveHealth:  &PassiveHealth{FailDuration: "45s", MaxFails: 3},
-				Retries:        &Retries{Count: 2, TryDuration: "5s", TryInterval: "250ms"},
+			Config: loadbalancer.Config{
+				Algorithm:      loadbalancer.AlgoLeastConn,
+				ActiveHealth:   &loadbalancer.ActiveHealth{Path: "/healthz", Interval: "10s", Timeout: "3s", Passes: 3, Fails: 2, ExpectStatus: 204},
+				PassiveHealth:  &loadbalancer.PassiveHealth{FailDuration: "45s", MaxFails: 3},
+				Retries:        &loadbalancer.Retries{Count: 2, TryDuration: "5s", TryInterval: "250ms"},
 				SlowStart:      "60s",
 				DrainTimeout:   "20s",
 				RequestTimeout: "30s",
-				RateLimit:      &RateLimit{RPS: 20, Burst: 50},
-				UpstreamTLS:    &UpstreamTLS{ServerName: "api.internal"},
+				RateLimit:      &loadbalancer.RateLimit{RPS: 20, Burst: 50},
+				UpstreamTLS:    &loadbalancer.UpstreamTLS{ServerName: "api.internal"},
 			},
 		},
-		"sticky": {Service: "shop cart", Port: 80, Config: Config{Algorithm: AlgoCookie, CookieName: "sid"}},
+		"sticky": {Service: "shop cart", Port: 80, Config: loadbalancer.Config{Algorithm: loadbalancer.AlgoCookie, CookieName: "sid"}},
 		"weighted": {
 			Service: "canary", Port: 9000, Domains: []string{"c.example.com"},
 			Upstreams: []string{"10.0.1.1:9000", "10.0.1.2:9000"},
-			Config:    Config{Algorithm: AlgoWeighted, Weights: []int{9, 1}, SlowStart: "30s"},
+			Config:    loadbalancer.Config{Algorithm: loadbalancer.AlgoWeighted, Weights: []int{9, 1}, SlowStart: "30s"},
 		},
-		"iphash": {Service: "ws", Port: 4000, Config: Config{Algorithm: AlgoIPHash}},
+		"iphash": {Service: "ws", Port: 4000, Config: loadbalancer.Config{Algorithm: loadbalancer.AlgoIPHash}},
 	}
 }
 
@@ -80,7 +82,7 @@ func TestExportErrors(t *testing.T) {
 	}{
 		{"unknown format", "pulumi", ExportInput{Service: "a"}, "unknown format"},
 		{"no service", FormatCDK, ExportInput{}, "service name"},
-		{"invalid config", FormatCDK, ExportInput{Service: "a", Config: Config{Algorithm: "bad"}}, "algorithm"},
+		{"invalid config", FormatCDK, ExportInput{Service: "a", Config: loadbalancer.Config{Algorithm: "bad"}}, "algorithm"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

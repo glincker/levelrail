@@ -88,6 +88,9 @@ func (svc *Service) validate(name string) error {
 	if err := svc.validateEgress(name); err != nil {
 		return err
 	}
+	if err := svc.LoadBalancer.Validate(); err != nil {
+		return fmt.Errorf("spec: service %q: %w", name, err)
+	}
 	return svc.validateVolumes(name)
 }
 

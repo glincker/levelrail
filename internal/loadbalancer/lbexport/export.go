@@ -1,8 +1,12 @@
-package loadbalancer
+// Package lbexport renders a load balancer config as Terraform, CDK,
+// CloudFormation, Caddyfile or Caddy JSON. It never calls any cloud API.
+package lbexport
 
 import (
 	"fmt"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 )
 
 // Export formats accepted by Export.
@@ -24,7 +28,7 @@ type ExportInput struct {
 	Service string
 	Port    int
 	Domains []string
-	Config  Config
+	Config  loadbalancer.Config
 	// Upstreams are the current dial addresses; used by the Caddy formats only.
 	Upstreams []string
 }
@@ -124,7 +128,7 @@ func clamp(v, lo, hi int) int {
 	return v
 }
 
-func secs(s string) int { return int(ParseDuration(s).Seconds()) }
+func secs(s string) int { return int(loadbalancer.ParseDuration(s).Seconds()) }
 
 func buildALB(name string, in ExportInput) alb {
 	cfg := in.Config
@@ -133,14 +137,14 @@ func buildALB(name string, in ExportInput) alb {
 	warn := func(format string, args ...any) { a.Warnings = append(a.Warnings, fmt.Sprintf(format, args...)) }
 
 	switch cfg.Algorithm {
-	case AlgoLeastConn:
+	case loadbalancer.AlgoLeastConn:
 		a.Algorithm = "least_outstanding_requests"
-	case AlgoWeighted:
+	case loadbalancer.AlgoWeighted:
 		a.Algorithm = "weighted_random"
 		warn("weighted: ALB target group weights are set on the listener forward action or via weighted_random, per-target weights %v are not exported", cfg.Weights)
-	case AlgoCookie:
+	case loadbalancer.AlgoCookie:
 		a.Sticky, a.StickySecs = true, 86400
-	case AlgoIPHash, AlgoURIHash:
+	case loadbalancer.AlgoIPHash, loadbalancer.AlgoURIHash:
 		warn("%s has no ALB equivalent, exported as round_robin", cfg.Algorithm)
 	}
 	if cfg.UpstreamTLS != nil {

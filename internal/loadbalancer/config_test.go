@@ -65,27 +65,3 @@ func TestEffectiveWeightsSlowStart(t *testing.T) {
 		}
 	}
 }
-
-func TestToRoute(t *testing.T) {
-	ups := []Upstream{{Dial: "10.0.0.1:80"}, {Dial: "10.0.0.2:80"}}
-	if ToRoute(Config{}, nil, nil) != nil {
-		t.Fatal("no upstreams must give nil route")
-	}
-	lb := ToRoute(Config{
-		Algorithm:     AlgoCookie,
-		ActiveHealth:  &ActiveHealth{Path: "/h"},
-		PassiveHealth: &PassiveHealth{},
-		Retries:       &Retries{Count: 2},
-		DrainTimeout:  "10s", RequestTimeout: "20s",
-		RateLimit: &RateLimit{RPS: 4}, UpstreamTLS: &UpstreamTLS{InsecureSkipVerify: true},
-	}, ups, nil)
-	if lb.Policy != "cookie" || lb.CookieName != "lb" || lb.ActiveHealth.Interval != "10s" || lb.PassiveHealth.MaxFails != 1 ||
-		lb.Retries != 2 || lb.TryDuration != "5s" || lb.StreamCloseDelay != "10s" || lb.ResponseHeaderTimeout != "20s" ||
-		lb.RateLimitRPS != 4 || !lb.UpstreamTLS.InsecureSkipVerify || len(lb.Upstreams) != 2 {
-		t.Fatalf("unexpected route: %+v", lb)
-	}
-	w := ToRoute(Config{Algorithm: AlgoWeighted}, ups, []int{2, 1})
-	if w.Policy != "weighted_round_robin" || len(w.Weights) != 2 {
-		t.Fatalf("weighted route: %+v", w)
-	}
-}

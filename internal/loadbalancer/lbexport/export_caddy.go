@@ -1,4 +1,4 @@
-package loadbalancer
+package lbexport
 
 import (
 	"encoding/json"
@@ -8,16 +8,17 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 )
 
-func exportUpstreams(in ExportInput) []Upstream {
+func exportUpstreams(in ExportInput) []loadbalancer.Upstream {
 	dials := in.Upstreams
 	if len(dials) == 0 {
 		dials = []string{"localhost:" + strconv.Itoa(in.Port)}
 	}
-	ups := make([]Upstream, len(dials))
+	ups := make([]loadbalancer.Upstream, len(dials))
 	for i, d := range dials {
-		ups[i] = Upstream{ID: UpstreamID(in.Service, i), Dial: d, Replica: i}
+		ups[i] = loadbalancer.Upstream{ID: loadbalancer.UpstreamID(in.Service, i), Dial: d, Replica: i}
 	}
 	return ups
 }
@@ -51,16 +52,16 @@ func renderCaddyfile(in ExportInput) (string, []string) {
 	}
 	w("\treverse_proxy %s {\n", strings.Join(dials, " "))
 	switch cfg.Algorithm {
-	case AlgoLeastConn:
+	case loadbalancer.AlgoLeastConn:
 		w("\t\tlb_policy least_conn\n")
-	case AlgoIPHash:
+	case loadbalancer.AlgoIPHash:
 		w("\t\tlb_policy ip_hash\n")
-	case AlgoURIHash:
+	case loadbalancer.AlgoURIHash:
 		w("\t\tlb_policy uri_hash\n")
-	case AlgoCookie:
+	case loadbalancer.AlgoCookie:
 		w("\t\tlb_policy cookie %s\n", cfg.CookieName)
-	case AlgoWeighted:
-		weights := EffectiveWeights(cfg, ups, nil, time.Time{})
+	case loadbalancer.AlgoWeighted:
+		weights := loadbalancer.EffectiveWeights(cfg, ups, nil, time.Time{})
 		parts := make([]string, len(weights))
 		for i, x := range weights {
 			parts[i] = strconv.Itoa(x)
@@ -110,8 +111,8 @@ func renderCaddyfile(in ExportInput) (string, []string) {
 
 func renderCaddyJSON(in ExportInput) (string, []string, error) {
 	ups := exportUpstreams(in)
-	weights := EffectiveWeights(in.Config, ups, nil, time.Time{})
-	lb := ToRoute(in.Config, ups, weights)
+	weights := loadbalancer.EffectiveWeights(in.Config, ups, nil, time.Time{})
+	lb := ingress.NewLBRoute(in.Config, ups, weights)
 	hosts := in.Domains
 	if len(hosts) == 0 {
 		hosts = []string{"example.com"}

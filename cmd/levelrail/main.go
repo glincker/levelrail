@@ -1647,6 +1647,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithStaticRootDir(staticSitesDir),
 		deploy.WithAppStore(db),
 		deploy.WithVaultConfigChecker(db),
+		deploy.WithLoadBalancerStore(db),
 	}
 	if secretsManager != nil {
 		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager))
