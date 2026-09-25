@@ -539,6 +539,9 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, "api: create app") {
 		return
 	}
+	if !rt.settleGPUCreatePlacement(w, r, body, &req) {
+		return
+	}
 
 	_, err = rt.apps.GetDesiredService(r.Context(), req.Name)
 	if err == nil {

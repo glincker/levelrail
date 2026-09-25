@@ -89,13 +89,44 @@ curl https://llm.example.com/v1/chat/completions \
 
 Any app can request a GPU with `resources.gpu` in `app.yaml` (see the [app spec reference](app-spec-reference.md)). Such an app only runs on a node with a usable GPU: the reconciler reports `NoGPUOnNode` or `GPURuntimeMissing` instead of starting it, and moving it to a node without one is rejected.
 
+## GPU scheduling
+
+Placement counts GPUs, not just workloads. Each node has a ledger built from the desired state: every app with `resources.gpu` and every model on the node reserves GPUs.
+
+| Request | Reserves |
+| --- | --- |
+| a count, `gpus: 2` | that many GPUs, anonymous |
+| device IDs (index or UUID) | those exact devices; a second workload asking for the same device does not fit |
+| `all` or no count | every GPU, so the node must be completely free |
+
+A workload fits a node when the node reports a GPU, Docker has the nvidia runtime, and enough GPUs are free (total minus reserved, never below zero). A node that is exactly full fits nothing more. A workload's own reservation is ignored when re-checking it against its own node.
+
+Where the ledger is consulted:
+
+- **Create.** A new GPU app without `node_id` is auto-placed on the least loaded node that fits (the local host is the fallback), or refused with `409` and a per-node reason. An explicit `node_id` is checked the same way once the node has reported.
+- **Move.** `PUT /api/v1/apps/{name}/node` rejects a target that lacks the runtime or the free GPUs.
+- **Drain.** Each GPU app is placed on a node that fits, and GPUs it takes are reserved for the apps after it in the same drain. An app no node can host stays put and is reported under `blocked` (dashboard drain dialog, `levelrail nodes drain`, API). Models are never moved, so they are always listed as blocked.
+
+Docker does not isolate GPUs by count: two containers can share a device, so the ledger is scheduling accounting, not enforcement. A running app is never stopped because the ledger says the node is oversubscribed.
+
+### Seeing reservations
+
+- **API.** `GET /api/v1/gpus` adds `reserved_gpus`, `free_gpus` and `reservations` (`app:<name>`, `model:<name>`) per node. `GET /api/v1/nodes` and `GET /api/v1/nodes/{id}` carry a `gpu` summary.
+- **CLI.** `levelrail nodes list` has a GPU column (`free/total`), `levelrail nodes get` prints a GPU block, `levelrail models gpus` has a RESERVED column.
+- **Dashboard.** The AI models page GPU cards and the node detail GPU card show reserved vs total GPUs and VRAM used vs total; the node list shows a `GPU free/total` badge.
+- **MCP.** `list_gpu_nodes` returns the same fields.
+
+### Attention and doctor
+
+When a GPU app or model cannot run on its own node and no eligible GPU node has enough free GPUs, `levelrail doctor` and the attention list (Status page, `levelrail attention`, MCP `get_attention`) raise a warning `GPU app <name> cannot be placed`. Fix it by freeing a GPU (stop or shrink another GPU workload), adding a GPU node, or installing the nvidia container toolkit on the node that has GPUs.
+
 ## Access control
 
 Listing and reading models and GPUs needs the `read` ability. Deleting and restarting needs `write`. Deploying, rotating a key and setting a HuggingFace token need `write:sensitive`. Model resources can be targeted by IAM policies as `model:<name>`. The AI assistant asks for confirmation before any of the mutating model tools.
 
 ## Not in version 1
 
-AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node), request rate limits at the gateway, and per-key usage accounting.
+AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, request rate limits at the gateway, and per-key usage accounting.
 
 ## GPU in Compose templates
 

@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select'
 import { useDrainNode, useNodes } from '../queries/nodes'
 import type { DrainNodeResponse, NodeResource } from '../types/nodeDetail'
+import { drainFailures } from '../lib/drainResult'
 
 // Local-node sentinel value: POST /api/v1/nodes/{id}/drain?target_node_id=
 // treats an empty string as "the local/control-plane node"
@@ -180,6 +181,8 @@ function DrainResult({
   onClose: () => void
 }) {
   const hasErrors = (result.errors?.length ?? 0) > 0
+  const blocked = result.blocked ?? []
+  const failures = drainFailures(result)
   const movedNothing =
     result.moved_services.length === 0 && result.moved_databases.length === 0
 
@@ -215,11 +218,18 @@ function DrainResult({
             items={result.moved_databases}
           />
         ) : null}
-        {hasErrors ? (
+        {blocked.length > 0 ? (
+          <ResultList
+            icon={<WarningIcon className="size-4 text-amber-600" />}
+            title="Blocked, left on this node (no GPU node available)"
+            items={blocked.map((b) => `${b.kind} ${b.name}: ${b.reason}`)}
+          />
+        ) : null}
+        {failures.length > 0 ? (
           <ResultList
             icon={<XCircleIcon className="size-4 text-destructive" />}
             title="Failed to move"
-            items={result.errors ?? []}
+            items={failures}
             variant="destructive"
           />
         ) : null}

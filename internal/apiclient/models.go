@@ -80,9 +80,27 @@ type GPUNodeResource struct {
 	TotalVRAMMiB     int64               `json:"total_vram_mib"`
 	UsedVRAMMiB      int64               `json:"used_vram_mib"`
 	ModelCount       int                 `json:"model_count"`
+	ReservedGPUs     int                 `json:"reserved_gpus"`
+	FreeGPUs         int                 `json:"free_gpus"`
+	Reservations     []string            `json:"reservations"`
+	Schedulable      bool                `json:"schedulable"`
 	Hint             string              `json:"hint,omitempty"`
 	Devices          []GPUDeviceResource `json:"devices"`
 	UpdatedAt        time.Time           `json:"updated_at"`
+}
+
+// NodeGPUResource mirrors internal/api's nodeGPUResource, the GPU summary
+// on a node.
+type NodeGPUResource struct {
+	Present          bool     `json:"present"`
+	RuntimeInstalled bool     `json:"runtime_installed"`
+	DriverVersion    string   `json:"driver_version,omitempty"`
+	GPUCount         int      `json:"gpu_count"`
+	ReservedGPUs     int      `json:"reserved_gpus"`
+	FreeGPUs         int      `json:"free_gpus"`
+	TotalVRAMMiB     int64    `json:"total_vram_mib"`
+	UsedVRAMMiB      int64    `json:"used_vram_mib"`
+	Reservations     []string `json:"reservations"`
 }
 
 // ListModels calls GET /api/v1/models.

@@ -54,7 +54,7 @@ func printDrainNodeResultHuman(out io.Writer, id string, r drainNodeResponse) {
 	}
 	_, _ = fmt.Fprintf(out, "node %q drained to %s\n", id, target)
 
-	if len(r.MovedServices) == 0 && len(r.MovedDatabases) == 0 {
+	if len(r.MovedServices) == 0 && len(r.MovedDatabases) == 0 && len(r.Blocked) == 0 {
 		_, _ = fmt.Fprintln(out, "nothing was placed on this node")
 	} else {
 		tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
@@ -68,7 +68,13 @@ func printDrainNodeResultHuman(out io.Writer, id string, r drainNodeResponse) {
 		_ = tw.Flush()
 	}
 
-	if len(r.Errors) > 0 {
+	if len(r.Blocked) > 0 {
+		_, _ = fmt.Fprintln(out, "blocked (left on the node):")
+		for _, b := range r.Blocked {
+			_, _ = fmt.Fprintf(out, "  %s %s: %s\n", b.Kind, b.Name, b.Reason)
+		}
+	}
+	if len(r.Errors) > len(r.Blocked) {
 		_, _ = fmt.Fprintln(out, "errors:")
 		for _, e := range r.Errors {
 			_, _ = fmt.Fprintf(out, "  %s\n", e)
@@ -84,7 +90,10 @@ Moves every service and database currently placed on <id> to
 --target (default: the local node). Only changes desired placement;
 the reconcile engine's next pass converges each moved resource on its
 new node. A resource that fails to move is reported, not silently
-dropped; everything that did move stays moved.
+dropped; everything that did move stays moved. GPU apps only move to a
+node with a working nvidia runtime and enough free GPUs, otherwise they
+are listed as blocked and stay put; models cannot be moved and are
+always listed as blocked.
 
 Flags:
   --target string          node id to move placements to (default: the local node)

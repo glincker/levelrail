@@ -1873,6 +1873,8 @@ type NodeResource struct {
 	// IsLocal is true for the one node running the control plane process
 	// itself, the only node with real disk/memory host metrics.
 	IsLocal bool `json:"is_local"`
+	// GPU is set when the node reported an NVIDIA GPU.
+	GPU *NodeGPUResource `json:"gpu,omitempty"`
 }
 
 // NodeAlertStatusResource mirrors internal/api's nodeAlertStatusResource
@@ -2134,6 +2136,16 @@ type DrainNodeResponse struct {
 	MovedServices  []string `json:"moved_services"`
 	MovedDatabases []string `json:"moved_databases"`
 	Errors         []string `json:"errors,omitempty"`
+	AutoPlaced     bool     `json:"auto_placed,omitempty"`
+	// Blocked names apps and models left on the node, with the reason.
+	Blocked []DrainBlockedResource `json:"blocked,omitempty"`
+}
+
+// DrainBlockedResource mirrors internal/api's drainBlocked.
+type DrainBlockedResource struct {
+	Kind   string `json:"kind"`
+	Name   string `json:"name"`
+	Reason string `json:"reason"`
 }
 
 // DiagnosisSignal mirrors internal/api's diagnosisSignalResource: one
