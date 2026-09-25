@@ -127,6 +127,10 @@ func generate(doc string, routes []route) string {
 	}
 	// Place new routes in the group whose rows share the longest path prefix.
 	other := &section{name: "## Other"}
+	otherIsNew := idx["## Other"] == nil
+	if !otherIsNew {
+		other = idx["## Other"]
+	}
 	for _, r := range routes {
 		if existing[r.key()] {
 			continue
@@ -145,7 +149,7 @@ func generate(doc string, routes []route) string {
 		}
 		best.rows = append(best.rows, r)
 	}
-	if idx["## Other"] == nil && len(other.rows) > 0 {
+	if otherIsNew && len(other.rows) > 0 {
 		idx["## Other"] = other
 	}
 	var out []string
@@ -154,7 +158,7 @@ func generate(doc string, routes []route) string {
 		l := lines[i]
 		if strings.HasPrefix(l, "## ") {
 			cur = l
-			if l == "## See also" && idx["## Other"] == other {
+			if l == "## See also" && otherIsNew && idx["## Other"] == other {
 				out = append(out, "## Other", "", "Routes that do not fit an existing group.", "")
 				out = append(out, table(other.rows)...)
 				out = append(out, "")
