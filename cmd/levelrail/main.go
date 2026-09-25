@@ -41,6 +41,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/netguard"
+	"github.com/GLINCKER/levelrail/internal/objectstore"
 	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
@@ -623,6 +624,7 @@ func run(logger *slog.Logger) error {
 	}()
 
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver)
+	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
 		Handler:           apiHandler,
@@ -784,6 +786,7 @@ func run(logger *slog.Logger) error {
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
 		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
+	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	if controlPlaneBackupInterval(logger) > 0 {
 		alertingEngine.SetControlPlaneBackups(cpbackup.NewManager(db, agentDataDir), 0)
 	}

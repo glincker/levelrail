@@ -186,5 +186,6 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   'aws-s3': () => import('@thesvg/react/aws-amazon-simple-storage-service'),
   cloudflare: () => import('@thesvg/react/cloudflare'),
   backblaze: () => import('@thesvg/react/backblaze'),
+  wasabi: () => import('@thesvg/react/wasabi-badge'),
   'google-cloud-storage': () => import('@thesvg/react/google-cloud-storage'),
 }

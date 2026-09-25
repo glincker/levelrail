@@ -125,6 +125,8 @@ var cliCommandTree = map[string]*cmdNode{
 	"channels":              {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil}},
 	"shared-env":            {subs: map[string]*cmdNode{"list": nil, "set": nil, "delete": nil}},
 	"backup-targets":        {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
+	"storage":               {subs: map[string]*cmdNode{"providers": nil, "list": nil, "add": nil, "test": nil, "delete": nil}},
+	"logs":                  {subs: map[string]*cmdNode{"archive": {subs: map[string]*cmdNode{"set": nil, "status": nil, "remove": nil}}, "dump": nil, "ls": nil, "fetch": nil}},
 	"registry-credentials":  {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "repositories": nil, "tags": nil}},
 	"registry":              {subs: map[string]*cmdNode{"status": nil, "enable": nil, "disable": nil, "repositories": nil, "tags": nil}},
 	"flags":                 {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "set": nil, "delete": nil}},

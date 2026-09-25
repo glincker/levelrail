@@ -612,6 +612,20 @@ Routes that do not fit an existing group.
 | GET | /api/v1/ai/sessions/{id} | AbilityRoot | handleGetAIChatSession |
 | POST | /api/v1/ai/sessions/{id}/messages | AbilityRoot | handleCreateAIChatMessage |
 | POST | /api/v1/ai/sessions/{id}/confirmations/{confirmation_id} | AbilityRoot | handleResolveAIChatConfirmation |
+| GET | /api/v1/storage/providers | AbilityRead | handleListStorageProviders |
+| GET | /api/v1/storage/destinations | AbilityRead | handleListStorageDestinations |
+| POST | /api/v1/storage/destinations | AbilityWriteSensitive | handleCreateStorageDestination |
+| GET | /api/v1/storage/destinations/{id} | AbilityRead | handleGetStorageDestination |
+| PUT | /api/v1/storage/destinations/{id} | AbilityWriteSensitive | handleUpdateStorageDestination |
+| DELETE | /api/v1/storage/destinations/{id} | AbilityWriteSensitive | handleDeleteStorageDestination |
+| POST | /api/v1/storage/destinations/{id}/test | AbilityWriteSensitive | handleTestStorageDestination |
+| GET | /api/v1/log-archive/policies | AbilityRead | handleListLogArchivePolicies |
+| PUT | /api/v1/log-archive/policy | AbilityWrite | handleSetLogArchivePolicy |
+| DELETE | /api/v1/log-archive/policy | AbilityWrite | handleDeleteLogArchivePolicy |
+| POST | /api/v1/log-archive/dump | AbilityWrite | handleLogArchiveDump |
+| GET | /api/v1/log-archive/runs | AbilityRead | handleListLogArchiveRuns |
+| GET | /api/v1/log-archive/objects | AbilityRead | handleListLogArchiveObjects |
+| GET | /api/v1/log-archive/objects/download | AbilityRead | handleDownloadLogArchiveObject |
 
 ## See also
 

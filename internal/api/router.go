@@ -257,6 +257,7 @@ type Router struct {
 	detect                         detectFunc                       // framework pre-flight detector for handleDetectFramework; always non-nil, defaulted to build.Detect in NewRouter, overridable in this package's own tests
 	staticSites                    StaticSiteStore                  // always set, same "core Store interface, not an optional plug-in" shape as certs above
 	backupTargets                  BackupTargetStore                // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
+	storage                        *StorageDeps                     // nil is valid: /api/v1/storage and /api/v1/log-archive routes return 501
 	backupSecrets                  BackupSecretsSetter              // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
 	registryCredentials            RegistryCredentialStore          // always set, same "core Store interface" shape as backupTargets above
 	registryCredentialSecrets      RegistryCredentialSecretsSetter  // nil is valid: POST /api/v1/registry-credentials returns 501, same shape as backupSecrets above
