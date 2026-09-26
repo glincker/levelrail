@@ -1,0 +1,97 @@
+package api
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+const scopedListMaxBatches = 20
+
+// databaseVisibilityFilter reports whether the caller can read a database.
+func (rt *Router) databaseVisibilityFilter(r *http.Request) (func(name string) bool, error) {
+	principalType, principalID, abilities, err := rt.callerPrincipal(r)
+	if err != nil {
+		return nil, fmt.Errorf("resolve caller: %w", err)
+	}
+	policies, err := rt.policies.ListPoliciesForPrincipal(r.Context(), principalType, principalID)
+	if err != nil {
+		return nil, fmt.Errorf("list caller policies: %w", err)
+	}
+	return func(name string) bool {
+		return authorizeResource(abilities, policies, AbilityRead, "database:"+name)
+	}, nil
+}
+
+// backupVisible hides a backup only when it belongs to an app or database
+// the caller cannot read.
+func backupVisible(h store.BackupHistory, canSeeApp, canSeeDB func(string) bool) bool {
+	if h.ServiceName != "" && !canSeeApp(h.ServiceName) {
+		return false
+	}
+	return h.DatabaseName == "" || canSeeDB(h.DatabaseName)
+}
+
+// domainOwners maps each domain to the apps that serve it.
+func (rt *Router) domainOwners(ctx context.Context) (map[string][]string, error) {
+	owners := map[string][]string{}
+	domains, err := rt.domains.ListServiceDomains(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list service domains: %w", err)
+	}
+	for _, d := range domains {
+		owners[d.Domain] = append(owners[d.Domain], d.ServiceName)
+	}
+	sites, err := rt.staticSites.ListStaticSites(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list static sites: %w", err)
+	}
+	for _, s := range sites {
+		for _, d := range s.Domains {
+			owners[d] = append(owners[d], s.Name)
+		}
+	}
+	return owners, nil
+}
+
+// pageBackups fills up to limit visible backups, walking the raw cursor
+// forward so hidden rows never shrink or shift the page.
+func (rt *Router) pageBackups(ctx context.Context, limit int, before *time.Time, canSeeApp, canSeeDB func(string) bool) ([]store.BackupHistory, error) {
+	var out []store.BackupHistory
+	for batch := 0; batch < scopedListMaxBatches && len(out) < limit; batch++ {
+		rows, err := rt.backupHistory.ListAllBackupHistory(ctx, limit, before)
+		if err != nil {
+			return nil, fmt.Errorf("list backup history: %w", err)
+		}
+		for _, h := range rows {
+			if len(out) < limit && backupVisible(h, canSeeApp, canSeeDB) {
+				out = append(out, h)
+			}
+		}
+		if len(rows) < limit {
+			break
+		}
+		t, err := time.Parse(time.RFC3339, rows[len(rows)-1].StartedAt)
+		if err != nil {
+			return nil, fmt.Errorf("parse backup cursor: %w", err)
+		}
+		before = &t
+	}
+	return out, nil
+}
+
+// certVisible hides a certificate only when its domain or a SAN belongs to
+// an app the caller cannot read; certificates matching no app stay visible.
+func certVisible(domain string, sans []string, owners map[string][]string, canSee func(string) bool) bool {
+	for _, d := range append([]string{domain}, sans...) {
+		for _, app := range owners[d] {
+			if !canSee(app) {
+				return false
+			}
+		}
+	}
+	return true
+}
