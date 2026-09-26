@@ -69,12 +69,17 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 	}
 
 	image := req.ImageRepo + ":" + req.CommitSHA
+	var seq int64
+	if req.Order != nil {
+		seq = req.Order.Sequence
+	}
 	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: id, ServiceName: req.ServiceName, Image: image,
 		CommitSHA: req.CommitSHA, Source: source,
 		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
 		Snapshot:          store.NewDeployAttemptSnapshot(svc),
 		DetectedFramework: detectedFramework,
+		Sequence:          seq,
 	}); err != nil {
 		rt.logger.Error("api: trigger build: save deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
 		if rt.deployRecorder != nil {
@@ -97,6 +102,9 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		finishCtx := context.Background() // survives past r.Context() the same way webhook.Handler.beginDeployAttempt's own finish func does
 		if rt.deployRecorder != nil {
 			rt.deployRecorder.Finish(finishCtx, id)
+		}
+		if rt.finishSuperseded(finishCtx, id, deployErr) {
+			return
 		}
 		status := store.DeployAttemptStatusSucceeded
 		errMsg := ""
@@ -165,6 +173,13 @@ type deployAttemptResource struct {
 	DetectedFramework string     `json:"detected_framework,omitempty"`
 	// CacheWarning is set when the build carried on without its remote cache.
 	CacheWarning string `json:"cache_warning,omitempty"`
+
+	ImageDigest    string `json:"image_digest,omitempty"`
+	DigestReason   string `json:"digest_reason,omitempty"`
+	RolloutState   string `json:"rollout_state,omitempty"`
+	RunningImageID string `json:"running_image_id,omitempty"`
+	Sequence       int64  `json:"sequence,omitempty"`
+	Reason         string `json:"reason,omitempty"`
 }
 
 func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
@@ -179,6 +194,12 @@ func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
 		FinishedAt:        a.FinishedAt,
 		Error:             a.Error,
 		DetectedFramework: a.DetectedFramework,
+		ImageDigest:       a.ImageDigest,
+		DigestReason:      a.DigestReason,
+		RolloutState:      a.RolloutState,
+		RunningImageID:    a.RunningImageID,
+		Sequence:          a.Sequence,
+		Reason:            a.Reason,
 	}
 }
 

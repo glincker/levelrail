@@ -230,8 +230,31 @@ func (c *Client) TriggerBuild(ctx context.Context, name string, req BuildTrigger
 // (ApproveDeployApproval below) before this tag actually reaches a
 // running container.
 func (c *Client) DeployApp(ctx context.Context, name, image string, confirm bool) (DeployTriggerResult, error) {
+	return c.DeployAppWith(ctx, name, DeployTriggerRequest{Image: image, Confirm: confirm})
+}
+
+// DeployAppWith is DeployApp with the full request: pull and freeze override.
+func (c *Client) DeployAppWith(ctx context.Context, name string, req DeployTriggerRequest) (DeployTriggerResult, error) {
 	var out DeployTriggerResult
-	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploys", DeployTriggerRequest{Image: image, Confirm: confirm}, &out)
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploys", req, &out)
+	return out, err
+}
+
+// GetDeployFreeze calls GET /api/v1/apps/{name}/deploy-freeze.
+func (c *Client) GetDeployFreeze(ctx context.Context, name string) (DeployFreezeResource, error) {
+	var out DeployFreezeResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploy-freeze", nil, &out)
+	return out, err
+}
+
+// SetDeployFreeze calls PUT /api/v1/apps/{name}/deploy-freeze, replacing the
+// app's windows; an empty list clears them.
+func (c *Client) SetDeployFreeze(ctx context.Context, name string, windows []FreezeWindowResource) (DeployFreezeResource, error) {
+	var out DeployFreezeResource
+	if windows == nil {
+		windows = []FreezeWindowResource{}
+	}
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/deploy-freeze", PutDeployFreezeRequest{Windows: windows}, &out)
 	return out, err
 }
 

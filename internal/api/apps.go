@@ -30,7 +30,10 @@ import (
 type appResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
-	Port  int    `json:"port"`
+	// ImageDigest is the content Image is pinned to, or a build's local
+	// image ID; empty for a legacy unpinned tag.
+	ImageDigest string `json:"image_digest,omitempty"`
+	Port        int    `json:"port"`
 	// HostPort pins the host-side port Docker binds Port to
 	// (store.DesiredService.HostPort, migrations/0056). nil means "let
 	// Docker assign one", the ordinary case; a real conflict at deploy
@@ -268,6 +271,7 @@ func toAppResource(svc store.DesiredService) appResource {
 	}
 
 	return appResource{
+		ImageDigest:         appImageDigest(svc),
 		Name:                svc.Name,
 		Image:               svc.Image,
 		Port:                svc.Port,

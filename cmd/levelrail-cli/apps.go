@@ -37,6 +37,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsHookRuns(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+	case "freeze":
+		return runAppsFreeze(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback":
 		return runAppsAutoRollback(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "deploys":
@@ -48,7 +50,7 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "stop":
 		return runAppsStop(prog, args[1:], stdout, stderr, lookupEnv)
 	case "start":
-		return runAppsStart(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsStart(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "delete":
 		return runAppsDelete(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "status":
@@ -156,6 +158,7 @@ func appsUsage(prog string) string {
   %[1]s apps group <name> [flags]   show name's sibling services under the same multi-service app
   %[1]s apps hook-runs <name> [flags]   show the most recent outcome of name's pre/post-deploy hooks
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
+  %[1]s apps freeze set|show|clear <name> [flags]   deploy freeze windows: hold automatic deploys on a cron schedule
   %[1]s apps auto-rollback enable|disable|status <name> [flags]   opt an app into (or out of) automatic rollback when a crashloop alert fires
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state

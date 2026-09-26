@@ -65,9 +65,14 @@ type GPURequest struct {
 // ContainerState is the observed state of a single container, trimmed to
 // the fields a controller actually needs to decide what to do next.
 type ContainerState struct {
-	ID      string
-	Name    string
-	Image   string
+	ID    string
+	Name  string
+	Image string
+	// ImageID is the local image ID the container actually runs, empty
+	// when the transport does not report it.
+	ImageID string
+	// Created is when the container was created, zero when unknown.
+	Created time.Time
 	Running bool
 	// Ports reflects live port bindings. Docker only actually binds a
 	// container's published ports once it's running, so this is empty

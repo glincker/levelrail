@@ -178,6 +178,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 
 	// OAuth settings: GET is AbilityRead, PUT is AbilityRoot, matching
 	// /api/v1/settings/ingress's own tiers.
+	// Global deploy freeze windows apply to every app, so writing them is root-only.
+	mux.HandleFunc("GET /api/v1/settings/deploy-freeze", rt.requireAbility(AbilityRead, rt.handleGetGlobalDeployFreeze))
+	mux.HandleFunc("PUT /api/v1/settings/deploy-freeze", rt.requireAbility(AbilityRoot, rt.handlePutGlobalDeployFreeze))
 	mux.HandleFunc("GET /api/v1/settings/oauth", rt.requireAbility(AbilityRead, rt.handleListOAuthSettings))
 	mux.HandleFunc("PUT /api/v1/settings/oauth/{provider}", rt.requireAbility(AbilityRoot, rt.handleUpdateOAuthProviderSettings))
 
@@ -266,6 +269,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDeployHistory))
 	mux.HandleFunc("GET /api/v1/apps/{name}/auto-rollback", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAutoRollback))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/auto-rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAutoRollback))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-freeze", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppDeployFreeze))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/deploy-freeze", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutAppDeployFreeze))
 
 	// Restart (handleRestartApp's own doc comment): AbilityDeploy, the
 	// same boundary as the deploy trigger above, since forcing a

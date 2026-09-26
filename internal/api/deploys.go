@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -27,6 +26,10 @@ func applicationControllerName(appName string) string {
 type deployTriggerRequest struct {
 	Image   string `json:"image"`
 	Confirm bool   `json:"confirm,omitempty"`
+	// Pull re-resolves the tag against the registry and fails rather than
+	// deploying a cached image when the registry is unreachable.
+	Pull bool `json:"pull,omitempty"`
+	freezeOverride
 }
 
 // deployTriggerResult is POST .../deploys and POST .../promote's shared
@@ -83,6 +86,11 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	note, ok := rt.freezeGate(w, r, name, req.freezeOverride)
+	if !ok {
+		return
+	}
+
 	env, protected, ok := rt.checkEnvironmentProtection(r.Context(), w, existing.EnvironmentID, req.Confirm)
 	if !ok {
 		return
@@ -96,9 +104,13 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := rt.executeConfirmedDeploy(r.Context(), *existing, req.Image)
+	updated, err := rt.executeConfirmedDeploy(r.Context(), *existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note})
 	if err != nil {
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
+		if req.Pull {
+			writeError(w, http.StatusBadGateway, "could not resolve the image from its registry; retry without pull to use the cached image")
+			return
+		}
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -115,14 +127,21 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 // auto-rollback (MaybeAutoRollback) also drives, so a manual deploy, an
 // approved one, and an automatic rollback all converge through identical
 // code, never three divergent ones.
-func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.DesiredService, image string) (store.DesiredService, error) {
-	updated, err := deploy.TriggerImageDeploy(ctx, deployTriggerImageStore{rt}, rt.reconcileNudger, existing, image, store.DeployAttemptSourceImage, rt.logger)
+// confirmedDeployOptions carries a manual deploy's pull and freeze
+// override choices into executeConfirmedDeploy.
+type confirmedDeployOptions struct {
+	pull   bool
+	reason string
+}
+
+func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.DesiredService, image string, opts confirmedDeployOptions) (store.DesiredService, error) {
+	updated, err := rt.imageTrigger(ctx, existing, opts.pull, opts.reason).Deploy(ctx, existing, image)
 	if err != nil {
 		return store.DesiredService{}, err
 	}
 	if rt.deployNotifier != nil {
 		rt.deployNotifier.Dispatch(ctx, resourceIDForApp(existing.Name), alerting.DeployOutcome{
-			AppName: existing.Name, Image: image, Succeeded: true,
+			AppName: existing.Name, Image: updated.Image, Succeeded: true,
 		})
 	}
 	return updated, nil

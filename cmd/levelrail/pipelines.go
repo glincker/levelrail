@@ -47,7 +47,7 @@ func envDuration(name string, def time.Duration) time.Duration {
 // the API router and git webhook path, and runs both until ctx is done.
 func startPipelines(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *store.DB, secretsManager *secrets.Manager, client *docker.Client,
 	registry *agent.Registry, builder *deploy.Pipeline, nudger *reconcile.Engine, dispatcher *alerting.DeployDispatcher, apiRouter *api.Router) {
-	acts := &pipelineActions{db: db, builder: builder, nudger: nudger, notifier: dispatcher, secrets: secretsManager, logger: logger}
+	acts := &pipelineActions{db: db, builder: builder, nudger: nudger, notifier: dispatcher, secrets: secretsManager, logger: logger, resolver: client}
 	cfg := pipeline.Config{
 		Store:      db,
 		Actions:    acts,
@@ -101,6 +101,7 @@ type pipelineActions struct {
 	notifier *alerting.DeployDispatcher
 	secrets  *secrets.Manager
 	logger   *slog.Logger
+	resolver docker.ImageResolver
 }
 
 func (a *pipelineActions) RepoInfo(ctx context.Context, app string) (string, string, error) {
@@ -200,32 +201,47 @@ func (a *pipelineActions) protectedCheck(ctx context.Context, svc *store.Desired
 	return nil
 }
 
-func (a *pipelineActions) push(ctx context.Context, service, image, strategy string, log func(string)) error {
+func (a *pipelineActions) push(ctx context.Context, service, image, strategy string, log func(string)) (store.DesiredService, error) {
 	svc, err := a.db.GetDesiredService(ctx, service)
 	if err != nil {
-		return fmt.Errorf("load service %q: %w", service, err)
+		return store.DesiredService{}, fmt.Errorf("load service %q: %w", service, err)
 	}
 	if err := a.protectedCheck(ctx, svc); err != nil {
-		return err
+		return store.DesiredService{}, err
 	}
 	if strategy != "" {
 		switch strategy {
 		case "rolling", "recreate", "blue-green":
 			svc.Strategy = strategy
 		default:
-			return fmt.Errorf("unknown strategy %q", strategy)
+			return store.DesiredService{}, fmt.Errorf("unknown strategy %q", strategy)
 		}
 	}
+	status, err := deploy.CheckFreeze(ctx, a.db, service, time.Now())
+	if err != nil {
+		return store.DesiredService{}, err
+	}
+	if status.Frozen {
+		id, err := deploy.HoldDeploy(ctx, a.db, service, image, store.DeployAttemptSourceImage, deploy.HeldRequest{Kind: deploy.HeldKindImage, Image: image}, status)
+		if err != nil {
+			return store.DesiredService{}, err
+		}
+		log(fmt.Sprintf("%s is frozen, deploy %s held until the window ends", service, id))
+		return store.DesiredService{}, &deploy.FrozenError{Status: status}
+	}
 	log(fmt.Sprintf("deploying %s to %s", service, image))
-	_, err = deploy.TriggerImageDeploy(ctx, a.db, a.nudger, *svc, image, store.DeployAttemptSourceImage, a.logger)
-	return err
+	return deploy.ImageTrigger{
+		Store: a.db, Nudger: a.nudger, Resolver: a.resolver, Ordered: a.db, Sequencer: a.db,
+		Logger: a.logger, Source: store.DeployAttemptSourceImage, Automatic: true,
+	}.Deploy(ctx, *svc, image)
 }
 
 func (a *pipelineActions) Deploy(ctx context.Context, req pipeline.DeployRequest, log func(string)) error {
-	if err := a.push(ctx, req.Service, req.Image, req.Strategy, log); err != nil {
+	updated, err := a.push(ctx, req.Service, req.Image, req.Strategy, log)
+	if err != nil {
 		return err
 	}
-	return a.waitReady(ctx, req.Service, req.Image, req.Wait, log)
+	return a.waitReady(ctx, req.Service, updated.Image, req.Wait, log)
 }
 
 func (a *pipelineActions) waitReady(ctx context.Context, service, image string, wait time.Duration, log func(string)) error {
@@ -271,7 +287,7 @@ func (a *pipelineActions) Promote(ctx context.Context, from, to string, log func
 	if err != nil {
 		return "", fmt.Errorf("load source service %q: %w", from, err)
 	}
-	if err := a.push(ctx, to, src.Image, "", log); err != nil {
+	if _, err := a.push(ctx, to, src.Image, "", log); err != nil {
 		return "", err
 	}
 	return src.Image, nil
@@ -290,7 +306,7 @@ func (a *pipelineActions) Rollback(ctx context.Context, service string, log func
 	if !ok {
 		return "", fmt.Errorf("no previous successful deploy of %q to roll back to", service)
 	}
-	if err := a.push(ctx, service, image, "", log); err != nil {
+	if _, err := a.push(ctx, service, image, "", log); err != nil {
 		return "", err
 	}
 	return image, nil

@@ -15,7 +15,7 @@ func TestParseBitbucketPushEvent(t *testing.T) {
 		{
 			name: "ordinary push",
 			body: `{"push":{"changes":[{"new":{"type":"branch","name":"main","target":{"hash":"abc123"}},"old":{"type":"branch","name":"main","target":{"hash":"def456"}}}]}}`,
-			want: PushEvent{Ref: "refs/heads/main", After: "abc123"},
+			want: PushEvent{Ref: "refs/heads/main", After: "abc123", Before: "def456"},
 		},
 		{
 			name: "new branch push (no old)",

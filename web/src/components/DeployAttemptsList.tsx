@@ -21,6 +21,8 @@ import {
   DEPLOY_ATTEMPT_STATUS_LABEL,
 } from '../lib/deployAttemptPresentation'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
+import { DigestChip, RolloutChip } from './DeployDigestChips'
+import { unpinnedImage } from '../lib/imageDigest'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -261,9 +263,17 @@ function DeployAttemptRow({
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <p className="truncate font-mono text-sm font-medium text-foreground">
-            {attempt.image}
+          <p
+            className="truncate font-mono text-sm font-medium text-foreground"
+            title={attempt.image}
+          >
+            {unpinnedImage(attempt.image)}
           </p>
+          <DigestChip
+            digest={attempt.image_digest}
+            reason={attempt.digest_reason}
+          />
+          <RolloutChip attempt={attempt} />
           {attempt.commit_sha ? (
             <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-neutral-600 dark:text-muted-foreground">
               {attempt.commit_sha.slice(0, 7)}
@@ -279,6 +289,9 @@ function DeployAttemptRow({
           Started {new Date(attempt.started_at).toLocaleString()} ·{' '}
           {formatDeployDuration(attempt.started_at, attempt.finished_at)}
         </p>
+        {attempt.reason ? (
+          <p className="mt-1 text-xs text-muted-foreground">{attempt.reason}</p>
+        ) : null}
         {attempt.error ? (
           <p className="mt-1 text-xs text-destructive">{attempt.error}</p>
         ) : null}

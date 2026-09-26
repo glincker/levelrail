@@ -37,6 +37,7 @@ const sidebarGroups = [
       { text: 'Pipelines', link: '/pipelines' },
       { text: 'Screenshots', link: '/screenshots' },
       { text: 'Deploying apps', link: '/deploying-apps' },
+      { text: 'Deploy safety', link: '/deploy-safety' },
       { text: 'Managing databases', link: '/managing-databases' },
       { text: 'Observability', link: '/observability' },
       { text: 'Multi-node', link: '/multi-node' },

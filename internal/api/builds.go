@@ -175,6 +175,7 @@ type triggerBuildRequest struct {
 	// the resulting deploy_attempts row (see handleDetectFramework's own
 	// doc comment): this handler never re-runs detection itself.
 	DetectedFramework string `json:"detected_framework,omitempty"`
+	freezeOverride
 }
 
 // triggerBuildResponse is POST /api/v1/apps/{name}/builds's success
@@ -276,6 +277,10 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	freezeNote, ok := rt.freezeGate(w, r, name, req.freezeOverride)
+	if !ok {
+		return
+	}
 
 	buildType := req.Build.Type
 	if buildType == "" {
@@ -361,6 +366,12 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id, progress, finishAttempt, setCommit := rt.beginBuildDeployAttempt(r.Context(), buildReq, *existing, store.DeployAttemptSourceManual, req.DetectedFramework)
+	buildReq.AttemptID = id
+	if freezeNote != "" && id != "" {
+		if err := rt.deploySafety.SetDeployAttemptReason(r.Context(), id, freezeNote); err != nil {
+			rt.logger.Warn("api: record freeze override failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
+		}
+	}
 	rt.buildStartMu.Unlock()
 
 	// AbilityDeploy alone (this route's own gate) is not enough to
