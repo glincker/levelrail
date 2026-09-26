@@ -245,7 +245,7 @@ func (a *Aggregator) fromDeploys(ctx context.Context, logger *slog.Logger, app s
 	}
 	var out []Change
 	for i, at := range attempts {
-		if !inWindow(at.StartedAt, since, until) {
+		if !inWindow(effectiveAt(at), since, until) {
 			continue
 		}
 		var older []store.DeployAttempt
@@ -255,6 +255,15 @@ func (a *Aggregator) fromDeploys(ctx context.Context, logger *slog.Logger, app s
 		out = append(out, attemptChange(at, IsRollbackAttempt(at, older)))
 	}
 	return out
+}
+
+// effectiveAt is when an attempt took effect: its finish time once it
+// succeeded, otherwise its start.
+func effectiveAt(a store.DeployAttempt) time.Time {
+	if a.Status == store.DeployAttemptStatusSucceeded && a.FinishedAt != nil {
+		return a.FinishedAt.UTC()
+	}
+	return a.StartedAt.UTC()
 }
 
 // IsRollbackAttempt reports whether a redeployed an image that an attempt
@@ -302,12 +311,13 @@ func attemptChange(a store.DeployAttempt, rollback bool) Change {
 	if a.ImageDigest != "" {
 		detail = append(detail, "digest "+shortDigest(a.ImageDigest))
 	}
-	c := Change{At: a.StartedAt.UTC(), Kind: kind, Actor: actor, Detail: strings.Join(detail, ", "), Ref: "deploy:" + a.ID}
+	c := Change{At: effectiveAt(a), Kind: kind, Actor: actor, Detail: strings.Join(detail, ", "), Ref: "deploy:" + a.ID}
 	title := fmt.Sprintf("%s to %s", verb, imageName(a.Image))
 	switch a.Status {
 	case store.DeployAttemptStatusSucceeded:
 	case store.DeployAttemptStatusRunning:
 		title += " in progress"
+		c.noEffect = true
 	case store.DeployAttemptStatusFailed:
 		title += " failed"
 		c.noEffect = true
@@ -360,15 +370,23 @@ func auditChange(e store.AuditEntry, prefix string, since, until time.Time) (Cha
 		return Change{}, false
 	}
 	rest, ok := strings.CutPrefix(e.Path, prefix)
-	if !ok {
+	if !ok || strings.HasSuffix(rest, "/check") {
 		return Change{}, false
 	}
 	c := Change{At: at.UTC(), Actor: e.ActorName, Ref: "audit:" + e.ID}
 	switch {
 	case strings.HasPrefix(rest, "loadbalancer"):
 		c.Kind, c.Title = KindLB, "Load balancer "+auditVerb(e.Method)
-	case strings.HasSuffix(rest, "/maintenance"):
-		c.Kind, c.Title = KindMaintenance, "Domain maintenance "+auditVerb(e.Method)
+	case strings.HasPrefix(rest, "domains/"):
+		domain, what, found := strings.Cut(strings.TrimPrefix(rest, "domains/"), "/")
+		if !found || domain == "" {
+			return Change{}, false
+		}
+		c.Kind, c.Detail = KindDomain, domain
+		if what == "maintenance" {
+			c.Kind = KindMaintenance
+		}
+		c.Title = "Domain " + strings.ReplaceAll(what, "-", " ") + " " + auditVerb(e.Method)
 	case rest == "deploy-freeze":
 		c.Kind, c.Title = KindFreeze, "Deploy freeze "+auditVerb(e.Method)
 	default:

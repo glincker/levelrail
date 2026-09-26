@@ -369,6 +369,9 @@ type alertHistoryResource struct {
 	// Changes is set on fired entries when ?include=changes is passed: what
 	// changed on the app in the window before the alert fired.
 	Changes *changes.Result `json:"changes,omitempty"`
+	// ChangesOmitted marks a fired entry past the per-request cap that was
+	// asked for but not filled in; narrow the query with ?limit.
+	ChangesOmitted bool `json:"changes_omitted,omitempty"`
 }
 
 const (
@@ -445,12 +448,17 @@ func (rt *Router) writeAlertHistory(w http.ResponseWriter, r *http.Request, app 
 	withChanges := 0
 	for _, e := range list {
 		var chg *changes.Result
-		if agg != nil && e.Event == alerting.EventFired && e.App != "" && withChanges < alertHistoryChangesMax {
-			res := agg.Collect(r.Context(), e.App, e.At)
-			chg = &res
-			withChanges++
+		omitted := false
+		if agg != nil && e.Event == alerting.EventFired && e.App != "" {
+			if withChanges < alertHistoryChangesMax {
+				res := agg.Collect(r.Context(), e.App, e.At)
+				chg = &res
+				withChanges++
+			} else {
+				omitted = true
+			}
 		}
-		out = append(out, alertHistoryResource{Changes: chg, ID: e.ID, At: e.At.UTC(), RuleID: e.RuleID, RuleName: e.RuleName, RuleKind: e.RuleKind,
+		out = append(out, alertHistoryResource{Changes: chg, ChangesOmitted: omitted, ID: e.ID, At: e.At.UTC(), RuleID: e.RuleID, RuleName: e.RuleName, RuleKind: e.RuleKind,
 			ResourceID: e.ResourceID, App: e.App, Node: e.Node, Severity: e.Severity, Event: e.Event, Outcome: e.Outcome,
 			Detail: e.Detail, SilenceID: e.SilenceID, ChannelID: e.ChannelID, Error: e.Error})
 	}
