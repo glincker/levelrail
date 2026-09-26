@@ -79,7 +79,7 @@ func (s *attestSniffer) scan(r io.Reader) error {
 		if err != nil {
 			return err
 		}
-		if hdr.Typeflag != tar.TypeReg || !strings.HasPrefix(hdr.Name, blobPrefix) || hdr.Size > s.limit {
+		if hdr.Typeflag != tar.TypeReg || !strings.HasPrefix(strings.TrimPrefix(hdr.Name, "./"), blobPrefix) || hdr.Size > s.limit {
 			continue
 		}
 		head := make([]byte, sniffBytes)

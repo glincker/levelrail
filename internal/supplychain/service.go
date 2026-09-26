@@ -16,7 +16,10 @@ import (
 // Store persists supply chain metadata; *SQLStore satisfies it.
 type Store interface {
 	GetSettings(ctx context.Context, app string) (Settings, error)
+	// SaveSettings writes scan_enabled and scan_gate only and clears any override the new gate no longer allows.
 	SaveSettings(ctx context.Context, s Settings) error
+	// ArmOverride arms an override only while the stored gate is block_on_critical with scanning on.
+	ArmOverride(ctx context.Context, app, reason string, at time.Time) (bool, error)
 	// ConsumeOverride returns and clears the armed override if it is newer than notBefore.
 	ConsumeOverride(ctx context.Context, app string, notBefore time.Time) (string, bool, error)
 	SaveRecord(ctx context.Context, r Record) error
@@ -55,8 +58,9 @@ type Service struct {
 	fs   *FileStore
 	now  func() time.Time
 
-	scanMu sync.Mutex
-	opMu   sync.Mutex
+	scanMu     sync.Mutex
+	opMu       sync.Mutex
+	settingsMu sync.Mutex
 }
 
 // Option customizes a Service.
@@ -102,6 +106,8 @@ type SettingsPatch struct {
 
 // SaveSettings applies patch. A gate other than off requires scanning enabled.
 func (s *Service) SaveSettings(ctx context.Context, app string, patch SettingsPatch) (Settings, error) {
+	s.settingsMu.Lock()
+	defer s.settingsMu.Unlock()
 	cur, err := s.deps.Store.GetSettings(ctx, app)
 	if err != nil {
 		return Settings{}, err
@@ -131,48 +137,57 @@ func (s *Service) ArmOverride(ctx context.Context, app, reason string) (Settings
 	if reason == "" {
 		return Settings{}, fmt.Errorf("%w: override reason is required", ErrInvalid)
 	}
-	cur, err := s.deps.Store.GetSettings(ctx, app)
+	s.settingsMu.Lock()
+	defer s.settingsMu.Unlock()
+	armed, err := s.deps.Store.ArmOverride(ctx, app, reason, s.now())
 	if err != nil {
 		return Settings{}, err
 	}
-	if cur.Gate != GateBlockOnCritical {
+	if !armed {
 		return Settings{}, fmt.Errorf("%w: override only applies to scan_gate block_on_critical", ErrInvalid)
 	}
-	cur.OverrideReason, cur.OverrideArmedAt = reason, s.now()
-	if err := s.deps.Store.SaveSettings(ctx, cur); err != nil {
-		return Settings{}, err
-	}
-	return cur, nil
+	return s.deps.Store.GetSettings(ctx, app)
 }
 
 // AfterBuild is the deploy pipeline hook: it stores the build's SBOM and, when
 // the app opted in, scans it and applies the gate. Only a gate block returns
 // an error; every other failure is logged and the release proceeds.
 func (s *Service) AfterBuild(ctx context.Context, app, attemptID string, att build.Attestations) error {
-	if attemptID == "" {
+	if len(att.SBOM) == 0 {
 		return nil
 	}
-	rec, err := s.storeSBOM(ctx, app, attemptID, att)
-	if err != nil {
-		s.log.Warn("supplychain: record sbom failed", slog.String("app", app), slog.String("attempt_id", attemptID), slog.String("error", err.Error()))
+	// rec without an AttemptID is transient: it gates the release but is never persisted.
+	rec := &Record{App: app}
+	if attemptID != "" {
+		stored, err := s.storeSBOM(ctx, app, attemptID, att)
+		if err != nil {
+			s.log.Warn("supplychain: record sbom failed", slog.String("app", app), slog.String("attempt_id", attemptID), slog.String("error", err.Error()))
+		}
+		if stored != nil {
+			rec = stored
+		}
 	}
 	settings, err := s.deps.Store.GetSettings(ctx, app)
 	if err != nil {
 		s.log.Warn("supplychain: load settings failed", slog.String("app", app), slog.String("error", err.Error()))
 		return nil
 	}
-	if !s.cfg.Enabled || !settings.Enabled || rec == nil {
+	if !s.cfg.Enabled || !settings.Enabled {
 		return nil
 	}
-	sbom, err := s.fs.Read(app, attemptID)
-	if err != nil {
-		return nil
-	}
-	scan, scanErr := s.scanAndStore(ctx, rec, sbom)
+	scan, scanErr := s.scanAndStore(ctx, rec, att.SBOM)
 	if scanErr != nil {
 		s.log.Warn("supplychain: scan failed, release allowed", slog.String("app", app), slog.String("attempt_id", attemptID), slog.String("error", scanErr.Error()))
 	}
 	return s.applyGate(ctx, settings, rec, scan)
+}
+
+// persist saves rec unless it is transient.
+func (s *Service) persist(ctx context.Context, rec Record) error {
+	if rec.AttemptID == "" {
+		return nil
+	}
+	return s.deps.Store.SaveRecord(ctx, rec)
 }
 
 func (s *Service) applyGate(ctx context.Context, settings Settings, rec *Record, scan *ScanSummary) error {
@@ -187,7 +202,7 @@ func (s *Service) applyGate(ctx context.Context, settings Settings, rec *Record,
 	}
 	d := Decide(settings.Gate, scan, override)
 	rec.GateAction, rec.GateReason = d.Action, d.Reason
-	if err := s.deps.Store.SaveRecord(ctx, *rec); err != nil {
+	if err := s.persist(ctx, *rec); err != nil {
 		s.log.Warn("supplychain: save gate decision failed", slog.String("app", rec.App), slog.String("attempt_id", rec.AttemptID), slog.String("error", err.Error()))
 	}
 	if d.Blocked() {
@@ -226,13 +241,13 @@ func (s *Service) scanAndStore(ctx context.Context, rec *Record, sbom []byte) (*
 	rec.ScannedAt, rec.Scanner = s.now(), s.cfg.Scanner
 	if err != nil {
 		rec.ScanStatus, rec.ScanError, rec.Scan = ScanFailed, err.Error(), nil
-		if serr := s.deps.Store.SaveRecord(ctx, *rec); serr != nil {
+		if serr := s.persist(ctx, *rec); serr != nil {
 			s.log.Warn("supplychain: save scan failure failed", slog.String("attempt_id", rec.AttemptID), slog.String("error", serr.Error()))
 		}
 		return nil, err
 	}
 	rec.ScanStatus, rec.ScanError, rec.Scan = ScanOK, "", &sum
-	if err := s.deps.Store.SaveRecord(ctx, *rec); err != nil {
+	if err := s.persist(ctx, *rec); err != nil {
 		return &sum, fmt.Errorf("supplychain: save scan result: %w", err)
 	}
 	return &sum, nil
