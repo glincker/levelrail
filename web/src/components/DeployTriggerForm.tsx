@@ -374,7 +374,13 @@ function BuildFromSourceForm({ appName }: { appName: string }) {
 // image" (the original path) stays the default tab: it is the faster,
 // already-working path for anyone with a registry set up, and this
 // change must not make it harder to reach.
-export function DeployTriggerForm({ appName }: { appName: string }) {
+export function DeployTriggerForm({
+  appName,
+  defaultTab = 'existing-image',
+}: {
+  appName: string
+  defaultTab?: 'existing-image' | 'build-from-source'
+}) {
   return (
     <Card id="deploy-trigger-form" className="ring-primary/20">
       <CardHeader>
@@ -388,7 +394,7 @@ export function DeployTriggerForm({ appName }: { appName: string }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="existing-image">
+        <Tabs defaultValue={defaultTab}>
           <TabsList>
             <TabsTrigger value="existing-image">
               <RocketIcon className="size-3.5" data-icon="inline-start" />

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { DialogControl } from './dialogControl'
 import { RocketLaunchIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -48,11 +49,18 @@ const AUTO_DETECT_VALUE = '__auto__'
 export function PromoteAppDialog({
   appName,
   projectId,
+  control,
 }: {
   appName: string
   projectId?: string
+  control?: DialogControl
 }) {
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = control?.open ?? internalOpen
+  const setOpen = (next: boolean) => {
+    setInternalOpen(next)
+    control?.onOpenChange?.(next)
+  }
   const [environmentId, setEnvironmentId] = useState('')
   const [target, setTarget] = useState('')
   const [ackProtected, setAckProtected] = useState(false)
@@ -116,12 +124,14 @@ export function PromoteAppDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
-        render={<Button type="button" variant="outline" size="sm" />}
-      >
-        <RocketLaunchIcon className="size-3.5" aria-hidden="true" />
-        Promote to...
-      </DialogTrigger>
+      {control?.hideTrigger ? null : (
+        <DialogTrigger
+          render={<Button type="button" variant="outline" size="sm" />}
+        >
+          <RocketLaunchIcon className="size-3.5" aria-hidden="true" />
+          Promote to...
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Promote &ldquo;{appName}&rdquo;</DialogTitle>

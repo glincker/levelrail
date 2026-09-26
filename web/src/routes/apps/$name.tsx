@@ -109,6 +109,9 @@ function AppDetailLayout() {
       s.location.pathname.endsWith('/overview') ||
       s.location.pathname.endsWith('/deploys'),
   })
+  const isOverview = useRouterState({
+    select: (s) => s.location.pathname.endsWith('/overview'),
+  })
   const section = useRouterState({
     select: (s) => s.location.pathname.split('/').filter(Boolean).pop(),
   })
@@ -126,27 +129,35 @@ function AppDetailLayout() {
           page={section ? APP_SECTION_LABELS[section] : undefined}
         />
       </div>
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold text-foreground">{app.name}</h1>
-          <Badge variant={status.variant}>{status.label}</Badge>
-          <ConvergenceIndicator conditions={conditions} />
-        </div>
-        <div className="flex items-center gap-2">
-          <StopStartAppButton name={app.name} suspended={app.suspended} />
-          <RestartAppButton name={app.name} />
-          <RedeployAppButton name={app.name} image={app.image} />
-          <PromoteAppDialog appName={app.name} projectId={app.project_id} />
-          <CloneAppDialog name={app.name} />
-          <DeleteAppDialog name={app.name} />
-        </div>
-      </div>
+      {isOverview ? null : (
+        <>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-semibold text-foreground">
+                {app.name}
+              </h1>
+              <Badge variant={status.variant}>{status.label}</Badge>
+              <ConvergenceIndicator conditions={conditions} />
+            </div>
+            <div className="flex items-center gap-2">
+              <StopStartAppButton name={app.name} suspended={app.suspended} />
+              <RestartAppButton name={app.name} />
+              <RedeployAppButton name={app.name} image={app.image} />
+              <PromoteAppDialog appName={app.name} projectId={app.project_id} />
+              <CloneAppDialog name={app.name} />
+              <DeleteAppDialog name={app.name} />
+            </div>
+          </div>
 
-      <TagsControl appName={app.name} tags={app.tags} />
+          <TagsControl appName={app.name} tags={app.tags} />
+        </>
+      )}
 
       <PendingDeployApprovalBanner appName={app.name} />
 
-      {showDeployTrigger ? <DeployTriggerForm appName={app.name} /> : null}
+      {showDeployTrigger && !isOverview ? (
+        <DeployTriggerForm appName={app.name} />
+      ) : null}
 
       <Outlet />
     </div>

@@ -1,31 +1,10 @@
 import { lazy, Suspense } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
-import {
-  GaugeIcon,
-  StackIcon,
-  BookOpenIcon,
-  DatabaseIcon,
-  SignOutIcon,
-  HardDrivesIcon,
-  GearIcon,
-  FolderIcon,
-  GlobeIcon,
-  CloudArrowUpIcon,
-  RobotIcon,
-  GavelIcon,
-  TreeStructureIcon,
-  HeartbeatIcon,
-  CpuIcon,
-  ArrowsSplitIcon,
-  BellIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { SignOutIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -36,8 +15,7 @@ import { Button } from '@/components/ui/button'
 import { useBrand } from '../hooks/useBrand'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { useLogout } from '../queries/auth'
-import { useAttentionItems } from '../queries/attention'
-import { useDeployApprovalsOptional } from '../queries/deployApprovals'
+import { GlobalNav } from './shell/GlobalNav'
 
 // Lazy: exactly one of these three renders at a time (mutually exclusive
 // by pathname below), so a session that never visits /databases or
@@ -90,14 +68,6 @@ export function AppSidebar() {
   const scopedAppName = pathname.match(APP_SCOPE_PATTERN)?.[1]
   const scopedDatabaseName = pathname.match(DATABASE_SCOPE_PATTERN)?.[1]
   const isSettingsScoped = SETTINGS_SCOPE_PATTERN.test(pathname)
-  // Optional convenience only, the same graceful-degradation shape
-  // useImageTagsOptional's own doc comment establishes: a failure or
-  // empty result here must never block the sidebar rendering, so the
-  // badge simply doesn't show rather than surfacing a loading/error
-  // state of its own.
-  const pendingApprovals = useDeployApprovalsOptional('pending')
-  const pendingApprovalCount = pendingApprovals.data?.length ?? 0
-  const attentionCount = useAttentionItems().items.length
 
   return (
     <Sidebar collapsible="icon" variant="floating">
@@ -136,196 +106,7 @@ export function AppSidebar() {
             <SettingsScopedSidebar />
           </Suspense>
         ) : (
-          <>
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/" />}
-                      isActive={pathname === '/'}
-                      tooltip="Dashboard"
-                    >
-                      <GaugeIcon />
-                      <span>Dashboard</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/status" />}
-                      isActive={pathname.startsWith('/status')}
-                      tooltip="Status"
-                    >
-                      <HeartbeatIcon />
-                      <span>Status</span>
-                      {attentionCount > 0 ? (
-                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white group-data-[collapsible=icon]:hidden">
-                          {attentionCount}
-                        </span>
-                      ) : null}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/apps" />}
-                      isActive={pathname.startsWith('/apps')}
-                      tooltip="Apps"
-                    >
-                      <StackIcon />
-                      <span>Apps</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/databases" />}
-                      isActive={pathname.startsWith('/databases')}
-                      tooltip="Databases"
-                    >
-                      <DatabaseIcon />
-                      <span>Databases</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/models" />}
-                      isActive={pathname.startsWith('/models')}
-                      tooltip="AI models"
-                    >
-                      <CpuIcon />
-                      <span>AI models</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/projects" />}
-                      isActive={pathname.startsWith('/projects')}
-                      tooltip="Projects"
-                    >
-                      <FolderIcon />
-                      <span>Projects</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/nodes" />}
-                      isActive={pathname.startsWith('/nodes')}
-                      tooltip="Nodes"
-                    >
-                      <HardDrivesIcon />
-                      <span>Nodes</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/domains" />}
-                      isActive={pathname.startsWith('/domains')}
-                      tooltip="Domains"
-                    >
-                      <GlobeIcon />
-                      <span>Domains</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/loadbalancers" />}
-                      isActive={pathname.startsWith('/loadbalancers')}
-                      tooltip="Load balancers"
-                    >
-                      <ArrowsSplitIcon />
-                      <span>Load balancers</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/backups" />}
-                      isActive={pathname.startsWith('/backups')}
-                      tooltip="Backups"
-                    >
-                      <CloudArrowUpIcon />
-                      <span>Backups</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/approvals" />}
-                      isActive={pathname.startsWith('/approvals')}
-                      tooltip="Deploy approvals"
-                    >
-                      <GavelIcon />
-                      <span>Deploy approvals</span>
-                      {pendingApprovalCount > 0 ? (
-                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white group-data-[collapsible=icon]:hidden">
-                          {pendingApprovalCount}
-                        </span>
-                      ) : null}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  {/* pipelines overview */}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/pipelines" />}
-                      isActive={pathname.startsWith('/pipelines')}
-                      tooltip="Pipelines"
-                    >
-                      <TreeStructureIcon />
-                      <span>Pipelines</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/alerts" />}
-                      isActive={pathname.startsWith('/alerts')}
-                      tooltip="Alerts"
-                    >
-                      <BellIcon />
-                      <span>Alerts</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/ai-assistant" />}
-                      isActive={pathname.startsWith('/ai-assistant')}
-                      tooltip="AI Assistant"
-                    >
-                      <RobotIcon />
-                      <span>AI Assistant</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            {/* Single entry point into the settings hub; the grouped
-                sub-nav (SettingsScopedSidebar) takes over once inside
-                /settings/*. */}
-            <SidebarGroup className="mt-auto">
-              <SidebarGroupLabel>Settings</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/settings" />}
-                      isActive={pathname.startsWith('/settings')}
-                      tooltip="Settings"
-                    >
-                      <GearIcon />
-                      <span>Settings</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/help" />}
-                      isActive={pathname.startsWith('/help')}
-                      tooltip="Documentation"
-                    >
-                      <BookOpenIcon />
-                      <span>Documentation</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
+          <GlobalNav />
         )}
       </SidebarContent>
 
