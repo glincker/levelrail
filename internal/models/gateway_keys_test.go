@@ -169,6 +169,58 @@ func TestGateway_TPMSoftLimit(t *testing.T) {
 	}
 }
 
+func TestKeyLimiter_DailyTokenBudget(t *testing.T) {
+	tests := []struct {
+		name     string
+		tpd      int
+		used     int64
+		elapsed  time.Duration
+		wantOK   bool
+		wantWait time.Duration
+	}{
+		{"under budget", 100, 99, time.Hour, true, 0},
+		{"at budget blocks", 100, 100, time.Hour, false, 23 * time.Hour},
+		{"window resets after a day", 100, 100, 25 * time.Hour, true, 0},
+		{"unlimited", 0, 1 << 40, time.Hour, true, 0},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var l keyLimiter
+			start := time.Now()
+			k := store.ModelKey{ID: "k", TPD: tc.tpd}
+			rel, _, ok := l.acquire(k, start)
+			if !ok {
+				t.Fatal("first acquire failed")
+			}
+			rel()
+			l.addTokens("k", tc.used, start)
+			rel, wait, ok := l.acquire(k, start.Add(tc.elapsed))
+			if ok != tc.wantOK {
+				t.Fatalf("ok = %v, want %v", ok, tc.wantOK)
+			}
+			if ok {
+				rel()
+				return
+			}
+			if wait != tc.wantWait {
+				t.Errorf("wait = %v, want %v", wait, tc.wantWait)
+			}
+		})
+	}
+}
+
+func TestGateway_TPDLimit(t *testing.T) {
+	key, k := mkKey(t, "a", func(k *store.ModelKey) { k.TPD = 10 })
+	gw := gatewayFor(t, okUpstream(), k)
+	if got := call(gw, key, "/v1/chat/completions", `{}`).Code; got != 200 {
+		t.Fatalf("first = %d", got)
+	}
+	rec := call(gw, key, "/v1/chat/completions", `{}`)
+	if rec.Code != http.StatusTooManyRequests || rec.Header().Get("Retry-After") == "" {
+		t.Errorf("after the daily budget = %d, retry-after %q", rec.Code, rec.Header().Get("Retry-After"))
+	}
+}
+
 func TestGateway_InvalidateDropsRevokedKey(t *testing.T) {
 	key, k := mkKey(t, "a", nil)
 	st := &mutableKeys{keyedStore: keyedStore{models: []store.Model{{Name: "chat", Domain: "chat.example.com", EndpointDial: "127.0.0.1:1"}}, keys: []store.ModelKey{k}}}

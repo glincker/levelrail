@@ -57,13 +57,13 @@ func TestModelKeys_Flow(t *testing.T) {
 	}
 
 	rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models/chat/keys",
-		`{"name":"ci","rpm":30,"tpm":5000,"max_parallel":2,"allow_paths":["/v1/chat/completions"],"allow_models":["llama3.1:8b"]}`)
+		`{"name":"ci","rpm":30,"tpm":5000,"tpd":90000,"max_parallel":2,"allow_paths":["/v1/chat/completions"],"allow_models":["llama3.1:8b"]}`)
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("create key = %d %s", rec.Code, rec.Body.String())
 	}
 	var created createdModelKeyResource
 	_ = json.Unmarshal(rec.Body.Bytes(), &created)
-	if !strings.HasPrefix(created.APIKey, "lr-") || created.KeyPrefix != created.APIKey[:8] || created.RPM != 30 || created.Status != "active" {
+	if !strings.HasPrefix(created.APIKey, "lr-") || created.KeyPrefix != created.APIKey[:8] || created.RPM != 30 || created.TPD != 90000 || created.CreatedBy == "" || created.Status != "active" {
 		t.Errorf("created = %+v", created)
 	}
 

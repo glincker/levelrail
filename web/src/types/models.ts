@@ -85,6 +85,7 @@ export interface ModelKey {
   status: ModelKeyStatus
   rpm: number
   tpm: number
+  tpd: number
   max_parallel: number
   allow_paths: string[]
   allow_models: string[]
@@ -94,6 +95,7 @@ export interface ModelKey {
   expires_at?: string
   revoked_at?: string
   last_used_at?: string
+  created_by?: string
 }
 
 export interface CreatedModelKey extends ModelKey {
@@ -105,6 +107,7 @@ export interface CreateModelKeyRequest {
   expires_at?: string
   rpm?: number
   tpm?: number
+  tpd?: number
   max_parallel?: number
   allow_paths?: string[]
   allow_models?: string[]
