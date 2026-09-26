@@ -311,6 +311,7 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 	fs.StringVar(&notifyURL, "notify-url", "", "legacy alternative to --channel-id: a raw webhook URL/destination")
 	fs.StringVar(&notifyKind, "notify-kind", "", "legacy alternative to --channel-id: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat")
 	fs.BoolVar(&disabled, "disabled", false, "create the rule disabled (default: enabled)")
+	noise := registerAlertNoiseFlags(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsAlertsCreateUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -338,6 +339,10 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		Enabled:            !disabled,
 		BackupResourceKind: backupFields.ResourceKind, BackupDatabaseName: backupFields.DatabaseName,
 		BackupServiceName: backupFields.ServiceName, BackupVolumeName: backupFields.VolumeName,
+	}
+
+	if err := noise.apply(&req); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
@@ -408,7 +413,7 @@ Flags:
   --notify-url string                  legacy alternative to --channel-id
   --notify-kind string                 legacy alternative to --channel-id
   --disabled                           create the rule disabled (default: enabled)
-  --token string                       API token (default: %[2]s env var, then the credentials file)
+`+alertNoiseFlagsUsage+`  --token string                       API token (default: %[2]s env var, then the credentials file)
   --api-url string                    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string                    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                                 print the created rule as JSON to stdout, nothing else
@@ -449,6 +454,7 @@ func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, l
 	fs.StringVar(&notifyURL, "notify-url", "", "legacy alternative to --channel-id: a raw webhook URL/destination")
 	fs.StringVar(&notifyKind, "notify-kind", "", "legacy alternative to --channel-id: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat")
 	fs.BoolVar(&disabled, "disabled", false, "leave the rule disabled (default: enabled)")
+	noise := registerAlertNoiseFlags(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsAlertsUpdateUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -477,6 +483,10 @@ func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, l
 		Enabled:            !disabled,
 		BackupResourceKind: backupFields.ResourceKind, BackupDatabaseName: backupFields.DatabaseName,
 		BackupServiceName: backupFields.ServiceName, BackupVolumeName: backupFields.VolumeName,
+	}
+
+	if err := noise.apply(&req); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
@@ -531,7 +541,7 @@ Flags:
   --notify-url string                  legacy alternative to --channel-id
   --notify-kind string                 legacy alternative to --channel-id
   --disabled                           leave the rule disabled (default: enabled)
-  --token string                       API token (default: %[2]s env var, then the credentials file)
+`+alertNoiseFlagsUsage+`  --token string                       API token (default: %[2]s env var, then the credentials file)
   --api-url string                    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string                    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                                 print the updated rule as JSON to stdout, nothing else

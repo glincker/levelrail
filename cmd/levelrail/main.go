@@ -286,6 +286,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "restore" {
+		if err := runRestore(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdout, os.LookupEnv); err != nil {
+			logger.Error("restore failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "setup-token" {
 		if err := runSetupToken(context.Background(), os.Stdout, openStore); err != nil {
 			logger.Error("setup-token failed", slog.String("error", err.Error()))
@@ -621,6 +628,7 @@ func run(logger *slog.Logger) error {
 	configureNodeCerts(apiRouter, agentServer)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
+	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
@@ -793,8 +801,14 @@ func run(logger *slog.Logger) error {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
-	if controlPlaneBackupInterval(logger) > 0 {
-		alertingEngine.SetControlPlaneBackups(cpbackup.NewManager(db, agentDataDir), 0)
+	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))
+	go func() {
+		if err := apiRouter.RunStatusPageSampler(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("status page sampler stopped", slog.String("error", err.Error()))
+		}
+	}()
+	if localScheduled := controlPlaneBackupInterval(logger) > 0; localScheduled || cpDR != nil {
+		alertingEngine.SetControlPlaneBackups(cpbackup.AlertSource{Local: cpbackup.NewManager(db, agentDataDir), Svc: cpDR, LocalScheduled: localScheduled}, 0)
 	}
 	// db satisfies alerting.AutoRollbackStore structurally (it already
 	// satisfies deploy.ImageDeployStore, plus GetDesiredService/
@@ -1900,6 +1914,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
 		api.WithRequestSummaryWindow(requestSummaryWindow()),
 		api.WithAlertRules(alertingDB),
+		api.WithAlertNoise(alertingDB),
+		api.WithStatusPage(db, statusPageConfig(logger), statusPageRateLimit(logger)),
 		api.WithDeployNotifyTargets(alertingDB),
 		api.WithDeployNotifier(deployDispatcher),
 		api.WithNotificationChannels(alertingDB),
@@ -2206,7 +2222,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
 	opts = append(opts, api.WithModels(modelSvc))
 	rt := api.NewRouter(logger, b, db, opts...)
-	return modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, web.Handler())), rt
+	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, web.Handler()))), rt
 }
 
 // composeMux wires the three top-level handlers rootHandler serves
@@ -2229,6 +2245,7 @@ func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler
 	mux.Handle("/healthz", apiHandler)
 	mux.Handle("/readyz", apiHandler)
 	mux.Handle("/api/", apiHandler)
+	mux.Handle("/public/", apiHandler)
 	if webhookHandler != nil {
 		mux.Handle("POST /webhook", webhookHandler)
 	}

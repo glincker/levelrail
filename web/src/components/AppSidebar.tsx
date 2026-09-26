@@ -17,6 +17,7 @@ import {
   HeartbeatIcon,
   CpuIcon,
   ArrowsSplitIcon,
+  BellIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -268,6 +269,16 @@ export function AppSidebar() {
                     >
                       <TreeStructureIcon />
                       <span>Pipelines</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/alerts" />}
+                      isActive={pathname.startsWith('/alerts')}
+                      tooltip="Alerts"
+                    >
+                      <BellIcon />
+                      <span>Alerts</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>

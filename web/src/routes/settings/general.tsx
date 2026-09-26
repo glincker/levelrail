@@ -36,6 +36,7 @@ import {
 import type { CertificateStatus } from '../../queries/certificates'
 import { CleanUpDockerDialog } from '../../components/CleanUpDockerDialog'
 import { ControlPlaneBackupsCard } from '../../components/ControlPlaneBackupsCard'
+import { ControlPlaneDrCard } from '../../components/ControlPlaneDrCard'
 import { OrphanedVolumesCard } from '../../components/OrphanedVolumesCard'
 import { RotateMasterKeyDialog } from '../../components/RotateMasterKeyDialog'
 import { SecretBindingCard } from '../../components/SecretBindingCard'
@@ -442,6 +443,8 @@ function GeneralSettingsPage() {
       <OrphanedVolumesCard />
 
       <ControlPlaneBackupsCard />
+
+      <ControlPlaneDrCard />
 
       <CertificatesCard />
 

@@ -92,6 +92,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runRegistry(prog, args[1:], stdout, stderr, lookupEnv)
 	case "channels":
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
+	case "alerts":
+		return runAlerts(prog, args[1:], stdout, stderr, lookupEnv)
+	case "status-page":
+		return runStatusPage(prog, args[1:], stdout, stderr, lookupEnv)
 	case "shared-env":
 		return runSharedEnv(prog, args[1:], stdout, stderr, lookupEnv)
 	case "storage":
@@ -110,6 +114,12 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runPipelines(prog, args[1:], stdout, stderr, lookupEnv)
 	case "lb":
 		return runLB(prog, args[1:], stdout, stderr, lookupEnv)
+	case "apply":
+		return runApply(prog, args[1:], stdout, stderr, lookupEnv)
+	case "diff":
+		return runDiff(prog, args[1:], stdout, stderr, lookupEnv)
+	case "export":
+		return runExport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "nodes":
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
@@ -200,6 +210,8 @@ Usage:
   %[1]s cloudflare-tunnel get|set|disconnect [flags]   expose the control plane through a Cloudflare Tunnel
   %[1]s vault get|set|disconnect [flags]               configure resolving app secrets from an external HashiCorp Vault
   %[1]s channels list|create|delete|test [flags]           manage notification channels (Slack, Discord, Telegram, email, Pushover, webhook)
+  %[1]s alerts silences|silence|maintenance|history        mute alerts, schedule maintenance windows, review alert history
+  %[1]s status-page get|set|preview|components|incidents    manage the opt-in public status page
   %[1]s shared-env list|set|delete --scope SCOPE --id ID [flags]   manage project/organization/environment-scoped shared env vars, plain or secret
   %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations
   %[1]s storage providers|list|add|test|delete [flags]   manage S3-compatible storage destinations (AWS S3, R2, B2, MinIO, Wasabi, custom)
@@ -210,6 +222,9 @@ Usage:
   %[1]s pipelines list|validate|save|delete|run|runs|logs|cancel|approve [flags]   CI/CD pipelines: run, watch, approve, cancel
   %[1]s tags list|create|delete|apps [flags]                  manage tags, always identified by name, arbitrary labels for organizing and filtering apps
   %[1]s lb show|set|clear|status|export|import <app> [flags]  load balancer across an app's replicas: config, live upstreams, terraform/cdk/cloudformation/caddy export
+  %[1]s apply -f file|dir|- [--dry-run] [--prune --source S] [flags]   converge to YAML resource files: plan, diff, apply
+  %[1]s diff -f dir [flags]                                    drift between the files and live state, exit 2 when they differ
+  %[1]s export [--project P] [--app A] [-o dir|-] [flags]      write live state as stable resource files
   %[1]s apps tag <name> <tag> [flags]                          attach a tag (by name) to an app
   %[1]s apps untag <name> <tag> [flags]                        detach a tag (by name) from an app
   %[1]s nodes list|get|delete [flags]                        manage nodes

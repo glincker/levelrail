@@ -72,6 +72,7 @@
 package api
 
 import (
+	"github.com/GLINCKER/levelrail/internal/statuspage"
 	"log/slog"
 	"sync"
 	"time"
@@ -113,6 +114,13 @@ type Router struct {
 	requestSummaryWindow   time.Duration      // 0 keeps defaultRequestSummaryWindow
 	alertRules             AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
 	lb                     lbDeps             // zero value is valid: load balancer routes return 501
+	iac                    iacDeps            // zero value is valid: lazily builds the in-process handler apply calls
+	alertNoise             AlertNoise         // nil is valid: silence, maintenance window and alert history routes return 501
+	statusPage             StatusPageStore    // nil is valid: status page routes return 501 and the public page stays off
+	statusView             StatusPageViewer
+	statusSampler          *statuspage.Service
+	statusLimiter          *apiRateLimiter
+	statusHost             statusHostCache
 	sessions               *sessionStore
 	logins                 *loginLimiter
 	recoveryCodes          RecoveryCodeStore // always set, same "core Store interface" shape as auth above
@@ -422,6 +430,8 @@ type Router struct {
 
 	cpBackups           ControlPlaneBackupManager // nil is valid: /system/backups routes return 501
 	cpBackupScheduleOff bool                      // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
+	cpDR                ControlPlaneDR            // nil is valid: /system/control-plane-dr routes return 501
+	cpDRMaterial        EscrowMaterialReader
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.

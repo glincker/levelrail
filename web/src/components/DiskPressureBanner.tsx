@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import { WarningCircleIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Alert,
@@ -10,7 +10,12 @@ import { Button } from '@/components/ui/button'
 import { assessDiskPressure } from '../lib/diskPressure'
 import { formatBytes } from '../lib/format'
 import { useDockerHealthPoll } from '../queries/systemStatus'
-import { CleanUpDockerDialog } from './CleanUpDockerDialog'
+
+const CleanUpDockerDialog = lazy(() =>
+  import('./CleanUpDockerDialog').then((m) => ({
+    default: m.CleanUpDockerDialog,
+  })),
+)
 
 export function DiskPressureBanner() {
   const { data } = useDockerHealthPoll()
@@ -44,7 +49,9 @@ export function DiskPressureBanner() {
           : ''}
         Builds and deploys may fail if it runs out.
         <span className="mt-2 block">
-          <CleanUpDockerDialog />
+          <Suspense fallback={null}>
+            <CleanUpDockerDialog />
+          </Suspense>
         </span>
       </AlertDescription>
       <AlertAction>
