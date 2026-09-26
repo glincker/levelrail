@@ -34,6 +34,12 @@ func runLB(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 		return runLBClear(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
 		return runLBStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "check":
+		return runLBCheck(prog, args[1:], stdout, stderr, lookupEnv)
+	case "history":
+		return runLBHistory(prog, args[1:], stdout, stderr, lookupEnv)
+	case "upstream":
+		return runLBUpstream(prog, args[1:], stdout, stderr, lookupEnv)
 	case "export":
 		return runLBExport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "import":
@@ -52,6 +58,9 @@ func lbUsage(prog string) string {
   %[1]s lb set <app> [--algorithm ...] [flags]         create or change the load balancer (only the flags you pass change)
   %[1]s lb clear <app> [flags]                         remove the load balancer, back to a single upstream
   %[1]s lb status <app> [flags]                        live upstream table: health, active requests, last check
+  %[1]s lb check <app> [flags]                         probe every upstream once, right now
+  %[1]s lb history <app> [--limit N] [flags]           recent checks and state changes per upstream
+  %[1]s lb upstream <app> <id> --state S [flags]       set an upstream active, draining or disabled
   %[1]s lb export <app> --format FORMAT [--out FILE]   generate terraform, cdk, cloudformation, caddy or caddy-json
   %[1]s lb import <app> --file app.yaml [--service S]  load the loadbalancer: block of an app.yaml
 

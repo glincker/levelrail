@@ -117,8 +117,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 84 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 84 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 87 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 87 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -214,6 +214,9 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/deploy-freeze | AbilityDeploy | handlePutAppDeployFreeze |
 | POST | /api/v1/apps/{name}/preflight | AbilityRead | handlePreflightApp |
 | GET | /api/v1/apps/{name}/requests | AbilityRead | handleQueryRequests |
+| GET | /api/v1/apps/{name}/loadbalancer/history | AbilityRead | handleLoadBalancerHistory |
+| POST | /api/v1/apps/{name}/loadbalancer/check | AbilityWrite | handleLoadBalancerCheck |
+| PUT | /api/v1/apps/{name}/loadbalancer/upstreams/{id} | AbilityWrite | handleSetLoadBalancerUpstream |
 
 :::
 

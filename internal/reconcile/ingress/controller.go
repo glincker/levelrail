@@ -588,6 +588,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancers: %w", err)
 	}
+	lbAdmin, err := c.lbAdminStates(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancer admin states: %w", err)
+	}
 	var lbPlans []lbPlan
 	now := time.Now()
 
@@ -675,7 +679,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		var dial string
 		var ok bool
 		if lbCfg, balanced := lbConfigs[svc.Name]; balanced {
-			plan := c.planLoadBalancer(ctx, svc, lbCfg, now)
+			plan := c.planLoadBalancer(ctx, svc, lbCfg, lbAdmin[svc.Name], now)
 			lbPlans = append(lbPlans, plan)
 			if lb, ok = plan.route, plan.route != nil; ok {
 				dial = lb.Upstreams[0]

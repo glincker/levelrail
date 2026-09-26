@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer/lbexport"
@@ -31,13 +30,14 @@ type lbDeps struct {
 	registry *loadbalancer.Registry
 	stats    loadbalancer.StatsSource
 	prober   loadbalancer.Prober
+	gate     *loadbalancer.CheckGate
 }
 
 // WithLoadBalancers enables the /api/v1/apps/{name}/loadbalancer routes.
 // registry and stats feed the live status route and may be nil.
 func WithLoadBalancers(s LoadBalancerStore, registry *loadbalancer.Registry, stats loadbalancer.StatsSource) Option {
 	return func(rt *Router) {
-		rt.lb = lbDeps{store: s, registry: registry, stats: stats, prober: loadbalancer.HTTPProber{}}
+		rt.lb = lbDeps{store: s, registry: registry, stats: stats, prober: loadbalancer.HTTPProber{}, gate: loadbalancer.CheckGateFromEnv()}
 	}
 }
 
@@ -221,24 +221,20 @@ func (rt *Router) handleLoadBalancerStatus(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "load balancer not configured")
 		return
 	}
-	var obs loadbalancer.Observation
-	if rt.lb.registry != nil {
-		obs, _ = rt.lb.registry.Get(name)
+	obs, observed, err := rt.lbObservation(r.Context(), name, cfg)
+	if err != nil {
+		rt.internalError(w, "api: load balancer admin states failed", err)
+		return
 	}
-	if obs.Service == "" {
+	if !observed {
 		writeJSON(w, http.StatusOK, loadbalancer.Status{Service: name, Algorithm: cfg.EffectiveAlgorithm(), Reason: "Pending", Message: "no reconcile pass has observed this load balancer yet", Upstreams: []loadbalancer.UpstreamStatus{}})
 		return
 	}
-	obs.Config = *cfg
-	var stats map[string]loadbalancer.Stats
-	if rt.lb.stats != nil {
-		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
-		defer cancel()
-		if s, err := rt.lb.stats.UpstreamStats(ctx); err == nil {
-			stats = s
-		}
+	st := loadbalancer.BuildStatus(r.Context(), obs, rt.lbStats(r.Context()), rt.lb.prober)
+	if rt.lb.registry != nil {
+		rt.lb.registry.RecordStatus(&st)
 	}
-	writeJSON(w, http.StatusOK, loadbalancer.BuildStatus(r.Context(), obs, stats, rt.lb.prober))
+	writeJSON(w, http.StatusOK, st)
 }
 
 // handleExportLoadBalancer handles GET /api/v1/apps/{name}/loadbalancer/export.
