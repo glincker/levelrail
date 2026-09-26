@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -48,18 +49,14 @@ func (rt *Router) handleListFailedDeploys(w http.ResponseWriter, r *http.Request
 }
 
 // appVisibilityFilter returns a predicate reporting whether the caller can
-// read an app, reusing visibleAppNames (nil means every app is visible).
+// read an app by name, so rows for since-deleted apps are still judged by IAM.
 func (rt *Router) appVisibilityFilter(r *http.Request) (func(app string) bool, error) {
-	visible, err := rt.visibleAppNames(r)
+	canRead, filtered, err := rt.callerAppVisibility(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("resolve caller visibility: %w", err)
 	}
-	if visible == nil {
+	if !filtered {
 		return func(string) bool { return true }, nil
 	}
-	set := make(map[string]struct{}, len(visible))
-	for _, n := range visible {
-		set[n] = struct{}{}
-	}
-	return func(app string) bool { _, ok := set[app]; return ok }, nil
+	return canRead, nil
 }
