@@ -30,11 +30,13 @@ export interface TrafficStats {
   p95Series: number[]
 }
 
-function windowStats(points: RequestPoint[]): WindowStats {
+function windowStats(
+  points: RequestPoint[],
+  windowMinutes: number,
+): WindowStats {
   const requests = points.reduce((s, p) => s + p.requests, 0)
-  const ratePerSec = points.length
-    ? points.reduce((s, p) => s + p.rate_per_sec, 0) / points.length
-    : 0
+  // The API omits idle minutes, so divide by the window length, not the point count.
+  const ratePerSec = requests / (windowMinutes * 60)
   const errors = points.reduce(
     (s, p) => s + p.requests * (p.error_rate_4xx + p.error_rate_5xx),
     0,
@@ -56,8 +58,8 @@ export function computeTraffic(
   const cutoff = nowMs - windowMinutes * MS_PER_MINUTE
   const current = points.filter((p) => Date.parse(p.timestamp) > cutoff)
   const previous = points.filter((p) => Date.parse(p.timestamp) <= cutoff)
-  const cur = windowStats(current)
-  const prev = windowStats(previous)
+  const cur = windowStats(current, windowMinutes)
+  const prev = windowStats(previous, windowMinutes)
   return {
     hasTraffic: cur.requests + prev.requests > 0,
     current: cur,
