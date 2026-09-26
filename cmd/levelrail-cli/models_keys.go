@@ -77,10 +77,10 @@ func fmtLimit(n int) string {
 
 func printModelKeysTable(out io.Writer, keys []apiclient.ModelKeyResource) {
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tPREFIX\tSTATUS\tRPM\tTPM\tPARALLEL\tEXPIRES\tLAST USED")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tPREFIX\tSTATUS\tRPM\tTPM\tTPD\tPARALLEL\tEXPIRES\tLAST USED\tCREATED BY")
 	for _, k := range keys {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", k.ID, k.Name, k.KeyPrefix, k.Status,
-			fmtLimit(k.RPM), fmtLimit(k.TPM), fmtLimit(k.MaxParallel), fmtKeyTime(k.ExpiresAt), fmtKeyTime(k.LastUsedAt))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", k.ID, k.Name, k.KeyPrefix, k.Status,
+			fmtLimit(k.RPM), fmtLimit(k.TPM), fmtLimit(k.TPD), fmtLimit(k.MaxParallel), fmtKeyTime(k.ExpiresAt), fmtKeyTime(k.LastUsedAt), dash(k.CreatedBy))
 	}
 	_ = tw.Flush()
 }
@@ -94,6 +94,7 @@ func runModelsKeysCreate(prog string, args []string, stdout, stderr io.Writer, l
 	fs.DurationVar(&expires, "expires-in", 0, "expire the key after this long, for example 720h (default: never)")
 	fs.IntVar(&req.RPM, "rpm", 0, "requests per minute (0 = unlimited)")
 	fs.IntVar(&req.TPM, "tpm", 0, "tokens per minute, enforced after the fact from metered usage (0 = unlimited)")
+	fs.IntVar(&req.TPD, "tpd", 0, "tokens per day, enforced after the fact from metered usage (0 = unlimited)")
 	fs.IntVar(&req.MaxParallel, "max-parallel", 0, "maximum parallel requests (0 = unlimited)")
 	fs.StringVar(&paths, "allow-paths", "", "comma-separated gateway paths the key may call (default: all served paths)")
 	fs.StringVar(&allowModels, "allow-models", "", "comma-separated model names the key may request (default: any)")

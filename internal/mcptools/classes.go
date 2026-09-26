@@ -202,6 +202,7 @@ var toolTable = map[string]Meta{
 	"preflight_model":                       {clsR, "models", 0},
 	"list_model_cache":                      {clsR, "models", 0},
 	"list_model_keys":                       {clsR, "models", 0},
+	"revoke_model_key":                      {clsD, "models", 0},
 	"get_model_usage":                       {clsR, "models", 0},
 	"get_model_logs":                        {clsR, "models", unt},
 	"deploy_model":                          {clsM, "models", outb},

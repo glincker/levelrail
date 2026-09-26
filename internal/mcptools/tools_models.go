@@ -13,6 +13,11 @@ type modelNameInput struct {
 	Name string `json:"name" jsonschema:"the model's name"`
 }
 
+type modelKeyInput struct {
+	Name  string `json:"name" jsonschema:"the model's name"`
+	KeyID string `json:"key_id" jsonschema:"the key id from list_model_keys"`
+}
+
 type modelLogsInput struct {
 	Name  string `json:"name" jsonschema:"the model's name"`
 	Since string `json:"since,omitempty" jsonschema:"how far back to search as a Go duration, e.g. 30m or 2h; defaults to 1h"`
@@ -160,6 +165,16 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 			return nil, nil, fmt.Errorf("list keys of model %q: %w", in.Name, err)
 		}
 		return nil, out, nil
+	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "revoke_model_key",
+		Description: "Revoke one named API key of a model at once. Clients using it get 401 immediately and it cannot be undone; create or rotate a key to replace it. Destructive.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelKeyInput) (*mcp.CallToolResult, modelActionResult, error) {
+		if err := client.RevokeModelKey(ctx, in.Name, in.KeyID); err != nil {
+			return nil, modelActionResult{}, fmt.Errorf("revoke key %q of model %q: %w", in.KeyID, in.Name, err)
+		}
+		return nil, modelActionResult{OK: true}, nil
 	})
 
 	addTool(server, &mcp.Tool{

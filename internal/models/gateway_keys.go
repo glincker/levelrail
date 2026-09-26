@@ -89,6 +89,8 @@ type keyState struct {
 	parallel    int
 	windowStart time.Time
 	windowUsed  int64
+	dayStart    time.Time
+	dayUsed     int64
 }
 
 func (l *keyLimiter) state(id string, now time.Time, burst int) *keyState {
@@ -97,7 +99,7 @@ func (l *keyLimiter) state(id string, now time.Time, burst int) *keyState {
 	}
 	s := l.states[id]
 	if s == nil {
-		s = &keyState{tokens: float64(burst), refilled: now, windowStart: now}
+		s = &keyState{tokens: float64(burst), refilled: now, windowStart: now, dayStart: now}
 		l.states[id] = s
 	}
 	return s
@@ -105,7 +107,8 @@ func (l *keyLimiter) state(id string, now time.Time, burst int) *keyState {
 
 // acquire admits one request for k or reports how long to wait. The
 // returned release must be called when the request ends. tpm is a soft
-// limit: it blocks once the current minute's metered tokens reach it.
+// limit: it blocks once the current minute's (or, for tpd, the current
+// day's) metered tokens reach it.
 func (l *keyLimiter) acquire(k store.ModelKey, now time.Time) (release func(), retryAfter time.Duration, ok bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -116,6 +119,14 @@ func (l *keyLimiter) acquire(k store.ModelKey, now time.Time) (release func(), r
 		}
 		if s.windowUsed >= int64(k.TPM) {
 			return nil, s.windowStart.Add(time.Minute).Sub(now), false
+		}
+	}
+	if k.TPD > 0 {
+		if now.Sub(s.dayStart) >= 24*time.Hour {
+			s.dayStart, s.dayUsed = now, 0
+		}
+		if s.dayUsed >= int64(k.TPD) {
+			return nil, s.dayStart.Add(24 * time.Hour).Sub(now), false
 		}
 	}
 	if k.MaxParallel > 0 && s.parallel >= k.MaxParallel {
@@ -156,6 +167,10 @@ func (l *keyLimiter) addTokens(id string, n int64, now time.Time) {
 		s.windowStart, s.windowUsed = now, 0
 	}
 	s.windowUsed += n
+	if now.Sub(s.dayStart) >= 24*time.Hour {
+		s.dayStart, s.dayUsed = now, 0
+	}
+	s.dayUsed += n
 }
 
 // inFlight returns the running request count of every key with any.
