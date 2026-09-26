@@ -60,6 +60,17 @@ describe('upstreamView', () => {
     for (const u of states) {
       expect(upstreamView(u).reason.length).toBeGreaterThan(0)
     }
+    const disabled = upstreamView(
+      up(4, {
+        state: 'disabled',
+        healthy: false,
+        reason: 'disabled by operator',
+      }),
+    )
+    const draining = upstreamView(up(5, { state: 'draining', healthy: false }))
+    expect(disabled.glyph).toBe('off')
+    expect(draining.glyph).toBe('warn')
+    expect(disabled.label).not.toBe(draining.label)
     expect(upstreamView(up(0)).glyph).toBe('ok')
     expect(upstreamView(down(0)).glyph).toBe('down')
   })

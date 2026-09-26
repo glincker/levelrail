@@ -74,11 +74,11 @@ export interface UpstreamView {
 
 export function upstreamView(u: LiveUpstream): UpstreamView {
   const admin = u.admin_state ?? 'active'
-  if (admin === 'disabled') {
+  if (admin === 'disabled' || u.state === 'disabled') {
     return {
       tone: 'neutral',
       label: 'Disabled',
-      reason: 'Taken out of rotation by an operator',
+      reason: u.reason || 'disabled by operator',
       glyph: 'off',
     }
   }
@@ -86,7 +86,7 @@ export function upstreamView(u: LiveUpstream): UpstreamView {
     return {
       tone: 'warning',
       label: 'Draining',
-      reason: u.reason || 'Finishing open requests, no new ones',
+      reason: u.reason || 'draining, no new connections',
       glyph: 'warn',
     }
   }

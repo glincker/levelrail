@@ -22,6 +22,8 @@ interface Props {
   algorithm: LoadBalancerAlgorithm
   checkSupported: boolean
   checking: boolean
+  cooldown: number
+  checkNote?: string
   onCheck: () => void
   onExport: () => void
   onRemove: () => void
@@ -39,6 +41,8 @@ export function LbHeader({
   algorithm,
   checkSupported,
   checking,
+  cooldown,
+  checkNote,
   onCheck,
   onExport,
   onRemove,
@@ -65,7 +69,7 @@ export function LbHeader({
           type="button"
           size="sm"
           variant="outline"
-          disabled={!checkSupported || checking}
+          disabled={!checkSupported || checking || cooldown > 0}
           title={checkSupported ? undefined : UNSUPPORTED_HINT}
           onClick={onCheck}
         >
@@ -73,7 +77,7 @@ export function LbHeader({
             data-icon="inline-start"
             className={checking ? 'animate-spin' : undefined}
           />
-          Check now
+          Check now{cooldown > 0 ? ` (${cooldown}s)` : ''}
         </Button>
         <Button type="button" size="sm" variant="outline" onClick={onExport}>
           <ExportIcon data-icon="inline-start" />
@@ -102,6 +106,9 @@ export function LbHeader({
           ]}
         />
       </div>
+      {checkNote ? (
+        <p className="basis-full text-xs text-muted-foreground">{checkNote}</p>
+      ) : null}
     </header>
   )
 }

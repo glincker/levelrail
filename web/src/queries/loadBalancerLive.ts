@@ -50,6 +50,21 @@ export interface LoadBalancerHistory {
   upstreams: UpstreamHistory[]
 }
 
+export class RateLimitError extends ApiError {
+  readonly retryAfter: number
+
+  constructor(retryAfter: number) {
+    super(429, 'Checks are rate limited')
+    this.name = 'RateLimitError'
+    this.retryAfter = retryAfter
+  }
+}
+
+export interface CheckResponse {
+  results: CheckResult[]
+  note?: string
+}
+
 export interface CheckResult {
   id: string
   dial: string
@@ -111,9 +126,21 @@ export function useLoadBalancerHistory(appName: string, enabled: boolean) {
 
 export function useRunLoadBalancerCheck(appName: string) {
   const queryClient = useQueryClient()
-  return useMutation<{ results: CheckResult[] }, ApiError, void>({
-    mutationFn: () =>
-      send(`${base(appName)}/check`, { method: 'POST' }, 'run health check'),
+  return useMutation<CheckResponse, ApiError, void>({
+    mutationFn: async () => {
+      const res = await fetch(`${base(appName)}/check`, { method: 'POST' })
+      if (res.status === 429) {
+        const secs = Number.parseInt(res.headers?.get('Retry-After') ?? '', 10)
+        throw new RateLimitError(Number.isFinite(secs) && secs > 0 ? secs : 5)
+      }
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `run health check failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as CheckResponse
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: appLoadBalancerKeys.status(appName),

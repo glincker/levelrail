@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { SkeletonLine, SkeletonTile } from '@/components/kit'
 import { HelpLink } from '@/components/HelpLink'
 import { toast } from '@/components/ui/toast'
@@ -17,6 +17,7 @@ import {
 } from '../../queries/appLoadBalancer'
 import {
   isUnsupported,
+  RateLimitError,
   useLoadBalancerHistory,
   useRunLoadBalancerCheck,
   useSetUpstreamAdminState,
@@ -76,10 +77,18 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
   const [configOpen, setConfigOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [removeOpen, setRemoveOpen] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+  const [checkNote, setCheckNote] = useState('')
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [pendingSuggestion, setPendingSuggestion] = useState<string | null>(
     null,
   )
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const id = window.setTimeout(() => setCooldown((c) => c - 1), 1000)
+    return () => window.clearTimeout(id)
+  }, [cooldown])
 
   const savedConfig = resource.data?.config
   const savedForm = useMemo(
@@ -193,21 +202,27 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
 
   function runCheck() {
     check.mutate(undefined, {
-      onSuccess: ({ results }) => {
+      onSuccess: ({ results, note }) => {
+        setCheckNote(note ?? '')
         const ok = results.filter((r) => r.ok).length
         toast.add({
           title: `Check finished: ${ok} of ${results.length} passed`,
           type: ok === results.length ? 'success' : 'warning',
         })
       },
-      onError: (error) =>
+      onError: (error) => {
+        if (error instanceof RateLimitError) {
+          setCooldown(error.retryAfter)
+          return
+        }
         toast.add({
           title: isUnsupported(error)
             ? 'Check now is not available yet.'
             : 'Check failed.',
           description: error.message,
           type: 'error',
-        }),
+        })
+      },
     })
   }
 
@@ -288,6 +303,8 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
             algorithm={algorithm}
             checkSupported={history.supported}
             checking={check.isPending}
+            cooldown={cooldown}
+            checkNote={checkNote}
             onCheck={runCheck}
             onExport={() => setExportOpen(true)}
             onRemove={() => setRemoveOpen(true)}

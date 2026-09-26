@@ -224,6 +224,7 @@ export const STATE_VARIANT: Record<
   healthy: 'success',
   unhealthy: 'destructive',
   draining: 'warning',
+  disabled: 'muted',
   unknown: 'muted',
 }
 
