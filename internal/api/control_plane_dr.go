@@ -18,28 +18,29 @@ type ControlPlaneDR interface {
 	ListRemote(ctx context.Context) ([]cpbackup.Remote, error)
 	StartBackup() error
 	StartDrill() error
-	BuildEscrow(ctx context.Context, masterKey string, extra []string, upload bool) (cpbackup.EscrowBundle, error)
+	BuildEscrow(ctx context.Context, in cpbackup.EscrowInput) (cpbackup.EscrowBundle, error)
 	AckEscrow(ctx context.Context) error
 }
 
-// MasterKeyReader returns the running control plane's serialized master key.
-// It is called only to build an escrow bundle and its result is never logged.
-type MasterKeyReader func() (string, error)
+// EscrowMaterialReader returns the master key and the other recovery files an
+// escrow bundle protects. It is called only to build a bundle and its result
+// is never logged.
+type EscrowMaterialReader func() (cpbackup.EscrowMaterial, error)
 
 // WithControlPlaneDR enables the /api/v1/system/control-plane-dr routes and
 // the doctor's disaster recovery check. Without it the routes return 501.
-func WithControlPlaneDR(dr ControlPlaneDR, masterKey MasterKeyReader) Option {
+func WithControlPlaneDR(dr ControlPlaneDR, material EscrowMaterialReader) Option {
 	return func(rt *Router) {
 		rt.cpDR = dr
-		rt.cpDRMasterKey = masterKey
+		rt.cpDRMaterial = material
 	}
 }
 
 // SetControlPlaneDR enables the disaster recovery routes after the router is
 // built, for wiring that needs the router's own dependencies first.
-func (rt *Router) SetControlPlaneDR(dr ControlPlaneDR, masterKey MasterKeyReader) {
+func (rt *Router) SetControlPlaneDR(dr ControlPlaneDR, material EscrowMaterialReader) {
 	rt.cpDR = dr
-	rt.cpDRMasterKey = masterKey
+	rt.cpDRMaterial = material
 }
 
 func (rt *Router) cpDROrNotImplemented(w http.ResponseWriter) (ControlPlaneDR, bool) {
@@ -166,7 +167,7 @@ func (rt *Router) handleControlPlaneDREscrow(w http.ResponseWriter, r *http.Requ
 	if !ok {
 		return
 	}
-	if rt.cpDRMasterKey == nil {
+	if rt.cpDRMaterial == nil {
 		writeError(w, http.StatusNotImplemented, "no master key is available to escrow")
 		return
 	}
@@ -175,13 +176,13 @@ func (rt *Router) handleControlPlaneDREscrow(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	key, err := rt.cpDRMasterKey()
+	material, err := rt.cpDRMaterial()
 	if err != nil {
 		rt.logger.Error("api: read master key for escrow failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "the master key could not be read")
 		return
 	}
-	bundle, err := dr.BuildEscrow(r.Context(), key, req.Recipients, req.Upload)
+	bundle, err := dr.BuildEscrow(r.Context(), cpbackup.EscrowInput{EscrowMaterial: material, Recipients: req.Recipients, Upload: req.Upload})
 	if err != nil {
 		rt.writeCPDRError(w, "escrow", err)
 		return

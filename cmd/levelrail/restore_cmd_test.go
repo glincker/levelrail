@@ -179,18 +179,28 @@ func TestRunRestore_RefusesRunningDatabase(t *testing.T) {
 	}
 }
 
-func TestMasterKeyReader(t *testing.T) {
-	file := filepath.Join(t.TempDir(), "master.key")
+func TestEscrowMaterialReader(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "master.key")
 	if err := os.WriteFile(file, []byte("AGE-SECRET-KEY-PQ-1FAKE\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := masterKeyReader(file, func(string) string { return "" })(); err != nil || got != "AGE-SECRET-KEY-PQ-1FAKE" {
-		t.Fatalf("file source = %q, %v", got, err)
+	if err := os.WriteFile(filepath.Join(dir, agentCAKeyFilename), []byte("ca key pem"), 0o600); err != nil {
+		t.Fatal(err)
 	}
-	if got, err := masterKeyReader("", func(string) string { return " from-env " })(); err != nil || got != "from-env" {
-		t.Fatalf("env source = %q, %v", got, err)
+	none := func(string) string { return "" }
+	got, err := escrowMaterialReader(file, dir, none)()
+	if err != nil || got.MasterKey != "AGE-SECRET-KEY-PQ-1FAKE" || got.Files[agentCAKeyFilename] != "ca key pem" {
+		t.Fatalf("file source = %+v, %v", got, err)
 	}
-	if _, err := masterKeyReader("", func(string) string { return "" })(); err == nil {
+	if _, ok := got.Files[agentCACertFilename]; ok {
+		t.Fatal("a missing CA certificate must simply be left out")
+	}
+	got, err = escrowMaterialReader("", t.TempDir(), func(string) string { return " from-env " })()
+	if err != nil || got.MasterKey != "from-env" || len(got.Files) != 0 {
+		t.Fatalf("env source = %+v, %v", got, err)
+	}
+	if _, err := escrowMaterialReader("", dir, none)(); err == nil {
 		t.Fatal("no source must error")
 	}
 }

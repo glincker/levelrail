@@ -31,7 +31,24 @@ type EscrowPayload struct {
 	// MasterKey is the serialized master key identity. Never log it.
 	MasterKey       string `json:"master_key"`
 	MasterRecipient string `json:"master_recipient"`
-	Instructions    string `json:"instructions"`
+	// Files holds other recovery material by file name, such as the agent CA
+	// key that lives outside the database. Never log its values.
+	Files        map[string]string `json:"files,omitempty"`
+	Instructions string            `json:"instructions"`
+}
+
+// EscrowMaterial is what an escrow bundle protects.
+type EscrowMaterial struct {
+	MasterKey string
+	Files     map[string]string
+}
+
+// EscrowInput describes one escrow bundle to build. Recipients, when
+// non-empty, replace the configured ones for this bundle.
+type EscrowInput struct {
+	EscrowMaterial
+	Recipients []string
+	Upload     bool
 }
 
 // EscrowBundle is a generated escrow file: armored age ciphertext plus a
@@ -47,17 +64,19 @@ type EscrowBundle struct {
 
 const escrowInstructions = `Control plane escrow bundle
 
-This file holds the control plane master key, encrypted to the age recipients
-you configured. The database backups are useless without it: every stored
-secret is unreadable without the master key.
+This file holds the control plane master key and the agent CA key, encrypted to
+the age recipients you configured. The database backups are useless without the
+master key (every stored secret is unreadable), and without the agent CA key
+every node agent must be re-enrolled.
 
 To recover on a new machine:
   1. Decrypt this bundle with an identity that matches one of its recipients:
-       levelrail-cli control-plane-backups escrow open escrow.age --identity identity.txt
-     (or with the age tool: age -d -i identity.txt escrow.age)
-     The output is JSON. The master_key field is the key.
-  2. Put master_key in the new server's data directory as master.key (mode 0600),
-     or set it as APP_MASTER_KEY.
+       levelrail-cli control-plane-backups escrow open escrow.age --identity identity.txt --extract DIR
+     This writes master.key and the agent CA files into DIR (mode 0600). With the
+     age tool instead: age -d -i identity.txt escrow.age prints JSON with the
+     master_key and files fields.
+  2. Copy those files into the new server's data directory, or set the master key
+     as APP_MASTER_KEY.
   3. Restore the database: levelrail restore --from <backup> --identity identity.txt
 
 Store this file offline and apart from your backups. Anyone holding both the
@@ -69,10 +88,10 @@ func fingerprint(recipient string) string {
 	return hex.EncodeToString(sum[:8])
 }
 
-// BuildEscrow encrypts masterKey to the operator's recipients. extra, when
-// non-empty, replaces the configured recipients for this bundle. The drill
-// identity is never a recipient of escrow.
-func (s *Service) BuildEscrow(ctx context.Context, masterKey string, extra []string, upload bool) (EscrowBundle, error) {
+// BuildEscrow encrypts the master key and other recovery files to the
+// operator's recipients. The drill identity is never a recipient of escrow.
+func (s *Service) BuildEscrow(ctx context.Context, in EscrowInput) (EscrowBundle, error) {
+	masterKey, extra, upload := in.MasterKey, in.Recipients, in.Upload
 	cfg, err := s.Store.GetCPDRSettings(ctx)
 	if err != nil {
 		return EscrowBundle{}, fmt.Errorf("load settings: %w", err)
@@ -103,7 +122,7 @@ func (s *Service) BuildEscrow(ctx context.Context, masterKey string, extra []str
 	now := s.now().UTC().Truncate(time.Second)
 	payload, err := json.Marshal(EscrowPayload{
 		Version: 1, CreatedAt: now, InstallID: installID, BinaryVersion: s.BinaryVersion,
-		MasterKey: mk.String(), MasterRecipient: mk.Recipient().String(), Instructions: escrowInstructions,
+		MasterKey: mk.String(), MasterRecipient: mk.Recipient().String(), Files: in.Files, Instructions: escrowInstructions,
 	})
 	if err != nil {
 		return EscrowBundle{}, fmt.Errorf("encode escrow payload: %w", err)

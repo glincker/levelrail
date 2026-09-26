@@ -18,7 +18,7 @@ type fakeDR struct {
 	status   cpbackup.Status
 	updateFn func(cpbackup.ConfigUpdate) error
 	updated  cpbackup.ConfigUpdate
-	escrowFn func(masterKey string, extra []string, upload bool) (cpbackup.EscrowBundle, error)
+	escrowFn func(in cpbackup.EscrowInput) (cpbackup.EscrowBundle, error)
 	started  []string
 	busy     bool
 	ackErr   error
@@ -44,8 +44,8 @@ func (f *fakeDR) StartDrill() error {
 	f.started = append(f.started, "drill")
 	return nil
 }
-func (f *fakeDR) BuildEscrow(_ context.Context, key string, extra []string, upload bool) (cpbackup.EscrowBundle, error) {
-	return f.escrowFn(key, extra, upload)
+func (f *fakeDR) BuildEscrow(_ context.Context, in cpbackup.EscrowInput) (cpbackup.EscrowBundle, error) {
+	return f.escrowFn(in)
 }
 func (f *fakeDR) AckEscrow(context.Context) error { return f.ackErr }
 
@@ -112,22 +112,25 @@ func TestControlPlaneDR_EscrowNeverLeaksKey(t *testing.T) {
 	db := openTestDB(t)
 	const secret = "AGE-SECRET-KEY-PQ-1TESTONLY" //nolint:gosec // fake key for a leak check
 	var gotKey string
+	var gotFiles map[string]string
 	var gotUpload bool
-	fake := &fakeDR{escrowFn: func(k string, _ []string, upload bool) (cpbackup.EscrowBundle, error) {
-		gotKey, gotUpload = k, upload
+	fake := &fakeDR{escrowFn: func(in cpbackup.EscrowInput) (cpbackup.EscrowBundle, error) {
+		gotKey, gotFiles, gotUpload = in.MasterKey, in.Files, in.Upload
 		return cpbackup.EscrowBundle{Armored: "-----BEGIN AGE ENCRYPTED FILE-----", Fingerprint: "abcd", RecipientCount: 1, CreatedAt: time.Now()}, nil
 	}}
-	rt := NewRouter(discardLogger(), testBrand(), db, WithControlPlaneDR(fake, func() (string, error) { return secret, nil }))
+	rt := NewRouter(discardLogger(), testBrand(), db, WithControlPlaneDR(fake, func() (cpbackup.EscrowMaterial, error) {
+		return cpbackup.EscrowMaterial{MasterKey: secret, Files: map[string]string{"agent-ca.key": "ca-secret"}}, nil
+	}))
 
 	rec := drRequest(t, rt, db, http.MethodPost, "/api/v1/system/control-plane-dr/escrow", `{"upload":true}`)
-	if rec.Code != http.StatusOK || gotKey != secret || !gotUpload {
+	if rec.Code != http.StatusOK || gotKey != secret || !gotUpload || gotFiles["agent-ca.key"] != "ca-secret" {
 		t.Fatalf("status = %d key = %q upload = %v", rec.Code, gotKey, gotUpload)
 	}
 	if strings.Contains(rec.Body.String(), secret) {
 		t.Fatal("escrow response contains the plaintext master key")
 	}
 
-	fake.escrowFn = func(string, []string, bool) (cpbackup.EscrowBundle, error) {
+	fake.escrowFn = func(cpbackup.EscrowInput) (cpbackup.EscrowBundle, error) {
 		return cpbackup.EscrowBundle{}, cpbackup.ErrEscrowSameBucket
 	}
 	if rec = drRequest(t, rt, db, http.MethodPost, "/api/v1/system/control-plane-dr/escrow", `{"upload":true}`); rec.Code != http.StatusConflict {

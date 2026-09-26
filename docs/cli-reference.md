@@ -1225,7 +1225,8 @@ levelrail control-plane-backups schedule show|set [flags]
 levelrail control-plane-backups run-now [--no-wait] [flags]
 levelrail control-plane-backups drill run|status [flags]
 levelrail control-plane-backups escrow [--out FILE] [--recipient KEY] [--upload] [--ack] [flags]
-levelrail control-plane-backups escrow open <file> --identity FILE
+levelrail control-plane-backups escrow ack [flags]
+levelrail control-plane-backups escrow open <file> --identity FILE [--extract DIR]
 levelrail control-plane-backups keys generate [--out FILE] [--hybrid]
 ```
 
@@ -1245,7 +1246,7 @@ key pair on your machine (private key to a `0600` file, public key to
 stdout), `schedule set` changes only the flags you pass, `run-now` and
 `drill run` wait for the run and exit 1 if it failed, `drill status` exits
 1 when the last drill failed or none has run, and `escrow` writes the master
-key encrypted to your recipients (never uploaded unless `--upload`, and never
+key and agent CA key encrypted to your recipients (never uploaded unless `--upload`, and never
 to the backup bucket). Restore an off-box backup on the server with
 `levelrail restore --from <s3://... | file> --identity FILE [--dry-run]`.
 See [Disaster recovery](/disaster-recovery).

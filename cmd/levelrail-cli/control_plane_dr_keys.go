@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"sort"
 	"time"
 
 	"filippo.io/age"
@@ -84,6 +86,9 @@ func runDREscrow(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	if len(args) > 0 && args[0] == "open" {
 		return runEscrowOpen(prog, args[1:], stdout, stderr)
 	}
+	if len(args) > 0 && args[0] == "ack" {
+		return runEscrowAck(prog, args[1:], stdout, stderr, lookupEnv)
+	}
 	fs, tokenP, urlP, profileP, jsonP, outP, queryP := apiFlagSet(prog, "control-plane-backups escrow", "print the escrow summary as JSON to stdout and nothing else", stderr)
 	out := fs.String("out", "", "escrow file to write (default levelrail-escrow-<time>.age, mode 0600)")
 	upload := fs.Bool("upload", false, "also upload the bundle to the separate escrow destination (opt-in; never the backup bucket)")
@@ -109,7 +114,7 @@ func runDREscrow(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	if err := writeExclusive(path+".instructions.txt", bundle.Instructions+"\n", 0o600); err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
-	_, _ = fmt.Fprintf(stderr, "\nWARNING: %s holds your master key, encrypted to %d recipient(s).\n"+
+	_, _ = fmt.Fprintf(stderr, "\nWARNING: %s holds your master key and agent CA key, encrypted to %d recipient(s).\n"+
 		"Store it OFFLINE and NOT in the same place as your backups: whoever gets both a backup and this file\n"+
 		"(plus a recipient's private key) can read every secret. Regenerate it after rotating the master key.\n\n", path, bundle.RecipientCount)
 	if *ack {
@@ -124,8 +129,27 @@ func runDREscrow(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 			_, _ = fmt.Fprintf(stdout, "also uploaded to the escrow destination as %s\n", bundle.UploadedKey)
 		}
 		if !*ack {
-			_, _ = fmt.Fprintf(stdout, "once it is stored offline, run: %s control-plane-backups escrow --ack (or acknowledge it in Settings)\n", prog)
+			_, _ = fmt.Fprintf(stdout, "once it is stored offline, run: %s control-plane-backups escrow ack (or confirm it in Settings)\n", prog)
 		}
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+func runEscrowAck(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenP, urlP, profileP, jsonP, outP, queryP := apiFlagSet(prog, "control-plane-backups escrow ack", "print the new status as JSON to stdout and nothing else", stderr)
+	client, jsonOut, of, code, ok := drClient(prog, fs, args, apiFlagPtrs{tokenP, urlP, profileP, jsonP, outP, queryP}, stderr, lookupEnv)
+	if !ok {
+		return code
+	}
+	st, err := client.AckControlPlaneEscrow(context.Background())
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("acknowledge escrow: %w", err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, st, func() {
+		_, _ = fmt.Fprintln(stdout, "escrow recorded as stored offline")
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
@@ -148,11 +172,14 @@ func writeExclusive(path, content string, perm os.FileMode) error {
 	return nil
 }
 
-// runEscrowOpen decrypts an escrow bundle on this machine and prints the master key.
+// runEscrowOpen decrypts an escrow bundle on this machine. It prints the master
+// key, or with --extract writes master.key and the other recovery files into a
+// directory.
 func runEscrowOpen(prog string, args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet(prog+" control-plane-backups escrow open", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	identity := fs.String("identity", "", "age identity file that matches one of the bundle's recipients")
+	extract := fs.String("extract", "", "write master.key and the other recovery files (agent CA) into this directory instead of printing the key")
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
@@ -160,50 +187,89 @@ func runEscrowOpen(prog string, args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	if fs.NArg() != 1 || *identity == "" {
-		_, _ = fmt.Fprintf(stderr, "usage: %s control-plane-backups escrow open <bundle> --identity <file>\n", prog)
+		_, _ = fmt.Fprintf(stderr, "usage: %s control-plane-backups escrow open <bundle> --identity <file> [--extract DIR]\n", prog)
 		return exitUsage
 	}
-	key, err := openEscrowBundle(fs.Arg(0), *identity)
+	payload, err := openEscrowBundle(fs.Arg(0), *identity)
 	if err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitValidation
 	}
-	_, _ = fmt.Fprintln(stderr, "The master key follows on stdout. Put it in master.key (mode 0600) or APP_MASTER_KEY and do not save it anywhere else.")
-	_, _ = fmt.Fprintln(stdout, key)
+	if *extract == "" {
+		_, _ = fmt.Fprintln(stderr, "The master key follows on stdout. Put it in master.key (mode 0600) or APP_MASTER_KEY and do not save it anywhere else.")
+		_, _ = fmt.Fprintln(stdout, payload.MasterKey)
+		return exitOK
+	}
+	written, err := extractEscrow(payload, *extract)
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitValidation
+	}
+	for _, name := range written {
+		_, _ = fmt.Fprintf(stdout, "wrote %s\n", filepath.Join(*extract, name))
+	}
+	_, _ = fmt.Fprintln(stderr, "Copy these files into the new server's data directory before starting it. Delete this directory once you have.")
 	return exitOK
 }
 
-func openEscrowBundle(bundlePath, identityPath string) (string, error) {
+type escrowPayload struct {
+	MasterKey string            `json:"master_key"`
+	Files     map[string]string `json:"files"`
+}
+
+func extractEscrow(p escrowPayload, dir string) ([]string, error) {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return nil, fmt.Errorf("create %s: %w", dir, err)
+	}
+	files := map[string]string{"master.key": p.MasterKey + "\n"}
+	for name, content := range p.Files {
+		if name != filepath.Base(name) || name == "." || name == ".." || name == "master.key" {
+			return nil, fmt.Errorf("refusing to write a file named %q", name)
+		}
+		files[name] = content
+	}
+	names := make([]string, 0, len(files))
+	for name := range files {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if err := writeExclusive(filepath.Join(dir, name), files[name], 0o600); err != nil {
+			return nil, err
+		}
+	}
+	return names, nil
+}
+
+func openEscrowBundle(bundlePath, identityPath string) (escrowPayload, error) {
 	raw, err := os.ReadFile(bundlePath) //nolint:gosec // operator-supplied path
 	if err != nil {
-		return "", fmt.Errorf("read bundle: %w", err)
+		return escrowPayload{}, fmt.Errorf("read bundle: %w", err)
 	}
 	idf, err := os.Open(identityPath) //nolint:gosec // operator-supplied path
 	if err != nil {
-		return "", fmt.Errorf("open identity file: %w", err)
+		return escrowPayload{}, fmt.Errorf("open identity file: %w", err)
 	}
 	defer func() { _ = idf.Close() }()
 	ids, err := age.ParseIdentities(idf)
 	if err != nil {
-		return "", fmt.Errorf("parse identity file: %w", err)
+		return escrowPayload{}, fmt.Errorf("parse identity file: %w", err)
 	}
 	i := bytes.Index(raw, []byte(armor.Header))
 	if i < 0 {
-		return "", errors.New("not an escrow bundle")
+		return escrowPayload{}, errors.New("not an escrow bundle")
 	}
 	dec, err := age.Decrypt(armor.NewReader(bytes.NewReader(raw[i:])), ids...)
 	if err != nil {
-		return "", errors.New("this identity cannot decrypt the bundle")
+		return escrowPayload{}, errors.New("this identity cannot decrypt the bundle")
 	}
 	data, err := io.ReadAll(io.LimitReader(dec, 1<<20))
 	if err != nil {
-		return "", fmt.Errorf("decrypt bundle: %w", err)
+		return escrowPayload{}, fmt.Errorf("decrypt bundle: %w", err)
 	}
-	var payload struct {
-		MasterKey string `json:"master_key"`
-	}
+	var payload escrowPayload
 	if err := json.Unmarshal(data, &payload); err != nil || payload.MasterKey == "" {
-		return "", errors.New("the bundle does not contain a master key")
+		return escrowPayload{}, errors.New("the bundle does not contain a master key")
 	}
-	return payload.MasterKey, nil
+	return payload, nil
 }

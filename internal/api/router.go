@@ -417,7 +417,7 @@ type Router struct {
 	cpBackups           ControlPlaneBackupManager // nil is valid: /system/backups routes return 501
 	cpBackupScheduleOff bool                      // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
 	cpDR                ControlPlaneDR            // nil is valid: /system/control-plane-dr routes return 501
-	cpDRMasterKey       MasterKeyReader
+	cpDRMaterial        EscrowMaterialReader
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.

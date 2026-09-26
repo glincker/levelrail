@@ -12,8 +12,9 @@ Two things are needed to recover, and they are deliberately kept apart:
 | --- | --- | --- |
 | The backup | The control plane database, gzipped and encrypted with [age](https://age-encryption.org) to your public keys | Your storage destination (S3, R2, B2, MinIO, Wasabi) |
 | The master key | Decrypts every stored secret. It is not in the database or in a backup | Your escrow bundle, stored offline |
+| The agent CA key | Signs node agent certificates. It lives in the data directory (`agent-ca.crt`, `agent-ca.key`), not in the database | Your escrow bundle, stored offline |
 
-The database alone restores your apps and users but leaves every secret unreadable. The master key alone restores nothing.
+The database alone restores your apps and users but leaves every secret unreadable. The master key alone restores nothing. Without the agent CA key a restored control plane generates a new CA, so every node agent has to be re-enrolled; the escrow bundle carries it so they reconnect on their own.
 
 ## Threat model
 
@@ -61,7 +62,7 @@ The dashboard has a guided checklist under Settings, Disaster recovery. The same
    levelrail-cli control-plane-backups escrow --out escrow.age --ack
    ```
 
-   This writes `escrow.age` (the master key, encrypted to your recipients) and `escrow.age.instructions.txt`. Do not put them in the backup bucket.
+   This writes `escrow.age` (the master key and the agent CA files, encrypted to your recipients) and `escrow.age.instructions.txt`. Do not put them in the backup bucket.
 6. Run a drill: `levelrail-cli control-plane-backups drill run`.
 
 `levelrail-cli doctor` then reports `control_plane_dr` as ok.
@@ -113,15 +114,14 @@ Secrets are bound to their storage slot (table, row and column), not to the mach
 Restore is an offline command on the server, because a database cannot be swapped under a running control plane. It refuses to run while another process has the database open.
 
 1. Provision the new machine and install the same release (or newer). Stop the control plane if it is running.
-2. Recover the master key from your escrow bundle and put it in the data directory:
+2. Recover the master key and the agent CA files from your escrow bundle and put them in the data directory:
 
    ```
-   levelrail-cli control-plane-backups escrow open escrow.age --identity backup-identity.txt > master.key
-   chmod 600 master.key
-   mv master.key /var/lib/levelrail-data/master.key
+   levelrail-cli control-plane-backups escrow open escrow.age --identity backup-identity.txt --extract ./recovered
+   mv ./recovered/* /var/lib/levelrail-data/
    ```
 
-   Or set `APP_MASTER_KEY` instead. `escrow open` decrypts locally and prints the key to stdout only.
+   This writes `master.key`, `agent-ca.crt` and `agent-ca.key` with mode `0600` and never overwrites an existing file. Or set `APP_MASTER_KEY` instead of using the file. Without `--extract`, `escrow open` prints only the master key to stdout. Decryption happens on your machine.
 3. Rehearse first with `--dry-run`. It downloads, verifies and decrypts the backup and runs `integrity_check`, and leaves the live database alone:
 
    ```

@@ -83,7 +83,7 @@ func newDRServer(t *testing.T, f *drFake) *httptest.Server {
 		var buf bytes.Buffer
 		aw := armor.NewWriter(&buf)
 		enc, _ := age.Encrypt(aw, rec)
-		_, _ = enc.Write([]byte(`{"master_key":"AGE-SECRET-KEY-PQ-1FAKEFORTEST"}`))
+		_, _ = enc.Write([]byte(`{"master_key":"AGE-SECRET-KEY-PQ-1FAKEFORTEST","files":{"agent-ca.key":"ca pem"}}`))
 		_ = enc.Close()
 		_ = aw.Close()
 		write(w, apiclient.ControlPlaneEscrowBundle{Armored: buf.String(), Instructions: "keep it safe", Fingerprint: "ffff", RecipientCount: 1})
@@ -206,6 +206,11 @@ func TestCLI_ControlPlaneDR_KeysGenerateAndEscrowRoundTrip(t *testing.T) {
 	if _, err := os.Stat(bundle + ".instructions.txt"); err != nil {
 		t.Fatal("instructions file missing")
 	}
+	f.acked = false
+	runCLIExpectOK(t, []string{"control-plane-backups", "escrow", "ack", "--api-url", srv.URL})
+	if !f.acked {
+		t.Fatal("escrow ack did not reach the server")
+	}
 	if got := run("levelrail-cli-test", []string{"control-plane-backups", "escrow", "--api-url", srv.URL, "--recipient", recipient, "--out", bundle}, &out, &errOut, envMap()); got == exitOK {
 		t.Fatal("escrow must never overwrite an existing bundle")
 	}
@@ -213,6 +218,22 @@ func TestCLI_ControlPlaneDR_KeysGenerateAndEscrowRoundTrip(t *testing.T) {
 	stdout, _ = runCLIExpectOK(t, []string{"control-plane-backups", "escrow", "open", bundle, "--identity", idFile})
 	if strings.TrimSpace(stdout) != "AGE-SECRET-KEY-PQ-1FAKEFORTEST" {
 		t.Fatalf("opened key = %q", stdout)
+	}
+
+	extractDir := filepath.Join(dir, "recovered")
+	stdout, _ = runCLIExpectOK(t, []string{"control-plane-backups", "escrow", "open", bundle, "--identity", idFile, "--extract", extractDir})
+	if strings.Contains(stdout, "AGE-SECRET-KEY") || !strings.Contains(stdout, "master.key") || !strings.Contains(stdout, "agent-ca.key") {
+		t.Fatalf("extract stdout = %q", stdout)
+	}
+	if got, _ := os.ReadFile(filepath.Join(extractDir, "master.key")); strings.TrimSpace(string(got)) != "AGE-SECRET-KEY-PQ-1FAKEFORTEST" { //nolint:gosec // test path
+		t.Fatalf("master.key = %q", got)
+	}
+	if info, err := os.Stat(filepath.Join(extractDir, "agent-ca.key")); err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("agent-ca.key mode = %v, err = %v", info, err)
+	}
+	out.Reset()
+	if got := run("levelrail-cli-test", []string{"control-plane-backups", "escrow", "open", bundle, "--identity", idFile, "--extract", extractDir}, &out, &errOut, envMap()); got != exitValidation {
+		t.Fatalf("extract must not overwrite existing files, exit = %d", got)
 	}
 
 	otherID := filepath.Join(dir, "other.txt")

@@ -21,9 +21,13 @@ func TestBuildEscrow_RoundTripMultiRecipient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b, err := e.svc.BuildEscrow(context.Background(), mk.String(), nil, false)
+	files := map[string]string{"agent-ca.key": "ca private key pem"}
+	b, err := e.svc.BuildEscrow(context.Background(), EscrowInput{EscrowMaterial: EscrowMaterial{MasterKey: mk.String(), Files: files}})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if strings.Contains(b.Armored, "ca private key pem") {
+		t.Fatal("recovery file contents are readable in the bundle")
 	}
 	if b.RecipientCount != 2 || b.UploadedKey != "" || strings.Contains(b.Armored, mk.String()) || !strings.Contains(b.Armored, "BEGIN AGE ENCRYPTED FILE") {
 		t.Fatalf("bundle = %+v", b)
@@ -33,7 +37,7 @@ func TestBuildEscrow_RoundTripMultiRecipient(t *testing.T) {
 		if err != nil {
 			t.Fatalf("recipient could not open the bundle: %v", err)
 		}
-		if p.MasterKey != mk.String() || p.InstallID == "" || p.Instructions == "" {
+		if p.MasterKey != mk.String() || p.InstallID == "" || p.Instructions == "" || p.Files["agent-ca.key"] != "ca private key pem" {
 			t.Fatalf("payload = %+v", p)
 		}
 		if _, err := secrets.LoadMasterKey(p.MasterKey); err != nil {
@@ -60,7 +64,7 @@ func TestBuildEscrow_DrillIdentityIsNeverARecipient(t *testing.T) {
 	e.svc.DrillIdentities = []age.Identity{drill}
 	e.configure(nil)
 	mk, _ := secrets.GenerateMasterKey()
-	b, err := e.svc.BuildEscrow(context.Background(), mk.String(), nil, false)
+	b, err := e.svc.BuildEscrow(context.Background(), EscrowInput{EscrowMaterial: EscrowMaterial{MasterKey: mk.String()}, Recipients: nil, Upload: false})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +81,7 @@ func TestBuildEscrow_RecipientOverrideAndBadKey(t *testing.T) {
 	e.configure(nil)
 	other := mustIdentity(t)
 	mk, _ := secrets.GenerateMasterKey()
-	b, err := e.svc.BuildEscrow(context.Background(), mk.String(), []string{other.Recipient().String()}, false)
+	b, err := e.svc.BuildEscrow(context.Background(), EscrowInput{EscrowMaterial: EscrowMaterial{MasterKey: mk.String()}, Recipients: []string{other.Recipient().String()}, Upload: false})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +91,7 @@ func TestBuildEscrow_RecipientOverrideAndBadKey(t *testing.T) {
 	if _, err := OpenEscrow([]byte(b.Armored), []age.Identity{e.id}); err == nil {
 		t.Fatal("configured recipient should not open an overridden bundle")
 	}
-	if _, err := e.svc.BuildEscrow(context.Background(), "garbage", nil, false); err == nil || strings.Contains(err.Error(), "garbage") {
+	if _, err := e.svc.BuildEscrow(context.Background(), EscrowInput{EscrowMaterial: EscrowMaterial{MasterKey: "garbage"}, Recipients: nil, Upload: false}); err == nil || strings.Contains(err.Error(), "garbage") {
 		t.Fatalf("bad key err = %v", err)
 	}
 }
@@ -97,12 +101,12 @@ func TestBuildEscrow_UploadNeedsSeparateBucket(t *testing.T) {
 	mk, _ := secrets.GenerateMasterKey()
 
 	e.configure(nil)
-	if _, err := e.svc.BuildEscrow(context.Background(), mk.String(), nil, true); err == nil {
+	if _, err := e.svc.BuildEscrow(context.Background(), EscrowInput{EscrowMaterial: EscrowMaterial{MasterKey: mk.String()}, Recipients: nil, Upload: true}); err == nil {
 		t.Fatal("upload without an escrow destination must fail")
 	}
 
 	e.configure(func(u *ConfigUpdate) { u.EscrowTargetID = "alias" })
-	if _, err := e.svc.BuildEscrow(context.Background(), mk.String(), nil, true); !errors.Is(err, ErrEscrowSameBucket) {
+	if _, err := e.svc.BuildEscrow(context.Background(), EscrowInput{EscrowMaterial: EscrowMaterial{MasterKey: mk.String()}, Recipients: nil, Upload: true}); !errors.Is(err, ErrEscrowSameBucket) {
 		t.Fatalf("same-bucket alias err = %v", err)
 	}
 	if len(e.srv.Keys()) != 0 {
@@ -117,7 +121,7 @@ func TestBuildEscrow_UploadNeedsSeparateBucket(t *testing.T) {
 	}
 
 	e.configure(func(u *ConfigUpdate) { u.EscrowTargetID = "esc" })
-	b, err := e.svc.BuildEscrow(context.Background(), mk.String(), nil, true)
+	b, err := e.svc.BuildEscrow(context.Background(), EscrowInput{EscrowMaterial: EscrowMaterial{MasterKey: mk.String()}, Recipients: nil, Upload: true})
 	if err != nil {
 		t.Fatal(err)
 	}

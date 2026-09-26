@@ -28,7 +28,8 @@ func controlPlaneDRUsage(prog string) string {
   %[1]s control-plane-backups drill run [--no-wait]            restore the newest backup into a temp dir and check it
   %[1]s control-plane-backups drill status                     last drill result (exit 1 if it failed)
   %[1]s control-plane-backups escrow [flags]                   write the master key, encrypted to your recipients, to a file
-  %[1]s control-plane-backups escrow open <file> --identity F  decrypt an escrow bundle locally
+  %[1]s control-plane-backups escrow ack                       record that the bundle is stored offline
+  %[1]s control-plane-backups escrow open <file> --identity F [--extract DIR]  decrypt a bundle locally
   %[1]s control-plane-backups keys generate [--out FILE]       make an age keypair for backups (private key stays on this machine)
 
 schedule set flags: --enable | --disable, --destination ID, --recipient KEY (repeat),
