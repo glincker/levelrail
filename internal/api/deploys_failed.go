@@ -32,9 +32,34 @@ func (rt *Router) handleListFailedDeploys(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	canSee, err := rt.appVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: list failed deploys: visibility", err)
+		return
+	}
 	out := make([]failedDeployResource, 0, len(failed))
 	for _, f := range failed {
+		if !canSee(f.Attempt.ServiceName) {
+			continue
+		}
 		out = append(out, failedDeployResource{toDeployAttemptResource(f.Attempt), f.LastGoodImage})
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// appVisibilityFilter returns a predicate reporting whether the caller can
+// read an app, reusing visibleAppNames (nil means every app is visible).
+func (rt *Router) appVisibilityFilter(r *http.Request) (func(app string) bool, error) {
+	visible, err := rt.visibleAppNames(r)
+	if err != nil {
+		return nil, err
+	}
+	if visible == nil {
+		return func(string) bool { return true }, nil
+	}
+	set := make(map[string]struct{}, len(visible))
+	for _, n := range visible {
+		set[n] = struct{}{}
+	}
+	return func(app string) bool { _, ok := set[app]; return ok }, nil
 }

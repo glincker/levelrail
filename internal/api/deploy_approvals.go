@@ -184,8 +184,16 @@ func (rt *Router) handleListDeployApprovals(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: list deploy approvals failed", err)
 		return
 	}
+	canSee, err := rt.appVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: list deploy approvals: visibility", err)
+		return
+	}
 	out := make([]deployApprovalResource, 0, len(approvals))
 	for _, a := range approvals {
+		if !canSee(a.ServiceName) {
+			continue
+		}
 		if status == store.DeployApprovalStatusPending {
 			a = rt.expireIfStale(r.Context(), a)
 			if a.Status != store.DeployApprovalStatusPending {
