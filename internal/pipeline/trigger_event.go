@@ -21,6 +21,8 @@ func listensTo(t Triggers, kind string) bool {
 		return t.PullRequest != nil
 	case TriggerTag:
 		return t.Tag != nil
+	case TriggerMergeGroup:
+		return t.MergeGroup != nil
 	}
 	return false
 }
@@ -31,8 +33,13 @@ func explainMismatch(t Triggers, ev Event) string {
 	switch ev.Kind {
 	case TriggerPush:
 		return fmt.Sprintf("branch %q does not match on.push.branches %v", ev.Branch, []string(t.Push.Branches))
+	case TriggerMergeGroup:
+		return fmt.Sprintf("branch %q does not match on.merge_group.branches %v", ev.Branch, []string(t.MergeGroup.Branches))
 	case TriggerPullRequest:
-		return fmt.Sprintf("target branch %q does not match on.pull_request.branches %v", ev.Branch, []string(t.PullRequest.Branches))
+		if !globAny(t.PullRequest.Branches, ev.Branch) {
+			return fmt.Sprintf("target branch %q does not match on.pull_request.branches %v", ev.Branch, []string(t.PullRequest.Branches))
+		}
+		return fmt.Sprintf("action %q is not in on.pull_request.types %v", ev.Action, []string(t.PullRequest.Types))
 	case TriggerTag:
 		return fmt.Sprintf("tag %q does not match on.tag.patterns %v", ev.Tag, []string(t.Tag.Patterns))
 	}
@@ -78,7 +85,16 @@ func (e *Engine) TriggerEvent(ctx context.Context, app string, ev Event, ref, sh
 			e.logTrigger(ctx, app, p.Name, ev, ref, sha, store.TriggerSkipped, explainMismatch(def.On, ev), "")
 			continue
 		}
+		if f := def.On.pathFilter(ev.Kind); !f.IsZero() {
+			if res := f.Apply(e.changedFiles(ctx, &ev, app)); !res.Run {
+				e.logTrigger(ctx, app, p.Name, ev, ref, sha, store.TriggerSkipped, res.Reason, "")
+				continue
+			}
+		}
 		opt := StartOptions{Trigger: ev.Kind, Actor: actor, Ref: ref, SHA: sha}
+		if ev.Kind == TriggerMergeGroup {
+			opt.BaseBranch = ev.Branch
+		}
 		if ev.Kind == TriggerPullRequest {
 			opt.BaseBranch = ev.Branch
 			if ev.Fork {

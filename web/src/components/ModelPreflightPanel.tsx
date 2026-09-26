@@ -29,6 +29,7 @@ export interface ModelPreflightPanelProps {
   model: string
   node: string
   hfToken: string
+  gpus?: string
   onPickModel: (model: string) => void
 }
 
@@ -39,6 +40,7 @@ export function ModelPreflightPanel({
   model,
   node,
   hfToken,
+  gpus = 'all',
   onPickModel,
 }: ModelPreflightPanelProps) {
   const debouncedModel = useDebouncedValue(model, DEBOUNCE_MS)
@@ -53,10 +55,11 @@ export function ModelPreflightPanel({
       repo: ref.repo,
       engine,
       quant: ref.quant || undefined,
+      gpu_count: /^[1-9]\d*$/.test(gpus.trim()) ? Number(gpus) : undefined,
       node_id: node === LOCAL_NODE ? undefined : node,
       hf_token: debouncedToken || undefined,
     }
-  }, [ref, engine, node, debouncedToken])
+  }, [ref, engine, node, gpus, debouncedToken])
   const query = usePreflight(req, tokenFingerprint(debouncedToken))
 
   if (!ref) return null
@@ -159,8 +162,10 @@ function PreflightBody({
           {result.selected ? (
             <p className="flex flex-wrap items-center gap-2 text-muted-foreground">
               <span>
-                Will download {result.selected.label},{' '}
-                {formatBytes(result.selected.bytes)}
+                {hfRef.quant || result.quants.length === 0 || engine === 'vllm'
+                  ? 'Will download'
+                  : 'Recommended, not yet selected:'}{' '}
+                {result.selected.label}, {formatBytes(result.selected.bytes)}
               </span>
               {result.selected.fit !== 'unknown' ? (
                 <StatusPill

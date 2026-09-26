@@ -68,7 +68,10 @@ func startPipelines(ctx context.Context, logger *slog.Logger, b *brand.Brand, db
 		JobTimeout:      envDuration("APP_PIPELINE_JOB_TIMEOUT", 0),
 		ApprovalTimeout: envDuration("APP_PIPELINE_APPROVAL_TIMEOUT", 0),
 		KeepRuns:        envInt("APP_PIPELINE_KEEP_RUNS", 0),
+		Reporter:        apiRouter.PipelineStatusReporter(),
+		ReportTimeout:   envDuration("APP_GIT_STATUS_TIMEOUT", 0),
 	}
+	apiRouter.SetForgeDeployments(db)
 	if secretsManager != nil {
 		cfg.Secrets = secretsManager
 	}

@@ -461,6 +461,15 @@ func (c *Client) RuntimeNames(ctx context.Context) ([]string, error) {
 	return names, nil
 }
 
+// DockerRootDir returns the daemon's storage root, where named volumes live.
+func (c *Client) DockerRootDir(ctx context.Context) (string, error) {
+	info, err := c.cli.Info(ctx)
+	if err != nil {
+		return "", fmt.Errorf("docker: info: %w", err)
+	}
+	return info.DockerRootDir, nil
+}
+
 // BridgeGatewayIP returns the gateway IP of Docker's default "bridge"
 // network: the address from which a container attached to that network
 // (the default whenever Create's NetworkingConfig is nil, which is every

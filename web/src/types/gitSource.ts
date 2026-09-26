@@ -74,9 +74,23 @@ export interface GitSourceResource {
   // read-only-here, set-via-preview-settings shape as preview_enabled
   // above (queries/previewEnvironments.ts's setPreviewPostPRComments).
   post_pr_comments: boolean
+  // deploy_paths and deploy_paths_ignore filter which pushes deploy by the
+  // files they changed; report_status posts deploy state back to the forge.
+  // Set via PUT /api/v1/apps/{name}/git-source/deploy-settings.
+  deploy_paths: string[]
+  deploy_paths_ignore: string[]
+  report_status: boolean
   created_at: string
   updated_at: string
 }
+
+export interface GitDeploySettings {
+  deploy_paths: string[]
+  deploy_paths_ignore: string[]
+  report_status: boolean
+}
+
+export type SetGitDeploySettingsRequest = Partial<GitDeploySettings>
 
 // SetGitSourceRequest is PUT /api/v1/apps/{name}/git-source's body.
 // token is write-only, and only sent at all when the operator actually

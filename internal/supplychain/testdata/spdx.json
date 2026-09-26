@@ -1,0 +1,15 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "app-image",
+  "packages": [
+    {"SPDXID": "SPDXRef-DocumentRoot-Image-app", "name": "app-image", "versionInfo": "sha256:abc"},
+    {"SPDXID": "SPDXRef-Package-apk-musl", "name": "musl", "versionInfo": "1.2.4-r2", "licenseConcluded": "MIT", "licenseDeclared": "MIT",
+     "externalRefs": [{"referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl", "referenceLocator": "pkg:apk/alpine/musl@1.2.4-r2"}]},
+    {"SPDXID": "SPDXRef-Package-apk-busybox", "name": "busybox", "versionInfo": "1.36.1-r5", "licenseConcluded": "NOASSERTION", "licenseDeclared": "GPL-2.0-only",
+     "externalRefs": [{"referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl", "referenceLocator": "pkg:apk/alpine/busybox@1.36.1-r5"}]},
+    {"SPDXID": "SPDXRef-Package-npm-express", "name": "express", "versionInfo": "4.19.2", "licenseConcluded": "MIT",
+     "externalRefs": [{"referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl", "referenceLocator": "pkg:npm/express@4.19.2"}]},
+    {"SPDXID": "SPDXRef-Package-mystery", "name": "mystery", "licenseConcluded": "NONE", "licenseDeclared": "NOASSERTION"}
+  ]
+}

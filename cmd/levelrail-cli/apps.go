@@ -85,6 +85,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsLogDrain(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "scheduled-tasks":
 		return runAppsScheduledTasks(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "sbom":
+		return runAppsSBOM(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "scan":
+		return runAppsScan(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "build-cache":
 		return runAppsBuildCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "alerts":
@@ -193,6 +197,8 @@ func appsUsage(prog string) string {
   %[1]s apps exec-access enable|disable|status <name> [flags]   opt an app into (or out of) shell/exec access, on by default
   %[1]s apps log-drain get|set|clear <name> [flags]   configure an external log drain
   %[1]s apps scheduled-tasks <verb> [flags]   manage cron-scheduled commands run inside the app's container
+  %[1]s apps sbom <app> [deploy-id] [--download]   show a deploy's software bill of materials
+  %[1]s apps scan <verb> <app> [flags]    enable/disable/status/run/gate/override vulnerability scanning
   %[1]s apps build-cache <verb> [flags]   show/set/clear/remove the BuildKit remote cache on a storage destination
   %[1]s apps alerts <verb> [flags]   manage alert rules (threshold, crashloop, cert_expiry)
   %[1]s apps deploy-notify-targets <verb> [flags]   manage which notification channels get a deploy's outcome

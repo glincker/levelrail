@@ -162,10 +162,17 @@ func printAlertHistory(out io.Writer, list []apiclient.AlertHistoryEntry) {
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", e.At.Format(time.RFC3339), orDash(e.App), e.RuleName, e.Event, e.Outcome, orDash(detail))
 	}
 	_ = tw.Flush()
+	omitted := 0
 	for _, e := range list {
 		if e.Changes != nil {
 			_, _ = fmt.Fprintf(out, "\n%s %s\n", e.At.Format(time.RFC3339), e.RuleName)
 			printRecentChanges(out, e.Changes, "  ")
 		}
+		if e.ChangesOmitted {
+			omitted++
+		}
+	}
+	if omitted > 0 {
+		_, _ = fmt.Fprintf(out, "\nchanges omitted for %d older firings (the server fills the newest 25); use a smaller --limit or --since\n", omitted)
 	}
 }

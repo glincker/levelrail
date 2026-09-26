@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { formatBytes } from '../lib/modelPreflight'
 import { usePruneModelCache } from '../queries/modelPreflight'
+import type { CachePruneResult } from '../types/modelPreflight'
 
 // Two steps: opening the dialog runs a dry run and lists exactly what would
 // go, and the confirm button removes only those volumes. The server rechecks
@@ -27,6 +28,7 @@ export function PruneModelCacheDialog({
   const [open, setOpen] = useState(false)
   const preview = usePruneModelCache()
   const prune = usePruneModelCache()
+  const [outcome, setOutcome] = useState<CachePruneResult | null>(null)
   const candidates = preview.data?.candidates ?? []
 
   function handleOpenChange(next: boolean) {
@@ -36,6 +38,7 @@ export function PruneModelCacheDialog({
     } else {
       preview.reset()
       prune.reset()
+      setOutcome(null)
     }
   }
 
@@ -49,7 +52,11 @@ export function PruneModelCacheDialog({
             description: `Reclaimed ${formatBytes(result.reclaimed_bytes)}.`,
             type: 'success',
           })
-          handleOpenChange(false)
+          if (result.skipped.length > 0) {
+            setOutcome(result)
+          } else {
+            handleOpenChange(false)
+          }
         },
       },
     )
@@ -88,17 +95,37 @@ export function PruneModelCacheDialog({
             again if you deploy that model later.
           </DialogDescription>
         </DialogHeader>
+        {outcome ? (
+          <div role="status" className="space-y-1.5 text-sm">
+            <p>
+              Removed {outcome.removed.length} volume
+              {outcome.removed.length === 1 ? '' : 's'}; kept{' '}
+              {outcome.skipped.length}.
+            </p>
+            <ul
+              aria-label="Volumes that were not removed"
+              className="max-h-48 space-y-1 overflow-auto rounded-md border border-border p-2 text-xs"
+            >
+              {outcome.skipped.map((k) => (
+                <li key={k.volume} className="space-y-0.5">
+                  <span className="block truncate font-mono">{k.volume}</span>
+                  <span className="text-muted-foreground">{k.reason}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         {preview.isPending ? (
           <p role="status" className="text-sm text-muted-foreground">
             Checking what would be removed...
           </p>
         ) : null}
-        {preview.isSuccess && candidates.length === 0 ? (
+        {!outcome && preview.isSuccess && candidates.length === 0 ? (
           <p role="status" className="text-sm text-muted-foreground">
             Nothing to prune right now.
           </p>
         ) : null}
-        {candidates.length > 0 ? (
+        {!outcome && candidates.length > 0 ? (
           <ul
             aria-label="Volumes that would be removed"
             className="max-h-48 space-y-1 overflow-auto rounded-md border border-border p-2 text-xs"
@@ -128,12 +155,14 @@ export function PruneModelCacheDialog({
               handleOpenChange(false)
             }}
           >
-            Cancel
+            {outcome ? 'Close' : 'Cancel'}
           </Button>
           <Button
             type="button"
             variant="destructive"
-            disabled={candidates.length === 0 || prune.isPending}
+            disabled={
+              outcome !== null || candidates.length === 0 || prune.isPending
+            }
             onClick={confirm}
           >
             {prune.isPending

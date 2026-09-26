@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { GitSourceCard } from '../../../components/GitSourceCard'
+import { GitDeploySettingsCard } from '../../../components/GitDeploySettingsCard'
 import { PreviewEnvironmentsCard } from '../../../components/PreviewEnvironmentsCard'
 import { WebhookDeliveriesPanel } from '../../../components/WebhookDeliveriesPanel'
 import { HelpLink } from '../../../components/HelpLink'
@@ -23,6 +24,7 @@ function SourceSection() {
         <HelpLink path="/git-integrations" label="Git integrations guide" />
       </div>
       <GitSourceCard app={app} />
+      <GitDeploySettingsCard appName={name} />
       <WebhookDeliveriesPanel app={app} />
       <PreviewEnvironmentsCard app={app} />
     </div>

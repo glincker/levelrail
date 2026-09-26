@@ -71,6 +71,18 @@ func semanticIssues(def *Definition, root *yaml.Node) []Issue {
 		def.On.Manual = &ManualTrigger{}
 		def.On.API = true
 	}
+	for _, kind := range []string{TriggerPush, TriggerPullRequest} {
+		if err := def.On.pathFilter(kind).Validate(); err != nil {
+			add("on."+kind, err.Error())
+		}
+	}
+	if pr := def.On.PullRequest; pr != nil {
+		for i, ty := range pr.Types {
+			if !slices.Contains(PRTypes, ty) {
+				add(fmt.Sprintf("on.pull_request.types.%d", i), fmt.Sprintf("unknown pull request type %q (use %s)", ty, strings.Join(PRTypes, ", ")))
+			}
+		}
+	}
 	for i, s := range def.On.Schedule {
 		if _, err := cronexpr.Parse(s); err != nil {
 			add(fmt.Sprintf("on.schedule.%d", i), err.Error())

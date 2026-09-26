@@ -77,7 +77,8 @@ type AlertHistoryEntry struct {
 	Error      string    `json:"error,omitempty"`
 
 	// Changes is set on fired entries when the query asked for it.
-	Changes *RecentChangesResource `json:"changes,omitempty"`
+	Changes        *RecentChangesResource `json:"changes,omitempty"`
+	ChangesOmitted bool                   `json:"changes_omitted,omitempty"`
 }
 
 // AlertHistoryQuery filters ListAlertHistory; zero fields are omitted.

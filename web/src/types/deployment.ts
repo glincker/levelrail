@@ -1,3 +1,5 @@
+import type { VulnCounts } from './supplyChain'
+
 export const DEPLOYMENT_STATUSES = [
   'building',
   'queued',
@@ -59,6 +61,10 @@ export interface Deployment {
   is_live: boolean
   approval_id: string | null
   preview_image_url: string | null
+  /** Packages in the deploy's SBOM, null when none was recorded. */
+  sbom_packages: number | null
+  /** Findings per severity, null until the deploy was scanned. */
+  vuln_counts: VulnCounts | null
 }
 
 export interface DeploymentListPage {

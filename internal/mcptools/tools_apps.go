@@ -166,6 +166,57 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, attempts, nil
 	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "get_deploy_sbom",
+		Description: "Get the software bill of materials summary of one deploy: package count, package types, license counts and the first packages. Without a deploy id the newest deploy that has an SBOM is used. Read only; SBOMs exist only for Dockerfile builds when the server sets APP_BUILD_ATTEST=true.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployRefInput) (*mcp.CallToolResult, apiclient.SBOMSummary, error) {
+		id, err := supplyChainDeploy(ctx, client, in, true)
+		if err != nil {
+			return nil, apiclient.SBOMSummary{}, err
+		}
+		sum, err := client.GetSBOM(ctx, in.Name, id)
+		if err != nil {
+			return nil, apiclient.SBOMSummary{}, fmt.Errorf("get sbom of deploy %q for app %q: %w", id, in.Name, err)
+		}
+		return nil, sum, nil
+	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "get_deploy_vulnerabilities",
+		Description: "Get the vulnerability scan result of one deploy: counts by severity, the top fixable findings and the scan gate decision. Without a deploy id the newest scanned deploy is used. Read only; it never starts a scan.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployRefInput) (*mcp.CallToolResult, apiclient.VulnReport, error) {
+		id, err := supplyChainDeploy(ctx, client, in, false)
+		if err != nil {
+			return nil, apiclient.VulnReport{}, err
+		}
+		rep, err := client.GetVulnerabilities(ctx, in.Name, id)
+		if err != nil {
+			return nil, apiclient.VulnReport{}, fmt.Errorf("get vulnerabilities of deploy %q for app %q: %w", id, in.Name, err)
+		}
+		return nil, rep, nil
+	})
+}
+
+type deployRefInput struct {
+	Name     string `json:"name" jsonschema:"the app's name"`
+	DeployID string `json:"deploy_id,omitempty" jsonschema:"deploy attempt id; omit for the newest deploy with data"`
+}
+
+func supplyChainDeploy(ctx context.Context, client *apiclient.Client, in deployRefInput, needSBOM bool) (string, error) {
+	if in.DeployID != "" {
+		return in.DeployID, nil
+	}
+	attempts, err := client.ListDeployAttempts(ctx, in.Name)
+	if err != nil {
+		return "", fmt.Errorf("list deploy attempts for app %q: %w", in.Name, err)
+	}
+	for _, a := range attempts {
+		if a.SBOMPackages != nil && (needSBOM || a.VulnCounts != nil) {
+			return a.ID, nil
+		}
+	}
+	return "", fmt.Errorf("no deploy of app %q has supply chain data yet", in.Name)
 }
 
 // tailLogEntries applies get_app_logs' client-side "last N entries"

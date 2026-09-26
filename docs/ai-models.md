@@ -86,9 +86,10 @@ The token you supply is used for that one request. It is not stored or logged, a
 | `APP_MODEL_FIT_OVERHEAD_PERCENT` | `20` | Added to weight size for KV cache and buffers. |
 | `APP_MODEL_FIT_PERCENT` | `90` | Share of free VRAM a model may use to count as "fits". Above it, up to 100%, is "tight". |
 | `APP_MODEL_DISK_HEADROOM_PERCENT` | `10` | Free disk required beyond the download. |
-| `APP_NODE_DISK_FACT_MAX_AGE` | `10m` | Older node disk samples count as unknown. |
 
-The API is `POST /api/v1/models/preflight` (`repo`, optional `engine`, `quant`, `file`, `node_id`, `hf_token`) and the MCP tool is `preflight_model`. Hub problems (missing, gated, rate limited, unreachable) come back as a `status` in a normal response so a client can always show the next step.
+The disk check measures the filesystem holding Docker's volumes on the control plane host. If that path is not visible from the control plane, or the node is remote, disk is reported as unknown.
+
+The API is `POST /api/v1/models/preflight` (`repo`, optional `engine`, `quant`, `file`, `gpu_count`, `node_id`, `hf_token`) and the MCP tool is `preflight_model`. Hub problems (missing, gated, rate limited, unreachable) come back as a `status` in a normal response so a client can always show the next step.
 
 ## Model cache
 

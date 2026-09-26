@@ -2,46 +2,50 @@ package main
 
 import (
 	"context"
+	"errors"
+	"io"
+	"log/slog"
 	"testing"
-	"time"
-
-	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
-type fakeLatest map[string][]telemetry.Sample
-
-func (f fakeLatest) LatestByMetric(_ context.Context, metric string) ([]telemetry.Sample, error) {
-	return f[metric], nil
+type fakeRoot struct {
+	dir string
+	err error
 }
 
-func TestNodeDiskFacts(t *testing.T) {
-	now := time.Now()
-	fresh := now.Add(-time.Minute)
-	stale := now.Add(-time.Hour)
-	mk := func(ts time.Time, used, total float64) fakeLatest {
-		return fakeLatest{
-			telemetry.MetricDiskUsedBytes:  {{ResourceID: "node:n1", Timestamp: ts, Value: used}},
-			telemetry.MetricDiskTotalBytes: {{ResourceID: "node:n1", Timestamp: ts, Value: total}},
-		}
-	}
+func (f fakeRoot) DockerRootDir(context.Context) (string, error) { return f.dir, f.err }
+
+func TestDockerDiskFacts(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	var statted string
+	usage := func(p string) (int64, int64, error) { statted = p; return 70, 100, nil }
+	failing := func(string) (int64, int64, error) { return 0, 0, errors.New("no such path") }
 	tests := []struct {
 		name     string
-		src      fakeLatest
+		src      fakeRoot
+		usage    func(string) (int64, int64, error)
 		node     string
-		wantFree int64
 		wantOK   bool
+		wantPath string
 	}{
-		{"fresh", mk(fresh, 30, 100), "n1", 70, true},
-		{"stale is unknown", mk(stale, 30, 100), "n1", 0, false},
-		{"other node is unknown", mk(fresh, 30, 100), "n2", 0, false},
-		{"no samples", fakeLatest{}, "n1", 0, false},
-		{"used above total clamps to zero", mk(fresh, 120, 100), "n1", 0, true},
-		{"zero total is unknown", mk(fresh, 0, 0), "n1", 0, false},
+		{"local uses docker root", fakeRoot{dir: "/var/lib/docker"}, usage, "", true, "/var/lib/docker"},
+		{"remote node is unknown", fakeRoot{dir: "/var/lib/docker"}, usage, "n1", false, ""},
+		{"docker info fails", fakeRoot{err: errors.New("down")}, usage, "", false, ""},
+		{"root not visible to control plane", fakeRoot{dir: "/var/lib/docker"}, failing, "", false, ""},
 	}
 	for _, tt := range tests {
-		free, _, ok := nodeDiskFacts(context.Background(), tt.src, tt.node, 10*time.Minute, now)
-		if free != tt.wantFree || ok != tt.wantOK {
-			t.Errorf("%s: free=%d ok=%v, want %d %v", tt.name, free, ok, tt.wantFree, tt.wantOK)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			statted = ""
+			free, total, ok := dockerDiskFacts(context.Background(), tt.src, tt.usage, tt.node, logger)
+			if ok != tt.wantOK {
+				t.Fatalf("ok=%v, want %v", ok, tt.wantOK)
+			}
+			if tt.wantOK && statted != tt.wantPath {
+				t.Fatalf("statted %q, want %q", statted, tt.wantPath)
+			}
+			if ok && (free != 70 || total != 100) {
+				t.Fatalf("free=%d total=%d", free, total)
+			}
+		})
 	}
 }

@@ -29,6 +29,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// accepts an optional live deploy token in the same request body.
 	mux.HandleFunc("GET /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetGitSource))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitSource))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source/deploy-settings", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitDeploySettings))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteGitSource))
 
 	// Git push webhook (git_webhook.go), the per-app-URL evolution of the
