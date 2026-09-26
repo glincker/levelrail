@@ -363,6 +363,13 @@ func (db *DB) FinishDeployAttempt(ctx context.Context, id, status string, finish
 // get its own FinishDeployAttempt call. Returns the number of rows
 // fixed.
 func (db *DB) FailOrphanedDeployAttempts(ctx context.Context, finishedAt time.Time) (int, error) {
+	// A released held deploy goes back to held so the releaser replays it.
+	if _, err := db.ExecContext(ctx, `
+		UPDATE deploy_attempts SET status = ?, reason = ?
+		WHERE status = ? AND held_request != ''
+	`, DeployAttemptStatusHeld, DeployReasonFrozen+": release interrupted by restart", DeployAttemptStatusRunning); err != nil {
+		return 0, fmt.Errorf("store: requeue interrupted held deploy attempts: %w", err)
+	}
 	res, err := db.ExecContext(ctx, `
 		UPDATE deploy_attempts SET status = ?, finished_at = ?, error = ?
 		WHERE status = ?

@@ -58,9 +58,9 @@ func DefaultGatewayLimits() GatewayLimits {
 func LoadGatewayLimits() GatewayLimits {
 	l := DefaultGatewayLimits()
 	l.MaxBodyBytes = envInt64(envGatewayMaxBody, l.MaxBodyBytes)
-	l.MaxN = int(envInt64(envGatewayMaxN, int64(l.MaxN)))
-	l.MaxTokens = int(envInt64(envGatewayMaxGenLen, int64(l.MaxTokens)))
-	l.MaxInflight = int(envInt64(envGatewayMaxInflight, int64(l.MaxInflight)))
+	l.MaxN = envInt(envGatewayMaxN, l.MaxN)
+	l.MaxTokens = envInt(envGatewayMaxGenLen, l.MaxTokens)
+	l.MaxInflight = envInt(envGatewayMaxInflight, l.MaxInflight)
 	l.RetryAfter = envDuration(envGatewayRetryAfter, l.RetryAfter)
 	l.DialTimeout = envDuration(envGatewayDialTimeout, l.DialTimeout)
 	l.HeaderTimeout = envDuration(envGatewayHeaderTimeout, l.HeaderTimeout)
@@ -95,6 +95,18 @@ func envInt64(name string, def int64) int64 {
 		return def
 	}
 	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return def
+	}
+	return n
+}
+
+func envInt(name string, def int) int {
+	v := os.Getenv(name)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
 	if err != nil {
 		return def
 	}

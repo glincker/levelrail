@@ -37,10 +37,10 @@ func DefaultMeterConfig() MeterConfig {
 func LoadMeterConfig() MeterConfig {
 	c := DefaultMeterConfig()
 	c.FlushInterval = envDuration(envUsageFlushInterval, c.FlushInterval)
-	c.BatchSize = int(envInt64(envUsageBatchSize, int64(c.BatchSize)))
-	c.MaxBuffered = int(envInt64(envUsageMaxBuffered, int64(c.MaxBuffered)))
+	c.BatchSize = envInt(envUsageBatchSize, c.BatchSize)
+	c.MaxBuffered = envInt(envUsageMaxBuffered, c.MaxBuffered)
 	c.Retention = envDuration(envUsageRetention, c.Retention)
-	c.ScanBytes = int(envInt64(envUsageScanBytes, int64(c.ScanBytes)))
+	c.ScanBytes = envInt(envUsageScanBytes, c.ScanBytes)
 	return c
 }
 

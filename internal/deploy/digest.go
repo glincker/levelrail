@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -22,6 +23,10 @@ type ImageResolution struct {
 	// Note carries the registry error behind a fallback, for the operator.
 	Note string
 }
+
+// ErrFreshImageUnavailable is returned when a deploy requires a fresh
+// registry resolution but no image resolver is available.
+var ErrFreshImageUnavailable = errors.New("image resolver unavailable, cannot resolve a fresh image")
 
 // RegistryAuthSource resolves a registry credential ID into pull auth.
 type RegistryAuthSource interface {
@@ -52,6 +57,9 @@ func ResolveImage(ctx context.Context, r docker.ImageResolver, image string, aut
 		return ImageResolution{Image: image, Digest: d, Reason: store.DigestReasonPinned}, nil
 	}
 	if r == nil {
+		if requireFresh {
+			return ImageResolution{}, fmt.Errorf("resolve image %q: %w", image, ErrFreshImageUnavailable)
+		}
 		return ImageResolution{Image: image}, nil
 	}
 	res, err := r.ResolveImage(ctx, image, auth, requireFresh)

@@ -244,6 +244,25 @@ func TestFailOrphanedDeployAttempts_MarksRunningOnesFailed(t *testing.T) {
 	}
 }
 
+func TestFailOrphanedDeployAttempts_RequeuesInterruptedRelease(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveDeployAttempt(ctx, DeployAttempt{
+		ID: "dep_released", ServiceName: "web", Image: "nginx:2",
+		Status: DeployAttemptStatusRunning, StartedAt: time.Now().UTC(), HeldRequest: `{"kind":"image","image":"nginx:2"}`,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	n, err := db.FailOrphanedDeployAttempts(ctx, time.Now().UTC())
+	if err != nil || n != 0 {
+		t.Fatalf("FailOrphanedDeployAttempts() = %d, %v; want 0 failed", n, err)
+	}
+	held, err := db.ListHeldDeployAttempts(ctx)
+	if err != nil || len(held) != 1 || held[0].ID != "dep_released" {
+		t.Fatalf("held = %+v, %v; want the interrupted release back in held", held, err)
+	}
+}
+
 func TestFailOrphanedDeployAttempts_NothingRunning_ReturnsZero(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

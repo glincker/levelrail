@@ -124,7 +124,7 @@ func (s *Service) ListKeys(ctx context.Context, model string) ([]KeyView, error)
 }
 
 func validateLimits(engine string, l KeyLimits) error {
-	maxLimit := int(envInt64(envMaxLimit, 10_000_000))
+	maxLimit := envInt(envMaxLimit, 10_000_000)
 	for name, v := range map[string]int{"rpm": l.RPM, "tpm": l.TPM, "max_parallel": l.MaxParallel} {
 		if v < 0 || (maxLimit > 0 && v > maxLimit) {
 			return fmt.Errorf("%w: %s must be between 0 and %d", ErrInvalid, name, maxLimit)
@@ -145,7 +145,7 @@ func validateLimits(engine string, l KeyLimits) error {
 }
 
 func (s *Service) checkKeyCapacity(ctx context.Context, model string) error {
-	limit := int(envInt64(envMaxKeys, 50))
+	limit := envInt(envMaxKeys, 50)
 	if limit <= 0 {
 		return nil
 	}

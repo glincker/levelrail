@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -43,6 +44,9 @@ type deployApprovalResource struct {
 	CreatedAt         string `json:"created_at"`
 	ExpiresAt         string `json:"expires_at"`
 	DecidedAt         string `json:"decided_at,omitempty"`
+	FreezeOverride    string `json:"freeze_override,omitempty"`
+	Pull              bool   `json:"pull,omitempty"`
+	IncludeEnv        bool   `json:"include_env,omitempty"`
 }
 
 func toDeployApprovalResource(a store.DeployApproval) deployApprovalResource {
@@ -52,6 +56,7 @@ func toDeployApprovalResource(a store.DeployApproval) deployApprovalResource {
 		RequestedByType: a.RequestedByType, RequestedBy: a.RequestedBy, RequestedByName: a.RequestedByName,
 		ApprovedByType: a.ApprovedByType, ApprovedBy: a.ApprovedBy, ApprovedByName: a.ApprovedByName,
 		Reason: a.Reason, CreatedAt: a.CreatedAt, ExpiresAt: a.ExpiresAt, DecidedAt: a.DecidedAt,
+		FreezeOverride: a.FreezeOverride, Pull: a.Pull, IncludeEnv: a.IncludeEnv,
 	}
 }
 
@@ -82,6 +87,14 @@ func (rt *Router) currentActor(r *http.Request) (actorType, actorID, actorName s
 	return store.PrincipalTypeToken, rec.ID, rec.Name, true
 }
 
+// deployApprovalOptions are the request options an approval applies later.
+type deployApprovalOptions struct {
+	freezeOverride string
+	pull           bool
+	includeEnv     bool
+	promoteEnv     string
+}
+
 // requestDeployApproval creates and saves a pending deploy_approvals row
 // gating action against env, writing its own 401/500 response and
 // returning ok=false on failure, the same "writes its own failure
@@ -89,7 +102,7 @@ func (rt *Router) currentActor(r *http.Request) (actorType, actorID, actorName s
 // already established. Called by handleTriggerDeploy (deploys.go) and
 // handlePromoteApp (promote.go) once each has already confirmed env is
 // protected and the caller passed confirm: true.
-func (rt *Router) requestDeployApproval(w http.ResponseWriter, r *http.Request, env store.Environment, serviceName, sourceServiceName, action, image string) (deployApprovalResource, bool) {
+func (rt *Router) requestDeployApproval(w http.ResponseWriter, r *http.Request, env store.Environment, serviceName, sourceServiceName, action, image string, opts deployApprovalOptions) (deployApprovalResource, bool) {
 	actorType, actorID, actorName, ok := rt.currentActor(r)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "authentication required")
@@ -106,8 +119,10 @@ func (rt *Router) requestDeployApproval(w http.ResponseWriter, r *http.Request, 
 		EnvironmentID: env.ID, Action: action, Image: image,
 		Status:          store.DeployApprovalStatusPending,
 		RequestedByType: actorType, RequestedBy: actorID, RequestedByName: actorName,
-		CreatedAt: store.FormatAuditTime(now),
-		ExpiresAt: store.FormatAuditTime(now.Add(rt.effectiveDeployApprovalTTL())),
+		CreatedAt:      store.FormatAuditTime(now),
+		ExpiresAt:      store.FormatAuditTime(now.Add(rt.effectiveDeployApprovalTTL())),
+		FreezeOverride: opts.freezeOverride, Pull: opts.pull, IncludeEnv: opts.includeEnv,
+		PromoteEnv: opts.promoteEnv,
 	}
 	if err := rt.deployApprovals.SaveDeployApproval(r.Context(), a); err != nil {
 		rt.internalError(w, "api: request deploy approval failed", err, slog.String("service", serviceName))
@@ -273,13 +288,29 @@ func (rt *Router) handleApproveDeployApproval(w http.ResponseWriter, r *http.Req
 	var updated store.DesiredService
 	switch a.Action {
 	case store.DeployApprovalActionPromote:
-		updated, err = rt.setDesiredImage(r.Context(), *svc, a.Image)
+		target := *svc
+		if a.IncludeEnv {
+			if err := applyPromoteEnvSnapshot(&target, a.PromoteEnv); err != nil {
+				rt.internalError(w, "api: approve deploy approval: read env snapshot failed", err, slog.String("id", id))
+				return
+			}
+		}
+		updated, err = rt.setDesiredImage(r.Context(), target, a.Image)
 		if err == nil {
 			rt.recordInstantDeployAttempt(r.Context(), updated, a.Image, store.DeployAttemptSourcePromote)
 			rt.nudgeReconciler()
 		}
 	default:
-		updated, err = rt.executeConfirmedDeploy(r.Context(), *svc, a.Image, confirmedDeployOptions{})
+		note, ok := rt.approvalFreezeGate(w, r, a)
+		if !ok {
+			return
+		}
+		updated, err = rt.executeConfirmedDeploy(r.Context(), *svc, a.Image, confirmedDeployOptions{pull: a.Pull, reason: note})
+	}
+	if err != nil && a.Pull && a.Action != store.DeployApprovalActionPromote {
+		rt.logger.Error("api: approve deploy approval: fresh pull failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusBadGateway, "could not resolve the image from its registry; the approval is still pending, retry later or reject it and request again without pull")
+		return
 	}
 	if err != nil {
 		rt.internalError(w, "api: approve deploy approval: apply failed", err, slog.String("id", id))
@@ -301,6 +332,27 @@ func (rt *Router) handleApproveDeployApproval(w http.ResponseWriter, r *http.Req
 		Approval: toDeployApprovalResource(final),
 		App:      toAppResource(updated),
 	})
+}
+
+// approvalFreezeGate refuses to apply an approved deploy during a freeze
+// unless the original request carried an override.
+func (rt *Router) approvalFreezeGate(w http.ResponseWriter, r *http.Request, a store.DeployApproval) (string, bool) {
+	if rt.deploySafety == nil {
+		return "", true
+	}
+	status, err := deploy.CheckFreeze(r.Context(), rt.deploySafety, a.ServiceName, time.Now())
+	if err != nil {
+		rt.internalError(w, "api: approve deploy approval: check freeze failed", err, slog.String("id", a.ID))
+		return "", false
+	}
+	if !status.Frozen {
+		return "", true
+	}
+	if a.FreezeOverride == "" {
+		writeError(w, http.StatusLocked, (&deploy.FrozenError{Status: status}).Error()+"; this request did not override the freeze, reject it and request again with override_freeze and override_reason")
+		return "", false
+	}
+	return a.FreezeOverride, true
 }
 
 // deployApprovalDecisionResponse is POST .../approve's response: the
