@@ -44,6 +44,17 @@ func TestModelTools_RequestsAndResults(t *testing.T) {
 			},
 		},
 		{
+			tool: "revoke_model_key", args: map[string]any{"name": "chat", "key_id": "k1"}, wantMethod: http.MethodDelete, wantPath: "/api/v1/models/chat/keys/k1",
+			respond: func(w http.ResponseWriter) { w.WriteHeader(http.StatusNoContent) },
+			check: func(t *testing.T, r *mcp.CallToolResult) {
+				var out modelActionResult
+				decodeStructured(t, r, &out)
+				if !out.OK {
+					t.Error("want ok")
+				}
+			},
+		},
+		{
 			tool: "list_model_keys", args: map[string]any{"name": "chat"}, wantMethod: http.MethodGet, wantPath: "/api/v1/models/chat/keys",
 			respond: func(w http.ResponseWriter) {
 				_ = json.NewEncoder(w).Encode([]apiclient.ModelKeyResource{{ID: "k1", Name: "ci", KeyPrefix: "lr-12345", Status: "active"}})

@@ -122,7 +122,7 @@ JSON bodies are read up to the size cap so `n` and the token limits can be check
 A model can have several named keys, so each client gets its own identity, limits and usage. The key made at deploy time is the key named `default`; existing models were migrated to it, and it keeps working unchanged.
 
 ```bash
-levelrail models keys create chat --name ci --rpm 60 --tpm 100000 --max-parallel 4 \
+levelrail models keys create chat --name ci --rpm 60 --tpm 100000 --tpd 2000000 --max-parallel 4 \
   --allow-paths /v1/chat/completions --expires-in 720h
 levelrail models keys list chat
 levelrail models keys rotate chat <key-id> --grace 30m
@@ -134,8 +134,9 @@ In the dashboard, the gauge button on a model row opens the keys panel (create, 
 
 - Only the SHA-256 of a key is stored. The key is shown once, with its first 8 characters kept as a prefix for identification. `last used` is updated on each flush interval.
 - **Rotation** issues a replacement with the same name, limits and expiry. The old key keeps working for a grace window (`--grace`, default `APP_MODEL_KEY_ROTATION_GRACE`, `1h`; at most `APP_MODEL_KEY_MAX_GRACE`, `168h`; `0` retires it at once), then stops. **Revoking** stops a key immediately.
-- **Limits** are per key. `rpm` and max parallel are enforced at the gateway: a request over either gets `429` with `Retry-After` and the same generic OpenAI-style error, so the response never says which limit tripped. `tpm` is soft: tokens are counted from responses after they finish, so the request that crosses the limit still completes and later ones get `429` until the minute rolls over. An unknown, revoked or expired key always gets `401`.
+- **Limits** are per key. `rpm` and max parallel are enforced at the gateway: a request over either gets `429` with `Retry-After` and the same generic OpenAI-style error, so the response never says which limit tripped. `tpm` and `tpd` (tokens per day, rolling 24 hours) are soft: tokens are counted from responses after they finish, so the request that crosses the limit still completes and later ones get `429` until the window rolls over. An unknown, revoked or expired key always gets `401`.
 - **Allow lists**: `allow_paths` are exact gateway paths (a trailing `/` allows everything below it) and must be routes the engine's allowlist already serves, so a key can never reach an engine admin route. `allow_models` are compared with the `model` field of the request body; a request without one is refused when the list is set.
+- Each key records who created it (`created_by`). The MCP server can list keys (`list_model_keys`) and revoke one (`revoke_model_key`).
 - At most `APP_MODEL_MAX_KEYS` (`50`) live keys per model.
 
 ### What is metered

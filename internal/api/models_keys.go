@@ -18,6 +18,7 @@ type modelKeyResource struct {
 	Status      string     `json:"status"`
 	RPM         int        `json:"rpm"`
 	TPM         int        `json:"tpm"`
+	TPD         int        `json:"tpd"`
 	MaxParallel int        `json:"max_parallel"`
 	AllowPaths  []string   `json:"allow_paths"`
 	AllowModels []string   `json:"allow_models"`
@@ -27,6 +28,7 @@ type modelKeyResource struct {
 	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
 	RevokedAt   *time.Time `json:"revoked_at,omitempty"`
 	LastUsedAt  *time.Time `json:"last_used_at,omitempty"`
+	CreatedBy   string     `json:"created_by,omitempty"`
 }
 
 type createdModelKeyResource struct {
@@ -39,6 +41,7 @@ type createModelKeyRequest struct {
 	ExpiresAt   *time.Time `json:"expires_at"`
 	RPM         int        `json:"rpm"`
 	TPM         int        `json:"tpm"`
+	TPD         int        `json:"tpd"`
 	MaxParallel int        `json:"max_parallel"`
 	AllowPaths  []string   `json:"allow_paths"`
 	AllowModels []string   `json:"allow_models"`
@@ -50,7 +53,7 @@ type rotateModelKeyRequest struct {
 
 func toModelKeyResource(k models.KeyView) modelKeyResource {
 	return modelKeyResource{
-		ID: k.ID, Name: k.Name, KeyPrefix: k.KeyPrefix, Status: string(k.Status), RPM: k.RPM, TPM: k.TPM, MaxParallel: k.MaxParallel,
+		ID: k.ID, Name: k.Name, KeyPrefix: k.KeyPrefix, Status: string(k.Status), RPM: k.RPM, TPM: k.TPM, TPD: k.TPD, CreatedBy: k.CreatedBy, MaxParallel: k.MaxParallel,
 		AllowPaths: nonNil(k.AllowPaths), AllowModels: nonNil(k.AllowModels), ReplacedBy: k.ReplacedBy, InFlight: k.InFlight,
 		CreatedAt: k.CreatedAt, ExpiresAt: k.ExpiresAt, RevokedAt: k.RevokedAt, LastUsedAt: k.LastUsedAt,
 	}
@@ -104,8 +107,8 @@ func (rt *Router) handleCreateModelKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	created, err := rt.models.CreateKey(r.Context(), r.PathValue("name"), models.CreateKeyInput{
-		Name: req.Name, ExpiresAt: req.ExpiresAt,
-		Limits: models.KeyLimits{RPM: req.RPM, TPM: req.TPM, MaxParallel: req.MaxParallel, AllowPaths: req.AllowPaths, AllowModels: req.AllowModels},
+		Name: req.Name, CreatedBy: rt.eventActor(r), ExpiresAt: req.ExpiresAt,
+		Limits: models.KeyLimits{RPM: req.RPM, TPM: req.TPM, TPD: req.TPD, MaxParallel: req.MaxParallel, AllowPaths: req.AllowPaths, AllowModels: req.AllowModels},
 	})
 	if err != nil {
 		rt.writeModelKeyError(w, "create model key", err)
@@ -147,7 +150,7 @@ func (rt *Router) handleRotateModelKey(w http.ResponseWriter, r *http.Request) {
 		g := time.Duration(*req.GraceSeconds) * time.Second
 		grace = &g
 	}
-	created, err := rt.models.RotateKeyByID(r.Context(), r.PathValue("name"), r.PathValue("id"), grace)
+	created, err := rt.models.RotateKeyByID(r.Context(), r.PathValue("name"), r.PathValue("id"), rt.eventActor(r), grace)
 	if err != nil {
 		rt.writeModelKeyError(w, "rotate model key", err)
 		return
