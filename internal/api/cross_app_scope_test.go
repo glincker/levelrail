@@ -15,9 +15,11 @@ func TestCrossAppListsHideDeniedApps(t *testing.T) {
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
 	now := time.Now().UTC()
-	for _, app := range []string{"web", "api"} {
-		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: app, Image: app + ":1", Port: 80}); err != nil {
-			t.Fatal(err)
+	for _, app := range []string{"web", "api", "gone"} {
+		if app != "gone" {
+			if err := db.SaveDesiredService(ctx, store.DesiredService{Name: app, Image: app + ":1", Port: 80}); err != nil {
+				t.Fatal(err)
+			}
 		}
 		if err := db.SaveDeployAttempt(ctx, store.DeployAttempt{
 			ID: "dep_" + app, ServiceName: app, Image: app + ":1", Source: store.DeployAttemptSourceImage,
@@ -62,7 +64,11 @@ func TestCrossAppListsHideDeniedApps(t *testing.T) {
 	if err := json.Unmarshal(get("/api/v1/deploy-approvals"), &approvals); err != nil {
 		t.Fatal(err)
 	}
-	if len(approvals.Approvals) != 1 || approvals.Approvals[0].ServiceName != "web" {
-		t.Fatalf("approvals = %+v, want only web", approvals.Approvals)
+	got := map[string]bool{}
+	for _, a := range approvals.Approvals {
+		got[a.ServiceName] = true
+	}
+	if len(got) != 2 || !got["web"] || !got["gone"] {
+		t.Fatalf("approvals = %+v, want web and the deleted-app approval, not api", approvals.Approvals)
 	}
 }
