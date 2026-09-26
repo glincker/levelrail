@@ -260,7 +260,7 @@ func TestFirePipelinePushSyncsBeforeTriggering(t *testing.T) {
 	events := &recordingEvents{order: &order, done: make(chan struct{}, 1)}
 	rt.SetPipelineEvents(events)
 
-	rt.firePipelinePush(context.Background(), "web", "refs/heads/main", "abc")
+	rt.firePipelinePushEvent(context.Background(), "web", webhook.PushEvent{Ref: "refs/heads/main", After: "abc"})
 	select {
 	case <-events.done:
 	case <-time.After(5 * time.Second):
@@ -274,7 +274,7 @@ func TestFirePipelinePushSyncsBeforeTriggering(t *testing.T) {
 	}
 
 	order = order[:0]
-	rt.firePipelinePush(context.Background(), "web", "refs/tags/v1", "abc")
+	rt.firePipelinePushEvent(context.Background(), "web", webhook.PushEvent{Ref: "refs/tags/v1", After: "abc"})
 	<-events.done
 	if strings.Join(order, ",") != "trigger" {
 		t.Fatalf("a tag push must not sync: %v", order)
@@ -286,7 +286,7 @@ func TestFirePipelinePushStillTriggersWhenSyncFails(t *testing.T) {
 	rt, _ := newSyncRouter(t, syncer)
 	events := &recordingEvents{done: make(chan struct{}, 1)}
 	rt.SetPipelineEvents(events)
-	rt.firePipelinePush(context.Background(), "web", "refs/heads/main", "abc")
+	rt.firePipelinePushEvent(context.Background(), "web", webhook.PushEvent{Ref: "refs/heads/main", After: "abc"})
 	select {
 	case <-events.done:
 	case <-time.After(5 * time.Second):
@@ -299,7 +299,7 @@ func TestFirePipelinePushTriggersWhenCommitUnavailable(t *testing.T) {
 	rt, _ := newSyncRouter(t, syncer)
 	events := &recordingEvents{done: make(chan struct{}, 1)}
 	rt.SetPipelineEvents(events)
-	rt.firePipelinePush(context.Background(), "web", "refs/heads/main", "abc")
+	rt.firePipelinePushEvent(context.Background(), "web", webhook.PushEvent{Ref: "refs/heads/main", After: "abc"})
 	select {
 	case <-events.done:
 	case <-time.After(5 * time.Second):

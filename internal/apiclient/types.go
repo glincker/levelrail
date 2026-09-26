@@ -1330,9 +1330,29 @@ type GitSourceResource struct {
 	// toggle for a preview deploy's GitHub PR comment/commit status, set
 	// via SetPreviewPostPRComments (preview-settings, same route as
 	// PreviewEnabled).
-	PostPRComments bool   `json:"post_pr_comments"`
-	CreatedAt      string `json:"created_at"`
-	UpdatedAt      string `json:"updated_at"`
+	PostPRComments bool `json:"post_pr_comments"`
+	// DeployPaths, DeployPathsIgnore and ReportStatus mirror the store
+	// fields of the same names, set via SetGitDeploySettings.
+	DeployPaths       []string `json:"deploy_paths"`
+	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
+	ReportStatus      bool     `json:"report_status"`
+	CreatedAt         string   `json:"created_at"`
+	UpdatedAt         string   `json:"updated_at"`
+}
+
+// GitDeploySettings mirrors internal/api's gitDeploySettings.
+type GitDeploySettings struct {
+	DeployPaths       []string `json:"deploy_paths"`
+	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
+	ReportStatus      bool     `json:"report_status"`
+}
+
+// SetGitDeploySettingsRequest mirrors internal/api's
+// setGitDeploySettingsRequest; a nil field keeps its current value.
+type SetGitDeploySettingsRequest struct {
+	DeployPaths       *[]string `json:"deploy_paths,omitempty"`
+	DeployPathsIgnore *[]string `json:"deploy_paths_ignore,omitempty"`
+	ReportStatus      *bool     `json:"report_status,omitempty"`
 }
 
 // SetGitSourceRequest mirrors internal/api's setGitSourceRequest

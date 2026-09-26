@@ -40,7 +40,7 @@ func (e *Engine) Start(ctx context.Context, p store.Pipeline, opt StartOptions) 
 		return store.PipelineRun{}, fmt.Errorf("pipeline: %q is invalid: %s", p.Name, issues[0])
 	}
 	ev := Event{Kind: opt.Trigger, Branch: strings.TrimPrefix(opt.Ref, "refs/heads/"), Tag: strings.TrimPrefix(opt.Ref, "refs/tags/")}
-	if opt.Trigger == TriggerPullRequest && opt.BaseBranch != "" {
+	if (opt.Trigger == TriggerPullRequest || opt.Trigger == TriggerMergeGroup) && opt.BaseBranch != "" {
 		ev.Branch = opt.BaseBranch
 	}
 	if !def.On.Matches(ev) && opt.Trigger != TriggerSchedule {
@@ -134,7 +134,7 @@ func (e *Engine) Rerun(ctx context.Context, runID, actor string) (store.Pipeline
 	var inputs map[string]string
 	_ = json.Unmarshal([]byte(old.InputsJSON), &inputs)
 	trig := old.TriggerKind
-	if trig == TriggerSchedule || trig == TriggerPush || trig == TriggerPullRequest || trig == TriggerTag {
+	if trig == TriggerSchedule || trig == TriggerPush || trig == TriggerPullRequest || trig == TriggerTag || trig == TriggerMergeGroup {
 		trig = TriggerManual
 		if def, _ := Validate([]byte(p.YAML)); def != nil && def.On.Manual == nil && def.On.API {
 			trig = TriggerAPI

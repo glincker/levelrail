@@ -73,6 +73,7 @@ func TestPipelineRoutes_RequireAuth(t *testing.T) {
 		{http.MethodPost, "/api/v1/apps/web/pipeline-runs/r1/rerun"},
 		{http.MethodPost, "/api/v1/apps/web/pipeline-runs/r1/approvals/1"},
 		{http.MethodPost, "/api/v1/pipelines/validate"},
+		{http.MethodPost, "/api/v1/pipelines/filters"},
 		{http.MethodGet, "/api/v1/pipelines/schema"},
 	})
 }

@@ -21,6 +21,7 @@
       }
     },
     "timeout": { "$ref": "#/$defs/duration" },
+    "report_status": { "type": "boolean" },
     "templates": {
       "type": "object",
       "additionalProperties": {
@@ -52,13 +53,20 @@
     "refTrigger": {
       "type": ["object", "null"],
       "additionalProperties": false,
-      "properties": { "branches": { "$ref": "#/$defs/stringOrList" } }
+      "properties": {
+        "branches": { "$ref": "#/$defs/stringOrList" },
+        "paths": { "$ref": "#/$defs/stringOrList" },
+        "paths_ignore": { "$ref": "#/$defs/stringOrList" }
+      }
     },
     "prTrigger": {
       "type": ["object", "null"],
       "additionalProperties": false,
       "properties": {
         "branches": { "$ref": "#/$defs/stringOrList" },
+        "types": { "$ref": "#/$defs/stringOrList" },
+        "paths": { "$ref": "#/$defs/stringOrList" },
+        "paths_ignore": { "$ref": "#/$defs/stringOrList" },
         "forks": { "enum": ["block", "approve", "allow"] }
       }
     },
@@ -68,6 +76,7 @@
       "properties": {
         "push": { "$ref": "#/$defs/refTrigger" },
         "pull_request": { "$ref": "#/$defs/prTrigger" },
+        "merge_group": { "$ref": "#/$defs/refTrigger" },
         "tag": {
           "type": ["object", "null"],
           "additionalProperties": false,

@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/pathfilter"
 	"github.com/GLINCKER/levelrail/internal/pipeline"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -91,6 +92,16 @@ type pipelineRunResource struct {
 	Approvals    []pipelineApproval `json:"approvals,omitempty"`
 	Issues       []pipeline.Issue   `json:"issues,omitempty"`
 	Hold         *pipelineHold      `json:"hold,omitempty"`
+	Report       *pipelineReport    `json:"report,omitempty"`
+}
+
+// pipelineReport is the run's commit status as posted to the git forge.
+// URL is the forge's page for the commit; Warning says why a post failed.
+type pipelineReport struct {
+	Provider string `json:"provider,omitempty"`
+	State    string `json:"state,omitempty"`
+	URL      string `json:"url,omitempty"`
+	Warning  string `json:"warning,omitempty"`
 }
 
 // pipelineHold is a run held for approval, such as a pull request from a fork.
@@ -222,6 +233,9 @@ func triggerNames(t pipeline.Triggers) []string {
 	if t.Tag != nil {
 		out = append(out, pipeline.TriggerTag)
 	}
+	if t.MergeGroup != nil {
+		out = append(out, pipeline.TriggerMergeGroup)
+	}
 	if t.Manual != nil {
 		out = append(out, pipeline.TriggerManual)
 	}
@@ -243,6 +257,9 @@ func toRunResource(r store.PipelineRun, pipelineName string) pipelineRunResource
 	_ = json.Unmarshal([]byte(r.InputsJSON), &res.Inputs)
 	if r.HoldState != "" {
 		res.Hold = &pipelineHold{State: r.HoldState, Reason: r.HoldReason, By: r.HoldBy, At: r.HoldAt}
+	}
+	if r.ReportProvider != "" || r.ReportWarning != "" {
+		res.Report = &pipelineReport{Provider: r.ReportProvider, State: r.ReportState, URL: r.ReportURL, Warning: r.ReportWarning}
 	}
 	return res
 }
@@ -460,8 +477,44 @@ func (rt *Router) handleValidatePipeline(w http.ResponseWriter, r *http.Request)
 	if def != nil {
 		resp["triggers"] = triggerNames(def.On)
 		resp["jobs"] = len(def.Jobs)
+		resp["filters"] = pipeline.FiltersOf(def)
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+type pipelineFiltersRequest struct {
+	YAML         string    `json:"yaml"`
+	Paths        *[]string `json:"paths,omitempty"`
+	PathsIgnore  *[]string `json:"paths_ignore,omitempty"`
+	ReportStatus *bool     `json:"report_status,omitempty"`
+}
+
+// handlePipelineFilters handles POST /api/v1/pipelines/filters: it returns
+// the submitted YAML with the requested path filters and report_status set,
+// without saving anything.
+func (rt *Router) handlePipelineFilters(w http.ResponseWriter, r *http.Request) {
+	var req pipelineFiltersRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, pipelineBodyLimit)).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	var paths, ignore []string
+	if req.Paths != nil {
+		paths = nonNilPaths(*req.Paths)
+	}
+	if req.PathsIgnore != nil {
+		ignore = nonNilPaths(*req.PathsIgnore)
+	}
+	if err := (pathfilter.Filter{Paths: paths, Ignore: ignore}).Validate(); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	out, err := pipeline.ApplyFilters([]byte(req.YAML), paths, ignore, req.ReportStatus)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"yaml": string(out)})
 }
 
 // handlePipelineSchema handles GET /api/v1/pipelines/schema.

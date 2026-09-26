@@ -38,6 +38,10 @@ type GitSourceStore interface {
 	// /api/v1/apps/{name}/preview-settings route: the opt-in toggle for
 	// posting a GitHub PR comment/commit status about a preview deploy.
 	SetGitSourcePostPRComments(ctx context.Context, serviceName string, enabled bool) error
+	// SetGitSourceDeploySettings backs PUT
+	// /api/v1/apps/{name}/git-source/deploy-settings: push path filters
+	// and forge status reporting.
+	SetGitSourceDeploySettings(ctx context.Context, serviceName string, paths, pathsIgnore []string, reportStatus bool) error
 }
 
 // GitSourceSecrets is the surface a git source's connect flow and the
@@ -111,9 +115,14 @@ type gitSourceResource struct {
 	// PostPRComments mirrors store.GitSource.PostPRComments: same
 	// read-only-here, set-via-preview-settings shape as PreviewEnabled
 	// above.
-	PostPRComments bool      `json:"post_pr_comments"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	PostPRComments bool `json:"post_pr_comments"`
+	// DeployPaths, DeployPathsIgnore and ReportStatus mirror the store
+	// fields of the same names, set via PUT .../git-source/deploy-settings.
+	DeployPaths       []string  `json:"deploy_paths"`
+	DeployPathsIgnore []string  `json:"deploy_paths_ignore"`
+	ReportStatus      bool      `json:"report_status"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // gitSourceWebhookPath is the relative API path GitHub's own webhook
@@ -143,6 +152,9 @@ func toGitSourceResource(g store.GitSource, hasToken bool) gitSourceResource {
 		WebhookURL:         gitSourceWebhookPath(g.ServiceName),
 		PreviewEnabled:     g.PreviewEnabled,
 		PostPRComments:     g.PostPRComments,
+		DeployPaths:        nonNilPaths(g.DeployPaths),
+		DeployPathsIgnore:  nonNilPaths(g.DeployPathsIgnore),
+		ReportStatus:       g.ReportStatus,
 		CreatedAt:          g.CreatedAt,
 		UpdatedAt:          g.UpdatedAt,
 	}

@@ -121,11 +121,55 @@ on:
 | `push` | a push reaches a matching branch (through the app's git webhook) |
 | `pull_request` | a pull request is opened or updated against a matching branch |
 | `tag` | a tag matching a pattern is pushed |
+| `merge_group` | GitHub's merge queue asks for checks on a queued group |
 | `schedule` | a five-field cron expression comes due (missed runs are not replayed) |
 | `manual` | someone starts it from the dashboard or CLI, with the declared inputs |
 | `api` | an API token starts it |
 
 A trigger key with no value (`push:`) means "on, any branch". A file with no `on` block is manual and API only. Branch and tag filters accept `*` (within one path segment) and `**`. A `pull_request` trigger's `branches` filter matches the pull request's target branch.
+
+### Path filters
+
+`push` and `pull_request` triggers can limit runs by the files a change touched:
+
+```yaml
+on:
+  push:
+    branches: [main]
+    paths: ["src/**", "go.mod"]
+    paths_ignore: ["**/*_test.go"]
+  pull_request:
+    types: [opened, synchronize]
+    paths_ignore: ["docs/**", "**/*.md"]
+```
+
+A run starts when at least one changed file matches `paths` (or `paths` is empty) and is not matched by `paths_ignore`. A change that fails the filter starts no run and is recorded in **Recent triggers** as `skipped: no changed path matched paths` or `skipped: every changed path matched paths_ignore`. Globs support `*` and `?` within one path segment, `**` as a whole segment, `[abc]` classes, and `{a,b}` alternatives. Dotfiles match like any other file, and Windows separators are treated as `/`.
+
+The changed files come from the webhook payload when it lists them (GitHub, GitLab, and Gitea push events do, up to 20 commits). Otherwise the control plane asks the git provider (compare, pull request files, or diffstat on Bitbucket) using the connected provider credentials. If the file list cannot be read (no credentials, a rate limit, a new branch with no base commit), the run starts anyway. A filter never blocks a run because of a lookup failure.
+
+`types` on `pull_request` limits which actions start a run: `opened`, `reopened`, and `synchronize`. Empty means all three.
+
+### Merge queues
+
+```yaml
+on:
+  merge_group:
+    branches: [main]
+```
+
+GitHub's merge queue sends a `merge_group` webhook when it wants checks on a queued group. A `merge_group` trigger starts a run on the group's head commit, so the required status appears on the queue's temporary branch. Subscribe the repository webhook to the "Merge groups" event. `branches` matches the branch the group merges into.
+
+### Reporting status to the git provider
+
+A run posts its state to the provider that hosts the app's repository as a commit status named after the brand short name and the pipeline (`<short name>/pipeline/<name>`): `pending` when it starts, then `success`, `failure`, or `error` (cancelled). The status links to the run page when a dashboard URL is set under Settings. Providers: GitHub commit statuses, GitLab commit statuses, Gitea statuses, and Bitbucket build statuses.
+
+Reporting is on by default when the app has a connected git source and provider credentials. Turn it off per pipeline with `report_status: false`, per app with `levelrail apps git-source settings my-app --report-status=false` (or the app's Source page), or for the whole server with `APP_GIT_STATUS_ENABLED=false`. A failed post (a rate limit, a revoked token) never fails or delays the run: the run records a warning and the runs list shows it in the **Forge status** column. Runs list the last status they posted as a link to the commit.
+
+```yaml
+report_status: true
+```
+
+`levelrail pipelines save my-app ci.yaml --paths "src/**" --paths-ignore "**/*.md" --report-status=false` applies the same fields to the file before saving. The pipeline editor has the fields too.
 
 ### Pull requests from forks
 
@@ -315,6 +359,7 @@ Environment variables tune the engine: `APP_PIPELINE_MAX_PARALLEL_JOBS` (default
 
 ## Current limits
 
+- There is no pipeline-level `finally` block yet. For cleanup after a failure, end the job with a step that has `if: always()`.
 - Checkout and `build` need a git source connected to the app. Without one, container jobs run with an empty workspace.
 - The `build` step clones the repository itself instead of reading the job workspace, so files created by earlier steps are not part of the build context.
 - Artifacts are per node. Jobs that exchange artifacts must run on the same node.

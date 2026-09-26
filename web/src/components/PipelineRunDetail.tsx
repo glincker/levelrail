@@ -21,6 +21,7 @@ import type { PipelineApproval, PipelineRun } from '../types/pipelines'
 import { formatDuration } from '../lib/pipelineStatus'
 import { PipelineRunGraph } from './PipelineRunGraph'
 import { PipelineHoldGate } from './PipelineHoldGate'
+import { PipelineReportLink } from './PipelineReportLink'
 import { PipelineRunLogs } from './PipelineRunLogs'
 import { PipelineStatusBadge } from './PipelineStatusBadge'
 import { PipelineStepList } from './PipelineStepList'
@@ -101,6 +102,11 @@ function RunHeader({ app, run }: { app: string; run: PipelineRun }) {
         </p>
         {run.reason ? (
           <p className="mt-1 text-sm text-muted-foreground">{run.reason}</p>
+        ) : null}
+        {run.report ? (
+          <p className="mt-1 text-xs">
+            <PipelineReportLink report={run.report} />
+          </p>
         ) : null}
       </div>
       <div className="flex gap-2">
