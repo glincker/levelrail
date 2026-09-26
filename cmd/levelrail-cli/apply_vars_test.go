@@ -28,6 +28,7 @@ func TestResolveVars(t *testing.T) {
 	}
 	env := map[string]string{
 		"REGION": "from-env", "TIER": "env-tier", "APP_COLOR": "blue", "APP_SIZE": "l",
+		"S3_ACCESS_KEY_ID": "s3leak", "APP_DB_PASSWORD": "pwleak",
 		"AWS_SECRET_ACCESS_KEY": "leak", "AWS_REGION": "us-east-1", "GITHUB_TOKEN": "ghs_leak", "HOME": "/root",
 	}
 	lookup := func(k string) (string, bool) { v, ok := env[k]; return v, ok }
@@ -60,6 +61,10 @@ func TestResolveVars(t *testing.T) {
 			src: varSources{allowEnv: []string{"A*"}}, errHas: []string{"AWS_REGION", "credential"}},
 		{name: "GITHUB_TOKEN blocked by wildcard", names: []string{"GITHUB_TOKEN"},
 			src: varSources{allowEnv: []string{"GITHUB_*"}}, errHas: []string{"GITHUB_TOKEN"}, errLacks: []string{"ghs_leak"}},
+		{name: "S3 key blocked by wildcard", names: []string{"S3_ACCESS_KEY_ID"},
+			src: varSources{allowEnv: []string{"S3_*"}}, errHas: []string{"credential"}, errLacks: []string{"s3leak"}},
+		{name: "secret looking name blocked by app wildcard", names: []string{"APP_DB_PASSWORD", "APP_COLOR"},
+			src: varSources{allowEnv: []string{"APP_*"}}, errHas: []string{"APP_DB_PASSWORD"}, errLacks: []string{"pwleak", "APP_COLOR:"}},
 		{name: "explicit credential allow works", names: []string{"AWS_SECRET_ACCESS_KEY"},
 			src: varSources{allowEnv: []string{"AWS_SECRET_ACCESS_KEY"}}, want: map[string]string{"AWS_SECRET_ACCESS_KEY": "leak"}},
 		{name: "credential via var file is explicit", names: []string{"AWS_SECRET_ACCESS_KEY"},
@@ -138,13 +143,57 @@ func TestApply_HostilePlaceholderNeverReachesServer(t *testing.T) {
 
 func TestExport_PlaceholderWarningExplainsHowToSupplyValues(t *testing.T) {
 	f := &iacFake{export: iac.ExportResult{
-		Files:    []iac.ExportFile{{Name: "app-web.yaml", Kind: iac.KindApp, Content: "version: 1\n"}},
+		Files:    []iac.ExportFile{{Name: "app-web.yaml", Kind: iac.KindApp, Content: "version: 1\nspec: {env: {API_KEY: ${{ env.API_KEY }}}}\n"}},
 		Warnings: []string{"env API_KEY looks like a secret and was written as a placeholder"},
 	}}
 	srv := httptest.NewServer(f.handler(t))
 	defer srv.Close()
 	code, _, stderr := runIaC([]string{"export", "--api-url", srv.URL}, nil)
 	if code != exitOK || !strings.Contains(stderr, "--var NAME=VALUE") || !strings.Contains(stderr, "--allow-env") {
+		t.Fatalf("code = %d stderr = %s", code, stderr)
+	}
+}
+
+func TestResolveVars_IgnoresCommentedPlaceholders(t *testing.T) {
+	files := []apiclient.IaCFile{{Name: "a.yaml", Content: "# set ${{ env.OLD_THING }} before applying\nversion: 1\n  # ${{ env.ALSO_OLD }}\nx: \"${{ env.REGION }}\"\n"}}
+	got, err := resolveVars(files, varSources{vars: map[string]string{"REGION": "eu"}}, func(string) (string, bool) { return "", false })
+	if err != nil || !reflect.DeepEqual(got, map[string]string{"REGION": "eu"}) {
+		t.Fatalf("vars = %v err = %v", got, err)
+	}
+}
+
+func TestReadVarFile_RejectsDroppedLines(t *testing.T) {
+	for name, tc := range map[string]struct {
+		content string
+		ok      bool
+	}{
+		"valid":              {content: "# c\nexport A=1\nB=\"two\nlines\"\nC='x'\n", ok: true},
+		"missing separator":  {content: "A=1\nexportREGION eu\n"},
+		"invalid name":       {content: "A=1\n9BAD=x\n"},
+		"export without key": {content: "export =1\n"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "v.env")
+			if err := os.WriteFile(path, []byte(tc.content), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			_, err := readVarFile(path)
+			if tc.ok != (err == nil) {
+				t.Fatalf("err = %v, want ok %v", err, tc.ok)
+			}
+			if err != nil && !strings.Contains(err.Error(), "line") {
+				t.Fatalf("error does not name the line: %v", err)
+			}
+		})
+	}
+}
+
+func TestExport_NoNoteWithoutPlaceholders(t *testing.T) {
+	f := &iacFake{export: iac.ExportResult{Files: []iac.ExportFile{{Name: "tag-x.yaml", Kind: iac.KindTag, Content: "version: 1\n"}}}}
+	srv := httptest.NewServer(f.handler(t))
+	defer srv.Close()
+	code, _, stderr := runIaC([]string{"export", "--include-env-values=false", "--api-url", srv.URL}, nil)
+	if code != exitOK || strings.Contains(stderr, "--allow-env") {
 		t.Fatalf("code = %d stderr = %s", code, stderr)
 	}
 }

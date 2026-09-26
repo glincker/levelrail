@@ -18,22 +18,26 @@ type varSources struct {
 	allowEnv []string
 }
 
-var credentialPrefixes = []string{"AWS_", "AZURE_", "GOOGLE_", "GCP_", "SSH_", "ARM_", "ACTIONS_", "DIGITALOCEAN_", "CLOUDFLARE_API_"}
+var credentialPrefixes = []string{"AWS_", "AZURE_", "GOOGLE_", "GCP_", "SSH_", "ARM_", "ACTIONS_", "S3_", "DIGITALOCEAN_", "CLOUDFLARE_API_"}
 
-var credentialNames = map[string]bool{
-	"GITHUB_TOKEN": true, "GH_TOKEN": true, "GITLAB_TOKEN": true, "NPM_TOKEN": true,
-	"CI_JOB_TOKEN": true,
-}
+var credentialNames = map[string]bool{"GITHUB_TOKEN": true, "GH_TOKEN": true, "GITLAB_TOKEN": true, "NPM_TOKEN": true, "CI_JOB_TOKEN": true}
 
-// looksLikeCredential reports names that hold cloud or CI credentials; these
-// are read from the environment only when --allow-env names them exactly.
+var credentialWords = []string{"TOKEN", "SECRET", "PASSW", "CREDENTIAL", "PRIVATE", "ACCESS_KEY", "API_KEY", "_KEY_ID", "_KEY"}
+
+// looksLikeCredential reports names that may hold credentials; these are
+// read from the environment only when --allow-env names them exactly.
 func looksLikeCredential(name string) bool {
 	up := strings.ToUpper(name)
-	if credentialNames[up] || strings.HasSuffix(up, "_SECRET_ACCESS_KEY") {
+	if credentialNames[up] {
 		return true
 	}
 	for _, p := range credentialPrefixes {
 		if strings.HasPrefix(up, p) {
+			return true
+		}
+	}
+	for _, w := range credentialWords {
+		if strings.Contains(up, w) {
 			return true
 		}
 	}
@@ -72,7 +76,7 @@ func (al envAllowlist) permits(name string) (bool, string) {
 	for _, p := range al.prefixes {
 		if strings.HasPrefix(name, p) {
 			if looksLikeCredential(name) {
-				return false, "looks like a cloud or CI credential, so a wildcard does not cover it"
+				return false, "looks like a credential, so a wildcard does not cover it"
 			}
 			return true, ""
 		}
@@ -85,6 +89,9 @@ func readVarFile(path string) (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("--var-file: read %s: %w", path, err)
 	}
+	if line, ok := badVarFileLine(data); !ok {
+		return nil, newValidationError("--var-file %s: line %d is not NAME=VALUE with a valid name", path, line)
+	}
 	out := map[string]string{}
 	for _, e := range parseEnvFileBytes(data) {
 		out[e.Key] = e.Value
@@ -92,14 +99,50 @@ func readVarFile(path string) (map[string]string, error) {
 	return out, nil
 }
 
+// badVarFileLine finds an assignment whose name the dotenv parser would
+// silently drop. Lines inside a multiline quoted value are not checked.
+func badVarFileLine(data []byte) (int, bool) {
+	inQuote := byte(0)
+	for i, raw := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+		if inQuote != 0 {
+			if strings.IndexByte(raw, inQuote) >= 0 {
+				inQuote = 0
+			}
+			continue
+		}
+		line := strings.TrimSpace(raw)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if rest, ok := strings.CutPrefix(line, "export "); ok {
+			line = strings.TrimSpace(rest)
+		}
+		key, val, found := strings.Cut(line, "=")
+		if !found || !validEnvKey(strings.TrimSpace(key)) {
+			return i + 1, false
+		}
+		val = strings.TrimSpace(val)
+		if len(val) > 0 && (val[0] == '"' || val[0] == '\'') && strings.IndexByte(val[1:], val[0]) < 0 {
+			inQuote = val[0]
+		}
+	}
+	return 0, true
+}
+
+// placeholderNames lists the placeholders outside full line YAML comments.
 func placeholderNames(files []apiclient.IaCFile) []string {
 	seen := map[string]bool{}
 	var names []string
 	for _, f := range files {
-		for _, m := range envPlaceRe.FindAllStringSubmatch(f.Content, -1) {
-			if !seen[m[1]] {
-				seen[m[1]] = true
-				names = append(names, m[1])
+		for _, line := range strings.Split(f.Content, "\n") {
+			if strings.HasPrefix(strings.TrimSpace(line), "#") {
+				continue
+			}
+			for _, m := range envPlaceRe.FindAllStringSubmatch(line, -1) {
+				if !seen[m[1]] {
+					seen[m[1]] = true
+					names = append(names, m[1])
+				}
 			}
 		}
 	}

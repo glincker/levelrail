@@ -194,12 +194,12 @@ Export never writes a secret value. Secret backed variables are written as `secr
 A resource file can be written by someone else: a teammate, a template, a pull request. So the CLI never fills a `${{ env.NAME }}` placeholder from your shell unless you said it may. A placeholder is resolved from, in this order:
 
 1. `--var NAME=VALUE` (repeatable).
-2. `--var-file PATH` (repeatable): `KEY=VALUE` lines in dotenv format, with `#` comments, quotes and an optional `export` prefix. Keep the file readable only by you (`chmod 600`), and out of the repository.
+2. `--var-file PATH` (repeatable): `KEY=VALUE` lines in dotenv format, with `#` comments, quotes and an optional `export` prefix. A line that is not a valid `NAME=VALUE` is an error naming the line. Keep the file readable only by you (`chmod 600`), and out of the repository.
 3. `--allow-env NAME[,NAME...]` (repeatable): reads exactly those names from your environment. A trailing `*` allows a prefix, for example `--allow-env 'APP_*'`.
 
-Anything else fails before the CLI contacts the control plane, and the error lists each unresolved name with the three ways to provide it. Nothing from the files is sent while a placeholder is unresolved.
+Anything else fails before the CLI contacts the control plane, and the error lists each unresolved name with the three ways to provide it. Nothing from the files is sent while a placeholder is unresolved. Placeholders on full line `#` comments are ignored.
 
-Names that look like cloud or CI credentials (`AWS_*`, `AZURE_*`, `GOOGLE_*`, `GCP_*`, `SSH_*`, `ACTIONS_*`, anything ending in `_SECRET_ACCESS_KEY`, `GITHUB_TOKEN`, `GH_TOKEN`, `NPM_TOKEN` and similar) are never covered by a wildcard. If a file really needs one, name it exactly: `--allow-env AWS_REGION`. A shared file that quietly asks for `${{ env.AWS_SECRET_ACCESS_KEY }}` therefore fails instead of sending your key.
+Names that look like credentials are never covered by a wildcard: cloud and CI prefixes (`AWS_*`, `AZURE_*`, `GOOGLE_*`, `GCP_*`, `S3_*`, `SSH_*`, `ACTIONS_*` and similar), `GITHUB_TOKEN`, `GH_TOKEN`, `NPM_TOKEN`, and any name containing `TOKEN`, `SECRET`, `PASSW`, `CREDENTIAL`, `PRIVATE` or `_KEY`. If a file really needs one, name it exactly: `--allow-env AWS_REGION`. A shared file that quietly asks for `${{ env.AWS_SECRET_ACCESS_KEY }}` therefore fails instead of sending your key.
 
 The control plane never reads its own environment for placeholders. The dashboard and the MCP tools cannot pass values at all, so files applied there must not use `${{ env.NAME }}`.
 

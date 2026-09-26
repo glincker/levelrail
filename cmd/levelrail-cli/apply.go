@@ -59,8 +59,8 @@ Flags:
   --var NAME=VALUE     value for a ${{ env.NAME }} placeholder (repeatable, wins over the others)
   --var-file PATH      KEY=VALUE lines (dotenv format) for placeholders (repeatable)
   --allow-env NAMES    comma separated names (or PREFIX*) that placeholders may read from
-                       your environment; nothing else is read from it. Cloud and CI
-                       credentials (AWS_*, GITHUB_TOKEN, ...) need their exact name.
+                       your environment; nothing else is read from it. Credential
+                       looking names (AWS_*, *TOKEN*, *SECRET*, *_KEY*) need their exact name.
   --no-deploy          do not restart running apps to apply env changes
   --continue-on-error  keep applying after an item fails
 %[3]s`, prog, name, commonFlagsHelp)
@@ -242,7 +242,7 @@ func runExport(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	for _, w := range res.Warnings {
 		_, _ = fmt.Fprintln(stderr, "warning: "+w)
 	}
-	if !*includeEnv || hasPlaceholderWarning(res.Warnings) {
+	if exportHasPlaceholders(res) {
 		_, _ = fmt.Fprintln(stderr, "note: at apply time supply placeholder values with --var NAME=VALUE, --var-file PATH or --allow-env NAME")
 	}
 	if c.jsonOut {
@@ -275,9 +275,9 @@ func writeExport(dir string, res iac.ExportResult) error {
 	return nil
 }
 
-func hasPlaceholderWarning(warns []string) bool {
-	for _, w := range warns {
-		if strings.Contains(w, "placeholder") {
+func exportHasPlaceholders(res iac.ExportResult) bool {
+	for _, f := range res.Files {
+		if envPlaceRe.MatchString(f.Content) {
 			return true
 		}
 	}

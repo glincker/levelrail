@@ -1084,7 +1084,7 @@ See [Platform as code](platform-as-code.md) for the document format, secrets han
 ```
 levelrail apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NAME] [--project P] [--yes] [--secret K=env:VAR] [--var NAME=VALUE] [--var-file PATH] [--allow-env NAME[,NAME...]] [--no-deploy] [--continue-on-error] [flags]
 ```
-validate resource files, print the plan, and apply it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`). `${{ env.NAME }}` placeholders are filled only from `--var`, `--var-file` or the names listed with `--allow-env` (a trailing `*` allows a prefix, but never covers cloud or CI credential names such as `AWS_*` or `GITHUB_TOKEN`, which must be named exactly); an unresolved placeholder fails before anything is sent
+validate resource files, print the plan, and apply it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`). `${{ env.NAME }}` placeholders are filled only from `--var`, `--var-file` or the names listed with `--allow-env` (a trailing `*` allows a prefix, but never covers credential looking names such as `AWS_*`, `GITHUB_TOKEN` or anything containing `TOKEN`, `SECRET`, `PASSW` or `_KEY`, which must be named exactly); an unresolved placeholder fails before anything is sent
 
 ```
 levelrail diff -f dir [flags]
