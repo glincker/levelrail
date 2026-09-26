@@ -122,6 +122,12 @@ func (p *planner) planPrune() {
 			p.pruneLB(name)
 			continue
 		}
+		if p.opts.Project != "" {
+			live, ok := p.st.apps[name]
+			if !ok || p.st.projectsByID[live.wire.ProjectID].Name != p.opts.Project {
+				continue
+			}
+		}
 		r := &Resource{Kind: KindApp, Name: name}
 		p.add(r, ActionDelete, nil, nil, func(ctx context.Context, x *executor) error {
 			return x.d.Do(ctx, "DELETE", "/api/v1/apps/"+esc(name), nil, nil)

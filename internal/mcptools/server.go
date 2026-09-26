@@ -67,6 +67,7 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerPipelineTools(server, client)
 	registerModelTools(server, client)
 	registerLoadBalancerTools(server, client)
+	registerIaCTools(server, client)
 
 	summary := applyOptions(server, opts)
 	return server, summary

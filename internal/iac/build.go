@@ -23,6 +23,9 @@ type Options struct {
 	// Secrets maps "NAME" or "app/NAME" to a value to store at apply time.
 	// Values never appear in a plan, result or export.
 	Secrets map[string]string
+	// Project limits prune to managed apps of this project, matching the
+	// project filter applied to the files.
+	Project string
 	// Prune deletes managed resources absent from the files.
 	Prune bool
 	// NoDeploy skips the restart that applies an env change to a running app.

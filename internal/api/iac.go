@@ -36,6 +36,7 @@ type iacFile struct {
 type iacRequest struct {
 	Files            []iacFile         `json:"files"`
 	Source           string            `json:"source,omitempty"`
+	Project          string            `json:"project,omitempty"`
 	Prune            bool              `json:"prune,omitempty"`
 	Vars             map[string]string `json:"vars,omitempty"`
 	Secrets          map[string]string `json:"secrets,omitempty"`
@@ -95,10 +96,13 @@ func (req iacRequest) build() ([]*iac.Resource, iac.Options, []iac.Issue) {
 	for i, f := range req.Files {
 		sources[i] = iac.Source{Name: f.Name, Data: []byte(f.Content)}
 	}
-	opts := iac.Options{Vars: req.Vars, Source: req.Source, Secrets: req.Secrets, Prune: req.Prune, NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError}
+	opts := iac.Options{Vars: req.Vars, Source: req.Source, Project: req.Project, Secrets: req.Secrets, Prune: req.Prune, NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError}
 	docs, issues := iac.ParseDocuments(sources)
 	if len(issues) > 0 {
 		return nil, opts, issues
+	}
+	if req.Project != "" {
+		docs = iac.FilterProject(docs, req.Project)
 	}
 	res, issues := iac.Build(docs, opts)
 	return res, opts, issues

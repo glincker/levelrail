@@ -110,6 +110,12 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runPipelines(prog, args[1:], stdout, stderr, lookupEnv)
 	case "lb":
 		return runLB(prog, args[1:], stdout, stderr, lookupEnv)
+	case "apply":
+		return runApply(prog, args[1:], stdout, stderr, lookupEnv)
+	case "diff":
+		return runDiff(prog, args[1:], stdout, stderr, lookupEnv)
+	case "export":
+		return runExport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "nodes":
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
@@ -207,6 +213,9 @@ Usage:
   %[1]s pipelines list|validate|save|delete|run|runs|logs|cancel|approve [flags]   CI/CD pipelines: run, watch, approve, cancel
   %[1]s tags list|create|delete|apps [flags]                  manage tags, always identified by name, arbitrary labels for organizing and filtering apps
   %[1]s lb show|set|clear|status|export|import <app> [flags]  load balancer across an app's replicas: config, live upstreams, terraform/cdk/cloudformation/caddy export
+  %[1]s apply -f file|dir|- [--dry-run] [--prune --source S] [flags]   converge to YAML resource files: plan, diff, apply
+  %[1]s diff -f dir [flags]                                    drift between the files and live state, exit 2 when they differ
+  %[1]s export [--project P] [--app A] [-o dir|-] [flags]      write live state as stable resource files
   %[1]s apps tag <name> <tag> [flags]                          attach a tag (by name) to an app
   %[1]s apps untag <name> <tag> [flags]                        detach a tag (by name) from an app
   %[1]s nodes list|get|delete [flags]                        manage nodes
