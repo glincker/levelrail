@@ -126,6 +126,7 @@ func historyCommand() apiCmd {
 			fs.StringVar(&q.Event, "event", "", "fired, resolved, flapping or flap_ended")
 			fs.StringVar(&q.Since, "since", "", "RFC 3339 timestamp lower bound")
 			fs.IntVar(&q.Limit, "limit", 50, "maximum rows (newest first)")
+			fs.BoolVar(&q.IncludeChanges, "changes", false, "show what changed on the app before each firing")
 		},
 		run: func(ctx context.Context, c *Client, _ []string) (any, func(io.Writer), error) {
 			list, err := c.ListAlertHistory(ctx, q)
@@ -136,11 +137,13 @@ func historyCommand() apiCmd {
 
 func alertsHistoryUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s alerts history [--app NAME] [--rule ID] [--outcome OUTCOME] [--event EVENT] [--since TIME] [--limit N]
+  %[1]s alerts history [--app NAME] [--rule ID] [--outcome OUTCOME] [--event EVENT] [--since TIME] [--limit N] [--changes]
 
 Lists alert firings and resolutions, newest first, with what happened to
 each notification (sent, silenced, grouped, inhibited, failed, ratelimited,
 flapping, skipped). Retention is set by APP_ALERT_HISTORY_RETENTION.
+--changes adds what changed on the app in the minutes before each firing,
+with the most likely cause tagged (a heuristic: the nearest change before the alert).
 `, prog)
 }
 
@@ -159,4 +162,10 @@ func printAlertHistory(out io.Writer, list []apiclient.AlertHistoryEntry) {
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", e.At.Format(time.RFC3339), orDash(e.App), e.RuleName, e.Event, e.Outcome, orDash(detail))
 	}
 	_ = tw.Flush()
+	for _, e := range list {
+		if e.Changes != nil {
+			_, _ = fmt.Fprintf(out, "\n%s %s\n", e.At.Format(time.RFC3339), e.RuleName)
+			printRecentChanges(out, e.Changes, "  ")
+		}
+	}
 }

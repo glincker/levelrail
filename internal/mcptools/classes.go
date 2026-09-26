@@ -128,6 +128,7 @@ var toolTable = map[string]Meta{
 	"list_preview_environments":             {clsR, "previews", unt},
 	"sweep_stale_preview_environments":      {clsD, "previews", 0},
 	"list_alert_rules":                      {clsR, "alerts", 0},
+	"get_slo_status":                        {clsR, "alerts", 0},
 	"list_alert_silences":                   {clsR, "alerts", 0},
 	"create_alert_silence":                  {clsM, "alerts", 0},
 	"silence_alert_rule":                    {clsM, "alerts", 0},

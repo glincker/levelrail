@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { BellRingingIcon } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -17,7 +17,9 @@ import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
 import { EditAlertRuleDialog } from './EditAlertRuleDialog'
 import { DeleteAlertRuleDialog } from './DeleteAlertRuleDialog'
 import { RuleNoiseDialog } from './RuleNoiseDialog'
+import { RecentChanges } from './RecentChanges'
 import { SilenceRuleMenu } from './SilenceRuleMenu'
+import { SloSuggestion } from './SloSuggestion'
 import { useAlertRules } from '../queries/alerts'
 import type { AlertRule } from '../types/alerts'
 import type { AppVolume } from '../types/appDetail'
@@ -136,6 +138,15 @@ function formatCondition(rule: AlertRule): string {
     const forPart = rule.for_duration ? ` for ${rule.for_duration}` : ''
     return `any of this app's own domains not resolving correctly or pointing elsewhere${forPart}`
   }
+  if (rule.kind === 'slo_burn') {
+    const slo = rule.slo
+    if (!slo) return 'SLO burn rate'
+    const what =
+      slo.objective === 'latency'
+        ? `${slo.target}% of requests under ${slo.latency_ms ?? '?'}ms`
+        : `${slo.target}% availability`
+    return `${what}, alerts on 30 day error budget burn`
+  }
   if (rule.kind === 'log_archive_stale') {
     return `a log archive policy failing or not succeeding within ${rule.for_duration || 'its default age limit'} (platform-wide)`
   }
@@ -190,6 +201,9 @@ function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'domain_health') {
     return `${rule.last_value} domain(s) unhealthy`
+  }
+  if (rule.kind === 'slo_burn') {
+    return `${rule.last_value.toFixed(1)}x burn rate (fastest tier)`
   }
   if (rule.kind === 'log_archive_stale') {
     return `${rule.last_value} log archive policy(ies) unhealthy`
@@ -246,71 +260,82 @@ function RuleRow({
   const showLogsLink = rule.kind === 'crashloop' && state === 'firing'
 
   return (
-    <TableRow>
-      <TableCell className="font-medium text-foreground">
-        {rule.name}
-        {!rule.enabled ? (
-          <Badge variant="muted" className="ml-2">
-            Disabled
-          </Badge>
-        ) : null}
-      </TableCell>
-      <TableCell>
-        <Badge variant={rule.kind === 'crashloop' ? 'destructive' : 'outline'}>
-          {rule.kind}
-        </Badge>
-      </TableCell>
-      <TableCell className="max-w-[20rem] truncate font-mono text-xs text-muted-foreground">
-        {formatCondition(rule)}
-      </TableCell>
-      <TableCell>
-        <div className="flex flex-col gap-1">
-          <Badge variant={STATE_BADGE_VARIANT[state]}>
-            <StateDot state={state} />
-            {STATE_LABEL[state]}
-          </Badge>
-          {rule.silenced ? (
-            <Badge variant="muted" title="Notifications are silenced">
-              Silenced
+    <Fragment>
+      <TableRow>
+        <TableCell className="font-medium text-foreground">
+          {rule.name}
+          {!rule.enabled ? (
+            <Badge variant="muted" className="ml-2">
+              Disabled
             </Badge>
           ) : null}
-          {showLogsLink ? (
-            <Link
-              to="/apps/$name/logs"
-              params={{ name: appName }}
-              className="text-xs text-primary underline underline-offset-2"
-            >
-              View logs
-            </Link>
-          ) : null}
-        </div>
-      </TableCell>
-      <TableCell className="text-muted-foreground">
-        {formatDate(rule.last_evaluated_at, 'Never')}
-      </TableCell>
-      <TableCell className="text-muted-foreground">
-        {formatLastValue(rule)}
-      </TableCell>
-      <TableCell>
-        <NotifyChannelCell rule={rule} />
-      </TableCell>
-      <TableCell className="text-right">
-        <div className="flex flex-wrap justify-end gap-2">
-          <SilenceRuleMenu
-            appName={appName}
-            ruleId={rule.id}
-            ruleName={rule.name}
-          />
-          <RuleNoiseDialog appName={appName} rule={rule} />
-          <EditAlertRuleDialog
-            appName={appName}
-            rule={rule}
-            volumes={volumes}
-          />
-          <DeleteAlertRuleDialog appName={appName} rule={rule} />
-        </div>
-      </TableCell>
-    </TableRow>
+        </TableCell>
+        <TableCell>
+          <Badge
+            variant={rule.kind === 'crashloop' ? 'destructive' : 'outline'}
+          >
+            {rule.kind}
+          </Badge>
+        </TableCell>
+        <TableCell className="max-w-[20rem] truncate font-mono text-xs text-muted-foreground">
+          {formatCondition(rule)}
+        </TableCell>
+        <TableCell>
+          <div className="flex flex-col gap-1">
+            <Badge variant={STATE_BADGE_VARIANT[state]}>
+              <StateDot state={state} />
+              {STATE_LABEL[state]}
+            </Badge>
+            {rule.silenced ? (
+              <Badge variant="muted" title="Notifications are silenced">
+                Silenced
+              </Badge>
+            ) : null}
+            {showLogsLink ? (
+              <Link
+                to="/apps/$name/logs"
+                params={{ name: appName }}
+                className="text-xs text-primary underline underline-offset-2"
+              >
+                View logs
+              </Link>
+            ) : null}
+          </div>
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {formatDate(rule.last_evaluated_at, 'Never')}
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {formatLastValue(rule)}
+        </TableCell>
+        <TableCell>
+          <NotifyChannelCell rule={rule} />
+        </TableCell>
+        <TableCell className="text-right">
+          <div className="flex flex-wrap justify-end gap-2">
+            <SilenceRuleMenu
+              appName={appName}
+              ruleId={rule.id}
+              ruleName={rule.name}
+            />
+            <RuleNoiseDialog appName={appName} rule={rule} />
+            <EditAlertRuleDialog
+              appName={appName}
+              rule={rule}
+              volumes={volumes}
+            />
+            <DeleteAlertRuleDialog appName={appName} rule={rule} />
+          </div>
+        </TableCell>
+      </TableRow>
+      {state === 'firing' ? (
+        <TableRow>
+          <TableCell colSpan={8} className="bg-muted/30 whitespace-normal">
+            <RecentChanges app={appName} />
+          </TableCell>
+        </TableRow>
+      ) : null}
+    </Fragment>
   )
 }
 
@@ -374,6 +399,8 @@ export function AlertRulesPanel({
           <CreateAlertRuleDialog appName={appName} volumes={volumes} />
         </div>
       </div>
+
+      <SloSuggestion appName={appName} rules={rules} />
 
       <div className="mt-3">
         {isLoading ? (

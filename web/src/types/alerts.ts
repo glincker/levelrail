@@ -40,6 +40,17 @@ export type AlertRuleKind =
   | 'node_offline'
   | 'node_cert_expiring'
   | 'log_archive_stale'
+  | 'slo_burn'
+
+export type SloObjective = 'availability' | 'latency'
+
+// slo_burn-only: a request-based SLO over the app's ingress request
+// metrics (internal/alerting.SLOConfig). target is a percentage, 99.9.
+export interface SloConfig {
+  objective: SloObjective
+  target: number
+  latency_ms?: number
+}
 
 export type BackupResourceKind = 'database' | 'volume'
 
@@ -93,6 +104,8 @@ export interface AlertRule {
   backup_service_name?: string
   backup_volume_name?: string
 
+  slo?: SloConfig
+
   // notify_url/notify_kind are the *resolved* values: the attached
   // channel's own when channel_id is set, this rule's legacy columns
   // otherwise (rules created before notification channels existed).
@@ -142,6 +155,7 @@ export interface CreateAlertRuleRequest {
   backup_database_name?: string
   backup_service_name?: string
   backup_volume_name?: string
+  slo?: SloConfig
   channel_id?: string
   notify_url?: string
   notify_kind?: NotifyKind
