@@ -16,6 +16,7 @@ export type TimelineKind =
   | 'rollback'
   | 'scale'
   | 'freeze_override'
+  | 'scan_gate_override'
   | 'suspend'
   | 'resume'
 

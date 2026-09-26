@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/supplychain"
 )
 
 // deploymentStore is the optional cross-app deployment query surface;
@@ -29,34 +30,36 @@ type deploymentSteps struct {
 
 // deploymentResource is the wire shape for one row of GET /api/v1/deployments.
 type deploymentResource struct {
-	ID              string           `json:"id"`
-	App             string           `json:"app"`
-	Status          string           `json:"status"`
-	Trigger         string           `json:"trigger"`
-	Environment     string           `json:"environment"`
-	Image           string           `json:"image"`
-	ImageRef        string           `json:"image_ref"`
-	ImageDigest     string           `json:"image_digest"`
-	DigestReason    string           `json:"digest_reason"`
-	RolloutState    string           `json:"rollout_state"`
-	CommitSHA       string           `json:"commit_sha"`
-	Branch          string           `json:"branch"`
-	CommitMessage   string           `json:"commit_message"`
-	Author          string           `json:"author"`
-	PRNumber        *int             `json:"pr_number"`
-	StartedAt       time.Time        `json:"started_at"`
-	FinishedAt      *time.Time       `json:"finished_at"`
-	DurationMS      *int64           `json:"duration_ms"`
-	Steps           *deploymentSteps `json:"steps"`
-	ErrorSummary    *string          `json:"error_summary"`
-	ReasonCode      string           `json:"reason_code"`
-	Reason          string           `json:"reason"`
-	RollbackOf      *string          `json:"rollback_of"`
-	RolledBackBy    *string          `json:"rolled_back_by"`
-	SupersededBy    *string          `json:"superseded_by"`
-	IsLive          bool             `json:"is_live"`
-	ApprovalID      *string          `json:"approval_id"`
-	PreviewImageURL *string          `json:"preview_image_url"`
+	ID              string              `json:"id"`
+	App             string              `json:"app"`
+	Status          string              `json:"status"`
+	Trigger         string              `json:"trigger"`
+	Environment     string              `json:"environment"`
+	Image           string              `json:"image"`
+	ImageRef        string              `json:"image_ref"`
+	ImageDigest     string              `json:"image_digest"`
+	DigestReason    string              `json:"digest_reason"`
+	RolloutState    string              `json:"rollout_state"`
+	CommitSHA       string              `json:"commit_sha"`
+	Branch          string              `json:"branch"`
+	CommitMessage   string              `json:"commit_message"`
+	Author          string              `json:"author"`
+	PRNumber        *int                `json:"pr_number"`
+	StartedAt       time.Time           `json:"started_at"`
+	FinishedAt      *time.Time          `json:"finished_at"`
+	DurationMS      *int64              `json:"duration_ms"`
+	Steps           *deploymentSteps    `json:"steps"`
+	ErrorSummary    *string             `json:"error_summary"`
+	ReasonCode      string              `json:"reason_code"`
+	Reason          string              `json:"reason"`
+	RollbackOf      *string             `json:"rollback_of"`
+	RolledBackBy    *string             `json:"rolled_back_by"`
+	SupersededBy    *string             `json:"superseded_by"`
+	IsLive          bool                `json:"is_live"`
+	ApprovalID      *string             `json:"approval_id"`
+	PreviewImageURL *string             `json:"preview_image_url"`
+	SBOMPackages    *int                `json:"sbom_packages"`
+	VulnCounts      *supplychain.Counts `json:"vuln_counts"`
 }
 
 type deploymentListResponse struct {
@@ -168,6 +171,24 @@ func (rt *Router) attachPreviewURLs(ctx context.Context, items []deploymentResou
 	}
 }
 
+// attachSupplyChain fills sbom_packages and vuln_counts with one lookup per page.
+func (rt *Router) attachSupplyChain(ctx context.Context, items []deploymentResource) {
+	if rt.supplyChain == nil || len(items) == 0 {
+		return
+	}
+	ids := make([]string, 0, len(items))
+	for i := range items {
+		ids = append(ids, items[i].ID)
+	}
+	recs := rt.supplyChainRecords(ctx, ids)
+	for i := range items {
+		if rec, ok := recs[items[i].ID]; ok {
+			n, counts := supplyChainRecordSummary(rec)
+			items[i].SBOMPackages, items[i].VulnCounts = &n, counts
+		}
+	}
+}
+
 // visibleAppNames returns the apps the caller can read, or nil when every
 // app is visible (a caller with no IAM policies and the base read ability).
 func (rt *Router) visibleAppNames(r *http.Request) ([]string, error) {
@@ -222,6 +243,7 @@ func (rt *Router) handleListDeployments(w http.ResponseWriter, r *http.Request) 
 		out.Items = append(out.Items, rt.toDeploymentResource(d))
 	}
 	rt.attachPreviewURLs(r.Context(), out.Items)
+	rt.attachSupplyChain(r.Context(), out.Items)
 	writeJSON(w, http.StatusOK, out)
 }
 

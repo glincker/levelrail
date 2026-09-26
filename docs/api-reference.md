@@ -117,8 +117,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 98 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 98 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 104 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 104 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -228,6 +228,12 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/deployments/{id}/preview | AbilityRead | handleGetPreviewImage |
 | GET | /api/v1/apps/{name}/changes | AbilityRead | handleAppChanges |
 | GET | /api/v1/apps/{name}/slo-preview | AbilityRead | handleSLOPreview |
+| GET | /api/v1/apps/{name}/supply-chain | AbilityRead | handleGetSupplyChain |
+| PUT | /api/v1/apps/{name}/supply-chain | AbilityWrite | handlePutSupplyChain |
+| POST | /api/v1/apps/{name}/supply-chain/override | AbilityWrite | handleSupplyChainOverride |
+| GET | /api/v1/apps/{name}/deployments/{id}/sbom | AbilityRead | handleGetSBOM |
+| GET | /api/v1/apps/{name}/deployments/{id}/vulnerabilities | AbilityRead | handleGetVulnerabilities |
+| POST | /api/v1/apps/{name}/deployments/{id}/scan | AbilityWrite | handleScanDeployment |
 
 :::
 

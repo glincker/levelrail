@@ -30,6 +30,8 @@ export function makeDeployment(over: Partial<Deployment> = {}): Deployment {
     is_live: false,
     approval_id: null,
     preview_image_url: null,
+    sbom_packages: null,
+    vuln_counts: null,
     ...over,
   }
 }
