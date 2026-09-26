@@ -141,10 +141,12 @@ func (rt *Router) enqueueDeploy(ctx context.Context, svc store.DesiredService, s
 		return "", err
 	}
 	now := time.Now()
+	meta := commitMetaFrom(ctx)
 	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: id, ServiceName: svc.Name, Image: image, CommitSHA: hr.CommitSHA, Source: source,
 		Status: store.DeployAttemptStatusQueued, StartedAt: now, QueuedAt: &now,
 		Snapshot: store.NewDeployAttemptSnapshot(svc), HeldRequest: string(payload),
+		Branch: meta.Branch, CommitMessage: meta.Message, Author: meta.Author,
 	}); err != nil {
 		return "", fmt.Errorf("save queued deploy attempt: %w", err)
 	}
@@ -463,4 +465,49 @@ func heldWaitReason(reason string) string {
 		return reason
 	}
 	return "freeze window" + rest
+}
+
+// deploymentWaits computes the wait state of every queued or held deployment
+// in rows with two queries, however many apps they span.
+func (rt *Router) deploymentWaits(ctx context.Context, rows []store.Deployment) map[string]waitState {
+	if rt.deploySafety == nil {
+		return nil
+	}
+	need := false
+	for _, d := range rows {
+		if s := d.Attempt.Status; s == store.DeployAttemptStatusQueued || s == store.DeployAttemptStatusHeld {
+			need = true
+			break
+		}
+	}
+	if !need {
+		return nil
+	}
+	byApp := map[string][]store.DeployAttempt{}
+	if queued, err := rt.deploySafety.ListQueuedDeployAttempts(ctx); err == nil {
+		for _, a := range queued {
+			byApp[a.ServiceName] = append(byApp[a.ServiceName], a)
+		}
+	}
+	if running, err := rt.deploySafety.ListRunningDeployAttempts(ctx); err == nil {
+		for _, a := range running {
+			byApp[a.ServiceName] = append(byApp[a.ServiceName], a)
+		}
+	}
+	out := map[string]waitState{}
+	for _, d := range rows {
+		a := d.Attempt
+		if a.Status == store.DeployAttemptStatusQueued || a.Status == store.DeployAttemptStatusHeld {
+			out[a.ID] = rt.waitFor(ctx, a, byApp[a.ServiceName])
+		}
+	}
+	return out
+}
+
+func applyDeploymentWait(res *deploymentResource, w waitState) {
+	if w.Position > 0 {
+		res.QueuePosition = &w.Position
+	}
+	res.WaitReason = strOrNil(w.Reason)
+	res.BlockedBy = strOrNil(w.BlockedBy)
 }

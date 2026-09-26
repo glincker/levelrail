@@ -86,6 +86,9 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 			Snapshot:          store.NewDeployAttemptSnapshot(svc),
 			DetectedFramework: detectedFramework,
 			Sequence:          seq,
+			Branch:            commitMetaFrom(ctx).Branch,
+			CommitMessage:     commitMetaFrom(ctx).Message,
+			Author:            commitMetaFrom(ctx).Author,
 		}); err != nil {
 			rt.logger.Error("api: trigger build: save deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
 			rt.cancels.Release(id)

@@ -141,7 +141,9 @@ when the deploy ahead of it finishes or is canceled. Queued deploys survive a
 control plane restart. `deploy-attempts` rows carry `queued_at`,
 `queue_position`, `wait_reason` (for example `waiting for #dep_x`,
 `freeze window until <time>`, `waiting for build capacity`) and `blocked_by`.
-Held (frozen) rows report the same `wait_reason`. Freeze windows and
+Held (frozen) rows report the same `wait_reason`. `GET /api/v1/deployments`
+and its stream carry the same `queued_at`, `queue_position`, `wait_reason`,
+`blocked_by`, `superseded_by` and `canceled_by` fields. Freeze windows and
 protected-environment approvals behave exactly as before; a deploy pending
 approval is still an approval, not a queue row.
 
