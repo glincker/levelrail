@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -71,12 +72,20 @@ func parseMemInfoLineKB(line string) (int64, error) {
 	return value, nil
 }
 
-// HostMemoryBytes reads this host's total and available memory from
-// /proc/meminfo, the same read HostMemoryCollector.CollectOnce performs
-// on a poll tick. Exported for a one-shot caller (internal/api's ram
-// doctor check) that has no running collector to read back from.
+// ErrHostMemoryUnsupported means this operating system has no memory
+// source the control plane knows how to read.
+var ErrHostMemoryUnsupported = errors.New("telemetry: host memory is not reported on this operating system")
+
+// HostMemoryBytes reads this host's total and available memory, the same
+// read HostMemoryCollector.CollectOnce performs on a poll tick: from
+// /proc/meminfo where it exists, from sysctl on macOS. Exported for a
+// one-shot caller (internal/api's ram doctor check) that has no running
+// collector to read back from.
 func HostMemoryBytes() (totalBytes, availableBytes int64, err error) {
-	return hostMemoryBytes("/proc/meminfo")
+	if _, statErr := os.Stat("/proc/meminfo"); statErr == nil {
+		return hostMemoryBytes("/proc/meminfo")
+	}
+	return platformHostMemory()
 }
 
 // hostMemoryBytes reads a host's total and available memory from a
@@ -102,18 +111,24 @@ type HostMemoryCollector struct {
 	logger      *slog.Logger
 }
 
-// NewHostMemoryCollector builds a HostMemoryCollector reading
-// /proc/meminfo. logger defaults to slog.Default() if nil.
+// NewHostMemoryCollector builds a HostMemoryCollector reading the
+// platform's memory source (see HostMemoryBytes). logger defaults to slog.Default() if nil.
 func NewHostMemoryCollector(resourceID string, store *DB, interval time.Duration, logger *slog.Logger) *HostMemoryCollector {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &HostMemoryCollector{memInfoPath: "/proc/meminfo", resourceID: resourceID, store: store, interval: interval, logger: logger}
+	return &HostMemoryCollector{resourceID: resourceID, store: store, interval: interval, logger: logger}
 }
 
 // CollectOnce reads the host's current memory capacity once and writes it.
 func (c *HostMemoryCollector) CollectOnce(ctx context.Context) error {
-	total, available, err := hostMemoryBytes(c.memInfoPath)
+	var total, available int64
+	var err error
+	if c.memInfoPath != "" {
+		total, available, err = hostMemoryBytes(c.memInfoPath)
+	} else {
+		total, available, err = HostMemoryBytes()
+	}
 	if err != nil {
 		return fmt.Errorf("collect host memory: %w", err)
 	}
