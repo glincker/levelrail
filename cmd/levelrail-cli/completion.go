@@ -40,6 +40,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"delete":                  nil,
 		"status":                  nil,
 		"diagnose":                nil,
+		"preflight":               nil,
 		"resource-recommendation": nil,
 		"deploys":                 {subs: map[string]*cmdNode{"list": nil, "compare": nil, "logs": nil, "failed": nil, "steps": nil}},
 		"promote":                 nil,

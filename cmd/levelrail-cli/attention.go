@@ -57,7 +57,11 @@ func printAttentionHuman(out io.Writer, items []attentionItem) {
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "SEVERITY\tKIND\tSUBJECT\tDETAIL")
 	for _, it := range items {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", it.Severity, it.Kind, it.Subject, it.Detail)
+		detail := it.Detail
+		if it.Fixable {
+			detail += " [fixable: apps diagnose " + it.Subject + "]"
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", it.Severity, it.Kind, it.Subject, detail)
 	}
 	_ = tw.Flush()
 }

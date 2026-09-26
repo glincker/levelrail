@@ -27,6 +27,8 @@ func TestGetAttention(t *testing.T) {
 			_, _ = w.Write([]byte(`[{"service_name":"api","error":"build failed"}]`))
 		case "/api/v1/system/status":
 			_, _ = w.Write([]byte(`{"data_dir_total_bytes":100,"data_dir_free_bytes":3}`))
+		case "/api/v1/apps/api/diagnose", "/api/v1/apps/web/diagnose":
+			_, _ = w.Write([]byte(`{"confidence":"none","fixable":false}`))
 		default:
 			t.Errorf("unexpected path %q", r.URL.Path)
 		}

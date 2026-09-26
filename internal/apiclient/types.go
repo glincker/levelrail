@@ -2194,6 +2194,8 @@ type DiagnosisResource struct {
 	Confidence      string            `json:"confidence"`
 	MatchedSignals  []DiagnosisSignal `json:"matched_signals"`
 	DeployAttemptID string            `json:"deploy_attempt_id,omitempty"`
+	Causes          []DiagnosisCause  `json:"causes,omitempty"`
+	Fixable         bool              `json:"fixable,omitempty"`
 }
 
 // DimensionRecommendationResource mirrors internal/api's
