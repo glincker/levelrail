@@ -125,11 +125,15 @@ jobs:
         include:
           - lane: api-1
             group: api
-            shard: 1/2
+            shard: 1/3
             flags: -short -timeout=10m
           - lane: api-2
             group: api
-            shard: 2/2
+            shard: 2/3
+            flags: -short -timeout=10m
+          - lane: api-3
+            group: api
+            shard: 3/3
             flags: -short -timeout=10m
           - lane: docker
             group: docker
@@ -206,10 +210,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Check lanes api-1, api-2
+      - name: Check lanes api-1, api-2, api-3
         env:
           GH_TOKEN: ${{ github.token }}
-        run: scripts/check-lane-results.sh "Test (api-1)" "Test (api-2)"
+        run: scripts/check-lane-results.sh "Test (api-1)" "Test (api-2)" "Test (api-3)"
 
   test-rest:
     name: Test (everything else)
@@ -291,7 +295,7 @@ jobs:
       - name: Merge coverage profiles
         run: |
           missing=0
-          for lane in api-1 api-2 docker rest; do
+          for lane in api-1 api-2 api-3 docker rest; do
             if [ ! -f "coverage-artifacts/coverage-$lane.out" ]; then
               echo "::error::coverage-$lane.out missing (artifact expired or its job never uploaded); re-run all jobs"
               missing=1

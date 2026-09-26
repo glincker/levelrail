@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -88,9 +89,20 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.applyDeploy(w, r, *existing, req, "")
+}
+
+// applyDeploy runs a deploy request through the freeze gate and the
+// protected-environment gate, then applies it. rollbackTo, when set, marks
+// the attempt as a rollback to that deploy.
+func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing store.DesiredService, req deployTriggerRequest, rollbackTo string) {
+	name := existing.Name
 	note, ok := rt.freezeGate(w, r, name, req.freezeOverride)
 	if !ok {
 		return
+	}
+	if rollbackTo != "" {
+		note = strings.TrimSpace(note + " RollbackTo: " + rollbackTo)
 	}
 
 	env, protected, ok := rt.checkEnvironmentProtection(r.Context(), w, existing.EnvironmentID, req.Confirm)
@@ -106,7 +118,7 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := rt.executeConfirmedDeploy(r.Context(), *existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note})
+	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note})
 	if err != nil {
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
 		if req.Pull {

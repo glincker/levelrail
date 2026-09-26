@@ -17,7 +17,7 @@ type FailedDeploy struct {
 // that attempt failed and started at or after since, newest first.
 func (db *DB) ListFailedDeploysSince(ctx context.Context, since time.Time) ([]FailedDeploy, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT d.id, d.service_name, d.image, d.commit_sha, d.source, d.status, d.started_at, d.finished_at, d.error, d.config_snapshot, d.detected_framework, d.image_digest, d.digest_reason, d.rollout_state, d.running_image_id, d.sequence, d.reason, d.held_request, d.branch, d.commit_message, d.author,
+		SELECT d.id, d.service_name, d.image, d.commit_sha, d.source, d.status, d.started_at, d.finished_at, d.error, d.config_snapshot, d.detected_framework, d.image_digest, d.digest_reason, d.rollout_state, d.running_image_id, d.sequence, d.reason, d.held_request, d.branch, d.commit_message, d.author, d.queued_at, d.superseded_by, d.canceled_by,
 			COALESCE((SELECT g.image FROM deploy_attempts g
 				WHERE g.service_name = d.service_name AND g.status = ? AND g.image <> ''
 				ORDER BY g.started_at DESC LIMIT 1), '')

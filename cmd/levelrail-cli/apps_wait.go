@@ -131,10 +131,10 @@ var rolloutDoneReasons = map[string]bool{
 //     computeRolloutStage), else a done-reason condition at or after
 //     FinishedAt means success, else still pending.
 func computeRolloutOutcome(attempt deployAttemptResource, conditions []conditionResource) rolloutOutcome {
-	if attempt.Status == "failed" {
+	if attempt.Status == "failed" || attempt.Status == "canceled" || attempt.Status == "superseded" {
 		return rolloutOutcome{state: "failed"}
 	}
-	if attempt.Status == "running" || attempt.FinishedAt == nil {
+	if attempt.Status == "running" || attempt.Status == "queued" || attempt.FinishedAt == nil {
 		return rolloutOutcome{state: "pending"}
 	}
 	reference := *attempt.FinishedAt
