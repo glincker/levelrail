@@ -11,6 +11,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
+	"time"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" database/sql driver
 )
@@ -22,6 +23,8 @@ import (
 // never contends with internal/store's own WAL.
 type DB struct {
 	*sql.DB
+	tiers *TierConfig
+	clock func() time.Time
 }
 
 // Open opens (creating if needed) the SQLite database at path, applies
