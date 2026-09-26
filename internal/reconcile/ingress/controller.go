@@ -783,11 +783,13 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		ACMEDirectoryURL:  settings.ACMEDirectoryURL,
 		DNSProvider:       c.resolveDNSProvider(ctx),
 		TLSCertificates:   tlsCertOverrides,
+		RequestStats:      true,
 	})
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
 	}
 
+	c.publishRequestHostOwners(claimedHosts)
 	if err := c.driver.Apply(ctx, cfg); err != nil {
 		return notReady("ApplyFailed", err), fmt.Errorf("ingress: apply config: %w", err)
 	}

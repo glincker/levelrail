@@ -17,6 +17,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 // appResource is the wire shape for an app: store.DesiredService plus
@@ -677,7 +678,14 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resource.Tags = tagNames
-	writeJSON(w, http.StatusOK, resource)
+	writeJSON(w, http.StatusOK, appWithRequests{appResource: resource, Requests: rt.requestSummaryFor(r, name)})
+}
+
+// appWithRequests is GET /api/v1/apps/{name}'s body: the app plus its recent
+// ingress request summary (rate, error rate, p95), omitted without telemetry.
+type appWithRequests struct {
+	appResource
+	Requests *telemetry.RequestSummary `json:"requests,omitempty"`
 }
 
 // handleUpdateApp handles PUT /api/v1/apps/{name}. Full replace, same as

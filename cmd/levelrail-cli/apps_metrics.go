@@ -18,6 +18,9 @@ import (
 // runMetricsCommand (metrics_cmd.go) for the flag parsing and rendering
 // shared with "databases metrics"/"nodes metrics".
 func runAppsMetrics(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if rest, wantRequests := splitRequestsFlag(args); wantRequests {
+		return runAppsRequests(prog, rest, stdout, stderr, lookupEnv)
+	}
 	return runMetricsCommand(prog, args, stdout, stderr, lookupEnv, metricsCommandConfig{
 		cmdLabel: "apps metrics",
 		argLabel: "app name",
