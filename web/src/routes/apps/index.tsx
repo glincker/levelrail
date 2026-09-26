@@ -13,7 +13,14 @@ import { staticSitesQueryOptions } from '../../queries/staticSites'
 import { APP_LIST_GRID, AppRow, RowSkeleton } from '../../components/AppRow'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { StaticSitesCard } from '../../components/StaticSitesCard'
-import { TagFilter } from '../../components/TagFilter'
+import { AppsBulkBar } from '../../components/AppsBulkBar'
+import { AppsFilterBar } from '../../components/AppsFilterBar'
+import { AppsStatusStrip } from '../../components/AppsStatusStrip'
+import {
+  EMPTY_FILTERS,
+  filtersActive,
+  type AppListFilters,
+} from '../../lib/appViews'
 import { Button } from '../../components/ui/button'
 import { EmptyState } from '../../components/ui/empty-state'
 
@@ -48,6 +55,7 @@ function ListHeader() {
       className={`${APP_LIST_GRID} sticky top-0 z-10 border-b border-border bg-card px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
     >
       <span aria-hidden="true" />
+      <span aria-hidden="true" />
       <span>Name</span>
       <span>Image</span>
       <span>Domain</span>
@@ -60,21 +68,46 @@ function ListHeader() {
 function AppListPage() {
   const { data: apps } = useSuspenseQuery(appListQueryOptions())
   const parentRef = useRef<HTMLDivElement>(null)
-  const [tagFilter, setTagFilter] = useState<string[]>([])
+  const [filters, setFilters] = useState<AppListFilters>(EMPTY_FILTERS)
+  const [selected, setSelected] = useState<string[]>([])
 
-  // Client-side only, the same reasoning TagFilter's own doc comment
-  // gives: GET /api/v1/apps already returns everything in one response,
-  // so filtering the array already in memory needs no new request. OR
-  // semantics: an app matching any selected tag passes.
-  const filteredApps = useMemo(
+  const environments = useMemo(
     () =>
-      tagFilter.length === 0
-        ? apps
-        : apps.filter((app) =>
-            (app.tags ?? []).some((tag) => tagFilter.includes(tag)),
+      [
+        ...new Set(
+          apps.flatMap((app) =>
+            app.environment_name ? [app.environment_name] : [],
           ),
-    [apps, tagFilter],
+        ),
+      ].sort(),
+    [apps],
   )
+
+  // Client-side over the already-loaded list, which is fine to a few
+  // hundred apps and keeps typing instant. The same filters exist
+  // server-side (GET /api/v1/apps?tag=&environment=&q=) for the CLI and MCP.
+  const filteredApps = useMemo(() => {
+    const q = filters.query.trim().toLowerCase()
+    return apps.filter(
+      (app) =>
+        (q === '' ||
+          app.name.toLowerCase().includes(q) ||
+          app.image.toLowerCase().includes(q)) &&
+        (filters.environments.length === 0 ||
+          filters.environments.includes(app.environment_name ?? '')) &&
+        (filters.tags.length === 0 ||
+          (app.tags ?? []).some((tag) => filters.tags.includes(tag))),
+    )
+  }, [apps, filters])
+
+  const toggleSelected = (name: string, checked: boolean) => {
+    setSelected((prev) =>
+      checked ? [...new Set([...prev, name])] : prev.filter((n) => n !== name),
+    )
+  }
+  const allVisibleSelected =
+    filteredApps.length > 0 &&
+    filteredApps.every((app) => selected.includes(app.name))
 
   const virtualizer = useVirtualizer({
     count: filteredApps.length,
@@ -91,11 +124,23 @@ function AppListPage() {
           {apps.length > 0 ? (
             <span className="text-sm text-muted-foreground">
               {filteredApps.length}
-              {tagFilter.length > 0 ? ` of ${apps.length}` : ''}{' '}
+              {filtersActive(filters) ? ` of ${apps.length}` : ''}{' '}
               {apps.length === 1 ? 'app' : 'apps'}
             </span>
           ) : null}
-          <TagFilter selected={tagFilter} onChange={setTagFilter} />
+          {filteredApps.length > 0 ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setSelected(
+                  allVisibleSelected ? [] : filteredApps.map((a) => a.name),
+                )
+              }}
+            >
+              {allVisibleSelected ? 'Deselect all' : 'Select all'}
+            </Button>
+          ) : null}
           {/* Secondary entry point for the databases resource kind,
               lower-emphasis (outline) than "New app" since the sidebar's
               Databases nav item is the primary way in: this is here
@@ -122,6 +167,16 @@ function AppListPage() {
           />
         </div>
       </div>
+      {apps.length > 0 ? (
+        <>
+          <AppsStatusStrip />
+          <AppsFilterBar
+            filters={filters}
+            environments={environments}
+            onChange={setFilters}
+          />
+        </>
+      ) : null}
       {apps.length === 0 ? (
         <EmptyState
           icon={<PackageIcon className="size-5" />}
@@ -164,13 +219,15 @@ function AppListPage() {
       ) : filteredApps.length === 0 ? (
         <EmptyState
           icon={<PackageIcon className="size-5" />}
-          title="No apps match these tags"
-          description="Clear the tag filter to see every app again."
+          title="No apps match these filters"
+          description="Clear the filters to see every app again."
           action={
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setTagFilter([])}
+              onClick={() => {
+                setFilters(EMPTY_FILTERS)
+              }}
             >
               Clear filter
             </Button>
@@ -206,7 +263,11 @@ function AppListPage() {
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
-                  <AppRow app={app} />
+                  <AppRow
+                    app={app}
+                    selected={selected.includes(app.name)}
+                    onSelect={toggleSelected}
+                  />
                 </div>
               )
             })}
@@ -214,6 +275,12 @@ function AppListPage() {
         </div>
       )}
       <StaticSitesCard />
+      <AppsBulkBar
+        selected={selected}
+        onClear={() => {
+          setSelected([])
+        }}
+      />
     </div>
   )
 }

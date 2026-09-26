@@ -255,6 +255,8 @@ export interface AppBindMount {
 // as possibly-present.
 export interface AppListEntry extends AppDetail {
   status: AppStatusSummary
+  // Resolved name of environment_id, empty when the app has none.
+  environment_name?: string
 }
 
 // Mirrors internal/api/apps.go's appStatusSummary exactly. `variant`
