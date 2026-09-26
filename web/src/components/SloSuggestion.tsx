@@ -3,6 +3,7 @@ import { TargetIcon } from '@phosphor-icons/react/dist/ssr'
 import { Suggestion } from '@/components/kit'
 import { toast } from '@/components/ui/toast'
 import { useCreateAlertRule } from '../queries/alerts'
+import { useNotificationChannelsOptional } from '../queries/notificationChannels'
 import { DEFAULT_SLO_TARGET, useSloPreview } from '../queries/sloPreview'
 import type { AlertRule, SloConfig } from '../types/alerts'
 
@@ -36,6 +37,9 @@ export function SloSuggestion({
   const [dismissed, setDismissed] = useState(() => readDismissed(appName))
   const preview = useSloPreview(appName, DEFAULT_SLO, !hasSlo && !dismissed)
   const create = useCreateAlertRule(appName)
+  const channels = useNotificationChannelsOptional()
+  const channelId =
+    rules.find((r) => r.channel_id)?.channel_id ?? channels.data?.[0]?.id
 
   if (hasSlo || dismissed || !preview.data?.has_traffic) return null
 
@@ -44,7 +48,11 @@ export function SloSuggestion({
       tone="info"
       icon={<TargetIcon />}
       title={`Track a ${DEFAULT_SLO_TARGET}% availability SLO`}
-      detail={`This app is serving traffic and has no SLO alert. A ${DEFAULT_SLO_TARGET}% target pages you when the 30 day error budget burns fast and opens a ticket-level alert when it burns slowly.`}
+      detail={`This app is serving traffic and has no SLO alert. A ${DEFAULT_SLO_TARGET}% target pages you when the 30 day error budget burns fast and opens a ticket-level alert when it burns slowly.${
+        channelId
+          ? ''
+          : ' No notification channel is connected yet, so the rule will only show in alert history until you attach one.'
+      }`}
       actions={[
         {
           label: 'Create SLO rule',
@@ -56,6 +64,7 @@ export function SloSuggestion({
                 name: `${DEFAULT_SLO_TARGET}% availability SLO`,
                 kind: 'slo_burn',
                 slo: DEFAULT_SLO,
+                channel_id: channelId,
                 enabled: true,
               })
               toast.add({ title: 'SLO alert rule created.', type: 'success' })

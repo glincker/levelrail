@@ -154,6 +154,43 @@ describe('recent changes and SLO UI', () => {
     ).toBeTruthy()
   })
 
+  it('creates the suggested SLO rule on an existing notification channel', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn(
+      (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const url = urlOf(input)
+        if (url.includes('/notification-channels')) {
+          return Promise.resolve(
+            json([{ id: 'ch_1', name: 'ops', kind: 'slack' }]),
+          )
+        }
+        if (init?.method === 'POST')
+          return Promise.resolve(json({ id: 'r1' }, 201))
+        return Promise.resolve(json(BURNING))
+      },
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    renderWithClient(<SloSuggestion appName="web" rules={[]} />)
+
+    await user.click(
+      await screen.findByRole('button', { name: /create slo rule/i }),
+    )
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(([, init]) => init?.method === 'POST'),
+      ).toBe(true)
+    })
+    const post = fetchMock.mock.calls.find(
+      ([, init]) => init?.method === 'POST',
+    )
+    const body = JSON.parse(post?.[1]?.body as string) as Record<
+      string,
+      unknown
+    >
+    expect(body.channel_id).toBe('ch_1')
+    expect(body.kind).toBe('slo_burn')
+  })
+
   it('shows no SLO suggestion when a slo_burn rule exists', async () => {
     const fetchMock = vi.fn(() => Promise.resolve(json(BURNING)))
     vi.stubGlobal('fetch', fetchMock)
@@ -161,7 +198,10 @@ describe('recent changes and SLO UI', () => {
     renderWithClient(<SloSuggestion appName="web" rules={[rule]} />)
     await new Promise((r) => setTimeout(r, 30))
     expect(screen.queryByTestId('suggestion')).toBeNull()
-    expect(fetchMock).not.toHaveBeenCalled()
+    const asked = (fetchMock.mock.calls as unknown[][]).map((c) =>
+      urlOf(c[0] as RequestInfo),
+    )
+    expect(asked.some((u) => u.includes('slo-preview'))).toBe(false)
   })
 
   it('shows no SLO suggestion without traffic', async () => {

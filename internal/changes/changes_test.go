@@ -42,6 +42,8 @@ var now = time.Date(2026, 9, 26, 12, 0, 0, 0, time.UTC)
 
 func ago(m int) time.Time { return now.Add(-time.Duration(m) * time.Minute) }
 
+func timePtr(t time.Time) *time.Time { return &t }
+
 func agg(ev EventSource, dp DeploySource, au AuditSource) *Aggregator {
 	return &Aggregator{Events: ev, Deploys: dp, Audit: au, Window: 30 * time.Minute, Max: 20}
 }
@@ -110,6 +112,46 @@ func TestCollectOrderingAndSuspect(t *testing.T) {
 			},
 			wantTitles:  []string{"Load balancer updated", "Domain maintenance updated"},
 			wantSuspect: "Load balancer updated",
+		},
+		{
+			name: "in-progress deploy is listed but not suspected",
+			events: []store.AppEvent{
+				{ID: "e1", Kind: store.AppEventEnvChange, Title: "Env changed: A", CreatedAt: ago(20)},
+			},
+			attempts: []store.DeployAttempt{
+				{ID: "d1", Image: "app:v4", Status: store.DeployAttemptStatusRunning, StartedAt: ago(1)},
+			},
+			wantTitles:  []string{"Deploy to app:v4 in progress", "Env changed: A"},
+			wantSuspect: "Env changed: A",
+		},
+		{
+			name: "deploy started before the window but finished inside it counts at its finish time",
+			events: []store.AppEvent{
+				{ID: "e1", Kind: store.AppEventEnvChange, Title: "Env changed: A", CreatedAt: ago(10)},
+			},
+			attempts: []store.DeployAttempt{
+				{ID: "d1", Image: "app:v5", Status: store.DeployAttemptStatusSucceeded, StartedAt: ago(40), FinishedAt: timePtr(ago(5))},
+			},
+			wantTitles:  []string{"Deploy to app:v5", "Env changed: A"},
+			wantSuspect: "Deploy to app:v5",
+		},
+		{
+			name: "deploy that finished after the alert is not a change yet",
+			attempts: []store.DeployAttempt{
+				{ID: "d1", Image: "app:v6", Status: store.DeployAttemptStatusSucceeded, StartedAt: ago(5), FinishedAt: timePtr(now.Add(time.Minute))},
+			},
+			wantTitles: []string{},
+		},
+		{
+			name: "load balancer check is a diagnostic, not a change; domain sub-resources are changes",
+			audit: []store.AuditEntry{
+				{ID: "a1", Method: "POST", Path: "/api/v1/apps/web/loadbalancer/check", StatusCode: 200, CreatedAt: store.FormatAuditTime(ago(2))},
+				{ID: "a2", Method: "PUT", Path: "/api/v1/apps/web/domains/x.com/waf", StatusCode: 200, CreatedAt: store.FormatAuditTime(ago(4)), ActorName: "amy"},
+				{ID: "a3", Method: "DELETE", Path: "/api/v1/apps/web/domains/x.com/redirect", StatusCode: 204, CreatedAt: store.FormatAuditTime(ago(6))},
+				{ID: "a4", Method: "PUT", Path: "/api/v1/apps/web/domains/x.com/error-pages", StatusCode: 200, CreatedAt: store.FormatAuditTime(ago(8))},
+			},
+			wantTitles:  []string{"Domain waf updated", "Domain redirect removed", "Domain error pages updated"},
+			wantSuspect: "Domain waf updated",
 		},
 		{
 			name: "rollback detected and suspected",

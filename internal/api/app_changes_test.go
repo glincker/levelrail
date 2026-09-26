@@ -134,6 +134,35 @@ func TestAlertHistoryIncludeChanges(t *testing.T) {
 	}
 }
 
+func TestAlertHistoryIncludeChangesFlagsOmittedEntries(t *testing.T) {
+	rt, db, adb := newTestRouterWithAlerting(t)
+	rt.alertNoise = adb
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	total := alertHistoryChangesMax + 3
+	for i := 0; i < total; i++ {
+		if err := adb.RecordHistory(context.Background(), alerting.HistoryEntry{RuleID: "r", RuleName: "5xx", App: "web", Event: alerting.EventFired, Outcome: alerting.OutcomeSent, At: time.Now().Add(-time.Duration(i) * time.Minute)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var got []alertHistoryResource
+	if code := tlJSON(t, rt, cookie, http.MethodGet, "/api/v1/alert-history?include=changes&limit=100", "", &got); code != http.StatusOK {
+		t.Fatalf("history = %d", code)
+	}
+	filled, omitted := 0, 0
+	for _, e := range got {
+		if e.Changes != nil {
+			filled++
+		}
+		if e.ChangesOmitted {
+			omitted++
+		}
+	}
+	if filled != alertHistoryChangesMax || omitted != 3 {
+		t.Fatalf("filled=%d omitted=%d, want %d and 3", filled, omitted, alertHistoryChangesMax)
+	}
+}
+
 func TestSLORuleValidationAndPreview(t *testing.T) {
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)

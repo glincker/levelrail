@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/changes"
@@ -97,6 +98,9 @@ type Engine struct {
 
 	slo         SLOPolicy
 	sloThrottle *domainHealthThrottle
+
+	sloMu       sync.Mutex
+	sloSeverity map[string]string
 }
 
 // NewEngine builds an Engine. newNotifier defaults to a Notifier with no
@@ -162,7 +166,7 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 		nodeCPUThreshold: nodeCPUThreshold, nodeMemoryThreshold: nodeMemoryThreshold,
 		domainHealthCheckInterval: domainHealthCheckInterval, domainHealthThrottle: newDomainHealthThrottle(),
 		backupMissingGracePeriod: backupMissingGracePeriod,
-		slo:                      SLOPolicyFromEnv(), sloThrottle: newDomainHealthThrottle(),
+		slo:                      SLOPolicyFromEnv(), sloThrottle: newDomainHealthThrottle(), sloSeverity: make(map[string]string),
 	}
 }
 
@@ -390,13 +394,24 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 		switch {
 		case becameFiring:
+			if r.Kind == KindSLOBurn {
+				e.sloEscalated(r.ID, next.Severity)
+			}
 			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices, taskFailureNotice, backupMissingNoticeText, sloNotice)
 			if r.Kind == KindCrashloop && e.autoRollback != nil {
 				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
 			}
 		case becameResolved:
+			if r.Kind == KindSLOBurn {
+				e.sloForget(r.ID)
+			}
 			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, nil, "", "", "")
 		case stillFiring:
+			// A ticket-level SLO burn that worsens into a page-level one must
+			// notify again: the operator only heard a warning so far.
+			if r.Kind == KindSLOBurn && e.sloEscalated(r.ID, next.Severity) {
+				e.dispatch(ctx, next, false, nil, nil, nil, nil, nil, nil, "", "", sloNotice)
+			}
 			// No dispatch here: a rule that's still firing sends no repeat
 			// notification (see dispatch's own doc comment on why). But a
 			// second, genuinely different bad deploy inside the same
@@ -414,6 +429,23 @@ func (e *Engine) Tick(ctx context.Context) error {
 	}
 
 	return errors.Join(errs...)
+}
+
+// sloEscalated records severity as the last one seen for rule id and reports
+// whether it just rose from a non-critical level to critical. A rule seen for
+// the first time (for example after a restart) is recorded without escalating.
+func (e *Engine) sloEscalated(id, severity string) bool {
+	e.sloMu.Lock()
+	defer e.sloMu.Unlock()
+	prev, seen := e.sloSeverity[id]
+	e.sloSeverity[id] = severity
+	return seen && prev != SeverityCritical && severity == SeverityCritical
+}
+
+func (e *Engine) sloForget(id string) {
+	e.sloMu.Lock()
+	defer e.sloMu.Unlock()
+	delete(e.sloSeverity, id)
 }
 
 // dispatch sends one notification for r's transition. Failures are
