@@ -24,6 +24,7 @@ const sidebarGroups = [
       { text: 'Troubleshooting', link: '/troubleshooting' },
       { text: 'Docker', link: '/docker' },
       { text: 'Domains and ingress', link: '/domains-and-ingress' },
+      { text: 'Deployments page', link: '/deployments-page' },
       { text: 'Load balancing', link: '/load-balancing' },
       { text: 'ACME verification runbook', link: '/acme-verification-runbook' },
       { text: 'Feature flags', link: '/feature-flags' },

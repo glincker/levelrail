@@ -1,0 +1,35 @@
+import type { Deployment } from '../types/deployment'
+
+export function makeDeployment(over: Partial<Deployment> = {}): Deployment {
+  return {
+    id: 'dep-aaaaaaaa-1',
+    app: 'web',
+    status: 'ready',
+    trigger: 'git push',
+    environment: 'production',
+    image: 'registry.example.com/web:1.2.3',
+    image_ref: 'registry.example.com/web@sha256:abcdef0123456789abcdef',
+    image_digest: 'sha256:abcdef0123456789abcdef',
+    digest_reason: 'Resolved',
+    rollout_state: 'serving',
+    commit_sha: '1234567890abcdef',
+    branch: 'main',
+    commit_message: 'Fix the login redirect',
+    author: 'Ada Lovelace',
+    pr_number: null,
+    started_at: '2026-09-26T10:00:00Z',
+    finished_at: '2026-09-26T10:03:31Z',
+    duration_ms: 211_000,
+    steps: null,
+    error_summary: null,
+    reason_code: '',
+    reason: '',
+    rollback_of: null,
+    rolled_back_by: null,
+    superseded_by: null,
+    is_live: false,
+    approval_id: null,
+    preview_image_url: null,
+    ...over,
+  }
+}

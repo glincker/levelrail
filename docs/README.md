@@ -46,6 +46,7 @@ Four main types, plus two Levelrail-specific categories:
 | [github-actions.md](github-actions.md) | Deploy from a GitHub Actions workflow with the bundled composite Action |
 | [pipelines.md](pipelines.md) | Test, build, approve, and deploy with YAML pipelines: triggers, matrix, secrets, and approvals |
 | [platform-as-code.md](platform-as-code.md) | Describe projects, environments, apps, domains and databases as YAML, then export, diff, plan and apply them from the CLI, the dashboard, MCP or CI |
+| [deployments-page.md](deployments-page.md) | The cross-app Deployments page: live feed, filters, details drawer, actions and keyboard shortcuts |
 | [load-balancing.md](load-balancing.md) | Balance traffic across replicas and nodes with health checks, sticky sessions, weights and graceful cutovers, and export the setup as Terraform, CDK, CloudFormation or Caddy |
 | [domains-and-ingress.md](domains-and-ingress.md) | Why there's no reverse proxy to install, how `app.yaml` domains route to containers, and TLS's current honest status |
 | [acme-verification-runbook.md](acme-verification-runbook.md) | Verify real ACME certificate issuance against a live domain, step by step |

@@ -18,6 +18,7 @@ const APP_SLUG_DOCS: Record<string, string> = {
 const PREFIX_DOCS: [string, string][] = [
   ['/databases', 'managing-databases'],
   ['/backups', 'backups-and-storage'],
+  ['/deployments', 'deployments-page'],
   ['/loadbalancers', 'load-balancing'],
   ['/domains', 'domains-and-ingress'],
   ['/nodes', 'multi-node'],
