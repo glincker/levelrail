@@ -627,6 +627,11 @@ AI model resources on GPU nodes and the GPU node snapshots they schedule against
 | GET | /api/v1/models/{name}/logs | AbilityRead | handleQueryModelLogs |
 | GET | /api/v1/models/{name}/logs/stream | AbilityRead | handleLiveModelLogStream |
 | GET | /api/v1/gpus | AbilityRead | handleListGPUNodes |
+| GET | /api/v1/models/{name}/keys | AbilityRead | handleListModelKeys |
+| POST | /api/v1/models/{name}/keys | AbilityWriteSensitive | handleCreateModelKey |
+| DELETE | /api/v1/models/{name}/keys/{id} | AbilityWrite | handleRevokeModelKey |
+| POST | /api/v1/models/{name}/keys/{id}/rotate | AbilityWriteSensitive | handleRotateModelKey |
+| GET | /api/v1/models/{name}/usage | AbilityRead | handleModelUsage |
 
 ## Other
 
