@@ -23,6 +23,11 @@ type ModelService interface {
 	Delete(ctx context.Context, name string) error
 	Restart(ctx context.Context, name string) error
 	RotateKey(ctx context.Context, name string) (string, error)
+	ListKeys(ctx context.Context, model string) ([]models.KeyView, error)
+	CreateKey(ctx context.Context, model string, in models.CreateKeyInput) (models.CreatedKey, error)
+	RevokeKey(ctx context.Context, model, id string) error
+	RotateKeyByID(ctx context.Context, model, id string, grace *time.Duration) (models.CreatedKey, error)
+	Usage(ctx context.Context, model string, window time.Duration) (models.UsageReport, error)
 	SetHFToken(ctx context.Context, name, token string) error
 	GPUNodes(ctx context.Context) ([]models.GPUNode, error)
 	NodeGPU(ctx context.Context, nodeID string) (gpu.Info, bool, error)
