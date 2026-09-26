@@ -42,7 +42,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 49 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 51 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -103,13 +103,15 @@ Endpoints for:
 | GET | /api/v1/settings/ai-assistant | AbilityRead | handleGetAIAssistantSettings |
 | PUT | /api/v1/settings/ai-assistant | AbilityRoot | handleUpdateAIAssistantSettings |
 | DELETE | /api/v1/settings/ai-assistant | AbilityRoot | handleDeleteAIAssistantSettings |
+| GET | /api/v1/settings/deploy-freeze | AbilityRead | handleGetGlobalDeployFreeze |
+| PUT | /api/v1/settings/deploy-freeze | AbilityRoot | handlePutGlobalDeployFreeze |
 
 :::
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 78 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 78 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 80 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 80 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -199,6 +201,8 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleSetPipelineSync |
 | POST | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleRunPipelineSync |
 | GET | /api/v1/apps/{name}/requests | AbilityRead | handleQueryRequests |
+| GET | /api/v1/apps/{name}/deploy-freeze | AbilityRead | handleGetAppDeployFreeze |
+| PUT | /api/v1/apps/{name}/deploy-freeze | AbilityDeploy | handlePutAppDeployFreeze |
 
 :::
 
