@@ -81,7 +81,7 @@ curl https://llm.example.com/v1/chat/completions \
   -d '{"model": "llama3.1:8b", "messages": [{"role": "user", "content": "hello"}]}'
 ```
 
-- The key is generated at deploy time and shown once. Only its SHA-256 hash is stored. Lost it? `levelrail models rotate-key <name>` issues a new one and invalidates the old one.
+- The key is generated at deploy time and shown once. Only its SHA-256 hash is stored. Lost it? `levelrail models rotate-key <name>` replaces the `default` key at once. For more than one key, see [Virtual keys](#virtual-keys-and-usage).
 - Only an allowlist of OpenAI-compatible routes is served (see below). Engine admin APIs (Ollama's pull and delete, vLLM's runtime LoRA load and unload, llama.cpp's `/props` and `/lora-adapters`) are never exposed, even ones that live under `/v1/`.
 - The engine's port is published on loopback (local node) or the WireGuard mesh address (remote node), never on a public interface.
 
@@ -116,6 +116,46 @@ Limits are global (every model) and set with environment variables on the contro
 | `APP_MODEL_GATEWAY_IDLE_TIMEOUT` | `2m` | Longest gap between engine output on a response. It is a gap, not a total, so long streams that keep producing tokens are never cut. |
 
 JSON bodies are read up to the size cap so `n` and the token limits can be checked; the body is then forwarded unchanged. Audio uploads are size-capped but not parsed. Request and response bodies are never logged: each request logs only method, model, status, duration and bytes.
+
+## Virtual keys and usage
+
+A model can have several named keys, so each client gets its own identity, limits and usage. The key made at deploy time is the key named `default`; existing models were migrated to it, and it keeps working unchanged.
+
+```bash
+levelrail models keys create chat --name ci --rpm 60 --tpm 100000 --max-parallel 4 \
+  --allow-paths /v1/chat/completions --expires-in 720h
+levelrail models keys list chat
+levelrail models keys rotate chat <key-id> --grace 30m
+levelrail models keys revoke chat <key-id>
+levelrail models usage chat --since 168h
+```
+
+In the dashboard, the gauge button on a model row opens the keys panel (create, rotate, revoke, last used, limits) and the usage card (requests, tokens, errors and time to first byte over time, plus a per key table).
+
+- Only the SHA-256 of a key is stored. The key is shown once, with its first 8 characters kept as a prefix for identification. `last used` is updated on each flush interval.
+- **Rotation** issues a replacement with the same name, limits and expiry. The old key keeps working for a grace window (`--grace`, default `APP_MODEL_KEY_ROTATION_GRACE`, `1h`; at most `APP_MODEL_KEY_MAX_GRACE`, `168h`; `0` retires it at once), then stops. **Revoking** stops a key immediately.
+- **Limits** are per key. `rpm` and max parallel are enforced at the gateway: a request over either gets `429` with `Retry-After` and the same generic OpenAI-style error, so the response never says which limit tripped. `tpm` is soft: tokens are counted from responses after they finish, so the request that crosses the limit still completes and later ones get `429` until the minute rolls over. An unknown, revoked or expired key always gets `401`.
+- **Allow lists**: `allow_paths` are exact gateway paths (a trailing `/` allows everything below it) and must be routes the engine's allowlist already serves, so a key can never reach an engine admin route. `allow_models` are compared with the `model` field of the request body; a request without one is refused when the list is set.
+- At most `APP_MODEL_MAX_KEYS` (`50`) live keys per model.
+
+### What is metered
+
+Per key and model, per hour: requests, 2xx, 4xx and 5xx counts, requests refused with `429`, input and output tokens, response bytes, total duration and time to first byte (the first byte the engine sends, not the first token).
+
+Tokens are read from the response's `usage` object: non-streaming responses, and streams opened with `stream_options.include_usage`. A stream without it, or a compressed response, is counted as a request only. Nothing is estimated, and the report says so (`usage_requests` shows how many requests carried usage). Prompts and bodies are never stored or logged; only the last `APP_MODEL_USAGE_SCAN_BYTES` of a JSON or event-stream body are held in memory to find `usage`.
+
+Counts are aggregated in memory and written in bounded batches, so the request path never waits on the database. If the control plane stops between flushes, up to one interval of counts is lost.
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `APP_MODEL_USAGE_FLUSH_INTERVAL` | `30s` | How often aggregates are written. |
+| `APP_MODEL_USAGE_BATCH_SIZE` | `200` | Rows per write. |
+| `APP_MODEL_USAGE_MAX_BUFFERED` | `10000` | Hourly aggregates held between flushes; more are dropped and logged. |
+| `APP_MODEL_USAGE_RETENTION` | `720h` | Hourly rows older than this are deleted. `0` keeps them. |
+| `APP_MODEL_USAGE_SCAN_BYTES` | `16384` | Tail of a response searched for `usage`. `0` turns token counting off. |
+| `APP_MODEL_KEY_MAX_LIMIT` | `10000000` | Largest rpm, tpm or parallel value a key may be given. |
+
+The control plane has no Prometheus endpoint yet, so usage is exposed through `GET /api/v1/models/{name}/usage?since=24h`, the CLI and the `get_model_usage` MCP tool.
 
 ## GPU apps
 
@@ -154,11 +194,11 @@ When a GPU app or model cannot run on its own node and no eligible GPU node has 
 
 ## Access control
 
-Listing and reading models and GPUs needs the `read` ability. Deleting and restarting needs `write`. Deploying, rotating a key and setting a HuggingFace token need `write:sensitive`. Model resources can be targeted by IAM policies as `model:<name>`. The AI assistant asks for confirmation before any of the mutating model tools.
+Listing and reading models and GPUs needs the `read` ability. Deleting and restarting needs `write`. Listing keys and reading usage need `read`; revoking a key needs `write`. Deploying, creating or rotating a key and setting a HuggingFace token need `write:sensitive`. Model resources can be targeted by IAM policies as `model:<name>`. The AI assistant asks for confirmation before any of the mutating model tools.
 
 ## Not in version 1
 
-AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, per-key rate limits at the gateway (only the per-model concurrency cap exists), per-model limit overrides, and per-key usage accounting.
+AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, per-model limit overrides, engine metrics (KV cache, queue depth) on the model page, and a Prometheus endpoint for usage.
 
 ## GPU in Compose templates
 
