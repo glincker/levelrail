@@ -14,7 +14,7 @@ import (
 )
 
 type previewNotifier interface {
-	NotifyReady(app, image string)
+	NotifyReady(app, image, runningImageID string)
 }
 
 // previewRolloutRecorder forwards rollout records to inner and tells the
@@ -27,7 +27,7 @@ type previewRolloutRecorder struct {
 func (p previewRolloutRecorder) RecordRollout(ctx context.Context, serviceName, image, state, runningImageID string) error {
 	err := p.inner.RecordRollout(ctx, serviceName, image, state, runningImageID)
 	if state == store.RolloutStateServing && p.notify != nil {
-		p.notify.NotifyReady(serviceName, image)
+		p.notify.NotifyReady(serviceName, image, runningImageID)
 	}
 	return err
 }
@@ -59,12 +59,12 @@ func (r previewResolver) Resolve(ctx context.Context, app, image string) (previe
 	if image != "" && svc.Image != image {
 		return preview.Target{}, &preview.SkipError{Reason: "superseded"}
 	}
-	id, err := r.sql.LatestSucceededDeployment(ctx, app, svc.Image)
+	id, err := r.sql.LatestServingDeployment(ctx, app, svc.Image)
 	if err != nil {
 		return preview.Target{}, err
 	}
 	if id == "" {
-		return preview.Target{}, &preview.SkipError{Reason: "no_deployment"}
+		return preview.Target{}, &preview.SkipError{Reason: "not_serving"}
 	}
 	skip := func(reason, detail string) error {
 		return &preview.SkipError{DeploymentID: id, Reason: reason, Detail: detail}

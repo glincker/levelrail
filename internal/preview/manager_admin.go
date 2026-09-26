@@ -100,6 +100,9 @@ func (m *Manager) DeleteApp(ctx context.Context, app string) error {
 	if err := m.deps.Store.DeletePreviewRecords(ctx, ids); err != nil {
 		return fmt.Errorf("preview: delete records for %q: %w", app, err)
 	}
+	if err := m.deps.Store.DeletePreviewSettings(ctx, app); err != nil {
+		return fmt.Errorf("preview: delete settings for %q: %w", app, err)
+	}
 	m.mu.Lock()
 	delete(m.seen, app)
 	m.mu.Unlock()
@@ -313,6 +316,9 @@ func (m *Manager) dropApp(ctx context.Context, app string) {
 	}
 	if _, err := m.deleteRecords(ctx, recs); err != nil {
 		m.log.Warn("preview: delete records of deleted app failed", slog.String("app", app), slog.String("error", err.Error()))
+	}
+	if err := m.deps.Store.DeletePreviewSettings(ctx, app); err != nil {
+		m.log.Warn("preview: delete settings of deleted app failed", slog.String("app", app), slog.String("error", err.Error()))
 	}
 	if err := m.fs.RemoveApp(app); err != nil {
 		m.log.Warn("preview: remove files of deleted app failed", slog.String("app", app), slog.String("error", err.Error()))
