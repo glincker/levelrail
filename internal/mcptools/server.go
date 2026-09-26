@@ -29,6 +29,7 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	server := mcp.NewServer(&mcp.Implementation{Name: "levelrail-mcp", Version: version.Version}, nil)
 
 	registerAppTools(server, client)
+	registerBulkAppTools(server, client)
 	registerDatabaseTools(server, client)
 	registerServiceTemplateTools(server, client)
 	registerNodeTools(server, client)
