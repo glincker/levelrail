@@ -42,6 +42,13 @@ func newAppServer(t *testing.T) (*httptest.Server, MetaTarget) {
 		w.Header().Set("Content-Type", "image/png")
 		_, _ = w.Write(png)
 	})
+	mux.HandleFunc("/domain-only.png", func(w http.ResponseWriter, r *http.Request) {
+		if r.Host != "app.example.com" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write(png)
+	})
 	mux.HandleFunc("/huge.png", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write(make([]byte, 3<<20))
 	})
@@ -132,6 +139,8 @@ func TestHTTPFetcher_FetchImage(t *testing.T) {
 	}{
 		{name: "relative on the app", ref: "/og.png"},
 		{name: "public domain is read from the app itself", ref: "https://app.example.com/og.png"},
+		{name: "public domain keeps its Host header", ref: "https://app.example.com/domain-only.png"},
+		{name: "app origin does not get a public Host", ref: "/domain-only.png", wantErr: "404"},
 		{name: "over the size cap", ref: "/huge.png", wantErr: "size cap"},
 		{name: "missing", ref: "/nope.png", wantErr: "404"},
 		{name: "file scheme", ref: "file:///etc/passwd", wantErr: "unusable"},

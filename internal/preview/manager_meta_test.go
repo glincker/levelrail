@@ -257,6 +257,41 @@ func TestMetadataTier_RecaptureKeepsBetterImage(t *testing.T) {
 	}
 }
 
+func TestMetadataTier_FailedRecaptureKeepsCardAndImage(t *testing.T) {
+	tests := []struct {
+		name       string
+		first      func(f *fakeFetcher)
+		wantSource string
+	}{
+		{name: "card", first: func(*fakeFetcher) {}, wantSource: SourceCard},
+		{name: "site image", first: func(f *fakeFetcher) {
+			f.page = pageWith(200, PageMeta{Title: "Home", OGImage: "/og.png"})
+			f.image = pngBytes(t, paintedImage(1200, 630, 255))
+		}, wantSource: SourceOGImage},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newMetaHarness(t, nil)
+			tc.first(h.fetch)
+			h.ready(t)
+			for _, next := range []struct {
+				page *PageResult
+				err  error
+			}{{err: errBoom}, {page: pageWith(401, PageMeta{})}, {err: ErrNotHTML}} {
+				h.fetch.page, h.fetch.pageErr = next.page, next.err
+				if err := h.m.Capture(context.Background(), "web"); err != nil {
+					t.Fatal(err)
+				}
+				h.waitIdle(t, "web")
+				r, _ := h.record("dep_1")
+				if r.Status != StatusOK || r.Source != tc.wantSource {
+					t.Fatalf("after a failed recapture record = %+v, want the original %s kept", r, tc.wantSource)
+				}
+			}
+		})
+	}
+}
+
 func TestRetention_AppliesToEverySource(t *testing.T) {
 	h := newMetaHarness(t, func(c *Config) { c.KeepPerApp = 2; c.TTL = 0 })
 	ctx := context.Background()

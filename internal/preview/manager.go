@@ -264,11 +264,9 @@ func (m *Manager) commit(ctx context.Context, c captured) {
 	if s, err := m.Settings(ctx, rec.App); err != nil || !s.Enabled || !m.cfg.Enabled {
 		return
 	}
-	if rec.Status != StatusOK || rec.Source == SourceCard {
-		if prev, err := m.deps.Store.GetPreviewRecord(ctx, rec.DeploymentID); err == nil && prev != nil && prev.HasFile() {
-			m.log.Info("preview: capture not stored, keeping existing thumbnail", slog.String("app", rec.App), slog.String("reason", rec.Reason))
-			return
-		}
+	if prev, err := m.deps.Store.GetPreviewRecord(ctx, rec.DeploymentID); err == nil && prev != nil && keepsPrevious(rec, *prev) {
+		m.log.Info("preview: capture not stored, keeping existing preview", slog.String("app", rec.App), slog.String("reason", rec.Reason))
+		return
 	}
 	if rec.HasFile() {
 		if err := m.fs.Write(rec.App, rec.DeploymentID, c.jpeg); err != nil {
@@ -286,6 +284,18 @@ func (m *Manager) commit(ctx context.Context, c captured) {
 	if err := m.enforceLocked(ctx); err != nil {
 		m.log.Warn("preview: retention pass failed", slog.String("error", err.Error()))
 	}
+}
+
+// keepsPrevious reports whether next must not replace prev: a skip or failure
+// never replaces a successful preview, and a card never replaces an image.
+func keepsPrevious(next, prev Record) bool {
+	switch {
+	case next.Status != StatusOK:
+		return prev.Status == StatusOK
+	case next.Source == SourceCard:
+		return prev.HasFile()
+	}
+	return false
 }
 
 func (m *Manager) gates() (reason, detail string) {

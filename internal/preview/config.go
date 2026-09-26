@@ -37,6 +37,12 @@ const (
 	EnvMetaMinImgPx  = "APP_PREVIEW_META_MIN_IMAGE_PX"
 )
 
+// Bounds on the thumbnail canvas, so a typo cannot ask for a huge allocation.
+const (
+	minThumbPx = 64
+	maxThumbPx = 2048
+)
+
 // DefaultImage is the pinned capture browser; override with APP_PREVIEW_IMAGE.
 const DefaultImage = "docker.io/chromedp/headless-shell:151.0.7922.109"
 
@@ -90,7 +96,7 @@ func ConfigFromEnv(lookup func(string) (string, bool), logger *slog.Logger) Conf
 		CPUs:          e.float(EnvCPUs, 1.0),
 		ViewportW:     w,
 		ViewportH:     h,
-		ThumbWidth:    e.integer(EnvThumbWidth, 640),
+		ThumbWidth:    e.bounded(EnvThumbWidth, 640, minThumbPx, maxThumbPx),
 		Quality:       e.integer(EnvQuality, 72),
 		MaxThumbKB:    e.integer(EnvMaxThumbKB, 200),
 		BlankRatio:    e.float(EnvBlankRatio, 0.995),
@@ -103,7 +109,7 @@ func ConfigFromEnv(lookup func(string) (string, bool), logger *slog.Logger) Conf
 		QueueDepth:    e.integer(EnvQueueDepth, 8),
 		SweepInterval: e.duration(EnvSweepInterval, time.Hour),
 		DefaultMode:   e.mode(EnvDefaultMode, ModeMetadata),
-		ThumbHeight:   e.integer(EnvThumbHeight, 400),
+		ThumbHeight:   e.bounded(EnvThumbHeight, 400, minThumbPx, maxThumbPx),
 		MetaTimeout:   e.duration(EnvMetaTimeout, 5*time.Second),
 		MetaMaxHTML:   int64(e.integer(EnvMetaMaxHTMLKB, 512)) << 10,
 		MetaMaxImage:  int64(e.integer(EnvMetaMaxImgKB, 2048)) << 10,
@@ -155,6 +161,15 @@ func (e envReader) integer(key string, def int) int {
 	n, err := strconv.Atoi(v)
 	if err != nil || n <= 0 {
 		e.bad(key, v)
+		return def
+	}
+	return n
+}
+
+func (e envReader) bounded(key string, def, lo, hi int) int {
+	n := e.integer(key, def)
+	if n < lo || n > hi {
+		e.bad(key, strconv.Itoa(n))
 		return def
 	}
 	return n

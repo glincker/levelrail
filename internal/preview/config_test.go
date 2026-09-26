@@ -46,6 +46,17 @@ func TestConfigFromEnv_Overrides(t *testing.T) {
 	}
 }
 
+func TestConfigFromEnv_ThumbnailSizeIsBounded(t *testing.T) {
+	c := ConfigFromEnv(lookupFrom(map[string]string{EnvThumbHeight: "100000", EnvThumbWidth: "8"}), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if c.ThumbHeight != 400 || c.ThumbWidth != 640 {
+		t.Errorf("out of range sizes must fall back, got %dx%d", c.ThumbWidth, c.ThumbHeight)
+	}
+	c = ConfigFromEnv(lookupFrom(map[string]string{EnvThumbHeight: "300", EnvThumbWidth: "480"}), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if c.ThumbHeight != 300 || c.ThumbWidth != 480 {
+		t.Errorf("in range sizes must be kept, got %dx%d", c.ThumbWidth, c.ThumbHeight)
+	}
+}
+
 func TestConfigFromEnv_MalformedFallsBack(t *testing.T) {
 	c := ConfigFromEnv(lookupFrom(map[string]string{
 		EnvKeepPerApp: "many", EnvViewport: "wide", EnvTimeout: "soon", EnvEnabled: "maybe", EnvMemoryMB: "-4",
