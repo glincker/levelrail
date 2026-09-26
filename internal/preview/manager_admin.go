@@ -21,6 +21,7 @@ func (m *Manager) Settings(ctx context.Context, app string) (AppSettings, error)
 		return AppSettings{}, fmt.Errorf("preview: load settings for %q: %w", app, err)
 	}
 	s.App = app
+	s.Normalize(m.cfg.DefaultMode, s.Mode != "")
 	if s.Path == "" {
 		s.Path = DefaultPath
 	}
@@ -33,9 +34,19 @@ func (m *Manager) SaveSettings(ctx context.Context, app string, patch SettingsPa
 	if err != nil {
 		return AppSettings{}, err
 	}
-	if patch.Enabled != nil {
-		s.Enabled = *patch.Enabled
+	switch {
+	case patch.Mode != nil:
+		mode, perr := ParseMode(*patch.Mode)
+		if perr != nil {
+			return AppSettings{}, perr
+		}
+		s.Mode = mode
+	case patch.Enabled != nil && *patch.Enabled:
+		s.Mode = ModeScreenshot
+	case patch.Enabled != nil:
+		s.Mode = ModeOff
 	}
+	s.Enabled = s.Mode != ModeOff
 	if patch.Path != nil {
 		s.Path = *patch.Path
 	}
@@ -215,7 +226,7 @@ func (m *Manager) deleteRecords(ctx context.Context, victims []Record) (PruneRes
 	var res PruneResult
 	ids := make([]string, 0, len(victims))
 	for _, r := range victims {
-		if r.Status == StatusOK {
+		if r.HasFile() {
 			if err := m.fs.Remove(r.App, r.DeploymentID); err != nil {
 				return res, err
 			}
@@ -260,7 +271,7 @@ func (m *Manager) removeOrphanFiles(ctx context.Context) error {
 	}
 	okIDs := map[string]bool{}
 	for _, r := range recs {
-		if r.Status == StatusOK {
+		if r.HasFile() {
 			okIDs[r.DeploymentID] = true
 		}
 	}
@@ -276,7 +287,7 @@ func (m *Manager) removeOrphanFiles(ctx context.Context) error {
 	}
 	var dangling []string
 	for _, r := range recs {
-		if r.Status == StatusOK && !onDisk[r.DeploymentID] {
+		if r.HasFile() && !onDisk[r.DeploymentID] {
 			dangling = append(dangling, r.DeploymentID)
 		}
 	}

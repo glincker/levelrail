@@ -32,17 +32,19 @@ type PreviewService interface {
 func (rt *Router) SetPreview(p PreviewService) { rt.preview = p }
 
 type previewRecordResource struct {
-	DeploymentID string    `json:"deployment_id"`
-	Status       string    `json:"status"`
-	Reason       string    `json:"reason,omitempty"`
-	Detail       string    `json:"detail,omitempty"`
-	HTTPStatus   int       `json:"http_status,omitempty"`
-	Path         string    `json:"path"`
-	Width        int       `json:"width,omitempty"`
-	Height       int       `json:"height,omitempty"`
-	Bytes        int64     `json:"bytes"`
-	CapturedAt   time.Time `json:"captured_at"`
-	ImageURL     string    `json:"image_url,omitempty"`
+	DeploymentID string            `json:"deployment_id"`
+	Status       string            `json:"status"`
+	Reason       string            `json:"reason,omitempty"`
+	Detail       string            `json:"detail,omitempty"`
+	HTTPStatus   int               `json:"http_status,omitempty"`
+	Path         string            `json:"path"`
+	Source       string            `json:"source"`
+	Meta         *preview.CardMeta `json:"meta,omitempty"`
+	Width        int               `json:"width,omitempty"`
+	Height       int               `json:"height,omitempty"`
+	Bytes        int64             `json:"bytes"`
+	CapturedAt   time.Time         `json:"captured_at"`
+	ImageURL     string            `json:"image_url,omitempty"`
 }
 
 type previewBrowserImage struct {
@@ -60,6 +62,8 @@ type previewStorage struct {
 type previewStatusResource struct {
 	App           string                 `json:"app"`
 	Enabled       bool                   `json:"enabled"`
+	Mode          string                 `json:"mode"`
+	DefaultMode   string                 `json:"default_mode"`
 	Path          string                 `json:"path"`
 	WaitMS        int                    `json:"wait_ms"`
 	ServerEnabled bool                   `json:"server_enabled"`
@@ -74,23 +78,33 @@ type previewStatusResource struct {
 }
 
 func previewImageURL(app string, rec preview.Record) string {
-	if rec.Status != preview.StatusOK {
+	if !rec.HasFile() {
 		return ""
 	}
 	return "/api/v1/apps/" + url.PathEscape(app) + "/deployments/" + url.PathEscape(rec.DeploymentID) + "/preview?v=" + strconv.FormatInt(rec.CapturedAt.Unix(), 10)
 }
 
 func toPreviewRecordResource(app string, rec preview.Record) previewRecordResource {
-	return previewRecordResource{
+	out := previewRecordResource{
 		DeploymentID: rec.DeploymentID, Status: rec.Status, Reason: rec.Reason, Detail: rec.Detail,
-		HTTPStatus: rec.HTTPStatus, Path: rec.Path, Width: rec.Width, Height: rec.Height, Bytes: rec.Bytes,
+		HTTPStatus: rec.HTTPStatus, Path: rec.Path, Source: rec.Source, Width: rec.Width, Height: rec.Height, Bytes: rec.Bytes,
 		CapturedAt: rec.CapturedAt.UTC(), ImageURL: previewImageURL(app, rec),
 	}
+	if out.Source == "" {
+		out.Source = preview.SourceScreenshot
+	}
+	if rec.Meta != "" {
+		var meta preview.CardMeta
+		if err := json.Unmarshal([]byte(rec.Meta), &meta); err == nil {
+			out.Meta = &meta
+		}
+	}
+	return out
 }
 
 func toPreviewStatusResource(app string, cfg preview.Config, sum preview.Summary) previewStatusResource {
 	out := previewStatusResource{
-		App: app, Enabled: sum.Settings.Enabled, Path: sum.Settings.Path, WaitMS: sum.Settings.WaitMS,
+		App: app, Enabled: sum.Settings.Enabled, Mode: string(sum.Settings.Mode), DefaultMode: string(cfg.DefaultMode), Path: sum.Settings.Path, WaitMS: sum.Settings.WaitMS,
 		ServerEnabled: sum.GlobalOn, Capturing: sum.Capturing, Image: sum.Image,
 		KeepPerApp: cfg.KeepPerApp, TTLDays: int(cfg.TTL / (24 * time.Hour)), MaxTotalMB: cfg.MaxTotalBytes >> 20,
 		Storage: previewStorage{AppBytes: sum.App.Bytes, AppCount: sum.App.Count, TotalBytes: sum.Total.Bytes, TotalCount: sum.Total.Count},
@@ -137,6 +151,7 @@ func (rt *Router) handleGetPreview(w http.ResponseWriter, r *http.Request) {
 }
 
 type previewSettingsRequest struct {
+	Mode    *string `json:"mode"`
 	Enabled *bool   `json:"enabled"`
 	Path    *string `json:"path"`
 	WaitMS  *int    `json:"wait_ms"`
@@ -153,7 +168,7 @@ func (rt *Router) handlePutPreview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	app := r.PathValue("name")
-	_, err := rt.preview.SaveSettings(r.Context(), app, preview.SettingsPatch{Enabled: req.Enabled, Path: req.Path, WaitMS: req.WaitMS})
+	_, err := rt.preview.SaveSettings(r.Context(), app, preview.SettingsPatch{Mode: req.Mode, Enabled: req.Enabled, Path: req.Path, WaitMS: req.WaitMS})
 	if errors.Is(err, preview.ErrInvalid) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return

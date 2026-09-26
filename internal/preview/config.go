@@ -28,6 +28,13 @@ const (
 	EnvMinFreeDiskMB = "APP_PREVIEW_MIN_FREE_DISK_MB"
 	EnvQueueDepth    = "APP_PREVIEW_QUEUE_DEPTH"
 	EnvSweepInterval = "APP_PREVIEW_SWEEP_INTERVAL"
+	EnvDefaultMode   = "APP_PREVIEW_DEFAULT_MODE"
+	EnvThumbHeight   = "APP_PREVIEW_THUMB_HEIGHT"
+	EnvMetaTimeout   = "APP_PREVIEW_META_TIMEOUT"
+	EnvMetaMaxHTMLKB = "APP_PREVIEW_META_MAX_HTML_KB"
+	EnvMetaMaxImgKB  = "APP_PREVIEW_META_MAX_IMAGE_KB"
+	EnvMetaRedirects = "APP_PREVIEW_META_MAX_REDIRECTS"
+	EnvMetaMinImgPx  = "APP_PREVIEW_META_MIN_IMAGE_PX"
 )
 
 // DefaultImage is the pinned capture browser; override with APP_PREVIEW_IMAGE.
@@ -56,6 +63,14 @@ type Config struct {
 	MinFreeDisk   int64
 	QueueDepth    int
 	SweepInterval time.Duration
+
+	DefaultMode  Mode
+	ThumbHeight  int
+	MetaTimeout  time.Duration
+	MetaMaxHTML  int64
+	MetaMaxImage int64
+	MetaRedirect int
+	MetaMinImgPx int
 }
 
 // ConfigFromEnv reads Config from lookup (os.LookupEnv in production).
@@ -67,7 +82,7 @@ func ConfigFromEnv(lookup func(string) (string, bool), logger *slog.Logger) Conf
 	e := envReader{lookup: lookup, logger: logger}
 	w, h := e.viewport(EnvViewport, 1280, 800)
 	return Config{
-		Enabled:       e.boolean(EnvEnabled, false),
+		Enabled:       e.boolean(EnvEnabled, true),
 		Image:         e.str(EnvImage, DefaultImage),
 		Timeout:       e.duration(EnvTimeout, 30*time.Second),
 		PullTimeout:   e.duration(EnvPullTimeout, 5*time.Minute),
@@ -87,6 +102,13 @@ func ConfigFromEnv(lookup func(string) (string, bool), logger *slog.Logger) Conf
 		MinFreeDisk:   int64(e.integer(EnvMinFreeDiskMB, 2048)) << 20,
 		QueueDepth:    e.integer(EnvQueueDepth, 8),
 		SweepInterval: e.duration(EnvSweepInterval, time.Hour),
+		DefaultMode:   e.mode(EnvDefaultMode, ModeMetadata),
+		ThumbHeight:   e.integer(EnvThumbHeight, 400),
+		MetaTimeout:   e.duration(EnvMetaTimeout, 5*time.Second),
+		MetaMaxHTML:   int64(e.integer(EnvMetaMaxHTMLKB, 512)) << 10,
+		MetaMaxImage:  int64(e.integer(EnvMetaMaxImgKB, 2048)) << 10,
+		MetaRedirect:  e.integer(EnvMetaRedirects, 3),
+		MetaMinImgPx:  e.integer(EnvMetaMinImgPx, 120),
 	}
 }
 
@@ -177,4 +199,17 @@ func (e envReader) viewport(key string, defW, defH int) (int, int) {
 		return defW, defH
 	}
 	return w, h
+}
+
+func (e envReader) mode(key string, def Mode) Mode {
+	v, ok := e.raw(key)
+	if !ok {
+		return def
+	}
+	m, err := ParseMode(strings.ToLower(v))
+	if err != nil {
+		e.bad(key, v)
+		return def
+	}
+	return m
 }

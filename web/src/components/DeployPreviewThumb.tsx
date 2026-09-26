@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { SkeletonLine, StatusPill } from './kit'
 import { previewReasonText } from '../lib/previewReasons'
+import { PreviewCard } from './PreviewCard'
+import type { PreviewSource } from '../types/preview'
 import {
   useCapturePreview,
   usePreviewHistory,
@@ -20,12 +22,20 @@ export interface DeployPreviewThumbProps {
   deploymentId: string
   /** preview_image_url from the deploy history response, if the caller has it. */
   imageUrl?: string
+  /** Short commit SHA shown on the text card, when the caller has it. */
+  commitSha?: string
   /** Offer a Recapture action; only meaningful for the release now serving. */
   canRecapture?: boolean
   size?: 'sm' | 'md'
   /** Render nothing while this deployment has no preview and previews are off. */
   hideWhenEmpty?: boolean
   className?: string
+}
+
+const SOURCE_LABEL: Record<PreviewSource, string> = {
+  screenshot: 'Screenshot',
+  og_image: 'Site image',
+  card: 'Card',
 }
 
 const WIDTH: Record<NonNullable<DeployPreviewThumbProps['size']>, string> = {
@@ -37,6 +47,7 @@ export function DeployPreviewThumb({
   appName,
   deploymentId,
   imageUrl,
+  commitSha,
   canRecapture = false,
   size = 'sm',
   hideWhenEmpty = false,
@@ -52,6 +63,11 @@ export function DeployPreviewThumb({
   const record = history.data?.find((r) => r.deployment_id === deploymentId)
   const src = imageUrl ?? record?.image_url
   const canShow = src !== undefined && src !== failedSrc
+  const isCard = record?.status === 'ok' && record.source === 'card'
+  const sourceLabel =
+    record?.status === 'ok' && (canShow || isCard)
+      ? SOURCE_LABEL[record.source]
+      : undefined
   const previewsOn = status.data?.enabled === true && status.data.server_enabled
   const capturing =
     canRecapture && (status.data?.capturing === true || capture.isPending)
@@ -101,7 +117,19 @@ export function DeployPreviewThumb({
             <SkeletonLine className="h-full rounded-none" />
           </div>
         ) : null}
-        {!canShow && !loading && !capturing ? (
+        {isCard && !capturing ? (
+          <PreviewCard
+            appName={appName}
+            meta={record?.meta}
+            commitSha={commitSha}
+          />
+        ) : null}
+        {sourceLabel ? (
+          <span className="absolute bottom-1 left-1 rounded bg-background/80 px-1.5 py-0.5 text-[10px] font-medium text-foreground">
+            {sourceLabel}
+          </span>
+        ) : null}
+        {!canShow && !isCard && !loading && !capturing ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <ImageSquareIcon
               className="size-5 text-muted-foreground"
@@ -110,7 +138,7 @@ export function DeployPreviewThumb({
           </div>
         ) : null}
       </div>
-      {!canShow && !loading && !capturing && record ? (
+      {!canShow && !isCard && !loading && !capturing && record ? (
         <div className="flex flex-col items-start gap-1">
           <StatusPill tone="neutral" size="sm" label="No preview" />
           <p className="line-clamp-3 text-[11px] leading-snug text-muted-foreground">

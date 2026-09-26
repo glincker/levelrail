@@ -32,6 +32,8 @@ const (
 	ReasonBlankImage    = "blank_image"
 	ReasonBadImage      = "bad_image"
 	ReasonTimeout       = "timeout"
+	ReasonNotHTML       = "not_html"
+	ReasonRedirect      = "redirect"
 	ReasonCaptureFailed = "capture_failed"
 )
 
@@ -44,7 +46,40 @@ var ErrDisabled = errors.New("preview: disabled")
 // ErrInvalid wraps every settings validation failure.
 var ErrInvalid = errors.New("preview: invalid setting")
 
-// Record is one deployment's preview outcome. Only StatusOK rows own a file.
+// Record sources: where a preview's pixels came from.
+const (
+	SourceScreenshot = "screenshot"
+	SourceOGImage    = "og_image"
+	SourceCard       = "card"
+)
+
+// Mode is how much a per-app preview may cost.
+type Mode string
+
+// Preview modes, cheapest first.
+const (
+	ModeOff        Mode = "off"
+	ModeMetadata   Mode = "metadata"
+	ModeScreenshot Mode = "screenshot"
+)
+
+// ParseMode validates a mode string.
+func ParseMode(s string) (Mode, error) {
+	switch m := Mode(s); m {
+	case ModeOff, ModeMetadata, ModeScreenshot:
+		return m, nil
+	}
+	return "", fmt.Errorf("%w: mode must be off, metadata or screenshot", ErrInvalid)
+}
+
+// CardMeta is the page metadata a card preview is composed from in the UI.
+type CardMeta struct {
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+	ThemeColor  string `json:"theme_color,omitempty"`
+}
+
+// Record is one deployment's preview outcome. Only rows with HasFile own a file.
 type Record struct {
 	DeploymentID string
 	App          string
@@ -56,9 +91,15 @@ type Record struct {
 	Reason       string
 	Detail       string
 	HTTPStatus   int
+	Source       string
+	Meta         string
 	CapturedAt   time.Time
 	LastViewedAt time.Time
 }
+
+// HasFile reports whether the record has a thumbnail on disk. Card records
+// are composed in the UI from Meta and store no file.
+func (r Record) HasFile() bool { return r.Status == StatusOK && r.Source != SourceCard }
 
 // LastUsed is the recency LRU eviction orders by.
 func (r Record) LastUsed() time.Time {
@@ -70,7 +111,10 @@ func (r Record) LastUsed() time.Time {
 
 // AppSettings is one app's opt-in and capture options.
 type AppSettings struct {
-	App     string
+	App string
+	// Mode is the preview tier. Enabled is derived from it (Mode != off) and
+	// kept for callers written before tiers existed.
+	Mode    Mode
 	Enabled bool
 	Path    string
 	WaitMS  int
@@ -98,6 +142,20 @@ func ValidatePath(p string) error {
 	return nil
 }
 
+// Normalize fills Mode and Enabled from each other. A zero Mode with Enabled
+// unset takes def when the app was never configured, and off otherwise.
+func (s *AppSettings) Normalize(def Mode, configured bool) {
+	switch {
+	case s.Mode == "" && s.Enabled:
+		s.Mode = ModeScreenshot
+	case s.Mode == "" && configured:
+		s.Mode = ModeOff
+	case s.Mode == "":
+		s.Mode = def
+	}
+	s.Enabled = s.Mode != ModeOff
+}
+
 // Validate checks settings before they are stored.
 func (s AppSettings) Validate() error {
 	if err := ValidatePath(s.Path); err != nil {
@@ -111,9 +169,21 @@ func (s AppSettings) Validate() error {
 
 // SettingsPatch updates only the fields that are non-nil.
 type SettingsPatch struct {
+	Mode    *string
 	Enabled *bool
 	Path    *string
 	WaitMS  *int
+}
+
+// MetaTarget is where the metadata tier fetches an app's page: the app's
+// published loopback port, with Host/Port/Domains naming its origins.
+type MetaTarget struct {
+	DeploymentID string
+	Image        string
+	Dial         string
+	Host         string
+	Port         int
+	Domains      []string
 }
 
 // Target is where to point the browser for an app's current release.
@@ -142,6 +212,9 @@ type Resolver interface {
 	// Resolve returns the capture target for app's release currently
 	// serving image ("" means whatever is current), or a *SkipError.
 	Resolve(ctx context.Context, app, image string) (Target, error)
+	// ResolveMeta is Resolve for the metadata tier: it needs no Docker
+	// network, only a reachable published port.
+	ResolveMeta(ctx context.Context, app, image string) (MetaTarget, error)
 	// CurrentDeployment returns the deployment serving production, or "".
 	CurrentDeployment(ctx context.Context, app string) (string, error)
 	AppExists(ctx context.Context, app string) (bool, error)

@@ -53,6 +53,7 @@ type Manager struct {
 
 	now      func() time.Time
 	shooter  Shooter
+	fetcher  MetaFetcher
 	hostMem  func() (total, available int64, err error)
 	diskFree func(path string) (int64, error)
 
@@ -93,6 +94,7 @@ func New(cfg Config, deps Deps, opts ...Option) *Manager {
 	}
 	m := &Manager{
 		cfg: cfg, deps: deps, log: deps.Logger,
+		fetcher:  newHTTPFetcher(cfg),
 		fs:       NewFileStore(deps.DataDir + "/previews"),
 		now:      time.Now,
 		shooter:  CDPShooter{},
@@ -217,6 +219,10 @@ func (m *Manager) process(ctx context.Context, j job) {
 	if !m.cfg.Enabled || !settings.Enabled {
 		return
 	}
+	if settings.Mode == ModeMetadata {
+		m.processMeta(ctx, settings, j)
+		return
+	}
 	target, err := m.deps.Resolver.Resolve(ctx, j.app, j.image)
 	var skip *SkipError
 	switch {
@@ -258,13 +264,13 @@ func (m *Manager) commit(ctx context.Context, c captured) {
 	if s, err := m.Settings(ctx, rec.App); err != nil || !s.Enabled || !m.cfg.Enabled {
 		return
 	}
-	if rec.Status != StatusOK {
-		if prev, err := m.deps.Store.GetPreviewRecord(ctx, rec.DeploymentID); err == nil && prev != nil && prev.Status == StatusOK {
+	if rec.Status != StatusOK || rec.Source == SourceCard {
+		if prev, err := m.deps.Store.GetPreviewRecord(ctx, rec.DeploymentID); err == nil && prev != nil && prev.HasFile() {
 			m.log.Info("preview: capture not stored, keeping existing thumbnail", slog.String("app", rec.App), slog.String("reason", rec.Reason))
 			return
 		}
 	}
-	if rec.Status == StatusOK {
+	if rec.HasFile() {
 		if err := m.fs.Write(rec.App, rec.DeploymentID, c.jpeg); err != nil {
 			m.log.Error("preview: write thumbnail failed", slog.String("app", rec.App), slog.String("error", err.Error()))
 			return
@@ -342,7 +348,7 @@ func (m *Manager) capture(ctx context.Context, s AppSettings, t Target) captured
 		m.log.Warn("preview: reject capture image", slog.String("app", s.App), slog.String("error", err.Error()))
 		return fail(StatusFailed, ReasonBadImage, "the screenshot could not be processed")
 	}
-	rec.Status, rec.Bytes, rec.Width, rec.Height = StatusOK, int64(len(thumb.JPEG)), thumb.Width, thumb.Height
+	rec.Status, rec.Source, rec.Bytes, rec.Width, rec.Height = StatusOK, SourceScreenshot, int64(len(thumb.JPEG)), thumb.Width, thumb.Height
 	return captured{rec: rec, jpeg: thumb.JPEG}
 }
 

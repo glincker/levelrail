@@ -611,9 +611,9 @@ levelrail preview status <app> [flags]
 show the app's deploy preview settings, storage used and latest result
 
 ```
-levelrail preview enable <app> [--path /] [--wait-ms N] [flags]
+levelrail preview enable <app> [--mode metadata|screenshot] [--path /] [--wait-ms N] [flags]
 ```
-turn deploy preview screenshots on for the app, optionally choosing the page to capture
+turn deploy previews on for the app: `metadata` reads the page title and social image (no browser), `screenshot` (the default here) runs a browser container per deploy
 
 ```
 levelrail preview disable <app> [flags]

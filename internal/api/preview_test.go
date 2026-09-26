@@ -42,9 +42,19 @@ func (f *fakePreview) Settings(_ context.Context, app string) (preview.AppSettin
 
 func (f *fakePreview) SaveSettings(ctx context.Context, app string, p preview.SettingsPatch) (preview.AppSettings, error) {
 	s, _ := f.Settings(ctx, app)
-	if p.Enabled != nil {
-		s.Enabled = *p.Enabled
+	switch {
+	case p.Mode != nil:
+		mode, err := preview.ParseMode(*p.Mode)
+		if err != nil {
+			return preview.AppSettings{}, err
+		}
+		s.Mode = mode
+	case p.Enabled != nil && *p.Enabled:
+		s.Mode = preview.ModeScreenshot
+	case p.Enabled != nil:
+		s.Mode = preview.ModeOff
 	}
+	s.Enabled = s.Mode != "" && s.Mode != preview.ModeOff
 	if p.Path != nil {
 		s.Path = *p.Path
 	}
@@ -196,8 +206,19 @@ func TestPreviewSettings_RoundTripAndValidation(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatal(err)
 	}
-	if !got.Enabled || got.Path != "/pricing" || got.WaitMS != 500 || !got.ServerEnabled {
-		t.Errorf("status = %+v", got)
+	if !got.Enabled || got.Mode != "screenshot" || got.Path != "/pricing" || got.WaitMS != 500 || !got.ServerEnabled {
+		t.Errorf("status = %+v, want legacy enabled to map to screenshot", got)
+	}
+	rec = put(`{"mode":"metadata"}`)
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil || rec.Code != http.StatusOK || got.Mode != "metadata" || !got.Enabled {
+		t.Errorf("mode metadata put = %d %+v err %v", rec.Code, got, err)
+	}
+	rec = put(`{"mode":"off","enabled":true}`)
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil || got.Mode != "off" || got.Enabled {
+		t.Errorf("mode must win over enabled: %+v err %v", got, err)
+	}
+	if rec := put(`{"mode":"full"}`); rec.Code != http.StatusBadRequest {
+		t.Errorf("unknown mode status = %d, want 400", rec.Code)
 	}
 	for _, bad := range []string{`{"path":"//evil.example"}`, `{"path":"http://evil.example/"}`, `{"path":"relative"}`, `{"wait_ms":999999}`} {
 		if rec := put(bad); rec.Code != http.StatusBadRequest {

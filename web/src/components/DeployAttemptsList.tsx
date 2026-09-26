@@ -267,6 +267,7 @@ function DeployAttemptRow({
           appName={appName}
           deploymentId={attempt.id}
           imageUrl={attempt.preview_image_url}
+          commitSha={attempt.commit_sha}
           canRecapture={isLatestAttempt}
           hideWhenEmpty
         />

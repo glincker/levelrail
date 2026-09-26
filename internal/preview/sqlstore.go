@@ -11,7 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-const recordColumns = `deployment_id, app_name, path, bytes, width, height, status, reason, detail, http_status, captured_at, last_viewed_at`
+const recordColumns = `deployment_id, app_name, path, bytes, width, height, status, reason, detail, http_status, source, meta, captured_at, last_viewed_at`
 
 // SQLStore implements Store over the control plane database.
 type SQLStore struct{ db *store.DB }
@@ -37,7 +37,8 @@ func parseTime(s string) time.Time {
 // GetPreviewSettings returns the stored settings, or the zero value when none exist.
 func (s *SQLStore) GetPreviewSettings(ctx context.Context, app string) (AppSettings, error) {
 	var out AppSettings
-	err := s.db.QueryRowContext(ctx, `SELECT enabled, path, wait_ms FROM deploy_preview_settings WHERE app_name = ?`, app).Scan(&out.Enabled, &out.Path, &out.WaitMS)
+	var mode string
+	err := s.db.QueryRowContext(ctx, `SELECT enabled, mode, path, wait_ms FROM deploy_preview_settings WHERE app_name = ?`, app).Scan(&out.Enabled, &mode, &out.Path, &out.WaitMS)
 	if errors.Is(err, sql.ErrNoRows) {
 		return AppSettings{App: app, Path: DefaultPath}, nil
 	}
@@ -45,15 +46,19 @@ func (s *SQLStore) GetPreviewSettings(ctx context.Context, app string) (AppSetti
 		return AppSettings{}, fmt.Errorf("store: get preview settings for %q: %w", app, err)
 	}
 	out.App = app
+	out.Mode = Mode(mode)
+	out.Normalize(ModeOff, true)
 	return out, nil
 }
 
-// SavePreviewSettings upserts settings.
+// SavePreviewSettings upserts settings. The legacy enabled column stays true
+// only for screenshot mode, so an older binary reading it behaves the same.
 func (s *SQLStore) SavePreviewSettings(ctx context.Context, a AppSettings) error {
+	a.Normalize(ModeOff, true)
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO deploy_preview_settings (app_name, enabled, path, wait_ms, updated_at) VALUES (?, ?, ?, ?, ?)
-		ON CONFLICT(app_name) DO UPDATE SET enabled = excluded.enabled, path = excluded.path, wait_ms = excluded.wait_ms, updated_at = excluded.updated_at
-	`, a.App, a.Enabled, a.Path, a.WaitMS, fmtTime(time.Now()))
+		INSERT INTO deploy_preview_settings (app_name, enabled, mode, path, wait_ms, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(app_name) DO UPDATE SET enabled = excluded.enabled, mode = excluded.mode, path = excluded.path, wait_ms = excluded.wait_ms, updated_at = excluded.updated_at
+	`, a.App, a.Mode == ModeScreenshot, string(a.Mode), a.Path, a.WaitMS, fmtTime(time.Now()))
 	if err != nil {
 		return fmt.Errorf("store: save preview settings for %q: %w", a.App, err)
 	}
@@ -92,11 +97,11 @@ func (s *SQLStore) LatestServingDeployment(ctx context.Context, service, image s
 // UpsertPreviewRecord inserts or replaces a record, keeping its view time.
 func (s *SQLStore) UpsertPreviewRecord(ctx context.Context, r Record) error {
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO deploy_previews (`+recordColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO deploy_previews (`+recordColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(deployment_id) DO UPDATE SET app_name = excluded.app_name, path = excluded.path, bytes = excluded.bytes,
 			width = excluded.width, height = excluded.height, status = excluded.status, reason = excluded.reason,
-			detail = excluded.detail, http_status = excluded.http_status, captured_at = excluded.captured_at
-	`, r.DeploymentID, r.App, r.Path, r.Bytes, r.Width, r.Height, r.Status, r.Reason, r.Detail, r.HTTPStatus, fmtTime(r.CapturedAt), fmtTime(r.LastViewedAt))
+			detail = excluded.detail, http_status = excluded.http_status, source = excluded.source, meta = excluded.meta, captured_at = excluded.captured_at
+	`, r.DeploymentID, r.App, r.Path, r.Bytes, r.Width, r.Height, r.Status, r.Reason, r.Detail, r.HTTPStatus, sourceOrDefault(r.Source), r.Meta, fmtTime(r.CapturedAt), fmtTime(r.LastViewedAt))
 	if err != nil {
 		return fmt.Errorf("store: upsert preview record %q: %w", r.DeploymentID, err)
 	}
@@ -108,7 +113,7 @@ type rowScanner interface{ Scan(dest ...any) error }
 func scanRecord(sc rowScanner) (Record, error) {
 	var r Record
 	var captured, viewed string
-	if err := sc.Scan(&r.DeploymentID, &r.App, &r.Path, &r.Bytes, &r.Width, &r.Height, &r.Status, &r.Reason, &r.Detail, &r.HTTPStatus, &captured, &viewed); err != nil {
+	if err := sc.Scan(&r.DeploymentID, &r.App, &r.Path, &r.Bytes, &r.Width, &r.Height, &r.Status, &r.Reason, &r.Detail, &r.HTTPStatus, &r.Source, &r.Meta, &captured, &viewed); err != nil {
 		return Record{}, err
 	}
 	r.CapturedAt, r.LastViewedAt = parseTime(captured), parseTime(viewed)
@@ -222,4 +227,11 @@ func (s *SQLStore) LatestSucceededDeployment(ctx context.Context, service, image
 		return "", fmt.Errorf("store: latest succeeded deployment of %q: %w", service, err)
 	}
 	return id, nil
+}
+
+func sourceOrDefault(src string) string {
+	if src == "" {
+		return SourceScreenshot
+	}
+	return src
 }
