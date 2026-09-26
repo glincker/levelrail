@@ -1077,6 +1077,25 @@ levelrail flags list <app> [flags]
 levelrail flags set <app> <id> --name NAME [--description DESC] [--disabled] [--rollout PERCENT] [flags]
 ```
 
+## Apply, Diff and Export
+
+See [Platform as code](platform-as-code.md) for the document format, secrets handling, prune rules and CI use.
+
+```
+levelrail apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NAME] [--project P] [--yes] [--secret K=env:VAR] [--var NAME=VALUE] [--no-deploy] [--continue-on-error] [flags]
+```
+validate resource files, print the plan, and apply it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`)
+
+```
+levelrail diff -f dir [flags]
+```
+drift between the files and live state, exits 2 when they differ
+
+```
+levelrail export [--project P] [--app A] [-o dir|-] [--include-env-values=false] [flags]
+```
+write live state as stable resource files, never containing secret values
+
 ## Nodes
 
 ```
@@ -1220,6 +1239,14 @@ levelrail control-plane-backups create [flags]
 levelrail control-plane-backups download <name> [--out FILE] [flags]
 levelrail control-plane-backups verify <name> [flags]
 levelrail control-plane-backups delete <name> [flags]
+levelrail control-plane-backups list --offbox [flags]
+levelrail control-plane-backups schedule show|set [flags]
+levelrail control-plane-backups run-now [--no-wait] [flags]
+levelrail control-plane-backups drill run|status [flags]
+levelrail control-plane-backups escrow [--out FILE] [--recipient KEY] [--upload] [--ack] [flags]
+levelrail control-plane-backups escrow ack [flags]
+levelrail control-plane-backups escrow open <file> --identity FILE [--extract DIR]
+levelrail control-plane-backups keys generate [--out FILE] [--hybrid]
 ```
 
 Snapshots of the control plane's own database, stored under
@@ -1231,6 +1258,17 @@ fails), `delete` removes one. Snapshots never contain
 the master key. Restore is an offline server command, `levelrail
 restore-db <file>`; see [Control plane backup and
 restore](/control-plane-backup).
+
+The `--offbox`, `schedule`, `run-now`, `drill`, `escrow` and `keys`
+subcommands drive encrypted off-box backups: `keys generate` makes an age
+key pair on your machine (private key to a `0600` file, public key to
+stdout), `schedule set` changes only the flags you pass, `run-now` and
+`drill run` wait for the run and exit 1 if it failed, `drill status` exits
+1 when the last drill failed or none has run, and `escrow` writes the master
+key and agent CA key encrypted to your recipients (never uploaded unless `--upload`, and never
+to the backup bucket). Restore an off-box backup on the server with
+`levelrail restore --from <s3://... | file> --identity FILE [--dry-run]`.
+See [Disaster recovery](/disaster-recovery).
 
 ### Orphaned Volumes
 

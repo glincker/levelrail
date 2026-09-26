@@ -55,6 +55,10 @@ Always read the CLI's output (or the JSON response's `warning`/`persistedToFile`
 
 This command requires an API token or session with the `root` ability. It's gated the same way as other fleet-wide, irreversible actions like `system prune`, because narrower, per-app-scoped tokens should never reach such powerful operations.
 
+## Refresh your escrow bundle
+
+If you keep a [key escrow bundle](/disaster-recovery#after-rotating-the-master-key), it still holds the old key after a rotation. Generate a new one with `levelrail-cli control-plane-backups escrow` and replace the stored copy. For an env-sourced key, update `APP_MASTER_KEY` first.
+
 ## Failure modes and what they mean
 
 ::: details "rotate master key: ... unwrap DEK for ...: ..."

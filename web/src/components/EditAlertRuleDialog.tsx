@@ -348,6 +348,13 @@ export function EditAlertRuleDialog({
       kind: values.kind,
       channel_id: values.channelId || undefined,
       enabled: values.enabled,
+      // A PUT replaces the whole rule: carry the noise settings this
+      // form does not edit (see RuleNoiseDialog) so saving never resets them.
+      severity: rule.severity,
+      labels: rule.labels,
+      consecutive_failures: rule.consecutive_failures,
+      flap_threshold: rule.flap_threshold,
+      flap_window: rule.flap_window,
     }
     if (values.kind === 'threshold') {
       req.metric = values.metric.trim()

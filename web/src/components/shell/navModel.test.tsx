@@ -22,6 +22,7 @@ const EXPECTED_GLOBAL = [
   '/models',
   '/pipelines',
   '/approvals',
+  '/alerts',
   '/ai-assistant',
   '/settings',
   '/help',

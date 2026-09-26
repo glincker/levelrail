@@ -48,6 +48,7 @@ export type GlobalTo =
   | '/ai-assistant'
   | '/pipelines'
   | '/approvals'
+  | '/alerts'
   | '/settings'
   | '/help'
 
@@ -158,6 +159,7 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: <GavelIcon />,
         badge: 'approvals',
       },
+      { id: 'alerts', label: 'Alerts', to: '/alerts', icon: <BellIcon /> },
     ],
   },
 ]

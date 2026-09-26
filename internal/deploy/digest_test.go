@@ -80,6 +80,16 @@ func TestResolveImageMapsSources(t *testing.T) {
 	}
 }
 
+func TestResolveImageRequireFreshWithoutResolverFails(t *testing.T) {
+	if _, err := ResolveImage(context.Background(), nil, "nginx:latest", nil, true); !errors.Is(err, ErrFreshImageUnavailable) {
+		t.Fatalf("err = %v, want ErrFreshImageUnavailable", err)
+	}
+	got, err := ResolveImage(context.Background(), nil, "nginx:1@sha256:aa", nil, true)
+	if err != nil || got.Digest != "sha256:aa" {
+		t.Fatalf("pinned image with requireFresh: got %+v, %v", got, err)
+	}
+}
+
 func TestImageResolutionApplyClearsStaleLocalID(t *testing.T) {
 	svc := store.DesiredService{Image: "web:abc", ImageID: "sha256:build", ImageIDRef: "web:abc"}
 	ImageResolution{Image: "nginx:1@sha256:x", Digest: "sha256:x"}.apply(&svc)

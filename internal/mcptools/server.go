@@ -36,6 +36,7 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerNodeTools(server, client)
 	registerPreviewTools(server, client)
 	registerAlertTools(server, client)
+	registerAlertNoiseTools(server, client)
 	registerAppMetricsTools(server, client)
 	registerAppRequestsTool(server, client)
 	registerDiagnosticTools(server, client)
@@ -65,12 +66,14 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerDeployApprovalTools(server, client)
 	registerAttentionTools(server, client)
 	registerControlPlaneBackupTools(server, client)
+	registerControlPlaneDRTools(server, client)
 	registerFailedDeployTools(server, client)
 	registerLogArchiveTools(server, client)
 	registerBuildCacheTools(server, client)
 	registerPipelineTools(server, client)
 	registerModelTools(server, client)
 	registerLoadBalancerTools(server, client)
+	registerIaCTools(server, client)
 
 	summary := applyOptions(server, opts)
 	return server, summary

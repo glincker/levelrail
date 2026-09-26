@@ -123,6 +123,14 @@ var toolTable = map[string]Meta{
 	"list_preview_environments":             {clsR, "previews", unt},
 	"sweep_stale_preview_environments":      {clsD, "previews", 0},
 	"list_alert_rules":                      {clsR, "alerts", 0},
+	"list_alert_silences":                   {clsR, "alerts", 0},
+	"create_alert_silence":                  {clsM, "alerts", 0},
+	"silence_alert_rule":                    {clsM, "alerts", 0},
+	"expire_alert_silence":                  {clsM, "alerts", 0},
+	"list_maintenance_windows":              {clsR, "alerts", 0},
+	"list_alert_history":                    {clsR, "alerts", unt},
+	"get_status_page":                       {clsR, "alerts", 0},
+	"list_status_incidents":                 {clsR, "alerts", 0},
 	"get_app_metrics":                       {clsR, "metrics", 0},
 	"get_app_requests":                      {clsR, "metrics", 0},
 	"diagnose_app_failure":                  {clsR, "diagnostics", unt},
@@ -142,6 +150,9 @@ var toolTable = map[string]Meta{
 	"list_control_plane_backups":            {clsR, "backups", 0},
 	"create_control_plane_backup":           {clsM, "backups", sens},
 	"verify_control_plane_backup":           {clsM, "backups", 0},
+	"get_control_plane_dr_status":           {clsR, "backups", unt},
+	"list_control_plane_offbox_backups":     {clsR, "backups", 0},
+	"get_control_plane_drill_status":        {clsR, "backups", unt},
 	"list_app_volume_backups":               {clsR, "backups", 0},
 	"list_notification_channels":            {clsR, "notifications", sens},
 	"list_notification_deliveries":          {clsR, "notifications", unt},
@@ -199,6 +210,8 @@ var toolTable = map[string]Meta{
 	"set_app_load_balancer":                 {clsM, "loadbalancer", 0},
 	"clear_app_load_balancer":               {clsD, "loadbalancer", 0},
 	"export_app_load_balancer":              {clsR, "loadbalancer", 0},
+	"plan_apply":                            {clsR, "iac", 0},
+	"apply_resources":                       {clsD, "iac", 0},
 }
 
 // Lookup returns a tool's classification.

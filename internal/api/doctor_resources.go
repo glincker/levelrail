@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 
@@ -25,6 +26,9 @@ func (rt *Router) doctorCheckRAM() doctorCheckResource {
 		read = func() (int64, int64, error) { return telemetry.HostMemoryBytes() }
 	}
 	total, _, err := read()
+	if errors.Is(err, telemetry.ErrHostMemoryUnsupported) {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "Memory size is not reported on this operating system."}
+	}
 	if err != nil {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: fmt.Sprintf("could not read total memory: %s", err)}
 	}

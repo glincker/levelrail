@@ -27,6 +27,7 @@ import {
   HardDrivesIcon,
   RobotIcon,
   SparkleIcon,
+  FileCodeIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
 export interface SettingsNavItem {
@@ -142,6 +143,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         description: 'Slack, Discord, Telegram, webhook, and email alerts.',
       },
       {
+        to: '/settings/status-page',
+        icon: HeartbeatIcon,
+        title: 'Status page',
+        description:
+          'Optional public page with component status, uptime and incidents.',
+      },
+      {
         to: '/settings/backup-targets',
         icon: CloudArrowUpIcon,
         title: 'Backup targets',
@@ -236,6 +244,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'Domains',
         description:
           'Platform ingress: dashboard domain and ACME certificates.',
+      },
+      {
+        to: '/settings/infrastructure',
+        icon: FileCodeIcon,
+        title: 'Infrastructure as code',
+        description:
+          'Plan and apply YAML resource files, and export live state.',
       },
       {
         to: '/settings/updates',

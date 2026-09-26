@@ -53,7 +53,11 @@ function applyChange(app: AppDetail, change: DiagnosisChange, to: string) {
     return
   }
   if (field.startsWith('env.')) {
-    app.env = { ...(app.env ?? {}), [field.slice('env.'.length)]: to }
+    const key = field.slice('env.'.length)
+    if ((app.env?.[key] ?? '') !== from) {
+      throw new StaleFixError(`${key} changed`)
+    }
+    app.env = { ...(app.env ?? {}), [key]: to }
     return
   }
   throw new Error(`Unsupported fix field ${field}.`)

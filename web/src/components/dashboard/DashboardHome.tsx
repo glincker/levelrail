@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { CaretDownIcon, RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
 import { EmptyState } from '@/components/kit'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,10 @@ import { FleetTiles } from './FleetTiles'
 import { NeedsAttention } from './NeedsAttention'
 import { RecentActivity } from './RecentActivity'
 import { QuickStart } from './QuickStart'
+
+const RecentAlertsCard = lazy(() =>
+  import('../RecentAlertsCard').then((m) => ({ default: m.RecentAlertsCard })),
+)
 
 function ResourceUsage({ apps }: { apps: AppListEntry[] }) {
   const [open, setOpen] = useState(false)
@@ -94,6 +98,9 @@ export function DashboardHome({
       <StatusHeader firstAppName={apps[0]?.name} showSetup={isRoot} />
       <FleetTiles apps={apps} />
       <NeedsAttention />
+      <Suspense fallback={null}>
+        <RecentAlertsCard />
+      </Suspense>
       <RecentActivity apps={apps} />
       <QuickStart hasApps />
       <ResourceUsage apps={apps} />
