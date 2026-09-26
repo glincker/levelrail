@@ -121,6 +121,8 @@ type mux struct {
 	// onGPU, if set, receives each GPUReport frame. Same set-before-recvLoop
 	// and must-not-block rules as onHeartbeat.
 	onGPU func(*agentpb.GPUReport)
+
+	onHello func(*agentpb.AgentInfo)
 }
 
 // frameSub is one in-flight multi-frame operation's control-plane-side
@@ -159,13 +161,20 @@ type (
 // newMux starts dispatching stream immediately (recvLoop runs in its own
 // goroutine from this call onward).
 func newMux(stream sessionStream) *mux {
-	return newMuxWithHandlers(stream, nil, nil)
+	return newMuxWithHandlers(stream, muxHandlers{})
 }
 
-// newMuxWithHandlers is newMux plus callbacks for agent GPU reports and
-// heartbeats, both optional. They are passed here, before recvLoop starts,
-// to avoid racing recvLoop reading them.
-func newMuxWithHandlers(stream sessionStream, onGPU func(*agentpb.GPUReport), onHeartbeat func()) *mux {
+// muxHandlers are optional callbacks for unprompted agent frames. They run
+// on recvLoop and must not block.
+type muxHandlers struct {
+	gpu       func(*agentpb.GPUReport)
+	heartbeat func()
+	hello     func(*agentpb.AgentInfo)
+}
+
+// newMuxWithHandlers is newMux plus h. They are passed here, before
+// recvLoop starts, to avoid racing recvLoop reading them.
+func newMuxWithHandlers(stream sessionStream, h muxHandlers) *mux {
 	m := &mux{
 		stream:   stream,
 		pending:  make(map[string]chan *agentpb.AgentResponse),
@@ -174,8 +183,9 @@ func newMuxWithHandlers(stream sessionStream, onGPU func(*agentpb.GPUReport), on
 		builds:   make(map[string]*buildSub),
 		closed:   make(chan struct{}),
 	}
-	m.onHeartbeat = onHeartbeat
-	m.onGPU = onGPU
+	m.onHeartbeat = h.heartbeat
+	m.onGPU = h.gpu
+	m.onHello = h.hello
 	go m.recvLoop()
 	return m
 }
@@ -207,6 +217,10 @@ func (m *mux) recvLoop() {
 		case *agentpb.AgentMessage_GpuReport:
 			if m.onGPU != nil {
 				m.onGPU(p.GpuReport)
+			}
+		case *agentpb.AgentMessage_Hello:
+			if m.onHello != nil {
+				m.onHello(p.Hello)
 			}
 		}
 	}

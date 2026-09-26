@@ -50,6 +50,9 @@ type Event struct {
 	// NodeOfflineNotices is populated only for a firing node_offline
 	// event: one line per offline node, from EvaluateNodeOffline.
 	NodeOfflineNotices []string
+	// NodeCertNotices is populated only for a firing node_cert_expiring
+	// event: one line per node whose agent certificate needs attention.
+	NodeCertNotices []string
 	// ResourceUsageNotices is populated only for a firing (not resolved)
 	// node_resource_usage event: one line per node over its CPU and/or
 	// memory threshold, from EvaluateNodeResourceUsage. Nil for every
@@ -163,6 +166,7 @@ type genericPayload struct {
 	DiskSpaceNotices     []string   `json:"disk_space_notices,omitempty"`
 	ResourceUsageNotices []string   `json:"resource_usage_notices,omitempty"`
 	NodeOfflineNotices   []string   `json:"node_offline_notices,omitempty"`
+	NodeCertNotices      []string   `json:"node_cert_notices,omitempty"`
 	TaskFailureNotice    string     `json:"task_failure_notice,omitempty"`
 	DomainHealthNotices  []string   `json:"domain_health_notices,omitempty"`
 	BackupMissingNotice  string     `json:"backup_missing_notice,omitempty"`
@@ -176,6 +180,7 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		CertNotices: ev.CertNotices, PatchNotices: ev.PatchNotices, DiskSpaceNotices: ev.DiskSpaceNotices,
 		ResourceUsageNotices: ev.ResourceUsageNotices,
 		NodeOfflineNotices:   ev.NodeOfflineNotices,
+		NodeCertNotices:      ev.NodeCertNotices,
 		TaskFailureNotice:    ev.TaskFailureNotice,
 		DomainHealthNotices:  ev.DomainHealthNotices,
 		BackupMissingNotice:  ev.BackupMissingNotice,
@@ -638,6 +643,9 @@ func summaryText(ev Event) string {
 	}
 	if len(ev.NodeOfflineNotices) > 0 {
 		fmt.Fprintf(&b, "\nOffline nodes:\n- %s", strings.Join(ev.NodeOfflineNotices, "\n- "))
+	}
+	if len(ev.NodeCertNotices) > 0 {
+		fmt.Fprintf(&b, "\nNode certificates:\n- %s", strings.Join(ev.NodeCertNotices, "\n- "))
 	}
 	if len(ev.ResourceUsageNotices) > 0 {
 		fmt.Fprintf(&b, "\nResource usage:\n- %s", strings.Join(ev.ResourceUsageNotices, "\n- "))

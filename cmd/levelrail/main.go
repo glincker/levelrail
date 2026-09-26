@@ -487,7 +487,8 @@ func run(logger *slog.Logger) error {
 			PermitWithoutStream: true,
 		}),
 	)
-	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger, agent.WithGPUSink(db)))
+	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(), agent.WithGPUSink(db))...)
+	agentpb.RegisterAgentServiceServer(agentGRPCServer, agentServer)
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
 		if err := agentGRPCServer.Serve(agentListener); err != nil {
@@ -617,6 +618,7 @@ func run(logger *slog.Logger) error {
 	}()
 
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver)
+	configureNodeCerts(apiRouter, agentServer)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
 	httpServer := &http.Server{
@@ -789,6 +791,7 @@ func run(logger *slog.Logger) error {
 		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
+	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
 	if controlPlaneBackupInterval(logger) > 0 {
 		alertingEngine.SetControlPlaneBackups(cpbackup.NewManager(db, agentDataDir), 0)
 	}

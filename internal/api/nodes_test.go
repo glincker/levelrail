@@ -989,6 +989,9 @@ func (f *fakeDrainNodeStore) GetNode(_ context.Context, id string) (*store.Node,
 	return nil, store.ErrNodeNotFound
 }
 func (f *fakeDrainNodeStore) DeleteNode(context.Context, string) error { return nil }
+func (f *fakeDrainNodeStore) RevokeNodeCert(context.Context, string, time.Time) error {
+	return nil
+}
 func (f *fakeDrainNodeStore) SaveNodeJoinToken(context.Context, store.NodeJoinToken) error {
 	return nil
 }

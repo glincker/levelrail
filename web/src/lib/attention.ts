@@ -6,6 +6,7 @@ import type { DiskPressure } from './diskPressure'
 import type { FailedDeploy } from '../queries/failedDeploys'
 import { certExpiryLabel } from './certStatus'
 import { formatAge, formatBytes } from './format'
+import { nodeAgentAttentionItems } from './nodeAgentAttention'
 
 export type AttentionSeverity = 'critical' | 'warning'
 
@@ -91,6 +92,7 @@ export function buildAttentionItems({
         target: { kind: 'node', id: node.id },
       })
     }
+    items.push(...nodeAgentAttentionItems(node))
   }
 
   for (const cert of certs) {

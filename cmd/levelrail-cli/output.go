@@ -827,6 +827,7 @@ func printNodeHuman(out io.Writer, n nodeResource) {
 	_, _ = fmt.Fprintf(out, "accepts app workloads:   %t\n", n.AcceptsAppWorkloads)
 	_, _ = fmt.Fprintf(out, "accepts build workloads: %t\n", n.AcceptsBuildWorkloads)
 	_, _ = fmt.Fprintf(out, "created at:              %s\n", n.CreatedAt.Format(time.RFC3339))
+	printNodeCertHuman(out, n)
 	if n.AlertStatus != nil {
 		_, _ = fmt.Fprintf(out, "alert status:\n")
 		_, _ = fmt.Fprintf(out, "  patch status:          %s\n", n.AlertStatus.PatchStatus)
@@ -844,9 +845,9 @@ func printNodesTable(out io.Writer, nodes []nodeResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tADDRESS\tSTATUS\tSCHEDULABLE\tGPU\tCREATED")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tADDRESS\tSTATUS\tSCHEDULABLE\tGPU\tCERT\tAGENT\tCREATED")
 	for _, n := range nodes {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%t\t%s\t%s\n", n.ID, n.Name, n.Address, n.Status, n.Schedulable, nodeGPUColumn(n.GPU), n.CreatedAt.Format(time.RFC3339))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%t\t%s\t%s\t%s\t%s\n", n.ID, n.Name, n.Address, n.Status, n.Schedulable, nodeGPUColumn(n.GPU), nodeCertColumn(n.Cert), nodeAgentColumn(n.Agent), n.CreatedAt.Format(time.RFC3339))
 	}
 	_ = tw.Flush()
 }

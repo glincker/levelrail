@@ -1,37 +1,30 @@
 package agent
 
-// This file: the control plane's own implementation of
-// agentpb.AgentServiceServer. Enroll validates a
-// join token and issues a client certificate (pki.go);
-// Session accepts an already-mTLS-authenticated agent's persistent
-// stream, confirms its certificate actually matches the node it claims
-// to be, and wires up a GRPCTransport into Registry (transport.go) for
-// the rest of the control plane to use until the stream ends.
+// This file: the control plane's agentpb.AgentServiceServer. Certificate
+// renewal and re-enrollment live in server_cert.go (ADR 021).
 
 import (
 	"context"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// EnrollStore is the narrow store surface Server needs: validate and
-// consume a join token, persist the newly enrolled node,
-// and track its connection state. *store.DB satisfies this
-// structurally.
+// EnrollStore is the store surface Server needs. *store.DB satisfies it.
 type EnrollStore interface {
 	GetNodeJoinTokenByHash(ctx context.Context, hash string) (*store.NodeJoinToken, error)
 	MarkNodeJoinTokenUsed(ctx context.Context, id string) error
@@ -39,17 +32,17 @@ type EnrollStore interface {
 	GetNode(ctx context.Context, id string) (*store.Node, error)
 	UpdateNodeStatus(ctx context.Context, id string, status store.NodeStatus) error
 	TouchNodeLastSeen(ctx context.Context, id string) error
+	RotateNodeCert(ctx context.Context, id, presentedFingerprint string, c store.NodeCert, grace time.Duration, now time.Time) error
+	ReenrollNodeCert(ctx context.Context, id string, c store.NodeCert, now time.Time) error
+	SyncNodeCertDetails(ctx context.Context, id, fingerprint, serial string, notAfter time.Time) error
+	UpdateNodeAgentInfo(ctx context.Context, id string, info store.NodeAgentInfo, now time.Time) error
 }
 
-// clientCertValidity is how long an issued agent certificate stays
-// valid. ADR 003's Consequences section names "certificate rotation on
-// a schedule" as real Phase 3 scope; the rotation mechanism itself
-// (renewing or re-enrolling before expiry) is not built in this pass,
-// only the expiry is set here, deliberately short enough (90 days, not
-// this package's own CA's 10-year validity) that an unbuilt rotation
-// mechanism is a visible, real gap rather than one nobody would notice
-// for a year.
-const clientCertValidity = 90 * 24 * time.Hour
+// Defaults for the env-tunable certificate settings (ADR 021).
+const (
+	DefaultClientCertValidity = 90 * 24 * time.Hour
+	DefaultCertRenewGrace     = 24 * time.Hour
+)
 
 // Server implements agentpb.AgentServiceServer.
 type Server struct {
@@ -59,17 +52,63 @@ type Server struct {
 	registry *Registry
 	logger   *slog.Logger
 	gpuSink  GPUSink // nil is valid: GPU reports are ignored
+
+	certValidity time.Duration
+	renewGrace   time.Duration
+	requireCSR   bool
+	now          func() time.Time
+
+	sessionsMu sync.Mutex
+	sessions   map[string]*liveSession
+}
+
+type liveSession struct {
+	kick chan struct{}
 }
 
 // Option configures optional Server behavior.
 type Option func(*Server)
+
+// WithCertValidity sets how long issued agent certificates stay valid.
+func WithCertValidity(d time.Duration) Option {
+	return func(s *Server) {
+		if d > 0 {
+			s.certValidity = d
+		}
+	}
+}
+
+// WithRenewGrace sets how long a renewed node's previous certificate stays
+// accepted, so a renewal whose response was lost cannot lock the node out.
+func WithRenewGrace(d time.Duration) Option {
+	return func(s *Server) {
+		if d > 0 {
+			s.renewGrace = d
+		}
+	}
+}
+
+// WithRequireCSR refuses enrollments from agents that do not send a CSR,
+// closing the legacy path where the control plane generates the key.
+func WithRequireCSR(require bool) Option {
+	return func(s *Server) { s.requireCSR = require }
+}
+
+// WithClock overrides the server's time source, for tests.
+func WithClock(now func() time.Time) Option {
+	return func(s *Server) { s.now = now }
+}
 
 // NewServer builds a Server. logger defaults to slog.Default() if nil.
 func NewServer(ca *CA, st EnrollStore, registry *Registry, logger *slog.Logger, opts ...Option) *Server {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	s := &Server{ca: ca, store: st, registry: registry, logger: logger}
+	s := &Server{
+		ca: ca, store: st, registry: registry, logger: logger,
+		certValidity: DefaultClientCertValidity, renewGrace: DefaultCertRenewGrace,
+		now: time.Now, sessions: map[string]*liveSession{},
+	}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -84,33 +123,12 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 	if req.GetNodeName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "node_name is required")
 	}
-
-	tok, err := s.store.GetNodeJoinTokenByHash(ctx, hashJoinToken(req.GetJoinToken()))
-	if errors.Is(err, store.ErrNodeJoinTokenNotFound) {
-		return nil, status.Error(codes.Unauthenticated, "invalid join token")
-	}
-	if err != nil {
-		s.logger.Error("agent: enroll: look up join token failed", slog.String("error", err.Error()))
-		return nil, status.Error(codes.Internal, "internal error")
-	}
-	if tok.UsedAt != nil {
-		return nil, status.Error(codes.Unauthenticated, "join token already used")
-	}
-	if time.Now().After(tok.ExpiresAt) {
-		return nil, status.Error(codes.Unauthenticated, "join token expired")
+	if len(req.GetCsrDer()) == 0 && s.requireCSR {
+		return nil, status.Error(codes.FailedPrecondition, "this control plane requires agents to generate their own key: upgrade the agent")
 	}
 
-	// Consume the token before doing anything else irreversible: a
-	// failure past this point (e.g. SaveNode losing a name race) still
-	// leaves the token spent, the same "fail safe over allowing a
-	// one-time credential a second attempt" preference this codebase's
-	// other single-use resources already follow.
-	if err := s.store.MarkNodeJoinTokenUsed(ctx, tok.ID); err != nil {
-		if errors.Is(err, store.ErrNodeJoinTokenAlreadyUsed) {
-			return nil, status.Error(codes.Unauthenticated, "join token already used")
-		}
-		s.logger.Error("agent: enroll: mark join token used failed", slog.String("error", err.Error()))
-		return nil, status.Error(codes.Internal, "internal error")
+	if _, err := s.redeemToken(ctx, req.GetJoinToken(), store.NodeJoinTokenPurposeEnroll); err != nil {
+		return nil, err
 	}
 
 	nodeID, err := randomNodeID()
@@ -119,29 +137,16 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
-	certPEM, keyPEM, err := s.ca.IssueClientCert(nodeID, clientCertValidity)
+	issued, keyPEM, origin, err := s.issueForEnroll(nodeID, req.GetCsrDer())
 	if err != nil {
-		s.logger.Error("agent: enroll: issue client cert failed", slog.String("error", err.Error()))
-		return nil, status.Error(codes.Internal, "internal error")
-	}
-	fingerprint, err := certFingerprintFromPEM(certPEM)
-	if err != nil {
-		s.logger.Error("agent: enroll: compute cert fingerprint failed", slog.String("error", err.Error()))
-		return nil, status.Error(codes.Internal, "internal error")
+		return nil, err
 	}
 
-	now := time.Now()
+	now := s.now()
 	if err := s.store.SaveNode(ctx, store.Node{
 		ID: nodeID, Name: req.GetNodeName(), Status: store.NodeStatusPending,
-		CertFingerprint: fingerprint, CreatedAt: now, UpdatedAt: now,
-		// AcceptsAppWorkloads defaults to true for every newly enrolled
-		// node (migrations/0010_node_workloads.sql's own
-		// doc comment): set explicitly here rather than relying on the
-		// column's own DEFAULT so the intent is visible at this call
-		// site, not just in a migration file. AcceptsBuildWorkloads is
-		// left at its zero value (false): an operator opts a node into
-		// build work explicitly, via PUT /api/v1/nodes/{id}/workloads,
-		// never implicitly at enrollment time.
+		CertFingerprint: issued.Fingerprint, CertNotAfter: &issued.NotAfter, CertSerial: issued.Serial, CertKeyOrigin: origin,
+		CreatedAt: now, UpdatedAt: now,
 		AcceptsAppWorkloads: true,
 	}); err != nil {
 		if errors.Is(err, store.ErrNodeNameTaken) {
@@ -150,42 +155,110 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		s.logger.Error("agent: enroll: save node failed", slog.String("error", err.Error()))
 		return nil, status.Error(codes.Internal, "internal error")
 	}
+	s.recordAgentInfo(ctx, nodeID, req.GetAgent())
 
-	s.logger.Info("agent: node enrolled", slog.String("node_id", nodeID), slog.String("name", req.GetNodeName()))
+	s.logger.Info("agent: node enrolled", slog.String("node_id", nodeID), slog.String("name", req.GetNodeName()), slog.String("key_origin", origin))
 
 	return &agentpb.EnrollResponse{
 		NodeId:        nodeID,
-		ClientCertPem: certPEM,
+		ClientCertPem: issued.PEM,
 		ClientKeyPem:  keyPEM,
 		CaCertPem:     s.ca.CertPEM(),
+		NotAfter:      timestamppb.New(issued.NotAfter),
 	}, nil
 }
 
+// issueForEnroll signs the agent's CSR, or for an agent too old to send
+// one, generates the key server-side and returns it (the pre-ADR 021 path).
+func (s *Server) issueForEnroll(nodeID string, csrDER []byte) (IssuedCert, []byte, string, error) {
+	if len(csrDER) > 0 {
+		issued, err := s.signCSR(nodeID, csrDER)
+		return issued, nil, store.CertKeyOriginAgent, err
+	}
+	s.logger.Warn("agent: legacy enrollment without a CSR, generating the key on the control plane", slog.String("node_id", nodeID))
+	certPEM, keyPEM, err := s.ca.IssueClientCert(nodeID, s.certValidity)
+	if err != nil {
+		s.logger.Error("agent: issue client cert failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
+		return IssuedCert{}, nil, "", status.Error(codes.Internal, "internal error")
+	}
+	cert, err := parseCertPEM(certPEM)
+	if err != nil {
+		s.logger.Error("agent: parse issued cert failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
+		return IssuedCert{}, nil, "", status.Error(codes.Internal, "internal error")
+	}
+	issued, err := issuedFromDER(cert.Raw)
+	if err != nil {
+		s.logger.Error("agent: parse issued cert failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
+		return IssuedCert{}, nil, "", status.Error(codes.Internal, "internal error")
+	}
+	return issued, keyPEM, store.CertKeyOriginServer, nil
+}
+
+func (s *Server) signCSR(nodeID string, csrDER []byte) (IssuedCert, error) {
+	issued, err := s.ca.SignClientCSR(nodeID, csrDER, s.certValidity, s.now())
+	if errors.Is(err, ErrInvalidCSR) {
+		return IssuedCert{}, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err != nil {
+		s.logger.Error("agent: sign client CSR failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
+		return IssuedCert{}, status.Error(codes.Internal, "internal error")
+	}
+	return issued, nil
+}
+
+// redeemToken validates plaintext as an unused, unexpired token of purpose
+// and consumes it. The token is spent before anything else irreversible
+// happens, so a later failure never gives the same token a second try.
+func (s *Server) redeemToken(ctx context.Context, plaintext, purpose string) (*store.NodeJoinToken, error) {
+	tok, err := s.store.GetNodeJoinTokenByHash(ctx, hashJoinToken(plaintext))
+	if errors.Is(err, store.ErrNodeJoinTokenNotFound) {
+		return nil, status.Error(codes.Unauthenticated, "invalid join token")
+	}
+	if err != nil {
+		s.logger.Error("agent: look up join token failed", slog.String("error", err.Error()))
+		return nil, status.Error(codes.Internal, "internal error")
+	}
+	if got := tokenPurpose(tok); got != purpose {
+		return nil, status.Errorf(codes.Unauthenticated, "this is a %s token, not a %s token", got, purpose)
+	}
+	if tok.UsedAt != nil {
+		return nil, status.Error(codes.Unauthenticated, "join token already used")
+	}
+	if s.now().After(tok.ExpiresAt) {
+		return nil, status.Error(codes.Unauthenticated, "join token expired")
+	}
+	if err := s.store.MarkNodeJoinTokenUsed(ctx, tok.ID); err != nil {
+		if errors.Is(err, store.ErrNodeJoinTokenAlreadyUsed) {
+			return nil, status.Error(codes.Unauthenticated, "join token already used")
+		}
+		s.logger.Error("agent: mark join token used failed", slog.String("error", err.Error()))
+		return nil, status.Error(codes.Internal, "internal error")
+	}
+	return tok, nil
+}
+
+func tokenPurpose(t *store.NodeJoinToken) string {
+	if t.Purpose == "" {
+		return store.NodeJoinTokenPurposeEnroll
+	}
+	return t.Purpose
+}
+
 // Session implements agentpb.AgentServiceServer: accepts an
-// mTLS-authenticated agent's persistent stream, confirms its
-// certificate actually matches the node it claims to be (not just that
-// *some* certificate this CA issued was presented: a compromised or
-// misconfigured node presenting a different, still-CA-issued
-// certificate for another node's ID must not be trusted as that other
-// node), and wires up a GRPCTransport into Registry for the rest of the
-// control plane to use until the stream ends.
+// mTLS-authenticated agent's persistent stream once its certificate is
+// confirmed to be one this node may use, and wires a GRPCTransport into
+// Registry until the stream ends.
 func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 	ctx := stream.Context()
-	nodeID, fingerprint, err := peerIdentity(ctx)
+	node, peerCert, err := s.authenticatePeer(ctx)
 	if err != nil {
-		return status.Errorf(codes.Unauthenticated, "session: %v", err)
+		return err
 	}
-
-	node, err := s.store.GetNode(ctx, nodeID)
-	if errors.Is(err, store.ErrNodeNotFound) {
-		return status.Errorf(codes.Unauthenticated, "session: unknown node %q", nodeID)
-	}
-	if err != nil {
-		s.logger.Error("agent: session: look up node failed", slog.String("error", err.Error()))
-		return status.Error(codes.Internal, "internal error")
-	}
-	if node.CertFingerprint != fingerprint {
-		return status.Errorf(codes.Unauthenticated, "session: certificate fingerprint mismatch for node %q", nodeID)
+	nodeID := node.ID
+	if fp := CertFingerprint(peerCert.Raw); fp == node.CertFingerprint {
+		if err := s.store.SyncNodeCertDetails(ctx, nodeID, fp, certSerial(peerCert), peerCert.NotAfter); err != nil {
+			s.logger.Warn("agent: session: sync cert details failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
+		}
 	}
 
 	if err := s.store.UpdateNodeStatus(ctx, nodeID, store.NodeStatusOnline); err != nil {
@@ -195,31 +268,24 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 		s.logger.Warn("agent: session: touch last seen failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
 	}
 
-	// heartbeats carries a signal every time this stream's mux actually
-	// receives an AgentMessage_Heartbeat frame from the agent (mux.go's
-	// onHeartbeat callback below); heartbeatLoop is what turns that into
-	// a TouchNodeLastSeen call. A single touch at connect time (above)
-	// can't distinguish "still connected" from "connected an hour ago,
-	// then the process hung", which is exactly what
-	// internal/reconcile/nodehealth needs LastSeenAt to reflect: this is
-	// deliberately event-driven off a real frame the agent chose to send,
-	// not a server-side timer that would touch last_seen_at for as long
-	// as the stream object merely exists, whether or not the agent
-	// process on the other end is actually still running.
-	// Buffered 1 and non-blocking on send: recvLoop (this callback's
-	// caller) must never block delivering a heartbeat signal, the same
-	// discipline eventChanBuffer's own doc comment requires of
-	// deliverEvent; a heartbeat that arrives while one is already pending
-	// collapses into it, which is fine, since all heartbeatLoop does with
-	// the signal is refresh a timestamp.
+	// last_seen_at advances only on real Heartbeat frames, so a hung agent
+	// with an open connection stops looking healthy. Buffered and
+	// non-blocking: recvLoop must never block delivering the signal.
 	heartbeats := make(chan struct{}, 1)
-	m := newMuxWithHandlers(stream, s.onGPUReport(nodeID), func() {
-		select {
-		case heartbeats <- struct{}{}:
-		default:
-		}
+	m := newMuxWithHandlers(stream, muxHandlers{
+		gpu: s.onGPUReport(nodeID),
+		heartbeat: func() {
+			select {
+			case heartbeats <- struct{}{}:
+			default:
+			}
+		},
+		hello: func(info *agentpb.AgentInfo) {
+			go s.recordAgentInfo(context.Background(), nodeID, info)
+		},
 	})
 	s.registry.Register(nodeID, newGRPCTransport(m))
+	live := s.trackSession(nodeID)
 	s.logger.Info("agent: node connected", slog.String("node_id", nodeID))
 
 	heartbeatDone := make(chan struct{})
@@ -227,19 +293,86 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 
 	defer func() {
 		close(heartbeatDone)
+		s.untrackSession(nodeID, live)
 		s.registry.Unregister(nodeID)
-		// context.Background(), not ctx: the stream's own context is
-		// already done by the time this defer runs (that's why Session
-		// is returning), and this update needs to actually reach the
-		// store, not be cancelled along with it.
+		// The stream's context is already done here; the offline mark
+		// must still reach the store.
 		if err := s.store.UpdateNodeStatus(context.Background(), nodeID, store.NodeStatusOffline); err != nil {
 			s.logger.Warn("agent: session: mark node offline failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
 		}
 		s.logger.Info("agent: node disconnected", slog.String("node_id", nodeID))
 	}()
 
-	<-m.closed
-	return nil
+	select {
+	case <-m.closed:
+		return nil
+	case <-live.kick:
+		return status.Error(codes.PermissionDenied, "session closed by the control plane: node certificate revoked")
+	}
+}
+
+// authenticatePeer resolves the caller's client certificate to the node it
+// may act as, rejecting unknown nodes, revoked certificates, and any
+// certificate that is neither current nor inside the renewal overlap.
+func (s *Server) authenticatePeer(ctx context.Context) (*store.Node, *x509.Certificate, error) {
+	cert, err := peerCertificate(ctx)
+	if err != nil {
+		return nil, nil, status.Errorf(codes.Unauthenticated, "%v", err)
+	}
+	nodeID := cert.Subject.CommonName
+	node, err := s.store.GetNode(ctx, nodeID)
+	if errors.Is(err, store.ErrNodeNotFound) {
+		return nil, nil, status.Errorf(codes.Unauthenticated, "unknown node %q", nodeID)
+	}
+	if err != nil {
+		s.logger.Error("agent: look up node failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
+		return nil, nil, status.Error(codes.Internal, "internal error")
+	}
+	if node.CertRevokedAt != nil {
+		return nil, nil, status.Errorf(codes.PermissionDenied, "certificate for node %q was revoked: re-enroll the node", nodeID)
+	}
+	if !node.AcceptsCert(CertFingerprint(cert.Raw), s.now()) {
+		return nil, nil, status.Errorf(codes.Unauthenticated, "certificate fingerprint mismatch for node %q", nodeID)
+	}
+	return node, cert, nil
+}
+
+// Disconnect ends nodeID's live Session, if any, so a node whose
+// certificate was just revoked stops acting on an already-open stream.
+func (s *Server) Disconnect(nodeID string) {
+	s.sessionsMu.Lock()
+	defer s.sessionsMu.Unlock()
+	if live, ok := s.sessions[nodeID]; ok {
+		close(live.kick)
+		delete(s.sessions, nodeID)
+	}
+}
+
+func (s *Server) trackSession(nodeID string) *liveSession {
+	live := &liveSession{kick: make(chan struct{})}
+	s.sessionsMu.Lock()
+	defer s.sessionsMu.Unlock()
+	s.sessions[nodeID] = live
+	return live
+}
+
+func (s *Server) untrackSession(nodeID string, live *liveSession) {
+	s.sessionsMu.Lock()
+	defer s.sessionsMu.Unlock()
+	if s.sessions[nodeID] == live {
+		delete(s.sessions, nodeID)
+	}
+}
+
+func (s *Server) recordAgentInfo(ctx context.Context, nodeID string, info *agentpb.AgentInfo) {
+	if info == nil {
+		return
+	}
+	if err := s.store.UpdateNodeAgentInfo(ctx, nodeID, store.NodeAgentInfo{
+		Version: info.GetVersion(), Commit: info.GetCommit(), OS: info.GetOs(), Arch: info.GetArch(),
+	}, s.now()); err != nil {
+		s.logger.Warn("agent: store agent info failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
+	}
 }
 
 // onGPUReport returns the mux callback persisting nodeID's GPU reports,
@@ -259,24 +392,15 @@ func (s *Server) onGPUReport(nodeID string) func(*agentpb.GPUReport) {
 	}
 }
 
-// heartbeatLoop touches last_seen_at for nodeID every time a signal
-// arrives on heartbeats (a real AgentMessage_Heartbeat frame having just
-// been received, per mux.go's onHeartbeat callback), until done is
-// closed. Runs in its own goroutine for the lifetime of one Session
-// call; a single TouchNodeLastSeen failure is logged and forgotten
-// rather than retried, the same "best-effort, never block the caller"
-// posture TouchNodeLastSeen's own doc comment already commits to (the
-// next heartbeat frame, moments away, is the retry).
+// heartbeatLoop touches last_seen_at for nodeID each time a Heartbeat frame
+// arrives, until done is closed. A failed touch is only logged: the next
+// heartbeat is the retry.
 func (s *Server) heartbeatLoop(nodeID string, heartbeats <-chan struct{}, done <-chan struct{}) {
 	for {
 		select {
 		case <-done:
 			return
 		case <-heartbeats:
-			// context.Background(), not the stream's context: the same
-			// reasoning as the final offline update above, a heartbeat
-			// touch must not be cancelled by the stream context tearing
-			// down mid-call.
 			if err := s.store.TouchNodeLastSeen(context.Background(), nodeID); err != nil {
 				s.logger.Warn("agent: session: heartbeat touch failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
 			}
@@ -284,24 +408,21 @@ func (s *Server) heartbeatLoop(nodeID string, heartbeats <-chan struct{}, done <
 	}
 }
 
-// peerIdentity extracts the enrolled node's ID (the mTLS client
-// certificate's CommonName, set to the node ID at issuance by
-// IssueClientCert in Enroll above) and that certificate's own
-// fingerprint from ctx's gRPC peer info.
-func peerIdentity(ctx context.Context) (nodeID, fingerprint string, err error) {
+// peerCertificate returns the verified client certificate on ctx's
+// connection. Its CommonName is the node ID it was issued to.
+func peerCertificate(ctx context.Context) (*x509.Certificate, error) {
 	p, ok := peer.FromContext(ctx)
 	if !ok || p.AuthInfo == nil {
-		return "", "", fmt.Errorf("no peer TLS info on this connection")
+		return nil, fmt.Errorf("no peer TLS info on this connection")
 	}
 	tlsInfo, ok := p.AuthInfo.(credentials.TLSInfo)
 	if !ok {
-		return "", "", fmt.Errorf("peer auth info is %T, want TLS", p.AuthInfo)
+		return nil, fmt.Errorf("peer auth info is %T, want TLS", p.AuthInfo)
 	}
 	if len(tlsInfo.State.PeerCertificates) == 0 {
-		return "", "", fmt.Errorf("no client certificate presented")
+		return nil, fmt.Errorf("no client certificate presented")
 	}
-	cert := tlsInfo.State.PeerCertificates[0]
-	return cert.Subject.CommonName, CertFingerprint(cert.Raw), nil
+	return tlsInfo.State.PeerCertificates[0], nil
 }
 
 func hashJoinToken(plaintext string) string {
@@ -310,22 +431,15 @@ func hashJoinToken(plaintext string) string {
 }
 
 func certFingerprintFromPEM(certPEM []byte) (string, error) {
-	block, _ := pem.Decode(certPEM)
-	if block == nil {
-		return "", fmt.Errorf("agent: no PEM block found in certificate data")
+	cert, err := parseCertPEM(certPEM)
+	if err != nil {
+		return "", err
 	}
-	if _, err := x509.ParseCertificate(block.Bytes); err != nil {
-		return "", fmt.Errorf("agent: parse certificate: %w", err)
-	}
-	return CertFingerprint(block.Bytes), nil
+	return CertFingerprint(cert.Raw), nil
 }
 
+// randomNodeID reuses randomRequestID's generator: a node ID is the
+// certificate's CommonName, so it only needs to be unique and unguessable.
 func randomNodeID() (string, error) {
-	// Reuses the same generation shape as randomRequestID
-	// (crypto/rand, hex-encoded), a different, purpose-specific
-	// function rather than a shared one: a node ID is long-lived and
-	// externally visible (it's the certificate's own CommonName), a
-	// request ID is ephemeral and internal, different enough concerns
-	// that conflating their generators would be the wrong kind of reuse.
 	return randomRequestID()
 }

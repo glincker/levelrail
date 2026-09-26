@@ -80,6 +80,7 @@ type EnrollOption func(*enrollConfig)
 
 type enrollConfig struct {
 	caFingerprint string
+	caPEM         []byte
 }
 
 // WithPinnedCAFingerprint makes DialEnroll refuse any control plane whose
@@ -93,17 +94,23 @@ func normalizeFingerprint(fp string) string {
 }
 
 // DialEnroll connects to addr and exchanges joinToken for an Identity.
-// There is no CA on disk yet, so the server is verified against the
-// pinned CA fingerprint when one is given (see ADR 003), and trusted on
-// first use otherwise. Every later connection verifies against the
-// returned CA.
+// The private key is generated here and only a CSR is sent (ADR 021); a
+// control plane too old to sign CSRs returns a key of its own instead, which
+// is used as is. There is no CA on disk yet, so the server is verified
+// against the pinned CA fingerprint when one is given (see ADR 003), and
+// trusted on first use otherwise.
 func DialEnroll(ctx context.Context, addr, joinToken, nodeName string, opts ...EnrollOption) (*Identity, error) {
 	var cfg enrollConfig
 	for _, opt := range opts {
 		opt(&cfg)
 	}
 
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(credentials.NewTLS(enrollTrustConfig(cfg.caFingerprint))))
+	keyPEM, csrDER, err := NewKeyAndCSR(nodeName)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(credentials.NewTLS(cfg.tlsConfig())))
 	if err != nil {
 		return nil, fmt.Errorf("agent: dial %q for enrollment: %w", addr, err)
 	}
@@ -112,27 +119,91 @@ func DialEnroll(ctx context.Context, addr, joinToken, nodeName string, opts ...E
 	resp, err := agentpb.NewAgentServiceClient(conn).Enroll(ctx, &agentpb.EnrollRequest{
 		JoinToken: joinToken,
 		NodeName:  nodeName,
+		CsrDer:    csrDER,
+		Agent:     LocalAgentInfo(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("agent: enroll: %w", err)
 	}
-
-	if cfg.caFingerprint != "" {
-		got, err := certFingerprintFromPEM(resp.GetCaCertPem())
-		if err != nil {
-			return nil, fmt.Errorf("agent: enroll: %w", err)
-		}
-		if subtle.ConstantTimeCompare([]byte(got), []byte(cfg.caFingerprint)) != 1 {
-			return nil, fmt.Errorf("%w: enroll response carries CA %s", ErrCAFingerprintMismatch, got)
-		}
+	if err := cfg.checkPinnedCA(resp.GetCaCertPem()); err != nil {
+		return nil, fmt.Errorf("agent: enroll: %w", err)
+	}
+	if len(resp.GetClientKeyPem()) > 0 {
+		keyPEM = resp.GetClientKeyPem()
+	}
+	if err := validateIssued(resp.GetNodeId(), resp.GetClientCertPem(), keyPEM, resp.GetCaCertPem(), time.Now()); err != nil {
+		return nil, fmt.Errorf("agent: enroll: %w", err)
 	}
 
 	return &Identity{
 		NodeID:        resp.GetNodeId(),
 		ClientCertPEM: resp.GetClientCertPem(),
-		ClientKeyPEM:  resp.GetClientKeyPem(),
+		ClientKeyPEM:  keyPEM,
 		CACertPEM:     resp.GetCaCertPem(),
 	}, nil
+}
+
+// DialReenroll exchanges a re-enrollment token for a new certificate for an
+// existing node, keeping its identity. nodeID may be empty when the old
+// identity file is gone; the token alone names the node.
+func DialReenroll(ctx context.Context, addr, token, nodeID string, opts ...EnrollOption) (*Identity, error) {
+	var cfg enrollConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	keyPEM, csrDER, err := NewKeyAndCSR(nodeID)
+	if err != nil {
+		return nil, err
+	}
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(credentials.NewTLS(cfg.tlsConfig())))
+	if err != nil {
+		return nil, fmt.Errorf("agent: dial %q for re-enrollment: %w", addr, err)
+	}
+	defer func() { _ = conn.Close() }()
+
+	resp, err := agentpb.NewAgentServiceClient(conn).Reenroll(ctx, &agentpb.ReenrollRequest{
+		ReenrollToken: token, NodeId: nodeID, CsrDer: csrDER, Agent: LocalAgentInfo(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("agent: re-enroll: %w", err)
+	}
+	if err := cfg.checkPinnedCA(resp.GetCaCertPem()); err != nil {
+		return nil, fmt.Errorf("agent: re-enroll: %w", err)
+	}
+	if err := validateIssued(resp.GetNodeId(), resp.GetClientCertPem(), keyPEM, resp.GetCaCertPem(), time.Now()); err != nil {
+		return nil, fmt.Errorf("agent: re-enroll: %w", err)
+	}
+	return &Identity{NodeID: resp.GetNodeId(), ClientCertPEM: resp.GetClientCertPem(), ClientKeyPEM: keyPEM, CACertPEM: resp.GetCaCertPem()}, nil
+}
+
+// WithTrustedCA verifies the control plane against caPEM, the CA an
+// already-enrolled node has on disk, instead of a fingerprint pin.
+func WithTrustedCA(caPEM []byte) EnrollOption {
+	return func(c *enrollConfig) { c.caPEM = caPEM }
+}
+
+func (c enrollConfig) tlsConfig() *tls.Config {
+	if len(c.caPEM) > 0 {
+		pool := x509.NewCertPool()
+		if pool.AppendCertsFromPEM(c.caPEM) {
+			return &tls.Config{RootCAs: pool, NextProtos: []string{"h2"}}
+		}
+	}
+	return enrollTrustConfig(c.caFingerprint)
+}
+
+func (c enrollConfig) checkPinnedCA(caPEM []byte) error {
+	if c.caFingerprint == "" {
+		return nil
+	}
+	got, err := certFingerprintFromPEM(caPEM)
+	if err != nil {
+		return err
+	}
+	if subtle.ConstantTimeCompare([]byte(got), []byte(c.caFingerprint)) != 1 {
+		return fmt.Errorf("%w: response carries CA %s", ErrCAFingerprintMismatch, got)
+	}
+	return nil
 }
 
 // enrollTrustConfig builds the enrollment TLS config. Go's built-in
@@ -203,6 +274,9 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 		opt(&cfg)
 	}
 
+	if cfg.renewer != nil {
+		id = cfg.renewer.Holder().Current()
+	}
 	cert, err := tls.X509KeyPair(id.ClientCertPEM, id.ClientKeyPEM)
 	if err != nil {
 		return fmt.Errorf("agent: parse identity certificate: %w", err)
@@ -234,9 +308,18 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 	}
 	defer func() { _ = conn.Close() }()
 
-	stream, err := agentpb.NewAgentServiceClient(conn).Session(ctx)
+	client := agentpb.NewAgentServiceClient(conn)
+	stream, err := client.Session(ctx)
 	if err != nil {
 		return fmt.Errorf("agent: open session: %w", err)
+	}
+	if err := stream.Send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Hello{Hello: LocalAgentInfo()}}); err != nil {
+		return fmt.Errorf("agent: send hello: %w", err)
+	}
+	if cfg.renewer != nil {
+		renewCtx, stopRenew := context.WithCancel(ctx)
+		defer stopRenew()
+		go cfg.renewer.Run(renewCtx, client)
 	}
 
 	heartbeatInterval := defaultHeartbeatInterval
@@ -256,6 +339,14 @@ type sessionConfig struct {
 	keepaliveTime     time.Duration
 	keepaliveTimeout  time.Duration
 	gpuProbe          GPUProbe
+	renewer           *Renewer
+}
+
+// WithRenewer keeps the session's certificate fresh with r while the
+// session is open. The identity r holds replaces the one RunSession was
+// given, so each reconnect presents the newest certificate.
+func WithRenewer(r *Renewer) SessionOption {
+	return func(c *sessionConfig) { c.renewer = r }
 }
 
 // SessionOption configures optional RunSession behavior.

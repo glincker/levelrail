@@ -37,6 +37,7 @@ type NodeStore interface {
 	UpdateNodeWorkloads(ctx context.Context, id string, acceptsApp, acceptsBuild bool) error
 	// SetNodeSchedulable is the cordon/uncordon mutation.
 	SetNodeSchedulable(ctx context.Context, id string, schedulable bool) error
+	RevokeNodeCert(ctx context.Context, id string, now time.Time) error
 }
 
 // nodeResource is the wire shape for a node.
@@ -71,6 +72,10 @@ type nodeResource struct {
 	IsLocal bool `json:"is_local"`
 	// GPU is set when the node has reported an NVIDIA GPU.
 	GPU *nodeGPUResource `json:"gpu,omitempty"`
+	// Cert and Agent are the agent certificate lifecycle and the agent's
+	// self-reported build (node_cert.go, ADR 021).
+	Cert  *nodeCertResource  `json:"cert,omitempty"`
+	Agent *nodeAgentResource `json:"agent,omitempty"`
 }
 
 // nodeAlertStatusResource is alerting.NodeAlertStatus's wire shape: each
@@ -167,11 +172,13 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	gpus := rt.nodeGPUResources(r.Context())
+	now := time.Now()
 	out := make([]nodeResource, 0, len(nodes))
 	for _, n := range nodes {
 		res := toNodeResource(n)
 		res.IsLocal = n.ID == rt.localNodeID
 		res.GPU = gpus[n.ID]
+		res.Cert, res.Agent = rt.nodeCertAndAgent(n, now)
 		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -199,6 +206,7 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 	res := toNodeResource(*n)
 	res.IsLocal = n.ID == rt.localNodeID
 	res.GPU = rt.nodeGPUResources(r.Context())[n.ID]
+	res.Cert, res.Agent = rt.nodeCertAndAgent(*n, time.Now())
 	if rt.telemetry != nil {
 		th := rt.nodeAlertThresholds
 		status := alerting.CheckNodeAlertStatus(r.Context(), *n, rt.apps, rt.telemetry,
