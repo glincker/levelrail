@@ -178,7 +178,7 @@ func TestParseUpstreamReplica(t *testing.T) {
 		id string
 		n  int
 		ok bool
-	}{{"web#2", 2, true}, {"web#x", 0, false}, {"other#1", 0, false}, {"web#-1", 0, false}, {"web", 0, false}}
+	}{{"web#2", 2, true}, {"web#x", 0, false}, {"other#1", 0, false}, {"web#-1", 0, false}, {"web", 0, false}, {"web#00", 0, false}, {"web#+1", 0, false}}
 	for _, tt := range tests {
 		t.Run(fmt.Sprint(tt.id), func(t *testing.T) {
 			n, ok := ParseUpstreamReplica("web", tt.id)

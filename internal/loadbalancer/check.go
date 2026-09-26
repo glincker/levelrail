@@ -140,7 +140,7 @@ func ParseUpstreamReplica(service, id string) (int, bool) {
 		return 0, false
 	}
 	n, err := strconv.Atoi(rest)
-	if err != nil || n < 0 {
+	if err != nil || n < 0 || strconv.Itoa(n) != rest {
 		return 0, false
 	}
 	return n, true
