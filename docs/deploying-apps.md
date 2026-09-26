@@ -218,6 +218,18 @@ When an attempt fails (a failed build, or a roll out that never became ready), t
 
 The cause is a heuristic match, not a diagnosis. The error text and failing reconcile conditions are checked first, then the newest build log lines, against a fixed rule table covering: missing environment variable, port mismatch, container killed for memory (OOMKilled or exit 137), registry auth, image or tag not found, health check timeout, wrong Dockerfile path, dependency install failure, plus the older npm, pip, heap, disk and permission rules. It never changes the attempt's real status. Everything runs in the browser over data the page already loads.
 
+#### Deployments across all apps
+
+`GET /api/v1/deployments` lists deploy attempts across every app the caller can read, newest first, with cursor pagination (`limit` default 50, max 200; pass `next_cursor` back as `cursor`). Results are filtered to apps the caller may read: a token or user with an IAM Deny on `app:web` never sees web's deployments, in the list, the summary or the stream.
+
+Filters: `status` (building, ready, failed, canceled, rolled_back, superseded, held; comma separated or repeated), `app`, `branch`, `trigger` (git push, manual, rollback, api, preview), `environment` (name or id), `since` and `until` (RFC3339 or a duration ago such as `24h`, `7d`), `q` (commit message, sha prefix, app name), `live=true` (only the release currently serving each app) and `pr` (previews of one pull request). `queued`, `awaiting_approval`, `schedule` and `pipeline` are accepted values that match nothing today.
+
+Status and trigger are derived from what the deploy attempt already records: `rolled_back` is a succeeded deploy that a later rollback replaced (`rolled_back_by`), a rollback has `rollback_of` pointing at the attempt whose image it re-deployed, `held` is a deploy parked by a freeze window, and `canceled` is a failed attempt whose error is a canceled context. `image_ref` pins the tag to its digest only when the digest is registry verified; otherwise it is just the tag, and `digest_reason` says why. Commit message, author and branch are recorded for git push deploys from the push payload and are empty for other triggers and for attempts recorded before this feature. `steps` and the failing step are only known while an attempt is running, because step history is not persisted.
+
+`GET /api/v1/deployments/summary?window=24h` returns counts by status for the window (up to 30d), `in_progress`, `needs_attention` (held plus digest mismatch), `failure_rate_24h`, median and p95 `duration`, and `per_day` for 14 days. `GET /api/v1/deployments/stream` is server-sent events: each message is `{type: created|step|finished, step?, deployment}`, with the same item shape as the list. Only deploys that run through the build recorder emit events; a plain image redeploy shows up in the list but not on the stream.
+
+From the CLI: `levelrail deployments list [--status failed --app web --since 24h --json]`, `levelrail deployments summary`, and `levelrail deployments watch`. The MCP tools `list_deployments` and `deployments_summary` are read-only.
+
 ### 3. Docker Compose
 
 Deploy from a `compose.yaml` file. Each compose service becomes its own `DesiredService` under one app in one synchronous call.

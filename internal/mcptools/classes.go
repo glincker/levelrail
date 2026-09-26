@@ -94,6 +94,8 @@ var toolTable = map[string]Meta{
 	"list_deploys":                          {clsR, "deploys", unt},
 	"list_deploy_attempts":                  {clsR, "deploys", unt},
 	"list_failed_deploys":                   {clsR, "deploys", unt},
+	"list_deployments":                      {clsR, "deploys", unt},
+	"deployments_summary":                   {clsR, "deploys", 0},
 	"get_deploy_freeze":                     {clsR, "deploys", 0},
 	"deploy_app":                            {clsM, "deploys", outb},
 	"deploy_compose":                        {clsM, "deploys", outb},

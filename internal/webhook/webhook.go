@@ -375,12 +375,20 @@ type PushEvent struct {
 	Before string `json:"before"`
 	// HeadCommitAt is the pushed head commit's timestamp, zero if unknown.
 	HeadCommitAt time.Time `json:"-"`
+	// HeadMessage and HeadAuthor are the pushed head commit's message and
+	// author name, empty when the payload carries none.
+	HeadMessage string `json:"-"`
+	HeadAuthor  string `json:"-"`
 }
 
 // pushCommit is one commit entry in a GitHub, Gitea or GitLab push payload.
 type pushCommit struct {
 	ID        string `json:"id"`
 	Timestamp string `json:"timestamp"`
+	Message   string `json:"message"`
+	Author    struct {
+		Name string `json:"name"`
+	} `json:"author"`
 }
 
 // ErrPushEventFieldsMissing is returned by ParsePushEvent when body
@@ -417,6 +425,7 @@ func ParsePushEvent(body []byte) (PushEvent, error) {
 		if t, err := time.Parse(time.RFC3339, head.Timestamp); err == nil {
 			ev.HeadCommitAt = t
 		}
+		ev.HeadMessage, ev.HeadAuthor = head.Message, head.Author.Name
 	}
 	return ev, nil
 }
