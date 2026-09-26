@@ -48,3 +48,21 @@ func TestLBUpstreamAdminState_RoundTripAndCascade(t *testing.T) {
 		t.Fatalf("rows must cascade with the service, got %v", got)
 	}
 }
+
+func TestDeleteServiceLoadBalancer_ClearsAdminState(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetLBUpstreamAdminState(ctx, "web", 0, "disabled"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.DeleteServiceLoadBalancer(ctx, "web"); err != nil {
+		t.Fatal(err)
+	}
+	got, err := db.ListLBUpstreamAdminStates(ctx)
+	if err != nil || len(got["web"]) != 0 {
+		t.Fatalf("admin state survived balancer delete: %v err %v", got, err)
+	}
+}
