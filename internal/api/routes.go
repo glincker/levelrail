@@ -395,6 +395,10 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// boundary as the branch listing above.
 	mux.HandleFunc("POST /api/v1/build/detect", rt.requireAbility(AbilityDeploy, rt.handleDetectFramework))
 
+	// Import front door: classifies pasted input and returns a plan preview,
+	// creating nothing. AbilityWrite because it makes outbound fetches.
+	mux.HandleFunc("POST /api/v1/imports/plan", rt.requireAbility(AbilityWrite, rt.handleImportPlan))
+
 	// Previously-built image tags for this app's repo, so the deploy
 	// trigger form can offer a dropdown instead of a hand-typed tag
 	// (see ImageLister above). AbilityRead like every other passive
