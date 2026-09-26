@@ -394,3 +394,16 @@ func TestLoadGatewayLimits(t *testing.T) {
 		t.Errorf("summary = %+v", s)
 	}
 }
+
+func TestEnvIntRejectsOutOfRange(t *testing.T) {
+	for _, v := range []string{"4294967296", "-9223372036854775808", "99999999999999999999"} {
+		t.Setenv(envGatewayMaxN, v)
+		if got := LoadGatewayLimits().MaxN; got != DefaultGatewayLimits().MaxN {
+			t.Errorf("%s: MaxN = %d, want the default", v, got)
+		}
+	}
+	t.Setenv(envMaxKeys, "2147483647")
+	if got := envInt(envMaxKeys, 50); got != 2147483647 {
+		t.Errorf("in range value = %d", got)
+	}
+}

@@ -172,6 +172,19 @@ func TestPlaceholderVarsResolveAndSecretRefsAllowed(t *testing.T) {
 	}
 }
 
+func TestPlaceholdersNeverReadTheServerEnvironment(t *testing.T) {
+	t.Setenv("IAC_TEST_SERVER_SECRET", "server-side-value")
+	src := "version: 1\nkind: App\nmetadata: {name: web}\nspec:\n  service:\n    build: {type: image, image: x}\n    port: 80\n    env:\n      X: ${{ env.IAC_TEST_SERVER_SECRET }}\n"
+	docs, issues := ParseDocuments([]Source{{Name: "t.yaml", Data: []byte(src)}})
+	if len(issues) > 0 {
+		t.Fatalf("parse issues: %v", issues)
+	}
+	_, issues = Build(docs, Options{})
+	if len(issues) != 1 || !strings.Contains(issues[0].Message, "IAC_TEST_SERVER_SECRET is not provided") {
+		t.Fatalf("issues = %+v", issues)
+	}
+}
+
 func TestDuplicatesAndDomainConflicts(t *testing.T) {
 	dup := "version: 1\nkind: Tag\nmetadata: {name: a}\n---\nversion: 1\nkind: Tag\nmetadata: {name: a}\n"
 	docs, _ := ParseDocuments([]Source{{Name: "d.yaml", Data: []byte(dup)}})

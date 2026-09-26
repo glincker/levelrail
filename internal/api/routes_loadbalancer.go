@@ -11,5 +11,8 @@ func (rt *Router) registerLoadBalancerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/loadbalancer", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteLoadBalancer))
 	mux.HandleFunc("POST /api/v1/apps/{name}/loadbalancer/import", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleImportLoadBalancer))
 	mux.HandleFunc("GET /api/v1/apps/{name}/loadbalancer/status", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleLoadBalancerStatus))
+	mux.HandleFunc("GET /api/v1/apps/{name}/loadbalancer/history", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleLoadBalancerHistory))
+	mux.HandleFunc("POST /api/v1/apps/{name}/loadbalancer/check", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleLoadBalancerCheck))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/loadbalancer/upstreams/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetLoadBalancerUpstream))
 	mux.HandleFunc("GET /api/v1/apps/{name}/loadbalancer/export", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleExportLoadBalancer))
 }

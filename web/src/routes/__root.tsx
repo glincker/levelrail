@@ -5,30 +5,18 @@ import {
   Outlet,
   redirect,
 } from '@tanstack/react-router'
-import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
 import { getStoredUsername } from '../lib/authStore'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { brandQueryOptions } from '../queries/brand'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
 import { CommandPalette } from '../components/CommandPalette'
-import { ConnectionBanner } from '../components/ConnectionBanner'
 import { ShortcutsDialog } from '../components/ShortcutsDialog'
 import { useShortcuts } from '../hooks/useShortcuts'
-import { DockerHealthBanner } from '../components/DockerHealthBanner'
-import { DiskPressureBanner } from '../components/DiskPressureBanner'
-import { HelpMenu } from '../components/HelpMenu'
-import { InsecureConnectionBanner } from '../components/InsecureConnectionBanner'
-import { NotificationBell } from '../components/NotificationBell'
 import { ThemeProvider } from '../components/ThemeProvider'
-import { ThemeToggle } from '../components/ThemeToggle'
-import { Button } from '../components/ui/button'
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from '../components/ui/sidebar'
-import { Separator } from '../components/ui/separator'
+import { AppHeader } from '../components/shell/AppHeader'
+import { ShellBanner } from '../components/shell/ShellBanner'
+import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
 import { Toaster } from '../components/ui/toast'
 
 // Router context carries the QueryClient so every route loader can call
@@ -116,32 +104,8 @@ function AppShell() {
       />
       <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="w-56 justify-start text-muted-foreground"
-            onClick={() => setCommandPaletteOpen(true)}
-          >
-            <MagnifyingGlassIcon />
-            <span className="flex-1 text-left">Search...</span>
-            <kbd className="rounded border border-border bg-muted px-1 text-xs">
-              ⌘K
-            </kbd>
-          </Button>
-          <div className="ml-auto flex items-center gap-2">
-            <NotificationBell />
-            <HelpMenu />
-            <ThemeToggle />
-          </div>
-        </header>
-        <ConnectionBanner />
-        <InsecureConnectionBanner />
-        <DockerHealthBanner />
-        <DiskPressureBanner />
+        <AppHeader onSearch={() => setCommandPaletteOpen(true)} />
+        <ShellBanner />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="mx-auto w-full max-w-6xl">
             <Outlet />

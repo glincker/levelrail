@@ -69,7 +69,8 @@ export interface LoadBalancerResource {
   export_formats: LoadBalancerExportFormat[]
 }
 
-export type UpstreamState = 'healthy' | 'unhealthy' | 'draining' | 'unknown'
+export type UpstreamState =
+  'healthy' | 'unhealthy' | 'draining' | 'disabled' | 'unknown'
 
 export interface UpstreamStatus {
   id: string

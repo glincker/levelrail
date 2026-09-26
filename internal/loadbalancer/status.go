@@ -18,7 +18,20 @@ const (
 	StateUnhealthy = "unhealthy"
 	StateDraining  = "draining"
 	StateUnknown   = "unknown"
+	StateDisabled  = "disabled"
 )
+
+// Operator-set admin states for one upstream.
+const (
+	AdminActive   = "active"
+	AdminDraining = "draining"
+	AdminDisabled = "disabled"
+)
+
+// ValidAdminState reports whether s is one of the admin states.
+func ValidAdminState(s string) bool {
+	return s == AdminActive || s == AdminDraining || s == AdminDisabled
+}
 
 // UpstreamObservation is what the reconciler saw for one upstream.
 type UpstreamObservation struct {
@@ -29,6 +42,13 @@ type UpstreamObservation struct {
 	Draining bool   `json:"draining,omitempty"`
 	Weight   int    `json:"weight"`
 	Note     string `json:"note,omitempty"`
+	// AdminState is the operator's choice; empty means active.
+	AdminState string `json:"admin_state,omitempty"`
+}
+
+// InPool reports whether the upstream may receive new connections.
+func (u UpstreamObservation) InPool() bool {
+	return u.Running && (u.AdminState == "" || u.AdminState == AdminActive)
 }
 
 // Observation is the reconciler's last view of one service's balancer.
@@ -47,11 +67,14 @@ type Registry struct {
 	mu        sync.Mutex
 	obs       map[string]Observation
 	firstSeen map[string]map[string]time.Time
+	hist      map[string]map[string]*upstreamHist
+	histCfg   HistoryConfig
+	now       func() time.Time
 }
 
-// NewRegistry returns an empty Registry.
+// NewRegistry returns an empty Registry with history sized from the environment.
 func NewRegistry() *Registry {
-	return &Registry{obs: map[string]Observation{}, firstSeen: map[string]map[string]time.Time{}}
+	return NewRegistryWithHistory(HistoryConfigFromEnv())
 }
 
 // FirstSeen records the first time each upstream ID was seen for service and
@@ -114,6 +137,11 @@ func (r *Registry) Retain(keep map[string]bool) {
 		if !keep[s] {
 			delete(r.obs, s)
 			delete(r.firstSeen, s)
+		}
+	}
+	for s := range r.hist {
+		if !keep[s] {
+			delete(r.hist, s)
 		}
 	}
 }
@@ -236,6 +264,11 @@ type UpstreamStatus struct {
 	LastCheck   *time.Time `json:"last_check,omitempty"`
 	LatencyMs   int64      `json:"latency_ms,omitempty"`
 	Reason      string     `json:"reason,omitempty"`
+	AdminState  string     `json:"admin_state"`
+	// LastChangedAt is when State last changed, or when it was first observed.
+	LastChangedAt *time.Time `json:"last_changed_at,omitempty"`
+
+	probed *CheckRecord
 }
 
 // Status is the API view of one service's load balancer.
@@ -278,7 +311,17 @@ func BuildStatus(ctx context.Context, obs Observation, stats map[string]Stats, p
 }
 
 func classify(ctx context.Context, st UpstreamStatus, u UpstreamObservation, cfg Config, prober Prober) UpstreamStatus {
+	st.AdminState = u.AdminState
+	if st.AdminState == "" {
+		st.AdminState = AdminActive
+	}
 	switch {
+	case st.AdminState == AdminDisabled:
+		st.State, st.Reason = StateDisabled, "disabled by operator"
+		return st
+	case st.AdminState == AdminDraining:
+		st.State, st.Reason = StateDraining, "draining, no new connections"
+		return st
 	case !u.Running:
 		st.State, st.Reason = StateUnhealthy, "container not running"
 		return st
@@ -292,16 +335,10 @@ func classify(ctx context.Context, st UpstreamStatus, u UpstreamObservation, cfg
 		checked := res.CheckedAt
 		st.LastCheck = &checked
 		st.LatencyMs = res.Latency.Milliseconds()
-		want := h.ExpectStatus
-		ok := res.OK
-		if want != 0 {
-			ok = res.StatusCode == want
-		}
-		if !ok {
-			st.State, st.Reason = StateUnhealthy, strings.TrimSpace(res.Err)
-			if st.Reason == "" {
-				st.Reason = fmt.Sprintf("status %d, want %d", res.StatusCode, want)
-			}
+		reason := probeReason(res, h.ExpectStatus, timeout)
+		st.probed = &CheckRecord{At: checked, OK: reason == "", StatusCode: res.StatusCode, LatencyMs: st.LatencyMs, Reason: reason}
+		if reason != "" {
+			st.State, st.Reason = StateUnhealthy, reason
 			return st
 		}
 	}
@@ -311,4 +348,35 @@ func classify(ctx context.Context, st UpstreamStatus, u UpstreamObservation, cfg
 		st.State, st.Reason = StateDraining, u.Note
 	}
 	return st
+}
+
+// probeReason returns "" for a passing probe, else a short human reason.
+func probeReason(res ProbeResult, want int, timeout time.Duration) string {
+	if res.Err != "" && res.StatusCode == 0 {
+		e := strings.ToLower(res.Err)
+		switch {
+		case strings.Contains(e, "timeout") || strings.Contains(e, "deadline exceeded"):
+			return fmt.Sprintf("timeout after %s", timeout)
+		case strings.Contains(e, "connection refused"):
+			return "connection refused"
+		case strings.Contains(e, "no such host"):
+			return "host not found"
+		case strings.Contains(e, "certificate") || strings.Contains(e, "tls"):
+			return "TLS handshake failed"
+		case len(res.Err) > 80:
+			return strings.TrimSpace(res.Err[:80])
+		}
+		return strings.TrimSpace(res.Err)
+	}
+	ok := res.OK
+	if want != 0 {
+		ok = res.StatusCode == want
+	}
+	if ok {
+		return ""
+	}
+	if want != 0 {
+		return fmt.Sprintf("expected %d, got %d", want, res.StatusCode)
+	}
+	return fmt.Sprintf("expected 2xx or 3xx, got %d", res.StatusCode)
 }

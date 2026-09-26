@@ -6,6 +6,7 @@
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { pollUnlessMissing } from '../lib/pollUnlessMissing'
 
 // Mirrors internal/api/network.go's networkResource wire shape exactly.
 export interface AppNetwork {
@@ -51,6 +52,6 @@ export function appNetworkQueryOptions(appName: string) {
 export function useAppNetwork(appName: string) {
   return useQuery({
     ...appNetworkQueryOptions(appName),
-    refetchInterval: APP_NETWORK_POLL_INTERVAL_MS,
+    refetchInterval: pollUnlessMissing(APP_NETWORK_POLL_INTERVAL_MS),
   })
 }

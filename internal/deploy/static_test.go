@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -289,6 +290,50 @@ func TestPipeline_DeployStatic_EscapingPaths_Rejected(t *testing.T) {
 				t.Errorf("directory outside the static root was touched: %v", err)
 			}
 		})
+	}
+}
+
+func TestPipeline_DeployStatic_SymlinkEscape_Rejected(t *testing.T) {
+	for _, tc := range []struct{ name, link, buildPath string }{
+		{name: "build.path is a link", link: "dist", buildPath: "dist"},
+		{name: "a parent of build.path is a link", link: "out", buildPath: "out/private"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			outside := t.TempDir()
+			writeTree(t, outside, map[string]string{"private/master.key": "do not serve", "master.key": "do not serve"})
+			sourceDir := t.TempDir()
+			if err := os.Symlink(outside, filepath.Join(sourceDir, tc.link)); err != nil {
+				t.Fatal(err)
+			}
+			staticRoot := t.TempDir()
+			staticStore := &fakeStaticSiteStore{}
+			p := New(&fakeBuilder{}, &fakeServiceStore{}, WithStaticSiteStore(staticStore), WithStaticRootDir(staticRoot))
+			svc := staticService("docs.example.com")
+			svc.Build.Path = tc.buildPath
+			_, err := p.Deploy(context.Background(), Request{ServiceName: "docs", Service: svc, SourceDir: sourceDir, CommitSHA: "abc1234"}, nil)
+			if err == nil || !strings.Contains(err.Error(), "outside the repository") {
+				t.Fatalf("Deploy() error = %v, want a refusal", err)
+			}
+			if staticStore.saveCalls != 0 {
+				t.Errorf("SaveStaticSite called %d times, want 0", staticStore.saveCalls)
+			}
+		})
+	}
+}
+
+func TestPipeline_DeployStatic_InRepoSymlinkAllowed(t *testing.T) {
+	sourceDir := t.TempDir()
+	writeTree(t, sourceDir, map[string]string{"build/index.html": "<h1>ok</h1>"})
+	if err := os.Symlink(filepath.Join(sourceDir, "build"), filepath.Join(sourceDir, "dist")); err != nil {
+		t.Fatal(err)
+	}
+	staticStore := &fakeStaticSiteStore{}
+	p := New(&fakeBuilder{}, &fakeServiceStore{}, WithStaticSiteStore(staticStore), WithStaticRootDir(t.TempDir()))
+	if _, err := p.Deploy(context.Background(), Request{ServiceName: "docs", Service: staticService("docs.example.com"), SourceDir: sourceDir, CommitSHA: "abc1234"}, nil); err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+	if staticStore.saveCalls != 1 {
+		t.Fatalf("SaveStaticSite called %d times, want 1", staticStore.saveCalls)
 	}
 }
 

@@ -117,8 +117,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 87 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 87 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 90 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 90 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -207,16 +207,19 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/pipeline-sync | AbilityRead | handleGetPipelineSync |
 | PUT | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleSetPipelineSync |
 | POST | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleRunPipelineSync |
-| POST | /api/v1/apps/{name}/preflight | AbilityRead | handlePreflightApp |
+| GET | /api/v1/apps/{name}/alert-history | AbilityRead | handleListAppAlertHistory |
 | POST | /api/v1/apps/bulk | AbilityWrite | handleBulkApps |
 | GET | /api/v1/apps/{name}/clone/preview | AbilityRead | handleClonePreview |
 | GET | /api/v1/apps/{name}/deploy-freeze | AbilityRead | handleGetAppDeployFreeze |
 | PUT | /api/v1/apps/{name}/deploy-freeze | AbilityDeploy | handlePutAppDeployFreeze |
+| POST | /api/v1/apps/{name}/preflight | AbilityRead | handlePreflightApp |
 | GET | /api/v1/apps/{name}/requests | AbilityRead | handleQueryRequests |
+| GET | /api/v1/apps/{name}/loadbalancer/history | AbilityRead | handleLoadBalancerHistory |
+| POST | /api/v1/apps/{name}/loadbalancer/check | AbilityWrite | handleLoadBalancerCheck |
+| PUT | /api/v1/apps/{name}/loadbalancer/upstreams/{id} | AbilityWrite | handleSetLoadBalancerUpstream |
 | GET | /api/v1/apps/{name}/timeline | AbilityRead | handleAppTimeline |
 | GET | /api/v1/apps/{name}/pending-changes | AbilityRead | handlePendingChanges |
 | POST | /api/v1/apps/{name}/apply-pending | AbilityDeploy | handleApplyPending |
-| GET | /api/v1/apps/{name}/alert-history | AbilityRead | handleListAppAlertHistory |
 
 :::
 
@@ -389,6 +392,7 @@ Endpoints for:
 - Workload assignment and placement
 - Cordon, drain, and lifecycle operations
 - Node-level metrics and patch status
+- Agent certificate re-enrollment and revocation
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -404,10 +408,10 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/metrics | AbilityRoot | handleQueryNodeMetrics |
 | GET | /api/v1/nodes/{id}/patch-status | AbilityRoot | handleGetNodePatchStatus |
 | GET | /api/v1/nodes/{id}/events | AbilityRoot | handleListNodeEvents |
-| POST | /api/v1/nodes/{id}/mesh/rotate-key | AbilityRoot | handleRotateNodeMeshKey |
-| GET | /api/v1/nodes/resource-usage | AbilityRoot | handleFleetResourceUsage |
 | POST | /api/v1/nodes/{id}/reenroll-token | AbilityRoot | handleCreateNodeReenrollToken |
 | POST | /api/v1/nodes/{id}/revoke-cert | AbilityRoot | handleRevokeNodeCert |
+| POST | /api/v1/nodes/{id}/mesh/rotate-key | AbilityRoot | handleRotateNodeMeshKey |
+| GET | /api/v1/nodes/resource-usage | AbilityRoot | handleFleetResourceUsage |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -709,11 +713,6 @@ Routes that do not fit an existing group.
 | GET | /api/v1/pipeline-runs | AbilityRead | handleListAllPipelineRuns |
 | GET | /api/v1/pipelines/summary | AbilityRead | handleGetPipelineSummary |
 | GET | /api/v1/loadbalancers | AbilityRead | handleListLoadBalancers |
-| POST | /api/v1/preflight | AbilityWrite | handlePreflightNew |
-| GET | /api/v1/apps-summary | AbilityRead | handleAppsSummary |
-| POST | /api/v1/imports/plan | AbilityWrite | handleImportPlan |
-| POST | /api/v1/imports/platform/discover | AbilityWriteSensitive | handleDiscoverPlatformImport |
-| POST | /api/v1/imports/platform/apply | AbilityWriteSensitive | handleApplyPlatformImport |
 | GET | /api/v1/alert-silences | AbilityRead | handleListAlertSilences |
 | POST | /api/v1/alert-silences | AbilityWrite | handleCreateAlertSilence |
 | DELETE | /api/v1/alert-silences/{id} | AbilityWrite | handleExpireAlertSilence |
@@ -722,10 +721,6 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/alert-maintenance-windows/{id} | AbilityWrite | handleUpdateMaintenanceWindow |
 | DELETE | /api/v1/alert-maintenance-windows/{id} | AbilityWrite | handleDeleteMaintenanceWindow |
 | GET | /api/v1/alert-history | AbilityRead | handleListAlertHistory |
-| POST | /api/v1/apply/plan | AbilityRead | handleIaCPlan |
-| POST | /api/v1/apply | AbilityWrite | handleIaCApply |
-| GET | /api/v1/export | AbilityRead | handleIaCExport |
-| GET | /api/v1/apply/schema | AbilityRead | handleIaCSchema |
 | GET | /public/status | Public | handlePublicStatusHTML |
 | GET | /public/status.json | Public | handlePublicStatusJSON |
 | GET | /public/status.rss | Public | handlePublicStatusRSS |
@@ -740,6 +735,15 @@ Routes that do not fit an existing group.
 | POST | /api/v1/status-page/incidents | AbilityWrite | handleCreateStatusIncident |
 | POST | /api/v1/status-page/incidents/{id}/updates | AbilityWrite | handlePostStatusIncidentUpdate |
 | DELETE | /api/v1/status-page/incidents/{id} | AbilityWrite | handleDeleteStatusIncident |
+| GET | /api/v1/apps-summary | AbilityRead | handleAppsSummary |
+| POST | /api/v1/preflight | AbilityWrite | handlePreflightNew |
+| POST | /api/v1/imports/plan | AbilityWrite | handleImportPlan |
+| POST | /api/v1/apply/plan | AbilityRead | handleIaCPlan |
+| POST | /api/v1/apply | AbilityWrite | handleIaCApply |
+| GET | /api/v1/export | AbilityRead | handleIaCExport |
+| GET | /api/v1/apply/schema | AbilityRead | handleIaCSchema |
+| POST | /api/v1/imports/platform/discover | AbilityWriteSensitive | handleDiscoverPlatformImport |
+| POST | /api/v1/imports/platform/apply | AbilityWriteSensitive | handleApplyPlatformImport |
 
 ## See also
 

@@ -185,9 +185,29 @@ levelrail-cli apply -f infra/ \
 
 Use `NAME` to apply to every app referencing that name, or `app/NAME` for one app. The plan only ever shows that a secret is set, never the value. A secret that is referenced but has no value yet is reported as a warning.
 
-- `${{ env.NAME }}` placeholders in plain values are filled from your environment when you run the CLI (or with `--var NAME=value`). Export uses them when you pass `--include-env-values=false`.
+- `${{ env.NAME }}` placeholders in plain values are filled at apply time from the sources described in [Providing values safely](#providing-values-safely). Export uses them when you pass `--include-env-values=false`.
 
-Export never writes a secret value. Secret backed variables are written as `secretRef`, and a plain variable whose name or value looks like a secret is written as a `${{ env.NAME }}` placeholder with a warning.
+Export never writes a secret value. Secret backed variables are written as `secretRef`, and a plain variable whose name or value looks like a secret is written as a `${{ env.NAME }}` placeholder with a warning that also says how to supply it.
+
+## Providing values safely
+
+A resource file can be written by someone else: a teammate, a template, a pull request. So the CLI never fills a `${{ env.NAME }}` placeholder from your shell unless you said it may. A placeholder is resolved from, in this order:
+
+1. `--var NAME=VALUE` (repeatable).
+2. `--var-file PATH` (repeatable): `KEY=VALUE` lines in dotenv format, with `#` comments, quotes and an optional `export` prefix. A line that is not a valid `NAME=VALUE` is an error naming the line. Keep the file readable only by you (`chmod 600`), and out of the repository.
+3. `--allow-env NAME[,NAME...]` (repeatable): reads exactly those names from your environment. A trailing `*` allows a prefix, for example `--allow-env 'APP_*'`.
+
+Anything else fails before the CLI contacts the control plane, and the error lists each unresolved name with the three ways to provide it. Nothing from the files is sent while a placeholder is unresolved. Placeholders on full line `#` comments are ignored.
+
+Names that look like credentials are never covered by a wildcard: cloud and CI prefixes (`AWS_*`, `AZURE_*`, `GOOGLE_*`, `GCP_*`, `S3_*`, `SSH_*`, `ACTIONS_*` and similar), `GITHUB_TOKEN`, `GH_TOKEN`, `NPM_TOKEN`, and any name containing `TOKEN`, `SECRET`, `PASSW`, `CREDENTIAL`, `PRIVATE` or `_KEY`. If a file really needs one, name it exactly: `--allow-env AWS_REGION`. A shared file that quietly asks for `${{ env.AWS_SECRET_ACCESS_KEY }}` therefore fails instead of sending your key.
+
+The control plane never reads its own environment for placeholders. The dashboard and the MCP tools cannot pass values at all, so files applied there must not use `${{ env.NAME }}`.
+
+```bash
+levelrail-cli apply -f infra/ --var REGION=eu-west-1
+levelrail-cli apply -f infra/ --var-file ./prod.vars
+levelrail-cli apply -f infra/ --allow-env REGION,LOG_LEVEL
+```
 
 ## Export
 
@@ -204,7 +224,8 @@ Output is stable: documents are ordered by kind then name, keys are sorted, and 
 
 ```text
 levelrail-cli apply -f file|dir|- [--dry-run] [--prune] [--yes] [--project P]
-                    [--source NAME] [--secret ...] [--var ...]
+                    [--source NAME] [--secret ...] [--var NAME=VALUE]
+                    [--var-file PATH] [--allow-env NAME[,NAME...]]
                     [--no-deploy] [--continue-on-error] [--exit-code]
 levelrail-cli diff  -f dir        # the same as apply --dry-run --exit-code
 ```
@@ -283,7 +304,8 @@ jobs:
         env:
           APP_API_URL: ${{ secrets.LEVELRAIL_API_URL }}
           APP_API_TOKEN: ${{ secrets.LEVELRAIL_READ_TOKEN }}
-        run: levelrail-cli apply -f infra/ --source infra-repo --dry-run --exit-code || [ $? -eq 2 ]
+          REGION: ${{ vars.REGION }}
+        run: levelrail-cli apply -f infra/ --source infra-repo --allow-env REGION --dry-run --exit-code || [ $? -eq 2 ]
 
   apply:
     if: github.event_name == 'push'
@@ -297,8 +319,11 @@ jobs:
           APP_API_URL: ${{ secrets.LEVELRAIL_API_URL }}
           APP_API_TOKEN: ${{ secrets.LEVELRAIL_WRITE_TOKEN }}
           PROD_API_KEY: ${{ secrets.PROD_API_KEY }}
-        run: levelrail-cli apply -f infra/ --source infra-repo --yes --secret API_KEY=env:PROD_API_KEY
+          REGION: ${{ vars.REGION }}
+        run: levelrail-cli apply -f infra/ --source infra-repo --yes --secret API_KEY=env:PROD_API_KEY --allow-env REGION
 ```
+
+Pass placeholder values with `--var` or name them with `--allow-env`; the runner's own credentials (`GITHUB_TOKEN`, `ACTIONS_*`, cloud keys) are never read unless you name them exactly. The plan job needs the same `--var` or `--allow-env` flags as the apply job.
 
 Planning needs only a read token. Use a separate token with write ability for the apply job. The install step is yours to supply: download the `levelrail-cli` release binary for the runner, the way the bundled deploy action does. See [GitHub Actions](github-actions.md) for token setup and that action.
 

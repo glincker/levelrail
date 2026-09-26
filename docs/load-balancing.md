@@ -95,6 +95,51 @@ The ingress controller reports a `LoadBalancer` condition with these reasons:
 
 Metrics `lb_upstreams_total`, `lb_upstreams_healthy` and `lb_active_requests` are recorded per app every 15 seconds and can be charted or alerted on like any other metric.
 
+`GET .../loadbalancer/status` also returns, per upstream, `admin_state`, `reason` for any state other than healthy and `last_changed_at` (when the state last changed, or when the control plane first saw the upstream).
+
+## Check history and transitions
+
+Every health probe result and every state change is recorded per upstream, so you can answer why an upstream went unhealthy after the fact:
+
+```bash
+levelrail lb history web            # recent checks and state changes
+levelrail lb history web --json     # checks, transitions and 30 minute series
+```
+
+`GET /api/v1/apps/web/loadbalancer/history?limit=60` and the `get_load_balancer_history` MCP tool return the same. Each upstream has:
+
+- `checks`: the last 60 probe results (`at`, `ok`, `status_code`, `latency_ms`, `reason`), newest last.
+- `transitions`: state changes with a short reason such as `timeout after 2s`, `connection refused`, `expected 200, got 503`, `3 recent failures`, `container not running` or `draining, no new connections`.
+- `series`: connections, probe latency and failure counts sampled every 15 seconds over the last 30 minutes.
+
+The history is held in memory and resets when the control plane restarts, which keeps the store small and the write path free of per-probe inserts. Sizes are bounded by `APP_LB_HISTORY_CHECKS` (default 60), `APP_LB_HISTORY_TRANSITIONS` (default 50 per upstream), `APP_LB_HISTORY_STEP` (15s), `APP_LB_HISTORY_WINDOW` (30m) and `APP_LB_HISTORY_MAX_AGE` (24h). Balancers without an `active_health` block record transitions and series but no probe results, because no probe runs on them in the background.
+
+## Check now
+
+```bash
+levelrail lb check web
+```
+
+`POST /api/v1/apps/web/loadbalancer/check` (and the `check_load_balancer` MCP tool) probes every running upstream once, in parallel, with the configured active health check and records the results in the history. When the balancer has no active health check, it probes `GET /` with a 2 second timeout (`APP_LB_CHECK_TIMEOUT`) and says so in a `note` field. Checks are limited to one per app per 2 seconds (`APP_LB_CHECK_MIN_INTERVAL`); a faster call gets `429` with `Retry-After`. A check changes no configuration.
+
+## Per-upstream admin state
+
+```bash
+levelrail lb upstream web web#1 --state draining
+levelrail lb upstream web web#1 --state disabled
+levelrail lb upstream web web#1 --state active
+```
+
+`PUT /api/v1/apps/web/loadbalancer/upstreams/{id}` (and the `set_load_balancer_upstream_state` MCP tool) sets one replica to:
+
+| State | Effect |
+| --- | --- |
+| `active` | Normal. The default; clears the setting. |
+| `draining` | Removed from the ingress pool on the next reconcile, so it gets no new connections. Requests in flight finish, and open streams stay up for the balancer's `drain_timeout`. Shown as `draining`. |
+| `disabled` | Removed from the ingress pool the same way and shown as `disabled`. Use it for maintenance you expect to last. |
+
+Caddy has no per-upstream drain flag, so both states work by leaving the upstream out of the generated pool; the difference is how it is reported and what you intend. The setting is stored per app and replica index, survives restarts, is removed with the app, and is re-applied on every reconcile, so a failed apply is retried until the pool matches. If every running replica is drained or disabled the domain is left unrouted (`NoUpstreams`), so check the pool before draining the last replica. Balancing then reports `UpstreamsDegraded` with the number held out.
+
 ## Export as infrastructure as code
 
 **Export** in the dashboard, or:

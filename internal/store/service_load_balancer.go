@@ -44,6 +44,9 @@ func (db *DB) DeleteServiceLoadBalancer(ctx context.Context, service string) err
 	if _, err := db.ExecContext(ctx, `DELETE FROM service_load_balancers WHERE service_name = ?`, service); err != nil {
 		return fmt.Errorf("store: delete service load balancer: %w", err)
 	}
+	if _, err := db.ExecContext(ctx, `DELETE FROM lb_upstream_admin_state WHERE service_name = ?`, service); err != nil {
+		return fmt.Errorf("store: clear upstream admin state: %w", err)
+	}
 	return nil
 }
 

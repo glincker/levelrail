@@ -82,6 +82,10 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error
 		}
 		srcDir = filepath.Join(buildRoot, buildPath)
 	}
+	srcDir, err = containedRealPath(req.SourceDir, srcDir)
+	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: static source: %w", req.ServiceName, err)
+	}
 	info, err := os.Stat(srcDir)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: static source directory %q: %w", req.ServiceName, srcDir, err)
@@ -120,6 +124,25 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error
 	}
 
 	return destDir, nil
+}
+
+// containedRealPath resolves symlinks in dir and refuses a result outside the
+// checkout, since a repository could link build.path to a control plane file
+// that the static site would then serve publicly.
+func containedRealPath(checkout, dir string) (string, error) {
+	realRoot, err := filepath.EvalSymlinks(checkout)
+	if err != nil {
+		return "", fmt.Errorf("resolve checkout %q: %w", checkout, err)
+	}
+	realDir, err := filepath.EvalSymlinks(dir)
+	if err != nil {
+		return "", fmt.Errorf("resolve %q: %w", dir, err)
+	}
+	rel, err := filepath.Rel(realRoot, realDir)
+	if err != nil || !filepath.IsLocal(rel) {
+		return "", fmt.Errorf("%q resolves outside the repository", dir)
+	}
+	return realDir, nil
 }
 
 // staticDestDir joins service and commit under root, refusing any value

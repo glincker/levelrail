@@ -98,7 +98,7 @@ export function formFromConfig(
     maxFails: str(cfg?.passive_health?.max_fails),
     failDuration: cfg?.passive_health?.fail_duration ?? '30s',
     retriesEnabled: cfg?.retries !== undefined,
-    retryCount: str(cfg?.retries?.count) || '2',
+    retryCount: cfg?.retries ? String(cfg.retries.count ?? 2) : '2',
     tryDuration: cfg?.retries?.try_duration ?? '5s',
     slowStart: cfg?.slow_start ?? '',
     drainTimeout: cfg?.drain_timeout ?? '',
@@ -145,7 +145,10 @@ export function configFromForm(f: LbFormState): LoadBalancerConfig {
     }
   }
   if (f.retriesEnabled) {
-    cfg.retries = { count: num(f.retryCount), try_duration: opt(f.tryDuration) }
+    cfg.retries = {
+      count: f.retryCount.trim() === '0' ? 0 : num(f.retryCount),
+      try_duration: opt(f.tryDuration),
+    }
   }
   if (opt(f.slowStart) && f.algorithm === 'weighted') {
     cfg.slow_start = f.slowStart.trim()
@@ -224,6 +227,7 @@ export const STATE_VARIANT: Record<
   healthy: 'success',
   unhealthy: 'destructive',
   draining: 'warning',
+  disabled: 'muted',
   unknown: 'muted',
 }
 
