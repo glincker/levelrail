@@ -61,6 +61,10 @@ func (rt *Router) beginForgeDeployment(ctx context.Context, app string, gs store
 	if err != nil || f.kind != forgeGitHub {
 		return nil
 	}
+	return rt.beginOnForge(ctx, f, app, sha, environment, scope, envURL)
+}
+
+func (rt *Router) beginOnForge(ctx context.Context, f *forge, app, sha, environment, scope, envURL string) *forgeDeployment {
 	owner, repo := f.ownerName()
 	production := environment == forgeEnvProduction
 	id, err := f.github.CreateDeployment(ctx, f.instanceURL, f.token, owner, repo, sha, environment, "Deploy "+app, production)
