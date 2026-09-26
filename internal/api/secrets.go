@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -80,7 +81,11 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rt.declareSecretEnv(r.Context(), name, key, true)
+	if _, err := rt.declareSecretEnv(r.Context(), name, key, true); err != nil {
+		rt.logger.Error("api: set secret: declare failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", key))
+		writeError(w, http.StatusInternalServerError, "the secret value was saved but declaring the key failed, retry the request")
+		return
+	}
 	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSecretChange, Keys: []string{key}, Title: "Secret set: " + key})
 	rt.nudgeReconciler()
 	w.WriteHeader(http.StatusNoContent)
@@ -99,18 +104,17 @@ type secretValueDeleter interface {
 
 // declareSecretEnv makes key a secret-backed env name on the app, so its
 // stored value is injected at container creation. Without it a stored value
-// is never read. Failure is logged: the value itself is already saved.
-func (rt *Router) declareSecretEnv(ctx context.Context, name, key string, declared bool) bool {
+// is never read.
+func (rt *Router) declareSecretEnv(ctx context.Context, name, key string, declared bool) (bool, error) {
 	d, ok := rt.apps.(secretEnvDeclarer)
 	if !ok {
-		return false
+		return false, nil
 	}
 	changed, err := d.SetServiceSecretEnvDeclared(ctx, name, key, declared)
 	if err != nil {
-		rt.logger.Error("api: declare secret env failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", key))
-		return false
+		return false, fmt.Errorf("declare secret env %q: %w", key, err)
 	}
-	return changed
+	return changed, nil
 }
 
 // handleDeleteSecret handles DELETE /api/v1/apps/{name}/secrets/{key}: removes
@@ -146,12 +150,18 @@ func (rt *Router) handleDeleteSecret(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	// Undeclare first: if the value delete then fails, the key is already no
+	// longer injected and a retry finishes the job.
+	undeclared, err := rt.declareSecretEnv(r.Context(), name, key, false)
+	if err != nil {
+		rt.internalError(w, "api: delete secret: undeclare failed", err, slog.String("name", name), slog.String("key", key))
+		return
+	}
 	existed, err := deleter.DeleteSecretValue(r.Context(), name, key)
 	if err != nil {
 		rt.internalError(w, "api: delete secret failed", err, slog.String("name", name), slog.String("key", key))
 		return
 	}
-	undeclared := rt.declareSecretEnv(r.Context(), name, key, false)
 	if !existed && !undeclared && !slices.Contains(store.SecretEnvNames(svc.SecretEnv), key) {
 		writeError(w, http.StatusNotFound, "no secret with this key")
 		return

@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -34,9 +33,10 @@ type pendingChangesResource struct {
 	ApplyAction string          `json:"apply_action"`
 }
 
-// computePendingChanges compares desired state with what the running
-// container was created with. Without a creation-time snapshot (a container
-// from before snapshots) only the env_dirty latch is known.
+// computePendingChanges compares desired state with the last release that
+// went live. A snapshot naming an older release still counts: a rollout in
+// flight has not made anything live yet. Without any snapshot (a container
+// from before snapshots) only the env_dirty latch and secret events are known.
 func (rt *Router) computePendingChanges(ctx context.Context, svc store.DesiredService) (pendingChangesResource, error) {
 	res := pendingChangesResource{Changes: []pendingChange{}, ApplyAction: pendingApplyRestart}
 	events := rt.appEvents()
@@ -47,11 +47,9 @@ func (rt *Router) computePendingChanges(ctx context.Context, svc store.DesiredSe
 	if err != nil {
 		return res, err
 	}
-	expected := application.ContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce)
-
 	var envKeys, secretKeys, configKeys []string
 	switch {
-	case applied != nil && applied.Release == expected:
+	case applied != nil:
 		secretValues, unresolved := rt.declaredSecretValues(ctx, svc)
 		hashes := make(map[string]string, len(applied.EnvHashes))
 		for k, h := range applied.EnvHashes {
@@ -75,9 +73,13 @@ func (rt *Router) computePendingChanges(ctx context.Context, svc store.DesiredSe
 			}
 		}
 		configKeys = drift.ConfigKeys
-	case applied == nil && svc.EnvDirty:
-		envKeys = []string{}
-		res.Changes = append(res.Changes, pendingChange{Kind: pendingKindEnv, Since: rt.pendingSince(ctx, events, svc.Name, nil, store.AppEventEnvChange)})
+	default:
+		if svc.EnvDirty {
+			res.Changes = append(res.Changes, pendingChange{Kind: pendingKindEnv, Since: rt.pendingSince(ctx, events, svc.Name, nil, store.AppEventEnvChange)})
+		}
+		if secretEvents, err := events.ListAppEvents(ctx, svc.Name, nil, time.Time{}, []string{store.AppEventSecretChange}, 1); err == nil && len(secretEvents) > 0 {
+			res.Changes = append(res.Changes, pendingChange{Kind: pendingKindSecret, Since: rt.pendingSince(ctx, events, svc.Name, nil, store.AppEventSecretChange)})
+		}
 	}
 
 	add := func(kind string, keys []string, eventKind string) {

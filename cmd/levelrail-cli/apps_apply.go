@@ -34,25 +34,29 @@ func describePendingChanges(p apiclient.PendingChanges) string {
 // afterConfigWrite is what "apps env import" and "apps secrets set" do once
 // a save landed: with apply it restarts the app right away, otherwise it
 // tells the operator that N changes are waiting and how to apply them. It
-// never fails the command: the save itself already succeeded.
-func afterConfigWrite(ctx context.Context, client *Client, prog, name string, apply bool, out, errOut io.Writer) {
+// returns a failure exit code only when apply was requested and did not happen.
+func afterConfigWrite(ctx context.Context, client *Client, prog, name string, apply bool, out, errOut io.Writer) int {
 	pending, err := client.GetPendingChanges(ctx, name)
 	if err != nil {
 		_, _ = fmt.Fprintf(errOut, "could not check pending changes for app %q: %v\n", name, err)
-		return
+		if apply {
+			return exitCodeForError(err)
+		}
+		return exitOK
 	}
 	if !pending.Pending {
-		return
+		return exitOK
 	}
 	if apply {
 		if _, err := client.ApplyPendingChanges(ctx, name); err != nil {
 			_, _ = fmt.Fprintf(errOut, "could not apply pending changes for app %q: %v\n", name, err)
-			return
+			return exitCodeForError(err)
 		}
 		_, _ = fmt.Fprintf(out, "applying %d pending change(s) to app %q: restarting it (%s)\n", pendingChangeCount(pending), name, describePendingChanges(pending))
-		return
+		return exitOK
 	}
 	_, _ = fmt.Fprintf(out, "%d changes pending (%s). Run: %s apps apply %s (or pass --apply)\n", pendingChangeCount(pending), describePendingChanges(pending), prog, name)
+	return exitOK
 }
 
 type appsApplyResult struct {

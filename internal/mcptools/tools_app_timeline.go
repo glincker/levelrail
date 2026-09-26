@@ -54,22 +54,17 @@ func registerAppTimelineTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "set_app_domains",
-		Description: "Replace an app's domain list. Reads the app, changes only its domains and saves it back; a domain already used by another app is refused with a conflict and nothing is changed. Mutating.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in setAppDomainsInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
-		app, err := client.GetApp(ctx, in.Name)
-		if err != nil {
-			return nil, apiclient.AppResource{}, fmt.Errorf("get app %q: %w", in.Name, err)
-		}
+		Description: "Replace an app's domain list, changing no other setting; a domain already used by another app is refused with a conflict and nothing is changed. Mutating.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in setAppDomainsInput) (*mcp.CallToolResult, apiclient.EditDomainsResult, error) {
 		domains := make([]string, 0, len(in.Domains))
 		for _, d := range in.Domains {
 			if d = strings.ToLower(strings.TrimSpace(d)); d != "" && !slices.Contains(domains, d) {
 				domains = append(domains, d)
 			}
 		}
-		app.Domains = domains
-		updated, err := client.UpdateApp(ctx, in.Name, app)
+		updated, err := client.EditAppDomains(ctx, in.Name, apiclient.EditDomainsRequest{Set: &domains})
 		if err != nil {
-			return nil, apiclient.AppResource{}, fmt.Errorf("set domains for app %q: %w", in.Name, err)
+			return nil, apiclient.EditDomainsResult{}, fmt.Errorf("set domains for app %q: %w", in.Name, err)
 		}
 		return nil, updated, nil
 	})

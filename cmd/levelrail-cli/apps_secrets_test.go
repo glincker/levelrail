@@ -125,6 +125,24 @@ func TestRun_AppsSecretsSet_PendingHintAndApply(t *testing.T) {
 	}
 }
 
+func TestRun_AppsSecretsDelete_ApplyDeniedFails(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case servePendingChanges(w, r, true):
+		case strings.HasSuffix(r.URL.Path, "/apply-pending"):
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+		default:
+			w.WriteHeader(http.StatusNoContent)
+		}
+	}))
+	defer srv.Close()
+	stderr := runCLIExpectAPIError(t, []string{"apps", "secrets", "delete", "web", "API_KEY", "--apply", "--api-url", srv.URL})
+	if !strings.Contains(stderr, "could not apply pending changes") {
+		t.Errorf("stderr = %q", stderr)
+	}
+}
+
 func TestRun_AppsSecretsDelete(t *testing.T) {
 	var gotMethod, gotURI string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

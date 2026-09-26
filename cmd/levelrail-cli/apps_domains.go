@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 func appsDomainsUsage(prog string) string {
@@ -16,7 +18,7 @@ func appsDomainsUsage(prog string) string {
   %[1]s apps domains add <name> <domain>... [flags]      add one or more domains
   %[1]s apps domains remove <name> <domain>... [flags]   remove one or more domains
 
-add and remove read the app, change only its domain list and save it back.
+add and remove change only the domain list, never any other setting.
 A domain already used by another app is refused with the conflicting app named.
 
 Run "%[1]s apps domains <subcommand> -h" for a subcommand's own flags.
@@ -100,28 +102,21 @@ func runAppsDomainsChange(prog, verb string, args []string, stdout, stderr io.Wr
 	}
 	name, wanted := rest[0], normalizeDomains(rest[1:])
 
-	ctx := context.Background()
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	app, err := client.GetApp(ctx, name)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get app %q: %w", name, err))
+	req := apiclient.EditDomainsRequest{Add: wanted}
+	if verb == "remove" {
+		req = apiclient.EditDomainsRequest{Remove: wanted}
 	}
-
-	next, err := applyDomainChange(app.Domains, verb, wanted)
+	edited, err := client.EditAppDomains(context.Background(), name, req)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, newValidationError("app %q: %v", name, err))
-	}
-	result := appsDomainsResult{App: name, Domains: next, Changed: !slices.Equal(app.Domains, next)}
-	if result.Changed {
-		app.Domains = next
-		if _, err := client.UpdateApp(ctx, name, app); err != nil {
-			var apiErr *apiError
-			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusConflict {
-				return reportError(stdout, stderr, jsonOut, fmt.Errorf("cannot %s domains on app %q, nothing was changed: %w", verb, name, err))
-			}
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("update domains for app %q: %w", name, err))
+		var apiErr *apiError
+		if errors.As(err, &apiErr) && (apiErr.StatusCode == http.StatusConflict || apiErr.StatusCode == http.StatusBadRequest) {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("cannot %s domains on app %q, nothing was changed: %w", verb, name, err))
 		}
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update domains for app %q: %w", name, err))
 	}
+	next := edited.Domains
+	result := appsDomainsResult{App: name, Domains: next, Changed: edited.Changed}
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
 		if !result.Changed {
 			_, _ = fmt.Fprintf(stdout, "no change: app %q domains are already as requested\n", name)
@@ -140,22 +135,4 @@ func normalizeDomains(in []string) []string {
 		}
 	}
 	return out
-}
-
-// applyDomainChange returns current with wanted added or removed. Removing a
-// domain the app does not have is an error rather than a silent no-op.
-func applyDomainChange(current []string, verb string, wanted []string) ([]string, error) {
-	next := slices.Clone(current)
-	for _, d := range wanted {
-		has := slices.Contains(next, d)
-		switch {
-		case verb == "add" && !has:
-			next = append(next, d)
-		case verb == "remove" && has:
-			next = slices.DeleteFunc(next, func(x string) bool { return x == d })
-		case verb == "remove":
-			return nil, fmt.Errorf("domain %q is not set", d)
-		}
-	}
-	return next, nil
 }

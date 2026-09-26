@@ -87,50 +87,31 @@ func TestRun_AppsStatusShowsPendingAndHold(t *testing.T) {
 	}
 }
 
-func TestApplyDomainChange(t *testing.T) {
-	tests := []struct {
-		name    string
-		current []string
-		verb    string
-		wanted  []string
-		want    []string
-		wantErr bool
-	}{
-		{"add new", []string{"a.com"}, "add", []string{"b.com"}, []string{"a.com", "b.com"}, false},
-		{"add existing is a no-op", []string{"a.com"}, "add", []string{"a.com"}, []string{"a.com"}, false},
-		{"remove", []string{"a.com", "b.com"}, "remove", []string{"a.com"}, []string{"b.com"}, false},
-		{"remove missing", []string{"a.com"}, "remove", []string{"z.com"}, nil, true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := applyDomainChange(tt.current, tt.verb, tt.wanted)
-			if (err != nil) != tt.wantErr || strings.Join(got, ",") != strings.Join(tt.want, ",") {
-				t.Fatalf("got %v err %v, want %v err=%v", got, err, tt.want, tt.wantErr)
-			}
-		})
-	}
-}
-
 func TestRun_AppsDomainsAddAndConflict(t *testing.T) {
-	var putBody map[string]any
+	var patchBody map[string]any
 	status := http.StatusOK
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodPut {
-			_ = json.NewDecoder(r.Body).Decode(&putBody)
+			t.Errorf("domains must not PUT the whole app")
+		}
+		if r.Method == http.MethodPatch {
+			_ = json.NewDecoder(r.Body).Decode(&patchBody)
 			if status != http.StatusOK {
 				w.WriteHeader(status)
 				_, _ = w.Write([]byte(`{"error":"domain b.com is already used by app other"}`))
 				return
 			}
+			_, _ = w.Write([]byte(`{"app":"web","domains":["a.com","b.com"],"changed":true}`))
+			return
 		}
 		_, _ = w.Write([]byte(`{"name":"web","image":"nginx","port":80,"domains":["a.com"]}`))
 	}))
 	defer srv.Close()
 
 	stdout, _ := runCLIExpectOK(t, []string{"apps", "domains", "add", "web", "B.com", "--api-url", srv.URL})
-	if d, _ := putBody["domains"].([]any); len(d) != 2 || d[1] != "b.com" {
-		t.Errorf("PUT domains = %v", putBody["domains"])
+	if d, _ := patchBody["add"].([]any); len(d) != 1 || d[0] != "b.com" {
+		t.Errorf("PATCH body = %v", patchBody)
 	}
 	if !strings.Contains(stdout, "a.com, b.com") {
 		t.Errorf("stdout = %q", stdout)

@@ -112,7 +112,7 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 		}
 		code := runAppsSecretsSetEnvFile(client, rest[0], envFile, overwriteLocked, stdout, stderr)
 		if code == exitOK {
-			afterConfigWrite(context.Background(), client, prog, rest[0], apply, stdout, stderr)
+			code = afterConfigWrite(context.Background(), client, prog, rest[0], apply, stdout, stderr)
 		}
 		return code
 	}
@@ -127,8 +127,7 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 		return reportError(stdout, stderr, false, fmt.Errorf("set secret %q for app %q: %w", key, name, err))
 	}
 	_, _ = fmt.Fprintf(stdout, "secret %q set for app %q\n", key, name)
-	afterConfigWrite(context.Background(), client, prog, name, apply, stdout, stderr)
-	return exitOK
+	return afterConfigWrite(context.Background(), client, prog, name, apply, stdout, stderr)
 }
 
 func runAppsSecretsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -156,8 +155,7 @@ func runAppsSecretsDelete(prog string, args []string, stdout, stderr io.Writer, 
 		return reportError(stdout, stderr, false, fmt.Errorf("delete secret %q for app %q: %w", key, name, err))
 	}
 	_, _ = fmt.Fprintf(stdout, "secret %q deleted for app %q\n", key, name)
-	afterConfigWrite(context.Background(), client, prog, name, apply, stdout, stderr)
-	return exitOK
+	return afterConfigWrite(context.Background(), client, prog, name, apply, stdout, stderr)
 }
 
 // runAppsSecretsSetEnvFile reads path as a .env-format file and sets each

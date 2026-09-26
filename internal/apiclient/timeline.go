@@ -45,6 +45,29 @@ type PendingChanges struct {
 	ApplyAction string          `json:"apply_action"`
 }
 
+// EditDomainsRequest mirrors internal/api's editDomainsRequest: Set, or Add
+// and Remove.
+type EditDomainsRequest struct {
+	Set    *[]string `json:"set,omitempty"`
+	Add    []string  `json:"add,omitempty"`
+	Remove []string  `json:"remove,omitempty"`
+}
+
+// EditDomainsResult mirrors internal/api's editDomainsResponse.
+type EditDomainsResult struct {
+	App     string   `json:"app"`
+	Domains []string `json:"domains"`
+	Changed bool     `json:"changed"`
+}
+
+// EditAppDomains calls PATCH /api/v1/apps/{name}/domains, which changes only
+// the domain list.
+func (c *Client) EditAppDomains(ctx context.Context, name string, req EditDomainsRequest) (EditDomainsResult, error) {
+	var out EditDomainsResult
+	err := c.do(ctx, http.MethodPatch, "/api/v1/apps/"+PathEscape(name)+"/domains", req, &out)
+	return out, err
+}
+
 // ApplyPendingResult mirrors internal/api's applyPendingResult.
 type ApplyPendingResult struct {
 	AttemptID string `json:"attempt_id,omitempty"`

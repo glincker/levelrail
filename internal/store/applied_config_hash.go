@@ -17,6 +17,8 @@ const (
 	AppliedFieldCommand    = "command"
 	AppliedFieldEntrypoint = "entrypoint"
 	AppliedFieldLabels     = "labels"
+	AppliedFieldHostPort   = "host_port"
+	AppliedFieldBindAddr   = "bind_address"
 	// AppliedFieldSecretKeys lists, comma-joined, which env keys were
 	// secret-backed; informational, never diffed as a setting.
 	AppliedFieldSecretKeys = "secret_keys"
@@ -51,7 +53,16 @@ func AppliedFields(svc DesiredService) map[string]string {
 		AppliedFieldCommand:    shortJSONHash(svc.Command),
 		AppliedFieldEntrypoint: shortJSONHash(svc.Entrypoint),
 		AppliedFieldLabels:     shortJSONHash(sortedLabels(svc.Labels)),
+		AppliedFieldHostPort:   hostPortField(svc.HostPort),
+		AppliedFieldBindAddr:   svc.BindAddress,
 	}
+}
+
+func hostPortField(p *int) string {
+	if p == nil {
+		return ""
+	}
+	return strconv.Itoa(*p)
 }
 
 type labelPair struct{ K, V string }

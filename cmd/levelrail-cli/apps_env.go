@@ -129,7 +129,9 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 		if of.Format == outputJSON || of.Query != "" {
 			hintOut = io.Discard
 		}
-		afterConfigWrite(ctx, client, prog, name, apply, hintOut, stderr)
+		if applyCode := afterConfigWrite(ctx, client, prog, name, apply, hintOut, stderr); code == exitOK {
+			code = applyCode
+		}
 	}
 	return code
 }

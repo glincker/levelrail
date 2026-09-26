@@ -411,7 +411,7 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 46 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+::: details 47 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -470,6 +470,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/branch-env | AbilityRead | handleListAppBranchEnv |
 | POST | /api/v1/apps/{name}/branch-env | AbilityWriteSensitive | handleSetAppBranchEnv |
 | DELETE | /api/v1/apps/{name}/branch-env/{id} | AbilityWrite | handleDeleteAppBranchEnv |
+| PATCH | /api/v1/apps/{name}/domains | AbilityWrite | handleEditAppDomains |
 
 :::
 

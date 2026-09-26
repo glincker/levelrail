@@ -32,6 +32,28 @@ func newTimelineRouter(t *testing.T) (*Router, *store.DB, *http.Cookie) {
 	return rt, db, cookie
 }
 
+type failingDeclarerStore struct{ *store.DB }
+
+func (failingDeclarerStore) SetServiceSecretEnvDeclared(context.Context, string, string, bool) (bool, error) {
+	return false, errors.New("disk full")
+}
+
+func TestSecretsDeclareFailureIsReported(t *testing.T) {
+	rt, db, cookie := newTimelineRouter(t)
+	tlJSON(t, rt, cookie, http.MethodPut, "/api/v1/apps/web/secrets/TOKEN", `{"value":"v"}`, nil)
+	rt.apps = failingDeclarerStore{db}
+
+	if code := tlJSON(t, rt, cookie, http.MethodPut, "/api/v1/apps/web/secrets/OTHER", `{"value":"v"}`, nil); code != http.StatusInternalServerError {
+		t.Fatalf("set with failing declare = %d, want 500", code)
+	}
+	if code := tlJSON(t, rt, cookie, http.MethodDelete, "/api/v1/apps/web/secrets/TOKEN", "", nil); code != http.StatusInternalServerError {
+		t.Fatalf("delete with failing undeclare = %d, want 500", code)
+	}
+	if ok, _ := db.HasSecretValue(context.Background(), "web", "TOKEN"); !ok {
+		t.Fatal("value deleted although the key is still declared")
+	}
+}
+
 func tlJSON(t *testing.T, rt *Router, cookie *http.Cookie, method, target, body string, out any) int {
 	t.Helper()
 	rec := serve(rt, authedRequest(t, cookie, method, target, body))
@@ -223,13 +245,32 @@ func TestPendingChangesEnvSecretConfigThenApply(t *testing.T) {
 	if svc.RestartNonce == "" {
 		t.Fatal("apply did not restart the app")
 	}
+	if p := pending(t, rt, cookie); !p.Pending {
+		t.Fatalf("mid-restart the old release is still the live one, want pending: %+v", p)
+	}
+	snapshotFor(t, db, map[string]string{"TOKEN": "s3cr3t-value"})
 	if p := pending(t, rt, cookie); p.Pending {
-		t.Fatalf("still pending mid-restart: %+v", p)
+		t.Fatalf("still pending once the new release is live: %+v", p)
 	}
 	var tl timelineResponse
 	tlJSON(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/timeline", "", &tl)
 	if tl.Items[0].Kind != "restart" || tl.Items[0].Title != "Applied pending changes" {
 		t.Fatalf("newest event = %+v", tl.Items[0])
+	}
+}
+
+func TestPendingChangesHostPortAndLegacySecret(t *testing.T) {
+	rt, db, cookie := newTimelineRouter(t)
+	snapshotFor(t, db, nil)
+	putApp(t, rt, cookie, `{"image":"nginx:1","port":80,"env":{"A":"1"},"host_port":18080}`)
+	if p := pending(t, rt, cookie); len(p.Changes) != 1 || p.Changes[0].Kind != "config" || p.Changes[0].Keys[0] != "host_port" {
+		t.Fatalf("host_port change pending = %+v", p)
+	}
+
+	rt2, _, cookie2 := newTimelineRouter(t)
+	tlJSON(t, rt2, cookie2, http.MethodPut, "/api/v1/apps/web/secrets/TOKEN", `{"value":"v"}`, nil)
+	if p := pending(t, rt2, cookie2); !p.Pending || p.Changes[0].Kind != "secret" {
+		t.Fatalf("no-snapshot secret change pending = %+v", p)
 	}
 }
 
