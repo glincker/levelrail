@@ -119,6 +119,31 @@ func TestParseGrype(t *testing.T) {
 	}
 }
 
+func TestParseScannerOutput_UnexpectedShapeIsAnError(t *testing.T) {
+	for _, in := range []string{`{}`, `{"Results":[]}`, `[]`, `null`, `{"matches":[]}`} {
+		if _, err := ParseTrivy([]byte(in)); err == nil {
+			t.Errorf("trivy %q: expected an error", in)
+		}
+	}
+	for _, in := range []string{`{}`, `{"matches":null}`, `{"Results":[]}`, `null`} {
+		if _, err := ParseGrype([]byte(in)); !errors.Is(err, ErrUnexpectedReport) {
+			t.Errorf("grype %q: err = %v, want ErrUnexpectedReport", in, err)
+		}
+	}
+	if _, err := ParseTrivy([]byte(`{}`)); !errors.Is(err, ErrUnexpectedReport) {
+		t.Errorf("trivy {}: %v", err)
+	}
+}
+
+func TestParseScannerOutput_CleanReportsStayClean(t *testing.T) {
+	if sum, err := ParseTrivy([]byte(`{"SchemaVersion":2,"ArtifactName":"sbom"}`)); err != nil || sum.Counts.Total() != 0 {
+		t.Errorf("trivy clean = %+v, %v", sum, err)
+	}
+	if sum, err := ParseGrype([]byte(`{"matches":[]}`)); err != nil || sum.Counts.Total() != 0 {
+		t.Errorf("grype clean = %+v, %v", sum, err)
+	}
+}
+
 func TestParseScannerOutput_Malformed(t *testing.T) {
 	if _, err := ParseTrivy([]byte("{")); err == nil {
 		t.Error("trivy: expected an error")

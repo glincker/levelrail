@@ -144,8 +144,8 @@ func TestAfterBuild_NoSBOMIsNotAnError(t *testing.T) {
 	if _, err := h.svc.Get(context.Background(), "web", "da_1"); !errors.Is(err, ErrNotFound) {
 		t.Errorf("expected no record, got %v", err)
 	}
-	if err := h.svc.AfterBuild(context.Background(), "web", "", attest(t)); err != nil {
-		t.Fatalf("no attempt id: %v", err)
+	if err := h.svc.AfterBuild(context.Background(), "web", "", build.Attestations{}); err != nil {
+		t.Fatalf("no sbom, no attempt id: %v", err)
 	}
 }
 
@@ -168,7 +168,7 @@ func TestAfterBuild_GateTable(t *testing.T) {
 		{name: "scan disabled for the app", gate: "off", enabled: false, wantScans: 0},
 		{name: "server kill switch", gate: "block_on_critical", enabled: true, serverOff: true, wantScans: 0},
 		{name: "scanner failure fails open", gate: "block_on_critical", enabled: true, runErr: errors.New("daemon down"), wantScans: 1, wantAction: ActionAllow, wantStatus: ScanFailed},
-		{name: "clean image passes the gate", gate: "block_on_critical", enabled: true, stdout: func(*testing.T) []byte { return []byte(`{"Results":[]}`) }, wantScans: 1, wantAction: ActionAllow, wantStatus: ScanOK},
+		{name: "clean image passes the gate", gate: "block_on_critical", enabled: true, stdout: func(*testing.T) []byte { return []byte(`{"SchemaVersion":2}`) }, wantScans: 1, wantAction: ActionAllow, wantStatus: ScanOK},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

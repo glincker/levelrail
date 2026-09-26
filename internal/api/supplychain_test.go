@@ -18,7 +18,7 @@ import (
 
 const testSPDX = `{"spdxVersion":"SPDX-2.3","packages":[{"SPDXID":"p1","name":"musl","versionInfo":"1.2","licenseConcluded":"MIT","externalRefs":[{"referenceType":"purl","referenceLocator":"pkg:apk/alpine/musl@1.2"}]},{"SPDXID":"p2","name":"busybox","versionInfo":"1.36"}]}`
 
-const testTrivy = `{"Results":[{"Vulnerabilities":[{"VulnerabilityID":"CVE-1","PkgName":"musl","InstalledVersion":"1.2","FixedVersion":"1.3","Severity":"CRITICAL","Title":"bad"},{"VulnerabilityID":"CVE-2","PkgName":"busybox","InstalledVersion":"1.36","Severity":"LOW"}]}]}`
+const testTrivy = `{"SchemaVersion":2,"Results":[{"Vulnerabilities":[{"VulnerabilityID":"CVE-1","PkgName":"musl","InstalledVersion":"1.2","FixedVersion":"1.3","Severity":"CRITICAL","Title":"bad"},{"VulnerabilityID":"CVE-2","PkgName":"busybox","InstalledVersion":"1.36","Severity":"LOW"}]}]}`
 
 type scRunner struct {
 	mu   sync.Mutex
