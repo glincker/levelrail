@@ -117,11 +117,10 @@ func newHTTPClient(o ClientOptions) *http.Client {
 			ResponseHeaderTimeout: 20 * time.Second,
 			TLSClientConfig:       &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: o.Insecure}, //nolint:gosec // explicit operator opt-in for self-signed sources
 		},
-		CheckRedirect: func(_ *http.Request, via []*http.Request) error {
-			if len(via) >= 5 {
-				return errors.New("too many redirects")
-			}
-			return nil
+		// Source credentials travel in custom headers Go copies onto every
+		// redirect hop, so redirects are never followed.
+		CheckRedirect: func(req *http.Request, _ []*http.Request) error {
+			return fmt.Errorf("source redirected to %s://%s; use that address as the source URL", req.URL.Scheme, req.URL.Host)
 		},
 	}
 }

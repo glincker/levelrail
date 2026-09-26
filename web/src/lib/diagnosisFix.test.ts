@@ -64,6 +64,11 @@ describe('patchApp', () => {
         {},
       ),
     ).toThrow(StaleFixError)
+    expect(() =>
+      patchApp(app, [{ field: 'env.A', from: '', to: '', needs_input: true }], {
+        'env.A': 'new',
+      }),
+    ).toThrow(StaleFixError)
   })
 
   it('requires a value for input changes and rejects unknown fields', () => {

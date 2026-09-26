@@ -218,6 +218,28 @@ func TestCapRoverBadLoginRedactsPassword(t *testing.T) {
 	}
 }
 
+func TestSourceRedirectIsNotFollowed(t *testing.T) {
+	leaked := make(chan string, 1)
+	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		leaked <- r.Header.Get("x-api-key")
+		_, _ = w.Write([]byte(`[]`))
+	}))
+	defer other.Close()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, other.URL, http.StatusFound)
+	}))
+	defer srv.Close()
+	src, _ := NewDokploy(srv.URL, "key-fixture", testOpts)
+	if _, err := src.Discover(context.Background()); err == nil || !strings.Contains(err.Error(), "redirected") {
+		t.Fatalf("want redirect refusal, got %v", err)
+	}
+	select {
+	case v := <-leaked:
+		t.Fatalf("redirect target received a request with x-api-key %q", v)
+	default:
+	}
+}
+
 func TestSourceErrorRedactsToken(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "bad token tok-secret-fixture", http.StatusUnauthorized)

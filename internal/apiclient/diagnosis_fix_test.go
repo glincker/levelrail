@@ -55,6 +55,7 @@ func TestPatchAppMap(t *testing.T) {
 		}},
 		{"env missing input", []DiagnosisChange{{Field: "env.B", NeedsInput: true}}, nil, errors.New("value required"), nil},
 		{"stale port", []DiagnosisChange{{Field: "port", From: "9999", To: "8080"}}, nil, ErrFixStale, nil},
+		{"stale env set since diagnosis", []DiagnosisChange{{Field: "env.A", NeedsInput: true}}, map[string]string{"env.A": "x"}, ErrFixStale, nil},
 		{"stale path", []DiagnosisChange{{Field: "health.readiness.path", From: "/other", To: "/x"}}, nil, ErrFixStale, nil},
 		{"unsupported", []DiagnosisChange{{Field: "image", From: "", To: "x"}}, nil, errors.New("unsupported"), nil},
 	}
