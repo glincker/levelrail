@@ -1,6 +1,32 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import { fuzzyMatchIndices } from '@/lib/fuzzy'
 import type { PaletteItem } from './commandPaletteData'
+
+function Highlighted({ text, query }: { text: string; query: string }) {
+  const hit = new Set(fuzzyMatchIndices(query, text))
+  if (hit.size === 0) return <>{text}</>
+  const runs: { text: string; hit: boolean }[] = []
+  Array.from(text).forEach((ch, i) => {
+    const h = hit.has(i)
+    const last = runs[runs.length - 1]
+    if (last && last.hit === h) last.text += ch
+    else runs.push({ text: ch, hit: h })
+  })
+  return (
+    <>
+      {runs.map((r, i) =>
+        r.hit ? (
+          <mark key={i} className="bg-transparent font-semibold text-primary">
+            {r.text}
+          </mark>
+        ) : (
+          r.text
+        ),
+      )}
+    </>
+  )
+}
 
 export function Kbd({ children }: { children: React.ReactNode }) {
   return (
@@ -14,9 +40,11 @@ export function ResultRow({
   item,
   optionId,
   active,
+  query = '',
   onSelect,
 }: {
   item: PaletteItem
+  query?: string
   optionId: string
   active: boolean
   onSelect: () => void
@@ -46,10 +74,18 @@ export function ResultRow({
       <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground [&_svg]:size-4">
         {item.icon}
       </span>
-      <span className="truncate">{item.label}</span>
+      <span className="truncate">
+        <Highlighted text={item.label} query={query} />
+      </span>
       {active ? (
         <span className="ml-auto" aria-hidden="true">
           <Kbd>Enter</Kbd>
+        </span>
+      ) : item.hint ? (
+        <span className="ml-auto flex gap-0.5" aria-hidden="true">
+          {item.hint.map((k) => (
+            <Kbd key={k}>{k}</Kbd>
+          ))}
         </span>
       ) : null}
     </button>

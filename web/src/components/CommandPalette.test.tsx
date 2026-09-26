@@ -9,11 +9,18 @@ const setTheme = vi.fn()
 const restartApp = vi.fn()
 const redeployApp = vi.fn()
 const listApps = vi.fn(() =>
-  Promise.resolve([{ name: 'web', image: 'nginx:1.27' }]),
+  Promise.resolve([
+    { name: 'web', image: 'nginx:1.27', status: { variant: 'success' } },
+  ]),
 )
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigate,
+  useRouterState: ({
+    select,
+  }: {
+    select: (s: { location: { pathname: string } }) => unknown
+  }) => select({ location: { pathname: '/' } }),
 }))
 vi.mock('./ThemeProvider', () => ({
   useTheme: () => ({ theme: 'light', setTheme }),
@@ -62,10 +69,20 @@ describe('CommandPalette', () => {
     expect(screen.getByText('Esc')).toBeInTheDocument()
   })
 
-  it('navigates from the Actions group with Enter', async () => {
+  it('opens the assistant from the first suggestion with Enter', async () => {
     const user = userEvent.setup()
     renderPalette()
     await user.keyboard('{Enter}')
+    expect(navigate).toHaveBeenCalledWith({
+      to: '/ai-assistant',
+      params: undefined,
+    })
+  })
+
+  it('navigates from the Actions group by clicking', async () => {
+    const user = userEvent.setup()
+    renderPalette()
+    await user.click(screen.getByRole('option', { name: /Go to Status/ }))
     expect(navigate).toHaveBeenCalledWith({ to: '/status', params: undefined })
   })
 

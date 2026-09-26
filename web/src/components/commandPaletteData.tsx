@@ -26,6 +26,9 @@ import {
   CircleHalfIcon,
   ArrowsSplitIcon,
   TreeStructureIcon,
+  CpuIcon,
+  GavelIcon,
+  RobotIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
 export interface PaletteItem {
@@ -34,6 +37,7 @@ export interface PaletteItem {
   group: string
   icon: React.ReactNode
   run: () => void
+  hint?: string[]
 }
 
 export interface RouteEntry {
@@ -42,9 +46,11 @@ export interface RouteEntry {
   group: string
   icon: React.ReactNode
   to: string
+  search?: Record<string, string>
 }
 
 export const GROUP_ORDER = [
+  'Suggested',
   'Recent',
   'Actions',
   'App actions',
@@ -74,6 +80,25 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     '/apps',
     'Actions',
   ),
+  nav('action-dashboard', 'Go to dashboard', <GaugeIcon />, '/', 'Actions'),
+  nav('action-new-app', 'New app', <PlusIcon />, '/apps', 'Actions'),
+  nav(
+    'action-import',
+    'Import',
+    <CloudArrowUpIcon />,
+    '/settings/import-platform',
+    'Actions',
+  ),
+  {
+    ...nav(
+      'action-filter-failing',
+      'Filter failing apps',
+      <HeartbeatIcon />,
+      '/apps',
+      'Actions',
+    ),
+    search: { status: 'failing' },
+  },
   nav('nav-dashboard', 'Dashboard', <GaugeIcon />, '/'),
   nav('nav-databases', 'Databases', <DatabaseIcon />, '/databases'),
   nav('nav-projects', 'Projects', <FolderIcon />, '/projects'),
@@ -85,6 +110,10 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     <ArrowsSplitIcon />,
     '/loadbalancers',
   ),
+  nav('nav-backups', 'Backups', <CloudArrowUpIcon />, '/backups'),
+  nav('nav-approvals', 'Deploy approvals', <GavelIcon />, '/approvals'),
+  nav('nav-models', 'AI models', <CpuIcon />, '/models'),
+  nav('nav-assistant', 'AI assistant', <RobotIcon />, '/ai-assistant'),
   nav('nav-help', 'Help', <QuestionIcon />, '/help'),
   nav('settings-hub', 'Settings', <GearIcon />, '/settings', 'Settings'),
   nav(

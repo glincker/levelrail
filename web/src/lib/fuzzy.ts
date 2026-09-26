@@ -45,3 +45,21 @@ export function fuzzyFilter<T>(
   scored.sort((a, b) => b.score - a.score || a.index - b.index)
   return scored.map((s) => s.item)
 }
+
+/** Character positions in `text` that matched `query`, for highlighting. */
+export function fuzzyMatchIndices(query: string, text: string): number[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return []
+  const t = text.toLowerCase()
+  const at = t.indexOf(q)
+  if (at !== -1) return Array.from({ length: q.length }, (_, i) => at + i)
+  const out: number[] = []
+  let ti = 0
+  for (const ch of q) {
+    const found = t.indexOf(ch, ti)
+    if (found === -1) return []
+    out.push(found)
+    ti = found + 1
+  }
+  return out
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { DialogControl } from './dialogControl'
 import { useNavigate } from '@tanstack/react-router'
 import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -22,8 +23,19 @@ import { useDeleteApp } from '../queries/apps'
 // dialog, not a bare one-click button, same reasoning
 // DeleteDatabaseDialog's own header comment gives. On success, navigates
 // back to /apps since the detail page's own resource no longer exists.
-export function DeleteAppDialog({ name }: { name: string }) {
-  const [open, setOpen] = useState(false)
+export function DeleteAppDialog({
+  name,
+  control,
+}: {
+  name: string
+  control?: DialogControl
+}) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = control?.open ?? internalOpen
+  const setOpen = (next: boolean) => {
+    setInternalOpen(next)
+    control?.onOpenChange?.(next)
+  }
   const navigate = useNavigate()
   const deleteApp = useDeleteApp()
 
@@ -36,10 +48,12 @@ export function DeleteAppDialog({ name }: { name: string }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-        <TrashIcon className="size-3.5" aria-hidden="true" />
-        Delete
-      </DialogTrigger>
+      {control?.hideTrigger ? null : (
+        <DialogTrigger render={<Button variant="destructive" size="sm" />}>
+          <TrashIcon className="size-3.5" aria-hidden="true" />
+          Delete
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1.5 text-destructive">

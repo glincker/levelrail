@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { DialogControl } from './dialogControl'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -44,8 +45,19 @@ type CloneAppFormValues = z.infer<typeof cloneAppSchema>
 // On success, navigates to the new app's own detail page, the same
 // success shape CreateAppFields already establishes for a brand-new
 // app.
-export function CloneAppDialog({ name }: { name: string }) {
-  const [open, setOpen] = useState(false)
+export function CloneAppDialog({
+  name,
+  control,
+}: {
+  name: string
+  control?: DialogControl
+}) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = control?.open ?? internalOpen
+  const setOpen = (next: boolean) => {
+    setInternalOpen(next)
+    control?.onOpenChange?.(next)
+  }
   const navigate = useNavigate()
   const cloneApp = useCloneApp()
   const { register, handleSubmit, formState, reset } =
@@ -83,12 +95,14 @@ export function CloneAppDialog({ name }: { name: string }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
-        render={<Button type="button" variant="outline" size="sm" />}
-      >
-        <CopyIcon className="size-3.5" aria-hidden="true" />
-        Clone
-      </DialogTrigger>
+      {control?.hideTrigger ? null : (
+        <DialogTrigger
+          render={<Button type="button" variant="outline" size="sm" />}
+        >
+          <CopyIcon className="size-3.5" aria-hidden="true" />
+          Clone
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Clone &ldquo;{name}&rdquo;</DialogTitle>
@@ -96,8 +110,8 @@ export function CloneAppDialog({ name }: { name: string }) {
             Copies image, port, env, resource limits, health checks, deploy
             strategy, replicas, and project into a new app. Domains, node
             placement, and secret values are not copied: connect a domain and
-            re-set secrets for the new app separately. Cloning does not
-            start a deploy.
+            re-set secrets for the new app separately. Cloning does not start a
+            deploy.
           </DialogDescription>
         </DialogHeader>
         <form
