@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -173,21 +174,8 @@ func attemptTimelineItems(attempts []store.DeployAttempt) []timelineItem {
 	return items
 }
 
-// isRollbackAttempt reports whether a deployed an image that an attempt older
-// than its immediate predecessor had already deployed. older is newest first.
 func isRollbackAttempt(a store.DeployAttempt, older []store.DeployAttempt) bool {
-	if a.Source == store.DeployAttemptSourceAutoRollback {
-		return true
-	}
-	if len(older) < 2 || older[0].Image == a.Image {
-		return false
-	}
-	for _, o := range older[1:] {
-		if o.Status == store.DeployAttemptStatusSucceeded && o.Image == a.Image {
-			return true
-		}
-	}
-	return false
+	return changes.IsRollbackAttempt(a, older)
 }
 
 func attemptTimelineItem(a store.DeployAttempt, rollback bool) timelineItem {

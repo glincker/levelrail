@@ -69,6 +69,9 @@ type ruleResource struct {
 	BackupServiceName  string `json:"backup_service_name,omitempty"`
 	BackupVolumeName   string `json:"backup_volume_name,omitempty"`
 
+	// KindSLOBurn-only field: the request-based SLO the rule watches.
+	SLO *alerting.SLOConfig `json:"slo,omitempty"`
+
 	NotifyURL  string `json:"notify_url,omitempty"`
 	NotifyKind string `json:"notify_kind,omitempty"`
 	Enabled    bool   `json:"enabled"`
@@ -115,6 +118,7 @@ func toRuleResource(r alerting.Rule) ruleResource {
 		BackupDatabaseName:    r.BackupDatabaseName,
 		BackupServiceName:     r.BackupServiceName,
 		BackupVolumeName:      r.BackupVolumeName,
+		SLO:                   r.SLO,
 		NotifyURL:             r.NotifyURL,
 		NotifyKind:            string(r.NotifyKind),
 		Enabled:               r.Enabled,
@@ -150,10 +154,10 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 
 	kind := alerting.Kind(a.Kind)
 	switch kind {
-	case alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale:
+	case alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindSLOBurn:
 	default:
-		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, or %q",
-			alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale)
+		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, or %q",
+			alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindSLOBurn)
 	}
 
 	forDuration, err := parseOptionalDuration(a.ForDuration)
@@ -198,6 +202,7 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		BackupServiceName:     a.BackupServiceName,
 		BackupVolumeName:      a.BackupVolumeName,
 		ChannelID:             a.ChannelID,
+		SLO:                   a.SLO,
 		NotifyURL:             a.NotifyURL,
 		NotifyKind:            alerting.NotifyKind(a.NotifyKind),
 		Enabled:               a.Enabled,
@@ -227,6 +232,13 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		}
 		if r.RestartCountThreshold <= 0 {
 			return alerting.Rule{}, errors.New("restart_count_threshold must be a positive integer for a scheduled_task_failure rule")
+		}
+	case alerting.KindSLOBurn:
+		if r.SLO == nil {
+			return alerting.Rule{}, errors.New("slo is required for an slo_burn rule")
+		}
+		if err := r.SLO.Validate(); err != nil {
+			return alerting.Rule{}, fmt.Errorf("slo: %w", err)
 		}
 	case alerting.KindBackupMissing:
 		switch r.BackupResourceKind {

@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useForm, type Control } from 'react-hook-form'
+import {
+  Controller,
+  useForm,
+  type Control,
+  type FieldErrors,
+} from 'react-hook-form'
 import { z } from 'zod'
 import {
   GaugeIcon,
@@ -56,6 +61,8 @@ import type {
   Comparator,
   CreateAlertRuleRequest,
 } from '../types/alerts'
+import { SloRuleFields, type SloFormShape } from './SloRuleFields'
+import { sloConfigFromForm } from '../queries/sloPreview'
 import type { AppVolume } from '../types/appDetail'
 
 // Sanity-check regex for a Go `time.Duration` string ("2m", "30s",
@@ -129,6 +136,7 @@ const KIND_OPTIONS: {
     Icon: ArchiveIcon,
   },
   { value: 'log_archive_stale', label: 'Log archive stale', Icon: ArchiveIcon },
+  { value: 'slo_burn', label: 'SLO burn rate', Icon: GaugeIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -161,6 +169,7 @@ const createAlertRuleSchema = z
       'node_cert_expiring',
       'control_plane_backup_stale',
       'log_archive_stale',
+      'slo_burn',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -172,6 +181,9 @@ const createAlertRuleSchema = z
     backupResourceKind: z.enum(['database', 'volume', '']),
     backupDatabaseName: z.string(),
     backupVolumeName: z.string(),
+    sloObjective: z.enum(['availability', 'latency']),
+    sloTarget: z.coerce.number({ error: 'Must be a number' }),
+    sloLatencyMs: z.coerce.number({ error: 'Must be a number' }),
     channelId: z.string(),
     enabled: z.boolean(),
   })
@@ -221,6 +233,24 @@ const createAlertRuleSchema = z
           code: 'custom',
           message: 'Must look like a duration, e.g. "2m" or "30s"',
           path: ['forDuration'],
+        })
+      }
+      return
+    }
+
+    if (data.kind === 'slo_burn') {
+      if (!(data.sloTarget >= 50 && data.sloTarget < 100)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be at least 50 and below 100, e.g. 99.9',
+          path: ['sloTarget'],
+        })
+      }
+      if (data.sloObjective === 'latency' && !(data.sloLatencyMs >= 5)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be at least 5 ms',
+          path: ['sloLatencyMs'],
         })
       }
       return
@@ -332,6 +362,9 @@ const DEFAULT_VALUES: CreateAlertRuleFormInput = {
   backupResourceKind: '',
   backupDatabaseName: '',
   backupVolumeName: '',
+  sloObjective: 'availability',
+  sloTarget: 99.9,
+  sloLatencyMs: 300,
   channelId: '',
   enabled: true,
 }
@@ -365,6 +398,9 @@ export function CreateAlertRuleDialog({
     })
   const kind = watch('kind')
   const backupResourceKind = watch('backupResourceKind')
+  const sloObjective = watch('sloObjective')
+  const sloTarget = watch('sloTarget')
+  const sloLatencyMs = watch('sloLatencyMs')
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -398,6 +434,12 @@ export function CreateAlertRuleDialog({
       values.kind === 'log_archive_stale'
     ) {
       req.for_duration = values.forDuration.trim() || undefined
+    } else if (values.kind === 'slo_burn') {
+      req.slo = sloConfigFromForm(
+        values.sloObjective,
+        values.sloTarget,
+        values.sloLatencyMs,
+      )
     } else if (values.kind === 'backup_missing') {
       req.backup_resource_kind = values.backupResourceKind || undefined
       req.for_duration = values.forDuration.trim() || undefined
@@ -614,6 +656,16 @@ export function CreateAlertRuleDialog({
                 <FieldError errors={[formState.errors.forDuration]} />
               </Field>
             </>
+          ) : kind === 'slo_burn' ? (
+            <SloRuleFields
+              idPrefix="rule"
+              app={appName}
+              control={control as unknown as Control<SloFormShape>}
+              errors={formState.errors as FieldErrors<SloFormShape>}
+              objective={sloObjective}
+              target={sloTarget as string | number}
+              latencyMs={sloLatencyMs as string | number}
+            />
           ) : kind === 'threshold' ? (
             <>
               <Field>

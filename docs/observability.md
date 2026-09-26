@@ -347,6 +347,42 @@ Every state change and notification decision is recorded: the rule, app, node, s
 
 Shown per app on `/apps/{name}/alerts`, globally on `/alerts` (with outcome and event filters), and available from the CLI (`levelrail-cli alerts history`), the API (`GET /api/v1/alert-history`) and the `list_alert_history` MCP tool. Entries are pruned after `APP_ALERT_HISTORY_RETENTION`. Who created, changed or removed a silence, window or rule is recorded separately in the generic audit log (`GET /api/v1/audit-log`), which covers every write request.
 
+## What changed before an alert
+
+Every firing app alert, its history entry, `diagnose` and the dashboard alert rows answer "what changed on this app in the last 30 minutes": deploys (with digest and who), rollbacks, config, domain, scaling and load balancer changes, freeze and maintenance events, and env or secret key names (never values). They come from the app event log, deploy attempts and the audit log, merged newest first by `internal/changes`.
+
+The most recent change that took effect before the alert (a deploy, rollback, config, env, secret, domain, scaling or load balancer change) is tagged **Likely cause**. It is a heuristic: it picks the nearest preceding change, not a proven culprit, and never picks a restart, freeze or maintenance event or a failed deploy.
+
+- Notifications (webhook, Slack, Discord, Telegram, email and the rest) carry the top 5 changes, an "and N more" line and a link to the app's alerts page. The generic webhook adds `recent_changes` and `changes_link` fields. Discord and PagerDuty messages are capped to their receiver limits with the changes section kept.
+- `GET /api/v1/apps/{name}/changes?until=&window=` returns the list; `GET /api/v1/alert-history?include=changes` attaches it to fired entries; `GET /api/v1/apps/{name}/diagnose` includes it as `recent_changes`.
+- CLI: `levelrail-cli apps diagnose <app>` and `levelrail-cli alerts history --changes`. MCP: `diagnose_app_failure`, and `list_alert_history` with `include_changes`.
+- Dashboard: expand a fired row in the alert history or the dashboard's recent alerts card; firing rules on an app's alerts page show the block inline.
+
+| Env var | Default | Meaning |
+| --- | --- | --- |
+| `APP_ALERT_CHANGE_WINDOW` | `30m` | how far back changes are collected |
+| `APP_ALERT_CHANGE_MAX` | `20` | cap on entries kept per alert |
+| `APP_DASHBOARD_URL` | unset | base URL for notification links; falls back to `http://<APP_PUBLIC_HOST>:<port>`, and with neither set no link is added |
+
+## SLO burn-rate alerts
+
+A `slo_burn` rule watches a request-based SLO over the app's ingress request metrics: availability (requests without a 5xx) or latency (requests under a limit, rounded down to the nearest histogram bound), with a target such as 99.9 over a 30 day budget window. It uses the multiwindow multi-burn-rate method: a tier fires only when the burn rate is at or above its factor over both its long and its short window, so a brief blip does not page and a real outage does. Burn rate is how many times faster than sustainable the error budget is being spent.
+
+| Tier | Factor | Windows | Severity |
+| --- | --- | --- | --- |
+| `page_fast` | 14.4x | 1h and 5m | critical (page) |
+| `page_slow` | 6x | 6h and 30m | critical (page) |
+| `ticket_fast` | 3x | 1d and 2h | warning (ticket) |
+| `ticket_slow` | 1x | 3d and 6h | warning (ticket) |
+
+An app with no traffic, or fewer than `APP_SLO_MIN_REQUESTS` requests in a tier's long window, never fires. An app newer than a window is judged on the traffic it has. Hysteresis, silences and maintenance windows apply as for any rule.
+
+Override on the control plane with `APP_SLO_<TIER>_FACTOR`, `APP_SLO_<TIER>_LONG` and `APP_SLO_<TIER>_SHORT` (tier is `PAGE_FAST`, `PAGE_SLOW`, `TICKET_FAST` or `TICKET_SLOW`), `APP_SLO_WINDOW` (default `720h`), `APP_SLO_MIN_REQUESTS` (default `10`) and `APP_SLO_EVAL_INTERVAL` (default `1m`).
+
+- Create with `levelrail-cli apps alerts create <app> --name NAME --kind slo_burn --slo 99.9` (add `--slo-latency-ms 300` for a latency SLO), or from the Create rule dialog, which previews the error budget remaining and the current burn rates live.
+- `levelrail-cli apps alerts slo <app> [--slo 99.9]`, `GET /api/v1/apps/{name}/slo-preview` and the `get_slo_status` MCP tool show the budget and burn rates without creating a rule.
+- An app with traffic and no SLO rule gets a suggestion on its alerts page to create a default 99.9% availability SLO.
+
 ## Notification channels
 
 Channels are global, connect-once destinations (Settings -> Notification channels). Attach them to alert rules by `channel_id` instead of retyping webhook URLs per rule.

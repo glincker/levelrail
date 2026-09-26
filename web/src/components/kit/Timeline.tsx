@@ -12,6 +12,7 @@ export interface TimelineItem {
   title: string
   detail?: string
   actor?: string
+  badge?: ReactNode
   onClick?: () => void
 }
 
@@ -26,7 +27,10 @@ function Row({ item, last }: { item: TimelineItem; last: boolean }) {
   const content = (
     <>
       <div className="flex min-w-0 flex-col">
-        <span className="text-sm font-medium">{item.title}</span>
+        <span className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
+          {item.title}
+          {item.badge}
+        </span>
         {item.detail && (
           <span className="text-sm text-muted-foreground">{item.detail}</span>
         )}
