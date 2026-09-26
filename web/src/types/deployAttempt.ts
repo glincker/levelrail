@@ -38,6 +38,8 @@ export interface DeployAttempt {
   image_digest?: string
   /** How image_digest was obtained, e.g. Resolved or PullFailedUsingCached. */
   digest_reason?: string
+  /** URL of this deploy's preview thumbnail, when one was captured. */
+  preview_image_url?: string
   /** What the controller last saw running: 'serving' or 'mismatch'. */
   rollout_state?: 'serving' | 'mismatch'
   running_image_id?: string

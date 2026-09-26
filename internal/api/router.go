@@ -351,6 +351,7 @@ type Router struct {
 	auditLog                       AuditStore                       // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
 	scheduledTasks                 ScheduledTaskStore               // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task needs no runner configuration, only actually running one does
 	scheduledTaskRunner            ScheduledTaskRunner              // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
+	preview                        PreviewService                   // nil is valid: preview routes return 501 (SetPreview)
 	pipelineStore                  PipelineStore                    // nil is valid: pipeline routes return 501 (WithPipelines)
 	pipelineRunner                 PipelineRunner                   // nil is valid: run/cancel/rerun return 501
 	pipelineEvents                 PipelineEvents                   // nil is valid: git events start no pipelines

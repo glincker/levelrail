@@ -674,6 +674,13 @@ func run(logger *slog.Logger) error {
 	// daemon on every tick.
 	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
 
+	previewLocalNodeID := ""
+	if meshCfg != nil {
+		previewLocalNodeID = meshCfg.localNodeID
+	}
+	previewManager := newPreviewManager(ctx, logger, db, client, agentDataDir, b.ShortName, previewLocalNodeID)
+	apiRouter.SetPreview(previewManager)
+
 	engine.SetStore(db)
 	engine.SetSource(dynamicSource(dynamicSourceDeps{
 		db:                           db,
@@ -696,6 +703,7 @@ func run(logger *slog.Logger) error {
 		ingressHTTPAddr:              ingressHTTPAddr(),
 		models:                       newModelDeps(),
 		lbRegistry:                   lbRegistry,
+		previewNotifier:              previewManager,
 	}))
 	startLocalGPUCollector(ctx, db, client, logger)
 
@@ -2957,6 +2965,7 @@ func publicHost() string {
 // field here is fixed for the process lifetime, only the store contents
 // dynamicSource reads change between reconcile passes.
 type dynamicSourceDeps struct {
+	previewNotifier  previewNotifier
 	db               *store.DB
 	runtime          docker.Runtime
 	driver           *ingressdriver.Driver
@@ -3139,7 +3148,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithNetworkPrefix(deps.networkPrefix),
 		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),
-		application.WithRolloutRecorder(deps.db),
+		application.WithRolloutRecorder(rolloutRecorderFor(deps.db, deps.previewNotifier)),
 		application.WithAppliedConfigRecorder(deps.db),
 		application.WithPreviousReleaseHold(previousReleaseHold(deps.logger)),
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
