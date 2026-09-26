@@ -4,6 +4,7 @@ import {
   canRedeploy,
   canRollbackTo,
   isInProgress,
+  statusView,
 } from './deploymentPresentation'
 
 export function redeployReason(d: Deployment): string {
@@ -19,9 +20,11 @@ export function rollbackReason(d: Deployment): string {
   return 'Only a release that finished ready can be rolled back to'
 }
 
-export function cancelReason(d: Deployment, supported: boolean): string {
-  if (!canCancel(d)) return 'Only queued or building deploys can be cancelled'
-  return supported ? '' : 'This server does not support cancelling deploys yet'
+export function cancelReason(d: Deployment): string {
+  if (canCancel(d)) return ''
+  if (d.is_live) return 'This deploy is already live, roll back instead'
+  if (d.status === 'canceled') return 'This deploy was already canceled'
+  return `This deploy already finished (${statusView(d.status).label.toLowerCase()})`
 }
 
 export function promoteReason(d: Deployment, hasProject: boolean): string {

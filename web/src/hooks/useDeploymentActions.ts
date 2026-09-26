@@ -8,10 +8,7 @@ import {
   rollbackImage,
 } from '../lib/deploymentPresentation'
 import { isPendingApproval } from '../queries/deploys'
-import {
-  isCancelUnsupported,
-  useDeploymentMutations,
-} from '../queries/deployments'
+import { useDeploymentMutations } from '../queries/deployments'
 
 export type DeploymentActionKind = 'redeploy' | 'rollback' | 'cancel'
 
@@ -23,34 +20,37 @@ export interface PendingAction {
 export function actionAllowed(
   kind: DeploymentActionKind,
   d: Deployment,
-  cancelSupported: boolean,
 ): boolean {
   if (kind === 'redeploy') return canRedeploy(d)
   if (kind === 'rollback') return canRollbackTo(d)
-  return canCancel(d) && cancelSupported
+  return canCancel(d)
 }
 
 export interface DeploymentActions {
   pending: PendingAction | null
   busy: boolean
-  cancelSupported: boolean
   request: (kind: DeploymentActionKind, d: Deployment) => void
   confirm: () => void
   dismiss: () => void
 }
 
-export function useDeploymentActions(): DeploymentActions {
+export function useDeploymentActions(
+  onViewApproval?: () => void,
+): DeploymentActions {
   const [pending, setPending] = useState<PendingAction | null>(null)
-  const [cancelSupported, setCancelSupported] = useState(true)
-  const { deployImage, cancel } = useDeploymentMutations()
+  const { deployImage, cancel, rollback } = useDeploymentMutations()
 
   const request = (kind: DeploymentActionKind, d: Deployment) => {
-    if (actionAllowed(kind, d, cancelSupported))
-      setPending({ kind, deployment: d })
+    if (actionAllowed(kind, d)) setPending({ kind, deployment: d })
   }
 
   const done = () => {
     setPending(null)
+  }
+
+  const failed = (error: Error) => {
+    toast.add({ title: error.message, type: 'error' })
+    done()
   }
 
   const confirm = () => {
@@ -60,50 +60,55 @@ export function useDeploymentActions(): DeploymentActions {
       cancel.mutate(d, {
         onSuccess: () => {
           toast.add({
-            title: `Cancelled the deploy of "${d.app}".`,
+            title: `Canceled the deploy of "${d.app}".`,
             type: 'success',
           })
           done()
         },
-        onError: (error) => {
-          if (isCancelUnsupported(error)) setCancelSupported(false)
-          toast.add({
-            title: isCancelUnsupported(error)
-              ? 'This server does not support cancelling deploys yet.'
-              : error.message,
-            type: 'error',
-          })
-          done()
-        },
+        onError: failed,
       })
       return
     }
-    const image = rollbackImage(d)
+    if (kind === 'rollback') {
+      rollback.mutate(d, {
+        onSuccess: (result) => {
+          if (isPendingApproval(result)) {
+            toast.add({
+              title: `Rolling back "${d.app}" is waiting for approval.`,
+              type: 'warning',
+              actionProps: onViewApproval
+                ? { children: 'View approval', onClick: onViewApproval }
+                : undefined,
+            })
+          } else {
+            toast.add({ title: `Rolling back "${d.app}".`, type: 'success' })
+          }
+          done()
+        },
+        onError: failed,
+      })
+      return
+    }
     deployImage.mutate(
-      { app: d.app, image },
+      { app: d.app, image: rollbackImage(d) },
       {
         onSuccess: (result) => {
-          const verb = kind === 'rollback' ? 'Rolling back' : 'Redeploying'
           toast.add({
             title: isPendingApproval(result)
-              ? `${verb} "${d.app}" is waiting for approval.`
-              : `${verb} "${d.app}".`,
+              ? `Redeploying "${d.app}" is waiting for approval.`
+              : `Redeploying "${d.app}".`,
             type: 'success',
           })
           done()
         },
-        onError: (error) => {
-          toast.add({ title: error.message, type: 'error' })
-          done()
-        },
+        onError: failed,
       },
     )
   }
 
   return {
     pending,
-    busy: deployImage.isPending || cancel.isPending,
-    cancelSupported,
+    busy: deployImage.isPending || cancel.isPending || rollback.isPending,
     request,
     confirm,
     dismiss: done,

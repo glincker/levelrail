@@ -88,7 +88,7 @@ export function flattenPages(data: DeploymentPages | undefined): Deployment[] {
   return data ? data.pages.flatMap((p) => p.items) : []
 }
 
-/** Keeps the "Building now" lane to in-progress rows, newest first. */
+/** Keeps the "Building now" lane to in-progress rows. */
 export function applyEventToLane(
   rows: Deployment[],
   ev: DeploymentEvent,
@@ -98,7 +98,19 @@ export function applyEventToLane(
   if (!isInProgress(dep)) {
     return without.length === rows.length ? rows : without
   }
-  const next = [...without, dep]
-  next.sort((a, b) => b.started_at.localeCompare(a.started_at))
-  return next
+  return sortLane([...without, dep])
+}
+
+/** Building rows first (newest first), then the queue in its own order. */
+export function sortLane(rows: Deployment[]): Deployment[] {
+  const rank = (d: Deployment) => (d.status === 'queued' ? 1 : 0)
+  return rows.slice().sort((a, b) => {
+    if (rank(a) !== rank(b)) return rank(a) - rank(b)
+    if (a.status === 'queued') {
+      const pa = a.queue_position ?? Number.MAX_SAFE_INTEGER
+      const pb = b.queue_position ?? Number.MAX_SAFE_INTEGER
+      if (pa !== pb) return pa - pb
+    }
+    return b.started_at.localeCompare(a.started_at)
+  })
 }

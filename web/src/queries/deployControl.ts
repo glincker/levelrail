@@ -15,7 +15,7 @@ import { applyTriggerDeployResult } from './deploys'
 import type { TriggerDeployResult } from './deploys'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
-async function postJson<T>(
+export async function postJson<T>(
   url: string,
   body: unknown,
   what: string,

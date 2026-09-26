@@ -14,6 +14,7 @@ import { RelativeTime } from '@/components/kit'
 import type { Deployment } from '../../types/deployment'
 import {
   durationLabel,
+  hasNote,
   headline,
   isRollback,
   shortId,
@@ -31,6 +32,7 @@ import { PromoteAppDialog } from '../PromoteAppDialog'
 import { DeployPreviewThumb } from '../DeployPreviewThumb'
 import { SupplyChainSection } from '../SupplyChainSection'
 import { DrawerActions } from './DrawerActions'
+import { DeploymentNote } from './DeploymentNote'
 import { EnvPill, StatusCell } from './DeploymentRow'
 import { ImageRefChip } from './ImageRefChip'
 
@@ -99,13 +101,13 @@ function FailureCard({ d }: { d: Deployment }) {
 function DrawerBody({
   d,
   now,
-  cancelSupported,
   onAction,
+  onOpenDeployment,
 }: {
   d: Deployment
   now: number
-  cancelSupported: boolean
   onAction: (kind: DeploymentActionKind, d: Deployment) => void
+  onOpenDeployment: (id: string) => void
 }) {
   const app = useQuery(appDetailQueryOptions(d.app))
   const [promoteOpen, setPromoteOpen] = useState(false)
@@ -122,12 +124,18 @@ function DrawerBody({
           <span className="text-xs font-medium text-tone-success">Live</span>
         )}
       </div>
-      {sub && d.status !== 'failed' && (
-        <p className="text-sm text-muted-foreground">{sub}</p>
+      {hasNote(d) ? (
+        <p>
+          <DeploymentNote d={d} onOpen={onOpenDeployment} />
+        </p>
+      ) : (
+        sub &&
+        d.status !== 'failed' && (
+          <p className="text-sm text-muted-foreground">{sub}</p>
+        )
       )}
       <DrawerActions
         d={d}
-        cancelSupported={cancelSupported}
         hasProject={Boolean(projectId)}
         onAction={onAction}
         onPromote={() => {
@@ -252,9 +260,9 @@ export interface DeploymentDrawerProps {
   deployment: Deployment | undefined
   searching: boolean
   now: number
-  cancelSupported: boolean
   onClose: () => void
   onAction: (kind: DeploymentActionKind, d: Deployment) => void
+  onOpenDeployment: (id: string) => void
 }
 
 export function DeploymentDrawer({
@@ -262,9 +270,9 @@ export function DeploymentDrawer({
   deployment,
   searching,
   now,
-  cancelSupported,
   onClose,
   onAction,
+  onOpenDeployment,
 }: DeploymentDrawerProps) {
   return (
     <Sheet
@@ -294,8 +302,8 @@ export function DeploymentDrawer({
             key={deployment.id}
             d={deployment}
             now={now}
-            cancelSupported={cancelSupported}
             onAction={onAction}
+            onOpenDeployment={onOpenDeployment}
           />
         ) : (
           !searching && (
