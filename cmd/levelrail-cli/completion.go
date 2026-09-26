@@ -183,6 +183,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"templates":        {subs: map[string]*cmdNode{"list": nil, "get": nil, "deploy": nil}},
 	"static-sites":     {subs: map[string]*cmdNode{"list": nil}},
 	"deploy-approvals": {subs: map[string]*cmdNode{"list": nil, "get": nil, "approve": nil, "reject": nil}},
+	"import":           nil,
 	"build":            {subs: map[string]*cmdNode{"detect": nil, "branches": nil}},
 }
 
