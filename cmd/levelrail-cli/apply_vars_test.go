@@ -168,6 +168,8 @@ func TestReadVarFile_RejectsDroppedLines(t *testing.T) {
 		ok      bool
 	}{
 		"valid":              {content: "# c\nexport A=1\nB=\"two\nlines\"\nC='x'\n", ok: true},
+		"escaped quote":      {content: "A=\"one\nsay \\\"hi\\\"\nend\"\nB=2\n", ok: true},
+		"bom":                {content: "\xef\xbb\xbfA=1\n", ok: true},
 		"missing separator":  {content: "A=1\nexportREGION eu\n"},
 		"invalid name":       {content: "A=1\n9BAD=x\n"},
 		"export without key": {content: "export =1\n"},

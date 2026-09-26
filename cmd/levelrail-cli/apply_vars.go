@@ -99,18 +99,16 @@ func readVarFile(path string) (map[string]string, error) {
 	return out, nil
 }
 
-// badVarFileLine finds an assignment whose name the dotenv parser would
-// silently drop. Lines inside a multiline quoted value are not checked.
+// badVarFileLine walks the file the way parseEnvFileBytes does and reports
+// the first line it would silently drop.
 func badVarFileLine(data []byte) (int, bool) {
-	inQuote := byte(0)
-	for i, raw := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
-		if inQuote != 0 {
-			if strings.IndexByte(raw, inQuote) >= 0 {
-				inQuote = 0
-			}
-			continue
-		}
-		line := strings.TrimSpace(raw)
+	all := strings.ReplaceAll(strings.TrimPrefix(string(data), "\xef\xbb\xbf"), "\r\n", "\n")
+	total := strings.Count(all, "\n")
+	for s := all; s != ""; {
+		lineNo := total - strings.Count(s, "\n") + 1
+		var line string
+		line, s = cutEnvLine(s)
+		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
@@ -119,12 +117,9 @@ func badVarFileLine(data []byte) (int, bool) {
 		}
 		key, val, found := strings.Cut(line, "=")
 		if !found || !validEnvKey(strings.TrimSpace(key)) {
-			return i + 1, false
+			return lineNo, false
 		}
-		val = strings.TrimSpace(val)
-		if len(val) > 0 && (val[0] == '"' || val[0] == '\'') && strings.IndexByte(val[1:], val[0]) < 0 {
-			inQuote = val[0]
-		}
+		_, s = parseEnvValue(strings.TrimSpace(val), s)
 	}
 	return 0, true
 }
