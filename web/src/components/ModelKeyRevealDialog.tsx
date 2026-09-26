@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
+import { curlExample } from '../lib/modelKeyForm'
 
 // Shows a model's API key exactly once. The server stores only a hash, so
 // closing this dialog is the last chance to copy it.
@@ -67,6 +68,27 @@ export function ModelKeyRevealDialog({
               Copy
             </Button>
           </div>
+          {baseUrl ? (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Try it</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    copy(curlExample(baseUrl, apiKey), 'curl command')
+                  }}
+                >
+                  <CopyIcon aria-hidden="true" />
+                  Copy curl
+                </Button>
+              </div>
+              <pre className="overflow-x-auto rounded-md border border-border bg-muted p-2 font-mono text-xs">
+                {curlExample(baseUrl, apiKey)}
+              </pre>
+            </div>
+          ) : null}
           {baseUrl ? (
             <p className="text-xs text-muted-foreground">
               OpenAI-compatible base URL:{' '}

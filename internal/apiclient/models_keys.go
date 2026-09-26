@@ -16,6 +16,7 @@ type ModelKeyResource struct {
 	Status      string     `json:"status"`
 	RPM         int        `json:"rpm"`
 	TPM         int        `json:"tpm"`
+	TPD         int        `json:"tpd"`
 	MaxParallel int        `json:"max_parallel"`
 	AllowPaths  []string   `json:"allow_paths"`
 	AllowModels []string   `json:"allow_models"`
@@ -25,6 +26,7 @@ type ModelKeyResource struct {
 	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
 	RevokedAt   *time.Time `json:"revoked_at,omitempty"`
 	LastUsedAt  *time.Time `json:"last_used_at,omitempty"`
+	CreatedBy   string     `json:"created_by,omitempty"`
 }
 
 // CreatedModelKeyResource is a key plus its one-time plaintext.
@@ -39,6 +41,7 @@ type CreateModelKeyRequest struct {
 	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
 	RPM         int        `json:"rpm,omitempty"`
 	TPM         int        `json:"tpm,omitempty"`
+	TPD         int        `json:"tpd,omitempty"`
 	MaxParallel int        `json:"max_parallel,omitempty"`
 	AllowPaths  []string   `json:"allow_paths,omitempty"`
 	AllowModels []string   `json:"allow_models,omitempty"`

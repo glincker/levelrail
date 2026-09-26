@@ -12,10 +12,12 @@ import {
 import { Button } from '@/components/ui/button'
 import { Field, FieldHint, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { InfoTip } from '@/components/kit'
 import { useCreateModelKey } from '../queries/modelKeys'
 import {
   buildKeyRequest,
   EMPTY_KEY_FORM,
+  EXPIRY_PRESETS,
   type KeyForm,
 } from '../lib/modelKeyForm'
 
@@ -84,9 +86,15 @@ export function CreateModelKeyDialog({
               }}
             />
           </Field>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <Field>
-              <FieldLabel htmlFor="key-rpm">Requests/min</FieldLabel>
+              <FieldLabel htmlFor="key-rpm">
+                Requests/min
+                <InfoTip label="About requests per minute">
+                  Hard limit. A request over it gets 429 with a Retry-After
+                  header. Empty means unlimited.
+                </InfoTip>
+              </FieldLabel>
               <Input
                 id="key-rpm"
                 inputMode="numeric"
@@ -97,7 +105,14 @@ export function CreateModelKeyDialog({
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="key-tpm">Tokens/min</FieldLabel>
+              <FieldLabel htmlFor="key-tpm">
+                Tokens/min
+                <InfoTip label="About tokens per minute">
+                  Soft limit, counted from finished responses. The request that
+                  crosses it still completes; later ones get 429 until the
+                  minute rolls over.
+                </InfoTip>
+              </FieldLabel>
               <Input
                 id="key-tpm"
                 inputMode="numeric"
@@ -108,7 +123,29 @@ export function CreateModelKeyDialog({
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="key-parallel">Parallel</FieldLabel>
+              <FieldLabel htmlFor="key-tpd">
+                Tokens/day
+                <InfoTip label="About tokens per day">
+                  Soft daily budget on a rolling 24 hour window, counted from
+                  finished responses. Empty means unlimited.
+                </InfoTip>
+              </FieldLabel>
+              <Input
+                id="key-tpd"
+                inputMode="numeric"
+                value={form.tpd}
+                onChange={(e) => {
+                  set('tpd', e.target.value)
+                }}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="key-parallel">
+                Parallel
+                <InfoTip label="About parallel requests">
+                  Most requests this key may run at the same time.
+                </InfoTip>
+              </FieldLabel>
               <Input
                 id="key-parallel"
                 inputMode="numeric"
@@ -120,11 +157,26 @@ export function CreateModelKeyDialog({
             </Field>
           </div>
           <FieldHint>
-            Tokens per minute is soft: it is enforced from metered responses, so
-            a request can overshoot it.
+            Token limits are soft: they are enforced from metered responses, so
+            a request can overshoot them.
           </FieldHint>
           <Field>
             <FieldLabel htmlFor="key-expires">Expires in (days)</FieldLabel>
+            <div className="flex flex-wrap gap-1.5">
+              {EXPIRY_PRESETS.map((p) => (
+                <Button
+                  key={p.label}
+                  type="button"
+                  size="xs"
+                  variant={form.expiresDays === p.days ? 'default' : 'outline'}
+                  onClick={() => {
+                    set('expiresDays', p.days)
+                  }}
+                >
+                  {p.label}
+                </Button>
+              ))}
+            </div>
             <Input
               id="key-expires"
               inputMode="decimal"

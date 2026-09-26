@@ -726,6 +726,16 @@ levelrail models gpus [flags]
 ```
 list GPU nodes with driver, VRAM, usage and nvidia runtime status
 
+```
+levelrail models preflight <repo> [flags]
+```
+check a Hugging Face repo before deploying: access, size, quantizations with a fit estimate, free disk
+
+```
+levelrail models cache list|prune [flags]
+```
+list cached model weights per node, or prune unused ones (`--dry-run` first)
+
 See [AI models](ai-models.md).
 
 ## Auth

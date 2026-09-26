@@ -40,9 +40,11 @@ type ModelKey struct {
 	ExpiresAt   *time.Time
 	RevokedAt   *time.Time
 	LastUsedAt  *time.Time
+	TPD         int
+	CreatedBy   string
 }
 
-const modelKeyColumns = `id, model_name, name, key_hash, key_prefix, rpm, tpm, max_parallel, allow_paths, allow_models, replaced_by, created_at, expires_at, revoked_at, last_used_at`
+const modelKeyColumns = `id, model_name, name, key_hash, key_prefix, rpm, tpm, max_parallel, allow_paths, allow_models, replaced_by, created_at, expires_at, revoked_at, last_used_at, tpd, created_by`
 
 type execer interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
@@ -57,9 +59,9 @@ func insertModelKey(ctx context.Context, ex execer, k ModelKey) error {
 	if err != nil {
 		return fmt.Errorf("marshal allow models: %w", err)
 	}
-	_, err = ex.ExecContext(ctx, `INSERT INTO model_keys (`+modelKeyColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	_, err = ex.ExecContext(ctx, `INSERT INTO model_keys (`+modelKeyColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		k.ID, k.ModelName, k.Name, k.KeyHash, k.KeyPrefix, k.RPM, k.TPM, k.MaxParallel, string(paths), string(models),
-		k.ReplacedBy, formatTime(k.CreatedAt), timeOrEmpty(k.ExpiresAt), timeOrEmpty(k.RevokedAt), timeOrEmpty(k.LastUsedAt))
+		k.ReplacedBy, formatTime(k.CreatedAt), timeOrEmpty(k.ExpiresAt), timeOrEmpty(k.RevokedAt), timeOrEmpty(k.LastUsedAt), k.TPD, k.CreatedBy)
 	if err != nil {
 		if strings.Contains(err.Error(), "model_keys.model_name") {
 			return ErrModelKeyExists
@@ -94,7 +96,7 @@ func scanModelKey(scan func(dest ...any) error) (*ModelKey, error) {
 		createdAt, expiresAt, revokedAt, usedAt string
 	)
 	if err := scan(&k.ID, &k.ModelName, &k.Name, &k.KeyHash, &k.KeyPrefix, &k.RPM, &k.TPM, &k.MaxParallel, &paths, &models,
-		&k.ReplacedBy, &createdAt, &expiresAt, &revokedAt, &usedAt); err != nil {
+		&k.ReplacedBy, &createdAt, &expiresAt, &revokedAt, &usedAt, &k.TPD, &k.CreatedBy); err != nil {
 		return nil, err
 	}
 	if err := json.Unmarshal([]byte(paths), &k.AllowPaths); err != nil {

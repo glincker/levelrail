@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { CpuIcon, RobotIcon } from '@phosphor-icons/react/dist/ssr'
 import { DeployModelDialog } from '../../components/DeployModelDialog'
 import { GpuNodeCard } from '../../components/GpuNodeCard'
+import { ModelCacheCard } from '../../components/ModelCacheCard'
 import { ModelKeyRevealDialog } from '../../components/ModelKeyRevealDialog'
 import {
   MODEL_LIST_GRID,
@@ -150,6 +151,15 @@ function ModelsPage() {
           Models
         </h2>
         <ModelList />
+      </section>
+      <section aria-labelledby="model-cache-heading" className="space-y-3">
+        <h2
+          id="model-cache-heading"
+          className="text-sm font-medium text-foreground"
+        >
+          Model cache
+        </h2>
+        <ModelCacheCard />
       </section>
       {created ? (
         <ModelKeyRevealDialog

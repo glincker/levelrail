@@ -34,6 +34,7 @@ const maxAllowEntries = 50
 type KeyLimits struct {
 	RPM         int
 	TPM         int
+	TPD         int
 	MaxParallel int
 	AllowPaths  []string
 	AllowModels []string
@@ -42,6 +43,7 @@ type KeyLimits struct {
 // CreateKeyInput is a request for a new virtual key.
 type CreateKeyInput struct {
 	Name      string
+	CreatedBy string
 	ExpiresAt *time.Time
 	Limits    KeyLimits
 }
@@ -125,7 +127,7 @@ func (s *Service) ListKeys(ctx context.Context, model string) ([]KeyView, error)
 
 func validateLimits(engine string, l KeyLimits) error {
 	maxLimit := envInt(envMaxLimit, 10_000_000)
-	for name, v := range map[string]int{"rpm": l.RPM, "tpm": l.TPM, "max_parallel": l.MaxParallel} {
+	for name, v := range map[string]int{"rpm": l.RPM, "tpm": l.TPM, "tpd": l.TPD, "max_parallel": l.MaxParallel} {
 		if v < 0 || (maxLimit > 0 && v > maxLimit) {
 			return fmt.Errorf("%w: %s must be between 0 and %d", ErrInvalid, name, maxLimit)
 		}
@@ -184,11 +186,11 @@ func (s *Service) CreateKey(ctx context.Context, model string, in CreateKeyInput
 	if err := s.checkKeyCapacity(ctx, model); err != nil {
 		return CreatedKey{}, err
 	}
-	return s.insertKey(ctx, model, in.Name, in.ExpiresAt, in.Limits, nil, nil)
+	return s.insertKey(ctx, model, in.Name, in.CreatedBy, in.ExpiresAt, in.Limits, nil, nil)
 }
 
 // insertKey creates the key, or with old set rotates old into it.
-func (s *Service) insertKey(ctx context.Context, model, name string, expires *time.Time, l KeyLimits, old *store.ModelKey, graceUntil *time.Time) (CreatedKey, error) {
+func (s *Service) insertKey(ctx context.Context, model, name, createdBy string, expires *time.Time, l KeyLimits, old *store.ModelKey, graceUntil *time.Time) (CreatedKey, error) {
 	plain, hash, prefix, err := NewAPIKey()
 	if err != nil {
 		return CreatedKey{}, err
@@ -199,7 +201,7 @@ func (s *Service) insertKey(ctx context.Context, model, name string, expires *ti
 	}
 	now := time.Now().UTC()
 	k := store.ModelKey{ID: id, ModelName: model, Name: name, KeyHash: hash, KeyPrefix: prefix, RPM: l.RPM, TPM: l.TPM,
-		MaxParallel: l.MaxParallel, AllowPaths: l.AllowPaths, AllowModels: l.AllowModels, CreatedAt: now, ExpiresAt: expires}
+		TPD: l.TPD, CreatedBy: createdBy, MaxParallel: l.MaxParallel, AllowPaths: l.AllowPaths, AllowModels: l.AllowModels, CreatedAt: now, ExpiresAt: expires}
 	if old == nil {
 		err = s.store.CreateModelKey(ctx, k)
 	} else {
@@ -235,7 +237,7 @@ func KeyRotationGrace() time.Duration { return envDuration(envKeyGrace, time.Hou
 // RotateKeyByID issues a replacement for a key with the same name, limits
 // and expiry. The old key keeps working for grace (KeyRotationGrace when
 // nil, no grace when zero) and is then dead.
-func (s *Service) RotateKeyByID(ctx context.Context, model, id string, grace *time.Duration) (CreatedKey, error) {
+func (s *Service) RotateKeyByID(ctx context.Context, model, id, actor string, grace *time.Duration) (CreatedKey, error) {
 	old, err := s.store.GetModelKey(ctx, model, id)
 	if err != nil {
 		if errors.Is(err, store.ErrModelKeyNotFound) {
@@ -259,6 +261,6 @@ func (s *Service) RotateKeyByID(ctx context.Context, model, id string, grace *ti
 		t := now.Add(g)
 		until = &t
 	}
-	l := KeyLimits{RPM: old.RPM, TPM: old.TPM, MaxParallel: old.MaxParallel, AllowPaths: old.AllowPaths, AllowModels: old.AllowModels}
-	return s.insertKey(ctx, model, old.Name, old.ExpiresAt, l, old, until)
+	l := KeyLimits{RPM: old.RPM, TPM: old.TPM, TPD: old.TPD, MaxParallel: old.MaxParallel, AllowPaths: old.AllowPaths, AllowModels: old.AllowModels}
+	return s.insertKey(ctx, model, old.Name, actor, old.ExpiresAt, l, old, until)
 }

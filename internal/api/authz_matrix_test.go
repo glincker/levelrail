@@ -59,6 +59,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/pipelines/validate":    "validates YAML, persists nothing",
 	"POST /api/v1/apps/{name}/preflight": "read-only probes of the stored app config, persists nothing",
+	"POST /api/v1/models/preflight":      "queries the public Hugging Face Hub with a caller-supplied token, persists nothing",
 	"POST /api/v1/apply/plan":            "computes a plan from live reads, persists nothing",
 	"POST /api/v1/prometheus/read":       "Prometheus remote read is a POST but only queries, gated by AbilityRead",
 }
