@@ -627,6 +627,7 @@ func run(logger *slog.Logger) error {
 
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
+	startHeldDeployReleaser(ctx, logger, db, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
@@ -1649,7 +1650,10 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithAppStore(db),
 		deploy.WithVaultConfigChecker(db),
 		deploy.WithLoadBalancerStore(db),
+		deploy.WithOrderedStore(db),
+		deploy.WithAttemptRecorder(db),
 	}
+	deployOpts = append(deployOpts, digestResolverOptions(logger, db, secretsManager)...)
 	if secretsManager != nil {
 		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager), deploy.WithBuildCache(newBuildCache(logger, db, secretsManager)))
 	}
@@ -2001,6 +2005,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithPublicHost(publicHost()),
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
+		api.WithDeploySafety(db, client),
 		api.WithLogBroadcaster(logBroadcaster),
 		// emailSender is always non-nil (run() builds it unconditionally):
 		// forgot-password always exists, it just fails clearly at send
@@ -3165,6 +3170,8 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithNetworkPrefix(deps.networkPrefix),
 		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),
+		application.WithRolloutRecorder(deps.db),
+		application.WithPreviousReleaseHold(previousReleaseHold(deps.logger)),
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
 		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
 	}
