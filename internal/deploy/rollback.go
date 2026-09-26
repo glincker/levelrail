@@ -6,64 +6,99 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// ImageDeployStore is the narrow store surface TriggerImageDeploy needs:
-// point a service's desired image at a new tag and record the
-// deploy_attempts row for it. *store.DB satisfies this structurally.
+// ImageDeployStore is the narrow store surface an image deploy trigger
+// needs. *store.DB satisfies this structurally.
 type ImageDeployStore interface {
 	SaveDesiredService(ctx context.Context, svc store.DesiredService) error
 	SaveDeployAttempt(ctx context.Context, a store.DeployAttempt) error
 	FinishDeployAttempt(ctx context.Context, id, status string, finishedAt time.Time, errMsg string) error
 }
 
-// ReconcileNudger wakes the reconcile loop after a desired-state write,
-// the same nudge every other deploy-trigger path already performs after
-// its own SaveDesiredService call. *reconcile.Engine satisfies this
-// structurally, the same "not imported directly" boundary this
-// package's other narrow interfaces already draw.
+// Sequencer hands out per-service trigger order.
+type Sequencer interface {
+	NextDeploySequence(ctx context.Context, serviceName string) (int64, error)
+}
+
+// ReconcileNudger wakes the reconcile loop after a desired-state write.
 type ReconcileNudger interface {
 	Nudge()
 }
 
-// TriggerImageDeploy points existing's desired image at image, records a
-// deploy_attempts row for it (source), and wakes the reconciler: the
-// exact sequence internal/api/deploys.go's handleTriggerDeploy performs
-// for every manual redeploy or manual rollback (POST
-// /api/v1/apps/{name}/deploys). Factored out here so an automatic
-// trigger, the crashloop auto-rollback in internal/alerting, drives
-// production state through the identical path instead of a second,
-// divergent one. nudger may be nil, in which case the caller relies on
-// the next resync tick instead, the same "absence degrades, never
-// errors" shape internal/api.Router's own reconcileNudger field follows.
-func TriggerImageDeploy(ctx context.Context, st ImageDeployStore, nudger ReconcileNudger, existing store.DesiredService, image, source string, logger *slog.Logger) (store.DesiredService, error) {
+// ImageTrigger points a service at an image with no build step: manual
+// redeploys and rollbacks, pipeline deploy steps and crashloop rollback.
+// Every optional field degrades to the pre-digest behavior when nil.
+type ImageTrigger struct {
+	Store    ImageDeployStore
+	Nudger   ReconcileNudger
+	Resolver docker.ImageResolver
+	// Ordered and Sequencer together enable the stale-deploy guard.
+	Ordered   OrderedStore
+	Sequencer Sequencer
+	Logger    *slog.Logger
+	Source    string
+	// RequireFresh fails instead of deploying a cached image (deploy --pull).
+	RequireFresh bool
+	// Automatic subjects the deploy to the stale guard; manual ones are exempt.
+	Automatic bool
+	// Auth authenticates digest resolution against a private registry.
+	Auth *docker.RegistryAuth
+}
+
+// Deploy resolves image, writes it as existing's desired image, records a
+// deploy attempt carrying the digest, and nudges the reconciler.
+func (t ImageTrigger) Deploy(ctx context.Context, existing store.DesiredService, image string) (store.DesiredService, error) {
+	logger := t.Logger
 	if logger == nil {
 		logger = slog.Default()
 	}
-
-	updated := existing
-	updated.Image = image
-	updated.EnvDirty = false
-	if err := st.SaveDesiredService(ctx, updated); err != nil {
+	resolution, err := ResolveImage(ctx, t.Resolver, image, t.Auth, t.RequireFresh)
+	if err != nil {
 		return store.DesiredService{}, fmt.Errorf("deploy: trigger image deploy for %q: %w", existing.Name, err)
 	}
 
-	recordImageDeployAttempt(ctx, st, updated, image, source, logger)
+	updated := existing
+	resolution.apply(&updated)
+	updated.EnvDirty = false
 
-	if nudger != nil {
-		nudger.Nudge()
+	var seq int64
+	if t.Sequencer != nil && t.Ordered != nil {
+		if seq, err = t.Sequencer.NextDeploySequence(ctx, existing.Name); err != nil {
+			return store.DesiredService{}, fmt.Errorf("deploy: trigger image deploy for %q: %w", existing.Name, err)
+		}
+		order := store.DeployOrder{Sequence: seq, Automatic: t.Automatic}
+		err = t.Ordered.SaveDesiredServiceOrdered(ctx, updated, order, CheckOrder)
+	} else {
+		err = t.Store.SaveDesiredService(ctx, updated)
+	}
+	if err != nil {
+		return store.DesiredService{}, fmt.Errorf("deploy: trigger image deploy for %q: %w", existing.Name, err)
+	}
+
+	source := t.Source
+	if source == "" {
+		source = store.DeployAttemptSourceImage
+	}
+	recordImageDeployAttempt(ctx, t.Store, updated, resolution, seq, source, logger)
+
+	if t.Nudger != nil {
+		t.Nudger.Nudge()
 	}
 	return updated, nil
 }
 
-// recordImageDeployAttempt saves and immediately finishes (as succeeded)
-// a deploy_attempts row for a trigger with no build step to wait on,
-// mirroring internal/api/deploys.go's recordInstantDeployAttempt. A
-// failure here is logged, not returned: the desired-state write already
-// succeeded, so a history-tracking hiccup must never turn an otherwise-
-// successful deploy trigger into a caller-visible failure.
-func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc store.DesiredService, image, source string, logger *slog.Logger) {
+// TriggerImageDeploy is ImageTrigger without digest resolution or ordering,
+// for callers deploying an image already taken from deploy history.
+func TriggerImageDeploy(ctx context.Context, st ImageDeployStore, nudger ReconcileNudger, existing store.DesiredService, image, source string, logger *slog.Logger) (store.DesiredService, error) {
+	return ImageTrigger{Store: st, Nudger: nudger, Logger: logger, Source: source}.Deploy(ctx, existing, image)
+}
+
+// recordImageDeployAttempt saves and immediately finishes an attempt for a
+// trigger with no build. Failures are logged: desired state already landed.
+func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc store.DesiredService, res ImageResolution, seq int64, source string, logger *slog.Logger) {
 	id, err := store.NewDeployAttemptID()
 	if err != nil {
 		logger.Error("deploy: record deploy attempt: mint id failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
@@ -71,28 +106,26 @@ func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc stor
 	}
 	now := time.Now()
 	if err := st.SaveDeployAttempt(ctx, store.DeployAttempt{
-		ID: id, ServiceName: svc.Name, Image: image,
+		ID: id, ServiceName: svc.Name, Image: svc.Image,
 		Source: source,
 		Status: store.DeployAttemptStatusRunning, StartedAt: now,
-		Snapshot: store.NewDeployAttemptSnapshot(svc),
+		Snapshot:    store.NewDeployAttemptSnapshot(svc),
+		ImageDigest: res.Digest, DigestReason: res.Reason, Sequence: seq,
 	}); err != nil {
 		logger.Error("deploy: record deploy attempt: save failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return
+	}
+	if res.Note != "" {
+		logger.Warn("deploy: image resolved without the registry", slog.String("attempt_id", id), slog.String("reason", res.Reason), slog.String("registry_error", res.Note))
 	}
 	if err := st.FinishDeployAttempt(ctx, id, store.DeployAttemptStatusSucceeded, time.Now(), ""); err != nil {
 		logger.Error("deploy: record deploy attempt: finish failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 	}
 }
 
-// PreviousKnownGoodImage returns the most recent successful deploy
-// attempt's image for a service whose currentImage is currentImage,
-// scanning attempts newest-first (ListDeployAttempts' own order) for the
-// first successful attempt whose image actually differs. ok is false
-// when no such attempt exists, either because this is the service's
-// first-ever deploy or because it has already been rolled back to its
-// oldest recorded image: the signal a caller (crashloop auto-rollback)
-// uses to leave a crashloop to alert-only rather than rolling back to
-// nothing.
+// PreviousKnownGoodImage returns the newest succeeded attempt's image that
+// differs from currentImage, scanning attempts newest first. ok is false
+// when there is nothing to roll back to.
 func PreviousKnownGoodImage(attempts []store.DeployAttempt, currentImage string) (image string, ok bool) {
 	for _, a := range attempts {
 		if a.Status != store.DeployAttemptStatusSucceeded {
