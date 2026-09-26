@@ -156,6 +156,9 @@ type AppliedConfig struct {
 	EnvHashes   map[string]string
 	Fields      map[string]string
 	AppliedAt   time.Time
+	// HeldUntil is when the held previous release is due for removal, zero
+	// when none is held.
+	HeldUntil time.Time
 }
 
 // SaveAppliedConfig replaces name's applied config snapshot.
@@ -187,17 +190,37 @@ func (db *DB) SaveAppliedConfig(ctx context.Context, c AppliedConfig) error {
 	return nil
 }
 
+// SetPreviousReleaseHeldUntil records when name's held previous release is
+// due for removal; the zero time clears it.
+func (db *DB) SetPreviousReleaseHeldUntil(ctx context.Context, name string, until time.Time) error {
+	value := ""
+	if !until.IsZero() {
+		value = until.UTC().Format(appEventTimeFormat)
+	}
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO applied_config (service_name, release, applied_at, held_until)
+		VALUES (?, '', ?, ?)
+		ON CONFLICT (service_name) DO UPDATE SET held_until = excluded.held_until
+	`, name, time.Now().UTC().Format(appEventTimeFormat), value)
+	if err != nil {
+		return fmt.Errorf("store: set previous release hold for %q: %w", name, err)
+	}
+	return nil
+}
+
 // GetAppliedConfig returns name's snapshot, or nil when none was recorded
-// (a container created before snapshots existed).
+// (a container created before snapshots existed). A row that only carries a
+// hold has an empty Release.
 func (db *DB) GetAppliedConfig(ctx context.Context, name string) (*AppliedConfig, error) {
 	var (
 		c         AppliedConfig
 		hashes    string
 		fields    string
 		appliedAt string
+		heldUntil string
 	)
-	err := db.QueryRowContext(ctx, `SELECT service_name, release, env_hashes, fields, applied_at FROM applied_config WHERE service_name = ?`, name).
-		Scan(&c.ServiceName, &c.Release, &hashes, &fields, &appliedAt)
+	err := db.QueryRowContext(ctx, `SELECT service_name, release, env_hashes, fields, applied_at, held_until FROM applied_config WHERE service_name = ?`, name).
+		Scan(&c.ServiceName, &c.Release, &hashes, &fields, &appliedAt, &heldUntil)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -215,6 +238,11 @@ func (db *DB) GetAppliedConfig(ctx context.Context, name string) (*AppliedConfig
 		return nil, fmt.Errorf("store: parse applied config time %q: %w", appliedAt, err)
 	}
 	c.AppliedAt = t
+	if heldUntil != "" {
+		if h, err := time.Parse(appEventTimeFormat, heldUntil); err == nil {
+			c.HeldUntil = h
+		}
+	}
 	return &c, nil
 }
 

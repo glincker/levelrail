@@ -3140,6 +3140,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),
 		application.WithRolloutRecorder(deps.db),
+		application.WithAppliedConfigRecorder(deps.db),
 		application.WithPreviousReleaseHold(previousReleaseHold(deps.logger)),
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
 		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),

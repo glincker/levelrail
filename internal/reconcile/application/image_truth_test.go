@@ -252,7 +252,10 @@ func TestHeldFilter(t *testing.T) {
 		{ID: "3", Name: target + "-r2", Running: true, Created: now.Add(-time.Hour)},
 		{ID: "4", Name: ContainerName("web", "img:v0", ""), Running: false, Created: now.Add(-2 * time.Hour)},
 	}
-	due := c.heldFilter(all, []string{target}, now)
+	due, heldUntil := c.heldFilter(all, []string{target}, now)
+	if want := all[0].Created.Add(time.Minute); !heldUntil.Equal(want) {
+		t.Fatalf("heldUntil = %v, want %v", heldUntil, want)
+	}
 	ids := map[string]bool{}
 	for _, cs := range due {
 		ids[cs.ID] = true
@@ -260,7 +263,7 @@ func TestHeldFilter(t *testing.T) {
 	if ids["2"] || !ids["3"] || !ids["4"] || ids["1"] {
 		t.Fatalf("due = %v, want excess replica and stopped container only", ids)
 	}
-	if due := c.heldFilter(all, []string{target}, now.Add(2*time.Minute)); len(due) != 3 {
-		t.Fatalf("after the hold, due = %d, want 3", len(due))
+	if due, until := c.heldFilter(all, []string{target}, now.Add(2*time.Minute)); len(due) != 3 || !until.IsZero() {
+		t.Fatalf("after the hold, due = %d until = %v, want 3 and none", len(due), until)
 	}
 }

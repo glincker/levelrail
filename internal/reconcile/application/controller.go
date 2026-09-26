@@ -29,6 +29,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -238,9 +239,11 @@ type Controller struct {
 	egressReadyBudget       time.Duration
 	egressReadyPollInterval time.Duration
 
-	rollouts            RolloutRecorder // nil is valid: rollout state just isn't recorded
-	servingImageID      string          // image ID of the last replica proven ready this pass
-	previousReleaseHold time.Duration   // 0 removes the previous release at cutover
+	rollouts            RolloutRecorder       // nil is valid: rollout state just isn't recorded
+	servingImageID      string                // image ID of the last replica proven ready this pass
+	previousReleaseHold time.Duration         // 0 removes the previous release at cutover
+	applied             AppliedConfigRecorder // nil is valid: pending changes just aren't tracked
+	lastHeldUntil       time.Time
 }
 
 // Option configures optional Controller behavior.
@@ -728,6 +731,7 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 			// With a hold configured the last old container stays as the
 			// held previous release.
 			if len(stale) > 1 || (len(stale) == 1 && c.previousReleaseHold <= 0) {
+				sort.SliceStable(stale, func(i, j int) bool { return stale[i].Created.Before(stale[j].Created) })
 				_ = c.removeContainers(ctx, stale[:1])
 			}
 		}
@@ -996,6 +1000,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if err != nil {
 		return fmt.Errorf("create %q: %w", name, err)
 	}
+	c.recordApplied(ctx, name, desired)
 	if err := c.runtime.Start(ctx, id); err != nil {
 		return fmt.Errorf("start %q after create: %w", name, err)
 	}
