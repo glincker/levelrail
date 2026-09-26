@@ -1039,6 +1039,11 @@ func (rt *Router) deleteApp(ctx context.Context, name string) error {
 			rt.logger.Warn("api: delete app: remove previews failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 	}
+	if rt.supplyChain != nil {
+		if err := rt.supplyChain.DeleteApp(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove supply chain data failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
 	if existing.AppID != "" {
 		rt.deleteAppIfOrphaned(ctx, existing.AppID)
 	}

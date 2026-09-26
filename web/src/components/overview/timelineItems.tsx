@@ -7,6 +7,7 @@ import {
   PauseIcon,
   PlayIcon,
   RocketLaunchIcon,
+  ShieldWarningIcon,
   SnowflakeIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Tone } from '@/components/kit'
@@ -27,6 +28,7 @@ const KIND_ICON: Record<TimelineKind, React.ReactNode> = {
   config_change: <GearIcon />,
   scale: <ArrowsOutIcon />,
   freeze_override: <SnowflakeIcon />,
+  scan_gate_override: <ShieldWarningIcon />,
   suspend: <PauseIcon />,
   resume: <PlayIcon />,
 }

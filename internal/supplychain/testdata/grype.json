@@ -1,0 +1,12 @@
+{
+  "matches": [
+    {"vulnerability": {"id": "CVE-2024-0001", "severity": "Critical", "description": "openssl: remote code execution\nsecond line", "fix": {"versions": ["3.1.5"], "state": "fixed"}},
+     "artifact": {"name": "openssl", "version": "3.1.4"}},
+    {"vulnerability": {"id": "CVE-2024-0003", "severity": "High", "fix": {"versions": [], "state": "not-fixed"}},
+     "artifact": {"name": "express", "version": "4.19.2"}},
+    {"vulnerability": {"id": "CVE-2024-0007", "severity": "Negligible", "fix": {"versions": ["1.0", "2.0"], "state": "fixed"}},
+     "artifact": {"name": "tiny", "version": "0.9"}},
+    {"vulnerability": {"id": "CVE-2024-0008", "severity": "Unknown"},
+     "artifact": {"name": "odd", "version": "1"}}
+  ]
+}

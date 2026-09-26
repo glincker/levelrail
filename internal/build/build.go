@@ -21,6 +21,9 @@ type Result struct {
 	// ExporterResponse is BuildKit's raw exporter metadata (e.g. the
 	// resulting image ID), passed through for callers that need it.
 	ExporterResponse map[string]string
+
+	// Attestations holds the SBOM and provenance of a build run with Request.Attest.
+	Attestations Attestations
 }
 
 // ProgressEvent is one structured build progress update, deliberately
@@ -117,8 +120,16 @@ func (c *Client) solveDockerfile(ctx context.Context, req Request, cache CacheCo
 func (c *Client) runSolve(ctx context.Context, req Request, cache CacheConfig, out io.Writer, progress func(ProgressEvent)) (*Result, error) {
 	start := time.Now()
 
+	var sniffer *attestSniffer
+	if req.Attest {
+		sniffer = newAttestSniffer(0)
+		out = io.MultiWriter(out, sniffer)
+	}
 	solveOpt, err := newSolveOpt(req, cache, nopWriteCloser{out})
 	if err != nil {
+		if sniffer != nil {
+			sniffer.Finish()
+		}
 		return nil, err
 	}
 
@@ -139,10 +150,17 @@ func (c *Client) runSolve(ctx context.Context, req Request, cache CacheConfig, o
 		return nil
 	})
 
-	if err := eg.Wait(); err != nil {
+	err = eg.Wait()
+	var att Attestations
+	if sniffer != nil {
+		att = sniffer.Finish()
+	}
+	if err != nil {
 		return nil, err
 	}
-	return newResult(req.Tag, start, solveResp), nil
+	res := newResult(req.Tag, start, solveResp)
+	res.Attestations = att
+	return res, nil
 }
 
 // solveAndLoad runs solve and streams the docker-save tar it produces into

@@ -1,0 +1,11 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "components": [
+    {"type": "library", "name": "lodash", "version": "4.17.21", "purl": "pkg:npm/lodash@4.17.21", "licenses": [{"license": {"id": "MIT"}}]},
+    {"type": "library", "name": "openssl", "version": "3.1.4", "purl": "pkg:apk/alpine/openssl@3.1.4", "licenses": [{"expression": "Apache-2.0"}]},
+    {"type": "application", "name": "custom-tool", "version": "1.0.0", "licenses": [{"license": {"name": "Proprietary"}}]},
+    {"type": "library", "name": "nolicense", "version": "0.1.0", "purl": "pkg:golang/example.com/nolicense@0.1.0"},
+    {"type": "library", "version": "9.9.9"}
+  ]
+}

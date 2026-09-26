@@ -13,6 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/supplychain"
 )
 
 // This file is the real deploy-attempt history and log surface: a
@@ -185,6 +186,9 @@ type deployAttemptResource struct {
 	Reason         string `json:"reason,omitempty"`
 	// PreviewImageURL is set when a deploy preview thumbnail exists.
 	PreviewImageURL string `json:"preview_image_url,omitempty"`
+	// SBOMPackages and VulnCounts are set when the build produced an SBOM and it was scanned.
+	SBOMPackages *int                `json:"sbom_packages,omitempty"`
+	VulnCounts   *supplychain.Counts `json:"vuln_counts,omitempty"`
 }
 
 func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
@@ -242,11 +246,20 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 		}
 	}
 	previewURLs := rt.previewImageURLs(r.Context(), name)
+	ids := make([]string, 0, len(attempts))
+	for _, a := range attempts {
+		ids = append(ids, a.ID)
+	}
+	supply := rt.supplyChainRecords(r.Context(), ids)
 	out := make([]deployAttemptResource, 0, len(attempts))
 	for _, a := range attempts {
 		res := toDeployAttemptResource(a)
 		res.CacheWarning = warnings[a.ID]
 		res.PreviewImageURL = previewURLs[a.ID]
+		if rec, ok := supply[a.ID]; ok {
+			n, counts := supplyChainRecordSummary(rec)
+			res.SBOMPackages, res.VulnCounts = &n, counts
+		}
 		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
