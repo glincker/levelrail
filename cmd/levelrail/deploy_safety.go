@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/api"
@@ -19,7 +20,23 @@ const (
 	defaultHeldReleaseInterval  = 30 * time.Second
 	previousReleaseHoldEnv      = "APP_DEPLOY_PREVIOUS_RELEASE_HOLD"
 	heldDeployReleaseIntervalEv = "APP_DEPLOY_HELD_RELEASE_INTERVAL"
+	deployMaxConcurrentEnv      = "APP_DEPLOY_MAX_CONCURRENT"
 )
+
+// deployMaxConcurrent is how many deploys may run at once across all apps;
+// 0 (the default) means unlimited.
+func deployMaxConcurrent(logger *slog.Logger) int {
+	raw := os.Getenv(deployMaxConcurrentEnv)
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 0 {
+		logger.Warn("invalid deploy concurrency limit, using unlimited", slog.String("env", deployMaxConcurrentEnv), slog.String("value", raw))
+		return 0
+	}
+	return n
+}
 
 // envDurationOr parses name as a duration, falling back to def when unset
 // or invalid. "0" is a valid value.
@@ -51,6 +68,22 @@ func startHeldDeployReleaser(ctx context.Context, logger *slog.Logger, db *store
 	}
 	r := deploy.Releaser{Store: db, Freeze: db, Handlers: rt.ReleaseHandlers(), Logger: logger}
 	go r.Run(ctx, interval)
+	go runDeployQueueDrain(ctx, rt, interval)
+}
+
+// runDeployQueueDrain restarts queued deploys a restart or a missed finish
+// left waiting.
+func runDeployQueueDrain(ctx context.Context, rt *api.Router, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		rt.DrainDeployQueue(ctx)
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
 }
 
 // digestResolverOptions gives the build pipeline a docker client to resolve

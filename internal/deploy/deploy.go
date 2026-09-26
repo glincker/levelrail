@@ -167,6 +167,9 @@ type Request struct {
 	// RequireFreshImage fails an image deploy whose registry is unreachable
 	// instead of falling back to the cached image.
 	RequireFreshImage bool
+	// Commit, when set, runs right before desired state is written and can
+	// veto it (ErrCanceled), the last point a deploy is cancelable.
+	Commit func() error
 }
 
 // Pipeline builds a service (when its build type requires a build) and
