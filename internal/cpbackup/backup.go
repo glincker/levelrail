@@ -36,6 +36,20 @@ func (s *Service) tempDir() (string, error) {
 	return dir, nil
 }
 
+// CleanTemp removes work directories a crashed run left behind. They can hold a
+// plaintext snapshot, so it runs at startup when no run can be in progress.
+func (s *Service) CleanTemp() {
+	matches, err := filepath.Glob(filepath.Join(s.DataDir, DirName, ".offbox-*"))
+	if err != nil {
+		return
+	}
+	for _, m := range matches {
+		if err := os.RemoveAll(m); err != nil {
+			s.logger().Warn("remove stale off-box work directory", slog.String("path", m), slog.String("error", err.Error()))
+		}
+	}
+}
+
 // RunBackup snapshots the database, encrypts it to the configured recipients
 // and uploads it with a manifest. slot names the schedule tick (zero for a
 // manual run): a slot whose manifest already exists is skipped, and one whose

@@ -77,6 +77,7 @@ func (s *Service) UpdateConfig(ctx context.Context, u ConfigUpdate) error {
 
 // Run checks for due backups and drills every Opts.Tick until ctx is done.
 func (s *Service) Run(ctx context.Context) {
+	s.CleanTemp()
 	t := time.NewTicker(s.Opts.Tick)
 	defer t.Stop()
 	for {

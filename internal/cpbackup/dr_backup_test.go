@@ -226,3 +226,25 @@ func TestUpdateConfig_Validation(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCleanTemp_RemovesLeftoverWorkDirs(t *testing.T) {
+	e := newDREnv(t)
+	stale := filepath.Join(e.dir, DirName, ".offbox-crashed")
+	if err := os.MkdirAll(stale, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(stale, "snapshot.db"), "plaintext snapshot")
+	keep := filepath.Join(e.dir, DirName, "levelrail-20260101T000000Z.db")
+	writeFile(t, keep, "a real local snapshot")
+
+	e.svc.CleanTemp()
+	if _, err := os.Stat(stale); !os.IsNotExist(err) {
+		t.Fatal("stale work directory survived")
+	}
+	if _, err := os.Stat(keep); err != nil {
+		t.Fatal("cleanup removed a real snapshot")
+	}
+	e.configure(nil)
+	e.backup()
+	assertNoLeftovers(t, filepath.Join(e.dir, DirName), "levelrail-20260101T000000Z.db")
+}
