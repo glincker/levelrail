@@ -414,7 +414,7 @@ func (rt *Router) writeAlertHistory(w http.ResponseWriter, r *http.Request, app 
 		limit = alertHistoryDefaultLimit
 	}
 	var list []alerting.HistoryEntry
-	for batch := 0; batch < scopedListMaxBatches && len(list) < limit; batch++ {
+	for len(list) < limit {
 		rows, err := rt.alertNoise.ListHistory(r.Context(), f)
 		if err != nil {
 			rt.internalError(w, "api: list alert history failed", err)
