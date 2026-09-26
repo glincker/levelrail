@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runAppsPromote implements "apps promote <name> --to <environment-id>
@@ -22,7 +25,9 @@ import (
 func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps promote", "print the result as JSON to stdout and nothing else", stderr)
 	var to, target string
-	var preview, confirm bool
+	var preview, confirm, includeEnv, force bool
+	fs.BoolVar(&includeEnv, "include-env", false, "also apply added and removed plain env keys (values of keys both apps have stay as they are)")
+	fs.BoolVar(&force, "force", false, "promote even if the source app is unhealthy or its last deploy failed")
 	fs.StringVar(&to, "to", "", "destination environment ID (required)")
 	fs.StringVar(&target, "target", "", "target app name, when more than one app in --to belongs to the same project")
 	fs.BoolVar(&preview, "preview", false, "show what promoting would change, without applying it")
@@ -53,7 +58,7 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 	}
 
 	result, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (deployTriggerResult, error) {
-		return client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: confirm})
+		return client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: confirm, IncludeEnv: includeEnv, Force: force})
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("promote app %q: %w", name, err))
@@ -99,7 +104,30 @@ func printPromotePreviewHuman(w io.Writer, prev promotePreviewResource) {
 		}
 	}
 
-	_, _ = fmt.Fprintf(w, "\nnot compared: %v\n%s\n", prev.UnsnapshottedFields, prev.Note)
+	d := prev.Diff
+	for _, f := range []*apiclient.DeployCompareField{d.Replicas, d.Resources, d.Health} {
+		if f != nil {
+			_, _ = fmt.Fprintf(w, "  %-10s %s -> %s\n", f.Field, f.From, f.To)
+		}
+	}
+	printKeyList(w, "env keys to add", d.EnvAdded)
+	printKeyList(w, "env keys to remove", d.EnvRemoved)
+	printKeyList(w, "env keys with different values (kept)", d.EnvChanged)
+	printKeyList(w, "secret keys only on source", d.SecretsAdded)
+	printKeyList(w, "secret keys only on target", d.SecretsGone)
+	_, _ = fmt.Fprintf(w, "\nleft untouched: %s\n", strings.Join(d.Untouched, ", "))
+	if prev.NeedsConfirmation {
+		_, _ = fmt.Fprint(w, "\nthis environment needs --confirm\n")
+	}
+	for _, b := range prev.Blockers {
+		_, _ = fmt.Fprintf(w, "blocked: %s (use --force to override)\n", b)
+	}
+}
+
+func printKeyList(w io.Writer, label string, keys []string) {
+	if len(keys) > 0 {
+		_, _ = fmt.Fprintf(w, "  %s: %s\n", label, strings.Join(keys, ", "))
+	}
 }
 
 func appsPromoteUsage(prog string) string {
@@ -123,6 +151,8 @@ Flags:
   --to string             destination environment ID (required)
   --target string        target app name, to disambiguate multiple apps in --to
   --confirm                  confirm promoting into a protected environment, skipping the interactive prompt
+  --include-env              also apply added and removed plain env keys (values never overwrite the target)
+  --force                    promote even if the source is unhealthy or its last deploy failed
   --preview                 show what would change, don't apply it
   --dry-run                 alias for --preview
   --token string          API token (default: %[2]s env var, then the credentials file)

@@ -37,8 +37,8 @@ func TestRun_AppsPromote_Preview(t *testing.T) {
 	if !strings.Contains(stdout, "web-staging") || !strings.Contains(stdout, "web-prod") {
 		t.Errorf("stdout = %q, want both app names", stdout)
 	}
-	if !strings.Contains(stdout, "not compared") {
-		t.Errorf("stdout = %q, want the honest limitation note", stdout)
+	if !strings.Contains(stdout, "left untouched") {
+		t.Errorf("stdout = %q, want the untouched-fields line", stdout)
 	}
 }
 
