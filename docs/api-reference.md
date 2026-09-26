@@ -108,8 +108,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 77 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 77 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 78 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 78 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -198,6 +198,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/pipeline-sync | AbilityRead | handleGetPipelineSync |
 | PUT | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleSetPipelineSync |
 | POST | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleRunPipelineSync |
+| GET | /api/v1/apps/{name}/requests | AbilityRead | handleQueryRequests |
 
 :::
 
