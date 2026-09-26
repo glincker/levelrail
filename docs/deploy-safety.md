@@ -117,13 +117,20 @@ Held deploys are checked every `APP_DEPLOY_HELD_RELEASE_INTERVAL`
 
 ## Holding the previous release
 
-After a successful blue-green or rolling cutover the previous release's
-running container is kept for `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` (default
-`3m`, `0` disables), measured from the newest container's creation. During
-that window a rollback to it is instant (no pull, no cold start), and
-routes that still point at it keep working. Once the window passes, the
-next reconcile removes it. The `recreate` strategy never holds anything,
-since it stops the old release before starting the new one.
+After a successful blue-green or rolling cutover the most recent previous
+release's running containers are kept for `APP_DEPLOY_PREVIOUS_RELEASE_HOLD`
+(default `3m`, `0` disables). The window is measured from the newest
+release's first container, so scaling up does not extend it. Only one
+previous release is ever held: as soon as a newer previous release exists,
+older running releases are removed, so deploying five times in a minute
+leaves the current release plus one previous one, not five containers.
+During the window a rollback to the held release is instant (no pull, no
+cold start), and routes that still point at it keep working. Once the window
+passes, the next reconcile removes it. The `recreate` strategy never holds
+anything, since it stops the old release before starting the new one.
+
+`GET /api/v1/apps/{name}` reports `previous_release_held_until` (RFC3339)
+while a release is held, and `levelrail apps status <name>` prints it.
 
 ## Limits
 

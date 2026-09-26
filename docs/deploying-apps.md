@@ -73,6 +73,8 @@ The reconciler tracks both containers until the old one exits. If the new contai
 
 `SaveDesiredService` via `PUT /api/v1/apps/{name}` is a full replace, not a patch. It overwrites every field with whatever the request body carries (same as an app.yaml apply).
 
+A save keeps the stored settings a request body cannot express (volumes, bind mounts, entrypoint, database env, registry credential, pull policy, pinned image ID). `secret_env` and `vault_env` are applied only when the body carries them: omit them to keep the stored set, send `[]` to clear. Secret values are never accepted here (a body with `secrets` is rejected): use `PUT /api/v1/apps/{name}/secrets/{key}`.
+
 Fields managed separately (`node_id`, `project_id`, `environment_id`, `storage_target_id`, `suspended`, `database_attachment`, `log_drain`) have their own dedicated endpoints. This ensures an ordinary edit can never silently move an app between nodes or projects.
 
 ### Core primitives
@@ -91,6 +93,16 @@ Every state-changing action funnels through these:
 `EnvDirty` tracks when env vars change without an image change. Saving new env vars sets this flag, and it stays set until a redeploy or restart lands.
 
 The dashboard shows this as an amber "Environment changes pending restart" banner at the top of the app's Overview page with a one-click restart action.
+
+### Pending changes
+
+The reconciler records what each new container was created with (short hashes of the app's env and secret values, plus port, command, entrypoint and labels). `GET /api/v1/apps/{name}/pending-changes` compares that with the desired state and returns `{ pending, changes: [{ kind: env | secret | config, keys, since }], apply_action }`. Key names only, never values. Rotating a secret counts as a pending `secret` change; resources and health checks apply live and are not listed. `POST /api/v1/apps/{name}/apply-pending` restarts the app to apply them (202). For a container created before this tracking existed, only the `env_dirty` flag is known.
+
+CLI: `levelrail apps status <name>` prints a "pending changes" line, `apps env import` and `apps secrets set` print "N changes pending. Run: levelrail apps apply <name> (or pass --apply)", and `apps apply <name>` restarts. MCP: `get_app_pending_changes`.
+
+### App timeline
+
+`GET /api/v1/apps/{name}/timeline?limit=50&before=<cursor>` merges recorded events (`restart`, `env_change`, `secret_change`, `config_change`, `scale`, `suspend`, `resume`, `freeze_override`) with deploy attempts (`deploy`, `rollback`; an in-flight one is `in_progress`), newest first. Each item has `id`, `at`, `kind`, `status`, `actor` (a user, `token:<name>` or `system`), `title`, optional `detail` and, for deploys, `ref: { type: "deploy_attempt", id }`. Events carry env and secret key names and non-secret scalar from and to values only. Pass the previous page's `next_cursor` as `before`. CLI: `levelrail apps timeline <name>`. MCP: `get_app_timeline`.
 
 ## The four ways to create an app
 
@@ -336,7 +348,9 @@ levelrail-cli apps secrets set <name> DATABASE_PASSWORD --value "new-password"
 ```
 
 - Dashboard: app Environment tab, edit the secret field
-- API: `PUT /api/v1/apps/{name}/secrets/<key>` with JSON `{ value: "..." }`
+- API: `PUT /api/v1/apps/{name}/secrets/<key>` with JSON `{ value: "..." }`; `DELETE /api/v1/apps/{name}/secrets/<key>` removes it (`?force=true` for a locked key)
+
+Setting a secret declares its key as secret-backed on the app (the same list `secret_env` shows), which is what makes the container receive it. Deleting the secret undeclares it. The value reaches the container the next time it is created: run `levelrail-cli apps apply <name>` or pass `--apply`.
 
 Secrets are never returned in plaintext, even from the API. The dashboard and CLI confirm receipt but don't echo the value back.
 

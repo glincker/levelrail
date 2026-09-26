@@ -101,7 +101,24 @@ levelrail apps deploy <name> --image IMAGE [flags]
 ```
 levelrail apps wait <name> [flags]
 ```
-poll until a deploy attempt actually converges, exit accordingly (a CI gate for "apps deploy")
+poll until a deploy attempt actually converges, exit accordingly (a CI gate for "apps deploy"). On success it says what happened: `rolled out`, `already up to date` (the deploy changed nothing) or `restarted`; `--json` carries the same as `outcome`
+
+```
+levelrail apps timeline <name> [--limit N] [flags]
+```
+what happened to an app, newest first: deploys, rollbacks, restarts, env, secret and config changes (key names only, never values), scaling, stop and start
+
+```
+levelrail apps apply <name> [flags]
+```
+restart an app so saved env, secret and config changes reach the running container; does nothing when nothing is pending
+
+```
+levelrail apps domains list <name> [flags]
+levelrail apps domains add <name> <domain>... [flags]
+levelrail apps domains remove <name> <domain>... [flags]
+```
+show or change an app's domains; a domain already used by another app is refused and nothing is changed
 
 ```
 levelrail apps deploy-compose <name> --file compose.yaml [flags]
@@ -387,9 +404,9 @@ levelrail apps scheduled-tasks update <app> <id> --schedule CRON [--disabled] --
 ```
 
 ```
-levelrail apps env import <name> --file .env [--dry-run] [--keep-existing] [flags]
+levelrail apps env import <name> --file .env [--dry-run] [--keep-existing] [--apply] [flags]
 ```
-merge a .env file into an app's plain env vars, printing which keys are new, changed or unchanged (keys that are secrets are skipped)
+merge a .env file into an app's plain env vars, printing which keys are new, changed or unchanged (keys that are secrets are skipped); prints how many changes are pending, or restarts the app right away with `--apply`
 
 ```
 levelrail apps env export <name> [--out FILE] [flags]
@@ -402,9 +419,14 @@ levelrail apps secrets list <name> [flags]
 list an app's secret keys and their locked state
 
 ```
-levelrail apps secrets set <name> <key> <value> [flags]
+levelrail apps secrets set <name> <key> <value> [--apply] [flags]
 ```
-set or rotate one secret's encrypted value
+set or rotate one secret's encrypted value and declare the key as secret-backed so it is injected; `--apply` restarts the app now
+
+```
+levelrail apps secrets delete <name> <key> [--force] [--apply] [flags]
+```
+delete a secret's value and stop declaring the key
 
 ```
 levelrail apps secrets set <name> --env-file <path> [flags]

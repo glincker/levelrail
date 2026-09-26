@@ -111,6 +111,9 @@ type AppResource struct {
 	// Env was saved since the running container was last recreated, so
 	// the change is not live yet. Clears on restart or redeploy.
 	EnvDirty bool `json:"env_dirty"`
+	// PreviousReleaseHeldUntil mirrors internal/api's GET app payload: when
+	// the kept previous release, an instant rollback target, is removed.
+	PreviousReleaseHeldUntil string `json:"previous_release_held_until,omitempty"`
 	// Volumes mirrors internal/api's appResource.Volumes: this app's
 	// declared named Docker volumes, response-only (declared through
 	// app.yaml, not settable here).
