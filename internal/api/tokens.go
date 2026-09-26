@@ -79,6 +79,19 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	callerAbilities, err := rt.callerAbilities(r)
+	if err != nil {
+		rt.logger.Error("api: create token: resolve caller abilities failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	for _, a := range req.Abilities {
+		if !hasAbility(callerAbilities, a) {
+			writeError(w, http.StatusForbidden, fmt.Sprintf("cannot mint a token with abilities you don't hold yourself: %s", a))
+			return
+		}
+	}
+
 	var expiresAt *time.Time
 	if req.ExpiresInDays > 0 {
 		expires := time.Now().Add(time.Duration(req.ExpiresInDays) * 24 * time.Hour)
