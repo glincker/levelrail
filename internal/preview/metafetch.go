@@ -77,13 +77,16 @@ func (f *httpFetcher) internalClient(t MetaTarget) *http.Client {
 	}
 }
 
-func (f *httpFetcher) get(ctx context.Context, c *http.Client, u, accept string) (*http.Response, error) {
+// get requests u with c. A non-empty host overrides the Host header, so an
+// app that routes by domain still answers as it would to a visitor.
+func (f *httpFetcher) get(ctx context.Context, c *http.Client, u, accept, host string) (*http.Response, error) {
 	ctx, cancel := context.WithTimeout(ctx, f.cfg.MetaTimeout)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("preview: build request: %w", err)
 	}
+	req.Host = host
 	req.Header.Set("Accept", accept)
 	req.Header.Set("User-Agent", "deploy-preview/1")
 	resp, err := c.Do(req)
@@ -112,7 +115,7 @@ func (f *httpFetcher) FetchPage(ctx context.Context, t MetaTarget, path string) 
 	client := f.internalClient(t)
 	defer client.CloseIdleConnections()
 	pageURL := url.URL{Scheme: "http", Host: origin(t)}
-	resp, err := f.get(ctx, client, pageURL.String()+path, "text/html")
+	resp, err := f.get(ctx, client, pageURL.String()+path, "text/html", "")
 	if err != nil {
 		return nil, err
 	}
@@ -139,15 +142,18 @@ func (f *httpFetcher) FetchImage(ctx context.Context, t MetaTarget, base *url.UR
 	if err != nil {
 		return nil, err
 	}
-	client, target := f.external, u.String()
+	client, target, host := f.external, u.String(), ""
 	if f.ownedHost(t, u) {
 		ic := f.internalClient(t)
 		defer ic.CloseIdleConnections()
 		internal := *u
 		internal.Scheme, internal.Host = "http", origin(t)
 		client, target = ic, internal.String()
+		if !strings.EqualFold(u.Host, origin(t)) {
+			host = u.Host
+		}
 	}
-	resp, err := f.get(ctx, client, target, "image/jpeg,image/png,*/*;q=0.1")
+	resp, err := f.get(ctx, client, target, "image/jpeg,image/png,*/*;q=0.1", host)
 	if err != nil {
 		return nil, err
 	}

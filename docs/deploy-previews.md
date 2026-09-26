@@ -9,7 +9,7 @@ When a deploy goes live, the control plane can save a small thumbnail of the run
 | Mode | What it does | Cost |
 | --- | --- | --- |
 | `off` | No preview. | None. |
-| `metadata` (default) | One small request to the app, reads its title and social image (`og:image` or `twitter:image`). Uses that image as the thumbnail, or a text card when there is none. | No browser, no container, no image download. One request of at most 5 seconds and 512 KB, plus at most one 2 MB image. |
+| `metadata` (default) | One small request to the app, reads its title and social image (`og:image` or `twitter:image`). Uses that image as the thumbnail, or a text card when there is none. | No browser, no container, no browser image download. One request of at most 5 seconds and 512 KB, plus at most one 2 MB social image. |
 | `screenshot` | A real screenshot from a short-lived browser container. | Up to 512 MB of memory and 1 CPU for about 10 seconds per deploy, and a browser image of about 143 MB downloaded once. |
 
 New apps start in the server's default mode, `metadata`. Nothing runs while idle in any mode: there is no resident browser, and a screenshot capture starts a container, takes one picture and removes the container again.
@@ -100,7 +100,7 @@ The deploy history shows a "No preview" note with the reason when a capture does
 | `redirect` | The page redirected away from the app (metadata mode). |
 | `timeout`, `capture_failed`, `bad_image` | The capture itself failed. |
 
-A failed recapture never replaces a thumbnail that already exists, and a card never replaces a site image or screenshot.
+A failed recapture never replaces a preview that already exists (image or card), and a card never replaces a site image or screenshot.
 
 ## Retention and cleanup
 
@@ -127,14 +127,14 @@ Set these on the control plane. Unset or malformed values fall back to the defau
 | `APP_PREVIEW_META_MAX_IMAGE_KB` | `2048` | Largest social image downloaded. |
 | `APP_PREVIEW_META_MAX_REDIRECTS` | `3` | Redirects followed, all on the app itself. |
 | `APP_PREVIEW_META_MIN_IMAGE_PX` | `120` | Smallest side of a social image worth using. |
-| `APP_PREVIEW_THUMB_HEIGHT` | `400` | Height of the canvas a social image is fitted onto. |
+| `APP_PREVIEW_THUMB_HEIGHT` | `400` | Height of the canvas a social image is fitted onto. Between 64 and 2048. |
 | `APP_PREVIEW_IMAGE` | pinned `chromedp/headless-shell` | Browser image. Point it at your own digest-pinned copy if you prefer. |
 | `APP_PREVIEW_TIMEOUT` | `30s` | Hard limit for one capture. |
 | `APP_PREVIEW_PULL_TIMEOUT` | `5m` | Limit for the first image pull. |
 | `APP_PREVIEW_MEMORY_MB` | `512` | Memory cap of the capture container. |
 | `APP_PREVIEW_CPUS` | `1.0` | CPU cap of the capture container. |
 | `APP_PREVIEW_VIEWPORT` | `1280x800` | Browser window size. |
-| `APP_PREVIEW_THUMB_WIDTH` | `640` | Thumbnail width in pixels. |
+| `APP_PREVIEW_THUMB_WIDTH` | `640` | Thumbnail width in pixels. Between 64 and 2048. |
 | `APP_PREVIEW_QUALITY` | `72` | JPEG quality. |
 | `APP_PREVIEW_MAX_THUMB_KB` | `200` | Largest thumbnail accepted. |
 | `APP_PREVIEW_BLANK_RATIO` | `0.995` | Share of one color at which a page counts as blank. |

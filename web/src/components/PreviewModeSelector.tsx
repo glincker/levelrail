@@ -20,7 +20,7 @@ const OPTIONS: ModeOption[] = [
     mode: 'metadata',
     label: 'Metadata',
     summary: 'No browser. Costs about nothing.',
-    cost: 'Makes one small request to the app after each deploy and reads its title and social image (og:image). No browser, no container and no image download. Without a social image the preview is a text card. Pages that need a login are skipped.',
+    cost: 'Makes one small request to the app after each deploy and reads its title and social image (og:image). No browser, no container and no browser image download. It may download one social image of up to 2 MB per deploy. Without a social image the preview is a text card. Pages that need a login are skipped.',
   },
   {
     mode: 'screenshot',
