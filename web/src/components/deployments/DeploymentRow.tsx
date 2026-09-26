@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   ArrowUUpLeftIcon,
   ArrowsClockwiseIcon,
@@ -81,6 +82,23 @@ function Author({ name }: { name: string }) {
       <span aria-hidden="true">{initials(name)}</span>
       <span className="sr-only">{name}</span>
     </span>
+  )
+}
+
+function RowThumb({ url, app }: { url: string | null; app: string }) {
+  const [failed, setFailed] = useState<string | null>(null)
+  if (url === null || url === failed) return null
+  return (
+    <img
+      src={url}
+      alt={`Preview of the ${app} deployment`}
+      loading="lazy"
+      decoding="async"
+      onError={() => {
+        setFailed(url)
+      }}
+      className="h-6 w-10 shrink-0 rounded-sm border border-border object-cover object-top"
+    />
   )
 }
 
@@ -180,6 +198,7 @@ export function DeploymentRow({
         <span className="md:w-20 md:text-right">
           <RelativeTime at={d.started_at} live />
         </span>
+        <RowThumb url={d.preview_image_url} app={d.app} />
         <Author name={d.author} />
       </span>
     </button>

@@ -148,6 +148,26 @@ func (rt *Router) toDeploymentResource(d store.Deployment) deploymentResource {
 	return res
 }
 
+// attachPreviewURLs fills preview_image_url with one preview lookup per
+// distinct app on the page; rows are already scoped to readable apps.
+func (rt *Router) attachPreviewURLs(ctx context.Context, items []deploymentResource) {
+	if rt.preview == nil {
+		return
+	}
+	byApp := make(map[string]map[string]string)
+	for i := range items {
+		app := items[i].App
+		urls, seen := byApp[app]
+		if !seen {
+			urls = rt.previewImageURLs(ctx, app)
+			byApp[app] = urls
+		}
+		if u, ok := urls[items[i].ID]; ok {
+			items[i].PreviewImageURL = &u
+		}
+	}
+}
+
 // visibleAppNames returns the apps the caller can read, or nil when every
 // app is visible (a caller with no IAM policies and the base read ability).
 func (rt *Router) visibleAppNames(r *http.Request) ([]string, error) {
@@ -201,6 +221,7 @@ func (rt *Router) handleListDeployments(w http.ResponseWriter, r *http.Request) 
 	for _, d := range rows {
 		out.Items = append(out.Items, rt.toDeploymentResource(d))
 	}
+	rt.attachPreviewURLs(r.Context(), out.Items)
 	writeJSON(w, http.StatusOK, out)
 }
 
