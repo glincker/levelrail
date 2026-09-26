@@ -60,6 +60,13 @@ export interface Deployment {
   superseded_by: string | null
   is_live: boolean
   approval_id: string | null
+  queued_at: string | null
+  /** 1-based place in the app's deploy queue, null once it left the queue. */
+  queue_position: number | null
+  wait_reason: string | null
+  /** Id of the deploy this one is queued behind. */
+  blocked_by: string | null
+  canceled_by: string | null
   preview_image_url: string | null
   /** Packages in the deploy's SBOM, null when none was recorded. */
   sbom_packages: number | null

@@ -22,7 +22,7 @@ export function confirmCopy(action: PendingAction): ConfirmCopy {
     },
     rollback: {
       title: `Roll back ${d.app} to ${shortId(d.id)}?`,
-      description: `Deploys ${rollbackImage(d)} to ${d.app} in its current environment. Only the image changes: environment variables and settings are not reapplied from that release.`,
+      description: `Redeploys the exact image this release recorded (${d.image_digest || rollbackImage(d)}) to ${d.app} in ${d.environment || 'its current environment'}. Only the image changes: environment variables and settings are not reapplied from that release.`,
       confirm: 'Roll back',
       danger: true,
     },

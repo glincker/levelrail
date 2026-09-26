@@ -35,6 +35,7 @@ import {
   deploymentsSummaryOptions,
 } from '../../queries/deployments'
 import { BuildingNowLane } from './BuildingNowLane'
+import { CancelSupersededPopover } from './CancelSupersededPopover'
 import { ConfirmActionDialog } from './ConfirmActionDialog'
 import { DeploymentDrawer } from './DeploymentDrawer'
 import { DeploymentList, DeploymentsSkeleton, LoadMore } from './DeploymentList'
@@ -48,6 +49,7 @@ const MIN_AUTHOR_ROWS = 20
 export interface DeploymentsPageProps {
   search: DeploymentsSearch
   onSearchChange: (next: UrlSearch) => void
+  onViewApproval?: () => void
 }
 
 function filtersOf(s: DeploymentsSearch): DeploymentFilters {
@@ -65,13 +67,14 @@ function filtersOf(s: DeploymentsSearch): DeploymentFilters {
 export function DeploymentsPage({
   search,
   onSearchChange,
+  onViewApproval,
 }: DeploymentsPageProps) {
   const filters = filtersOf(search)
   const openId = search.d
   const listQuery = useInfiniteQuery(deploymentsInfiniteOptions(filters))
   const lane = useQuery(deploymentsLaneOptions())
   const summary = useQuery(deploymentsSummaryOptions())
-  const actions = useDeploymentActions()
+  const actions = useDeploymentActions(onViewApproval)
   const [focusId, setFocusId] = useState('')
   const [addOpen, setAddOpen] = useState(false)
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -214,6 +217,10 @@ export function DeploymentsPage({
             label={streamView.label}
             live={stream.state === 'live'}
           />
+          <CancelSupersededPopover
+            apps={facetsFrom(all).app}
+            selected={filters.app}
+          />
           <ShortcutsHelp />
         </div>
       </header>
@@ -230,7 +237,6 @@ export function DeploymentsPage({
       <BuildingNowLane
         rows={laneRows}
         now={now}
-        cancelSupported={actions.cancelSupported}
         onOpen={setOpen}
         onCancel={(d) => {
           actions.request('cancel', d)
@@ -338,11 +344,11 @@ export function DeploymentsPage({
         deployment={drawerRow}
         searching={searching}
         now={now}
-        cancelSupported={actions.cancelSupported}
         onClose={() => {
           setOpen('')
         }}
         onAction={actions.request}
+        onOpenDeployment={setOpen}
       />
       <ConfirmActionDialog
         action={actions.pending}

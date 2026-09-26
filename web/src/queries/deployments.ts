@@ -19,7 +19,9 @@ import {
   type DeploymentFilters,
 } from '../lib/deploymentFilters'
 import { ApiError, readErrorMessage } from '../lib/apiError'
-import { triggerDeploy } from './deploys'
+import { applyTriggerDeployResult, triggerDeploy } from './deploys'
+import type { TriggerDeployResult } from './deploys'
+import { postJson } from './deployControl'
 import { appKeys } from './apps'
 import { deployAttemptKeys } from './deployAttempts'
 
@@ -132,12 +134,6 @@ export function deployLogsPath(d: Pick<Deployment, 'app' | 'id'>) {
   }
 }
 
-export function isCancelUnsupported(error: unknown): boolean {
-  return (
-    error instanceof ApiError && (error.status === 404 || error.status === 405)
-  )
-}
-
 export async function cancelDeployment(d: Deployment): Promise<void> {
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(d.app)}/deploys/${encodeURIComponent(d.id)}/cancel`,
@@ -152,6 +148,16 @@ export async function cancelDeployment(d: Deployment): Promise<void> {
       ),
     )
   }
+}
+
+export function rollbackToDeployment(
+  d: Pick<Deployment, 'app' | 'id'>,
+): Promise<TriggerDeployResult> {
+  return postJson<TriggerDeployResult>(
+    `/api/v1/apps/${encodeURIComponent(d.app)}/deploys/${encodeURIComponent(d.id)}/rollback`,
+    { confirm: true },
+    'roll back deploy',
+  )
 }
 
 export interface DeployImageInput {
@@ -175,9 +181,19 @@ export function useDeploymentMutations() {
   })
   const cancel = useMutation({
     mutationFn: cancelDeployment,
-    onSuccess: (_r, d) => {
+    onSettled: (_r, _e, d) => {
       refresh(d.app)
     },
   })
-  return { deployImage, cancel }
+  const rollback = useMutation({
+    mutationFn: rollbackToDeployment,
+    onSuccess: (result, d) => {
+      applyTriggerDeployResult(qc, d.app, result)
+      refresh(d.app)
+    },
+    onError: (_e, d) => {
+      refresh(d.app)
+    },
+  })
+  return { deployImage, cancel, rollback }
 }

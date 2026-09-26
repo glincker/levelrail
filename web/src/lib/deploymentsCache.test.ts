@@ -116,7 +116,7 @@ describe('applyEventToPages', () => {
 })
 
 describe('applyEventToLane', () => {
-  it('adds in-progress rows newest first and drops finished ones', () => {
+  it('adds in-progress rows, building before queued, and drops finished ones', () => {
     const a = makeDeployment({
       id: 'a',
       status: 'building',
@@ -130,7 +130,7 @@ describe('applyEventToLane', () => {
         started_at: '2026-09-26T10:05:00Z',
       }),
     )
-    expect(rows.map((r) => r.id)).toEqual(['b', 'a'])
+    expect(rows.map((r) => r.id)).toEqual(['a', 'b'])
     rows = applyEventToLane(rows, ev('finished', { id: 'a', status: 'ready' }))
     expect(rows.map((r) => r.id)).toEqual(['b'])
   })
