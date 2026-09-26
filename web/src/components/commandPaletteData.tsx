@@ -28,6 +28,7 @@ import {
   TreeStructureIcon,
   CpuIcon,
   GavelIcon,
+  RocketLaunchIcon,
   RobotIcon,
   BellIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -113,6 +114,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     '/loadbalancers',
   ),
   nav('nav-backups', 'Backups', <CloudArrowUpIcon />, '/backups'),
+  nav('nav-deployments', 'Deployments', <RocketLaunchIcon />, '/deployments'),
   nav('nav-approvals', 'Deploy approvals', <GavelIcon />, '/approvals'),
   nav('nav-models', 'AI models', <CpuIcon />, '/models'),
   nav('nav-assistant', 'AI assistant', <RobotIcon />, '/ai-assistant'),
