@@ -436,49 +436,6 @@ func validateAppResource(a appResource) error {
 	return nil
 }
 
-// handleListApps handles GET /api/v1/apps. Status is computed from one
-// batched conditions query (store.GetConditionsForControllers), not a
-// GetConditions call per app: see appListResource's own doc comment for
-// why that matters at 50+ rows.
-func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
-	svcs, err := rt.apps.ListDesiredServices(r.Context())
-	if err != nil {
-		rt.logger.Error("api: list apps failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	controllerNames := make([]string, len(svcs))
-	appNames := make([]string, len(svcs))
-	for i, s := range svcs {
-		controllerNames[i] = applicationControllerName(s.Name)
-		appNames[i] = s.Name
-	}
-	conditionsByController, err := rt.deploys.GetConditionsForControllers(r.Context(), controllerNames)
-	if err != nil {
-		rt.logger.Error("api: list apps: batch load conditions failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	tagsByApp, err := rt.tags.ListTagsForApps(r.Context(), appNames)
-	if err != nil {
-		rt.logger.Error("api: list apps: batch load tags failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	out := make([]appListResource, 0, len(svcs))
-	for _, s := range svcs {
-		resource := toAppResource(s)
-		resource.Tags = tagNamesFromStoreTags(tagsByApp[s.Name])
-		out = append(out, appListResource{
-			appResource: resource,
-			Status:      summarizeAppConditions(conditionsByController[applicationControllerName(s.Name)]),
-		})
-	}
-	writeJSON(w, http.StatusOK, out)
-}
-
 // handleCreateApp handles POST /api/v1/apps. Rejects a name that already
 // exists rather than silently overwriting it: that's what PUT
 // (handleUpdateApp) is for. A domain conflict (store.ErrDomainTaken,
