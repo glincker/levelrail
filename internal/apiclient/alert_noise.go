@@ -75,16 +75,21 @@ type AlertHistoryEntry struct {
 	SilenceID  string    `json:"silence_id,omitempty"`
 	ChannelID  string    `json:"channel_id,omitempty"`
 	Error      string    `json:"error,omitempty"`
+
+	// Changes is set on fired entries when the query asked for it.
+	Changes *RecentChangesResource `json:"changes,omitempty"`
 }
 
 // AlertHistoryQuery filters ListAlertHistory; zero fields are omitted.
+// IncludeChanges asks the server to attach what changed before each firing.
 type AlertHistoryQuery struct {
-	App     string
-	RuleID  string
-	Outcome string
-	Event   string
-	Since   string
-	Limit   int
+	App            string
+	RuleID         string
+	Outcome        string
+	Event          string
+	Since          string
+	Limit          int
+	IncludeChanges bool
 }
 
 func (q AlertHistoryQuery) encode() string {
@@ -96,6 +101,9 @@ func (q AlertHistoryQuery) encode() string {
 	}
 	if q.Limit > 0 {
 		v.Set("limit", strconv.Itoa(q.Limit))
+	}
+	if q.IncludeChanges {
+		v.Set("include", "changes")
 	}
 	if len(v) == 0 {
 		return ""
