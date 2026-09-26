@@ -107,10 +107,11 @@ func (rt *Router) handleDeploymentsStream(w http.ResponseWriter, r *http.Request
 				continue
 			}
 			out := deploymentEvent{Type: deploymentEventType(ev.Kind), Deployment: rt.toDeploymentResource(d)}
-			one := []deploymentResource{out.Deployment}
-			rt.attachPreviewURLs(r.Context(), one)
-			out.Deployment = one[0]
-			if ev.Kind == deploylog.StateStep {
+			if ev.Kind != deploylog.StateStep {
+				one := []deploymentResource{out.Deployment}
+				rt.attachPreviewURLs(r.Context(), one)
+				out.Deployment = one[0]
+			} else {
 				out.Step = &deploymentStepMsg{Name: ev.Step, Status: ev.Status}
 			}
 			data, err := json.Marshal(out)

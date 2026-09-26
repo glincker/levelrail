@@ -109,6 +109,18 @@ describe('DeployPreviewThumb', () => {
     )
   })
 
+  it('prefers the refreshed history url over a stale prop after a recapture', async () => {
+    history = [
+      record({ image_url: '/api/v1/apps/web/deployments/dep_1/preview?v=2' }),
+    ]
+    renderThumb({ imageUrl: '/api/v1/apps/web/deployments/dep_1/preview?v=1' })
+    await waitFor(() => {
+      expect(
+        screen.getByRole('img', { name: 'Preview of deployment dep_1' }),
+      ).toHaveAttribute('src', '/api/v1/apps/web/deployments/dep_1/preview?v=2')
+    })
+  })
+
   it.each([
     ['screenshot', 'Screenshot'],
     ['og_image', 'Site image'],
