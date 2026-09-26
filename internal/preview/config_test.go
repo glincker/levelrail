@@ -13,8 +13,11 @@ func lookupFrom(m map[string]string) func(string) (string, bool) {
 
 func TestConfigFromEnv_Defaults(t *testing.T) {
 	c := ConfigFromEnv(lookupFrom(nil), slog.New(slog.NewTextHandler(io.Discard, nil)))
-	if c.Enabled {
-		t.Error("previews must default to off")
+	if !c.Enabled || c.DefaultMode != ModeMetadata {
+		t.Errorf("defaults must be on with metadata mode, got enabled=%v mode=%q", c.Enabled, c.DefaultMode)
+	}
+	if c.MetaTimeout != 5*time.Second || c.MetaMaxHTML != 512<<10 || c.MetaMaxImage != 2<<20 || c.ThumbHeight != 400 {
+		t.Errorf("unexpected metadata defaults: %+v", c)
 	}
 	if c.Image != DefaultImage || c.Timeout != 30*time.Second || c.MemoryMB != 512 || c.CPUs != 1 {
 		t.Errorf("unexpected defaults: %+v", c)
@@ -47,7 +50,7 @@ func TestConfigFromEnv_MalformedFallsBack(t *testing.T) {
 	c := ConfigFromEnv(lookupFrom(map[string]string{
 		EnvKeepPerApp: "many", EnvViewport: "wide", EnvTimeout: "soon", EnvEnabled: "maybe", EnvMemoryMB: "-4",
 	}), slog.New(slog.NewTextHandler(io.Discard, nil)))
-	if c.KeepPerApp != 5 || c.ViewportW != 1280 || c.Timeout != 30*time.Second || c.Enabled || c.MemoryMB != 512 {
+	if c.KeepPerApp != 5 || c.ViewportW != 1280 || c.Timeout != 30*time.Second || !c.Enabled || c.MemoryMB != 512 {
 		t.Errorf("malformed values should fall back: %+v", c)
 	}
 }

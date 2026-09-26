@@ -34,6 +34,8 @@ func TestRun_Preview_Verbs(t *testing.T) {
 	}
 
 	runCLIExpectOK(t, append([]string{"preview", "enable", "web", "--path", "/pricing", "--wait-ms", "300"}, api...))
+	runCLIExpectOK(t, append([]string{"preview", "enable", "web", "--mode", "metadata"}, api...))
+	runCLIExpectOK(t, append([]string{"preview", "disable", "web", "--mode", "screenshot"}, api...))
 	runCLIExpectOK(t, append([]string{"preview", "disable", "web"}, api...))
 	runCLIExpectOK(t, append([]string{"preview", "capture", "web"}, api...))
 	out, _ = runCLIExpectOK(t, append([]string{"preview", "prune", "web", "--all"}, api...))
@@ -44,6 +46,8 @@ func TestRun_Preview_Verbs(t *testing.T) {
 	want := []call{
 		{http.MethodGet, "/api/v1/apps/web/preview", ""},
 		{http.MethodPut, "/api/v1/apps/web/preview", `{"enabled":true,"path":"/pricing","wait_ms":300}`},
+		{http.MethodPut, "/api/v1/apps/web/preview", `{"mode":"metadata","enabled":true}`},
+		{http.MethodPut, "/api/v1/apps/web/preview", `{"enabled":false}`},
 		{http.MethodPut, "/api/v1/apps/web/preview", `{"enabled":false}`},
 		{http.MethodPost, "/api/v1/apps/web/preview/capture", ""},
 		{http.MethodPost, "/api/v1/apps/web/preview/prune", `{"all":true}`},

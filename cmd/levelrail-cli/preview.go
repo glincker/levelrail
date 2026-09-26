@@ -32,12 +32,18 @@ func runPreview(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 func previewUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s preview status <app> [flags]                            show the app's deploy preview settings, storage and latest result
-  %[1]s preview enable <app> [--path /] [--wait-ms N] [flags]   turn deploy previews on (runs a short browser container after each deploy)
+  %[1]s preview enable <app> [--mode metadata|screenshot] [--path /] [--wait-ms N] [flags]
+                                                                turn deploy previews on (default mode: screenshot)
   %[1]s preview disable <app> [flags]                           turn deploy previews off
+
+Modes: metadata reads the page's title and og:image with one small request (no browser, costs
+about nothing); screenshot runs a browser container for about 10 s per deploy and pulls a
+~143 MB image once.
   %[1]s preview capture <app> [flags]                           recapture the current release now
   %[1]s preview prune <app> [--all] [flags]                     delete old previews now (--all deletes every preview of the app)
 
-Previews are opt-in per app and need the server to run with APP_PREVIEW_ENABLED=true.
+Previews need the server to run with APP_PREVIEW_ENABLED=true (the default). New apps use the
+server's default mode, metadata unless APP_PREVIEW_DEFAULT_MODE says otherwise.
 Run "%[1]s preview <subcommand> -h" for a subcommand's own flags.
 `, prog)
 }
@@ -47,6 +53,7 @@ func runPreviewVerb(prog, verb string, args []string, stdout, stderr io.Writer, 
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, label, "print the result as JSON to stdout and nothing else", stderr)
 	var (
 		path   = fs.String("path", "", "path to capture, an absolute path on the app (default /)")
+		mode   = fs.String("mode", "", "preview mode for enable: metadata or screenshot (default screenshot)")
 		waitMS = fs.Int("wait-ms", -1, "extra milliseconds to let the page settle before the screenshot")
 		all    = fs.Bool("all", false, "delete every preview of the app, including the current release's")
 	)
@@ -70,6 +77,9 @@ func runPreviewVerb(prog, verb string, args []string, stdout, stderr io.Writer, 
 		req := apiclient.PreviewSettingsRequest{}
 		on := verb == "enable"
 		req.Enabled = &on
+		if on && *mode != "" {
+			req.Mode = mode
+		}
 		if *path != "" {
 			req.Path = path
 		}
@@ -95,9 +105,12 @@ func runPreviewVerb(prog, verb string, args []string, stdout, stderr io.Writer, 
 }
 
 func printPreviewHuman(out io.Writer, s apiclient.PreviewStatus) {
-	state := "off"
-	if s.Enabled {
-		state = "on"
+	state := s.Mode
+	if state == "" {
+		state = "off"
+		if s.Enabled {
+			state = "on"
+		}
 	}
 	_, _ = fmt.Fprintf(out, "app:        %s\n", s.App)
 	_, _ = fmt.Fprintf(out, "previews:   %s (path %s, wait %d ms)\n", state, s.Path, s.WaitMS)
@@ -111,6 +124,9 @@ func printPreviewHuman(out io.Writer, s apiclient.PreviewStatus) {
 	_, _ = fmt.Fprintf(out, "retention:  last %d per app plus production, %d days\n", s.KeepPerApp, s.TTLDays)
 	if l := s.Latest; l != nil {
 		line := fmt.Sprintf("%s (%s)", l.Status, l.DeploymentID)
+		if l.Source != "" && l.Status == "ok" {
+			line = fmt.Sprintf("%s, source %s (%s)", l.Status, l.Source, l.DeploymentID)
+		}
 		if l.Reason != "" {
 			line = fmt.Sprintf("%s: %s %s", line, l.Reason, l.Detail)
 		}

@@ -26,7 +26,7 @@ func TestSQLStore_SettingsRoundTrip(t *testing.T) {
 	if err != nil || got.Enabled || got.Path != "/" {
 		t.Fatalf("defaults = %+v err %v", got, err)
 	}
-	want := AppSettings{App: "web", Enabled: true, Path: "/pricing", WaitMS: 250}
+	want := AppSettings{App: "web", Mode: ModeScreenshot, Enabled: true, Path: "/pricing", WaitMS: 250}
 	if err := s.SavePreviewSettings(ctx, want); err != nil {
 		t.Fatal(err)
 	}

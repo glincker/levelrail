@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/draw"
 	"image/jpeg"
 	"image/png"
 )
@@ -106,6 +107,59 @@ func BuildThumb(pngData []byte, thumbWidth, quality, maxBytes int, blankRatio fl
 		}
 		if maxBytes <= 0 || buf.Len() <= maxBytes {
 			return &Thumb{JPEG: buf.Bytes(), Width: thumb.Bounds().Dx(), Height: thumb.Bounds().Dy()}, nil
+		}
+	}
+	return nil, fmt.Errorf("preview: thumbnail exceeds %d bytes", maxBytes)
+}
+
+const maxSourcePixels = 16 << 20
+
+// ErrTinyImage means a fetched image is too small to be a useful thumbnail.
+var ErrTinyImage = errors.New("preview: image is too small")
+
+var letterbox = color.RGBA{R: 244, G: 244, B: 245, A: 255}
+
+// BuildThumbFit decodes a JPEG or PNG, scales it down to fit within w by h
+// (never up) and centers it on a neutral w by h canvas. It rejects images
+// under minPx on either side and single-color images.
+func BuildThumbFit(data []byte, w, h, minPx, quality, maxBytes int, blankRatio float64) (*Thumb, error) {
+	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("preview: decode image header: %w", err)
+	}
+	if format != "jpeg" && format != "png" {
+		return nil, fmt.Errorf("preview: unsupported image format %q", format)
+	}
+	switch {
+	case cfg.Width < minPx || cfg.Height < minPx:
+		return nil, ErrTinyImage
+	case cfg.Width > maxSourceDim || cfg.Height > maxSourceDim || cfg.Width*cfg.Height > maxSourcePixels:
+		return nil, fmt.Errorf("preview: image dimensions %dx%d out of bounds", cfg.Width, cfg.Height)
+	}
+	src, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("preview: decode image: %w", err)
+	}
+	flat := image.NewRGBA(src.Bounds())
+	draw.Draw(flat, flat.Bounds(), image.NewUniform(color.White), image.Point{}, draw.Src)
+	draw.Draw(flat, flat.Bounds(), src, src.Bounds().Min, draw.Over)
+	if IsBlank(flat, blankRatio) {
+		return nil, ErrBlankImage
+	}
+	fitW := min(cfg.Width, w, cfg.Width*h/cfg.Height)
+	scaled := downscale(flat, max(1, fitW))
+	canvas := image.NewRGBA(image.Rect(0, 0, w, h))
+	draw.Draw(canvas, canvas.Bounds(), image.NewUniform(letterbox), image.Point{}, draw.Src)
+	sb := scaled.Bounds()
+	off := image.Pt((w-sb.Dx())/2, (h-sb.Dy())/2)
+	draw.Draw(canvas, sb.Add(off), scaled, sb.Min, draw.Src)
+	for _, q := range []int{quality, max(minQuality, quality-25)} {
+		var buf bytes.Buffer
+		if err := jpeg.Encode(&buf, canvas, &jpeg.Options{Quality: q}); err != nil {
+			return nil, fmt.Errorf("preview: encode thumbnail: %w", err)
+		}
+		if maxBytes <= 0 || buf.Len() <= maxBytes {
+			return &Thumb{JPEG: buf.Bytes(), Width: w, Height: h}, nil
 		}
 	}
 	return nil, fmt.Errorf("preview: thumbnail exceeds %d bytes", maxBytes)

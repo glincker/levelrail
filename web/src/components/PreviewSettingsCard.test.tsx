@@ -40,7 +40,9 @@ describe('PreviewSettingsCard', () => {
     prunes = 0
     status = {
       app: 'web',
-      enabled: false,
+      enabled: true,
+      mode: 'metadata',
+      default_mode: 'metadata',
       path: '/',
       wait_ms: 0,
       server_enabled: true,
@@ -88,25 +90,56 @@ describe('PreviewSettingsCard', () => {
     vi.restoreAllMocks()
   })
 
-  it('loads off by default and shows storage and retention', async () => {
+  it('loads in the default metadata mode and shows storage and retention', async () => {
     renderCard()
-    const toggle = await screen.findByRole('switch', {
-      name: 'Deploy preview screenshots enabled',
+    const group = await screen.findByRole('radiogroup', {
+      name: 'Deploy preview mode',
     })
-    expect(toggle).toHaveAttribute('aria-checked', 'false')
+    expect(group).toBeInTheDocument()
+    expect(
+      screen.getByRole('radio', { name: /^Metadata \(default\)/ }),
+    ).toBeChecked()
+    expect(screen.getByRole('radio', { name: /^Off/ })).not.toBeChecked()
+    expect(screen.getByRole('radio', { name: /^Screenshot/ })).not.toBeChecked()
+    expect(screen.queryByText('docker.io/example/browser:1')).toBeNull()
+    expect(document.getElementById('preview-wait')).toBeNull()
     expect(screen.getByText(/2\.0 KiB in 2\s+previews/)).toBeInTheDocument()
     expect(screen.getByText('Last 5 plus live, 30 days')).toBeInTheDocument()
   })
 
-  it('enables previews with a PUT', async () => {
+  it('states the cost of each mode honestly', async () => {
+    renderCard()
+    await screen.findByRole('radiogroup')
+    expect(
+      screen.getByText('No browser. Costs about nothing.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Runs a browser for about 10 s per deploy.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Screenshot previews' }),
+    ).toBeInTheDocument()
+  })
+
+  it('switches to screenshot mode with a PUT and reveals the browser options', async () => {
     const user = userEvent.setup()
     renderCard()
-    await user.click(
-      await screen.findByRole('switch', {
-        name: 'Deploy preview screenshots enabled',
-      }),
+    await user.click(await screen.findByRole('radio', { name: /^Screenshot/ }))
+    await waitFor(() => expect(puts).toEqual([{ mode: 'screenshot' }]))
+    await waitFor(() =>
+      expect(document.getElementById('preview-wait')).not.toBeNull(),
     )
-    await waitFor(() => expect(puts).toEqual([{ enabled: true }]))
+    expect(screen.getByText('docker.io/example/browser:1')).toBeInTheDocument()
+  })
+
+  it('turns previews off with a PUT', async () => {
+    const user = userEvent.setup()
+    renderCard()
+    await user.click(await screen.findByRole('radio', { name: /^Off/ }))
+    await waitFor(() => expect(puts).toEqual([{ mode: 'off' }]))
+    expect(
+      await screen.findByRole('button', { name: /Recapture now/ }),
+    ).toBeDisabled()
   })
 
   it('saves a new capture path', async () => {

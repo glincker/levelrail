@@ -12,6 +12,8 @@ const REASON_TEXT: Record<string, string> = {
   auth_wall: 'Skipped: the page needs a login.',
   blank_image: 'Skipped: the page rendered blank.',
   bad_image: 'The screenshot could not be processed.',
+  not_html: 'Skipped: the page is not HTML.',
+  redirect: 'Skipped: the page redirects away from the app.',
   timeout: 'The capture took too long.',
   capture_failed: 'The capture failed.',
 }

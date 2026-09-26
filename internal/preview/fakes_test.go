@@ -135,6 +135,16 @@ func (r *fakeResolver) Resolve(context.Context, string, string) (Target, error) 
 	return r.target, r.err
 }
 
+func (r *fakeResolver) ResolveMeta(context.Context, string, string) (MetaTarget, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.calls++
+	if r.err != nil {
+		return MetaTarget{}, r.err
+	}
+	return MetaTarget{DeploymentID: r.target.DeploymentID, Image: r.target.Image, Dial: "127.0.0.1:1", Host: r.target.Host, Port: r.target.Port}, nil
+}
+
 func (r *fakeResolver) CurrentDeployment(context.Context, string) (string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -318,6 +328,7 @@ func newHarness(t *testing.T, mutate func(*Config)) *harness {
 		}
 		return "", false
 	}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	cfg.DefaultMode = ModeOff
 	if mutate != nil {
 		mutate(&cfg)
 	}

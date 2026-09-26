@@ -14,6 +14,7 @@ type PreviewRecord struct {
 	Detail       string    `json:"detail,omitempty"`
 	HTTPStatus   int       `json:"http_status,omitempty"`
 	Path         string    `json:"path"`
+	Source       string    `json:"source,omitempty"`
 	Bytes        int64     `json:"bytes"`
 	CapturedAt   time.Time `json:"captured_at"`
 	ImageURL     string    `json:"image_url,omitempty"`
@@ -23,6 +24,8 @@ type PreviewRecord struct {
 type PreviewStatus struct {
 	App           string `json:"app"`
 	Enabled       bool   `json:"enabled"`
+	Mode          string `json:"mode"`
+	DefaultMode   string `json:"default_mode"`
 	Path          string `json:"path"`
 	WaitMS        int    `json:"wait_ms"`
 	ServerEnabled bool   `json:"server_enabled"`
@@ -47,6 +50,7 @@ type PreviewStatus struct {
 // PreviewSettingsRequest is PUT /api/v1/apps/{name}/preview's body; nil
 // fields are left unchanged.
 type PreviewSettingsRequest struct {
+	Mode    *string `json:"mode,omitempty"`
 	Enabled *bool   `json:"enabled,omitempty"`
 	Path    *string `json:"path,omitempty"`
 	WaitMS  *int    `json:"wait_ms,omitempty"`

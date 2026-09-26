@@ -10,11 +10,11 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { InfoTip, SkeletonLine } from './kit'
+import { PreviewModeSelector } from './PreviewModeSelector'
 import { formatBytes } from '../lib/format'
-import type { PreviewStatus } from '../types/preview'
+import type { PreviewMode, PreviewStatus } from '../types/preview'
 import {
   useCapturePreview,
   usePreviewStatus,
@@ -27,9 +27,9 @@ function storageText(bytes: number): string {
   return bytes > 0 ? formatBytes(bytes) : '0 B'
 }
 
-// PreviewSettingsCard is the per-app opt-in for deploy preview screenshots
-// (GET/PUT /api/v1/apps/{name}/preview). Off by default: a preview can show
-// internal pages, and each capture runs a short-lived browser container.
+// PreviewSettingsCard picks a per-app deploy preview mode (GET/PUT
+// /api/v1/apps/{name}/preview): off, metadata (one small request, no browser)
+// or screenshot (a short-lived browser container per deploy).
 export function PreviewSettingsCard({ appName }: { appName: string }) {
   const status = usePreviewStatus(appName)
 
@@ -38,16 +38,16 @@ export function PreviewSettingsCard({ appName }: { appName: string }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CameraIcon className="size-4 text-muted-foreground" />
-          Deploy preview screenshots
+          Deploy previews
           <InfoTip label="About deploy previews">
-            Runs a 140 MB browser container for about 10 seconds after each
-            deploy. It loads the app over its private network and saves a small
-            thumbnail. The browser image is pulled the first time it is needed
-            and removed again once it sits unused.
+            A thumbnail of each deploy, shown in deploy history. The page is
+            always read over the app's own network without cookies, so pages
+            that need a login are skipped.
           </InfoTip>
         </CardTitle>
         <CardDescription>
-          A thumbnail of each deploy, shown in deploy history. Off by default.
+          A thumbnail of each deploy, shown in deploy history. Metadata mode
+          costs about nothing; screenshots need a browser.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -96,15 +96,16 @@ function PreviewSettingsForm({
       toast.add({ title, description: error.message, type: 'error' })
   }
 
-  function toggle(next: boolean) {
+  function changeMode(next: PreviewMode) {
     setPreview.mutate(
-      { enabled: next },
+      { mode: next },
       {
         onSuccess: () =>
           toast.add({
-            title: next
-              ? 'Deploy previews enabled.'
-              : 'Deploy previews disabled.',
+            title:
+              next === 'off'
+                ? 'Deploy previews turned off.'
+                : `Deploy previews set to ${next}.`,
             type: 'success',
           }),
         onError: onError('Could not update deploy previews.'),
@@ -145,29 +146,20 @@ function PreviewSettingsForm({
         </p>
       ) : null}
 
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-foreground">Enabled</p>
-          <p className="text-sm text-muted-foreground">
-            Screenshots can show internal pages. The page is loaded without
-            cookies, so login pages are skipped.
-          </p>
-        </div>
-        <Switch
-          checked={status.enabled}
-          onCheckedChange={toggle}
-          disabled={setPreview.isPending}
-          aria-label="Deploy preview screenshots enabled"
-        />
-      </div>
+      <PreviewModeSelector
+        value={status.mode}
+        defaultMode={status.default_mode}
+        disabled={setPreview.isPending}
+        onChange={changeMode}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="preview-path" className="flex items-center gap-1.5">
             Page to capture
             <InfoTip label="About the capture path">
-              An absolute path on this app, such as / or /pricing. The browser
-              reaches the app by its service name, never by a URL you supply.
+              An absolute path on this app, such as / or /pricing. The app is
+              reached by its service name, never by a URL you supply.
             </InfoTip>
           </Label>
           <Input
@@ -178,22 +170,24 @@ function PreviewSettingsForm({
             spellCheck={false}
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="preview-wait" className="flex items-center gap-1.5">
-            Extra wait (ms)
-            <InfoTip label="About the extra wait">
-              Milliseconds to let the page settle after it loads, for apps that
-              render late. Up to 10000.
-            </InfoTip>
-          </Label>
-          <Input
-            id="preview-wait"
-            inputMode="numeric"
-            value={waitMs}
-            onChange={(e) => setWaitMs(e.target.value)}
-            aria-invalid={!waitValid}
-          />
-        </div>
+        {status.mode === 'screenshot' ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="preview-wait" className="flex items-center gap-1.5">
+              Extra wait (ms)
+              <InfoTip label="About the extra wait">
+                Milliseconds to let the page settle after it loads, for apps
+                that render late. Up to 10000.
+              </InfoTip>
+            </Label>
+            <Input
+              id="preview-wait"
+              inputMode="numeric"
+              value={waitMs}
+              onChange={(e) => setWaitMs(e.target.value)}
+              aria-invalid={!waitValid}
+            />
+          </div>
+        ) : null}
       </div>
       <div>
         <Button
@@ -234,15 +228,17 @@ function PreviewSettingsForm({
             Last {status.keep_per_app} plus live, {status.ttl_days} days
           </dd>
         </div>
-        <div>
-          <dt className="text-muted-foreground">Browser image</dt>
-          <dd
-            className="truncate font-mono text-xs text-foreground"
-            title={status.image}
-          >
-            {status.image}
-          </dd>
-        </div>
+        {status.mode === 'screenshot' || status.browser_image ? (
+          <div>
+            <dt className="text-muted-foreground">Browser image</dt>
+            <dd
+              className="truncate font-mono text-xs text-foreground"
+              title={status.image}
+            >
+              {status.image}
+            </dd>
+          </div>
+        ) : null}
       </dl>
 
       <div className="flex flex-wrap gap-2">
@@ -254,7 +250,9 @@ function PreviewSettingsForm({
               onError: onError('Could not start a preview capture.'),
             })
           }
-          disabled={!status.enabled || !status.server_enabled || capturing}
+          disabled={
+            status.mode === 'off' || !status.server_enabled || capturing
+          }
         >
           <CameraIcon className="size-3.5" data-icon="inline-start" />
           {capturing ? 'Capturing...' : 'Recapture now'}
