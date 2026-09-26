@@ -1494,6 +1494,13 @@ func (c *Client) SetGitSource(ctx context.Context, name string, req SetGitSource
 	return out, err
 }
 
+// SetGitDeploySettings calls PUT /api/v1/apps/{name}/git-source/deploy-settings.
+func (c *Client) SetGitDeploySettings(ctx context.Context, name string, req SetGitDeploySettingsRequest) (GitDeploySettings, error) {
+	var out GitDeploySettings
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/git-source/deploy-settings", req, &out)
+	return out, err
+}
+
 // DeleteGitSource calls DELETE /api/v1/apps/{name}/git-source.
 func (c *Client) DeleteGitSource(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/git-source", nil, nil)

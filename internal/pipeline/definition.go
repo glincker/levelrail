@@ -37,6 +37,7 @@ const (
 	TriggerPush        = "push"
 	TriggerPullRequest = "pull_request"
 	TriggerTag         = "tag"
+	TriggerMergeGroup  = "merge_group"
 	TriggerManual      = "manual"
 	TriggerSchedule    = "schedule"
 	TriggerAPI         = "api"
@@ -85,15 +86,18 @@ func (l *StringList) UnmarshalYAML(n *yaml.Node) error {
 
 // Definition is a parsed pipeline file.
 type Definition struct {
-	Version     int                 `yaml:"version" json:"version"`
-	Name        string              `yaml:"name" json:"name"`
-	On          Triggers            `yaml:"on" json:"on"`
-	Stages      []string            `yaml:"stages,omitempty" json:"stages,omitempty"`
-	Env         map[string]string   `yaml:"env,omitempty" json:"env,omitempty"`
-	Concurrency *Concurrency        `yaml:"concurrency,omitempty" json:"concurrency,omitempty"`
-	Timeout     Duration            `yaml:"timeout,omitempty" json:"timeout,omitempty"`
-	Templates   map[string]Template `yaml:"templates,omitempty" json:"templates,omitempty"`
-	Jobs        map[string]*Job     `yaml:"jobs" json:"jobs"`
+	Version     int               `yaml:"version" json:"version"`
+	Name        string            `yaml:"name" json:"name"`
+	On          Triggers          `yaml:"on" json:"on"`
+	Stages      []string          `yaml:"stages,omitempty" json:"stages,omitempty"`
+	Env         map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
+	Concurrency *Concurrency      `yaml:"concurrency,omitempty" json:"concurrency,omitempty"`
+	// ReportStatus posts run state back to the forge as a commit status.
+	// Nil means on, when the app has provider credentials.
+	ReportStatus *bool               `yaml:"report_status,omitempty" json:"report_status,omitempty"`
+	Timeout      Duration            `yaml:"timeout,omitempty" json:"timeout,omitempty"`
+	Templates    map[string]Template `yaml:"templates,omitempty" json:"templates,omitempty"`
+	Jobs         map[string]*Job     `yaml:"jobs" json:"jobs"`
 	// JobOrder is the order jobs appear in the file, kept for stable display.
 	JobOrder []string `yaml:"-" json:"job_order"`
 }
@@ -103,15 +107,22 @@ type Triggers struct {
 	Push        *RefTrigger    `yaml:"push,omitempty" json:"push,omitempty"`
 	PullRequest *PRTrigger     `yaml:"pull_request,omitempty" json:"pull_request,omitempty"`
 	Tag         *TagTrigger    `yaml:"tag,omitempty" json:"tag,omitempty"`
+	MergeGroup  *RefTrigger    `yaml:"merge_group,omitempty" json:"merge_group,omitempty"`
 	Manual      *ManualTrigger `yaml:"manual,omitempty" json:"manual,omitempty"`
 	Schedule    []string       `yaml:"schedule,omitempty" json:"schedule,omitempty"`
 	API         bool           `yaml:"api,omitempty" json:"api,omitempty"`
 }
 
-// RefTrigger filters push and pull request events by branch glob.
+// RefTrigger filters push and merge_group events by branch glob and, for
+// push, by the paths the commits changed.
 type RefTrigger struct {
-	Branches StringList `yaml:"branches,omitempty" json:"branches,omitempty"`
+	Branches    StringList `yaml:"branches,omitempty" json:"branches,omitempty"`
+	Paths       StringList `yaml:"paths,omitempty" json:"paths,omitempty"`
+	PathsIgnore StringList `yaml:"paths_ignore,omitempty" json:"paths_ignore,omitempty"`
 }
+
+// ReportsStatus reports whether run state is posted back to the forge.
+func (d *Definition) ReportsStatus() bool { return d.ReportStatus == nil || *d.ReportStatus }
 
 // Fork policies for pull requests whose source is another repository.
 const (
@@ -124,6 +135,11 @@ const (
 // what happens to a pull request from a fork.
 type PRTrigger struct {
 	Branches StringList `yaml:"branches,omitempty" json:"branches,omitempty"`
+	// Types limits which pull request actions start a run: opened,
+	// reopened, synchronize. Empty means all three.
+	Types       StringList `yaml:"types,omitempty" json:"types,omitempty"`
+	Paths       StringList `yaml:"paths,omitempty" json:"paths,omitempty"`
+	PathsIgnore StringList `yaml:"paths_ignore,omitempty" json:"paths_ignore,omitempty"`
 	// Forks is block (the default), approve (hold the run until an
 	// approver releases it), or allow.
 	Forks string `yaml:"forks,omitempty" json:"forks,omitempty"`

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 )
 
 // runAppsGitSource dispatches "apps git-source <verb> [flags]" to one of
@@ -27,6 +28,8 @@ func runAppsGitSource(prog string, args []string, stdout, stderr io.Writer, look
 		return runAppsGitSourceGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "set":
 		return runAppsGitSourceSet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "settings":
+		return runAppsGitSourceSettings(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runAppsGitSourceDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -40,6 +43,7 @@ func appsGitSourceUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps git-source get <name> [flags]                              show an app's connected repo
   %[1]s apps git-source set <name> --repo-url URL [flags]              connect (or edit) a repo for auto-deploy-on-push
+  %[1]s apps git-source settings <name> [flags]                         set push path filters and forge status reporting
   %[1]s apps git-source delete <name> [flags]                           disconnect an app's repo
 
 Run "%[1]s apps git-source <subcommand> -h" for a subcommand's own flags.
@@ -151,4 +155,11 @@ func printGitSourceHuman(out io.Writer, gs gitSourceResource) {
 	_, _ = fmt.Fprintf(out, "webhook_url:    %s\n", gs.WebhookURL)
 	_, _ = fmt.Fprintf(out, "preview_enabled: %t\n", gs.PreviewEnabled)
 	_, _ = fmt.Fprintf(out, "post_pr_comments: %t\n", gs.PostPRComments)
+	_, _ = fmt.Fprintf(out, "report_status:  %t\n", gs.ReportStatus)
+	if len(gs.DeployPaths) > 0 {
+		_, _ = fmt.Fprintf(out, "deploy_paths:   %s\n", strings.Join(gs.DeployPaths, ", "))
+	}
+	if len(gs.DeployPathsIgnore) > 0 {
+		_, _ = fmt.Fprintf(out, "deploy_paths_ignore: %s\n", strings.Join(gs.DeployPathsIgnore, ", "))
+	}
 }

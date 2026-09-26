@@ -11,6 +11,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/gpu"
 )
 
 const mib = 1 << 20
@@ -18,7 +20,8 @@ const mib = 1 << 20
 var hfRepoRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,95}/[A-Za-z0-9][A-Za-z0-9._-]{0,95}$`)
 
 // DiskFactsFunc reports free and total bytes of the disk holding a node's
-// model cache. ok is false when the node has not reported.
+// model cache. nodeID is "" for the control plane host. ok is false when
+// the disk cannot be measured.
 type DiskFactsFunc func(ctx context.Context, nodeID string) (free, total int64, ok bool)
 
 type preflightDeps struct {
@@ -51,6 +54,8 @@ type PreflightInput struct {
 	File   string
 	Quant  string
 	NodeID string
+	// GPUCount is how many GPUs the model will use; 0 or less means all.
+	GPUCount int
 	// Token is used for this request only and never stored or logged.
 	Token string
 }
@@ -167,7 +172,7 @@ func (s *Service) Preflight(ctx context.Context, in PreflightInput) (PreflightRe
 	}
 
 	res := PreflightResult{Repo: repo, Files: []PreflightFile{}, Quants: []Quant{}, Warnings: []string{}, CompatibleEngines: []string{}, EstimateNote: FitNote}
-	res.Node = s.preflightNode(ctx, in.NodeID)
+	res.Node = s.preflightNode(ctx, in.NodeID, in.GPUCount)
 
 	info, cached, err := s.preflight.hf.Repo(ctx, repo, in.Token)
 	res.Cached = cached
@@ -242,7 +247,7 @@ func (s *Service) describePreflight(res *PreflightResult, info *HFRepo, in Prefl
 	}
 
 	switch {
-	case info.Gated != "" && info.Access == "denied":
+	case info.Gated != "" && (info.Access == "denied" || in.Engine == EngineOllama):
 		res.Status = HFStatusGated
 		if in.Engine == EngineOllama {
 			res.Message = "This repository is gated, and Ollama cannot pass a Hugging Face token."
@@ -276,14 +281,14 @@ func (s *Service) describePreflight(res *PreflightResult, info *HFRepo, in Prefl
 		res.RecommendationNote = "No quantization fits this node's free VRAM and disk (estimate). Pick a smaller model or a node with more memory."
 	}
 
-	res.Selected = s.selectDownload(res, in, safetensors, binWeights, freeVRAM)
+	res.Selected = s.selectDownload(res, files, in, safetensors, binWeights, freeVRAM)
 	res.Disk = fit.diskCheck(res.Selected, res.Quants, res.Node.DiskFreeBytes)
 }
 
-func (s *Service) selectDownload(res *PreflightResult, in PreflightInput, safetensors, binWeights, freeVRAM int64) *PreflightSelection {
+func (s *Service) selectDownload(res *PreflightResult, files []HFFile, in PreflightInput, safetensors, binWeights, freeVRAM int64) *PreflightSelection {
 	fit := s.preflight.fit
 	if in.File != "" {
-		for _, f := range res.Files {
+		for _, f := range files {
 			if f.Name == in.File {
 				return &PreflightSelection{Label: f.Name, Bytes: f.Bytes, Fit: fit.FitVerdict(f.Bytes, freeVRAM)}
 			}
@@ -343,27 +348,39 @@ func (c FitConfig) diskCheck(sel *PreflightSelection, quants []Quant, free *int6
 	return d
 }
 
-func (s *Service) preflightNode(ctx context.Context, nodeID string) PreflightNode {
+// usableVRAM totals the GPUs a model will occupy. With a positive gpuCount
+// it assumes the worst placement: the gpuCount devices with the least free
+// memory, since the scheduler does not say which ones it will pick.
+func usableVRAM(devices []gpu.Device, gpuCount int) (total, free int64) {
+	type dev struct{ total, free int64 }
+	ds := make([]dev, len(devices))
+	for i, d := range devices {
+		t, u := d.VRAMTotalMiB*mib, d.VRAMUsedMiB*mib
+		ds[i] = dev{t, max(t-u, 0)}
+	}
+	sort.Slice(ds, func(i, j int) bool { return ds[i].free < ds[j].free })
+	if gpuCount > 0 && gpuCount < len(ds) {
+		ds = ds[:gpuCount]
+	}
+	for _, d := range ds {
+		total += d.total
+		free += d.free
+	}
+	return total, free
+}
+
+func (s *Service) preflightNode(ctx context.Context, nodeID string, gpuCount int) PreflightNode {
 	n := PreflightNode{NodeID: nodeID}
 	info, known, err := s.nodeGPU(ctx, nodeID)
 	if err != nil {
 		slog.Warn("models: preflight read node gpu", slog.String("node", nodeID), slog.String("error", err.Error()))
 	} else if known && info.Present {
 		n.GPUPresent = true
-		var total, used int64
-		for _, d := range info.Devices {
-			total += d.VRAMTotalMiB * mib
-			used += d.VRAMUsedMiB * mib
-		}
-		free := max(total-used, 0)
+		total, free := usableVRAM(info.Devices, gpuCount)
 		n.VRAMTotalBytes, n.VRAMFreeBytes = &total, &free
 	}
 	if s.preflight.diskFree != nil {
-		id := nodeID
-		if id == "" {
-			id = s.localID
-		}
-		if free, total, ok := s.preflight.diskFree(ctx, id); ok {
+		if free, total, ok := s.preflight.diskFree(ctx, nodeID); ok {
 			n.DiskFreeBytes, n.DiskTotalBytes = &free, &total
 		}
 	}

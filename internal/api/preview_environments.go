@@ -97,6 +97,17 @@ func (rt *Router) handlePullRequestWebhookEvent(ctx context.Context, appName str
 // preview at all. approved lets one operator-approved fork PR through the
 // fork gate.
 func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, gs store.GitSource, ev webhook.PullRequestEvent, approved bool) (int, string) {
+	envURL := ""
+	if d := rt.previewDomain(ctx, appName, ev.Number); d != "" {
+		envURL = "https://" + d
+	}
+	dep := rt.beginForgeDeployment(ctx, appName, gs, ev.HeadSHA, forgeEnvPreview, envURL)
+	status, message := rt.deployPreviewEnvironmentInner(ctx, appName, gs, ev, approved)
+	dep.finish(ctx, deploymentStateFor(status, message), strings.TrimSpace(message))
+	return status, message
+}
+
+func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName string, gs store.GitSource, ev webhook.PullRequestEvent, approved bool) (int, string) {
 	previewName := previewAppName(appName, ev.Number)
 
 	preview, done, status, message := rt.beginPreview(ctx, appName, gs, ev, approved)

@@ -11,6 +11,7 @@ export interface PreflightRequest {
   engine?: string
   quant?: string
   file?: string
+  gpu_count?: number
   node_id?: string
   hf_token?: string
 }

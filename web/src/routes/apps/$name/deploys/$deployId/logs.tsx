@@ -34,6 +34,7 @@ import { DeployMetaCard } from '../../../../../components/DeployMetaCard'
 import { DeployQuickLinks } from '../../../../../components/DeployQuickLinks'
 import { DeployStageTimeline } from '../../../../../components/DeployStageTimeline'
 import { ConditionsPanel } from '../../../../../components/ConditionsPanel'
+import { SupplyChainSection } from '../../../../../components/SupplyChainSection'
 import { PageSpinner } from '@/components/ui/page-spinner'
 
 // 'image' attempts (a bare image-tag redeploy/rollback) have no build
@@ -213,6 +214,17 @@ function DeployLogsPage() {
               </DeploySection>
             </div>
           </div>
+
+          <section className="space-y-2 rounded-lg border border-border p-4">
+            <h2 className="text-sm font-medium text-foreground">
+              Supply chain
+            </h2>
+            <SupplyChainSection
+              appName={name}
+              deploymentId={deployId}
+              sbomPackages={attempt.sbom_packages}
+            />
+          </section>
 
           <DeployQuickLinks appName={name} />
         </>

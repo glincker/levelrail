@@ -1,7 +1,6 @@
 package githubapp
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -123,22 +122,7 @@ func (c *Client) do(ctx context.Context, baseURL, method, path string, authHeade
 // GET or a bodyless POST, which is why do itself deliberately has no
 // body parameter (see its own doc comment).
 func (c *Client) doWithBody(ctx context.Context, baseURL, method, path, authHeader string, body []byte) error {
-	return c.doJSON(ctx, baseURL, method, path, authHeader, body, nil)
-}
-
-func (c *Client) doJSON(ctx context.Context, baseURL, method, path, authHeader string, body []byte, out any) error {
-	req, err := http.NewRequestWithContext(ctx, method, baseURL+path, bytes.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("%s: build request: %w", errPrefix, err)
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("X-GitHub-Api-Version", apiVersion)
-	req.Header.Set("Content-Type", "application/json")
-	if authHeader != "" {
-		req.Header.Set("Authorization", authHeader)
-	}
-
-	err = gitprovider.Execute(c.HTTP, req, errPrefix, apiName, method+" "+path, out)
+	err := c.doJSON(ctx, baseURL, method, path, authHeader, body, nil)
 	var apiErr *apiError
 	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusForbidden {
 		return fmt.Errorf("%w: %w", ErrPermissionDenied, apiErr)

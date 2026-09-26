@@ -23,6 +23,8 @@ const (
 	AppEventSuspend        = "suspend"
 	AppEventResume         = "resume"
 	AppEventFreezeOverride = "freeze_override"
+	// AppEventScanGateOverride marks an operator letting a scan-blocked release through.
+	AppEventScanGateOverride = "scan_gate_override"
 )
 
 const (

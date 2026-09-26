@@ -117,8 +117,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 100 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 100 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 106 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 106 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -228,6 +228,12 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/deployments/{id}/preview | AbilityRead | handleGetPreviewImage |
 | GET | /api/v1/apps/{name}/changes | AbilityRead | handleAppChanges |
 | GET | /api/v1/apps/{name}/slo-preview | AbilityRead | handleSLOPreview |
+| GET | /api/v1/apps/{name}/supply-chain | AbilityRead | handleGetSupplyChain |
+| PUT | /api/v1/apps/{name}/supply-chain | AbilityWrite | handlePutSupplyChain |
+| POST | /api/v1/apps/{name}/supply-chain/override | AbilityWrite | handleSupplyChainOverride |
+| GET | /api/v1/apps/{name}/deployments/{id}/sbom | AbilityRead | handleGetSBOM |
+| GET | /api/v1/apps/{name}/deployments/{id}/vulnerabilities | AbilityRead | handleGetVulnerabilities |
+| POST | /api/v1/apps/{name}/deployments/{id}/scan | AbilityWrite | handleScanDeployment |
 | GET | /api/v1/apps/{name}/preview-policy | AbilityRead | handleGetPreviewPolicy |
 | PUT | /api/v1/apps/{name}/preview-policy | AbilityWriteSensitive | handleSetPreviewPolicy |
 
@@ -259,6 +265,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/previews/{number}/teardown | AbilityDeploy | handleTeardownPreviewEnvironment |
 | POST | /api/v1/previews/sweep | AbilityDeploy | handleSweepPreviewEnvironments |
 | DELETE | /api/v1/apps/{name}/secrets/{key} | AbilityWriteSensitive | handleDeleteSecret |
+| PUT | /api/v1/apps/{name}/git-source/deploy-settings | AbilityWriteSensitive | handleSetGitDeploySettings |
 | GET | /api/v1/previews | AbilityRead | handleListAllPreviews |
 | POST | /api/v1/apps/{name}/previews/{number}/approve | AbilityWriteSensitive | handleApprovePreviewEnvironment |
 
@@ -762,6 +769,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/deployments/stream | AbilityRead | handleDeploymentsStream |
 | GET | /api/v1/model-cache | AbilityRead | handleListModelCache |
 | POST | /api/v1/model-cache/prune | AbilityRoot | handlePruneModelCache |
+| POST | /api/v1/pipelines/filters | AbilityRead | handlePipelineFilters |
 
 ## See also
 
