@@ -121,6 +121,7 @@ var toolTable = map[string]Meta{
 	"sweep_stale_preview_environments":      {clsD, "previews", 0},
 	"list_alert_rules":                      {clsR, "alerts", 0},
 	"get_app_metrics":                       {clsR, "metrics", 0},
+	"get_app_requests":                      {clsR, "metrics", 0},
 	"diagnose_app_failure":                  {clsR, "diagnostics", unt},
 	"get_attention":                         {clsR, "diagnostics", unt},
 	"list_feature_flags":                    {clsR, "flags", 0},

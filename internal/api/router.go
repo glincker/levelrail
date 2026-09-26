@@ -107,6 +107,7 @@ type Router struct {
 	secrets                SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	composeSecrets         ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
+	requestSummaryWindow   time.Duration      // 0 keeps defaultRequestSummaryWindow
 	alertRules             AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
 	lb                     lbDeps             // zero value is valid: load balancer routes return 501
 	sessions               *sessionStore
