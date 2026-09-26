@@ -24,6 +24,9 @@ func (t *Triggers) UnmarshalYAML(n *yaml.Node) error {
 		case "pull_request":
 			t.PullRequest = &PRTrigger{}
 			err = decodeUnlessNull(val, isNull, t.PullRequest)
+		case "merge_group":
+			t.MergeGroup = &RefTrigger{}
+			err = decodeUnlessNull(val, isNull, t.MergeGroup)
 		case "tag":
 			t.Tag = &TagTrigger{}
 			err = decodeUnlessNull(val, isNull, t.Tag)
@@ -53,5 +56,5 @@ func decodeUnlessNull(val *yaml.Node, isNull bool, out any) error {
 
 // IsEmpty reports whether no trigger is configured.
 func (t Triggers) IsEmpty() bool {
-	return t.Push == nil && t.PullRequest == nil && t.Tag == nil && t.Manual == nil && len(t.Schedule) == 0 && !t.API
+	return t.Push == nil && t.PullRequest == nil && t.Tag == nil && t.MergeGroup == nil && t.Manual == nil && len(t.Schedule) == 0 && !t.API
 }

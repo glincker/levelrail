@@ -255,6 +255,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/previews/{number}/teardown | AbilityDeploy | handleTeardownPreviewEnvironment |
 | POST | /api/v1/previews/sweep | AbilityDeploy | handleSweepPreviewEnvironments |
 | DELETE | /api/v1/apps/{name}/secrets/{key} | AbilityWriteSensitive | handleDeleteSecret |
+| PUT | /api/v1/apps/{name}/git-source/deploy-settings | AbilityWriteSensitive | handleSetGitDeploySettings |
 
 ## Telemetry
 
@@ -753,6 +754,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/deployments | AbilityRead | handleListDeployments |
 | GET | /api/v1/deployments/summary | AbilityRead | handleDeploymentsSummary |
 | GET | /api/v1/deployments/stream | AbilityRead | handleDeploymentsStream |
+| POST | /api/v1/pipelines/filters | AbilityRead | handlePipelineFilters |
 
 ## See also
 

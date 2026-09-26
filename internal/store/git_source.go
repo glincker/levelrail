@@ -85,8 +85,16 @@ type GitSource struct {
 	// "SaveGitSource never writes it" shape PreviewEnabled's own doc
 	// comment already establishes.
 	PostPRComments bool
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	// DeployPaths and DeployPathsIgnore filter which pushes deploy by the
+	// files they changed (doublestar globs). Empty means every push
+	// deploys. ReportStatus posts deploy and preview state back to the
+	// forge; it defaults on. All three are set only via
+	// SetGitSourceDeploySettings.
+	DeployPaths       []string
+	DeployPathsIgnore []string
+	ReportStatus      bool
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }
 
 // GitSourceBuild is one additional service's own build config within
@@ -162,7 +170,7 @@ func (db *DB) SaveGitSource(ctx context.Context, g GitSource) error {
 // ErrGitSourceNotFound if none is.
 func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, created_at, updated_at
+		SELECT service_name, repo_url, branch, build_type, build_path, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at
 		FROM service_git_sources WHERE service_name = ?
 	`, serviceName)
 	g, err := scanGitSource(row.Scan)
@@ -258,6 +266,35 @@ func (db *DB) SetGitSourcePostPRComments(ctx context.Context, serviceName string
 	return db.setGitSourceBoolColumn(ctx, "post_pr_comments", serviceName, enabled)
 }
 
+// SetGitSourceDeploySettings replaces a connected source's deploy path
+// filters and status reporting flag; it returns ErrGitSourceNotFound if no
+// source is connected for serviceName.
+func (db *DB) SetGitSourceDeploySettings(ctx context.Context, serviceName string, paths, pathsIgnore []string, reportStatus bool) error {
+	pathsJSON, err := json.Marshal(nonNilStrings(paths))
+	if err != nil {
+		return fmt.Errorf("store: set source %q deploy settings: %w", serviceName, err)
+	}
+	ignoreJSON, err := json.Marshal(nonNilStrings(pathsIgnore))
+	if err != nil {
+		return fmt.Errorf("store: set source %q deploy settings: %w", serviceName, err)
+	}
+	report := 0
+	if reportStatus {
+		report = 1
+	}
+	res, err := db.ExecContext(ctx, `
+		UPDATE service_git_sources SET deploy_paths = ?, deploy_paths_ignore = ?, report_status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE service_name = ?
+	`, string(pathsJSON), string(ignoreJSON), report, serviceName)
+	if err != nil {
+		return fmt.Errorf("store: set source %q deploy settings: %w", serviceName, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrGitSourceNotFound
+	}
+	return nil
+}
+
 // setGitSourceBoolColumn is SetGitSourcePreviewEnabled/
 // SetGitSourcePostPRComments's shared implementation: column is always
 // one of this file's own literal column names, never caller/request
@@ -290,13 +327,22 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 		additionalJSON, svcJSON       string
 		dbJSON                        string
 		previewEnabled, postPRComment int
+		reportStatus                  int
+		pathsJSON, pathsIgnoreJSON    string
 		createdAt, updatedAt          string
 	)
-	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &createdAt, &updatedAt); err != nil {
+	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
 	g.PreviewEnabled = previewEnabled != 0
 	g.PostPRComments = postPRComment != 0
+	g.ReportStatus = reportStatus != 0
+	if err := json.Unmarshal([]byte(pathsJSON), &g.DeployPaths); err != nil {
+		return nil, fmt.Errorf("unmarshal deploy_paths: %w", err)
+	}
+	if err := json.Unmarshal([]byte(pathsIgnoreJSON), &g.DeployPathsIgnore); err != nil {
+		return nil, fmt.Errorf("unmarshal deploy_paths_ignore: %w", err)
+	}
 	if err := json.Unmarshal([]byte(additionalJSON), &g.AdditionalServices); err != nil {
 		return nil, fmt.Errorf("unmarshal additional_services: %w", err)
 	}

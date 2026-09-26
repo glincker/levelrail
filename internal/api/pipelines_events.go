@@ -20,24 +20,25 @@ type PipelineEvents interface {
 // SetPipelineEvents wires git webhook deliveries to pipeline triggers.
 func (rt *Router) SetPipelineEvents(e PipelineEvents) { rt.pipelineEvents = e }
 
-// firePipelinePush starts pipelines for a push or tag ref. It runs
+// firePipelinePushEvent starts pipelines for a push or tag ref. It runs
 // independently of whether the app's git source deploys on this push.
-func (rt *Router) firePipelinePush(ctx context.Context, app, ref, sha string) {
+func (rt *Router) firePipelinePushEvent(ctx context.Context, app string, push webhook.PushEvent) {
 	if rt.pipelineEvents == nil {
 		return
 	}
-	if rt.pipelineSync != nil && strings.HasPrefix(ref, "refs/heads/") {
-		go rt.syncThenTriggerPush(context.WithoutCancel(ctx), app, ref, sha)
+	if rt.pipelineSync != nil && strings.HasPrefix(push.Ref, "refs/heads/") {
+		go rt.syncThenTriggerPush(context.WithoutCancel(ctx), app, push)
 		return
 	}
-	rt.triggerPipelinePush(ctx, app, ref, sha)
+	rt.triggerPipelinePush(ctx, app, push)
 }
 
 // syncThenTriggerPush refreshes the app's repository-sourced definitions
 // before starting the pushed ref's pipelines, reading the files at the pushed
 // commit so a run's SHA and definitions agree. It runs off the request goroutine because a
 // clone can outlast a git provider's webhook timeout.
-func (rt *Router) syncThenTriggerPush(ctx context.Context, app, ref, sha string) {
+func (rt *Router) syncThenTriggerPush(ctx context.Context, app string, push webhook.PushEvent) {
+	ref, sha := push.Ref, push.After
 	ctx, cancel := context.WithTimeout(ctx, pipelineSyncTimeout)
 	defer cancel()
 	if _, ran, err := rt.pipelineSync.syncer.SyncOnPush(ctx, app, ref, sha); errors.Is(err, pipeline.ErrSHAUnavailable) {
@@ -47,11 +48,15 @@ func (rt *Router) syncThenTriggerPush(ctx context.Context, app, ref, sha string)
 	} else if ran {
 		rt.logger.Info("api: pipeline definitions synced on push", slog.String("app", app), slog.String("ref", ref))
 	}
-	rt.triggerPipelinePush(ctx, app, ref, sha)
+	rt.triggerPipelinePush(ctx, app, push)
 }
 
-func (rt *Router) triggerPipelinePush(ctx context.Context, app, ref, sha string) {
-	ev := pipeline.Event{Kind: pipeline.TriggerPush, Branch: strings.TrimPrefix(ref, "refs/heads/")}
+func (rt *Router) triggerPipelinePush(ctx context.Context, app string, push webhook.PushEvent) {
+	ref, sha := push.Ref, push.After
+	ev := pipeline.Event{
+		Kind: pipeline.TriggerPush, Branch: strings.TrimPrefix(ref, "refs/heads/"), Changed: push.Changed,
+		ChangedFn: rt.changedFilesFn(app, changeQuery{Base: push.Before, Head: sha}),
+	}
 	if strings.HasPrefix(ref, "refs/tags/") {
 		ev = pipeline.Event{Kind: pipeline.TriggerTag, Tag: strings.TrimPrefix(ref, "refs/tags/")}
 	}
@@ -66,8 +71,21 @@ func (rt *Router) firePipelinePullRequest(ctx context.Context, app string, pr we
 	if rt.pipelineEvents == nil || pr.Action == webhook.PullRequestClosed {
 		return
 	}
-	ev := pipeline.Event{Kind: pipeline.TriggerPullRequest, Branch: pr.BaseRef, Fork: pr.IsFork(), HeadRepo: pr.HeadRepoFullName}
+	ev := pipeline.Event{
+		Kind: pipeline.TriggerPullRequest, Branch: pr.BaseRef, Fork: pr.IsFork(), HeadRepo: pr.HeadRepoFullName,
+		Action: string(pr.Action), ChangedFn: rt.changedFilesFn(app, changeQuery{PR: pr.Number}),
+	}
 	rt.pipelineEvents.TriggerEvent(ctx, app, ev, "refs/heads/"+pr.HeadRef, pr.HeadSHA, "webhook")
+}
+
+// firePipelineMergeGroup starts merge_group pipelines when GitHub's merge
+// queue asks for checks on a queued group's head commit.
+func (rt *Router) firePipelineMergeGroup(ctx context.Context, app string, mg webhook.MergeGroupEvent) {
+	if rt.pipelineEvents == nil || !mg.ChecksRequested() {
+		return
+	}
+	ev := pipeline.Event{Kind: pipeline.TriggerMergeGroup, Branch: mg.BaseBranch()}
+	rt.pipelineEvents.TriggerEvent(ctx, app, ev, mg.HeadRef, mg.HeadSHA, "webhook")
 }
 
 // SetPipelines wires the pipeline endpoints after construction, for wiring

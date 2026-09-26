@@ -18,6 +18,7 @@ import {
   useValidatePipeline,
 } from '../queries/pipelines'
 import { lineOffsets, NEW_PIPELINE_YAML } from '../lib/pipelineTemplate'
+import { PipelineTriggerFilters } from './PipelineTriggerFilters'
 import type { PipelineIssue } from '../types/pipelines'
 
 const LINE_HEIGHT_CLASS = 'leading-5'
@@ -215,6 +216,14 @@ export function PipelineEditor({
         errorLines={errorLines}
         boxRef={boxRef}
       />
+      {valid && validate.data?.filters ? (
+        <PipelineTriggerFilters
+          key={JSON.stringify(validate.data.filters)}
+          yaml={text}
+          filters={validate.data.filters}
+          onApply={setYaml}
+        />
+      ) : null}
       <div aria-live="polite" className="text-sm">
         {valid ? (
           <p className="flex items-center gap-1.5 text-green-700 dark:text-green-400">

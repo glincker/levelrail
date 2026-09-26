@@ -35,7 +35,7 @@ func pipelinesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s pipelines list <app> [flags]                       list an app's pipelines
   %[1]s pipelines validate <file> [--json]                 validate a pipeline file locally (no API call)
-  %[1]s pipelines save <app> <file-or-repo-dir> [--name N] [flags]   create or update pipelines from a file, or every file in a repo's pipeline directory
+  %[1]s pipelines save <app> <file-or-repo-dir> [--name N] [--paths G,...] [--paths-ignore G,...] [--report-status=false] [flags]   create or update pipelines from a file, or every file in a repo's pipeline directory
   %[1]s pipelines delete <app> <name> [flags]              delete a pipeline
   %[1]s pipelines run <app> <name> [--ref R] [--sha S] [--input k=v]... [--follow] [flags]
   %[1]s pipelines runs <app> [<run-id>] [--pipeline N] [--limit N] [flags]   list runs, or show one run's jobs and steps
@@ -192,10 +192,28 @@ func runPipelinesValidate(prog string, args []string, stdout, stderr io.Writer) 
 func runPipelinesSave(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	c := newPipelineCmd(prog, "pipelines save", "print the saved pipelines as JSON", stdout, stderr)
 	name := c.fs.String("name", "", "pipeline name for a single file (default: the file's name field)")
+	var paths, ignore csvListFlag
+	var report bool
+	c.fs.Var(&paths, "paths", "run push and pull_request triggers only when a changed file matches these globs (comma separated, ** supported); empty clears the filter")
+	c.fs.Var(&ignore, "paths-ignore", "skip runs when every changed file matches these globs (comma separated); empty clears the filter")
+	c.fs.BoolVar(&report, "report-status", true, "post run state back to the git forge as a commit status")
 	client, pos, of, jsonOut, code, ok := c.parse(args, 2, 2, lookupEnv)
 	if !ok {
 		return code
 	}
+	var edit filterEdit
+	c.fs.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "paths":
+			v := []string(paths)
+			edit.paths = &v
+		case "paths-ignore":
+			v := []string(ignore)
+			edit.ignore = &v
+		case "report-status":
+			edit.report = &report
+		}
+	})
 	ctx := context.Background()
 	files := []string{pos[1]}
 	if info, err := os.Stat(pos[1]); err == nil && info.IsDir() { //nolint:gosec // operator-supplied local path on their own CLI
@@ -208,7 +226,7 @@ func runPipelinesSave(prog string, args []string, stdout, stderr io.Writer, look
 	}
 	var saved []apiclient.PipelineResource
 	for _, f := range files {
-		p, err := savePipelineFile(ctx, client, pos[0], f, *name, stderr)
+		p, err := savePipelineFile(ctx, client, pos[0], f, *name, edit, stderr)
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
 		}
@@ -221,10 +239,38 @@ func runPipelinesSave(prog string, args []string, stdout, stderr io.Writer, look
 	})
 }
 
-func savePipelineFile(ctx context.Context, client *Client, app, path, nameOverride string, stderr io.Writer) (apiclient.PipelineResource, error) {
+// filterEdit carries the path filter and status reporting flags of
+// "pipelines save"; a nil field leaves the file's own setting alone.
+type filterEdit struct {
+	paths, ignore *[]string
+	report        *bool
+}
+
+func (e filterEdit) apply(data []byte) ([]byte, error) {
+	var paths, ignore []string
+	if e.paths != nil {
+		paths = append([]string{}, *e.paths...)
+	}
+	if e.ignore != nil {
+		ignore = append([]string{}, *e.ignore...)
+	}
+	if e.paths == nil && e.ignore == nil && e.report == nil {
+		return data, nil
+	}
+	out, err := pipeline.ApplyFilters(data, paths, ignore, e.report)
+	if err != nil {
+		return nil, newValidationError("%v", err)
+	}
+	return out, nil
+}
+
+func savePipelineFile(ctx context.Context, client *Client, app, path, nameOverride string, edit filterEdit, stderr io.Writer) (apiclient.PipelineResource, error) {
 	data, err := os.ReadFile(path) //nolint:gosec // operator-supplied CLI argument
 	if err != nil {
 		return apiclient.PipelineResource{}, fmt.Errorf("read %s: %w", path, err)
+	}
+	if data, err = edit.apply(data); err != nil {
+		return apiclient.PipelineResource{}, fmt.Errorf("%s: %w", path, err)
 	}
 	def, issues := pipeline.Validate(data)
 	if len(issues) > 0 {
@@ -358,16 +404,36 @@ func runPipelinesRuns(prog string, args []string, stdout, stderr io.Writer, look
 			return
 		}
 		tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
-		_, _ = fmt.Fprintln(tw, "ID\tPIPELINE\t#\tSTATUS\tTRIGGER\tREF\tSTARTED\tREASON")
+		_, _ = fmt.Fprintln(tw, "ID\tPIPELINE\t#\tSTATUS\tTRIGGER\tREF\tSTARTED\tREPORTED\tREASON")
 		for _, r := range runs {
-			_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\n", r.ID, r.PipelineName, r.Number, r.Status, r.Trigger, r.Ref, r.CreatedAt.Local().Format(time.DateTime), r.Reason)
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n", r.ID, r.PipelineName, r.Number, r.Status, r.Trigger, r.Ref, r.CreatedAt.Local().Format(time.DateTime), reportSummary(r.Report), r.Reason)
 		}
 		_ = tw.Flush()
 	})
 }
 
+// reportSummary is the one-word outcome of a run's forge status post.
+func reportSummary(r *apiclient.PipelineReport) string {
+	switch {
+	case r == nil:
+		return "-"
+	case r.Warning != "":
+		return "warning"
+	case r.State != "":
+		return r.Provider + ":" + r.State
+	}
+	return "-"
+}
+
 func printPipelineRun(out io.Writer, r apiclient.PipelineRunResource) {
 	_, _ = fmt.Fprintf(out, "run #%d of %s: %s (%s)\n", r.Number, r.PipelineName, r.Status, r.Reason)
+	if r.Report != nil {
+		if r.Report.Warning != "" {
+			_, _ = fmt.Fprintf(out, "  forge status: %s\n", r.Report.Warning)
+		} else if r.Report.State != "" {
+			_, _ = fmt.Fprintf(out, "  reported to %s as %s: %s\n", r.Report.Provider, r.Report.State, r.Report.URL)
+		}
+	}
 	for _, j := range r.Jobs {
 		_, _ = fmt.Fprintf(out, "  job %s: %s %s\n", j.Key, j.Status, j.Reason)
 		for _, s := range j.Steps {

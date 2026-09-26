@@ -24,8 +24,9 @@ type ManifestConfig struct {
 // DefaultManifestConfig is what BuildManifest requests: contents:read +
 // metadata:read (BuildManifest's own doc comment explains why) plus
 // repository_hooks:write, so a freshly registered App can call
-// Client.CreateRepoWebhook to auto-register a repo's push webhook. No
-// webhook events. Returned by LoadManifestConfig whenever no config
+// Client.CreateRepoWebhook to auto-register a repo's push webhook, plus
+// statuses:write and deployments:write for commit status and deployment
+// reporting. No webhook events. Returned by LoadManifestConfig whenever no config
 // file is present.
 //
 // GitHub does not retroactively grant a new permission to an existing
@@ -39,6 +40,8 @@ func DefaultManifestConfig() ManifestConfig {
 			"contents":         "read",
 			"metadata":         "read",
 			"repository_hooks": "write",
+			"statuses":         "write",
+			"deployments":      "write",
 		},
 		DefaultEvents: []string{},
 	}

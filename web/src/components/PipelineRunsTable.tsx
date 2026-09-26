@@ -10,6 +10,7 @@ import {
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { usePipelineRuns } from '../queries/pipelines'
 import { formatDuration } from '../lib/pipelineStatus'
+import { PipelineReportLink } from './PipelineReportLink'
 import { PipelineStatusBadge } from './PipelineStatusBadge'
 
 export function PipelineRunsTable({
@@ -21,7 +22,7 @@ export function PipelineRunsTable({
 }) {
   const { data, isLoading, error } = usePipelineRuns(appName, pipeline)
   if (isLoading) {
-    return <TableSkeleton columnCount={6} rowCount={4} />
+    return <TableSkeleton columnCount={7} rowCount={4} />
   }
   if (error) {
     return <p className="text-sm text-destructive">{error.message}</p>
@@ -41,6 +42,7 @@ export function PipelineRunsTable({
             <TableHead>Ref</TableHead>
             <TableHead>Started</TableHead>
             <TableHead>Duration</TableHead>
+            <TableHead>Forge status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -70,6 +72,9 @@ export function PipelineRunsTable({
               </TableCell>
               <TableCell className="text-xs tabular-nums text-muted-foreground">
                 {formatDuration(r.started_at, r.finished_at)}
+              </TableCell>
+              <TableCell className="text-xs">
+                <PipelineReportLink report={r.report} />
               </TableCell>
             </TableRow>
           ))}

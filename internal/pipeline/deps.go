@@ -119,6 +119,11 @@ type Config struct {
 	JobTimeout      time.Duration
 	ApprovalTimeout time.Duration
 	KeepRuns        int
+
+	// Reporter, when set, posts run state to the git forge as a commit
+	// status. ReportTimeout bounds each post.
+	Reporter      StatusReporter
+	ReportTimeout time.Duration
 }
 
 const (
@@ -143,6 +148,9 @@ func (c *Config) applyDefaults() {
 	}
 	if c.NamePrefix == "" {
 		c.NamePrefix = "pl"
+	}
+	if c.ReportTimeout <= 0 {
+		c.ReportTimeout = defaultReportTimeout
 	}
 	if c.GitImage == "" {
 		c.GitImage = defaultGitImage

@@ -280,6 +280,25 @@ Every git source has a `trigger_mode`, independent of preview environments and u
 | `push` (default) | Deploys on every push to the configured branch. Unchanged from before trigger modes existed. |
 | `release` | Deploys only on a tag ref push, or (GitHub only) a `release` webhook event with action `published`. Branch pushes, including to the configured branch, never deploy in this mode. |
 
+### Path filters for pushes
+
+A git source can deploy only when a push changes files you ship:
+
+```
+levelrail apps git-source settings my-app --paths "src/**,Dockerfile" --paths-ignore "**/*.md"
+```
+
+`--paths` and `--paths-ignore` take comma separated doublestar globs (`**` spans directories, dotfiles match, Windows separators are accepted) and replace the whole list; an empty value clears it. A push whose changed files all fall outside the filter is answered with `ignored: skipped: no changed path matched paths` (or `... matched paths_ignore`) and is visible in the delivery history. The file list comes from the push payload; when the payload has none (Bitbucket, or a push of more than 20 commits) the control plane reads it from the git provider, and if that fails the push deploys. The dashboard has the same fields on the app's Source tab under **Deploy filters and status reporting**.
+
+### Reporting deploys back to the provider
+
+With `report_status` on (the default), the control plane reports to the provider:
+
+- Pipeline runs: a commit status per run (pending, success, failure, error), linking to the run page. See [Pipelines](pipelines.md#reporting-status-to-the-git-provider).
+- GitHub deploys: a deployment through the Deployments API for each push deploy (environment `production`) and each pull request preview (environment `preview`), moving through `in_progress` to `success` or `failure`. A deploy that finishes successfully marks the environment's previous successful deployment `inactive`, and a deploy that was superseded before it went live is reported `inactive`.
+
+Posting needs the provider connection the app was set up with (newly registered GitHub Apps request `statuses: write` and `deployments: write`; an App registered earlier must have those permissions added and accepted in GitHub, otherwise posts fail with a warning and nothing else changes). A failed post is logged and never fails a deploy or a run. `APP_GIT_STATUS_ENABLED=false` on the control plane turns all of this off, and `levelrail apps git-source settings my-app --report-status=false` turns it off for one app. Merge queue support: GitHub `merge_group` events are routed to pipelines with a `merge_group` trigger; subscribe the repository webhook to the "Merge groups" event.
+
 ### Per-provider support
 
 | Provider | Tag push | GitHub-style `release` published event |
