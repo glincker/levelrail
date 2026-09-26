@@ -93,6 +93,24 @@ func TestListDeploymentsFilters(t *testing.T) {
 	}
 }
 
+func TestListDeploymentBriefsKeepsOldHeld(t *testing.T) {
+	now := time.Now().UTC()
+	db := openTestDB(t)
+	seedDeployments(t, db, now)
+	ctx := context.Background()
+	if err := db.SaveDeployAttempt(ctx, DeployAttempt{ID: "dep_old", ServiceName: "api", Image: "api:old", Source: DeployAttemptSourceWebhook, Status: DeployAttemptStatusHeld, StartedAt: now.Add(-40 * 24 * time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
+	briefs, err := db.ListDeploymentBriefs(ctx, now.Add(-2*time.Hour), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := BuildDeploymentSummary(briefs, now, 24*time.Hour)
+	if s.NeedsAttention != 2 {
+		t.Errorf("needs attention = %d, want 2 (old held plus recent held)", s.NeedsAttention)
+	}
+}
+
 func TestListDeploymentsDerivedFields(t *testing.T) {
 	now := time.Now().UTC()
 	db := openTestDB(t)

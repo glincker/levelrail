@@ -91,7 +91,6 @@ func (rt *Router) handleDeploymentsStream(w http.ResponseWriter, r *http.Request
 
 	heartbeat := time.NewTicker(deploymentStreamHeartbeat)
 	defer heartbeat.Stop()
-	lastCheck := time.Now()
 	for {
 		select {
 		case <-r.Context().Done():
@@ -100,11 +99,8 @@ func (rt *Router) handleDeploymentsStream(w http.ResponseWriter, r *http.Request
 			_, _ = fmt.Fprint(w, ": ping\n\n")
 			flusher.Flush()
 		case ev := <-events:
-			if time.Since(lastCheck) > streamRecheckInterval {
-				if fresh, _, err := rt.callerAppVisibility(r); err == nil {
-					canRead = fresh
-				}
-				lastCheck = time.Now()
+			if fresh, _, err := rt.callerAppVisibility(r); err == nil {
+				canRead = fresh
 			}
 			d, found := rt.fetchDeployment(r.Context(), ds, ev.AttemptID, ev.Kind == deploylog.StateFinished)
 			if !found || !canRead(d.Attempt.ServiceName) {

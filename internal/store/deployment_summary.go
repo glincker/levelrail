@@ -13,6 +13,7 @@ import (
 type DeploymentBrief struct {
 	Status       string
 	RolloutState string
+	IsLive       bool
 	StartedAt    time.Time
 	FinishedAt   *time.Time
 }
@@ -42,11 +43,19 @@ const DeploymentSummaryDays = 14
 // ListDeploymentBriefs returns status and timing for every deployment of the
 // visible apps started at or after since.
 func (db *DB) ListDeploymentBriefs(ctx context.Context, since time.Time, visibleApps []string) ([]DeploymentBrief, error) {
-	where, args, err := deploymentWhere(DeploymentFilter{Since: since, VisibleApps: visibleApps}, false)
+	where, args, err := deploymentWhere(DeploymentFilter{VisibleApps: visibleApps}, false)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := db.QueryContext(ctx, `SELECT `+deploymentStatusSQL+`, d.rollout_state, d.started_at, d.finished_at `+deploymentFromSQL+where, args...)
+	// Held and mismatched-live deploys need attention however old they are.
+	old := "(d.started_at >= ? OR d.status = 'held' OR (d.rollout_state = 'mismatch' AND " + isLiveSQL + "))"
+	if where == "" {
+		where = " WHERE " + old
+	} else {
+		where += " AND " + old
+	}
+	args = append(args, since.UTC().Format(time.RFC3339Nano))
+	rows, err := db.QueryContext(ctx, `SELECT `+deploymentStatusSQL+`, d.rollout_state, `+isLiveSQL+`, d.started_at, d.finished_at `+deploymentFromSQL+where, args...)
 	if err != nil {
 		return nil, fmt.Errorf("store: list deployment briefs: %w", err)
 	}
@@ -59,7 +68,7 @@ func (db *DB) ListDeploymentBriefs(ctx context.Context, since time.Time, visible
 			started  string
 			finished sql.NullString
 		)
-		if err := rows.Scan(&b.Status, &b.RolloutState, &started, &finished); err != nil {
+		if err := rows.Scan(&b.Status, &b.RolloutState, &b.IsLive, &started, &finished); err != nil {
 			return nil, fmt.Errorf("store: scan deployment brief: %w", err)
 		}
 		if b.StartedAt, err = time.Parse(time.RFC3339Nano, started); err != nil {
@@ -104,7 +113,7 @@ func BuildDeploymentSummary(briefs []DeploymentBrief, now time.Time, window time
 		if b.Status == DeploymentBuilding {
 			s.InProgress++
 		}
-		if b.Status == DeploymentHeld || b.RolloutState == RolloutStateMismatch {
+		if b.Status == DeploymentHeld || (b.IsLive && b.RolloutState == RolloutStateMismatch) {
 			s.NeedsAttention++
 		}
 		if !started.Before(firstDay) && !started.After(now) {
