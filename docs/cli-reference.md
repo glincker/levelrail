@@ -1077,6 +1077,25 @@ levelrail flags list <app> [flags]
 levelrail flags set <app> <id> --name NAME [--description DESC] [--disabled] [--rollout PERCENT] [flags]
 ```
 
+## Apply, Diff and Export
+
+See [Platform as code](platform-as-code.md) for the document format, secrets handling, prune rules and CI use.
+
+```
+levelrail apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NAME] [--project P] [--yes] [--secret K=env:VAR] [--var NAME=VALUE] [--no-deploy] [--continue-on-error] [flags]
+```
+validate resource files, print the plan, and apply it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`)
+
+```
+levelrail diff -f dir [flags]
+```
+drift between the files and live state, exits 2 when they differ
+
+```
+levelrail export [--project P] [--app A] [-o dir|-] [--include-env-values=false] [flags]
+```
+write live state as stable resource files, never containing secret values
+
 ## Nodes
 
 ```
