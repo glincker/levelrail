@@ -1516,10 +1516,12 @@ type CreateAlertRuleRequest struct {
 	BackupDatabaseName string `json:"backup_database_name,omitempty"`
 	BackupServiceName  string `json:"backup_service_name,omitempty"`
 	BackupVolumeName   string `json:"backup_volume_name,omitempty"`
-	ChannelID          string `json:"channel_id,omitempty"`
-	NotifyURL          string `json:"notify_url,omitempty"`
-	NotifyKind         string `json:"notify_kind,omitempty"`
-	Enabled            bool   `json:"enabled"`
+	// SLO is kind=slo_burn-only: the request-based SLO the rule watches.
+	SLO        *AlertSLOConfig `json:"slo,omitempty"`
+	ChannelID  string          `json:"channel_id,omitempty"`
+	NotifyURL  string          `json:"notify_url,omitempty"`
+	NotifyKind string          `json:"notify_kind,omitempty"`
+	Enabled    bool            `json:"enabled"`
 
 	Severity            string            `json:"severity,omitempty"`
 	Labels              map[string]string `json:"labels,omitempty"`
@@ -2258,6 +2260,9 @@ type DiagnosisResource struct {
 	DeployAttemptID string            `json:"deploy_attempt_id,omitempty"`
 	Causes          []DiagnosisCause  `json:"causes,omitempty"`
 	Fixable         bool              `json:"fixable,omitempty"`
+
+	// RecentChanges is what changed on the app shortly before the diagnosis.
+	RecentChanges *RecentChangesResource `json:"recent_changes,omitempty"`
 }
 
 // DimensionRecommendationResource mirrors internal/api's
@@ -2332,6 +2337,8 @@ type AlertRuleResource struct {
 	BackupDatabaseName string `json:"backup_database_name,omitempty"`
 	BackupServiceName  string `json:"backup_service_name,omitempty"`
 	BackupVolumeName   string `json:"backup_volume_name,omitempty"`
+
+	SLO *AlertSLOConfig `json:"slo,omitempty"`
 
 	NotifyURL  string `json:"notify_url,omitempty"`
 	NotifyKind string `json:"notify_kind,omitempty"`

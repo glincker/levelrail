@@ -148,6 +148,9 @@ type Rule struct {
 
 	// ChannelID attaches an already-connected NotificationChannel; empty
 	// for legacy rules, which use NotifyURL/NotifyKind below directly.
+	// SLO is the KindSLOBurn-only request-based SLO; nil for every other kind.
+	SLO *SLOConfig
+
 	ChannelID  string
 	NotifyURL  string
 	NotifyKind NotifyKind
@@ -206,8 +209,8 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 			backup_resource_kind, backup_database_name, backup_service_name, backup_volume_name,
 			channel_id, notify_url, notify_kind, enabled,
 			severity, labels_json, consecutive_failures, flap_threshold, flap_window_seconds,
-			created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			slo_json, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET
 			name = excluded.name,
 			kind = excluded.kind,
@@ -232,6 +235,7 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 			consecutive_failures = excluded.consecutive_failures,
 			flap_threshold = excluded.flap_threshold,
 			flap_window_seconds = excluded.flap_window_seconds,
+			slo_json = excluded.slo_json,
 			updated_at = excluded.updated_at
 	`,
 		r.ID, r.Name, string(r.Kind), r.ResourceID,
@@ -240,7 +244,7 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 		r.BackupResourceKind, r.BackupDatabaseName, r.BackupServiceName, r.BackupVolumeName,
 		nullIfEmpty(r.ChannelID), r.NotifyURL, string(r.NotifyKind), boolToInt(r.Enabled),
 		severityOrDefault(r.Severity), encodeLabels(r.Labels), r.ConsecutiveFailures, r.FlapThreshold, int64(r.FlapWindow.Seconds()),
-		now, now,
+		encodeSLO(r.SLO), now, now,
 	)
 	if err != nil {
 		return fmt.Errorf("alerting: save rule %q: %w", r.ID, err)
@@ -381,6 +385,7 @@ const ruleSelectColumns = `
 		r.channel_id, COALESCE(c.notify_url, r.notify_url), COALESCE(c.kind, r.notify_kind),
 		r.enabled, c.enabled,
 		r.severity, r.labels_json, r.consecutive_failures, r.flap_threshold, r.flap_window_seconds,
+		r.slo_json,
 		r.pending_since, r.firing, r.firing_since, r.last_evaluated_at, r.last_value
 	FROM alert_rules r
 	LEFT JOIN notification_channels c ON c.id = r.channel_id`
@@ -399,6 +404,7 @@ func scanRule(scan func(dest ...any) error) (*Rule, error) {
 		lastValue                    sql.NullFloat64
 		labelsJSON                   string
 		flapWindowSeconds            int64
+		sloJSON                      string
 	)
 	err := scan(
 		&r.ID, &r.Name, &kind, &r.ResourceID,
@@ -408,6 +414,7 @@ func scanRule(scan func(dest ...any) error) (*Rule, error) {
 		&channelID, &r.NotifyURL, &notifyKind,
 		&enabledInt, &channelEnabled,
 		&r.Severity, &labelsJSON, &r.ConsecutiveFailures, &r.FlapThreshold, &flapWindowSeconds,
+		&sloJSON,
 		&pendingSince, &firingInt, &firingSince, &lastEvaluatedAt, &lastValue,
 	)
 	if err != nil {
@@ -426,6 +433,7 @@ func scanRule(scan func(dest ...any) error) (*Rule, error) {
 	r.Firing = firingInt != 0
 	r.Labels = decodeLabels(labelsJSON)
 	r.FlapWindow = time.Duration(flapWindowSeconds) * time.Second
+	r.SLO = decodeSLO(sloJSON)
 
 	pendingT, err := parseNullableTime(pendingSince)
 	if err != nil {

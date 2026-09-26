@@ -63,6 +63,8 @@ type Service struct {
 
 	onKeysChanged func()
 	liveStats     func() map[string]int
+	preflight     preflightDeps
+	cache         cacheDeps
 }
 
 // NewService builds a Service. secrets may be nil (HuggingFace tokens

@@ -3,6 +3,10 @@ package main
 import (
 	"fmt"
 	"io"
+	"strings"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // printDiagnosisCauses prints each typed cause with its numbered fixes, the
@@ -27,5 +31,38 @@ func printDiagnosisCauses(out io.Writer, d diagnosisResource) {
 				_, _ = fmt.Fprintf(out, "      %s\n", f.Hint)
 			}
 		}
+	}
+}
+
+// printRecentChanges prints the "what changed" section: newest first, the
+// likely cause tagged.
+func printRecentChanges(out io.Writer, r *apiclient.RecentChangesResource, indent string) {
+	if r == nil {
+		return
+	}
+	window := (time.Duration(r.WindowSeconds) * time.Second).String()
+	if len(r.Changes) == 0 {
+		_, _ = fmt.Fprintf(out, "%sno changes in the last %s\n", indent, window)
+		return
+	}
+	_, _ = fmt.Fprintf(out, "%schanged in the last %s:\n", indent, window)
+	for _, c := range r.Changes {
+		line := c.At.Local().Format("15:04:05") + " " + c.Title
+		if len(c.Keys) > 0 {
+			line += " [" + strings.Join(c.Keys, ", ") + "]"
+		}
+		if c.Detail != "" {
+			line += " (" + c.Detail + ")"
+		}
+		if c.Actor != "" {
+			line += " by " + c.Actor
+		}
+		if c.LikelyCause {
+			line += "  <- likely cause"
+		}
+		_, _ = fmt.Fprintf(out, "%s  %s\n", indent, line)
+	}
+	if more := r.Total - len(r.Changes); more > 0 {
+		_, _ = fmt.Fprintf(out, "%s  and %d more\n", indent, more)
 	}
 }
