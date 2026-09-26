@@ -23,6 +23,12 @@ type LoadBalancerSource interface {
 	ListServiceLoadBalancers(ctx context.Context) (map[string]string, error)
 }
 
+// LBAdminStateSource lists operator-set upstream admin states as
+// service -> replica index -> state. A LoadBalancerSource may implement it.
+type LBAdminStateSource interface {
+	ListLBUpstreamAdminStates(ctx context.Context) (map[string]map[int]string, error)
+}
+
 // NodeUpstreamResolver returns the runtime for a remote node and the host
 // the control plane dials to reach its published ports.
 type NodeUpstreamResolver interface {
@@ -75,6 +81,14 @@ func (c *Controller) loadBalancerConfigs(ctx context.Context) (map[string]loadba
 	return out, nil
 }
 
+func (c *Controller) lbAdminStates(ctx context.Context) (map[string]map[int]string, error) {
+	src, ok := c.lbSource.(LBAdminStateSource)
+	if !ok {
+		return nil, nil
+	}
+	return src.ListLBUpstreamAdminStates(ctx)
+}
+
 // lbPlan is one service's balancer for this pass.
 type lbPlan struct {
 	route *ingress.LBRoute
@@ -83,14 +97,20 @@ type lbPlan struct {
 
 // planLoadBalancer discovers upstreams for svc and builds its route. The
 // route is nil when no upstream is usable.
-func (c *Controller) planLoadBalancer(ctx context.Context, svc store.DesiredService, cfg loadbalancer.Config, now time.Time) lbPlan {
+func (c *Controller) planLoadBalancer(ctx context.Context, svc store.DesiredService, cfg loadbalancer.Config, admin map[int]string, now time.Time) lbPlan {
 	ups := c.discoverUpstreams(ctx, svc)
 	var pool []loadbalancer.Upstream
-	draining := false
-	for _, u := range ups {
-		if u.Running {
-			pool = append(pool, u.Upstream)
-			draining = draining || u.Draining
+	draining, heldOut := false, 0
+	for i := range ups {
+		if !ups[i].Draining {
+			ups[i].AdminState = admin[ups[i].Replica]
+		}
+		switch {
+		case ups[i].Running && !ups[i].InPool():
+			heldOut++
+		case ups[i].InPool():
+			pool = append(pool, ups[i].Upstream)
+			draining = draining || ups[i].Draining
 		}
 	}
 
@@ -118,10 +138,16 @@ func (c *Controller) planLoadBalancer(ctx context.Context, svc store.DesiredServ
 	switch {
 	case len(pool) == 0:
 		obs.Reason, obs.Message = "NoUpstreams", "no running replica with a reachable published port"
+		if heldOut > 0 {
+			obs.Message = fmt.Sprintf("%d running replica(s) are drained or disabled by an operator and none is left in the pool", heldOut)
+		}
 	case draining:
 		obs.Reason, obs.Message = "ServingPreviousRelease", fmt.Sprintf("serving %d container(s) of the previous release until the new one is running", len(pool))
 	case len(pool) < want:
 		obs.Reason, obs.Message = "UpstreamsDegraded", fmt.Sprintf("%d of %d replicas are in the pool", len(pool), want)
+		if heldOut > 0 {
+			obs.Message += fmt.Sprintf(" (%d drained or disabled by an operator)", heldOut)
+		}
 	default:
 		obs.Reason, obs.Message, obs.Ready = "Balancing", fmt.Sprintf("balancing across %d upstream(s)", len(pool)), true
 	}

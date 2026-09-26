@@ -44,7 +44,7 @@ func (r lbNodeUpstreams) UpstreamHost(ctx context.Context, nodeID string) (docke
 	return rt, host, nil
 }
 
-func lbTelemetrySamples(ctx context.Context, reg *loadbalancer.Registry, stats loadbalancer.StatsSource) []telemetry.LoadBalancerSample {
+func lbTelemetrySamples(ctx context.Context, reg *loadbalancer.Registry, stats loadbalancer.StatsSource, prober loadbalancer.Prober) []telemetry.LoadBalancerSample {
 	obs := reg.List()
 	if len(obs) == 0 {
 		return nil
@@ -55,7 +55,8 @@ func lbTelemetrySamples(ctx context.Context, reg *loadbalancer.Registry, stats l
 	}
 	out := make([]telemetry.LoadBalancerSample, 0, len(obs))
 	for _, o := range obs {
-		st := loadbalancer.BuildStatus(ctx, o, counters, nil)
+		st := loadbalancer.BuildStatus(ctx, o, counters, prober)
+		reg.RecordStatus(&st)
 		sample := telemetry.LoadBalancerSample{Service: o.Service, Total: len(st.Upstreams)}
 		for _, u := range st.Upstreams {
 			if u.Healthy {
@@ -78,7 +79,7 @@ func runLoadBalancerTelemetry(ctx context.Context, reg *loadbalancer.Registry, s
 		case <-ctx.Done():
 			return
 		case now := <-ticker.C:
-			if err := db.RecordLoadBalancer(ctx, lbTelemetrySamples(ctx, reg, stats), now); err != nil && ctx.Err() == nil {
+			if err := db.RecordLoadBalancer(ctx, lbTelemetrySamples(ctx, reg, stats, loadbalancer.HTTPProber{}), now); err != nil && ctx.Err() == nil {
 				logger.Warn("load balancer telemetry sample failed", slog.String("error", err.Error()))
 			}
 		}
