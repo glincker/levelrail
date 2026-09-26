@@ -19,6 +19,7 @@ import (
 type gateBuilder struct {
 	started      chan string
 	release      chan struct{}
+	stop         chan struct{}
 	beforeCommit func(id string)
 	afterCommit  chan struct{}
 
@@ -27,7 +28,7 @@ type gateBuilder struct {
 }
 
 func newGateBuilder() *gateBuilder {
-	return &gateBuilder{started: make(chan string, 16), release: make(chan struct{})}
+	return &gateBuilder{started: make(chan string, 16), release: make(chan struct{}), stop: make(chan struct{})}
 }
 
 func (g *gateBuilder) Deploy(ctx context.Context, req deploy.Request, _ func(build.ProgressEvent)) (string, error) {
@@ -36,6 +37,8 @@ func (g *gateBuilder) Deploy(ctx context.Context, req deploy.Request, _ func(bui
 	case <-ctx.Done():
 		return "", ctx.Err()
 	case <-g.release:
+	case <-g.stop:
+		return "", context.Canceled
 	}
 	if g.beforeCommit != nil {
 		g.beforeCommit(req.AttemptID)
@@ -87,6 +90,7 @@ func (g *gateBuilder) assertNoStart(t *testing.T) {
 func newQueueRouter(t *testing.T, opts ...Option) (*Router, *store.DB, *http.Cookie, *gateBuilder) {
 	t.Helper()
 	gb := newGateBuilder()
+	t.Cleanup(func() { close(gb.stop) })
 	db := openTestDB(t)
 	rt := NewRouter(nil, testBrand(), db, append([]Option{WithBuilder(gb), WithDeploySafety(db, nil)}, opts...)...)
 	rt.fetch = newFakeFetch(t.TempDir(), nil).fetch
