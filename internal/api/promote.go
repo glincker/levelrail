@@ -138,7 +138,7 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if res.env.Protected {
-		approval, ok := rt.requestDeployApproval(w, r, res.env, res.target.Name, res.source.Name, store.DeployApprovalActionPromote, res.source.Image)
+		approval, ok := rt.requestDeployApproval(w, r, res.env, res.target.Name, res.source.Name, store.DeployApprovalActionPromote, res.source.Image, deployApprovalOptions{includeEnv: req.IncludeEnv})
 		if !ok {
 			return
 		}

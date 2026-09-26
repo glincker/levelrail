@@ -74,6 +74,14 @@ type DeployApproval struct {
 	ExpiresAt string
 	// DecidedAt is empty while Status is pending.
 	DecidedAt string
+
+	// FreezeOverride is the requester's freeze override note, empty when
+	// the request did not override a freeze.
+	FreezeOverride string
+	// Pull requires a fresh registry resolution when the deploy applies.
+	Pull bool
+	// IncludeEnv applies a promotion's added and removed env keys too.
+	IncludeEnv bool
 }
 
 // deployApprovalIDPrefix mirrors auditEntryIDPrefix's own "short,
@@ -99,12 +107,12 @@ func (db *DB) SaveDeployApproval(ctx context.Context, a DeployApproval) error {
 			id, service_name, source_service_name, environment_id, action, image, status,
 			requested_by_type, requested_by, requested_by_name,
 			approved_by_type, approved_by, approved_by_name, reason,
-			created_at, expires_at, decided_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			created_at, expires_at, decided_at, freeze_override, pull, include_env
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, a.ID, a.ServiceName, a.SourceServiceName, a.EnvironmentID, a.Action, a.Image, a.Status,
 		a.RequestedByType, a.RequestedBy, a.RequestedByName,
 		a.ApprovedByType, a.ApprovedBy, a.ApprovedByName, a.Reason,
-		a.CreatedAt, a.ExpiresAt, a.DecidedAt)
+		a.CreatedAt, a.ExpiresAt, a.DecidedAt, a.FreezeOverride, a.Pull, a.IncludeEnv)
 	if err != nil {
 		return fmt.Errorf("store: save deploy approval %q: %w", a.ID, err)
 	}
@@ -180,7 +188,7 @@ const deployApprovalSelect = `
 	SELECT id, service_name, source_service_name, environment_id, action, image, status,
 		requested_by_type, requested_by, requested_by_name,
 		approved_by_type, approved_by, approved_by_name, reason,
-		created_at, expires_at, decided_at
+		created_at, expires_at, decided_at, freeze_override, pull, include_env
 	FROM deploy_approvals
 `
 
@@ -193,7 +201,7 @@ func scanDeployApproval(s rowScanner) (DeployApproval, error) {
 		&a.ID, &a.ServiceName, &a.SourceServiceName, &a.EnvironmentID, &a.Action, &a.Image, &a.Status,
 		&a.RequestedByType, &a.RequestedBy, &a.RequestedByName,
 		&a.ApprovedByType, &a.ApprovedBy, &a.ApprovedByName, &a.Reason,
-		&a.CreatedAt, &a.ExpiresAt, &a.DecidedAt,
+		&a.CreatedAt, &a.ExpiresAt, &a.DecidedAt, &a.FreezeOverride, &a.Pull, &a.IncludeEnv,
 	)
 	return a, err
 }

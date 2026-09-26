@@ -42,6 +42,7 @@ func TestSaveAndGetDeployApproval(t *testing.T) {
 	ctx := context.Background()
 
 	want := testDeployApproval("apr_test1")
+	want.FreezeOverride, want.Pull, want.IncludeEnv = "FreezeOverride: hotfix", true, true
 	if err := db.SaveDeployApproval(ctx, want); err != nil {
 		t.Fatalf("SaveDeployApproval() error = %v", err)
 	}
