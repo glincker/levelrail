@@ -16,6 +16,15 @@ func configureTelemetryTiers(db *telemetry.DB) {
 	db.Configure(telemetry.TierConfigFromEnv(os.Getenv))
 }
 
+// requestSummaryWindow reads APP_REQUESTS_SUMMARY_WINDOW; zero keeps the API default.
+func requestSummaryWindow() time.Duration {
+	d, err := time.ParseDuration(os.Getenv("APP_REQUESTS_SUMMARY_WINDOW"))
+	if err != nil || d <= 0 {
+		return 0
+	}
+	return d
+}
+
 // startTelemetryMaintenance runs the ingress request sampler, the rollup job
 // and the retention sweep until ctx is cancelled.
 func startTelemetryMaintenance(ctx context.Context, db *telemetry.DB, interval time.Duration, logger *slog.Logger) {

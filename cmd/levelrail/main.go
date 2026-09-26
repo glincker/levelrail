@@ -1891,6 +1891,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithReconcileNudger(engine),
 		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
+		api.WithRequestSummaryWindow(requestSummaryWindow()),
 		api.WithAlertRules(alertingDB),
 		api.WithDeployNotifyTargets(alertingDB),
 		api.WithDeployNotifier(deployDispatcher),

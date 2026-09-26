@@ -88,9 +88,44 @@ The endpoint `GET /api/v1/nodes/{id}/metrics` returns two types of readings:
 
 The response includes `resource_count`: how many placed services actually contributed a sample (for summed metrics), or `1`/`0` for whether host data exists (for real per-node metrics).
 
-**Not collected today:**
+**Request metrics (RED), measured at the ingress with no app changes:** see [Request metrics](#request-metrics-red) below.
 
-Request rate, response time percentiles, error rate, container restart count, and build duration are called out in the UI as "not yet collected" rather than faked. These are in the required list but lack collectors (restart count/build duration/deploy frequency need follow-up; request rate/response time/error rate need ingress-layer hooks the embedded Caddy doesn't expose yet). Deploy frequency is the exception: it's computed client-side from deploy-attempt history already read by the deploy markers overlay.
+**Not collected today:** container restart count, build duration and deploy frequency are recorded as discrete events or computed client-side from deploy-attempt history, not as continuous collectors.
+
+## Request metrics (RED)
+
+Every proxy and static route in the embedded Caddy is wrapped by a small `request_stats` handler (`internal/ingress/request_stats.go`). It times the request and counts it into fixed in-memory counters per route host, so idle cost is near zero and nothing is written to log files. Paths, query strings and client addresses are never read, and cardinality is bounded by the number of configured hosts. The sampler drains the counters every 15 seconds, maps hosts to apps through the ingress route table (domain to app), and writes only non-zero values under the app's `service:<name>` resource id. Platform routes (dashboard, registry, models) are not attributed to an app. Requests rejected by the WAF or rate limiter count as 4xx. Load balancer and proxy failures (502, 503, 504 raised by the reverse proxy) also count under `http_upstream_errors`.
+
+Metrics (per-tick counter deltas; a tick with no traffic writes nothing):
+
+| Metric | Meaning |
+| --- | --- |
+| `http_requests` | Requests finished |
+| `http_responses_2xx`, `_3xx`, `_4xx`, `_5xx` | Requests by status class |
+| `http_upstream_errors` | Proxy failures (502, 503, 504) returned by the reverse proxy |
+| `http_bytes_in`, `http_bytes_out` | Request content length and response body bytes |
+| `http_latency_bucket_<le>` | Latency histogram, upper bounds 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000 ms plus `inf` |
+
+Percentiles are estimated from the summed histogram buckets (linear interpolation inside a bucket), so they merge correctly across time buckets, rollup tiers and nodes.
+
+Read it with `GET /api/v1/apps/{name}/requests?from=&to=&step=` (rate, 4xx and 5xx error rate, p50, p95, p99, bytes, upstream errors and a summary), `levelrail-cli apps requests <name>` (or `apps metrics <name> --requests`), the `get_app_requests` MCP tool, or the Metrics tab of an app. `GET /api/v1/apps/{name}` also carries a `requests` summary (rate, error rates, p95 over `APP_REQUESTS_SUMMARY_WINDOW`, default 5m) that later features such as auto-rollback and SLO alerts can consume. In Go, use `telemetry.SummarizeRequests(ctx, querier, app, window, now)`.
+
+## Rollups and retention
+
+Raw 15 second samples are rolled up into 1 minute and 1 hour buckets by a background job (`telemetry.Maintainer`). Each run computes at most `APP_METRICS_ROLLUP_MAX_BUCKETS` closed buckets per tier and commits them together with a per-tier watermark in one transaction, so an interrupted run resumes where it stopped and recomputing a bucket is idempotent. Counters (`http_*`) are summed, gauges are averaged. Queries pick a tier by range (raw up to `APP_METRICS_RAW_QUERY_MAX_RANGE`, 1 minute up to `APP_METRICS_MINUTE_QUERY_MAX_RANGE`, otherwise 1 hour), move to a coarser tier when the finer one no longer retains the range start, and fill the not yet rolled up tail from the finer tier.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_METRICS_RETENTION` | 360h (15 days) | Raw sample retention |
+| `APP_METRICS_RETENTION_1M` | 720h (30 days) | 1 minute rollup retention |
+| `APP_METRICS_RETENTION_1H` | 8760h (365 days) | 1 hour rollup retention |
+| `APP_METRICS_MAX_DB_BYTES` | 1073741824 | Live size cap for `telemetry.db`, 0 disables |
+| `APP_METRICS_RAW_QUERY_MAX_RANGE` | 6h | Widest range served from raw samples |
+| `APP_METRICS_MINUTE_QUERY_MAX_RANGE` | 168h | Widest range served from 1 minute rollups |
+| `APP_METRICS_ROLLUP_LAG` | 30s | Delay before a bucket is closed |
+| `APP_METRICS_ROLLUP_MAX_BUCKETS` | 1440 | Buckets computed per tier per run |
+
+When the database exceeds the size cap, the oldest tenth of the finest tier is deleted, but only rows already covered by the next tier, so raw samples that are not yet rolled up are never dropped for size. The cap measures the whole file, which also holds logs; only metric tiers are pruned, so a database dominated by logs can stay over the cap (a warning is logged).
 
 ## Dashboard pages
 
@@ -426,7 +461,7 @@ levelrail-cli channels deliveries <id> [--limit N]
 ## Not built yet (deliberate gaps)
 
 **Missing metrics collectors:**
-- Request rate, response-time percentiles, error rate, container restart count, and build duration. Section 4.8 requires these, but only 7 of 12 are collected. The first three need ingress-layer hooks the embedded Caddy doesn't expose. Deploy frequency is computed client-side from deploy-attempt history.
+- Request metrics only cover traffic that passes through this control plane's embedded Caddy (proxy and static routes). WebSocket and long-lived streams are recorded when they end, so their latency is the connection lifetime. Multi-node request federation reuses the `MetricsSource` interface but has only been exercised in process, since remote nodes do not run their own ingress yet.
 
 **Missing node metrics:**
 - True host-level readings (real free/total CPU or memory) for any node other than the one running the control plane. `GET /api/v1/nodes/{id}/metrics` and `GET /api/v1/nodes/resource-usage` both sum already-collected per-container samples for CPU/memory usage; `internal/agent` has no `/proc` reads today, so a remote node's `memory_total_bytes`/`disk_used_bytes`/`disk_total_bytes` stay absent rather than wrong. A future per-node agent writing host samples under the same `node:<id>` resource-ID format would show up in both endpoints automatically, no handler change needed.
