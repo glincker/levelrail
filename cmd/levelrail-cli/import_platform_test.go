@@ -94,7 +94,7 @@ func TestImportPlatformTokenFlagWarnsAndValidation(t *testing.T) {
 		}
 	}
 	var o, e bytes.Buffer
-	if c := runImport("cli", []string{"repo"}, &o, &e, importEnv(nil)); c != exitUsage {
-		t.Errorf("import repo: exit %d", c)
+	if c := runImport("cli", []string{"platform"}, &o, &e, importEnv(nil)); c != exitUsage {
+		t.Errorf("import platform without a kind: exit %d, want usage", c)
 	}
 }

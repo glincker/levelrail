@@ -162,6 +162,7 @@ var toolTable = map[string]Meta{
 	"get_domain_redirect":                   {clsR, "domains", 0},
 	"get_domain_error_pages":                {clsR, "domains", unt},
 	"check_domain_dns":                      {clsR, "domains", outb},
+	"plan_import":                           {clsR, "deploys", outb | unt},
 	"list_certificates":                     {clsR, "domains", 0},
 	"get_cloudflare_tunnel_status":          {clsR, "domains", outb},
 	"get_app_log_drain":                     {clsR, "logs", sens},

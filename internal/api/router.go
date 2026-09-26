@@ -85,6 +85,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/GLINCKER/levelrail/internal/importplan"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -262,6 +263,7 @@ type Router struct {
 	builder                        Builder                          // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
 	fetch                          fetchFunc                        // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
 	listBranches                   listBranchesFunc                 // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
+	importFiles                    func() importplan.FileSource     // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
 	detect                         detectFunc                       // framework pre-flight detector for handleDetectFramework; always non-nil, defaulted to build.Detect in NewRouter, overridable in this package's own tests
 	staticSites                    StaticSiteStore                  // always set, same "core Store interface, not an optional plug-in" shape as certs above
 	backupTargets                  BackupTargetStore                // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
@@ -478,6 +480,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		fetch:                       gitCheckout,
 		listBranches:                listRemoteBranches,
 		detect:                      build.Detect,
+		importFiles:                 func() importplan.FileSource { return importplan.NewHTTPFiles() },
 		gitSourceFetch:              gitCheckoutWithToken,
 		logins:                      newLoginLimiter(),
 		recoveryCodes:               s,

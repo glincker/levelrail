@@ -181,6 +181,10 @@ export interface CreateAppRequest {
   node_id?: string
   domains?: string[]
   health?: ServiceHealth
+  env?: Record<string, string>
+  /** Names of env vars backed by encrypted secret storage, values in `secrets`. */
+  secret_env?: string[]
+  secrets?: Record<string, string>
 }
 
 // POST /api/v1/apps. Rejects a name that already exists with a 409

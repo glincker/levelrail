@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"text/tabwriter"
 
@@ -14,15 +13,6 @@ import (
 )
 
 const envImportSourceToken = "APP_IMPORT_SOURCE_TOKEN" //nolint:gosec // env var name, not a credential
-
-// runImport dispatches "import <kind> ...". Only "platform" lives here.
-func runImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	if len(args) == 0 || args[0] != "platform" {
-		_, _ = fmt.Fprint(stderr, importPlatformUsage(prog))
-		return exitUsage
-	}
-	return runImportPlatform(prog, args[1:], os.Stdin, stdout, stderr, lookupEnv)
-}
 
 type importPlatformFlags struct {
 	url, token, only, collision, apiURL, profile string

@@ -48,6 +48,7 @@ Four main types, plus two Levelrail-specific categories:
 | [load-balancing.md](load-balancing.md) | Balance traffic across replicas and nodes with health checks, sticky sessions, weights and graceful cutovers, and export the setup as Terraform, CDK, CloudFormation or Caddy |
 | [domains-and-ingress.md](domains-and-ingress.md) | Why there's no reverse proxy to install, how `app.yaml` domains route to containers, and TLS's current honest status |
 | [acme-verification-runbook.md](acme-verification-runbook.md) | Verify real ACME certificate issuance against a live domain, step by step |
+| [importing-apps.md](importing-apps.md) | The New app import front door: repo URL, docker run, image, compose or Dockerfile in, deployment plan preview out |
 | [deploying-apps.md](deploying-apps.md) | An app's lifecycle: create, deploy, roll back, promote, health checks, resource limits, exec, and scheduled tasks |
 | [managing-databases.md](managing-databases.md) | Create and manage Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse resources |
 | [tags.md](tags.md) | Label and organize apps with arbitrary tags for filtering and grouping |

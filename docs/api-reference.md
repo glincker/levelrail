@@ -694,9 +694,10 @@ Routes that do not fit an existing group.
 | GET | /api/v1/pipeline-runs | AbilityRead | handleListAllPipelineRuns |
 | GET | /api/v1/pipelines/summary | AbilityRead | handleGetPipelineSummary |
 | GET | /api/v1/loadbalancers | AbilityRead | handleListLoadBalancers |
+| POST | /api/v1/imports/plan | AbilityWrite | handleImportPlan |
+| GET | /api/v1/apps-summary | AbilityRead | handleAppsSummary |
 | POST | /api/v1/imports/platform/discover | AbilityWriteSensitive | handleDiscoverPlatformImport |
 | POST | /api/v1/imports/platform/apply | AbilityWriteSensitive | handleApplyPlatformImport |
-| GET | /api/v1/apps-summary | AbilityRead | handleAppsSummary |
 
 ## See also
 
