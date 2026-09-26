@@ -199,6 +199,8 @@ var toolTable = map[string]Meta{
 	"list_models":                           {clsR, "models", 0},
 	"get_model":                             {clsR, "models", 0},
 	"list_gpu_nodes":                        {clsR, "models", 0},
+	"preflight_model":                       {clsR, "models", 0},
+	"list_model_cache":                      {clsR, "models", 0},
 	"list_model_keys":                       {clsR, "models", 0},
 	"revoke_model_key":                      {clsD, "models", 0},
 	"get_model_usage":                       {clsR, "models", 0},

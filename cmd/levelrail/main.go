@@ -2231,6 +2231,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 
 	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
+	wireModelPreflight(modelSvc, client, telemetryDB, b.ShortName, logger)
 	opts = append(opts, api.WithModels(modelSvc))
 	rt := api.NewRouter(logger, b, db, opts...)
 	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, web.Handler()))), rt
