@@ -244,6 +244,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// clone is a creation shaped as "copy {name}" rather than "start
 	// from scratch": handleCloneApp's own doc comment covers what does
 	// and doesn't carry over.
+	mux.HandleFunc("GET /api/v1/apps/{name}/clone/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleClonePreview))
 	mux.HandleFunc("POST /api/v1/apps/{name}/clone", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCloneApp))
 
 	// Placement: AbilityRoot, not AbilityWrite, matching
