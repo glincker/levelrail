@@ -1,3 +1,4 @@
+import { NewAppPreflight } from './PreflightPanel'
 import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
@@ -69,57 +70,59 @@ import { RegistryImagePicker } from './RegistryImagePicker'
 // through to store.DefaultDeployStrategy").
 const STRATEGY_DEFAULT_VALUE = '__default__'
 
-const createAppSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required'),
-  image: z.string().trim().min(1, 'Image is required'),
-  port: z.coerce
-    .number({ error: 'Port is required' })
-    .int('Port must be a whole number')
-    .positive('Port must be a positive integer'),
-  // Optional target node id, empty string means the local node. Only
-  // ever populated from the Select below, which only ever offers real
-  // node ids or the local sentinel, so no further validation is needed
-  // beyond what the Select already constrains it to.
-  node: z.string().optional(),
-  // Optional project id, same shape as node above.
-  project: z.string().optional(),
-  strategy: z.enum([
-    'recreate',
-    'blue-green',
-    'rolling',
-    STRATEGY_DEFAULT_VALUE,
-  ]),
-  // Left as a plain trimmed string rather than z.coerce.number: an empty
-  // string here means "use store.DefaultReplicas", which a coerced
-  // number field can't represent (Number('') is 0, a real, different
-  // value), so validation into a real optional number happens in
-  // onSubmit below instead, after this schema has confirmed the field is
-  // either blank or a valid positive integer string.
-  replicas: z
-    .string()
-    .trim()
-    .refine(
-      (v) => v === '' || (/^\d+$/.test(v) && Number(v) > 0),
-      'Replicas must be a positive whole number, or left blank for the default',
-    ),
-  healthCheckEnabled: z.boolean(),
-  healthCheckPath: z.string().trim(),
-}).superRefine((values, ctx) => {
-  if (!values.healthCheckEnabled) return
-  if (!values.healthCheckPath) {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'Health check path is required',
-      path: ['healthCheckPath'],
-    })
-  } else if (!values.healthCheckPath.startsWith('/')) {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'Path must start with /',
-      path: ['healthCheckPath'],
-    })
-  }
-})
+const createAppSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Name is required'),
+    image: z.string().trim().min(1, 'Image is required'),
+    port: z.coerce
+      .number({ error: 'Port is required' })
+      .int('Port must be a whole number')
+      .positive('Port must be a positive integer'),
+    // Optional target node id, empty string means the local node. Only
+    // ever populated from the Select below, which only ever offers real
+    // node ids or the local sentinel, so no further validation is needed
+    // beyond what the Select already constrains it to.
+    node: z.string().optional(),
+    // Optional project id, same shape as node above.
+    project: z.string().optional(),
+    strategy: z.enum([
+      'recreate',
+      'blue-green',
+      'rolling',
+      STRATEGY_DEFAULT_VALUE,
+    ]),
+    // Left as a plain trimmed string rather than z.coerce.number: an empty
+    // string here means "use store.DefaultReplicas", which a coerced
+    // number field can't represent (Number('') is 0, a real, different
+    // value), so validation into a real optional number happens in
+    // onSubmit below instead, after this schema has confirmed the field is
+    // either blank or a valid positive integer string.
+    replicas: z
+      .string()
+      .trim()
+      .refine(
+        (v) => v === '' || (/^\d+$/.test(v) && Number(v) > 0),
+        'Replicas must be a positive whole number, or left blank for the default',
+      ),
+    healthCheckEnabled: z.boolean(),
+    healthCheckPath: z.string().trim(),
+  })
+  .superRefine((values, ctx) => {
+    if (!values.healthCheckEnabled) return
+    if (!values.healthCheckPath) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Health check path is required',
+        path: ['healthCheckPath'],
+      })
+    } else if (!values.healthCheckPath.startsWith('/')) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Path must start with /',
+        path: ['healthCheckPath'],
+      })
+    }
+  })
 
 type CreateAppFormInput = z.input<typeof createAppSchema>
 type CreateAppFormOutput = z.output<typeof createAppSchema>
@@ -188,14 +191,11 @@ export function CreateAppFields({
   // entirely when the dialog closes (see CreateResourceWizard.tsx), so a
   // fresh open already gets a fresh useState(false) here.
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const { control, register, handleSubmit, formState, reset, watch, setValue } = useForm<
-    CreateAppFormInput,
-    unknown,
-    CreateAppFormOutput
-  >({
-    resolver: zodResolver(createAppSchema),
-    defaultValues: DEFAULT_VALUES,
-  })
+  const { control, register, handleSubmit, formState, reset, watch, setValue } =
+    useForm<CreateAppFormInput, unknown, CreateAppFormOutput>({
+      resolver: zodResolver(createAppSchema),
+      defaultValues: DEFAULT_VALUES,
+    })
 
   useEffect(() => {
     if (!open) {
@@ -234,7 +234,10 @@ export function CreateAppFields({
             ? undefined
             : values.strategy,
         replicas: values.replicas === '' ? undefined : Number(values.replicas),
-        health: healthCheckFrom(values.healthCheckEnabled, values.healthCheckPath),
+        health: healthCheckFrom(
+          values.healthCheckEnabled,
+          values.healthCheckPath,
+        ),
         project_id: resolveSubmittedProjectId(values.project),
         // Only sent once the operator has actually opened the advanced
         // panel: leaving node_id undefined (dropped from the JSON body
@@ -280,7 +283,10 @@ export function CreateAppFields({
 
         <RegistryImagePicker
           onSelect={(imageRef) => {
-            setValue('image', imageRef, { shouldValidate: true, shouldDirty: true })
+            setValue('image', imageRef, {
+              shouldValidate: true,
+              shouldDirty: true,
+            })
           }}
         />
 
@@ -348,9 +354,9 @@ export function CreateAppFields({
               {...register('healthCheckPath')}
             />
             <FieldHint>
-              Checked before cutting traffic to a new container, and to
-              detect a crashed one afterward. Change or turn this off if your
-              app doesn&rsquo;t serve this path.
+              Checked before cutting traffic to a new container, and to detect a
+              crashed one afterward. Change or turn this off if your app
+              doesn&rsquo;t serve this path.
             </FieldHint>
             <FieldError errors={[formState.errors.healthCheckPath]} />
           </Field>
@@ -449,6 +455,14 @@ export function CreateAppFields({
           />
         </div>
       ) : null}
+
+      <NewAppPreflight
+        request={{
+          name: watch('name')?.trim() || undefined,
+          image: watch('image')?.trim() || undefined,
+          port: Number(watch('port')) || undefined,
+        }}
+      />
 
       {createApp.isError ? (
         <Alert variant="destructive">

@@ -108,8 +108,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 77 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 77 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 78 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 78 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -198,6 +198,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/pipeline-sync | AbilityRead | handleGetPipelineSync |
 | PUT | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleSetPipelineSync |
 | POST | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleRunPipelineSync |
+| POST | /api/v1/apps/{name}/preflight | AbilityRead | handlePreflightApp |
 
 :::
 
@@ -680,6 +681,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/pipeline-runs | AbilityRead | handleListAllPipelineRuns |
 | GET | /api/v1/pipelines/summary | AbilityRead | handleGetPipelineSummary |
 | GET | /api/v1/loadbalancers | AbilityRead | handleListLoadBalancers |
+| POST | /api/v1/preflight | AbilityWrite | handlePreflightNew |
 
 ## See also
 

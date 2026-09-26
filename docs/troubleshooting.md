@@ -107,6 +107,54 @@ Common causes: the control plane restarted (check `systemctl status` or `docker 
 
 An expired session is different: a 401 sends you to the login page, and after signing in you land back on the page you were on.
 
+## Deploy preflight and failure diagnosis
+
+Two read-only tools catch the common failures before and after a deploy. Both are deterministic rules over signals the platform already collects, with no model call, and neither changes anything by itself.
+
+### Preflight
+
+Run preflight from the app overview ("Run preflight"), the create-app dialog ("Check before creating"), `levelrail-cli apps preflight <name> [--require-env A,B]`, or the `preflight_app` MCP tool. Each check reports pass, warn or fail with a reason and a fix. The CLI exits 1 when any check fails.
+
+| Check | Fails when | Warns when |
+| --- | --- | --- |
+| DNS for each domain | it resolves to an IP that is not this server's public IP | it does not resolve yet, it is proxied by Cloudflare, or the server IP could not be detected |
+| Host port | a pinned host port is taken by another app or a process on the node | the check could not run |
+| Image | the registry has no such image or tag | the registry needs credentials, is rate limiting, or is unreachable |
+| Disk space | free space is below the image size times `APP_PREFLIGHT_DISK_FACTOR` (default 3) | free space is below `APP_PREFLIGHT_MIN_FREE_DISK_BYTES` (default 2 GiB) |
+| Memory limit | the limit exceeds the node's total memory | the limit is below `APP_PREFLIGHT_MIN_MEMORY_BYTES` (default 128 MiB) or above the memory currently free |
+| Git source | the branch does not exist or the host is unreachable | the repository is private (checked anonymously) or uses an SSH URL |
+| Required env | a required variable is not set (including variables declared with an empty value) | never |
+| Volumes and bind mounts | a bind mount path is relative or under a protected system path, or a volume path is not absolute | never |
+| GPU | the node has no free GPU for the request | never |
+
+Each check is bounded by `APP_PREFLIGHT_TIMEOUT` (default 8s). Image lookups are cached for `APP_PREFLIGHT_IMAGE_CACHE_TTL` (default 5m). Disk and memory are only known for the control plane's own node. A Cloudflare proxied domain is a warning, not a failure: it works with SSL mode Full (strict), or switch the record to DNS only until the certificate is issued.
+
+### Failure diagnosis and one-click fixes
+
+`GET /api/v1/apps/{name}/diagnose`, `levelrail-cli apps diagnose <name>`, the deploy failure card and the `diagnose_app_failure` MCP tool return typed causes, each with evidence lines and numbered fixes. A fix is one of:
+
+- **patch**: exact field changes, previewed as a diff, then applied through the normal app update with your own permissions (and recorded in the audit log). Optionally followed by a redeploy.
+- **input**: the same, but you supply a value (for example an env var).
+- **manual**: no API setter exists (volume ownership, image architecture); the hint says what to do.
+
+Apply from the CLI with `levelrail-cli apps diagnose <name> --apply-fix N [--input env.NAME=value] [--redeploy]`. A fix refuses to apply if the app changed since the diagnosis. The attention list marks apps that have a one-click fix.
+
+| Cause | Evidence | Fix |
+| --- | --- | --- |
+| `WRONG_PORT` | listening sockets from `/proc/net/tcp` (needs exec access enabled and a running container), else a "listening on" log line or the image's exposed ports, together with a failing readiness check | patch `port` to the port the app actually listens on |
+| `OOM_KILLED` | exit code 137 with the OOMKilled flag, or OOM lines in the logs | patch `resources.memory_bytes` up by `APP_DIAGNOSE_OOM_FACTOR` (default 2, at least 256 MiB more) |
+| `MISSING_ENV` | "is not set", "is undefined", "required environment variable", Python `KeyError`, pydantic "Field required", zod "Required", Go envconfig | input `env.NAME` for each missing variable |
+| `PORT_IN_USE` | "port is already allocated", `EADDRINUSE`, "address already in use" | manual: free the port or pin another host port |
+| `PERMISSION_DENIED` | `EACCES`, `PermissionError`, "cannot create directory ... Permission denied" | manual: chown the host directory or volume to the container user |
+| `EXEC_FORMAT_ERROR` | "exec format error", "no matching manifest for", platform mismatch | manual: rebuild for the node architecture or publish a multi-arch image |
+| `COMMAND_NOT_FOUND` | "executable file not found in $PATH", "not found" from sh, exit code 127, entrypoint "no such file" | manual: fix the entrypoint, shebang, line endings or executable bit |
+| `HEALTHCHECK_FAILING` | readiness probe timeout, refused connection, or a 404 | patch `health.readiness.path` to a candidate (`/healthz`, `/health`, `/`, ...) on a 404, otherwise a manual hint |
+| `IMAGE_PULL_FAILED` | manifest unknown (not found), unauthorized (credentials), toomanyrequests (rate limit) | manual: fix the reference or add a registry credential |
+| `BUILD_OUT_OF_DISK` | "no space left on device", `ENOSPC` | manual: prune images and build cache or add disk |
+| `CRASHLOOP_GENERIC` | crashloop alert firing or a non-zero exit, with no more specific cause | manual: read the logs right after startup |
+
+Log text is untrusted: every excerpt is cleaned and secret-redacted before it leaves the server, and the MCP tools mark their output as untrusted.
+
 ## Readiness (`/readyz`)
 
 `GET /healthz` is a bare liveness check. `GET /readyz` is unauthenticated and cheap, and returns `200 {"ready":true,"checks":[...]}` only when the control plane can serve: the database answers a query, every migration is applied, and the reconcile engine has started. Otherwise it returns `503` and the failing check has `"status":"failing"`. A Docker daemon outage shows as `"status":"degraded"` on the `docker` check but keeps `ready` true, so the dashboard stays reachable to show it. `levelrail healthcheck --ready` runs the same probe from inside the container (the shipped image uses it for its `HEALTHCHECK`); it exits non-zero on 503. During startup the engine check fails for a moment, which is what the image's `--start-period` absorbs.
