@@ -239,10 +239,16 @@ func toContainerState(s container.Summary) *ContainerState {
 	if len(s.Names) > 0 {
 		name = strings.TrimPrefix(s.Names[0], "/")
 	}
+	var created time.Time
+	if s.Created > 0 {
+		created = time.Unix(s.Created, 0).UTC()
+	}
 	return &ContainerState{
 		ID:      s.ID,
 		Name:    name,
 		Image:   s.Image,
+		ImageID: s.ImageID,
+		Created: created,
 		Running: s.State == "running",
 		Ports:   observedPorts(s.Ports),
 		Labels:  s.Labels,
