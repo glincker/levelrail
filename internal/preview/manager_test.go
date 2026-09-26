@@ -14,7 +14,7 @@ import (
 func TestNotifyReady_CapturesOptedInAppAndStoresThumbnail(t *testing.T) {
 	h := newHarness(t, nil)
 	h.enable(t, "web")
-	h.m.NotifyReady("web", "img:1")
+	h.m.NotifyReady("web", "img:1", "id-img:1")
 	h.waitIdle(t, "web")
 
 	r, ok := h.record("dep_1")
@@ -39,7 +39,7 @@ func TestNotifyReady_CapturesOptedInAppAndStoresThumbnail(t *testing.T) {
 func TestNotifyReady_SkipsWhenNotOptedInOrDisabled(t *testing.T) {
 	t.Run("app not opted in", func(t *testing.T) {
 		h := newHarness(t, nil)
-		h.m.NotifyReady("web", "img:1")
+		h.m.NotifyReady("web", "img:1", "id-img:1")
 		h.waitIdle(t, "web")
 		if h.run.started != 0 || len(h.store.records) != 0 {
 			t.Errorf("started=%d records=%d, want none", h.run.started, len(h.store.records))
@@ -48,7 +48,7 @@ func TestNotifyReady_SkipsWhenNotOptedInOrDisabled(t *testing.T) {
 	t.Run("kill switch off", func(t *testing.T) {
 		h := newHarness(t, func(c *Config) { c.Enabled = false })
 		h.enable(t, "web")
-		h.m.NotifyReady("web", "img:1")
+		h.m.NotifyReady("web", "img:1", "id-img:1")
 		h.waitIdle(t, "web")
 		if h.res.calls != 0 || h.run.started != 0 {
 			t.Errorf("resolver calls=%d started=%d, want none", h.res.calls, h.run.started)
@@ -63,13 +63,13 @@ func TestNotifyReady_DedupesSameRelease(t *testing.T) {
 	h := newHarness(t, nil)
 	h.enable(t, "web")
 	for i := 0; i < 5; i++ {
-		h.m.NotifyReady("web", "img:1")
+		h.m.NotifyReady("web", "img:1", "id-img:1")
 		h.waitIdle(t, "web")
 	}
 	if h.shoot.calls != 1 {
 		t.Errorf("shoot calls = %d, want 1", h.shoot.calls)
 	}
-	h.m.NotifyReady("web", "img:2")
+	h.m.NotifyReady("web", "img:2", "id-img:2")
 	h.waitIdle(t, "web")
 	if h.res.calls != 2 {
 		t.Errorf("resolver calls = %d, want 2 (one per release)", h.res.calls)
@@ -80,7 +80,7 @@ func TestProcess_DoesNotRecaptureExistingDeployment(t *testing.T) {
 	h := newHarness(t, nil)
 	h.enable(t, "web")
 	h.store.records["dep_1"] = Record{DeploymentID: "dep_1", App: "web", Status: StatusSkipped, Reason: ReasonHTTPStatus, CapturedAt: h.nowVal}
-	h.m.NotifyReady("web", "img:1")
+	h.m.NotifyReady("web", "img:1", "id-img:1")
 	h.waitIdle(t, "web")
 	if h.shoot.calls != 0 {
 		t.Errorf("shoot calls = %d, want 0", h.shoot.calls)
@@ -119,7 +119,7 @@ func TestCapture_SkipRules(t *testing.T) {
 			h := newHarness(t, nil)
 			h.enable(t, "web")
 			tt.setup(h)
-			h.m.NotifyReady("web", "img:1")
+			h.m.NotifyReady("web", "img:1", "id-img:1")
 			h.waitIdle(t, "web")
 			r, ok := h.record("dep_1")
 			if !ok {
@@ -145,7 +145,7 @@ func TestCapture_ResolverSkipIsRecorded(t *testing.T) {
 	h := newHarness(t, nil)
 	h.enable(t, "web")
 	h.res.err = &SkipError{DeploymentID: "dep_9", Reason: ReasonNoAppNetwork, Detail: "no network"}
-	h.m.NotifyReady("web", "img:1")
+	h.m.NotifyReady("web", "img:1", "id-img:1")
 	h.waitIdle(t, "web")
 	r, ok := h.record("dep_9")
 	if !ok || r.Status != StatusSkipped || r.Reason != ReasonNoAppNetwork {
@@ -160,7 +160,7 @@ func TestCapture_SupersededResolverSkipRecordsNothing(t *testing.T) {
 	h := newHarness(t, nil)
 	h.enable(t, "web")
 	h.res.err = &SkipError{Reason: "superseded"}
-	h.m.NotifyReady("web", "img:1")
+	h.m.NotifyReady("web", "img:1", "id-img:1")
 	h.waitIdle(t, "web")
 	if len(h.store.records) != 0 {
 		t.Errorf("records = %v, want none", h.store.records)
@@ -170,7 +170,7 @@ func TestCapture_SupersededResolverSkipRecordsNothing(t *testing.T) {
 func TestCapture_ContainerSpecIsLockedDown(t *testing.T) {
 	h := newHarness(t, nil)
 	h.enable(t, "web")
-	h.m.NotifyReady("web", "img:1")
+	h.m.NotifyReady("web", "img:1", "id-img:1")
 	h.waitIdle(t, "web")
 	if len(h.run.specs) != 1 {
 		t.Fatalf("specs = %d", len(h.run.specs))
@@ -203,7 +203,7 @@ func TestQueue_SingleFlightAndCoalescing(t *testing.T) {
 		h.enable(t, app)
 	}
 	h.shoot.block = make(chan struct{})
-	h.m.NotifyReady("a", "img:1")
+	h.m.NotifyReady("a", "img:1", "id-img:1")
 	deadline := time.Now().Add(2 * time.Second)
 	for {
 		h.shoot.mu.Lock()
@@ -217,9 +217,9 @@ func TestQueue_SingleFlightAndCoalescing(t *testing.T) {
 		}
 		time.Sleep(2 * time.Millisecond)
 	}
-	h.m.NotifyReady("b", "img:1")
-	h.m.NotifyReady("b", "img:2")
-	h.m.NotifyReady("c", "img:1")
+	h.m.NotifyReady("b", "img:1", "id-img:1")
+	h.m.NotifyReady("b", "img:2", "id-img:2")
+	h.m.NotifyReady("c", "img:1", "id-img:1")
 	h.m.mu.Lock()
 	queued := len(h.m.queue)
 	h.m.mu.Unlock()
@@ -285,7 +285,7 @@ func TestEnsureImage_TracksOnlyImagesItPulled(t *testing.T) {
 	t.Run("pulled by us is tracked", func(t *testing.T) {
 		h := newHarness(t, nil)
 		h.enable(t, "web")
-		h.m.NotifyReady("web", "img:1")
+		h.m.NotifyReady("web", "img:1", "id-img:1")
 		h.waitIdle(t, "web")
 		if st := h.m.BrowserImage(context.Background()); st.ID != "sha256:browser" || st.LastUsed.IsZero() {
 			t.Errorf("tracked image = %+v", st)
@@ -295,7 +295,7 @@ func TestEnsureImage_TracksOnlyImagesItPulled(t *testing.T) {
 		h := newHarness(t, nil)
 		h.run.pulled = false
 		h.enable(t, "web")
-		h.m.NotifyReady("web", "img:1")
+		h.m.NotifyReady("web", "img:1", "id-img:1")
 		h.waitIdle(t, "web")
 		if st := h.m.BrowserImage(context.Background()); st.ID != "" {
 			t.Errorf("image the user pulled must not be tracked, got %+v", st)
@@ -493,5 +493,140 @@ func TestFileStore_RejectsUnsafeNames(t *testing.T) {
 	}
 	if err := fs.Write("app", "dep_ok-1", []byte("x")); err != nil {
 		t.Errorf("safe name rejected: %v", err)
+	}
+}
+
+func TestNotifyReady_RebuiltSameTagIsANewRelease(t *testing.T) {
+	h := newHarness(t, nil)
+	h.enable(t, "web")
+	h.m.NotifyReady("web", "img:latest", "sha256:aaa")
+	h.waitIdle(t, "web")
+	h.m.NotifyReady("web", "img:latest", "sha256:aaa")
+	h.waitIdle(t, "web")
+	if h.res.calls != 1 {
+		t.Fatalf("same content resolved %d times, want 1", h.res.calls)
+	}
+	h.m.NotifyReady("web", "img:latest", "sha256:bbb")
+	h.waitIdle(t, "web")
+	if h.res.calls != 2 {
+		t.Errorf("rebuilt tag resolved %d times total, want 2", h.res.calls)
+	}
+}
+
+func TestQueuedManualCapture_DoesNotRunAfterOptOut(t *testing.T) {
+	h := newHarness(t, nil)
+	h.enable(t, "web")
+	h.enable(t, "other")
+	h.shoot.block = make(chan struct{})
+	h.m.NotifyReady("other", "img:1", "id")
+	waitForShots(t, h, 1)
+	if err := h.m.Capture(context.Background(), "web"); err != nil {
+		t.Fatal(err)
+	}
+	off := false
+	if _, err := h.m.SaveSettings(context.Background(), "web", SettingsPatch{Enabled: &off}); err != nil {
+		t.Fatal(err)
+	}
+	close(h.shoot.block)
+	h.waitIdle(t, "web")
+	if h.shoot.calls != 1 || len(h.store.records) != 1 {
+		t.Errorf("shots=%d records=%d, want only the other app's capture", h.shoot.calls, len(h.store.records))
+	}
+}
+
+func TestCapture_OptOutWhileBrowserRunsDiscardsResult(t *testing.T) {
+	h := newHarness(t, nil)
+	h.enable(t, "web")
+	h.shoot.block = make(chan struct{})
+	h.m.NotifyReady("web", "img:1", "id")
+	waitForShots(t, h, 1)
+	off := false
+	if _, err := h.m.SaveSettings(context.Background(), "web", SettingsPatch{Enabled: &off}); err != nil {
+		t.Fatal(err)
+	}
+	close(h.shoot.block)
+	h.waitIdle(t, "web")
+	if len(h.store.records) != 0 || h.m.fs.Exists("web", "dep_1") {
+		t.Error("a capture finishing after opt-out must be discarded")
+	}
+}
+
+func TestCapture_AppDeletedWhileBrowserRunsLeavesNothing(t *testing.T) {
+	h := newHarness(t, nil)
+	h.enable(t, "web")
+	h.shoot.block = make(chan struct{})
+	h.m.NotifyReady("web", "img:1", "id")
+	waitForShots(t, h, 1)
+	h.res.mu.Lock()
+	h.res.gone["web"] = true
+	h.res.mu.Unlock()
+	if err := h.m.DeleteApp(context.Background(), "web"); err != nil {
+		t.Fatal(err)
+	}
+	close(h.shoot.block)
+	h.waitIdle(t, "web")
+	if len(h.store.records) != 0 || h.m.fs.Exists("web", "dep_1") {
+		t.Error("a capture finishing after app deletion must leave no record or file")
+	}
+}
+
+func TestDeleteApp_ClearsOptIn(t *testing.T) {
+	h := newHarness(t, nil)
+	h.enable(t, "web")
+	if err := h.m.DeleteApp(context.Background(), "web"); err != nil {
+		t.Fatal(err)
+	}
+	s, err := h.m.Settings(context.Background(), "web")
+	if err != nil || s.Enabled {
+		t.Errorf("settings after delete = %+v err %v, a recreated app must start opted out", s, err)
+	}
+}
+
+func TestSweep_DeletedAppLosesItsOptIn(t *testing.T) {
+	h := newHarness(t, nil)
+	h.enable(t, "gone")
+	h.store.records["dep_g"] = Record{DeploymentID: "dep_g", App: "gone", Status: StatusSkipped, CapturedAt: h.nowVal}
+	h.res.gone["gone"] = true
+	h.m.Sweep(context.Background())
+	if s, _ := h.m.Settings(context.Background(), "gone"); s.Enabled {
+		t.Error("sweep must clear the opt-in of a deleted app")
+	}
+}
+
+func TestResolverSkip_KeepsExistingThumbnail(t *testing.T) {
+	h := newHarness(t, nil)
+	h.enable(t, "web")
+	if err := h.m.fs.Write("web", "dep_1", []byte("x")); err != nil {
+		t.Fatal(err)
+	}
+	h.store.records["dep_1"] = Record{DeploymentID: "dep_1", App: "web", Status: StatusOK, Bytes: 1, CapturedAt: h.nowVal}
+	h.res.err = &SkipError{DeploymentID: "dep_1", Reason: ReasonRemoteNode}
+	if err := h.m.Capture(context.Background(), "web"); err != nil {
+		t.Fatal(err)
+	}
+	h.waitIdle(t, "web")
+	if r, _ := h.record("dep_1"); r.Status != StatusOK {
+		t.Errorf("record = %+v, a skip must not replace an existing thumbnail", r)
+	}
+	h.m.Sweep(context.Background())
+	if !h.m.fs.Exists("web", "dep_1") {
+		t.Error("existing thumbnail was swept after a skipped recapture")
+	}
+}
+
+func waitForShots(t *testing.T, h *harness, n int) {
+	t.Helper()
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		h.shoot.mu.Lock()
+		got := h.shoot.calls
+		h.shoot.mu.Unlock()
+		if got >= n {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("shooter called %d times, want %d", got, n)
+		}
+		time.Sleep(2 * time.Millisecond)
 	}
 }

@@ -117,3 +117,43 @@ func TestSQLStore_StateAndLatestDeployment(t *testing.T) {
 		}
 	}
 }
+
+func TestSQLStore_ServingDeploymentAndSettingsDelete(t *testing.T) {
+	s, db := openSQLStore(t)
+	ctx := context.Background()
+	now := time.Now()
+	for _, a := range []store.DeployAttempt{
+		{ID: "dep_old", ServiceName: "web", Image: "web:1", Status: store.DeployAttemptStatusSucceeded, StartedAt: now.Add(-2 * time.Hour)},
+		{ID: "dep_new", ServiceName: "web", Image: "web:2", Status: store.DeployAttemptStatusSucceeded, StartedAt: now.Add(-time.Hour)},
+	} {
+		a.Source = store.DeployAttemptSourceImage
+		if err := db.SaveDeployAttempt(ctx, a); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.RecordRollout(ctx, "web", "web:1", store.RolloutStateServing, "sha256:1"); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := s.LatestServingDeployment(ctx, "web", ""); err != nil || got != "dep_old" {
+		t.Errorf("serving = %q err %v, want dep_old while the newer release is still rolling out", got, err)
+	}
+	if got, _ := s.LatestServingDeployment(ctx, "web", "web:2"); got != "" {
+		t.Errorf("web:2 is not serving yet, got %q", got)
+	}
+	if err := db.RecordRollout(ctx, "web", "web:2", store.RolloutStateServing, "sha256:2"); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.LatestServingDeployment(ctx, "web", ""); got != "dep_new" {
+		t.Errorf("serving = %q, want dep_new", got)
+	}
+
+	if err := s.SavePreviewSettings(ctx, AppSettings{App: "web", Enabled: true, Path: "/x"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeletePreviewSettings(ctx, "web"); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetPreviewSettings(ctx, "web"); got.Enabled || got.Path != "/" {
+		t.Errorf("settings after delete = %+v, want defaults", got)
+	}
+}

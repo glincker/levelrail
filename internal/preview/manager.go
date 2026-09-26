@@ -114,17 +114,19 @@ func (m *Manager) Config() Config { return m.cfg }
 func (m *Manager) roleLabel() string { return m.deps.Namespace + roleLabelSuffix }
 
 // NotifyReady is called each time an app's release is observed serving. It
-// is cheap after the first call per release and never blocks.
-func (m *Manager) NotifyReady(app, image string) {
+// is cheap after the first call per release (image tag plus the running image
+// ID, so a rebuilt mutable tag counts as a new release) and never blocks.
+func (m *Manager) NotifyReady(app, image, runningImageID string) {
 	if !m.cfg.Enabled {
 		return
 	}
+	release := image + "\x00" + runningImageID
 	m.mu.Lock()
-	if m.seen[app] == image {
+	if m.seen[app] == release {
 		m.mu.Unlock()
 		return
 	}
-	m.seen[app] = image
+	m.seen[app] = release
 	m.mu.Unlock()
 	m.enqueue(job{app: app, image: image})
 }
@@ -212,7 +214,7 @@ func (m *Manager) process(ctx context.Context, j job) {
 		m.log.Error("preview: load settings failed", slog.String("app", j.app), slog.String("error", err.Error()))
 		return
 	}
-	if !m.cfg.Enabled || (!settings.Enabled && !j.force) {
+	if !m.cfg.Enabled || !settings.Enabled {
 		return
 	}
 	target, err := m.deps.Resolver.Resolve(ctx, j.app, j.image)
@@ -220,7 +222,7 @@ func (m *Manager) process(ctx context.Context, j job) {
 	switch {
 	case errors.As(err, &skip):
 		if skip.DeploymentID != "" {
-			m.recordOutcome(ctx, Record{DeploymentID: skip.DeploymentID, App: j.app, Path: settings.Path, Status: StatusSkipped, Reason: skip.Reason, Detail: skip.Detail})
+			m.commit(ctx, captured{rec: Record{DeploymentID: skip.DeploymentID, App: j.app, Path: settings.Path, Status: StatusSkipped, Reason: skip.Reason, Detail: skip.Detail}})
 		}
 		return
 	case err != nil:
@@ -232,18 +234,42 @@ func (m *Manager) process(ctx context.Context, j job) {
 			return
 		}
 	}
-	rec := m.capture(ctx, settings, target)
-	if j.force && rec.Status != StatusOK {
-		if prev, gerr := m.deps.Store.GetPreviewRecord(ctx, target.DeploymentID); gerr == nil && prev != nil && prev.Status == StatusOK {
-			m.log.Info("preview: recapture failed, keeping existing thumbnail", slog.String("app", j.app), slog.String("reason", rec.Reason))
+	m.commit(ctx, m.capture(ctx, settings, target))
+}
+
+// captured is a capture attempt's outcome: a record, plus the thumbnail when
+// the record is StatusOK.
+type captured struct {
+	rec  Record
+	jpeg []byte
+}
+
+// commit stores a capture outcome unless the app was deleted or opted out
+// while the browser ran, and never lets a skip or failure replace a thumbnail
+// that already exists. It holds opMu so it cannot interleave with DeleteApp.
+func (m *Manager) commit(ctx context.Context, c captured) {
+	rec := c.rec
+	rec.CapturedAt = m.now().UTC()
+	m.opMu.Lock()
+	defer m.opMu.Unlock()
+	if exists, err := m.deps.Resolver.AppExists(ctx, rec.App); err != nil || !exists {
+		return
+	}
+	if s, err := m.Settings(ctx, rec.App); err != nil || !s.Enabled || !m.cfg.Enabled {
+		return
+	}
+	if rec.Status != StatusOK {
+		if prev, err := m.deps.Store.GetPreviewRecord(ctx, rec.DeploymentID); err == nil && prev != nil && prev.Status == StatusOK {
+			m.log.Info("preview: capture not stored, keeping existing thumbnail", slog.String("app", rec.App), slog.String("reason", rec.Reason))
 			return
 		}
 	}
-	m.recordOutcome(ctx, rec)
-}
-
-func (m *Manager) recordOutcome(ctx context.Context, rec Record) {
-	rec.CapturedAt = m.now().UTC()
+	if rec.Status == StatusOK {
+		if err := m.fs.Write(rec.App, rec.DeploymentID, c.jpeg); err != nil {
+			m.log.Error("preview: write thumbnail failed", slog.String("app", rec.App), slog.String("error", err.Error()))
+			return
+		}
+	}
 	if err := m.deps.Store.UpsertPreviewRecord(ctx, rec); err != nil {
 		m.log.Error("preview: save record failed", slog.String("app", rec.App), slog.String("deployment_id", rec.DeploymentID), slog.String("error", err.Error()))
 		return
@@ -251,8 +277,6 @@ func (m *Manager) recordOutcome(ctx context.Context, rec Record) {
 	if rec.Status != StatusOK {
 		m.log.Info("preview: capture not stored", slog.String("app", rec.App), slog.String("deployment_id", rec.DeploymentID), slog.String("status", rec.Status), slog.String("reason", rec.Reason))
 	}
-	m.opMu.Lock()
-	defer m.opMu.Unlock()
 	if err := m.enforceLocked(ctx); err != nil {
 		m.log.Warn("preview: retention pass failed", slog.String("error", err.Error()))
 	}
@@ -268,11 +292,11 @@ func (m *Manager) gates() (reason, detail string) {
 	return "", ""
 }
 
-func (m *Manager) capture(ctx context.Context, s AppSettings, t Target) Record {
+func (m *Manager) capture(ctx context.Context, s AppSettings, t Target) captured {
 	rec := Record{DeploymentID: t.DeploymentID, App: s.App, Path: s.Path}
-	fail := func(status, reason, detail string) Record {
+	fail := func(status, reason, detail string) captured {
 		rec.Status, rec.Reason, rec.Detail = status, reason, detail
-		return rec
+		return captured{rec: rec}
 	}
 	if reason, detail := m.gates(); reason != "" {
 		return fail(StatusSkipped, reason, detail)
@@ -318,15 +342,8 @@ func (m *Manager) capture(ctx context.Context, s AppSettings, t Target) Record {
 		m.log.Warn("preview: reject capture image", slog.String("app", s.App), slog.String("error", err.Error()))
 		return fail(StatusFailed, ReasonBadImage, "the screenshot could not be processed")
 	}
-	m.opMu.Lock()
-	err = m.fs.Write(s.App, t.DeploymentID, thumb.JPEG)
-	m.opMu.Unlock()
-	if err != nil {
-		m.log.Error("preview: write thumbnail failed", slog.String("app", s.App), slog.String("error", err.Error()))
-		return fail(StatusFailed, ReasonCaptureFailed, "the thumbnail could not be written")
-	}
 	rec.Status, rec.Bytes, rec.Width, rec.Height = StatusOK, int64(len(thumb.JPEG)), thumb.Width, thumb.Height
-	return rec
+	return captured{rec: rec, jpeg: thumb.JPEG}
 }
 
 // appURL addresses the app inside its private Docker network, which is plain

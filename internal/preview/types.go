@@ -151,6 +151,7 @@ type Resolver interface {
 type Store interface {
 	GetPreviewSettings(ctx context.Context, app string) (AppSettings, error)
 	SavePreviewSettings(ctx context.Context, s AppSettings) error
+	DeletePreviewSettings(ctx context.Context, app string) error
 	UpsertPreviewRecord(ctx context.Context, r Record) error
 	GetPreviewRecord(ctx context.Context, deploymentID string) (*Record, error)
 	ListPreviewRecords(ctx context.Context, app string) ([]Record, error)

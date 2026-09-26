@@ -41,6 +41,13 @@ func (s *memStore) SavePreviewSettings(_ context.Context, a AppSettings) error {
 	return nil
 }
 
+func (s *memStore) DeletePreviewSettings(_ context.Context, app string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.settings, app)
+	return nil
+}
+
 func (s *memStore) UpsertPreviewRecord(_ context.Context, r Record) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

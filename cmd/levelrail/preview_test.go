@@ -18,10 +18,10 @@ func (r *recordingRollouts) RecordRollout(context.Context, string, string, strin
 	return r.err
 }
 
-type recordingNotifier struct{ got [][2]string }
+type recordingNotifier struct{ got [][3]string }
 
-func (n *recordingNotifier) NotifyReady(app, image string) {
-	n.got = append(n.got, [2]string{app, image})
+func (n *recordingNotifier) NotifyReady(app, image, runningImageID string) {
+	n.got = append(n.got, [3]string{app, image, runningImageID})
 }
 
 func TestPreviewRolloutRecorder_NotifiesOnlyWhenServing(t *testing.T) {
@@ -38,8 +38,8 @@ func TestPreviewRolloutRecorder_NotifiesOnlyWhenServing(t *testing.T) {
 	if err := rec.RecordRollout(context.Background(), "web", "img:1", store.RolloutStateServing, "sha256:x"); err != nil {
 		t.Fatal(err)
 	}
-	if len(n.got) != 1 || n.got[0] != [2]string{"web", "img:1"} {
-		t.Errorf("notified = %v, want web img:1", n.got)
+	if len(n.got) != 1 || n.got[0] != [3]string{"web", "img:1", "sha256:x"} {
+		t.Errorf("notified = %v, want web img:1 sha256:x", n.got)
 	}
 	if inner.calls != 2 {
 		t.Errorf("inner calls = %d, want every call forwarded", inner.calls)

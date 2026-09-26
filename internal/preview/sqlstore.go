@@ -60,6 +60,35 @@ func (s *SQLStore) SavePreviewSettings(ctx context.Context, a AppSettings) error
 	return nil
 }
 
+// DeletePreviewSettings removes an app's settings, returning it to the default off state.
+func (s *SQLStore) DeletePreviewSettings(ctx context.Context, app string) error {
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM deploy_preview_settings WHERE app_name = ?`, app); err != nil {
+		return fmt.Errorf("store: delete preview settings for %q: %w", app, err)
+	}
+	return nil
+}
+
+// LatestServingDeployment is LatestSucceededDeployment restricted to attempts
+// the controller has observed serving, so a preview is never filed under a
+// release that has not replaced the old one yet.
+func (s *SQLStore) LatestServingDeployment(ctx context.Context, service, image string) (string, error) {
+	q := `SELECT id FROM deploy_attempts WHERE service_name = ? AND status = ? AND rollout_state = ?`
+	args := []any{service, store.DeployAttemptStatusSucceeded, store.RolloutStateServing}
+	if image != "" {
+		q += ` AND image = ?`
+		args = append(args, image)
+	}
+	var id string
+	err := s.db.QueryRowContext(ctx, q+` ORDER BY started_at DESC LIMIT 1`, args...).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("store: latest serving deployment of %q: %w", service, err)
+	}
+	return id, nil
+}
+
 // UpsertPreviewRecord inserts or replaces a record, keeping its view time.
 func (s *SQLStore) UpsertPreviewRecord(ctx context.Context, r Record) error {
 	_, err := s.db.ExecContext(ctx, `
