@@ -110,7 +110,7 @@ func TestModels_CreateGetListDeleteFlow(t *testing.T) {
 	}
 	var got modelResource
 	_ = json.Unmarshal(rec.Body.Bytes(), &got)
-	if got.APIKeyPrefix != created.APIKey[:7] || got.Status.Reason != "Pending" {
+	if got.APIKeyPrefix != created.APIKey[:8] || got.Status.Reason != "Pending" {
 		t.Errorf("got = %+v", got)
 	}
 	if got.Limits != models.DefaultGatewayLimits().Summary() {

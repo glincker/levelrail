@@ -133,36 +133,55 @@ var countFields = []string{"n", "best_of"}
 // n and token caps. The body is read up to the cap and re-attached so the
 // proxy can forward it.
 func (l GatewayLimits) prepareBody(w http.ResponseWriter, r *http.Request, jsonBody bool) *requestError {
+	_, rerr := l.prepareBodyInfo(w, r, jsonBody)
+	return rerr
+}
+
+// bodyInfo is what prepareBodyInfo learned from a request body.
+type bodyInfo struct {
+	model   string
+	hasJSON bool
+}
+
+// prepareBodyInfo is prepareBody that also reports the request's "model"
+// field. hasJSON is false when the request has no body.
+func (l GatewayLimits) prepareBodyInfo(w http.ResponseWriter, r *http.Request, jsonBody bool) (bodyInfo, *requestError) {
+	var info bodyInfo
 	if r.Body == nil || r.Body == http.NoBody {
-		return nil
+		return info, nil
 	}
 	if l.MaxBodyBytes > 0 && r.ContentLength > l.MaxBodyBytes {
-		return tooLarge(l.MaxBodyBytes)
+		return info, tooLarge(l.MaxBodyBytes)
 	}
 	if l.MaxBodyBytes > 0 {
 		r.Body = http.MaxBytesReader(w, r.Body, l.MaxBodyBytes)
 	}
 	if !jsonBody {
-		return nil
+		info.hasJSON = true
+		return info, nil
 	}
 	buf, err := io.ReadAll(r.Body)
 	if err != nil {
 		var mbe *http.MaxBytesError
 		if errors.As(err, &mbe) {
-			return tooLarge(l.MaxBodyBytes)
+			return info, tooLarge(l.MaxBodyBytes)
 		}
-		return &requestError{http.StatusBadRequest, "invalid_request_error", "could not read the request body"}
+		return info, &requestError{http.StatusBadRequest, "invalid_request_error", "could not read the request body"}
 	}
 	r.Body = io.NopCloser(bytes.NewReader(buf))
 	r.ContentLength = int64(len(buf))
 	if len(bytes.TrimSpace(buf)) == 0 {
-		return nil
+		return info, nil
 	}
+	info.hasJSON = true
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(buf, &fields); err != nil {
-		return &requestError{http.StatusBadRequest, "invalid_request_error", "request body must be a JSON object"}
+		return info, &requestError{http.StatusBadRequest, "invalid_request_error", "request body must be a JSON object"}
 	}
-	return l.checkFields(fields)
+	if raw, ok := fields["model"]; ok {
+		_ = json.Unmarshal(raw, &info.model)
+	}
+	return info, l.checkFields(fields)
 }
 
 func tooLarge(limit int64) *requestError {

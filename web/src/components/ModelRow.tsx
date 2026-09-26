@@ -14,6 +14,7 @@ import { useRestartModel, useRotateModelApiKey } from '../queries/models'
 import type { ModelResource } from '../types/models'
 import { DeleteModelDialog } from './DeleteModelDialog'
 import { ModelKeyRevealDialog } from './ModelKeyRevealDialog'
+import { ModelKeysDialog } from './ModelKeysDialog'
 import { useState } from 'react'
 
 // Shared column grid between the sticky header (routes/models/index.tsx)
@@ -140,6 +141,11 @@ export function ModelRow({ model }: { model: ModelResource }) {
         >
           <KeyIcon aria-hidden="true" />
         </Button>
+        <ModelKeysDialog
+          name={model.name}
+          baseUrl={model.endpoint_url}
+          disabled={deleting}
+        />
         <DeleteModelDialog name={model.name} disabled={deleting} />
       </span>
       {newKey ? (

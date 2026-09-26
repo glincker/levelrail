@@ -91,7 +91,7 @@ func TestAPIKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	k2, _, _, _ := NewAPIKey()
-	if k1 == k2 || !strings.HasPrefix(k1, "lr-") || !strings.HasPrefix(k1, p1) || len(p1) != 7 {
+	if k1 == k2 || !strings.HasPrefix(k1, "lr-") || !strings.HasPrefix(k1, p1) || len(p1) != 8 {
 		t.Errorf("key/prefix = %q/%q", k1, p1)
 	}
 	if !KeyMatches(k1, h1) || KeyMatches(k2, h1) || KeyMatches("", h1) {

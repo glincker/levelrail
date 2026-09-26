@@ -57,7 +57,11 @@ func modelWiring(db *store.DB, secretsManager *secrets.Manager) (*models.Service
 	if secretsManager != nil {
 		writer = secretsManager
 	}
-	return models.NewService(db, writer, hosts, ""), models.NewGateway(db, hosts, nil), hosts
+	svc, gw := models.NewService(db, writer, hosts, ""), models.NewGateway(db, hosts, nil)
+	svc.SetKeyChangeHook(gw.Invalidate)
+	svc.SetLiveStats(gw.InFlight)
+	gw.StartMetering(context.Background(), db)
+	return svc, gw, hosts
 }
 
 // modelNodes resolves node GPU state and reachability for the model and
