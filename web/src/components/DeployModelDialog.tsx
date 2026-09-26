@@ -176,6 +176,7 @@ export function DeployModelDialog({
             model={form.model}
             node={form.node}
             hfToken={form.hfToken}
+            gpus={form.gpus}
             onPickModel={(m) => {
               set('model', m)
             }}

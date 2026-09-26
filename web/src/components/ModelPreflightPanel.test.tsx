@@ -162,6 +162,41 @@ describe('ModelPreflightPanel', () => {
     expect(body).not.toHaveProperty('hf_token')
   })
 
+  it('labels the recommended quant as not selected when the model has no quant suffix', async () => {
+    const selected = {
+      label: 'Q4_K_M',
+      bytes: 2 * 1024 ** 3,
+      fit: 'fits' as const,
+    }
+    mockHub(result({ selected }))
+    renderPanel()
+    expect(
+      await screen.findByText(/Recommended, not yet selected: Q4_K_M/),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Will download/)).toBeNull()
+  })
+
+  it('says will download once a quant is pinned', async () => {
+    mockHub(
+      result({
+        selected: { label: 'Q4_K_M', bytes: 2 * 1024 ** 3, fit: 'fits' },
+      }),
+    )
+    renderPanel({ model: 'acme/chat-GGUF:Q4_K_M' })
+    expect(await screen.findByText(/Will download Q4_K_M/)).toBeInTheDocument()
+  })
+
+  it('sends the GPU count only when it is a number', async () => {
+    const fetchMock = mockHub(result())
+    renderPanel({ gpus: '1' })
+    await screen.findByText('Found')
+    const body = JSON.parse(sentBody(fetchMock.mock.calls[0]?.[1])) as Record<
+      string,
+      unknown
+    >
+    expect(body).toMatchObject({ gpu_count: 1 })
+  })
+
   it('explains a gated repo and its next step', async () => {
     mockHub(
       result({

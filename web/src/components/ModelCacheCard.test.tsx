@@ -48,7 +48,10 @@ function report(entries: CacheEntry[]): CacheReport {
   }
 }
 
-function stubApi(cache: CacheReport) {
+function stubApi(
+  cache: CacheReport,
+  skipped: CachePruneResult['skipped'] = [],
+) {
   const prunes: { dry_run: boolean; volumes: string[] }[] = []
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (url === '/api/v1/model-cache/prune') {
@@ -62,8 +65,9 @@ function stubApi(cache: CacheReport) {
       const result: CachePruneResult = {
         dry_run: body.dry_run,
         candidates: [entry({ volume: 'lr-model-old-cache', prunable: true })],
-        removed: body.dry_run ? [] : ['lr-model-old-cache'],
-        skipped: [],
+        removed:
+          body.dry_run || skipped.length > 0 ? [] : ['lr-model-old-cache'],
+        skipped: body.dry_run ? [] : skipped,
         reclaimed_bytes: body.dry_run ? 0 : GIB,
       }
       return Promise.resolve(new Response(JSON.stringify(result)))
@@ -125,6 +129,27 @@ describe('ModelCacheCard', () => {
         volumes: ['lr-model-old-cache'],
       })
     })
+  })
+
+  it('keeps the dialog open and explains volumes the server skipped', async () => {
+    stubApi(report([entry({ volume: 'lr-model-old-cache', prunable: true })]), [
+      {
+        volume: 'lr-model-old-cache',
+        reason: 'mounted by a running container',
+      },
+    ])
+    renderCard()
+    await userEvent.click(
+      await screen.findByRole('button', { name: /Prune unused/ }),
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Remove 1 volume' }),
+    )
+    const list = await screen.findByRole('list', {
+      name: 'Volumes that were not removed',
+    })
+    expect(list).toHaveTextContent('lr-model-old-cache')
+    expect(list).toHaveTextContent('mounted by a running container')
   })
 
   it('disables pruning when nothing is reclaimable', async () => {
