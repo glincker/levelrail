@@ -96,7 +96,12 @@ export function OverviewPage({
         onDeploy={setDeployTab}
       />
       <SetupRing app={app} hasGitSource={Boolean(git.data)} />
-      <OverviewSuggestions app={app} reading={reading} latest={latest} />
+      <OverviewSuggestions
+        app={app}
+        reading={reading}
+        latest={latest}
+        conditions={conditions}
+      />
       <section
         aria-label="Live traffic and resources"
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5"

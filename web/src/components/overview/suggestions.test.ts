@@ -42,7 +42,10 @@ describe('computeSuggestions', () => {
       app: { ...healthy.app, health: null },
     })
     expect(s?.id).toBe('no_health_check')
-    expect(s?.action).toEqual({ kind: 'add_health', label: 'Add /healthz' })
+    expect(s?.action).toEqual({
+      kind: 'open_health',
+      label: 'Set up health check',
+    })
   })
 
   it('does not suggest a health check for a stopped app', () => {
@@ -150,5 +153,16 @@ describe('computeSetup', () => {
     })
     expect(items).toHaveLength(4)
     expect(done).toBe(1)
+  })
+})
+
+describe('unhealthy suggestion', () => {
+  it('shows the top cause for an unhealthy app without a failed deploy', () => {
+    const s = computeSuggestions({
+      ...healthy,
+      unhealthy: true,
+      topCauseTitle: 'Crash loop',
+    }).find((d) => d.id === 'unhealthy')
+    expect(s?.action.kind).toBe('show_fix')
   })
 })

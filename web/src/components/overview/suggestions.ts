@@ -10,7 +10,7 @@ import type { Tone } from '@/components/kit'
 export const MAX_SUGGESTIONS = 3
 
 export type SuggestionActionKind =
-  | 'add_health'
+  | 'open_health'
   | 'restart'
   | 'apply_pending'
   | 'open_logs'
@@ -38,6 +38,7 @@ export interface SuggestionInput {
   traffic?: TrafficStats
   memory?: { usage: number; limit: number }
   latestAttemptStatus?: DeployAttemptStatus
+  unhealthy?: boolean
   topCauseTitle?: string
   domainStatus?: DomainCheckStatus
   gitSourceKnown: boolean
@@ -71,6 +72,20 @@ export function computeSuggestions(
       action: input.topCauseTitle
         ? { kind: 'show_fix', label: 'See the fix' }
         : { kind: 'open_deploy', label: 'View deploy' },
+    })
+  }
+
+  if (
+    input.unhealthy &&
+    input.latestAttemptStatus !== 'failed' &&
+    input.topCauseTitle
+  ) {
+    out.push({
+      id: 'unhealthy',
+      priority: 95,
+      tone: 'danger',
+      title: `App is unhealthy: ${input.topCauseTitle}`,
+      action: { kind: 'show_fix', label: 'See the fix' },
     })
   }
 
@@ -119,10 +134,7 @@ export function computeSuggestions(
       tone: 'warning',
       title: 'No health check',
       detail: `${HEALTH_CHECK_DEFAULT_PATH} is the usual path`,
-      action: {
-        kind: 'add_health',
-        label: `Add ${HEALTH_CHECK_DEFAULT_PATH}`,
-      },
+      action: { kind: 'open_health', label: 'Set up health check' },
     })
   }
 
