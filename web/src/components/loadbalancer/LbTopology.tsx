@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { LoadBalancerAlgorithm } from '../../queries/appLoadBalancer'
 import type { LiveUpstream } from '../../queries/loadBalancerLive'
-import { rollupPool, upstreamShares, upstreamView } from './rollup'
+import { formatShare, rollupPool, upstreamShares, upstreamView } from './rollup'
 import {
   CLIENT,
   MAX_NODES,
@@ -178,7 +178,7 @@ export function LbTopology({
                   y={cy + 12}
                   className="fill-muted-foreground text-[11px]"
                 >
-                  {`${view.label}${pct.get(u.id) ? `, ${pct.get(u.id)}%` : ''}`}
+                  {`${view.label}${pct.get(u.id) ? `, ${formatShare(pct.get(u.id) ?? 0, algorithm)}` : ''}`}
                 </text>
               </g>
             </g>
@@ -269,7 +269,7 @@ export function LbTopology({
                 <th scope="row">{u.dial || `Replica ${u.replica}`}</th>
                 <td>{view.label}</td>
                 <td>{view.reason}</td>
-                <td>{`${pct.get(u.id) ?? 0}%`}</td>
+                <td>{formatShare(pct.get(u.id) ?? 0, algorithm)}</td>
                 <td>{u.active_connections}</td>
               </tr>
             )

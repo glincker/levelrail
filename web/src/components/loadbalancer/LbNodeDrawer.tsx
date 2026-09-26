@@ -18,7 +18,7 @@ import { adminActions, UNSUPPORTED_HINT } from './adminActions'
 import { summarizeChecks } from './checkSummary'
 import { HealthHistoryStrip } from './HealthHistoryStrip'
 import { StateGlyphIcon } from './StateGlyphIcon'
-import { upstreamShares, upstreamView } from './rollup'
+import { formatShare, upstreamShares, upstreamView } from './rollup'
 
 interface Props {
   upstream: LiveUpstream | undefined
@@ -78,7 +78,10 @@ export function LbNodeDrawer({
             </SheetHeader>
 
             <dl className="grid grid-cols-3 gap-3">
-              <Stat label="Traffic share" value={`${share}%`} />
+              <Stat
+                label="Traffic share"
+                value={formatShare(share, algorithm)}
+              />
               <Stat label="Connections" value={String(u.active_connections)} />
               <Stat label="Failures" value={String(u.fails)} />
               <Stat

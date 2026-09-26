@@ -302,7 +302,10 @@ describe('LoadBalancerPage', () => {
       await screen.findByRole('button', { name: 'Create recommended setup' }),
     )
     await waitFor(() => expect(stub.puts).toHaveLength(1))
-    expect(stub.puts[0]).toEqual(presetById('balanced')?.config)
+    expect(stub.puts[0]).toEqual({
+      ...presetById('balanced')?.config,
+      active_health: undefined,
+    })
   })
 
   it('picking a preset from the empty state fills a draft without saving', async () => {

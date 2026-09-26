@@ -53,7 +53,7 @@ export function LbEmptyState({
       <EmptyState
         icon={<ArrowsSplitIcon />}
         title="Spread traffic across replicas"
-        description="Health checks, retries and clean cutovers. Least connections with a /healthz check is a good start."
+        description="Health checks, retries and clean cutovers. Least connections with passive failure detection is a good start. Add an active health check once your app serves one."
         action={
           recommended ? (
             <Button

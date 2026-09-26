@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { formFromConfig } from '../../lib/loadBalancer'
+import { configFromForm, formFromConfig } from '../../lib/loadBalancer'
 import type { LoadBalancerConfig } from '../../queries/appLoadBalancer'
 import type { LiveUpstream } from '../../queries/loadBalancerLive'
 import { detectionTimes, weightShares } from './detection'
 import { LB_PRESETS, presetById } from './presets'
-import { rollupPool, upstreamShares, upstreamView } from './rollup'
+import { formatShare, rollupPool, upstreamShares, upstreamView } from './rollup'
 import { predictEffect, summarizeChanges } from './changes'
 import { computeSuggestions, p95 } from './suggestions'
+import { shellQuote } from './shellQuote'
 
 function up(id: number, patch: Partial<LiveUpstream> = {}): LiveUpstream {
   return {
@@ -146,6 +147,11 @@ describe('presets match the brief', () => {
     expect(c?.drain_timeout).toBe('60s')
     expect(c?.request_timeout).toBeUndefined()
   })
+  it('keeps an explicit zero retry count in the form', () => {
+    const cfg = presetById('websockets')?.config
+    expect(formFromConfig(cfg, 2).retryCount).toBe('0')
+    expect(configFromForm(formFromConfig(cfg, 2)).retries?.count).toBe(0)
+  })
   it('others', () => {
     expect(presetById('sticky')?.config).toMatchObject({
       algorithm: 'cookie',
@@ -259,6 +265,8 @@ describe('computeSuggestions', () => {
       (s) => s.id === 'flapping',
     )
     expect(flap?.apply?.(cfg).active_health?.fails).toBe(3)
+    const applied = flap?.apply?.(cfg) ?? cfg
+    expect(ids(applied, { history })).not.toContain('flapping')
   })
   it('tight timeout', () => {
     const cfg: LoadBalancerConfig = {
@@ -283,5 +291,22 @@ describe('computeSuggestions', () => {
   it('p95 helper', () => {
     expect(p95([])).toBe(0)
     expect(p95([1, 2, 3, 4, 100])).toBe(100)
+  })
+})
+
+describe('formatShare', () => {
+  it('marks shares of non-deterministic policies as estimates', () => {
+    expect(formatShare(50, 'least_conn')).toBe('~50%')
+    expect(formatShare(0, 'cookie')).toBe('0%')
+    expect(formatShare(50, 'round_robin')).toBe('50%')
+    expect(formatShare(90, 'weighted')).toBe('90%')
+  })
+})
+
+describe('shellQuote', () => {
+  it('leaves safe names and quotes hostile ones', () => {
+    expect(shellQuote('my-app_1.x')).toBe('my-app_1.x')
+    expect(shellQuote('a; rm -rf ~')).toBe("'a; rm -rf ~'")
+    expect(shellQuote("it's")).toBe("'it'\\''s'")
   })
 })

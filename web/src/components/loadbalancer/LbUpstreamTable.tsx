@@ -16,7 +16,13 @@ import type {
 import { adminActions, UNSUPPORTED_HINT } from './adminActions'
 import { HealthHistoryStrip } from './HealthHistoryStrip'
 import { StateGlyphIcon } from './StateGlyphIcon'
-import { changedAt, upstreamShares, upstreamView } from './rollup'
+import {
+  changedAt,
+  formatShare,
+  sharesAreEstimated,
+  upstreamShares,
+  upstreamView,
+} from './rollup'
 
 interface Props {
   upstreams: LiveUpstream[]
@@ -152,8 +158,15 @@ export function LbUpstreamTable({
                 </span>
                 <AnimatedNumber value={u.active_connections} />
               </span>
-              <span className="text-sm tabular-nums" title="Share of traffic">
-                {shares.get(u.id) ?? 0}%
+              <span
+                className="text-sm tabular-nums"
+                title={
+                  sharesAreEstimated(algorithm)
+                    ? 'Estimated share, not measured'
+                    : 'Share of traffic'
+                }
+              >
+                {formatShare(shares.get(u.id) ?? 0, algorithm)}
               </span>
               {historySupported ? (
                 <HealthHistoryStrip checks={h?.checks ?? []} />
