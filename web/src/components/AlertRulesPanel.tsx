@@ -16,6 +16,8 @@ import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
 import { EditAlertRuleDialog } from './EditAlertRuleDialog'
 import { DeleteAlertRuleDialog } from './DeleteAlertRuleDialog'
+import { RuleNoiseDialog } from './RuleNoiseDialog'
+import { SilenceRuleMenu } from './SilenceRuleMenu'
 import { useAlertRules } from '../queries/alerts'
 import type { AlertRule } from '../types/alerts'
 import type { AppVolume } from '../types/appDetail'
@@ -267,6 +269,11 @@ function RuleRow({
             <StateDot state={state} />
             {STATE_LABEL[state]}
           </Badge>
+          {rule.silenced ? (
+            <Badge variant="muted" title="Notifications are silenced">
+              Silenced
+            </Badge>
+          ) : null}
           {showLogsLink ? (
             <Link
               to="/apps/$name/logs"
@@ -288,7 +295,13 @@ function RuleRow({
         <NotifyChannelCell rule={rule} />
       </TableCell>
       <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          <SilenceRuleMenu
+            appName={appName}
+            ruleId={rule.id}
+            ruleName={rule.name}
+          />
+          <RuleNoiseDialog appName={appName} rule={rule} />
           <EditAlertRuleDialog
             appName={appName}
             rule={rule}

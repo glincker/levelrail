@@ -108,8 +108,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 77 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 77 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 78 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 78 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -198,6 +198,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/pipeline-sync | AbilityRead | handleGetPipelineSync |
 | PUT | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleSetPipelineSync |
 | POST | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleRunPipelineSync |
+| GET | /api/v1/apps/{name}/alert-history | AbilityRead | handleListAppAlertHistory |
 
 :::
 
@@ -279,6 +280,7 @@ Endpoints for:
 | POST | /api/v1/notification-channels/{id}/test | AbilityWrite | handleTestExistingNotificationChannel |
 | GET | /api/v1/notification-channels/{id}/deliveries | AbilityRead | handleListNotificationDeliveries |
 | POST | /api/v1/prometheus/read | AbilityRead | handlePrometheusRead |
+| POST | /api/v1/apps/{name}/alerts/{id}/silence | AbilityWrite | handleSilenceAlertRule |
 
 ## Databases CRUD / Engines / Resources
 
@@ -683,6 +685,28 @@ Routes that do not fit an existing group.
 | GET | /api/v1/pipeline-runs | AbilityRead | handleListAllPipelineRuns |
 | GET | /api/v1/pipelines/summary | AbilityRead | handleGetPipelineSummary |
 | GET | /api/v1/loadbalancers | AbilityRead | handleListLoadBalancers |
+| GET | /api/v1/alert-silences | AbilityRead | handleListAlertSilences |
+| POST | /api/v1/alert-silences | AbilityWrite | handleCreateAlertSilence |
+| DELETE | /api/v1/alert-silences/{id} | AbilityWrite | handleExpireAlertSilence |
+| GET | /api/v1/alert-maintenance-windows | AbilityRead | handleListMaintenanceWindows |
+| POST | /api/v1/alert-maintenance-windows | AbilityWrite | handleCreateMaintenanceWindow |
+| PUT | /api/v1/alert-maintenance-windows/{id} | AbilityWrite | handleUpdateMaintenanceWindow |
+| DELETE | /api/v1/alert-maintenance-windows/{id} | AbilityWrite | handleDeleteMaintenanceWindow |
+| GET | /api/v1/alert-history | AbilityRead | handleListAlertHistory |
+| GET | /public/status | Public | handlePublicStatusHTML |
+| GET | /public/status.json | Public | handlePublicStatusJSON |
+| GET | /public/status.rss | Public | handlePublicStatusRSS |
+| GET | /api/v1/status-page | AbilityRead | handleGetStatusPage |
+| PUT | /api/v1/status-page | AbilityWrite | handlePutStatusPage |
+| GET | /api/v1/status-page/preview | AbilityRead | handleStatusPagePreview |
+| GET | /api/v1/status-page/components | AbilityRead | handleListStatusComponents |
+| POST | /api/v1/status-page/components | AbilityWrite | handleCreateStatusComponent |
+| PUT | /api/v1/status-page/components/{id} | AbilityWrite | handleUpdateStatusComponent |
+| DELETE | /api/v1/status-page/components/{id} | AbilityWrite | handleDeleteStatusComponent |
+| GET | /api/v1/status-page/incidents | AbilityRead | handleListStatusIncidents |
+| POST | /api/v1/status-page/incidents | AbilityWrite | handleCreateStatusIncident |
+| POST | /api/v1/status-page/incidents/{id}/updates | AbilityWrite | handlePostStatusIncidentUpdate |
+| DELETE | /api/v1/status-page/incidents/{id} | AbilityWrite | handleDeleteStatusIncident |
 
 ## See also
 

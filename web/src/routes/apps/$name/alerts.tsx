@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { AlertRulesPanel } from '../../../components/AlertRulesPanel'
+import { AlertHistoryTable } from '../../../components/AlertHistoryTable'
 import { DeployNotifyTargetsPanel } from '../../../components/DeployNotifyTargetsPanel'
 import { useApp } from '../../../queries/apps'
 
@@ -29,6 +30,16 @@ function AlertsSection() {
     <div className="flex flex-col gap-4">
       <AlertRulesPanel appName={name} volumes={app?.volumes} />
       <DeployNotifyTargetsPanel appName={name} />
+      <section className="rounded-lg border border-border p-4">
+        <h2 className="mb-1 text-sm font-semibold text-foreground">
+          Alert history
+        </h2>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Every firing and resolution for this app, and whether its notification
+          was sent, silenced, grouped, inhibited or failed.
+        </p>
+        <AlertHistoryTable app={name} />
+      </section>
     </div>
   )
 }
