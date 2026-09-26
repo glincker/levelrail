@@ -142,6 +142,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runSecrets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "migrate":
 		return runMigrate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "import":
+		return runImport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "completion":
 		return runCompletion(prog, args[1:], stdout, stderr, lookupEnv)
 	case "settings":
@@ -235,6 +237,7 @@ Usage:
   %[1]s profile list [flags]           list configured credentials profiles and their API URLs
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
+  %[1]s import platform coolify|dokploy|caprover --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
   %[1]s git-providers [flags]                             connection status and capabilities for every git provider in one call
