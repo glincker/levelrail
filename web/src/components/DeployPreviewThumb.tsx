@@ -61,7 +61,7 @@ export function DeployPreviewThumb({
   useRefreshWhenCaptureEnds(appName, status.data?.capturing)
 
   const record = history.data?.find((r) => r.deployment_id === deploymentId)
-  const src = imageUrl ?? record?.image_url
+  const src = record?.image_url ?? imageUrl
   const canShow = src !== undefined && src !== failedSrc
   const isCard = record?.status === 'ok' && record.source === 'card'
   const sourceLabel =
