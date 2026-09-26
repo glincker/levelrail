@@ -110,6 +110,7 @@ func (rt *Router) handleDeploymentsStream(w http.ResponseWriter, r *http.Request
 			applyDeploymentWait(&out.Deployment, rt.deploymentWaits(r.Context(), []store.Deployment{d})[d.Attempt.ID])
 			one := []deploymentResource{out.Deployment}
 			rt.attachPreviewURLs(r.Context(), one)
+			rt.attachSupplyChain(r.Context(), one)
 			out.Deployment = one[0]
 			if ev.Kind == deploylog.StateStep {
 				out.Step = &deploymentStepMsg{Name: ev.Step, Status: ev.Status}

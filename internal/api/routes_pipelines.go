@@ -26,6 +26,7 @@ func (rt *Router) registerPipelineRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/pipeline-sync", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetPipelineSync))
 	mux.HandleFunc("POST /api/v1/apps/{name}/pipeline-sync", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleRunPipelineSync))
 	mux.HandleFunc("POST /api/v1/pipelines/validate", rt.requireAbility(AbilityRead, rt.handleValidatePipeline))
+	mux.HandleFunc("POST /api/v1/pipelines/filters", rt.requireAbility(AbilityRead, rt.handlePipelineFilters))
 	mux.HandleFunc("GET /api/v1/pipelines/schema", rt.requireAbility(AbilityRead, rt.handlePipelineSchema))
 }
 

@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-query'
 import type {
   Pipeline,
+  PipelineFiltersRequest,
   PipelineLogLine,
   PipelineRun,
   PipelineSaveRequest,
@@ -161,6 +162,19 @@ export function useValidatePipeline() {
         'validate pipeline',
         jsonInit('POST', { yaml }),
       ),
+  })
+}
+
+export function useApplyPipelineFilters() {
+  return useMutation({
+    mutationFn: async (req: PipelineFiltersRequest) => {
+      const res = await requestJson<{ yaml: string }>(
+        '/api/v1/pipelines/filters',
+        'apply pipeline filters',
+        jsonInit('POST', req),
+      )
+      return res.yaml
+    },
   })
 }
 

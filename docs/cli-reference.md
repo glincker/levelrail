@@ -630,6 +630,43 @@ levelrail preview prune <app> [--all] [flags]
 ```
 delete old previews now, or every preview of the app with `--all`
 
+## Supply chain
+
+```
+levelrail apps sbom <app> [deploy-id] [--download] [--file PATH] [flags]
+```
+show a deploy's software bill of materials (newest deploy with one by default), or print or save the raw SPDX or CycloneDX document
+
+```
+levelrail apps scan enable <app> [flags]
+```
+turn vulnerability scanning on for the app; the first scan pulls the scanner image
+
+```
+levelrail apps scan disable <app> [flags]
+```
+turn scanning off and reset the gate
+
+```
+levelrail apps scan status <app> [deploy-id] [flags]
+```
+show the scan settings and the latest scan result
+
+```
+levelrail apps scan run <app> [deploy-id] [flags]
+```
+scan a deploy's SBOM now
+
+```
+levelrail apps scan gate <app> off|warn|block_on_critical [flags]
+```
+choose what a scan may do to a release; `block_on_critical` keeps the previous release serving
+
+```
+levelrail apps scan override <app> --reason TEXT [flags]
+```
+let the next blocked release through once, with a recorded reason
+
 ## Databases
 
 ```

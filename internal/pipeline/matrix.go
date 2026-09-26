@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"slices"
@@ -102,6 +103,13 @@ type Event struct {
 	Fork bool
 	// HeadRepo is that source repository's full name, for the trigger log.
 	HeadRepo string
+	// Action is a pull request's normalized action (opened, synchronize).
+	Action string
+	// Changed lists the files the event touched. ChangedFn, when set, is
+	// called at most once to fetch the list when Changed is empty. An
+	// empty result means the list is unknown, so path filters pass.
+	Changed   []string
+	ChangedFn func(ctx context.Context) ([]string, error)
 }
 
 // Matches reports whether the definition should run for ev.
@@ -110,9 +118,11 @@ func (t Triggers) Matches(ev Event) bool {
 	case TriggerPush:
 		return t.Push != nil && globAny(t.Push.Branches, ev.Branch)
 	case TriggerPullRequest:
-		return t.PullRequest != nil && globAny(t.PullRequest.Branches, ev.Branch)
+		return t.PullRequest != nil && globAny(t.PullRequest.Branches, ev.Branch) && t.PullRequest.acceptsAction(ev.Action)
 	case TriggerTag:
 		return t.Tag != nil && globAny(t.Tag.Patterns, ev.Tag)
+	case TriggerMergeGroup:
+		return t.MergeGroup != nil && globAny(t.MergeGroup.Branches, ev.Branch)
 	case TriggerManual:
 		return t.Manual != nil
 	case TriggerAPI:

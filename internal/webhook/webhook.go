@@ -379,7 +379,14 @@ type PushEvent struct {
 	// author name, empty when the payload carries none.
 	HeadMessage string `json:"-"`
 	HeadAuthor  string `json:"-"`
+	// Changed lists the files the pushed commits touched. Nil means the
+	// payload did not say (no commit list, or a list the provider truncates).
+	Changed []string `json:"-"`
 }
+
+// maxPayloadCommits is the commit count at which GitHub, Gitea and GitLab
+// truncate a push payload's commit list, so the file list cannot be trusted.
+const maxPayloadCommits = 20
 
 // pushCommit is one commit entry in a GitHub, Gitea or GitLab push payload.
 type pushCommit struct {
@@ -389,6 +396,30 @@ type pushCommit struct {
 	Author    struct {
 		Name string `json:"name"`
 	} `json:"author"`
+	Added    []string `json:"added"`
+	Modified []string `json:"modified"`
+	Removed  []string `json:"removed"`
+}
+
+// changedFromCommits unions the per-commit file lists, or returns nil when
+// the list may be incomplete.
+func changedFromCommits(commits []pushCommit) []string {
+	if len(commits) == 0 || len(commits) >= maxPayloadCommits {
+		return nil
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, c := range commits {
+		for _, list := range [][]string{c.Added, c.Modified, c.Removed} {
+			for _, f := range list {
+				if !seen[f] {
+					seen[f] = true
+					out = append(out, f)
+				}
+			}
+		}
+	}
+	return out
 }
 
 // ErrPushEventFieldsMissing is returned by ParsePushEvent when body
@@ -415,6 +446,7 @@ func ParsePushEvent(body []byte) (PushEvent, error) {
 	if ev.After == "" || ev.Ref == "" {
 		return ev, ErrPushEventFieldsMissing
 	}
+	ev.Changed = changedFromCommits(payload.Commits)
 	head := payload.HeadCommit
 	for i := range payload.Commits {
 		if head == nil && payload.Commits[i].ID == ev.After {

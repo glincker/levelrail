@@ -29,6 +29,7 @@ import { appDetailQueryOptions } from '../../queries/apps'
 import type { DeploymentActionKind } from '../../hooks/useDeploymentActions'
 import { PromoteAppDialog } from '../PromoteAppDialog'
 import { DeployPreviewThumb } from '../DeployPreviewThumb'
+import { SupplyChainSection } from '../SupplyChainSection'
 import { DrawerActions } from './DrawerActions'
 import { EnvPill, StatusCell } from './DeploymentRow'
 import { ImageRefChip } from './ImageRefChip'
@@ -211,6 +212,13 @@ function DrawerBody({
           canRecapture={d.is_live}
           size="md"
           className="w-full"
+        />
+      </Section>
+      <Section title="Supply chain">
+        <SupplyChainSection
+          appName={d.app}
+          deploymentId={d.id}
+          sbomPackages={d.sbom_packages}
         />
       </Section>
       {d.status !== 'failed' && (

@@ -12,7 +12,13 @@ export type PipelineStatus =
   | 'skipped'
 
 export type PipelineTrigger =
-  'push' | 'pull_request' | 'tag' | 'manual' | 'schedule' | 'api'
+  | 'push'
+  | 'pull_request'
+  | 'merge_group'
+  | 'tag'
+  | 'manual'
+  | 'schedule'
+  | 'api'
 
 export interface PipelineRunBrief {
   id: string
@@ -97,6 +103,30 @@ export interface PipelineRun {
   jobs?: PipelineJob[]
   approvals?: PipelineApproval[]
   hold?: PipelineHold
+  report?: PipelineRunReport
+}
+
+// PipelineRunReport is the run's commit status as posted to the git forge.
+// url is the forge's page for the commit; warning says why a post failed
+// (a failed post never fails the run).
+export interface PipelineRunReport {
+  provider?: string
+  state?: string
+  url?: string
+  warning?: string
+}
+
+export interface PipelineFilters {
+  paths: string[]
+  paths_ignore: string[]
+  report_status: boolean
+}
+
+export interface PipelineFiltersRequest {
+  yaml: string
+  paths?: string[]
+  paths_ignore?: string[]
+  report_status?: boolean
 }
 
 export interface PipelineHold {
@@ -153,6 +183,7 @@ export interface PipelineValidation {
   issues: PipelineIssue[]
   triggers?: PipelineTrigger[]
   jobs?: number
+  filters?: PipelineFilters
 }
 
 export interface PipelineSaveRequest {

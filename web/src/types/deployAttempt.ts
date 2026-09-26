@@ -1,3 +1,5 @@
+import type { VulnCounts } from './supplyChain'
+
 // Wire type for GET /api/v1/apps/{name}/deploy-attempts
 // (internal/api/deploy_attempts.go's handleListDeployAttempts,
 // deployAttemptResource). A real, row-per-attempt deploy history,
@@ -64,4 +66,8 @@ export interface DeployAttempt {
   /** The newer queued deploy that replaced this one. */
   superseded_by?: string
   canceled_by?: string
+  /** Packages in the deploy's SBOM, absent when none was recorded. */
+  sbom_packages?: number
+  /** Findings per severity, absent until the deploy was scanned. */
+  vuln_counts?: VulnCounts
 }

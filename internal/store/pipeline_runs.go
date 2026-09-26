@@ -35,6 +35,13 @@ type PipelineRun struct {
 	HoldReason string
 	HoldBy     string
 	HoldAt     *time.Time
+	// ReportProvider, ReportState and ReportURL record the last commit
+	// status posted to the git forge (empty when none was). ReportWarning
+	// holds why posting failed; a failure never fails the run.
+	ReportProvider string
+	ReportState    string
+	ReportURL      string
+	ReportWarning  string
 }
 
 // Run hold states.
@@ -46,7 +53,7 @@ const (
 
 const pipelineRunCols = `id, pipeline_id, app_name, number, trigger_kind, trigger_actor, ref, commit_sha, inputs, definition,
 	concurrency_group, cancel_in_progress, status, reason, cancel_requested, created_at, started_at, finished_at,
-	hold_state, hold_reason, hold_by, hold_at`
+	hold_state, hold_reason, hold_by, hold_at, report_provider, report_state, report_url, report_warning`
 
 func scanPipelineRun(scan func(...any) error) (PipelineRun, error) {
 	var r PipelineRun
@@ -54,7 +61,8 @@ func scanPipelineRun(scan func(...any) error) (PipelineRun, error) {
 	var started, finished, holdAt sql.NullString
 	if err := scan(&r.ID, &r.PipelineID, &r.AppName, &r.Number, &r.TriggerKind, &r.TriggerActor, &r.Ref, &r.CommitSHA,
 		&r.InputsJSON, &r.Definition, &r.ConcurrencyGroup, &r.CancelInProgress, &r.Status, &r.Reason, &r.CancelRequested,
-		&created, &started, &finished, &r.HoldState, &r.HoldReason, &r.HoldBy, &holdAt); err != nil {
+		&created, &started, &finished, &r.HoldState, &r.HoldReason, &r.HoldBy, &holdAt,
+		&r.ReportProvider, &r.ReportState, &r.ReportURL, &r.ReportWarning); err != nil {
 		return PipelineRun{}, err
 	}
 	var err error
@@ -184,6 +192,27 @@ func (db *DB) SetPipelineRunStatus(ctx context.Context, id, status, reason strin
 	`, status, reason, formatTimePtr(started), formatTimePtr(finished), id)
 	if err != nil {
 		return fmt.Errorf("store: set pipeline run %q status: %w", id, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrPipelineRunNotFound
+	}
+	return nil
+}
+
+// SetPipelineRunReport records the outcome of the latest status post for a
+// run. A blank provider, state or url keeps the value already stored; the
+// warning is always replaced so a later success clears an earlier failure.
+func (db *DB) SetPipelineRunReport(ctx context.Context, id, provider, state, url, warning string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE pipeline_runs SET
+			report_provider = CASE WHEN ? = '' THEN report_provider ELSE ? END,
+			report_state = CASE WHEN ? = '' THEN report_state ELSE ? END,
+			report_url = CASE WHEN ? = '' THEN report_url ELSE ? END,
+			report_warning = ?
+		WHERE id = ?
+	`, provider, provider, state, state, url, url, warning, id)
+	if err != nil {
+		return fmt.Errorf("store: set pipeline run %q report: %w", id, err)
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrPipelineRunNotFound

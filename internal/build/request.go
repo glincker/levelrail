@@ -31,6 +31,9 @@ type Request struct {
 	// NoCache disables BuildKit's cache for this build.
 	NoCache bool
 
+	// Attest asks BuildKit for an SBOM and minimal provenance attestation.
+	Attest bool
+
 	// S3Cache adds BuildKit's s3 cache backend for this build. Nil means none.
 	S3Cache *S3Cache
 }

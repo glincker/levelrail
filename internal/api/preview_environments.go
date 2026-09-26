@@ -91,6 +91,17 @@ func (rt *Router) handlePullRequestWebhookEvent(ctx context.Context, appName str
 // since a reachable preview with no vanity domain is more useful than no
 // preview at all.
 func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, gs store.GitSource, ev webhook.PullRequestEvent) (int, string) {
+	envURL := ""
+	if d := rt.previewDomain(ctx, appName, ev.Number); d != "" {
+		envURL = "https://" + d
+	}
+	dep := rt.beginForgeDeployment(ctx, appName, gs, ev.HeadSHA, forgeEnvPreview, envURL)
+	status, message := rt.deployPreviewEnvironmentInner(ctx, appName, gs, ev)
+	dep.finish(ctx, deploymentStateFor(status, message), strings.TrimSpace(message))
+	return status, message
+}
+
+func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName string, gs store.GitSource, ev webhook.PullRequestEvent) (int, string) {
 	previewName := previewAppName(appName, ev.Number)
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 

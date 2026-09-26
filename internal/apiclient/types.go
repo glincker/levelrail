@@ -1334,9 +1334,29 @@ type GitSourceResource struct {
 	// toggle for a preview deploy's GitHub PR comment/commit status, set
 	// via SetPreviewPostPRComments (preview-settings, same route as
 	// PreviewEnabled).
-	PostPRComments bool   `json:"post_pr_comments"`
-	CreatedAt      string `json:"created_at"`
-	UpdatedAt      string `json:"updated_at"`
+	PostPRComments bool `json:"post_pr_comments"`
+	// DeployPaths, DeployPathsIgnore and ReportStatus mirror the store
+	// fields of the same names, set via SetGitDeploySettings.
+	DeployPaths       []string `json:"deploy_paths"`
+	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
+	ReportStatus      bool     `json:"report_status"`
+	CreatedAt         string   `json:"created_at"`
+	UpdatedAt         string   `json:"updated_at"`
+}
+
+// GitDeploySettings mirrors internal/api's gitDeploySettings.
+type GitDeploySettings struct {
+	DeployPaths       []string `json:"deploy_paths"`
+	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
+	ReportStatus      bool     `json:"report_status"`
+}
+
+// SetGitDeploySettingsRequest mirrors internal/api's
+// setGitDeploySettingsRequest; a nil field keeps its current value.
+type SetGitDeploySettingsRequest struct {
+	DeployPaths       *[]string `json:"deploy_paths,omitempty"`
+	DeployPathsIgnore *[]string `json:"deploy_paths_ignore,omitempty"`
+	ReportStatus      *bool     `json:"report_status,omitempty"`
 }
 
 // SetGitSourceRequest mirrors internal/api's setGitSourceRequest
@@ -2508,12 +2528,14 @@ type DeployAttemptResource struct {
 	Sequence       int64  `json:"sequence,omitempty"`
 	Reason         string `json:"reason,omitempty"`
 
-	QueuedAt      *time.Time `json:"queued_at,omitempty"`
-	QueuePosition int        `json:"queue_position,omitempty"`
-	WaitReason    string     `json:"wait_reason,omitempty"`
-	BlockedBy     string     `json:"blocked_by,omitempty"`
-	SupersededBy  string     `json:"superseded_by,omitempty"`
-	CanceledBy    string     `json:"canceled_by,omitempty"`
+	QueuedAt      *time.Time  `json:"queued_at,omitempty"`
+	QueuePosition int         `json:"queue_position,omitempty"`
+	WaitReason    string      `json:"wait_reason,omitempty"`
+	BlockedBy     string      `json:"blocked_by,omitempty"`
+	SupersededBy  string      `json:"superseded_by,omitempty"`
+	CanceledBy    string      `json:"canceled_by,omitempty"`
+	SBOMPackages  *int        `json:"sbom_packages,omitempty"`
+	VulnCounts    *VulnCounts `json:"vuln_counts,omitempty"`
 }
 
 // CancelSupersededResource mirrors internal/api's cancelSupersededResource.

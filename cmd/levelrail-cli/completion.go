@@ -24,6 +24,8 @@ type cmdNode struct {
 var cliCommandTree = map[string]*cmdNode{
 	"apps": {subs: map[string]*cmdNode{
 		"freeze":                  {subs: map[string]*cmdNode{"set": nil, "show": nil, "clear": nil}},
+		"sbom":                    nil,
+		"scan":                    {subs: map[string]*cmdNode{"enable": nil, "disable": nil, "status": nil, "run": nil, "gate": nil, "override": nil}},
 		"create":                  nil,
 		"list":                    nil,
 		"get":                     nil,
@@ -78,7 +80,7 @@ var cliCommandTree = map[string]*cmdNode{
 		}},
 		"env":                {subs: map[string]*cmdNode{"import": nil, "export": nil}},
 		"secrets":            {subs: map[string]*cmdNode{"list": nil, "set": nil, "delete": nil, "lock": nil}},
-		"git-source":         {subs: map[string]*cmdNode{"get": nil, "set": nil, "delete": nil}},
+		"git-source":         {subs: map[string]*cmdNode{"get": nil, "set": nil, "settings": nil, "delete": nil}},
 		"webhook-deliveries": {subs: map[string]*cmdNode{"list": nil, "replay": nil}},
 		"bulk":               nil,
 		"clone":              nil,
