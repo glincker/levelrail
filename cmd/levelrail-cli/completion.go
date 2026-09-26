@@ -125,7 +125,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"list": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "clone-restores": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
-	"control-plane-backups": {subs: map[string]*cmdNode{"list": nil, "create": nil, "download": nil, "verify": nil, "delete": nil}},
+	"control-plane-backups": {subs: map[string]*cmdNode{"list": nil, "create": nil, "download": nil, "verify": nil, "delete": nil, "schedule": {subs: map[string]*cmdNode{"show": nil, "set": nil}}, "run-now": nil, "drill": {subs: map[string]*cmdNode{"run": nil, "status": nil}}, "escrow": nil, "keys": {subs: map[string]*cmdNode{"generate": nil}}, "help-dr": nil}},
 	"cloudflare-tunnel":     {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},
 	"vault":                 {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},
 	"channels":              {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil}},

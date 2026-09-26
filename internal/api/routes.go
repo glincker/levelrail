@@ -61,6 +61,18 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/system/backups/{name}/download", rt.requireAbility(AbilityRoot, rt.handleDownloadControlPlaneBackup))
 	mux.HandleFunc("POST /api/v1/system/backups/{name}/verify", rt.requireAbility(AbilityRoot, rt.handleVerifyControlPlaneBackup))
 	mux.HandleFunc("DELETE /api/v1/system/backups/{name}", rt.requireAbility(AbilityRoot, rt.handleDeleteControlPlaneBackup))
+	// Off-box encrypted control plane backups, restore drills and escrow
+	// (control_plane_dr.go). Status reads are AbilityRead and carry public
+	// recipients only. Changing the destination or recipients is
+	// AbilityWriteSensitive; building an escrow bundle touches the master
+	// key, so it is AbilityRoot. Restore stays an offline CLI action.
+	mux.HandleFunc("GET /api/v1/system/control-plane-dr", rt.requireAbility(AbilityRead, rt.handleGetControlPlaneDR))
+	mux.HandleFunc("PUT /api/v1/system/control-plane-dr/settings", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateControlPlaneDR))
+	mux.HandleFunc("GET /api/v1/system/control-plane-dr/backups", rt.requireAbility(AbilityRead, rt.handleListControlPlaneDRBackups))
+	mux.HandleFunc("POST /api/v1/system/control-plane-dr/run", rt.requireAbility(AbilityWriteSensitive, rt.handleRunControlPlaneDRBackup))
+	mux.HandleFunc("POST /api/v1/system/control-plane-dr/drill", rt.requireAbility(AbilityWriteSensitive, rt.handleRunControlPlaneDRDrill))
+	mux.HandleFunc("POST /api/v1/system/control-plane-dr/escrow", rt.requireAbility(AbilityRoot, rt.handleControlPlaneDREscrow))
+	mux.HandleFunc("POST /api/v1/system/control-plane-dr/escrow/ack", rt.requireAbility(AbilityWriteSensitive, rt.handleAckControlPlaneDREscrow))
 	// Orphaned named volumes: detection is a read (AbilityRead), the
 	// cleanup that actually deletes one is the same AbilityRoot,
 	// fleet-wide, no-undo tier system/prune sits behind, not

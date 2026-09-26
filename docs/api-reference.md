@@ -39,6 +39,13 @@ System endpoints for:
 | GET | /api/v1/updates | AbilityRead | handleGetUpdates |
 | GET | /api/v1/system/secrets/binding | AbilityRead | handleGetSecretBinding |
 | POST | /api/v1/system/secrets/rebind | AbilityRoot | handleRebindSecrets |
+| GET | /api/v1/system/control-plane-dr | AbilityRead | handleGetControlPlaneDR |
+| PUT | /api/v1/system/control-plane-dr/settings | AbilityWriteSensitive | handleUpdateControlPlaneDR |
+| GET | /api/v1/system/control-plane-dr/backups | AbilityRead | handleListControlPlaneDRBackups |
+| POST | /api/v1/system/control-plane-dr/run | AbilityWriteSensitive | handleRunControlPlaneDRBackup |
+| POST | /api/v1/system/control-plane-dr/drill | AbilityWriteSensitive | handleRunControlPlaneDRDrill |
+| POST | /api/v1/system/control-plane-dr/escrow | AbilityRoot | handleControlPlaneDREscrow |
+| POST | /api/v1/system/control-plane-dr/escrow/ack | AbilityWriteSensitive | handleAckControlPlaneDREscrow |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

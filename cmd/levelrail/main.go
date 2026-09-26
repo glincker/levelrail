@@ -286,6 +286,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "restore" {
+		if err := runRestore(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdout, os.LookupEnv); err != nil {
+			logger.Error("restore failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "setup-token" {
 		if err := runSetupToken(context.Background(), os.Stdout, openStore); err != nil {
 			logger.Error("setup-token failed", slog.String("error", err.Error()))
@@ -621,6 +628,7 @@ func run(logger *slog.Logger) error {
 	configureNodeCerts(apiRouter, agentServer)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
+	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
@@ -793,8 +801,8 @@ func run(logger *slog.Logger) error {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
-	if controlPlaneBackupInterval(logger) > 0 {
-		alertingEngine.SetControlPlaneBackups(cpbackup.NewManager(db, agentDataDir), 0)
+	if localScheduled := controlPlaneBackupInterval(logger) > 0; localScheduled || cpDR != nil {
+		alertingEngine.SetControlPlaneBackups(cpbackup.AlertSource{Local: cpbackup.NewManager(db, agentDataDir), Svc: cpDR, LocalScheduled: localScheduled}, 0)
 	}
 	// db satisfies alerting.AutoRollbackStore structurally (it already
 	// satisfies deploy.ImageDeployStore, plus GetDesiredService/
