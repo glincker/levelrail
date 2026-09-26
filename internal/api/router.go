@@ -113,6 +113,7 @@ type Router struct {
 	requestSummaryWindow   time.Duration      // 0 keeps defaultRequestSummaryWindow
 	alertRules             AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
 	lb                     lbDeps             // zero value is valid: load balancer routes return 501
+	iac                    iacDeps            // zero value is valid: lazily builds the in-process handler apply calls
 	sessions               *sessionStore
 	logins                 *loginLimiter
 	recoveryCodes          RecoveryCodeStore // always set, same "core Store interface" shape as auth above

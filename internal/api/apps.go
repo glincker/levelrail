@@ -690,6 +690,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// every save: SaveDesiredService, unlike NodeID/StorageTargetID,
 	// always writes this column.
 	desired.Egress = existing.Egress
+	preserveUnsentAppFields(&desired, *existing, req)
 	if imageChanged {
 		desired.EnvDirty = false
 	} else {

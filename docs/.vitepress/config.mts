@@ -36,6 +36,7 @@ const sidebarGroups = [
       },
       { text: 'Deploying from GitHub Actions', link: '/github-actions' },
       { text: 'Pipelines', link: '/pipelines' },
+      { text: 'Platform as code', link: '/platform-as-code' },
       { text: 'Screenshots', link: '/screenshots' },
       { text: 'Deploying apps', link: '/deploying-apps' },
       { text: 'Deploy safety', link: '/deploy-safety' },

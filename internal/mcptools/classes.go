@@ -202,6 +202,8 @@ var toolTable = map[string]Meta{
 	"set_app_load_balancer":                 {clsM, "loadbalancer", 0},
 	"clear_app_load_balancer":               {clsD, "loadbalancer", 0},
 	"export_app_load_balancer":              {clsR, "loadbalancer", 0},
+	"plan_apply":                            {clsR, "iac", 0},
+	"apply_resources":                       {clsD, "iac", 0},
 }
 
 // Lookup returns a tool's classification.

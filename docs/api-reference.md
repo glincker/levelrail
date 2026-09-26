@@ -707,6 +707,10 @@ Routes that do not fit an existing group.
 | POST | /api/v1/imports/plan | AbilityWrite | handleImportPlan |
 | POST | /api/v1/imports/platform/discover | AbilityWriteSensitive | handleDiscoverPlatformImport |
 | POST | /api/v1/imports/platform/apply | AbilityWriteSensitive | handleApplyPlatformImport |
+| POST | /api/v1/apply/plan | AbilityRead | handleIaCPlan |
+| POST | /api/v1/apply | AbilityWrite | handleIaCApply |
+| GET | /api/v1/export | AbilityRead | handleIaCExport |
+| GET | /api/v1/apply/schema | AbilityRead | handleIaCSchema |
 
 ## See also
 
