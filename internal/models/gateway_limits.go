@@ -101,16 +101,18 @@ func envInt64(name string, def int64) int64 {
 	return n
 }
 
+// envInt parses into 32 bits so an out of range override falls back to def
+// instead of wrapping on conversion.
 func envInt(name string, def int) int {
 	v := os.Getenv(name)
 	if v == "" {
 		return def
 	}
-	n, err := strconv.Atoi(v)
+	n, err := strconv.ParseInt(v, 10, 32)
 	if err != nil {
 		return def
 	}
-	return n
+	return int(n)
 }
 
 func envDuration(name string, def time.Duration) time.Duration {

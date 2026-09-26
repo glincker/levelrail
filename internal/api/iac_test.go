@@ -130,6 +130,21 @@ func TestIaCPlanReportsLineNumberedIssues(t *testing.T) {
 	}
 }
 
+func TestIaCPlanNeverResolvesPlaceholdersFromServerEnv(t *testing.T) {
+	t.Setenv("IAC_API_TEST_SECRET", "server-side-value")
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	docs := "version: 1\nkind: App\nmetadata: {name: web}\nspec:\n  service:\n    build: {type: image, image: x}\n    port: 80\n    env:\n      X: ${{ env.IAC_API_TEST_SECRET }}\n"
+	var out iacPlanResponse
+	code := iacCall(t, rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/apply/plan", iacRequestBody(t, docs, nil)), &out)
+	if code != http.StatusUnprocessableEntity || len(out.Issues) != 1 || !strings.Contains(out.Issues[0].Message, "IAC_API_TEST_SECRET is not provided") {
+		t.Fatalf("code = %d issues = %+v", code, out.Issues)
+	}
+	if strings.Contains(jsonBody(t, out), "server-side-value") {
+		t.Fatal("the response carries the server environment value")
+	}
+}
+
 func TestIaCApplyRefusesPruneWithoutSource(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
