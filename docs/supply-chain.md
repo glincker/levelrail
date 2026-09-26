@@ -47,7 +47,9 @@ Each deploy's **Supply chain** section (in the deployments drawer and on the per
 | `warn` | recorded, deploy flagged with the reason | goes live |
 | `block_on_critical` | recorded | **does not go live** |
 
-A blocked deploy fails with the reason, `desired state` is not changed and the previous release keeps serving. If the scanner is unavailable, times out or fails, the gate fails open and the deploy records that the scan did not complete.
+A blocked deploy fails with the reason, `desired state` is not changed and the previous release keeps serving. If the scanner is unavailable, times out or fails, the gate fails open and the deploy records that the scan did not complete. A scanner report that is not in the expected format counts as a failed scan, never as a clean one.
+
+Every service of a multi-service deploy is gated on its own settings, and one blocked service does not let the others skip their gate. Changing scanning settings never arms, restores or extends an override: turning the gate away from `block_on_critical` disarms it.
 
 To let one blocked release through, an operator arms an override with a reason (**Deploy settings**, **Supply chain**, or `levelrail apps scan override web --reason "..."`). It applies to the next release only, expires after `APP_SCAN_OVERRIDE_TTL` (default 1 hour), and the reason is recorded in the app timeline and the audit log. A deploy freeze still applies as usual: the gate runs after a build, so it never releases a frozen deploy.
 

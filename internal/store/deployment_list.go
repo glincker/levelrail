@@ -135,12 +135,17 @@ func storedStatusesFor(statuses []string) []string {
 		switch s {
 		case DeploymentHeld:
 			add(DeployAttemptStatusHeld)
+		case DeploymentQueued:
+			add(DeployAttemptStatusQueued)
 		case DeploymentBuilding:
 			add(DeployAttemptStatusRunning)
 		case DeploymentReady, DeploymentRolledBack:
 			add(DeployAttemptStatusSucceeded)
 		case DeploymentFailed, DeploymentCanceled:
 			add(DeployAttemptStatusFailed)
+			if s == DeploymentCanceled {
+				add(DeployAttemptStatusCanceled)
+			}
 		case DeploymentSuperseded:
 			add(DeployAttemptStatusSuperseded)
 		}
@@ -314,7 +319,7 @@ func (db *DB) ListDeployments(ctx context.Context, f DeploymentFilter) ([]Deploy
 	q := `SELECT ` + cols + `, ` + deploymentStatusSQL + `,
 		COALESCE(env.name, ''), COALESCE(g.branch, ''), COALESCE(pv.pr_number, 0), ` + isLiveSQL + `, COALESCE((` + rolledByExpr() + `), ''),
 		CASE WHEN d.source IN ('image','auto_rollback') THEN COALESCE(` + rollbackTargetForD + `, '') ELSE '' END,
-		CASE WHEN d.status = 'superseded' THEN COALESCE((SELECT n.id FROM deploy_attempts n
+		CASE WHEN d.status = 'superseded' THEN COALESCE(NULLIF(d.superseded_by, ''), (SELECT n.id FROM deploy_attempts n
 			WHERE n.service_name = d.service_name AND n.started_at > d.started_at
 			ORDER BY n.started_at ASC LIMIT 1), '') ELSE '' END ` +
 		deploymentFromSQL + where + ` ORDER BY d.started_at DESC, d.id DESC LIMIT ?`

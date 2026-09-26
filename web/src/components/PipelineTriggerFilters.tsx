@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -35,22 +35,39 @@ export function PipelineTriggerFilters({
   const [ignore, setIgnore] = useState(toLines(filters.paths_ignore))
   const [report, setReport] = useState(filters.report_status)
   const apply = useApplyPipelineFilters()
+  const latest = useRef(yaml)
+  useEffect(() => {
+    latest.current = yaml
+  }, [yaml])
+  const split = filters.split
 
   const dirty =
-    paths !== toLines(filters.paths) ||
-    ignore !== toLines(filters.paths_ignore) ||
+    (!split &&
+      (paths !== toLines(filters.paths) ||
+        ignore !== toLines(filters.paths_ignore))) ||
     report !== filters.report_status
 
-  const submit = () =>
+  const submit = () => {
+    const snapshot = yaml
     apply.mutate(
       {
-        yaml,
-        paths: fromLines(paths),
-        paths_ignore: fromLines(ignore),
+        yaml: snapshot,
+        ...(split
+          ? {}
+          : { paths: fromLines(paths), paths_ignore: fromLines(ignore) }),
         report_status: report,
       },
       {
-        onSuccess: onApply,
+        onSuccess: (next) => {
+          if (latest.current !== snapshot) {
+            toast.add({
+              title: 'The YAML changed while applying. Apply again.',
+              type: 'error',
+            })
+            return
+          }
+          onApply(next)
+        },
         onError: (e) =>
           toast.add({
             title: 'Could not apply the filters.',
@@ -59,12 +76,19 @@ export function PipelineTriggerFilters({
           }),
       },
     )
+  }
 
   return (
     <fieldset className="space-y-3 rounded-lg border border-border p-3">
       <legend className="px-1 text-sm font-medium text-foreground">
         Trigger filters
       </legend>
+      {split ? (
+        <p className="text-xs text-muted-foreground">
+          Push and pull request triggers have different path filters. Edit them
+          in the YAML; only the status reporting switch is applied here.
+        </p>
+      ) : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="pipeline-paths" className="flex items-center gap-1.5">
@@ -79,6 +103,7 @@ export function PipelineTriggerFilters({
             id="pipeline-paths"
             value={paths}
             onChange={(e) => setPaths(e.target.value)}
+            disabled={split}
             rows={3}
             spellCheck={false}
             className="font-mono text-xs"
@@ -101,6 +126,7 @@ export function PipelineTriggerFilters({
             id="pipeline-paths-ignore"
             value={ignore}
             onChange={(e) => setIgnore(e.target.value)}
+            disabled={split}
             rows={3}
             spellCheck={false}
             className="font-mono text-xs"

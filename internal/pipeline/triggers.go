@@ -25,7 +25,7 @@ func (t *Triggers) UnmarshalYAML(n *yaml.Node) error {
 			t.PullRequest = &PRTrigger{}
 			err = decodeUnlessNull(val, isNull, t.PullRequest)
 		case "merge_group":
-			t.MergeGroup = &RefTrigger{}
+			t.MergeGroup = &MergeGroupTrigger{}
 			err = decodeUnlessNull(val, isNull, t.MergeGroup)
 		case "tag":
 			t.Tag = &TagTrigger{}

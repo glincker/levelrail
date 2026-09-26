@@ -105,6 +105,9 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error
 	}
 	duration := time.Since(start)
 
+	if err := commitPoint(req); err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
 	if err := p.staticSites.SaveStaticSite(ctx, store.StaticSite{
 		Name:    req.ServiceName,
 		Domains: req.Service.Domains,

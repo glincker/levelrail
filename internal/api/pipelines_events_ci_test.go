@@ -51,6 +51,16 @@ func TestPushPipelineEventCarriesChangedFiles(t *testing.T) {
 	}
 }
 
+func TestReopenedPullRequestFiresReopenedAction(t *testing.T) {
+	rt, _ := newSyncRouter(t, &fakeSyncer{})
+	events := &recordingEvents{}
+	rt.SetPipelineEvents(events)
+	rt.firePipelinePullRequest(context.Background(), "web", webhook.PullRequestEvent{Action: webhook.PullRequestOpened, Reopened: true, Number: 4, BaseRef: "main", HeadRef: "f", HeadSHA: "s"})
+	if len(events.events) != 1 || events.events[0].Action != "reopened" {
+		t.Fatalf("events = %+v", events.events)
+	}
+}
+
 func TestPullRequestPipelineEventCarriesAction(t *testing.T) {
 	rt, _ := newSyncRouter(t, &fakeSyncer{})
 	events := &recordingEvents{}
@@ -78,7 +88,7 @@ func TestPipelineFiltersEndpoint(t *testing.T) {
 		t.Fatalf("manual-only pipeline: %d, want 400", rec.Code)
 	}
 	val := doAuthed(t, rt, cookie, "/api/v1/pipelines/validate", `{"yaml":`+jsonString(yamlText)+`}`)
-	if !strings.Contains(val.Body.String(), `"filters":{"paths":[],"paths_ignore":[],"report_status":true}`) {
+	if !strings.Contains(val.Body.String(), `"filters":{"paths":[],"paths_ignore":[],"report_status":true,"split":false}`) {
 		t.Fatalf("validate body = %s", val.Body.String())
 	}
 }

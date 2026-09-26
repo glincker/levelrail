@@ -2,6 +2,7 @@ package supplychain
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -15,8 +16,12 @@ const (
 
 const topVulnLimit = 10
 
+// ErrUnexpectedReport means the scanner output parsed as JSON but is not a report of the configured scanner.
+var ErrUnexpectedReport = errors.New("supplychain: unexpected scanner report")
+
 type trivyReport struct {
-	Results []struct {
+	SchemaVersion *int `json:"SchemaVersion"`
+	Results       []struct {
 		Vulnerabilities []struct {
 			ID           string `json:"VulnerabilityID"`
 			Package      string `json:"PkgName"`
@@ -29,7 +34,7 @@ type trivyReport struct {
 }
 
 type grypeReport struct {
-	Matches []struct {
+	Matches *[]struct {
 		Vulnerability struct {
 			ID          string `json:"id"`
 			Severity    string `json:"severity"`
@@ -65,6 +70,9 @@ func ParseTrivy(data []byte) (ScanSummary, error) {
 	if err := json.Unmarshal(data, &rep); err != nil {
 		return ScanSummary{}, fmt.Errorf("supplychain: parse trivy output: %w", err)
 	}
+	if rep.SchemaVersion == nil {
+		return ScanSummary{}, fmt.Errorf("%w: trivy output has no SchemaVersion, not a trivy report", ErrUnexpectedReport)
+	}
 	var vulns []Vuln
 	for _, r := range rep.Results {
 		for _, v := range r.Vulnerabilities {
@@ -80,8 +88,11 @@ func ParseGrype(data []byte) (ScanSummary, error) {
 	if err := json.Unmarshal(data, &rep); err != nil {
 		return ScanSummary{}, fmt.Errorf("supplychain: parse grype output: %w", err)
 	}
+	if rep.Matches == nil {
+		return ScanSummary{}, fmt.Errorf("%w: grype output has no matches list, not a grype report", ErrUnexpectedReport)
+	}
 	var vulns []Vuln
-	for _, m := range rep.Matches {
+	for _, m := range *rep.Matches {
 		fixed := ""
 		if len(m.Vulnerability.Fix.Versions) > 0 {
 			fixed = strings.Join(m.Vulnerability.Fix.Versions, ", ")

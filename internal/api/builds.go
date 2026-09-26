@@ -185,6 +185,11 @@ type triggerBuildRequest struct {
 // GET .../deploys/{id}/logs for progress and outcome.
 type triggerBuildResponse struct {
 	ID string `json:"id,omitempty"`
+	// Status is "queued" when the build waits behind another deploy, with
+	// QueuePosition and WaitReason saying why; empty when it started at once.
+	Status        string `json:"status,omitempty"`
+	QueuePosition int    `json:"queue_position,omitempty"`
+	WaitReason    string `json:"wait_reason,omitempty"`
 }
 
 // isGitHubHTTPSRepoURL reports whether repoURL is an https remote on
@@ -341,118 +346,41 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageRepo := req.ImageRepo
-	if imageRepo == "" {
-		imageRepo = name
-	}
+	// AbilityDeploy alone (this route's own gate) is not enough to
+	// authorize minting a live GitHub App installation token: repoURL is
+	// fully caller-controlled, so an unscoped mint would let any
+	// deploy-only caller read any private repo the org's installation can
+	// reach. Checked once, in request scope, before the goroutine outlives r.
+	allowPrivateRepoAuth := rt.callerHasAbility(r, AbilityReadSensitive)
 
-	buildCfg := spec.Build{Type: buildType, Path: req.Build.Path, BaseDirectory: req.Build.BaseDirectory, Args: req.Build.Args}
-	if buildType == spec.BuildImage {
-		buildCfg = spec.Build{Type: buildType, Image: req.Build.Image}
-	}
-	svcSpec := specServiceFromDesired(*existing, buildCfg)
-
-	buildReq := deploy.Request{
-		ServiceName: name,
-		Service:     svcSpec,
-		CommitSHA:   req.Ref,
-		ImageRepo:   imageRepo,
-	}
+	buildReq := manualBuildRequest(name, *existing, req, buildType)
+	source := store.DeployAttemptSourceManual
 
 	rt.buildStartMu.Lock()
-	if rt.hasRunningDeployAttempt(r.Context(), name) {
+	if rt.deploySafety != nil {
+		if rt.deployBlocker(r.Context(), name) {
+			resp, err := rt.enqueueManualBuild(r.Context(), *existing, req, buildReq, freezeNote, allowPrivateRepoAuth)
+			rt.buildStartMu.Unlock()
+			if err != nil {
+				rt.logger.Error("api: trigger build: queue failed", slog.String("error", err.Error()), slog.String("name", name))
+				writeError(w, http.StatusInternalServerError, "internal error")
+				return
+			}
+			writeJSON(w, http.StatusAccepted, resp)
+			return
+		}
+	} else if rt.hasRunningDeployAttempt(r.Context(), name) {
 		rt.buildStartMu.Unlock()
 		writeError(w, http.StatusConflict, "a deploy for this app is already running")
 		return
 	}
-	id, progress, finishAttempt, setCommit := rt.beginBuildDeployAttempt(r.Context(), buildReq, *existing, store.DeployAttemptSourceManual, req.DetectedFramework)
-	buildReq.AttemptID = id
-	if freezeNote != "" && id != "" {
-		if err := rt.deploySafety.SetDeployAttemptReason(r.Context(), id, freezeNote); err != nil {
-			rt.logger.Warn("api: record freeze override failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
-		}
-	}
+	run := rt.beginManualBuild(r.Context(), *existing, buildReq, buildType, source, req.DetectedFramework, freezeNote, allowPrivateRepoAuth)
 	rt.buildStartMu.Unlock()
 
-	// AbilityDeploy alone (this route's own gate) is not enough to
-	// authorize minting a live GitHub App installation token: repoURL is
-	// fully caller-controlled and need not have anything to do with this
-	// app, so an unscoped mint here would let any AbilityDeploy-only
-	// caller (e.g. a CI token meant only to trigger builds) read any
-	// private repo the org's installation can reach, the exact class of
-	// disclosure handleListGitHubAppRepos already gates at
-	// AbilityReadSensitive for the same reason. Checked once, in request
-	// scope, before the goroutine below outlives r.
-	allowPrivateRepoAuth := rt.callerHasAbility(r, AbilityReadSensitive)
+	run.repoURL, run.ref = req.RepoURL, req.Ref
+	go rt.runManualBuild(run) //nolint:gosec // the build outlives the request; runManualBuild derives its own context
 
-	repoURL, ref := req.RepoURL, req.Ref
-	go func() { //nolint:gosec // deliberately not r.Context(): it is cancelled the moment this handler returns, which would abort the fetch and build within microseconds of starting them; see this handler's own doc comment
-		ctx := context.Background()
-		if buildType != spec.BuildImage {
-			rt.emitStep(id, "detecting", "running")
-			var token string
-			if allowPrivateRepoAuth {
-				token = rt.tokenForRepo(ctx, repoURL)
-			}
-			sourceDir, commit, cleanup, err := rt.fetch(ctx, repoURL, ref, token)
-			if err != nil {
-				rt.logger.Error("api: trigger build: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref))
-				rt.emitStep(id, "detecting", "failed")
-				finishAttempt(err)
-				return
-			}
-			defer cleanup()
-			buildReq.SourceDir = sourceDir
-			// Tag by what was actually checked out, never by ref itself: a
-			// branch name reused as an image tag moves onto the newer image
-			// on the next build, orphaning the previous one as a rollback
-			// target.
-			if commit != "" {
-				buildReq.CommitSHA = commit
-				setCommit(ctx, commit)
-			}
-			rt.emitStep(id, "detecting", "done")
-		}
-
-		rt.emitStep(id, "building", "running")
-		tag, err := rt.builder.Deploy(ctx, buildReq, progress)
-		if err != nil {
-			rt.emitStep(id, "building", "failed")
-		} else {
-			rt.emitStep(id, "building", "done")
-			// No separate registry push exists yet for a single-node
-			// control plane (the built image is loaded straight into the
-			// local Docker Engine, see internal/build.Client.Build): this
-			// step is reported alongside "building" rather than measured
-			// on its own, and is honest about that rather than inventing a
-			// timing split BuildKit never actually observed.
-			rt.emitStep(id, "pushing", "done")
-			rt.emitStep(id, "deploying", "done")
-		}
-		finishAttempt(err)
-		if err != nil {
-			// Non-leaky, matching internal/webhook.Handler.ServeHTTP's own
-			// choice for an identical failure (its own doc comment: "500
-			// with a non-leaky message if the deploy itself fails"): a
-			// build failure can carry internal detail (daemon socket
-			// paths, registry hostnames) that has no business reaching an
-			// HTTP response body, logged here instead. There's no HTTP
-			// response left to write by this point anyway; the deploy
-			// attempt row (already marked failed by finishAttempt above)
-			// is how a caller learns the outcome.
-			rt.logger.Error("api: trigger build failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref))
-			return
-		}
-		rt.logger.Info("api: manual build triggered", slog.String("name", name), slog.String("repo_url", repoURL), slog.String("ref", ref), slog.String("build_type", buildType), slog.String("tag", tag))
-		// The build just wrote a new image onto desired state
-		// (finishDeploy's SaveDesiredService); without this, the
-		// reconciler doesn't notice until its next resyncInterval tick
-		// (default 30s), the same gap api.ReconcileNudger's doc comment
-		// describes for create/stop/start/restart.
-		rt.nudgeReconciler()
-	}()
-
-	writeJSON(w, http.StatusAccepted, triggerBuildResponse{ID: id})
+	writeJSON(w, http.StatusAccepted, triggerBuildResponse{ID: run.id})
 }
 
 // specServiceFromDesired reconstructs the parts of a spec.Service that

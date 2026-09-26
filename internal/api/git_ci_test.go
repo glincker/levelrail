@@ -371,7 +371,14 @@ func newDeploymentFixture(t *testing.T, respond func(*http.Request) (int, map[st
 }
 
 func newTestDeployment(rt *Router, f *forge, id string, externalID int64) *forgeDeployment {
-	rec := store.ForgeDeployment{ID: id, AppName: "web", Environment: forgeEnvProduction, Provider: forgeGitHub, ExternalID: externalID, CommitSHA: "sha", State: "in_progress"}
+	return newScopedDeployment(rt, f, id, externalID, forgeEnvProduction)
+}
+
+// newScopedDeployment creates a deployment whose creation time orders by
+// externalID, so a higher ID is a newer deploy.
+func newScopedDeployment(rt *Router, f *forge, id string, externalID int64, scope string) *forgeDeployment {
+	created := time.Date(2026, 1, 1, 0, 0, int(externalID), 0, time.UTC)
+	rec := store.ForgeDeployment{ID: id, AppName: "web", Environment: scope, Provider: forgeGitHub, ExternalID: externalID, CommitSHA: "sha", State: "in_progress", CreatedAt: created, UpdatedAt: created}
 	_ = rt.forgeDeployments.CreateForgeDeployment(context.Background(), rec)
 	return &forgeDeployment{rt: rt, f: f, rec: rec, logURL: "https://dash.test/apps/web/deployments"}
 }
@@ -441,7 +448,7 @@ func TestDeploymentStateFor(t *testing.T) {
 		want   githubapp.DeploymentState
 	}{
 		{200, "deploy triggered: web:sha1\n", githubapp.DeploymentSuccess},
-		{207, "services deploy triggered (1 failed)\n", githubapp.DeploymentSuccess},
+		{207, "services deploy triggered (1 failed)\n", githubapp.DeploymentFailure},
 		{500, "deploy failed", githubapp.DeploymentFailure},
 		{200, "not deployed: superseded by a newer commit\n", githubapp.DeploymentInactive},
 	}

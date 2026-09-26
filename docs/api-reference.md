@@ -117,8 +117,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 106 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 106 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 110 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 110 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -234,6 +234,10 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/deployments/{id}/sbom | AbilityRead | handleGetSBOM |
 | GET | /api/v1/apps/{name}/deployments/{id}/vulnerabilities | AbilityRead | handleGetVulnerabilities |
 | POST | /api/v1/apps/{name}/deployments/{id}/scan | AbilityWrite | handleScanDeployment |
+| POST | /api/v1/apps/{name}/deploys/{deployId}/cancel | AbilityDeploy | handleCancelDeploy |
+| POST | /api/v1/apps/{name}/deploys/{deployId}/rollback | AbilityDeploy | handleRollbackToDeploy |
+| GET | /api/v1/apps/{name}/cancel-superseded | AbilityRead | handleGetCancelSuperseded |
+| PUT | /api/v1/apps/{name}/cancel-superseded | AbilityDeploy | handleSetCancelSuperseded |
 | GET | /api/v1/apps/{name}/preview-policy | AbilityRead | handleGetPreviewPolicy |
 | PUT | /api/v1/apps/{name}/preview-policy | AbilityWriteSensitive | handleSetPreviewPolicy |
 

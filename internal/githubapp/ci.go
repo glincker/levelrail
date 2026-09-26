@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -27,6 +28,10 @@ const (
 )
 
 const changedFilesPageCap = 30
+
+// ErrChangedFilesTruncated means a change touched more files than the client
+// pages through, so the list is incomplete and must not drive a decision.
+var ErrChangedFilesTruncated = errors.New("githubapp: changed file list is truncated")
 
 func (c *Client) doJSON(ctx context.Context, baseURL, method, path, authHeader string, body []byte, out any) error {
 	var rd *bytes.Reader
@@ -137,10 +142,10 @@ func (c *Client) CompareChangedFiles(ctx context.Context, instanceURL, token, ow
 		}
 		out = append(out, collectFilenames(resp.Files)...)
 		if len(resp.Files) < 100 {
-			break
+			return out, nil
 		}
 	}
-	return out, nil
+	return nil, ErrChangedFilesTruncated
 }
 
 // PullRequestFiles lists the files changed by pull request number.
@@ -154,8 +159,8 @@ func (c *Client) PullRequestFiles(ctx context.Context, instanceURL, token, owner
 		}
 		out = append(out, collectFilenames(resp)...)
 		if len(resp) < 100 {
-			break
+			return out, nil
 		}
 	}
-	return out, nil
+	return nil, ErrChangedFilesTruncated
 }

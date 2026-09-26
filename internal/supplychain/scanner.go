@@ -51,6 +51,9 @@ func (s *Service) runScan(ctx context.Context, attemptID string, sbom []byte) (S
 	if err != nil {
 		return ScanSummary{}, fmt.Errorf("supplychain: scanner image %q unavailable: %w", s.cfg.Image, err)
 	}
+	if attemptID == "" {
+		attemptID = "adhoc"
+	}
 	suffix := make([]byte, 4)
 	_, _ = rand.Read(suffix)
 	runCtx, cancel := context.WithTimeout(ctx, s.cfg.Timeout)

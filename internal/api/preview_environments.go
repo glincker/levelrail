@@ -79,7 +79,11 @@ func (rt *Router) handlePullRequestWebhookEvent(ctx context.Context, appName str
 	}
 
 	if ev.Action == webhook.PullRequestClosed {
-		return rt.teardownPullRequestPreview(ctx, appName, ev.Number)
+		status, message := rt.teardownPullRequestPreview(ctx, appName, ev.Number)
+		if status < http.StatusBadRequest {
+			rt.deactivateForgeDeployments(ctx, appName, gs, previewScope(ev.Number))
+		}
+		return status, message
 	}
 
 	if rt.builder == nil {
@@ -101,7 +105,7 @@ func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, 
 	if d := rt.previewDomain(ctx, appName, ev.Number); d != "" {
 		envURL = "https://" + d
 	}
-	dep := rt.beginForgeDeployment(ctx, appName, gs, ev.HeadSHA, forgeEnvPreview, envURL)
+	dep := rt.beginForgeDeployment(ctx, appName, gs, ev.HeadSHA, forgeEnvPreview, previewScope(ev.Number), envURL)
 	status, message := rt.deployPreviewEnvironmentInner(ctx, appName, gs, ev, approved)
 	dep.finish(ctx, deploymentStateFor(status, message), strings.TrimSpace(message))
 	return status, message

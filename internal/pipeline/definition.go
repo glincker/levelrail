@@ -104,17 +104,22 @@ type Definition struct {
 
 // Triggers lists what starts a run. A nil field means that trigger is off.
 type Triggers struct {
-	Push        *RefTrigger    `yaml:"push,omitempty" json:"push,omitempty"`
-	PullRequest *PRTrigger     `yaml:"pull_request,omitempty" json:"pull_request,omitempty"`
-	Tag         *TagTrigger    `yaml:"tag,omitempty" json:"tag,omitempty"`
-	MergeGroup  *RefTrigger    `yaml:"merge_group,omitempty" json:"merge_group,omitempty"`
-	Manual      *ManualTrigger `yaml:"manual,omitempty" json:"manual,omitempty"`
-	Schedule    []string       `yaml:"schedule,omitempty" json:"schedule,omitempty"`
-	API         bool           `yaml:"api,omitempty" json:"api,omitempty"`
+	Push        *RefTrigger        `yaml:"push,omitempty" json:"push,omitempty"`
+	PullRequest *PRTrigger         `yaml:"pull_request,omitempty" json:"pull_request,omitempty"`
+	Tag         *TagTrigger        `yaml:"tag,omitempty" json:"tag,omitempty"`
+	MergeGroup  *MergeGroupTrigger `yaml:"merge_group,omitempty" json:"merge_group,omitempty"`
+	Manual      *ManualTrigger     `yaml:"manual,omitempty" json:"manual,omitempty"`
+	Schedule    []string           `yaml:"schedule,omitempty" json:"schedule,omitempty"`
+	API         bool               `yaml:"api,omitempty" json:"api,omitempty"`
 }
 
-// RefTrigger filters push and merge_group events by branch glob and, for
-// push, by the paths the commits changed.
+// MergeGroupTrigger filters merge queue events by the branch they merge into.
+type MergeGroupTrigger struct {
+	Branches StringList `yaml:"branches,omitempty" json:"branches,omitempty"`
+}
+
+// RefTrigger filters push events by branch glob and by the paths the
+// commits changed.
 type RefTrigger struct {
 	Branches    StringList `yaml:"branches,omitempty" json:"branches,omitempty"`
 	Paths       StringList `yaml:"paths,omitempty" json:"paths,omitempty"`

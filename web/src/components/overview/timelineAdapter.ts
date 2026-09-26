@@ -14,6 +14,8 @@ const ATTEMPT_STATUS: Record<DeployAttemptStatus, TimelineStatus> = {
   failed: 'failed',
   held: 'pending',
   superseded: 'info',
+  queued: 'pending',
+  canceled: 'info',
 }
 
 const SOURCE_ACTOR: Record<DeployAttemptSource, string> = {

@@ -56,6 +56,21 @@ func TestRun_AppsGitSourceSettings_NeedsAFlag(t *testing.T) {
 	}
 }
 
+func TestCSVListFlagKeepsBraceAlternatives(t *testing.T) {
+	var l csvListFlag
+	if err := l.Set("src/**/*.{ts,tsx}, go.mod ,{a,{b,c}}/x"); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"src/**/*.{ts,tsx}", "go.mod", "{a,{b,c}}/x"}
+	if !reflect.DeepEqual([]string(l), want) {
+		t.Fatalf("parsed %q, want %q", l, want)
+	}
+	var empty csvListFlag
+	if err := empty.Set(""); err != nil || empty == nil || len(empty) != 0 {
+		t.Fatalf("empty value = %#v, err %v, want an empty non-nil list", empty, err)
+	}
+}
+
 func TestFilterEditApply(t *testing.T) {
 	src := "version: 1\nname: ci\non:\n  push:\n    branches: [main]\njobs:\n  t:\n    image: a\n    steps:\n      - run: echo\n"
 	paths, ignore, off := []string{"src/**"}, []string{"**/*.md"}, false

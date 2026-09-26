@@ -33,7 +33,10 @@ func TestPathFilterSkipReasons(t *testing.T) {
 		{"unknown files run", "  push:\n    paths: [src/**]\n", Event{Kind: TriggerPush, Branch: "main"}, true, ""},
 		{"pr paths skip", "  pull_request:\n    paths: [api/**]\n", Event{Kind: TriggerPullRequest, Branch: "main", Action: "opened", Changed: []string{"web/a.ts"}}, false, "skipped: no changed path matched paths"},
 		{"pr types skip", "  pull_request:\n    types: [synchronize]\n", Event{Kind: TriggerPullRequest, Branch: "main", Action: "opened"}, false, `action "opened" is not in on.pull_request.types`},
-		{"pr reopened accepts opened", "  pull_request:\n    types: [reopened]\n", Event{Kind: TriggerPullRequest, Branch: "main", Action: "opened"}, true, ""},
+		{"reopened type skips a new pr", "  pull_request:\n    types: [reopened]\n", Event{Kind: TriggerPullRequest, Branch: "main", Action: "opened"}, false, `action "opened" is not in on.pull_request.types`},
+		{"opened type skips a reopen", "  pull_request:\n    types: [opened]\n", Event{Kind: TriggerPullRequest, Branch: "main", Action: "reopened"}, false, `action "reopened" is not in on.pull_request.types`},
+		{"reopened type matches a reopen", "  pull_request:\n    types: [reopened]\n", Event{Kind: TriggerPullRequest, Branch: "main", Action: "reopened"}, true, ""},
+		{"no types accepts a reopen", "  pull_request:\n", Event{Kind: TriggerPullRequest, Branch: "main", Action: "reopened"}, true, ""},
 		{"merge group runs", "  merge_group:\n    branches: [main]\n", Event{Kind: TriggerMergeGroup, Branch: "main"}, true, ""},
 		{"merge group wrong branch", "  merge_group:\n    branches: [release]\n", Event{Kind: TriggerMergeGroup, Branch: "main"}, false, `does not match on.merge_group.branches`},
 	}
@@ -59,6 +62,12 @@ func TestPathFilterSkipReasons(t *testing.T) {
 				t.Fatalf("log = %+v, want skipped with %q", log[0], tt.wantReason)
 			}
 		})
+	}
+}
+
+func TestMergeGroupRejectsPathFilters(t *testing.T) {
+	if _, issues := Validate([]byte(pathsYAML("  merge_group:\n    paths: [src/**]\n"))); len(issues) == 0 {
+		t.Fatal("merge_group accepted paths, which are never applied to it")
 	}
 }
 
