@@ -33,6 +33,11 @@ type deployModelInput struct {
 	HFToken       string   `json:"hf_token,omitempty" jsonschema:"HuggingFace access token for gated models, stored encrypted and never returned"`
 }
 
+type modelUsageInput struct {
+	Name  string `json:"name" jsonschema:"the model's name"`
+	Since string `json:"since,omitempty" jsonschema:"how far back to report as a Go duration, e.g. 24h or 168h; defaults to 24h"`
+}
+
 type modelActionResult struct {
 	OK bool `json:"ok" jsonschema:"true when the request was accepted"`
 }
@@ -133,6 +138,36 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 		out, err := client.RotateModelAPIKey(ctx, in.Name)
 		if err != nil {
 			return nil, apiclient.ModelAPIKeyResource{}, fmt.Errorf("rotate api key of model %q: %w", in.Name, err)
+		}
+		return nil, out, nil
+	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "list_model_keys",
+		Description: "List a model's named API keys: prefix, status (active, rotating, expired, revoked), limits, expiry and last use. Key material is never returned. Read-only.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelNameInput) (*mcp.CallToolResult, []apiclient.ModelKeyResource, error) {
+		out, err := client.ListModelKeys(ctx, in.Name)
+		if err != nil {
+			return nil, nil, fmt.Errorf("list keys of model %q: %w", in.Name, err)
+		}
+		return nil, out, nil
+	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "get_model_usage",
+		Description: "Gateway usage of a model over a window: requests, status classes, rate-limited count, input and output tokens, average latency and time to first byte, hourly series and a per key breakdown. Tokens only cover responses that carried a usage object; the note field says so. Read-only.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelUsageInput) (*mcp.CallToolResult, apiclient.ModelUsageReport, error) {
+		var since time.Duration
+		if in.Since != "" {
+			d, err := time.ParseDuration(in.Since)
+			if err != nil {
+				return nil, apiclient.ModelUsageReport{}, fmt.Errorf("get usage of model %q: invalid since %q: %w", in.Name, in.Since, err)
+			}
+			since = d
+		}
+		out, err := client.GetModelUsage(ctx, in.Name, since)
+		if err != nil {
+			return nil, apiclient.ModelUsageReport{}, fmt.Errorf("get usage of model %q: %w", in.Name, err)
 		}
 		return nil, out, nil
 	})
