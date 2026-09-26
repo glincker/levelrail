@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -143,5 +144,55 @@ func TestPipelineSummaryCountsOnlyReadableApps(t *testing.T) {
 	}
 	if scoped.Running != 1 || full.Running != 2 {
 		t.Fatalf("running scoped = %d (want 1), admin = %d (want 2)", scoped.Running, full.Running)
+	}
+}
+
+func TestCertVisibleMatchesDomainsCaseInsensitively(t *testing.T) {
+	owners := map[string][]string{"beta.example.com": {"beta-app"}}
+	canSee := func(app string) bool { return app != "beta-app" }
+	tests := []struct {
+		name   string
+		domain string
+		sans   []string
+		want   bool
+	}{
+		{"same case", "beta.example.com", nil, false},
+		{"upper case cert", "BETA.Example.com", nil, false},
+		{"hidden SAN", "alpha.example.com", []string{"Beta.example.com"}, false},
+		{"unattached", "platform.example.com", nil, true},
+	}
+	for _, tc := range tests {
+		if got := certVisible(tc.domain, tc.sans, owners, canSee); got != tc.want {
+			t.Errorf("%s: certVisible = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestBackupsPageReachesReadableRowsBehindManyHiddenOnes(t *testing.T) {
+	rt, tok, _ := newScopedListFixture(t)
+	db, ok := rt.backupHistory.(*store.DB)
+	if !ok {
+		t.Fatal("backup history is not the store")
+	}
+	ctx := context.Background()
+	target := store.BackupTarget{ID: "bkt_test1"}
+	tied := time.Now().UTC().Add(time.Hour).Format(time.RFC3339)
+	for i := 0; i < 45; i++ {
+		id := fmt.Sprintf("bk-hidden-%02d", i)
+		if err := db.StartBackupHistory(ctx, store.BackupHistory{ID: id, DatabaseName: "beta-db", TargetID: target.ID, StartedAt: tied}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/backups?limit=2", nil)
+	bearer(tok)(req)
+	rt.Handler().ServeHTTP(rec, req)
+	var got []backupHistoryResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || got[0].ID != "bk-alpha-db" || got[1].ID != "bk-alpha-vol" {
+		t.Fatalf("scoped page = %+v, want bk-alpha-db then bk-alpha-vol", got)
 	}
 }
