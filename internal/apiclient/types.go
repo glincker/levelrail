@@ -284,6 +284,10 @@ type BuildTriggerRequestBuild struct {
 // a git-push-triggered deploy produces.
 type BuildTriggerResponse struct {
 	ID string `json:"id,omitempty"`
+	// Status is "queued" when the build waits behind another deploy.
+	Status        string `json:"status,omitempty"`
+	QueuePosition int    `json:"queue_position,omitempty"`
+	WaitReason    string `json:"wait_reason,omitempty"`
 }
 
 // DeployTriggerRequest mirrors internal/api's deployTriggerRequest
@@ -2496,6 +2500,25 @@ type DeployAttemptResource struct {
 	RunningImageID string `json:"running_image_id,omitempty"`
 	Sequence       int64  `json:"sequence,omitempty"`
 	Reason         string `json:"reason,omitempty"`
+
+	QueuedAt      *time.Time `json:"queued_at,omitempty"`
+	QueuePosition int        `json:"queue_position,omitempty"`
+	WaitReason    string     `json:"wait_reason,omitempty"`
+	BlockedBy     string     `json:"blocked_by,omitempty"`
+	SupersededBy  string     `json:"superseded_by,omitempty"`
+	CanceledBy    string     `json:"canceled_by,omitempty"`
+}
+
+// CancelSupersededResource mirrors internal/api's cancelSupersededResource.
+type CancelSupersededResource struct {
+	Enabled bool `json:"enabled"`
+}
+
+// RollbackToRequest is the optional body of POST .../deploys/{id}/rollback.
+type RollbackToRequest struct {
+	Confirm        bool   `json:"confirm,omitempty"`
+	OverrideFreeze bool   `json:"override_freeze,omitempty"`
+	OverrideReason string `json:"override_reason,omitempty"`
 }
 
 // FreezeWindowResource mirrors internal/api's freezeWindowResource.

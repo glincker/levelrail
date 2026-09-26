@@ -1973,6 +1973,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
 		api.WithDeploySafety(db, client),
+		api.WithDeployMaxConcurrent(deployMaxConcurrent(logger)),
 		api.WithLogBroadcaster(logBroadcaster),
 		// emailSender is always non-nil (run() builds it unconditionally):
 		// forgot-password always exists, it just fails clearly at send

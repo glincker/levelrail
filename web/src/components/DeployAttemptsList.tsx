@@ -3,6 +3,8 @@ import { useState } from 'react'
 import {
   ScrollIcon,
   ArrowCounterClockwiseIcon,
+  DotsThreeIcon,
+  ProhibitIcon,
   RocketLaunchIcon,
   GitDiffIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -10,17 +12,18 @@ import type { DeployAttempt } from '../types/deployAttempt'
 import type { ReconcileCondition } from '../types/deploy'
 import type { EnvironmentResource } from '../types/environment'
 import { useApp } from '../queries/apps'
-import { useTriggerDeploy } from '../queries/deploys'
+import { isPendingApproval, useTriggerDeploy } from '../queries/deploys'
+import { useCancelDeploy, useRollbackToDeploy } from '../queries/deployControl'
 import { useProtectedEnvironment } from '../queries/environments'
 import { formatDeployDuration } from '../lib/deployDuration'
 import { computeDeployStages } from '../lib/deployStages'
 import {
   DEPLOY_ATTEMPT_SOURCE_LABEL,
-  DEPLOY_ATTEMPT_STATUS_BADGE_VARIANT,
-  DEPLOY_ATTEMPT_STATUS_ICON,
   DEPLOY_ATTEMPT_STATUS_LABEL,
+  DEPLOY_ATTEMPT_STATUS_TONE,
 } from '../lib/deployAttemptPresentation'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
+import { ActionMenu, InfoTip, StatusPill } from './kit'
 import { DigestChip, RolloutChip } from './DeployDigestChips'
 import { unpinnedImage } from '../lib/imageDigest'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -211,7 +214,12 @@ function DeployAttemptRow({
   ackProtected: boolean
 }) {
   const triggerDeploy = useTriggerDeploy(appName)
-  const StatusIcon = DEPLOY_ATTEMPT_STATUS_ICON[attempt.status]
+  const rollbackTo = useRollbackToDeploy(appName)
+  const cancelDeploy = useCancelDeploy(appName)
+  const isCancelable =
+    attempt.status === 'queued' ||
+    attempt.status === 'running' ||
+    attempt.status === 'held'
   // Stage vocabulary (Build/Roll out) reuses computeDeployStages, the
   // same derivation the live deploy view uses: only meaningful for the
   // latest attempt, since reconcile conditions carry no per-attempt
@@ -225,20 +233,88 @@ function DeployAttemptRow({
       )?.label
     : undefined
 
+  const rollbackBlocked =
+    triggerDeploy.isPending ||
+    rollbackTo.isPending ||
+    (protectedEnv?.protected && !ackProtected)
+
+  const notifyRollback = (result: Parameters<typeof isPendingApproval>[0]) => {
+    toast.add({
+      title: isPendingApproval(result)
+        ? 'Rollback is waiting for approval.'
+        : 'Rollback triggered.',
+      description: `Redeploying ${unpinnedImage(attempt.image)}.`,
+      type: 'success',
+    })
+  }
+
   const handleRollback = () => {
+    if (attempt.image_digest) {
+      rollbackTo.mutate(
+        { deployId: attempt.id, confirm: ackProtected },
+        {
+          onSuccess: notifyRollback,
+          onError: (error) =>
+            toast.add({
+              title: 'Could not roll back.',
+              description: error.message,
+              type: 'error',
+            }),
+        },
+      )
+      return
+    }
     triggerDeploy.mutate(
       { image: attempt.image, confirm: ackProtected },
-      {
-        onSuccess: () => {
-          toast.add({
-            title: 'Rollback triggered.',
-            description: `Redeploying ${attempt.image}.`,
-            type: 'success',
-          })
-        },
-      },
+      { onSuccess: notifyRollback },
     )
   }
+
+  const handleCancel = () => {
+    cancelDeploy.mutate(attempt.id, {
+      onSuccess: () =>
+        toast.add({ title: 'Deploy canceled.', type: 'success' }),
+      onError: (error) =>
+        toast.add({
+          title: 'Could not cancel the deploy.',
+          description: error.message,
+          type: 'error',
+        }),
+    })
+  }
+
+  const menuItems = [
+    ...(attempt.status === 'succeeded'
+      ? [
+          {
+            id: 'rollback',
+            label: 'Roll back to this',
+            description: attempt.image_digest
+              ? 'Redeploys exactly this image, pinned by digest'
+              : 'No digest recorded: redeploys by image tag',
+            icon: <ArrowCounterClockwiseIcon className="size-4" />,
+            disabled: rollbackBlocked,
+            onSelect: handleRollback,
+          },
+        ]
+      : []),
+    ...(isCancelable
+      ? [
+          {
+            id: 'cancel',
+            label: 'Cancel deploy',
+            description:
+              attempt.status === 'running'
+                ? 'Stops the build; the serving release is untouched'
+                : 'Removes it from the queue',
+            icon: <ProhibitIcon className="size-4" />,
+            tone: 'danger' as const,
+            disabled: cancelDeploy.isPending,
+            onSelect: handleCancel,
+          },
+        ]
+      : []),
+  ]
 
   return (
     <li className="flex items-start gap-3 px-4 py-3 first:pt-0 last:pb-0">
@@ -248,18 +324,13 @@ function DeployAttemptRow({
         onCheckedChange={onToggleSelected}
         aria-label={`Select ${attempt.image} to compare`}
       />
-      <Badge
-        variant={DEPLOY_ATTEMPT_STATUS_BADGE_VARIANT[attempt.status]}
-        className="mt-0.5 shrink-0 rounded-full"
-      >
-        <StatusIcon
-          className={
-            attempt.status === 'running' ? 'size-3 animate-spin' : 'size-3'
-          }
+      <span className="mt-0.5 shrink-0">
+        <StatusPill
+          tone={DEPLOY_ATTEMPT_STATUS_TONE[attempt.status]}
+          label={`${DEPLOY_ATTEMPT_STATUS_LABEL[attempt.status]}${stageLabel ? ` (${stageLabel})` : ''}`}
+          live={attempt.status === 'running' || attempt.status === 'queued'}
         />
-        {DEPLOY_ATTEMPT_STATUS_LABEL[attempt.status]}
-        {stageLabel ? ` (${stageLabel})` : ''}
-      </Badge>
+      </span>
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -289,7 +360,28 @@ function DeployAttemptRow({
           Started {new Date(attempt.started_at).toLocaleString()} ·{' '}
           {formatDeployDuration(attempt.started_at, attempt.finished_at)}
         </p>
-        {attempt.reason ? (
+        {attempt.status === 'queued' ? (
+          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+            Position {attempt.queue_position ?? 1}
+            {attempt.wait_reason ? `, ${attempt.wait_reason}` : ''}
+            <InfoTip label="About the queue">
+              Deploys of one app run one at a time. This one starts on its own
+              when the deploy ahead of it finishes or is canceled.
+            </InfoTip>
+          </p>
+        ) : attempt.status === 'held' && attempt.wait_reason ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            {attempt.wait_reason}
+          </p>
+        ) : attempt.status === 'superseded' && attempt.superseded_by ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Superseded by {attempt.superseded_by}
+          </p>
+        ) : attempt.status === 'canceled' ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Canceled{attempt.canceled_by ? ` by ${attempt.canceled_by}` : ''}
+          </p>
+        ) : attempt.reason ? (
           <p className="mt-1 text-xs text-muted-foreground">{attempt.reason}</p>
         ) : null}
         {attempt.error ? (
@@ -327,24 +419,19 @@ function DeployAttemptRow({
           <GitDiffIcon className="size-3.5" data-icon="inline-start" />
           Compare to current
         </Button>
-        {attempt.status === 'succeeded' ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRollback}
-            disabled={
-              triggerDeploy.isPending ||
-              (protectedEnv?.protected && !ackProtected)
+        {menuItems.length > 0 ? (
+          <ActionMenu
+            trigger={
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label={`More actions for ${attempt.id}`}
+              >
+                <DotsThreeIcon weight="bold" className="size-4" />
+              </Button>
             }
-          >
-            <ArrowCounterClockwiseIcon
-              className="size-3.5"
-              data-icon="inline-start"
-            />
-            {triggerDeploy.isPending
-              ? 'Rolling back...'
-              : 'Rollback to this build'}
-          </Button>
+            items={menuItems}
+          />
         ) : null}
       </div>
     </li>

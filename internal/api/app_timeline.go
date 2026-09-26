@@ -176,7 +176,7 @@ func attemptTimelineItems(attempts []store.DeployAttempt) []timelineItem {
 // isRollbackAttempt reports whether a deployed an image that an attempt older
 // than its immediate predecessor had already deployed. older is newest first.
 func isRollbackAttempt(a store.DeployAttempt, older []store.DeployAttempt) bool {
-	if a.Source == store.DeployAttemptSourceAutoRollback {
+	if a.Source == store.DeployAttemptSourceAutoRollback || strings.Contains(a.Reason, "RollbackTo:") {
 		return true
 	}
 	if len(older) < 2 || older[0].Image == a.Image {

@@ -85,6 +85,9 @@ func WithAttemptRecorder(r AttemptRecorder) Option {
 // saveDesired writes desired through the ordering guard when the request
 // carries an Order and the pipeline has an ordered store.
 func (p *Pipeline) saveDesired(ctx context.Context, req Request, desired store.DesiredService) error {
+	if err := commitPoint(req); err != nil {
+		return err
+	}
 	if req.Order != nil && p.ordered != nil {
 		return p.ordered.SaveDesiredServiceOrdered(ctx, desired, *req.Order, CheckOrder)
 	}
@@ -98,4 +101,11 @@ func (p *Pipeline) recordDigest(ctx context.Context, req Request, res ImageResol
 	if err := p.attempts.SetDeployAttemptDigest(ctx, req.AttemptID, res.Digest, res.Reason); err != nil {
 		p.logger.Warn("deploy: record attempt digest failed", "attempt_id", req.AttemptID, "error", err.Error())
 	}
+}
+
+func commitPoint(req Request) error {
+	if req.Commit == nil {
+		return nil
+	}
+	return req.Commit()
 }

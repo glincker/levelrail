@@ -43,6 +43,16 @@ const STATUS_VIEW: Record<
     verb: 'superseded',
     icon: <RocketLaunchIcon className="size-4" />,
   },
+  queued: {
+    tone: 'neutral',
+    verb: 'deploy queued',
+    icon: <PauseCircleIcon className="size-4" />,
+  },
+  canceled: {
+    tone: 'neutral',
+    verb: 'deploy canceled',
+    icon: <XCircleIcon className="size-4" />,
+  },
 }
 
 export function toTimelineItems(

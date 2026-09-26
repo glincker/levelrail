@@ -259,7 +259,12 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 	if held, msg := rt.holdIfFrozen(ctx, name, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt}, name+":"+ev.After); held {
 		return http.StatusAccepted, msg
 	}
-	return rt.deployFromGitSource(ctx, name, gs, ev.After, ev.After, rt.nextOrder(ctx, name, ev.After, ev.Before, ev.HeadCommitAt))
+	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt, Branch: strings.TrimPrefix(ev.Ref, "refs/heads/")}, name+":"+ev.After)
+	defer release()
+	if queued {
+		return http.StatusAccepted, msg
+	}
+	return rt.deployFromGitSource(withStartRelease(ctx, release), name, gs, ev.After, ev.After, rt.nextOrder(ctx, name, ev.After, ev.Before, ev.HeadCommitAt))
 }
 
 // isGitHubReleaseEvent reports whether header names GitHub's own
@@ -355,7 +360,12 @@ func (rt *Router) processGitHubReleaseWebhookEvent(ctx context.Context, name str
 	if held, msg := rt.holdIfFrozen(ctx, name, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}, name+":"+label); held {
 		return http.StatusAccepted, msg
 	}
-	return rt.deployFromGitSource(ctx, name, gs, "refs/tags/"+rel.TagName, label, rt.nextOrder(ctx, name, "", "", time.Time{}))
+	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}, name+":"+label)
+	defer release()
+	if queued {
+		return http.StatusAccepted, msg
+	}
+	return rt.deployFromGitSource(withStartRelease(ctx, release), name, gs, "refs/tags/"+rel.TagName, label, rt.nextOrder(ctx, name, "", "", time.Time{}))
 }
 
 // dockerSafeTag makes tagName safe to use as a Docker image tag
@@ -431,8 +441,17 @@ func (rt *Router) deployFromGitSource(ctx context.Context, name string, gs store
 
 	attemptID, progress, finishAttempt, _ := rt.beginBuildDeployAttempt(ctx, buildReq, *existing, store.DeployAttemptSourceWebhook, "")
 	buildReq.AttemptID = attemptID
-	tag, err := rt.builder.Deploy(ctx, buildReq, progress)
+	buildCtx := ctx
+	if attemptID != "" {
+		buildReq.Commit = func() error { return rt.cancels.Commit(attemptID) }
+		buildCtx = rt.cancels.Bind(ctx, attemptID)
+	}
+	tag, err := rt.builder.Deploy(buildCtx, buildReq, progress)
+	_, canceled := rt.cancels.Canceled(attemptID)
 	finishAttempt(err)
+	if canceled && err != nil {
+		return http.StatusOK, "not deployed: deploy canceled\n"
+	}
 	if errors.Is(err, deploy.ErrSuperseded) {
 		rt.logger.Info("api: git push webhook: deploy superseded", slog.String("name", name), slog.String("commit", commitLabel), slog.String("reason", err.Error()))
 		return http.StatusOK, "not deployed: " + err.Error() + "\n"

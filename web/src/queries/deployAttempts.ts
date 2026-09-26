@@ -51,7 +51,9 @@ export function deployAttemptsQueryOptions(appName: string) {
     queryKey: deployAttemptKeys.list(appName),
     queryFn: () => fetchDeployAttempts(appName),
     refetchInterval: (query) =>
-      query.state.data?.[0]?.status === 'running'
+      query.state.data?.some(
+        (a) => a.status === 'running' || a.status === 'queued',
+      )
         ? RUNNING_ATTEMPT_POLL_INTERVAL_MS
         : false,
   })

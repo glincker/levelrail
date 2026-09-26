@@ -13,6 +13,8 @@ import (
 // Held request kinds, each replayed by its own ReleaseHandler.
 const (
 	HeldKindImage = "image"
+	// HeldKindBuild is a queued manual build, replayed from Build.
+	HeldKindBuild = "build"
 	HeldKindGit   = "git"
 )
 
@@ -25,6 +27,15 @@ type HeldRequest struct {
 	CommitSHA   string    `json:"commit_sha,omitempty"`
 	Before      string    `json:"before,omitempty"`
 	CommitAt    time.Time `json:"commit_at,omitempty"`
+	// Branch lets a newer queued deploy supersede older ones of the same branch.
+	Branch string `json:"branch,omitempty"`
+	// FreezeNote is set when a manual deploy overrode a freeze window, so the
+	// queue does not hold it behind that window again.
+	FreezeNote string `json:"freeze_note,omitempty"`
+	// Build is a queued manual build's original request body.
+	Build json.RawMessage `json:"build,omitempty"`
+	// AllowPrivateRepoAuth records the requester's ability to mint repo tokens.
+	AllowPrivateRepoAuth bool `json:"allow_private_repo_auth,omitempty"`
 }
 
 // HeldStore is the store surface holding and releasing needs.
