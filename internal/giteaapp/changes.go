@@ -2,10 +2,15 @@ package giteaapp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 )
+
+// ErrChangedFilesTruncated means a change touched more files than the client
+// pages through, so the list is incomplete and must not drive a decision.
+var ErrChangedFilesTruncated = errors.New("giteaapp: changed file list is truncated")
 
 // CommitStatusError marks a commit status as errored.
 const CommitStatusError CommitStatusState = "error"
@@ -37,10 +42,10 @@ func (c *Client) PullRequestChangedFiles(ctx context.Context, instanceURL, acces
 		}
 		out = append(out, collectFilenames(resp)...)
 		if len(resp) < listPerPage {
-			break
+			return out, nil
 		}
 	}
-	return out, nil
+	return nil, ErrChangedFilesTruncated
 }
 
 // CompareChangedFiles lists the files touched by the commits between base

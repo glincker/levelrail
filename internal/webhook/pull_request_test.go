@@ -149,7 +149,7 @@ func TestParsePullRequestEventForProvider_GitLabSynchronizeReopenAndClosed(t *te
 			if err != nil {
 				t.Fatalf("ParsePullRequestEventForProvider() error = %v", err)
 			}
-			want := PullRequestEvent{Action: tt.want, Number: 14, HeadRef: "fix-bug", HeadSHA: "abc999", BaseRef: "develop"}
+			want := PullRequestEvent{Action: tt.want, Number: 14, HeadRef: "fix-bug", HeadSHA: "abc999", BaseRef: "develop", Reopened: tt.action == "reopen"}
 			if got != want {
 				t.Errorf("ParsePullRequestEventForProvider() = %+v, want %+v", got, want)
 			}
@@ -301,7 +301,7 @@ func TestParsePullRequestEventForProvider_GiteaSynchronizedReopenAndClosed(t *te
 			if err != nil {
 				t.Fatalf("ParsePullRequestEventForProvider() error = %v", err)
 			}
-			want := PullRequestEvent{Action: tt.want, Number: 11, HeadRef: "fix-w", HeadSHA: "pqr678", BaseRef: "develop"}
+			want := PullRequestEvent{Action: tt.want, Number: 11, HeadRef: "fix-w", HeadSHA: "pqr678", BaseRef: "develop", Reopened: tt.action == "reopened"}
 			if got != want {
 				t.Errorf("ParsePullRequestEventForProvider() = %+v, want %+v", got, want)
 			}

@@ -64,7 +64,8 @@ func runAppsGitSourceSettings(prog string, args []string, stdout, stderr io.Writ
 }
 
 // csvListFlag is a string list flag that accepts comma separated values and
-// may be repeated. An empty value yields an empty (non-nil) list.
+// may be repeated. Commas inside {a,b} alternatives do not split. An empty
+// value yields an empty (non-nil) list.
 type csvListFlag []string
 
 func (l *csvListFlag) String() string { return strings.Join(*l, ",") }
@@ -73,10 +74,32 @@ func (l *csvListFlag) Set(v string) error {
 	if *l == nil {
 		*l = csvListFlag{}
 	}
-	for _, part := range strings.Split(v, ",") {
+	for _, part := range splitOutsideBraces(v) {
 		if part = strings.TrimSpace(part); part != "" {
 			*l = append(*l, part)
 		}
 	}
 	return nil
+}
+
+// splitOutsideBraces splits s on commas that are not inside {...}.
+func splitOutsideBraces(s string) []string {
+	var parts []string
+	depth, start := 0, 0
+	for i, r := range s {
+		switch r {
+		case '{':
+			depth++
+		case '}':
+			if depth > 0 {
+				depth--
+			}
+		case ',':
+			if depth == 0 {
+				parts = append(parts, s[start:i])
+				start = i + 1
+			}
+		}
+	}
+	return append(parts, s[start:])
 }

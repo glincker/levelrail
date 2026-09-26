@@ -21,13 +21,7 @@ var PRTypes = []string{prActionOpened, prActionReopened, prActionSynchronize}
 // acceptsAction reports whether the trigger runs for a pull request action.
 // An empty action (a manual re-run) always passes.
 func (t *PRTrigger) acceptsAction(action string) bool {
-	if len(t.Types) == 0 || action == "" {
-		return true
-	}
-	if slices.Contains(t.Types, action) {
-		return true
-	}
-	return action == prActionOpened && slices.Contains(t.Types, prActionReopened)
+	return len(t.Types) == 0 || action == "" || slices.Contains(t.Types, action)
 }
 
 // pathFilter returns the path filter configured for ev's trigger kind.
