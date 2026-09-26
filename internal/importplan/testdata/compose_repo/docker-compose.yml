@@ -1,0 +1,12 @@
+services:
+  web:
+    image: ghcr.io/example/web:1.2.3
+    ports:
+      - "8080:80"
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      MODE: ${MODE:-prod}
+    volumes:
+      - data:/var/lib/data
+volumes:
+  data:
