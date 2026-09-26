@@ -149,7 +149,7 @@ func (c *Controller) discoverUpstreams(ctx context.Context, svc store.DesiredSer
 	current := make(map[string]bool, replicas)
 	var out []loadbalancer.UpstreamObservation
 	for i := 0; i < replicas; i++ {
-		name := application.ReplicaContainerName(svc.Name, svc.Image, svc.RestartNonce, i)
+		name := application.ReplicaContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce, i)
 		current[name] = true
 		u := loadbalancer.UpstreamObservation{Upstream: loadbalancer.Upstream{ID: loadbalancer.UpstreamID(svc.Name, i), Replica: i, NodeID: svc.NodeID}}
 		state, err := rt.InspectByName(ctx, name)

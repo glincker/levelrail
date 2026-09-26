@@ -165,7 +165,7 @@ func (r *Runner) Run(ctx context.Context, task store.ScheduledTask) error {
 		return r.record(ctx, task.ID, store.ScheduledTaskStatusContainerNotRunning, "node unreachable: "+err.Error())
 	}
 
-	target := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
+	target := application.ContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce)
 	state, err := rt.InspectByName(runCtx, target)
 	if err != nil {
 		if isReplaced(runCtx) {

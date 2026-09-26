@@ -935,7 +935,7 @@ func (c *Controller) resolveRoute53DNSProvider(ctx context.Context) ingress.DNS0
 // no valid backend to route right now; the caller skips it for this
 // pass rather than failing the whole reconcile.
 func (c *Controller) dialForService(ctx context.Context, svc store.DesiredService) (string, bool) {
-	target := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
+	target := application.ContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce)
 
 	state, err := c.runtime.InspectByName(ctx, target)
 	if err != nil {
