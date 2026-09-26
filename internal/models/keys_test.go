@@ -83,7 +83,7 @@ func TestService_RotateWithGraceAndRevoke(t *testing.T) {
 		t.Fatal(err)
 	}
 	grace := 30 * time.Minute
-	rotated, err := svc.RotateKeyByID(ctx, "chat", created.ID, &grace)
+	rotated, err := svc.RotateKeyByID(ctx, "chat", created.ID, "tester", &grace)
 	if err != nil {
 		t.Fatalf("RotateKeyByID: %v", err)
 	}
@@ -98,15 +98,15 @@ func TestService_RotateWithGraceAndRevoke(t *testing.T) {
 	if states[created.ID] != KeyRotating || states[rotated.ID] != KeyActive {
 		t.Errorf("states = %v", states)
 	}
-	if _, err := svc.RotateKeyByID(ctx, "chat", created.ID, nil); !errors.Is(err, ErrInvalid) {
+	if _, err := svc.RotateKeyByID(ctx, "chat", created.ID, "tester", nil); !errors.Is(err, ErrInvalid) {
 		t.Errorf("rotating a rotating key err = %v", err)
 	}
 	bad := -time.Second
-	if _, err := svc.RotateKeyByID(ctx, "chat", rotated.ID, &bad); !errors.Is(err, ErrInvalid) {
+	if _, err := svc.RotateKeyByID(ctx, "chat", rotated.ID, "tester", &bad); !errors.Is(err, ErrInvalid) {
 		t.Errorf("negative grace err = %v", err)
 	}
 	zero := time.Duration(0)
-	if _, err := svc.RotateKeyByID(ctx, "chat", rotated.ID, &zero); err != nil {
+	if _, err := svc.RotateKeyByID(ctx, "chat", rotated.ID, "tester", &zero); err != nil {
 		t.Fatalf("zero grace rotate: %v", err)
 	}
 	if err := svc.RevokeKey(ctx, "chat", created.ID); err != nil {
