@@ -51,14 +51,18 @@ func (b *idleBody) Close() error {
 // statusWriter records the status and byte count for the request log.
 type statusWriter struct {
 	http.ResponseWriter
-	status int
-	bytes  int64
+	status      int
+	bytes       int64
+	obs         *responseObserver
+	keyID       string
+	rateLimited bool
 }
 
 func (s *statusWriter) WriteHeader(code int) {
 	if s.status == 0 {
 		s.status = code
 	}
+	s.obs.decide(s.Header())
 	s.ResponseWriter.WriteHeader(code)
 }
 
@@ -66,6 +70,7 @@ func (s *statusWriter) Write(p []byte) (int, error) {
 	if s.status == 0 {
 		s.status = http.StatusOK
 	}
+	s.obs.wrote(s.Header(), p)
 	n, err := s.ResponseWriter.Write(p)
 	s.bytes += int64(n)
 	return n, err

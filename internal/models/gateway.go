@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"math"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -24,10 +25,12 @@ const (
 // GatewayStore is the store surface the gateway reads.
 type GatewayStore interface {
 	ListModels(ctx context.Context) ([]store.Model, error)
+	ListActiveModelKeys(ctx context.Context) ([]store.ModelKey, error)
 }
 
 // Gateway authenticates OpenAI-compatible requests addressed to a model's
-// host with the model's API key and reverse proxies them to the engine.
+// host with one of the model's virtual API keys and reverse proxies them to
+// the engine, enforcing the key's limits and metering its usage.
 // Only an allowlist of inference and listing routes is forwarded, so
 // engine admin APIs (Ollama pull and delete, vLLM LoRA loading) are never
 // exposed. Request size, generation length, concurrency and upstream
@@ -40,10 +43,13 @@ type Gateway struct {
 	limits    GatewayLimits
 	transport *http.Transport
 	inflight  inflight
+	keyLimits keyLimiter
+	meter     *meter
 
 	mu       sync.Mutex
 	loadedAt time.Time
 	byHost   map[string]store.Model
+	keys     map[string][]store.ModelKey
 }
 
 // NewGateway builds a Gateway. hosts maps a model to the hostnames it is
@@ -52,7 +58,7 @@ func NewGateway(st GatewayStore, hosts *HostResolver, logger *slog.Logger) *Gate
 	if logger == nil {
 		logger = slog.Default()
 	}
-	g := &Gateway{store: st, hosts: hosts, logger: logger}
+	g := &Gateway{store: st, hosts: hosts, logger: logger, meter: newMeter(LoadMeterConfig(), logger)}
 	g.SetLimits(LoadGatewayLimits())
 	return g
 }
@@ -63,15 +69,43 @@ func (g *Gateway) SetLimits(l GatewayLimits) {
 	g.transport = newGatewayTransport(l)
 }
 
-func (g *Gateway) lookup(ctx context.Context, host string) (store.Model, bool) {
+// StartMetering flushes usage to st every flush interval until ctx ends.
+func (g *Gateway) StartMetering(ctx context.Context, st UsageStore) {
+	go g.meter.run(ctx, st)
+}
+
+// Invalidate makes the next request reload models and keys, so a revoked
+// key stops working at once instead of after the cache TTL.
+func (g *Gateway) Invalidate() {
+	g.mu.Lock()
+	g.loadedAt = time.Time{}
+	g.mu.Unlock()
+}
+
+// InFlight returns the running request count per key id.
+func (g *Gateway) InFlight() map[string]int { return g.keyLimits.inFlight() }
+
+func (g *Gateway) lookup(ctx context.Context, host string) (store.Model, []store.ModelKey, bool) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if g.byHost == nil || time.Since(g.loadedAt) > gatewayCacheTTL {
 		list, err := g.store.ListModels(ctx)
 		if err != nil {
 			g.logger.Error("models: gateway list models failed", slog.String("error", err.Error()))
-			return store.Model{}, false
+			return store.Model{}, nil, false
 		}
+		allKeys, err := g.store.ListActiveModelKeys(ctx)
+		if err != nil {
+			g.logger.Error("models: gateway list keys failed", slog.String("error", err.Error()))
+			return store.Model{}, nil, false
+		}
+		g.keys = map[string][]store.ModelKey{}
+		live := map[string]bool{}
+		for _, k := range allKeys {
+			g.keys[k.ModelName] = append(g.keys[k.ModelName], k)
+			live[k.ID] = true
+		}
+		g.keyLimits.retain(live)
 		g.byHost = map[string]store.Model{}
 		for _, m := range list {
 			if m.Deleting {
@@ -84,7 +118,7 @@ func (g *Gateway) lookup(ctx context.Context, host string) (store.Model, bool) {
 		g.loadedAt = time.Now()
 	}
 	m, ok := g.byHost[host]
-	return m, ok
+	return m, g.keys[m.Name], ok
 }
 
 func hostOnly(hostport string) string {
@@ -97,21 +131,37 @@ func hostOnly(hostport string) string {
 // Handle serves r when its Host belongs to a model, returning true. It
 // returns false without touching w for every other host.
 func (g *Gateway) Handle(w http.ResponseWriter, r *http.Request) bool {
-	m, ok := g.lookup(r.Context(), hostOnly(r.Host))
+	m, keys, ok := g.lookup(r.Context(), hostOnly(r.Host))
 	if !ok {
 		return false
 	}
-	sw := &statusWriter{ResponseWriter: w}
 	start := time.Now()
+	sw := &statusWriter{ResponseWriter: w, obs: newResponseObserver(start, g.meter.cfg.ScanBytes)}
 	defer func() {
 		g.logger.Info("models: gateway request", slog.String("method", r.Method), slog.String("model", m.Name),
 			slog.Int("status", sw.status), slog.Duration("duration", time.Since(start)), slog.Int64("bytes", sw.bytes))
+		g.observe(m.Name, sw, start)
 	}()
-	g.serve(sw, r, m)
+	g.serve(sw, r, m, keys)
 	return true
 }
 
-func (g *Gateway) serve(w http.ResponseWriter, r *http.Request, m store.Model) {
+// observe records a finished authenticated request; requests without a
+// known key are not metered.
+func (g *Gateway) observe(model string, sw *statusWriter, start time.Time) {
+	if sw.keyID == "" {
+		return
+	}
+	o := observation{model: model, keyID: sw.keyID, at: start, status: sw.status, rateLimited: sw.rateLimited,
+		duration: time.Since(start), ttft: sw.obs.ttft, bytes: sw.bytes}
+	if u, ok := sw.obs.usage(); ok {
+		o.usage = &u
+		g.keyLimits.addTokens(sw.keyID, u.input+u.output, time.Now())
+	}
+	g.meter.record(o)
+}
+
+func (g *Gateway) serve(w *statusWriter, r *http.Request, m store.Model, keys []store.ModelKey) {
 	route, match := matchRoute(m.Engine, r.URL.Path, r.Method)
 	if hasEncodedSlash(r.URL.EscapedPath()) {
 		match = routeNotFound
@@ -127,15 +177,29 @@ func (g *Gateway) serve(w http.ResponseWriter, r *http.Request, m store.Model) {
 	case routeAllowed:
 	}
 	token, found := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
-	if !found || !KeyMatches(strings.TrimSpace(token), m.APIKeyHash) {
+	key, authed := authenticate(keys, strings.TrimSpace(token), time.Now())
+	if !found || !authed {
 		w.Header().Set("WWW-Authenticate", `Bearer realm="model"`)
 		writeOpenAIError(w, http.StatusUnauthorized, "invalid_api_key", "missing or invalid API key")
+		return
+	}
+	w.keyID = key.ID
+	if !pathAllowed(key, r.URL.Path) {
+		writeOpenAIError(w, http.StatusForbidden, "permission_denied", "this API key may not use this route or model")
 		return
 	}
 	if m.EndpointDial == "" {
 		writeOpenAIError(w, http.StatusServiceUnavailable, "model_not_ready", "model is not running yet")
 		return
 	}
+	releaseKey, wait, admitted := g.keyLimits.acquire(key, time.Now())
+	if !admitted {
+		w.rateLimited = true
+		w.Header().Set("Retry-After", strconv.Itoa(max(int(math.Ceil(wait.Seconds())), 1)))
+		writeOpenAIError(w, http.StatusTooManyRequests, "rate_limit_exceeded", "rate limit exceeded for this API key")
+		return
+	}
+	defer releaseKey()
 	lim := g.limits
 	release, ok := g.inflight.acquire(m.Name, lim.MaxInflight)
 	if !ok {
@@ -145,8 +209,13 @@ func (g *Gateway) serve(w http.ResponseWriter, r *http.Request, m store.Model) {
 	}
 	defer release()
 	if r.Method == http.MethodPost {
-		if rerr := lim.prepareBody(w, r, !route.multipart); rerr != nil {
+		info, rerr := lim.prepareBodyInfo(w, r, !route.multipart)
+		if rerr != nil {
 			writeOpenAIError(w, rerr.status, rerr.code, rerr.msg)
+			return
+		}
+		if !modelAllowed(key, info.model, info.hasJSON) {
+			writeOpenAIError(w, http.StatusForbidden, "permission_denied", "this API key may not use this route or model")
 			return
 		}
 	}
