@@ -53,7 +53,8 @@ secret is unreadable without the master key.
 
 To recover on a new machine:
   1. Decrypt this bundle with an identity that matches one of its recipients:
-       age -d -i identity.txt escrow.age    (or: levelrail-cli control-plane-backups escrow --open escrow.age --identity identity.txt)
+       levelrail-cli control-plane-backups escrow open escrow.age --identity identity.txt
+     (or with the age tool: age -d -i identity.txt escrow.age)
      The output is JSON. The master_key field is the key.
   2. Put master_key in the new server's data directory as master.key (mode 0600),
      or set it as APP_MASTER_KEY.

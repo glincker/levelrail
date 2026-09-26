@@ -27,7 +27,7 @@ Backups do contain token hashes and encrypted secrets, so every backup route req
 
 Snapshots are written to `<data dir>/control-plane-backups/` and named `levelrail-YYYYMMDDTHHMMSSZ.db` (UTC). Each one is copied with `VACUUM INTO`, checked with SQLite's `integrity_check`, and hashed with SHA-256.
 
-Snapshots sit on the same disk as the database. To survive losing the machine, download them and store them elsewhere.
+Snapshots sit on the same disk as the database. To survive losing the machine, set up [encrypted off-box backups, key escrow and restore drills](/disaster-recovery), or download snapshots and store them elsewhere.
 
 ## Automatic snapshots
 

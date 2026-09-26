@@ -219,3 +219,20 @@ func TestGenerateIdentity(t *testing.T) {
 		}
 	}
 }
+
+func TestParseRecipients_RejectsMixedKeyKinds(t *testing.T) {
+	classic, err := GenerateIdentity(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hybrid, err := GenerateIdentity(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ParseRecipients([]string{classic.Recipient, hybrid.Recipient}); err == nil {
+		t.Fatal("mixing classic and post-quantum recipients must be rejected up front")
+	}
+	if _, err := ParseRecipients([]string{hybrid.Recipient}); err != nil {
+		t.Fatalf("hybrid alone: %v", err)
+	}
+}

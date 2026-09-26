@@ -110,6 +110,7 @@ the exact method/path/ability of every one), grouped by resource:
 | DB point-in-time restore (PITR, postgres only) | 7 | `/databases/{name}/pitr*`, `/base-backups*`, `/pitr-restore*` |
 | App volume backups/restore | 11 | `/apps/{name}/volumes/{volume}/backups*` |
 | Control plane self-backup (SQLite snapshots, scheduled and pre-upgrade; offline `restore-db`) | 4 | `/system/backups*` |
+| Control plane disaster recovery (age-encrypted off-box backups, key escrow, `restore`, scheduled restore drills) | 4 | `/system/control-plane-dr*` |
 | App storage/database attach | 5 | `/apps/{name}/storage`, `/apps/{name}/database` |
 | Audit log / log-drain | 5 | `/audit-log`, `/audit-log/purge` |
 

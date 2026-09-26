@@ -47,6 +47,11 @@ func ParseRecipients(keys []string) ([]age.Recipient, error) {
 	if len(out) == 0 {
 		return nil, ErrNoRecipients
 	}
+	w, err := age.Encrypt(io.Discard, out...)
+	if err != nil {
+		return nil, fmt.Errorf("these recipients cannot be combined (post-quantum and classic keys cannot be mixed): %w", err)
+	}
+	_ = w.Close()
 	return out, nil
 }
 
