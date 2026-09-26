@@ -54,6 +54,58 @@ The engine image can be overridden per engine with `APP_MODEL_IMAGE_OLLAMA`, `AP
 
 The token is stored through the envelope-encryption path (`internal/secrets`) under the model's own namespace and injected into the engine container at create time. It is never returned by the API and never logged. It requires a master key (`APP_MASTER_KEY`). Rotate it with `PUT /api/v1/models/{name}/hf-token`, which restarts the model.
 
+## Hugging Face preflight
+
+Before deploying a Hugging Face repository, check it:
+
+```sh
+levelrail models preflight bartowski/Llama-3.2-3B-Instruct-GGUF --engine llamacpp --node <node-id>
+HF_TOKEN=hf_... levelrail models preflight meta-llama/Llama-3.1-8B-Instruct --engine vllm --hf-token-from-env
+```
+
+The check queries the public Hub API (through the same outbound guard as webhooks, with a timeout and a response size cap) and reports:
+
+- whether the repository exists, and whether it is gated. A gated repository says what to do next: accept the license on huggingface.co and provide an access token.
+- the license, total download size and per-file sizes.
+- the GGUF quantizations it contains, with sizes, and a recommended one for the target node.
+- whether the node has enough free disk for the download, and which engine can load the weights (GGUF for llama.cpp and Ollama, safetensors for vLLM).
+
+In the dashboard the same panel appears under the model field of the deploy dialog and updates as you type. Picking a quantization there fills in the `:quant` suffix.
+
+**Fit figures are estimates.** A quantization is judged against the node's free VRAM as its file size plus a flat overhead for the KV cache and buffers. Real usage depends on context length, batch size, engine and driver. Fit is shown only when the node has reported its GPU, and disk only when it has reported its disk; otherwise the answer is "unknown", never a guess. System RAM is not considered.
+
+The token you supply is used for that one request. It is not stored or logged, and it is never part of a cache key.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_HF_CACHE_TTL` | `5m` | How long Hub answers are reused. `0` disables the cache. |
+| `APP_HF_TIMEOUT` | `10s` | Per-request timeout to the Hub. |
+| `APP_HF_MAX_RESPONSE_BYTES` | `16777216` | Cap on the repository listing. |
+| `APP_HF_MAX_LISTED_FILES` | `100` | Files returned per repository (totals always cover all files). |
+| `APP_HF_BASE_URL` | `https://huggingface.co` | Hub base URL (a mirror). |
+| `APP_MODEL_FIT_OVERHEAD_PERCENT` | `20` | Added to weight size for KV cache and buffers. |
+| `APP_MODEL_FIT_PERCENT` | `90` | Share of free VRAM a model may use to count as "fits". Above it, up to 100%, is "tight". |
+| `APP_MODEL_DISK_HEADROOM_PERCENT` | `10` | Free disk required beyond the download. |
+| `APP_NODE_DISK_FACT_MAX_AGE` | `10m` | Older node disk samples count as unknown. |
+
+The API is `POST /api/v1/models/preflight` (`repo`, optional `engine`, `quant`, `file`, `node_id`, `hf_token`) and the MCP tool is `preflight_model`. Hub problems (missing, gated, rate limited, unreachable) come back as a `status` in a normal response so a client can always show the next step.
+
+## Model cache
+
+Each model keeps its downloaded weights in its own Docker volume. Deleting a model keeps the volume, so those volumes are what accumulates.
+
+```sh
+levelrail models cache list
+levelrail models cache prune --dry-run
+levelrail models cache prune
+```
+
+The list shows each volume with its size, its owning model, when it was last used, and whether it is safe to prune. Last use comes from gateway traffic when the model has any, otherwise from the model's last change (or, for a volume no model owns, the volume's creation time). Two models that point at the same weights are flagged and counted once in the unique total.
+
+Prune removes only volumes that no model owns, that no container mounts, and that have been unused for `APP_MODEL_CACHE_UNUSED_DAYS` days (default 30). Weights of any deployed model, running or not, are never removed. The server rechecks each volume right before removing it. In the dashboard, the Model cache section shows a dry run in a confirmation dialog first. Pruning needs the root ability.
+
+Only the control plane's own host is inspected today; remote nodes are listed as not yet supported. The MCP tool `list_model_cache` is read-only; the API is `GET /api/v1/model-cache` and `POST /api/v1/model-cache/prune`.
+
 ## Lifecycle and status
 
 A model has one `Ready` condition whose reason tells you where it is:

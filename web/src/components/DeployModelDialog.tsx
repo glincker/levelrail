@@ -29,6 +29,7 @@ import {
   type DeployFormState,
 } from '../lib/modelDeployForm'
 import { useCreateModel, useGpuNodes } from '../queries/models'
+import { ModelPreflightPanel } from './ModelPreflightPanel'
 import type { CreateModelResponse } from '../types/models'
 
 export function DeployModelDialog({
@@ -170,6 +171,15 @@ export function DeployModelDialog({
               className="font-mono"
             />
           </Field>
+          <ModelPreflightPanel
+            engine={form.engine}
+            model={form.model}
+            node={form.node}
+            hfToken={form.hfToken}
+            onPickModel={(m) => {
+              set('model', m)
+            }}
+          />
           <div className="grid grid-cols-2 gap-3">
             <Field>
               <FieldLabel htmlFor="model-gpus">GPUs</FieldLabel>

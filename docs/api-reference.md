@@ -665,6 +665,7 @@ AI model resources on GPU nodes and the GPU node snapshots they schedule against
 | DELETE | /api/v1/models/{name}/keys/{id} | AbilityWrite | handleRevokeModelKey |
 | POST | /api/v1/models/{name}/keys/{id}/rotate | AbilityWriteSensitive | handleRotateModelKey |
 | GET | /api/v1/models/{name}/usage | AbilityRead | handleModelUsage |
+| POST | /api/v1/models/preflight | AbilityRead | handleModelPreflight |
 
 ## Other
 
@@ -753,6 +754,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/deployments | AbilityRead | handleListDeployments |
 | GET | /api/v1/deployments/summary | AbilityRead | handleDeploymentsSummary |
 | GET | /api/v1/deployments/stream | AbilityRead | handleDeploymentsStream |
+| GET | /api/v1/model-cache | AbilityRead | handleListModelCache |
+| POST | /api/v1/model-cache/prune | AbilityRoot | handlePruneModelCache |
 
 ## See also
 
