@@ -48,6 +48,9 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/auth/forgot-password":          "always generic response, rate limited",
 	"POST /api/v1/auth/reset-password":           "authenticated by the single-use reset token",
 	"POST /api/v1/webhooks/github/{name}":        "authenticated by the HMAC signature of the app's webhook secret",
+	"GET /public/status":                         "opt-in public status page, serves only operator-chosen names and statuses, rate limited and cacheable",
+	"GET /public/status.json":                    "JSON form of the opt-in public status page, same whitelisted view",
+	"GET /public/status.rss":                     "RSS feed of operator-authored incidents on the opt-in public status page",
 }
 
 // readOnlyMayMutate lists mutating routes a read-only token may call:

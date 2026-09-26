@@ -81,7 +81,9 @@ func (n *NoiseControl) ApplyStreak(prev, next Rule, now time.Time) Rule {
 	return n.streaks.apply(prev, next, need, now)
 }
 
-func isPlatformKind(k Kind) bool {
+// IsPlatformKind reports whether a rule kind watches the whole control
+// plane rather than one app.
+func IsPlatformKind(k Kind) bool {
 	switch k {
 	case KindCertExpiry, KindPatchStatus, KindNodeDiskSpace, KindNodeResourceUsage, KindNodeOffline,
 		KindNodeCertExpiring, KindControlPlaneBackupStale, KindLogArchiveStale:
@@ -98,7 +100,7 @@ type alertScope struct {
 
 func (n *NoiseControl) describe(ctx context.Context, r Rule) alertScope {
 	sc := alertScope{ac: AlertContext{RuleID: r.ID, Kind: string(r.Kind), Labels: r.Labels, Severity: severityOrDefault(r.Severity)}}
-	if isPlatformKind(r.Kind) {
+	if IsPlatformKind(r.Kind) {
 		return sc
 	}
 	sc.ac.App = strings.TrimPrefix(r.ResourceID, "service:")
@@ -129,29 +131,43 @@ type silenceHit struct {
 	detail string
 }
 
+// MuteHit names the silence or maintenance window muting an alert.
+type MuteHit struct {
+	ID     string
+	Detail string
+	Window bool
+}
+
+// FindMute reports whether any active silence or enabled maintenance
+// window in effect at now mutes the alert c.
+func FindMute(silences []Silence, windows []MaintenanceWindow, c AlertContext, now time.Time) (MuteHit, bool) {
+	for _, s := range silences {
+		if s.Status(now) == SilenceActive && s.Matchers.Matches(c) {
+			return MuteHit{ID: s.ID, Detail: "silence " + s.ID}, true
+		}
+	}
+	for _, w := range windows {
+		if !w.Enabled || !w.Covers(c) {
+			continue
+		}
+		if st, err := w.StateAt(now); err == nil && st.Active {
+			return MuteHit{ID: w.ID, Detail: "maintenance window " + w.Name, Window: true}, true
+		}
+	}
+	return MuteHit{}, false
+}
+
 func (n *NoiseControl) silencedBy(ctx context.Context, ac AlertContext, now time.Time) (silenceHit, bool) {
 	silences, err := n.store.ListActiveSilences(ctx, now)
 	if err != nil {
 		n.logger.Error("alerting: list silences failed, treating alert as not silenced", slog.String("error", err.Error()))
 	}
-	for _, s := range silences {
-		if s.Matchers.Matches(ac) {
-			return silenceHit{id: s.ID, detail: "silence " + s.ID}, true
-		}
-	}
 	windows, err := n.store.ListMaintenanceWindows(ctx)
 	if err != nil {
 		n.logger.Error("alerting: list maintenance windows failed, treating alert as not in maintenance", slog.String("error", err.Error()))
 	}
-	for _, w := range windows {
-		if !w.Enabled || !w.Covers(ac) {
-			continue
-		}
-		if st, serr := w.StateAt(now); serr == nil && st.Active {
-			return silenceHit{id: w.ID, detail: "maintenance window " + w.Name}, true
-		}
-	}
-	return silenceHit{}, false
+	hit, ok := FindMute(silences, windows, ac, now)
+	return silenceHit{id: hit.ID, detail: hit.Detail}, ok
 }
 
 func (n *NoiseControl) record(ctx context.Context, sc alertScope, r Rule, event, outcome, detail, silenceID string, sendErr error, now time.Time) {
