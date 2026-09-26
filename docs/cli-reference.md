@@ -1341,6 +1341,17 @@ levelrail migrate dokploy --url URL --token TOKEN [flags]
 
 :::
 
+::: details Import (from another platform)
+
+### Import platform
+
+```
+levelrail import platform coolify|dokploy|caprover --url URL [flags]
+```
+read apps and databases from another platform and create them here; use `--dry-run` first, see [migrating from Coolify, Dokploy or CapRover](migrating-from-coolify-dokploy-and-caprover.md)
+
+:::
+
 ::: details Completion (shell setup)
 
 ```
