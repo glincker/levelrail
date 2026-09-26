@@ -22,6 +22,7 @@ func TestHandleImportPlan(t *testing.T) {
 	rt.importFiles = func() importplan.FileSource {
 		return fakeImportFiles{"Dockerfile": "FROM x\nEXPOSE 3000\n", ".env.example": "API_TOKEN=\n"}
 	}
+	rt.listBranches = func(context.Context, string) ([]string, error) { return []string{"dev", "master"}, nil }
 	cookie := loginTestSession(t, rt, db)
 
 	cases := []struct {
@@ -51,7 +52,7 @@ func TestHandleImportPlan(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &plan); err != nil {
 		t.Fatal(err)
 	}
-	if plan.Services[0].Port != 3000 || len(plan.MissingRequiredEnv) != 1 || plan.MissingRequiredEnv[0] != "API_TOKEN" {
+	if plan.Ref != "master" || plan.Services[0].Port != 3000 || len(plan.MissingRequiredEnv) != 1 || plan.MissingRequiredEnv[0] != "API_TOKEN" {
 		t.Errorf("plan = %+v", plan)
 	}
 }

@@ -43,7 +43,34 @@ func (rt *Router) handleImportPlan(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rt.resolveImportRef(r.Context(), plan)
 	writeJSON(w, http.StatusOK, plan)
+}
+
+// resolveImportRef fills plan.Ref with the repo's main, master or first
+// branch, so a build can be triggered from the plan without another lookup.
+func (rt *Router) resolveImportRef(ctx context.Context, plan *importplan.DeploymentPlan) {
+	if plan.Source != importplan.SourceRepo || plan.Ref != "" {
+		return
+	}
+	plan.Ref = "main"
+	u, err := url.Parse(plan.RepoURL)
+	if err != nil || !publicRailpackHosts[strings.ToLower(u.Hostname())] || rt.listBranches == nil {
+		return
+	}
+	branches, err := rt.listBranches(ctx, plan.RepoURL)
+	if err != nil || len(branches) == 0 {
+		return
+	}
+	plan.Ref = branches[0]
+	for _, want := range []string{"main", "master"} {
+		for _, b := range branches {
+			if b == want {
+				plan.Ref = want
+				return
+			}
+		}
+	}
 }
 
 func (rt *Router) importDetect(ctx context.Context, repoURL, ref string) (string, error) {
