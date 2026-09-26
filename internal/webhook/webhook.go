@@ -370,6 +370,17 @@ func resourceIDForService(name string) string {
 type PushEvent struct {
 	Ref   string `json:"ref"`
 	After string `json:"after"`
+	// Before is the commit the branch moved from, the stale-deploy guard's
+	// strongest ordering signal.
+	Before string `json:"before"`
+	// HeadCommitAt is the pushed head commit's timestamp, zero if unknown.
+	HeadCommitAt time.Time `json:"-"`
+}
+
+// pushCommit is one commit entry in a GitHub, Gitea or GitLab push payload.
+type pushCommit struct {
+	ID        string `json:"id"`
+	Timestamp string `json:"timestamp"`
 }
 
 // ErrPushEventFieldsMissing is returned by ParsePushEvent when body
@@ -384,12 +395,28 @@ var ErrPushEventFieldsMissing = errors.New("webhook: payload missing ref or afte
 // only the commit SHA and target ref matter to this package, everything
 // else in GitHub's much larger push payload is ignored).
 func ParsePushEvent(body []byte) (PushEvent, error) {
-	var ev PushEvent
-	if err := json.Unmarshal(body, &ev); err != nil {
+	var payload struct {
+		PushEvent
+		HeadCommit *pushCommit  `json:"head_commit"`
+		Commits    []pushCommit `json:"commits"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
 		return PushEvent{}, fmt.Errorf("webhook: malformed payload: %w", err)
 	}
+	ev := payload.PushEvent
 	if ev.After == "" || ev.Ref == "" {
 		return ev, ErrPushEventFieldsMissing
+	}
+	head := payload.HeadCommit
+	for i := range payload.Commits {
+		if head == nil && payload.Commits[i].ID == ev.After {
+			head = &payload.Commits[i]
+		}
+	}
+	if head != nil {
+		if t, err := time.Parse(time.RFC3339, head.Timestamp); err == nil {
+			ev.HeadCommitAt = t
+		}
 	}
 	return ev, nil
 }

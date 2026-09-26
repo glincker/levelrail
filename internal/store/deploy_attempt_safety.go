@@ -112,3 +112,12 @@ func (db *DB) TransitionDeployAttempt(ctx context.Context, id, from, to, reason 
 	}
 	return n > 0, nil
 }
+
+// SetDeployAttemptReason records why an attempt was held, superseded or
+// allowed through a freeze.
+func (db *DB) SetDeployAttemptReason(ctx context.Context, id, reason string) error {
+	if _, err := db.ExecContext(ctx, `UPDATE deploy_attempts SET reason = ? WHERE id = ?`, reason, id); err != nil {
+		return fmt.Errorf("store: set deploy attempt %q reason: %w", id, err)
+	}
+	return nil
+}

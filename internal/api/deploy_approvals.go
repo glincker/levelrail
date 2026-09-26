@@ -279,7 +279,7 @@ func (rt *Router) handleApproveDeployApproval(w http.ResponseWriter, r *http.Req
 			rt.nudgeReconciler()
 		}
 	default:
-		updated, err = rt.executeConfirmedDeploy(r.Context(), *svc, a.Image)
+		updated, err = rt.executeConfirmedDeploy(r.Context(), *svc, a.Image, confirmedDeployOptions{})
 	}
 	if err != nil {
 		rt.internalError(w, "api: approve deploy approval: apply failed", err, slog.String("id", id))

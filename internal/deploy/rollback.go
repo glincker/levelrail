@@ -46,6 +46,8 @@ type ImageTrigger struct {
 	Automatic bool
 	// Auth authenticates digest resolution against a private registry.
 	Auth *docker.RegistryAuth
+	// Reason is recorded on the attempt, e.g. a freeze override.
+	Reason string
 }
 
 // Deploy resolves image, writes it as existing's desired image, records a
@@ -82,7 +84,7 @@ func (t ImageTrigger) Deploy(ctx context.Context, existing store.DesiredService,
 	if source == "" {
 		source = store.DeployAttemptSourceImage
 	}
-	recordImageDeployAttempt(ctx, t.Store, updated, resolution, seq, source, logger)
+	recordImageDeployAttempt(ctx, t.Store, updated, resolution, seq, source, t.Reason, logger)
 
 	if t.Nudger != nil {
 		t.Nudger.Nudge()
@@ -98,7 +100,7 @@ func TriggerImageDeploy(ctx context.Context, st ImageDeployStore, nudger Reconci
 
 // recordImageDeployAttempt saves and immediately finishes an attempt for a
 // trigger with no build. Failures are logged: desired state already landed.
-func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc store.DesiredService, res ImageResolution, seq int64, source string, logger *slog.Logger) {
+func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc store.DesiredService, res ImageResolution, seq int64, source, reason string, logger *slog.Logger) {
 	id, err := store.NewDeployAttemptID()
 	if err != nil {
 		logger.Error("deploy: record deploy attempt: mint id failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
@@ -110,7 +112,7 @@ func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc stor
 		Source: source,
 		Status: store.DeployAttemptStatusRunning, StartedAt: now,
 		Snapshot:    store.NewDeployAttemptSnapshot(svc),
-		ImageDigest: res.Digest, DigestReason: res.Reason, Sequence: seq,
+		ImageDigest: res.Digest, DigestReason: res.Reason, Sequence: seq, Reason: reason,
 	}); err != nil {
 		logger.Error("deploy: record deploy attempt: save failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return
