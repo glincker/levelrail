@@ -41,6 +41,8 @@ type alertHistoryInput struct {
 	Event   string `json:"event,omitempty" jsonschema:"fired, resolved, flapping or flap_ended"`
 	Since   string `json:"since,omitempty" jsonschema:"RFC 3339 lower bound"`
 	Limit   int    `json:"limit,omitempty" jsonschema:"maximum entries, newest first (default 50)"`
+
+	IncludeChanges bool `json:"include_changes,omitempty" jsonschema:"attach what changed on the app before each firing (deploys, config, env key names, scaling), with the likely cause flagged"`
 }
 
 func registerAlertNoiseTools(server *mcp.Server, client *apiclient.Client) {
@@ -102,9 +104,9 @@ func registerAlertNoiseTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_alert_history",
-		Description: "List alert firings and resolutions, newest first, with what happened to each notification (sent, silenced, grouped, inhibited, failed, ratelimited, flapping, skipped).",
+		Description: "List alert firings and resolutions, newest first, with what happened to each notification (sent, silenced, grouped, inhibited, failed, ratelimited, flapping, skipped). Set include_changes to see what changed on the app before each firing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in alertHistoryInput) (*mcp.CallToolResult, []apiclient.AlertHistoryEntry, error) {
-		q := apiclient.AlertHistoryQuery{App: in.App, RuleID: in.RuleID, Outcome: in.Outcome, Event: in.Event, Since: in.Since, Limit: in.Limit}
+		q := apiclient.AlertHistoryQuery{App: in.App, RuleID: in.RuleID, Outcome: in.Outcome, Event: in.Event, Since: in.Since, Limit: in.Limit, IncludeChanges: in.IncludeChanges}
 		out, err := client.ListAlertHistory(ctx, q)
 		if err != nil {
 			return nil, nil, fmt.Errorf("list alert history: %w", err)

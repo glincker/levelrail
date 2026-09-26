@@ -1,5 +1,9 @@
-import { useState } from 'react'
-import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { Fragment, useState } from 'react'
+import {
+  CaretDownIcon,
+  CaretRightIcon,
+  ClockCounterClockwiseIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import type { VariantProps } from 'class-variance-authority'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -19,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { RecentChanges } from './RecentChanges'
 import { useAlertHistory } from '../queries/alertNoise'
 import type {
   AlertEventName,
@@ -56,34 +61,64 @@ const EVENTS: AlertEventName[] = ['fired', 'resolved', 'flapping', 'flap_ended']
 const ALL = 'all'
 
 function HistoryRow({ entry }: { entry: AlertHistoryEntry }) {
+  const [open, setOpen] = useState(false)
   const detail = [entry.detail, entry.error].filter(Boolean).join(' - ')
+  const canExpand = entry.event === 'fired' && Boolean(entry.app)
   return (
-    <TableRow>
-      <TableCell className="whitespace-nowrap text-muted-foreground">
-        {new Date(entry.at).toLocaleString()}
-      </TableCell>
-      <TableCell className="font-medium text-foreground">
-        {entry.rule_name}
-        <span className="ml-2 font-mono text-xs text-muted-foreground">
-          {entry.rule_kind}
-        </span>
-      </TableCell>
-      <TableCell className="text-muted-foreground">
-        {entry.app ?? '-'}
-        {entry.node ? ` on ${entry.node}` : ''}
-      </TableCell>
-      <TableCell>
-        <Badge variant={entry.event === 'fired' ? 'destructive' : 'outline'}>
-          {entry.event.replace('_', ' ')}
-        </Badge>
-      </TableCell>
-      <TableCell>
-        <Badge variant={OUTCOME_VARIANT[entry.outcome]}>{entry.outcome}</Badge>
-      </TableCell>
-      <TableCell className="max-w-[22rem] truncate text-xs text-muted-foreground">
-        {detail || '-'}
-      </TableCell>
-    </TableRow>
+    <Fragment>
+      <TableRow>
+        <TableCell className="whitespace-nowrap text-muted-foreground">
+          {canExpand ? (
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-label={`${open ? 'Hide' : 'Show'} what changed before ${entry.rule_name} fired`}
+              onClick={() => {
+                setOpen((v) => !v)
+              }}
+              className="mr-1 inline-flex size-5 items-center justify-center rounded text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
+            >
+              {open ? (
+                <CaretDownIcon className="size-3.5" aria-hidden="true" />
+              ) : (
+                <CaretRightIcon className="size-3.5" aria-hidden="true" />
+              )}
+            </button>
+          ) : null}
+          {new Date(entry.at).toLocaleString()}
+        </TableCell>
+        <TableCell className="font-medium text-foreground">
+          {entry.rule_name}
+          <span className="ml-2 font-mono text-xs text-muted-foreground">
+            {entry.rule_kind}
+          </span>
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {entry.app ?? '-'}
+          {entry.node ? ` on ${entry.node}` : ''}
+        </TableCell>
+        <TableCell>
+          <Badge variant={entry.event === 'fired' ? 'destructive' : 'outline'}>
+            {entry.event.replace('_', ' ')}
+          </Badge>
+        </TableCell>
+        <TableCell>
+          <Badge variant={OUTCOME_VARIANT[entry.outcome]}>
+            {entry.outcome}
+          </Badge>
+        </TableCell>
+        <TableCell className="max-w-[22rem] truncate text-xs text-muted-foreground">
+          {detail || '-'}
+        </TableCell>
+      </TableRow>
+      {open && entry.app ? (
+        <TableRow>
+          <TableCell colSpan={6} className="bg-muted/30 whitespace-normal">
+            <RecentChanges app={entry.app} until={entry.at} />
+          </TableCell>
+        </TableRow>
+      ) : null}
+    </Fragment>
   )
 }
 

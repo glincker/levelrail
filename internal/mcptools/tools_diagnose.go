@@ -11,7 +11,7 @@ import (
 func registerDiagnosticTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "diagnose_app_failure",
-		Description: "Explain why an app's most recent deploy attempt failed, or why it's crashlooping: a deterministic pattern match over already-collected signals (deploy attempt error, reconcile conditions, crashloop state, recent logs), never a call to an external model. Read-only, changes nothing. The result carries typed causes (for example WRONG_PORT, OOM_KILLED, MISSING_ENV) with evidence and numbered fixes; each fix lists the exact field changes it would make, which an operator can apply from the dashboard or CLI. Pass deploy_id to diagnose a specific past attempt instead of the newest one.",
+		Description: "Explain why an app's most recent deploy attempt failed, or why it's crashlooping: a deterministic pattern match over already-collected signals (deploy attempt error, reconcile conditions, crashloop state, recent logs), never a call to an external model. Read-only, changes nothing. The result carries typed causes (for example WRONG_PORT, OOM_KILLED, MISSING_ENV) with evidence and numbered fixes; each fix lists the exact field changes it would make, which an operator can apply from the dashboard or CLI. The result also lists what changed on the app in the last 30 minutes (deploys, config, env key names, scaling) with the likely cause flagged. Pass deploy_id to diagnose a specific past attempt instead of the newest one.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in diagnoseAppInput) (*mcp.CallToolResult, apiclient.DiagnosisResource, error) {
 		result, err := client.DiagnoseApp(ctx, in.Name, in.DeployID)
 		if err != nil {

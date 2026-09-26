@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -364,9 +365,14 @@ type alertHistoryResource struct {
 	SilenceID  string    `json:"silence_id,omitempty"`
 	ChannelID  string    `json:"channel_id,omitempty"`
 	Error      string    `json:"error,omitempty"`
+
+	// Changes is set on fired entries when ?include=changes is passed: what
+	// changed on the app in the window before the alert fired.
+	Changes *changes.Result `json:"changes,omitempty"`
 }
 
 const (
+	alertHistoryChangesMax   = 25
 	alertHistoryDefaultLimit = 100
 	alertHistoryMaxLimit     = 500
 )
@@ -432,8 +438,19 @@ func (rt *Router) writeAlertHistory(w http.ResponseWriter, r *http.Request, app 
 		f.Before = &last
 	}
 	out := make([]alertHistoryResource, 0, len(list))
+	var agg *changes.Aggregator
+	if q.Get("include") == "changes" {
+		agg = rt.changeAggregator()
+	}
+	withChanges := 0
 	for _, e := range list {
-		out = append(out, alertHistoryResource{ID: e.ID, At: e.At.UTC(), RuleID: e.RuleID, RuleName: e.RuleName, RuleKind: e.RuleKind,
+		var chg *changes.Result
+		if agg != nil && e.Event == alerting.EventFired && e.App != "" && withChanges < alertHistoryChangesMax {
+			res := agg.Collect(r.Context(), e.App, e.At)
+			chg = &res
+			withChanges++
+		}
+		out = append(out, alertHistoryResource{Changes: chg, ID: e.ID, At: e.At.UTC(), RuleID: e.RuleID, RuleName: e.RuleName, RuleKind: e.RuleKind,
 			ResourceID: e.ResourceID, App: e.App, Node: e.Node, Severity: e.Severity, Event: e.Event, Outcome: e.Outcome,
 			Detail: e.Detail, SilenceID: e.SilenceID, ChannelID: e.ChannelID, Error: e.Error})
 	}
