@@ -119,6 +119,11 @@ const KIND_OPTIONS: {
   { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
   { value: 'node_offline', label: 'Node offline', Icon: HardDriveIcon },
   {
+    value: 'node_cert_expiring',
+    label: 'Node agent certificate expiring',
+    Icon: HardDriveIcon,
+  },
+  {
     value: 'control_plane_backup_stale',
     label: 'Control plane backup stale',
     Icon: ArchiveIcon,
@@ -153,6 +158,7 @@ const createAlertRuleSchema = z
       'domain_health',
       'backup_missing',
       'node_offline',
+      'node_cert_expiring',
       'control_plane_backup_stale',
       'log_archive_stale',
     ]),
@@ -181,6 +187,7 @@ const createAlertRuleSchema = z
       data.kind === 'node_disk_space' ||
       data.kind === 'node_resource_usage' ||
       data.kind === 'node_offline' ||
+      data.kind === 'node_cert_expiring' ||
       data.kind === 'control_plane_backup_stale' ||
       data.kind === 'log_archive_stale'
     ) {
@@ -515,6 +522,14 @@ export function CreateAlertRuleDialog({
               {DEFAULT_NODE_DISK_SPACE_THRESHOLD_PERCENT}% used (the control
               plane&apos;s configured threshold, overridable via
               APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
+            </p>
+          ) : kind === 'node_cert_expiring' ? (
+            <p className="text-sm text-muted-foreground">
+              Watches every node&apos;s agent certificate and fires when one is
+              inside the control plane&apos;s warning window
+              (APP_NODE_CERT_EXPIRY_WARNING, 21 days by default) or already
+              expired. Healthy agents renew well before that, so this means
+              renewal is failing or the node needs re-enrolling.
             </p>
           ) : kind === 'node_offline' ? (
             <p className="text-sm text-muted-foreground">

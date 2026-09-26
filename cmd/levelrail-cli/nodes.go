@@ -18,42 +18,47 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return exitUsage
 	}
 
-	switch args[0] {
+	sub, rest := args[0], args[1:]
+	switch sub {
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, nodesUsage(prog))
 		return exitOK
 	case "list":
-		return runNodesList(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesList(prog, rest, stdout, stderr, lookupEnv)
 	case "get":
-		return runNodesGet(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesGet(prog, rest, stdout, stderr, lookupEnv)
 	case "delete":
-		return runNodesDelete(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesDelete(prog, rest, stdout, stderr, lookupEnv)
 	case "join-token":
-		return runNodesJoinToken(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesJoinToken(prog, rest, stdout, stderr, lookupEnv)
 	case "cordon":
-		return runNodesCordon(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesCordon(prog, rest, stdout, stderr, lookupEnv)
 	case "uncordon":
-		return runNodesUncordon(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesUncordon(prog, rest, stdout, stderr, lookupEnv)
 	case "drain":
-		return runNodesDrain(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesDrain(prog, rest, stdout, stderr, lookupEnv)
 	case "workloads":
-		return runNodesWorkloads(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesWorkloads(prog, rest, stdout, stderr, lookupEnv)
 	case "health":
-		return runNodesHealth(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesHealth(prog, rest, stdout, stderr, lookupEnv)
 	case "patch-status":
-		return runNodesPatchStatus(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesPatchStatus(prog, rest, stdout, stderr, lookupEnv)
 	case "events":
-		return runNodesEvents(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesEvents(prog, rest, stdout, stderr, lookupEnv)
 	case "metrics":
-		return runNodesMetrics(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesMetrics(prog, rest, stdout, stderr, lookupEnv)
 	case "resource-usage":
-		return runNodesResourceUsage(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesResourceUsage(prog, rest, stdout, stderr, lookupEnv)
 	case "mesh":
-		return runNodesMesh(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesMesh(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-key":
-		return runNodesRotateKey(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesRotateKey(prog, rest, stdout, stderr, lookupEnv)
+	case "reenroll-token":
+		return runNodesReenrollToken(prog, rest, stdout, stderr, lookupEnv)
+	case "revoke-cert":
+		return runNodesRevokeCert(prog, rest, stdout, stderr, lookupEnv)
 	default:
-		_, _ = fmt.Fprintf(stderr, "%s: unknown nodes subcommand %q\n\n", prog, args[0])
+		_, _ = fmt.Fprintf(stderr, "%s: unknown nodes subcommand %q\n\n", prog, sub)
 		_, _ = fmt.Fprint(stderr, nodesUsage(prog))
 		return exitUsage
 	}
@@ -76,6 +81,8 @@ func nodesUsage(prog string) string {
   %[1]s nodes resource-usage [flags]                                 show every node's latest CPU/memory/disk usage, plus a fleet rollup
   %[1]s nodes mesh [flags]                                           show this control plane's live WireGuard mesh state and peers
   %[1]s nodes rotate-key <id> [flags]                                rotate a node's WireGuard key (only the local node today)
+  %[1]s nodes reenroll-token <id> [flags]                            mint a one-time token to re-issue a node's agent certificate, shown once
+  %[1]s nodes revoke-cert <id> [flags]                               revoke a node's agent certificate and disconnect it
 
 Run "%[1]s nodes <subcommand> -h" for a subcommand's own flags.
 `, prog)

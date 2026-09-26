@@ -1,3 +1,5 @@
+import type { NodeAgentResource, NodeCertResource } from './nodeCert'
+
 // Wire type for a node, GET /api/v1/nodes and GET /api/v1/nodes/{id}
 // (internal/api/nodes.go's nodeResource). Same snake_case-matches-wire-
 // shape convention appDetail.ts and databaseDetail.ts document: an
@@ -51,6 +53,9 @@ export interface NodeResource {
   is_local: boolean
   // Present only when the node reported an NVIDIA GPU.
   gpu?: NodeGpuResource
+  // Absent from control planes that predate ADR 021.
+  cert?: NodeCertResource
+  agent?: NodeAgentResource
 }
 
 // GPU summary on a node (internal/api/gpu_placement.go's nodeGPUResource).

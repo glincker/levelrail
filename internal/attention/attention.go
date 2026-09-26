@@ -56,6 +56,36 @@ func diskItem(s apiclient.SystemStatusResource) (Item, bool) {
 	return Item{}, false
 }
 
+// nodeAgentItems flags a node's agent certificate (ADR 021) and an agent
+// older than the control plane's minimum version.
+func nodeAgentItems(n apiclient.NodeResource) []Item {
+	var items []Item
+	if c := n.Cert; c != nil {
+		expires := ""
+		if c.NotAfter != nil {
+			expires = c.NotAfter.Format("2006-01-02")
+		}
+		switch c.State {
+		case "expired":
+			items = append(items, Item{Critical, "node_cert", n.Name, "agent certificate expired " + expires + ": re-enroll the node"})
+		case "critical":
+			items = append(items, Item{Critical, "node_cert", n.Name, "agent certificate expires " + expires + ", renewal is failing"})
+		case "expiring":
+			items = append(items, Item{Warning, "node_cert", n.Name, "agent certificate expires " + expires + ", renewal is failing"})
+		case "revoked":
+			items = append(items, Item{Warning, "node_cert", n.Name, "agent certificate revoked: re-enroll or delete the node"})
+		}
+	}
+	if a := n.Agent; a != nil && a.Outdated {
+		v := a.Version
+		if v == "" {
+			v = "unknown version"
+		}
+		items = append(items, Item{Warning, "node_agent", n.Name, "agent " + v + " is older than the minimum " + a.MinVersion})
+	}
+	return items
+}
+
 // Build mirrors web/src/lib/attention.ts: disk pressure, failing apps,
 // recent failed deploys, offline nodes, bad certificates, and doctor
 // warnings or failures, critical first.
@@ -84,6 +114,7 @@ func Build(in Input) []Item {
 			}
 			items = append(items, Item{Critical, "node", n.Name, detail})
 		}
+		items = append(items, nodeAgentItems(n)...)
 	}
 	for _, c := range in.Certs {
 		switch c.Status {

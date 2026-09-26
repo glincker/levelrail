@@ -85,6 +85,8 @@ type Engine struct {
 	cpBackupMaxAge time.Duration
 
 	logArchive LogArchiveSource
+
+	nodeCertWarning, nodeCertCritical time.Duration
 }
 
 // NewEngine builds an Engine. newNotifier defaults to a Notifier with no
@@ -177,6 +179,12 @@ func (e *Engine) SetControlPlaneBackups(src ControlPlaneBackupSource, maxAge tim
 // SetLogArchive enables kind=log_archive_stale rules.
 func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
 
+// SetNodeCertThresholds sets the default warning window and critical
+// threshold for kind=node_cert_expiring rules. Zero keeps the defaults.
+func (e *Engine) SetNodeCertThresholds(warning, critical time.Duration) {
+	e.nodeCertWarning, e.nodeCertCritical = warning, critical
+}
+
 // Tick evaluates every enabled rule once. Errors from individual rules
 // (a metrics query failing, a notification failing to send) are
 // collected and joined, never stopping evaluation of the remaining
@@ -194,7 +202,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 	for _, r := range rules {
 		var next Rule
-		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeOfflineNotices []string
+		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string
 		var taskFailureNotice, backupMissingNoticeText string
 		switch r.Kind {
 		case KindThreshold:
@@ -250,7 +258,24 @@ func (e *Engine) Tick(ctx context.Context) error {
 				e.logger.Warn("alerting: node_offline rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
 				continue
 			}
-			next, nodeOfflineNotices, err = EvaluateNodeOffline(ctx, e.nodes, r, now)
+			next, nodeNotices, err = EvaluateNodeOffline(ctx, e.nodes, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindNodeCertExpiring:
+			if e.nodes == nil {
+				e.logger.Warn("alerting: node_cert_expiring rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			warning, critical := e.nodeCertWarning, e.nodeCertCritical
+			if warning <= 0 {
+				warning = DefaultNodeCertWarning
+			}
+			if critical <= 0 {
+				critical = DefaultNodeCertCritical
+			}
+			next, nodeNotices, err = EvaluateNodeCertExpiring(ctx, e.nodes, r, warning, critical, now)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -323,7 +348,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 		switch {
 		case becameFiring:
-			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeOfflineNotices, taskFailureNotice, backupMissingNoticeText)
+			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices, taskFailureNotice, backupMissingNoticeText)
 			if r.Kind == KindCrashloop && e.autoRollback != nil {
 				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
 			}
@@ -355,7 +380,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 // persisted successfully before dispatch is called, so a lost
 // notification doesn't leave the rule's stored state inconsistent with
 // reality, only the operator momentarily uninformed.
-func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeOfflineNotices []string, taskFailureNotice, backupMissingNotice string) {
+func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string, taskFailureNotice, backupMissingNotice string) {
 	// r.Enabled is already resolved against its attached channel
 	// (scanRule): a disabled channel silences the rule the same way
 	// DeployDispatcher.Dispatch skips a target with a disabled channel.
@@ -377,7 +402,10 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 		ev.DiskSpaceNotices = diskSpaceNotices
 	}
 	if r.Kind == KindNodeOffline && !resolved {
-		ev.NodeOfflineNotices = nodeOfflineNotices
+		ev.NodeOfflineNotices = nodeNotices
+	}
+	if r.Kind == KindNodeCertExpiring && !resolved {
+		ev.NodeCertNotices = nodeNotices
 	}
 	if r.Kind == KindNodeResourceUsage && !resolved {
 		ev.ResourceUsageNotices = resourceUsageNotices

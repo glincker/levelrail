@@ -41,7 +41,7 @@ func TestServer_GPUReportReachesSink(t *testing.T) {
 	sink := recordingGPUSink{got: make(chan gpu.Info, 1), id: make(chan string, 1)}
 	s := &Server{gpuSink: sink, logger: slog.Default()}
 	stream := newFakeSessionStream()
-	m := newMuxWithHandlers(stream, s.onGPUReport("node-1"), nil)
+	m := newMuxWithHandlers(stream, muxHandlers{gpu: s.onGPUReport("node-1")})
 	defer close(stream.recv)
 
 	want := gpu.Info{Present: true, DriverVersion: "550", Devices: []gpu.Device{{Index: 0, Name: "L4", VRAMTotalMiB: 24576}}}
