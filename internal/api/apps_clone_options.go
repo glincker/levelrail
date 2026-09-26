@@ -7,10 +7,13 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+const cloneRollbackTimeout = 30 * time.Second
 
 type errCloneRequest string
 
@@ -93,8 +96,10 @@ func (rt *Router) validateCloneEnvironment(ctx context.Context, source store.Des
 }
 
 // rollbackClone removes a partially created clone so a retry does not
-// conflict with it.
-func (rt *Router) rollbackClone(ctx context.Context, name string) {
+// conflict with it. Cleanup outlives a canceled request.
+func (rt *Router) rollbackClone(reqCtx context.Context, name string) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(reqCtx), cloneRollbackTimeout)
+	defer cancel()
 	if rt.secrets != nil {
 		if err := rt.secrets.DeleteAll(ctx, name); err != nil {
 			rt.logger.Error("api: clone app: roll back secrets failed", slog.String("error", err.Error()), slog.String("new_name", name))

@@ -91,13 +91,17 @@ func TestApprovePromoteAppliesRequestedEnv(t *testing.T) {
 	if len(approvals) != 1 || !approvals[0].IncludeEnv {
 		t.Fatalf("approvals = %+v", approvals)
 	}
+	src.Env = map[string]string{"FEATURE_X": "on", "LATER": "1"}
+	if err := db.SaveDesiredService(ctx, *src); err != nil {
+		t.Fatal(err)
+	}
 	approver := storeUserWithAbilitiesForTest(t, db, "approver@example.com", []string{AbilityRead, AbilityDeploy})
 	ok := serve(rt, authedRequest(t, sessionCookieForTest(t, rt, approver.ID), http.MethodPost, "/api/v1/deploy-approvals/"+approvals[0].ID+"/approve", ""))
 	if ok.Code != http.StatusOK {
 		t.Fatalf("approve = %d %s", ok.Code, ok.Body.String())
 	}
 	target, _ := db.GetDesiredService(ctx, "web-prod")
-	if target.Env["FEATURE_X"] != "on" || target.Image != "levelrail/web:2" {
+	if _, later := target.Env["LATER"]; later || target.Env["FEATURE_X"] != "on" || target.Image != "levelrail/web:2" {
 		t.Fatalf("target = image %q env %v", target.Image, target.Env)
 	}
 }
@@ -109,8 +113,8 @@ func TestApproveDeployKeepsPullRequirement(t *testing.T) {
 		t.Fatalf("approval lost pull: %+v", a)
 	}
 	rec := serve(rt, authedRequest(t, approver, http.MethodPost, "/api/v1/deploy-approvals/"+id+"/approve", ""))
-	if rec.Code == http.StatusOK {
-		t.Fatalf("approve with pull and registry down succeeded: %s", rec.Body.String())
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("approve with pull and registry down = %d %s, want 502", rec.Code, rec.Body.String())
 	}
 	svc, _ := db.GetDesiredService(context.Background(), "web")
 	if svc.Image != "levelrail/web:1" {

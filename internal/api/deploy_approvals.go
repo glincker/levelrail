@@ -92,6 +92,7 @@ type deployApprovalOptions struct {
 	freezeOverride string
 	pull           bool
 	includeEnv     bool
+	promoteEnv     string
 }
 
 // requestDeployApproval creates and saves a pending deploy_approvals row
@@ -121,6 +122,7 @@ func (rt *Router) requestDeployApproval(w http.ResponseWriter, r *http.Request, 
 		CreatedAt:      store.FormatAuditTime(now),
 		ExpiresAt:      store.FormatAuditTime(now.Add(rt.effectiveDeployApprovalTTL())),
 		FreezeOverride: opts.freezeOverride, Pull: opts.pull, IncludeEnv: opts.includeEnv,
+		PromoteEnv: opts.promoteEnv,
 	}
 	if err := rt.deployApprovals.SaveDeployApproval(r.Context(), a); err != nil {
 		rt.internalError(w, "api: request deploy approval failed", err, slog.String("service", serviceName))
@@ -287,8 +289,11 @@ func (rt *Router) handleApproveDeployApproval(w http.ResponseWriter, r *http.Req
 	switch a.Action {
 	case store.DeployApprovalActionPromote:
 		target := *svc
-		if a.IncludeEnv && !rt.applyApprovedPromoteEnv(w, r, a, &target) {
-			return
+		if a.IncludeEnv {
+			if err := applyPromoteEnvSnapshot(&target, a.PromoteEnv); err != nil {
+				rt.internalError(w, "api: approve deploy approval: read env snapshot failed", err, slog.String("id", id))
+				return
+			}
 		}
 		updated, err = rt.setDesiredImage(r.Context(), target, a.Image)
 		if err == nil {
@@ -301,6 +306,11 @@ func (rt *Router) handleApproveDeployApproval(w http.ResponseWriter, r *http.Req
 			return
 		}
 		updated, err = rt.executeConfirmedDeploy(r.Context(), *svc, a.Image, confirmedDeployOptions{pull: a.Pull, reason: note})
+	}
+	if err != nil && a.Pull && a.Action != store.DeployApprovalActionPromote {
+		rt.logger.Error("api: approve deploy approval: fresh pull failed", slog.String("error", err.Error()), slog.String("id", id))
+		writeError(w, http.StatusBadGateway, "could not resolve the image from its registry; the approval is still pending, retry later or reject it and request again without pull")
+		return
 	}
 	if err != nil {
 		rt.internalError(w, "api: approve deploy approval: apply failed", err, slog.String("id", id))
@@ -343,21 +353,6 @@ func (rt *Router) approvalFreezeGate(w http.ResponseWriter, r *http.Request, a s
 		return "", false
 	}
 	return a.FreezeOverride, true
-}
-
-// applyApprovedPromoteEnv applies the source's current env diff to target.
-func (rt *Router) applyApprovedPromoteEnv(w http.ResponseWriter, r *http.Request, a store.DeployApproval, target *store.DesiredService) bool {
-	source, err := rt.apps.GetDesiredService(r.Context(), a.SourceServiceName)
-	if errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusConflict, "source app "+a.SourceServiceName+" no longer exists")
-		return false
-	}
-	if err != nil {
-		rt.internalError(w, "api: approve deploy approval: load source failed", err, slog.String("id", a.ID))
-		return false
-	}
-	applyPromoteEnv(target, *source, buildPromoteDiff(*source, *target))
-	return true
 }
 
 // deployApprovalDecisionResponse is POST .../approve's response: the
