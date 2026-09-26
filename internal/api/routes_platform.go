@@ -18,6 +18,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// GET=Read/PUT=WriteSensitive split just below: a key NAME is no
 	// more sensitive than a git-source's connection config.
 	mux.HandleFunc("GET /api/v1/apps/{name}/secrets", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListSecrets))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/secrets/{key}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteSecret))
 	mux.HandleFunc("POST /api/v1/apps/{name}/secrets/{key}/lock", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetSecretLock))
 
 	// Git source (a deferred follow-up, git_sources.go):

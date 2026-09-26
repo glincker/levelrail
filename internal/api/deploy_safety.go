@@ -75,6 +75,7 @@ func (rt *Router) freezeGate(w http.ResponseWriter, r *http.Request, name string
 		return "", false
 	}
 	note = "FreezeOverride: " + reason
+	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventFreezeOverride, Title: "Deploy freeze overridden", Detail: reason})
 	rt.logger.Warn("api: deploy freeze overridden", slog.String("name", name), slog.String("reason", reason), slog.String("window_id", status.WindowID), slog.String("remote_addr", clientIP(r)))
 	return note, true
 }

@@ -18,6 +18,8 @@ const (
 	// DigestReasonPullFailedUsingCached: the registry could not be reached,
 	// so the locally cached image for the tag was used instead.
 	DigestReasonPullFailedUsingCached = "PullFailedUsingCached"
+	// DigestReasonLocalImage: the image exists only locally, with no registry digest.
+	DigestReasonLocalImage = "LocalImage"
 	// DigestReasonUnresolved: neither the registry nor the local cache knew
 	// the tag; the node resolves it when it creates the container.
 	DigestReasonUnresolved = "Unresolved"

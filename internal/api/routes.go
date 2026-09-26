@@ -291,6 +291,11 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-freeze", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppDeployFreeze))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/deploy-freeze", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutAppDeployFreeze))
 
+	// Timeline and pending changes (app_timeline.go, pending_changes.go).
+	mux.HandleFunc("GET /api/v1/apps/{name}/timeline", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppTimeline))
+	mux.HandleFunc("GET /api/v1/apps/{name}/pending-changes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePendingChanges))
+	mux.HandleFunc("POST /api/v1/apps/{name}/apply-pending", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleApplyPending))
+
 	// Restart (handleRestartApp's own doc comment): AbilityDeploy, the
 	// same boundary as the deploy trigger above, since forcing a
 	// container recreation is the same class of action as triggering a
