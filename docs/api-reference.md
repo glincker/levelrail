@@ -744,6 +744,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/apply/schema | AbilityRead | handleIaCSchema |
 | POST | /api/v1/imports/platform/discover | AbilityWriteSensitive | handleDiscoverPlatformImport |
 | POST | /api/v1/imports/platform/apply | AbilityWriteSensitive | handleApplyPlatformImport |
+| GET | /api/v1/deployments | AbilityRead | handleListDeployments |
+| GET | /api/v1/deployments/summary | AbilityRead | handleDeploymentsSummary |
+| GET | /api/v1/deployments/stream | AbilityRead | handleDeploymentsStream |
 
 ## See also
 

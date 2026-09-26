@@ -348,6 +348,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// an app's own state.
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-attempts", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListDeployAttempts))
 	mux.HandleFunc("GET /api/v1/deploys/failed", rt.requireAbility(AbilityRead, rt.handleListFailedDeploys))
+	mux.HandleFunc("GET /api/v1/deployments", rt.requireAbility(AbilityRead, rt.handleListDeployments))
+	mux.HandleFunc("GET /api/v1/deployments/summary", rt.requireAbility(AbilityRead, rt.handleDeploymentsSummary))
+	mux.HandleFunc("GET /api/v1/deployments/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(deploymentsStreamResource, rt.handleDeploymentsStream)))
 
 	// Deploy comparison (deploy_compare.go): a before/after diff between
 	// two attempts, or one attempt against the app's current live state

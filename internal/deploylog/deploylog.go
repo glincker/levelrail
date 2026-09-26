@@ -112,8 +112,9 @@ type Recorder struct {
 	store  LogStore
 	logger *slog.Logger
 
-	mu     sync.Mutex
-	active map[string]*attemptState
+	mu       sync.Mutex
+	active   map[string]*attemptState
+	feedSubs []chan StateEvent
 }
 
 // NewRecorder builds a Recorder. store may be nil (see LogStore's own
@@ -139,6 +140,7 @@ func (r *Recorder) Start(attemptID string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.active[attemptID] = &attemptState{}
+	r.publishStateLocked(StateEvent{AttemptID: attemptID, Kind: StateStarted})
 }
 
 // Progress returns a progress func bound to attemptID, suitable for
@@ -225,6 +227,7 @@ func (r *Recorder) Step(attemptID, step, status string) {
 		return
 	}
 	st.steps = append(st.steps, ev)
+	r.publishStateLocked(StateEvent{AttemptID: attemptID, Kind: StateStep, Step: step, Status: status})
 	for _, ch := range st.stepSubs {
 		select {
 		case ch <- ev:
@@ -312,6 +315,7 @@ func (r *Recorder) Finish(ctx context.Context, attemptID string) {
 	subs := st.subs
 	stepSubs := st.stepSubs
 	delete(r.active, attemptID)
+	r.publishStateLocked(StateEvent{AttemptID: attemptID, Kind: StateFinished})
 	r.mu.Unlock()
 
 	if r.store != nil && len(toFlush) > 0 {

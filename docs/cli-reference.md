@@ -161,6 +161,13 @@ levelrail apps deploys failed [--since 24h] [flags]
 every app's latest failed deploy in the window (default set by the server), with the image of its newest good deploy as a rollback target
 
 ```
+levelrail deployments list [--status a,b] [--app NAME] [--branch B] [--trigger T] [--environment E] [--since 24h] [--until T] [--q TEXT] [--live] [--pr N] [--limit N] [--cursor C] [flags]
+levelrail deployments summary [--window 24h] [flags]
+levelrail deployments watch [flags]
+```
+deploys across every app you can read: a filterable newest-first list (with `--cursor` paging), a status and duration summary, and a live event stream (`--json` prints one object per event)
+
+```
 levelrail apps deploys steps <name> <deploy-id> [flags]
 ```
 stream one deploy attempt's pipeline steps (detecting, building, pushing, deploying) until it ends; exits non-zero if a step failed. An already-finished attempt replays only a short two-point summary
