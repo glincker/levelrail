@@ -372,6 +372,10 @@ func (n *NoiseControl) FlushAll(ctx context.Context, now time.Time, send SendFun
 }
 
 func (n *NoiseControl) flushGroup(ctx context.Context, evs []Event, now time.Time, send SendFunc) {
+	evs = n.dropNewlyMuted(ctx, evs, now)
+	if len(evs) == 0 {
+		return
+	}
 	combined := combineGroup(evs)
 	n.mu.Lock()
 	allowed := n.limiter.allow(targetKey(combined.Rule), n.cfg.RateLimit, n.cfg.RateWindow, now)
@@ -394,6 +398,23 @@ func (n *NoiseControl) flushGroup(ctx context.Context, evs []Event, now time.Tim
 			n.record(ctx, sc, e.Rule, EventFired, OutcomeSent, "", "", nil, now)
 		}
 	}
+}
+
+// dropNewlyMuted removes buffered events whose silence or maintenance window
+// began after they were buffered, recording them as silenced and holding them.
+func (n *NoiseControl) dropNewlyMuted(ctx context.Context, evs []Event, now time.Time) []Event {
+	live := make([]Event, 0, len(evs))
+	for _, e := range evs {
+		sc := n.describe(ctx, e.Rule)
+		hit, muted := n.silencedBy(ctx, sc.ac, now)
+		if !muted {
+			live = append(live, e)
+			continue
+		}
+		n.holdIfFiring(e, OutcomeSilenced, hit.id)
+		n.record(ctx, sc, e.Rule, EventFired, OutcomeSilenced, hit.detail, hit.id, nil, now)
+	}
+	return live
 }
 
 func groupDetail(count int) string {

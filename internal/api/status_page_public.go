@@ -41,8 +41,9 @@ func (rt *Router) statusCustomDomain(r *http.Request) string {
 	if time.Now().Before(c.expires) {
 		return c.domain
 	}
-	c.domain = ""
-	if s, err := rt.statusPage.GetStatusPageSettings(r.Context()); err == nil && s.Enabled {
+	// Keep the domain while the page is disabled or settings are unreadable so
+	// the host stays locked to public routes (servePublicStatus 404s when off).
+	if s, err := rt.statusPage.GetStatusPageSettings(r.Context()); err == nil {
 		c.domain = s.CustomDomain
 	}
 	c.expires = time.Now().Add(statusHostCacheTTL)

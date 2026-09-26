@@ -73,7 +73,12 @@ func runRestore(ctx context.Context, args []string, dataDir string, stdout io.Wr
 		}
 		_, _ = fmt.Fprintln(stdout, "WARNING: the control plane must be stopped while restoring.")
 	}
-	rep, err := cpbackup.Restore(ctx, src, cpbackup.RestoreOptions{LivePath: live, Identities: ids, DryRun: *dryRun, ForceInstallID: *force})
+	rep, err := cpbackup.Restore(ctx, src, cpbackup.RestoreOptions{LivePath: live, Identities: ids, DryRun: *dryRun, ForceInstallID: *force, BeforeInstall: func() error {
+		if inUse(ctx, live) {
+			return errors.New("the control plane database became busy during the restore: stop the control plane and retry")
+		}
+		return nil
+	}})
 	if *asJSON {
 		if encErr := json.NewEncoder(stdout).Encode(rep); encErr != nil && err == nil {
 			err = encErr

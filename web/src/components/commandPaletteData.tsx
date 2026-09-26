@@ -26,8 +26,7 @@ import {
   CircleHalfIcon,
   ArrowsSplitIcon,
   TreeStructureIcon,
-  BellRingingIcon,
-  BroadcastIcon,
+  BellIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
 export interface PaletteItem {
@@ -67,13 +66,7 @@ const nav = (
 export const ROUTE_ENTRIES: RouteEntry[] = [
   nav('action-status', 'Go to Status', <HeartbeatIcon />, '/status', 'Actions'),
   nav('action-apps', 'Go to Apps', <StackIcon />, '/apps', 'Actions'),
-  nav(
-    'action-alerts',
-    'Go to Alerts',
-    <BellRingingIcon />,
-    '/alerts',
-    'Actions',
-  ),
+  nav('action-alerts', 'Go to Alerts', <BellIcon />, '/alerts', 'Actions'),
   nav('action-nodes', 'Go to Nodes', <HardDrivesIcon />, '/nodes', 'Actions'),
   nav('action-create-app', 'Create app', <PlusIcon />, '/apps', 'Actions'),
   nav(
@@ -141,7 +134,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
   nav(
     'settings-status-page',
     'Status page',
-    <BroadcastIcon />,
+    <HeartbeatIcon />,
     '/settings/status-page',
     'Settings',
   ),

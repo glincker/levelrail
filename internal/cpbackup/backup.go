@@ -137,7 +137,7 @@ func (s *Service) runBackup(ctx context.Context, slot, started time.Time) (Manif
 		slot = started
 	}
 	dataKey := DataKey(installID, slot)
-	if existing, err := FetchManifest(ctx, bucket, dataKey); err == nil {
+	if existing, err := FetchManifest(ctx, bucket, dataKey); err == nil && confirmObject(ctx, bucket, dataKey, existing.SizeBytes) == nil {
 		return existing, nil
 	}
 
@@ -185,6 +185,17 @@ func (s *Service) runBackup(ctx context.Context, slot, started time.Time) (Manif
 }
 
 // upload sends the ciphertext, checks its stored size, then commits by writing the manifest.
+func confirmObject(ctx context.Context, b Bucket, key string, size int64) error {
+	page, err := b.List(ctx, key, "", 1)
+	if err != nil {
+		return err
+	}
+	if len(page.Objects) == 0 || page.Objects[0].Key != key || page.Objects[0].Size != size {
+		return errors.New("stored object does not match what was sent")
+	}
+	return nil
+}
+
 func upload(ctx context.Context, b Bucket, dataKey, cipherPath string, m Manifest) error {
 	f, err := os.Open(cipherPath) //nolint:gosec // path built by this package
 	if err != nil {
@@ -194,12 +205,8 @@ func upload(ctx context.Context, b Bucket, dataKey, cipherPath string, m Manifes
 	if err := b.Put(ctx, dataKey, f, "application/octet-stream", ""); err != nil {
 		return fmt.Errorf("upload backup: %w", err)
 	}
-	page, err := b.List(ctx, dataKey, "", 1)
-	if err != nil {
+	if err := confirmObject(ctx, b, dataKey, m.SizeBytes); err != nil {
 		return fmt.Errorf("confirm upload: %w", err)
-	}
-	if len(page.Objects) == 0 || page.Objects[0].Key != dataKey || page.Objects[0].Size != m.SizeBytes {
-		return errors.New("confirm upload: stored object does not match what was sent")
 	}
 	body, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {

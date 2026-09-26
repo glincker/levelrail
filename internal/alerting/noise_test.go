@@ -684,3 +684,20 @@ func TestEngine_Tick_ConsecutiveFailuresHoldsFirstTicks(t *testing.T) {
 func telemetrySample(v float64) []telemetry.Sample {
 	return []telemetry.Sample{{Timestamp: time.Now(), Value: v}}
 }
+
+func TestRoute_GroupedAlertMutedByLateSilence_NotSent(t *testing.T) {
+	ctx := context.Background()
+	nc, db, spy := newRouteFixture(t, NoiseConfig{GroupWindow: time.Minute}, nil)
+	nc.Route(ctx, Event{Rule: webRule("r1")}, t0, spy.send)
+	if err := db.CreateSilence(ctx, Silence{ID: "sil_late", Matchers: SilenceMatcher{Apps: []string{"web"}}, StartsAt: t0.Add(10 * time.Second), EndsAt: t0.Add(time.Hour), CreatedAt: t0}); err != nil {
+		t.Fatal(err)
+	}
+	nc.Sweep(ctx, t0.Add(time.Minute), spy.send)
+	if len(spy.events) != 0 {
+		t.Fatalf("a silence that began before the flush must mute the group: %+v", spy.events)
+	}
+	h := history(t, db)
+	if len(h) != 1 || h[0].Outcome != OutcomeSilenced || h[0].SilenceID != "sil_late" {
+		t.Fatalf("history = %+v", h)
+	}
+}

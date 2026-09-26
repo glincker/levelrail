@@ -552,3 +552,18 @@ func TestPublishedSchemaMatchesMerged(t *testing.T) {
 		t.Fatalf("schema: %v", err)
 	}
 }
+
+func TestPruneRemovesLastSecretReference(t *testing.T) {
+	f := newFake()
+	secrets := map[string]string{"API_KEY": "k", "DB_PASSWORD": "p"}
+	applyAll(t, f, fixture, Options{Source: "git", Secrets: secrets})
+	if refs, _ := f.apps["web"]["secret_env"].([]any); len(refs) == 0 {
+		t.Fatalf("fixture app has no secret references: %v", f.apps["web"])
+	}
+	stripped := strings.Replace(fixture, "      API_KEY: {secretRef: API_KEY}\n", "", 1)
+	stripped = strings.Replace(stripped, "      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}\n", "", 1)
+	applyAll(t, f, stripped, Options{Source: "git", Prune: true})
+	if refs, _ := f.apps["web"]["secret_env"].([]any); len(refs) != 0 {
+		t.Fatalf("prune left secret references behind: %v", f.apps["web"]["secret_env"])
+	}
+}

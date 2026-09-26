@@ -44,7 +44,7 @@ func (p *planner) envDiff(r *Resource, live map[string]string, extra, liveExtra 
 }
 
 func mergeEnv(live, desired map[string]string) map[string]string {
-	out := make(map[string]string, len(live)+len(desired))
+	out := make(map[string]string)
 	for k, v := range live {
 		out[k] = v
 	}

@@ -89,6 +89,9 @@ func (x *executor) updateApp(ctx context.Context, r *Resource, f map[string]any,
 			delete(body, k)
 		}
 	}
+	if prune && len(merged.SecretEnv) == 0 && len(lw.SecretEnv) > 0 {
+		body["secret_env"] = []string{}
+	}
 	var out struct {
 		EnvDirty bool `json:"env_dirty"`
 	}

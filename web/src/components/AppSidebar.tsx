@@ -17,7 +17,7 @@ import {
   HeartbeatIcon,
   CpuIcon,
   ArrowsSplitIcon,
-  BellRingingIcon,
+  BellIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Sidebar,
@@ -277,7 +277,7 @@ export function AppSidebar() {
                       isActive={pathname.startsWith('/alerts')}
                       tooltip="Alerts"
                     >
-                      <BellRingingIcon />
+                      <BellIcon />
                       <span>Alerts</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

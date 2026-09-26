@@ -199,3 +199,18 @@ func TestStatusPage_CustomDomainServesOnlyStatus(t *testing.T) {
 		t.Error("other hosts must pass through untouched")
 	}
 }
+
+func TestStatusPage_DisabledKeepsCustomHostLocked(t *testing.T) {
+	rt, _, cookie := newStatusRouter(t, 100)
+	apiDo(t, rt, cookie, http.MethodPut, "/api/v1/status-page", `{"enabled":false,"title":"Acme","custom_domain":"status.example.com"}`)
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("dashboard")) })
+	h := rt.StatusHostHandler(next)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/apps", nil)
+	req.Host = "status.example.com"
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound || rec.Body.String() == "dashboard" {
+		t.Fatalf("disabled status host must not reach the dashboard, got %d %q", rec.Code, rec.Body.String())
+	}
+}

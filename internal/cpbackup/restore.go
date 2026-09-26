@@ -121,6 +121,8 @@ type RestoreOptions struct {
 	// ForceInstallID accepts a backup taken by a different install.
 	ForceInstallID bool
 	Now            func() time.Time
+	// BeforeInstall runs just before the live database is replaced; an error aborts the restore.
+	BeforeInstall func() error
 
 	hook func(stage string) error
 }
@@ -181,6 +183,11 @@ func Restore(ctx context.Context, src Source, opts RestoreOptions) (RestoreRepor
 	rep.Checks = append(rep.Checks, Check{Name: "install_id", OK: true, Detail: "install id matches"})
 	if opts.DryRun {
 		return rep, nil
+	}
+	if opts.BeforeInstall != nil {
+		if err := opts.BeforeInstall(); err != nil {
+			return rep, err
+		}
 	}
 	pre, err := swapIn(restored, opts)
 	rep.PreRestore = pre

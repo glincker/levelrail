@@ -28,7 +28,6 @@ import {
   RobotIcon,
   SparkleIcon,
   FileCodeIcon,
-  BroadcastIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
 export interface SettingsNavItem {
@@ -145,7 +144,7 @@ export const settingsNavSections: SettingsNavSection[] = [
       },
       {
         to: '/settings/status-page',
-        icon: BroadcastIcon,
+        icon: HeartbeatIcon,
         title: 'Status page',
         description:
           'Optional public page with component status, uptime and incidents.',

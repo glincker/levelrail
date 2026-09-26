@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useEffect } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   PackageIcon,
@@ -20,13 +20,16 @@ import { SetupChecklistCard } from './SetupChecklistCard'
 import { FleetResourceChart } from './FleetResourceChart'
 import { FleetUtilizationSummary } from './FleetUtilizationSummary'
 import { TopResourceConsumers } from './TopResourceConsumers'
-import { RecentAlertsCard } from './RecentAlertsCard'
 import { useCompleteOnboarding } from '../queries/onboarding'
 import type { OnboardingState } from '../queries/onboarding'
 import { useIsRoot } from '../hooks/useIsRoot'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+
+const RecentAlertsCard = lazy(() =>
+  import('./RecentAlertsCard').then((m) => ({ default: m.RecentAlertsCard })),
+)
 
 // GET /api/v1/apps carries no updated/last-deploy timestamp, so this
 // keeps the API's own ordering rather than sorting by recency.
@@ -122,7 +125,9 @@ export function DashboardOverview({
 
       <TopResourceConsumers apps={apps} />
 
-      <RecentAlertsCard />
+      <Suspense fallback={null}>
+        <RecentAlertsCard />
+      </Suspense>
 
       {attention.length > 0 ? (
         <section>

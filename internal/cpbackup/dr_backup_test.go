@@ -248,3 +248,22 @@ func TestCleanTemp_RemovesLeftoverWorkDirs(t *testing.T) {
 	e.backup()
 	assertNoLeftovers(t, filepath.Join(e.dir, DirName), "levelrail-20260101T000000Z.db")
 }
+
+func TestRunBackup_DamagedObjectWithManifestIsReuploaded(t *testing.T) {
+	e := newDREnv(t)
+	e.configure(nil)
+	slot := time.Date(2026, 9, 25, 2, 0, 0, 0, time.UTC)
+	first, err := e.svc.RunBackup(context.Background(), slot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.srv.Put(first.Key, []byte("damaged"), e.clock.Now())
+	m, err := e.svc.RunBackup(context.Background(), slot)
+	if err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	live := filepath.Join(t.TempDir(), "levelrail.db")
+	if _, err := Restore(context.Background(), NewBucketSource(newBucket(t, e.srv), m.Key), RestoreOptions{LivePath: live, Identities: []age.Identity{e.id}}); err != nil {
+		t.Fatalf("backup still damaged after retry: %v", err)
+	}
+}

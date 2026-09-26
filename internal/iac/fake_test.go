@@ -194,7 +194,7 @@ func (f *fakeCP) appRoutes() {
 		if !ok {
 			return nil, errNotFound
 		}
-		for _, keep := range []string{"project_id", "environment_id", "tags", "vault_env", "volumes"} {
+		for _, keep := range []string{"project_id", "environment_id", "tags", "vault_env", "volumes", "secret_env"} {
 			if _, sent := b[keep]; !sent && old[keep] != nil {
 				b[keep] = old[keep]
 			}
