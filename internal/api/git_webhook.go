@@ -249,6 +249,7 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 	}
 
 	rt.firePipelinePush(ctx, name, ev.Ref, ev.After)
+	ctx = withPushCommitMeta(ctx, ev)
 
 	triggered, ignoredMsg := gitSourceTriggerMatchesPush(gs, ev.Ref)
 	if !triggered {

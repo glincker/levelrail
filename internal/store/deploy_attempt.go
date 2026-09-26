@@ -83,6 +83,12 @@ type DeployAttempt struct {
 	Reason string
 	// HeldRequest is the JSON a held attempt needs to be replayed.
 	HeldRequest string
+
+	// Branch, CommitMessage and Author come from the push payload
+	// (migrations/0149), empty when the trigger carried none.
+	Branch        string
+	CommitMessage string
+	Author        string
 }
 
 // DeployAttemptEnvKind classifies one env var key captured in a
@@ -292,9 +298,9 @@ func (db *DB) SaveDeployAttempt(ctx context.Context, a DeployAttempt) error {
 		return fmt.Errorf("store: save deploy attempt %q: marshal snapshot: %w", a.ID, err)
 	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO deploy_attempts (id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework, image_digest, digest_reason, sequence, reason, held_request)
-		VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?)
-	`, a.ID, a.ServiceName, a.Image, a.CommitSHA, a.Source, a.Status, a.StartedAt.UTC().Format(time.RFC3339Nano), string(snapshotJSON), a.DetectedFramework, a.ImageDigest, a.DigestReason, a.Sequence, a.Reason, a.HeldRequest)
+		INSERT INTO deploy_attempts (id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework, image_digest, digest_reason, sequence, reason, held_request, branch, commit_message, author)
+		VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, a.ID, a.ServiceName, a.Image, a.CommitSHA, a.Source, a.Status, a.StartedAt.UTC().Format(time.RFC3339Nano), string(snapshotJSON), a.DetectedFramework, a.ImageDigest, a.DigestReason, a.Sequence, a.Reason, a.HeldRequest, a.Branch, a.CommitMessage, a.Author)
 	if err != nil {
 		return fmt.Errorf("store: save deploy attempt %q: %w", a.ID, err)
 	}
@@ -439,7 +445,7 @@ func (db *DB) ListDeployAttempts(ctx context.Context, serviceName string) ([]Dep
 	return out, nil
 }
 
-const deployAttemptColumns = "id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework, image_digest, digest_reason, rollout_state, running_image_id, sequence, reason, held_request"
+const deployAttemptColumns = "id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework, image_digest, digest_reason, rollout_state, running_image_id, sequence, reason, held_request, branch, commit_message, author"
 
 func scanDeployAttempt(scan func(dest ...any) error) (*DeployAttempt, error) {
 	var (
@@ -448,7 +454,7 @@ func scanDeployAttempt(scan func(dest ...any) error) (*DeployAttempt, error) {
 		finishedAt, errString sql.NullString
 		snapshotJSON          string
 	)
-	if err := scan(&a.ID, &a.ServiceName, &a.Image, &a.CommitSHA, &a.Source, &a.Status, &startedAt, &finishedAt, &errString, &snapshotJSON, &a.DetectedFramework, &a.ImageDigest, &a.DigestReason, &a.RolloutState, &a.RunningImageID, &a.Sequence, &a.Reason, &a.HeldRequest); err != nil {
+	if err := scan(&a.ID, &a.ServiceName, &a.Image, &a.CommitSHA, &a.Source, &a.Status, &startedAt, &finishedAt, &errString, &snapshotJSON, &a.DetectedFramework, &a.ImageDigest, &a.DigestReason, &a.RolloutState, &a.RunningImageID, &a.Sequence, &a.Reason, &a.HeldRequest, &a.Branch, &a.CommitMessage, &a.Author); err != nil {
 		return nil, err
 	}
 	if snapshotJSON != "" {

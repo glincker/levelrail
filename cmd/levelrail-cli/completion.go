@@ -152,6 +152,7 @@ var cliCommandTree = map[string]*cmdNode{
 	"flags":                {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "set": nil, "delete": nil}},
 	"pipelines":            {subs: map[string]*cmdNode{"list": nil, "validate": nil, "save": nil, "delete": nil, "run": nil, "runs": nil, "logs": nil, "cancel": nil, "approve": nil, "sync": nil, "triggers": nil}},
 	"preview":              {subs: map[string]*cmdNode{"status": nil, "enable": nil, "disable": nil, "capture": nil, "prune": nil}},
+	"deployments":          {subs: map[string]*cmdNode{"list": nil, "watch": nil, "summary": nil}},
 	"lb":                   {subs: map[string]*cmdNode{"list": nil, "show": nil, "set": nil, "clear": nil, "status": nil, "check": nil, "history": nil, "upstream": nil, "export": nil, "import": nil}},
 	"tags":                 {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil, "apps": nil}},
 	"nodes": {subs: map[string]*cmdNode{
