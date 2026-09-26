@@ -189,13 +189,17 @@ func TestClient_CreatePullRequestComment(t *testing.T) {
 			t.Fatalf("decode request body: %v", err)
 		}
 		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":9}`))
 	}))
 	defer srv.Close()
 
 	c := &Client{HTTP: srv.Client(), APIBaseURL: srv.URL}
-	err := c.CreatePullRequestComment(context.Background(), "tok", "acme/widgets", 42, "preview deployed")
+	id, err := c.CreatePullRequestComment(context.Background(), "tok", "acme/widgets", 42, "preview deployed")
 	if err != nil {
 		t.Fatalf("CreatePullRequestComment() error = %v", err)
+	}
+	if id != 9 {
+		t.Errorf("comment id = %d, want 9", id)
 	}
 	if gotBody.Content.Raw != "preview deployed" {
 		t.Errorf("content.raw = %q, want %q", gotBody.Content.Raw, "preview deployed")
@@ -210,7 +214,7 @@ func TestClient_CreatePullRequestComment_ErrorResponse(t *testing.T) {
 	defer srv.Close()
 
 	c := &Client{HTTP: srv.Client(), APIBaseURL: srv.URL}
-	err := c.CreatePullRequestComment(context.Background(), "tok", "acme/widgets", 42, "body")
+	_, err := c.CreatePullRequestComment(context.Background(), "tok", "acme/widgets", 42, "body")
 	if err == nil {
 		t.Fatal("CreatePullRequestComment() error = nil, want an error for a 404 response")
 	}

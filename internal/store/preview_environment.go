@@ -35,7 +35,18 @@ const (
 	PreviewStatusDeploying = "deploying"
 	PreviewStatusActive    = "active"
 	PreviewStatusFailed    = "failed"
+	// PreviewStatusAwaitingApproval marks a fork pull request held back
+	// until an operator approves it; nothing is deployed in this state.
+	PreviewStatusAwaitingApproval = "awaiting_approval"
+	// PreviewStatusLimitReached marks a pull request rejected because the
+	// preview cap was full and the app's policy is to reject.
+	PreviewStatusLimitReached = "limit_reached"
 )
+
+// Occupies reports whether a preview in this status holds a concurrency slot.
+func (p PreviewEnvironment) Occupies() bool {
+	return p.Status == PreviewStatusDeploying || p.Status == PreviewStatusActive || p.Status == PreviewStatusFailed
+}
 
 // ErrPreviewEnvironmentNotFound is returned by GetPreviewEnvironment and
 // GetPreviewEnvironmentByAppAndPR when no row matches.
@@ -68,6 +79,13 @@ type PreviewEnvironment struct {
 	StatusReason string
 	CreatedAt    string
 	UpdatedAt    string
+	// CommentID is the provider ID of the single status comment kept on the
+	// pull request, 0 until one has been posted.
+	CommentID int64
+	// IsFork records that the pull request's head repository differs from
+	// its base repository; HeadRepo is that head repository's full name.
+	IsFork   bool
+	HeadRepo string
 }
 
 // SavePreviewEnvironment inserts a new preview environment row.
@@ -76,15 +94,15 @@ type PreviewEnvironment struct {
 func (db *DB) SavePreviewEnvironment(ctx context.Context, p PreviewEnvironment) error {
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO preview_environments
-			(id, app_name, pr_number, preview_app_id, environment_id, branch, head_sha, domain, status, status_reason, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(id, app_name, pr_number, preview_app_id, environment_id, branch, head_sha, domain, status, status_reason, created_at, updated_at, is_fork, head_repo)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, p.ID, p.AppName, p.PRNumber, p.PreviewAppID,
 		sql.NullString{String: p.EnvironmentID, Valid: p.EnvironmentID != ""},
 		p.Branch, p.HeadSHA,
 		sql.NullString{String: p.Domain, Valid: p.Domain != ""},
 		p.Status,
 		sql.NullString{String: p.StatusReason, Valid: p.StatusReason != ""},
-		p.CreatedAt, p.UpdatedAt)
+		p.CreatedAt, p.UpdatedAt, boolToInt(p.IsFork), p.HeadRepo)
 	if err != nil {
 		return fmt.Errorf("store: save preview environment %q: %w", p.ID, err)
 	}
@@ -100,14 +118,14 @@ func (db *DB) SavePreviewEnvironment(ctx context.Context, p PreviewEnvironment) 
 func (db *DB) UpdatePreviewEnvironment(ctx context.Context, p PreviewEnvironment) error {
 	res, err := db.ExecContext(ctx, `
 		UPDATE preview_environments SET
-			branch = ?, head_sha = ?, environment_id = ?, domain = ?, status = ?, status_reason = ?, updated_at = ?
+			branch = ?, head_sha = ?, environment_id = ?, domain = ?, status = ?, status_reason = ?, updated_at = ?, is_fork = ?, head_repo = ?
 		WHERE id = ?
 	`, p.Branch, p.HeadSHA,
 		sql.NullString{String: p.EnvironmentID, Valid: p.EnvironmentID != ""},
 		sql.NullString{String: p.Domain, Valid: p.Domain != ""},
 		p.Status,
 		sql.NullString{String: p.StatusReason, Valid: p.StatusReason != ""},
-		p.UpdatedAt, p.ID)
+		p.UpdatedAt, boolToInt(p.IsFork), p.HeadRepo, p.ID)
 	if err != nil {
 		return fmt.Errorf("store: update preview environment %q: %w", p.ID, err)
 	}
@@ -221,19 +239,67 @@ func (db *DB) ListStalePreviewEnvironments(ctx context.Context, cutoff time.Time
 	return out, nil
 }
 
-const previewEnvironmentColumns = "id, app_name, pr_number, preview_app_id, environment_id, branch, head_sha, domain, status, status_reason, created_at, updated_at"
+const previewEnvironmentColumns = "id, app_name, pr_number, preview_app_id, environment_id, branch, head_sha, domain, status, status_reason, created_at, updated_at, comment_id, is_fork, head_repo"
 
 func scanPreviewEnvironment(scan func(dest ...any) error) (*PreviewEnvironment, error) {
 	var (
 		p                     PreviewEnvironment
 		environmentID, domain sql.NullString
 		statusReason          sql.NullString
+		isFork                int
 	)
-	if err := scan(&p.ID, &p.AppName, &p.PRNumber, &p.PreviewAppID, &environmentID, &p.Branch, &p.HeadSHA, &domain, &p.Status, &statusReason, &p.CreatedAt, &p.UpdatedAt); err != nil {
+	if err := scan(&p.ID, &p.AppName, &p.PRNumber, &p.PreviewAppID, &environmentID, &p.Branch, &p.HeadSHA, &domain, &p.Status, &statusReason, &p.CreatedAt, &p.UpdatedAt, &p.CommentID, &isFork, &p.HeadRepo); err != nil {
 		return nil, err
 	}
 	p.EnvironmentID = environmentID.String
 	p.Domain = domain.String
 	p.StatusReason = statusReason.String
+	p.IsFork = isFork != 0
 	return &p, nil
+}
+
+// ListPreviewEnvironments returns every preview environment across all
+// apps, oldest created first: the order eviction and the global usage
+// view both need.
+func (db *DB) ListPreviewEnvironments(ctx context.Context) ([]PreviewEnvironment, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT `+previewEnvironmentColumns+`
+		FROM preview_environments ORDER BY created_at ASC, id ASC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list preview environments: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var out []PreviewEnvironment
+	for rows.Next() {
+		p, err := scanPreviewEnvironment(rows.Scan)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan preview environment row: %w", err)
+		}
+		out = append(out, *p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate preview environment rows: %w", err)
+	}
+	return out, nil
+}
+
+// SetPreviewEnvironmentCommentID records the provider comment ID of a
+// preview's status comment without touching any other column.
+func (db *DB) SetPreviewEnvironmentCommentID(ctx context.Context, id string, commentID int64) error {
+	res, err := db.ExecContext(ctx, `UPDATE preview_environments SET comment_id = ? WHERE id = ?`, commentID, id)
+	if err != nil {
+		return fmt.Errorf("store: set preview environment %q comment id: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set preview environment %q comment id: rows affected: %w", id, err)
+	}
+	if n == 0 {
+		return ErrPreviewEnvironmentNotFound
+	}
+	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -106,6 +107,7 @@ type fakeGitHubAppClient struct {
 	createHookCall bool
 
 	commentErr   error
+	prComments   fakePRComments
 	commentCalls []fakeIssueComment
 
 	statusErr   error
@@ -180,9 +182,20 @@ func (f *fakeGitHubAppClient) CreateRepoWebhook(_ context.Context, _, _, _, _, h
 	return f.createHookErr
 }
 
-func (f *fakeGitHubAppClient) CreateIssueComment(_ context.Context, _, _, owner, repo string, number int, body string) error {
+func (f *fakeGitHubAppClient) CreateIssueComment(_ context.Context, _, _, owner, repo string, number int, body string) (int64, error) {
 	f.commentCalls = append(f.commentCalls, fakeIssueComment{owner: owner, repo: repo, number: number, body: body})
-	return f.commentErr
+	if f.commentErr != nil {
+		return 0, f.commentErr
+	}
+	return f.prComments.create(body), nil
+}
+
+func (f *fakeGitHubAppClient) ListIssueComments(_ context.Context, _, _, _, _ string, _ int) ([]gitprovider.Comment, error) {
+	return f.prComments.list()
+}
+
+func (f *fakeGitHubAppClient) UpdateIssueComment(_ context.Context, _, _, _, _ string, commentID int64, body string) error {
+	return f.prComments.update(commentID, body)
 }
 
 func (f *fakeGitHubAppClient) CreateCommitStatus(_ context.Context, _, _, owner, repo, sha string, state githubapp.CommitStatusState, targetURL, description, statusContext string) error {

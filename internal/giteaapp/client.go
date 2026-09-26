@@ -281,20 +281,6 @@ type createIssueCommentRequest struct {
 	Body string `json:"body"`
 }
 
-// CreateIssueComment posts a new comment on issue/pull request number of
-// fullName ("owner/repo"), authenticated with an OAuth access token the
-// same way CreateRepoWebhook is. Gitea's REST API has no distinct "pull
-// request comment" endpoint: a PR is also an issue, the same shape
-// GitHub's own CreateIssueComment documents.
-func (c *Client) CreateIssueComment(ctx context.Context, instanceURL, accessToken, fullName string, number int, body string) error {
-	payload, err := json.Marshal(createIssueCommentRequest{Body: body})
-	if err != nil {
-		return fmt.Errorf("giteaapp: marshal issue comment request: %w", err)
-	}
-	u := fmt.Sprintf("%s/repos/%s/issues/%d/comments", apiBaseURL(instanceURL), fullName, number)
-	return c.do(ctx, http.MethodPost, u, "Bearer "+accessToken, bytes.NewReader(payload), nil)
-}
-
 // CommitStatusState is Gitea's own documented "state" enum for
 // POST .../statuses/{sha}.
 type CommitStatusState string

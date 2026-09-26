@@ -9,6 +9,7 @@ package gitprovider
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -59,4 +60,24 @@ func Execute(client *http.Client, req *http.Request, prefix, api, label string, 
 		return fmt.Errorf("%s: decode response for %s: %w", prefix, label, err)
 	}
 	return nil
+}
+
+// Comment is one pull request comment as the preview upsert sees it.
+type Comment struct {
+	ID   int64
+	Body string
+}
+
+// MaxCommentPages bounds how many pages a comment lookup walks, so a PR
+// with a huge thread cannot turn one status update into unbounded requests.
+const MaxCommentPages = 10
+
+// CommentPageSize is the page size every provider's comment listing asks for.
+const CommentPageSize = 100
+
+// IsNotFound reports whether err is a provider 404, meaning the resource
+// (typically a comment an operator deleted) no longer exists.
+func IsNotFound(err error) bool {
+	var apiErr *APIError
+	return errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound
 }

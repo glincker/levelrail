@@ -886,6 +886,7 @@ func run(logger *slog.Logger) error {
 	// Always runs, the same "always non-nil, no secretsManager gate"
 	// shape as the scheduled task scheduler just above: nothing about
 	// this loop needs a master key configured.
+	go sweepOrphanPreviewsOnce(ctx, logger, apiRouter)
 	go func() {
 		if err := apiRouter.RunPreviewSweeper(ctx, previewSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("preview sweeper stopped", slog.String("error", err.Error()))
@@ -1974,6 +1975,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		),
 		api.WithResourceRecommendationLookback(resourceRecommendationLookback(logger)),
 		api.WithPreviewTTL(previewTTL(logger)),
+		api.WithPreviewLimits(previewLimits(logger)),
+		api.WithPreviewStuckAfter(previewStuckAfter(logger)),
 		api.WithInviteTTL(inviteTTL(logger)),
 		api.WithAuditLogRetention(auditLogRetention(logger)),
 		api.WithDeployApprovalTTL(deployApprovalTTL(logger)),

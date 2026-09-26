@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -95,6 +96,7 @@ type fakeBitbucketAppClient struct {
 	createHookCall bool
 
 	commentErr   error
+	prComments   fakePRComments
 	commentCalls []fakeBitbucketPRComment
 
 	statusErr   error
@@ -150,9 +152,20 @@ func (f *fakeBitbucketAppClient) CreateRepoWebhook(_ context.Context, _, _, hook
 	return f.createHookErr
 }
 
-func (f *fakeBitbucketAppClient) CreatePullRequestComment(_ context.Context, _, fullName string, prID int, body string) error {
+func (f *fakeBitbucketAppClient) CreatePullRequestComment(_ context.Context, _, fullName string, prID int, body string) (int64, error) {
 	f.commentCalls = append(f.commentCalls, fakeBitbucketPRComment{fullName: fullName, prID: prID, body: body})
-	return f.commentErr
+	if f.commentErr != nil {
+		return 0, f.commentErr
+	}
+	return f.prComments.create(body), nil
+}
+
+func (f *fakeBitbucketAppClient) ListPullRequestComments(_ context.Context, _, _ string, _ int) ([]gitprovider.Comment, error) {
+	return f.prComments.list()
+}
+
+func (f *fakeBitbucketAppClient) UpdatePullRequestComment(_ context.Context, _, _ string, _ int, commentID int64, body string) error {
+	return f.prComments.update(commentID, body)
 }
 
 func (f *fakeBitbucketAppClient) CreateCommitBuildStatus(_ context.Context, _, fullName, commit string, state bitbucketapp.BuildStatusState, targetURL, description, key string) error {

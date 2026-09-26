@@ -187,13 +187,17 @@ func TestClient_CreateIssueComment(t *testing.T) {
 			t.Fatalf("decode request body: %v", err)
 		}
 		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":9}`))
 	}))
 	defer srv.Close()
 
 	c := &Client{HTTP: srv.Client()}
-	err := c.CreateIssueComment(context.Background(), srv.URL, "tok", "acme/widgets", 42, "preview deployed")
+	id, err := c.CreateIssueComment(context.Background(), srv.URL, "tok", "acme/widgets", 42, "preview deployed")
 	if err != nil {
 		t.Fatalf("CreateIssueComment() error = %v", err)
+	}
+	if id != 9 {
+		t.Errorf("comment id = %d, want 9", id)
 	}
 	if gotBody.Body != "preview deployed" {
 		t.Errorf("body = %q, want %q", gotBody.Body, "preview deployed")
@@ -208,7 +212,7 @@ func TestClient_CreateIssueComment_ErrorResponse(t *testing.T) {
 	defer srv.Close()
 
 	c := &Client{HTTP: srv.Client()}
-	err := c.CreateIssueComment(context.Background(), srv.URL, "tok", "acme/widgets", 42, "body")
+	_, err := c.CreateIssueComment(context.Background(), srv.URL, "tok", "acme/widgets", 42, "body")
 	if err == nil {
 		t.Fatal("CreateIssueComment() error = nil, want an error for a 404 response")
 	}

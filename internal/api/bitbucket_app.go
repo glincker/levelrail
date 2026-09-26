@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -47,7 +48,9 @@ type BitbucketAppClient interface {
 	GetRepo(ctx context.Context, accessToken, fullName string) (bitbucketapp.Repo, error)
 	ListBranches(ctx context.Context, accessToken, fullName string) ([]bitbucketapp.Branch, error)
 	CreateRepoWebhook(ctx context.Context, accessToken, fullName, hookURL, secret string) error
-	CreatePullRequestComment(ctx context.Context, accessToken, fullName string, prID int, body string) error
+	CreatePullRequestComment(ctx context.Context, accessToken, fullName string, prID int, body string) (int64, error)
+	ListPullRequestComments(ctx context.Context, accessToken, fullName string, prID int) ([]gitprovider.Comment, error)
+	UpdatePullRequestComment(ctx context.Context, accessToken, fullName string, prID int, commentID int64, body string) error
 	CreateCommitBuildStatus(ctx context.Context, accessToken, fullName, commit string, state bitbucketapp.BuildStatusState, targetURL, description, key string) error
 }
 

@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/url"
 	"strings"
@@ -82,13 +81,9 @@ func (rt *Router) notifyPreviewPendingGitHub(ctx context.Context, appName string
 	}
 }
 
-// notifyPreviewSuccessGitHub posts the live preview URL as a PR comment
-// and sets a success commit status pointing at it: the two GitHub-visible
-// signals a successful preview deploy/redeploy produces. previewURL is
-// "" when no control-plane primary domain is configured (previewDomain's
-// own doc comment): the comment and status still post, just without a
-// link to follow.
-func (rt *Router) notifyPreviewSuccessGitHub(ctx context.Context, appName string, gs store.GitSource, prNumber int, headSHA, previewURL string) {
+// notifyPreviewSuccessGitHub sets a success commit status pointing at the live
+// preview URL. The PR comment is upserted separately (upsertPreviewComment).
+func (rt *Router) notifyPreviewSuccessGitHub(ctx context.Context, appName string, gs store.GitSource, headSHA, previewURL string) {
 	instanceURL, token, owner, repo, ok := rt.previewGitHubTarget(ctx, appName, gs)
 	if !ok {
 		return
@@ -96,28 +91,19 @@ func (rt *Router) notifyPreviewSuccessGitHub(ctx context.Context, appName string
 
 	description := "Preview deployed"
 	targetURL := ""
-	body := fmt.Sprintf("Preview environment deployed for commit `%s`.", headSHA)
 	if previewURL != "" {
 		targetURL = "https://" + previewURL
 		description = "Preview deployed: " + previewURL
-		body = fmt.Sprintf("Preview environment deployed for commit `%s`: %s", headSHA, targetURL)
 	}
 
 	if err := rt.githubAppClient.CreateCommitStatus(ctx, instanceURL, token, owner, repo, headSHA,
 		githubapp.CommitStatusSuccess, targetURL, description, previewStatusContext); err != nil {
 		rt.logger.Warn("api: post preview success commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
-	if err := rt.githubAppClient.CreateIssueComment(ctx, instanceURL, token, owner, repo, prNumber, body); err != nil {
-		rt.logger.Warn("api: post preview success pr comment failed", slog.String("error", err.Error()), slog.String("app_name", appName), slog.Int("pr_number", prNumber))
-	}
 }
 
-// notifyPreviewFailureGitHub sets a failure commit status. No PR
-// comment, unlike notifyPreviewSuccessGitHub/notifyPreviewTornDownGitHub:
-// GET .../previews already surfaces a failed deploy's own reason through
-// StatusReason, and a failing build commonly gets redeployed on the very
-// next push, which would otherwise leave a stale failure comment sitting
-// on the PR.
+// notifyPreviewFailureGitHub sets a failure commit status. The failure reason
+// also lands in the single PR comment (upsertPreviewComment).
 func (rt *Router) notifyPreviewFailureGitHub(ctx context.Context, appName string, gs store.GitSource, headSHA, reason string) {
 	instanceURL, token, owner, repo, ok := rt.previewGitHubTarget(ctx, appName, gs)
 	if !ok {
@@ -126,20 +112,5 @@ func (rt *Router) notifyPreviewFailureGitHub(ctx context.Context, appName string
 	if err := rt.githubAppClient.CreateCommitStatus(ctx, instanceURL, token, owner, repo, headSHA,
 		githubapp.CommitStatusFailure, "", truncateStatusDescription(reason, githubStatusDescriptionMax), previewStatusContext); err != nil {
 		rt.logger.Warn("api: post preview failure commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
-	}
-}
-
-// notifyPreviewTornDownGitHub posts a teardown notice on the PR: the
-// comment counterpart to a torn-down preview's own commit status, which
-// is left alone (the last pending/success/failure status a closed PR
-// had stays exactly as GitHub already shows it).
-func (rt *Router) notifyPreviewTornDownGitHub(ctx context.Context, preview store.PreviewEnvironment, gs store.GitSource) {
-	instanceURL, token, owner, repo, ok := rt.previewGitHubTarget(ctx, preview.AppName, gs)
-	if !ok {
-		return
-	}
-	body := fmt.Sprintf("Preview environment `%s` torn down.", preview.PreviewAppID)
-	if err := rt.githubAppClient.CreateIssueComment(ctx, instanceURL, token, owner, repo, preview.PRNumber, body); err != nil {
-		rt.logger.Warn("api: post preview teardown pr comment failed", slog.String("error", err.Error()), slog.String("app_name", preview.AppName), slog.Int("pr_number", preview.PRNumber))
 	}
 }

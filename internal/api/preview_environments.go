@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,6 +28,11 @@ type PreviewEnvironmentStore interface {
 	ListPreviewEnvironmentsByApp(ctx context.Context, appName string) ([]store.PreviewEnvironment, error)
 	DeletePreviewEnvironment(ctx context.Context, id string) error
 	ListStalePreviewEnvironments(ctx context.Context, cutoff time.Time) ([]store.PreviewEnvironment, error)
+	ListPreviewEnvironments(ctx context.Context) ([]store.PreviewEnvironment, error)
+	SetPreviewEnvironmentCommentID(ctx context.Context, id string, commentID int64) error
+	GetPreviewAppSettings(ctx context.Context, appName string) (store.PreviewAppSettings, error)
+	ListPreviewAppSettings(ctx context.Context) (map[string]store.PreviewAppSettings, error)
+	SavePreviewAppSettings(ctx context.Context, s store.PreviewAppSettings) error
 
 	// SavePreviewEphemeralDatabase through DeletePreviewEphemeralDatabase
 	// back the ephemeralInPreviews lifecycle
@@ -79,67 +85,45 @@ func (rt *Router) handlePullRequestWebhookEvent(ctx context.Context, appName str
 	if rt.builder == nil {
 		return http.StatusNotImplemented, "git push deploys are not configured on this control plane\n"
 	}
-	return rt.deployPreviewEnvironment(ctx, appName, gs, ev)
+	return rt.deployPreviewEnvironment(ctx, appName, gs, ev, false)
 }
 
-// deployPreviewEnvironment creates a new preview_environments row (or
-// reuses the existing one for a synchronize on an already-open PR),
-// fetches the PR's head commit, deploys it under previewAppName, and
-// records the outcome. A failure at any step marks the row Failed with
-// a reason rather than leaving it stuck Deploying; a domain collision
+// deployPreviewEnvironment gates a pull request event (fork approval,
+// concurrency cap), then deploys the PR's head commit under previewAppName
+// and records the outcome. A failure at any step marks the row Failed with a
+// reason rather than leaving it stuck Deploying; a domain collision
 // specifically does not fail the whole preview (see deployPreviewSingle),
 // since a reachable preview with no vanity domain is more useful than no
-// preview at all.
-func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, gs store.GitSource, ev webhook.PullRequestEvent) (int, string) {
+// preview at all. approved lets one operator-approved fork PR through the
+// fork gate.
+func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, gs store.GitSource, ev webhook.PullRequestEvent, approved bool) (int, string) {
 	previewName := previewAppName(appName, ev.Number)
-	now := time.Now().UTC().Format(time.RFC3339Nano)
 
-	preview, err := rt.previewEnvironments.GetPreviewEnvironmentByAppAndPR(ctx, appName, ev.Number)
-	switch {
-	case errors.Is(err, store.ErrPreviewEnvironmentNotFound):
-		id, idErr := store.NewPreviewEnvironmentID()
-		if idErr != nil {
-			rt.logger.Error("api: pull request webhook: mint preview id failed", slog.String("error", idErr.Error()))
-			return http.StatusInternalServerError, "internal error\n"
-		}
-		preview = &store.PreviewEnvironment{
-			ID: id, AppName: appName, PRNumber: ev.Number, PreviewAppID: previewName,
-			Branch: ev.HeadRef, HeadSHA: ev.HeadSHA, Status: store.PreviewStatusDeploying,
-			CreatedAt: now, UpdatedAt: now,
-		}
-		if err := rt.previewEnvironments.SavePreviewEnvironment(ctx, *preview); err != nil {
-			rt.logger.Error("api: pull request webhook: save preview failed", slog.String("error", err.Error()))
-			return http.StatusInternalServerError, "internal error\n"
-		}
-	case err != nil:
-		rt.logger.Error("api: pull request webhook: load preview failed", slog.String("error", err.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
-		return http.StatusInternalServerError, "internal error\n"
-	default:
-		preview.Branch, preview.HeadSHA, preview.Status, preview.UpdatedAt = ev.HeadRef, ev.HeadSHA, store.PreviewStatusDeploying, now
-		if err := rt.previewEnvironments.UpdatePreviewEnvironment(ctx, *preview); err != nil {
-			rt.logger.Error("api: pull request webhook: update preview failed", slog.String("error", err.Error()))
-			return http.StatusInternalServerError, "internal error\n"
-		}
+	preview, done, status, message := rt.beginPreview(ctx, appName, gs, ev, approved)
+	if done {
+		return status, message
 	}
 
 	rt.notifyPreviewPending(ctx, appName, gs, ev.HeadSHA)
+	rt.upsertPreviewComment(ctx, gs, preview, previewCommentBuilding, "")
 
 	token, err := rt.resolveGitSourceDeployToken(ctx, appName)
 	if err != nil {
 		rt.logger.Error("api: pull request webhook: resolve deploy token failed", slog.String("error", err.Error()), slog.String("app_name", appName))
-		rt.finishPreviewFailed(ctx, gs, *preview, "resolve deploy token: "+err.Error())
+		rt.finishPreviewFailed(ctx, gs, preview, "resolve deploy token: "+err.Error())
 		return http.StatusInternalServerError, "deploy failed\n"
 	}
 
 	sourceDir, cleanup, err := rt.gitSourceFetch(ctx, gs.RepoURL, ev.HeadSHA, token)
 	if err != nil {
 		rt.logger.Error("api: pull request webhook: fetch source failed", slog.String("error", err.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
-		rt.finishPreviewFailed(ctx, gs, *preview, "fetch source: "+err.Error())
+		rt.finishPreviewFailed(ctx, gs, preview, "fetch source: "+err.Error())
 		return http.StatusInternalServerError, "deploy failed\n"
 	}
 	defer cleanup()
 
 	wantDomain := rt.previewDomain(ctx, appName, ev.Number)
+	vars := previewEnvVars{PRNumber: ev.Number, Branch: ev.HeadRef}
 
 	var (
 		usedDomain     string
@@ -147,13 +131,13 @@ func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, 
 		deployErr      error
 	)
 	if len(gs.Services) > 0 {
-		usedDomain, domainConflict, deployErr = rt.deployPreviewMulti(ctx, previewName, gs, sourceDir, ev.HeadSHA, wantDomain)
+		usedDomain, domainConflict, deployErr = rt.deployPreviewMulti(ctx, previewName, gs, sourceDir, ev.HeadSHA, wantDomain, vars)
 	} else {
-		usedDomain, domainConflict, deployErr = rt.deployPreviewSingle(ctx, appName, previewName, gs, sourceDir, ev.HeadRef, ev.HeadSHA, wantDomain)
+		usedDomain, domainConflict, deployErr = rt.deployPreviewSingle(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain, vars)
 	}
 	if deployErr != nil {
 		rt.logger.Error("api: pull request webhook: deploy failed", slog.String("error", deployErr.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
-		rt.finishPreviewFailed(ctx, gs, *preview, deployErr.Error())
+		rt.finishPreviewFailed(ctx, gs, preview, deployErr.Error())
 		return http.StatusInternalServerError, "deploy failed\n"
 	}
 
@@ -184,7 +168,8 @@ func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, 
 		return http.StatusInternalServerError, "internal error\n"
 	}
 
-	rt.notifyPreviewSuccess(ctx, appName, gs, ev.Number, ev.HeadSHA, usedDomain)
+	rt.notifyPreviewSuccess(ctx, appName, gs, ev.HeadSHA, usedDomain)
+	rt.upsertPreviewComment(ctx, gs, preview, previewCommentReady, preview.StatusReason)
 
 	rt.logger.Info("api: pull request webhook: preview deployed", slog.String("app_name", appName), slog.Int("pr_number", ev.Number), slog.String("preview_app", previewName))
 	return statusCode, fmt.Sprintf("preview deployed: %s\n", previewName)
@@ -193,15 +178,40 @@ func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, 
 // finishPreviewFailed marks preview Failed with reason, logged but not
 // itself returned as an error: called only from paths that are already
 // about to report a failure to the webhook caller. Also posts a failure
-// commit status (notifyPreviewFailure), gs being the same connected git
-// source every caller already has in scope.
-func (rt *Router) finishPreviewFailed(ctx context.Context, gs store.GitSource, preview store.PreviewEnvironment, reason string) {
+// commit status and updates the pull request's status comment, gs being the
+// same connected git source every caller already has in scope.
+func (rt *Router) finishPreviewFailed(ctx context.Context, gs store.GitSource, preview *store.PreviewEnvironment, reason string) {
 	preview.Status, preview.StatusReason = store.PreviewStatusFailed, reason
 	preview.UpdatedAt = time.Now().UTC().Format(time.RFC3339Nano)
-	if err := rt.previewEnvironments.UpdatePreviewEnvironment(ctx, preview); err != nil {
+	if err := rt.previewEnvironments.UpdatePreviewEnvironment(ctx, *preview); err != nil {
 		rt.logger.Error("api: pull request webhook: mark preview failed failed", slog.String("error", err.Error()), slog.String("preview_id", preview.ID))
 	}
 	rt.notifyPreviewFailure(ctx, preview.AppName, gs, preview.HeadSHA, reason)
+	rt.upsertPreviewComment(ctx, gs, preview, previewCommentFailed, reason)
+}
+
+// previewEnvVars is what a preview deploy injects into every container it
+// starts, so the app can know where it is running.
+type previewEnvVars struct {
+	PRNumber int
+	Branch   string
+}
+
+// injectPreviewEnv sets PREVIEW_PR_NUMBER and PREVIEW_BRANCH, plus
+// PREVIEW_URL when domain is known, on a copy of env.
+func injectPreviewEnv(env map[string]spec.EnvVar, vars previewEnvVars, domain string) map[string]spec.EnvVar {
+	out := make(map[string]spec.EnvVar, len(env)+3)
+	for k, v := range env {
+		out[k] = v
+	}
+	out["PREVIEW_PR_NUMBER"] = spec.EnvVar{Value: strconv.Itoa(vars.PRNumber)}
+	out["PREVIEW_BRANCH"] = spec.EnvVar{Value: vars.Branch}
+	if domain != "" {
+		out["PREVIEW_URL"] = spec.EnvVar{Value: "https://" + domain}
+	} else {
+		delete(out, "PREVIEW_URL")
+	}
+	return out
 }
 
 // domainSlice returns nil for an empty domain, rather than a
@@ -244,7 +254,7 @@ func applyPreviewEnvOverrides(svcSpec *spec.Service, overrides map[string]string
 // host:port is strictly more useful than no preview, and returns
 // domainConflict=true so the caller can record why the preview has no
 // domain instead of silently swallowing it.
-func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName string, gs store.GitSource, sourceDir, branch, headSHA, wantDomain string) (usedDomain string, domainConflict bool, err error) {
+func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName string, gs store.GitSource, sourceDir, headSHA, wantDomain string, vars previewEnvVars) (usedDomain string, domainConflict bool, err error) {
 	prod, err := rt.apps.GetDesiredService(ctx, appName)
 	if err != nil {
 		return "", false, fmt.Errorf("load production service %q: %w", appName, err)
@@ -256,10 +266,11 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 	if err != nil {
 		return "", false, fmt.Errorf("load branch env overrides for %q: %w", appName, err)
 	}
-	if err := applyBranchEnvOverrides(ctx, &svcSpec, appName, branch, branchOverrides, rt.secrets); err != nil {
+	if err := applyBranchEnvOverrides(ctx, &svcSpec, appName, vars.Branch, branchOverrides, rt.secrets); err != nil {
 		return "", false, fmt.Errorf("apply branch env overrides for %q: %w", appName, err)
 	}
 	svcSpec.Domains = domainSlice(wantDomain)
+	svcSpec.Env = injectPreviewEnv(svcSpec.Env, vars, wantDomain)
 	req := deploy.Request{ServiceName: previewName, Service: svcSpec, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepo: previewName}
 
 	_, deployErr := rt.builder.Deploy(ctx, req, build.SlogProgress(rt.logger))
@@ -267,6 +278,7 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 	var domainTaken *store.ErrDomainTaken
 	if deployErr != nil && wantDomain != "" && errors.As(deployErr, &domainTaken) {
 		req.Service.Domains = nil
+		req.Service.Env = injectPreviewEnv(req.Service.Env, vars, "")
 		if _, retryErr := rt.builder.Deploy(ctx, req, build.SlogProgress(rt.logger)); retryErr != nil {
 			return "", false, fmt.Errorf("deploy without domain after domain conflict: %w", retryErr)
 		}
@@ -294,8 +306,16 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 // reports that service's failure independently of its siblings, which
 // this treats as a domain-conflict-shaped partial success (the rest of
 // the preview is still reachable) rather than special-casing the retry.
-func (rt *Router) deployPreviewMulti(ctx context.Context, previewName string, gs store.GitSource, sourceDir, headSHA, wantDomain string) (usedDomain string, domainConflict bool, err error) {
+func (rt *Router) deployPreviewMulti(ctx context.Context, previewName string, gs store.GitSource, sourceDir, headSHA, wantDomain string, vars previewEnvVars) (usedDomain string, domainConflict bool, err error) {
 	services, primaryKey := previewServicesSpec(gs.Services, wantDomain)
+	for k, svc := range services {
+		domain := ""
+		if len(svc.Domains) > 0 {
+			domain = svc.Domains[0]
+		}
+		svc.Env = injectPreviewEnv(svc.Env, vars, domain)
+		services[k] = svc
+	}
 
 	outcomes, err := rt.builder.DeploySpec(ctx, deploy.MultiRequest{
 		AppName: previewName, Services: services, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepoBase: previewName,
@@ -435,99 +455,6 @@ func (rt *Router) tagPreviewWithEnvironment(ctx context.Context, previewName str
 		if err := rt.environments.SetServiceEnvironment(ctx, svc.Name, environmentID); err != nil {
 			return fmt.Errorf("tag %q: %w", svc.Name, err)
 		}
-	}
-	return nil
-}
-
-// teardownPullRequestPreview deletes a closed pull request's preview
-// app and its member service(s), then its preview_environments row.
-// Idempotent: a PR with no known preview (already torn down, or one
-// that was opened before previews were enabled) is reported as ignored,
-// not an error, the same "closing a PR twice" tolerance a real webhook
-// delivery retry needs.
-func (rt *Router) teardownPullRequestPreview(ctx context.Context, appName string, prNumber int) (int, string) {
-	preview, err := rt.previewEnvironments.GetPreviewEnvironmentByAppAndPR(ctx, appName, prNumber)
-	if errors.Is(err, store.ErrPreviewEnvironmentNotFound) {
-		return http.StatusOK, fmt.Sprintf("ignored: no preview environment found for pr #%d\n", prNumber)
-	}
-	if err != nil {
-		rt.logger.Error("api: pull request webhook: load preview for teardown failed", slog.String("error", err.Error()), slog.String("app_name", appName), slog.Int("pr_number", prNumber))
-		return http.StatusInternalServerError, "internal error\n"
-	}
-
-	return rt.teardownPreviewRecord(ctx, *preview)
-}
-
-// teardownPreviewRecord is teardownPullRequestPreview's and
-// handleTeardownPreview's (preview_environments_handlers.go, the manual
-// teardown action) shared implementation: delete every member service,
-// then the app row, then the preview_environments row itself, in that
-// order, so a crash or a failed step always leaves something concrete
-// (the row, or the still-linked app) for the next attempt to find and
-// retry rather than an orphan with no record at all.
-func (rt *Router) teardownPreviewRecord(ctx context.Context, preview store.PreviewEnvironment) (int, string) {
-	failed := rt.teardownPreviewApp(ctx, preview.PreviewAppID)
-	failed = append(failed, rt.teardownPreviewEphemeralDatabases(ctx, preview.ID)...)
-	if len(failed) > 0 {
-		preview.Status = store.PreviewStatusFailed
-		preview.StatusReason = fmt.Sprintf("teardown left %d resource(s) undeleted: %s", len(failed), strings.Join(failed, ", "))
-		preview.UpdatedAt = time.Now().UTC().Format(time.RFC3339Nano)
-		if err := rt.previewEnvironments.UpdatePreviewEnvironment(ctx, preview); err != nil {
-			rt.logger.Error("api: preview teardown: record failure failed", slog.String("error", err.Error()), slog.String("preview_id", preview.ID))
-		}
-		rt.logger.Error("api: preview teardown partially failed", slog.String("app_name", preview.AppName), slog.Int("pr_number", preview.PRNumber), slog.Any("failed_resources", failed))
-		return http.StatusMultiStatus, fmt.Sprintf("preview teardown partially failed: %d resource(s) undeleted\n", len(failed))
-	}
-
-	if err := rt.previewEnvironments.DeletePreviewEnvironment(ctx, preview.ID); err != nil {
-		rt.logger.Error("api: preview teardown: delete record failed", slog.String("error", err.Error()), slog.String("preview_id", preview.ID))
-		return http.StatusInternalServerError, "internal error\n"
-	}
-
-	rt.notifyPreviewTornDown(ctx, preview)
-
-	rt.logger.Info("api: preview torn down", slog.String("app_name", preview.AppName), slog.Int("pr_number", preview.PRNumber))
-	return http.StatusOK, fmt.Sprintf("preview %q torn down\n", preview.PreviewAppID)
-}
-
-// teardownPreviewApp deletes every DesiredService belonging to
-// previewAppID and, once none remain, the store.App row itself,
-// mirroring handleDeleteApp/deleteAppIfOrphaned's own two-step deletion
-// exactly. Returns the names of any services that failed to delete;
-// nil means teardown fully succeeded. A previewAppID with no matching
-// store.App (already deleted, e.g. a retried teardown) is treated as
-// already torn down, not a failure.
-func (rt *Router) teardownPreviewApp(ctx context.Context, previewAppID string) []string {
-	app, err := rt.appGroups.GetAppByName(ctx, previewAppID)
-	if errors.Is(err, store.ErrAppNotFound) {
-		return nil
-	}
-	if err != nil {
-		rt.logger.Error("api: teardown preview app: load app failed", slog.String("error", err.Error()), slog.String("preview_app_id", previewAppID))
-		return []string{previewAppID}
-	}
-
-	services, err := rt.appGroups.ListServicesByApp(ctx, app.ID)
-	if err != nil {
-		rt.logger.Error("api: teardown preview app: list services failed", slog.String("error", err.Error()), slog.String("preview_app_id", previewAppID))
-		return []string{previewAppID}
-	}
-
-	var failed []string
-	for _, svc := range services {
-		if err := rt.apps.DeleteDesiredService(ctx, svc.Name); err != nil && !errors.Is(err, store.ErrServiceNotFound) {
-			rt.logger.Error("api: teardown preview app: delete service failed", slog.String("error", err.Error()), slog.String("service", svc.Name))
-			failed = append(failed, svc.Name)
-			continue
-		}
-		rt.teardownServiceContainers(svc.Name, svc.NodeID)
-	}
-	if len(failed) > 0 {
-		return failed
-	}
-
-	if err := rt.appGroups.DeleteApp(ctx, app.ID); err != nil && !errors.Is(err, store.ErrAppNotFound) {
-		rt.logger.Error("api: teardown preview app: delete app row failed", slog.String("error", err.Error()), slog.String("preview_app_id", previewAppID))
 	}
 	return nil
 }

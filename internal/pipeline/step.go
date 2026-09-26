@@ -77,6 +77,7 @@ func (jr *jobRun) stepEnv(step Step, sc Scope) (map[string]string, error) {
 		"CI": "true", "PIPELINE_RUN_ID": jr.run.ID, "PIPELINE_RUN_NUMBER": fmt.Sprint(jr.run.Number), "PIPELINE_JOB": jr.row.Key,
 		"PIPELINE_SHA": jr.run.CommitSHA, "PIPELINE_REF": jr.run.Ref, "PIPELINE_APP": jr.run.AppName,
 	}
+	maps.Copy(env, jr.runEnv)
 	for _, layer := range []map[string]string{jr.def.Env, jr.jd.Env, step.Env} {
 		for k, v := range layer {
 			iv, err := Interpolate(v, sc)

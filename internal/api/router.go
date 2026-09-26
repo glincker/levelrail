@@ -246,6 +246,15 @@ type Router struct {
 	// for a missed pull-request-closed webhook delivery. 0 means "use
 	// the default", set via WithPreviewTTL.
 	previewTTL time.Duration
+	// previewLimits caps live preview environments (WithPreviewLimits);
+	// previewAdmitMu serializes the check-evict-save section that enforces it.
+	previewLimits  PreviewLimits
+	previewAdmitMu sync.Mutex
+	// previewDeploys tracks approval-triggered background deploys.
+	previewDeploys sync.WaitGroup
+	// previewStuckAfter is how long a preview may sit in deploying before the
+	// orphan sweep marks it failed (WithPreviewStuckAfter).
+	previewStuckAfter time.Duration
 	// auditLogRetention overrides defaultAuditLogRetention
 	// (audit_retention.go): how long an audit_log row survives before
 	// PurgeOldAuditEntries removes it. 0 means "use the default", set via

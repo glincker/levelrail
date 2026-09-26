@@ -123,6 +123,10 @@ func (c *Client) do(ctx context.Context, baseURL, method, path string, authHeade
 // GET or a bodyless POST, which is why do itself deliberately has no
 // body parameter (see its own doc comment).
 func (c *Client) doWithBody(ctx context.Context, baseURL, method, path, authHeader string, body []byte) error {
+	return c.doJSON(ctx, baseURL, method, path, authHeader, body, nil)
+}
+
+func (c *Client) doJSON(ctx context.Context, baseURL, method, path, authHeader string, body []byte, out any) error {
 	req, err := http.NewRequestWithContext(ctx, method, baseURL+path, bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("%s: build request: %w", errPrefix, err)
@@ -134,7 +138,7 @@ func (c *Client) doWithBody(ctx context.Context, baseURL, method, path, authHead
 		req.Header.Set("Authorization", authHeader)
 	}
 
-	err = gitprovider.Execute(c.HTTP, req, errPrefix, apiName, method+" "+path, nil)
+	err = gitprovider.Execute(c.HTTP, req, errPrefix, apiName, method+" "+path, out)
 	var apiErr *apiError
 	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusForbidden {
 		return fmt.Errorf("%w: %w", ErrPermissionDenied, apiErr)
@@ -476,20 +480,6 @@ func (c *Client) CreateRepoWebhook(ctx context.Context, instanceURL, token, owne
 
 type createIssueCommentRequest struct {
 	Body string `json:"body"`
-}
-
-// CreateIssueComment posts a new comment on issue/pull request number of
-// owner/repo, authenticated with an installation access token the same
-// way CreateRepoWebhook is. GitHub's REST API has no distinct "pull
-// request comment" endpoint: a PR is also an issue, and this is the same
-// endpoint used for both.
-func (c *Client) CreateIssueComment(ctx context.Context, instanceURL, token, owner, repo string, number int, body string) error {
-	payload, err := json.Marshal(createIssueCommentRequest{Body: body})
-	if err != nil {
-		return fmt.Errorf("githubapp: marshal issue comment request: %w", err)
-	}
-	path := fmt.Sprintf("/repos/%s/%s/issues/%d/comments", url.PathEscape(owner), url.PathEscape(repo), number)
-	return c.doWithBody(ctx, c.APIBaseURL(instanceURL), http.MethodPost, path, bearerPrefix+token, payload)
 }
 
 // CommitStatusState is GitHub's own documented "state" enum for POST

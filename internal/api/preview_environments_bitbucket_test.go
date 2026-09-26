@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
@@ -19,15 +20,21 @@ import (
 // matching setUpPreviewApp's own fixed-name convention for the app
 // itself.
 func bitbucketPullRequestBody() []byte {
+	return bitbucketPullRequestBodyFrom("acme/web")
+}
+
+func bitbucketPullRequestBodyFrom(headRepo string) []byte {
 	b, _ := json.Marshal(map[string]any{
 		"pullrequest": map[string]any{
 			"id": 42,
 			"source": map[string]any{
-				"branch": map[string]any{"name": "feature-x"},
-				"commit": map[string]any{"hash": "sha1"},
+				"branch":     map[string]any{"name": "feature-x"},
+				"commit":     map[string]any{"hash": "sha1"},
+				"repository": map[string]any{"full_name": headRepo},
 			},
 			"destination": map[string]any{
-				"branch": map[string]any{"name": "main"},
+				"branch":     map[string]any{"name": "main"},
+				"repository": map[string]any{"full_name": "acme/web"},
 			},
 		},
 	})
@@ -135,8 +142,7 @@ func TestHandlePullRequestWebhook_Bitbucket_PostPRComments_Disabled_NoBitbucketC
 }
 
 // TestHandlePullRequestWebhook_Bitbucket_PostPRComments_DeployFailed_PostsFailureStatusOnly
-// proves a failed deploy posts a failed build status, and deliberately
-// no pull request comment, mirroring the GitHub equivalent.
+// proves a failed deploy posts a failed build status, and the single status comment ends in the failed state.
 func TestHandlePullRequestWebhook_Bitbucket_PostPRComments_DeployFailed_PostsFailureStatusOnly(t *testing.T) {
 	rt, secret, builder, fakeClient := setUpPreviewAppWithBitbucketNotifications(t, true)
 	builder.errs = []error{context.DeadlineExceeded}
@@ -153,8 +159,8 @@ func TestHandlePullRequestWebhook_Bitbucket_PostPRComments_DeployFailed_PostsFai
 	if fakeClient.statusCalls[1].state != bitbucketapp.BuildStatusFailed {
 		t.Errorf("second status state = %q, want FAILED", fakeClient.statusCalls[1].state)
 	}
-	if len(fakeClient.commentCalls) != 0 {
-		t.Errorf("CreatePullRequestComment called %d times, want 0 on a failed deploy", len(fakeClient.commentCalls))
+	if len(fakeClient.commentCalls) != 1 || !strings.Contains(fakeClient.prComments.comments[0].Body, "Preview environment: failed") {
+		t.Errorf("status comment = %+v (created %d), want one comment ending in the failed state", fakeClient.prComments.comments, len(fakeClient.commentCalls))
 	}
 }
 
@@ -176,11 +182,11 @@ func TestHandlePullRequestWebhook_Bitbucket_PostPRComments_Teardown_PostsComment
 		t.Fatalf("closed: status = %d, body = %s", rec.Code, rec.Body.String())
 	}
 
-	if len(fakeClient.commentCalls) != 1 {
-		t.Fatalf("CreatePullRequestComment called %d times, want 1 for the teardown notice", len(fakeClient.commentCalls))
+	if len(fakeClient.commentCalls) != 0 {
+		t.Errorf("teardown created %d new comments, want the existing one edited in place", len(fakeClient.commentCalls))
 	}
-	if fakeClient.commentCalls[0].prID != 42 {
-		t.Errorf("teardown comment PR id = %d, want 42", fakeClient.commentCalls[0].prID)
+	if n := len(fakeClient.prComments.updates); n == 0 || !strings.Contains(fakeClient.prComments.updates[n-1].Body, "Preview environment: removed") {
+		t.Errorf("teardown updates = %+v, want the last edit to say removed", fakeClient.prComments.updates)
 	}
 }
 

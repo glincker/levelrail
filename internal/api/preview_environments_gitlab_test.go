@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
@@ -19,6 +20,10 @@ import (
 // same branch, matching setUpPreviewApp's own fixed-name convention for
 // the app itself.
 func gitlabPullRequestBody(action string) []byte {
+	return gitlabPullRequestBodyFrom(action, "org/web")
+}
+
+func gitlabPullRequestBodyFrom(action, sourcePath string) []byte {
 	b, _ := json.Marshal(map[string]any{
 		"object_attributes": map[string]any{
 			"iid":           42,
@@ -26,6 +31,8 @@ func gitlabPullRequestBody(action string) []byte {
 			"source_branch": "feature-x",
 			"target_branch": "main",
 			"last_commit":   map[string]any{"id": "sha1"},
+			"source":        map[string]any{"path_with_namespace": sourcePath},
+			"target":        map[string]any{"path_with_namespace": "org/web"},
 		},
 	})
 	return b
@@ -133,8 +140,7 @@ func TestHandlePullRequestWebhook_GitLab_PostPRComments_Disabled_NoGitLabCalls(t
 }
 
 // TestHandlePullRequestWebhook_GitLab_PostPRComments_DeployFailed_PostsFailureStatusOnly
-// proves a failed deploy posts a failure commit status, and deliberately
-// no merge request note, mirroring the GitHub equivalent.
+// proves a failed deploy posts a failure commit status, and the single status comment ends in the failed state.
 func TestHandlePullRequestWebhook_GitLab_PostPRComments_DeployFailed_PostsFailureStatusOnly(t *testing.T) {
 	rt, secret, builder, fakeClient := setUpPreviewAppWithGitLabNotifications(t, true)
 	builder.errs = []error{context.DeadlineExceeded}
@@ -151,8 +157,8 @@ func TestHandlePullRequestWebhook_GitLab_PostPRComments_DeployFailed_PostsFailur
 	if fakeClient.statusCalls[1].state != gitlabapp.CommitStateFailed {
 		t.Errorf("second status state = %q, want failed", fakeClient.statusCalls[1].state)
 	}
-	if len(fakeClient.noteCalls) != 0 {
-		t.Errorf("CreateMergeRequestNote called %d times, want 0 on a failed deploy", len(fakeClient.noteCalls))
+	if len(fakeClient.noteCalls) != 1 || !strings.Contains(fakeClient.prComments.comments[0].Body, "Preview environment: failed") {
+		t.Errorf("status comment = %+v (created %d), want one comment ending in the failed state", fakeClient.prComments.comments, len(fakeClient.noteCalls))
 	}
 }
 
@@ -174,11 +180,11 @@ func TestHandlePullRequestWebhook_GitLab_PostPRComments_Teardown_PostsNote(t *te
 		t.Fatalf("closed: status = %d, body = %s", rec.Code, rec.Body.String())
 	}
 
-	if len(fakeClient.noteCalls) != 1 {
-		t.Fatalf("CreateMergeRequestNote called %d times, want 1 for the teardown notice", len(fakeClient.noteCalls))
+	if len(fakeClient.noteCalls) != 0 {
+		t.Errorf("teardown created %d new comments, want the existing one edited in place", len(fakeClient.noteCalls))
 	}
-	if fakeClient.noteCalls[0].mrIID != 42 {
-		t.Errorf("teardown note MR IID = %d, want 42", fakeClient.noteCalls[0].mrIID)
+	if n := len(fakeClient.prComments.updates); n == 0 || !strings.Contains(fakeClient.prComments.updates[n-1].Body, "Preview environment: removed") {
+		t.Errorf("teardown updates = %+v, want the last edit to say removed", fakeClient.prComments.updates)
 	}
 }
 

@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/url"
 	"strings"
@@ -73,10 +72,9 @@ func (rt *Router) notifyPreviewPendingGitLab(ctx context.Context, appName string
 	}
 }
 
-// notifyPreviewSuccessGitLab posts the live preview URL as a merge
-// request note and sets a success commit status pointing at it,
-// mirroring notifyPreviewSuccessGitHub's own reasoning.
-func (rt *Router) notifyPreviewSuccessGitLab(ctx context.Context, appName string, gs store.GitSource, mrIID int, headSHA, previewURL string) {
+// notifyPreviewSuccessGitLab sets a success commit status pointing at the live
+// preview URL. The PR comment is upserted separately (upsertPreviewComment).
+func (rt *Router) notifyPreviewSuccessGitLab(ctx context.Context, appName string, gs store.GitSource, headSHA, previewURL string) {
 	instanceURL, accessToken, projectPath, ok := rt.previewGitLabTarget(ctx, appName, gs)
 	if !ok {
 		return
@@ -84,24 +82,19 @@ func (rt *Router) notifyPreviewSuccessGitLab(ctx context.Context, appName string
 
 	description := "Preview deployed"
 	targetURL := ""
-	body := fmt.Sprintf("Preview environment deployed for commit `%s`.", headSHA)
 	if previewURL != "" {
 		targetURL = "https://" + previewURL
 		description = "Preview deployed: " + previewURL
-		body = fmt.Sprintf("Preview environment deployed for commit `%s`: %s", headSHA, targetURL)
 	}
 
 	if err := rt.gitlabAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, projectPath, headSHA,
 		gitlabapp.CommitStateSuccess, targetURL, description, previewStatusContext); err != nil {
 		rt.logger.Warn("api: post preview success gitlab commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
-	if err := rt.gitlabAppClient.CreateMergeRequestNote(ctx, instanceURL, accessToken, projectPath, mrIID, body); err != nil {
-		rt.logger.Warn("api: post preview success gitlab merge request note failed", slog.String("error", err.Error()), slog.String("app_name", appName), slog.Int("mr_iid", mrIID))
-	}
 }
 
-// notifyPreviewFailureGitLab sets a failure commit status, no merge
-// request note, mirroring notifyPreviewFailureGitHub's own reasoning.
+// notifyPreviewFailureGitLab sets a failure commit status. The failure reason
+// also lands in the single PR comment (upsertPreviewComment).
 func (rt *Router) notifyPreviewFailureGitLab(ctx context.Context, appName string, gs store.GitSource, headSHA, reason string) {
 	instanceURL, accessToken, projectPath, ok := rt.previewGitLabTarget(ctx, appName, gs)
 	if !ok {
@@ -110,18 +103,5 @@ func (rt *Router) notifyPreviewFailureGitLab(ctx context.Context, appName string
 	if err := rt.gitlabAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, projectPath, headSHA,
 		gitlabapp.CommitStateFailed, "", truncateStatusDescription(reason, gitLabStatusDescriptionMax), previewStatusContext); err != nil {
 		rt.logger.Warn("api: post preview failure gitlab commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
-	}
-}
-
-// notifyPreviewTornDownGitLab posts a teardown notice as a merge request
-// note, mirroring notifyPreviewTornDownGitHub's own reasoning.
-func (rt *Router) notifyPreviewTornDownGitLab(ctx context.Context, preview store.PreviewEnvironment, gs store.GitSource) {
-	instanceURL, accessToken, projectPath, ok := rt.previewGitLabTarget(ctx, preview.AppName, gs)
-	if !ok {
-		return
-	}
-	body := fmt.Sprintf("Preview environment `%s` torn down.", preview.PreviewAppID)
-	if err := rt.gitlabAppClient.CreateMergeRequestNote(ctx, instanceURL, accessToken, projectPath, preview.PRNumber, body); err != nil {
-		rt.logger.Warn("api: post preview teardown gitlab merge request note failed", slog.String("error", err.Error()), slog.String("app_name", preview.AppName), slog.Int("pr_number", preview.PRNumber))
 	}
 }

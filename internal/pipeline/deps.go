@@ -105,9 +105,12 @@ type Config struct {
 	Actions Actions
 	Secrets SecretResolver
 	Source  Source
-	Logger  *slog.Logger
-	Now     func() time.Time
-	NewID   func() string
+	// RunEnv returns extra environment variables for a run's steps, for
+	// example the preview environment a pull request run belongs to. Optional.
+	RunEnv func(ctx context.Context, run store.PipelineRun) map[string]string
+	Logger *slog.Logger
+	Now    func() time.Time
+	NewID  func() string
 
 	// NamePrefix namespaces containers and volumes (the brand short name).
 	NamePrefix string

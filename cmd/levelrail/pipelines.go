@@ -52,6 +52,7 @@ func startPipelines(ctx context.Context, logger *slog.Logger, b *brand.Brand, db
 		Store:      db,
 		Actions:    acts,
 		Source:     acts,
+		RunEnv:     apiRouter.PipelineRunEnv,
 		Logger:     logger,
 		NamePrefix: b.ShortName,
 		Runtime: func(nodeID string) (pipeline.Runtime, error) {

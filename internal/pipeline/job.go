@@ -29,6 +29,8 @@ type jobRun struct {
 	mask  *masker
 	sink  *logSink
 
+	runEnv map[string]string
+
 	mu          sync.Mutex
 	outputs     map[string]string
 	containerID string
@@ -73,6 +75,9 @@ func (e *Engine) runJob(ctx context.Context, run store.PipelineRun, def *Definit
 		outputs: map[string]string{},
 	}
 	_ = json.Unmarshal([]byte(row.OutputsJSON), &jr.outputs)
+	if e.cfg.RunEnv != nil {
+		jr.runEnv = e.cfg.RunEnv(ctx, run)
+	}
 	defer jr.sink.Close()
 
 	rt, err := e.cfg.Runtime(row.NodeID)

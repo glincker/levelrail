@@ -1759,6 +1759,7 @@ type SetAppEnvironmentRequest struct {
 // PreviewEnvironmentResource mirrors internal/api's
 // previewEnvironmentResource (internal/api/preview_environments_handlers.go).
 type PreviewEnvironmentResource struct {
+	AppName      string `json:"app_name"`
 	PRNumber     int    `json:"pr_number"`
 	PreviewAppID string `json:"preview_app_id"`
 	Branch       string `json:"branch"`
@@ -1769,6 +1770,9 @@ type PreviewEnvironmentResource struct {
 	CreatedAt    string `json:"created_at"`
 	UpdatedAt    string `json:"updated_at"`
 	Stale        bool   `json:"stale"`
+	ExpiresAt    string `json:"expires_at,omitempty"`
+	IsFork       bool   `json:"is_fork"`
+	HeadRepo     string `json:"head_repo,omitempty"`
 	// EphemeralDatabases mirrors internal/api's own EphemeralDatabases
 	// field: every disposable, preview-scoped database instance
 	// provisioned for this preview (spec.Database.EphemeralInPreviews),

@@ -384,7 +384,7 @@ levelrail-cli apps previews pr-status disable storefront
 - `success`: Live with preview URL
 - `failure`: Deploy failed (truncated to 140 characters on GitHub, 255 on GitLab; sent untruncated to Bitbucket and Gitea, which document no hard limit)
 
-A successful deploy or teardown also posts a comment: a GitHub/Gitea issue comment, a GitLab merge request note, or a Bitbucket pull request comment, whichever the connected source is.
+One comment per pull request is kept up to date through the whole lifecycle (building, ready, failed, removed): a GitHub/Gitea issue comment, a GitLab merge request note, or a Bitbucket pull request comment, whichever the connected source is. See "Limits, fork safety, and the status comment" below.
 
 **Implementation:** Each provider uses its own connected app/OAuth token the same way its repo/branch calls do (GitHub App installation token, GitLab/Gitea OAuth access token, Bitbucket OAuth consumer token). If `repo_url` isn't hosted on the connected instance for that provider, or no provider is connected and authorized at all, this is a silent no-op: logged, never failing the preview deploy.
 
@@ -434,6 +434,39 @@ levelrail-cli apps branch-env clear storefront <id>
 - Never touch the parent app's own running deploy or its own env
 - Single-service preview path only, the same limitation the unscoped override above has
 
+### Limits, fork safety, and the status comment
+
+**Concurrency caps.** The control plane caps live previews per app (`APP_PREVIEW_ENV_MAX_PER_APP`, default 10) and across the whole platform (`APP_PREVIEW_ENV_MAX_TOTAL`, default 50). `0` turns a cap off. When a new pull request would exceed a cap, the app's policy decides:
+
+- `evict_oldest` (default): the oldest live preview (by creation time) is removed to make room, and its pull request comment says why.
+- `reject`: the new pull request is not deployed. Its row shows `limit_reached` with the reason, and the pull request comment says so. The next push retries once a slot frees up.
+
+A push to a preview that is already live never counts as a new preview and is never evicted by its own redeploy. Pull requests waiting for approval hold no slot.
+
+**Fork pull requests.** A pull request whose head repository differs from the target repository does not get a preview, and never receives the app's environment variables or secrets, unless an operator opts in per app (`allow_fork_previews`, default off). A pull request whose payload names no repository is treated as a fork. Instead the preview shows `awaiting_approval` and the pull request comment explains why and how to approve. An operator approval deploys that commit once. A later push from the fork waits for approval again, and the previously approved deployment is removed.
+
+Approving is a security decision: the fork's code runs on your server with the app's environment variables and secrets. The dashboard asks you to confirm in plain words, and the CLI requires `--yes`.
+
+**Preview environment variables.** Every preview container gets `PREVIEW_URL` (when a domain was assigned), `PREVIEW_PR_NUMBER` and `PREVIEW_BRANCH`. Pipeline runs triggered by a pull request get the same three variables for the live preview built from their branch.
+
+**One status comment per pull request.** Each pull request carries a single comment, found by a hidden marker and edited in place, showing the state (building, ready with the URL, failed with a short reason, removed with the reason), the commit and the last update time. If an operator deletes it, the next update posts a fresh one. A failure to post or edit a comment is logged and never fails the deploy. Comments still need the PR comments toggle above.
+
+**Per-app policy** lives in the dashboard (Source tab, **Preview limits and safety**) or the CLI:
+
+```bash
+levelrail-cli apps previews limits                      # platform usage and caps
+levelrail-cli apps previews limits storefront           # one app's policy and usage
+levelrail-cli apps previews limits storefront --on-limit reject --allow-forks --ttl-hours 48
+levelrail-cli apps previews list                        # previews across every app you can read
+levelrail-cli apps previews approve storefront 42 --yes
+```
+
+`--ttl-hours` overrides the platform TTL (`APP_PREVIEW_TTL`) for one app; `0` restores the default.
+
+**Cleanup.** A preview is removed when its pull request closes or merges, when it expires (TTL), when it is evicted, or manually. At startup the control plane also repairs what a crash can leave behind: previews stuck in `deploying` longer than `APP_PREVIEW_STUCK_AFTER` (default 30 minutes) are marked failed, and preview services that no preview owns are removed with their containers.
+
+Databases: a preview that declares `ephemeralInPreviews` databases gets its own disposable instance, removed with the preview. Creating a per-preview role inside a shared managed database is not supported.
+
 ### Manual teardown and the TTL sweep
 
 **Manual teardown:**
@@ -449,7 +482,7 @@ Also available: "Tear down" button next to each preview row in the dashboard.
 
 The TTL sweep handles the failure mode that `webhook-deliveries` is designed to expose: a pull-request-closed delivery that never arrived.
 
-Any preview whose last update is older than `APP_PREVIEW_TTL` (Go duration string, default 7 days) gets torn down automatically by a background loop.
+Any preview whose last update is older than `APP_PREVIEW_TTL` (Go duration string, default 7 days, or the app's own `--ttl-hours`) gets torn down automatically by a background loop.
 
 Trigger it immediately instead of waiting:
 ```bash
@@ -506,6 +539,10 @@ Or click the "Sweep stale previews" button (appears once at least one preview is
 | `GET` | `/api/v1/apps/{name}/previews` | `read` |
 | `POST` | `/api/v1/apps/{name}/previews/{number}/teardown` | `deploy` |
 | `POST` | `/api/v1/previews/sweep` | `deploy` |
+| `GET` | `/api/v1/previews` | `read` |
+| `GET` | `/api/v1/apps/{name}/preview-policy` | `read` |
+| `PUT` | `/api/v1/apps/{name}/preview-policy` | `write:sensitive` |
+| `POST` | `/api/v1/apps/{name}/previews/{number}/approve` | `write:sensitive` |
 | `PUT` | `/api/v1/apps/{name}/preview-env/{key}` | `write` |
 | `DELETE` | `/api/v1/apps/{name}/preview-env/{key}` | `write` |
 | `GET` | `/api/v1/apps/{name}/branch-env` | `read` |
@@ -564,7 +601,9 @@ levelrail-cli apps webhook-deliveries replay <app-name> <delivery-id>
 ### Preview environments
 
 ```bash
-levelrail-cli apps previews list <app-name>
+levelrail-cli apps previews list [app-name]
+levelrail-cli apps previews limits [app-name] [--on-limit evict_oldest|reject] [--allow-forks] [--ttl-hours N]
+levelrail-cli apps previews approve <app-name> <pr-number> --yes
 levelrail-cli apps previews enable <app-name>
 levelrail-cli apps previews disable <app-name>
 levelrail-cli apps previews pr-status enable <app-name>
