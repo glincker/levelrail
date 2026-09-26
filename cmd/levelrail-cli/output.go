@@ -434,12 +434,14 @@ func printDiagnosisHuman(out io.Writer, d diagnosisResource) {
 	_, _ = fmt.Fprintf(out, "\n%s\n", d.Explanation)
 	_, _ = fmt.Fprintf(out, "\nsuggested next step:\n  %s\n", d.Suggestion)
 	if len(d.MatchedSignals) == 0 {
+		printDiagnosisCauses(out, d)
 		return
 	}
 	_, _ = fmt.Fprintln(out, "\nmatched signals:")
 	for _, s := range d.MatchedSignals {
 		_, _ = fmt.Fprintf(out, "  [%s] %s\n", s.Source, s.Excerpt)
 	}
+	printDiagnosisCauses(out, d)
 }
 
 // printResourceRecommendationHuman prints "apps resource-recommendation"

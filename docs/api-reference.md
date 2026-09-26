@@ -110,8 +110,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 82 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 82 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 83 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 83 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -200,6 +200,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/pipeline-sync | AbilityRead | handleGetPipelineSync |
 | PUT | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleSetPipelineSync |
 | POST | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleRunPipelineSync |
+| POST | /api/v1/apps/{name}/preflight | AbilityRead | handlePreflightApp |
 | POST | /api/v1/apps/bulk | AbilityWrite | handleBulkApps |
 | GET | /api/v1/apps/{name}/clone/preview | AbilityRead | handleClonePreview |
 | GET | /api/v1/apps/{name}/deploy-freeze | AbilityRead | handleGetAppDeployFreeze |
@@ -694,8 +695,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/pipeline-runs | AbilityRead | handleListAllPipelineRuns |
 | GET | /api/v1/pipelines/summary | AbilityRead | handleGetPipelineSummary |
 | GET | /api/v1/loadbalancers | AbilityRead | handleListLoadBalancers |
-| POST | /api/v1/imports/plan | AbilityWrite | handleImportPlan |
+| POST | /api/v1/preflight | AbilityWrite | handlePreflightNew |
 | GET | /api/v1/apps-summary | AbilityRead | handleAppsSummary |
+| POST | /api/v1/imports/plan | AbilityWrite | handleImportPlan |
 | POST | /api/v1/imports/platform/discover | AbilityWriteSensitive | handleDiscoverPlatformImport |
 | POST | /api/v1/imports/platform/apply | AbilityWriteSensitive | handleApplyPlatformImport |
 

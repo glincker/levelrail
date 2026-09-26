@@ -127,6 +127,7 @@ var toolTable = map[string]Meta{
 	"get_app_requests":                      {clsR, "metrics", 0},
 	"diagnose_app_failure":                  {clsR, "diagnostics", unt},
 	"get_attention":                         {clsR, "diagnostics", unt},
+	"preflight_app":                         {clsR, "diagnostics", unt},
 	"list_feature_flags":                    {clsR, "flags", 0},
 	"get_feature_flag":                      {clsR, "flags", 0},
 	"get_system_doctor":                     {clsR, "system", 0},
