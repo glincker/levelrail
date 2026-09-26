@@ -1034,6 +1034,11 @@ func (rt *Router) deleteApp(ctx context.Context, name string) error {
 		return fmt.Errorf("delete app %q: %w", name, err)
 	}
 	rt.teardownServiceContainers(name, existing.NodeID)
+	if rt.preview != nil {
+		if err := rt.preview.DeleteApp(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove previews failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
 	if existing.AppID != "" {
 		rt.deleteAppIfOrphaned(ctx, existing.AppID)
 	}

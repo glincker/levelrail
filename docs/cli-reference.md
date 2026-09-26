@@ -603,6 +603,33 @@ levelrail lb import <app> --file app.yaml [--service S] [flags]
 ```
 load the `loadbalancer:` block of an app.yaml
 
+## Preview
+
+```
+levelrail preview status <app> [flags]
+```
+show the app's deploy preview settings, storage used and latest result
+
+```
+levelrail preview enable <app> [--mode metadata|screenshot] [--path /] [--wait-ms N] [flags]
+```
+turn deploy previews on for the app: `metadata` reads the page title and social image (no browser), `screenshot` (the default here) runs a browser container per deploy
+
+```
+levelrail preview disable <app> [flags]
+```
+turn deploy previews off for the app
+
+```
+levelrail preview capture <app> [flags]
+```
+recapture the current release now
+
+```
+levelrail preview prune <app> [--all] [flags]
+```
+delete old previews now, or every preview of the app with `--all`
+
 ## Databases
 
 ```

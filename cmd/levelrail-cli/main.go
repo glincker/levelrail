@@ -116,6 +116,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDeployments(prog, args[1:], stdout, stderr, lookupEnv)
 	case "lb":
 		return runLB(prog, args[1:], stdout, stderr, lookupEnv)
+	case "preview":
+		return runPreview(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apply":
 		return runApply(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diff":
@@ -206,6 +208,7 @@ Usage:
   %[1]s databases get <name> [flags]   show one database
   %[1]s models list|get|deploy|logs|delete|restart|rotate-key|gpus [flags]   AI models on GPU nodes
   %[1]s domains list [flags]           list every app's domains in one call
+  %[1]s preview status|enable|disable|capture|prune <app> [flags]   deploy preview screenshots (opt-in per app)
   %[1]s deployments list|summary|watch [flags]   deploys across all apps, filterable, with live stream
   %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
   %[1]s pitr enable|disable|status|base-backups|restore <database> [flags]   point-in-time restore (postgres only)

@@ -206,6 +206,8 @@ type deployAttemptResource struct {
 	SupersededBy string `json:"superseded_by,omitempty"`
 	// CanceledBy is who canceled the deploy.
 	CanceledBy string `json:"canceled_by,omitempty"`
+	// PreviewImageURL is set when a deploy preview thumbnail exists.
+	PreviewImageURL string `json:"preview_image_url,omitempty"`
 }
 
 // applyWait fills the queue and wait fields of res for attempt a.
@@ -274,11 +276,13 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 			rt.logger.Warn("api: list deploy attempt cache warnings failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 	}
+	previewURLs := rt.previewImageURLs(r.Context(), name)
 	out := make([]deployAttemptResource, 0, len(attempts))
 	for _, a := range attempts {
 		res := toDeployAttemptResource(a)
 		res.CacheWarning = warnings[a.ID]
 		rt.applyWait(r.Context(), &res, a, attempts)
+		res.PreviewImageURL = previewURLs[a.ID]
 		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)

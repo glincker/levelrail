@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeDeployment } from '../../test/deploymentFixtures'
 import { DeploymentRow } from './DeploymentRow'
@@ -118,5 +118,25 @@ describe('DeploymentRow states', () => {
     expect(row).toHaveAttribute('aria-current', 'true')
     await userEvent.click(row)
     expect(onOpen).toHaveBeenCalledWith(d.id)
+  })
+})
+
+describe('DeploymentRow preview thumbnail', () => {
+  const alt = 'Preview of the web deployment'
+
+  it('shows a small thumbnail when a capture exists', () => {
+    renderRow({ preview_image_url: '/api/v1/apps/web/deployments/d/preview' })
+    expect(screen.getByAltText(alt)).toBeInTheDocument()
+  })
+
+  it('renders no thumbnail when there is no capture', () => {
+    renderRow({ preview_image_url: null })
+    expect(screen.queryByAltText(alt)).toBeNull()
+  })
+
+  it('drops the thumbnail when the image fails to load', () => {
+    renderRow({ preview_image_url: '/broken.jpg' })
+    fireEvent.error(screen.getByAltText(alt))
+    expect(screen.queryByAltText(alt)).toBeNull()
   })
 })

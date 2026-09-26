@@ -6,11 +6,48 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/preview"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+func TestAttachPreviewURLs(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	fp := newFakePreview(t)
+	fp.addOK(t, "web", "dep_ok")
+	fp.records["dep_skipped"] = preview.Record{DeploymentID: "dep_skipped", App: "web", Status: preview.StatusSkipped, Reason: "no_http"}
+	fp.addOK(t, "api", "dep_other_app")
+
+	tests := []struct {
+		name    string
+		service PreviewService
+		id      string
+		want    bool
+	}{
+		{"stored ok capture", fp, "dep_ok", true},
+		{"skipped capture stays null", fp, "dep_skipped", false},
+		{"no capture stays null", fp, "dep_none", false},
+		{"capture of another app is not reused", fp, "dep_other_app", false},
+		{"preview not configured", nil, "dep_ok", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt.preview = tt.service
+			items := []deploymentResource{{ID: tt.id, App: "web"}}
+			rt.attachPreviewURLs(context.Background(), items)
+			got := items[0].PreviewImageURL
+			if (got != nil) != tt.want {
+				t.Fatalf("preview_image_url = %v, want set = %v", got, tt.want)
+			}
+			if tt.want && !strings.HasPrefix(*got, "/api/v1/apps/web/deployments/dep_ok/preview") {
+				t.Fatalf("unexpected url %q", *got)
+			}
+		})
+	}
+}
 
 func TestParseDeploymentQuery(t *testing.T) {
 	now := time.Date(2026, 9, 26, 12, 0, 0, 0, time.UTC)

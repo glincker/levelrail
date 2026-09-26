@@ -366,6 +366,11 @@ type alertHistoryResource struct {
 	Error      string    `json:"error,omitempty"`
 }
 
+const (
+	alertHistoryDefaultLimit = 100
+	alertHistoryMaxLimit     = 500
+)
+
 func (rt *Router) writeAlertHistory(w http.ResponseWriter, r *http.Request, app string) {
 	if !rt.alertNoiseReady(w) {
 		return
@@ -399,10 +404,32 @@ func (rt *Router) writeAlertHistory(w http.ResponseWriter, r *http.Request, app 
 		}
 		f.Before = &t
 	}
-	list, err := rt.alertNoise.ListHistory(r.Context(), f)
+	canSee, err := rt.appVisibilityFilter(r)
 	if err != nil {
-		rt.internalError(w, "api: list alert history failed", err)
+		rt.internalError(w, "api: list alert history: visibility", err)
 		return
+	}
+	limit := f.Limit
+	if limit <= 0 || limit > alertHistoryMaxLimit {
+		limit = alertHistoryDefaultLimit
+	}
+	var list []alerting.HistoryEntry
+	for len(list) < limit {
+		rows, err := rt.alertNoise.ListHistory(r.Context(), f)
+		if err != nil {
+			rt.internalError(w, "api: list alert history failed", err)
+			return
+		}
+		for _, e := range rows {
+			if len(list) < limit && (e.App == "" || canSee(e.App)) {
+				list = append(list, e)
+			}
+		}
+		if len(rows) < limit {
+			break
+		}
+		last := rows[len(rows)-1].At
+		f.Before = &last
 	}
 	out := make([]alertHistoryResource, 0, len(list))
 	for _, e := range list {

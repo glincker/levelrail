@@ -88,7 +88,7 @@ export function DeploymentsSummary({
         info={
           unavailable
             ? NA_TIP
-            : 'Held deploys and images that differ from what is running. Select to show held deploys.'
+            : 'Held deploys, and live images that differ from what is running. Select to show held deploys.'
         }
       />
       <div className="col-span-2 lg:col-span-1">

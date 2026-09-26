@@ -25,6 +25,7 @@ import {
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
 import { ActionMenu, InfoTip, StatusPill } from './kit'
 import { DigestChip, RolloutChip } from './DeployDigestChips'
+import { DeployPreviewThumb } from './DeployPreviewThumb'
 import { unpinnedImage } from '../lib/imageDigest'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -331,6 +332,17 @@ function DeployAttemptRow({
           live={attempt.status === 'running' || attempt.status === 'queued'}
         />
       </span>
+
+      {attempt.status === 'succeeded' ? (
+        <DeployPreviewThumb
+          appName={appName}
+          deploymentId={attempt.id}
+          imageUrl={attempt.preview_image_url}
+          commitSha={attempt.commit_sha}
+          canRecapture={isLatestAttempt}
+          hideWhenEmpty
+        />
+      ) : null}
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

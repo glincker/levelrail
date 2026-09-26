@@ -28,7 +28,7 @@ import {
 import { appDetailQueryOptions } from '../../queries/apps'
 import type { DeploymentActionKind } from '../../hooks/useDeploymentActions'
 import { PromoteAppDialog } from '../PromoteAppDialog'
-import { DeployPreviewSlot } from './DeployPreviewSlot'
+import { DeployPreviewThumb } from '../DeployPreviewThumb'
 import { DrawerActions } from './DrawerActions'
 import { EnvPill, StatusCell } from './DeploymentRow'
 import { ImageRefChip } from './ImageRefChip'
@@ -204,7 +204,14 @@ function DrawerBody({
         )}
       </Section>
       <Section title="Preview">
-        <DeployPreviewSlot url={d.preview_image_url} app={d.app} />
+        <DeployPreviewThumb
+          appName={d.app}
+          deploymentId={d.id}
+          imageUrl={d.preview_image_url ?? undefined}
+          canRecapture={d.is_live}
+          size="md"
+          className="w-full"
+        />
       </Section>
       {d.status !== 'failed' && (
         <Button
