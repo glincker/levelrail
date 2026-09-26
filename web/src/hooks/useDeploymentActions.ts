@@ -78,7 +78,7 @@ export function useDeploymentActions(): DeploymentActions {
       })
       return
     }
-    const image = kind === 'rollback' ? rollbackImage(d) : d.image
+    const image = rollbackImage(d)
     deployImage.mutate(
       { app: d.app, image },
       {

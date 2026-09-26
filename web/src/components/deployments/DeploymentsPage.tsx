@@ -125,7 +125,7 @@ export function DeploymentsPage({
   }
 
   const drawerRow = openId
-    ? (rows.find((d) => d.id === openId) ??
+    ? (all.find((d) => d.id === openId) ??
       laneRows.find((d) => d.id === openId))
     : undefined
   const searching =
@@ -138,7 +138,8 @@ export function DeploymentsPage({
       openId &&
       !drawerRow &&
       listQuery.hasNextPage &&
-      !listQuery.isFetchingNextPage
+      !listQuery.isFetchingNextPage &&
+      !listQuery.isFetchNextPageError
     ) {
       void listQuery.fetchNextPage()
     }
