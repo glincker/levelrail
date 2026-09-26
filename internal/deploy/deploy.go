@@ -197,6 +197,9 @@ type Pipeline struct {
 	registryAuth RegistryAuthSource    // nil resolves private images without credentials
 	ordered      OrderedStore          // nil disables the stale-deploy guard
 	attempts     AttemptRecorder       // nil skips recording digests on attempts
+
+	attest      bool            // request BuildKit SBOM and provenance on Dockerfile builds
+	supplyChain SupplyChainHook // nil skips SBOM storage and the scan gate
 }
 
 // New builds a Pipeline.
@@ -280,6 +283,7 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		Tag:            tag,
 		BuildArgs:      req.Service.Build.Args,
 		S3Cache:        s3Cache,
+		Attest:         p.attest,
 	}, progress)
 	cacheDone()
 	if err != nil {
@@ -337,6 +341,11 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 // finishDeploy is deployDockerfile and deployRailpack's shared tail: save
 // the built image, identified by its local image ID, as desired state.
 func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Result) (string, error) {
+	if p.supplyChain != nil {
+		if err := p.supplyChain.AfterBuild(ctx, req.ServiceName, req.AttemptID, res.Attestations); err != nil {
+			return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+		}
+	}
 	desired, err := toDesiredService(req.ServiceName, res.Tag, req.Service)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)

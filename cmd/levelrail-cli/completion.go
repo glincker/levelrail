@@ -24,6 +24,8 @@ type cmdNode struct {
 var cliCommandTree = map[string]*cmdNode{
 	"apps": {subs: map[string]*cmdNode{
 		"freeze":                  {subs: map[string]*cmdNode{"set": nil, "show": nil, "clear": nil}},
+		"sbom":                    nil,
+		"scan":                    {subs: map[string]*cmdNode{"enable": nil, "disable": nil, "status": nil, "run": nil, "gate": nil, "override": nil}},
 		"create":                  nil,
 		"list":                    nil,
 		"get":                     nil,

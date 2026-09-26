@@ -2496,6 +2496,9 @@ type DeployAttemptResource struct {
 	RunningImageID string `json:"running_image_id,omitempty"`
 	Sequence       int64  `json:"sequence,omitempty"`
 	Reason         string `json:"reason,omitempty"`
+
+	SBOMPackages *int        `json:"sbom_packages,omitempty"`
+	VulnCounts   *VulnCounts `json:"vuln_counts,omitempty"`
 }
 
 // FreezeWindowResource mirrors internal/api's freezeWindowResource.
