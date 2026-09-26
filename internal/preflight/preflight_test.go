@@ -217,6 +217,9 @@ func TestParseImageRef(t *testing.T) {
 		{"ghcr.io/acme/web:v1", imageRef{"ghcr.io", "acme/web", "v1"}},
 		{"localhost:5000/app", imageRef{"localhost:5000", "app", "latest"}},
 		{"docker.io/library/redis:7", imageRef{"registry-1.docker.io", "library/redis", "7"}},
+		{"nginx:1.27@sha256:abc", imageRef{"registry-1.docker.io", "library/nginx", "sha256:abc"}},
+		{"ghcr.io/acme/web@sha256:def", imageRef{"ghcr.io", "acme/web", "sha256:def"}},
+		{"localhost:5000/app:v2@sha256:0a", imageRef{"localhost:5000", "app", "sha256:0a"}},
 	}
 	for _, tc := range tests {
 		if got := parseImageRef(tc.in); got != tc.want {

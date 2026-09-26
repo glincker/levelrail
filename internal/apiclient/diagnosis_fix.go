@@ -165,7 +165,11 @@ func patchField(app map[string]any, ch DiagnosisChange, to string) error {
 			env = map[string]any{}
 			app["env"] = env
 		}
-		env[strings.TrimPrefix(ch.Field, "env.")] = to
+		key := strings.TrimPrefix(ch.Field, "env.")
+		if cur, _ := env[key].(string); cur != ch.From {
+			return fmt.Errorf("%w: %s changed since the diagnosis", ErrFixStale, key)
+		}
+		env[key] = to
 		return nil
 	}
 	return fmt.Errorf("unsupported fix field %q", ch.Field)

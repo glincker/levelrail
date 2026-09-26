@@ -75,8 +75,9 @@ func (r *RegistryInspector) Inspect(ctx context.Context, ref string) (ImageInfo,
 type imageRef struct{ host, repo, tag string }
 
 func parseImageRef(ref string) imageRef {
+	digest := ""
 	if i := strings.Index(ref, "@"); i >= 0 {
-		ref = ref[:i] + ":" + ref[i+1:]
+		ref, digest = ref[:i], ref[i+1:]
 	}
 	host, rest := "registry-1.docker.io", ref
 	if i := strings.Index(ref, "/"); i >= 0 {
@@ -88,6 +89,9 @@ func parseImageRef(ref string) imageRef {
 	tag := "latest"
 	if i := strings.LastIndex(rest, ":"); i >= 0 && !strings.Contains(rest[i:], "/") {
 		rest, tag = rest[:i], rest[i+1:]
+	}
+	if digest != "" {
+		tag = digest
 	}
 	if host == "registry-1.docker.io" && !strings.Contains(rest, "/") {
 		rest = "library/" + rest

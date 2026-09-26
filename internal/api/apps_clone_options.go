@@ -7,10 +7,13 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+const cloneRollbackTimeout = 30 * time.Second
 
 type errCloneRequest string
 
@@ -55,11 +58,7 @@ func deriveCloneDomains(source []string, o cloneDomainOpts) []string {
 // placement and re-encrypting secret values under the clone's own slots.
 func (rt *Router) applyCloneExtras(ctx context.Context, source store.DesiredService, req cloneAppRequest) error {
 	if req.EnvironmentID != "" {
-		env, err := rt.environments.GetEnvironment(ctx, req.EnvironmentID)
-		if err != nil || env.ProjectID != source.ProjectID {
-			return errCloneRequest("environment_id must be an environment of the source app's project")
-		}
-		if err := rt.environments.SetServiceEnvironment(ctx, req.NewName, env.ID); err != nil {
+		if err := rt.environments.SetServiceEnvironment(ctx, req.NewName, req.EnvironmentID); err != nil {
 			return fmt.Errorf("set environment: %w", err)
 		}
 	}
@@ -79,6 +78,36 @@ func (rt *Router) applyCloneExtras(ctx context.Context, source store.DesiredServ
 		}
 	}
 	return nil
+}
+
+// validateCloneEnvironment checks envID before anything is written.
+func (rt *Router) validateCloneEnvironment(ctx context.Context, source store.DesiredService, envID string) error {
+	if envID == "" {
+		return nil
+	}
+	env, err := rt.environments.GetEnvironment(ctx, envID)
+	if errors.Is(err, store.ErrEnvironmentNotFound) || (err == nil && env.ProjectID != source.ProjectID) {
+		return errCloneRequest("environment_id must be an environment of the source app's project")
+	}
+	if err != nil {
+		return fmt.Errorf("load environment %q: %w", envID, err)
+	}
+	return nil
+}
+
+// rollbackClone removes a partially created clone so a retry does not
+// conflict with it. Cleanup outlives a canceled request.
+func (rt *Router) rollbackClone(reqCtx context.Context, name string) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(reqCtx), cloneRollbackTimeout)
+	defer cancel()
+	if rt.secrets != nil {
+		if err := rt.secrets.DeleteAll(ctx, name); err != nil {
+			rt.logger.Error("api: clone app: roll back secrets failed", slog.String("error", err.Error()), slog.String("new_name", name))
+		}
+	}
+	if err := rt.deleteApp(ctx, name); err != nil && !errors.Is(err, store.ErrServiceNotFound) {
+		rt.logger.Error("api: clone app: roll back failed", slog.String("error", err.Error()), slog.String("new_name", name))
+	}
 }
 
 type clonePreviewResource struct {

@@ -132,6 +132,16 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := rt.validateCloneEnvironment(r.Context(), *source, req.EnvironmentID); err != nil {
+		var bad errCloneRequest
+		if errors.As(err, &bad) {
+			writeError(w, http.StatusBadRequest, bad.Error())
+			return
+		}
+		rt.internalError(w, "api: clone app: check environment failed", err, slog.String("new_name", req.NewName))
+		return
+	}
+
 	clone := cloneDesiredService(*source, req.NewName, deriveCloneDomains(source.Domains, cloneDomains))
 	if err := rt.apps.SaveDesiredService(r.Context(), clone); err != nil {
 		var domainTaken *store.ErrDomainTaken
@@ -146,6 +156,7 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 
 	if source.ProjectID != "" {
 		if err := rt.apps.UpdateServiceProject(r.Context(), req.NewName, source.ProjectID); err != nil {
+			rt.rollbackClone(r.Context(), req.NewName)
 			rt.logger.Error("api: clone app: assign project failed", slog.String("error", err.Error()), slog.String("new_name", req.NewName), slog.String("project_id", source.ProjectID))
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
@@ -153,6 +164,7 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := rt.applyCloneExtras(r.Context(), *source, req); err != nil {
+		rt.rollbackClone(r.Context(), req.NewName)
 		var bad errCloneRequest
 		if errors.As(err, &bad) {
 			writeError(w, http.StatusBadRequest, bad.Error())

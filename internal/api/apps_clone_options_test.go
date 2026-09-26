@@ -87,6 +87,41 @@ func TestCloneApp_CopySecretsRebindsToNewSlot(t *testing.T) {
 	}
 }
 
+func TestCloneApp_FailureLeavesNoPartialClone(t *testing.T) {
+	rt, db, manager := newCloneSecretsRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := t.Context()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{
+		Name: "web", Image: "img:1", Port: 80, SecretEnv: []store.SecretEnvRef{{Name: "API_KEY"}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := manager.SetValue(ctx, "web", "API_KEY", "s3cret"); err != nil {
+		t.Fatal(err)
+	}
+
+	badEnv := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(badEnv, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/clone", `{"new_name":"web2","environment_id":"env_missing"}`))
+	if badEnv.Code != http.StatusBadRequest {
+		t.Fatalf("bad environment status = %d body=%s", badEnv.Code, badEnv.Body.String())
+	}
+	if _, err := db.GetDesiredService(ctx, "web2"); err == nil {
+		t.Fatal("a rejected environment must not leave a clone behind")
+	}
+
+	if _, err := db.ExecContext(ctx, `UPDATE service_secrets SET wrapped_dek = 'broken' WHERE service_name = 'web'`); err != nil {
+		t.Fatal(err)
+	}
+	failed := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(failed, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/clone", `{"new_name":"web2","copy_secrets":true}`))
+	if failed.Code != http.StatusInternalServerError {
+		t.Fatalf("failed secret copy status = %d body=%s", failed.Code, failed.Body.String())
+	}
+	if _, err := db.GetDesiredService(ctx, "web2"); err == nil {
+		t.Fatal("a failed secret copy must roll the clone back")
+	}
+}
+
 func TestCloneApp_CopySecretsNeedsReadSensitive(t *testing.T) {
 	rt, db, _ := newCloneSecretsRouter(t)
 	bootstrapTestAdmin(t, db)

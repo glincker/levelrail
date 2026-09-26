@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"testing"
 )
 
@@ -22,6 +23,11 @@ func TestDoctorCheckRAM(t *testing.T) {
 			read:       func() (int64, int64, error) { return 512 << 20, 256 << 20, nil },
 			minBytes:   1 << 30,
 			wantStatus: doctorStatusWarn,
+		},
+		{
+			name:       "unsupported operating system is a clean unknown",
+			read:       func() (int64, int64, error) { return 0, 0, telemetry.ErrHostMemoryUnsupported },
+			wantStatus: doctorStatusUnknown,
 		},
 		{
 			name:       "read error degrades to unknown",
