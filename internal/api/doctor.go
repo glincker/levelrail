@@ -102,6 +102,7 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		rt.doctorCheckSecretBinding(ctx),
 		rt.doctorCheckStaleSecrets(ctx),
 		rt.doctorCheckControlPlaneBackup(),
+		rt.doctorCheckControlPlaneDR(ctx),
 		doctorCheckFirewallCtx(ctx),
 		rt.doctorCheckRAM(),
 		rt.doctorCheckCPU(),

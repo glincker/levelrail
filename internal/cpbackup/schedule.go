@@ -25,6 +25,9 @@ type ConfigUpdate struct {
 
 const maxRetention = 3650
 
+// ErrInvalid marks a configuration the operator must fix.
+var ErrInvalid = errors.New("invalid configuration")
+
 // UpdateConfig validates and stores the configuration.
 func (s *Service) UpdateConfig(ctx context.Context, u ConfigUpdate) error {
 	for _, expr := range []string{u.Schedule, u.DrillSchedule} {
@@ -32,12 +35,12 @@ func (s *Service) UpdateConfig(ctx context.Context, u ConfigUpdate) error {
 			continue
 		}
 		if _, err := cronexpr.Parse(expr); err != nil {
-			return fmt.Errorf("invalid cron expression %q: %w", expr, err)
+			return fmt.Errorf("%w: cron expression %q: %v", ErrInvalid, expr, err)
 		}
 	}
 	for _, n := range []int{u.Retention.Daily, u.Retention.Weekly, u.Retention.Monthly} {
 		if n < 0 || n > maxRetention {
-			return fmt.Errorf("retention counts must be between 0 and %d", maxRetention)
+			return fmt.Errorf("%w: retention counts must be between 0 and %d", ErrInvalid, maxRetention)
 		}
 	}
 	recipients := make([]string, 0, len(u.Recipients))
@@ -48,7 +51,7 @@ func (s *Service) UpdateConfig(ctx context.Context, u ConfigUpdate) error {
 	}
 	if len(recipients) > 0 {
 		if _, err := ParseRecipients(recipients); err != nil {
-			return err
+			return fmt.Errorf("%w: %v", ErrInvalid, err)
 		}
 	}
 	for _, id := range []string{u.TargetID, u.EscrowTargetID} {
@@ -56,11 +59,11 @@ func (s *Service) UpdateConfig(ctx context.Context, u ConfigUpdate) error {
 			continue
 		}
 		if _, _, err := s.Dest.Open(ctx, id); err != nil {
-			return fmt.Errorf("storage destination %q: %w", id, err)
+			return fmt.Errorf("%w: storage destination %q is not usable", ErrInvalid, id)
 		}
 	}
 	if u.Enabled && (u.TargetID == "" || len(recipients) == 0) {
-		return ErrNotConfigured
+		return fmt.Errorf("%w: %v", ErrInvalid, ErrNotConfigured)
 	}
 	cfg := store.CPDRSettings{
 		Enabled: u.Enabled, TargetID: u.TargetID, Recipients: recipients, Schedule: u.Schedule, DrillSchedule: u.DrillSchedule,

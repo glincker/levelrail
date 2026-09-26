@@ -149,7 +149,7 @@ func TestProblem_OverdueAndFailed(t *testing.T) {
 func TestAlertSource(t *testing.T) {
 	e := newDREnv(t)
 	local := NewManager(e.db, e.dir)
-	src := AlertSource{Local: local, Svc: e.svc}
+	src := AlertSource{Local: local, Svc: e.svc, LocalScheduled: true}
 	if _, ok, err := src.Newest(); err != nil || ok {
 		t.Fatalf("no snapshots yet: ok=%v err=%v", ok, err)
 	}

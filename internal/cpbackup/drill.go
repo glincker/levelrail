@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,7 +34,36 @@ func (s *Service) RunDrill(ctx context.Context) (DrillResult, error) {
 		return DrillResult{}, ErrBusy
 	}
 	defer s.drillMu.Unlock()
+	return s.drillLocked(ctx)
+}
 
+// StartDrill begins a drill in the background and returns at once.
+// ErrBusy means one is already running.
+func (s *Service) StartDrill() error {
+	if !s.drillMu.TryLock() {
+		return ErrBusy
+	}
+	go func() {
+		defer s.drillMu.Unlock()
+		ctx, cancel := context.WithTimeout(context.Background(), runTimeout)
+		defer cancel()
+		if _, err := s.drillLocked(ctx); err != nil {
+			s.logger().Error("manual control plane restore drill failed", slog.String("error", err.Error()))
+		}
+	}()
+	return nil
+}
+
+// DrillRunning reports whether a drill is in progress.
+func (s *Service) DrillRunning() bool {
+	if s.drillMu.TryLock() {
+		s.drillMu.Unlock()
+		return false
+	}
+	return true
+}
+
+func (s *Service) drillLocked(ctx context.Context) (DrillResult, error) {
 	start := s.now()
 	res := DrillResult{At: start.UTC().Truncate(time.Second)}
 	err := s.drill(ctx, &res)

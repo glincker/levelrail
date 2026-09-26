@@ -83,10 +83,10 @@ func TestHandleSystemDoctor_NothingConfigured(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got.Checks) != 19 {
-		t.Fatalf("len(Checks) = %d, want 19", len(got.Checks))
+	if len(got.Checks) != 20 {
+		t.Fatalf("len(Checks) = %d, want 20", len(got.Checks))
 	}
-	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable", "master_key_rotation", "secret_binding", "stale_secrets", "control_plane_backup", "public_ip", "external_reachability_80", "external_reachability_443", "clock_skew"} {
+	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable", "master_key_rotation", "secret_binding", "stale_secrets", "control_plane_backup", "control_plane_dr", "public_ip", "external_reachability_80", "external_reachability_443", "clock_skew"} {
 		if c := doctorCheckByCode(t, got.Checks, code); c.Status != doctorStatusUnknown {
 			t.Errorf("%s status = %q, want %q (nothing configured / offline)", code, c.Status, doctorStatusUnknown)
 		}

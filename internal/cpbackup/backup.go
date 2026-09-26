@@ -14,6 +14,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// runTimeout bounds one background backup or drill.
+const runTimeout = 2 * time.Hour
+
 func (s *Service) now() time.Time {
 	if s.Now != nil {
 		return s.Now()
@@ -42,7 +45,36 @@ func (s *Service) RunBackup(ctx context.Context, slot time.Time) (Manifest, erro
 		return Manifest{}, ErrBusy
 	}
 	defer s.backupMu.Unlock()
+	return s.backupLocked(ctx, slot)
+}
 
+// StartBackup begins a manual backup in the background and returns at once.
+// ErrBusy means one is already running.
+func (s *Service) StartBackup() error {
+	if !s.backupMu.TryLock() {
+		return ErrBusy
+	}
+	go func() {
+		defer s.backupMu.Unlock()
+		ctx, cancel := context.WithTimeout(context.Background(), runTimeout)
+		defer cancel()
+		if _, err := s.backupLocked(ctx, time.Time{}); err != nil {
+			s.logger().Error("manual off-box control plane backup failed", slog.String("error", err.Error()))
+		}
+	}()
+	return nil
+}
+
+// BackupRunning reports whether a backup is in progress.
+func (s *Service) BackupRunning() bool {
+	if s.backupMu.TryLock() {
+		s.backupMu.Unlock()
+		return false
+	}
+	return true
+}
+
+func (s *Service) backupLocked(ctx context.Context, slot time.Time) (Manifest, error) {
 	started := s.now().UTC().Truncate(time.Second)
 	m, err := s.runBackup(ctx, slot, started)
 	if err != nil {

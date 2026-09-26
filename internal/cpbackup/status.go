@@ -58,6 +58,8 @@ type Status struct {
 	LastAttemptAt           *time.Time  `json:"last_attempt_at,omitempty"`
 	LastDrill               DrillStatus `json:"last_drill"`
 	DrillIdentityConfigured bool        `json:"drill_identity_configured"`
+	BackupRunning           bool        `json:"backup_running"`
+	DrillRunning            bool        `json:"drill_running"`
 	Checklist               Checklist   `json:"checklist"`
 	Warnings                []Warning   `json:"warnings"`
 }
@@ -109,6 +111,7 @@ func (s *Service) Status(ctx context.Context) (Status, error) {
 		EscrowTargetID: cfg.EscrowTargetID, EscrowGeneratedAt: timePtr(cfg.EscrowGeneratedAt), EscrowAckedAt: timePtr(cfg.EscrowAckedAt),
 		LastBackupAt: timePtr(cfg.LastBackupAt), LastBackupKey: cfg.LastBackupKey, LastBackupError: cfg.LastBackupError,
 		LastAttemptAt: timePtr(cfg.LastAttemptAt), DrillIdentityConfigured: len(s.DrillIdentities) > 0,
+		BackupRunning: s.BackupRunning(), DrillRunning: s.DrillRunning(),
 		LastDrill: DrillStatus{At: timePtr(cfg.LastDrillAt), OK: cfg.LastDrillOK, Partial: cfg.LastDrillPartial, Detail: cfg.LastDrillDetail, DurationMs: cfg.LastDrillMs},
 		Warnings:  []Warning{},
 	}
@@ -226,6 +229,9 @@ func (s *Service) DRProblem(now time.Time) string { return s.Problem(now) }
 type AlertSource struct {
 	Local *Manager
 	Svc   *Service
+	// LocalScheduled is false when scheduled local snapshots are switched off,
+	// so their absence is not staleness.
+	LocalScheduled bool
 }
 
 // Newest reports the newest off-box backup when enabled, else the newest local snapshot.
@@ -236,6 +242,9 @@ func (a AlertSource) Newest() (time.Time, bool, error) {
 		if cfg, err := a.Svc.Store.GetCPDRSettings(ctx); err == nil && cfg.Enabled && cfg.TargetID != "" {
 			return cfg.LastBackupAt, !cfg.LastBackupAt.IsZero(), nil
 		}
+	}
+	if !a.LocalScheduled {
+		return time.Time{}, false, nil
 	}
 	return a.Local.Newest()
 }
