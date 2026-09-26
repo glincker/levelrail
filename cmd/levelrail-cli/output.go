@@ -419,8 +419,12 @@ func printDeployAttemptsHuman(out io.Writer, attempts []deployAttemptResource) {
 		if framework == "" {
 			framework = "-"
 		}
+		reason := a.Reason
+		if a.WaitReason != "" {
+			reason = a.WaitReason
+		}
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			a.ID, unpinnedImage(a.Image), shortDigest(a.ImageDigest, a.DigestReason), a.Source, a.Status, dashIfEmpty(a.RolloutState), dashIfEmpty(a.Reason), framework, a.StartedAt.Format(time.RFC3339), finished, a.Error)
+			a.ID, unpinnedImage(a.Image), shortDigest(a.ImageDigest, a.DigestReason), a.Source, a.Status, dashIfEmpty(a.RolloutState), dashIfEmpty(reason), framework, a.StartedAt.Format(time.RFC3339), finished, a.Error)
 	}
 	_ = tw.Flush()
 }

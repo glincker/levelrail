@@ -6,9 +6,17 @@
 // deliberately kept separate rather than one endpoint's shape changing
 // underneath its existing consumer).
 // 'held' is an automatic deploy parked by a freeze window; 'superseded'
-// never applied because a newer deploy already had.
+// never applied because a newer deploy already had; 'queued' waits behind
+// another deploy (see wait_reason); 'canceled' was stopped by an operator
+// before it wrote desired state.
 export type DeployAttemptStatus =
-  'running' | 'succeeded' | 'failed' | 'held' | 'superseded'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'held'
+  | 'superseded'
+  | 'queued'
+  | 'canceled'
 
 // Mirrors internal/store.DeployAttemptSource* on the wire: 'webhook' for
 // an unattended git-push build, 'manual' for a dashboard-triggered
@@ -46,4 +54,14 @@ export interface DeployAttempt {
   sequence?: number
   /** Why the attempt was held, superseded, or allowed through a freeze. */
   reason?: string
+  queued_at?: string
+  /** 1-based place in the app's queue, set only while queued. */
+  queue_position?: number
+  /** Why a queued or held deploy waits, e.g. "waiting for #dep_x". */
+  wait_reason?: string
+  /** The deploy a queued one waits for. */
+  blocked_by?: string
+  /** The newer queued deploy that replaced this one. */
+  superseded_by?: string
+  canceled_by?: string
 }

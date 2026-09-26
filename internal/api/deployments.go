@@ -57,6 +57,11 @@ type deploymentResource struct {
 	IsLive          bool             `json:"is_live"`
 	ApprovalID      *string          `json:"approval_id"`
 	PreviewImageURL *string          `json:"preview_image_url"`
+	QueuedAt        *time.Time       `json:"queued_at"`
+	QueuePosition   *int             `json:"queue_position"`
+	WaitReason      *string          `json:"wait_reason"`
+	BlockedBy       *string          `json:"blocked_by"`
+	CanceledBy      *string          `json:"canceled_by"`
 }
 
 type deploymentListResponse struct {
@@ -97,6 +102,8 @@ func deploymentReasonText(code string) string {
 		return "A newer deploy replaced this one"
 	case store.DeployReasonStale:
 		return "A newer commit had already deployed"
+	case store.DeployReasonCanceled:
+		return "Canceled by an operator before it cut traffic"
 	}
 	return code
 }
@@ -122,7 +129,7 @@ func (rt *Router) toDeploymentResource(d store.Deployment) deploymentResource {
 		StartedAt: a.StartedAt, FinishedAt: a.FinishedAt,
 		ReasonCode: a.Reason, Reason: deploymentReasonText(a.Reason),
 		RollbackOf: strOrNil(d.RollbackOf), RolledBackBy: strOrNil(d.RolledBackBy), SupersededBy: strOrNil(d.SupersededBy),
-		IsLive: d.IsLive,
+		IsLive: d.IsLive, QueuedAt: a.QueuedAt, CanceledBy: strOrNil(a.CanceledBy),
 	}
 	if d.PRNumber > 0 {
 		res.PRNumber = &d.PRNumber
@@ -218,8 +225,11 @@ func (rt *Router) handleListDeployments(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	out := deploymentListResponse{Items: make([]deploymentResource, 0, len(rows)), NextCursor: next}
+	waits := rt.deploymentWaits(r.Context(), rows)
 	for _, d := range rows {
-		out.Items = append(out.Items, rt.toDeploymentResource(d))
+		res := rt.toDeploymentResource(d)
+		applyDeploymentWait(&res, waits[d.Attempt.ID])
+		out.Items = append(out.Items, res)
 	}
 	rt.attachPreviewURLs(r.Context(), out.Items)
 	writeJSON(w, http.StatusOK, out)

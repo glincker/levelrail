@@ -2171,6 +2171,36 @@ func (c *Client) SetAutoRollback(ctx context.Context, appName string, enabled bo
 	return out, err
 }
 
+// CancelDeploy calls POST /api/v1/apps/{name}/deploys/{deployId}/cancel and
+// returns the attempt as it is after the cancel.
+func (c *Client) CancelDeploy(ctx context.Context, appName, deployID string) (DeployAttemptResource, error) {
+	var out DeployAttemptResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/deploys/"+PathEscape(deployID)+"/cancel", nil, &out)
+	return out, err
+}
+
+// RollbackToDeploy calls POST /api/v1/apps/{name}/deploys/{deployId}/rollback:
+// redeploys the content that past deploy recorded, pinned by digest.
+func (c *Client) RollbackToDeploy(ctx context.Context, appName, deployID string, req RollbackToRequest) (DeployTriggerResult, error) {
+	var out DeployTriggerResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/deploys/"+PathEscape(deployID)+"/rollback", req, &out)
+	return out, err
+}
+
+// GetCancelSuperseded calls GET /api/v1/apps/{name}/cancel-superseded.
+func (c *Client) GetCancelSuperseded(ctx context.Context, appName string) (CancelSupersededResource, error) {
+	var out CancelSupersededResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/cancel-superseded", nil, &out)
+	return out, err
+}
+
+// SetCancelSuperseded calls PUT /api/v1/apps/{name}/cancel-superseded.
+func (c *Client) SetCancelSuperseded(ctx context.Context, appName string, enabled bool) (CancelSupersededResource, error) {
+	var out CancelSupersededResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/cancel-superseded", CancelSupersededResource{Enabled: enabled}, &out)
+	return out, err
+}
+
 // GetExecAccess calls GET /api/v1/apps/{name}/exec-access: whether
 // appName's shell/exec routes (POST .../exec, GET .../terminal) are even
 // attempted, regardless of the caller's own IAM abilities. On by

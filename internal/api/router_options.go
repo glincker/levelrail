@@ -14,6 +14,12 @@ import (
 // Option configures optional Router behavior.
 type Option func(*Router)
 
+// WithDeployMaxConcurrent caps how many deploys run at once across all apps;
+// deploys over the cap wait as queued. Zero or less means unlimited.
+func WithDeployMaxConcurrent(n int) Option {
+	return func(rt *Router) { rt.deployMaxConcurrent = n }
+}
+
 // WithSecretSetter enables PUT /api/v1/apps/{name}/secrets/{key}.
 // Without one configured (the default), that route returns 501: an
 // operator running Levelrail without APP_MASTER_KEY set gets a clear

@@ -55,10 +55,13 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 	noopCommit := func(context.Context, string) {}
 	fallback := build.SlogProgress(rt.logger)
 
-	id, err := store.NewDeployAttemptID()
-	if err != nil {
-		rt.logger.Error("api: trigger build: mint deploy attempt id failed", slog.String("error", err.Error()))
-		return "", fallback, noop, noopCommit
+	id, adopted := adoptedAttemptID(ctx)
+	if !adopted {
+		var err error
+		if id, err = store.NewDeployAttemptID(); err != nil {
+			rt.logger.Error("api: trigger build: mint deploy attempt id failed", slog.String("error", err.Error()))
+			return "", fallback, noop, noopCommit
+		}
 	}
 
 	// Start before SaveDeployAttempt: the row is queryable the instant
@@ -73,22 +76,27 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 	if req.Order != nil {
 		seq = req.Order.Sequence
 	}
-	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
-		ID: id, ServiceName: req.ServiceName, Image: image,
-		CommitSHA: req.CommitSHA, Source: source,
-		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
-		Snapshot:          store.NewDeployAttemptSnapshot(svc),
-		DetectedFramework: detectedFramework,
-		Sequence:          seq,
-		Branch:            commitMetaFrom(ctx).Branch,
-		CommitMessage:     commitMetaFrom(ctx).Message,
-		Author:            commitMetaFrom(ctx).Author,
-	}); err != nil {
-		rt.logger.Error("api: trigger build: save deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
-		if rt.deployRecorder != nil {
-			rt.deployRecorder.Finish(ctx, id)
+	rt.cancels.Register(id)
+	defer releaseStartMark(ctx)
+	if !adopted {
+		if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
+			ID: id, ServiceName: req.ServiceName, Image: image,
+			CommitSHA: req.CommitSHA, Source: source,
+			Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
+			Snapshot:          store.NewDeployAttemptSnapshot(svc),
+			DetectedFramework: detectedFramework,
+			Sequence:          seq,
+			Branch:            commitMetaFrom(ctx).Branch,
+			CommitMessage:     commitMetaFrom(ctx).Message,
+			Author:            commitMetaFrom(ctx).Author,
+		}); err != nil {
+			rt.logger.Error("api: trigger build: save deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
+			rt.cancels.Release(id)
+			if rt.deployRecorder != nil {
+				rt.deployRecorder.Finish(ctx, id)
+			}
+			return "", fallback, noop, noopCommit
 		}
-		return "", fallback, noop, noopCommit
 	}
 
 	setCommit = func(setCtx context.Context, commit string) {
@@ -103,8 +111,12 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 
 	finish = func(deployErr error) {
 		finishCtx := context.Background() // survives past r.Context() the same way webhook.Handler.beginDeployAttempt's own finish func does
+		defer rt.drainAfterFinish(finishCtx, id)
 		if rt.deployRecorder != nil {
 			rt.deployRecorder.Finish(finishCtx, id)
+		}
+		if rt.finishCanceled(finishCtx, id, deployErr) {
+			return
 		}
 		if rt.finishSuperseded(finishCtx, id, deployErr) {
 			return
@@ -183,8 +195,28 @@ type deployAttemptResource struct {
 	RunningImageID string `json:"running_image_id,omitempty"`
 	Sequence       int64  `json:"sequence,omitempty"`
 	Reason         string `json:"reason,omitempty"`
+
+	// QueuedAt, QueuePosition and WaitReason describe a queued deploy (and
+	// WaitReason a held one); BlockedBy is the deploy it waits for.
+	QueuedAt      *time.Time `json:"queued_at,omitempty"`
+	QueuePosition int        `json:"queue_position,omitempty"`
+	WaitReason    string     `json:"wait_reason,omitempty"`
+	BlockedBy     string     `json:"blocked_by,omitempty"`
+	// SupersededBy is the newer deploy that replaced a queued one.
+	SupersededBy string `json:"superseded_by,omitempty"`
+	// CanceledBy is who canceled the deploy.
+	CanceledBy string `json:"canceled_by,omitempty"`
 	// PreviewImageURL is set when a deploy preview thumbnail exists.
 	PreviewImageURL string `json:"preview_image_url,omitempty"`
+}
+
+// applyWait fills the queue and wait fields of res for attempt a.
+func (rt *Router) applyWait(ctx context.Context, res *deployAttemptResource, a store.DeployAttempt, app []store.DeployAttempt) {
+	if a.Status != store.DeployAttemptStatusQueued && a.Status != store.DeployAttemptStatusHeld {
+		return
+	}
+	w := rt.waitFor(ctx, a, app)
+	res.QueuePosition, res.WaitReason, res.BlockedBy = w.Position, w.Reason, w.BlockedBy
 }
 
 func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
@@ -205,6 +237,9 @@ func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
 		RunningImageID:    a.RunningImageID,
 		Sequence:          a.Sequence,
 		Reason:            a.Reason,
+		QueuedAt:          a.QueuedAt,
+		SupersededBy:      a.SupersededBy,
+		CanceledBy:        a.CanceledBy,
 	}
 }
 
@@ -246,6 +281,7 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 	for _, a := range attempts {
 		res := toDeployAttemptResource(a)
 		res.CacheWarning = warnings[a.ID]
+		rt.applyWait(r.Context(), &res, a, attempts)
 		res.PreviewImageURL = previewURLs[a.ID]
 		out = append(out, res)
 	}

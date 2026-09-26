@@ -24,6 +24,7 @@ type DeploySafetyStore interface {
 	deploy.HeldStore
 	ReplaceDeployFreezeWindows(ctx context.Context, scope string, windows []store.DeployFreezeWindow) ([]store.DeployFreezeWindow, error)
 	SetDeployAttemptReason(ctx context.Context, id, reason string) error
+	DeployQueueStore
 }
 
 // WithDeploySafety enables freeze windows, the stale-deploy guard and
@@ -159,21 +160,26 @@ func (rt *Router) holdIfFrozen(ctx context.Context, name string, req deploy.Held
 	return true, fmt.Sprintf("held: %s, deploy %s will run when the window ends\n", (&deploy.FrozenError{Status: status}).Error(), id)
 }
 
+// replayGitDeploy re-runs a held or queued webhook deploy from its saved request.
+func (rt *Router) replayGitDeploy(ctx context.Context, name string, req deploy.HeldRequest) error {
+	gs, err := rt.gitSources.GetGitSource(ctx, name)
+	if err != nil {
+		return fmt.Errorf("load git source: %w", err)
+	}
+	order := rt.nextOrder(ctx, name, req.CommitSHA, req.Before, req.CommitAt)
+	status, msg := rt.deployFromGitSource(ctx, name, *gs, req.CheckoutRef, req.CommitLabel, order)
+	if status >= http.StatusBadRequest {
+		return errors.New(strings.TrimSpace(msg))
+	}
+	return nil
+}
+
 // ReleaseHandlers replays held deploys; cmd/levelrail wires them into a
 // deploy.Releaser.
 func (rt *Router) ReleaseHandlers() map[string]deploy.ReleaseHandler {
 	return map[string]deploy.ReleaseHandler{
 		deploy.HeldKindGit: func(ctx context.Context, a store.DeployAttempt, req deploy.HeldRequest) error {
-			gs, err := rt.gitSources.GetGitSource(ctx, a.ServiceName)
-			if err != nil {
-				return fmt.Errorf("load git source: %w", err)
-			}
-			order := rt.nextOrder(ctx, a.ServiceName, req.CommitSHA, req.Before, req.CommitAt)
-			status, msg := rt.deployFromGitSource(ctx, a.ServiceName, *gs, req.CheckoutRef, req.CommitLabel, order)
-			if status >= http.StatusBadRequest {
-				return errors.New(strings.TrimSpace(msg))
-			}
-			return nil
+			return rt.replayGitDeploy(ctx, a.ServiceName, req)
 		},
 		deploy.HeldKindImage: func(ctx context.Context, a store.DeployAttempt, req deploy.HeldRequest) error {
 			existing, err := rt.apps.GetDesiredService(ctx, a.ServiceName)

@@ -5,6 +5,7 @@ import { DeployStrategyEditor } from '../../../components/DeployStrategyEditor'
 import { HooksEditor } from '../../../components/HooksEditor'
 import { BuildCacheCard } from '../../../components/BuildCacheCard'
 import { DeployFreezeCard } from '../../../components/DeployFreezeCard'
+import { CancelSupersededCard } from '../../../components/CancelSupersededCard'
 import { PreviewSettingsCard } from '../../../components/PreviewSettingsCard'
 
 // Former Overview-page cards, split out here since both control how a
@@ -24,6 +25,7 @@ function DeploySettingsSection() {
       <DeployStrategyEditor app={app} />
       <HooksEditor app={app} />
       <DeployFreezeCard appName={name} />
+      <CancelSupersededCard appName={name} />
       <BuildCacheCard appName={name} />
       <PreviewSettingsCard appName={name} />
     </div>

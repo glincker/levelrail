@@ -132,6 +132,51 @@ anything, since it stops the old release before starting the new one.
 `GET /api/v1/apps/{name}` reports `previous_release_held_until` (RFC3339)
 while a release is held, and `levelrail apps status <name>` prints it.
 
+## Queue, cancel and rollback to a release
+
+Deploys of one app run one at a time. A build or webhook deploy requested
+while another deploy of the same app is running (or already queued) is
+recorded as `queued` instead of failing or racing, and starts by itself
+when the deploy ahead of it finishes or is canceled. Queued deploys survive a
+control plane restart. `deploy-attempts` rows carry `queued_at`,
+`queue_position`, `wait_reason` (for example `waiting for #dep_x`,
+`freeze window until <time>`, `waiting for build capacity`) and `blocked_by`.
+Held (frozen) rows report the same `wait_reason`. `GET /api/v1/deployments`
+and its stream carry the same `queued_at`, `queue_position`, `wait_reason`,
+`blocked_by`, `superseded_by` and `canceled_by` fields. Freeze windows and
+protected-environment approvals behave exactly as before; a deploy pending
+approval is still an approval, not a queue row.
+
+`APP_DEPLOY_MAX_CONCURRENT` caps how many deploys run at once across all apps
+(default unlimited); deploys over the cap wait as queued.
+
+`POST /api/v1/apps/{name}/deploys/{deployId}/cancel` cancels a queued or
+running deploy (same permission as triggering one) and records `canceled` with
+`canceled_by`. A running build is stopped before it writes desired state, so
+the serving release is never touched. Once a deploy has written desired state
+it can no longer be canceled and the call answers `409`; roll back instead.
+
+`PUT /api/v1/apps/{name}/cancel-superseded` (`{"enabled": true}`, default off)
+lets a newer queued deploy replace older queued deploys of the same branch.
+They become `superseded` with `superseded_by` pointing at the newer one. A
+deploy that already started building is never canceled automatically.
+
+`POST /api/v1/apps/{name}/deploys/{deployId}/rollback` redeploys the exact
+content a past succeeded deploy recorded, pinned by digest, through the same
+freeze and approval gates as a plain deploy. It answers `410` when the local
+image was garbage collected, `409` when its tag now points at other content or
+the row recorded no digest.
+
+```bash
+levelrail apps deploys cancel web dep_abc123
+levelrail apps deploys rollback-to web dep_abc123
+levelrail apps cancel-superseded enable web
+```
+
+In the dashboard, the deploy history row menu has **Roll back to this** and
+**Cancel deploy**, and app **Deploy settings** has the cancel-superseded
+switch. The MCP server exposes `cancel_deploy`.
+
 ## Limits
 
 - On remote nodes reached over the agent transport the running image ID is
