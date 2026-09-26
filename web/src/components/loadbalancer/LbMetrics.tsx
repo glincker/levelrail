@@ -5,6 +5,18 @@ import type {
 } from '../../queries/loadBalancerLive'
 import { medianLatency, type PoolRollup } from './rollup'
 
+function aggregateLatency(
+  history: Map<string, UpstreamHistory>,
+): number[] | undefined {
+  const all = [...history.values()].map((h) => h.series.latency_ms)
+  const len = Math.min(...all.map((s) => s.length))
+  if (all.length === 0 || len < 2) return undefined
+  return Array.from({ length: len }, (_, i) => {
+    const vals = all.map((s) => s[s.length - len + i]?.value ?? 0)
+    return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
+  })
+}
+
 export function LbMetrics({
   upstreams,
   rollup,
@@ -16,9 +28,7 @@ export function LbMetrics({
 }) {
   const latency = medianLatency(upstreams)
   const conns = upstreams.reduce((s, u) => s + u.active_connections, 0)
-  const first = [...history.values()].find(
-    (h) => h.series.latency_ms.length > 1,
-  )
+  const trend = aggregateLatency(history)
   return (
     <div className="grid grid-cols-3 gap-3 lg:grid-cols-1">
       <MetricTile
@@ -30,7 +40,7 @@ export function LbMetrics({
         label="Latency"
         value={latency ?? '-'}
         unit={latency === null ? undefined : 'ms'}
-        series={first?.series.latency_ms.map((p) => p.value)}
+        series={trend}
         tone="info"
         info="Median of the last health check across healthy replicas."
       />

@@ -12,31 +12,38 @@ import {
   useLoadBalancerExport,
   type LoadBalancerExportFormat,
 } from '../../queries/appLoadBalancer'
+import { shellQuote } from './shellQuote'
 import { TOKEN_CLASS, tokenize } from './highlight'
 
 const FORMATS: {
   value: LoadBalancerExportFormat
   label: string
   apply: (file: string, app: string) => string
+  hint?: string
 }[] = [
   { value: 'terraform', label: 'Terraform', apply: () => 'terraform apply' },
-  { value: 'cdk', label: 'CDK', apply: () => 'cdk deploy' },
+  {
+    value: 'cdk',
+    label: 'CDK',
+    apply: () => '',
+    hint: 'This is a stack class. Add it to a CDK app and instantiate it in your app entry point, then run cdk deploy.',
+  },
   {
     value: 'cloudformation',
     label: 'CloudFormation',
     apply: (f, app) =>
-      `aws cloudformation deploy --template-file ${f} --stack-name ${app}-lb`,
+      `aws cloudformation deploy --template-file ${shellQuote(f)} --stack-name ${shellQuote(`${app}-lb`)}`,
   },
   {
     value: 'caddy',
     label: 'Caddy',
-    apply: (f) => `caddy reload --config ${f}`,
+    apply: (f) => `caddy reload --config ${shellQuote(f)}`,
   },
   {
     value: 'caddy-json',
     label: 'Caddy JSON',
     apply: (f) =>
-      `curl -X POST localhost:2019/load -H 'Content-Type: application/json' -d @${f}`,
+      `curl -X POST localhost:2019/load -H 'Content-Type: application/json' -d @${shellQuote(f)}`,
   },
 ]
 
@@ -118,10 +125,14 @@ function Preview({
         </code>
       </pre>
       <p className="text-xs text-muted-foreground">
-        Apply with{' '}
-        <code className="rounded bg-muted px-1.5 py-0.5">
-          {format.apply(data.filename, appName)}
-        </code>
+        {format.hint ?? (
+          <>
+            Apply with{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5">
+              {format.apply(data.filename, appName)}
+            </code>
+          </>
+        )}
       </p>
       {data.warnings && data.warnings.length > 0 ? (
         <ul className="list-disc space-y-1 pl-5 text-xs text-tone-warning">

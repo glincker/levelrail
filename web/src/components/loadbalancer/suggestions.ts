@@ -29,6 +29,7 @@ export interface SuggestionInput {
 const FLAP_WINDOW_MS = 10 * 60 * 1000
 const FLAP_TRANSITIONS = 3
 const TIMEOUT_RATIO = 0.6
+const FLAP_FAILS_TARGET = 3
 
 export function p95(values: number[]): number {
   if (values.length === 0) return 0
@@ -95,7 +96,11 @@ export function computeSuggestions(input: SuggestionInput): LbSuggestion[] {
       href: 'scale',
     })
   }
-  if (health && flapping(input.history, now)) {
+  if (
+    health &&
+    (health.fails ?? 1) < FLAP_FAILS_TARGET &&
+    flapping(input.history, now)
+  ) {
     out.push({
       id: 'flapping',
       tone: 'warning',
@@ -107,7 +112,7 @@ export function computeSuggestions(input: SuggestionInput): LbSuggestion[] {
         ...cfg,
         active_health: cfg.active_health && {
           ...cfg.active_health,
-          fails: Math.max((cfg.active_health.fails ?? 1) + 2, 3),
+          fails: Math.max(cfg.active_health.fails ?? 1, FLAP_FAILS_TARGET),
         },
       }),
     })

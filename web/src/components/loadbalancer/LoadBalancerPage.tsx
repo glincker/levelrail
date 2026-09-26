@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { SkeletonLine, SkeletonTile } from '@/components/kit'
 import { HelpLink } from '@/components/HelpLink'
 import { toast } from '@/components/ui/toast'
@@ -9,11 +10,13 @@ import {
   type LbFormState,
 } from '../../lib/loadBalancer'
 import {
+  appLoadBalancerKeys,
   useAppLoadBalancer,
   useAppLoadBalancerStatus,
   useClearAppLoadBalancer,
   useSetAppLoadBalancer,
   type LoadBalancerConfig,
+  type LoadBalancerResource,
 } from '../../queries/appLoadBalancer'
 import {
   isUnsupported,
@@ -66,6 +69,8 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
   const status = useAppLoadBalancerStatus(appName, configured)
   const history = useLoadBalancerHistory(appName, configured)
   const save = useSetAppLoadBalancer(appName)
+  const queryClient = useQueryClient()
+  const queue = useRef<Promise<unknown>>(Promise.resolve())
   const clear = useClearAppLoadBalancer(appName)
   const check = useRunLoadBalancerCheck(appName)
   const admin = useSetUpstreamAdminState(appName)
@@ -181,23 +186,35 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
       onSetReplicas?.()
       return
     }
-    const before = savedConfig ?? {}
+    const apply = s.apply
     setPendingSuggestion(s.id)
-    save.mutate(s.apply(before), {
-      onSuccess: () =>
-        toast.add({
-          title: `Applied: ${s.title}`,
-          type: 'success',
-          actionProps: { children: 'Undo', onClick: () => save.mutate(before) },
-        }),
-      onError: (error) =>
-        toast.add({
-          title: 'Could not apply the suggestion.',
-          description: error.message,
-          type: 'error',
-        }),
-      onSettled: () => setPendingSuggestion(null),
-    })
+    queue.current = queue.current
+      .catch(() => undefined)
+      .then(async () => {
+        const before =
+          queryClient.getQueryData<LoadBalancerResource>(
+            appLoadBalancerKeys.detail(appName),
+          )?.config ?? {}
+        try {
+          await save.mutateAsync(apply(before))
+          toast.add({
+            title: `Applied: ${s.title}`,
+            type: 'success',
+            actionProps: {
+              children: 'Undo',
+              onClick: () => save.mutate(before),
+            },
+          })
+        } catch (error) {
+          toast.add({
+            title: 'Could not apply the suggestion.',
+            description: error instanceof Error ? error.message : 'Unknown',
+            type: 'error',
+          })
+        } finally {
+          setPendingSuggestion(null)
+        }
+      })
   }
 
   function runCheck() {
@@ -265,7 +282,12 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
       <LbEmptyState
         replicas={replicas}
         creating={save.isPending}
-        onCreate={(p) => saveConfig(p.config, 'Load balancer created.')}
+        onCreate={(p) =>
+          saveConfig(
+            { ...p.config, active_health: undefined },
+            'Load balancer created.',
+          )
+        }
         onPreset={applyPreset}
       />
     )
@@ -361,7 +383,7 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
         form={form}
         errors={errors}
         onChange={(patch) => setDraft({ ...form, ...patch })}
-        open={configOpen || draft !== null}
+        open={configOpen}
         onOpenChange={setConfigOpen}
         onPreset={applyPreset}
       />

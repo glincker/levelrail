@@ -114,6 +114,17 @@ export function upstreamView(u: LiveUpstream): UpstreamView {
   }
 }
 
+export function sharesAreEstimated(algorithm: LoadBalancerAlgorithm): boolean {
+  return algorithm !== 'round_robin' && algorithm !== 'weighted'
+}
+
+export function formatShare(
+  pct: number,
+  algorithm: LoadBalancerAlgorithm,
+): string {
+  return `${sharesAreEstimated(algorithm) && pct > 0 ? '~' : ''}${pct}%`
+}
+
 export function upstreamShares(
   upstreams: LiveUpstream[],
   algorithm: LoadBalancerAlgorithm,
