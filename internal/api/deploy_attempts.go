@@ -180,6 +180,8 @@ type deployAttemptResource struct {
 	RunningImageID string `json:"running_image_id,omitempty"`
 	Sequence       int64  `json:"sequence,omitempty"`
 	Reason         string `json:"reason,omitempty"`
+	// PreviewImageURL is set when a deploy preview thumbnail exists.
+	PreviewImageURL string `json:"preview_image_url,omitempty"`
 }
 
 func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
@@ -236,10 +238,12 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 			rt.logger.Warn("api: list deploy attempt cache warnings failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 	}
+	previewURLs := rt.previewImageURLs(r.Context(), name)
 	out := make([]deployAttemptResource, 0, len(attempts))
 	for _, a := range attempts {
 		res := toDeployAttemptResource(a)
 		res.CacheWarning = warnings[a.ID]
+		res.PreviewImageURL = previewURLs[a.ID]
 		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)

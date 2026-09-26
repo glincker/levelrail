@@ -5,6 +5,7 @@ import { DeployStrategyEditor } from '../../../components/DeployStrategyEditor'
 import { HooksEditor } from '../../../components/HooksEditor'
 import { BuildCacheCard } from '../../../components/BuildCacheCard'
 import { DeployFreezeCard } from '../../../components/DeployFreezeCard'
+import { PreviewSettingsCard } from '../../../components/PreviewSettingsCard'
 
 // Former Overview-page cards, split out here since both control how a
 // deploy actually rolls out: the port a new container listens on, and
@@ -24,6 +25,7 @@ function DeploySettingsSection() {
       <HooksEditor app={app} />
       <DeployFreezeCard appName={name} />
       <BuildCacheCard appName={name} />
+      <PreviewSettingsCard appName={name} />
     </div>
   )
 }

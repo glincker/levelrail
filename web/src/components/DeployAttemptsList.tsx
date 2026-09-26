@@ -22,6 +22,7 @@ import {
 } from '../lib/deployAttemptPresentation'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
 import { DigestChip, RolloutChip } from './DeployDigestChips'
+import { DeployPreviewThumb } from './DeployPreviewThumb'
 import { unpinnedImage } from '../lib/imageDigest'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -260,6 +261,16 @@ function DeployAttemptRow({
         {DEPLOY_ATTEMPT_STATUS_LABEL[attempt.status]}
         {stageLabel ? ` (${stageLabel})` : ''}
       </Badge>
+
+      {attempt.status === 'succeeded' ? (
+        <DeployPreviewThumb
+          appName={appName}
+          deploymentId={attempt.id}
+          imageUrl={attempt.preview_image_url}
+          canRecapture={isLatestAttempt}
+          hideWhenEmpty
+        />
+      ) : null}
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
