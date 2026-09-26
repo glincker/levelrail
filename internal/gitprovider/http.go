@@ -9,10 +9,32 @@ package gitprovider
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
+
+// IsRateLimited reports whether err is a provider API error caused by rate
+// limiting, and the Retry-After value it carried, if any.
+func IsRateLimited(err error) (retryAfter string, ok bool) {
+	var apiErr *APIError
+	if errors.As(err, &apiErr) && apiErr.RateLimited {
+		return apiErr.RetryAfter, true
+	}
+	return "", false
+}
+
+func rateLimited(resp *http.Response, body string) bool {
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return true
+	}
+	if resp.StatusCode != http.StatusForbidden {
+		return false
+	}
+	return resp.Header.Get("X-RateLimit-Remaining") == "0" || strings.Contains(strings.ToLower(body), "rate limit")
+}
 
 // MaxErrorBodySnippet caps how much of a non-2xx response body an
 // APIError retains, so a misbehaving upstream can't inflate a log line
@@ -27,6 +49,11 @@ type APIError struct {
 	API        string
 	StatusCode int
 	Body       string
+	// RetryAfter is the response's Retry-After header, empty when absent.
+	RetryAfter string
+	// RateLimited is true for a 429, or a 403 the provider marks as rate
+	// limited (an exhausted X-RateLimit-Remaining or a "rate limit" body).
+	RateLimited bool
 }
 
 func (e *APIError) Error() string {
@@ -50,7 +77,11 @@ func Execute(client *http.Client, req *http.Request, prefix, api, label string, 
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, MaxErrorBodySnippet))
-		return &APIError{Prefix: prefix, API: api, StatusCode: resp.StatusCode, Body: string(snippet)}
+		return &APIError{
+			Prefix: prefix, API: api, StatusCode: resp.StatusCode, Body: string(snippet),
+			RetryAfter:  resp.Header.Get("Retry-After"),
+			RateLimited: rateLimited(resp, string(snippet)),
+		}
 	}
 	if out == nil {
 		return nil

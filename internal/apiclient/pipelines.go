@@ -68,6 +68,16 @@ type PipelineRunResource struct {
 	Jobs         []PipelineJobView  `json:"jobs,omitempty"`
 	Approvals    []PipelineApproval `json:"approvals,omitempty"`
 	Hold         *PipelineHold      `json:"hold,omitempty"`
+	Report       *PipelineReport    `json:"report,omitempty"`
+}
+
+// PipelineReport mirrors internal/api's pipelineReport: the run's commit
+// status as posted to the git forge.
+type PipelineReport struct {
+	Provider string `json:"provider,omitempty"`
+	State    string `json:"state,omitempty"`
+	URL      string `json:"url,omitempty"`
+	Warning  string `json:"warning,omitempty"`
 }
 
 // PipelineJobView is one job of a run with its steps.

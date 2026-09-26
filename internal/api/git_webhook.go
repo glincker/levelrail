@@ -238,6 +238,16 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return rt.handlePullRequestWebhookEvent(ctx, name, gs, prEv)
 	}
 
+	if webhook.IsMergeGroupEvent(header) {
+		mg, err := webhook.ParseMergeGroupEvent(body)
+		if err != nil {
+			rt.logger.Warn("api: git push webhook: malformed merge_group payload", slog.String("error", err.Error()), slog.String("name", name))
+			return http.StatusBadRequest, "malformed payload"
+		}
+		rt.firePipelineMergeGroup(ctx, name, mg)
+		return http.StatusOK, "merge_group event handled\n"
+	}
+
 	if isGitHubReleaseEvent(header) {
 		return rt.processGitHubReleaseWebhookEvent(ctx, name, gs, body)
 	}
@@ -248,13 +258,17 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return http.StatusBadRequest, "malformed payload"
 	}
 
-	rt.firePipelinePush(ctx, name, ev.Ref, ev.After)
+	rt.firePipelinePushEvent(ctx, name, ev)
 	ctx = withPushCommitMeta(ctx, ev)
 
 	triggered, ignoredMsg := gitSourceTriggerMatchesPush(gs, ev.Ref)
 	if !triggered {
 		rt.logger.Info("api: git push webhook: ignoring push", slog.String("name", name), slog.String("ref", ev.Ref), slog.String("trigger_mode", effectiveGitSourceTriggerMode(gs.TriggerMode)))
 		return http.StatusOK, ignoredMsg
+	}
+	if msg := rt.skipPushForPaths(ctx, name, gs, ev.Before, ev.After, ev.Changed); msg != "" {
+		rt.logger.Info("api: git push webhook: push skipped by path filter", slog.String("name", name), slog.String("ref", ev.Ref))
+		return http.StatusOK, msg
 	}
 
 	if held, msg := rt.holdIfFrozen(ctx, name, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt}, name+":"+ev.After); held {
@@ -374,6 +388,13 @@ func dockerSafeTag(tagName string) string {
 // routing decision handleGitPushWebhook's own doc comment already
 // establishes.
 func (rt *Router) deployFromGitSource(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder) (status int, message string) {
+	dep := rt.beginForgeDeployment(ctx, name, gs, checkoutRef, forgeEnvProduction, "")
+	status, message = rt.deployFromGitSourceInner(ctx, name, gs, checkoutRef, commitLabel, order)
+	dep.finish(ctx, deploymentStateFor(status, message), strings.TrimSpace(message))
+	return status, message
+}
+
+func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder) (status int, message string) {
 	if rt.builder == nil {
 		return http.StatusNotImplemented, "git push deploys are not configured on this control plane"
 	}

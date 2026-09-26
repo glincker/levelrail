@@ -2,6 +2,7 @@ package webhook
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -56,7 +57,7 @@ func TestParseBitbucketPushEvent(t *testing.T) {
 			if err != nil {
 				t.Fatalf("ParseBitbucketPushEvent() error = %v, want nil", err)
 			}
-			if got != tt.want {
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ParseBitbucketPushEvent() = %+v, want %+v", got, tt.want)
 			}
 		})

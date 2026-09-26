@@ -139,6 +139,7 @@ func (e *Engine) advance(ctx context.Context, run store.PipelineRun) error {
 		}
 		run.Status = store.PipelineStatusRunning
 		run.StartedAt = &now
+		e.reportRun(ctx, run, def, ReportPending, fmt.Sprintf("Run #%d is running", run.Number))
 	}
 
 	if run.CancelInProgress && run.ConcurrencyGroup != "" {
@@ -218,7 +219,13 @@ func (e *Engine) cancelOlderInGroup(ctx context.Context, run store.PipelineRun) 
 func (e *Engine) finishRun(ctx context.Context, run store.PipelineRun, status, reason string) error {
 	now := e.cfg.Now()
 	e.cfg.Logger.Info("pipeline: run finished", slog.String("run_id", run.ID), slog.String("status", status), slog.String("reason", reason))
-	return e.cfg.Store.SetPipelineRunStatus(ctx, run.ID, status, reason, nil, &now)
+	if err := e.cfg.Store.SetPipelineRunStatus(ctx, run.ID, status, reason, nil, &now); err != nil {
+		return err
+	}
+	if def, err := Parse([]byte(run.Definition)); err == nil {
+		e.reportRun(ctx, run, def, reportStateFor(status), fmt.Sprintf("Run #%d %s", run.Number, status))
+	}
+	return nil
 }
 
 func (e *Engine) maybeFinish(ctx context.Context, run store.PipelineRun, def *Definition, jobs []store.PipelineJob) error {

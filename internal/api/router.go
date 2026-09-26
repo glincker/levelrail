@@ -355,6 +355,7 @@ type Router struct {
 	pipelineStore                  PipelineStore                    // nil is valid: pipeline routes return 501 (WithPipelines)
 	pipelineRunner                 PipelineRunner                   // nil is valid: run/cancel/rerun return 501
 	pipelineEvents                 PipelineEvents                   // nil is valid: git events start no pipelines
+	forgeDeployments               ForgeDeploymentStore             // nil is valid: app deploys are not reported to git forges
 	pipelineSync                   *pipelineSyncWiring              // nil is valid: pushes do not sync pipeline files and the sync routes return 501
 	featureFlags                   FeatureFlagStore                 // always set, same "core Store interface" shape as scheduledTasks above
 	tags                           TagStore                         // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
