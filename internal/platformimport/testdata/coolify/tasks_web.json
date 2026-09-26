@@ -1,0 +1,4 @@
+[
+  {"name": "nightly", "command": "php artisan schedule:run", "frequency": "0 3 * * *", "enabled": true},
+  {"name": "off", "command": "true", "frequency": "* * * * *", "enabled": false}
+]

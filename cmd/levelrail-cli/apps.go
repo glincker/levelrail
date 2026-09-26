@@ -37,6 +37,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsHookRuns(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rollback":
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+	case "freeze":
+		return runAppsFreeze(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback":
 		return runAppsAutoRollback(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "deploys":
@@ -48,13 +50,15 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "stop":
 		return runAppsStop(prog, args[1:], stdout, stderr, lookupEnv)
 	case "start":
-		return runAppsStart(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsStart(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "delete":
 		return runAppsDelete(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "status":
 		return runAppsStatus(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "diagnose":
 		return runAppsDiagnose(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "preflight":
+		return runAppsPreflight(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "resource-recommendation":
 		return runAppsResourceRecommendation(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "network":
@@ -63,6 +67,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsLogs(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "metrics":
 		return runAppsMetrics(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "requests":
+		return runAppsRequests(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "resource-usage":
 		return runAppsResourceUsage(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "exec":
@@ -107,6 +113,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsGitSource(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "webhook-deliveries":
 		return runAppsWebhookDeliveries(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "bulk":
+		return runAppsBulk(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin) //nolint:gosec // same guard as below
 	case "clone":
 		return runAppsClone(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "images":
@@ -154,6 +162,7 @@ func appsUsage(prog string) string {
   %[1]s apps group <name> [flags]   show name's sibling services under the same multi-service app
   %[1]s apps hook-runs <name> [flags]   show the most recent outcome of name's pre/post-deploy hooks
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
+  %[1]s apps freeze set|show|clear <name> [flags]   deploy freeze windows: hold automatic deploys on a cron schedule
   %[1]s apps auto-rollback enable|disable|status <name> [flags]   opt an app into (or out of) automatic rollback when a crashloop alert fires
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
@@ -163,11 +172,13 @@ func appsUsage(prog string) string {
   %[1]s apps start <name> [flags]       start an app previously stopped
   %[1]s apps delete <name> [flags]      remove an app's desired state
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
-  %[1]s apps diagnose <name> [--deploy ID] [flags]   explain a failed deploy or crashloop
+  %[1]s apps diagnose <name> [--deploy ID] [--apply-fix N] [flags]   explain a failed deploy or crashloop, optionally apply a fix
+  %[1]s apps preflight <name> [--require-env A,B] [flags]   run pre-deploy checks (DNS, ports, disk, image, env)
   %[1]s apps resource-recommendation <name> [flags]   suggest memory/CPU limits from historical usage
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps logs <name> [flags]     search an app's stored log entries, or --follow to stream live
   %[1]s apps metrics <name> --metric NAME [flags]   query an app's metric time series
+  %[1]s apps requests <name> [flags]                show request rate, errors and latency from the ingress
   %[1]s apps resource-usage [flags]   rank every app by latest CPU/memory/network usage
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
   %[1]s apps exec-access enable|disable|status <name> [flags]   opt an app into (or out of) shell/exec access, on by default

@@ -12,6 +12,15 @@ import (
 // cloneAppRequest is POST /api/v1/apps/{name}/clone's body.
 type cloneAppRequest struct {
 	NewName string `json:"new_name"`
+	// CopySecrets re-encrypts the source's secret values under the clone's
+	// own slot bindings; the caller must hold read:sensitive.
+	CopySecrets bool `json:"copy_secrets,omitempty"`
+	// Domains is "none" (default) or "suffix", which derives each clone
+	// domain by appending DomainSuffix to the first label.
+	Domains      string `json:"domains,omitempty"`
+	DomainSuffix string `json:"domain_suffix,omitempty"`
+	// EnvironmentID places the clone in an environment of the source's project.
+	EnvironmentID string `json:"environment_id,omitempty"`
 }
 
 // handleCloneApp handles POST /api/v1/apps/{name}/clone: duplicates
@@ -83,6 +92,20 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.CopySecrets && !rt.callerHasAbility(r, AbilityReadSensitive) {
+		writeError(w, http.StatusForbidden, "copying secret values requires read:sensitive")
+		return
+	}
+	if req.CopySecrets && rt.secrets == nil {
+		writeError(w, http.StatusNotImplemented, "secrets are not configured")
+		return
+	}
+	cloneDomains, err := cloneDomainsFor(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	source, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -109,23 +132,7 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clone := store.DesiredService{
-		Name:      req.NewName,
-		Image:     source.Image,
-		Port:      source.Port,
-		Env:       source.Env,
-		SecretEnv: source.SecretEnv,
-		// VaultEnv carries over in full, unlike SecretEnv above: it is a
-		// declaration only (a Vault path/key pair), never a value, so
-		// there is no decrypted-plaintext blast-radius concern to avoid
-		// here. The clone reads from the same external Vault path the
-		// source does the moment it deploys.
-		VaultEnv:  source.VaultEnv,
-		Resources: source.Resources,
-		Health:    source.Health,
-		Strategy:  source.Strategy,
-		Replicas:  source.Replicas,
-	}
+	clone := cloneDesiredService(*source, req.NewName, deriveCloneDomains(source.Domains, cloneDomains))
 	if err := rt.apps.SaveDesiredService(r.Context(), clone); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
@@ -143,6 +150,16 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
+	}
+
+	if err := rt.applyCloneExtras(r.Context(), *source, req); err != nil {
+		var bad errCloneRequest
+		if errors.As(err, &bad) {
+			writeError(w, http.StatusBadRequest, bad.Error())
+			return
+		}
+		rt.internalError(w, "api: clone app: apply options failed", err, slog.String("new_name", req.NewName))
+		return
 	}
 
 	cloned, err := rt.apps.GetDesiredService(r.Context(), req.NewName)

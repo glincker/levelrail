@@ -76,3 +76,41 @@ shutdown on SIGTERM confirmed (`context canceled` treated as normal exit,
 not an error). Full test suite (`internal/brand`, `internal/reconcile`,
 `internal/reconcile/nginxdemo`) passes, including the half-succeeded-create
 case.
+
+## Addendum (2026-09-25): content identity, ordering and release hold
+
+Container identity used to hash the image string, so a redeploy of a
+floating tag (`latest`, `main`) found its container already running and
+reported success while old content served (the Dokploy 5496 class).
+Desired state now carries content identity instead:
+
+- Registry images are pinned at deploy time to the digest the registry
+  reports (`repo:tag@sha256:...`, the manifest list for multi-arch). The
+  pinned string is `DesiredService.Image`, so container names, ingress
+  lookups, rollback history and pulls on any node all follow content with
+  no second identity field to keep in sync. A registry failure falls back
+  to the locally cached digest and says so on the deploy
+  (`PullFailedUsingCached`); `pull: true` makes it fail instead.
+- Local builds, which have no registry digest, record the built image ID
+  (`image_id`, valid only while `image_id_ref` equals `image`) and fold it
+  into the container name hash, so a rebuild of the same tag cuts over.
+- The application controller compares the running container's image ID
+  with what the desired reference resolves to on its node and never
+  reports Ready on a mismatch (`ImageDigestMismatch`). Unpinned legacy tags
+  are not verified, to avoid flagging apps nobody redeployed.
+
+Rejected: a separate digest column feeding the name hash (every
+`ContainerName` caller would need both fields, and rollback history would
+need both); always re-pulling in the reconciler (turns every resync into a
+registry call and makes content change without a deploy); comparing tags
+(the bug itself).
+
+Automatic deploys carry a per-service sequence plus provider commit
+ordering, checked in the same SQLite transaction as the desired-state
+write, so an older push or a slower build cannot overwrite a newer deploy.
+Manual deploys and rollbacks are exempt but advance the sequence. Freeze
+windows hold automatic deploys as `held` attempts that a releaser replays
+when the window ends. After a blue-green or rolling cutover the previous
+release is kept for `APP_DEPLOY_PREVIOUS_RELEASE_HOLD`, derived from
+container creation times so the decision stays level-triggered and survives
+a control-plane restart. See docs/deploy-safety.md.

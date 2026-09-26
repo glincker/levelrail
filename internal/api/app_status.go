@@ -75,4 +75,6 @@ func isOptionalFeatureUnconfigured(c reconcile.Condition) bool {
 type appListResource struct {
 	appResource
 	Status appStatusSummary `json:"status"`
+	// EnvironmentName is the resolved name of appResource.EnvironmentID, empty when untagged.
+	EnvironmentName string `json:"environment_name,omitempty"`
 }

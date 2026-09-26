@@ -254,6 +254,7 @@ type Controller struct {
 	logger  *slog.Logger
 
 	serverName     string
+	requestStats   bool
 	listenAddr     string
 	httpListenAddr string
 	adminListen    string
@@ -332,6 +333,12 @@ type Controller struct {
 
 // Option configures optional Controller behavior.
 type Option func(*Controller)
+
+// WithRequestStats makes every proxied route count requests for the
+// per-app request metrics.
+func WithRequestStats() Option {
+	return func(ctrl *Controller) { ctrl.requestStats = true }
+}
 
 // WithServerName overrides the name Caddy's config keys the shared server
 // under (apps.http.servers.<name>). Defaults to "levelrail-ingress".
@@ -783,11 +790,13 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		ACMEDirectoryURL:  settings.ACMEDirectoryURL,
 		DNSProvider:       c.resolveDNSProvider(ctx),
 		TLSCertificates:   tlsCertOverrides,
+		RequestStats:      c.requestStats,
 	})
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
 	}
 
+	c.publishRequestHostOwners(claimedHosts)
 	if err := c.driver.Apply(ctx, cfg); err != nil {
 		return notReady("ApplyFailed", err), fmt.Errorf("ingress: apply config: %w", err)
 	}
@@ -935,7 +944,7 @@ func (c *Controller) resolveRoute53DNSProvider(ctx context.Context) ingress.DNS0
 // no valid backend to route right now; the caller skips it for this
 // pass rather than failing the whole reconcile.
 func (c *Controller) dialForService(ctx context.Context, svc store.DesiredService) (string, bool) {
-	target := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
+	target := application.ContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce)
 
 	state, err := c.runtime.InspectByName(ctx, target)
 	if err != nil {

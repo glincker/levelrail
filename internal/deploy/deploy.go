@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -158,6 +159,14 @@ type Request struct {
 	// Naming policy (namespacing, registry prefix) is the caller's
 	// decision, not this package's.
 	ImageRepo string
+
+	// AttemptID, when set, receives the resolved digest (WithAttemptRecorder).
+	AttemptID string
+	// Order enables the stale-deploy guard (WithOrderedStore); nil skips it.
+	Order *store.DeployOrder
+	// RequireFreshImage fails an image deploy whose registry is unreachable
+	// instead of falling back to the cached image.
+	RequireFreshImage bool
 }
 
 // Pipeline builds a service (when its build type requires a build) and
@@ -182,6 +191,12 @@ type Pipeline struct {
 	loadBalancers LoadBalancerStore // nil is valid: the loadbalancer: block is then ignored
 
 	buildCache BuildCacheProvider // nil is valid: builds use only the local and registry caches
+
+	resolver     docker.ImageResolver  // nil keeps image references exactly as given
+	inspector    docker.ImageInspector // nil skips recording a build's local image ID
+	registryAuth RegistryAuthSource    // nil resolves private images without credentials
+	ordered      OrderedStore          // nil disables the stale-deploy guard
+	attempts     AttemptRecorder       // nil skips recording digests on attempts
 }
 
 // New builds a Pipeline.
@@ -319,32 +334,25 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 	return p.finishDeploy(ctx, req, res)
 }
 
-// finishDeploy is deployDockerfile and deployRailpack's shared tail once
-// their respective build step has produced res: build type diverges up
-// to this point (a Dockerfile solve vs. a Railpack Definition-based
-// solve, see deployRailpack's own doc comment), but turning a successful
-// build into saved desired state and a recorded build-duration metric is
-// identical either way, so it exists exactly once here rather than
-// duplicated in both callers.
+// finishDeploy is deployDockerfile and deployRailpack's shared tail: save
+// the built image, identified by its local image ID, as desired state.
 func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Result) (string, error) {
 	desired, err := toDesiredService(req.ServiceName, res.Tag, req.Service)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
+	resolution := p.buildResolution(ctx, res.Tag, res.ExporterResponse)
+	resolution.apply(&desired)
 
-	if err := p.store.SaveDesiredService(ctx, desired); err != nil {
+	if err := p.saveDesired(ctx, req, desired); err != nil {
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
 	}
+	p.recordDigest(ctx, req, resolution)
 	if err := p.saveLoadBalancer(ctx, req); err != nil {
 		return "", err
 	}
 
-	// Best-effort, secondary to the deploy itself: the build already
-	// succeeded and desired state is already saved by this point, so a
-	// metrics-store hiccup is logged, not returned as this Deploy call's
-	// error, the same "must never block the real operation" choice
-	// reconcile.Engine.reconcileOne already makes for persisting
-	// reconcile status.
+	// A metrics-store hiccup must never fail a deploy that already landed.
 	if p.metrics != nil {
 		if err := p.metrics.RecordBuildDuration(ctx, req.ServiceName, res.Duration, time.Now()); err != nil {
 			p.logger.Warn("deploy: record build duration metric failed",
@@ -355,22 +363,14 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	return res.Tag, nil
 }
 
-// deployImage handles build.Type == spec.BuildImage: a prebuilt image
-// already sitting in a registry, so there is no build.Result the way
-// deployDockerfile/deployRailpack produce one, and this bypasses
-// finishDeploy entirely rather than manufacturing a fake Result just to
-// reuse its shared tail. The two things finishDeploy does beyond the
-// desired-state save, returning res.Tag and recording a build-duration
-// metric, have no meaning here: the image reference is already known
-// (req.Service.Build.Image, not something this platform produced), and
-// there is no build duration to measure since no build ran.
+// deployImage handles build.Type == spec.BuildImage: no build, the
+// registry reference is resolved to a digest and pinned as desired state.
 func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error) {
 	if err := p.validateEnv(ctx, req.ServiceName, req.Service.Env); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 
-	image := req.Service.Build.Image
-	desired, err := toDesiredService(req.ServiceName, image, req.Service)
+	desired, err := toDesiredService(req.ServiceName, req.Service.Build.Image, req.Service)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
@@ -381,13 +381,19 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 		}
 		desired.RegistryCredentialID = cred.ID
 	}
-	if err := p.store.SaveDesiredService(ctx, desired); err != nil {
+	resolution, err := p.resolveImage(ctx, desired.Image, desired.RegistryCredentialID, req.RequireFreshImage)
+	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+	resolution.apply(&desired)
+	if err := p.saveDesired(ctx, req, desired); err != nil {
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
 	}
+	p.recordDigest(ctx, req, resolution)
 	if err := p.saveLoadBalancer(ctx, req); err != nil {
 		return "", err
 	}
-	return image, nil
+	return desired.Image, nil
 }
 
 // validateEnv fails loudly rather than silently deploying a container

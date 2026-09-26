@@ -17,6 +17,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 // appResource is the wire shape for an app: store.DesiredService plus
@@ -29,7 +30,10 @@ import (
 type appResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
-	Port  int    `json:"port"`
+	// ImageDigest is the content Image is pinned to, or a build's local
+	// image ID; empty for a legacy unpinned tag.
+	ImageDigest string `json:"image_digest,omitempty"`
+	Port        int    `json:"port"`
 	// HostPort pins the host-side port Docker binds Port to
 	// (store.DesiredService.HostPort, migrations/0056). nil means "let
 	// Docker assign one", the ordinary case; a real conflict at deploy
@@ -267,6 +271,7 @@ func toAppResource(svc store.DesiredService) appResource {
 	}
 
 	return appResource{
+		ImageDigest:         appImageDigest(svc),
 		Name:                svc.Name,
 		Image:               svc.Image,
 		Port:                svc.Port,
@@ -434,49 +439,6 @@ func validateAppResource(a appResource) error {
 		}
 	}
 	return nil
-}
-
-// handleListApps handles GET /api/v1/apps. Status is computed from one
-// batched conditions query (store.GetConditionsForControllers), not a
-// GetConditions call per app: see appListResource's own doc comment for
-// why that matters at 50+ rows.
-func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
-	svcs, err := rt.apps.ListDesiredServices(r.Context())
-	if err != nil {
-		rt.logger.Error("api: list apps failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	controllerNames := make([]string, len(svcs))
-	appNames := make([]string, len(svcs))
-	for i, s := range svcs {
-		controllerNames[i] = applicationControllerName(s.Name)
-		appNames[i] = s.Name
-	}
-	conditionsByController, err := rt.deploys.GetConditionsForControllers(r.Context(), controllerNames)
-	if err != nil {
-		rt.logger.Error("api: list apps: batch load conditions failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	tagsByApp, err := rt.tags.ListTagsForApps(r.Context(), appNames)
-	if err != nil {
-		rt.logger.Error("api: list apps: batch load tags failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	out := make([]appListResource, 0, len(svcs))
-	for _, s := range svcs {
-		resource := toAppResource(s)
-		resource.Tags = tagNamesFromStoreTags(tagsByApp[s.Name])
-		out = append(out, appListResource{
-			appResource: resource,
-			Status:      summarizeAppConditions(conditionsByController[applicationControllerName(s.Name)]),
-		})
-	}
-	writeJSON(w, http.StatusOK, out)
 }
 
 // handleCreateApp handles POST /api/v1/apps. Rejects a name that already
@@ -677,7 +639,14 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resource.Tags = tagNames
-	writeJSON(w, http.StatusOK, resource)
+	writeJSON(w, http.StatusOK, appWithRequests{appResource: resource, Requests: rt.requestSummaryFor(r, name)})
+}
+
+// appWithRequests is GET /api/v1/apps/{name}'s body: the app plus its recent
+// ingress request summary (rate, error rate, p95), omitted without telemetry.
+type appWithRequests struct {
+	appResource
+	Requests *telemetry.RequestSummary `json:"requests,omitempty"`
 }
 
 // handleUpdateApp handles PUT /api/v1/apps/{name}. Full replace, same as
@@ -977,41 +946,35 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 // down once its App row disappears would never actually go away.
 func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-
-	existing, err := rt.apps.GetDesiredService(r.Context(), name)
+	err := rt.deleteApp(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: delete app: load existing failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete app failed", err, slog.String("name", name))
 		return
 	}
-	appID := existing.AppID
-
-	if err := rt.apps.DeleteDesiredService(r.Context(), name); err != nil {
-		if errors.Is(err, store.ErrServiceNotFound) {
-			writeError(w, http.StatusNotFound, "app not found")
-			return
-		}
-		rt.logger.Error("api: delete app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	rt.teardownServiceContainers(name, existing.NodeID)
-
-	if appID != "" {
-		rt.deleteAppIfOrphaned(r.Context(), appID)
-	}
-
-	// teardownServiceContainers above already removes this app's own
-	// containers directly, not via the reconciler; the nudge here is for
-	// application/network-cleanup, the other controller with work to do
-	// once this app's App row is gone.
 	rt.nudgeReconciler()
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// deleteApp removes name's desired state, tears its containers down in the
+// background and drops its App row if it was the last member. Callers nudge
+// the reconciler afterwards.
+func (rt *Router) deleteApp(ctx context.Context, name string) error {
+	existing, err := rt.apps.GetDesiredService(ctx, name)
+	if err != nil {
+		return fmt.Errorf("load app %q: %w", name, err)
+	}
+	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
+		return fmt.Errorf("delete app %q: %w", name, err)
+	}
+	rt.teardownServiceContainers(name, existing.NodeID)
+	if existing.AppID != "" {
+		rt.deleteAppIfOrphaned(ctx, existing.AppID)
+	}
+	return nil
 }
 
 // teardownServiceContainers stops name's running containers in the

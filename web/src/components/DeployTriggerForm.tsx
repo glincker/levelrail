@@ -10,6 +10,9 @@ import { useTriggerBuild } from '../queries/builds'
 import { useImageTagsOptional } from '../queries/images'
 import { useProtectedEnvironment } from '../queries/environments'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
+import { DeploySafetyOptions } from './DeploySafetyOptions'
+import { useFreezeBlocksDeploy } from '../queries/deployFreeze'
+import { EMPTY_DEPLOY_SAFETY } from '../lib/imageDigest'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -52,6 +55,8 @@ function DeployExistingImageForm({ appName }: { appName: string }) {
   const triggerDeploy = useTriggerDeploy(appName)
   const protectedEnv = useProtectedEnvironment(app)
   const [ackProtected, setAckProtected] = useState(false)
+  const [safety, setSafety] = useState(EMPTY_DEPLOY_SAFETY)
+  const frozenWithoutReason = useFreezeBlocksDeploy(appName, safety)
   // Optional convenience only, the same graceful-degradation shape
   // useNodeListOptional's own doc comment establishes (queries/nodes.ts):
   // a failure or empty result here must never block this form's core
@@ -69,11 +74,18 @@ function DeployExistingImageForm({ appName }: { appName: string }) {
 
   const onSubmit = handleSubmit((values) => {
     triggerDeploy.mutate(
-      { image: values.image.trim(), confirm: ackProtected },
+      {
+        image: values.image.trim(),
+        confirm: ackProtected,
+        pull: safety.pull,
+        overrideFreeze: safety.overrideReason.trim() !== '',
+        overrideReason: safety.overrideReason.trim(),
+      },
       {
         onSuccess: (result) => {
           reset({ image: '' })
           setAckProtected(false)
+          setSafety(EMPTY_DEPLOY_SAFETY)
           if (isPendingApproval(result)) {
             toast.add({
               title: 'Deploy is pending approval.',
@@ -151,12 +163,18 @@ function DeployExistingImageForm({ appName }: { appName: string }) {
           type="submit"
           disabled={
             triggerDeploy.isPending ||
+            frozenWithoutReason ||
             (protectedEnv?.protected && !ackProtected)
           }
         >
           {triggerDeploy.isPending ? 'Triggering...' : 'Deploy'}
         </Button>
       </form>
+      <DeploySafetyOptions
+        appName={appName}
+        values={safety}
+        onChange={setSafety}
+      />
       {protectedEnv?.protected ? (
         <ProtectedEnvironmentNotice
           id="deploy-existing-image-ack-protected"

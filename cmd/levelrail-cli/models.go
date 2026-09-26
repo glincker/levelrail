@@ -30,6 +30,10 @@ func runModels(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runModelsRestart(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-key":
 		return runModelsRotateKey(prog, rest, stdout, stderr, lookupEnv)
+	case "keys":
+		return runModelsKeys(prog, rest, stdout, stderr, lookupEnv)
+	case "usage":
+		return runModelsUsage(prog, rest, stdout, stderr, lookupEnv)
 	case "gpus":
 		return runModelsGPUs(prog, rest, stdout, stderr, lookupEnv)
 	default:
@@ -48,6 +52,8 @@ func modelsUsage(prog string) string {
   %[1]s models delete <name> [flags]        remove a model (its downloaded weights volume is kept)
   %[1]s models restart <name> [flags]       recreate the engine container
   %[1]s models rotate-key <name> [flags]    issue a new API key (prints it once)
+  %[1]s models keys list|create|revoke|rotate   named API keys with limits, expiry and rotation grace
+  %[1]s models usage <name> [flags]         gateway requests, tokens, errors and latency per key
   %[1]s models gpus [flags]                 list GPU nodes with VRAM and usage
 
 Run "%[1]s models <subcommand> -h" for a subcommand's own flags.

@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
-import { PulseIcon, InfoIcon } from '@phosphor-icons/react/dist/ssr'
-import { Badge } from './ui/badge'
-import { Alert, AlertDescription, AlertTitle } from './ui/alert'
+import { PulseIcon } from '@phosphor-icons/react/dist/ssr'
+import { RequestMetricsSection } from './RequestMetricsSection'
 import { MetricChartCard } from './MetricChartCard'
 import { TimeRangeControls } from './TimeRangeControls'
 import { useMetricSeries } from '../queries/metrics'
@@ -20,15 +19,8 @@ import {
 } from '../lib/timeRange'
 
 // Per-app metrics dashboard, wired against the real
-// `GET /api/v1/apps/{name}/metrics`. One remaining honest gap against
-// the full per-app metrics list the observability phase requires
-// without configuration, deliberately not papered over: only the 9
-// metrics MetricName covers (types/metrics.ts) are actually collected
-// today. Request rate, response time percentiles, and error rate are
-// required per-app metrics but have no collector behind them yet (see
-// types/metrics.ts's comment for exactly why). NOT_YET_COLLECTED below
-// renders that remaining list as a plain, clearly labeled gap, not as
-// empty or fabricated charts.
+// `GET /api/v1/apps/{name}/metrics`. Request rate, error rate and latency
+// come from the ingress via RequestMetricsSection.
 //
 // Container restart count is real but deliberately not a CHART_GROUPS
 // line chart: internal/telemetry.MetricContainerRestartCount is one
@@ -72,12 +64,6 @@ import {
 // new backend work: deployFrequencyLabel below counts attempts whose
 // started_at falls in the visible range, the same filter
 // resolveDeployMarkers already applies for the chart overlay.
-
-const NOT_YET_COLLECTED = [
-  'Request rate',
-  'Response time percentiles',
-  'Error rate',
-]
 
 interface SeriesConfig {
   metric: MetricName
@@ -189,12 +175,16 @@ const DEPLOY_MARKER_COLOR: Record<DeployAttemptStatus, string> = {
   succeeded: '#22c55e',
   failed: '#ef4444',
   running: '#94a3b8',
+  held: '#f59e0b',
+  superseded: '#94a3b8',
 }
 
 const DEPLOY_MARKER_STATUS_LABEL: Record<DeployAttemptStatus, string> = {
   succeeded: 'Succeeded',
   failed: 'Failed',
   running: 'Running',
+  held: 'Held (frozen)',
+  superseded: 'Superseded',
 }
 
 function formatDeployMarkerTooltip(attempt: DeployAttempt, t: number): string {
@@ -329,22 +319,11 @@ export function MetricsDashboard({
         ))}
       </div>
 
-      <Alert className="mt-4">
-        <InfoIcon />
-        <AlertTitle>Not yet collected</AlertTitle>
-        <AlertDescription>
-          <p>
-            These are required per-app metrics, but no collector backs them yet:
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {NOT_YET_COLLECTED.map((label) => (
-              <Badge key={label} variant="outline">
-                {label}
-              </Badge>
-            ))}
-          </div>
-        </AlertDescription>
-      </Alert>
+      <RequestMetricsSection
+        appName={appName}
+        range={range}
+        markers={deployMarkers}
+      />
     </section>
   )
 }

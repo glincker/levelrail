@@ -194,8 +194,29 @@ func (c *Client) ListAppStatuses(ctx context.Context) ([]AppStatusEntry, error) 
 // placement are never copied (see internal/api/apps_clone.go's own doc
 // comment for why).
 func (c *Client) CloneApp(ctx context.Context, name, newName string) (AppResource, error) {
+	return c.CloneAppWith(ctx, name, CloneAppRequest{NewName: newName})
+}
+
+// CloneAppWith is CloneApp with the secret, domain and environment options.
+func (c *Client) CloneAppWith(ctx context.Context, name string, req CloneAppRequest) (AppResource, error) {
 	var out AppResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/clone", CloneAppRequest{NewName: newName}, &out)
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/clone", req, &out)
+	return out, err
+}
+
+// ClonePreview is GET /api/v1/apps/{name}/clone/preview's body.
+type ClonePreview struct {
+	Source      string   `json:"source"`
+	WillCopy    []string `json:"will_copy"`
+	WillNotCopy []string `json:"will_not_copy"`
+	SecretNames []string `json:"secret_names"`
+	Domains     []string `json:"source_domains"`
+}
+
+// PreviewClone calls GET /api/v1/apps/{name}/clone/preview.
+func (c *Client) PreviewClone(ctx context.Context, name string) (ClonePreview, error) {
+	var out ClonePreview
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/clone/preview", nil, &out)
 	return out, err
 }
 
@@ -230,8 +251,31 @@ func (c *Client) TriggerBuild(ctx context.Context, name string, req BuildTrigger
 // (ApproveDeployApproval below) before this tag actually reaches a
 // running container.
 func (c *Client) DeployApp(ctx context.Context, name, image string, confirm bool) (DeployTriggerResult, error) {
+	return c.DeployAppWith(ctx, name, DeployTriggerRequest{Image: image, Confirm: confirm})
+}
+
+// DeployAppWith is DeployApp with the full request: pull and freeze override.
+func (c *Client) DeployAppWith(ctx context.Context, name string, req DeployTriggerRequest) (DeployTriggerResult, error) {
 	var out DeployTriggerResult
-	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploys", DeployTriggerRequest{Image: image, Confirm: confirm}, &out)
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploys", req, &out)
+	return out, err
+}
+
+// GetDeployFreeze calls GET /api/v1/apps/{name}/deploy-freeze.
+func (c *Client) GetDeployFreeze(ctx context.Context, name string) (DeployFreezeResource, error) {
+	var out DeployFreezeResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploy-freeze", nil, &out)
+	return out, err
+}
+
+// SetDeployFreeze calls PUT /api/v1/apps/{name}/deploy-freeze, replacing the
+// app's windows; an empty list clears them.
+func (c *Client) SetDeployFreeze(ctx context.Context, name string, windows []FreezeWindowResource) (DeployFreezeResource, error) {
+	var out DeployFreezeResource
+	if windows == nil {
+		windows = []FreezeWindowResource{}
+	}
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/deploy-freeze", PutDeployFreezeRequest{Windows: windows}, &out)
 	return out, err
 }
 

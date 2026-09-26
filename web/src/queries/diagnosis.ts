@@ -6,9 +6,16 @@
 // fire on a normal page load, only when DiagnosisPanel actually renders
 // (a failed attempt or a crashlooping app) or an operator expands it.
 
-import { queryOptions, useQuery } from '@tanstack/react-query'
-import type { Diagnosis } from '../types/diagnosis'
-import { appKeys } from './apps'
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import type { Diagnosis, DiagnosisFix } from '../types/diagnosis'
+import { patchApp } from '../lib/diagnosisFix'
+import { appKeys, fetchApp, updateApp } from './apps'
+import { applyTriggerDeployResult, triggerDeploy } from './deploys'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const diagnosisKeys = {
@@ -47,4 +54,34 @@ export function useDiagnosis(
   enabled: boolean,
 ) {
   return useQuery({ ...diagnosisQueryOptions(appName, deployId), enabled })
+}
+
+export interface ApplyDiagnosisFixInput {
+  fix: DiagnosisFix
+  inputs: Record<string, string>
+  redeploy: boolean
+}
+
+// Applies a fix client side through the ordinary app update path: fetch the
+// current app, patch the fields the fix names, PUT it back with the caller's
+// own permissions, then optionally redeploy.
+export function useApplyDiagnosisFix(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ fix, inputs, redeploy }: ApplyDiagnosisFixInput) => {
+      const current = await fetchApp(appName)
+      const saved = await updateApp(patchApp(current, fix.changes, inputs))
+      queryClient.setQueryData(appKeys.detail(appName), saved)
+      if (redeploy) {
+        const result = await triggerDeploy(appName, { image: saved.image })
+        applyTriggerDeployResult(queryClient, appName, result)
+      }
+      return saved
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [...appKeys.detail(appName), 'diagnosis'],
+      })
+    },
+  })
 }

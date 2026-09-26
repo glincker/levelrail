@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -30,6 +31,12 @@ type ServiceStore interface {
 	DeleteModel(ctx context.Context, name string) error
 	MarkModelDeleting(ctx context.Context, name string) error
 	RotateModelAPIKey(ctx context.Context, name, hash, prefix string) error
+	ListModelKeys(ctx context.Context, model string) ([]store.ModelKey, error)
+	GetModelKey(ctx context.Context, model, id string) (*store.ModelKey, error)
+	CreateModelKey(ctx context.Context, k store.ModelKey) error
+	RevokeModelKey(ctx context.Context, model, id string, now time.Time) error
+	RotateModelKey(ctx context.Context, model, oldID string, next store.ModelKey, graceUntil *time.Time, now time.Time) error
+	ListModelUsage(ctx context.Context, model string, from, to time.Time) ([]store.ModelUsage, error)
 	RestartModel(ctx context.Context, name string) error
 	SetModelHFTokenSet(ctx context.Context, name string, set bool) error
 	GetConditions(ctx context.Context, controllerName string) ([]reconcile.Condition, error)
@@ -53,6 +60,9 @@ type Service struct {
 	secrets SecretWriter
 	hosts   *HostResolver
 	localID string
+
+	onKeysChanged func()
+	liveStats     func() map[string]int
 }
 
 // NewService builds a Service. secrets may be nil (HuggingFace tokens
@@ -164,7 +174,7 @@ func (s *Service) Restart(ctx context.Context, name string) error {
 	return s.store.RestartModel(ctx, name)
 }
 
-// RotateKey issues a new API key, invalidating the old one.
+// RotateKey replaces the model's "default" key at once, with no grace.
 func (s *Service) RotateKey(ctx context.Context, name string) (string, error) {
 	key, hash, prefix, err := NewAPIKey()
 	if err != nil {
@@ -173,6 +183,7 @@ func (s *Service) RotateKey(ctx context.Context, name string) (string, error) {
 	if err := s.store.RotateModelAPIKey(ctx, name, hash, prefix); err != nil {
 		return "", err
 	}
+	s.keysChanged()
 	return key, nil
 }
 

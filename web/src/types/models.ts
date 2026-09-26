@@ -72,3 +72,77 @@ export interface GpuNode {
   devices: GpuDevice[]
   updated_at: string
 }
+
+// Wire shapes for /api/v1/models/{name}/keys and /usage, mirroring
+// internal/api/models_keys.go and internal/models/usage.go.
+
+export type ModelKeyStatus = 'active' | 'rotating' | 'expired' | 'revoked'
+
+export interface ModelKey {
+  id: string
+  name: string
+  key_prefix: string
+  status: ModelKeyStatus
+  rpm: number
+  tpm: number
+  max_parallel: number
+  allow_paths: string[]
+  allow_models: string[]
+  replaced_by?: string
+  in_flight: number
+  created_at: string
+  expires_at?: string
+  revoked_at?: string
+  last_used_at?: string
+}
+
+export interface CreatedModelKey extends ModelKey {
+  api_key: string
+}
+
+export interface CreateModelKeyRequest {
+  name: string
+  expires_at?: string
+  rpm?: number
+  tpm?: number
+  max_parallel?: number
+  allow_paths?: string[]
+  allow_models?: string[]
+}
+
+export interface ModelUsageTotals {
+  requests: number
+  status_2xx: number
+  status_4xx: number
+  status_5xx: number
+  rate_limited: number
+  usage_requests: number
+  input_tokens: number
+  output_tokens: number
+  bytes_out: number
+  avg_duration_ms: number
+  avg_ttft_ms: number
+}
+
+export interface ModelUsagePoint extends ModelUsageTotals {
+  hour: string
+}
+
+export interface ModelKeyUsage extends ModelUsageTotals {
+  key_id: string
+  name: string
+  key_prefix: string
+  status: string
+  in_flight: number
+}
+
+export interface ModelUsageReport {
+  model: string
+  from: string
+  to: string
+  totals: ModelUsageTotals
+  series: ModelUsagePoint[]
+  keys: ModelKeyUsage[]
+  in_flight: number
+  note: string
+}

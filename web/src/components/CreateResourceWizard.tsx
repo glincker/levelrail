@@ -26,6 +26,9 @@ import { CreateAppFields } from './CreateAppFields'
 import { CreateAppFromGitFields } from './CreateAppFromGitFields'
 import { CreateComposeFields } from './CreateComposeFields'
 import { CreateDatabaseFields } from './CreateDatabaseFields'
+import { ImportFrontDoor } from './ImportFrontDoor'
+import { ImportPlanPreview } from './ImportPlanPreview'
+import type { ImportPlan, ImportPlanRequest } from '../queries/imports'
 import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 
 // Step 1's fixed application starting points. Database cards are
@@ -167,6 +170,12 @@ export function CreateResourceWizard({
   // is showing.
   const [fullscreen, setFullscreen] = useState(true)
   const [search, setSearch] = useState('')
+  // Set once the import front door has produced a plan preview; shown in
+  // place of the picker until the operator goes back or deploys.
+  const [importState, setImportState] = useState<{
+    plan: ImportPlan
+    request: ImportPlanRequest
+  } | null>(null)
   const [category, setCategory] = useState<
     'all' | 'applications' | 'databases'
   >('all')
@@ -227,6 +236,7 @@ export function CreateResourceWizard({
       setFullscreen(true)
       setSearch('')
       setCategory('all')
+      setImportState(null)
     }
   }
 
@@ -300,7 +310,32 @@ export function CreateResourceWizard({
         >
           {fullscreen ? <ArrowsInIcon /> : <ArrowsOutIcon />}
         </Button>
-        {selected === null ? (
+        {importState !== null ? (
+          <div
+            className={
+              fullscreen
+                ? 'mx-auto flex w-full max-w-2xl flex-col gap-4 py-4'
+                : 'contents'
+            }
+          >
+            <DialogHeader>
+              <DialogTitle className={fullscreen ? 'text-lg' : undefined}>
+                Deployment plan
+              </DialogTitle>
+              <DialogDescription>
+                Review what will be created. Nothing exists until you deploy.
+              </DialogDescription>
+            </DialogHeader>
+            <ImportPlanPreview
+              plan={importState.plan}
+              request={importState.request}
+              onBack={() => {
+                setImportState(null)
+              }}
+              onDeployed={handleCreated}
+            />
+          </div>
+        ) : selected === null ? (
           <>
             <DialogHeader>
               <DialogTitle className={fullscreen ? 'text-lg' : undefined}>
@@ -308,6 +343,13 @@ export function CreateResourceWizard({
               </DialogTitle>
               <DialogDescription>Pick a starting point.</DialogDescription>
             </DialogHeader>
+            {scope !== 'databases' ? (
+              <ImportFrontDoor
+                onPlan={(plan, request) => {
+                  setImportState({ plan, request })
+                }}
+              />
+            ) : null}
             <div className="relative">
               <MagnifyingGlassIcon
                 className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"

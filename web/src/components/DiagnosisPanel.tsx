@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { CaretDownIcon, WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  CaretDownIcon,
+  WarningCircleIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import {
@@ -10,6 +13,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useDiagnosis } from '../queries/diagnosis'
 import { useAlertRules } from '../queries/alerts'
+import { DiagnosisFixes } from './DiagnosisFixes'
 import type { ReconcileCondition } from '../types/deploy'
 import type { DeployAttemptStatus } from '../types/deployAttempt'
 import type { DiagnosisConfidence } from '../types/diagnosis'
@@ -126,6 +130,7 @@ export function DiagnosisPanel({
                     </ul>
                   </div>
                 ) : null}
+                <DiagnosisFixes appName={appName} />
               </div>
             ) : null}
           </CardContent>

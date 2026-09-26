@@ -8,6 +8,8 @@ import {
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Link } from '@tanstack/react-router'
+import { DigestChip } from './DeployDigestChips'
+import { unpinnedImage } from '../lib/imageDigest'
 import type { Icon } from '@phosphor-icons/react'
 import type { AppDetail } from '../types/appDetail'
 import type { ReconcileCondition } from '../types/deploy'
@@ -138,7 +140,14 @@ export function AppOverviewHero({
             )}
           </HeroField>
           <HeroField label="Image">
-            <span className="font-mono">{app.image}</span>
+            <span className="font-mono" title={app.image}>
+              {unpinnedImage(app.image)}
+            </span>
+            {app.image_digest ? (
+              <span className="ml-2">
+                <DigestChip digest={app.image_digest} />
+              </span>
+            ) : null}
             {app.pull_policy === 'always' ? (
               <Badge variant="outline" className="ml-2">
                 always pulls latest

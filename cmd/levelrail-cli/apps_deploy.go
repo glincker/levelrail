@@ -67,8 +67,10 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, cfg.cmdLabel, "print the updated app as JSON to stdout and nothing else", stderr)
 	var image string
 	var confirm bool
+	var extra deployExtraFlags
 	fs.StringVar(&image, "image", "", cfg.imageHelp)
 	fs.BoolVar(&confirm, "confirm", false, cfg.confirmHelp)
+	extra.register(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, cfg.usage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -84,15 +86,22 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	}
 	name := rest[0]
 
-	if image == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--image is required"))
-	}
-
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
+	if image == "" && extra.pull {
+		current, err := client.GetApp(ctx, name)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("load app %q: %w", name, err))
+		}
+		image = unpinnedImage(current.Image)
+	}
+	if image == "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--image is required (or --pull to re-resolve the current tag)"))
+	}
+
 	result, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (deployTriggerResult, error) {
-		return client.DeployApp(ctx, name, image, confirm)
+		return client.DeployAppWith(ctx, name, extra.request(image, confirm))
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s app %q: %w", cfg.errContext, name, err))
@@ -129,6 +138,10 @@ If the app is tagged with a protected environment, this fails unless
 Flags:
   --image string          image reference to deploy, e.g. registry.example.com/org/app:tag (required)
   --confirm                  confirm deploying into a protected environment, skipping the interactive prompt
+  --pull                     re-resolve the tag against its registry, failing rather than deploying a cached
+                             image; without --image, redeploys the app's current tag at its newest digest
+  --override-freeze          deploy even though a deploy freeze window is active
+  --override-reason string   required with --override-freeze, recorded on the deploy
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

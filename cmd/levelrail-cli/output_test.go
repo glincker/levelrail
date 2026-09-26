@@ -194,7 +194,7 @@ func TestPrintDeployAttemptsHuman(t *testing.T) {
 	// tabwriter renders columns as space-padded, not literal tabs, so
 	// compare by field position rather than substring.
 	fields := strings.Fields(lines[2])
-	const frameworkColumn = 4 // ID IMAGE SOURCE STATUS FRAMEWORK ...
+	const frameworkColumn = 7 // ID IMAGE DIGEST SOURCE STATUS ROLLOUT REASON FRAMEWORK ...
 	if len(fields) <= frameworkColumn || fields[frameworkColumn] != "-" {
 		t.Errorf("dep_2 row = %q, want the FRAMEWORK column to read '-'", lines[2])
 	}

@@ -5,7 +5,9 @@ package attention
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
+	"strconv"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -28,6 +30,9 @@ type Item struct {
 	Kind     string `json:"kind"`
 	Subject  string `json:"subject"`
 	Detail   string `json:"detail"`
+	// Fixable is set on deploy and app items whose diagnosis carries a
+	// one-click fix.
+	Fixable bool `json:"fixable,omitempty"`
 }
 
 // Input is everything Build reads; any field may be zero when its
@@ -49,9 +54,9 @@ func diskItem(s apiclient.SystemStatusResource) (Item, bool) {
 	detail := fmt.Sprintf("%.1f%% free (%d of %d bytes)", pct, s.DataDirFreeBytes, s.DataDirTotalBytes)
 	switch {
 	case pct < diskCriticalFreePercent:
-		return Item{Critical, "disk", "data dir", detail}, true
+		return Item{Critical, "disk", "data dir", detail, false}, true
 	case pct < diskWarnFreePercent:
-		return Item{Warning, "disk", "data dir", detail}, true
+		return Item{Warning, "disk", "data dir", detail, false}, true
 	}
 	return Item{}, false
 }
@@ -67,13 +72,13 @@ func nodeAgentItems(n apiclient.NodeResource) []Item {
 		}
 		switch c.State {
 		case "expired":
-			items = append(items, Item{Critical, "node_cert", n.Name, "agent certificate expired " + expires + ": re-enroll the node"})
+			items = append(items, Item{Critical, "node_cert", n.Name, "agent certificate expired " + expires + ": re-enroll the node", false})
 		case "critical":
-			items = append(items, Item{Critical, "node_cert", n.Name, "agent certificate expires " + expires + ", renewal is failing"})
+			items = append(items, Item{Critical, "node_cert", n.Name, "agent certificate expires " + expires + ", renewal is failing", false})
 		case "expiring":
-			items = append(items, Item{Warning, "node_cert", n.Name, "agent certificate expires " + expires + ", renewal is failing"})
+			items = append(items, Item{Warning, "node_cert", n.Name, "agent certificate expires " + expires + ", renewal is failing", false})
 		case "revoked":
-			items = append(items, Item{Warning, "node_cert", n.Name, "agent certificate revoked: re-enroll or delete the node"})
+			items = append(items, Item{Warning, "node_cert", n.Name, "agent certificate revoked: re-enroll or delete the node", false})
 		}
 	}
 	if a := n.Agent; a != nil && a.Outdated {
@@ -81,7 +86,7 @@ func nodeAgentItems(n apiclient.NodeResource) []Item {
 		if v == "" {
 			v = "unknown version"
 		}
-		items = append(items, Item{Warning, "node_agent", n.Name, "agent " + v + " is older than the minimum " + a.MinVersion})
+		items = append(items, Item{Warning, "node_agent", n.Name, "agent " + v + " is older than the minimum " + a.MinVersion, false})
 	}
 	return items
 }
@@ -99,11 +104,11 @@ func Build(in Input) []Item {
 		if detail == "" {
 			detail = "deploy failed"
 		}
-		items = append(items, Item{Critical, "deploy", f.ServiceName, detail})
+		items = append(items, Item{Critical, "deploy", f.ServiceName, detail, false})
 	}
 	for _, a := range in.Apps {
 		if a.Status.Variant == "destructive" {
-			items = append(items, Item{Critical, "app", a.Name, a.Status.Label})
+			items = append(items, Item{Critical, "app", a.Name, a.Status.Label, false})
 		}
 	}
 	for _, n := range in.Nodes {
@@ -112,24 +117,24 @@ func Build(in Input) []Item {
 			if n.LastSeenAt != nil {
 				detail = "last seen " + n.LastSeenAt.Format("2006-01-02 15:04 MST")
 			}
-			items = append(items, Item{Critical, "node", n.Name, detail})
+			items = append(items, Item{Critical, "node", n.Name, detail, false})
 		}
 		items = append(items, nodeAgentItems(n)...)
 	}
 	for _, c := range in.Certs {
 		switch c.Status {
 		case "expired":
-			items = append(items, Item{Critical, "certificate", c.Domain, "expired " + c.NotAfter.Format("2006-01-02")})
+			items = append(items, Item{Critical, "certificate", c.Domain, "expired " + c.NotAfter.Format("2006-01-02"), false})
 		case "expiring_soon":
-			items = append(items, Item{Warning, "certificate", c.Domain, "expires " + c.NotAfter.Format("2006-01-02")})
+			items = append(items, Item{Warning, "certificate", c.Domain, "expires " + c.NotAfter.Format("2006-01-02"), false})
 		}
 	}
 	for _, c := range in.Doctor.Checks {
 		switch c.Status {
 		case "fail":
-			items = append(items, Item{Critical, "doctor", c.Name, c.Message})
+			items = append(items, Item{Critical, "doctor", c.Name, c.Message, false})
 		case "warn":
-			items = append(items, Item{Warning, "doctor", c.Name, c.Message})
+			items = append(items, Item{Warning, "doctor", c.Name, c.Message, false})
 		}
 	}
 	sort.SliceStable(items, func(i, j int) bool {
@@ -160,5 +165,40 @@ func Collect(ctx context.Context, client *apiclient.Client) ([]Item, error) {
 	}
 	failed, _ := client.ListFailedDeploys(ctx, "24h")
 	status, _ := client.GetSystemStatus(ctx)
-	return Build(Input{Apps: apps, Nodes: nodes, Certs: certs, Doctor: doctor, Failed: failed, Status: status}), nil
+	items := Build(Input{Apps: apps, Nodes: nodes, Certs: certs, Doctor: doctor, Failed: failed, Status: status})
+	markFixable(ctx, client, items)
+	return items, nil
+}
+
+const (
+	envDiagnoseLimit     = "APP_ATTENTION_DIAGNOSE_LIMIT"
+	defaultDiagnoseLimit = 10
+)
+
+// markFixable flags deploy and app items whose diagnosis has a patch fix.
+// It asks about at most APP_ATTENTION_DIAGNOSE_LIMIT distinct apps, and a
+// failed lookup just leaves the item unflagged.
+func markFixable(ctx context.Context, client *apiclient.Client, items []Item) {
+	limit := defaultDiagnoseLimit
+	if n, err := strconv.Atoi(os.Getenv(envDiagnoseLimit)); err == nil && n >= 0 {
+		limit = n
+	}
+	fixable := map[string]bool{}
+	asked := map[string]bool{}
+	for i := range items {
+		it := &items[i]
+		if it.Kind != "deploy" && it.Kind != "app" {
+			continue
+		}
+		if !asked[it.Subject] {
+			if len(asked) >= limit {
+				continue
+			}
+			asked[it.Subject] = true
+			if d, err := client.DiagnoseApp(ctx, it.Subject, ""); err == nil {
+				fixable[it.Subject] = d.Fixable
+			}
+		}
+		it.Fixable = fixable[it.Subject]
+	}
 }

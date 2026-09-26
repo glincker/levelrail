@@ -416,6 +416,9 @@ type RoutesOptions struct {
 	// caller migrating from one to the other doesn't need a separate
 	// code path just to clear the old field.
 	CertStorage any
+	// RequestStats, if true, wraps every proxy and static route in the
+	// request_stats handler (per-app request rate, errors, latency).
+	RequestStats bool
 }
 
 // BuildRoutesConfig builds a Config with one server carrying one route
@@ -504,6 +507,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 				Errors:  &ErrorsConfig{Routes: errorPageErrorRoutes(r.ErrorPages)},
 			}}
 		}
+		if opts.RequestStats {
+			handle = append([]any{NewRequestStatsHandler(r.Hosts[0])}, handle...)
+		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
 			Handle: handle,
@@ -517,9 +523,13 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if r.RootDir == "" {
 			return nil, fmt.Errorf("ingress: build routes config: static route %d has no root directory", i)
 		}
+		staticHandle := []any{NewFileServerHandler(r.RootDir)}
+		if opts.RequestStats {
+			staticHandle = append([]any{NewRequestStatsHandler(r.Hosts[0])}, staticHandle...)
+		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
-			Handle: []any{NewFileServerHandler(r.RootDir)},
+			Handle: staticHandle,
 		})
 		allHosts = append(allHosts, r.Hosts...)
 	}

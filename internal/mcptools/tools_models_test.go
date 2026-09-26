@@ -44,6 +44,32 @@ func TestModelTools_RequestsAndResults(t *testing.T) {
 			},
 		},
 		{
+			tool: "list_model_keys", args: map[string]any{"name": "chat"}, wantMethod: http.MethodGet, wantPath: "/api/v1/models/chat/keys",
+			respond: func(w http.ResponseWriter) {
+				_ = json.NewEncoder(w).Encode([]apiclient.ModelKeyResource{{ID: "k1", Name: "ci", KeyPrefix: "lr-12345", Status: "active"}})
+			},
+			check: func(t *testing.T, r *mcp.CallToolResult) {
+				var out []apiclient.ModelKeyResource
+				decodeStructured(t, r, &out)
+				if len(out) != 1 || out[0].KeyPrefix != "lr-12345" || strings.Contains(toolResultText(r), "api_key") {
+					t.Errorf("out = %+v", out)
+				}
+			},
+		},
+		{
+			tool: "get_model_usage", args: map[string]any{"name": "chat", "since": "6h"}, wantMethod: http.MethodGet, wantPath: "/api/v1/models/chat/usage",
+			respond: func(w http.ResponseWriter) {
+				_ = json.NewEncoder(w).Encode(apiclient.ModelUsageReport{Model: "chat", Totals: apiclient.ModelUsageTotals{Requests: 3}, Note: "n"})
+			},
+			check: func(t *testing.T, r *mcp.CallToolResult) {
+				var out apiclient.ModelUsageReport
+				decodeStructured(t, r, &out)
+				if out.Totals.Requests != 3 {
+					t.Errorf("out = %+v", out)
+				}
+			},
+		},
+		{
 			tool: "list_gpu_nodes", args: map[string]any{}, wantMethod: http.MethodGet, wantPath: "/api/v1/gpus",
 			respond: func(w http.ResponseWriter) {
 				_ = json.NewEncoder(w).Encode([]apiclient.GPUNodeResource{{Name: "gpu-1", Present: true, GPUCount: 1, TotalVRAMMiB: 24576, Devices: []apiclient.GPUDeviceResource{}}})

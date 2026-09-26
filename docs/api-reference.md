@@ -42,7 +42,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 49 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 51 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -103,13 +103,15 @@ Endpoints for:
 | GET | /api/v1/settings/ai-assistant | AbilityRead | handleGetAIAssistantSettings |
 | PUT | /api/v1/settings/ai-assistant | AbilityRoot | handleUpdateAIAssistantSettings |
 | DELETE | /api/v1/settings/ai-assistant | AbilityRoot | handleDeleteAIAssistantSettings |
+| GET | /api/v1/settings/deploy-freeze | AbilityRead | handleGetGlobalDeployFreeze |
+| PUT | /api/v1/settings/deploy-freeze | AbilityRoot | handlePutGlobalDeployFreeze |
 
 :::
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 77 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 77 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 83 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 83 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -198,6 +200,12 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/pipeline-sync | AbilityRead | handleGetPipelineSync |
 | PUT | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleSetPipelineSync |
 | POST | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleRunPipelineSync |
+| POST | /api/v1/apps/{name}/preflight | AbilityRead | handlePreflightApp |
+| POST | /api/v1/apps/bulk | AbilityWrite | handleBulkApps |
+| GET | /api/v1/apps/{name}/clone/preview | AbilityRead | handleClonePreview |
+| GET | /api/v1/apps/{name}/deploy-freeze | AbilityRead | handleGetAppDeployFreeze |
+| PUT | /api/v1/apps/{name}/deploy-freeze | AbilityDeploy | handlePutAppDeployFreeze |
+| GET | /api/v1/apps/{name}/requests | AbilityRead | handleQueryRequests |
 
 :::
 
@@ -368,7 +376,6 @@ Endpoints for:
 - Workload assignment and placement
 - Cordon, drain, and lifecycle operations
 - Node-level metrics and patch status
-- Agent certificate re-enrollment and revocation
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -384,10 +391,10 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/metrics | AbilityRoot | handleQueryNodeMetrics |
 | GET | /api/v1/nodes/{id}/patch-status | AbilityRoot | handleGetNodePatchStatus |
 | GET | /api/v1/nodes/{id}/events | AbilityRoot | handleListNodeEvents |
-| POST | /api/v1/nodes/{id}/reenroll-token | AbilityRoot | handleCreateNodeReenrollToken |
-| POST | /api/v1/nodes/{id}/revoke-cert | AbilityRoot | handleRevokeNodeCert |
 | POST | /api/v1/nodes/{id}/mesh/rotate-key | AbilityRoot | handleRotateNodeMeshKey |
 | GET | /api/v1/nodes/resource-usage | AbilityRoot | handleFleetResourceUsage |
+| POST | /api/v1/nodes/{id}/reenroll-token | AbilityRoot | handleCreateNodeReenrollToken |
+| POST | /api/v1/nodes/{id}/revoke-cert | AbilityRoot | handleRevokeNodeCert |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -629,6 +636,11 @@ AI model resources on GPU nodes and the GPU node snapshots they schedule against
 | GET | /api/v1/models/{name}/logs | AbilityRead | handleQueryModelLogs |
 | GET | /api/v1/models/{name}/logs/stream | AbilityRead | handleLiveModelLogStream |
 | GET | /api/v1/gpus | AbilityRead | handleListGPUNodes |
+| GET | /api/v1/models/{name}/keys | AbilityRead | handleListModelKeys |
+| POST | /api/v1/models/{name}/keys | AbilityWriteSensitive | handleCreateModelKey |
+| DELETE | /api/v1/models/{name}/keys/{id} | AbilityWrite | handleRevokeModelKey |
+| POST | /api/v1/models/{name}/keys/{id}/rotate | AbilityWriteSensitive | handleRotateModelKey |
+| GET | /api/v1/models/{name}/usage | AbilityRead | handleModelUsage |
 
 ## Other
 
@@ -683,6 +695,11 @@ Routes that do not fit an existing group.
 | GET | /api/v1/pipeline-runs | AbilityRead | handleListAllPipelineRuns |
 | GET | /api/v1/pipelines/summary | AbilityRead | handleGetPipelineSummary |
 | GET | /api/v1/loadbalancers | AbilityRead | handleListLoadBalancers |
+| POST | /api/v1/preflight | AbilityWrite | handlePreflightNew |
+| GET | /api/v1/apps-summary | AbilityRead | handleAppsSummary |
+| POST | /api/v1/imports/plan | AbilityWrite | handleImportPlan |
+| POST | /api/v1/imports/platform/discover | AbilityWriteSensitive | handleDiscoverPlatformImport |
+| POST | /api/v1/imports/platform/apply | AbilityWriteSensitive | handleApplyPlatformImport |
 
 ## See also
 

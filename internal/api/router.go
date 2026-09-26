@@ -80,10 +80,12 @@ import (
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/GLINCKER/levelrail/internal/importplan"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -108,6 +110,7 @@ type Router struct {
 	secrets                SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	composeSecrets         ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
+	requestSummaryWindow   time.Duration      // 0 keeps defaultRequestSummaryWindow
 	alertRules             AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
 	lb                     lbDeps             // zero value is valid: load balancer routes return 501
 	sessions               *sessionStore
@@ -129,6 +132,8 @@ type Router struct {
 	registryAuthTester     RegistryAuthTester     // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
 	execRuntime            NodeRuntimeResolver    // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
 	models                 ModelService           // nil is valid: /api/v1/models routes return 501, see WithModels
+	deploySafety           DeploySafetyStore      // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
+	imageResolver          docker.ImageResolver   // nil deploys image tags unresolved, see WithDeploySafety
 	reconcileNudger        ReconcileNudger        // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
 	certs                  CertStore              // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
 	ingressSettings        IngressSettingsStore   // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
@@ -258,6 +263,7 @@ type Router struct {
 	builder                        Builder                          // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
 	fetch                          fetchFunc                        // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
 	listBranches                   listBranchesFunc                 // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
+	importFiles                    func() importplan.FileSource     // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
 	detect                         detectFunc                       // framework pre-flight detector for handleDetectFramework; always non-nil, defaulted to build.Detect in NewRouter, overridable in this package's own tests
 	staticSites                    StaticSiteStore                  // always set, same "core Store interface, not an optional plug-in" shape as certs above
 	backupTargets                  BackupTargetStore                // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
@@ -474,6 +480,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		fetch:                       gitCheckout,
 		listBranches:                listRemoteBranches,
 		detect:                      build.Detect,
+		importFiles:                 func() importplan.FileSource { return importplan.NewHTTPFiles() },
 		gitSourceFetch:              gitCheckoutWithToken,
 		logins:                      newLoginLimiter(),
 		recoveryCodes:               s,

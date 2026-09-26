@@ -409,7 +409,7 @@ func printDeployAttemptsHuman(out io.Writer, attempts []deployAttemptResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tIMAGE\tSOURCE\tSTATUS\tFRAMEWORK\tSTARTED\tFINISHED\tERROR")
+	_, _ = fmt.Fprintln(tw, "ID\tIMAGE\tDIGEST\tSOURCE\tSTATUS\tROLLOUT\tREASON\tFRAMEWORK\tSTARTED\tFINISHED\tERROR")
 	for _, a := range attempts {
 		finished := "-"
 		if a.FinishedAt != nil {
@@ -419,8 +419,8 @@ func printDeployAttemptsHuman(out io.Writer, attempts []deployAttemptResource) {
 		if framework == "" {
 			framework = "-"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			a.ID, a.Image, a.Source, a.Status, framework, a.StartedAt.Format(time.RFC3339), finished, a.Error)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			a.ID, unpinnedImage(a.Image), shortDigest(a.ImageDigest, a.DigestReason), a.Source, a.Status, dashIfEmpty(a.RolloutState), dashIfEmpty(a.Reason), framework, a.StartedAt.Format(time.RFC3339), finished, a.Error)
 	}
 	_ = tw.Flush()
 }
@@ -434,12 +434,14 @@ func printDiagnosisHuman(out io.Writer, d diagnosisResource) {
 	_, _ = fmt.Fprintf(out, "\n%s\n", d.Explanation)
 	_, _ = fmt.Fprintf(out, "\nsuggested next step:\n  %s\n", d.Suggestion)
 	if len(d.MatchedSignals) == 0 {
+		printDiagnosisCauses(out, d)
 		return
 	}
 	_, _ = fmt.Fprintln(out, "\nmatched signals:")
 	for _, s := range d.MatchedSignals {
 		_, _ = fmt.Fprintf(out, "  [%s] %s\n", s.Source, s.Excerpt)
 	}
+	printDiagnosisCauses(out, d)
 }
 
 // printResourceRecommendationHuman prints "apps resource-recommendation"

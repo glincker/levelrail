@@ -1,242 +1,158 @@
 ---
-description: Migrate apps from Coolify, Dokploy, or CapRover to Levelrail with automatic mapping and manual review
+description: Import apps, databases, env vars, domains and volumes from Coolify, Dokploy or CapRover with a dry run first, then apply
 ---
 
 # Migrating from Coolify, Dokploy, or CapRover
 
-The `migrate` commands read every application from a live source instance and convert each one into a Levelrail service.
+The platform importer reads a live Coolify, Dokploy or CapRover instance through its own HTTP API and creates the matching apps and databases here. It is read-only against the source: it never stops, changes or deletes anything there, and a test asserts it issues nothing but GET requests (CapRover's one login POST aside).
 
-Commands:
+You can run it three ways, all backed by the same two API routes:
 
-- `levelrail-cli migrate coolify`
-- `levelrail-cli migrate dokploy`
-- `levelrail-cli migrate caprover`
-
-Output can be saved as `app.yaml` files on disk or applied directly to a target Levelrail control plane.
-
-This is a one-way, read-only migration. Nothing on the source instance is touched, and applying to Levelrail is additive (creates new apps, does not delete or modify existing ones on the source).
+- Dashboard: Settings, then Import from another platform.
+- CLI: `levelrail-cli import platform coolify|dokploy|caprover --url URL`.
+- API: `POST /api/v1/imports/platform/discover` and `/apply` (ability `write:sensitive`, source token in the request body only).
 
 ::: tip
-This page describes what the commands do today, not an aspirational version. If something below says an app is dropped or needs manual review, that's the actual behavior of the mapping code, not a gap in this documentation.
+Always start with a dry run. `--dry-run` (or the dashboard's Discover step) reads the source and shows exactly what would be created, per item, without creating anything.
 :::
 
-## Migration decision flow
+## Quick start
 
-```mermaid
-graph TD
-  A["App config from<br/>source instance"] --> B{Blocking issue?<br/>Nixpacks, Compose,<br/>etc.}
-  B -->|Yes| C["Not migrated<br/>manual review needed"]
-  B -->|No| D{"Have all data<br/>for mapping?<br/>repo, ports, etc."}
-  D -->|Partial| E["app.yaml created<br/>review issues logged"]
-  D -->|Yes| F["app.yaml created<br/>no issues"]
-  C --> G["Check punch list"]
-  E --> G
-  F --> G
-  style C fill:#FFB6C1
-  style E fill:#FFE4B5
-  style F fill:#90EE90
+```bash
+# token from the environment, not the command line
+export APP_IMPORT_SOURCE_TOKEN=...            # or: --token-stdin
+levelrail-cli import platform coolify --url https://coolify.example.com --dry-run
+
+# happy with the report? run it for real, optionally for a subset
+levelrail-cli import platform coolify --url https://coolify.example.com --only web,api
 ```
 
-## Before you run it
+What the token is, per platform:
 
-### Source credentials
+| Platform | Credential | How it is sent to the source |
+| --- | --- | --- |
+| Coolify | API token (Keys and tokens). Use `read:sensitive` to get real env values | `Authorization: Bearer` |
+| Dokploy | API key | `x-api-key` header |
+| CapRover | Login password | exchanged for a session token via `POST /api/v2/login` |
 
-You need the source instance's base URL (`--url`) and a credential (`--token`):
+The token is sent to this control plane in the request body, used in memory for the duration of the request, and never stored, logged, written to the audit log, or returned in a response. Any error text is scrubbed of it. Prefer `APP_IMPORT_SOURCE_TOKEN` or `--token-stdin`: `--token` works but warns, because it lands in shell history and the process list.
 
-- **Coolify**: API bearer token
-- **Dokploy**: API key
-- **CapRover**: Instance login password (plain text, not a pre-issued API token)
+## Flags
 
-Coolify and Dokploy pass `--token` straight through as a bearer credential. CapRover authenticates via login exchange (`CaproverClient.Login`), exchanging the password for a session token automatically.
+| Flag | Meaning |
+| --- | --- |
+| `--url` | Source platform base URL (required) |
+| `--dry-run` | Report only, create nothing |
+| `--only a,b` | Import only these source ids or names |
+| `--collision suffix\|skip` | When a name is taken: rename with a numeric suffix (default) or skip |
+| `--insecure-tls` | Skip TLS verification of the source (self-signed certificates) |
+| `--allow-private`, `--allow-loopback` | Allow a private-network or loopback source, see below |
+| `--token-stdin` | Read the token from the first line of stdin |
+| `--json` | Print the report as JSON |
 
-### Secret values
+The command exits non-zero when any item failed, so a script can retry.
 
-Decide whether to include secret values with `--include-secret-values`.
+## Reaching a source on a private network
 
-Without it:
-- Every environment variable migrates as a key-only placeholder (name only, value skipped).
-- The report shows how many were skipped per app.
+Sources usually live on your own network, often on a private address. The control plane refuses those by default, because an import URL is an outbound request an operator controls. Allowing it is an explicit, double opt-in:
 
-With it:
+1. The operator sets `APP_IMPORT_ALLOW_PRIVATE_NETWORKS=true` (or `APP_IMPORT_ALLOW_LOOPBACK=true` for a source on the same host) in the control plane's environment.
+2. The request also sets `allow_private` (or `allow_loopback`), which the CLI exposes as `--allow-private` and `--allow-loopback` and the dashboard as a checkbox.
 
-- **Coolify**: requires the token to have the `read:sensitive` ability. Empty values (even with the flag set) are reported as review issues, not silently dropped.
-- **Dokploy**: no separate sensitive gate; API already returns real values. The flag only controls whether this tool writes or applies them.
-- **CapRover**: no documented redaction gate; same trust model as Dokploy. The flag only controls whether values are written or applied.
+Either alone is rejected with a 400. Use of the opt-in is logged with the source host (never the token). Cloud metadata and link-local addresses (`169.254.0.0/16` including `169.254.169.254`, `fe80::/10`, `fd00:ec2::/32`, `100.100.100.200`) and unspecified or multicast addresses are blocked unconditionally, even with both opt-ins, because there is no legitimate reason to point an importer at an instance metadata service. The check runs on the resolved IP at dial time and after redirects, so a hostname that re-resolves to an internal address is still caught. Proxies are ignored for the same reason.
 
-### Output mode: file or direct apply
+Other limits: 30 second request timeout, 8 MiB per response, bounded project and page walks, TLS verification on unless `--insecure-tls` is set, credentials embedded in the URL are rejected.
 
-Choose file mode (default) or `--apply`:
+## What the report tells you
 
-**File mode**: Writes one `<service>.yaml` per app into `--out-dir` (default `./migrated`), plus a `<service>.secrets.env` file (mode 0600) for any app whose real env values were fetched. The secrets file is plain `KEY=VALUE` text, meant to be read once and deleted (use `apps secrets set` or the dashboard's Secrets card to enter the values).
+Every discovered item gets one row with a status:
 
-**Apply mode** (`--apply`): Calls `POST /api/v1/apps` directly against a target Levelrail instance for each app, then sets each fetched secret via `PUT .../secrets/{key}`. Requires separate credentials: `--target-token`, `--target-api-url`, and `--target-profile` (separate from `--token`/`--url`) because this command talks to two control planes in one invocation. They resolve through the same `APP_API_TOKEN`/`APP_API_URL`/named-profile precedence as other commands.
+| Status | Meaning |
+| --- | --- |
+| Ready (`mapped`) | Maps cleanly, nothing for you to do |
+| Needs attention (`needs-attention`) | Will be created, but with a caveat and a suggested manual step |
+| Not supported (`unsupported`) | Cannot be imported, with the reason and what to do by hand |
+| Already imported | Created by an earlier run, skipped |
+| Skipped | Name already taken and `--collision skip` was set |
+| Created, Failed | Outcomes after an apply |
 
-## What actually gets migrated
+Apply is idempotent and resumable. Every imported app carries the labels `import/source-id` (`<platform>:<source id>`), `import/source-platform` and `import/source-name`. A re-run finds apps by that label and skips them, so a partial failure is fixed by running the same command again: finished items are skipped and only the rest are attempted. Databases have no labels, so a re-run treats an existing database with the same name, engine and version as already imported.
 
-All three commands map to the same `mappedApp`/`mappedService` shape, so they behave identically once past provider-specific fetch calls.
+## Mapping tables
 
-### Automatically migrated per app
+### Apps
 
-**Build type**
+| Neutral field | Coolify | Dokploy | CapRover |
+| --- | --- | --- | --- |
+| Name | application name | application name | app name |
+| Project | project name | project name | none |
+| Image source | build pack `dockerimage`: image and tag | source type `docker`: `dockerImage` | not exposed |
+| Git source | `git_repository`, `git_branch` | GitHub, Bitbucket, custom git URL, branch | `appPushWebhook.repoInfo` when set |
+| Build method | `dockerfile` (path from base directory and dockerfile location), `static`, Nixpacks becomes Railpack | `dockerfile`, `static`, nixpacks and buildpacks become Railpack | Dockerfile assumed when a repo is known |
+| Port | first of `ports_exposes` | port of the first domain | `containerHttpPort` (80 when unset) |
+| Env vars | `/envs`, real value when the token allows, preview duplicates dropped | `env` text block parsed | `envVars` |
+| Secret flag | hidden vars, plus secret-looking names | secret-looking names | secret-looking names |
+| Domains | `fqdn`, comma separated | domain list | `<app>.<root domain>` unless not exposed, plus custom domains |
+| Volumes | persistent storages | volume and bind mounts | volumes and bind mounts |
+| Replicas | 1 | `replicas` | `instanceCount` |
+| Health check | HTTP path, interval, timeout, retries | swarm health check when it is a curl or wget style HTTP probe | none |
+| Resource limits | `limits_memory`, `limits_cpus` | `memoryLimit` bytes, `cpuLimit` nanoCPUs | none |
+| Cron jobs | enabled scheduled tasks | not read | not applicable |
 
-- Coolify and Dokploy: `dockerfile`, `railpack`, or `static` (from their `build_pack`/`buildType` fields); non-default Dockerfile paths preserved as `build.path`.
-- CapRover: **assumed** to be `dockerfile` at the repo root (API does not expose `captain-definition` file contents). Flagged as a `review` issue naming the actual `captainDefinitionRelativeFilePath` so you can confirm before deploying.
+Secret-looking names are values whose key matches password, secret, token, key, credential, auth, DSN or a common database URL name. Those values go through the secrets manager (envelope encrypted, bound to the app), never into plain env. A secret variable that came back empty (Coolify redacts values without `read:sensitive`) is skipped and called out in the report.
 
-**Domains**
+### Databases
 
-- Coolify: comma-separated `fqdn` field
-- Dokploy: attached domain list
-- CapRover: app's default subdomain (`<appName>.<rootDomain>`, unless the app opted out) combined with explicit custom domains
+| Source | Engines mapped | Version |
+| --- | --- | --- |
+| Coolify | PostgreSQL, MySQL, MariaDB, MongoDB, Redis | major version from the image tag |
+| Dokploy | PostgreSQL, MySQL, MariaDB, MongoDB, Redis | major version from the image tag |
+| CapRover | none (databases are ordinary apps or one-click apps) | not applicable |
 
-All folded into the same domains list.
+A database whose engine or version cannot be determined is reported as unsupported.
 
-**Port**
+### Compose files and Dokku
 
-The first port found: Coolify's `ports_exposes`, Dokploy's first domain's port, or CapRover's `containerHttpPort`. Static sites get no port (no running container to route to).
+The importer package can also map a plain Docker Compose file (one app per service with an image, database-looking images as managed databases) and a `dokku config:export` style environment dump, without contacting anything. These two file sources are not yet exposed through the API, CLI or dashboard, so today they are only reachable from Go code. Live Dokku over SSH is not supported.
 
-**HTTP health checks**
+## What does not migrate
 
-- Coolify: path-based config maps directly (interval, timeout, retry count).
-- Dokploy and CapRover: no documented equivalent field in the API, so health checks are not migrated. Add by hand afterward.
+- Database contents. Databases are created empty. Dump each source database and restore it with the backup and restore tools, then update the app's connection settings. The report and the dashboard both say so.
+- Volume contents. Volumes are created empty, copy the data across before starting the app. Bind mounts need the same host path on the target node and the root ability; without root they are skipped and reported.
+- Git-built apps do not build automatically. They are created with a pending image so nothing runs, and the report names the repository and branch. Connect the repository (with credentials for a private one) and run a build.
+- CapRover apps have no recoverable image, because CapRover builds locally. Connect a repository or push an image to a registry, then set it as the source.
+- Compose stacks, Coolify one-click services and Dokploy compose apps. They are multi-service and are reported as unsupported, deploy their compose file with the compose deploy command.
+- Dokploy apps uploaded as an archive (`drop`), and file mounts. Unsupported.
+- Health checks that are shell commands, pre and post deploy commands, extra ports and raw host port mappings, Coolify preview variables. Called out as needs attention where relevant.
+- TLS certificates, DNS records, deploy history, logs and metrics. Re-point DNS only after the app is healthy here.
+- Cron jobs are reported with the schedule and command so you can recreate them as scheduled tasks.
 
-**Resource limits**
+## Rollback
 
-- Coolify: Docker-native `limits_memory`/`limits_cpus` strings convert to `resources.memory`/`resources.cpu`.
-- Dokploy: byte/nanoCPU fields convert the same way.
-- CapRover: exposes no per-app resource limits, so nothing is mapped.
+The importer only ever adds resources here and never touches the source, so the source keeps running throughout. To undo an import:
 
-**Environment variable keys**
+1. Find what it created: the apply report lists every created app and database by name, and each app carries the label `import/source-id` (visible in `levelrail-cli apps get <name> --json`).
+2. Delete those apps (`levelrail-cli apps delete <name>`) and the databases the report listed.
+3. Delete any projects the import created if they are empty.
 
-Always migrated for all three sources. Real values only migrate with `--include-secret-values`, and only into the secrets file or secrets API, never into the generated `app.yaml`.
+Because nothing on the source changed, no source-side rollback is needed. Keep DNS pointing at the source until the imported app is healthy.
 
-**Git repo and branch**
+## Manual checklist after an import
 
-- Coolify: `git_repository`/`git_branch` fields migrate directly.
-- Dokploy: GitHub and Bitbucket sources (owner + repository + branch) become URLs; GitLab and Gitea sources do not (API returns only `owner`/`repository`/`branch`, not the instance host, and guessing a host is worse than leaving it blank). These come back as a review issue with the values so you can build the URL yourself.
-- CapRover: **exposes no git repo/branch identity** on this endpoint (CapRover deploys are one-time pushes, not stored state). CapRover-sourced `app.yaml` files have no repo/branch, and the follow-up `apps create --repo ...` command is not printed.
+- [ ] Read every "needs attention" and "not supported" row and its suggested step.
+- [ ] Restore database dumps and copy volume data.
+- [ ] Connect repositories and run builds for git-based apps.
+- [ ] Confirm secrets landed (the Secrets card on each app) and re-enter any that were skipped.
+- [ ] Check domains, then re-point DNS.
+- [ ] Re-add health checks and cron jobs the report listed.
 
-### Issues reported for manual review or dropped
+## The older `migrate` commands
 
-Per app, in the `issues` list, each tagged `dropped`, `review`, or `blocking`:
-
-#### Blocking issues (app not migrated)
-
-- Coolify's `nixpacks` build pack, Dokploy's `nixpacks` build type: Levelrail uses Railpack, not Nixpacks; no translation is attempted.
-- Coolify's `dockercompose` build pack: Compose apps are multi-service by nature; translation to Levelrail's `services:` map is not attempted.
-- Dokploy's `docker` (prebuilt image) and `drop` (file upload) source types: `app.yaml` has no field for a bare image outside the CLI's `--image-repo` create flow; these need a manual `apps create`.
-- Dokploy's `heroku_buildpacks` and `paketo_buildpacks` build types: Same reason as nixpacks.
-
-Apps with blocking issues produce no `app.yaml` and are listed separately ("needs manual review (not migrated)").
-
-#### Dropped issues (silently omitted)
-
-- Coolify's command-based (`CMD`) health checks: Levelrail only supports HTTP-path health checks.
-- Additional ports on multi-port apps: `app.yaml` supports one port per service. Later ports are dropped.
-- CapRover's raw host/container TCP/UDP port mappings: Same reason; only the ingress-routed port is kept.
-- CapRover persistent volumes and bind mounts: `app.yaml` has no service-level volume field. One issue per volume names the container path. If `hasPersistentData` is set but no volumes were listed, a separate **review** issue tells you to check the CapRover dashboard by hand.
-
-#### Review issues (app migrated with caveats)
-
-- CapRover `instanceCount` above 1: This tool doesn't set `app.yaml`'s `replicas` field for any source (no app model exposes a count this tool maps), so scaled-out CapRover apps are called out explicitly rather than silently deployed at Levelrail's single-replica default.
-- Application name not valid for Levelrail (must be lowercase alphanumeric and hyphens, starting with a letter): Name is sanitized automatically; the original name is recorded in the issue.
-- Any resource-limit value this tool can't parse: Limit is left unset on the Levelrail side rather than guessed.
-
-Every review/dropped issue still produces a usable `app.yaml`, with the caveat recorded alongside it.
-
-## What never carries over, by design
-
-**Secret values**
-
-Unless you pass `--include-secret-values`, secrets do not migrate. Even with the flag, they never land inside the generated `app.yaml`. Re-enter secrets through `apps secrets set` or the dashboard's Secrets card.
-
-**TLS certificates**
-
-Levelrail's ingress issues its own (internal self-signed by default, public ACME as a settings toggle). Existing certificates from the source instance are not read or migrated.
-
-**DNS records**
-
-Domains are mapped into the generated `app.yaml`, but DNS records still point at the old instance until you repoint them. Plan for a cutover window per domain, not an instant switch.
-
-**Deploy history, logs, and metrics**
-
-The migration reads only current application configuration, not historical data.
-
-**Git source registration**
-
-Even for apps where a repo URL and branch were recovered, Levelrail doesn't persist git/build configuration as part of `POST /api/v1/apps` (see the next section). The generated `app.yaml` records the intended source, but no build is triggered by the migration itself.
-
-## The follow-up step every migrated app with a repo needs
-
-Levelrail doesn't store git repo/branch identity as part of an app resource; a build must be explicitly triggered with a repo, ref, and target image.
-
-For every migrated app that had a recoverable repo URL (never the case for CapRover), both file-mode and `--apply` reports print the exact follow-up command:
-
-```
-levelrail-cli apps create --file ./migrated/<service>.yaml \
-  --repo <repo-url> --ref <branch> --image-repo <your-registry>/<service>
-```
-
-**In file mode**: Run this command once you're ready to build (the app doesn't exist on Levelrail yet).
-
-**In `--apply` mode**: The app already exists on the target instance (created with a placeholder image, no build yet). Adapt the command to point at your registry, drop `--file`, confirm the app name matches what apply already created, then run it.
-
-## Manual-check punch list
-
-After running any of the three commands, before you trust the result:
-
-- [ ] Every app in "needs manual review (not migrated)": build it by
-      hand (a Compose app, a prebuilt-image app, a Nixpacks/buildpacks
-      app).
-- [ ] Every `review`-severity issue on a migrated app: read it, it
-      names the exact field and why it needed a human decision. For
-      CapRover specifically, that includes confirming the actual
-      `captain-definition` build method (this tool always assumes
-      `dockerfile` at the repo root, since the API doesn't expose it)
-      and checking the CapRover dashboard directly for any app flagged
-      as having persistent data with no volume recorded.
-- [ ] Re-enter every secret value (`apps secrets set <app> <key>`, or
-      the dashboard's Secrets card) unless you used
-      `--include-secret-values`, in which case: apply the values, then
-      delete the `.secrets.env` file, it's plain text on disk.
-- [ ] Re-point DNS for every migrated domain once you've confirmed the
-      app is healthy on Levelrail, and only then, so you keep a
-      rollback path to the old instance.
-- [ ] Trigger the actual build for every app with a repo, using the
-      follow-up `apps create --repo ... --ref ... --image-repo ...`
-      command the report printed. Every CapRover-sourced app needs this
-      done manually from scratch instead, since none of them get a repo
-      URL recovered at all.
-- [ ] Re-create storage for every CapRover app that had a volume or
-      bind mount: none of it carries over, and an app with
-      `hasPersistentData` set but no volume recorded needs a trip to
-      the CapRover dashboard to find out what's actually there.
-- [ ] Set `replicas` by hand for any CapRover app whose `instanceCount`
-      issue mentioned scaling beyond 1; every migrated app otherwise
-      lands at Levelrail's single-replica default regardless of source.
-- [ ] Re-check health checks: Dokploy- and CapRover-sourced apps had
-      none migrated; Coolify command-based checks were dropped. Add an
-      HTTP-path check in `app.yaml` or the dashboard's Health tab.
-- [ ] Re-verify resource limits landed as expected; a limit this tool
-      couldn't parse is left unset, not defaulted to something
-      conservative. CapRover apps never had resource limits mapped in
-      the first place, its listing doesn't expose any.
-- [ ] Confirm every domain in the generated `app.yaml` before wiring
-      up TLS. static sites and services with a domain-but-no-port
-      (multi-port sources) are the cases most likely to need a second
-      look.
-
-## Output formats
-
-Both commands support the same global CLI flags for scriptable output:
-
-- `--output json|table|text` (the human-readable summary is the `text` default; `--json` is a backward-compatible shorthand for `--output json`)
-- `--query` for JMESPath filtering
-
-The migration report itself is scriptable, so you can pipe the "blocking" list into another tool when migrating a large number of apps.
+`levelrail-cli migrate coolify|dokploy|caprover` predates the importer. It reads the same sources but writes `app.yaml` files (or creates apps one by one with `--apply`) instead of talking to the server-side importer, and it does not handle databases, volumes as resources, idempotent re-runs or the network opt-in. Use `import platform` for new work.
 
 ## See also
 
 - [getting-started.md](getting-started.md) - deploying your first app
-- [app-spec-reference.md](app-spec-reference.md) - full app.yaml schema for reference during migration
+- [app-spec-reference.md](app-spec-reference.md) - full app.yaml schema
+- [backups-and-storage.md](backups-and-storage.md) - dump and restore tools for moving data
 - [comparison.md](comparison.md) - architectural differences between platforms
-- [roadmap.md](roadmap.md) - current capabilities and limitations

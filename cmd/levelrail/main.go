@@ -124,16 +124,6 @@ const (
 	// smaller blast radius for an operator to tune without redesigning
 	// the schema.
 	metricsCollectionInterval = 15 * time.Second
-	// defaultMetricsRetention matches the observability design's
-	// "default 15 days" retention.
-	defaultMetricsRetention = 15 * 24 * time.Hour
-	// metricsRetentionSweepInterval: how often the retention sweep runs,
-	// not how long data is kept (that's the retention duration itself).
-	// Hourly is frequent enough that the table never grows much past its
-	// steady-state size, infrequent enough to be a non-event on a
-	// control plane whose idle cost the project's hardening phase wants
-	// measured.
-	metricsRetentionSweepInterval = 1 * time.Hour
 
 	// logTargetsResyncInterval is how often the log collector re-derives
 	// which containers it should be streaming from, kept
@@ -403,6 +393,7 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+	configureTelemetryTiers(telemetryDB)
 	defer func() {
 		if cerr := telemetryDB.Close(); cerr != nil {
 			logger.Error("closing telemetry store", slog.String("error", cerr.Error()))
@@ -629,6 +620,7 @@ func run(logger *slog.Logger) error {
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver)
 	configureNodeCerts(apiRouter, agentServer)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
+	startHeldDeployReleaser(ctx, logger, db, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
@@ -705,7 +697,7 @@ func run(logger *slog.Logger) error {
 			logger.Error("telemetry collector stopped", slog.String("error", err.Error()))
 		}
 	}()
-	go runMetricsRetentionSweep(ctx, telemetryDB, logger)
+	startTelemetryMaintenance(ctx, telemetryDB, metricsCollectionInterval, logger)
 
 	// Host disk space only has a real node to attribute samples to once
 	// meshCfg has bootstrapped this process's own nodes row
@@ -1357,50 +1349,6 @@ func logsRetention() time.Duration {
 	return d
 }
 
-// runMetricsRetentionSweep deletes samples older than the configured
-// retention window on a fixed interval, until ctx is done. Retention
-// duration is env-configurable (APP_METRICS_RETENTION, a Go duration
-// string like "360h"), following the project's "no hardcoded
-// thresholds, use env vars" rule; the sweep interval itself is not, see
-// metricsRetentionSweepInterval's doc comment for why that one's fixed.
-func runMetricsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.Logger) {
-	ticker := time.NewTicker(metricsRetentionSweepInterval)
-	defer ticker.Stop()
-
-	sweep := func() {
-		cutoff := time.Now().Add(-metricsRetention())
-		deleted, err := db.Retain(ctx, cutoff)
-		if err != nil {
-			logger.Error("metrics retention sweep failed", slog.String("error", err.Error()))
-			return
-		}
-		if deleted > 0 {
-			logger.Info("metrics retention sweep", slog.Int64("deleted", deleted), slog.Time("cutoff", cutoff))
-		}
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			sweep()
-		}
-	}
-}
-
-func metricsRetention() time.Duration {
-	raw := os.Getenv("APP_METRICS_RETENTION")
-	if raw == "" {
-		return defaultMetricsRetention
-	}
-	d, err := time.ParseDuration(raw)
-	if err != nil {
-		return defaultMetricsRetention
-	}
-	return d
-}
-
 // nodeHeartbeatInterval reads APP_NODE_HEARTBEAT_INTERVAL, the same
 // env-var-with-default shape as metricsRetention/logsRetention above.
 // Used by mesh.go's own localNodeHeartbeat, how often the control
@@ -1652,7 +1600,10 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithAppStore(db),
 		deploy.WithVaultConfigChecker(db),
 		deploy.WithLoadBalancerStore(db),
+		deploy.WithOrderedStore(db),
+		deploy.WithAttemptRecorder(db),
 	}
+	deployOpts = append(deployOpts, digestResolverOptions(logger, db, secretsManager)...)
 	if secretsManager != nil {
 		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager), deploy.WithBuildCache(newBuildCache(logger, db, secretsManager)))
 	}
@@ -1947,6 +1898,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithReconcileNudger(engine),
 		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
+		api.WithRequestSummaryWindow(requestSummaryWindow()),
 		api.WithAlertRules(alertingDB),
 		api.WithDeployNotifyTargets(alertingDB),
 		api.WithDeployNotifier(deployDispatcher),
@@ -2004,6 +1956,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithPublicHost(publicHost()),
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
+		api.WithDeploySafety(db, client),
 		api.WithLogBroadcaster(logBroadcaster),
 		// emailSender is always non-nil (run() builds it unconditionally):
 		// forgot-password always exists, it just fails clearly at send
@@ -3061,6 +3014,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithListenAddr(deps.ingressHTTPSAddr),
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
 			ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}),
+			ingressreconcile.WithRequestStats(),
 		}
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial))
@@ -3168,6 +3122,8 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithNetworkPrefix(deps.networkPrefix),
 		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),
+		application.WithRolloutRecorder(deps.db),
+		application.WithPreviousReleaseHold(previousReleaseHold(deps.logger)),
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
 		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
 	}

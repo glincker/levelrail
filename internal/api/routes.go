@@ -20,6 +20,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerPipelineOverviewRoutes(mux)
 	rt.registerModelRoutes(mux)
 	rt.registerLoadBalancerRoutes(mux)
+	rt.registerPlatformImportRoutes(mux)
 
 	var h http.Handler = mux
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
@@ -178,6 +179,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 
 	// OAuth settings: GET is AbilityRead, PUT is AbilityRoot, matching
 	// /api/v1/settings/ingress's own tiers.
+	// Global deploy freeze windows apply to every app, so writing them is root-only.
+	mux.HandleFunc("GET /api/v1/settings/deploy-freeze", rt.requireAbility(AbilityRead, rt.handleGetGlobalDeployFreeze))
+	mux.HandleFunc("PUT /api/v1/settings/deploy-freeze", rt.requireAbility(AbilityRoot, rt.handlePutGlobalDeployFreeze))
 	mux.HandleFunc("GET /api/v1/settings/oauth", rt.requireAbility(AbilityRead, rt.handleListOAuthSettings))
 	mux.HandleFunc("PUT /api/v1/settings/oauth/{provider}", rt.requireAbility(AbilityRoot, rt.handleUpdateOAuthProviderSettings))
 
@@ -201,6 +205,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// MCP-issued token is provably unable to reach a write/deploy route,
 	// not just conventionally discouraged from calling it.
 	mux.HandleFunc("GET /api/v1/apps", rt.requireAbility(AbilityRead, rt.handleListApps))
+	mux.HandleFunc("POST /api/v1/apps/bulk", rt.requireAbility(AbilityWrite, rt.handleBulkApps))
+	mux.HandleFunc("GET /api/v1/apps-summary", rt.requireAbility(AbilityRead, rt.handleAppsSummary))
 	mux.HandleFunc("POST /api/v1/apps", rt.requireAbility(AbilityWrite, rt.handleCreateApp))
 	// Resource-scoped (iam.go): a policy can Deny or narrowly Allow
 	// write/delete on one specific app by name, e.g. a token whose flat
@@ -242,6 +248,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// clone is a creation shaped as "copy {name}" rather than "start
 	// from scratch": handleCloneApp's own doc comment covers what does
 	// and doesn't carry over.
+	mux.HandleFunc("GET /api/v1/apps/{name}/clone/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleClonePreview))
 	mux.HandleFunc("POST /api/v1/apps/{name}/clone", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCloneApp))
 
 	// Placement: AbilityRoot, not AbilityWrite, matching
@@ -266,6 +273,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDeployHistory))
 	mux.HandleFunc("GET /api/v1/apps/{name}/auto-rollback", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAutoRollback))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/auto-rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAutoRollback))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-freeze", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppDeployFreeze))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/deploy-freeze", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutAppDeployFreeze))
 
 	// Restart (handleRestartApp's own doc comment): AbilityDeploy, the
 	// same boundary as the deploy trigger above, since forcing a
@@ -359,6 +368,13 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// anything.
 	mux.HandleFunc("GET /api/v1/apps/{name}/diagnose", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDiagnoseApp))
 
+	// Preflight checks (preflight.go): read-only probes of an existing
+	// app's stored config (AbilityRead, resource-scoped), or of a not yet
+	// created app described in the body (AbilityWrite, since the body
+	// names hosts the server will contact).
+	mux.HandleFunc("POST /api/v1/apps/{name}/preflight", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePreflightApp))
+	mux.HandleFunc("POST /api/v1/preflight", rt.requireAbility(AbilityWrite, rt.handlePreflightNew))
+
 	// Read-only resource right-sizing suggestion
 	// (resource_recommendation.go): synthesizes the app's historical
 	// CPU/memory usage and current limits into a deterministic
@@ -394,6 +410,10 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// comment): also not scoped to an existing app, same AbilityDeploy
 	// boundary as the branch listing above.
 	mux.HandleFunc("POST /api/v1/build/detect", rt.requireAbility(AbilityDeploy, rt.handleDetectFramework))
+
+	// Import front door: classifies pasted input and returns a plan preview,
+	// creating nothing. AbilityWrite because it makes outbound fetches.
+	mux.HandleFunc("POST /api/v1/imports/plan", rt.requireAbility(AbilityWrite, rt.handleImportPlan))
 
 	// Previously-built image tags for this app's repo, so the deploy
 	// trigger form can offer a dropdown instead of a hand-typed tag

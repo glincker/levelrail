@@ -49,28 +49,41 @@ type Model struct {
 
 const modelColumns = `name, engine, model_ref, node_id, gpu_count, gpu_device_ids, context_length, quantization, domain, api_key_hash, api_key_prefix, hf_token_set, endpoint_dial, restart_nonce, deleting, created_at, updated_at`
 
-// SaveModel inserts a new model row.
+// SaveModel inserts a new model row and its default API key.
 func (db *DB) SaveModel(ctx context.Context, m Model) error {
 	ids, err := json.Marshal(nonNilStrings(m.GPUDeviceIDs))
 	if err != nil {
 		return fmt.Errorf("store: marshal model gpu device ids: %w", err)
 	}
-	now := formatTime(time.Now().UTC())
-	_, err = db.ExecContext(ctx, `
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: begin save model %q: %w", m.Name, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	now := time.Now().UTC()
+	_, err = tx.ExecContext(ctx, `
 		INSERT INTO models (`+modelColumns+`)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', 0, 0, ?, ?)
 	`, m.Name, m.Engine, m.ModelRef, m.NodeID, m.GPUCount, string(ids), m.ContextLength, m.Quantization,
-		m.Domain, m.APIKeyHash, m.APIKeyPrefix, boolToInt(m.HFTokenSet), now, now)
-	if err == nil {
-		return nil
+		m.Domain, m.APIKeyHash, m.APIKeyPrefix, boolToInt(m.HFTokenSet), formatTime(now), formatTime(now))
+	if err != nil {
+		_ = tx.Rollback() // the pool has one connection, so release it before the lookup
+		if _, getErr := db.GetModel(ctx, m.Name); getErr == nil {
+			return ErrModelExists
+		}
+		if m.Domain != "" && strings.Contains(err.Error(), "models.domain") {
+			return ErrModelDomainTaken
+		}
+		return fmt.Errorf("store: save model %q: %w", m.Name, err)
 	}
-	if _, getErr := db.GetModel(ctx, m.Name); getErr == nil {
-		return ErrModelExists
+	def := ModelKey{ID: DefaultModelKeyID(m.Name), ModelName: m.Name, Name: DefaultModelKeyName, KeyHash: m.APIKeyHash, KeyPrefix: m.APIKeyPrefix, CreatedAt: now}
+	if err := insertModelKey(ctx, tx, def); err != nil {
+		return fmt.Errorf("store: save default key of model %q: %w", m.Name, err)
 	}
-	if m.Domain != "" && strings.Contains(err.Error(), "models.domain") {
-		return ErrModelDomainTaken
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: commit save model %q: %w", m.Name, err)
 	}
-	return fmt.Errorf("store: save model %q: %w", m.Name, err)
+	return nil
 }
 
 func nonNilStrings(s []string) []string {
@@ -172,9 +185,33 @@ func (db *DB) SetModelEndpoint(ctx context.Context, name, dial string) error {
 	return db.execModelUpdate(ctx, name, "set endpoint of", `UPDATE models SET endpoint_dial = ?, updated_at = ? WHERE name = ?`, dial)
 }
 
-// RotateModelAPIKey replaces the stored key hash and prefix.
+// RotateModelAPIKey replaces the model's default key at once, keeping the
+// legacy hash and prefix on the model row in step.
 func (db *DB) RotateModelAPIKey(ctx context.Context, name, hash, prefix string) error {
-	return db.execModelUpdate(ctx, name, "rotate key of", `UPDATE models SET api_key_hash = ?, api_key_prefix = ?, updated_at = ? WHERE name = ?`, hash, prefix)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: begin rotate key of model %q: %w", name, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	now := time.Now().UTC()
+	res, err := tx.ExecContext(ctx, `UPDATE models SET api_key_hash = ?, api_key_prefix = ?, updated_at = ? WHERE name = ?`, hash, prefix, formatTime(now), name)
+	if err != nil {
+		return fmt.Errorf("store: rotate key of model %q: %w", name, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrModelNotFound
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM model_keys WHERE id = ?`, DefaultModelKeyID(name)); err != nil {
+		return fmt.Errorf("store: drop old default key of model %q: %w", name, err)
+	}
+	def := ModelKey{ID: DefaultModelKeyID(name), ModelName: name, Name: DefaultModelKeyName, KeyHash: hash, KeyPrefix: prefix, CreatedAt: now}
+	if err := insertModelKey(ctx, tx, def); err != nil {
+		return fmt.Errorf("store: insert new default key of model %q: %w", name, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: commit rotate key of model %q: %w", name, err)
+	}
+	return nil
 }
 
 // SetModelHFTokenSet records whether a HuggingFace token secret exists.
@@ -193,10 +230,20 @@ func (db *DB) MarkModelDeleting(ctx context.Context, name string) error {
 	return db.execModelUpdate(ctx, name, "mark deleting", `UPDATE models SET deleting = 1, endpoint_dial = '', updated_at = ? WHERE name = ?`)
 }
 
-// DeleteModel removes the row. Idempotent.
+// DeleteModel removes the row with its keys and usage. Idempotent.
 func (db *DB) DeleteModel(ctx context.Context, name string) error {
-	if _, err := db.ExecContext(ctx, `DELETE FROM models WHERE name = ?`, name); err != nil {
-		return fmt.Errorf("store: delete model %q: %w", name, err)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: begin delete model %q: %w", name, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, q := range []string{`DELETE FROM model_keys WHERE model_name = ?`, `DELETE FROM model_usage_hourly WHERE model_name = ?`, `DELETE FROM models WHERE name = ?`} {
+		if _, err := tx.ExecContext(ctx, q, name); err != nil {
+			return fmt.Errorf("store: delete model %q: %w", name, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: commit delete model %q: %w", name, err)
 	}
 	return nil
 }

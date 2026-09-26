@@ -55,7 +55,9 @@ type ServiceHooks struct {
 type AppResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
-	Port  int    `json:"port"`
+	// ImageDigest is the content Image is pinned to, empty for a legacy tag.
+	ImageDigest string `json:"image_digest,omitempty"`
+	Port        int    `json:"port"`
 	// HostPort mirrors internal/api's appResource.HostPort: nil means
 	// "let Docker assign one", a value pins the host-side port. Settable
 	// on create and update, like Port.
@@ -286,6 +288,10 @@ type BuildTriggerResponse struct {
 type DeployTriggerRequest struct {
 	Image   string `json:"image"`
 	Confirm bool   `json:"confirm,omitempty"`
+	// Pull re-resolves the tag and fails if the registry is unreachable.
+	Pull           bool   `json:"pull,omitempty"`
+	OverrideFreeze bool   `json:"override_freeze,omitempty"`
+	OverrideReason string `json:"override_reason,omitempty"`
 }
 
 // DeployTriggerResult mirrors internal/api's deployTriggerResult
@@ -715,7 +721,11 @@ type DomainCheckResource struct {
 // (internal/api/apps_clone.go): POST /api/v1/apps/{name}/clone's
 // request body.
 type CloneAppRequest struct {
-	NewName string `json:"new_name"`
+	NewName       string `json:"new_name"`
+	CopySecrets   bool   `json:"copy_secrets,omitempty"`
+	Domains       string `json:"domains,omitempty"`
+	DomainSuffix  string `json:"domain_suffix,omitempty"`
+	EnvironmentID string `json:"environment_id,omitempty"`
 }
 
 // ImageResource mirrors internal/api's imageResource
@@ -882,6 +892,23 @@ type PromotePreviewResource struct {
 	Changes             []DeployCompareField `json:"changes"`
 	UnsnapshottedFields []string             `json:"unsnapshotted_fields"`
 	Note                string               `json:"note"`
+	Diff                PromoteDiff          `json:"diff"`
+	Blockers            []string             `json:"blockers"`
+	NeedsConfirmation   bool                 `json:"needs_confirmation"`
+}
+
+// PromoteDiff mirrors internal/api's promoteDiff. Env values are never sent.
+type PromoteDiff struct {
+	Image        *DeployCompareField `json:"image,omitempty"`
+	Replicas     *DeployCompareField `json:"replicas,omitempty"`
+	Resources    *DeployCompareField `json:"resources,omitempty"`
+	Health       *DeployCompareField `json:"health,omitempty"`
+	EnvAdded     []string            `json:"env_added"`
+	EnvRemoved   []string            `json:"env_removed"`
+	EnvChanged   []string            `json:"env_changed"`
+	SecretsAdded []string            `json:"secret_keys_added"`
+	SecretsGone  []string            `json:"secret_keys_removed"`
+	Untouched    []string            `json:"untouched"`
 }
 
 // PromoteAppRequest mirrors internal/api's promoteTriggerRequest:
@@ -889,9 +916,11 @@ type PromotePreviewResource struct {
 // "auto-discover the sole candidate, or disambiguate" contract
 // PromotePreview's own Target query param has.
 type PromoteAppRequest struct {
-	To      string `json:"to"`
-	Target  string `json:"target,omitempty"`
-	Confirm bool   `json:"confirm,omitempty"`
+	To         string `json:"to"`
+	Target     string `json:"target,omitempty"`
+	Confirm    bool   `json:"confirm,omitempty"`
+	IncludeEnv bool   `json:"include_env,omitempty"`
+	Force      bool   `json:"force,omitempty"`
 }
 
 // RestoreHistoryResource mirrors internal/api's restoreHistoryResource
@@ -2198,6 +2227,8 @@ type DiagnosisResource struct {
 	Confidence      string            `json:"confidence"`
 	MatchedSignals  []DiagnosisSignal `json:"matched_signals"`
 	DeployAttemptID string            `json:"deploy_attempt_id,omitempty"`
+	Causes          []DiagnosisCause  `json:"causes,omitempty"`
+	Fixable         bool              `json:"fixable,omitempty"`
 }
 
 // DimensionRecommendationResource mirrors internal/api's
@@ -2441,6 +2472,39 @@ type DeployAttemptResource struct {
 	// this build, e.g. "Node.js"; empty when detection was skipped
 	// (a CLI or webhook-triggered build) or found nothing buildable.
 	DetectedFramework string `json:"detected_framework,omitempty"`
+
+	ImageDigest    string `json:"image_digest,omitempty"`
+	DigestReason   string `json:"digest_reason,omitempty"`
+	RolloutState   string `json:"rollout_state,omitempty"`
+	RunningImageID string `json:"running_image_id,omitempty"`
+	Sequence       int64  `json:"sequence,omitempty"`
+	Reason         string `json:"reason,omitempty"`
+}
+
+// FreezeWindowResource mirrors internal/api's freezeWindowResource.
+type FreezeWindowResource struct {
+	ID       string `json:"id,omitempty"`
+	Cron     string `json:"cron"`
+	Duration string `json:"duration"`
+	Timezone string `json:"timezone,omitempty"`
+	Reason   string `json:"reason,omitempty"`
+	Scope    string `json:"scope,omitempty"`
+}
+
+// DeployFreezeResource mirrors internal/api's deployFreezeResource.
+type DeployFreezeResource struct {
+	Windows   []FreezeWindowResource `json:"windows"`
+	Inherited []FreezeWindowResource `json:"inherited,omitempty"`
+	Status    struct {
+		Frozen bool       `json:"frozen"`
+		Until  *time.Time `json:"until,omitempty"`
+		Reason string     `json:"reason,omitempty"`
+	} `json:"status"`
+}
+
+// PutDeployFreezeRequest is PUT .../deploy-freeze's body.
+type PutDeployFreezeRequest struct {
+	Windows []FreezeWindowResource `json:"windows"`
 }
 
 // CertificateResource mirrors internal/api's certificateStatus

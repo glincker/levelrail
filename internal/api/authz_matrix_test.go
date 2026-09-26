@@ -54,8 +54,9 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 // public routes (not token-gated at all) and pure computations that
 // change no state.
 var readOnlyMayMutate = map[string]string{
-	"POST /api/v1/pipelines/validate": "validates YAML, persists nothing",
-	"POST /api/v1/prometheus/read":    "Prometheus remote read is a POST but only queries, gated by AbilityRead",
+	"POST /api/v1/pipelines/validate":    "validates YAML, persists nothing",
+	"POST /api/v1/apps/{name}/preflight": "read-only probes of the stored app config, persists nothing",
+	"POST /api/v1/prometheus/read":       "Prometheus remote read is a POST but only queries, gated by AbilityRead",
 }
 
 // denyExempt lists /apps/{name}/... routes that legitimately do not

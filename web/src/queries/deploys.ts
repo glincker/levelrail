@@ -70,6 +70,10 @@ export function useDeployStatus(appName: string) {
 export interface TriggerDeployInput {
   image: string
   confirm?: boolean
+  /** Re-resolve the tag and fail instead of deploying a cached image. */
+  pull?: boolean
+  overrideFreeze?: boolean
+  overrideReason?: string
 }
 
 // TriggerDeployResult mirrors internal/api's deployTriggerResult
@@ -105,6 +109,9 @@ export async function triggerDeploy(
       body: JSON.stringify({
         image: input.image,
         confirm: input.confirm ?? false,
+        pull: input.pull ?? false,
+        override_freeze: input.overrideFreeze ?? false,
+        override_reason: input.overrideReason ?? '',
       }),
     },
   )

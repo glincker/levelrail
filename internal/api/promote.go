@@ -30,9 +30,12 @@ type promotePreviewResource struct {
 	Changes             []deployCompareField `json:"changes"`
 	UnsnapshottedFields []string             `json:"unsnapshotted_fields"`
 	Note                string               `json:"note"`
+	Diff                promoteDiff          `json:"diff"`
+	Blockers            []string             `json:"blockers"`
+	NeedsConfirmation   bool                 `json:"needs_confirmation"`
 }
 
-const promotePreviewNote = "Only the image tag is compared here. Environment variables are not diffed: environment-tier env vars are resolved live per environment at deploy time, not snapshotted per app, so there is nothing stale to compare. Ports, domains, resource limits, and other service configuration are the target app's own settings and are left untouched by a promotion."
+const promotePreviewNote = "The diff lists env key names only, never values. Domains, ports, node placement, volumes and secret values are the target app's own and are left untouched; env changes apply only when include_env is set."
 
 // promotePreviewUnsnapshottedFields is its own list, distinct from
 // deploy_compare.go's unsnapshottedDeployFields: that one means "not
@@ -53,7 +56,19 @@ func (rt *Router) handlePromotePreview(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	writeJSON(w, http.StatusOK, toPromotePreviewResource(res))
+	out := toPromotePreviewResource(res)
+	out.Diff = buildPromoteDiff(res.source, res.target)
+	out.NeedsConfirmation = promoteNeedsConfirmation(res.env, false)
+	blockers, err := rt.promoteBlockers(r.Context(), res.source)
+	if err != nil {
+		rt.internalError(w, "api: promote preview: check source failed", err, slog.String("name", name))
+		return
+	}
+	out.Blockers = blockers
+	if out.Blockers == nil {
+		out.Blockers = []string{}
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func toPromotePreviewResource(res promoteResolution) promotePreviewResource {
@@ -77,6 +92,10 @@ type promoteTriggerRequest struct {
 	To      string `json:"to"`
 	Target  string `json:"target,omitempty"`
 	Confirm bool   `json:"confirm,omitempty"`
+	// IncludeEnv also applies the diff's added and removed plain env keys.
+	IncludeEnv bool `json:"include_env,omitempty"`
+	// Force promotes even when the source is unhealthy or its last deploy failed.
+	Force bool `json:"force,omitempty"`
 }
 
 // handlePromoteApp handles POST /api/v1/apps/{name}/promote: points the
@@ -103,7 +122,18 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if environmentNeedsConfirmation(res.env, req.Confirm) {
+	if !req.Force {
+		blockers, err := rt.promoteBlockers(r.Context(), res.source)
+		if err != nil {
+			rt.internalError(w, "api: promote app: check source failed", err, slog.String("name", name))
+			return
+		}
+		if len(blockers) > 0 {
+			writeError(w, http.StatusConflict, strings.Join(blockers, "; ")+"; set force: true to promote anyway")
+			return
+		}
+	}
+	if promoteNeedsConfirmation(res.env, req.Confirm) {
 		writeEnvironmentConfirmationRequired(w, res.env)
 		return
 	}
@@ -116,14 +146,20 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := rt.setDesiredImage(r.Context(), res.target, res.source.Image)
+	target := res.target
+	if req.IncludeEnv {
+		applyPromoteEnv(&target, res.source, buildPromoteDiff(res.source, res.target))
+	}
+	image := promoteImageRef(res.source)
+	updated, err := rt.setDesiredImage(r.Context(), target, image)
 	if err != nil {
 		rt.logger.Error("api: promote app failed", slog.String("error", err.Error()), slog.String("source", name), slog.String("target", res.target.Name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	rt.recordInstantDeployAttempt(r.Context(), updated, res.source.Image, store.DeployAttemptSourcePromote)
+	rt.recordInstantDeployAttempt(r.Context(), updated, image, store.DeployAttemptSourcePromote)
+	rt.recordPromoteAudit(r.Context(), r, res.source.Name, res.target.Name)
 
 	rt.nudgeReconciler()
 	res2 := toAppResource(updated)

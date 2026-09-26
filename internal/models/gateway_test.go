@@ -16,6 +16,14 @@ type listStore struct{ models []store.Model }
 
 func (l listStore) ListModels(context.Context) ([]store.Model, error) { return l.models, nil }
 
+func (l listStore) ListActiveModelKeys(context.Context) ([]store.ModelKey, error) {
+	var out []store.ModelKey
+	for _, m := range l.models {
+		out = append(out, store.ModelKey{ID: store.DefaultModelKeyID(m.Name), ModelName: m.Name, Name: store.DefaultModelKeyName, KeyHash: m.APIKeyHash})
+	}
+	return out, nil
+}
+
 func TestGateway(t *testing.T) {
 	var gotAuth, gotPath string
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

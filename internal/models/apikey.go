@@ -11,7 +11,7 @@ import (
 const (
 	keyPrefix    = "lr-"
 	keyRandBytes = 24
-	shownPrefix  = 7
+	shownPrefix  = 8
 )
 
 // NewAPIKey returns a fresh plaintext key, its SHA-256 hex hash, and a
@@ -35,4 +35,13 @@ func HashAPIKey(plaintext string) string {
 // time.
 func KeyMatches(plaintext, storedHash string) bool {
 	return subtle.ConstantTimeCompare([]byte(HashAPIKey(plaintext)), []byte(storedHash)) == 1
+}
+
+// NewKeyID returns a random identifier for a virtual key.
+func NewKeyID() (string, error) {
+	buf := make([]byte, 8)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("models: generate key id: %w", err)
+	}
+	return "key-" + hex.EncodeToString(buf), nil
 }

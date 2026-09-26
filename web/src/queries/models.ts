@@ -25,7 +25,7 @@ export const modelKeys = {
 const SETTLING_REFETCH_MS = 3000
 const GPU_REFETCH_MS = 30000
 
-async function requestJson<T>(
+export async function requestJson<T>(
   url: string,
   init: RequestInit | undefined,
   what: string,
@@ -40,7 +40,7 @@ async function requestJson<T>(
   return (await res.json()) as T
 }
 
-async function requestVoid(
+export async function requestVoid(
   url: string,
   init: RequestInit,
   what: string,

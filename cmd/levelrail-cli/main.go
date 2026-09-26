@@ -142,6 +142,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runSecrets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "migrate":
 		return runMigrate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "import":
+		return runImport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "completion":
 		return runCompletion(prog, args[1:], stdout, stderr, lookupEnv)
 	case "settings":
@@ -180,6 +182,7 @@ Usage:
   %[1]s apps get <name> [flags]       show one app
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
   %[1]s apps deploy-compose <name> --file compose.yaml [flags]   deploy a Docker Compose file as an app
+  %[1]s import <repo-url|image|-f file|--docker-run "..."> [--deploy] [flags]   preview or deploy anything: repo, image, docker run, compose, Dockerfile
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
@@ -235,6 +238,7 @@ Usage:
   %[1]s profile list [flags]           list configured credentials profiles and their API URLs
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
+  %[1]s import platform coolify|dokploy|caprover --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
   %[1]s git-providers [flags]                             connection status and capabilities for every git provider in one call
