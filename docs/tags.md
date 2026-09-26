@@ -14,7 +14,9 @@ Tags are arbitrary labels you attach to apps to organize them by team, component
 
 ## How tags work
 
-A tag has an ID and a name. Tag names are unique across the control plane (you cannot create two tags with the same name) and capped at 64 characters for reasonable chip display in the dashboard.
+A tag has an ID and a name. Tag names are unique across the control plane (you cannot create two tags with the same name).
+
+Names are lowercased and must be a `key` or a `key:value` pair, such as `team:payments` or `tier:edge`. The key is up to 32 characters (letters, digits, `.`, `_`, `-`), and the value is up to 64 characters (the same set plus `/`). Anything else is rejected with a 400. An app can carry at most 20 tags by default; set `APP_MAX_TAGS_PER_APP` to change that. Tags created before these rules existed keep working.
 
 Apps-only. Databases do not support tags today. Tags are soft labels with no enforcement or special behavior: they do not prevent deployment, restrict access, or gate anything.
 
@@ -93,6 +95,10 @@ curl -X POST https://control-plane/api/v1/apps/my-app/tags \
 curl -X DELETE https://control-plane/api/v1/apps/my-app/tags/tag_abc123 \
   -H "Authorization: Bearer $TOKEN"
 ```
+
+## Filtering the apps list
+
+`GET /api/v1/apps` accepts `tag` (repeat it or comma-separate; an app must carry all of them), `environment` (name or ID), `project`, `q` (substring of name or image), `limit` and `offset`. The response header `X-Total-Count` carries the match count before paging. Without `limit` the whole filtered set returns, as before. `GET /api/v1/apps-summary` takes the same filters and returns running, deploying, failing and stopped counts. See [Managing apps at scale](./managing-apps-at-scale.md).
 
 ## Filtering by tag in the dashboard
 

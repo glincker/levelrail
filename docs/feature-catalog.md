@@ -96,6 +96,7 @@ the exact method/path/ability of every one), grouped by resource:
 | System (status/doctor/containers/prune/orphaned-volumes/master-key/firewall/onboarding/updates) | 14 | `GET /system/status`, `POST /system/prune`, `GET /system/volumes/orphaned`, `POST /system/master-key/rotate` |
 | Auth/2FA/users/roles/IAM/device-auth/OAuth | 33 | `/auth/login`, `/auth/2fa/*`, `/iam/policies*`, `/auth/device/*` |
 | Apps CRUD/lifecycle/deploy | 31 | `/apps`, `/apps/{name}/deploys`, `/restart`, `/exec`, `/deploy-spec`, `/hook-runs` |
+| Apps at scale (filtered list, status summary, bulk actions, clone preview, promote diff) | 3 | `GET /apps?tag=&environment=&q=`, `GET /apps-summary`, `POST /apps/bulk`, `GET /apps/{name}/clone/preview` |
 | Secrets / git-source / webhooks / previews | 12 | `/apps/{name}/secrets*`, `/webhooks/github/{name}`, `/previews*` |
 | Telemetry (metrics/logs) | 10 | `/apps/{name}/metrics`, `/logs/stream`, `/logs/download` |
 | Alerts / scheduled tasks / feature flags / notify channels | 22 | `/apps/{name}/alerts`, `/flags/evaluate/{key}`, `/notification-channels*` |

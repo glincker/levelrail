@@ -74,6 +74,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"secrets":            {subs: map[string]*cmdNode{"list": nil, "set": nil, "lock": nil}},
 		"git-source":         {subs: map[string]*cmdNode{"get": nil, "set": nil, "delete": nil}},
 		"webhook-deliveries": {subs: map[string]*cmdNode{"list": nil, "replay": nil}},
+		"bulk":               nil,
 		"clone":              nil,
 		"images":             nil,
 		"storage":            {subs: map[string]*cmdNode{"set": nil, "clear": nil}},

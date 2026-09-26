@@ -111,6 +111,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsGitSource(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "webhook-deliveries":
 		return runAppsWebhookDeliveries(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "bulk":
+		return runAppsBulk(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin) //nolint:gosec // same guard as below
 	case "clone":
 		return runAppsClone(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "images":

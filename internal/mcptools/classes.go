@@ -97,6 +97,8 @@ var toolTable = map[string]Meta{
 	"rollback_app":                          {clsD, "deploys", 0},
 	"restart_app":                           {clsM, "apps", 0},
 	"clone_app":                             {clsM, "apps", 0},
+	"bulk_apps":                             {clsM, "apps", 0},
+	"bulk_delete_apps":                      {clsD, "apps", 0},
 	"compare_deploys":                       {clsR, "deploys", unt},
 	"promote_app":                           {clsM, "deploys", 0},
 	"preview_promote_app":                   {clsR, "deploys", 0},

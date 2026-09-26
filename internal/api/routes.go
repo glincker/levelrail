@@ -204,6 +204,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// MCP-issued token is provably unable to reach a write/deploy route,
 	// not just conventionally discouraged from calling it.
 	mux.HandleFunc("GET /api/v1/apps", rt.requireAbility(AbilityRead, rt.handleListApps))
+	mux.HandleFunc("POST /api/v1/apps/bulk", rt.requireAbility(AbilityWrite, rt.handleBulkApps))
+	mux.HandleFunc("GET /api/v1/apps-summary", rt.requireAbility(AbilityRead, rt.handleAppsSummary))
 	mux.HandleFunc("POST /api/v1/apps", rt.requireAbility(AbilityWrite, rt.handleCreateApp))
 	// Resource-scoped (iam.go): a policy can Deny or narrowly Allow
 	// write/delete on one specific app by name, e.g. a token whose flat
@@ -245,6 +247,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// clone is a creation shaped as "copy {name}" rather than "start
 	// from scratch": handleCloneApp's own doc comment covers what does
 	// and doesn't carry over.
+	mux.HandleFunc("GET /api/v1/apps/{name}/clone/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleClonePreview))
 	mux.HandleFunc("POST /api/v1/apps/{name}/clone", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCloneApp))
 
 	// Placement: AbilityRoot, not AbilityWrite, matching

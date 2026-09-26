@@ -81,9 +81,9 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "clone_app",
-		Description: "Duplicate an existing app's desired state (image, port, env, secret names, resources, health checks, strategy, replicas, project) under a new name, creating a new app. Domains and secret values never carry over: the clone starts domainless and with its secrets unset, and always starts on the local node regardless of where the source is pinned. Fails with a conflict if the new name already exists. This is a mutating, app-creating action, the same category deploy_app/restart_app already expose here.",
+		Description: "Duplicate an existing app's desired state (image, port, env, secret names, resources, health checks, strategy, replicas, project) under a new name, creating a new app. Domains are left empty unless domain_suffix derives new ones, and secret values are copied only with copy_secrets (needs read:sensitive); volume data is never copied. The clone always starts on the local node regardless of where the source is pinned. Fails with a conflict if the new name already exists. This is a mutating, app-creating action, the same category deploy_app/restart_app already expose here.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneAppInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
-		app, err := client.CloneApp(ctx, in.Name, in.NewName)
+		app, err := client.CloneAppWith(ctx, in.Name, apiclient.CloneAppRequest{NewName: in.NewName, CopySecrets: in.CopySecrets, DomainSuffix: in.DomainSuffix, EnvironmentID: in.EnvironmentID, Domains: cloneDomainMode(in.DomainSuffix)})
 		if err != nil {
 			return nil, apiclient.AppResource{}, fmt.Errorf("clone app %q to %q: %w", in.Name, in.NewName, err)
 		}
@@ -190,8 +190,11 @@ type appNameInput struct {
 }
 
 type cloneAppInput struct {
-	Name    string `json:"name" jsonschema:"the app to duplicate"`
-	NewName string `json:"new_name" jsonschema:"name for the new, cloned app"`
+	Name          string `json:"name" jsonschema:"the app to duplicate"`
+	NewName       string `json:"new_name" jsonschema:"name for the new, cloned app"`
+	CopySecrets   bool   `json:"copy_secrets,omitempty" jsonschema:"copy secret values, re-encrypted for the new app; needs read:sensitive"`
+	DomainSuffix  string `json:"domain_suffix,omitempty" jsonschema:"derive domains by adding -SUFFIX to each source domain's first label; omit for no domains"`
+	EnvironmentID string `json:"environment_id,omitempty" jsonschema:"environment of the source's project to place the clone in"`
 }
 
 type deployAppInput struct {
@@ -210,4 +213,11 @@ type appLogsInput struct {
 	Since string `json:"since,omitempty" jsonschema:"how far back to search, e.g. '1h', '30m'; default 1h"`
 	Query string `json:"query,omitempty" jsonschema:"full-text search phrase; empty matches every line in the window"`
 	Tail  int    `json:"tail,omitempty" jsonschema:"max number of most-recent entries to return, default and hard cap 200"`
+}
+
+func cloneDomainMode(suffix string) string {
+	if suffix == "" {
+		return ""
+	}
+	return "suffix"
 }

@@ -46,6 +46,10 @@ const sidebarGroups = [
         text: 'Projects and organizations',
         link: '/projects-and-organizations',
       },
+        {
+        text: 'Managing apps at scale',
+        link: '/managing-apps-at-scale',
+      },
       { text: 'Identity and access', link: '/identity-and-access' },
       { text: 'Git integrations', link: '/git-integrations' },
       { text: 'Backups and storage', link: '/backups-and-storage' },

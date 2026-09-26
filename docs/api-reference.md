@@ -110,8 +110,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 80 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 80 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 82 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 82 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -200,9 +200,11 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/pipeline-sync | AbilityRead | handleGetPipelineSync |
 | PUT | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleSetPipelineSync |
 | POST | /api/v1/apps/{name}/pipeline-sync | AbilityWrite | handleRunPipelineSync |
-| GET | /api/v1/apps/{name}/requests | AbilityRead | handleQueryRequests |
+| POST | /api/v1/apps/bulk | AbilityWrite | handleBulkApps |
+| GET | /api/v1/apps/{name}/clone/preview | AbilityRead | handleClonePreview |
 | GET | /api/v1/apps/{name}/deploy-freeze | AbilityRead | handleGetAppDeployFreeze |
 | PUT | /api/v1/apps/{name}/deploy-freeze | AbilityDeploy | handlePutAppDeployFreeze |
+| GET | /api/v1/apps/{name}/requests | AbilityRead | handleQueryRequests |
 
 :::
 
@@ -373,7 +375,6 @@ Endpoints for:
 - Workload assignment and placement
 - Cordon, drain, and lifecycle operations
 - Node-level metrics and patch status
-- Agent certificate re-enrollment and revocation
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -389,10 +390,10 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/metrics | AbilityRoot | handleQueryNodeMetrics |
 | GET | /api/v1/nodes/{id}/patch-status | AbilityRoot | handleGetNodePatchStatus |
 | GET | /api/v1/nodes/{id}/events | AbilityRoot | handleListNodeEvents |
-| POST | /api/v1/nodes/{id}/reenroll-token | AbilityRoot | handleCreateNodeReenrollToken |
-| POST | /api/v1/nodes/{id}/revoke-cert | AbilityRoot | handleRevokeNodeCert |
 | POST | /api/v1/nodes/{id}/mesh/rotate-key | AbilityRoot | handleRotateNodeMeshKey |
 | GET | /api/v1/nodes/resource-usage | AbilityRoot | handleFleetResourceUsage |
+| POST | /api/v1/nodes/{id}/reenroll-token | AbilityRoot | handleCreateNodeReenrollToken |
+| POST | /api/v1/nodes/{id}/revoke-cert | AbilityRoot | handleRevokeNodeCert |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -693,6 +694,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/pipeline-runs | AbilityRead | handleListAllPipelineRuns |
 | GET | /api/v1/pipelines/summary | AbilityRead | handleGetPipelineSummary |
 | GET | /api/v1/loadbalancers | AbilityRead | handleListLoadBalancers |
+| GET | /api/v1/apps-summary | AbilityRead | handleAppsSummary |
 
 ## See also
 

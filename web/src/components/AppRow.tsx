@@ -4,6 +4,7 @@ import { logoIdForImage } from '../lib/imageLogo'
 import { PackageIcon, GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import { AppRowActions } from './AppRowActions'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import type { AppListEntry, AppStatusSummary } from '../types/appDetail'
 import { STATUS_DOT_COLOR } from '../lib/appStatus'
 
@@ -13,7 +14,7 @@ import { STATUS_DOT_COLOR } from '../lib/appStatus'
 // same width numbers twice. Icon avatar, name, image, domain, port,
 // trailing chevron, in that order.
 export const APP_LIST_GRID =
-  'grid grid-cols-[2rem_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,1.3fr)_4.5rem_2rem] items-center gap-3'
+  'grid grid-cols-[1.25rem_2rem_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,1.3fr)_4.5rem_2rem] items-center gap-3'
 
 // Links by app.name, not a separate id: the detail route
 // (routes/apps/$name.tsx) and its backing API (GET /api/v1/apps/{name})
@@ -29,7 +30,15 @@ export const APP_LIST_GRID =
 // route's ConditionsPanel remains where the full reconcile detail
 // lives; this dot is just the same category/color StatusDot below
 // summarizes, matching web/src/lib/appStatus.ts's summarizeAppStatus.
-export function AppRow({ app }: { app: AppListEntry }) {
+export function AppRow({
+  app,
+  selected = false,
+  onSelect,
+}: {
+  app: AppListEntry
+  selected?: boolean
+  onSelect?: (name: string, checked: boolean) => void
+}) {
   const domain = app.domains?.[0] ?? null
   const extraDomains = (app.domains?.length ?? 0) - 1
 
@@ -37,6 +46,16 @@ export function AppRow({ app }: { app: AppListEntry }) {
     <div
       className={`${APP_LIST_GRID} relative h-full w-full border-b border-border px-4 py-3 transition-colors hover:bg-muted/60`}
     >
+      <span className="relative z-10 flex items-center">
+        <Checkbox
+          checked={selected}
+          aria-label={`Select ${app.name}`}
+          onCheckedChange={(checked) => {
+            onSelect?.(app.name, checked)
+          }}
+        />
+      </span>
+
       <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
         <TemplateLogo
           id={logoIdForImage(app.image) ?? ''}
@@ -56,9 +75,14 @@ export function AppRow({ app }: { app: AppListEntry }) {
             {app.name}
           </Link>
         </span>
-        {app.tags && app.tags.length > 0 ? (
+        {(app.tags && app.tags.length > 0) || app.environment_name ? (
           <span className="flex flex-wrap items-center gap-1 pl-4">
-            {app.tags.slice(0, 3).map((tag) => (
+            {app.environment_name ? (
+              <Badge variant="muted" className="px-1.5 py-0 text-[10px]">
+                {app.environment_name}
+              </Badge>
+            ) : null}
+            {(app.tags ?? []).slice(0, 3).map((tag) => (
               <Badge
                 key={tag}
                 variant="outline"
@@ -67,9 +91,9 @@ export function AppRow({ app }: { app: AppListEntry }) {
                 {tag}
               </Badge>
             ))}
-            {app.tags.length > 3 ? (
+            {(app.tags?.length ?? 0) > 3 ? (
               <Badge variant="muted" className="px-1.5 py-0 text-[10px]">
-                +{app.tags.length - 3}
+                +{(app.tags?.length ?? 0) - 3}
               </Badge>
             ) : null}
           </span>
@@ -143,6 +167,7 @@ export function RowSkeleton() {
       className={`${APP_LIST_GRID} border-b border-border px-4 py-3`}
       aria-hidden="true"
     >
+      <div className="size-4 animate-pulse rounded bg-muted" />
       <div className="size-8 animate-pulse rounded-md bg-muted" />
       <div className="h-4 w-32 animate-pulse rounded bg-muted" />
       <div className="h-4 w-40 animate-pulse rounded bg-muted" />
