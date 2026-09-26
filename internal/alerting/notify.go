@@ -74,6 +74,12 @@ type Event struct {
 	// overdue summary, from EvaluateBackupMissing. Empty for every other
 	// rule kind and for resolved events.
 	BackupMissingNotice string
+
+	// Headline replaces the default first line for flapping and grouped
+	// messages; GroupNotices lists the alerts folded into a grouped one.
+	Headline     string
+	GroupNotices []string
+	GroupCount   int
 }
 
 // Notifier sends one Event somewhere. Every notify* function below
@@ -170,6 +176,10 @@ type genericPayload struct {
 	TaskFailureNotice    string     `json:"task_failure_notice,omitempty"`
 	DomainHealthNotices  []string   `json:"domain_health_notices,omitempty"`
 	BackupMissingNotice  string     `json:"backup_missing_notice,omitempty"`
+	Headline             string     `json:"headline,omitempty"`
+	GroupNotices         []string   `json:"group_notices,omitempty"`
+	GroupCount           int        `json:"group_count,omitempty"`
+	Severity             string     `json:"severity,omitempty"`
 }
 
 func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Event) error {
@@ -184,6 +194,10 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		TaskFailureNotice:    ev.TaskFailureNotice,
 		DomainHealthNotices:  ev.DomainHealthNotices,
 		BackupMissingNotice:  ev.BackupMissingNotice,
+		Headline:             ev.Headline,
+		GroupNotices:         ev.GroupNotices,
+		GroupCount:           ev.GroupCount,
+		Severity:             ev.Rule.Severity,
 	}
 	return postJSON(ctx, client, url, payload)
 }
@@ -621,13 +635,19 @@ func parseTelegramChatID(rawURL string) (chatID string, err error) {
 // them rather than duplicating this per channel.
 func summaryText(ev Event) string {
 	var b strings.Builder
-	if ev.Resolved {
+	switch {
+	case ev.Headline != "":
+		b.WriteString(ev.Headline)
+	case ev.Resolved:
 		fmt.Fprintf(&b, "[RESOLVED] %s (%s) on %s", ev.Rule.Name, ev.Rule.Kind, ev.Rule.ResourceID)
-	} else {
+	default:
 		fmt.Fprintf(&b, "[FIRING] %s (%s) on %s", ev.Rule.Name, ev.Rule.Kind, ev.Rule.ResourceID)
 	}
-	if ev.Rule.LastValue != nil {
+	if ev.Headline == "" && ev.Rule.LastValue != nil {
 		fmt.Fprintf(&b, ", value=%v", *ev.Rule.LastValue)
+	}
+	if len(ev.GroupNotices) > 0 {
+		fmt.Fprintf(&b, "\nAlerts:\n- %s", strings.Join(ev.GroupNotices, "\n- "))
 	}
 	if len(ev.LogLines) > 0 {
 		fmt.Fprintf(&b, "\nLast %d log lines:\n```\n%s\n```", len(ev.LogLines), strings.Join(ev.LogLines, "\n"))

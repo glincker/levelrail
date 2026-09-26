@@ -28,6 +28,7 @@ import {
   RobotIcon,
   SparkleIcon,
   FileCodeIcon,
+  BroadcastIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
 export interface SettingsNavItem {
@@ -141,6 +142,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: WebhooksLogoIcon,
         title: 'Notification channels',
         description: 'Slack, Discord, Telegram, webhook, and email alerts.',
+      },
+      {
+        to: '/settings/status-page',
+        icon: BroadcastIcon,
+        title: 'Status page',
+        description:
+          'Optional public page with component status, uptime and incidents.',
       },
       {
         to: '/settings/backup-targets',

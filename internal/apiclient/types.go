@@ -1497,6 +1497,12 @@ type CreateAlertRuleRequest struct {
 	NotifyURL          string `json:"notify_url,omitempty"`
 	NotifyKind         string `json:"notify_kind,omitempty"`
 	Enabled            bool   `json:"enabled"`
+
+	Severity            string            `json:"severity,omitempty"`
+	Labels              map[string]string `json:"labels,omitempty"`
+	ConsecutiveFailures int               `json:"consecutive_failures,omitempty"`
+	FlapThreshold       int               `json:"flap_threshold,omitempty"`
+	FlapWindow          string            `json:"flap_window,omitempty"`
 }
 
 // UpdateAlertRuleRequest is the same shape as CreateAlertRuleRequest:
@@ -2307,6 +2313,14 @@ type AlertRuleResource struct {
 	NotifyURL  string `json:"notify_url,omitempty"`
 	NotifyKind string `json:"notify_kind,omitempty"`
 	Enabled    bool   `json:"enabled"`
+
+	Severity            string            `json:"severity,omitempty"`
+	Labels              map[string]string `json:"labels,omitempty"`
+	ConsecutiveFailures int               `json:"consecutive_failures,omitempty"`
+	FlapThreshold       int               `json:"flap_threshold,omitempty"`
+	FlapWindow          string            `json:"flap_window,omitempty"`
+	Silenced            bool              `json:"silenced,omitempty"`
+	SilencedBy          string            `json:"silenced_by,omitempty"`
 
 	Firing          bool       `json:"firing,omitempty"`
 	PendingSince    *time.Time `json:"pending_since,omitempty"`

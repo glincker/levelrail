@@ -291,6 +291,62 @@ Guardrails:
 - If there's no older successful image to fall back to (the app has never deployed before, or has already been rolled back to its oldest recorded image), auto-rollback does nothing and leaves the crashloop to the alert notification alone, rather than rolling back to nothing.
 - Independent of the `crashloop` alert rule's own notification, which still fires either way.
 
+## Silences, maintenance windows, and noise control
+
+Everything in this section sits between rule evaluation and notification. A rule keeps evaluating, keeps its own firing state, and is always recorded in [alert history](#alert-history); these controls only decide whether a notification goes out.
+
+**`for_duration` and consecutive failures.** `for_duration` (threshold, domain health, and other debounced kinds) keeps a rule pending until its condition has held that long. Consecutive failures is a second, tick-based hold: the condition must be true on N evaluation ticks in a row (30 seconds apart) before the rule fires. Set it per rule with `consecutive_failures`, or for every rule with `APP_ALERT_CONSECUTIVE_FAILURES` (default `1`, meaning off). The streak counter lives in memory, so a control plane restart only delays a rule's first firing.
+
+**Silences.** A silence has matchers (rule IDs, apps, nodes, rule kinds, severities, labels), a start and end, a creator and a reason. Every matcher you give must match; a list inside one matcher matches any of its entries. A silence needs at least one matcher, so it can never mute everything by accident. Silences last at most 90 days, and one that ends early (`End now`, `alerts silences delete`) is kept as history, as are expired ones.
+
+- App matchers apply to app-scoped rules (threshold, crashloop, scheduled task, domain health, backup missing). Platform-wide rules such as certificate expiry have no app and are matched by rule ID, kind, severity or label.
+- Node matchers apply to apps placed on that node (by node name or ID).
+- Rules carry an optional `severity` (`info`, `warning`, default `warning`, or `critical`) and `labels` for silences to match on.
+- If a rule fires while silenced and is still firing when the silence ends, the held notification is sent then, so you are not left unaware of a live problem. If it resolves while silenced, no "resolved" message is sent for a firing you never heard about. Both cases are recorded in history.
+
+**Quick silence.** Silence one rule for 1h, 4h or 24h from the rule's row, from the dashboard's Recent alerts card, with `levelrail-cli alerts silence <app> <rule-id> --for 4h`, or with the `silence_alert_rule` MCP tool.
+
+**Maintenance windows.** A recurring silence: a 5-field cron expression for each start, a duration, and an IANA timezone, applied to all alerts, a set of apps, or a set of nodes. The cron is evaluated on the wall clock in that timezone, so "03:00 Europe/Berlin" stays at 03:00 across daylight saving changes and the window keeps its nominal length. Windows are listed with whether they are active now and their next start.
+
+**Node-down inhibition.** While a node is offline, alerts of apps placed on it are held (recorded as `inhibited`), so a dead node produces one node-offline alert instead of one per app. Held alerts are released if the app is still firing after the node returns. Platform-wide rules, including the node-offline rule itself, are never inhibited.
+
+**Flapping.** A rule that fires more than `flap_threshold` times inside `flap_window` (defaults `APP_ALERT_FLAP_THRESHOLD=5`, `APP_ALERT_FLAP_WINDOW=30m`; `0` disables) is marked flapping. It notifies once with a summary, further fires and resolves are held (recorded as `flapping`), and one "stable" message is sent when its fires drop to half the threshold. Per-rule overrides: `flap_threshold`, `flap_window`.
+
+**Grouping and deduplication.** With `APP_ALERT_GROUP_WINDOW` set (for example `2m`; default off), firing alerts for the same delivery target and app are buffered and sent as one message listing every alert with a count. A rule that fires twice in the window counts once, and a fire that resolves before the window closes sends nothing. Buffered alerts are flushed on shutdown.
+
+**Per-channel rate limit.** At most `APP_ALERT_CHANNEL_RATE_LIMIT` notifications (default `30`; `0` disables) per `APP_ALERT_CHANNEL_RATE_WINDOW` (default `10m`) go to one channel. Excess notifications are recorded as `ratelimited`. Deploy notifications are not counted.
+
+All noise state except silences, windows and history is in memory. A control plane restart forgets pending groups, streaks, flap counters and held notifications; rule firing state itself is persisted, so a still-firing rule does not re-notify after a restart.
+
+**Environment variables:**
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_ALERT_CONSECUTIVE_FAILURES` | `1` | ticks a condition must hold before firing (per rule: `consecutive_failures`) |
+| `APP_ALERT_FLAP_THRESHOLD` | `5` | fires within the window that mark a rule flapping (per rule: `flap_threshold`) |
+| `APP_ALERT_FLAP_WINDOW` | `30m` | flapping window (per rule: `flap_window`) |
+| `APP_ALERT_GROUP_WINDOW` | off | how long firing alerts are buffered into one message |
+| `APP_ALERT_CHANNEL_RATE_LIMIT` | `30` | notifications per channel per rate window |
+| `APP_ALERT_CHANNEL_RATE_WINDOW` | `10m` | rate limit window |
+| `APP_ALERT_HISTORY_RETENTION` | `30d` | how long alert history is kept |
+
+## Alert history
+
+Every state change and notification decision is recorded: the rule, app, node, severity, the event (`fired`, `resolved`, `flapping`, `flap_ended`), and the outcome.
+
+| Outcome | Meaning |
+| --- | --- |
+| `sent` | the notification was delivered |
+| `failed` | delivery failed; the error is stored |
+| `silenced` | a silence or maintenance window matched (`silence_id` names it) |
+| `inhibited` | the app's node was offline |
+| `grouped` | folded into one grouped message, or resolved before its group was sent |
+| `ratelimited` | the channel rate limit was reached |
+| `flapping` | held because the rule is flapping |
+| `skipped` | the rule or its channel is disabled |
+
+Shown per app on `/apps/{name}/alerts`, globally on `/alerts` (with outcome and event filters), and available from the CLI (`levelrail-cli alerts history`), the API (`GET /api/v1/alert-history`) and the `list_alert_history` MCP tool. Entries are pruned after `APP_ALERT_HISTORY_RETENTION`. Who created, changed or removed a silence, window or rule is recorded separately in the generic audit log (`GET /api/v1/audit-log`), which covers every write request.
+
 ## Notification channels
 
 Channels are global, connect-once destinations (Settings -> Notification channels). Attach them to alert rules by `channel_id` instead of retyping webhook URLs per rule.
@@ -406,6 +462,16 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 | `GET` | `/api/v1/apps/{name}/alerts` | `read` |
 | `PUT` | `/api/v1/apps/{name}/alerts/{id}` | `write` |
 | `DELETE` | `/api/v1/apps/{name}/alerts/{id}` | `write` |
+| `POST` | `/api/v1/apps/{name}/alerts/{id}/silence` | `write` |
+| `GET` | `/api/v1/apps/{name}/alert-history` | `read` |
+| `GET` | `/api/v1/alert-silences?include_expired=true` | `read` |
+| `POST` | `/api/v1/alert-silences` | `write` |
+| `DELETE` | `/api/v1/alert-silences/{id}` (ends the silence now, keeps it in history) | `write` |
+| `GET` | `/api/v1/alert-maintenance-windows` | `read` |
+| `POST` | `/api/v1/alert-maintenance-windows` | `write` |
+| `PUT` | `/api/v1/alert-maintenance-windows/{id}` | `write` |
+| `DELETE` | `/api/v1/alert-maintenance-windows/{id}` | `write` |
+| `GET` | `/api/v1/alert-history?app=...&rule_id=...&outcome=...&event=...&since=...&limit=...` | `read` |
 | `GET` | `/api/v1/notification-channels` | `read` |
 | `POST` | `/api/v1/notification-channels` | `write` |
 | `PUT` | `/api/v1/notification-channels/{id}` | `write` |
@@ -445,6 +511,19 @@ levelrail-cli apps alerts create <app> --name NAME --kind domain_health [--for-d
 levelrail-cli apps alerts create <app> --name NAME --kind control_plane_backup_stale [--for-duration 72h]
 levelrail-cli apps alerts update <app> <id> --name NAME --kind KIND [flags]
 levelrail-cli apps alerts delete <app> <id>
+# any create or update also takes: --severity info|warning|critical --consecutive-failures N
+#   --flap-threshold N --flap-window 30m --label key=value
+# a PUT replaces the whole rule, so pass these again on every update
+
+levelrail-cli alerts silences list [--all]
+levelrail-cli alerts silences create --for 4h [--rule ID] [--app NAME] [--node NAME] [--kind KIND] [--severity S] [--label k=v] [--reason TEXT]
+levelrail-cli alerts silences delete <id>
+levelrail-cli alerts silence <app> <rule-id> [--for 1h] [--reason TEXT]
+levelrail-cli alerts maintenance list
+levelrail-cli alerts maintenance create --name NAME --cron "0 3 * * 0" --duration 2h [--tz Europe/Berlin] [--scope all|app|node] [--target NAME]...
+levelrail-cli alerts maintenance update <id> [same flags]
+levelrail-cli alerts maintenance delete <id>
+levelrail-cli alerts history [--app NAME] [--rule ID] [--outcome OUTCOME] [--event EVENT] [--since TIME] [--limit N]
 
 levelrail-cli channels list
 levelrail-cli channels create --name NAME --kind KIND --notify-url URL
@@ -479,9 +558,13 @@ levelrail-cli channels deliveries <id> [--limit N]
 **Fixed configurations:**
 - Alert evaluation interval (30s) is fixed, not env-configurable (unlike per-kind thresholds).
 - No alert-rule-specific change history (visible only in generic `GET /api/v1/audit-log`).
+- SLO burn-rate rules are not built; the noise pipeline has no special handling for them yet.
+- Grouping, streak, flap and held-notification state is in memory and does not survive a control plane restart.
+- Silences and history are global, not scoped by IAM policy on individual apps: any principal with the base `read` or `write` ability can list or create them for any app.
 
 ## See also
 
+- [Public status page](./status-page.md) - opt-in read-only page with component status, uptime bars and incidents
 - [API Reference](./api-reference.md#telemetry) - full telemetry endpoint documentation
 - [Feature Catalog](./feature-catalog.md) - metrics and logs in the platform overview
 - [Architecture](./architecture.md) - telemetry design decisions and phase 2 rationale

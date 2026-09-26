@@ -20,6 +20,7 @@ import { SetupChecklistCard } from './SetupChecklistCard'
 import { FleetResourceChart } from './FleetResourceChart'
 import { FleetUtilizationSummary } from './FleetUtilizationSummary'
 import { TopResourceConsumers } from './TopResourceConsumers'
+import { RecentAlertsCard } from './RecentAlertsCard'
 import { useCompleteOnboarding } from '../queries/onboarding'
 import type { OnboardingState } from '../queries/onboarding'
 import { useIsRoot } from '../hooks/useIsRoot'
@@ -120,6 +121,8 @@ export function DashboardOverview({
       <FleetResourceChart />
 
       <TopResourceConsumers apps={apps} />
+
+      <RecentAlertsCard />
 
       {attention.length > 0 ? (
         <section>

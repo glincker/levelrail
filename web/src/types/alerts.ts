@@ -24,6 +24,8 @@
 // grace period. control_plane_backup_stale is platform-wide too: it watches
 // the control plane's own newest snapshot and reuses for_duration as the
 // maximum allowed age (default 3d).
+import type { Severity } from './alertNoise'
+
 export type AlertRuleKind =
   | 'threshold'
   | 'crashloop'
@@ -99,6 +101,17 @@ export interface AlertRule {
   notify_kind?: NotifyKind
   enabled: boolean
 
+  // Noise control (silences, flapping, consecutive failures).
+  severity?: Severity
+  labels?: Record<string, string>
+  consecutive_failures?: number
+  flap_threshold?: number
+  flap_window?: string
+
+  // Response-only: an active silence or maintenance window mutes this rule.
+  silenced?: boolean
+  silenced_by?: string
+
   // Evaluation state, response-only: only the evaluator ever sets these
   // (internal/alerting's Engine via UpdateState), a create request never
   // carries them. See ruleResource's own doc comment for the same
@@ -133,4 +146,9 @@ export interface CreateAlertRuleRequest {
   notify_url?: string
   notify_kind?: NotifyKind
   enabled: boolean
+  severity?: Severity
+  labels?: Record<string, string>
+  consecutive_failures?: number
+  flap_threshold?: number
+  flap_window?: string
 }

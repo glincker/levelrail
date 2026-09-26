@@ -87,6 +87,8 @@ type Engine struct {
 	logArchive LogArchiveSource
 
 	nodeCertWarning, nodeCertCritical time.Duration
+
+	noise *NoiseControl
 }
 
 // NewEngine builds an Engine. newNotifier defaults to a Notifier with no
@@ -185,6 +187,10 @@ func (e *Engine) SetNodeCertThresholds(warning, critical time.Duration) {
 	e.nodeCertWarning, e.nodeCertCritical = warning, critical
 }
 
+// SetNoiseControl enables silences, grouping, flapping control and alert
+// history. Unset, every transition notifies directly.
+func (e *Engine) SetNoiseControl(n *NoiseControl) { e.noise = n }
+
 // Tick evaluates every enabled rule once. Errors from individual rules
 // (a metrics query failing, a notification failing to send) are
 // collected and joined, never stopping evaluation of the remaining
@@ -199,6 +205,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 	now := time.Now()
 	var errs []error
+	if e.noise != nil {
+		defer e.noise.Sweep(ctx, now, e.sendEvent)
+	}
 
 	for _, r := range rules {
 		var next Rule
@@ -337,6 +346,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 			continue
 		}
 
+		if e.noise != nil {
+			next = e.noise.ApplyStreak(r, next, now)
+		}
 		becameFiring := next.Firing && !r.Firing
 		becameResolved := !next.Firing && r.Firing
 		stillFiring := next.Firing && r.Firing
@@ -385,6 +397,9 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	// (scanRule): a disabled channel silences the rule the same way
 	// DeployDispatcher.Dispatch skips a target with a disabled channel.
 	if !r.Enabled {
+		if e.noise != nil {
+			e.noise.RecordSkipped(ctx, r, resolved, time.Now())
+		}
 		return
 	}
 
@@ -420,18 +435,30 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 
+	if e.noise != nil {
+		e.noise.Route(ctx, ev, time.Now(), e.sendEvent)
+		return
+	}
+	_ = e.sendEvent(ctx, ev)
+}
+
+// sendEvent delivers ev and records the channel delivery. The error is
+// returned so NoiseControl can record the outcome; it is already logged.
+func (e *Engine) sendEvent(ctx context.Context, ev Event) error {
+	r := ev.Rule
 	sendErr := e.newNotifier(r).Notify(ctx, ev)
 	if sendErr != nil {
 		e.logger.Error("alerting: notification failed",
 			slog.String("rule_id", r.ID), slog.String("resource_id", r.ResourceID),
-			slog.Bool("resolved", resolved), slog.String("error", sendErr.Error()))
+			slog.Bool("resolved", ev.Resolved), slog.String("error", sendErr.Error()))
 	}
 
 	trigger := "alert-fired"
-	if resolved {
+	if ev.Resolved {
 		trigger = "alert-resolved"
 	}
 	recordDelivery(ctx, e.rules, e.logger, r.ChannelID, trigger, sendErr)
+	return sendErr
 }
 
 // fetchRecentLogLines returns the most recent up to crashloopLogLines
@@ -468,6 +495,11 @@ func (e *Engine) Run(ctx context.Context, interval time.Duration) error {
 	for {
 		select {
 		case <-ctx.Done():
+			if e.noise != nil {
+				flushCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+				e.noise.FlushAll(flushCtx, time.Now(), e.sendEvent)
+				cancel()
+			}
 			return ctx.Err()
 		case <-ticker.C:
 			if err := e.Tick(ctx); err != nil {

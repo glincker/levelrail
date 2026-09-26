@@ -22,6 +22,8 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerLoadBalancerRoutes(mux)
 	rt.registerPlatformImportRoutes(mux)
 	rt.registerIaCRoutes(mux)
+	rt.registerAlertNoiseRoutes(mux)
+	rt.registerStatusPageRoutes(mux)
 
 	var h http.Handler = mux
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)

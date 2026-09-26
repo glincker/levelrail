@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -37,11 +36,6 @@ schedule set flags: --enable | --disable, --destination ID, --recipient KEY (rep
 --retain-monthly N, --escrow-destination ID. Only the flags you pass change.
 `, prog)
 }
-
-type stringList []string
-
-func (s *stringList) String() string     { return strings.Join(*s, ",") }
-func (s *stringList) Set(v string) error { *s = append(*s, v); return nil }
 
 func runControlPlaneDR(prog, sub string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	switch sub {

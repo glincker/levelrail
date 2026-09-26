@@ -73,6 +73,20 @@ type ruleResource struct {
 	NotifyKind string `json:"notify_kind,omitempty"`
 	Enabled    bool   `json:"enabled"`
 
+	// Noise control. Severity and Labels feed silence matchers;
+	// ConsecutiveFailures, FlapThreshold and FlapWindow override the
+	// control plane defaults (zero keeps the default).
+	Severity            string            `json:"severity,omitempty"`
+	Labels              map[string]string `json:"labels,omitempty"`
+	ConsecutiveFailures int               `json:"consecutive_failures,omitempty"`
+	FlapThreshold       int               `json:"flap_threshold,omitempty"`
+	FlapWindow          string            `json:"flap_window,omitempty"`
+
+	// Response-only: set when an active silence or maintenance window
+	// currently mutes this rule.
+	Silenced   bool   `json:"silenced,omitempty"`
+	SilencedBy string `json:"silenced_by,omitempty"`
+
 	// Evaluation state: response-only. A request body that happens to
 	// set these is simply ignored, toRule below never reads them; only
 	// the evaluator (internal/alerting's Engine) ever writes this state,
@@ -104,6 +118,10 @@ func toRuleResource(r alerting.Rule) ruleResource {
 		NotifyURL:             r.NotifyURL,
 		NotifyKind:            string(r.NotifyKind),
 		Enabled:               r.Enabled,
+		Severity:              r.Severity,
+		Labels:                r.Labels,
+		ConsecutiveFailures:   r.ConsecutiveFailures,
+		FlapThreshold:         r.FlapThreshold,
 		Firing:                r.Firing,
 		PendingSince:          r.PendingSince,
 		FiringSince:           r.FiringSince,
@@ -115,6 +133,9 @@ func toRuleResource(r alerting.Rule) ruleResource {
 	}
 	if r.RestartWindow > 0 {
 		out.RestartWindow = r.RestartWindow.String()
+	}
+	if r.FlapWindow > 0 {
+		out.FlapWindow = r.FlapWindow.String()
 	}
 	return out
 }
@@ -144,7 +165,23 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		return alerting.Rule{}, fmt.Errorf("restart_window: %w", err)
 	}
 
+	flapWindow, err := parseOptionalDuration(a.FlapWindow)
+	if err != nil {
+		return alerting.Rule{}, fmt.Errorf("flap_window: %w", err)
+	}
+	if a.Severity != "" && a.Severity != alerting.SeverityInfo && a.Severity != alerting.SeverityWarning && a.Severity != alerting.SeverityCritical {
+		return alerting.Rule{}, fmt.Errorf("severity must be %q, %q or %q", alerting.SeverityInfo, alerting.SeverityWarning, alerting.SeverityCritical)
+	}
+	if a.ConsecutiveFailures < 0 || a.FlapThreshold < 0 {
+		return alerting.Rule{}, errors.New("consecutive_failures and flap_threshold must not be negative")
+	}
+
 	r := alerting.Rule{
+		Severity:              a.Severity,
+		Labels:                a.Labels,
+		ConsecutiveFailures:   a.ConsecutiveFailures,
+		FlapThreshold:         a.FlapThreshold,
+		FlapWindow:            flapWindow,
 		ID:                    id,
 		Name:                  a.Name,
 		Kind:                  kind,
@@ -460,6 +497,7 @@ func (rt *Router) handleListAlertRules(w http.ResponseWriter, r *http.Request) {
 	for _, rl := range rules {
 		out = append(out, toRuleResource(rl))
 	}
+	rt.annotateSilenced(r.Context(), name, rules, out)
 	writeJSON(w, http.StatusOK, out)
 }
 

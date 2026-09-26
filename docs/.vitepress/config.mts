@@ -42,6 +42,7 @@ const sidebarGroups = [
       { text: 'Deploy safety', link: '/deploy-safety' },
       { text: 'Managing databases', link: '/managing-databases' },
       { text: 'Observability', link: '/observability' },
+      { text: 'Public status page', link: '/status-page' },
       { text: 'Multi-node', link: '/multi-node' },
       { text: 'AI models', link: '/ai-models' },
       {
