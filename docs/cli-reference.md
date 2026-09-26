@@ -1082,9 +1082,9 @@ levelrail flags set <app> <id> --name NAME [--description DESC] [--disabled] [--
 See [Platform as code](platform-as-code.md) for the document format, secrets handling, prune rules and CI use.
 
 ```
-levelrail apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NAME] [--project P] [--yes] [--secret K=env:VAR] [--var NAME=VALUE] [--no-deploy] [--continue-on-error] [flags]
+levelrail apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NAME] [--project P] [--yes] [--secret K=env:VAR] [--var NAME=VALUE] [--var-file PATH] [--allow-env NAME[,NAME...]] [--no-deploy] [--continue-on-error] [flags]
 ```
-validate resource files, print the plan, and apply it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`)
+validate resource files, print the plan, and apply it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`). `${{ env.NAME }}` placeholders are filled only from `--var`, `--var-file` or the names listed with `--allow-env` (a trailing `*` allows a prefix, but never covers cloud or CI credential names such as `AWS_*` or `GITHUB_TOKEN`, which must be named exactly); an unresolved placeholder fails before anything is sent
 
 ```
 levelrail diff -f dir [flags]
@@ -1094,7 +1094,7 @@ drift between the files and live state, exits 2 when they differ
 ```
 levelrail export [--project P] [--app A] [-o dir|-] [--include-env-values=false] [flags]
 ```
-write live state as stable resource files, never containing secret values
+write live state as stable resource files, never containing secret values. Secret looking values become `${{ env.NAME }}` placeholders; supply them at apply time with `--var`, `--var-file` or `--allow-env`
 
 ## Nodes
 

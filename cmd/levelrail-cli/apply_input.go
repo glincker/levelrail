@@ -122,20 +122,3 @@ func resolveSecretFlags(specs map[string]string, lookupEnv func(string) (string,
 	}
 	return out, nil
 }
-
-// collectVars fills ${{ env.NAME }} placeholders from --var overrides and
-// then the process environment, for the names the files actually use.
-func collectVars(files []apiclient.IaCFile, overrides map[string]string, lookupEnv func(string) (string, bool)) map[string]string {
-	vars := map[string]string{}
-	for _, f := range files {
-		for _, m := range envPlaceRe.FindAllStringSubmatch(f.Content, -1) {
-			name := m[1]
-			if v, ok := overrides[name]; ok {
-				vars[name] = v
-			} else if v, ok := lookupEnv(name); ok {
-				vars[name] = v
-			}
-		}
-	}
-	return vars
-}

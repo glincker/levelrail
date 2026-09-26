@@ -35,6 +35,8 @@ type applyFlags struct {
 	exitCode        *bool
 	secrets         stringMapFlag
 	vars            stringMapFlag
+	varFiles        stringListFlag
+	allowEnv        stringListFlag
 }
 
 func applyUsage(prog, name string) string {
@@ -54,7 +56,11 @@ Flags:
   --project P          only the documents belonging to project P
   --yes                do not ask for confirmation
   --secret K=env:VAR   store a secret value read from an env var (or K=file:PATH); K or app/K
-  --var NAME=VALUE     value for a ${{ env.NAME }} placeholder (default: the environment)
+  --var NAME=VALUE     value for a ${{ env.NAME }} placeholder (repeatable, wins over the others)
+  --var-file PATH      KEY=VALUE lines (dotenv format) for placeholders (repeatable)
+  --allow-env NAMES    comma separated names (or PREFIX*) that placeholders may read from
+                       your environment; nothing else is read from it. Cloud and CI
+                       credentials (AWS_*, GITHUB_TOKEN, ...) need their exact name.
   --no-deploy          do not restart running apps to apply env changes
   --continue-on-error  keep applying after an item fails
 %[3]s`, prog, name, commonFlagsHelp)
@@ -73,6 +79,8 @@ func bindApplyFlags(fs *flag.FlagSet, diff bool) *applyFlags {
 	f.exitCode = fs.Bool("exit-code", diff, "with --dry-run, exit 2 when changes are pending")
 	fs.Var(f.secrets, "secret", "K=env:VAR or K=file:PATH, store a secret value at apply time")
 	fs.Var(f.vars, "var", "NAME=VALUE for a ${{ env.NAME }} placeholder")
+	fs.Var(&f.varFiles, "var-file", "file of KEY=VALUE lines for placeholders (repeatable)")
+	fs.Var(&f.allowEnv, "allow-env", "NAME[,NAME] or PREFIX* that placeholders may read from the environment")
 	return f
 }
 
@@ -163,13 +171,17 @@ func buildIaCRequest(af *applyFlags, lookupEnv func(string) (string, bool)) (api
 	if err != nil {
 		return apiclient.IaCRequest{}, err
 	}
+	vars, err := resolveVars(files, varSources{vars: af.vars, varFiles: af.varFiles, allowEnv: af.allowEnv}, lookupEnv)
+	if err != nil {
+		return apiclient.IaCRequest{}, err
+	}
 	secrets, err := resolveSecretFlags(af.secrets, lookupEnv)
 	if err != nil {
 		return apiclient.IaCRequest{}, err
 	}
 	return apiclient.IaCRequest{
 		Files: files, Source: *af.source, Project: *af.project, Prune: *af.prune, Secrets: secrets,
-		Vars: collectVars(files, af.vars, lookupEnv), NoDeploy: *af.noDeploy, ContinueOnError: *af.continueOnError,
+		Vars: vars, NoDeploy: *af.noDeploy, ContinueOnError: *af.continueOnError,
 	}, nil
 }
 
@@ -201,6 +213,7 @@ func exportUsage(prog string) string {
 Writes the live state as resource documents. Output is stable, so exporting
 twice gives identical files. Secret values are never written: secret env vars
 become secretRef, and secret looking values become ${{ env.NAME }} placeholders.
+Supply those at apply time with --var, --var-file or --allow-env.
 
 Flags:
   --project P                  only this project and what it holds
@@ -228,6 +241,9 @@ func runExport(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	}
 	for _, w := range res.Warnings {
 		_, _ = fmt.Fprintln(stderr, "warning: "+w)
+	}
+	if !*includeEnv || hasPlaceholderWarning(res.Warnings) {
+		_, _ = fmt.Fprintln(stderr, "note: at apply time supply placeholder values with --var NAME=VALUE, --var-file PATH or --allow-env NAME")
 	}
 	if c.jsonOut {
 		return c.render(res, func() {})
@@ -257,4 +273,13 @@ func writeExport(dir string, res iac.ExportResult) error {
 		}
 	}
 	return nil
+}
+
+func hasPlaceholderWarning(warns []string) bool {
+	for _, w := range warns {
+		if strings.Contains(w, "placeholder") {
+			return true
+		}
+	}
+	return false
 }

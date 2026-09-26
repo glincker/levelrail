@@ -139,7 +139,7 @@ func TestApply_SendsFilesSecretsAndVarsAndAppliesWithYes(t *testing.T) {
 	}
 
 	code, out, stderr := runIaC([]string{"apply", "-f", dir, "--yes", "--source", "ci", "--project", "p", "--no-deploy",
-		"--secret", "API_KEY=env:CI_KEY", "--secret", "web/DB_PASSWORD=file:" + secretFile, "--api-url", srv.URL}, map[string]string{"CI_KEY": "s3cret", "REGION": "eu"})
+		"--secret", "API_KEY=env:CI_KEY", "--secret", "web/DB_PASSWORD=file:" + secretFile, "--allow-env", "REGION", "--api-url", srv.URL}, map[string]string{"CI_KEY": "s3cret", "REGION": "eu"})
 	if code != exitOK {
 		t.Fatalf("exit = %d stderr = %s", code, stderr)
 	}
