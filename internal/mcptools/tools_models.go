@@ -13,6 +13,11 @@ type modelNameInput struct {
 	Name string `json:"name" jsonschema:"the model's name"`
 }
 
+type modelKeyInput struct {
+	Name  string `json:"name" jsonschema:"the model's name"`
+	KeyID string `json:"key_id" jsonschema:"the key id from list_model_keys"`
+}
+
 type modelLogsInput struct {
 	Name  string `json:"name" jsonschema:"the model's name"`
 	Since string `json:"since,omitempty" jsonschema:"how far back to search as a Go duration, e.g. 30m or 2h; defaults to 1h"`
@@ -36,6 +41,15 @@ type deployModelInput struct {
 type modelUsageInput struct {
 	Name  string `json:"name" jsonschema:"the model's name"`
 	Since string `json:"since,omitempty" jsonschema:"how far back to report as a Go duration, e.g. 24h or 168h; defaults to 24h"`
+}
+
+type preflightModelInput struct {
+	Repo    string `json:"repo" jsonschema:"HuggingFace repo id, owner/name, optionally with :quant"`
+	Engine  string `json:"engine,omitempty" jsonschema:"engine the model will run on: ollama, vllm or llamacpp"`
+	Quant   string `json:"quant,omitempty" jsonschema:"GGUF quantization to check, for example Q4_K_M"`
+	File    string `json:"file,omitempty" jsonschema:"a single repository file to check"`
+	NodeID  string `json:"node_id,omitempty" jsonschema:"node to check fit and disk against; empty means the control plane's own host"`
+	HFToken string `json:"hf_token,omitempty" jsonschema:"HuggingFace token for gated or private repos, used for this check only and never stored"`
 }
 
 type modelActionResult struct {
@@ -154,6 +168,16 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 	})
 
 	addTool(server, &mcp.Tool{
+		Name:        "revoke_model_key",
+		Description: "Revoke one named API key of a model at once. Clients using it get 401 immediately and it cannot be undone; create or rotate a key to replace it. Destructive.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelKeyInput) (*mcp.CallToolResult, modelActionResult, error) {
+		if err := client.RevokeModelKey(ctx, in.Name, in.KeyID); err != nil {
+			return nil, modelActionResult{}, fmt.Errorf("revoke key %q of model %q: %w", in.KeyID, in.Name, err)
+		}
+		return nil, modelActionResult{OK: true}, nil
+	})
+
+	addTool(server, &mcp.Tool{
 		Name:        "get_model_usage",
 		Description: "Gateway usage of a model over a window: requests, status classes, rate-limited count, input and output tokens, average latency and time to first byte, hourly series and a per key breakdown. Tokens only cover responses that carried a usage object; the note field says so. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelUsageInput) (*mcp.CallToolResult, apiclient.ModelUsageReport, error) {
@@ -168,6 +192,30 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 		out, err := client.GetModelUsage(ctx, in.Name, since)
 		if err != nil {
 			return nil, apiclient.ModelUsageReport{}, fmt.Errorf("get usage of model %q: %w", in.Name, err)
+		}
+		return nil, out, nil
+	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "preflight_model",
+		Description: "Check a HuggingFace repository before deploying a model: whether it exists, gated access and the next step, license, download size, GGUF quantizations with sizes and fit verdicts against the node's free VRAM, a recommended quantization, free disk on the node, and which engine can load the weights. GPU fit numbers are estimates. Queries the public Hub and persists nothing. Read-only.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in preflightModelInput) (*mcp.CallToolResult, apiclient.ModelPreflightResult, error) {
+		out, err := client.PreflightModel(ctx, apiclient.ModelPreflightRequest{
+			Repo: in.Repo, Engine: in.Engine, Quant: in.Quant, File: in.File, NodeID: in.NodeID, HFToken: in.HFToken,
+		})
+		if err != nil {
+			return nil, apiclient.ModelPreflightResult{}, fmt.Errorf("preflight %q: %w", in.Repo, err)
+		}
+		return nil, out, nil
+	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "list_model_cache",
+		Description: "List cached model weights per node: volume, owning model, size, last use, whether it is in use or prunable, and duplicate weights counted once. Only the control plane's host is inspected today. Read-only; pruning is done from the CLI or dashboard.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.ModelCacheReport, error) {
+		out, err := client.ListModelCache(ctx)
+		if err != nil {
+			return nil, apiclient.ModelCacheReport{}, fmt.Errorf("list model cache: %w", err)
 		}
 		return nil, out, nil
 	})

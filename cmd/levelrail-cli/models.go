@@ -36,6 +36,10 @@ func runModels(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runModelsUsage(prog, rest, stdout, stderr, lookupEnv)
 	case "gpus":
 		return runModelsGPUs(prog, rest, stdout, stderr, lookupEnv)
+	case "preflight":
+		return runModelsPreflight(prog, rest, stdout, stderr, lookupEnv)
+	case "cache":
+		return runModelsCache(prog, rest, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown models subcommand %q\n\n", prog, sub)
 		_, _ = fmt.Fprint(stderr, modelsUsage(prog))
@@ -55,6 +59,8 @@ func modelsUsage(prog string) string {
   %[1]s models keys list|create|revoke|rotate   named API keys with limits, expiry and rotation grace
   %[1]s models usage <name> [flags]         gateway requests, tokens, errors and latency per key
   %[1]s models gpus [flags]                 list GPU nodes with VRAM and usage
+  %[1]s models preflight <repo> [flags]     check a Hugging Face repo: access, size, quants, fit, disk
+  %[1]s models cache list|prune [flags]     list cached model weights, prune unused ones (--dry-run first)
 
 Run "%[1]s models <subcommand> -h" for a subcommand's own flags.
 `, prog)

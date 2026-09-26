@@ -44,6 +44,17 @@ func TestModelTools_RequestsAndResults(t *testing.T) {
 			},
 		},
 		{
+			tool: "revoke_model_key", args: map[string]any{"name": "chat", "key_id": "k1"}, wantMethod: http.MethodDelete, wantPath: "/api/v1/models/chat/keys/k1",
+			respond: func(w http.ResponseWriter) { w.WriteHeader(http.StatusNoContent) },
+			check: func(t *testing.T, r *mcp.CallToolResult) {
+				var out modelActionResult
+				decodeStructured(t, r, &out)
+				if !out.OK {
+					t.Error("want ok")
+				}
+			},
+		},
+		{
 			tool: "list_model_keys", args: map[string]any{"name": "chat"}, wantMethod: http.MethodGet, wantPath: "/api/v1/models/chat/keys",
 			respond: func(w http.ResponseWriter) {
 				_ = json.NewEncoder(w).Encode([]apiclient.ModelKeyResource{{ID: "k1", Name: "ci", KeyPrefix: "lr-12345", Status: "active"}})
@@ -52,6 +63,32 @@ func TestModelTools_RequestsAndResults(t *testing.T) {
 				var out []apiclient.ModelKeyResource
 				decodeStructured(t, r, &out)
 				if len(out) != 1 || out[0].KeyPrefix != "lr-12345" || strings.Contains(toolResultText(r), "api_key") {
+					t.Errorf("out = %+v", out)
+				}
+			},
+		},
+		{
+			tool: "preflight_model", args: map[string]any{"repo": "acme/chat-GGUF", "quant": "Q4_K_M"}, wantMethod: http.MethodPost, wantPath: "/api/v1/models/preflight",
+			respond: func(w http.ResponseWriter) {
+				_ = json.NewEncoder(w).Encode(apiclient.ModelPreflightResult{Repo: "acme/chat-GGUF", Status: "gated", Message: "gated", NextStep: "add a token"})
+			},
+			check: func(t *testing.T, r *mcp.CallToolResult) {
+				var out apiclient.ModelPreflightResult
+				decodeStructured(t, r, &out)
+				if out.Status != "gated" || out.NextStep == "" {
+					t.Errorf("out = %+v", out)
+				}
+			},
+		},
+		{
+			tool: "list_model_cache", args: map[string]any{}, wantMethod: http.MethodGet, wantPath: "/api/v1/model-cache",
+			respond: func(w http.ResponseWriter) {
+				_ = json.NewEncoder(w).Encode(apiclient.ModelCacheReport{UnusedDays: 30, Nodes: []apiclient.ModelCacheNode{{Name: "local", Supported: true}}})
+			},
+			check: func(t *testing.T, r *mcp.CallToolResult) {
+				var out apiclient.ModelCacheReport
+				decodeStructured(t, r, &out)
+				if out.UnusedDays != 30 || len(out.Nodes) != 1 {
 					t.Errorf("out = %+v", out)
 				}
 			},

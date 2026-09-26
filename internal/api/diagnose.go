@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/diagnose"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -36,6 +37,10 @@ type diagnosisResource struct {
 	DeployAttemptID string                    `json:"deploy_attempt_id,omitempty"`
 	Causes          []diagnosisCauseResource  `json:"causes"`
 	Fixable         bool                      `json:"fixable"`
+
+	// RecentChanges is what changed on the app in the last
+	// APP_ALERT_CHANGE_WINDOW, with the likely cause flagged.
+	RecentChanges *changes.Result `json:"recent_changes,omitempty"`
 }
 
 func toDiagnosisResource(res diagnose.Result, attemptID string) diagnosisResource {
@@ -118,7 +123,10 @@ func (rt *Router) handleDiagnoseApp(w http.ResponseWriter, r *http.Request) {
 	if attempt != nil {
 		attemptID = attempt.ID
 	}
-	writeJSON(w, http.StatusOK, toDiagnosisResource(diagnose.Diagnose(in), attemptID))
+	resp := toDiagnosisResource(diagnose.Diagnose(in), attemptID)
+	recent := rt.changeAggregator().Collect(ctx, name, time.Now())
+	resp.RecentChanges = &recent
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // resolveDiagnosisAttempt returns deployID's attempt if given (scoped to
