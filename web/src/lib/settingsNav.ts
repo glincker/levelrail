@@ -20,6 +20,7 @@ import {
   ArrowCircleUpIcon,
   ClockCounterClockwiseIcon,
   PackageIcon,
+  DownloadSimpleIcon,
   TerminalWindowIcon,
   HeartbeatIcon,
   StackIcon,
@@ -158,6 +159,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: PackageIcon,
         title: 'Registry credentials',
         description: 'Pull private images with build.type: image.',
+      },
+      {
+        to: '/settings/import-platform',
+        icon: DownloadSimpleIcon,
+        title: 'Import from another platform',
+        description: 'Bring apps over from Coolify, Dokploy or CapRover.',
       },
       {
         to: '/settings/registry',
