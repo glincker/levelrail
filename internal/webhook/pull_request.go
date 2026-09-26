@@ -49,6 +49,9 @@ type PullRequestEvent struct {
 	// payload carries none (for example a deleted fork).
 	HeadRepoFullName string
 	BaseRepoFullName string
+	// Reopened marks an Opened action that was a reopened pull request
+	// rather than a new one.
+	Reopened bool
 }
 
 // IsFork reports whether the pull request comes from a different
@@ -73,6 +76,8 @@ var ErrPullRequestEventFieldsMissing = errors.New("webhook: pull request payload
 // One shared table for all three providers: their vocabularies don't
 // overlap in a way that would make a shared table ambiguous, so this
 // avoids three near-identical switch statements silently drifting apart.
+func isReopenAction(raw string) bool { return raw == "reopened" || raw == "reopen" }
+
 func normalizePullRequestAction(raw string) (PullRequestAction, bool) {
 	switch raw {
 	case "opened", "reopened", "open", "reopen", "pullrequest:created":
@@ -164,6 +169,7 @@ func parseGitHubPullRequestEvent(body []byte) (PullRequestEvent, error) {
 		BaseRef:          p.PullRequest.Base.Ref,
 		HeadRepoFullName: p.PullRequest.Head.Repo.FullName,
 		BaseRepoFullName: p.PullRequest.Base.Repo.FullName,
+		Reopened:         isReopenAction(p.Action),
 	}, nil
 }
 
@@ -203,6 +209,7 @@ func parseGitLabPullRequestEvent(body []byte) (PullRequestEvent, error) {
 		BaseRef:          p.ObjectAttributes.TargetBranch,
 		HeadRepoFullName: p.ObjectAttributes.Source.PathWithNamespace,
 		BaseRepoFullName: p.ObjectAttributes.Target.PathWithNamespace,
+		Reopened:         isReopenAction(p.ObjectAttributes.Action),
 	}, nil
 }
 
@@ -284,5 +291,6 @@ func parseGiteaPullRequestEvent(body []byte) (PullRequestEvent, error) {
 		BaseRef:          p.PullRequest.Base.Ref,
 		HeadRepoFullName: p.PullRequest.Head.Repo.FullName,
 		BaseRepoFullName: p.PullRequest.Base.Repo.FullName,
+		Reopened:         isReopenAction(p.Action),
 	}, nil
 }

@@ -105,6 +105,32 @@ func TestParseMergeGroupEvent(t *testing.T) {
 	}
 }
 
+func TestPullRequestReopenedIsDistinguished(t *testing.T) {
+	gh := func(action string) PullRequestEvent {
+		h := http.Header{}
+		h.Set("X-GitHub-Event", "pull_request")
+		body := `{"action":"` + action + `","number":1,"pull_request":{"head":{"ref":"f","sha":"s","repo":{"full_name":"o/r"}},"base":{"ref":"main","repo":{"full_name":"o/r"}}}}`
+		ev, err := ParsePullRequestEventForProvider([]byte(body), h)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return ev
+	}
+	if ev := gh("reopened"); ev.Action != PullRequestOpened || !ev.Reopened {
+		t.Fatalf("reopened = %+v", ev)
+	}
+	if ev := gh("opened"); ev.Action != PullRequestOpened || ev.Reopened {
+		t.Fatalf("opened = %+v", ev)
+	}
+	h := http.Header{}
+	h.Set("X-Gitlab-Event", "Merge Request Hook")
+	body := `{"object_attributes":{"iid":2,"action":"reopen","source_branch":"f","target_branch":"main","last_commit":{"id":"s"},"source":{"path_with_namespace":"g/p"},"target":{"path_with_namespace":"g/p"}}}`
+	ev, err := ParsePullRequestEventForProvider([]byte(body), h)
+	if err != nil || !ev.Reopened {
+		t.Fatalf("gitlab reopen = %+v, err %v", ev, err)
+	}
+}
+
 func TestIsMergeGroupEvent(t *testing.T) {
 	h := http.Header{}
 	h.Set("X-GitHub-Event", "merge_group")

@@ -21,6 +21,10 @@ const (
 	forgeEnvPreview    = "preview"
 )
 
+// previewScope keys one pull request's preview deployments, so a newer
+// preview only supersedes deployments of the same pull request.
+func previewScope(prNumber int) string { return fmt.Sprintf("%s:%d", forgeEnvPreview, prNumber) }
+
 // ForgeDeploymentStore persists the deployments created on a git forge.
 // *store.DB satisfies it.
 type ForgeDeploymentStore interface {
@@ -45,9 +49,11 @@ type forgeDeployment struct {
 }
 
 // beginForgeDeployment creates a deployment for sha and marks it in_progress.
-// It returns nil when reporting is off, the app is not on GitHub, or the
-// forge rejects the call; a failure is logged and never blocks the deploy.
-func (rt *Router) beginForgeDeployment(ctx context.Context, app string, gs store.GitSource, sha, environment, envURL string) *forgeDeployment {
+// environment is the GitHub environment name and scope keys which earlier
+// deployments this one supersedes. It returns nil when reporting is off, the
+// app is not on GitHub, or the forge rejects the call; a rejection is logged,
+// recorded as an error row with its warning, and never blocks the deploy.
+func (rt *Router) beginForgeDeployment(ctx context.Context, app string, gs store.GitSource, sha, environment, scope, envURL string) *forgeDeployment {
 	if !gitStatusEnabled() || !gs.ReportStatus || rt.forgeDeployments == nil || sha == "" {
 		return nil
 	}
@@ -55,16 +61,25 @@ func (rt *Router) beginForgeDeployment(ctx context.Context, app string, gs store
 	if err != nil || f.kind != forgeGitHub {
 		return nil
 	}
+	return rt.beginOnForge(ctx, f, app, sha, environment, scope, envURL)
+}
+
+func (rt *Router) beginOnForge(ctx context.Context, f *forge, app, sha, environment, scope, envURL string) *forgeDeployment {
 	owner, repo := f.ownerName()
 	production := environment == forgeEnvProduction
 	id, err := f.github.CreateDeployment(ctx, f.instanceURL, f.token, owner, repo, sha, environment, "Deploy "+app, production)
+	now := time.Now().UTC()
 	if err != nil {
+		warning := "deployment not created: " + describeForgeError(err)
 		rt.logger.Warn("api: create forge deployment failed", slog.String("app_name", app), slog.String("environment", environment), slog.String("error", describeForgeError(err)))
+		failed := store.ForgeDeployment{ID: newForgeDeploymentID(), AppName: app, Environment: scope, Provider: f.kind, CommitSHA: sha, State: "error", Warning: warning, CreatedAt: now, UpdatedAt: now}
+		if serr := rt.forgeDeployments.CreateForgeDeployment(ctx, failed); serr != nil {
+			rt.logger.Warn("api: record failed forge deployment failed", slog.String("app_name", app), slog.String("error", serr.Error()))
+		}
 		return nil
 	}
-	now := time.Now().UTC()
 	d := &forgeDeployment{rt: rt, f: f, envURL: envURL, logURL: rt.dashboardLink(ctx, "/apps/"+app+"/deployments"), rec: store.ForgeDeployment{
-		ID: newForgeDeploymentID(), AppName: app, Environment: environment, Provider: f.kind, ExternalID: id,
+		ID: newForgeDeploymentID(), AppName: app, Environment: scope, Provider: f.kind, ExternalID: id,
 		CommitSHA: sha, State: string(githubapp.DeploymentInProgress), CreatedAt: now, UpdatedAt: now,
 	}}
 	if err := rt.forgeDeployments.CreateForgeDeployment(ctx, d.rec); err != nil {
@@ -75,12 +90,13 @@ func (rt *Router) beginForgeDeployment(ctx context.Context, app string, gs store
 }
 
 // deploymentStateFor maps a webhook deploy outcome to a deployment state: a
-// superseded deploy never went live, so it is reported inactive.
+// superseded deploy never went live, so it is reported inactive, and a
+// multi-status (some services failed) is not a successful release.
 func deploymentStateFor(status int, message string) githubapp.DeploymentState {
 	switch {
 	case strings.HasPrefix(message, "not deployed"):
 		return githubapp.DeploymentInactive
-	case status >= http.StatusBadRequest:
+	case status >= http.StatusBadRequest || status == http.StatusMultiStatus:
 		return githubapp.DeploymentFailure
 	}
 	return githubapp.DeploymentSuccess
@@ -106,8 +122,58 @@ func (d *forgeDeployment) post(ctx context.Context, state githubapp.DeploymentSt
 	return ""
 }
 
+// supersedeSelf marks this deployment inactive because a newer one of the same
+// scope already went live, so finishing late never displaces the newer one.
+func (d *forgeDeployment) supersedeSelf(ctx context.Context, at time.Time) {
+	if d.rec.State == string(githubapp.DeploymentInactive) {
+		return
+	}
+	owner, repo := d.f.ownerName()
+	warning := ""
+	if err := d.f.github.CreateDeploymentStatus(ctx, d.f.instanceURL, d.f.token, owner, repo, d.rec.ExternalID, githubapp.DeploymentInactive, "", "", "Superseded"); err != nil {
+		warning = fmt.Sprintf("deployment status inactive not reported: %s", describeForgeError(err))
+	}
+	d.rec.State = string(githubapp.DeploymentInactive)
+	if err := d.rt.forgeDeployments.SetForgeDeploymentState(ctx, d.rec.ID, d.rec.State, warning, at); err != nil {
+		d.rt.logger.Warn("api: update superseded forge deployment failed", slog.String("app_name", d.rec.AppName), slog.String("error", err.Error()))
+	}
+}
+
+// deactivateForgeDeployments marks every live deployment of scope inactive,
+// used when a pull request closes and its preview is torn down.
+func (rt *Router) deactivateForgeDeployments(ctx context.Context, app string, gs store.GitSource, scope string) {
+	if !gitStatusEnabled() || !gs.ReportStatus || rt.forgeDeployments == nil {
+		return
+	}
+	f, err := rt.resolveForge(ctx, gs.RepoURL)
+	if err != nil || f.kind != forgeGitHub {
+		return
+	}
+	rt.deactivateLive(ctx, f, app, scope)
+}
+
+func (rt *Router) deactivateLive(ctx context.Context, f *forge, app, scope string) {
+	live, err := rt.forgeDeployments.ListForgeDeploymentsByState(ctx, app, scope, string(githubapp.DeploymentSuccess), "")
+	if err != nil {
+		rt.logger.Warn("api: list forge deployments to deactivate failed", slog.String("app_name", app), slog.String("error", err.Error()))
+		return
+	}
+	owner, repo := f.ownerName()
+	now := time.Now().UTC()
+	for _, o := range live {
+		w := ""
+		if err := f.github.CreateDeploymentStatus(ctx, f.instanceURL, f.token, owner, repo, o.ExternalID, githubapp.DeploymentInactive, "", "", "Preview removed"); err != nil {
+			w = fmt.Sprintf("deployment status inactive not reported: %s", describeForgeError(err))
+			rt.logger.Warn("api: mark removed preview deployment inactive failed", slog.String("app_name", app), slog.String("error", describeForgeError(err)))
+		}
+		if err := rt.forgeDeployments.SetForgeDeploymentState(ctx, o.ID, string(githubapp.DeploymentInactive), w, now); err != nil {
+			rt.logger.Warn("api: update removed preview deployment failed", slog.String("app_name", app), slog.String("error", err.Error()))
+		}
+	}
+}
+
 // finish moves the deployment to its final state. On success every earlier
-// successful deployment of the same environment is marked inactive.
+// successful deployment of the same scope is marked inactive.
 func (d *forgeDeployment) finish(ctx context.Context, state githubapp.DeploymentState, description string) {
 	if d == nil {
 		return
@@ -128,6 +194,10 @@ func (d *forgeDeployment) finish(ctx context.Context, state githubapp.Deployment
 	}
 	owner, repo := d.f.ownerName()
 	for _, o := range older {
+		if !o.CreatedAt.Before(d.rec.CreatedAt) {
+			d.supersedeSelf(ctx, now)
+			continue
+		}
 		w := ""
 		if err := d.f.github.CreateDeploymentStatus(ctx, d.f.instanceURL, d.f.token, owner, repo, o.ExternalID, githubapp.DeploymentInactive, "", "", "Superseded"); err != nil {
 			w = fmt.Sprintf("deployment status inactive not reported: %s", describeForgeError(err))

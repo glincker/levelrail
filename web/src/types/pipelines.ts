@@ -120,6 +120,9 @@ export interface PipelineFilters {
   paths: string[]
   paths_ignore: string[]
   report_status: boolean
+  // split is true when push and pull_request carry different filters; the
+  // editor then leaves both untouched and only edits report_status.
+  split: boolean
 }
 
 export interface PipelineFiltersRequest {

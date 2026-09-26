@@ -3,6 +3,7 @@ package pipeline
 import (
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -59,6 +60,35 @@ func TestApplyFiltersClearAndKeep(t *testing.T) {
 	v := FiltersOf(def)
 	if !reflect.DeepEqual(v.Paths, []string{"src/**"}) || len(v.PathsIgnore) != 0 || !v.ReportStatus {
 		t.Errorf("FiltersOf = %+v, want paths kept, ignore cleared, report on", v)
+	}
+}
+
+func TestFiltersOfReportsSplit(t *testing.T) {
+	split := strings.Replace(filtersBase, "  pull_request:\n", "  pull_request:\n    paths: [api/**]\n", 1)
+	split = strings.Replace(split, "    branches: [main]\n", "    branches: [main]\n    paths: [web/**]\n", 1)
+	def, issues := Validate([]byte(split))
+	if len(issues) > 0 {
+		t.Fatal(issues)
+	}
+	if v := FiltersOf(def); !v.Split || !reflect.DeepEqual(v.Paths, []string{"web/**"}) {
+		t.Fatalf("view = %+v, want split with the push paths", v)
+	}
+	off := false
+	out, err := ApplyFilters([]byte(split), nil, nil, &off)
+	if err != nil {
+		t.Fatal(err)
+	}
+	def, issues = Validate(out)
+	if len(issues) > 0 {
+		t.Fatal(issues)
+	}
+	if !reflect.DeepEqual([]string(def.On.PullRequest.Paths), []string{"api/**"}) || def.ReportsStatus() {
+		t.Fatalf("a report_status edit changed the pull request filter: %+v", def.On.PullRequest)
+	}
+	same := strings.Replace(split, "paths: [api/**]", "paths: [web/**]", 1)
+	def, _ = Validate([]byte(same))
+	if FiltersOf(def).Split {
+		t.Fatal("identical filters reported as split")
 	}
 }
 

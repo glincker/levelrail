@@ -266,7 +266,7 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		rt.logger.Info("api: git push webhook: ignoring push", slog.String("name", name), slog.String("ref", ev.Ref), slog.String("trigger_mode", effectiveGitSourceTriggerMode(gs.TriggerMode)))
 		return http.StatusOK, ignoredMsg
 	}
-	if msg := rt.skipPushForPaths(ctx, name, gs, ev.Before, ev.After, ev.Changed); msg != "" {
+	if msg := rt.skipPushForPaths(ctx, name, gs, ev.Ref, ev.Before, ev.After, ev.Changed); msg != "" {
 		rt.logger.Info("api: git push webhook: push skipped by path filter", slog.String("name", name), slog.String("ref", ev.Ref))
 		return http.StatusOK, msg
 	}
@@ -398,7 +398,7 @@ func dockerSafeTag(tagName string) string {
 // routing decision handleGitPushWebhook's own doc comment already
 // establishes.
 func (rt *Router) deployFromGitSource(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder) (status int, message string) {
-	dep := rt.beginForgeDeployment(ctx, name, gs, checkoutRef, forgeEnvProduction, "")
+	dep := rt.beginForgeDeployment(ctx, name, gs, checkoutRef, forgeEnvProduction, forgeEnvProduction, "")
 	status, message = rt.deployFromGitSourceInner(ctx, name, gs, checkoutRef, commitLabel, order)
 	dep.finish(ctx, deploymentStateFor(status, message), strings.TrimSpace(message))
 	return status, message

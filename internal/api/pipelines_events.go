@@ -71,9 +71,13 @@ func (rt *Router) firePipelinePullRequest(ctx context.Context, app string, pr we
 	if rt.pipelineEvents == nil || pr.Action == webhook.PullRequestClosed {
 		return
 	}
+	action := string(pr.Action)
+	if pr.Reopened {
+		action = "reopened"
+	}
 	ev := pipeline.Event{
 		Kind: pipeline.TriggerPullRequest, Branch: pr.BaseRef, Fork: pr.IsFork(), HeadRepo: pr.HeadRepoFullName,
-		Action: string(pr.Action), ChangedFn: rt.changedFilesFn(app, changeQuery{PR: pr.Number}),
+		Action: action, ChangedFn: rt.changedFilesFn(app, changeQuery{PR: pr.Number}),
 	}
 	rt.pipelineEvents.TriggerEvent(ctx, app, ev, "refs/heads/"+pr.HeadRef, pr.HeadSHA, "webhook")
 }

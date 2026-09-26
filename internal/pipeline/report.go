@@ -66,9 +66,9 @@ func (e *Engine) reportRun(ctx context.Context, run store.PipelineRun, def *Defi
 	if p, err := e.cfg.Store.GetPipeline(ctx, run.PipelineID); err == nil {
 		name = p.Name
 	}
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), e.cfg.ReportTimeout)
-	defer cancel()
-	receipt, err := e.cfg.Reporter.ReportRun(ctx, ReportRequest{
+	postCtx, cancelPost := context.WithTimeout(context.WithoutCancel(ctx), e.cfg.ReportTimeout)
+	defer cancelPost()
+	receipt, err := e.cfg.Reporter.ReportRun(postCtx, ReportRequest{
 		App: run.AppName, Pipeline: name, RunID: run.ID, RunNumber: run.Number, SHA: run.CommitSHA, Ref: run.Ref,
 		State: state, Description: description, Context: fmt.Sprintf("%s/pipeline/%s", e.cfg.NamePrefix, name),
 	})
@@ -82,7 +82,9 @@ func (e *Engine) reportRun(ctx context.Context, run store.PipelineRun, def *Defi
 		state = ""
 	}
 	if rec, ok := e.cfg.Store.(reportRecorder); ok {
-		if rerr := rec.SetPipelineRunReport(ctx, run.ID, receipt.Provider, state, receipt.URL, warning); rerr != nil {
+		recCtx, cancelRec := context.WithTimeout(context.WithoutCancel(ctx), e.cfg.ReportTimeout)
+		defer cancelRec()
+		if rerr := rec.SetPipelineRunReport(recCtx, run.ID, receipt.Provider, state, receipt.URL, warning); rerr != nil {
 			e.cfg.Logger.Warn("pipeline: record report outcome failed", slog.String("run_id", run.ID), slog.String("error", rerr.Error()))
 		}
 	}

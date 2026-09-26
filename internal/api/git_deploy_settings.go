@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/pathfilter"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -105,9 +106,9 @@ func validateDeployPaths(s gitDeploySettings) error {
 // skipPushForPaths applies the source's path filter to a push. It returns a
 // non-empty message when the push should not deploy. Unknown changed files
 // (no list in the payload, and a failed forge lookup) let the push through.
-func (rt *Router) skipPushForPaths(ctx context.Context, name string, gs store.GitSource, before, after string, inline []string) string {
+func (rt *Router) skipPushForPaths(ctx context.Context, name string, gs store.GitSource, ref, before, after string, inline []string) string {
 	f := deployPathFilter(gs)
-	if f.IsZero() {
+	if f.IsZero() || strings.HasPrefix(ref, "refs/tags/") {
 		return ""
 	}
 	files := inline

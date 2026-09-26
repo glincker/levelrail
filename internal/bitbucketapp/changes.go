@@ -2,6 +2,7 @@ package bitbucketapp
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -22,10 +23,17 @@ type diffstatResponse struct {
 	Next string `json:"next"`
 }
 
+// ErrChangedFilesTruncated means a change touched more files than the client
+// pages through, so the list is incomplete and must not drive a decision.
+var ErrChangedFilesTruncated = errors.New("bitbucketapp: changed file list is truncated")
+
 func (c *Client) diffstatFiles(ctx context.Context, accessToken, first string) ([]string, error) {
 	var out []string
 	next := first
-	for page := 0; page < listPageCap && next != ""; page++ {
+	for page := 0; page < listPageCap; page++ {
+		if next == "" {
+			return out, nil
+		}
 		var resp diffstatResponse
 		if err := c.do(ctx, http.MethodGet, next, bearerPrefix+accessToken, nil, &resp); err != nil {
 			return nil, err
@@ -39,6 +47,9 @@ func (c *Client) diffstatFiles(ctx context.Context, accessToken, first string) (
 			}
 		}
 		next = resp.Next
+	}
+	if next != "" {
+		return nil, ErrChangedFilesTruncated
 	}
 	return out, nil
 }

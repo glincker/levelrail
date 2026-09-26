@@ -147,7 +147,7 @@ A run starts when at least one changed file matches `paths` (or `paths` is empty
 
 The changed files come from the webhook payload when it lists them (GitHub, GitLab, and Gitea push events do, up to 20 commits). Otherwise the control plane asks the git provider (compare, pull request files, or diffstat on Bitbucket) using the connected provider credentials. If the file list cannot be read (no credentials, a rate limit, a new branch with no base commit), the run starts anyway. A filter never blocks a run because of a lookup failure.
 
-`types` on `pull_request` limits which actions start a run: `opened`, `reopened`, and `synchronize`. Empty means all three.
+`types` on `pull_request` limits which actions start a run: `opened` (a new pull request), `reopened`, and `synchronize` (new commits). Empty means all three. Bitbucket does not report reopens separately. `merge_group` takes `branches` only, no path filters. A change list longer than the provider's paging limit is treated as unknown and the run starts.
 
 ### Merge queues
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"slices"
 
 	"gopkg.in/yaml.v3"
 )
@@ -14,6 +15,10 @@ type FilterView struct {
 	Paths        []string `json:"paths"`
 	PathsIgnore  []string `json:"paths_ignore"`
 	ReportStatus bool     `json:"report_status"`
+	// Split is true when push and pull_request carry different filters. The
+	// shown Paths and PathsIgnore are the push trigger's, and writing them
+	// through ApplyFilters would overwrite the pull request ones.
+	Split bool `json:"split"`
 }
 
 // FiltersOf reads the filters from the push trigger, falling back to the
@@ -23,6 +28,9 @@ func FiltersOf(def *Definition) FilterView {
 	switch {
 	case def.On.Push != nil:
 		v.Paths, v.PathsIgnore = nonNil(def.On.Push.Paths), nonNil(def.On.Push.PathsIgnore)
+		if pr := def.On.PullRequest; pr != nil {
+			v.Split = !slices.Equal(pr.Paths, def.On.Push.Paths) || !slices.Equal(pr.PathsIgnore, def.On.Push.PathsIgnore)
+		}
 	case def.On.PullRequest != nil:
 		v.Paths, v.PathsIgnore = nonNil(def.On.PullRequest.Paths), nonNil(def.On.PullRequest.PathsIgnore)
 	}
