@@ -34,6 +34,8 @@ type diagnosisResource struct {
 	Confidence      string                    `json:"confidence"`
 	MatchedSignals  []diagnosisSignalResource `json:"matched_signals"`
 	DeployAttemptID string                    `json:"deploy_attempt_id,omitempty"`
+	Causes          []diagnosisCauseResource  `json:"causes"`
+	Fixable         bool                      `json:"fixable"`
 }
 
 func toDiagnosisResource(res diagnose.Result, attemptID string) diagnosisResource {
@@ -47,6 +49,8 @@ func toDiagnosisResource(res diagnose.Result, attemptID string) diagnosisResourc
 		Confidence:      res.Confidence,
 		MatchedSignals:  signals,
 		DeployAttemptID: attemptID,
+		Causes:          toCauseResources(res.Causes),
+		Fixable:         anyPatchFix(res.Causes),
 	}
 }
 
@@ -61,7 +65,7 @@ func (rt *Router) handleDiagnoseApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	ctx := r.Context()
 
-	_, err := rt.apps.GetDesiredService(ctx, name)
+	svc, err := rt.apps.GetDesiredService(ctx, name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -107,6 +111,7 @@ func (rt *Router) handleDiagnoseApp(w http.ResponseWriter, r *http.Request) {
 		Conditions:     toConditionSignals(conditions),
 		Crashloop:      rt.diagnoseCrashloop(ctx, name),
 		RecentLogLines: recentLogs,
+		Facts:          rt.diagnoseFacts(ctx, svc, attemptFailedDuringBuild(attempt)),
 	}
 
 	attemptID := ""

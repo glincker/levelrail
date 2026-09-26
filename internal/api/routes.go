@@ -359,6 +359,13 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// anything.
 	mux.HandleFunc("GET /api/v1/apps/{name}/diagnose", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDiagnoseApp))
 
+	// Preflight checks (preflight.go): read-only probes of an existing
+	// app's stored config (AbilityRead, resource-scoped), or of a not yet
+	// created app described in the body (AbilityWrite, since the body
+	// names hosts the server will contact).
+	mux.HandleFunc("POST /api/v1/apps/{name}/preflight", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePreflightApp))
+	mux.HandleFunc("POST /api/v1/preflight", rt.requireAbility(AbilityWrite, rt.handlePreflightNew))
+
 	// Read-only resource right-sizing suggestion
 	// (resource_recommendation.go): synthesizes the app's historical
 	// CPU/memory usage and current limits into a deterministic
