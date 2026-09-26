@@ -1,11 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
-import { AppLoadBalancerCard } from '../../../components/AppLoadBalancerCard'
+import { LoadBalancerPage } from '../../../components/loadbalancer/LoadBalancerPage'
 import { PageSpinner } from '@/components/ui/page-spinner'
 
-// The load balancer tab: algorithm, weights, health checks and the live
-// upstream table for this app's replicas. App data is already primed by
-// the parent layout route's loader.
 export const Route = createFileRoute('/apps/$name/loadbalancer')({
   component: LoadBalancerSection,
   pendingComponent: PageSpinner,
@@ -14,6 +11,15 @@ export const Route = createFileRoute('/apps/$name/loadbalancer')({
 function LoadBalancerSection() {
   const { name } = Route.useParams()
   const { data: app } = useApp(name)
+  const navigate = useNavigate()
 
-  return <AppLoadBalancerCard appName={name} replicas={app.replicas} />
+  return (
+    <LoadBalancerPage
+      appName={name}
+      replicas={app.replicas}
+      onSetReplicas={() =>
+        void navigate({ to: '/apps/$name/deploy-settings', params: { name } })
+      }
+    />
+  )
 }
