@@ -75,6 +75,9 @@ const (
 	rollbackTargetSQL = `(SELECT e.id FROM deploy_attempts e
 		WHERE e.service_name = %[1]s.service_name AND e.image = %[1]s.image AND e.status = 'succeeded'
 			AND e.started_at < %[1]s.started_at AND e.id <> %[1]s.id
+			AND EXISTS (SELECT 1 FROM deploy_attempts m WHERE m.service_name = %[1]s.service_name
+				AND m.status = 'succeeded' AND m.image <> %[1]s.image
+				AND m.started_at > e.started_at AND m.started_at < %[1]s.started_at)
 		ORDER BY e.started_at DESC LIMIT 1)`
 
 	rollbackAttemptSQL = `(%[1]s.source = 'auto_rollback' OR (%[1]s.source = 'image' AND ` + rollbackTargetSQL + ` IS NOT NULL))`
@@ -114,7 +117,7 @@ func rolledByExpr() string {
 		ORDER BY r.started_at ASC LIMIT 1`
 }
 
-const isLiveSQL = `(d.status = 'succeeded' AND NOT EXISTS (SELECT 1 FROM deploy_attempts lx
+const isLiveSQL = `(d.status = 'succeeded' AND d.rollout_state <> 'mismatch' AND NOT EXISTS (SELECT 1 FROM deploy_attempts lx
 	WHERE lx.service_name = d.service_name AND lx.status = 'succeeded' AND lx.started_at > d.started_at))`
 
 // storedStatusesFor maps API statuses to the stored statuses that can
@@ -231,7 +234,7 @@ func deploymentWhere(f DeploymentFilter, withCursor bool) (string, []any, error)
 		args = append(args, f.App)
 	}
 	if f.Branch != "" {
-		conds = append(conds, "COALESCE(NULLIF(d.branch, ''), g.branch, '') = ?")
+		conds = append(conds, "COALESCE(NULLIF(d.branch, ''), CASE WHEN d.source = 'webhook' THEN g.branch END, '') = ?")
 		args = append(args, f.Branch)
 	}
 	if f.Live {

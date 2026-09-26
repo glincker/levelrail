@@ -18,8 +18,12 @@ type commitMetaKey struct{}
 // withPushCommitMeta carries a push's commit metadata to the deploy
 // attempt row minted deeper in the call chain.
 func withPushCommitMeta(ctx context.Context, ev webhook.PushEvent) context.Context {
+	branch, _ := strings.CutPrefix(ev.Ref, "refs/heads/")
+	if strings.HasPrefix(branch, "refs/") {
+		branch = ""
+	}
 	return context.WithValue(ctx, commitMetaKey{}, commitMeta{
-		Branch:  strings.TrimPrefix(ev.Ref, "refs/heads/"),
+		Branch:  branch,
 		Message: ev.HeadMessage,
 		Author:  ev.HeadAuthor,
 	})
