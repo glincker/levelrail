@@ -199,7 +199,7 @@ A resource file can be written by someone else: a teammate, a template, a pull r
 
 Anything else fails before the CLI contacts the control plane, and the error lists each unresolved name with the three ways to provide it. Nothing from the files is sent while a placeholder is unresolved.
 
-Names that look like cloud or CI credentials (`AWS_*`, `AZURE_*`, `GOOGLE_*`, `GCP_*`, `SSH_*`, anything ending in `_SECRET_ACCESS_KEY`, `GITHUB_TOKEN`, `GH_TOKEN`, `NPM_TOKEN` and similar) are never covered by a wildcard. If a file really needs one, name it exactly: `--allow-env AWS_REGION`. A shared file that quietly asks for `${{ env.AWS_SECRET_ACCESS_KEY }}` therefore fails instead of sending your key.
+Names that look like cloud or CI credentials (`AWS_*`, `AZURE_*`, `GOOGLE_*`, `GCP_*`, `SSH_*`, `ACTIONS_*`, anything ending in `_SECRET_ACCESS_KEY`, `GITHUB_TOKEN`, `GH_TOKEN`, `NPM_TOKEN` and similar) are never covered by a wildcard. If a file really needs one, name it exactly: `--allow-env AWS_REGION`. A shared file that quietly asks for `${{ env.AWS_SECRET_ACCESS_KEY }}` therefore fails instead of sending your key.
 
 The control plane never reads its own environment for placeholders. The dashboard and the MCP tools cannot pass values at all, so files applied there must not use `${{ env.NAME }}`.
 

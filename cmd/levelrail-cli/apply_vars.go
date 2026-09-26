@@ -18,11 +18,11 @@ type varSources struct {
 	allowEnv []string
 }
 
-var credentialPrefixes = []string{"AWS_", "AZURE_", "GOOGLE_", "GCP_", "SSH_", "ARM_", "DIGITALOCEAN_", "CLOUDFLARE_API_"}
+var credentialPrefixes = []string{"AWS_", "AZURE_", "GOOGLE_", "GCP_", "SSH_", "ARM_", "ACTIONS_", "DIGITALOCEAN_", "CLOUDFLARE_API_"}
 
 var credentialNames = map[string]bool{
 	"GITHUB_TOKEN": true, "GH_TOKEN": true, "GITLAB_TOKEN": true, "NPM_TOKEN": true,
-	"ACTIONS_RUNTIME_TOKEN": true, "ACTIONS_ID_TOKEN_REQUEST_TOKEN": true, "CI_JOB_TOKEN": true,
+	"CI_JOB_TOKEN": true,
 }
 
 // looksLikeCredential reports names that hold cloud or CI credentials; these
