@@ -1,5 +1,84 @@
 # Changelog
 
+## [0.2.0-beta.15](https://github.com/glincker/levelrail/compare/v0.2.0-beta.14...v0.2.0-beta.15) (2026-09-26)
+
+
+### Features
+
+* add 12 service templates (catalog tranche 5) ([#683](https://github.com/glincker/levelrail/issues/683)) ([8dde671](https://github.com/glincker/levelrail/commit/8dde6718d139d7b0307092af8e1a401b6a203f9e))
+* agent certificate renewal, agent-generated keys, re-enrollment and agent version reporting ([#710](https://github.com/glincker/levelrail/issues/710)) ([d272963](https://github.com/glincker/levelrail/commit/d272963dd5363f134079ade24cc58fee8e9e649e))
+* AI model deploys on GPU nodes, load balancer, S3/R2 log archive, pipelines, catalogue ([#701](https://github.com/glincker/levelrail/issues/701)) ([9b65885](https://github.com/glincker/levelrail/commit/9b6588557a944c9eebcddb88b859f557bd93bdf4))
+* app health timeline on the overview page (deploys, restarts, error windows) ([#694](https://github.com/glincker/levelrail/issues/694)) ([b6e7551](https://github.com/glincker/levelrail/commit/b6e75516b0eb5ab4b06bdbeb48a176a98d3cafc5))
+* app quick actions menu, redeploy button, empty-state CTAs ([#672](https://github.com/glincker/levelrail/issues/672)) ([81e9d4b](https://github.com/glincker/levelrail/commit/81e9d4b123f6e2d8f2ebfb7b321aba8a0bb3ba32))
+* app timeline, pending changes, secret declaration on set, domains CLI and previous-release hold cap ([#718](https://github.com/glincker/levelrail/issues/718)) ([74a6c0d](https://github.com/glincker/levelrail/commit/74a6c0d63025a82040a3a3cb4aa4c3f2849c8a7d))
+* brand logos for frameworks, integrations and backup targets ([#671](https://github.com/glincker/levelrail/issues/671)) ([e1e1cd4](https://github.com/glincker/levelrail/commit/e1e1cd41dff408da6f953fa7b9d593e59c56b181))
+* change correlation on alerts and SLO burn-rate rules ([#742](https://github.com/glincker/levelrail/issues/742)) ([70aabce](https://github.com/glincker/levelrail/commit/70aabce29ff02c13235a93aebe36d8f1a777756b))
+* cli build detect/branches and restore history lists (backups, pitr, app-volume-backups) ([#684](https://github.com/glincker/levelrail/issues/684)) ([f2fe3e0](https://github.com/glincker/levelrail/commit/f2fe3e03639d81f90272dfea69f8a215612a5746))
+* command palette actions, per-app quick actions, recent items and keyboard hints ([#693](https://github.com/glincker/levelrail/issues/693)) ([b4e5252](https://github.com/glincker/levelrail/commit/b4e52528f9a222f88cf6b79303f8343ea4b47660))
+* connection-lost banner with backoff reconnect and 12 new service templates ([#696](https://github.com/glincker/levelrail/issues/696)) ([ca77421](https://github.com/glincker/levelrail/commit/ca774212c3da3ab860719deebdc77005a3f8a839))
+* control plane backups card on general settings ([#675](https://github.com/glincker/levelrail/issues/675)) ([c8ee001](https://github.com/glincker/levelrail/commit/c8ee0016e5a6696c28d6970811b07a46621c09d0))
+* control plane self-backup and offline restore (snapshots, scheduler, pre-migration copy, downgrade guard, CLI, docs) ([#678](https://github.com/glincker/levelrail/issues/678)) ([efe0c6d](https://github.com/glincker/levelrail/commit/efe0c6d1aae13977fa25d450012df3a2f3e3bebf))
+* cross-app deployments API with summary, stream, CLI and MCP tools ([#725](https://github.com/glincker/levelrail/issues/725)) ([955dcde](https://github.com/glincker/levelrail/commit/955dcde4393a6ba7e8253adb538fdff0e4d64d7c))
+* cross-app deployments page with live feed, filters, drawer and shortcuts ([#728](https://github.com/glincker/levelrail/issues/728)) ([dcc5013](https://github.com/glincker/levelrail/commit/dcc50135682e7fdb690244628dd07493c538a027))
+* dashboard redesign with a UI kit, overview v2, mission control home, visual apps list and grouped navigation ([#715](https://github.com/glincker/levelrail/issues/715)) ([ed40d9f](https://github.com/glincker/levelrail/commit/ed40d9f50369d228c4d6cf120593d0da90dc964e))
+* dashboard setup checklist, deploy failure summary and keyboard shortcuts help ([#699](https://github.com/glincker/levelrail/issues/699)) ([03de1e6](https://github.com/glincker/levelrail/commit/03de1e6f9ecd54815f3e3041d10bbf3b6a20aaae))
+* deploy preview screenshots (opt-in thumbnails per deploy) ([#727](https://github.com/glincker/levelrail/issues/727)) ([a68fb9f](https://github.com/glincker/levelrail/commit/a68fb9f066295cad6bcf53b8e0b9d65d144a64b6))
+* doctor check for stale control plane backups, verified pre-upgrade snapshot and downgrade guard live ([#685](https://github.com/glincker/levelrail/issues/685)) ([ddc273a](https://github.com/glincker/levelrail/commit/ddc273adedc128b14fe3067d8dc09b229157081e))
+* encrypted off-box control plane backups, platform as code, alert silences and a public status page ([#712](https://github.com/glincker/levelrail/issues/712)) ([f9c114e](https://github.com/glincker/levelrail/commit/f9c114efd9e905fb2495db20ad7343fc6792a99a))
+* env editor .env import preview, pending diff, secret-safe export, and apps env import/export CLI ([#690](https://github.com/glincker/levelrail/issues/690)) ([85bf8a8](https://github.com/glincker/levelrail/commit/85bf8a841ccc94e0966cc819d4399bef29af7c2d))
+* failed deploys and disk pressure in attention ([#673](https://github.com/glincker/levelrail/issues/673)) ([567a125](https://github.com/glincker/levelrail/commit/567a125b77c47e36ebd4708ec8e4d999d86c3951))
+* GPU-aware scheduling, S3 build cache, pipeline graph and repo sync, fork PR guard, gateway fix ([#702](https://github.com/glincker/levelrail/issues/702)) ([50c87a2](https://github.com/glincker/levelrail/commit/50c87a2c07b620a56fb441120c3df381caf8d0a4))
+* Hugging Face preflight and model cache manager ([#741](https://github.com/glincker/levelrail/issues/741)) ([898eb78](https://github.com/glincker/levelrail/commit/898eb78e8c7ba4b8a98a917cca447295937aaa33))
+* load balancer check history, check now and per-upstream admin state ([#719](https://github.com/glincker/levelrail/issues/719)) ([7262460](https://github.com/glincker/levelrail/commit/7262460202094c12bd2389969363eea76ef73d53))
+* load balancer page redesign with live topology, suggestions, health history and export ([#721](https://github.com/glincker/levelrail/issues/721)) ([331fda3](https://github.com/glincker/levelrail/commit/331fda3ab15734907158dac4b5154778529e1fbf))
+* log controls, brand logos, status page, disk and cert guards ([#663](https://github.com/glincker/levelrail/issues/663)) ([9684013](https://github.com/glincker/levelrail/commit/96840139f0f5f2f4b5b5e4828a1261e995d0385b))
+* log level tags, level filter chips, expandable rows and jump to first error ([#669](https://github.com/glincker/levelrail/issues/669)) ([fd7281c](https://github.com/glincker/levelrail/commit/fd7281cc587b7b65eec448b2096e6693e57f9968))
+* MCP tools for attention, node status history, audit search and control plane backups ([#682](https://github.com/glincker/levelrail/issues/682)) ([5c47421](https://github.com/glincker/levelrail/commit/5c47421166b2ceb1b51604431c5b9fc7a9bd94c3))
+* node_offline alert kind (API, CLI, dashboard, docs) ([#691](https://github.com/glincker/levelrail/issues/691)) ([418f713](https://github.com/glincker/levelrail/commit/418f713a632c42e40049fd432ac3efa86dd6eea0))
+* per-key daily token budget, created_by, revoke MCP tool and reworked model keys panel ([#740](https://github.com/glincker/levelrail/issues/740)) ([2bc97f1](https://github.com/glincker/levelrail/commit/2bc97f14cf5385770b5ff9b99cb272f7e81eacdc))
+* readyz endpoint, CLI parity tranche 2, MCP backup verify and failed deploys tools, e2e cleanup ([#700](https://github.com/glincker/levelrail/issues/700)) ([f201d3e](https://github.com/glincker/levelrail/commit/f201d3ef839194a1b9b4a4e62600bcd2ff0456e5))
+* real preview thumbnails on the deployments page and cross-app API ([#737](https://github.com/glincker/levelrail/issues/737)) ([a186dd9](https://github.com/glincker/levelrail/commit/a186dd9ead5711b376902a8a7950737f3ce0550d))
+* report certificate renewal state (ok or stalled) in API, CLI and dashboard ([#670](https://github.com/glincker/levelrail/issues/670)) ([5af9598](https://github.com/glincker/levelrail/commit/5af9598bfce3b8affb415d28030fab225b6e0d4a))
+* request metrics, deploy safety, model keys, app management, import, preflight and migration runner fix ([#711](https://github.com/glincker/levelrail/issues/711)) ([56d8e27](https://github.com/glincker/levelrail/commit/56d8e27b332b4def6ba0ac28fa222aca66a0599e))
+* security follow-ups, control plane backup stale alert and verify, generated API reference ([#697](https://github.com/glincker/levelrail/issues/697)) ([0a6077c](https://github.com/glincker/levelrail/commit/0a6077c699b85373d7661a19f4f19a701a20b8e4))
+* server-side audit log search and failed-only filter ([#674](https://github.com/glincker/levelrail/issues/674)) ([6e6fa28](https://github.com/glincker/levelrail/commit/6e6fa280662373935cbebf3a8ddad69d9d258661))
+* tiered deploy previews with a free metadata default ([#736](https://github.com/glincker/levelrail/issues/736)) ([92f2913](https://github.com/glincker/levelrail/commit/92f2913dd4a5c2209d3f4f26cd1f60f6495e8ff5))
+
+
+### Bug Fixes
+
+* [HIGH] ssrf in http log drains ([#688](https://github.com/glincker/levelrail/issues/688)) ([8b1e58a](https://github.com/glincker/levelrail/commit/8b1e58a0bd855f791911b18fe57a97bec2e8e6e4))
+* accessibility pass on status, log viewer and node events, plus component tests ([#681](https://github.com/glincker/levelrail/issues/681)) ([ebc7b88](https://github.com/glincker/levelrail/commit/ebc7b888003c31664646413cbbb3436d0408c7cc))
+* dashboard review follow-ups (health link, fallback url, unhealthy diagnosis, cleanup card, read on open, lazy row metrics, stop polling on 404/501) ([#722](https://github.com/glincker/levelrail/issues/722)) ([62f8772](https://github.com/glincker/levelrail/commit/62f8772dce1420ab2038a4d43bc97998e26c22bb))
+* deploy preview review follow-ups (opt-out, deletion, labeling races) ([#733](https://github.com/glincker/levelrail/issues/733)) ([ac7c712](https://github.com/glincker/levelrail/commit/ac7c712b1078c198a8497f5b32a1a3632ed05d85))
+* deployments page review followups (pinned redeploy, confirm copy, deep link, retry loop) ([#730](https://github.com/glincker/levelrail/issues/730)) ([411b06f](https://github.com/glincker/levelrail/commit/411b06fc345dd2b1ad6bc7064c8c89d6e78af64f))
+* deployments review follow-ups (per-event visibility, old held in needs_attention, rollback and live precision) ([#726](https://github.com/glincker/levelrail/issues/726)) ([f75cd01](https://github.com/glincker/levelrail/commit/f75cd0159bac816efcd95abd1f0bae8375b9b4e2))
+* IaC env placeholders require an explicit allowlist and triage of open CodeQL alerts ([#717](https://github.com/glincker/levelrail/issues/717)) ([27b15db](https://github.com/glincker/levelrail/commit/27b15dbeda7c1bbf0f7ddb98a6fb666399a3b62d))
+* IAM scoping for app routes, review findings, load balancers and pipelines overview pages, salvaged Jules tests ([#708](https://github.com/glincker/levelrail/issues/708)) ([3a242b0](https://github.com/glincker/levelrail/commit/3a242b071fd4af63a369434772d19225c05b2187))
+* judge deleted-app approvals by IAM instead of hiding them ([#732](https://github.com/glincker/levelrail/issues/732)) ([6020a25](https://github.com/glincker/levelrail/commit/6020a25d49e2b830988d6033cd32730cfb75edec))
+* load balancer page review followups (safe export commands, no default probe, retry 0, serialized saves, estimated shares) ([#723](https://github.com/glincker/levelrail/issues/723)) ([8221d18](https://github.com/glincker/levelrail/commit/8221d18257fbd981daf940d1a53b7aa4538bf15d))
+* pin the e2e PITR minio image and skip when the registry is unavailable ([#698](https://github.com/glincker/levelrail/issues/698)) ([344f634](https://github.com/glincker/levelrail/commit/344f634b71a70dbc2314ce2f19ce83bc885473c0))
+* pipeline script injection, IAM and stream re-auth gaps, secret binding, gateway limits, MCP safety, container hardening, signed releases ([#709](https://github.com/glincker/levelrail/issues/709)) ([53c0f0e](https://github.com/glincker/levelrail/commit/53c0f0edb5b18da90810736e1c90b36ad1fbafca))
+* preview tiers review follow-ups (card kept on failure, public-domain Host, bounded thumbs) ([#738](https://github.com/glincker/levelrail/issues/738)) ([1ec9fae](https://github.com/glincker/levelrail/commit/1ec9faecdbb8f2c450a0d3b6e51d8346eaff1142))
+* read host memory on macOS and report unsupported platforms cleanly instead of a raw /proc error ([#714](https://github.com/glincker/levelrail/issues/714)) ([58e02e1](https://github.com/glincker/levelrail/commit/58e02e15eff2424f309601e7c34072e454da847d))
+* reject a second concurrent manual build of the same app, add deploy pipeline failure-mode tests ([#692](https://github.com/glincker/levelrail/issues/692)) ([873da2e](https://github.com/glincker/levelrail/commit/873da2ef69cde16760e1558dc5de6cde8209c59d))
+* reject noncanonical upstream ids and clear admin state when a load balancer is removed ([#720](https://github.com/glincker/levelrail/issues/720)) ([bc47eb7](https://github.com/glincker/levelrail/commit/bc47eb76b17bb79ecf8120c4e077af204842959e))
+* renumber the deploy approval options migration to 0144, it collided with the status page migration at 0142 ([#716](https://github.com/glincker/levelrail/issues/716)) ([a69d31d](https://github.com/glincker/levelrail/commit/a69d31d71327d8df81935997df290a018164df63))
+* scope cross-app list endpoints to apps the caller can read ([#734](https://github.com/glincker/levelrail/issues/734)) ([628a001](https://github.com/glincker/levelrail/commit/628a0014132a6c459f2cb8c76e2fe1a272bef1d5))
+* scope failed deploys and deploy approvals lists to readable apps ([#729](https://github.com/glincker/levelrail/issues/729)) ([bbb6bf9](https://github.com/glincker/levelrail/commit/bbb6bf9df0f902ce930abc89b522b19f6172519b))
+* security and correctness findings from review of [#711](https://github.com/glincker/levelrail/issues/711) ([#713](https://github.com/glincker/levelrail/issues/713)) ([6c6b05f](https://github.com/glincker/levelrail/commit/6c6b05fc983a99adafc793124dfa6574415a0f45))
+* unbounded scoped backup paging and case-insensitive cert domain ownership ([#735](https://github.com/glincker/levelrail/issues/735)) ([c53f832](https://github.com/glincker/levelrail/commit/c53f8329439afad17a7099766df70538e50b96a1))
+
+
+### Performance
+
+* idle footprint benchmark, cached Docker disk usage, single container list per suspended reconcile ([#695](https://github.com/glincker/levelrail/issues/695)) ([a1a52fc](https://github.com/glincker/levelrail/commit/a1a52fcb48a18828078bfb45aec0146c19abd265))
+
+
+### Documentation
+
+* refresh roadmap, feature catalog, README status and CLI reference ([#676](https://github.com/glincker/levelrail/issues/676)) ([5ff9db3](https://github.com/glincker/levelrail/commit/5ff9db3c1a0ed1cad820b1a65efad999461fffd5))
+
 ## [0.2.0-beta.14](https://github.com/glincker/levelrail/compare/v0.2.0-beta.13...v0.2.0-beta.14) (2026-09-23)
 
 
