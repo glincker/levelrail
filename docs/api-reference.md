@@ -117,8 +117,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 87 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 87 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 90 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 90 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -217,6 +217,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/loadbalancer/history | AbilityRead | handleLoadBalancerHistory |
 | POST | /api/v1/apps/{name}/loadbalancer/check | AbilityWrite | handleLoadBalancerCheck |
 | PUT | /api/v1/apps/{name}/loadbalancer/upstreams/{id} | AbilityWrite | handleSetLoadBalancerUpstream |
+| GET | /api/v1/apps/{name}/timeline | AbilityRead | handleAppTimeline |
+| GET | /api/v1/apps/{name}/pending-changes | AbilityRead | handlePendingChanges |
+| POST | /api/v1/apps/{name}/apply-pending | AbilityDeploy | handleApplyPending |
 
 :::
 
@@ -245,6 +248,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/previews | AbilityRead | handleListPreviewEnvironments |
 | POST | /api/v1/apps/{name}/previews/{number}/teardown | AbilityDeploy | handleTeardownPreviewEnvironment |
 | POST | /api/v1/previews/sweep | AbilityDeploy | handleSweepPreviewEnvironments |
+| DELETE | /api/v1/apps/{name}/secrets/{key} | AbilityWriteSensitive | handleDeleteSecret |
 
 ## Telemetry
 
@@ -411,7 +415,7 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 46 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+::: details 47 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -470,6 +474,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/branch-env | AbilityRead | handleListAppBranchEnv |
 | POST | /api/v1/apps/{name}/branch-env | AbilityWriteSensitive | handleSetAppBranchEnv |
 | DELETE | /api/v1/apps/{name}/branch-env/{id} | AbilityWrite | handleDeleteAppBranchEnv |
+| PATCH | /api/v1/apps/{name}/domains | AbilityWrite | handleEditAppDomains |
 
 :::
 

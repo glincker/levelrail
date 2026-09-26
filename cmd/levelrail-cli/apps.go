@@ -45,10 +45,16 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsDeploys(prog, args[1:], stdout, stderr, lookupEnv)
 	case "promote":
 		return runAppsPromote(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin) //nolint:gosec // same guard as below
+	case "timeline":
+		return runAppsTimeline(prog, args[1:], stdout, stderr, lookupEnv)
+	case "apply":
+		return runAppsApply(prog, args[1:], stdout, stderr, lookupEnv)
+	case "domains":
+		return runAppsDomains(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "restart":
-		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsRestart(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "stop":
-		return runAppsStop(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsStop(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "start":
 		return runAppsStart(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "delete":
@@ -168,6 +174,9 @@ func appsUsage(prog string) string {
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
   %[1]s apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [flags]   promote name's image onto a sibling app in another environment
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
+  %[1]s apps timeline <name> [--limit N] [flags]   what happened to an app: deploys, restarts, env, secret and config changes
+  %[1]s apps apply <name> [flags]       restart an app so saved env, secret and config changes take effect
+  %[1]s apps domains list|add|remove <name> [domain...] [flags]   show or change an app's domains
   %[1]s apps stop <name> [flags]        stop an app's running container
   %[1]s apps start <name> [flags]       start an app previously stopped
   %[1]s apps delete <name> [flags]      remove an app's desired state

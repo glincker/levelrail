@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -102,11 +103,11 @@ func (c *Controller) recordRollout(ctx context.Context, desired *store.DesiredSe
 	_ = c.rollouts.RecordRollout(ctx, c.serviceName, desired.Image, state, runningImageID)
 }
 
-// removeStaleAfterHold is removeStale that keeps other releases' running
-// containers until previousReleaseHold has passed since this service's most
-// recent container creation, so a rollback and a roll forward inside the
-// window are both instant. Stopped containers and excess replicas of the
-// current release are never held.
+// removeStaleAfterHold is removeStale that keeps the most recent previous
+// release's running containers until previousReleaseHold has passed since
+// the current cutover, so a rollback and a roll forward inside the window
+// are both instant. Older releases, stopped containers and excess replicas
+// of the current release are never held.
 func (c *Controller) removeStaleAfterHold(ctx context.Context, targets []string) error {
 	if c.previousReleaseHold <= 0 {
 		return c.removeStale(ctx, targets)
@@ -115,30 +116,76 @@ func (c *Controller) removeStaleAfterHold(ctx context.Context, targets []string)
 	if err != nil {
 		return fmt.Errorf("list containers for %s: %w", c.serviceName, err)
 	}
-	return c.removeContainers(ctx, c.heldFilter(all, targets, time.Now()))
+	due, heldUntil := c.heldFilter(all, targets, time.Now())
+	c.recordHold(ctx, heldUntil)
+	return c.removeContainers(ctx, due)
 }
 
-// heldFilter returns the stale containers that are due for removal at now.
-func (c *Controller) heldFilter(all []docker.ContainerState, targets []string, now time.Time) []docker.ContainerState {
-	var cutover time.Time
+// releaseOf is a container name without its replica suffix.
+func releaseOf(name string) string {
+	if i := strings.LastIndex(name, "-r"); i > 0 {
+		if n, err := strconv.Atoi(name[i+2:]); err == nil && n > 0 && !strings.HasPrefix(name[i+2:], "+") {
+			return name[:i]
+		}
+	}
+	return name
+}
+
+// heldFilter returns the stale containers due for removal at now, and when
+// the held previous release (if any) is due. A release's cutover is its
+// replica 0's creation, so scaling up does not extend the window.
+func (c *Controller) heldFilter(all []docker.ContainerState, targets []string, now time.Time) (due []docker.ContainerState, heldUntil time.Time) {
+	firstCreated := map[string]time.Time{}
+	lastCreated := map[string]time.Time{}
+	seenBase := map[string]bool{}
 	for _, cs := range all {
-		if ownsContainer(c.serviceName, cs.Name) && cs.Created.After(cutover) {
-			cutover = cs.Created
+		if !ownsContainer(c.serviceName, cs.Name) {
+			continue
+		}
+		rel := releaseOf(cs.Name)
+		if cs.Name == rel {
+			firstCreated[rel] = cs.Created
+			seenBase[rel] = true
+		} else if first, ok := firstCreated[rel]; !seenBase[rel] && (!ok || cs.Created.Before(first)) {
+			firstCreated[rel] = cs.Created
+		}
+		if cs.Created.After(lastCreated[rel]) {
+			lastCreated[rel] = cs.Created
+		}
+	}
+	var cutover time.Time
+	for _, t := range firstCreated {
+		if t.After(cutover) {
+			cutover = t
 		}
 	}
 	holding := !cutover.IsZero() && now.Before(cutover.Add(c.previousReleaseHold))
 	currentBase := ""
 	if len(targets) > 0 {
-		currentBase = targets[0]
+		currentBase = releaseOf(targets[0])
 	}
 
-	var due []docker.ContainerState
-	for _, cs := range c.filterStale(all, targets) {
-		sameRelease := currentBase != "" && strings.HasPrefix(cs.Name, currentBase)
-		if holding && cs.Running && !sameRelease {
+	stale := c.filterStale(all, targets)
+	newestPrevious := ""
+	if holding {
+		for _, cs := range stale {
+			rel := releaseOf(cs.Name)
+			if !cs.Running || rel == currentBase {
+				continue
+			}
+			if newestPrevious == "" || lastCreated[rel].After(lastCreated[newestPrevious]) || (lastCreated[rel].Equal(lastCreated[newestPrevious]) && rel > newestPrevious) {
+				newestPrevious = rel
+			}
+		}
+	}
+	for _, cs := range stale {
+		if newestPrevious != "" && cs.Running && releaseOf(cs.Name) == newestPrevious {
 			continue
 		}
 		due = append(due, cs)
 	}
-	return due
+	if newestPrevious != "" {
+		heldUntil = cutover.Add(c.previousReleaseHold)
+	}
+	return due, heldUntil
 }

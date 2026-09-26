@@ -1303,6 +1303,9 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	if _, err := db.ExecContext(ctx, `DELETE FROM deploy_freeze_windows WHERE scope = ?`, DeployFreezeScopeApp(name)); err != nil {
 		return fmt.Errorf("store: delete desired service %q: clear freeze windows: %w", name, err)
 	}
+	if err := db.DeleteAppTimelineData(ctx, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: %w", name, err)
+	}
 	return nil
 }
 

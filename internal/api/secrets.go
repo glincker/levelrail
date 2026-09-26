@@ -1,10 +1,13 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -78,6 +81,93 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if _, err := rt.declareSecretEnv(r.Context(), name, key, true); err != nil {
+		rt.logger.Error("api: set secret: declare failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("key", key))
+		writeError(w, http.StatusInternalServerError, "the secret value was saved but declaring the key failed, retry the request")
+		return
+	}
+	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSecretChange, Keys: []string{key}, Title: "Secret set: " + key})
+	rt.nudgeReconciler()
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// secretEnvDeclarer and secretValueDeleter are the narrow store writes behind
+// declaring a key as secret-backed and deleting its value. *store.DB
+// provides both.
+type secretEnvDeclarer interface {
+	SetServiceSecretEnvDeclared(ctx context.Context, name, key string, declared bool) (bool, error)
+}
+
+type secretValueDeleter interface {
+	DeleteSecretValue(ctx context.Context, serviceName, envKey string) (bool, error)
+}
+
+// declareSecretEnv makes key a secret-backed env name on the app, so its
+// stored value is injected at container creation. Without it a stored value
+// is never read.
+func (rt *Router) declareSecretEnv(ctx context.Context, name, key string, declared bool) (bool, error) {
+	d, ok := rt.apps.(secretEnvDeclarer)
+	if !ok {
+		return false, nil
+	}
+	changed, err := d.SetServiceSecretEnvDeclared(ctx, name, key, declared)
+	if err != nil {
+		return false, fmt.Errorf("declare secret env %q: %w", key, err)
+	}
+	return changed, nil
+}
+
+// handleDeleteSecret handles DELETE /api/v1/apps/{name}/secrets/{key}: removes
+// the stored value and undeclares the key. A locked secret needs force=true.
+func (rt *Router) handleDeleteSecret(w http.ResponseWriter, r *http.Request) {
+	if rt.secrets == nil {
+		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
+		return
+	}
+	deleter, ok := rt.apps.(secretValueDeleter)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "deleting secrets is not supported by this store")
+		return
+	}
+	name, key := r.PathValue("name"), r.PathValue("key")
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	}
+	if err != nil {
+		rt.internalError(w, "api: delete secret: load app failed", err, slog.String("name", name))
+		return
+	}
+	keys, err := rt.secrets.ListKeys(r.Context(), name)
+	if err != nil {
+		rt.internalError(w, "api: delete secret: list keys failed", err, slog.String("name", name))
+		return
+	}
+	for _, k := range keys {
+		if k.Key == key && k.Locked && r.URL.Query().Get("force") != "true" {
+			writeError(w, http.StatusConflict, "this key is locked, pass force=true to delete it")
+			return
+		}
+	}
+	// Undeclare first: if the value delete then fails, the key is already no
+	// longer injected and a retry finishes the job.
+	undeclared, err := rt.declareSecretEnv(r.Context(), name, key, false)
+	if err != nil {
+		rt.internalError(w, "api: delete secret: undeclare failed", err, slog.String("name", name), slog.String("key", key))
+		return
+	}
+	existed, err := deleter.DeleteSecretValue(r.Context(), name, key)
+	if err != nil {
+		rt.internalError(w, "api: delete secret failed", err, slog.String("name", name), slog.String("key", key))
+		return
+	}
+	if !existed && !undeclared && !slices.Contains(store.SecretEnvNames(svc.SecretEnv), key) {
+		writeError(w, http.StatusNotFound, "no secret with this key")
+		return
+	}
+	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSecretChange, Keys: []string{key}, Title: "Secret deleted: " + key})
+	rt.nudgeReconciler()
 	w.WriteHeader(http.StatusNoContent)
 }
 

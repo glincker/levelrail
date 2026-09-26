@@ -78,10 +78,97 @@ func TestRun_AppsSecretsList_Empty(t *testing.T) {
 	}
 }
 
+// servePendingChanges answers the follow-up pending-changes lookup a config
+// write makes, reporting whether it handled the request.
+func servePendingChanges(w http.ResponseWriter, r *http.Request, pending bool) bool {
+	if !strings.HasSuffix(r.URL.Path, "/pending-changes") {
+		return false
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if pending {
+		_, _ = w.Write([]byte(`{"pending":true,"changes":[{"kind":"secret","keys":["API_KEY"],"since":"2026-09-25T00:00:00Z"}],"apply_action":"restart"}`))
+		return true
+	}
+	_, _ = w.Write([]byte(`{"pending":false,"changes":[],"apply_action":"restart"}`))
+	return true
+}
+
+func TestRun_AppsSecretsSet_PendingHintAndApply(t *testing.T) {
+	for _, apply := range []bool{false, true} {
+		var applied bool
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch {
+			case servePendingChanges(w, r, true):
+			case strings.HasSuffix(r.URL.Path, "/apply-pending"):
+				applied = true
+				w.WriteHeader(http.StatusAccepted)
+				_, _ = w.Write([]byte(`{}`))
+			default:
+				w.WriteHeader(http.StatusNoContent)
+			}
+		}))
+		args := []string{"apps", "secrets", "set", "web", "API_KEY", "v", "--api-url", srv.URL}
+		if apply {
+			args = append(args, "--apply")
+		}
+		stdout, _ := runCLIExpectOK(t, args)
+		srv.Close()
+		if apply {
+			if !applied || !strings.Contains(stdout, "restarting it") {
+				t.Errorf("--apply: applied=%v stdout=%q", applied, stdout)
+			}
+			continue
+		}
+		if applied || !strings.Contains(stdout, "1 changes pending") || !strings.Contains(stdout, "apps apply web (or pass --apply)") {
+			t.Errorf("hint: applied=%v stdout=%q", applied, stdout)
+		}
+	}
+}
+
+func TestRun_AppsSecretsDelete_ApplyDeniedFails(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case servePendingChanges(w, r, true):
+		case strings.HasSuffix(r.URL.Path, "/apply-pending"):
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+		default:
+			w.WriteHeader(http.StatusNoContent)
+		}
+	}))
+	defer srv.Close()
+	stderr := runCLIExpectAPIError(t, []string{"apps", "secrets", "delete", "web", "API_KEY", "--apply", "--api-url", srv.URL})
+	if !strings.Contains(stderr, "could not apply pending changes") {
+		t.Errorf("stderr = %q", stderr)
+	}
+}
+
+func TestRun_AppsSecretsDelete(t *testing.T) {
+	var gotMethod, gotURI string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if servePendingChanges(w, r, false) {
+			return
+		}
+		gotMethod, gotURI = r.Method, r.URL.RequestURI()
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "secrets", "delete", "web", "API_KEY", "--force", "--api-url", srv.URL})
+	if gotMethod != http.MethodDelete || gotURI != "/api/v1/apps/web/secrets/API_KEY?force=true" {
+		t.Errorf("request = %s %s", gotMethod, gotURI)
+	}
+	if !strings.Contains(stdout, `secret "API_KEY" deleted for app "web"`) {
+		t.Errorf("stdout = %q", stdout)
+	}
+}
+
 func TestRun_AppsSecretsSet(t *testing.T) {
 	var gotPath, gotMethod string
 	var gotBody map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if servePendingChanges(w, r, false) {
+			return
+		}
 		gotPath, gotMethod = r.URL.Path, r.Method
 		_ = json.NewDecoder(r.Body).Decode(&gotBody)
 		w.WriteHeader(http.StatusNoContent)
@@ -190,6 +277,9 @@ func TestRun_AppsSecretsSet_EnvFile(t *testing.T) {
 	}
 	var calls []setCall
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if servePendingChanges(w, r, false) {
+			return
+		}
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		calls = append(calls, setCall{path: r.URL.Path, value: fmt.Sprint(body["value"])})
@@ -230,6 +320,9 @@ func TestRun_AppsSecretsSet_EnvFile_MalformedLines(t *testing.T) {
 
 	var gotKeys []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if servePendingChanges(w, r, false) {
+			return
+		}
 		gotKeys = append(gotKeys, strings.TrimPrefix(r.URL.Path, "/api/v1/apps/web/secrets/"))
 		w.WriteHeader(http.StatusNoContent)
 	}))

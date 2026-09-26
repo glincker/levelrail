@@ -29,8 +29,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
@@ -238,9 +240,13 @@ type Controller struct {
 	egressReadyBudget       time.Duration
 	egressReadyPollInterval time.Duration
 
-	rollouts            RolloutRecorder // nil is valid: rollout state just isn't recorded
-	servingImageID      string          // image ID of the last replica proven ready this pass
-	previousReleaseHold time.Duration   // 0 removes the previous release at cutover
+	rollouts            RolloutRecorder       // nil is valid: rollout state just isn't recorded
+	servingImageID      string                // image ID of the last replica proven ready this pass
+	previousReleaseHold time.Duration         // 0 removes the previous release at cutover
+	applied             AppliedConfigRecorder // nil is valid: pending changes just aren't tracked
+	lastHeldUntil       time.Time
+	unconfirmedMu       sync.Mutex
+	unconfirmed         map[string]*store.AppliedConfig // created but not yet proven ready, by container name
 }
 
 // Option configures optional Controller behavior.
@@ -728,6 +734,7 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 			// With a hold configured the last old container stays as the
 			// held previous release.
 			if len(stale) > 1 || (len(stale) == 1 && c.previousReleaseHold <= 0) {
+				sort.SliceStable(stale, func(i, j int) bool { return stale[i].Created.Before(stale[j].Created) })
 				_ = c.removeContainers(ctx, stale[:1])
 			}
 		}
@@ -867,7 +874,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		if err := c.verifyRunningReady(ctx, state, desired); err != nil {
 			return replicaOutcome{reason: readinessReason(err, "RunningNotReady")}, err
 		}
-		return c.imageOutcome(ctx, state, desired, false)
+		return c.confirmedOutcome(ctx, target, state, desired, false)
 	}
 
 	// Re-inspect: Docker only reports port bindings once a container is
@@ -908,7 +915,17 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	if err := c.waitReady(ctx, state, desired); err != nil {
 		return replicaOutcome{reason: readinessReason(err, "ReadinessFailed")}, err
 	}
-	return c.imageOutcome(ctx, state, desired, true)
+	return c.confirmedOutcome(ctx, target, state, desired, true)
+}
+
+// confirmedOutcome is imageOutcome plus recording target's creation-time
+// snapshot once the replica is proven ready.
+func (c *Controller) confirmedOutcome(ctx context.Context, target string, state *docker.ContainerState, desired *store.DesiredService, justDeployed bool) (replicaOutcome, error) {
+	out, err := c.imageOutcome(ctx, state, desired, justDeployed)
+	if err == nil {
+		c.confirmApplied(ctx, target)
+	}
+	return out, err
 }
 
 // imageOutcome is a ready replica's final verdict: Ready only when it runs
@@ -996,6 +1013,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if err != nil {
 		return fmt.Errorf("create %q: %w", name, err)
 	}
+	c.holdApplied(name, c.appliedSnapshot(ctx, name, desired))
 	if err := c.runtime.Start(ctx, id); err != nil {
 		return fmt.Errorf("start %q after create: %w", name, err)
 	}

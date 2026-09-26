@@ -10,8 +10,11 @@ import (
 	"maps"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
+	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -548,6 +551,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 			desired.VaultEnv[k] = store.VaultEnvRef{Path: v.Path, Key: v.Key}
 		}
 	}
+	resolution := rt.resolveCreateImage(r.Context(), &desired)
 	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
@@ -594,8 +598,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// pendingImageTag): its own POST .../builds call records the real
 	// history entry once a build actually succeeds.
 	if !spec.IsPendingImage(req.Image) {
-		rt.recordPlainDeployAttempt(r.Context(), desired, req.Image)
+		rt.recordResolvedDeployAttempt(r.Context(), desired, desired.Image, store.DeployAttemptSourceImage, resolution)
 	}
+	req.Image = desired.Image
+	req.ImageDigest = appImageDigest(desired)
 
 	// A new app is never dirty regardless of what the client sent:
 	// toDesiredService never carries EnvDirty into the INSERT (it's
@@ -615,6 +621,28 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)
+}
+
+// resolveCreateImage pins desired's image the way a deploy does (registry
+// digest, or the local image ID when only a local image exists) and returns
+// the resolution to record on the first deploy attempt. A resolver failure
+// leaves the image as given: creating an app must not depend on a registry.
+func (rt *Router) resolveCreateImage(ctx context.Context, desired *store.DesiredService) deploy.ImageResolution {
+	res := deploy.ImageResolution{Image: desired.Image}
+	if spec.IsPendingImage(desired.Image) {
+		return res
+	}
+	got, err := deploy.ResolveImage(ctx, rt.imageResolver, desired.Image, nil, false)
+	if err != nil {
+		rt.logger.Warn("api: create app: resolve image failed, deploying it unresolved", slog.String("error", err.Error()), slog.String("name", desired.Name))
+		return res
+	}
+	desired.Image = got.Image
+	desired.ImageID, desired.ImageIDRef = "", ""
+	if got.LocalID != "" && docker.ImageDigestOf(got.Image) == "" {
+		desired.ImageID, desired.ImageIDRef = got.LocalID, got.Image
+	}
+	return got
 }
 
 // handleGetApp handles GET /api/v1/apps/{name}.
@@ -639,7 +667,26 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resource.Tags = tagNames
-	writeJSON(w, http.StatusOK, appWithRequests{appResource: resource, Requests: rt.requestSummaryFor(r, name)})
+	writeJSON(w, http.StatusOK, appWithRequests{
+		appResource:              resource,
+		Requests:                 rt.requestSummaryFor(r, name),
+		PreviousReleaseHeldUntil: rt.previousReleaseHeldUntil(r.Context(), name),
+	})
+}
+
+// previousReleaseHeldUntil is when the held previous release is due for
+// removal, nil when none is held or the hold has already lapsed.
+func (rt *Router) previousReleaseHeldUntil(ctx context.Context, name string) *time.Time {
+	events := rt.appEvents()
+	if events == nil {
+		return nil
+	}
+	applied, err := events.GetAppliedConfig(ctx, name)
+	if err != nil || applied == nil || !applied.HeldUntil.After(time.Now()) {
+		return nil
+	}
+	until := applied.HeldUntil.UTC()
+	return &until
 }
 
 // appWithRequests is GET /api/v1/apps/{name}'s body: the app plus its recent
@@ -647,6 +694,9 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 type appWithRequests struct {
 	appResource
 	Requests *telemetry.RequestSummary `json:"requests,omitempty"`
+	// PreviousReleaseHeldUntil is when the kept previous release, an instant
+	// rollback target, is removed. Omitted when none is held.
+	PreviousReleaseHeldUntil *time.Time `json:"previous_release_held_until,omitempty"`
 }
 
 // handleUpdateApp handles PUT /api/v1/apps/{name}. Full replace, same as
@@ -664,6 +714,10 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 
 	if err := validateAppResource(req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if len(req.Secrets) > 0 {
+		writeError(w, http.StatusBadRequest, "secret values cannot be set through this endpoint: use PUT /api/v1/apps/{name}/secrets/{key}")
 		return
 	}
 
@@ -690,7 +744,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// every save: SaveDesiredService, unlike NodeID/StorageTargetID,
 	// always writes this column.
 	desired.Egress = existing.Egress
-	preserveUnsentAppFields(&desired, *existing, req)
+	preserveUnsentAppFields(&desired, *existing, req, imageChanged)
 	if imageChanged {
 		desired.EnvDirty = false
 	} else {
@@ -713,6 +767,9 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	if imageChanged {
 		rt.recordPlainDeployAttempt(r.Context(), desired, req.Image)
 	}
+	for _, ev := range updateEvents(name, *existing, desired) {
+		rt.recordAppEvent(r, ev)
+	}
 	// SaveDesiredService never touches node_id or project_id (their own
 	// doc comments explain why), so the response reflects existing's
 	// placement and project, not req's: req.NodeID/req.ProjectID are
@@ -723,6 +780,8 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// value happening to look right.
 	req.NodeID = existing.NodeID
 	req.ProjectID = existing.ProjectID
+	req.SecretEnv = store.SecretEnvNames(desired.SecretEnv)
+	req.VaultEnv = toAppResource(desired).VaultEnv
 	// Re-fetch rather than reusing req.toDesiredService(): NodeID and
 	// RestartNonce (both needed to compute the real running container's
 	// name, desiredServiceContainerNames) are response-only fields this
@@ -891,6 +950,7 @@ func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventRestart, Title: "Restarted"})
 	rt.reloadAndWriteApp(w, r, name, "restart app")
 }
 
@@ -911,6 +971,7 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSuspend, Title: "Stopped"})
 	rt.reloadAndWriteApp(w, r, name, "stop app")
 }
 
@@ -929,6 +990,7 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventResume, Title: "Started"})
 	rt.reloadAndWriteApp(w, r, name, "start app")
 }
 

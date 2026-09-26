@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"io"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
+
+const waitTimelineLimit = 20
 
 // rolloutOutcome is what "apps wait" actually needs to know about a
 // deploy attempt's roll-out: has it converged yet, and if so, did it
@@ -17,6 +21,75 @@ type rolloutOutcome struct {
 	// state is "pending" (still converging), "succeeded", or "failed".
 	state     string
 	condition *conditionResource // the matching condition, nil if state is "pending"
+	// result says what a succeeded rollout actually did: rolloutRolledOut,
+	// rolloutUpToDate or rolloutRestarted. Empty unless state is "succeeded".
+	result string
+}
+
+// What a succeeded rollout did, reported instead of the raw Ready reason
+// (which is "Deployed" on a fresh rollout and "AlreadyRunning" afterwards
+// whether or not anything changed).
+const (
+	rolloutRolledOut = "rolled_out"
+	rolloutUpToDate  = "already_up_to_date"
+	rolloutRestarted = "restarted"
+)
+
+// rolloutResultLabel is the human wording for a rollout result.
+func rolloutResultLabel(result string) string {
+	switch result {
+	case rolloutRolledOut:
+		return "rolled out"
+	case rolloutUpToDate:
+		return "already up to date"
+	case rolloutRestarted:
+		return "restarted"
+	default:
+		return "converged"
+	}
+}
+
+// timelineFetcher is the optional extra waitForRollout uses to tell a
+// restart apart from a deploy; a fetcher without it (or a server without
+// the endpoint) just yields deploy-based wording.
+type timelineFetcher interface {
+	GetAppTimeline(ctx context.Context, name string, limit int, before string) (apiclient.TimelineResponse, error)
+}
+
+// summarizeRollout decides what a succeeded rollout of attempt did. attempts
+// is newest first. A restart recorded after the attempt finished wins; a
+// fresh "Deployed" reason means a rollout; otherwise the attempt is a
+// rollout only if it changed the image or digest from the previous one.
+func summarizeRollout(attempts []deployAttemptResource, attempt deployAttemptResource, cond *conditionResource, timeline []apiclient.TimelineItem) string {
+	if attempt.FinishedAt != nil {
+		for _, it := range timeline {
+			if it.Kind != "restart" {
+				continue
+			}
+			if at, err := time.Parse(time.RFC3339Nano, it.At); err == nil && !at.Before(*attempt.FinishedAt) {
+				return rolloutRestarted
+			}
+		}
+	}
+	if cond != nil && cond.Reason == "Deployed" {
+		return rolloutRolledOut
+	}
+	for i, a := range attempts {
+		if a.ID != attempt.ID {
+			continue
+		}
+		if i+1 >= len(attempts) {
+			return rolloutRolledOut
+		}
+		prev := attempts[i+1]
+		sameDigest := attempt.ImageDigest != "" && attempt.ImageDigest == prev.ImageDigest
+		sameImage := attempt.ImageDigest == "" && attempt.Image == prev.Image
+		if sameDigest || sameImage {
+			return rolloutUpToDate
+		}
+		return rolloutRolledOut
+	}
+	return rolloutRolledOut
 }
 
 // rolloutFailureReasons and rolloutDoneReasons mirror deployStages.ts's
@@ -128,6 +201,15 @@ func waitForRollout(ctx context.Context, client deployAttemptFetcher, config rol
 		}
 
 		outcome := computeRolloutOutcome(attempt, conditions)
+		if outcome.state == "succeeded" {
+			var timeline []apiclient.TimelineItem
+			if tf, ok := client.(timelineFetcher); ok {
+				if resp, err := tf.GetAppTimeline(ctx, config.Name, waitTimelineLimit, ""); err == nil {
+					timeline = resp.Items
+				}
+			}
+			outcome.result = summarizeRollout(attempts, attempt, outcome.condition, timeline)
+		}
 		if config.OnTick != nil {
 			config.OnTick(outcome)
 		}
@@ -206,10 +288,11 @@ func runAppsWait(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	})
 
 	type waitResult struct {
-		App    string             `json:"app"`
-		Status string             `json:"status"`
-		Reason string             `json:"reason,omitempty"`
-		Detail *conditionResource `json:"condition,omitempty"`
+		App     string             `json:"app"`
+		Status  string             `json:"status"`
+		Outcome string             `json:"outcome,omitempty"`
+		Reason  string             `json:"reason,omitempty"`
+		Detail  *conditionResource `json:"condition,omitempty"`
 	}
 
 	if err != nil {
@@ -223,13 +306,13 @@ func runAppsWait(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	result := waitResult{App: name, Status: outcome.state, Detail: outcome.condition}
+	result := waitResult{App: name, Status: outcome.state, Outcome: outcome.result, Detail: outcome.condition}
 	if outcome.condition != nil {
 		result.Reason = outcome.condition.Reason
 	}
 	_ = renderResult(stdout, of.Format, of.Query, result, func() {
 		if outcome.state == "succeeded" {
-			_, _ = fmt.Fprintf(stdout, "%q converged successfully (%s)\n", name, result.Reason)
+			_, _ = fmt.Fprintf(stdout, "%q %s\n", name, rolloutResultLabel(outcome.result))
 		} else {
 			_, _ = fmt.Fprintf(stdout, "%q failed to converge (%s)\n", name, result.Reason)
 		}

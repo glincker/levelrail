@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -263,18 +265,27 @@ func (rt *Router) recordPlainDeployAttempt(ctx context.Context, svc store.Desire
 // succeeded, so a history-tracking hiccup must never turn an otherwise-
 // successful deploy trigger into a client-visible failure.
 func (rt *Router) recordInstantDeployAttempt(ctx context.Context, svc store.DesiredService, image, source string) {
+	rt.recordResolvedDeployAttempt(ctx, svc, image, source, deploy.ImageResolution{})
+}
+
+// recordResolvedDeployAttempt is recordInstantDeployAttempt carrying the
+// image resolution: the digest, how it was obtained and, for a local-only
+// image, a short reason so history never shows an unexplained blank.
+func (rt *Router) recordResolvedDeployAttempt(ctx context.Context, svc store.DesiredService, image, source string, res deploy.ImageResolution) {
 	serviceName := svc.Name
 	id, err := store.NewDeployAttemptID()
 	if err != nil {
 		rt.logger.Error("api: record deploy attempt: mint id failed", slog.String("error", err.Error()), slog.String("name", serviceName))
 		return
 	}
+	digestReason, reason := describeResolution(res)
 	now := time.Now()
 	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: id, ServiceName: serviceName, Image: image,
 		Source: source,
 		Status: store.DeployAttemptStatusRunning, StartedAt: now,
-		Snapshot: store.NewDeployAttemptSnapshot(svc),
+		Snapshot:    store.NewDeployAttemptSnapshot(svc),
+		ImageDigest: res.Digest, DigestReason: digestReason, Reason: reason,
 	}); err != nil {
 		rt.logger.Error("api: record deploy attempt: save failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return
@@ -288,6 +299,20 @@ func (rt *Router) recordInstantDeployAttempt(ctx context.Context, svc store.Desi
 			AppName: serviceName, Image: image, Succeeded: true,
 		})
 	}
+}
+
+// describeResolution maps an image resolution to the digest reason and the
+// short attempt reason to record. A local-only image (no registry digest)
+// is reported as LocalImage instead of a blank.
+func describeResolution(res deploy.ImageResolution) (digestReason, reason string) {
+	digestReason = res.Reason
+	switch {
+	case res.LocalID != "" && docker.ImageDigestOf(res.Image) == "" && res.Reason != store.DigestReasonLocalBuild:
+		return store.DigestReasonLocalImage, "LocalImage: no registry digest, running the local image"
+	case res.Reason == store.DigestReasonUnresolved:
+		return digestReason, "Unresolved: image not found in a registry or locally"
+	}
+	return digestReason, ""
 }
 
 // handleDeployHistory handles GET /api/v1/apps/{name}/deploys. It
