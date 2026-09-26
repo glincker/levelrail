@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
@@ -292,7 +294,7 @@ func (m *Manager) capture(ctx context.Context, s AppSettings, t Target) Record {
 
 	settle := maxSettle + time.Duration(s.WaitMS)*time.Millisecond
 	res, err := m.shooter.Shoot(runCtx, browser.Endpoint(), ShotRequest{
-		URL:   fmt.Sprintf("http://%s:%d%s", t.Host, t.Port, s.Path),
+		URL:   appURL(t, s.Path),
 		Width: m.cfg.ViewportW, Height: m.cfg.ViewportH,
 		Settle:   min(settle, time.Until(deadline)-startupReserve/2),
 		Deadline: deadline,
@@ -325,6 +327,13 @@ func (m *Manager) capture(ctx context.Context, s AppSettings, t Target) Record {
 	}
 	rec.Status, rec.Bytes, rec.Width, rec.Height = StatusOK, int64(len(thumb.JPEG)), thumb.Width, thumb.Height
 	return rec
+}
+
+// appURL addresses the app inside its private Docker network, which is plain
+// HTTP by design; path is validated to be an absolute path on the app.
+func appURL(t Target, path string) string {
+	base := url.URL{Scheme: "http", Host: net.JoinHostPort(t.Host, strconv.Itoa(t.Port))}
+	return base.String() + path
 }
 
 func (m *Manager) browserSpec(t Target) docker.BrowserSpec {

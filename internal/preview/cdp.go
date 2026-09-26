@@ -66,7 +66,8 @@ type cdpSession struct {
 func readyURL(ctx context.Context, addr string) (string, error) {
 	client := &http.Client{Timeout: 2 * time.Second}
 	for {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr+"/json/version", nil)
+		versionURL := url.URL{Scheme: "http", Host: addr, Path: "/json/version"}
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, versionURL.String(), nil)
 		if err != nil {
 			return "", fmt.Errorf("preview: build version request: %w", err)
 		}
