@@ -189,12 +189,16 @@ const DEPLOY_MARKER_COLOR: Record<DeployAttemptStatus, string> = {
   succeeded: '#22c55e',
   failed: '#ef4444',
   running: '#94a3b8',
+  held: '#f59e0b',
+  superseded: '#94a3b8',
 }
 
 const DEPLOY_MARKER_STATUS_LABEL: Record<DeployAttemptStatus, string> = {
   succeeded: 'Succeeded',
   failed: 'Failed',
   running: 'Running',
+  held: 'Held (frozen)',
+  superseded: 'Superseded',
 }
 
 function formatDeployMarkerTooltip(attempt: DeployAttempt, t: number): string {

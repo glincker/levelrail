@@ -5,7 +5,10 @@
 // not history, see that file's own doc comment for why the two are
 // deliberately kept separate rather than one endpoint's shape changing
 // underneath its existing consumer).
-export type DeployAttemptStatus = 'running' | 'succeeded' | 'failed'
+// 'held' is an automatic deploy parked by a freeze window; 'superseded'
+// never applied because a newer deploy already had.
+export type DeployAttemptStatus =
+  'running' | 'succeeded' | 'failed' | 'held' | 'superseded'
 
 // Mirrors internal/store.DeployAttemptSource* on the wire: 'webhook' for
 // an unattended git-push build, 'manual' for a dashboard-triggered
@@ -31,4 +34,14 @@ export interface DeployAttempt {
    *  this build, e.g. "Node.js". Absent when detection was skipped or
    *  found nothing buildable. */
   detected_framework?: string
+  /** Content identity: registry digest, or a build's local image ID. */
+  image_digest?: string
+  /** How image_digest was obtained, e.g. Resolved or PullFailedUsingCached. */
+  digest_reason?: string
+  /** What the controller last saw running: 'serving' or 'mismatch'. */
+  rollout_state?: 'serving' | 'mismatch'
+  running_image_id?: string
+  sequence?: number
+  /** Why the attempt was held, superseded, or allowed through a freeze. */
+  reason?: string
 }

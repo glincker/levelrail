@@ -1,5 +1,7 @@
 import {
   CheckCircleIcon,
+  PauseCircleIcon,
+  SkipForwardIcon,
   SpinnerGapIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -22,12 +24,16 @@ export const DEPLOY_ATTEMPT_STATUS_BADGE_VARIANT: Record<
   succeeded: 'success',
   failed: 'destructive',
   running: 'muted',
+  held: 'warning',
+  superseded: 'muted',
 }
 
 export const DEPLOY_ATTEMPT_STATUS_ICON: Record<DeployAttemptStatus, Icon> = {
   succeeded: CheckCircleIcon,
   failed: WarningCircleIcon,
   running: SpinnerGapIcon,
+  held: PauseCircleIcon,
+  superseded: SkipForwardIcon,
 }
 
 export const DEPLOY_ATTEMPT_STATUS_LABEL: Record<DeployAttemptStatus, string> =
@@ -35,6 +41,8 @@ export const DEPLOY_ATTEMPT_STATUS_LABEL: Record<DeployAttemptStatus, string> =
     succeeded: 'Succeeded',
     failed: 'Failed',
     running: 'Running',
+    held: 'Held (frozen)',
+    superseded: 'Superseded',
   }
 
 export const DEPLOY_ATTEMPT_SOURCE_LABEL: Record<DeployAttemptSource, string> =
