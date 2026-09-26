@@ -38,40 +38,54 @@ type PageMeta struct {
 // It stops at the first body element or when r is exhausted.
 func ParseMeta(r io.Reader) PageMeta {
 	var m PageMeta
-	z := html.NewTokenizer(r)
-	inTitle := false
-	var iconRank int
-	for {
-		switch z.Next() {
-		case html.ErrorToken:
-			return m.clean()
-		case html.TextToken:
-			if inTitle && m.Title == "" {
-				m.Title = strings.TrimSpace(string(z.Text()))
-			}
-		case html.EndTagToken:
-			name, _ := z.TagName()
-			if string(name) == "title" {
-				inTitle = false
-			}
-		case html.StartTagToken, html.SelfClosingTagToken:
-			name, hasAttr := z.TagName()
-			switch string(name) {
-			case "body":
-				return m.clean()
-			case "title":
-				inTitle = true
-			case "meta":
-				if hasAttr {
-					m.readMeta(attrs(z))
-				}
-			case "link":
-				if hasAttr {
-					m.readLink(attrs(z), &iconRank)
-				}
-			}
+	p := metaParser{z: html.NewTokenizer(r)}
+	for p.step(&m) {
+	}
+	return m.clean()
+}
+
+type metaParser struct {
+	z        *html.Tokenizer
+	inTitle  bool
+	iconRank int
+}
+
+// step consumes one token and reports whether parsing should continue.
+func (p *metaParser) step(m *PageMeta) bool {
+	switch p.z.Next() {
+	case html.ErrorToken:
+		return false
+	case html.TextToken:
+		if p.inTitle && m.Title == "" {
+			m.Title = strings.TrimSpace(string(p.z.Text()))
+		}
+	case html.EndTagToken:
+		if name, _ := p.z.TagName(); string(name) == "title" {
+			p.inTitle = false
+		}
+	case html.StartTagToken, html.SelfClosingTagToken:
+		return p.startTag(m)
+	}
+	return true
+}
+
+func (p *metaParser) startTag(m *PageMeta) bool {
+	name, hasAttr := p.z.TagName()
+	switch string(name) {
+	case "body":
+		return false
+	case "title":
+		p.inTitle = true
+	case "meta":
+		if hasAttr {
+			m.readMeta(attrs(p.z))
+		}
+	case "link":
+		if hasAttr {
+			m.readLink(attrs(p.z), &p.iconRank)
 		}
 	}
+	return true
 }
 
 func attrs(z *html.Tokenizer) map[string]string {

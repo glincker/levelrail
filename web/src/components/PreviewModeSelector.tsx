@@ -42,7 +42,7 @@ export function PreviewModeSelector({
   defaultMode,
   disabled,
   onChange,
-}: PreviewModeSelectorProps) {
+}: Readonly<PreviewModeSelectorProps>) {
   return (
     <div
       role="radiogroup"
@@ -64,7 +64,7 @@ export function PreviewModeSelector({
             <label
               htmlFor={id}
               className={cn(
-                'flex min-w-0 flex-1 cursor-pointer items-start gap-3',
+                'grid min-w-0 flex-1 cursor-pointer grid-cols-[auto_1fr] items-start gap-x-3 text-sm font-medium text-foreground',
                 disabled && 'cursor-not-allowed',
               )}
             >
@@ -72,23 +72,14 @@ export function PreviewModeSelector({
                 id={id}
                 type="radio"
                 name="preview-mode"
-                className="mt-1 accent-primary"
+                className="mt-1 row-span-2 accent-primary"
                 checked={selected}
                 disabled={disabled}
                 onChange={() => onChange(o.mode)}
               />
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium text-foreground">
-                  {o.label}
-                  {o.mode === defaultMode ? (
-                    <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                      (default)
-                    </span>
-                  ) : null}
-                </span>
-                <span className="block text-sm text-muted-foreground">
-                  {o.summary}
-                </span>
+              {o.mode === defaultMode ? `${o.label} (default)` : o.label}
+              <span className="font-normal text-muted-foreground">
+                {o.summary}
               </span>
             </label>
             <InfoTip label={`About ${o.label} previews`}>{o.cost}</InfoTip>

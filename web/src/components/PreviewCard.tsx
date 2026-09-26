@@ -10,7 +10,11 @@ const SHA_LENGTH = 7
 
 // PreviewCard is the fallback preview of the metadata mode: no image exists,
 // so it is composed here from the page title and description the server kept.
-export function PreviewCard({ appName, meta, commitSha }: PreviewCardProps) {
+export function PreviewCard({
+  appName,
+  meta,
+  commitSha,
+}: Readonly<PreviewCardProps>) {
   return (
     <div
       data-testid="preview-card"

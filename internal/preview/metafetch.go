@@ -111,7 +111,8 @@ func (b *cancelBody) Close() error {
 func (f *httpFetcher) FetchPage(ctx context.Context, t MetaTarget, path string) (*PageResult, error) {
 	client := f.internalClient(t)
 	defer client.CloseIdleConnections()
-	resp, err := f.get(ctx, client, "http://"+origin(t)+path, "text/html")
+	pageURL := url.URL{Scheme: "http", Host: origin(t)}
+	resp, err := f.get(ctx, client, pageURL.String()+path, "text/html")
 	if err != nil {
 		return nil, err
 	}

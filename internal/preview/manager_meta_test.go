@@ -72,7 +72,6 @@ func TestModeSelection(t *testing.T) {
 		patch       *SettingsPatch
 		wantMode    Mode
 		wantEnabled bool
-		wantErr     bool
 	}{
 		{name: "unconfigured app takes the metadata default", def: ModeMetadata, wantMode: ModeMetadata, wantEnabled: true},
 		{name: "unconfigured app takes an off default", def: ModeOff, wantMode: ModeOff},
@@ -82,20 +81,12 @@ func TestModeSelection(t *testing.T) {
 		{name: "explicit metadata", def: ModeOff, patch: &SettingsPatch{Mode: str("metadata")}, wantMode: ModeMetadata, wantEnabled: true},
 		{name: "explicit off beats the default", def: ModeMetadata, patch: &SettingsPatch{Mode: str("off")}, wantMode: ModeOff},
 		{name: "mode wins over enabled", def: ModeOff, patch: &SettingsPatch{Mode: str("metadata"), Enabled: &no}, wantMode: ModeMetadata, wantEnabled: true},
-		{name: "unknown mode is rejected", def: ModeMetadata, patch: &SettingsPatch{Mode: str("full")}, wantErr: true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			h := newHarness(t, func(c *Config) { c.DefaultMode = tc.def })
 			if tc.patch != nil {
-				_, err := h.m.SaveSettings(context.Background(), "web", *tc.patch)
-				if tc.wantErr {
-					if !errors.Is(err, ErrInvalid) {
-						t.Fatalf("err = %v, want ErrInvalid", err)
-					}
-					return
-				}
-				if err != nil {
+				if _, err := h.m.SaveSettings(context.Background(), "web", *tc.patch); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -104,6 +95,14 @@ func TestModeSelection(t *testing.T) {
 				t.Errorf("settings = %+v err %v, want mode %s enabled %v", s, err, tc.wantMode, tc.wantEnabled)
 			}
 		})
+	}
+}
+
+func TestModeSelection_RejectsUnknownMode(t *testing.T) {
+	h := newHarness(t, nil)
+	bad := "full"
+	if _, err := h.m.SaveSettings(context.Background(), "web", SettingsPatch{Mode: &bad}); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("err = %v, want ErrInvalid", err)
 	}
 }
 

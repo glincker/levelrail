@@ -96,10 +96,11 @@ describe('PreviewSettingsCard', () => {
       name: 'Deploy preview mode',
     })
     expect(group).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: /^Metadata/ })).toBeChecked()
+    expect(
+      screen.getByRole('radio', { name: /^Metadata \(default\)/ }),
+    ).toBeChecked()
     expect(screen.getByRole('radio', { name: /^Off/ })).not.toBeChecked()
     expect(screen.getByRole('radio', { name: /^Screenshot/ })).not.toBeChecked()
-    expect(screen.getByText('(default)')).toBeInTheDocument()
     expect(screen.queryByText('docker.io/example/browser:1')).toBeNull()
     expect(document.getElementById('preview-wait')).toBeNull()
     expect(screen.getByText(/2\.0 KiB in 2\s+previews/)).toBeInTheDocument()
