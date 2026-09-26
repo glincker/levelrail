@@ -34,6 +34,7 @@ import {
   useCertificates,
 } from '../../queries/certificates'
 import type { CertificateStatus } from '../../queries/certificates'
+import { DockerCleanupFallbackCard } from '../../components/DockerCleanupFallbackCard'
 import { CleanUpDockerDialog } from '../../components/CleanUpDockerDialog'
 import { ControlPlaneBackupsCard } from '../../components/ControlPlaneBackupsCard'
 import { ControlPlaneDrCard } from '../../components/ControlPlaneDrCard'
@@ -438,7 +439,9 @@ function GeneralSettingsPage() {
 
       {status.docker_disk_usage ? (
         <DockerDiskUsageCard usage={status.docker_disk_usage} />
-      ) : null}
+      ) : (
+        <DockerCleanupFallbackCard />
+      )}
 
       <OrphanedVolumesCard />
 

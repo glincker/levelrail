@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { pollUnlessMissing } from '../../lib/pollUnlessMissing'
 import { useActivityEvents } from '../../queries/activity'
 import { useDeployApprovalsOptional } from '../../queries/deployApprovals'
 import { failedDeploysQueryOptions } from '../../queries/failedDeploys'
@@ -34,7 +35,7 @@ export function NotificationCenter() {
   const failed = useQuery({
     ...failedDeploysQueryOptions(),
     retry: false,
-    refetchInterval: 30_000,
+    refetchInterval: pollUnlessMissing(30_000),
   })
   const { ids, set } = useReadIds()
   const list = buildNotifications({
@@ -108,6 +109,9 @@ export function NotificationCenter() {
                     <li key={n.id}>
                       <Link
                         to={n.href}
+                        onClick={() =>
+                          setReadIds(markAllRead(new Set(ids), [n]))
+                        }
                         className="flex items-start gap-2.5 rounded-lg px-2 py-2 hover:bg-muted"
                       >
                         <span

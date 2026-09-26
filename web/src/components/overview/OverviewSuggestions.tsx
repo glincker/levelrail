@@ -5,6 +5,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { summarizeAppStatus } from '../../lib/appStatus'
+import type { ReconcileCondition } from '../../types/deploy'
 import { ApiError } from '../../lib/apiError'
 import { usePendingChanges } from '../../queries/appTimeline'
 import { useAppTraffic } from '../../queries/appTraffic'
@@ -23,16 +25,19 @@ export function OverviewSuggestions({
   app,
   reading,
   latest,
+  conditions = [],
 }: {
   app: AppDetail
   reading: ResourceReading
   latest?: DeployAttempt
+  conditions?: ReconcileCondition[]
 }) {
   const { dismissed, dismiss } = useDismissed(app.name)
   const failed = latest?.status === 'failed'
+  const unhealthy = summarizeAppStatus(conditions).label === 'Attention needed'
   const { data: pending } = usePendingChanges(app.name)
   const { data: traffic } = useAppTraffic(app.name)
-  const diagnosis = useDiagnosis(app.name, undefined, failed)
+  const diagnosis = useDiagnosis(app.name, undefined, failed || unhealthy)
   const domain = app.domains?.[0] ?? ''
   const domainCheck = useDomainCheck(app.name, domain)
   const git = useGitSource(app.name)
@@ -51,6 +56,7 @@ export function OverviewSuggestions({
         ? { usage: reading.memNow, limit: reading.memLimit }
         : undefined,
     latestAttemptStatus: latest?.status,
+    unhealthy,
     topCauseTitle: diagnosis.data?.causes?.[0]?.title,
     domainStatus: domain ? domainCheck.data?.status : undefined,
     gitSourceKnown: gitKnown,
@@ -66,7 +72,7 @@ export function OverviewSuggestions({
       <Dialog open={actions.fixOpen} onOpenChange={actions.setFixOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Fix the failed deploy</DialogTitle>
+            <DialogTitle>Suggested fixes</DialogTitle>
           </DialogHeader>
           <DiagnosisFixes appName={app.name} deployId={latest?.id} />
         </DialogContent>

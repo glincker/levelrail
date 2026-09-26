@@ -12,6 +12,7 @@ import {
   TrafficSpark,
 } from './apps/AppMetricCells'
 import { AppQuickActions } from './apps/AppQuickActions'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useAppRowMetrics } from './apps/useAppRowMetrics'
 
 // Shared column grid for the sticky header (routes/apps/index.tsx) and
@@ -28,7 +29,8 @@ export function AppRow({
   selected?: boolean
   onSelect?: (name: string, checked: boolean) => void
 }) {
-  const metrics = useAppRowMetrics(app.name)
+  const wide = useMediaQuery('(min-width: 1024px)')
+  const metrics = useAppRowMetrics(app.name, wide)
   return (
     <div
       className={`${APP_LIST_GRID} group/row relative h-full w-full border-b border-border px-4 py-3 transition-colors hover:bg-muted/60`}

@@ -45,14 +45,10 @@ describe('useSuggestionActions', () => {
     expect(spy.mock.calls[0]?.[0]).toBe('/api/v1/apps/web/restart')
   })
 
-  it('add_health PUTs the app with a /healthz readiness probe', async () => {
+  it('open_health navigates to health settings without mutating', () => {
     const spy = mockFetch()
     const { result } = renderHook(() => useSuggestionActions(app), { wrapper })
-    act(() => result.current.run.add_health())
-    await waitFor(() => expect(spy).toHaveBeenCalled())
-    const [url, init] = spy.mock.calls[0] ?? []
-    expect(url).toBe('/api/v1/apps/web')
-    const body = JSON.parse((init as RequestInit).body as string) as AppDetail
-    expect(body.health?.readiness?.path).toBe('/healthz')
+    act(() => result.current.run.open_health())
+    expect(spy).not.toHaveBeenCalled()
   })
 })

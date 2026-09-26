@@ -11,18 +11,14 @@ import {
   WrenchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { toast } from '@/components/ui/toast'
-import {
-  HEALTH_CHECK_DEFAULT_PATH,
-  healthCheckFrom,
-} from '../../lib/healthCheckDefaults'
-import { useRestartApp, useUpdateApp } from '../../queries/apps'
+import { useRestartApp } from '../../queries/apps'
 import { useApplyPending } from '../../queries/appTimeline'
 import type { AppDetail } from '../../types/appDetail'
 import type { DeployAttempt } from '../../types/deployAttempt'
 import type { SuggestionActionKind, SuggestionDescriptor } from './suggestions'
 
 const ICONS: Record<SuggestionActionKind, React.ReactNode> = {
-  add_health: <HeartbeatIcon className="size-5" />,
+  open_health: <HeartbeatIcon className="size-5" />,
   restart: <ArrowClockwiseIcon className="size-5" />,
   apply_pending: <ArrowClockwiseIcon className="size-5" />,
   open_logs: <TerminalWindowIcon className="size-5" />,
@@ -36,7 +32,6 @@ const ICONS: Record<SuggestionActionKind, React.ReactNode> = {
 export function useSuggestionActions(app: AppDetail, latest?: DeployAttempt) {
   const navigate = useNavigate()
   const restart = useRestartApp()
-  const update = useUpdateApp(app.name)
   const applyPending = useApplyPending(app.name)
   const [fixOpen, setFixOpen] = useState(false)
   const name = app.name
@@ -44,18 +39,7 @@ export function useSuggestionActions(app: AppDetail, latest?: DeployAttempt) {
   const onError = (e: Error) => toast.add({ title: e.message, type: 'error' })
 
   const run: Record<SuggestionActionKind, () => void> = {
-    add_health: () =>
-      update.mutate(
-        { ...app, health: healthCheckFrom(true, HEALTH_CHECK_DEFAULT_PATH) },
-        {
-          onSuccess: () =>
-            toast.add({
-              title: `Health check added on ${HEALTH_CHECK_DEFAULT_PATH}.`,
-              type: 'success',
-            }),
-          onError,
-        },
-      ),
+    open_health: go('/apps/$name/health'),
     restart: () =>
       restart.mutate(name, {
         onSuccess: () =>
@@ -84,7 +68,6 @@ export function useSuggestionActions(app: AppDetail, latest?: DeployAttempt) {
     connect_git: go('/apps/$name/source'),
   }
   const pending: Partial<Record<SuggestionActionKind, boolean>> = {
-    add_health: update.isPending,
     restart: restart.isPending,
     apply_pending: applyPending.isPending,
   }
