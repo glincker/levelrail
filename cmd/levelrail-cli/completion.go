@@ -23,6 +23,7 @@ type cmdNode struct {
 // at test time rather than silently shipped.
 var cliCommandTree = map[string]*cmdNode{
 	"apps": {subs: map[string]*cmdNode{
+		"freeze":                  {subs: map[string]*cmdNode{"set": nil, "show": nil, "clear": nil}},
 		"create":                  nil,
 		"list":                    nil,
 		"get":                     nil,
@@ -92,7 +93,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"health":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"integrations":       {subs: map[string]*cmdNode{"catalog": nil, "list": nil, "add": nil, "remove": nil}},
 	}},
-	"models":    {subs: map[string]*cmdNode{"list": nil, "get": nil, "deploy": nil, "logs": nil, "delete": nil, "restart": nil, "rotate-key": nil, "gpus": nil}},
+	"models":    {subs: map[string]*cmdNode{"list": nil, "get": nil, "deploy": nil, "logs": nil, "delete": nil, "restart": nil, "rotate-key": nil, "gpus": nil, "keys": {subs: map[string]*cmdNode{"list": nil, "create": nil, "revoke": nil, "rotate": nil}}, "usage": nil}},
 	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "status": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "logs": nil, "slow-queries": nil, "set-project": nil, "clear-project": nil, "set-node": nil, "clear-node": nil, "set-resources": nil, "public-access": {subs: map[string]*cmdNode{"set": nil, "clear": nil}}}},
 	"auth": {subs: map[string]*cmdNode{"login": nil, "whoami": nil, "2fa": {subs: map[string]*cmdNode{
 		"status": nil, "setup": nil, "enable": nil, "disable": nil, "recovery-codes": nil,

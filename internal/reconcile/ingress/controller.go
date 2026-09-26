@@ -254,6 +254,7 @@ type Controller struct {
 	logger  *slog.Logger
 
 	serverName     string
+	requestStats   bool
 	listenAddr     string
 	httpListenAddr string
 	adminListen    string
@@ -332,6 +333,12 @@ type Controller struct {
 
 // Option configures optional Controller behavior.
 type Option func(*Controller)
+
+// WithRequestStats makes every proxied route count requests for the
+// per-app request metrics.
+func WithRequestStats() Option {
+	return func(ctrl *Controller) { ctrl.requestStats = true }
+}
 
 // WithServerName overrides the name Caddy's config keys the shared server
 // under (apps.http.servers.<name>). Defaults to "levelrail-ingress".
@@ -783,7 +790,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		ACMEDirectoryURL:  settings.ACMEDirectoryURL,
 		DNSProvider:       c.resolveDNSProvider(ctx),
 		TLSCertificates:   tlsCertOverrides,
-		RequestStats:      true,
+		RequestStats:      c.requestStats,
 	})
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
