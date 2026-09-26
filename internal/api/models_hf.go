@@ -25,6 +25,8 @@ type modelPreflightRequest struct {
 	File   string `json:"file"`
 	Quant  string `json:"quant"`
 	NodeID string `json:"node_id"`
+	// GPUCount is the number of GPUs the model will use; 0 or less means all.
+	GPUCount int `json:"gpu_count"`
 	// HFToken is used for this request only, never stored or logged.
 	HFToken string `json:"hf_token"`
 }
@@ -65,7 +67,7 @@ func (rt *Router) handleModelPreflight(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := svc.Preflight(r.Context(), models.PreflightInput{
 		Repo: req.Repo, Engine: req.Engine, File: strings.TrimSpace(req.File), Quant: strings.TrimSpace(req.Quant),
-		NodeID: req.NodeID, Token: strings.TrimSpace(req.HFToken),
+		NodeID: req.NodeID, GPUCount: req.GPUCount, Token: strings.TrimSpace(req.HFToken),
 	})
 	if err != nil {
 		rt.writeModelError(w, "model preflight", err)

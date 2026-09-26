@@ -120,7 +120,7 @@ func (c *HFClient) CacheTTL() time.Duration { return c.cfg.CacheTTL }
 
 func cacheKey(repo, token string) string {
 	sum := sha256.Sum256([]byte(token))
-	return repo + "|" + hex.EncodeToString(sum[:4])
+	return repo + "|" + hex.EncodeToString(sum[:])
 }
 
 type hubModelInfo struct {
