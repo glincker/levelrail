@@ -86,10 +86,9 @@ func genSelfSignedCertKeyPEM(t *testing.T, domain string) (certPEM, keyPEM strin
 func TestDomainTLSCert_Live_ServesUploadedCertificateInsteadOfACME(t *testing.T) {
 	env := newLiveBuildEnv(t)
 
-	const (
-		serviceName = "levelrail-test-e2e-tls-cert"
-		domain      = "e2e-tls-cert.levelrail.internal"
-	)
+	const serviceName = "levelrail-test-e2e-tls-cert"
+	// Unique per run: Caddy's in-process cert cache outlives Driver.Stop, so a fixed host serves the previous -count iteration's cert.
+	domain := fmt.Sprintf("e2e-tls-cert-%d.levelrail.internal", time.Now().UnixNano())
 	repo := "levelrail/test-e2e-tls-cert"
 	tag := repo + ":e2etlscert1"
 

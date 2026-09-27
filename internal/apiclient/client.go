@@ -2935,6 +2935,14 @@ func (c *Client) ListDeployAttempts(ctx context.Context, name string) ([]DeployA
 	return out, err
 }
 
+// GetDeploy calls GET /api/v1/apps/{name}/deploys/{deployId}: one deploy
+// attempt with its structured failure. deployID may be "latest".
+func (c *Client) GetDeploy(ctx context.Context, name, deployID string) (DeployAttemptResource, error) {
+	var out DeployAttemptResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploys/"+PathEscape(deployID), nil, &out)
+	return out, err
+}
+
 // DownloadDeployLog calls GET /api/v1/apps/{name}/deploys/{deployId}/logs/download:
 // one deploy attempt's full log as raw text, the download counterpart
 // to the dashboard's own SSE view. Built as its own request rather than

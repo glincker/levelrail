@@ -1,0 +1,4 @@
+{
+  "Status": "failed",
+  "Error": "deploy: service \"web\": build: failed to read dockerfile: open Dockerfile: no such file or directory"
+}

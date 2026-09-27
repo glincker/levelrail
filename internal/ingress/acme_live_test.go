@@ -264,6 +264,7 @@ func TestACMEIssuer_RealIssuanceAgainstLocalACMEServer(t *testing.T) {
 	if !ok {
 		t.Fatalf("policy.Issuers[0] = %T, want ACMEIssuer", policy.Issuers[0])
 	}
+	issuer.Challenges = &ChallengesConfig{HTTP: &HTTPChallengeConfig{AlternatePort: challengePort}}
 	policy.Issuers[0] = acmeIssuerWithTrust{ACMEIssuer: issuer, TrustedRootsPEMFiles: []string{transportRootPath}}
 
 	// BuildRoutesConfig's ACME branch deliberately leaves Apps.PKI nil

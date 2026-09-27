@@ -24,7 +24,42 @@ const (
 	EnvMode = "APP_MCP_MODE"
 	// EnvToolsets names the env var that selects the toolsets.
 	EnvToolsets = "APP_MCP_TOOLSETS"
+	// EnvToolProfile names the env var that selects the tool profile.
+	EnvToolProfile = "APP_MCP_TOOL_PROFILE"
+
+	// ProfileAgentCore is a small allowlist of the tools an agent needs to
+	// ship and debug an app.
+	ProfileAgentCore = "agent-core"
 )
+
+// agentCoreTools is the agent-core allowlist. Names not yet registered are
+// ignored, so the profile tolerates tools that have not landed.
+var agentCoreTools = map[string]struct{}{
+	"list_apps": {}, "get_app_status": {}, "get_attention": {}, "deploy_app": {},
+	"list_deploys": {}, "cancel_deploy": {}, "diagnose_app_failure": {},
+	"get_app_logs": {}, "preflight_app": {}, "rollback_app": {},
+	"set_app_env": {}, "unset_app_env": {}, "list_domains": {}, "set_app_domains": {},
+}
+
+// AgentCoreTools returns the sorted agent-core allowlist.
+func AgentCoreTools() []string {
+	names := make([]string, 0, len(agentCoreTools))
+	for n := range agentCoreTools {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// ParseToolProfile validates a tool profile name; empty means no profile.
+func ParseToolProfile(s string) (string, error) {
+	switch p := strings.ToLower(strings.TrimSpace(s)); p {
+	case "", ProfileAgentCore:
+		return p, nil
+	default:
+		return "", fmt.Errorf("unknown mcp tool profile %q, want %q", s, ProfileAgentCore)
+	}
+}
 
 // ParseMode parses a mode name, defaulting an empty value to standard.
 func ParseMode(s string) (Mode, error) {
@@ -62,19 +97,32 @@ func ParseToolsets(s string) ([]string, error) {
 type Options struct {
 	Mode     Mode
 	Toolsets []string
+	// Profile, when set, replaces the mode's class filter with an allowlist.
+	// Read-only mode still hides every non-read tool.
+	Profile string
 }
 
 // Summary reports what a server exposes.
 type Summary struct {
 	Mode     Mode
 	Toolsets []string
+	Profile  string
 	Total    int
 	Read     int
 	Mutate   int
 	Destruct int
 }
 
-func (o Options) allows(m Meta) bool {
+func (o Options) allows(name string, m Meta) bool {
+	if o.Profile == ProfileAgentCore {
+		if _, ok := agentCoreTools[name]; !ok {
+			return false
+		}
+		if o.Mode == ModeReadOnly && m.Class != ClassRead {
+			return false
+		}
+		return o.allowsToolset(m)
+	}
 	switch o.Mode {
 	case ModeReadOnly:
 		if m.Class != ClassRead {
@@ -86,6 +134,10 @@ func (o Options) allows(m Meta) bool {
 			return false
 		}
 	}
+	return o.allowsToolset(m)
+}
+
+func (o Options) allowsToolset(m Meta) bool {
 	if len(o.Toolsets) == 0 {
 		return true
 	}
@@ -98,10 +150,10 @@ func (o Options) allows(m Meta) bool {
 }
 
 func applyOptions(server *mcp.Server, opts Options) Summary {
-	sum := Summary{Mode: opts.Mode, Toolsets: opts.Toolsets}
+	sum := Summary{Mode: opts.Mode, Toolsets: opts.Toolsets, Profile: opts.Profile}
 	var hidden []string
 	for name, m := range toolTable {
-		if !opts.allows(m) {
+		if !opts.allows(name, m) {
 			hidden = append(hidden, name)
 			continue
 		}

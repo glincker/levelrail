@@ -1,0 +1,4 @@
+{
+  "Status": "failed",
+  "Error": "deploy: service \"web\": env var \"API_KEY\" is required but no secret value has been set for it yet"
+}

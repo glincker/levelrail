@@ -12,6 +12,32 @@ Exhaustive reference of all Levelrail CLI commands, organized by command group a
 - [Feature Catalog](feature-catalog.md) - Complete feature overview
 - [App Spec Reference](app-spec-reference.md) - YAML configuration syntax
 
+## Scripting: `--json` and exit codes
+
+Every command that returns data or a result supports `--json` (shorthand for `--output json`), and `--query` takes a JMESPath expression. With `--json`, stdout carries only the JSON result. The exceptions are `completion bash|zsh|fish` (a shell script) and `control-plane-backups help-dr` (a static runbook). A test walks the command tree and fails when a new command has no `--json` and is not on that exempt list.
+
+On failure, `--json` also prints an error object to stdout (the message still goes to stderr):
+
+```json
+{"error": "server returned 404: app not found", "code": "not_found", "exit_code": 4, "http_status": 404, "hint": "check the resource name with the matching list command"}
+```
+
+`error` is the original field. `code` is one of `validation`, `network`, `unauthorized`, `forbidden`, `not_found`, `conflict`, `rate_limited`, `invalid_request`, `server_error`, `api_error`. `http_status`, `retry_after` (rate limits) and `hint` appear when they apply.
+
+Exit codes are stable and shared by every command:
+
+| Code | Meaning |
+| --- | --- |
+| 0 | Success |
+| 1 | Usage error (unknown command, missing argument, bad flag); also a failed check for `control-plane-backups verify` and a critical item for `attention` |
+| 2 | Validation error: well-formed flags, but the request they describe is invalid |
+| 3 | Network error: the control plane could not be reached |
+| 4 | API error: the control plane replied with a non-2xx status (use `code` and `http_status` in the JSON error to tell auth, not found and conflict apart) |
+| 5 | Deploy failed: `apps wait` reached a failed deploy |
+| 6 | Deploy timeout: `apps wait` gave up before the deploy converged |
+
+Codes 3 and 4 are broad on purpose so existing scripts keep working; the JSON error object carries the finer distinction.
+
 ## Apps
 
 ```
@@ -154,6 +180,11 @@ diff two deploy attempts, or one against the current live state
 levelrail apps deploys logs <name> <deploy-id> [flags]
 ```
 one deploy attempt's full build/log output, printed to stdout (redirect to a file to save it)
+
+```
+levelrail apps deploys show <name> [deploy-id] [flags]
+```
+one deploy attempt (the newest by default) with its structured failure: code, cause, failing step, redacted log excerpt, suggested fix, docs link and retryable, see [Deploy failures](deploy-failures.md)
 
 ```
 levelrail apps deploys failed [--since 24h] [flags]

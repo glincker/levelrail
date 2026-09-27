@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/failure"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 )
@@ -65,6 +66,7 @@ type deploymentResource struct {
 	WaitReason      *string             `json:"wait_reason"`
 	BlockedBy       *string             `json:"blocked_by"`
 	CanceledBy      *string             `json:"canceled_by"`
+	Failure         *failure.Failure    `json:"failure,omitempty"`
 }
 
 type deploymentListResponse struct {
@@ -154,6 +156,9 @@ func (rt *Router) toDeploymentResource(d store.Deployment) deploymentResource {
 			msg = failingStep + ": " + msg
 		}
 		res.ErrorSummary = &msg
+	}
+	if f, ok := failure.Classify(attemptFailureInput(a, failingStep), failureOptions()); ok {
+		res.Failure = &f
 	}
 	return res
 }

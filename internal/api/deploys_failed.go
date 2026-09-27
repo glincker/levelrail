@@ -43,7 +43,9 @@ func (rt *Router) handleListFailedDeploys(w http.ResponseWriter, r *http.Request
 		if !canSee(f.Attempt.ServiceName) {
 			continue
 		}
-		out = append(out, failedDeployResource{toDeployAttemptResource(f.Attempt), f.LastGoodImage})
+		res := toDeployAttemptResource(f.Attempt)
+		rt.attachFailure(&res, f.Attempt)
+		out = append(out, failedDeployResource{res, f.LastGoodImage})
 	}
 	writeJSON(w, http.StatusOK, out)
 }
