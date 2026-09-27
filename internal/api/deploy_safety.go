@@ -81,6 +81,19 @@ func (rt *Router) freezeGate(w http.ResponseWriter, r *http.Request, name string
 	return note, true
 }
 
+// freezeStatus reports whether name is inside a deploy freeze window right
+// now. A failed lookup reads as not frozen: the POST gate still enforces it.
+func (rt *Router) freezeStatus(ctx context.Context, name string) (bool, string) {
+	if rt.deploySafety == nil {
+		return false, ""
+	}
+	st, err := deploy.CheckFreeze(ctx, rt.deploySafety, name, time.Now())
+	if err != nil {
+		return false, ""
+	}
+	return st.Frozen, st.Reason
+}
+
 // imageTrigger builds the manual image deploy path: digest resolution plus
 // ordering, exempt from the stale guard.
 func (rt *Router) imageTrigger(ctx context.Context, existing store.DesiredService, pull bool, reason string) deploy.ImageTrigger {

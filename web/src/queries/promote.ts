@@ -60,6 +60,10 @@ interface PromoteAppInput {
   // (internal/api's environmentNeedsConfirmation); derived from
   // PromoteAppDialog's own ProtectedEnvironmentNotice acknowledgment.
   confirm?: boolean
+  includeEnv?: boolean
+  force?: boolean
+  overrideFreeze?: boolean
+  overrideReason?: string
 }
 
 // PromoteAppResult mirrors triggerDeploy's own TriggerDeployResult
@@ -94,6 +98,12 @@ export async function promoteApp(
         to: input.to,
         target: input.target || undefined,
         confirm: input.confirm ?? false,
+        include_env: input.includeEnv || undefined,
+        force: input.force || undefined,
+        override_freeze: input.overrideFreeze || undefined,
+        override_reason: input.overrideFreeze
+          ? input.overrideReason
+          : undefined,
       }),
     },
   )
