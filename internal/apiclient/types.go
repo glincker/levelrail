@@ -2272,6 +2272,7 @@ type DiagnosisResource struct {
 	DeployAttemptID string            `json:"deploy_attempt_id,omitempty"`
 	Causes          []DiagnosisCause  `json:"causes,omitempty"`
 	Fixable         bool              `json:"fixable,omitempty"`
+	Failure         *DeployFailure    `json:"failure,omitempty"`
 
 	// RecentChanges is what changed on the app shortly before the diagnosis.
 	RecentChanges *RecentChangesResource `json:"recent_changes,omitempty"`
@@ -2544,6 +2545,23 @@ type DeployAttemptResource struct {
 	CanceledBy    string      `json:"canceled_by,omitempty"`
 	SBOMPackages  *int        `json:"sbom_packages,omitempty"`
 	VulnCounts    *VulnCounts `json:"vuln_counts,omitempty"`
+	// Failure classifies why the deploy failed or is blocked; absent otherwise.
+	Failure *DeployFailure `json:"failure,omitempty"`
+}
+
+// DeployFailure mirrors internal/failure's Failure: the structured cause of a
+// failed or blocked deploy, identical across the API, CLI and MCP.
+type DeployFailure struct {
+	Code         string    `json:"code"`
+	Cause        string    `json:"cause"`
+	FailingStep  string    `json:"failing_step,omitempty"`
+	LogExcerpt   string    `json:"log_excerpt,omitempty"`
+	SuggestedFix string    `json:"suggested_fix"`
+	DocsURL      string    `json:"docs_url"`
+	Retryable    bool      `json:"retryable"`
+	DeployID     string    `json:"deploy_id"`
+	App          string    `json:"app"`
+	At           time.Time `json:"at"`
 }
 
 // CancelSupersededResource mirrors internal/api's cancelSupersededResource.

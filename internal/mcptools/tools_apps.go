@@ -157,6 +157,21 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 	})
 
 	addTool(server, &mcp.Tool{
+		Name:        "get_deploy",
+		Description: "Get one deploy attempt (deploy_id, or \"latest\") with its status, image, commit and, when it failed or is blocked, the structured failure object: code, cause, failing_step, a capped and redacted log_excerpt, suggested_fix, docs_url, retryable, deploy_id, app and at. Use this to explain a failed build or deploy. Read-only.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in getDeployInput) (*mcp.CallToolResult, apiclient.DeployAttemptResource, error) {
+		id := in.DeployID
+		if id == "" {
+			id = "latest"
+		}
+		attempt, err := client.GetDeploy(ctx, in.Name, id)
+		if err != nil {
+			return nil, apiclient.DeployAttemptResource{}, fmt.Errorf("get deploy %q for app %q: %w", id, in.Name, err)
+		}
+		return nil, attempt, nil
+	})
+
+	addTool(server, &mcp.Tool{
 		Name:        "list_deploy_attempts",
 		Description: "List an app's real deploy-attempt history: one row per actual trigger call (manual deploy, build, or webhook), newest first, with status, image, commit SHA, and timestamps. Additive to get_app_status/list_deploys' current reconcile conditions, not a replacement: this is a real log of what was tried, not just the latest state.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.DeployAttemptResource, error) {
@@ -238,6 +253,11 @@ func tailLogEntries(entries []apiclient.LogEntryResource, tail int) []apiclient.
 
 type appNameInput struct {
 	Name string `json:"name" jsonschema:"the app's name"`
+}
+
+type getDeployInput struct {
+	Name     string `json:"name" jsonschema:"the app's name"`
+	DeployID string `json:"deploy_id,omitempty" jsonschema:"the deploy attempt id, or latest (default)"`
 }
 
 type cloneAppInput struct {

@@ -117,8 +117,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 110 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 110 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 111 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 111 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -240,6 +240,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/cancel-superseded | AbilityDeploy | handleSetCancelSuperseded |
 | GET | /api/v1/apps/{name}/preview-policy | AbilityRead | handleGetPreviewPolicy |
 | PUT | /api/v1/apps/{name}/preview-policy | AbilityWriteSensitive | handleSetPreviewPolicy |
+| GET | /api/v1/apps/{name}/deploys/{deployId} | AbilityRead | handleGetDeploy |
 
 :::
 
