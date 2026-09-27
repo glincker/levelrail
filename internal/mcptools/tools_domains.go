@@ -11,7 +11,7 @@ import (
 func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_domains",
-		Description: "List every domain routed by this control plane, across every app: domain name and which app owns it. The same data DomainEditor shows per-app, aggregated into one cross-app read. Read-only; does not connect, edit, or remove a domain.",
+		Description: "List every routed domain across all apps, with the owning app. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.DomainResource, error) {
 		domains, err := client.ListDomains(ctx)
 		if err != nil {

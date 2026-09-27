@@ -3,4 +3,3 @@
 #
 # One entry per line: <import path> <top-level test name> <issue URL> <quarantined on, YYYY-MM-DD>
 # Every entry needs an open issue and is fixed or deleted within 14 days.
-github.com/GLINCKER/levelrail/internal/ingress TestACMEIssuer_RealIssuanceAgainstLocalACMEServer https://github.com/glincker/levelrail/issues/588 2026-09-22
