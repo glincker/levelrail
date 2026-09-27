@@ -131,9 +131,20 @@ command that list everything needing action, a disk pressure banner,
 certificate expiry countdowns and stalled-renewal detection, node
 connection history, and a log viewer with level filters and expandable
 rows.
-There is no stable release yet and the project is not ready for
-production workloads. APIs, the app spec format, and the on-disk data
-layout can all still change without notice.
+There is no stable release yet: the only published image tag is `:beta`,
+and the project is not ready for production workloads. APIs, the app
+spec format, and the on-disk data layout can all still change without
+notice.
+
+Maturity is uneven. Per [docs/feature-status.md](docs/feature-status.md),
+only deploy approvals, database backups with point-in-time recovery, and
+GitHub previews are labeled stable (each has a live end-to-end test).
+Most other areas, including IAM, multi-node and WireGuard, the 17
+notification channels, and the MCP server, are beta, and the in-app AI
+chat, GPU models, load balancer, platform as code, and Cloudflare tunnel
+are hidden behind flags. No feature has been verified on a fresh VPS with
+a real public domain yet. The full per-feature list is in
+[docs/feature-status.md](docs/feature-status.md).
 
 From the team behind [thesvg](https://github.com/glincker/thesvg) (6,400+ brand SVG icons) and [theauth-go](https://github.com/glincker/theauth-go) (OAuth 2.1 auth library for Go).
 
@@ -219,9 +230,11 @@ matrix.
   taking it: Coolify checks only that the dump file is non-empty,
   Dokploy and CapRover do no check at all, and Dokku and Kamal have no
   built-in backup feature in the first place.
-- **AI-agent surface.** over 70 MCP tools (`cmd/levelrail-mcp`), against
-  Coolify's roughly 45, the only other project in this set with one at
-  all.
+- **AI-agent surface.** 144 registered MCP tools (`cmd/levelrail-mcp`),
+  with a 12-tool `agent-core` profile for small context budgets. Of the
+  other projects researched here, only Coolify ships an MCP server. The
+  MCP server is beta, see [docs/feature-status.md](docs/feature-status.md)
+  and [docs/mcp-tool-surface.md](docs/mcp-tool-surface.md).
 - **Notification channels.** 17 kinds against Dokploy's 12, the next
   closest.
 - **Fine-grained RBAC.** Resource-scoped IAM policies (`app:name`,
