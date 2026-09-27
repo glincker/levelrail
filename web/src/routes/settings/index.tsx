@@ -22,6 +22,7 @@ import {
   DownloadSimpleIcon,
   VaultIcon,
   RobotIcon,
+  PlugsConnectedIcon,
   SparkleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -68,6 +69,12 @@ const sections: SettingsSection[] = [
         icon: KeyIcon,
         title: 'API tokens',
         description: 'Scoped, revocable credentials for the CLI, CI, and MCP.',
+      },
+      {
+        to: '/settings/agents',
+        icon: PlugsConnectedIcon,
+        title: 'Agents',
+        description: 'Connect an AI agent over MCP and manage its tokens.',
       },
     ],
   },

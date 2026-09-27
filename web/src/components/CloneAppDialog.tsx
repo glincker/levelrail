@@ -18,7 +18,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
-import { useCloneApp } from '../queries/apps'
+import { useCloneApp, useClonePreview } from '../queries/apps'
+import type { ClonePreview } from '../queries/apps'
+import { Checkbox } from '@/components/ui/checkbox'
 
 // Mirrors CreateAppFields' name validation exactly (non-empty, trimmed):
 // a sanity check for fast feedback, not a substitute for the server's
@@ -27,6 +29,61 @@ import { useCloneApp } from '../queries/apps'
 // server-side, in handleCloneApp, and its 409 surfaces below the same
 // way DeleteAppDialog/MoveToProjectDialog show their own mutation
 // errors.
+function CloneOptions({
+  preview,
+  copySecrets,
+  onCopySecrets,
+  copyDomains,
+  onCopyDomains,
+}: {
+  preview: ClonePreview | undefined
+  copySecrets: boolean
+  onCopySecrets: (next: boolean) => void
+  copyDomains: boolean
+  onCopyDomains: (next: boolean) => void
+}) {
+  if (!preview) return null
+  return (
+    <div className="space-y-3 rounded-md border border-border p-3 text-xs">
+      <div className="space-y-1">
+        <p className="font-medium text-foreground">Copied</p>
+        <p className="text-muted-foreground">{preview.will_copy.join('; ')}</p>
+      </div>
+      <div className="space-y-1">
+        <p className="font-medium text-foreground">Not copied</p>
+        <p className="text-muted-foreground">
+          {preview.will_not_copy.join('; ')}
+        </p>
+      </div>
+      {preview.secret_names.length > 0 ? (
+        <label className="flex items-start gap-2 text-sm">
+          <Checkbox checked={copySecrets} onCheckedChange={onCopySecrets} />
+          <span>
+            Copy {preview.secret_names.length} secret value
+            {preview.secret_names.length === 1 ? '' : 's'}
+            <span className="block text-xs text-muted-foreground">
+              Re-encrypted for the clone, never shown. Off by default: names are
+              copied, values stay empty.
+            </span>
+          </span>
+        </label>
+      ) : null}
+      {preview.source_domains.length > 0 ? (
+        <label className="flex items-start gap-2 text-sm">
+          <Checkbox checked={copyDomains} onCheckedChange={onCopyDomains} />
+          <span>
+            Derive new domains from {preview.source_domains.join(', ')}
+            <span className="block text-xs text-muted-foreground">
+              Adds the new app name to the first label. Off by default: the
+              clone starts with no domains.
+            </span>
+          </span>
+        </label>
+      ) : null}
+    </div>
+  )
+}
+
 const cloneAppSchema = z.object({
   newName: z.string().trim().min(1, 'Name is required'),
 })
@@ -60,6 +117,9 @@ export function CloneAppDialog({
   }
   const navigate = useNavigate()
   const cloneApp = useCloneApp()
+  const preview = useClonePreview(name, open)
+  const [copySecrets, setCopySecrets] = useState(false)
+  const [copyDomains, setCopyDomains] = useState(false)
   const { register, handleSubmit, formState, reset } =
     useForm<CloneAppFormValues>({
       resolver: zodResolver(cloneAppSchema),
@@ -70,13 +130,22 @@ export function CloneAppDialog({
     setOpen(next)
     if (!next) {
       reset({ newName: '' })
+      setCopySecrets(false)
+      setCopyDomains(false)
       cloneApp.reset()
     }
   }
 
   const onSubmit = handleSubmit((values) => {
     cloneApp.mutate(
-      { name, newName: values.newName.trim() },
+      {
+        name,
+        newName: values.newName.trim(),
+        options: {
+          copySecrets,
+          domainSuffix: copyDomains ? values.newName.trim() : undefined,
+        },
+      },
       {
         onSuccess: (cloned) => {
           setOpen(false)
@@ -107,11 +176,9 @@ export function CloneAppDialog({
         <DialogHeader>
           <DialogTitle>Clone &ldquo;{name}&rdquo;</DialogTitle>
           <DialogDescription>
-            Copies image, port, env, resource limits, health checks, deploy
-            strategy, replicas, and project into a new app. Domains, node
-            placement, and secret values are not copied: connect a domain and
-            re-set secrets for the new app separately. Cloning does not start a
-            deploy.
+            Copies the app&apos;s configuration into a new app. Cloning never
+            starts a deploy, so approvals and freeze windows apply when you
+            first deploy the clone.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -129,6 +196,14 @@ export function CloneAppDialog({
             />
             <FieldError errors={[formState.errors.newName]} />
           </Field>
+
+          <CloneOptions
+            preview={preview.data}
+            copySecrets={copySecrets}
+            onCopySecrets={setCopySecrets}
+            copyDomains={copyDomains}
+            onCopyDomains={setCopyDomains}
+          />
 
           {cloneApp.isError ? (
             <p className="flex items-start gap-1.5 text-sm text-destructive">

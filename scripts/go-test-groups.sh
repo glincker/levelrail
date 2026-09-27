@@ -8,10 +8,13 @@
 # The docker group runs in its own job with bounded -p so heavy live tests
 # (Postgres, MinIO, BuildKit) can't OOM the runner by starting together.
 #
-# Usage: scripts/go-test-groups.sh <api|docker|rest>
+# Usage: scripts/go-test-groups.sh <api|docker|rest> [package...]
+# With packages, classifies only those instead of ./...
 set -euo pipefail
 
-group="${1:?usage: go-test-groups.sh <api|docker|rest>}"
+group="${1:?usage: go-test-groups.sh <api|docker|rest> [package...]}"
+shift
+[ "$#" -gt 0 ] || set -- ./...
 cd "$(git rev-parse --show-toplevel)"
 
 api_pkg="github.com/GLINCKER/levelrail/internal/api"
@@ -26,7 +29,7 @@ uses_docker() {
 	grep -qE 'internal/dockertest"|docker\.NewClient\(|docker/docker/client"|moby/moby/client"' "$dir"/*_test.go
 }
 
-go list -f '{{.ImportPath}} {{.Dir}}' ./... | while read -r pkg dir; do
+go list -e -f '{{.ImportPath}} {{.Dir}}' "$@" | while read -r pkg dir; do
 	if [ "$pkg" = "$api_pkg" ]; then
 		if [ "$group" = "api" ]; then echo "$pkg"; fi
 		continue

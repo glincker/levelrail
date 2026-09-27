@@ -24,6 +24,10 @@ type APIToken struct {
 	LastUsedAt *time.Time
 	ExpiresAt  *time.Time
 	RevokedAt  *time.Time
+	// AgentName and AgentDescription label a token issued to an AI agent;
+	// AgentName is empty for an ordinary token.
+	AgentName        string
+	AgentDescription string
 }
 
 // ErrAPITokenNotFound is returned by GetAPITokenByHash and RevokeAPIToken
@@ -42,9 +46,9 @@ func (db *DB) SaveAPIToken(ctx context.Context, t APIToken) error {
 		return fmt.Errorf("store: marshal abilities for token %q: %w", t.ID, err)
 	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO api_tokens (id, name, token_hash, abilities, created_at, expires_at)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`, t.ID, t.Name, t.TokenHash, string(abilitiesJSON), formatTime(t.CreatedAt), formatTimePtr(t.ExpiresAt))
+		INSERT INTO api_tokens (id, name, token_hash, abilities, created_at, expires_at, agent_name, agent_description)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, t.ID, t.Name, t.TokenHash, string(abilitiesJSON), formatTime(t.CreatedAt), formatTimePtr(t.ExpiresAt), t.AgentName, t.AgentDescription)
 	if err != nil {
 		return fmt.Errorf("store: save api token %q: %w", t.ID, err)
 	}
@@ -58,7 +62,7 @@ func (db *DB) SaveAPIToken(ctx context.Context, t APIToken) error {
 // storage and decision-making.
 func (db *DB) GetAPITokenByHash(ctx context.Context, hash string) (*APIToken, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, name, token_hash, abilities, created_at, last_used_at, expires_at, revoked_at
+		SELECT id, name, token_hash, abilities, created_at, last_used_at, expires_at, revoked_at, agent_name, agent_description
 		FROM api_tokens WHERE token_hash = ?
 	`, hash)
 	t, err := scanAPIToken(row.Scan)
@@ -76,7 +80,7 @@ func (db *DB) GetAPITokenByHash(ctx context.Context, hash string) (*APIToken, er
 // hiding history, matching Dokploy's own token list.
 func (db *DB) ListAPITokens(ctx context.Context) ([]APIToken, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, name, token_hash, abilities, created_at, last_used_at, expires_at, revoked_at
+		SELECT id, name, token_hash, abilities, created_at, last_used_at, expires_at, revoked_at, agent_name, agent_description
 		FROM api_tokens ORDER BY created_at DESC
 	`)
 	if err != nil {
@@ -164,7 +168,7 @@ func scanAPIToken(scan func(dest ...any) error) (*APIToken, error) {
 		createdAt                        string
 		lastUsedAt, expiresAt, revokedAt sql.NullString
 	)
-	if err := scan(&t.ID, &t.Name, &t.TokenHash, &abilitiesJSON, &createdAt, &lastUsedAt, &expiresAt, &revokedAt); err != nil {
+	if err := scan(&t.ID, &t.Name, &t.TokenHash, &abilitiesJSON, &createdAt, &lastUsedAt, &expiresAt, &revokedAt, &t.AgentName, &t.AgentDescription); err != nil {
 		return nil, err
 	}
 	if err := json.Unmarshal([]byte(abilitiesJSON), &t.Abilities); err != nil {

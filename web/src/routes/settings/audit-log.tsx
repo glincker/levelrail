@@ -2,20 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Input } from '@/components/ui/input'
 import { useEffect, useRef, useState } from 'react'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import {
   ClockCounterClockwiseIcon,
   DownloadSimpleIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../../components/ui/table'
-import { Badge } from '../../components/ui/badge'
 import { Button, buttonVariants } from '../../components/ui/button'
 import {
   Select,
@@ -28,11 +19,16 @@ import {
   auditLogExportURL,
   auditLogQueryOptions,
   fetchAuditLog,
+  CLIENT_KIND_LABELS,
   CLIENT_KIND_OPTIONS,
   type AuditLogEntry,
 } from '../../queries/auditLog'
 import { TableSkeleton } from '../../components/ui/table-skeleton'
 import { PurgeAuditLogDialog } from '../../components/PurgeAuditLogDialog'
+import { AuditLogTable } from '../../components/AuditLogTable'
+import { AgentFilterChips } from '../../components/AgentFilterChips'
+import { collectAgentNames } from '../../lib/agentNames'
+import { tokenListQueryOptions } from '../../queries/tokens'
 
 // ALL_CLIENT_KINDS is the filter dropdown's "no filter" sentinel: Base
 // UI's Select cannot use an empty string as an item value (it reads as
@@ -53,20 +49,6 @@ export const Route = createFileRoute('/settings/audit-log')({
   pendingComponent: AuditLogSettingsPending,
 })
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString()
-}
-
-// Matches the badge convention every other status-flavored table in
-// this app already uses (UserTable/TokenTable): success for a 2xx
-// response, destructive for anything else, since a non-2xx from an
-// AbilityWrite-or-higher route is exactly the kind of thing an operator
-// scanning this table needs to notice first.
-function StatusBadge({ status }: { status: number }) {
-  const ok = status >= 200 && status < 300
-  return <Badge variant={ok ? 'success' : 'destructive'}>{status}</Badge>
-}
-
 // Downloads GET /api/v1/audit-log?format=csv as a plain browser
 // navigation (<a href download>), the same pattern
 // BackupsSection.tsx's DownloadBackupLink already establishes for a raw,
@@ -78,38 +60,22 @@ function ExportAuditLogLink({
   clientKind,
   search,
   failedOnly,
+  agent,
 }: {
   clientKind?: string
   search?: string
   failedOnly?: boolean
+  agent?: string
 }) {
   return (
     <a
-      href={auditLogExportURL({ clientKind, search, failedOnly })}
+      href={auditLogExportURL({ clientKind, search, failedOnly, agent })}
       download
       className={buttonVariants({ variant: 'outline', size: 'sm' })}
     >
       <DownloadSimpleIcon className="size-3.5" aria-hidden="true" />
       Export CSV
     </a>
-  )
-}
-
-// Client kind labels mirror internal/api's ClientKindCLI/Dashboard/MCP/API
-// constants for display; CLIENT_KIND_OPTIONS (queries/auditLog.ts) is the
-// source of truth for which values exist.
-const CLIENT_KIND_LABELS: Record<string, string> = {
-  cli: 'CLI',
-  dashboard: 'Dashboard',
-  mcp: 'MCP',
-  api: 'API',
-}
-
-function ClientKindBadge({ clientKind }: { clientKind: string }) {
-  return (
-    <Badge variant="outline">
-      {CLIENT_KIND_LABELS[clientKind] ?? clientKind}
-    </Badge>
   )
 }
 
@@ -122,6 +88,11 @@ function AuditLogSettingsPage() {
   const [filterLoading, setFilterLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [failedOnly, setFailedOnly] = useState(false)
+  const [agentFilter, setAgentFilter] = useState<string | undefined>()
+  const { data: tokens = [] } = useQuery({
+    ...tokenListQueryOptions(),
+    retry: false,
+  })
   // A page shorter than the default limit means the store had no more
   // rows to return, the same "short page means done" signal offset-free
   // cursor pagination always relies on.
@@ -133,7 +104,10 @@ function AuditLogSettingsPage() {
     clientKindFilter === ALL_CLIENT_KINDS ? undefined : clientKindFilter
   const activeSearch = debouncedSearch === '' ? undefined : debouncedSearch
   const filtersActive =
-    activeClientKind !== undefined || activeSearch !== undefined || failedOnly
+    activeClientKind !== undefined ||
+    activeSearch !== undefined ||
+    failedOnly ||
+    agentFilter !== undefined
 
   // Server-driven: any filter change refetches the first page. The first
   // run is skipped because the route loader already supplied it.
@@ -150,6 +124,7 @@ function AuditLogSettingsPage() {
       clientKind: activeClientKind,
       search: activeSearch,
       failedOnly,
+      agent: agentFilter,
     })
       .then((next) => {
         if (cancelled) return
@@ -168,7 +143,7 @@ function AuditLogSettingsPage() {
     return () => {
       cancelled = true
     }
-  }, [activeClientKind, activeSearch, failedOnly])
+  }, [activeClientKind, activeSearch, failedOnly, agentFilter])
 
   async function handleLoadMore() {
     const last = entries[entries.length - 1]
@@ -181,6 +156,7 @@ function AuditLogSettingsPage() {
         clientKind: activeClientKind,
         search: activeSearch,
         failedOnly,
+        agent: agentFilter,
       })
       setEntries((prev) => [...prev, ...next])
       if (next.length < AUDIT_PAGE_SIZE) {
@@ -237,6 +213,7 @@ function AuditLogSettingsPage() {
               clientKind={activeClientKind}
               search={activeSearch}
               failedOnly={failedOnly}
+              agent={agentFilter}
             />
           ) : null}
         </div>
@@ -263,10 +240,15 @@ function AuditLogSettingsPage() {
         >
           Failed only
         </Button>
+        <AgentFilterChips
+          agents={collectAgentNames(tokens, entries, agentFilter)}
+          active={agentFilter}
+          onChange={setAgentFilter}
+        />
       </div>
 
       {filterLoading ? (
-        <TableSkeleton columnCount={7} rowCount={8} />
+        <TableSkeleton columnCount={8} rowCount={8} />
       ) : entries.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
           <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -279,51 +261,7 @@ function AuditLogSettingsPage() {
           </p>
         </div>
       ) : (
-        <>
-          <div className="rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Actor</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Ability</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Path</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {entries.map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(entry.created_at)}
-                    </TableCell>
-                    <TableCell className="font-medium text-foreground">
-                      {entry.actor_name}
-                      <Badge variant="outline" className="ml-2">
-                        {entry.actor_type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <ClientKindBadge clientKind={entry.client_kind} />
-                    </TableCell>
-                    <TableCell>{entry.ability}</TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {entry.method}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {entry.path}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={entry.status_code} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </>
+        <AuditLogTable entries={entries} />
       )}
 
       {loadMoreError ? (
@@ -347,13 +285,13 @@ function AuditLogSettingsPage() {
 }
 
 // Route-level fallback for the loader's pending phase, matching this
-// page's own 6-column table shape so the skeleton doesn't jump when real
+// page's own 8-column table shape so the skeleton doesn't jump when real
 // rows swap in.
 function AuditLogSettingsPending() {
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-semibold text-foreground">Audit log</h1>
-      <TableSkeleton columnCount={7} rowCount={8} />
+      <TableSkeleton columnCount={8} rowCount={8} />
     </div>
   )
 }

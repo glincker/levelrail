@@ -289,6 +289,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "restore-snapshot" {
+		if err := runRestoreSnapshot(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdin, os.Stdout); err != nil {
+			logger.Error("restore-snapshot failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "restore" {
 		if err := runRestore(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdout, os.LookupEnv); err != nil {
 			logger.Error("restore failed", slog.String("error", err.Error()))

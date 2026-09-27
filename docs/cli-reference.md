@@ -182,6 +182,11 @@ levelrail apps deploys logs <name> <deploy-id> [flags]
 one deploy attempt's full build/log output, printed to stdout (redirect to a file to save it)
 
 ```
+levelrail apps deploys wait <name> [deploy-id] [--timeout 10m] [--poll-interval 2s] [flags]
+```
+blocks until one deploy is healthy, failed, canceled, superseded or blocked and prints the result with its failure; exits 0 healthy, 7 not healthy, 6 timeout
+
+```
 levelrail apps deploys show <name> [deploy-id] [flags]
 ```
 one deploy attempt (the newest by default) with its structured failure: code, cause, failing step, redacted log excerpt, suggested fix, docs link and retryable, see [Deploy failures](deploy-failures.md)
@@ -282,6 +287,16 @@ levelrail apps logs <name> [flags]
 ```
 levelrail apps metrics <name> --metric NAME [flags]
 ```
+
+```
+levelrail apps overview [name ...] [flags]
+```
+
+```
+levelrail upgrade [--no-backup] [flags]
+```
+
+`upgrade` runs the preflight checks, takes a control plane backup and prints the upgrade command. It never upgrades by itself. See [Installing](installing.md#check-first-then-upgrade).
 
 ```
 levelrail apps moves list <name> [flags]
@@ -848,9 +863,9 @@ list configured credentials profiles
 ## Tokens
 
 ```
-levelrail tokens create --name NAME --abilities LIST [flags]
+levelrail tokens create --name NAME --abilities LIST [--agent NAME] [--agent-description TEXT] [flags]
 ```
-mint a new API token
+mint a new API token; `--agent` labels it as issued to an AI agent so audit entries record the agent name
 
 ```
 levelrail tokens list [flags]
@@ -1147,6 +1162,11 @@ levelrail logs ls --target ID [--app NAME]
 levelrail logs fetch --target ID --key KEY [--out FILE]
 ```
 
+```
+levelrail logs query <app> [--level LEVEL] [--since 30m] [--until T] [--deploy ID] [--text PHRASE] [--max-lines N] [--max-bytes N] [flags]
+```
+capped excerpt of an app's newest matching log lines with match counts and a truncation notice; the byte cap defaults to 8 KB or `APP_MCP_LOG_MAX_BYTES`
+
 ## Registry Credentials
 
 ```
@@ -1309,7 +1329,7 @@ levelrail version [flags]
 levelrail audit-log [flags]
 ```
 
-Filter with `--search <text>` (case-insensitive substring across actor, ability, method, path and remote address) and `--failed` (status 400 or higher). Both are applied server side and carry into `--format csv` exports.
+Filter with `--agent <name>` (entries made with a token labeled with that agent name), `--search <text>` (case-insensitive substring across actor, ability, method, path and remote address) and `--failed` (status 400 or higher). Both are applied server side and carry into `--format csv` exports.
 
 ### Audit Purge
 

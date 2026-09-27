@@ -161,7 +161,14 @@ These are three different reads over the same underlying log store, not separate
 **Stored search** (`GET /api/v1/apps/{name}/logs`)
 - A request/response query over persisted logs.
 - Filtered by `from`/`to` (RFC3339, default last hour) and optional `q` full-text phrase.
+- Optional `level` (minimum level: trace, debug, info, warn, error, fatal) keeps lines at or above it, using the JSON `level`/`severity` field or a level token near the start of a plain line; lines with no detectable level are dropped when it is set. Optional `limit` keeps only the newest N matches.
+- The response carries `total` (matches before `limit`) and each entry a `level` when one was detected.
 - This is what "why was this app slow at 3am last Tuesday" queries.
+
+**Compact query for agents** (`levelrail logs query <app>`, MCP `query_logs`)
+- Filters by level, time window (`--since`/`--until`, a duration or RFC3339), deploy attempt (`--deploy`, the window from that attempt's start to the next attempt's start) and text.
+- Returns an excerpt of the newest matching lines, never a full dump: at most `--max-lines` lines (default 100) and a byte cap (default 8 KB, set with `--max-bytes` or `APP_MCP_LOG_MAX_BYTES`), plus counts and a notice such as `showing 40 of 1,812 matching lines (newest), use since/until or level to narrow`.
+- Uses the stored search above with `level` and `limit`; `--json` prints the excerpt as one object.
 
 **Download** (`GET /api/v1/apps/{name}/logs/download`)
 - Same `from`/`to`/`q` filters as stored search.
@@ -206,6 +213,10 @@ The response includes:
 - Every app that exists, including ones with no telemetry samples yet (freshly deployed apps appear as zero-usage rows, not missing).
 - Each field (`cpu_percent`, `memory_usage_bytes`, `memory_limit_bytes`, `network_rx_bytes`, `network_tx_bytes`) present only when a sample has been recorded.
 - One `LatestByMetric` call per metric, not one query per app.
+
+## Batched apps overview
+
+`GET /api/v1/apps-metrics` returns, in one response, every app the caller can read with its latest CPU and memory, a one hour request rate, 5xx error rate, p95 latency, a 12 point request-rate sparkline (5 minute buckets) and the last deploy time. Pass `?names=a,b` to limit it. The dashboard apps list and home tiles read only this endpoint, so a page of apps costs one request instead of two per row. The number of apps included is capped by `APP_APPS_METRICS_MAX` (default 200). From the CLI: `levelrail-cli apps overview [name ...]`.
 
 ## Fleet utilization
 
@@ -484,6 +495,7 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 | `GET` | `/api/v1/databases/{name}/metrics` | `read` |
 | `GET` | `/api/v1/nodes/{id}/metrics` | `root` |
 | `GET` | `/api/v1/apps/resource-usage` | `read` |
+| `GET` | `/api/v1/apps-metrics` | `read` |
 | `GET` | `/api/v1/nodes/resource-usage` | `root` |
 | `GET` | `/api/v1/apps/{name}/logs?from=...&to=...&q=...` | `read` |
 | `GET` | `/api/v1/apps/{name}/logs/stream` (SSE) | `read` |

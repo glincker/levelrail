@@ -89,6 +89,9 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 	if c.userAgent != "" {
 		req.Header.Set("User-Agent", c.userAgent)
 	}
+	if agent := agentClientFrom(ctx); agent != "" {
+		req.Header.Set(AgentClientHeader, agent)
+	}
 
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
@@ -2858,6 +2861,9 @@ func auditLogQuery(opts ListAuditLogOptions) url.Values {
 	}
 	if opts.FailedOnly {
 		q.Set("status", "failed")
+	}
+	if opts.Agent != "" {
+		q.Set("agent", opts.Agent)
 	}
 	return q
 }

@@ -127,20 +127,28 @@ func (c *authSessionClient) Login(ctx context.Context, username, password string
 
 // tokenResource mirrors internal/api's tokenResource (internal/api/tokens.go).
 type tokenResource struct {
-	ID         string     `json:"id"`
-	Name       string     `json:"name"`
-	Abilities  []string   `json:"abilities"`
-	CreatedAt  time.Time  `json:"created_at"`
-	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
-	ExpiresAt  *time.Time `json:"expires_at,omitempty"`
-	RevokedAt  *time.Time `json:"revoked_at,omitempty"`
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	Abilities  []string    `json:"abilities"`
+	CreatedAt  time.Time   `json:"created_at"`
+	LastUsedAt *time.Time  `json:"last_used_at,omitempty"`
+	ExpiresAt  *time.Time  `json:"expires_at,omitempty"`
+	RevokedAt  *time.Time  `json:"revoked_at,omitempty"`
+	Agent      *tokenAgent `json:"agent,omitempty"`
+}
+
+// tokenAgent mirrors internal/api's agentIdentity.
+type tokenAgent struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
 }
 
 // createTokenRequest mirrors internal/api's createTokenRequest.
 type createTokenRequest struct {
-	Name          string   `json:"name"`
-	Abilities     []string `json:"abilities"`
-	ExpiresInDays int      `json:"expires_in_days,omitempty"`
+	Name          string      `json:"name"`
+	Abilities     []string    `json:"abilities"`
+	ExpiresInDays int         `json:"expires_in_days,omitempty"`
+	Agent         *tokenAgent `json:"agent,omitempty"`
 }
 
 // createTokenResponse mirrors internal/api's createTokenResponse: Token

@@ -21,6 +21,7 @@ func logsUsage(prog string) string {
   %[1]s logs dump --target ID --from TIME [--to TIME] [--app NAME] [--wait]   archive a time range now
   %[1]s logs ls --target ID [--app NAME]       list archived objects
   %[1]s logs fetch --target ID --key KEY [--out FILE]   download one archived object (gzip NDJSON)
+  %[1]s logs query <app> [--level L] [--since 30m] [--deploy ID] [--text T] [--max-lines N]   capped excerpt of the newest matching lines
 
 TIME is an RFC3339 timestamp or a duration back from now such as 24h.
 Without --app, a policy or dump covers every app.
@@ -45,6 +46,8 @@ func runLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runLogsLs(prog, rest, stdout, stderr, lookupEnv)
 	case "fetch":
 		return runLogsFetch(prog, rest, stdout, stderr, lookupEnv)
+	case "query":
+		return runAPICmd(prog, logsQueryCommand(lookupEnv), rest, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown logs subcommand %q\n\n%s", prog, args[0], logsUsage(prog))
 		return exitUsage

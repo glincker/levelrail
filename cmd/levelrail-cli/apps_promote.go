@@ -25,9 +25,12 @@ import (
 func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps promote", "print the result as JSON to stdout and nothing else", stderr)
 	var to, target string
-	var preview, confirm, includeEnv, force bool
+	var preview, confirm, includeEnv, force, overrideFreeze bool
+	var overrideReason string
 	fs.BoolVar(&includeEnv, "include-env", false, "also apply added and removed plain env keys (values of keys both apps have stay as they are)")
 	fs.BoolVar(&force, "force", false, "promote even if the source app is unhealthy or its last deploy failed")
+	fs.BoolVar(&overrideFreeze, "override-freeze", false, "promote even though a deploy freeze window is active")
+	fs.StringVar(&overrideReason, "override-reason", "", "required with --override-freeze, recorded on the deploy")
 	fs.StringVar(&to, "to", "", "destination environment ID (required)")
 	fs.StringVar(&target, "target", "", "target app name, when more than one app in --to belongs to the same project")
 	fs.BoolVar(&preview, "preview", false, "show what promoting would change, without applying it")
@@ -58,7 +61,7 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 	}
 
 	result, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (deployTriggerResult, error) {
-		return client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: confirm, IncludeEnv: includeEnv, Force: force})
+		return client.PromoteApp(ctx, name, promoteAppRequest{To: to, Target: target, Confirm: confirm, IncludeEnv: includeEnv, Force: force, OverrideFreeze: overrideFreeze, OverrideReason: overrideReason})
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("promote app %q: %w", name, err))
@@ -119,6 +122,9 @@ func printPromotePreviewHuman(w io.Writer, prev promotePreviewResource) {
 	if prev.NeedsConfirmation {
 		_, _ = fmt.Fprint(w, "\nthis environment needs --confirm\n")
 	}
+	if prev.Frozen {
+		_, _ = fmt.Fprintf(w, "frozen: %s (use --override-freeze with --override-reason to promote anyway)\n", prev.FreezeReason)
+	}
 	for _, b := range prev.Blockers {
 		_, _ = fmt.Fprintf(w, "blocked: %s (use --force to override)\n", b)
 	}
@@ -151,6 +157,8 @@ Flags:
   --to string             destination environment ID (required)
   --target string        target app name, to disambiguate multiple apps in --to
   --confirm                  confirm promoting into a protected environment, skipping the interactive prompt
+  --override-freeze          promote even though a deploy freeze window is active
+  --override-reason string   required with --override-freeze, recorded on the deploy
   --include-env              also apply added and removed plain env keys (values never overwrite the target)
   --force                    promote even if the source is unhealthy or its last deploy failed
   --preview                 show what would change, don't apply it

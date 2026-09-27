@@ -9,14 +9,19 @@
 // shape as queries/metrics.ts.
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
-import type { LogEntry, LogsResponse } from '../types/logs'
+import type { LogsResponse, LogsResult } from '../types/logs'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const logSearchKeys = {
   all: (appName: string) => [...appKeys.detail(appName), 'logs'] as const,
-  search: (appName: string, fromIso: string, toIso: string, q: string) =>
-    [...logSearchKeys.all(appName), fromIso, toIso, q] as const,
+  search: (
+    appName: string,
+    fromIso: string,
+    toIso: string,
+    q: string,
+    limit: number,
+  ) => [...logSearchKeys.all(appName), fromIso, toIso, q, limit] as const,
 }
 
 export interface LogSearchParams {
@@ -24,18 +29,23 @@ export interface LogSearchParams {
   to: Date
   /** Full-text search phrase; empty/omitted means every entry in range. */
   q?: string
+  /** Keep only the newest N matches; the response total still counts all. */
+  limit?: number
 }
 
 export async function fetchLogEntries(
   appName: string,
   params: LogSearchParams,
-): Promise<LogEntry[]> {
+): Promise<LogsResult> {
   const query = new URLSearchParams({
     from: params.from.toISOString(),
     to: params.to.toISOString(),
   })
   if (params.q) {
     query.set('q', params.q)
+  }
+  if (params.limit) {
+    query.set('limit', String(params.limit))
   }
   const res = await fetch(
     `/api/v1/apps/${encodeURIComponent(appName)}/logs?${query.toString()}`,
@@ -50,7 +60,8 @@ export async function fetchLogEntries(
     )
   }
   const body = (await res.json()) as LogsResponse
-  return body.entries ?? []
+  const entries = body.entries ?? []
+  return { entries, total: body.total ?? entries.length }
 }
 
 export function logSearchQueryOptions(
@@ -63,6 +74,7 @@ export function logSearchQueryOptions(
       params.from.toISOString(),
       params.to.toISOString(),
       params.q ?? '',
+      params.limit ?? 0,
     ),
     queryFn: () => fetchLogEntries(appName, params),
   })

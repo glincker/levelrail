@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "acme": {
+      "command": "acme-mcp",
+      "args": [
+        "--mode",
+        "read-only"
+      ],
+      "env": {
+        "APP_API_TOKEN": "${APP_API_TOKEN}"
+      }
+    }
+  }
+}

@@ -33,6 +33,8 @@ type promotePreviewResource struct {
 	Diff                promoteDiff          `json:"diff"`
 	Blockers            []string             `json:"blockers"`
 	NeedsConfirmation   bool                 `json:"needs_confirmation"`
+	Frozen              bool                 `json:"frozen"`
+	FreezeReason        string               `json:"freeze_reason,omitempty"`
 }
 
 const promotePreviewNote = "The diff lists env key names only, never values. Domains, ports, node placement, volumes and secret values are the target app's own and are left untouched; env changes apply only when include_env is set."
@@ -65,6 +67,7 @@ func (rt *Router) handlePromotePreview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	out.Blockers = blockers
+	out.Frozen, out.FreezeReason = rt.freezeStatus(r.Context(), res.target.Name)
 	if out.Blockers == nil {
 		out.Blockers = []string{}
 	}
@@ -96,6 +99,7 @@ type promoteTriggerRequest struct {
 	IncludeEnv bool `json:"include_env,omitempty"`
 	// Force promotes even when the source is unhealthy or its last deploy failed.
 	Force bool `json:"force,omitempty"`
+	freezeOverride
 }
 
 // handlePromoteApp handles POST /api/v1/apps/{name}/promote: points the
@@ -137,13 +141,17 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 		writeEnvironmentConfirmationRequired(w, res.env)
 		return
 	}
+	freezeNote, ok := rt.freezeGate(w, r, res.target.Name, req.freezeOverride)
+	if !ok {
+		return
+	}
 	if res.env.Protected {
 		snapshot, err := promoteEnvSnapshot(res.source, res.target, req.IncludeEnv)
 		if err != nil {
 			rt.internalError(w, "api: promote app: snapshot env failed", err, slog.String("name", name))
 			return
 		}
-		approval, ok := rt.requestDeployApproval(w, r, res.env, res.target.Name, res.source.Name, store.DeployApprovalActionPromote, res.source.Image, deployApprovalOptions{includeEnv: req.IncludeEnv, promoteEnv: snapshot})
+		approval, ok := rt.requestDeployApproval(w, r, res.env, res.target.Name, res.source.Name, store.DeployApprovalActionPromote, res.source.Image, deployApprovalOptions{includeEnv: req.IncludeEnv, promoteEnv: snapshot, freezeOverride: freezeNote})
 		if !ok {
 			return
 		}

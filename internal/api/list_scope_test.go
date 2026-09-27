@@ -91,6 +91,7 @@ func TestCrossAppListsScopedToReadableApps(t *testing.T) {
 		{"static sites", "/api/v1/static-sites", []string{"alpha-static.example.com"}, []string{"beta-static.example.com", "beta-app"}},
 		{"alert history", "/api/v1/alert-history", []string{"rule-alpha", "rule-platform"}, []string{"rule-beta", "beta-app"}},
 		{"app resource usage", "/api/v1/apps/resource-usage", []string{"alpha-app"}, []string{"beta-app"}},
+		{"apps metrics", "/api/v1/apps-metrics", []string{"alpha-app"}, []string{"beta-app"}},
 		{"databases", "/api/v1/databases", []string{"alpha-db"}, []string{"beta-db"}},
 	}
 	for _, tc := range tests {

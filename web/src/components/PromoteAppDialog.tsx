@@ -30,6 +30,12 @@ import {
 } from '../queries/promote'
 import { ApiError } from '../lib/apiError'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
+import { PromotePlan } from './PromotePlan'
+import {
+  EMPTY_PROMOTE_OPTIONS,
+  promoteOptionsReady,
+  type PromoteOptions,
+} from '../lib/promoteOptions'
 
 // Sentinel for "let the server auto-detect the target app", the same
 // reasoning PlacementFields.tsx's LOCAL_NODE_VALUE/NO_PROJECT_VALUE give:
@@ -64,6 +70,7 @@ export function PromoteAppDialog({
   const [environmentId, setEnvironmentId] = useState('')
   const [target, setTarget] = useState('')
   const [ackProtected, setAckProtected] = useState(false)
+  const [options, setOptions] = useState<PromoteOptions>(EMPTY_PROMOTE_OPTIONS)
 
   const environmentList = useEnvironmentListOptional(projectId ?? '')
   const environments = environmentList.data ?? []
@@ -89,13 +96,14 @@ export function PromoteAppDialog({
       setEnvironmentId('')
       setTarget('')
       setAckProtected(false)
+      setOptions(EMPTY_PROMOTE_OPTIONS)
       promote.reset()
     }
   }
 
   function handlePromote() {
     promote.mutate(
-      { to: environmentId, target, confirm: ackProtected },
+      { to: environmentId, target, confirm: ackProtected, ...options },
       {
         onSuccess: (result) => {
           setOpen(false)
@@ -253,6 +261,11 @@ export function PromoteAppDialog({
                     </span>
                   </p>
                 )}
+                <PromotePlan
+                  preview={preview.data}
+                  options={options}
+                  onChange={setOptions}
+                />
               </div>
             ) : null}
 
@@ -289,7 +302,8 @@ export function PromoteAppDialog({
             disabled={
               !environmentId ||
               !preview.data ||
-              isNoop ||
+              (isNoop && !options.includeEnv) ||
+              !promoteOptionsReady(preview.data, options) ||
               promote.isPending ||
               (selectedEnvironment?.protected && !ackProtected)
             }

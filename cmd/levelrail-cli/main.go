@@ -128,6 +128,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
 		return runStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "upgrade":
+		return runUpgrade(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
 	case "audit-log":
@@ -136,6 +138,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAuditPurge(prog, args[1:], stdout, stderr, lookupEnv)
 	case "attention":
 		return runAttention(prog, args[1:], stdout, stderr, lookupEnv)
+	case "init":
+		return runInit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "containers":
@@ -238,10 +242,12 @@ Usage:
   %[1]s nodes cordon|uncordon|drain|health|workloads <id> [flags]   node scheduling and maintenance
   %[1]s nodes mesh|rotate-key [id] [flags]                          WireGuard mesh status and key rotation
   %[1]s status [flags]                                        control plane status, including local Docker daemon reachability
+  %[1]s upgrade [--no-backup] [flags]                          preflight checks, backup, and the command that upgrades (never upgrades itself)
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
   %[1]s audit-purge [flags]                                   delete audit log entries past the retention window now
   %[1]s attention [flags]                                     everything failing right now: apps, nodes, certificates, doctor checks
+  %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database

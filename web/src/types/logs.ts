@@ -11,8 +11,19 @@ export interface LogEntry {
   message: string
   structured: boolean
   fields?: Record<string, unknown>
+  // Detected level (trace, debug, info, warn, error, fatal), absent when
+  // the line carries none.
+  level?: string
 }
 
 export interface LogsResponse {
   entries: LogEntry[]
+  // Entries that matched the time window and query before `limit` trimmed
+  // them to the newest N.
+  total?: number
+}
+
+export interface LogsResult {
+  entries: LogEntry[]
+  total: number
 }
