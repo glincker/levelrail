@@ -22,6 +22,7 @@ const sidebarGroups = [
     items: [
       { text: 'Installing', link: '/installing' },
       { text: 'Troubleshooting', link: '/troubleshooting' },
+      { text: 'Deploy failures', link: '/deploy-failures' },
       { text: 'Docker', link: '/docker' },
       { text: 'Domains and ingress', link: '/domains-and-ingress' },
       { text: 'Deployments page', link: '/deployments-page' },

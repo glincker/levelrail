@@ -444,6 +444,10 @@ func printDiagnosisHuman(out io.Writer, d diagnosisResource) {
 		}
 	}
 	printDiagnosisCauses(out, d)
+	if d.Failure != nil {
+		_, _ = fmt.Fprintln(out)
+		printDeployFailure(out, d.Failure)
+	}
 	if d.RecentChanges != nil {
 		_, _ = fmt.Fprintln(out)
 		printRecentChanges(out, d.RecentChanges, "")

@@ -25,6 +25,8 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return exitOK
 	case "list":
 		return runAppsDeploysList(prog, args[1:], stdout, stderr, lookupEnv)
+	case "show":
+		return runAppsDeploysShow(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compare":
 		return runAppsDeploysCompare(prog, args[1:], stdout, stderr, lookupEnv)
 	case "logs":
@@ -47,6 +49,7 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 func appsDeploysUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
+  %[1]s apps deploys show <name> [deploy-id] [flags]              one deploy attempt with its structured failure (newest by default)
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
   %[1]s apps deploys logs <name> <deploy-id> [flags]              one deploy attempt's full build/log output
   %[1]s apps deploys failed [--since 24h] [flags]                 every app's latest failed deploy in the window, fleet-wide

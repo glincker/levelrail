@@ -156,6 +156,11 @@ levelrail apps deploys logs <name> <deploy-id> [flags]
 one deploy attempt's full build/log output, printed to stdout (redirect to a file to save it)
 
 ```
+levelrail apps deploys show <name> [deploy-id] [flags]
+```
+one deploy attempt (the newest by default) with its structured failure: code, cause, failing step, redacted log excerpt, suggested fix, docs link and retryable, see [Deploy failures](deploy-failures.md)
+
+```
 levelrail apps deploys failed [--since 24h] [flags]
 ```
 every app's latest failed deploy in the window (default set by the server), with the image of its newest good deploy as a rollback target
