@@ -1,0 +1,6 @@
+version: 1
+services:
+  docs:
+    build:
+      type: static
+      path: ./
