@@ -30,7 +30,7 @@ features:
   - title: Resource-scoped IAM
     details: AWS-IAM-shaped Allow/Deny policies scoped to a specific app or database, with a full audit log and CSV export, in the free Apache 2.0 core.
   - title: AI-ready API
-    details: Over 70 MCP tools backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a crashloop directly.
+    details: 144 MCP tools (beta) backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a crashloop directly.
 ---
 
 <div class="vp-doc" style="max-width: 1152px; margin: 0 auto; padding: 0 24px 64px;">

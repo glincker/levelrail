@@ -36,6 +36,7 @@ const sidebarGroups = [
         text: 'Migrating from Coolify, Dokploy, or CapRover',
         link: '/migrating-from-coolify-dokploy-and-caprover',
       },
+      { text: 'Migrating from Vercel', link: '/migrating-from-vercel' },
       { text: 'Deploying from GitHub Actions', link: '/github-actions' },
       { text: 'Pipelines', link: '/pipelines' },
       { text: 'Platform as code', link: '/platform-as-code' },
