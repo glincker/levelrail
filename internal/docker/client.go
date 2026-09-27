@@ -30,6 +30,7 @@ import (
 // per the project's Docker Engine API only rule.
 type Client struct {
 	cli *dockerclient.Client
+	cdi cdiCache
 	// instanceLabelKey/instanceLabelValue, when both set (WithInstanceLabel),
 	// are stamped onto every container and network this Client creates
 	// (Create, EnsureNetwork) and used to scope every by-name lookup this
@@ -308,6 +309,9 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 	}
 
 	hostConfig := buildHostConfig(spec, portBindings)
+	if spec.GPU != nil {
+		c.attachGPU(ctx, hostConfig, *spec.GPU)
+	}
 	c.hardening.apply(hostConfig, spec)
 
 	resp, err := c.cli.ContainerCreate(ctx,

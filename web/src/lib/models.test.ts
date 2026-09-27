@@ -22,6 +22,10 @@ function model(
     gpu_count: -1,
     api_key_prefix: 'lr-abcd',
     hf_token_set: false,
+    residency: 'always',
+    idle_ttl_seconds: 0,
+    effective_idle_ttl_seconds: 900,
+    residency_state: 'awake',
     status: { ready, reason },
     created_at: '2026-09-24T00:00:00Z',
     updated_at: '2026-09-24T00:00:00Z',
@@ -56,6 +60,9 @@ describe('modelPhase', () => {
     ['Loading', false, 'progress'],
     ['Starting', false, 'progress'],
     ['Pending', false, 'progress'],
+    ['WakingUp', false, 'progress'],
+    ['WaitingForGPU', false, 'progress'],
+    ['Idle', false, 'idle'],
     ['Deleting', false, 'deleting'],
     ['NoGPUOnNode', false, 'blocked'],
     ['GPURuntimeMissing', false, 'blocked'],
@@ -72,6 +79,8 @@ describe('isModelSettling', () => {
       isModelSettling([model('ModelLoaded', true), model('Downloading')]),
     ).toBe(true)
     expect(isModelSettling([model('Deleting')])).toBe(true)
+    expect(isModelSettling([model('WakingUp')])).toBe(true)
+    expect(isModelSettling([model('Idle')])).toBe(false)
     expect(isModelSettling([])).toBe(false)
   })
 })

@@ -40,6 +40,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/gpu"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/models"
@@ -718,6 +719,7 @@ func run(logger *slog.Logger) error {
 		previewNotifier:              previewManager,
 	}))
 	startLocalGPUCollector(ctx, db, client, logger)
+	go models.NewEngineMetricsCollector(db, telemetryDB, nil, logger).Run(ctx, models.EngineMetricsInterval())
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
@@ -2247,7 +2249,16 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 
 	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
 	wireModelPreflight(modelSvc, client, b.ShortName, logger)
+	modelSvc.SetEngineMetricsReader(telemetryDB)
+	if engine != nil {
+		modelGateway.SetWakeHook(engine.Nudge)
+	}
 	opts = append(opts, api.WithModels(modelSvc))
+	if client != nil {
+		opts = append(opts, api.WithGPUHostDiagnoser(func(ctx context.Context) gpu.HostDiagnosis {
+			return gpu.DiagnoseHost(ctx, gpu.ExecRunner{}, client, nil)
+		}))
+	}
 	rt := api.NewRouter(logger, b, db, opts...)
 	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, web.Handler()))), rt
 }

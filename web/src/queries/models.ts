@@ -13,6 +13,7 @@ import type {
   CreateModelRequest,
   CreateModelResponse,
   GpuNode,
+  ModelResidency,
   ModelResource,
 } from '../types/models'
 
@@ -20,6 +21,7 @@ export const modelKeys = {
   all: ['models'] as const,
   list: () => [...modelKeys.all, 'list'] as const,
   gpus: () => [...modelKeys.all, 'gpus'] as const,
+  detail: (name: string) => [...modelKeys.all, 'detail', name] as const,
 }
 
 const SETTLING_REFETCH_MS = 3000
@@ -77,6 +79,26 @@ export function modelListQueryOptions() {
 
 export function useModels() {
   return useQuery(modelListQueryOptions())
+}
+
+export function modelDetailQueryOptions(name: string) {
+  return queryOptions({
+    queryKey: modelKeys.detail(name),
+    queryFn: () =>
+      requestJson<ModelResource>(
+        `/api/v1/models/${encodeURIComponent(name)}`,
+        undefined,
+        'fetch model',
+      ),
+    refetchInterval: (query) =>
+      query.state.data && isModelSettling([query.state.data])
+        ? SETTLING_REFETCH_MS
+        : false,
+  })
+}
+
+export function useModel(name: string) {
+  return useQuery(modelDetailQueryOptions(name))
 }
 
 export function fetchGpuNodes(): Promise<GpuNode[]> {
@@ -153,4 +175,44 @@ export function useRotateModelApiKey() {
       void queryClient.invalidateQueries({ queryKey: modelKeys.all })
     },
   })
+}
+
+export function useSetModelResidency() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (v: {
+      name: string
+      residency: ModelResidency
+      idleTtlSeconds: number
+    }) =>
+      requestVoid(
+        `/api/v1/models/${encodeURIComponent(v.name)}/residency`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            residency: v.residency,
+            idle_ttl_seconds: v.idleTtlSeconds,
+          }),
+        },
+        'set residency',
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: modelKeys.all })
+    },
+  })
+}
+
+export function useWakeModel() {
+  return useModelAction('wake model', (name) => ({
+    url: `/api/v1/models/${encodeURIComponent(name)}/wake`,
+    init: { method: 'POST' },
+  }))
+}
+
+export function useSleepModel() {
+  return useModelAction('sleep model', (name) => ({
+    url: `/api/v1/models/${encodeURIComponent(name)}/sleep`,
+    init: { method: 'POST' },
+  }))
 }

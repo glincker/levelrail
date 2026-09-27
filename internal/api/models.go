@@ -28,6 +28,12 @@ type ModelService interface {
 	RevokeKey(ctx context.Context, model, id string) error
 	RotateKeyByID(ctx context.Context, model, id, actor string, grace *time.Duration) (models.CreatedKey, error)
 	Usage(ctx context.Context, model string, window time.Duration) (models.UsageReport, error)
+	EngineMetrics(ctx context.Context, name string, window time.Duration) (models.EngineMetricsReport, error)
+	FitCheck(ctx context.Context, req models.FitRequest) (models.FitReport, error)
+	SetResidency(ctx context.Context, name, residency string, idleTTL time.Duration) error
+	Wake(ctx context.Context, name string) error
+	Sleep(ctx context.Context, name string) error
+	ModelFit(ctx context.Context, name string) (models.FitReport, error)
 	SetHFToken(ctx context.Context, name, token string) error
 	GPUNodes(ctx context.Context) ([]models.GPUNode, error)
 	NodeGPU(ctx context.Context, nodeID string) (gpu.Info, bool, error)
@@ -65,9 +71,16 @@ type modelResource struct {
 	APIKeyPrefix  string                      `json:"api_key_prefix"`
 	HFTokenSet    bool                        `json:"hf_token_set"`
 	Limits        models.GatewayLimitsSummary `json:"limits"`
-	Status        modelStatusResource         `json:"status"`
-	CreatedAt     time.Time                   `json:"created_at"`
-	UpdatedAt     time.Time                   `json:"updated_at"`
+	// Residency is "always" or "on_demand". IdleTTLSeconds 0 means the
+	// platform default, which EffectiveIdleTTLSeconds resolves.
+	Residency               string              `json:"residency"`
+	IdleTTLSeconds          int                 `json:"idle_ttl_seconds"`
+	EffectiveIdleTTLSeconds int                 `json:"effective_idle_ttl_seconds"`
+	ResidencyState          string              `json:"residency_state"`
+	LastActiveAt            *time.Time          `json:"last_active_at,omitempty"`
+	Status                  modelStatusResource `json:"status"`
+	CreatedAt               time.Time           `json:"created_at"`
+	UpdatedAt               time.Time           `json:"updated_at"`
 }
 
 func toModelResource(v models.View) modelResource {
@@ -79,7 +92,17 @@ func toModelResource(v models.View) modelResource {
 		Limits:    models.LoadGatewayLimits().Summary(),
 		Status:    modelStatusResource{Ready: v.Ready, Reason: v.Reason, Message: v.Message},
 		CreatedAt: m.CreatedAt, UpdatedAt: m.UpdatedAt,
+		Residency: m.Residency, IdleTTLSeconds: m.IdleTTLSeconds, ResidencyState: m.ResidencyState,
+		EffectiveIdleTTLSeconds: int(models.IdleTTL(m) / time.Second),
+		LastActiveAt:            optTime(m.LastActiveAt),
 	}
+}
+
+func optTime(t time.Time) *time.Time {
+	if t.IsZero() {
+		return nil
+	}
+	return &t
 }
 
 type createModelRequest struct {
@@ -93,6 +116,8 @@ type createModelRequest struct {
 	Quantization  string   `json:"quantization"`
 	Domain        string   `json:"domain"`
 	HFToken       string   `json:"hf_token"`
+	Residency     string   `json:"residency"`
+	IdleTTLSecs   int      `json:"idle_ttl_seconds"`
 }
 
 type createModelResponse struct {
@@ -217,6 +242,7 @@ func (rt *Router) handleCreateModel(w http.ResponseWriter, r *http.Request) {
 			GPUDeviceIDs: req.GPUDeviceIDs, ContextLength: req.ContextLength, Quantization: req.Quantization,
 		},
 		NodeID: req.NodeID, Domain: req.Domain, HFToken: req.HFToken,
+		Residency: req.Residency, IdleTTL: time.Duration(req.IdleTTLSecs) * time.Second,
 	})
 	if err != nil {
 		rt.writeModelError(w, "create model", err)
@@ -368,6 +394,11 @@ func (rt *Router) doctorCheckGPUs(ctx context.Context) []doctorCheckResource {
 			check.DocsPath = "/ai-models#gpu-nodes"
 		}
 		out = append(out, check)
+		if n.IsLocal && rt.gpuHostDiagnoser != nil {
+			out = append(out, rt.doctorHostGPUChecks(ctx, n.Name)...)
+		} else {
+			out = append(out, gpuMemoryChecks(n)...)
+		}
 	}
 	return out
 }

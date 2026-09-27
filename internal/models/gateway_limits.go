@@ -24,6 +24,9 @@ const (
 	envGatewayDialTimeout   = "APP_MODEL_GATEWAY_DIAL_TIMEOUT"
 	envGatewayHeaderTimeout = "APP_MODEL_GATEWAY_HEADER_TIMEOUT"
 	envGatewayIdleTimeout   = "APP_MODEL_GATEWAY_IDLE_TIMEOUT"
+	envGatewayWakeWait      = "APP_MODEL_WAKE_WAIT"
+	envGatewayWakeRetry     = "APP_MODEL_WAKE_RETRY_AFTER"
+	envGatewayTouchEvery    = "APP_MODEL_ACTIVITY_TOUCH_INTERVAL"
 )
 
 // GatewayLimits bounds what one request may cost the engine. The limits are
@@ -37,19 +40,28 @@ type GatewayLimits struct {
 	DialTimeout   time.Duration
 	HeaderTimeout time.Duration
 	IdleTimeout   time.Duration
+	// WakeWait bounds how long a request to a sleeping on-demand model is
+	// held while its engine loads; zero fails fast with Retry-After.
+	WakeWait       time.Duration
+	WakeRetryAfter time.Duration
+	// TouchInterval throttles how often gateway activity is written.
+	TouchInterval time.Duration
 }
 
 // DefaultGatewayLimits are the limits used when no environment override is set.
 func DefaultGatewayLimits() GatewayLimits {
 	return GatewayLimits{
-		MaxBodyBytes:  32 << 20,
-		MaxN:          16,
-		MaxTokens:     32768,
-		MaxInflight:   32,
-		RetryAfter:    5 * time.Second,
-		DialTimeout:   5 * time.Second,
-		HeaderTimeout: 5 * time.Minute,
-		IdleTimeout:   2 * time.Minute,
+		MaxBodyBytes:   32 << 20,
+		MaxN:           16,
+		MaxTokens:      32768,
+		MaxInflight:    32,
+		RetryAfter:     5 * time.Second,
+		DialTimeout:    5 * time.Second,
+		HeaderTimeout:  5 * time.Minute,
+		IdleTimeout:    2 * time.Minute,
+		WakeWait:       90 * time.Second,
+		WakeRetryAfter: 15 * time.Second,
+		TouchInterval:  10 * time.Second,
 	}
 }
 
@@ -65,6 +77,9 @@ func LoadGatewayLimits() GatewayLimits {
 	l.DialTimeout = envDuration(envGatewayDialTimeout, l.DialTimeout)
 	l.HeaderTimeout = envDuration(envGatewayHeaderTimeout, l.HeaderTimeout)
 	l.IdleTimeout = envDuration(envGatewayIdleTimeout, l.IdleTimeout)
+	l.WakeWait = envDuration(envGatewayWakeWait, l.WakeWait)
+	l.WakeRetryAfter = envDuration(envGatewayWakeRetry, l.WakeRetryAfter)
+	l.TouchInterval = envDuration(envGatewayTouchEvery, l.TouchInterval)
 	return l
 }
 

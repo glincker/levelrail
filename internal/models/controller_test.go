@@ -20,6 +20,11 @@ type fakeStore struct {
 	endpoint  string
 	deleted   bool
 	deleteErr error
+	stateErr  error
+	reads     int
+	// onRead runs before the n-th GetModel (1-based) returns, so a test can
+	// change the row between reads.
+	onRead func(n int, m *store.Model)
 }
 
 func (f *fakeStore) GetModel(context.Context, string) (*store.Model, error) {
@@ -29,8 +34,22 @@ func (f *fakeStore) GetModel(context.Context, string) (*store.Model, error) {
 	if f.model == nil {
 		return nil, store.ErrModelNotFound
 	}
+	f.reads++
+	if f.onRead != nil {
+		f.onRead(f.reads, f.model)
+	}
 	cp := *f.model
 	return &cp, nil
+}
+
+func (f *fakeStore) SetModelResidencyState(_ context.Context, _, state string) error {
+	if f.stateErr != nil {
+		return f.stateErr
+	}
+	if f.model != nil {
+		f.model.ResidencyState = state
+	}
+	return nil
 }
 
 func (f *fakeStore) SetModelEndpoint(_ context.Context, _, dial string) error {
@@ -85,6 +104,8 @@ type fakeRuntime struct {
 	createErr  error
 	startErr   error
 	removeErr  error
+	stopErr    error
+	stopped    []string
 	hostPort   int
 }
 
@@ -141,7 +162,18 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 	return nil
 }
 
-func (f *fakeRuntime) Stop(context.Context, string, time.Duration) error { return nil }
+func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error {
+	if f.stopErr != nil {
+		return f.stopErr
+	}
+	f.stopped = append(f.stopped, id)
+	for _, c := range f.containers {
+		if c.ID == id {
+			c.Running = false
+		}
+	}
+	return nil
+}
 
 func (f *fakeRuntime) Remove(_ context.Context, id string, _ bool) error {
 	if f.removeErr != nil {

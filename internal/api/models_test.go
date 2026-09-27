@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	"github.com/GLINCKER/levelrail/internal/models"
@@ -41,6 +42,12 @@ func TestModelsRoutes_RequireAuth(t *testing.T) {
 		{http.MethodPost, "/api/v1/models/chat/api-key"},
 		{http.MethodPut, "/api/v1/models/chat/hf-token"},
 		{http.MethodGet, "/api/v1/models/chat/logs"},
+		{http.MethodGet, "/api/v1/models/chat/engine-metrics"},
+		{http.MethodGet, "/api/v1/models/chat/fit"},
+		{http.MethodPut, "/api/v1/models/chat/residency"},
+		{http.MethodPost, "/api/v1/models/chat/wake"},
+		{http.MethodPost, "/api/v1/models/chat/sleep"},
+		{http.MethodPost, "/api/v1/models/fit"},
 		{http.MethodGet, "/api/v1/models/chat/logs/stream"},
 		{http.MethodGet, "/api/v1/gpus"},
 	})
@@ -251,7 +258,7 @@ func TestGPUsEndpointAndDoctor(t *testing.T) {
 	_ = json.Unmarshal(rec.Body.Bytes(), &doc)
 	var found *doctorCheckResource
 	for i := range doc.Checks {
-		if strings.HasPrefix(doc.Checks[i].Code, "gpu:") {
+		if doc.Checks[i].Code == "gpu:local" {
 			found = &doc.Checks[i]
 		}
 	}
@@ -268,5 +275,172 @@ func TestGPUsEndpointAndDoctor(t *testing.T) {
 		if strings.HasPrefix(c.Code, "gpu:") && c.Status != doctorStatusOK {
 			t.Errorf("healthy gpu check = %+v, want ok", c)
 		}
+	}
+}
+
+func TestModels_EngineMetricsEndpoint(t *testing.T) {
+	rt, db := newModelsTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if rec := doModels(t, rt, cookie, http.MethodGet, "/api/v1/models/nope/engine-metrics", ""); rec.Code != http.StatusNotFound {
+		t.Fatalf("missing model status = %d", rec.Code)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models", `{"name":"chat","engine":"ollama","model":"llama3.1:8b"}`); rec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d", rec.Code)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodGet, "/api/v1/models/chat/engine-metrics?since=bogus", ""); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad since status = %d", rec.Code)
+	}
+	rec := doModels(t, rt, cookie, http.MethodGet, "/api/v1/models/chat/engine-metrics?since=2h", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var rep models.EngineMetricsReport
+	if err := json.Unmarshal(rec.Body.Bytes(), &rep); err != nil {
+		t.Fatal(err)
+	}
+	if rep.Engine != "ollama" || rep.Collecting || rep.Health.State != models.EngineHealthUnknown || len(rep.Series) == 0 {
+		t.Errorf("report = %+v", rep)
+	}
+}
+
+func TestModels_FitEndpoints(t *testing.T) {
+	rt, db := newModelsTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SetNodeGPU(context.Background(), store.LocalNodeGPUKey, gpu.Info{Present: true, RuntimeInstalled: true,
+		Devices: []gpu.Device{{Index: 0, UUID: "GPU-a", Name: "RTX", VRAMTotalMiB: 24576}}}); err != nil {
+		t.Fatal(err)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models/fit", `{"engine":"nope","model":"x"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad engine status = %d", rec.Code)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models/fit", `{"engine":"ollama","model":"x","weights_bytes":-1}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("negative weights status = %d", rec.Code)
+	}
+	rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models/fit", `{"engine":"ollama","model":"llama3.1:8b","context_length":8192}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var rep models.FitReport
+	if err := json.Unmarshal(rec.Body.Bytes(), &rep); err != nil {
+		t.Fatal(err)
+	}
+	if len(rep.Nodes) != 1 || rep.Nodes[0].Verdict != models.FitFits || rep.Note == "" || !strings.Contains(rep.Nodes[0].Arithmetic, "weights") {
+		t.Fatalf("report = %+v", rep)
+	}
+
+	if rec := doModels(t, rt, cookie, http.MethodGet, "/api/v1/models/nope/fit", ""); rec.Code != http.StatusNotFound {
+		t.Fatalf("missing model status = %d", rec.Code)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models", `{"name":"chat","engine":"ollama","model":"llama3.1:8b"}`); rec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d", rec.Code)
+	}
+	rec = doModels(t, rt, cookie, http.MethodGet, "/api/v1/models/chat/fit", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("model fit status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	rep = models.FitReport{}
+	if err := json.Unmarshal(rec.Body.Bytes(), &rep); err != nil {
+		t.Fatal(err)
+	}
+	if rep.Model != "chat" || len(rep.Nodes) != 1 || !rep.Nodes[0].Current {
+		t.Fatalf("model fit report = %+v", rep)
+	}
+}
+
+func TestModels_ResidencyFlow(t *testing.T) {
+	rt, db := newModelsTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models", `{"name":"chat","engine":"ollama","model":"llama3.1:8b","residency":"on_demand","idle_ttl_seconds":600}`)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var created createModelResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	if created.Residency != "on_demand" || created.IdleTTLSeconds != 600 || created.EffectiveIdleTTLSeconds != 600 || created.LastActiveAt == nil || created.ResidencyState != "awake" {
+		t.Fatalf("created = %+v", created.modelResource)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models", `{"name":"bad","engine":"ollama","model":"llama3.1:8b","residency":"weekly"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad residency status = %d", rec.Code)
+	}
+
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models/chat/sleep", ""); rec.Code != http.StatusNoContent {
+		t.Fatalf("sleep status = %d", rec.Code)
+	}
+	rec = doModels(t, rt, cookie, http.MethodGet, "/api/v1/models/chat", "")
+	var got modelResource
+	_ = json.Unmarshal(rec.Body.Bytes(), &got)
+	if got.LastActiveAt != nil {
+		t.Fatalf("sleep must clear activity: %+v", got)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models/chat/wake", ""); rec.Code != http.StatusNoContent {
+		t.Fatalf("wake status = %d", rec.Code)
+	}
+
+	if rec := doModels(t, rt, cookie, http.MethodPut, "/api/v1/models/chat/residency", `{"residency":"always"}`); rec.Code != http.StatusNoContent {
+		t.Fatalf("set residency status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	for _, tc := range []struct{ method, path, body string }{
+		{http.MethodPost, "/api/v1/models/chat/wake", ""},
+		{http.MethodPost, "/api/v1/models/chat/sleep", ""},
+	} {
+		if rec := doModels(t, rt, cookie, tc.method, tc.path, tc.body); rec.Code != http.StatusBadRequest {
+			t.Fatalf("%s on an always-resident model status = %d", tc.path, rec.Code)
+		}
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPut, "/api/v1/models/chat/residency", `{"residency":"on_demand","idle_ttl_seconds":-1}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("negative ttl status = %d", rec.Code)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPut, "/api/v1/models/nope/residency", `{"residency":"always"}`); rec.Code != http.StatusNotFound {
+		t.Fatalf("missing model status = %d", rec.Code)
+	}
+}
+
+func TestDoctorHostGPUChecks(t *testing.T) {
+	rt, db := newModelsTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	info := gpu.Info{Present: true, DriverVersion: "550.1", RuntimeInstalled: true, Devices: []gpu.Device{{Index: 0, UUID: "GPU-a", Name: "A100", VRAMTotalMiB: 40960, VRAMUsedMiB: 1024}}}
+	if err := db.SetNodeGPU(ctx, store.LocalNodeGPUKey, info); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetNodeGPU(ctx, "remote", gpu.Info{Present: true, RuntimeInstalled: true, Devices: []gpu.Device{{Index: 0, Name: "L4", VRAMTotalMiB: 24576, VRAMUsedMiB: 2048}}}); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	if err := db.SaveNode(ctx, store.Node{ID: "remote", Name: "remote", Status: store.NodeStatusOnline, AcceptsAppWorkloads: true, CreatedAt: now, UpdatedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	rt.gpuHostDiagnoser = func(context.Context) gpu.HostDiagnosis {
+		return gpu.HostDiagnosis{Attach: gpu.AttachLegacy, Findings: []gpu.Finding{
+			{Code: "driver", Name: "NVIDIA driver", Status: gpu.StatusOK, Message: "driver 550.1"},
+			{Code: "cdi", Name: "CDI", Status: gpu.StatusWarn, Message: "spec present, docker lists none", Fix: gpu.CDIEnableHint},
+			{Code: "attach", Name: "GPU attach", Status: gpu.StatusFail, Message: "no path"},
+		}}
+	}
+	rec := doModels(t, rt, cookie, http.MethodGet, "/api/v1/system/doctor", "")
+	var doc systemDoctorResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &doc); err != nil {
+		t.Fatal(err)
+	}
+	byCode := map[string]doctorCheckResource{}
+	for _, c := range doc.Checks {
+		byCode[c.Code] = c
+	}
+	if c := byCode["gpu:local:cdi"]; c.Status != doctorStatusWarn || c.Fix != gpu.CDIEnableHint || c.DocsPath == "" {
+		t.Errorf("cdi check = %+v", c)
+	}
+	if c := byCode["gpu:local:attach"]; c.Status != doctorStatusFail {
+		t.Errorf("attach check = %+v", c)
+	}
+	if doc.OK {
+		t.Error("a failing GPU attach check must fail the doctor report")
+	}
+	if _, ok := byCode["gpu:remote:cdi"]; ok {
+		t.Error("remote nodes are not inspected for CDI")
+	}
+	if c := byCode["gpu:remote:gpu0"]; c.Status != doctorStatusOK || !strings.Contains(c.Message, "L4") {
+		t.Errorf("remote per-GPU memory = %+v", c)
 	}
 }

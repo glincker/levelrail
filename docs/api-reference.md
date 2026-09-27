@@ -685,6 +685,12 @@ AI model resources on GPU nodes and the GPU node snapshots they schedule against
 | POST | /api/v1/models/{name}/keys/{id}/rotate | AbilityWriteSensitive | handleRotateModelKey |
 | GET | /api/v1/models/{name}/usage | AbilityRead | handleModelUsage |
 | POST | /api/v1/models/preflight | AbilityRead | handleModelPreflight |
+| GET | /api/v1/models/{name}/engine-metrics | AbilityRead | handleModelEngineMetrics |
+| GET | /api/v1/models/{name}/fit | AbilityRead | handleModelFit |
+| POST | /api/v1/models/fit | AbilityRead | handleModelFitCheck |
+| PUT | /api/v1/models/{name}/residency | AbilityWrite | handleSetModelResidency |
+| POST | /api/v1/models/{name}/wake | AbilityWrite | handleWakeModel |
+| POST | /api/v1/models/{name}/sleep | AbilityWrite | handleSleepModel |
 
 ## Other
 

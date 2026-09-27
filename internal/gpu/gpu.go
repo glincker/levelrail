@@ -79,6 +79,11 @@ type RuntimeLister interface {
 	RuntimeNames(ctx context.Context) ([]string, error)
 }
 
+// CDILister reports the NVIDIA CDI devices the Docker daemon discovered.
+type CDILister interface {
+	CDIDevices(ctx context.Context) ([]string, error)
+}
+
 // ExecRunner runs commands with os/exec.
 type ExecRunner struct{}
 
@@ -116,6 +121,13 @@ func Detect(ctx context.Context, r Runner, rl RuntimeLister) Info {
 				if strings.EqualFold(n, "nvidia") {
 					info.RuntimeInstalled = true
 				}
+			}
+		}
+		// A daemon that lists NVIDIA CDI devices can attach GPUs without the
+		// nvidia runtime, so the node counts as usable.
+		if c, ok := rl.(CDILister); ok && !info.RuntimeInstalled {
+			if devs, err := c.CDIDevices(ctx); err == nil && len(devs) > 0 {
+				info.RuntimeInstalled = true
 			}
 		}
 	}

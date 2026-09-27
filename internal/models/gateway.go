@@ -46,6 +46,11 @@ type Gateway struct {
 	keyLimits keyLimiter
 	meter     *meter
 
+	wakeStore WakeStore
+	wakeHook  func()
+	touchMu   sync.Mutex
+	lastTouch map[string]time.Time
+
 	mu       sync.Mutex
 	loadedAt time.Time
 	byHost   map[string]store.Model
@@ -58,7 +63,10 @@ func NewGateway(st GatewayStore, hosts *HostResolver, logger *slog.Logger) *Gate
 	if logger == nil {
 		logger = slog.Default()
 	}
-	g := &Gateway{store: st, hosts: hosts, logger: logger, meter: newMeter(LoadMeterConfig(), logger)}
+	g := &Gateway{store: st, hosts: hosts, logger: logger, meter: newMeter(LoadMeterConfig(), logger), lastTouch: map[string]time.Time{}}
+	if ws, ok := st.(WakeStore); ok {
+		g.wakeStore = ws
+	}
 	g.SetLimits(LoadGatewayLimits())
 	return g
 }
@@ -188,7 +196,8 @@ func (g *Gateway) serve(w *statusWriter, r *http.Request, m store.Model, keys []
 		writeOpenAIError(w, http.StatusForbidden, "permission_denied", "this API key may not use this route or model")
 		return
 	}
-	if m.EndpointDial == "" {
+	onDemand := m.Residency == store.ResidencyOnDemand
+	if m.EndpointDial == "" && !onDemand {
 		writeOpenAIError(w, http.StatusServiceUnavailable, "model_not_ready", "model is not running yet")
 		return
 	}
@@ -218,6 +227,14 @@ func (g *Gateway) serve(w *statusWriter, r *http.Request, m store.Model, keys []
 			writeOpenAIError(w, http.StatusForbidden, "permission_denied", "this API key may not use this route or model")
 			return
 		}
+	}
+	if onDemand {
+		awake, ok := g.ensureAwake(r.Context(), w, m)
+		if !ok {
+			return
+		}
+		m = awake
+		defer g.holdActive(m.Name)()
 	}
 	g.forward(w, r, m)
 }

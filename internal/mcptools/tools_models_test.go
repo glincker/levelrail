@@ -107,6 +107,45 @@ func TestModelTools_RequestsAndResults(t *testing.T) {
 			},
 		},
 		{
+			tool: "get_model_engine_metrics", args: map[string]any{"name": "chat", "since": "2h"}, wantMethod: http.MethodGet, wantPath: "/api/v1/models/chat/engine-metrics",
+			respond: func(w http.ResponseWriter) {
+				_ = json.NewEncoder(w).Encode(apiclient.EngineMetricsReport{Model: "chat", Engine: "vllm", Collecting: true, Health: apiclient.EngineHealth{State: "ok"}})
+			},
+			check: func(t *testing.T, r *mcp.CallToolResult) {
+				var out apiclient.EngineMetricsReport
+				decodeStructured(t, r, &out)
+				if out.Model != "chat" || !out.Collecting {
+					t.Errorf("out = %+v", out)
+				}
+			},
+		},
+		{
+			tool: "check_model_fit", args: map[string]any{"engine": "ollama", "model": "llama3.1:8b"}, wantMethod: http.MethodPost, wantPath: "/api/v1/models/fit",
+			respond: func(w http.ResponseWriter) {
+				_ = json.NewEncoder(w).Encode(apiclient.ModelFitReport{Note: "estimate", Nodes: []apiclient.NodeFit{{Name: "local", Verdict: "fits"}}})
+			},
+			check: func(t *testing.T, r *mcp.CallToolResult) {
+				var out apiclient.ModelFitReport
+				decodeStructured(t, r, &out)
+				if len(out.Nodes) != 1 || out.Nodes[0].Verdict != "fits" {
+					t.Errorf("out = %+v", out)
+				}
+			},
+		},
+		{
+			tool: "check_model_fit", args: map[string]any{"name": "chat"}, wantMethod: http.MethodGet, wantPath: "/api/v1/models/chat/fit",
+			respond: func(w http.ResponseWriter) {
+				_ = json.NewEncoder(w).Encode(apiclient.ModelFitReport{Model: "chat", Note: "estimate"})
+			},
+			check: func(t *testing.T, r *mcp.CallToolResult) {
+				var out apiclient.ModelFitReport
+				decodeStructured(t, r, &out)
+				if out.Model != "chat" {
+					t.Errorf("out = %+v", out)
+				}
+			},
+		},
+		{
 			tool: "list_gpu_nodes", args: map[string]any{}, wantMethod: http.MethodGet, wantPath: "/api/v1/gpus",
 			respond: func(w http.ResponseWriter) {
 				_ = json.NewEncoder(w).Encode([]apiclient.GPUNodeResource{{Name: "gpu-1", Present: true, GPUCount: 1, TotalVRAMMiB: 24576, Devices: []apiclient.GPUDeviceResource{}}})

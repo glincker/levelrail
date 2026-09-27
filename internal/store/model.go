@@ -45,9 +45,27 @@ type Model struct {
 	Deleting      bool
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
+
+	// Residency is ResidencyAlways or ResidencyOnDemand. IdleTTLSeconds 0
+	// means the platform default. LastActiveAt is the last gateway request
+	// or wake; zero means never. ResidencyState is written by the reconciler.
+	Residency      string
+	IdleTTLSeconds int
+	LastActiveAt   time.Time
+	ResidencyState string
 }
 
-const modelColumns = `name, engine, model_ref, node_id, gpu_count, gpu_device_ids, context_length, quantization, domain, api_key_hash, api_key_prefix, hf_token_set, endpoint_dial, restart_nonce, deleting, created_at, updated_at`
+// Model residency modes and reconciler-observed states.
+const (
+	ResidencyAlways   = "always"
+	ResidencyOnDemand = "on_demand"
+
+	ResidencyAwake  = "awake"
+	ResidencyAsleep = "asleep"
+	ResidencyWaking = "waking"
+)
+
+const modelColumns = `name, engine, model_ref, node_id, gpu_count, gpu_device_ids, context_length, quantization, domain, api_key_hash, api_key_prefix, hf_token_set, endpoint_dial, restart_nonce, deleting, created_at, updated_at, residency, idle_ttl_seconds, last_active_at, residency_state`
 
 // SaveModel inserts a new model row and its default API key.
 func (db *DB) SaveModel(ctx context.Context, m Model) error {
@@ -63,9 +81,10 @@ func (db *DB) SaveModel(ctx context.Context, m Model) error {
 	now := time.Now().UTC()
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO models (`+modelColumns+`)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', 0, 0, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', 0, 0, ?, ?, ?, ?, ?, ?)
 	`, m.Name, m.Engine, m.ModelRef, m.NodeID, m.GPUCount, string(ids), m.ContextLength, m.Quantization,
-		m.Domain, m.APIKeyHash, m.APIKeyPrefix, boolToInt(m.HFTokenSet), formatTime(now), formatTime(now))
+		m.Domain, m.APIKeyHash, m.APIKeyPrefix, boolToInt(m.HFTokenSet), formatTime(now), formatTime(now),
+		residencyOrDefault(m.Residency), m.IdleTTLSeconds, formatOptTime(m.LastActiveAt), ResidencyAwake)
 	if err != nil {
 		_ = tx.Rollback() // the pool has one connection, so release it before the lookup
 		if _, getErr := db.GetModel(ctx, m.Name); getErr == nil {
@@ -99,10 +118,19 @@ func scanModel(scan func(dest ...any) error) (*Model, error) {
 		ids                  string
 		hfSet, deleting      int
 		createdAt, updatedAt string
+		lastActive           string
 	)
 	if err := scan(&m.Name, &m.Engine, &m.ModelRef, &m.NodeID, &m.GPUCount, &ids, &m.ContextLength, &m.Quantization,
-		&m.Domain, &m.APIKeyHash, &m.APIKeyPrefix, &hfSet, &m.EndpointDial, &m.RestartNonce, &deleting, &createdAt, &updatedAt); err != nil {
+		&m.Domain, &m.APIKeyHash, &m.APIKeyPrefix, &hfSet, &m.EndpointDial, &m.RestartNonce, &deleting, &createdAt, &updatedAt,
+		&m.Residency, &m.IdleTTLSeconds, &lastActive, &m.ResidencyState); err != nil {
 		return nil, err
+	}
+	if lastActive != "" {
+		t, err := time.Parse(time.RFC3339Nano, lastActive)
+		if err != nil {
+			return nil, fmt.Errorf("parse last_active_at: %w", err)
+		}
+		m.LastActiveAt = t
 	}
 	if err := json.Unmarshal([]byte(ids), &m.GPUDeviceIDs); err != nil {
 		return nil, fmt.Errorf("parse gpu_device_ids: %w", err)
@@ -244,6 +272,65 @@ func (db *DB) DeleteModel(ctx context.Context, name string) error {
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("store: commit delete model %q: %w", name, err)
+	}
+	return nil
+}
+
+func residencyOrDefault(r string) string {
+	if r == ResidencyOnDemand {
+		return r
+	}
+	return ResidencyAlways
+}
+
+func formatOptTime(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return formatTime(t)
+}
+
+// SetModelResidency sets the residency mode and idle TTL. Switching to
+// on-demand counts as activity so the model does not sleep at once;
+// switching to always clears any asleep state so the reconciler starts it.
+func (db *DB) SetModelResidency(ctx context.Context, name, residency string, idleTTLSeconds int, now time.Time) error {
+	residency = residencyOrDefault(residency)
+	if residency == ResidencyOnDemand {
+		return db.execModelUpdate(ctx, name, "set residency of",
+			`UPDATE models SET residency = ?, idle_ttl_seconds = ?, last_active_at = ?, updated_at = ? WHERE name = ?`,
+			residency, idleTTLSeconds, formatTime(now))
+	}
+	return db.execModelUpdate(ctx, name, "set residency of",
+		`UPDATE models SET residency = ?, idle_ttl_seconds = ?, residency_state = 'awake', updated_at = ? WHERE name = ?`,
+		residency, idleTTLSeconds)
+}
+
+// TouchModel records gateway activity (or a wake request) without
+// touching updated_at, which tracks configuration changes.
+func (db *DB) TouchModel(ctx context.Context, name string, at time.Time) error {
+	res, err := db.ExecContext(ctx, `UPDATE models SET last_active_at = ? WHERE name = ?`, formatTime(at), name)
+	if err != nil {
+		return fmt.Errorf("store: touch model %q: %w", name, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrModelNotFound
+	}
+	return nil
+}
+
+// SleepModel marks a model idle at once by clearing its activity.
+func (db *DB) SleepModel(ctx context.Context, name string) error {
+	return db.execModelUpdate(ctx, name, "sleep", `UPDATE models SET last_active_at = '', updated_at = ? WHERE name = ?`)
+}
+
+// SetModelResidencyState records the reconciler-observed residency state.
+func (db *DB) SetModelResidencyState(ctx context.Context, name, state string) error {
+	res, err := db.ExecContext(ctx, `UPDATE models SET residency_state = ? WHERE name = ?`, state, name)
+	if err != nil {
+		return fmt.Errorf("store: set residency state of model %q: %w", name, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrModelNotFound
 	}
 	return nil
 }

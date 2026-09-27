@@ -24,6 +24,9 @@ describe('validateDeployForm', () => {
     [{ gpus: '2' }, null],
     [{ context: 'abc' }, 'Context length'],
     [{ context: '8192' }, null],
+    [{ residency: 'on_demand' as const, idleMinutes: 'x' }, 'Idle time'],
+    [{ residency: 'on_demand' as const, idleMinutes: '30' }, null],
+    [{ residency: 'always' as const, idleMinutes: 'x' }, null],
   ])('%j -> %s', (patch, want) => {
     const got = validateDeployForm({ ...valid, ...patch })
     if (want === null) expect(got).toBeNull()
@@ -74,5 +77,21 @@ describe('buildCreateRequest', () => {
     })
     expect(req.hf_token).toBeUndefined()
     expect(req.quantization).toBeUndefined()
+  })
+
+  it('sends residency and idle seconds only for on-demand', () => {
+    expect(
+      buildCreateRequest({
+        ...valid,
+        residency: 'on_demand',
+        idleMinutes: '30',
+      }),
+    ).toMatchObject({ residency: 'on_demand', idle_ttl_seconds: 1800 })
+    const always = buildCreateRequest({ ...valid, idleMinutes: '30' })
+    expect(always.residency).toBeUndefined()
+    expect(always.idle_ttl_seconds).toBeUndefined()
+    const dflt = buildCreateRequest({ ...valid, residency: 'on_demand' })
+    expect(dflt.residency).toBe('on_demand')
+    expect(dflt.idle_ttl_seconds).toBeUndefined()
   })
 })

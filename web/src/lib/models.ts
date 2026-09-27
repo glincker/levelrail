@@ -31,18 +31,21 @@ export function vramPercent(used: number, total: number): number {
   return Math.min(100, Math.max(0, Math.round((used / total) * 100)))
 }
 
-export type ModelPhase = 'ready' | 'progress' | 'blocked' | 'deleting'
+export type ModelPhase = 'ready' | 'progress' | 'idle' | 'blocked' | 'deleting'
 
 const PROGRESS_REASONS = new Set([
   'Pending',
   'Starting',
   'Downloading',
   'Loading',
+  'WakingUp',
+  'WaitingForGPU',
 ])
 
 export function modelPhase(model: ModelResource): ModelPhase {
   if (model.status.reason === 'Deleting') return 'deleting'
   if (model.status.ready) return 'ready'
+  if (model.status.reason === 'Idle') return 'idle'
   if (PROGRESS_REASONS.has(model.status.reason)) return 'progress'
   return 'blocked'
 }

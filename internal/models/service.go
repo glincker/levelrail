@@ -39,6 +39,9 @@ type ServiceStore interface {
 	ListModelUsage(ctx context.Context, model string, from, to time.Time) ([]store.ModelUsage, error)
 	RestartModel(ctx context.Context, name string) error
 	SetModelHFTokenSet(ctx context.Context, name string, set bool) error
+	SetModelResidency(ctx context.Context, name, residency string, idleTTLSeconds int, now time.Time) error
+	TouchModel(ctx context.Context, name string, at time.Time) error
+	SleepModel(ctx context.Context, name string) error
 	GetConditions(ctx context.Context, controllerName string) ([]reconcile.Condition, error)
 	GetConditionsForControllers(ctx context.Context, controllerNames []string) (map[string][]reconcile.Condition, error)
 	GetNode(ctx context.Context, id string) (*store.Node, error)
@@ -65,6 +68,7 @@ type Service struct {
 	liveStats     func() map[string]int
 	preflight     preflightDeps
 	cache         cacheDeps
+	engineMetrics EngineMetricsReader
 }
 
 // NewService builds a Service. secrets may be nil (HuggingFace tokens
@@ -80,6 +84,10 @@ type CreateInput struct {
 	NodeID  string
 	Domain  string
 	HFToken string
+	// Residency is "always" (default) or "on_demand". IdleTTL 0 uses the
+	// platform default.
+	Residency string
+	IdleTTL   time.Duration
 }
 
 // Created is the result of Create; APIKey is the plaintext, shown once.
@@ -116,6 +124,10 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
 	if in.Spec.GPUCount == 0 {
 		in.Spec.GPUCount = -1
 	}
+	residency, idleSecs, err := validateResidency(in.Residency, in.IdleTTL)
+	if err != nil {
+		return Created{}, err
+	}
 	domain := strings.ToLower(strings.TrimSpace(in.Domain))
 	if domain != "" && !domainRe.MatchString(domain) {
 		return Created{}, fmt.Errorf("%w: domain %q is not a valid hostname", ErrInvalid, in.Domain)
@@ -147,7 +159,10 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
 		Name: in.Spec.Name, Engine: in.Spec.Engine, ModelRef: in.Spec.ModelRef, NodeID: in.NodeID,
 		GPUCount: in.Spec.GPUCount, GPUDeviceIDs: in.Spec.GPUDeviceIDs, ContextLength: in.Spec.ContextLength,
 		Quantization: in.Spec.Quantization, Domain: domain, APIKeyHash: hash, APIKeyPrefix: prefix,
-		HFTokenSet: in.HFToken != "",
+		HFTokenSet: in.HFToken != "", Residency: residency, IdleTTLSeconds: idleSecs,
+	}
+	if residency == store.ResidencyOnDemand {
+		m.LastActiveAt = time.Now().UTC()
 	}
 	if err := s.store.SaveModel(ctx, m); err != nil {
 		return Created{}, err

@@ -43,6 +43,12 @@ type ModelResource struct {
 	Status        ModelStatusResource `json:"status"`
 	CreatedAt     time.Time           `json:"created_at"`
 	UpdatedAt     time.Time           `json:"updated_at"`
+
+	Residency               string     `json:"residency"`
+	IdleTTLSeconds          int        `json:"idle_ttl_seconds"`
+	EffectiveIdleTTLSeconds int        `json:"effective_idle_ttl_seconds"`
+	ResidencyState          string     `json:"residency_state"`
+	LastActiveAt            *time.Time `json:"last_active_at,omitempty"`
 }
 
 // CreateModelRequest mirrors internal/api's createModelRequest.
@@ -57,6 +63,8 @@ type CreateModelRequest struct {
 	Quantization  string   `json:"quantization,omitempty"`
 	Domain        string   `json:"domain,omitempty"`
 	HFToken       string   `json:"hf_token,omitempty"`
+	Residency     string   `json:"residency,omitempty"`
+	IdleTTLSecs   int      `json:"idle_ttl_seconds,omitempty"`
 }
 
 // CreateModelResponse is a ModelResource plus the one-time API key.
@@ -183,4 +191,20 @@ func (c *Client) ListGPUNodes(ctx context.Context) ([]GPUNodeResource, error) {
 	var out []GPUNodeResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/gpus", nil, &out)
 	return out, err
+}
+
+// SetModelResidency calls PUT /api/v1/models/{name}/residency.
+func (c *Client) SetModelResidency(ctx context.Context, name, residency string, idleTTLSeconds int) error {
+	body := map[string]any{"residency": residency, "idle_ttl_seconds": idleTTLSeconds}
+	return c.do(ctx, http.MethodPut, "/api/v1/models/"+PathEscape(name)+"/residency", body, nil)
+}
+
+// WakeModel calls POST /api/v1/models/{name}/wake.
+func (c *Client) WakeModel(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/models/"+PathEscape(name)+"/wake", nil, nil)
+}
+
+// SleepModel calls POST /api/v1/models/{name}/sleep.
+func (c *Client) SleepModel(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/models/"+PathEscape(name)+"/sleep", nil, nil)
 }

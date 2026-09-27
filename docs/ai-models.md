@@ -29,6 +29,22 @@ When a node has a GPU but Docker has no `nvidia` runtime, the dashboard card sho
 
 If the agent runs inside a container, `nvidia-smi` must be reachable from it, or run the agent directly on the host.
 
+## GPU attach: CDI and legacy
+
+Containers get GPUs one of two ways. Levelrail prefers **CDI** (the Container Device Interface) when the Docker daemon on the node lists NVIDIA CDI devices (`nvidia.com/gpu=0`, `nvidia.com/gpu=all`), and otherwise uses the **legacy** `nvidia` runtime with a device request. The choice is made per container at create time on the node that runs it, so mixed fleets work. A node with CDI devices needs no `nvidia` runtime registered and is treated as usable.
+
+To use CDI, generate a spec on the node and make sure Docker discovers it (Docker 28.3 or newer does by default; older Docker needs `{"features": {"cdi": true}}` in `/etc/docker/daemon.json`):
+
+```sh
+sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+sudo systemctl restart docker
+docker info | grep -A3 "Discovered Devices"
+```
+
+A request that CDI cannot serve exactly (for example more GPUs than the spec lists) falls back to the legacy runtime instead of failing. With a count, CDI attaches the first N GPUs by index. Set `APP_GPU_ATTACH=legacy` on a node to never use CDI (the default is `auto`). Regenerate the spec after a driver update or GPU change.
+
+`levelrail doctor` (and the Doctor page) checks the control plane host in detail: the driver, per-GPU memory (a warning above `APP_GPU_DOCTOR_VRAM_WARN_PERCENT`, default 90), the NVIDIA container toolkit version, whether a CDI spec exists and Docker lists its devices, whether the `nvidia` runtime is registered, and the resulting attach mode, with the exact fix command for each problem. Remote nodes report only driver, runtime or CDI availability and per-GPU memory; the toolkit and spec files of a remote node are not inspected. None of this was exercised against a real GPU: the detection and the CDI request are covered with fakes.
+
 ## Deploying a model
 
 ```sh
@@ -91,6 +107,27 @@ The disk check measures the filesystem holding Docker's volumes on the control p
 
 The API is `POST /api/v1/models/preflight` (`repo`, optional `engine`, `quant`, `file`, `gpu_count`, `node_id`, `hf_token`) and the MCP tool is `preflight_model`. Hub problems (missing, gated, rate limited, unreachable) come back as a `status` in a normal response so a client can always show the next step.
 
+## VRAM fit check
+
+Before you deploy, and on the model page, Levelrail estimates whether a model fits in each GPU node's free VRAM and rates every node: `fits`, `tight`, `wont_fit` or `unknown`. The pill has an info tip with the arithmetic, for example `weights 4.7 GiB + KV 1.2 GiB + overhead 0.8 GiB = 6.7 GiB of 8.0 GiB free`.
+
+**This is an estimate, not a guarantee.** The pieces:
+
+- **Weights.** Exact when the Hugging Face file sizes are known (pass `weights_bytes` from a preflight), otherwise estimated from the parameter count in the model name (`8b`, `8x7b`) and the quantization (a tag suffix such as `q4_K_M`, a `:quant` suffix, or vLLM's `--quantization`). A name with no size, such as `mistral`, is `unknown`, never guessed. Ollama and llama.cpp default to about 4.85 bits per weight, vLLM to 16 (bf16).
+- **KV cache.** Approximated from the parameter count and the context length. With no context length set, `APP_MODEL_FIT_DEFAULT_CONTEXT` tokens (default 8192) are assumed and the tip says so.
+- **Overhead.** A flat `APP_MODEL_FIT_GPU_OVERHEAD_MIB` per GPU (default 512), plus `APP_MODEL_FIT_VLLM_EXTRA_MIB` (default 1024) for vLLM.
+- **Free VRAM.** From the node's GPU report (refreshed every minute). VRAM estimated for other models placed on the node that are not loaded yet is subtracted, so two deploys in the same minute do not both see the same free memory. On the model page, a loaded model's own VRAM is added back.
+- **Verdict.** `fits` when the total is at most `APP_MODEL_FIT_PERCENT` of free VRAM (default 90), `tight` up to 100%, otherwise `wont_fit`. vLLM also needs each GPU to have `APP_MODEL_VLLM_GPU_UTILIZATION` (default 0.9) of its memory free, because it pre-allocates that much.
+
+Nodes are ranked best first, with non-schedulable nodes last. The check is advisory: it never blocks a deploy. `APP_MODEL_FIT_KV_KIB_PER_TOKEN` overrides the KV heuristic if your model family differs.
+
+- **Dashboard.** The deploy dialog shows a verdict per node and highlights the selected one. The model page Overview shows the same for the deployed model, with its current node marked.
+- **CLI.** `levelrail models fit --engine ollama --model llama3.1:8b --context 8192`, or `levelrail models fit --name chat` for a deployed model.
+- **API.** `POST /api/v1/models/fit` and `GET /api/v1/models/{name}/fit` (read ability).
+- **MCP.** `check_model_fit` (read-only).
+
+No GPU was involved in testing this; the numbers come from the GPU facts nodes report and have not been compared against real engine memory use.
+
 ## Model cache
 
 Each model keeps its downloaded weights in its own Docker volume. Deleting a model keeps the volume, so those volumes are what accumulates.
@@ -117,12 +154,71 @@ A model has one `Ready` condition whose reason tells you where it is:
 | `Downloading` | The weights are downloading. Ollama reports percent and bytes; vLLM and llama.cpp download on start, follow `levelrail models logs <name> --follow`. |
 | `Loading` | The model is being loaded into VRAM. |
 | `ModelLoaded` | The model is loaded and serving. This is the readiness signal. |
+| `Idle` | An on-demand model whose engine was stopped after its idle time. It starts on the first request (see On-demand residency). |
+| `WakingUp` | An on-demand model's engine is starting or loading after a wake. |
+| `WaitingForGPU` | An on-demand model would fit the GPUs but other workloads hold too much VRAM right now; it starts when they free it. |
 | `NoGPUOnNode`, `GPURuntimeMissing`, `InsufficientGPUs` | The node cannot serve the request. See GPU nodes above. |
 | `HFTokenUnavailable` | A token is set but cannot be decrypted (no master key). |
 | `EndpointUnreachable` | The node is remote and not on the WireGuard mesh, so the control plane cannot reach the engine. |
 | `DownloadFailed` | The engine reported a download error (retried after 30 seconds). |
 
 The downloaded weights live in a persistent Docker volume, so a restart or redeploy does not download again. Deleting a model removes its container but keeps the volume.
+
+## The model page
+
+Each model has its own page at `/models/<name>` (click its name in the list). Tabs:
+
+- **Overview.** Status, engine, node, GPU, context length, quantization, the endpoint URL with a copy button, and a ready-made `curl` example.
+- **Keys.** The named keys with their limits, expiry and rotation (see Virtual keys below).
+- **Usage.** Requests, tokens, errors and first-byte latency per key.
+- **Logs.** The engine's live log tail.
+
+The tab is kept in the URL (`?tab=keys`), so a link opens straight to it. From the CLI, `levelrail models get <name>` prints the same overview facts.
+
+## Engine metrics
+
+The Overview tab shows the inference engine's own metrics with a health summary. The control plane scrapes each running engine every `APP_MODEL_ENGINE_METRICS_INTERVAL` (default 15s) over the same path its readiness probe uses, and stores the readings in the telemetry database under `model:<name>`.
+
+| Metric | vLLM | llama.cpp | Ollama |
+| --- | --- | --- | --- |
+| KV cache usage | yes | yes | not available |
+| Queued and running requests | yes | yes | not available |
+| Prefix cache hit rate | yes | not available | not available |
+| Tokens per second | yes | yes | not available |
+| Time to first token | yes | not available | not available |
+| VRAM in use, share running on CPU | not available | not available | yes (from `/api/ps`) |
+
+Rates (tokens per second, prefix hit rate, time to first token) are computed between two scrapes, so they appear one interval after the model starts and skip an engine restart. llama.cpp serves `/metrics` only when started with `--metrics`, which new containers now get; a model deployed earlier needs `levelrail models restart <name>`. Ollama exposes no Prometheus metrics, so the page says "Not available for ollama" instead of guessing; per-key tokens and first-byte latency are on the Usage tab.
+
+The health pill warns when the KV cache is at or above `APP_MODEL_KV_WARN_PERCENT` (default 90), when more than `APP_MODEL_QUEUE_WARN` requests are queued (default 4), or when an Ollama model runs partly on CPU.
+
+- **CLI.** `levelrail models metrics <name> --since 6h`.
+- **API.** `GET /api/v1/models/{name}/engine-metrics?since=1h` (read ability).
+- **MCP.** `get_model_engine_metrics` (read-only).
+
+The scrape is done by the control plane, not by a node agent, so a remote node's engine must be reachable over the mesh (the same requirement as serving it). Numbers depend on the engine version's metric names; vLLM's older `gpu_cache_usage_perc` and current `kv_cache_usage_perc` are both read.
+
+## On-demand residency
+
+By default a model is always loaded. On a shared GPU you can make it **on demand**: after an idle period the engine container is stopped, freeing its VRAM, and the first request starts it again.
+
+```sh
+levelrail models deploy --name chat --engine ollama --model llama3.1:8b --residency on_demand --idle-ttl 20m
+levelrail models residency chat --mode on_demand --idle-ttl 30m
+levelrail models wake chat      # start now
+levelrail models sleep chat     # stop now
+```
+
+How it behaves:
+
+- **Idle.** Every authenticated gateway request marks the model used (a long streaming response keeps refreshing it). When nothing has used it for the idle TTL, the reconciler stops the container and the status reason becomes `Idle`. The TTL is per model (`--idle-ttl`), defaulting to `APP_MODEL_IDLE_TTL` (15m). It cannot be set below `APP_MODEL_MIN_IDLE_TTL` (1m), so a busy model is never judged idle between activity writes (`APP_MODEL_ACTIVITY_TOUCH_INTERVAL`, default 10s).
+- **Wake.** The first authenticated request to an idle model asks the reconciler to start it and is held while the engine loads, for at most `APP_MODEL_WAKE_WAIT` (default 90s). If the engine is not serving by then, or the wait is 0, the client gets `503` with `Retry-After` (`APP_MODEL_WAKE_RETRY_AFTER`, default 15s) and error code `model_waking`; the wake keeps going, so a retry usually succeeds. Unauthenticated or invalid requests never wake a model.
+- **Ollama.** Ollama's own keep-alive is set to forever so weights stay in VRAM; unloading it means stopping the container, which is what on-demand does.
+- **GPU contention.** If a wake would fit an empty GPU set but other workloads hold too much VRAM (per the fit estimate above), the model reports `WaitingForGPU` and starts when memory frees. A model too large for the GPUs is not held back, since waiting would not help. The GPU snapshot refreshes every minute, so this can lag.
+- **State.** The reconciler owns the asleep, waking and awake states. Stop and start are idempotent: a stop that succeeded but failed to record is repaired on the next pass, and a request that lands while the reconciler is deciding to stop wins (the row is re-read right before stopping).
+- **Dashboard.** The model page Overview has a Residency card (mode, idle minutes, Wake now, Sleep now) and the deploy dialog has a Residency field. **API.** `PUT /api/v1/models/{name}/residency`, `POST /api/v1/models/{name}/wake`, `POST /api/v1/models/{name}/sleep` (write ability); the model resource carries `residency`, `idle_ttl_seconds`, `effective_idle_ttl_seconds`, `residency_state` and `last_active_at`. **MCP.** `get_model` returns the same fields and `deploy_model` accepts `residency` and `idle_ttl_seconds`.
+
+Swap groups (several models sharing one GPU, only one loaded at a time) are not built; give each model on a shared GPU an idle TTL instead. Cold start includes the engine's load time (minutes for a large vLLM model), so on-demand suits models used in bursts, not latency-critical ones. No GPU was involved in testing this; the engine start, stop and wake paths are covered with fakes.
 
 ## The endpoint and API key
 
@@ -252,7 +348,7 @@ Listing and reading models and GPUs needs the `read` ability. Deleting and resta
 
 ## Not in version 1
 
-AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, per-model limit overrides, engine metrics (KV cache, queue depth) on the model page, and a Prometheus endpoint for usage.
+AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, per-model limit overrides, swap groups, and a Prometheus endpoint for usage.
 
 ## GPU in Compose templates
 

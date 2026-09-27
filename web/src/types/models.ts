@@ -2,6 +2,7 @@
 // internal/api/models.go (modelResource, gpuNodeResource).
 
 export type ModelEngine = 'ollama' | 'vllm' | 'llamacpp'
+export type ModelResidency = 'always' | 'on_demand'
 
 export interface ModelStatus {
   ready: boolean
@@ -25,6 +26,11 @@ export interface ModelResource {
   status: ModelStatus
   created_at: string
   updated_at: string
+  residency: ModelResidency
+  idle_ttl_seconds: number
+  effective_idle_ttl_seconds: number
+  residency_state: 'awake' | 'asleep' | 'waking'
+  last_active_at?: string
 }
 
 export interface CreateModelRequest {
@@ -38,6 +44,8 @@ export interface CreateModelRequest {
   quantization?: string
   domain?: string
   hf_token?: string
+  residency?: ModelResidency
+  idle_ttl_seconds?: number
 }
 
 export interface CreateModelResponse extends ModelResource {
@@ -148,4 +156,38 @@ export interface ModelUsageReport {
   keys: ModelKeyUsage[]
   in_flight: number
   note: string
+}
+
+// Wire shapes for /api/v1/models/{name}/engine-metrics, mirroring
+// internal/models/enginemetrics_report.go.
+
+export interface EngineMetricPoint {
+  t: string
+  v: number
+}
+
+export interface EngineMetricSeries {
+  id: string
+  label: string
+  unit: 'percent' | 'count' | 'tokens_per_second' | 'seconds' | 'bytes'
+  supported: boolean
+  latest: number | null
+  points: EngineMetricPoint[]
+}
+
+export interface EngineHealth {
+  state: 'ok' | 'warn' | 'unknown'
+  summary: string
+  reasons: string[]
+}
+
+export interface EngineMetricsReport {
+  model: string
+  engine: ModelEngine
+  from: string
+  to: string
+  collecting: boolean
+  note: string
+  health: EngineHealth
+  series: EngineMetricSeries[]
 }
