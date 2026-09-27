@@ -9,6 +9,8 @@ An MCP client loads every tool definition from `tools/list` into the model's con
 
 Numbers are estimates: the serialized `tools/list` JSON length divided by 4 (no tokenizer library is in `go.mod`). They are stable enough to compare modes and catch regressions, not to bill against.
 
+This page complements [MCP tool surface](mcp-tool-surface.md), which reports the per-toolset cost and the `agent-core` profile. The difference is scope: that report counts each tool's name, description and input schema (about 18,300 tokens for 144 tools), while this audit measures the whole serialized `tools/list` response a client actually receives, which also carries output schemas and annotations (about 59,800 tokens for the same tools). Output schemas are the part the surface report does not see, and they are 57% of the bytes. This page adds the per-mode numbers, the per-tool findings and the regression test.
+
 ## Tools and tokens per mode
 
 Measured by `go test -run TestToolListTokenBudget -v ./internal/mcptools` (or `scripts/mcp-token-budget.sh`).
@@ -75,7 +77,7 @@ The output schema is the dominant cost. Typed handlers derive it from the Go res
 | --- | --- | --- |
 | `get_app_status`, `list_deploys` | Identical handler and result (current reconcile conditions). | Drop `list_deploys` from agent-facing modes; keep for compatibility in `full`. |
 | `deploy_app`, `rollback_app` | Same request and handler. | Keep both (intent is useful and the classes differ) but share one description. |
-| `list_deploys`, `list_deploy_attempts`, `list_deployments`, `list_failed_deploys` | Four ways to list deploy history at different scopes. | Descriptions must say which scope (one app vs fleet, failures only). The planned agent-core mode exposes `list_deploy_attempts` only. |
+| `list_deploys`, `list_deploy_attempts`, `list_deployments`, `list_failed_deploys` | Four ways to list deploy history at different scopes. | Descriptions must say which scope (one app vs fleet, failures only). Prefer `list_deploys` or `list_deploy_attempts` in compact profiles, not both. |
 | `get_resource_recommendation`, `get_database_resource_recommendation` | Same shape for apps and databases. | Fine, but one description should point at the other. |
 | `get_app_logs`, `get_model_logs`, `list_archived_logs` | Three log entry points. | A compact, capped log query tool for agents is planned. |
 | `preview_promote_app` and `promote_app`, `preview_clone_environment` and `clone_environment` | Preview and apply pairs. | Correct as designed; the read-only preview is what an agent should call first. |
@@ -101,8 +103,8 @@ The output schema is the dominant cost. Typed handlers derive it from the Go res
 
 ## Recommendations
 
-1. Ship a compact agent mode (`agent-core`) that covers deploy, status, logs, diagnose, rollback, env, secrets and domains in 15 tools or fewer. It costs a small fraction of the full set.
-2. Trim outputs before trimming inputs: return compact results from agent-core tools rather than the full resource structs, which removes the largest schemas from that mode.
+1. Use the `agent-core` profile in [MCP tool surface](mcp-tool-surface.md) for autonomous agents, and measure it with output schemas included: the budget test in this PR is the place to add it.
+2. Trim outputs before trimming inputs: return compact results from agent-facing tools rather than the full resource structs, which removes the largest output schemas from the list.
 3. Rewrite the 19 long descriptions to one sentence that says what the tool returns and when to call it; move history and CLI comparisons into docs.
 4. Mark `restart_app`, `approve_*`, `reject_*` and `expire_*` idempotent, and drop the mechanical `title` if a client ever charges for it.
 5. Keep the budget test below passing; raise a budget only with a reason in the PR.
