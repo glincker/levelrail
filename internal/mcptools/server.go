@@ -72,6 +72,8 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerControlPlaneDRTools(server, client)
 	registerFailedDeployTools(server, client)
 	registerDeploymentTools(server, client)
+	registerWaitDeployTool(server, client)
+	registerPlanTools(server, client)
 	registerLogArchiveTools(server, client)
 	registerQueryLogsTool(server, client)
 	registerBuildCacheTools(server, client)
