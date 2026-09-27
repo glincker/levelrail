@@ -64,6 +64,7 @@ Four main types, plus two Levelrail-specific categories:
 | [backups-and-storage.md](backups-and-storage.md) | Backup targets, registry credentials, and app volume backups |
 | [templates-and-registry.md](templates-and-registry.md) | Deploy curated service templates from the catalog as Compose-backed apps |
 | [ai-assistant.md](ai-assistant.md) | Run `levelrail-mcp` over stdio or the network for an MCP-compatible AI assistant, and scope a token for it |
+| [agent-tooling-audit.md](agent-tooling-audit.md) | Tool counts and estimated token cost per MCP mode, the heaviest and overlapping tools, and the budget test |
 
 ### Reference
 
