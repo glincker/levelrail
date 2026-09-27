@@ -31,6 +31,13 @@ A deploy that fails, is held, or does not become healthy carries one structured 
 
 The first stage is a table of known classes. When none matches, the runtime cause analysis behind `apps diagnose` is consulted before falling back to `unknown`.
 
+## Waiting for a deploy
+
+`GET /api/v1/apps/{name}/deploys/{deployId}` also returns an `outcome`: `in_progress`, `healthy`, `failed`, `canceled`, `superseded` or `blocked` (held by a freeze window or an approval). It is keyed on that one deploy: a container that reports serving this deploy's image is healthy, and rollout failures only count for the app's newest deploy, so a later restart or deploy cannot change an earlier deploy's result.
+
+- CLI: `levelrail-cli apps deploys wait <name> [deploy-id] [--timeout 10m]` blocks and prints the final status plus the failure. Exit codes: 0 healthy, 7 failed, canceled, superseded or blocked, 6 timeout. Without a deploy id the newest deploy is resolved once and followed by id. The older `apps wait` keeps its flags and exit codes (5 failed) and now also pins the deploy it started on.
+- MCP: `wait_for_deploy` blocks at most `APP_MCP_WAIT_WINDOW_SECONDS` (default 55) per call, because MCP call timeouts are shorter than deploys. When the deploy is still running it returns `{"status":"in_progress","poll_again":true,"deploy_id":"..."}`: call again with that `deploy_id` until `poll_again` is false. `APP_MCP_WAIT_POLL_SECONDS` (default 2) sets the poll period.
+
 ## Failure codes
 
 ### dockerfile_error

@@ -103,6 +103,12 @@ levelrail-cli tokens create --name "ai-assistant" --abilities read,deploy
 
 Pick the narrowest ability set the assistant actually needs. A read-only assistant that only diagnoses and reports needs `read` (add `read:sensitive` only if it must see secrets or env values); one that can also trigger rollbacks or redeploys needs `deploy` too. Every request through `levelrail-mcp`, over either transport, is attributed to the `mcp` client kind in the audit log (`GET /api/v1/audit-log`), so scoped-down tokens are traceable the same way CLI and dashboard activity already is.
 
+### Dry runs with plan_change
+
+`plan_change` previews a mutating tool call without running it. Pass `tool` and the `arguments` you would use; it returns `executed: false`, a summary, the before and after of each changed field, and `blocked` with `blockers` when a freeze window or a required approval would stop the call now. It uses reads only (plus the API's own dry runs for `bulk_apps`, `bulk_delete_apps`, `apply_resources` and `promote_app`), so it is safe for a read-only token.
+
+Planned tools: `deploy_app` and `rollback_app` (image and digest, freeze window), `set_app_env` and `unset_app_env` (key level only, values are never shown), `set_app_domains`, `restart_app`, `cancel_deploy`, `promote_app` (the promotion preview with its blockers), `apply_resources` (the resource plan and its hash), and the two bulk tools (the target list). Every other mutating tool answers `plannable: false` and is not run, so an agent knows to ask the user before calling it. Mutating tools do not accept a `dry_run` argument (the call is rejected before it reaches the API), except the bulk tools, which keep their own.
+
 ### Agent identity
 
 Label a token as issued to an agent and every audit entry made with it records who it was:

@@ -2552,6 +2552,9 @@ type DeployAttemptResource struct {
 	VulnCounts    *VulnCounts `json:"vuln_counts,omitempty"`
 	// Failure classifies why the deploy failed or is blocked; absent otherwise.
 	Failure *DeployFailure `json:"failure,omitempty"`
+	// Outcome is set by GetDeploy only: in_progress, healthy, failed,
+	// canceled, superseded or blocked.
+	Outcome string `json:"outcome,omitempty"`
 }
 
 // DeployFailure mirrors internal/failure's Failure: the structured cause of a
