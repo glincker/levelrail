@@ -685,6 +685,8 @@ AI model resources on GPU nodes and the GPU node snapshots they schedule against
 | GET | /api/v1/models/{name}/usage | AbilityRead | handleModelUsage |
 | POST | /api/v1/models/preflight | AbilityRead | handleModelPreflight |
 | GET | /api/v1/models/{name}/engine-metrics | AbilityRead | handleModelEngineMetrics |
+| GET | /api/v1/models/{name}/fit | AbilityRead | handleModelFit |
+| POST | /api/v1/models/fit | AbilityRead | handleModelFitCheck |
 
 ## Other
 

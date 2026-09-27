@@ -34,6 +34,8 @@ func runModels(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runModelsKeys(prog, rest, stdout, stderr, lookupEnv)
 	case "usage":
 		return runModelsUsage(prog, rest, stdout, stderr, lookupEnv)
+	case "fit":
+		return runModelsFit(prog, rest, stdout, stderr, lookupEnv)
 	case "metrics":
 		return runModelsMetrics(prog, rest, stdout, stderr, lookupEnv)
 	case "gpus":
@@ -60,6 +62,7 @@ func modelsUsage(prog string) string {
   %[1]s models rotate-key <name> [flags]    issue a new API key (prints it once)
   %[1]s models keys list|create|revoke|rotate   named API keys with limits, expiry and rotation grace
   %[1]s models usage <name> [flags]         gateway requests, tokens, errors and latency per key
+  %[1]s models fit --engine E --model M     estimate VRAM fit (fits, tight, no) on each GPU node
   %[1]s models metrics <name> [flags]       engine metrics: KV cache, queue, prefix hits, tokens per second, first token
   %[1]s models gpus [flags]                 list GPU nodes with VRAM and usage
   %[1]s models preflight <repo> [flags]     check a Hugging Face repo: access, size, quants, fit, disk

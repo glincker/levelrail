@@ -16,6 +16,7 @@ type modelEngineMetricsInput struct {
 }
 
 func registerModelServingTools(server *mcp.Server, client *apiclient.Client) {
+	registerModelFitTool(server, client)
 	addTool(server, &mcp.Tool{
 		Name:        "get_model_engine_metrics",
 		Description: "The inference engine's own metrics for a model: KV cache usage, queued and running requests, prefix cache hit rate, tokens per second and time to first token (vLLM and llama.cpp), or VRAM residency and CPU offload (Ollama), with a health summary. Metrics an engine cannot expose are flagged supported=false. Read-only.",

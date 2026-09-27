@@ -212,6 +212,7 @@ var toolTable = map[string]Meta{
 	"revoke_model_key":                      {clsD, "models", 0},
 	"get_model_usage":                       {clsR, "models", 0},
 	"get_model_engine_metrics":              {clsR, "models", 0},
+	"check_model_fit":                       {clsR, "models", 0},
 	"get_model_logs":                        {clsR, "models", unt},
 	"deploy_model":                          {clsM, "models", outb},
 	"delete_model":                          {clsD, "models", 0},

@@ -6,6 +6,7 @@ import { gpuSummary, nodeLabel } from '../../lib/models'
 import { chatCurlExample } from '../../lib/modelPresentation'
 import type { ModelResource } from '../../types/models'
 import { ModelEnginePanel } from './ModelEnginePanel'
+import { ModelFitCard } from './ModelFitCard'
 
 function copy(value: string, label: string) {
   void navigator.clipboard.writeText(value).then(() => {
@@ -64,6 +65,7 @@ export function ModelOverviewTab({ model }: { model: ModelResource }) {
         />
         <Fact label="Quantization" value={model.quantization || 'from model'} />
       </dl>
+      <ModelFitCard modelName={model.name} />
       <ModelEnginePanel modelName={model.name} engine={model.engine} />
       <section aria-label="Endpoint" className="space-y-2">
         <h3 className="text-sm font-semibold">Endpoint</h3>

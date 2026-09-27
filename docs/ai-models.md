@@ -91,6 +91,27 @@ The disk check measures the filesystem holding Docker's volumes on the control p
 
 The API is `POST /api/v1/models/preflight` (`repo`, optional `engine`, `quant`, `file`, `gpu_count`, `node_id`, `hf_token`) and the MCP tool is `preflight_model`. Hub problems (missing, gated, rate limited, unreachable) come back as a `status` in a normal response so a client can always show the next step.
 
+## VRAM fit check
+
+Before you deploy, and on the model page, Levelrail estimates whether a model fits in each GPU node's free VRAM and rates every node: `fits`, `tight`, `wont_fit` or `unknown`. The pill has an info tip with the arithmetic, for example `weights 4.7 GiB + KV 1.2 GiB + overhead 0.8 GiB = 6.7 GiB of 8.0 GiB free`.
+
+**This is an estimate, not a guarantee.** The pieces:
+
+- **Weights.** Exact when the Hugging Face file sizes are known (pass `weights_bytes` from a preflight), otherwise estimated from the parameter count in the model name (`8b`, `8x7b`) and the quantization (a tag suffix such as `q4_K_M`, a `:quant` suffix, or vLLM's `--quantization`). A name with no size, such as `mistral`, is `unknown`, never guessed. Ollama and llama.cpp default to about 4.85 bits per weight, vLLM to 16 (bf16).
+- **KV cache.** Approximated from the parameter count and the context length. With no context length set, `APP_MODEL_FIT_DEFAULT_CONTEXT` tokens (default 8192) are assumed and the tip says so.
+- **Overhead.** A flat `APP_MODEL_FIT_GPU_OVERHEAD_MIB` per GPU (default 512), plus `APP_MODEL_FIT_VLLM_EXTRA_MIB` (default 1024) for vLLM.
+- **Free VRAM.** From the node's GPU report (refreshed every minute). VRAM estimated for other models placed on the node that are not loaded yet is subtracted, so two deploys in the same minute do not both see the same free memory. On the model page, a loaded model's own VRAM is added back.
+- **Verdict.** `fits` when the total is at most `APP_MODEL_FIT_PERCENT` of free VRAM (default 90), `tight` up to 100%, otherwise `wont_fit`. vLLM also needs each GPU to have `APP_MODEL_VLLM_GPU_UTILIZATION` (default 0.9) of its memory free, because it pre-allocates that much.
+
+Nodes are ranked best first, with non-schedulable nodes last. The check is advisory: it never blocks a deploy. `APP_MODEL_FIT_KV_KIB_PER_TOKEN` overrides the KV heuristic if your model family differs.
+
+- **Dashboard.** The deploy dialog shows a verdict per node and highlights the selected one. The model page Overview shows the same for the deployed model, with its current node marked.
+- **CLI.** `levelrail models fit --engine ollama --model llama3.1:8b --context 8192`, or `levelrail models fit --name chat` for a deployed model.
+- **API.** `POST /api/v1/models/fit` and `GET /api/v1/models/{name}/fit` (read ability).
+- **MCP.** `check_model_fit` (read-only).
+
+No GPU was involved in testing this; the numbers come from the GPU facts nodes report and have not been compared against real engine memory use.
+
 ## Model cache
 
 Each model keeps its downloaded weights in its own Docker volume. Deleting a model keeps the volume, so those volumes are what accumulates.

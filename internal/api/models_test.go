@@ -42,6 +42,8 @@ func TestModelsRoutes_RequireAuth(t *testing.T) {
 		{http.MethodPut, "/api/v1/models/chat/hf-token"},
 		{http.MethodGet, "/api/v1/models/chat/logs"},
 		{http.MethodGet, "/api/v1/models/chat/engine-metrics"},
+		{http.MethodGet, "/api/v1/models/chat/fit"},
+		{http.MethodPost, "/api/v1/models/fit"},
 		{http.MethodGet, "/api/v1/models/chat/logs/stream"},
 		{http.MethodGet, "/api/v1/gpus"},
 	})
@@ -294,5 +296,49 @@ func TestModels_EngineMetricsEndpoint(t *testing.T) {
 	}
 	if rep.Engine != "ollama" || rep.Collecting || rep.Health.State != models.EngineHealthUnknown || len(rep.Series) == 0 {
 		t.Errorf("report = %+v", rep)
+	}
+}
+
+func TestModels_FitEndpoints(t *testing.T) {
+	rt, db := newModelsTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SetNodeGPU(context.Background(), store.LocalNodeGPUKey, gpu.Info{Present: true, RuntimeInstalled: true,
+		Devices: []gpu.Device{{Index: 0, UUID: "GPU-a", Name: "RTX", VRAMTotalMiB: 24576}}}); err != nil {
+		t.Fatal(err)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models/fit", `{"engine":"nope","model":"x"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad engine status = %d", rec.Code)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models/fit", `{"engine":"ollama","model":"x","weights_bytes":-1}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("negative weights status = %d", rec.Code)
+	}
+	rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models/fit", `{"engine":"ollama","model":"llama3.1:8b","context_length":8192}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var rep models.FitReport
+	if err := json.Unmarshal(rec.Body.Bytes(), &rep); err != nil {
+		t.Fatal(err)
+	}
+	if len(rep.Nodes) != 1 || rep.Nodes[0].Verdict != models.FitFits || rep.Note == "" || !strings.Contains(rep.Nodes[0].Arithmetic, "weights") {
+		t.Fatalf("report = %+v", rep)
+	}
+
+	if rec := doModels(t, rt, cookie, http.MethodGet, "/api/v1/models/nope/fit", ""); rec.Code != http.StatusNotFound {
+		t.Fatalf("missing model status = %d", rec.Code)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models", `{"name":"chat","engine":"ollama","model":"llama3.1:8b"}`); rec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d", rec.Code)
+	}
+	rec = doModels(t, rt, cookie, http.MethodGet, "/api/v1/models/chat/fit", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("model fit status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	rep = models.FitReport{}
+	if err := json.Unmarshal(rec.Body.Bytes(), &rep); err != nil {
+		t.Fatal(err)
+	}
+	if rep.Model != "chat" || len(rep.Nodes) != 1 || !rep.Nodes[0].Current {
+		t.Fatalf("model fit report = %+v", rep)
 	}
 }

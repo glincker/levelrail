@@ -30,6 +30,7 @@ import {
 } from '../lib/modelDeployForm'
 import { useCreateModel, useGpuNodes } from '../queries/models'
 import { ModelPreflightPanel } from './ModelPreflightPanel'
+import { ModelFitPanel } from './models/ModelFitPanel'
 import type { CreateModelResponse } from '../types/models'
 
 export function DeployModelDialog({
@@ -220,6 +221,7 @@ export function DeployModelDialog({
               />
             </Field>
           ) : null}
+          <ModelFitPanel form={form} />
           <Field>
             <FieldLabel htmlFor="model-domain">Domain</FieldLabel>
             <Input

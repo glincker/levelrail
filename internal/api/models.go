@@ -29,6 +29,8 @@ type ModelService interface {
 	RotateKeyByID(ctx context.Context, model, id, actor string, grace *time.Duration) (models.CreatedKey, error)
 	Usage(ctx context.Context, model string, window time.Duration) (models.UsageReport, error)
 	EngineMetrics(ctx context.Context, name string, window time.Duration) (models.EngineMetricsReport, error)
+	FitCheck(ctx context.Context, req models.FitRequest) (models.FitReport, error)
+	ModelFit(ctx context.Context, name string) (models.FitReport, error)
 	SetHFToken(ctx context.Context, name, token string) error
 	GPUNodes(ctx context.Context) ([]models.GPUNode, error)
 	NodeGPU(ctx context.Context, nodeID string) (gpu.Info, bool, error)
