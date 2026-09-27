@@ -1,9 +1,36 @@
+import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ModelRow } from './ModelRow'
 import type { ModelResource } from '../types/models'
+
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
+  return {
+    ...actual,
+    Link: ({
+      children,
+      to,
+      params,
+      search,
+      ...rest
+    }: {
+      children?: ReactNode
+      to?: string
+      params?: Record<string, string>
+      search?: { tab?: string }
+    } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
+      <a
+        href={`${to?.replace('$name', params?.name ?? '') ?? ''}?tab=${search?.tab ?? ''}`}
+        {...rest}
+      >
+        {children}
+      </a>
+    ),
+  }
+})
 
 function model(overrides: Partial<ModelResource> = {}): ModelResource {
   return {
@@ -48,6 +75,17 @@ describe('ModelRow', () => {
     expect(screen.getByText('Downloading')).toBeInTheDocument()
     expect(screen.getByText('downloading: 12%')).toBeInTheDocument()
     expect(screen.getByText('https://chat.example.com/v1')).toBeInTheDocument()
+  })
+
+  it('links the name to the detail page and the gauge to its keys tab', () => {
+    renderRow(model())
+    expect(screen.getByRole('link', { name: 'chat' })).toHaveAttribute(
+      'href',
+      '/models/chat?tab=overview',
+    )
+    expect(
+      screen.getByRole('link', { name: 'Keys and usage of chat' }),
+    ).toHaveAttribute('href', '/models/chat?tab=keys')
   })
 
   it('shows Loaded when ready', () => {

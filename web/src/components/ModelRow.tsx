@@ -1,5 +1,7 @@
+import { Link } from '@tanstack/react-router'
 import {
   ArrowClockwiseIcon,
+  GaugeIcon,
   CheckCircleIcon,
   CircleNotchIcon,
   KeyIcon,
@@ -14,7 +16,6 @@ import { useRestartModel, useRotateModelApiKey } from '../queries/models'
 import type { ModelResource } from '../types/models'
 import { DeleteModelDialog } from './DeleteModelDialog'
 import { ModelKeyRevealDialog } from './ModelKeyRevealDialog'
-import { ModelKeysDialog } from './ModelKeysDialog'
 import { useState } from 'react'
 
 // Shared column grid between the sticky header (routes/models/index.tsx)
@@ -62,9 +63,14 @@ export function ModelRow({ model }: { model: ModelResource }) {
       className={`${MODEL_LIST_GRID} h-full w-full border-b border-border px-4 py-3`}
     >
       <span className="min-w-0">
-        <span className="block truncate text-sm font-medium text-foreground">
+        <Link
+          to="/models/$name"
+          params={{ name: model.name }}
+          search={{ tab: 'overview' }}
+          className="block truncate text-sm font-medium text-foreground hover:underline"
+        >
           {model.name}
-        </span>
+        </Link>
         <span className="block truncate font-mono text-xs text-muted-foreground">
           {model.model}
         </span>
@@ -141,11 +147,22 @@ export function ModelRow({ model }: { model: ModelResource }) {
         >
           <KeyIcon aria-hidden="true" />
         </Button>
-        <ModelKeysDialog
-          name={model.name}
-          baseUrl={model.endpoint_url}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Keys and usage of ${model.name}`}
+          title="Keys and usage"
           disabled={deleting}
-        />
+          render={
+            <Link
+              to="/models/$name"
+              params={{ name: model.name }}
+              search={{ tab: 'keys' }}
+            />
+          }
+        >
+          <GaugeIcon aria-hidden="true" />
+        </Button>
         <DeleteModelDialog name={model.name} disabled={deleting} />
       </span>
       {newKey ? (

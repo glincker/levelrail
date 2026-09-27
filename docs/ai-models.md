@@ -124,6 +124,17 @@ A model has one `Ready` condition whose reason tells you where it is:
 
 The downloaded weights live in a persistent Docker volume, so a restart or redeploy does not download again. Deleting a model removes its container but keeps the volume.
 
+## The model page
+
+Each model has its own page at `/models/<name>` (click its name in the list). Tabs:
+
+- **Overview.** Status, engine, node, GPU, context length, quantization, the endpoint URL with a copy button, and a ready-made `curl` example.
+- **Keys.** The named keys with their limits, expiry and rotation (see Virtual keys below).
+- **Usage.** Requests, tokens, errors and first-byte latency per key.
+- **Logs.** The engine's live log tail.
+
+The tab is kept in the URL (`?tab=keys`), so a link opens straight to it. From the CLI, `levelrail models get <name>` prints the same overview facts.
+
 ## The endpoint and API key
 
 The model's hostname is routed through the built-in ingress to the control plane, whose gateway checks the API key and proxies to the engine. It speaks the OpenAI API:

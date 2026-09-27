@@ -20,6 +20,7 @@ export const modelKeys = {
   all: ['models'] as const,
   list: () => [...modelKeys.all, 'list'] as const,
   gpus: () => [...modelKeys.all, 'gpus'] as const,
+  detail: (name: string) => [...modelKeys.all, 'detail', name] as const,
 }
 
 const SETTLING_REFETCH_MS = 3000
@@ -77,6 +78,26 @@ export function modelListQueryOptions() {
 
 export function useModels() {
   return useQuery(modelListQueryOptions())
+}
+
+export function modelDetailQueryOptions(name: string) {
+  return queryOptions({
+    queryKey: modelKeys.detail(name),
+    queryFn: () =>
+      requestJson<ModelResource>(
+        `/api/v1/models/${encodeURIComponent(name)}`,
+        undefined,
+        'fetch model',
+      ),
+    refetchInterval: (query) =>
+      query.state.data && isModelSettling([query.state.data])
+        ? SETTLING_REFETCH_MS
+        : false,
+  })
+}
+
+export function useModel(name: string) {
+  return useQuery(modelDetailQueryOptions(name))
 }
 
 export function fetchGpuNodes(): Promise<GpuNode[]> {
