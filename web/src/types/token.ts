@@ -44,7 +44,11 @@ export const ABILITY_BADGE_VARIANT: Record<
 // both, so the picker's data lives in one place, not two. Kept in this
 // plain data file, not the component file, so AbilitiesField.tsx only
 // ever exports a component (react-refresh/only-export-components).
-export const ABILITY_OPTIONS: { value: Ability; label: string; hint: string }[] = [
+export const ABILITY_OPTIONS: {
+  value: Ability
+  label: string
+  hint: string
+}[] = [
   {
     value: 'read',
     label: 'Read',
@@ -102,10 +106,17 @@ export function toggleAbility(current: Ability[], ability: Ability): Ability[] {
 // Matches tokenResource exactly: `token` (the plaintext secret) is
 // deliberately absent here, it only ever appears on
 // CreateTokenResponse, and only in the one response that mints it.
+export interface TokenAgent {
+  name: string
+  description?: string
+}
+
 export interface TokenResource {
   id: string
   name: string
   abilities: Ability[]
+  // Set when the token was issued to an AI agent (internal/api/agent_identity.go).
+  agent?: TokenAgent
   created_at: string
   last_used_at?: string
   expires_at?: string
@@ -118,6 +129,8 @@ export interface CreateTokenRequest {
   // Omitted entirely (not 0, not null) means "never expires", matching
   // createTokenRequest's `omitempty` json tag on the Go side.
   expires_in_days?: number
+  // Labels the token as issued to an AI agent; audit entries record its name.
+  agent?: TokenAgent
 }
 
 // Matches createTokenResponse: tokenResource's fields plus the plaintext
