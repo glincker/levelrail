@@ -1,5 +1,12 @@
 name: CI
 
+# Impact-based: `changes` and Build, vet's plan step decide which work a
+# change needs (scripts/ci-changes.sh, scripts/ci-go-plan.sh). docs/ci.md
+# has the full picture.
+#
+# The six checks branch protection names never skip because of an upstream
+# failure: each runs (and fails) whenever an upstream job failed, and skips
+# only when its area has no work, which GitHub reports as success.
 on:
   push:
     branches:
@@ -8,150 +15,210 @@ on:
       - '**/*.md'
       - 'adr/**'
       - 'LICENSE'
-  # No paths-ignore here: required checks must report on docs-only PRs or
-  # auto-merge waits forever. The `changes` job skips the heavy jobs instead.
+  # No paths-ignore: required checks must report on every PR.
   pull_request:
     branches:
       - main
+  merge_group:
 
+# PR runs cancel superseded pushes; main and merge queue runs never cancel.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
 
 jobs:
-  # No `needs`, no path filter: runs immediately alongside `changes` so a
-  # migration version collision fails in seconds, not after the full
-  # build/test matrix.
-  migration-versions:
-    name: Migration version check
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    timeout-minutes: 3
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Check for duplicate migration versions
-        run: scripts/check-migration-versions.sh
-
-  # Gates every other job on which areas actually changed, so a
-  # frontend-only PR doesn't wait on the Go suite and vice versa.
   changes:
     name: Detect changed areas
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     timeout-minutes: 5
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-      installer: ${{ steps.filter.outputs.installer }}
+      base: ${{ steps.detect.outputs.base }}
+      full: ${{ steps.detect.outputs.full }}
+      go: ${{ steps.detect.outputs.go }}
+      go_full: ${{ steps.detect.outputs.go_full }}
+      lint: ${{ steps.detect.outputs.lint }}
+      lint_dirs: ${{ steps.detect.outputs.lint_dirs }}
+      tools: ${{ steps.detect.outputs.tools }}
+      web: ${{ steps.detect.outputs.web }}
+      vitest: ${{ steps.detect.outputs.vitest }}
+      installer: ${{ steps.detect.outputs.installer }}
+      workflows: ${{ steps.detect.outputs.workflows }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Filter
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-        id: filter
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          filters: |
-            backend:
-              - '**/*.go'
-              - 'go.mod'
-              - 'go.sum'
-              - '.golangci.yml'
-              - 'scripts/**'
-              - '.github/workflows/**'
-              - '.github/flaky-tests.txt'
-            frontend:
-              - 'web/**'
-              - '.github/workflows/**'
-            installer:
-              - 'install.sh'
-              - 'scripts/test-install-sh.sh'
-              - '.github/workflows/ci.yml'
-              - '.github/workflows/nightly.yml'
+          fetch-depth: 0
 
-  build-vet:
-    name: Build, vet
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - name: Detect
+        id: detect
+        env:
+          EVENT: ${{ github.event_name }}
+          MERGE_GROUP_BASE: ${{ github.event.merge_group.base_sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # A PR checkout is the test merge commit: its first parent is the
+          # exact base the diff should be against.
+          case "$EVENT" in
+            pull_request) base="$(git rev-parse HEAD^1)" ;;
+            merge_group) base="$MERGE_GROUP_BASE" ;;
+            *) base="$BEFORE" ;;
+          esac
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" = pull_request ] || [ "$EVENT" = merge_group ]; then
+            scripts/ci-changes.sh "$base" HEAD 2>summary.txt >> "$GITHUB_OUTPUT"
+          else
+            scripts/ci-changes.sh --full 2>summary.txt >> "$GITHUB_OUTPUT"
+          fi
+          { echo '### Changed areas'; echo '```'; cat summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-
-      - name: go build
-        run: go build ./...
-
-      - name: go vet
-        run: go vet ./...
-
-      # tools/ is its own module, so ./... above does not reach it.
-      - name: Release notes generator
-        run: go -C tools vet ./releasenotes/ && go -C tools test ./releasenotes/
-
+      # Warn-only here so an overdue quarantine nags every PR without
+      # blocking it; nightly.yml fails on it.
       - name: Quarantine list (.github/flaky-tests.txt)
         env:
           QUARANTINE_AGE: warn
         run: scripts/check-flaky-tests.sh
 
-  # Go tests are split into lanes by scripts/go-test-groups.sh: internal/api
-  # (sharded by test name, it is the slowest package by far), Docker-backed
-  # packages (own job, bounded -p so live containers can't OOM each other),
-  # and everything else. PR/push runs use -short without -race; nightly.yml
-  # has the thorough run. scripts/ci-go-test.sh reruns failed tests at most
-  # twice and lists any test that passed only on retry in the job summary.
+  build-vet:
+    name: Build, vet
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.go == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      scope: ${{ steps.plan.outputs.scope }}
+      has_tests: ${{ steps.plan.outputs.has_tests }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      lanes: ${{ steps.plan.outputs.lanes }}
+      api_checks: ${{ steps.plan.outputs.api_checks }}
+      rest_checks: ${{ steps.plan.outputs.rest_checks }}
+      coverage: ${{ steps.plan.outputs.coverage }}
+      quarantine: ${{ steps.plan.outputs.quarantine }}
+    steps:
+      - name: Change detection passed
+        if: needs.changes.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}"
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Check for duplicate migration versions
+        run: scripts/check-migration-versions.sh
+
+      - name: Set up Go
+        id: go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      # PRs only restore; main saves one fresh cache per day, so PR runs
+      # can't churn the repo's cache quota.
+      - name: Cache key
+        id: day
+        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Go cache
+        id: cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ steps.day.outputs.day }}
+          restore-keys: |
+            go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
+            go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
+
+      - name: Plan affected packages and test lanes
+        id: plan
+        env:
+          GO_FULL: ${{ needs.changes.outputs.go_full }}
+          BASE: ${{ needs.changes.outputs.base }}
+        run: |
+          if [ "$GO_FULL" = true ]; then
+            scripts/ci-go-plan.sh --full 2>summary.txt | tee -a "$GITHUB_OUTPUT"
+          else
+            scripts/ci-go-plan.sh "$BASE" HEAD 2>summary.txt | tee -a "$GITHUB_OUTPUT"
+          fi
+          { echo '### Go plan'; echo '```'; cat summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: go build
+        if: steps.plan.outputs.scope != 'none'
+        env:
+          PACKAGES: ${{ steps.plan.outputs.packages }}
+        run: |
+          read -r -a packages <<<"$PACKAGES"
+          go build "${packages[@]}"
+
+      - name: go vet
+        if: steps.plan.outputs.scope != 'none'
+        env:
+          PACKAGES: ${{ steps.plan.outputs.packages }}
+        run: |
+          read -r -a packages <<<"$PACKAGES"
+          go vet "${packages[@]}"
+
+      # tools/ is its own module, so the package list above never reaches it.
+      - name: Release notes generator
+        if: needs.changes.outputs.tools == 'true'
+        run: go -C tools vet ./releasenotes/ && go -C tools test ./releasenotes/
+
+      - name: Save Go cache
+        if: github.event_name == 'push' && steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+  # Lanes come from scripts/ci-go-plan.sh: internal/api sharded by test
+  # name when it is affected, Docker-backed packages with bounded -p, the
+  # rest in one lane, and a single merged lane when few packages are
+  # affected. PR/push runs use -short without -race; nightly.yml has the
+  # thorough run. scripts/ci-go-test.sh reruns failed tests at most twice.
   test-go:
     name: Test (${{ matrix.lane }})
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
     needs: [changes, build-vet]
-    if: needs.changes.outputs.backend == 'true'
+    if: needs.build-vet.result == 'success' && needs.build-vet.outputs.has_tests == 'true'
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - lane: api-1
-            group: api
-            shard: 1/3
-            flags: -short -timeout=10m
-          - lane: api-2
-            group: api
-            shard: 2/3
-            flags: -short -timeout=10m
-          - lane: api-3
-            group: api
-            shard: 3/3
-            flags: -short -timeout=10m
-          - lane: docker
-            group: docker
-            flags: -short -p 2 -timeout=12m
-          - lane: rest
-            group: rest
-            flags: -short -timeout=10m
+      matrix: ${{ fromJSON(needs.build-vet.outputs.matrix) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        id: go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-          cache-dependency-path: |
-            go.sum
-            tools/go.sum
+          cache: false
+
+      - name: Cache key
+        id: day
+        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Go cache
+        id: cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-test-${{ matrix.cache }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ steps.day.outputs.day }}
+          restore-keys: |
+            go-test-${{ matrix.cache }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
+            go-test-${{ matrix.cache }}-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
 
       # Version and checksums locked by tools/go.mod and tools/go.sum.
       - name: Install gotestsum
@@ -170,16 +237,17 @@ jobs:
           GO_TEST_FLAGS: ${{ matrix.flags }}
           SHARD: ${{ matrix.shard }}
           COVERPROFILE: coverage-${{ matrix.lane }}.out
+          LANE: ${{ matrix.lane }}
+          PACKAGES: ${{ matrix.packages }}
         run: |
-          pkgs="$(scripts/go-test-groups.sh '${{ matrix.group }}')"
-          mapfile -t packages <<<"$pkgs"
-          scripts/ci-go-test.sh '${{ matrix.lane }}' "${packages[@]}"
+          read -r -a packages <<<"$PACKAGES"
+          scripts/ci-go-test.sh "$LANE" "${packages[@]}"
 
       # overwrite: a re-run of this job replaces its own artifact instead of
       # failing on the name. 7 days: "re-run failed jobs" reuses sibling
       # jobs' artifacts from the first attempt, which a 1-day retention lost.
       - name: Upload coverage profile
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-${{ matrix.lane }}
           path: coverage-${{ matrix.lane }}.out
@@ -188,73 +256,111 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: test-results-${{ matrix.lane }}
           path: test-results/
           retention-days: 7
           overwrite: true
 
-  # Branch protection requires these two exact check names from before the
-  # lanes were split; each passes only if its lanes in test-go passed.
+      - name: Save Go cache
+        if: github.event_name == 'push' && matrix.save_cache && steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+  # Required check names from before the lanes were split: each passes only
+  # if its planned lanes passed.
   test-api:
     name: Test (internal/api)
+    needs: [changes, build-vet, test-go]
+    if: >-
+      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      && (needs.build-vet.result != 'success' || contains(needs.build-vet.outputs.api_checks, 'Test ('))))
     runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
-    needs: [changes, test-go]
-    if: always() && needs.changes.outputs.backend == 'true'
     timeout-minutes: 3
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - name: Upstream jobs passed
+        if: needs.changes.result != 'success' || needs.build-vet.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Build, vet: ${{ needs.build-vet.result }}"
+          exit 1
 
-      - name: Check lanes api-1, api-2, api-3
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check lanes
         env:
           GH_TOKEN: ${{ github.token }}
-        run: scripts/check-lane-results.sh "Test (api-1)" "Test (api-2)" "Test (api-3)"
+          CHECKS: ${{ needs.build-vet.outputs.api_checks }}
+        run: |
+          mapfile -t names < <(jq -r '.[]' <<<"$CHECKS")
+          scripts/check-lane-results.sh "${names[@]}"
 
   test-rest:
     name: Test (everything else)
+    needs: [changes, build-vet, test-go]
+    if: >-
+      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      && (needs.build-vet.result != 'success' || contains(needs.build-vet.outputs.rest_checks, 'Test ('))))
     runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
-    needs: [changes, test-go]
-    if: always() && needs.changes.outputs.backend == 'true'
     timeout-minutes: 3
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - name: Upstream jobs passed
+        if: needs.changes.result != 'success' || needs.build-vet.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Build, vet: ${{ needs.build-vet.result }}"
+          exit 1
 
-      - name: Check lanes docker, rest
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check lanes
         env:
           GH_TOKEN: ${{ github.token }}
-        run: scripts/check-lane-results.sh "Test (docker)" "Test (rest)"
+          CHECKS: ${{ needs.build-vet.outputs.rest_checks }}
+        run: |
+          mapfile -t names < <(jq -r '.[]' <<<"$CHECKS")
+          scripts/check-lane-results.sh "${names[@]}"
 
-  # Non-blocking: runs only the tests in .github/flaky-tests.txt, so a
-  # quarantined test keeps producing signal without gating merges.
+  # Non-blocking: runs only the tests in .github/flaky-tests.txt, and only
+  # when one of their packages is affected.
   test-quarantined:
     name: Test (quarantined, non-blocking)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
     needs: [changes, build-vet]
-    if: needs.changes.outputs.backend == 'true'
+    if: needs.build-vet.result == 'success' && needs.build-vet.outputs.quarantine == 'true'
+    runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        id: go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-          cache-dependency-path: |
-            go.sum
-            tools/go.sum
+          cache: false
+
+      - name: Restore Go cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-test-rest-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
+          restore-keys: |
+            go-test-rest-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
 
       # Version and checksums locked by tools/go.mod and tools/go.sum.
       - name: Install gotestsum
@@ -269,24 +375,37 @@ jobs:
 
   coverage-gate:
     name: Coverage gate
+    needs: [changes, build-vet, test-go]
+    if: >-
+      !cancelled() && (needs.changes.result != 'success' || (needs.changes.outputs.go == 'true'
+      && (needs.build-vet.result != 'success' || needs.build-vet.outputs.has_tests == 'true')))
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    needs: [changes, test-go]
-    if: needs.changes.outputs.backend == 'true'
     timeout-minutes: 5
+    env:
+      COVERAGE: ${{ needs.build-vet.outputs.coverage }}
+      LANES: ${{ needs.build-vet.outputs.lanes }}
+      BASE: ${{ needs.changes.outputs.base }}
     steps:
+      - name: Upstream jobs passed
+        if: needs.changes.result != 'success' || needs.build-vet.result != 'success' || needs.test-go.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}, Build, vet: ${{ needs.build-vet.result }}, test lanes: ${{ needs.test-go.result }}"
+          exit 1
+
+      # Full history: the changed-line gate needs a real merge-base.
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Full history, not just this job's default shallow clone:
-          # the changed-line coverage step below needs a real merge-base
-          # against the PR's base branch, which a shallow fetch can't
-          # resolve. Only this one lightweight job pays for it.
           fetch-depth: 0
 
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
       - name: Download coverage profiles
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: coverage-*
           path: coverage-artifacts
@@ -295,7 +414,7 @@ jobs:
       - name: Merge coverage profiles
         run: |
           missing=0
-          for lane in api-1 api-2 api-3 docker rest; do
+          for lane in $LANES; do
             if [ ! -f "coverage-artifacts/coverage-$lane.out" ]; then
               echo "::error::coverage-$lane.out missing (artifact expired or its job never uploaded); re-run all jobs"
               missing=1
@@ -304,55 +423,136 @@ jobs:
           [ "$missing" -eq 0 ] || exit 1
           scripts/merge-coverprofiles.sh coverage.out coverage-artifacts/coverage-*.out
 
+      # Only a full run has a profile for every package under internal/.
       - name: Coverage gate (70% for /internal)
+        if: env.COVERAGE == 'full'
         run: scripts/check-coverage.sh coverage.out internal/ 70
 
-      # PR-only: the aggregate gate above can pass while a PR's own new
-      # code is barely tested, diluted by the rest of internal/ already
-      # being well covered. This scopes the same 70% bar to only the
-      # statements this PR actually added or changed.
-      - name: Changed-line coverage gate (70% for /internal, PRs only)
-        if: github.event_name == 'pull_request'
-        run: scripts/check-changed-file-coverage.sh coverage.out "origin/${{ github.event.pull_request.base.ref }}" internal/ 70
+      # Scopes the same 70% bar to only the statements this change added or
+      # modified, so well-covered neighbours can't dilute new, untested code.
+      - name: Changed-line coverage gate (70% for /internal)
+        if: github.event_name != 'push'
+        run: scripts/check-changed-file-coverage.sh coverage.out "$BASE" internal/ 70
 
+  # Go lint and, when a workflow file changed, actionlint: one check line
+  # instead of two.
   lint:
     name: Lint
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
     needs: changes
-    if: needs.changes.outputs.backend == 'true'
+    if: >-
+      ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.lint != 'none'
+      || needs.changes.outputs.workflows == 'true') }}
+    runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      LINT: ${{ needs.changes.outputs.lint }}
+      WORKFLOWS: ${{ needs.changes.outputs.workflows }}
+      BASE: ${{ needs.changes.outputs.base }}
+      ACTIONLINT_VERSION: 1.7.12
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
     steps:
+      - name: Change detection passed
+        if: needs.changes.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}"
+          exit 1
+
+      # Full history: --new-from-rev and the workflow diff need the base commit.
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # Only the workflow files this diff touched: release.yml carries
+      # shellcheck warnings that predate this step.
+      - name: actionlint (changed workflows)
+        if: env.WORKFLOWS == 'true'
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "No base to diff against, skipping."
+            exit 0
+          fi
+          mapfile -t files < <(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '.github/workflows/*.yml' '.github/workflows/*.yaml')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No workflow files changed."
+            exit 0
+          fi
+          tarball="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLO "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${tarball}"
+          echo "${ACTIONLINT_SHA256}  ${tarball}" | sha256sum -c -
+          tar -xzf "$tarball" actionlint
+          ./actionlint -color "${files[@]}"
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        if: env.LINT != 'none'
+        id: go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+          cache: false
 
+      - name: Cache key
+        if: env.LINT != 'none'
+        id: day
+        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Go cache
+        if: env.LINT != 'none'
+        id: cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-lint-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ steps.day.outputs.day }}
+          restore-keys: |
+            go-lint-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
+            go-lint-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
+
+      # changed: only the packages holding a changed .go file, and only
+      # issues on lines this diff touched. all: go.mod, .golangci.yml or
+      # the pipeline changed, or a push to main.
       - name: golangci-lint
+        if: env.LINT != 'none'
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: v2.12
+          args: ${{ env.LINT == 'changed' && format('--new-from-rev={0} {1}', needs.changes.outputs.base, needs.changes.outputs.lint_dirs) || '' }}
+          skip-save-cache: ${{ github.event_name != 'push' }}
+
+      - name: Save Go cache
+        if: env.LINT != 'none' && github.event_name == 'push' && steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ steps.cache.outputs.cache-primary-key }}
 
   web-check:
     name: Web (tsc, eslint)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
     needs: changes
-    if: needs.changes.outputs.frontend == 'true'
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.web != 'none') }}
+    runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      WEB: ${{ needs.changes.outputs.web }}
+      VITEST: ${{ needs.changes.outputs.vitest }}
+      BASE: ${{ needs.changes.outputs.base }}
     steps:
+      - name: Change detection passed
+        if: needs.changes.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}"
+          exit 1
+
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Set up Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
           cache: npm
@@ -365,28 +565,31 @@ jobs:
       # Same command release.yml runs: vite build (which also generates
       # routeTree.gen.ts) then `tsc -b`, which type-checks test files too.
       - name: Build (vite build && tsc -b)
+        if: env.WEB == 'full'
         working-directory: web
         run: npm run build
+
+      # docs/ only feeds the /help manifest, so a docs-only change needs the
+      # bundle, not a type check.
+      - name: Build help manifest (vite build)
+        if: env.WEB == 'docs'
+        working-directory: web
+        run: npm exec --no -- vite build
 
       - name: Bundle size budget
         working-directory: web
         run: npm run check-bundle-size
 
       # eslint on the full tree still has a pre-existing backlog (mostly
-      # routeTree.gen.ts-related no-unsafe-* noise, not this PR's doing),
-      # so scope to changed files only, same as the pre-commit hook does.
+      # routeTree.gen.ts-related no-unsafe-* noise), so scope to changed
+      # files only, same as the pre-commit hook does.
       - name: eslint (changed files)
+        if: env.WEB == 'full'
         run: |
-          base="${{ github.event.pull_request.base.sha }}"
-          [ -z "$base" ] && base="${{ github.event.before }}"
-          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
             files=$(git -C web ls-files '*.ts' '*.tsx')
           else
-            # merge-base, not base directly: a PR branch that hasn't
-            # rebased since other work landed on main must not pick up
-            # those unrelated files as "changed".
-            merge_base=$(git merge-base "$base" HEAD)
-            files=$(git diff --name-only --diff-filter=ACM "$merge_base" HEAD -- 'web/*.ts' 'web/*.tsx' | sed 's#^web/##')
+            files=$(git diff --name-only --diff-filter=ACM "$BASE" HEAD -- 'web/*.ts' 'web/*.tsx' | sed 's#^web/##')
           fi
           if [ -n "$files" ]; then
             cd web && echo "$files" | xargs npm exec --no -- eslint
@@ -395,8 +598,27 @@ jobs:
           fi
 
       - name: vitest
+        if: env.WEB == 'full' && env.VITEST == 'full'
         working-directory: web
         run: npm test
+
+      # Tests whose module graph reaches a changed file. Config, lockfile
+      # and setup changes force the full run above instead.
+      - name: vitest (related to changed files)
+        if: env.WEB == 'full' && env.VITEST == 'changed'
+        working-directory: web
+        run: npm exec --no -- vitest run --changed "$BASE" --passWithNoTests
+
+      - name: vitest (help pages)
+        if: env.WEB == 'docs'
+        working-directory: web
+        run: |
+          mapfile -t sources < <(git grep -l 'virtual:docs' -- src)
+          if [ "${#sources[@]}" -eq 0 ]; then
+            echo "no sources import the docs manifest"
+            exit 0
+          fi
+          npm exec --no -- vitest related --run --passWithNoTests "${sources[@]}"
 
   # Runs install.sh end to end (install, re-run, upgrade, uninstall) in
   # systemd containers against a binary built from this commit.
@@ -405,8 +627,6 @@ jobs:
     needs: changes
     if: needs.changes.outputs.installer == 'true'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     timeout-minutes: 25
     strategy:
       fail-fast: false
@@ -414,12 +634,24 @@ jobs:
         image: ['ubuntu:24.04', 'debian:12']
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        id: go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Restore Go cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
+          restore-keys: |
+            go-build-${{ runner.os }}-${{ steps.go.outputs.go-version }}-
 
       - name: Build control plane binary
         run: CGO_ENABLED=0 go build -o levelrail-linux-amd64 ./cmd/levelrail
@@ -430,45 +662,30 @@ jobs:
       - name: Run install.sh in a systemd container
         run: scripts/test-install-sh.sh '${{ matrix.image }}' ./levelrail-linux-amd64
 
-  # The one check branch protection requires: a skipped job can't be
-  # required directly (blocks forever), so this always runs and passes
-  # only if every job that was supposed to run for this PR did.
+  # The single check to require in branch protection (docs/ci.md): always
+  # runs, and fails if change detection did not succeed or any job it needs
+  # failed or was cancelled. A skipped job had no work for this change.
   ci-required:
     name: CI required
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    needs: [migration-versions, changes, build-vet, test-go, test-api, test-rest, coverage-gate, lint, web-check, install-sh]
+    needs: [changes, build-vet, lint, test-go, test-api, test-rest, coverage-gate, web-check, install-sh]
     if: always()
+    runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
       - name: Evaluate required jobs
+        env:
+          NEEDS: ${{ toJSON(needs) }}
         run: |
-          if [ "${{ needs.migration-versions.result }}" != "success" ]; then
-            echo "migration-versions: ${{ needs.migration-versions.result }} (required)"
-            exit 1
-          fi
-          if [ "${{ needs.changes.result }}" != "success" ]; then
-            echo "changes: ${{ needs.changes.result }} (required)"
-            exit 1
-          fi
-          backend="${{ needs.changes.outputs.backend }}"
-          frontend="${{ needs.changes.outputs.frontend }}"
-          installer="${{ needs.changes.outputs.installer }}"
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<<"$NEEDS"
           fail=0
-          check() {
-            if [ "$3" = "true" ] && [ "$2" != "success" ]; then
-              echo "$1: $2 (required)"
-              fail=1
-            fi
-          }
-          check "build-vet" "${{ needs.build-vet.result }}" "$backend"
-          check "test-go" "${{ needs.test-go.result }}" "$backend"
-          check "test-api" "${{ needs.test-api.result }}" "$backend"
-          check "test-rest" "${{ needs.test-rest.result }}" "$backend"
-          check "coverage-gate" "${{ needs.coverage-gate.result }}" "$backend"
-          check "lint" "${{ needs.lint.result }}" "$backend"
-          check "web-check" "${{ needs.web-check.result }}" "$frontend"
-          check "install-sh" "${{ needs.install-sh.result }}" "$installer"
+          if [ "$(jq -r '.changes.result' <<<"$NEEDS")" != success ]; then
+            echo "::error::changes: change detection did not succeed"
+            fail=1
+          fi
+          bad="$(jq -r 'to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | .key' <<<"$NEEDS")"
+          if [ -n "$bad" ]; then
+            echo "::error::failed or cancelled: $(echo "$bad" | paste -sd' ' -)"
+            fail=1
+          fi
           [ "$fail" -eq 0 ] || exit 1
-          echo "all required jobs for this PR passed"
+          echo "all required jobs for this change passed"
