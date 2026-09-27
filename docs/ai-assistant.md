@@ -73,6 +73,8 @@ Every tool carries MCP annotations (`readOnlyHint`, `destructiveHint`, `idempote
 | `standard` (default) | read and mutating tools (deploy, restart, set, create, clone, approve, rotate) |
 | `full` | everything, including destructive tools (delete, clear, rollback, prune, sweep) |
 
+`APP_MCP_TOOL_PROFILE=agent-core` (or `--tool-profile agent-core`) additionally restricts the server to 15 tools for autonomous agents: list, status, deploy, rollback, cancel, diagnose, preflight, capped log search (`query_logs`), env (`get_app_env`, `set_app_env`, `unset_app_env`, secrets are write-only) and domains. It lists no output schemas, which brings the whole `tools/list` to about 2,500 estimated tokens against about 60,500 for `full`. See [MCP tool surface](mcp-tool-surface.md) and [Agent tooling audit](agent-tooling-audit.md).
+
 `APP_MCP_TOOLSETS` (or `--toolsets`) is an optional comma separated list that limits the groups exposed: `alerts, apps, audit, backups, databases, deploys, diagnostics, domains, environments, flags, iam, loadbalancer, logs, metrics, models, nodes, notifications, orgs, pipelines, previews, registry, scheduled, settings, system, templates, webhooks`.
 
 ```bash

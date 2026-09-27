@@ -101,9 +101,21 @@ The output schema is the dominant cost. Typed handlers derive it from the Go res
 - `set_app_load_balancer` (1,555 characters of input schema), `plan_apply` and `apply_resources` (1,254 each), `deploy_model` (1,166) and `list_deployments` (1,047) carry the largest input schemas. All are justified by real option surface, but they are poor candidates for a small agent-facing mode.
 - Nullable arrays and maps are rendered as `"type": ["null","array"]`, which is longer than needed.
 
+## The agent-core profile
+
+The profile lists 15 tools and omits output schemas from `tools/list` (results are still returned as text and structured content). Estimated cost of the whole listing:
+
+| Listing | Est. tokens |
+| --- | --- |
+| Profile with output schemas (before) | about 6,500 |
+| Profile without output schemas (now) | about 2,500 |
+| `full` mode | about 60,500 |
+
+`get_app_env` (plain env values plus secret key names, never values) and `query_logs` (capped, filtered log excerpt) were added to the profile; `get_app_logs` was replaced by `query_logs`. The profile's total listing is held under a budget by `TestAgentCoreProfileListingBudget` (default 3,500, override with `APP_MCP_TOKEN_BUDGET_AGENT_CORE`).
+
 ## Recommendations
 
-1. Use the `agent-core` profile in [MCP tool surface](mcp-tool-surface.md) for autonomous agents, and measure it with output schemas included: the budget test in this PR is the place to add it.
+1. Use the `agent-core` profile in [MCP tool surface](mcp-tool-surface.md) for autonomous agents (see the numbers below).
 2. Trim outputs before trimming inputs: return compact results from agent-facing tools rather than the full resource structs, which removes the largest output schemas from the list.
 3. Rewrite the 19 long descriptions to one sentence that says what the tool returns and when to call it; move history and CLI comparisons into docs.
 4. Mark `restart_app`, `approve_*`, `reject_*` and `expire_*` idempotent, and drop the mechanical `title` if a client ever charges for it.

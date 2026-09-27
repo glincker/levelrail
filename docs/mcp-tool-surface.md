@@ -9,7 +9,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | Toolset | Tools | Est. tokens |
 | --- | ---: | ---: |
 | alerts | 10 | 1265 |
-| apps | 12 | 1525 |
+| apps | 15 | 1975 |
 | audit | 1 | 259 |
 | backups | 11 | 1031 |
 | databases | 3 | 167 |
@@ -21,7 +21,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | iac | 2 | 800 |
 | iam | 2 | 149 |
 | loadbalancer | 9 | 1347 |
-| logs | 11 | 1419 |
+| logs | 12 | 1663 |
 | metrics | 4 | 626 |
 | models | 13 | 1644 |
 | nodes | 4 | 315 |
@@ -35,23 +35,26 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | system | 4 | 284 |
 | templates | 2 | 126 |
 | webhooks | 1 | 155 |
-| **total** | **144** | **18297** |
+| **total** | **148** | **18991** |
 
 ## agent-core profile
 
 Select with `--tool-profile agent-core` or `APP_MCP_TOOL_PROFILE=agent-core`. It is an allowlist independent of the read-only, standard and full modes; the API token's abilities still apply.
 
-12 tools, 1222 estimated tokens (cap 4000).
+15 tools, 1773 estimated tokens (cap 4000).
 
 - `cancel_deploy`
 - `deploy_app`
 - `diagnose_app_failure`
-- `get_app_logs`
+- `get_app_env`
 - `get_app_status`
 - `get_attention`
 - `list_apps`
 - `list_deploys`
-- `list_domains`
 - `preflight_app`
+- `query_logs`
 - `rollback_app`
 - `set_app_domains`
+- `set_app_env`
+- `unset_app_env`
+- `wait_for_deploy`
