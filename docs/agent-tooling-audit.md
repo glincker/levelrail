@@ -15,9 +15,10 @@ Measured by `go test -run TestToolListTokenBudget -v ./internal/mcptools` (or `s
 
 | Mode | Tools | Estimated tokens |
 | --- | --- | --- |
-| `read-only` | 109 | 41,600 |
-| `standard` (default) | 135 | 55,600 |
-| `full` | 144 | 59,800 |
+| `read-only` | 110 | 41,700 |
+| `standard` (default) | 138 | 56,100 |
+| `full` | 147 | 60,300 |
+| `agent-core` | 15 | 2,100 |
 
 Every mode is defined by `internal/mcptools/modes.go` and driven by the class table in `internal/mcptools/classes.go`: 109 read, 26 mutating, 9 destructive tools.
 
@@ -75,7 +76,7 @@ The output schema is the dominant cost. Typed handlers derive it from the Go res
 | --- | --- | --- |
 | `get_app_status`, `list_deploys` | Identical handler and result (current reconcile conditions). | Drop `list_deploys` from agent-facing modes; keep for compatibility in `full`. |
 | `deploy_app`, `rollback_app` | Same request and handler. | Keep both (intent is useful and the classes differ) but share one description. |
-| `list_deploys`, `list_deploy_attempts`, `list_deployments`, `list_failed_deploys` | Four ways to list deploy history at different scopes. | Descriptions must say which scope (one app vs fleet, failures only). The planned agent-core mode exposes `list_deploy_attempts` only. |
+| `list_deploys`, `list_deploy_attempts`, `list_deployments`, `list_failed_deploys` | Four ways to list deploy history at different scopes. | Descriptions must say which scope (one app vs fleet, failures only). The agent-core mode exposes `list_deploy_attempts` only. |
 | `get_resource_recommendation`, `get_database_resource_recommendation` | Same shape for apps and databases. | Fine, but one description should point at the other. |
 | `get_app_logs`, `get_model_logs`, `list_archived_logs` | Three log entry points. | A compact, capped log query tool for agents is planned. |
 | `preview_promote_app` and `promote_app`, `preview_clone_environment` and `clone_environment` | Preview and apply pairs. | Correct as designed; the read-only preview is what an agent should call first. |
@@ -101,8 +102,8 @@ The output schema is the dominant cost. Typed handlers derive it from the Go res
 
 ## Recommendations
 
-1. Ship a compact agent mode (`agent-core`) that covers deploy, status, logs, diagnose, rollback, env, secrets and domains in 15 tools or fewer. It costs a small fraction of the full set.
-2. Trim outputs before trimming inputs: return compact results from agent-core tools rather than the full resource structs, which removes the largest schemas from that mode.
+1. Use the compact `agent-core` mode (15 tools, about 2,100 tokens, 29 times smaller than `full`) for autonomous agents; it covers deploy, status, logs, diagnose, rollback, env, secrets and domains. See [AI assistant integration](ai-assistant.md#the-agent-core-mode).
+2. Trim outputs before trimming inputs: agent-core returns compact results instead of the full resource structs, which is what removes the largest schemas from that mode. The same approach would shrink the other modes.
 3. Rewrite the 19 long descriptions to one sentence that says what the tool returns and when to call it; move history and CLI comparisons into docs.
 4. Mark `restart_app`, `approve_*`, `reject_*` and `expire_*` idempotent, and drop the mechanical `title` if a client ever charges for it.
 5. Keep the budget test below passing; raise a budget only with a reason in the PR.
@@ -116,6 +117,7 @@ The output schema is the dominant cost. Typed handlers derive it from the Go res
 | `APP_MCP_TOKEN_BUDGET_READ_ONLY` | Override the `read-only` ceiling (estimated tokens). |
 | `APP_MCP_TOKEN_BUDGET_STANDARD` | Override the `standard` ceiling. |
 | `APP_MCP_TOKEN_BUDGET_FULL` | Override the `full` ceiling. |
+| `APP_MCP_TOKEN_BUDGET_AGENT_CORE` | Override the `agent-core` ceiling. |
 
 Run it with the report of the heaviest tools:
 

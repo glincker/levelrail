@@ -68,6 +68,18 @@ Every tool carries MCP annotations (`readOnlyHint`, `destructiveHint`, `idempote
 | `read-only` | read tools only (get, list, explain, diagnose, compare, preview) |
 | `standard` (default) | read and mutating tools (deploy, restart, set, create, clone, approve, rotate) |
 | `full` | everything, including destructive tools (delete, clear, rollback, prune, sweep) |
+| `agent-core` | 15 compact tools for autonomous agents (see below); includes `rollback_app` |
+
+### The `agent-core` mode
+
+`APP_MCP_MODE=agent-core` exposes only the tools an agent needs to operate an app end to end: `list_apps`, `get_app`, `get_app_status`, `list_deploy_attempts`, `deploy_app`, `rollback_app`, `restart_app`, `get_app_logs`, `diagnose_app_failure`, `list_app_images`, `get_app_env`, `set_app_env`, `set_app_secret`, `set_app_domains` and `check_domain_dns`. The tool names match the full set, but their results are compact (fixed small fields, messages clipped, logs capped at 8 KB) and they carry no output schema. Classes and annotations are unchanged: `rollback_app` is still destructive, the other mutating tools are still mutating, so the assistant's confirmation gate applies as before.
+
+| Mode | Tools | Estimated `tools/list` tokens |
+| --- | --- | --- |
+| `agent-core` | 15 | about 2,100 |
+| `full` | 147 | about 60,300 |
+
+The mode never widens access: the token's abilities still bound every call. `set_app_secret` passes a secret value through the model's context, so give an agent a token scoped to the apps it may touch. `set_app_env` and `set_app_secret` also exist in the other modes (as `standard` and `full` tools).
 
 `APP_MCP_TOOLSETS` (or `--toolsets`) is an optional comma separated list that limits the groups exposed: `alerts, apps, audit, backups, databases, deploys, diagnostics, domains, environments, flags, iam, loadbalancer, logs, metrics, models, nodes, notifications, orgs, pipelines, previews, registry, scheduled, settings, system, templates, webhooks`.
 

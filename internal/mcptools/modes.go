@@ -19,6 +19,9 @@ const (
 	ModeStandard Mode = "standard"
 	// ModeFull registers every tool.
 	ModeFull Mode = "full"
+	// ModeAgentCore registers a small compact tool set for autonomous
+	// agents, including mutating and destructive tools in that set.
+	ModeAgentCore Mode = "agent-core"
 
 	// EnvMode names the env var that selects the Mode.
 	EnvMode = "APP_MCP_MODE"
@@ -31,10 +34,10 @@ func ParseMode(s string) (Mode, error) {
 	switch m := Mode(strings.ToLower(strings.TrimSpace(s))); m {
 	case "":
 		return ModeStandard, nil
-	case ModeReadOnly, ModeStandard, ModeFull:
+	case ModeReadOnly, ModeStandard, ModeFull, ModeAgentCore:
 		return m, nil
 	default:
-		return "", fmt.Errorf("unknown mcp mode %q, want %q, %q or %q", s, ModeReadOnly, ModeStandard, ModeFull)
+		return "", fmt.Errorf("unknown mcp mode %q, want %q, %q, %q or %q", s, ModeReadOnly, ModeStandard, ModeFull, ModeAgentCore)
 	}
 }
 
@@ -74,8 +77,12 @@ type Summary struct {
 	Destruct int
 }
 
-func (o Options) allows(m Meta) bool {
+func (o Options) allows(name string, m Meta) bool {
 	switch o.Mode {
+	case ModeAgentCore:
+		if !agentCoreTools[name] {
+			return false
+		}
 	case ModeReadOnly:
 		if m.Class != ClassRead {
 			return false
@@ -101,7 +108,7 @@ func applyOptions(server *mcp.Server, opts Options) Summary {
 	sum := Summary{Mode: opts.Mode, Toolsets: opts.Toolsets}
 	var hidden []string
 	for name, m := range toolTable {
-		if !opts.allows(m) {
+		if !opts.allows(name, m) {
 			hidden = append(hidden, name)
 			continue
 		}

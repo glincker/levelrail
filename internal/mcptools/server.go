@@ -78,6 +78,11 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerLoadBalancerTools(server, client)
 	registerIaCTools(server, client)
 
+	registerAppEnvTools(server, client)
+	if opts.Mode == ModeAgentCore {
+		registerAgentCoreTools(server, client)
+	}
+
 	summary := applyOptions(server, opts)
 	return server, summary
 }

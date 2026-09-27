@@ -164,7 +164,7 @@ func parseFlags(prog string, args []string) (token, apiURL, profile, transport, 
 	fs.StringVar(&profile, "profile", "", "named credentials profile to read (overrides "+apiclient.EnvProfile+", default \""+apiclient.DefaultProfile+"\")")
 	fs.StringVar(&transport, "transport", "", "MCP transport: \""+transportStdio+"\" (default, spawn as a local subprocess) or \""+transportHTTP+"\" (network-reachable, requires an API token)")
 	fs.StringVar(&listen, "listen", "", "address to bind in --transport=http mode (default "+defaultListenAddr+", loopback only)")
-	fs.StringVar(&mode, "mode", "", "tool exposure: \"read-only\", \"standard\" (default, no destructive tools) or \"full\" (overrides "+mcptools.EnvMode+")")
+	fs.StringVar(&mode, "mode", "", "tool exposure: \"read-only\", \"standard\" (default, no destructive tools) or \"full\", or \"agent-core\" (15 compact tools for autonomous agents) (overrides "+mcptools.EnvMode+")")
 	fs.StringVar(&toolsets, "toolsets", "", "comma separated tool groups to expose, default all (overrides "+mcptools.EnvToolsets+")")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(fs.Output(), "%s: an MCP server exposing the control plane's REST API as tools over stdio or streamable HTTP.\n\nFlags:\n", prog)
