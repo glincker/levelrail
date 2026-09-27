@@ -1,62 +1,72 @@
 package failure
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 )
 
+// TestClassifyFixtures runs every testdata/failure/<class>/ directory: input.json
+// is an Input, want.json the expected code and retryable flag.
 func TestClassifyFixtures(t *testing.T) {
 	at := time.Date(2026, 9, 26, 10, 0, 0, 0, time.UTC)
-	cases := []struct {
-		name      string
-		in        Input
-		wantCode  string
-		retryable bool
-	}{
-		{"dockerfile missing", Input{Status: "failed", Error: "deploy: service \"web\": build: failed to read dockerfile: open Dockerfile: no such file or directory"}, CodeDockerfileError, false},
-		{"dockerfile syntax", Input{Status: "failed", Error: "deploy: service \"web\": build: dockerfile parse error on line 3: unknown instruction: RUNN"}, CodeDockerfileError, false},
-		{"dependency install", Input{Status: "failed", Error: "deploy: service \"web\": build: exit 1", LogLines: []string{"npm ERR! code ERESOLVE", "npm ERR! could not resolve"}}, CodeDependencyInstall, false},
-		{"build oom", Input{Status: "failed", FailingStep: "building", Error: "deploy: service \"web\": build: process \"/bin/sh -c npm run build\" did not complete successfully: signal: killed"}, CodeBuildOOM, false},
-		{"build timeout", Input{Status: "failed", Error: "deploy: service \"web\": build: context deadline exceeded"}, CodeBuildTimeout, true},
-		{"image pull denied", Input{Status: "failed", Error: "pull access denied for acme/web, repository does not exist or may require authorization"}, CodeImagePullFailed, false},
-		{"image not found", Input{Status: "failed", Error: "manifest unknown: manifest unknown"}, CodeImagePullFailed, false},
-		{"port not listening", Input{Condition: &Condition{Reason: "ReadinessFailed", Message: "GET http://172.18.0.3:3000/healthz: dial tcp 172.18.0.3:3000: connect: connection refused"}}, CodePortNotListening, false},
-		{"health check failed", Input{Condition: &Condition{Reason: "ReadinessFailed", Message: "readiness probe returned status 503"}}, CodeHealthCheckFailed, false},
-		{"container exit code", Input{Condition: &Condition{Reason: "ExitedDuringReadiness", Message: "container exited with code 2 during readiness"}}, CodeContainerCrashed, false},
-		{"crashloop", Input{Status: "failed", Error: "unhealthy", Crashloop: true}, CodeContainerCrashed, false},
-		{"runtime oom", Input{Condition: &Condition{Reason: "OOMKilledDuringReadiness", Message: "container was OOM killed"}}, CodeOOMKilled, false},
-		{"missing env", Input{Status: "failed", Error: "deploy: service \"web\": env var \"API_KEY\" is required but no secret value has been set for it yet"}, CodeMissingEnv, false},
-		{"registry push", Input{Status: "failed", FailingStep: "pushing", Error: "deploy: service \"web\": failed to push registry.local/web:abc: 502 Bad Gateway"}, CodeRegistryPushFailed, true},
-		{"disk full", Input{Status: "failed", Error: "write /var/lib/docker/tmp: no space left on device"}, CodeDiskFull, false},
-		{"freeze hold", Input{Status: "held", Reason: "Frozen", Error: "Frozen: release interrupted by restart"}, CodeFreezeWindow, true},
-		{"approval hold", Input{Status: "held", Reason: "AwaitingApproval"}, CodeApprovalPending, true},
-		{"scan gate", Input{Status: "failed", Error: "supply chain gate blocked this release: 2 critical vulnerabilities"}, CodeScanGateBlocked, false},
-		{"rollback gc", Input{Status: "failed", Error: "image web:1 was garbage collected and can no longer be rolled back to"}, CodeRollbackTargetGone, false},
-		{"docker unreachable", Input{Status: "failed", Error: "Cannot connect to the Docker daemon at unix:///var/run/docker.sock"}, CodeDockerUnreachable, true},
-		{"unknown", Input{Status: "failed", Error: "something entirely unexpected happened"}, CodeUnknown, false},
+	dirs, err := os.ReadDir("testdata/failure")
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.in.App, tc.in.DeployID, tc.in.At = "web", "da_1", at
-			got, ok := Classify(tc.in, Options{})
+	seen := map[string]bool{}
+	for _, d := range dirs {
+		dir := filepath.Join("testdata/failure", d.Name())
+		var want struct {
+			Code      string `json:"code"`
+			Retryable bool   `json:"retryable"`
+		}
+		readJSON(t, filepath.Join(dir, "want.json"), &want)
+		seen[want.Code] = true
+		t.Run(d.Name(), func(t *testing.T) {
+			var in Input
+			readJSON(t, filepath.Join(dir, "input.json"), &in)
+			in.App, in.DeployID, in.At = "web", "da_1", at
+			got, ok := Classify(in, Options{})
 			if !ok {
 				t.Fatalf("Classify reported not failing")
 			}
-			if got.Code != tc.wantCode {
-				t.Fatalf("code = %q, want %q (cause %q)", got.Code, tc.wantCode, got.Cause)
+			if got.Code != want.Code {
+				t.Fatalf("code = %q, want %q (cause %q)", got.Code, want.Code, got.Cause)
 			}
-			if got.Retryable != tc.retryable {
-				t.Errorf("retryable = %v, want %v", got.Retryable, tc.retryable)
+			if got.Retryable != want.Retryable {
+				t.Errorf("retryable = %v, want %v", got.Retryable, want.Retryable)
 			}
-			if got.SuggestedFix == "" || got.Cause == "" || got.DocsURL != "/deploy-failures#"+tc.wantCode {
+			if got.SuggestedFix == "" || got.Cause == "" || got.DocsURL != "/deploy-failures#"+want.Code {
 				t.Errorf("incomplete object: %+v", got)
 			}
 			if got.App != "web" || got.DeployID != "da_1" || !got.At.Equal(at) {
 				t.Errorf("identity fields not carried: %+v", got)
 			}
 		})
+	}
+	for _, c := range classes {
+		if !seen[c.code] {
+			t.Errorf("class %q has no fixture under testdata/failure", c.code)
+		}
+	}
+	if !seen[CodeUnknown] {
+		t.Error("no fixture for unknown")
+	}
+}
+
+func readJSON(t *testing.T, path string, v any) {
+	t.Helper()
+	raw, err := os.ReadFile(path) //nolint:gosec // fixture paths come from the repo's own testdata directory
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, v); err != nil {
+		t.Fatalf("%s: %v", path, err)
 	}
 }
 
