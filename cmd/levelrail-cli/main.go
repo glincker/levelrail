@@ -58,6 +58,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return exitUsage
 	}
 
+	if rejectDisabledExperimental(prog, args, stderr) {
+		return exitUsage
+	}
+
 	switch args[0] {
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, rootUsage(prog))
@@ -192,7 +196,7 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 }
 
 func rootUsage(prog string) string {
-	return fmt.Sprintf(`%[1]s: a scriptable client for the control plane API.
+	return filterExperimentalUsage(fmt.Sprintf(`%[1]s: a scriptable client for the control plane API.
 
 Usage:
   %[1]s apps create [flags]         create an app
@@ -296,5 +300,5 @@ Auth and target:
   command in this CLI already follows.
 
 Run "%[1]s apps -h", "%[1]s databases -h", or "%[1]s <command> <subcommand> -h" for more.
-`, prog, envAPIToken, envAPIURL, defaultAPIURL, envProfile, defaultProfile)
+`, prog, envAPIToken, envAPIURL, defaultAPIURL, envProfile, defaultProfile))
 }

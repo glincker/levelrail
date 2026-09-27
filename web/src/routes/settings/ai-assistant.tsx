@@ -1,3 +1,4 @@
+import { requireExperimental } from '../../lib/experimental'
 import { createFileRoute } from '@tanstack/react-router'
 import { RobotIcon } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -8,6 +9,8 @@ import { AiAssistantSettingsCard } from '../../components/AiAssistantSettingsCar
 import { PageSpinner } from '../../components/ui/page-spinner'
 
 export const Route = createFileRoute('/settings/ai-assistant')({
+  beforeLoad: ({ context: { queryClient } }) =>
+    requireExperimental(queryClient, 'ai-chat'),
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(aiAssistantSettingsQueryOptions()),
   component: AiAssistantSettingsPage,

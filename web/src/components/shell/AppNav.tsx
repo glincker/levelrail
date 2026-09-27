@@ -11,13 +11,14 @@ import { cn } from '@/lib/utils'
 import { AppNavHeader } from './AppNavHeader'
 import { CollapsibleSection } from './CollapsibleSection'
 import {
-  APP_NAV_SECTIONS,
   activeAppSection,
   isSingleSection,
   resolveOpen,
+  visibleAppSections,
   type AppNavItem,
   type AppNavSection,
 } from './navModel'
+import { useExperimentalFeatures } from '@/hooks/useExperimental'
 import { usePersistedToggles } from './usePersistedToggles'
 
 const APP_NAV_STORAGE_KEY = 'shell.nav.app.open'
@@ -81,6 +82,7 @@ export function AppNav({ name }: { name: string }) {
   const rail = state === 'collapsed'
   const [stored, setOpen] = usePersistedToggles(APP_NAV_STORAGE_KEY)
   const active = activeAppSection(pathname)
+  const experimental = useExperimentalFeatures()
 
   return (
     <>
@@ -88,7 +90,7 @@ export function AppNav({ name }: { name: string }) {
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
-            {APP_NAV_SECTIONS.map((section) => {
+            {visibleAppSections(experimental).map((section) => {
               const only = section.items[0]
               if (only && isSingleSection(section) && !rail) {
                 return (

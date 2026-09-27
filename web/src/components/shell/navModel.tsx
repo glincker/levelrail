@@ -33,6 +33,7 @@ import {
   WrenchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { GO_TARGETS } from '@/lib/shortcuts'
+import { filterByFeature, type ExperimentalFeature } from '@/lib/experimental'
 
 export type GlobalTo =
   | '/'
@@ -62,6 +63,7 @@ export interface GlobalNavItem {
   icon: React.ReactNode
   exact?: boolean
   badge?: GlobalBadge
+  feature?: ExperimentalFeature
 }
 
 export interface GlobalNavGroup {
@@ -139,6 +141,7 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Load balancers',
         to: '/loadbalancers',
         icon: <ArrowsSplitIcon />,
+        feature: 'load-balancer',
       },
     ],
   },
@@ -146,7 +149,13 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
     id: 'ai',
     label: 'AI',
     items: [
-      { id: 'models', label: 'AI models', to: '/models', icon: <CpuIcon /> },
+      {
+        id: 'models',
+        label: 'AI models',
+        to: '/models',
+        icon: <CpuIcon />,
+        feature: 'ai-models',
+      },
     ],
   },
   {
@@ -177,10 +186,35 @@ export const GLOBAL_NAV_FOOTER: GlobalNavItem[] = [
     label: 'AI assistant',
     to: '/ai-assistant',
     icon: <RobotIcon />,
+    feature: 'ai-chat',
   },
   { id: 'settings', label: 'Settings', to: '/settings', icon: <GearIcon /> },
   { id: 'help', label: 'Help', to: '/help', icon: <BookOpenIcon /> },
 ]
+
+export function visibleGlobalGroups(
+  enabled: readonly string[],
+): GlobalNavGroup[] {
+  return GLOBAL_NAV_GROUPS.map((g) => ({
+    ...g,
+    items: filterByFeature(g.items, enabled),
+  })).filter((g) => g.items.length > 0)
+}
+
+export function visibleGlobalFooter(
+  enabled: readonly string[],
+): GlobalNavItem[] {
+  return filterByFeature(GLOBAL_NAV_FOOTER, enabled)
+}
+
+export function visibleAppSections(
+  enabled: readonly string[],
+): AppNavSection[] {
+  return APP_NAV_SECTIONS.map((s) => ({
+    ...s,
+    items: filterByFeature(s.items, enabled),
+  })).filter((s) => s.items.length > 0)
+}
 
 export function allGlobalItems(): GlobalNavItem[] {
   return [...GLOBAL_NAV_GROUPS.flatMap((g) => g.items), ...GLOBAL_NAV_FOOTER]
@@ -227,6 +261,7 @@ export interface AppNavItem {
   label: string
   to: AppTo
   icon: React.ReactNode
+  feature?: ExperimentalFeature
 }
 
 export interface AppNavSection {
@@ -241,7 +276,8 @@ const item = (
   label: string,
   to: AppTo,
   icon: React.ReactNode,
-): AppNavItem => ({ id: slug, slug, label, to, icon })
+  feature?: ExperimentalFeature,
+): AppNavItem => ({ id: slug, slug, label, to, icon, feature })
 
 export const APP_NAV_SECTIONS: AppNavSection[] = [
   {
@@ -289,6 +325,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
         'Load balancer',
         '/apps/$name/loadbalancer',
         <ArrowsSplitIcon />,
+        'load-balancer',
       ),
       item('network', 'Network', '/apps/$name/network', <ShareNetworkIcon />),
     ],
