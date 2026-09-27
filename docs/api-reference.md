@@ -775,6 +775,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/model-cache | AbilityRead | handleListModelCache |
 | POST | /api/v1/model-cache/prune | AbilityRoot | handlePruneModelCache |
 | POST | /api/v1/pipelines/filters | AbilityRead | handlePipelineFilters |
+| GET | /api/v1/apps-metrics | AbilityRead | handleBatchAppMetrics |
 
 ## See also
 

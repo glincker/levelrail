@@ -207,6 +207,10 @@ The response includes:
 - Each field (`cpu_percent`, `memory_usage_bytes`, `memory_limit_bytes`, `network_rx_bytes`, `network_tx_bytes`) present only when a sample has been recorded.
 - One `LatestByMetric` call per metric, not one query per app.
 
+## Batched apps overview
+
+`GET /api/v1/apps-metrics` returns, in one response, every app the caller can read with its latest CPU and memory, a one hour request rate, 5xx error rate, p95 latency, a 12 point request-rate sparkline (5 minute buckets) and the last deploy time. Pass `?names=a,b` to limit it. The dashboard apps list and home tiles read only this endpoint, so a page of apps costs one request instead of two per row. The number of apps included is capped by `APP_APPS_METRICS_MAX` (default 200). From the CLI: `levelrail-cli apps overview [name ...]`.
+
 ## Fleet utilization
 
 `GET /api/v1/nodes/resource-usage` answers "how full are my servers" in one call: the node-scoped counterpart to `apps/resource-usage` above, read by both the node list's CPU/memory/disk columns and the dashboard's fleet summary card.
@@ -484,6 +488,7 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 | `GET` | `/api/v1/databases/{name}/metrics` | `read` |
 | `GET` | `/api/v1/nodes/{id}/metrics` | `root` |
 | `GET` | `/api/v1/apps/resource-usage` | `read` |
+| `GET` | `/api/v1/apps-metrics` | `read` |
 | `GET` | `/api/v1/nodes/resource-usage` | `root` |
 | `GET` | `/api/v1/apps/{name}/logs?from=...&to=...&q=...` | `read` |
 | `GET` | `/api/v1/apps/{name}/logs/stream` (SSE) | `read` |

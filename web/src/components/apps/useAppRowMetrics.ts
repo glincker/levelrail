@@ -1,4 +1,4 @@
-import { useAppLastDeploy, useAppTraffic } from '../../queries/fleetTraffic'
+import { useAppMetricsRow } from '../../queries/appsMetrics'
 
 export interface AppRowMetrics {
   loading: boolean
@@ -10,18 +10,14 @@ export interface AppRowMetrics {
 }
 
 export function useAppRowMetrics(name: string, enabled = true): AppRowMetrics {
-  const traffic = useAppTraffic(name, enabled)
-  const deploys = useAppLastDeploy(name, enabled)
-  const summary = traffic.data?.summary
-  const latest = deploys.data?.[0]
+  const row = useAppMetricsRow(name, enabled)
+  const data = row.data
   return {
-    loading: enabled && traffic.isPending,
-    hasTraffic: summary?.has_traffic ?? false,
-    spark: (traffic.data?.points ?? []).map((p) => p.rate_per_sec),
-    p95Ms: summary?.p95_ms ?? 0,
-    errorPct: (summary?.error_rate_5xx ?? 0) * 100,
-    lastDeployAt: latest
-      ? (latest.finished_at ?? latest.started_at)
-      : undefined,
+    loading: enabled && row.isPending,
+    hasTraffic: data?.has_traffic ?? false,
+    spark: data?.spark ?? [],
+    p95Ms: data?.p95_ms ?? 0,
+    errorPct: (data?.error_rate_5xx ?? 0) * 100,
+    lastDeployAt: data?.last_deploy_at,
   }
 }

@@ -56,6 +56,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"metrics":                 nil,
 		"requests":                nil,
 		"resource-usage":          nil,
+		"overview":                nil,
 		"exec":                    nil,
 		"exec-access":             {subs: map[string]*cmdNode{"enable": nil, "disable": nil, "status": nil}},
 		"log-drain":               {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},

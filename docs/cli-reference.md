@@ -284,6 +284,10 @@ levelrail apps metrics <name> --metric NAME [flags]
 ```
 
 ```
+levelrail apps overview [name ...] [flags]
+```
+
+```
 levelrail apps moves list <name> [flags]
 ```
 list every node-to-node move attempt for `<name>`, newest first
