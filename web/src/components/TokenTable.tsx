@@ -1,4 +1,4 @@
-import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { KeyIcon, RobotIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Table,
   TableBody,
@@ -45,6 +45,7 @@ export function TokenTable({ tokens }: { tokens: TokenResource[] }) {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
+            <TableHead>Agent</TableHead>
             <TableHead>Abilities</TableHead>
             <TableHead>Created</TableHead>
             <TableHead>Last used</TableHead>
@@ -63,6 +64,22 @@ export function TokenTable({ tokens }: { tokens: TokenResource[] }) {
               >
                 <TableCell className="font-medium text-foreground">
                   {token.name}
+                </TableCell>
+                <TableCell>
+                  {token.agent ? (
+                    <span
+                      className="inline-flex items-center gap-1.5 text-foreground"
+                      title={token.agent.description}
+                    >
+                      <RobotIcon
+                        className="size-3.5 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      {token.agent.name}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">None</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">

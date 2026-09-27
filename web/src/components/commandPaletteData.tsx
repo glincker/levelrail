@@ -10,6 +10,7 @@ import {
   UserIcon,
   ShieldIcon,
   KeyIcon,
+  PlugsConnectedIcon,
   CloudArrowUpIcon,
   WebhooksLogoIcon,
   GithubLogoIcon,
@@ -139,6 +140,13 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'API tokens',
     <KeyIcon />,
     '/settings/tokens',
+    'Settings',
+  ),
+  nav(
+    'settings-agents',
+    'Agents',
+    <PlugsConnectedIcon />,
+    '/settings/agents',
     'Settings',
   ),
   nav(
