@@ -93,6 +93,7 @@ var toolTable = map[string]Meta{
 	"set_app_domains":                       {clsM, "domains", 0},
 	"get_app_logs":                          {clsR, "logs", unt},
 	"query_logs":                            {clsR, "logs", unt},
+	"get_app_env":                           {clsR, "apps", 0},
 	"list_app_images":                       {clsR, "apps", 0},
 	"list_deploys":                          {clsR, "deploys", unt},
 	"get_deploy":                            {clsR, "deploys", unt},

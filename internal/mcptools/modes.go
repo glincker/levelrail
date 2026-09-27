@@ -37,8 +37,8 @@ const (
 var agentCoreTools = map[string]struct{}{
 	"list_apps": {}, "get_app_status": {}, "get_attention": {}, "deploy_app": {},
 	"list_deploys": {}, "cancel_deploy": {}, "diagnose_app_failure": {},
-	"get_app_logs": {}, "preflight_app": {}, "rollback_app": {},
-	"set_app_env": {}, "unset_app_env": {}, "list_domains": {}, "set_app_domains": {},
+	"query_logs": {}, "preflight_app": {}, "rollback_app": {},
+	"get_app_env": {}, "set_app_env": {}, "unset_app_env": {}, "set_app_domains": {},
 	"wait_for_deploy": {},
 }
 
@@ -170,5 +170,8 @@ func applyOptions(server *mcp.Server, opts Options) Summary {
 	}
 	sort.Strings(hidden)
 	server.RemoveTools(hidden...)
+	if opts.Profile == ProfileAgentCore {
+		server.AddReceivingMiddleware(omitOutputSchemas)
+	}
 	return sum
 }
