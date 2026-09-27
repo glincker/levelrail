@@ -77,11 +77,11 @@ func main() {
 }
 
 func run(prog string, args []string, lookupEnv func(string) (string, bool), logger *slog.Logger) error {
-	tokenFlag, apiURLFlag, profileFlag, transportFlag, listenFlag, modeFlag, toolsetsFlag, err := parseFlags(prog, args)
+	tokenFlag, apiURLFlag, profileFlag, transportFlag, listenFlag, modeFlag, toolsetsFlag, toolProfileFlag, err := parseFlags(prog, args)
 	if err != nil {
 		return err
 	}
-	opts, err := resolveOptions(modeFlag, toolsetsFlag, lookupEnv)
+	opts, err := resolveOptions(modeFlag, toolsetsFlag, toolProfileFlag, lookupEnv)
 	if err != nil {
 		return err
 	}
@@ -94,6 +94,7 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 	server, summary := mcptools.NewServerWithOptions(client, opts)
 	logAttrs := []any{
 		slog.String("mode", string(summary.Mode)),
+		slog.String("tool_profile", summary.Profile),
 		slog.Int("tools", summary.Total),
 		slog.Int("read", summary.Read),
 		slog.Int("mutating", summary.Mutate),
@@ -129,12 +130,19 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 	}
 }
 
-func resolveOptions(modeFlag, toolsetsFlag string, lookupEnv func(string) (string, bool)) (mcptools.Options, error) {
+func resolveOptions(modeFlag, toolsetsFlag, toolProfileFlag string, lookupEnv func(string) (string, bool)) (mcptools.Options, error) {
 	if modeFlag == "" {
 		modeFlag, _ = lookupEnv(mcptools.EnvMode)
 	}
 	if toolsetsFlag == "" {
 		toolsetsFlag, _ = lookupEnv(mcptools.EnvToolsets)
+	}
+	if toolProfileFlag == "" {
+		toolProfileFlag, _ = lookupEnv(mcptools.EnvToolProfile)
+	}
+	toolProfile, err := mcptools.ParseToolProfile(toolProfileFlag)
+	if err != nil {
+		return mcptools.Options{}, fmt.Errorf("resolve mcp tool profile: %w", err)
 	}
 	mode, err := mcptools.ParseMode(modeFlag)
 	if err != nil {
@@ -144,7 +152,7 @@ func resolveOptions(modeFlag, toolsetsFlag string, lookupEnv func(string) (strin
 	if err != nil {
 		return mcptools.Options{}, fmt.Errorf("resolve mcp toolsets: %w", err)
 	}
-	return mcptools.Options{Mode: mode, Toolsets: toolsets}, nil
+	return mcptools.Options{Mode: mode, Toolsets: toolsets, Profile: toolProfile}, nil
 }
 
 const (
@@ -157,7 +165,7 @@ const (
 // an operator explicitly passes a different --listen address.
 const defaultListenAddr = "127.0.0.1:8090"
 
-func parseFlags(prog string, args []string) (token, apiURL, profile, transport, listen, mode, toolsets string, err error) {
+func parseFlags(prog string, args []string) (token, apiURL, profile, transport, listen, mode, toolsets, toolProfile string, err error) {
 	fs := flag.NewFlagSet(prog, flag.ContinueOnError)
 	fs.StringVar(&token, "token", "", "API token (overrides "+apiclient.EnvAPIToken+" and the credentials file)")
 	fs.StringVar(&apiURL, "api-url", "", "control plane API base URL (overrides "+apiclient.EnvAPIURL+" and the credentials file, default "+apiclient.DefaultAPIURL+")")
@@ -166,12 +174,13 @@ func parseFlags(prog string, args []string) (token, apiURL, profile, transport, 
 	fs.StringVar(&listen, "listen", "", "address to bind in --transport=http mode (default "+defaultListenAddr+", loopback only)")
 	fs.StringVar(&mode, "mode", "", "tool exposure: \"read-only\", \"standard\" (default, no destructive tools) or \"full\" (overrides "+mcptools.EnvMode+")")
 	fs.StringVar(&toolsets, "toolsets", "", "comma separated tool groups to expose, default all (overrides "+mcptools.EnvToolsets+")")
+	fs.StringVar(&toolProfile, "tool-profile", "", "tool profile: \""+mcptools.ProfileAgentCore+"\" exposes a small allowlist of core agent tools (overrides "+mcptools.EnvToolProfile+")")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(fs.Output(), "%s: an MCP server exposing the control plane's REST API as tools over stdio or streamable HTTP.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	if parseErr := fs.Parse(args); parseErr != nil {
-		return "", "", "", "", "", "", "", parseErr
+		return "", "", "", "", "", "", "", "", parseErr
 	}
-	return token, apiURL, profile, transport, listen, mode, toolsets, nil
+	return token, apiURL, profile, transport, listen, mode, toolsets, toolProfile, nil
 }
