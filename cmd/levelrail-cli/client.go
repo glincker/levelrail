@@ -157,6 +157,7 @@ type (
 	containerResource           = apiclient.ContainerResource
 	containerPortResource       = apiclient.ContainerPortResource
 	updatesResource             = apiclient.UpdatesResource
+	updatePreflight             = apiclient.UpdatePreflight
 	nodeResource                = apiclient.NodeResource
 	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest
 	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse

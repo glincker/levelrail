@@ -141,6 +141,15 @@ func (c *Client) Ping(ctx context.Context) error {
 	return nil
 }
 
+// ServerVersion returns the Docker Engine version string the daemon reports.
+func (c *Client) ServerVersion(ctx context.Context) (string, error) {
+	v, err := c.cli.ServerVersion(ctx)
+	if err != nil {
+		return "", fmt.Errorf("docker: server version: %w", err)
+	}
+	return v.Version, nil
+}
+
 // TestRegistryAuth asks the daemon to authenticate against host with
 // username/password, the daemon's own `docker login`-equivalent check,
 // without pulling anything. Same narrow-interface-on-the-concrete-type

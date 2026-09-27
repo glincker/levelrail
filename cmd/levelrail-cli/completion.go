@@ -167,6 +167,7 @@ var cliCommandTree = map[string]*cmdNode{
 	}},
 	"status":                   nil,
 	"version":                  nil,
+	"upgrade":                  nil,
 	"audit-log":                nil,
 	"audit-purge":              nil,
 	"attention":                nil,

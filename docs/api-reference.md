@@ -46,6 +46,7 @@ System endpoints for:
 | POST | /api/v1/system/control-plane-dr/drill | AbilityWriteSensitive | handleRunControlPlaneDRDrill |
 | POST | /api/v1/system/control-plane-dr/escrow | AbilityRoot | handleControlPlaneDREscrow |
 | POST | /api/v1/system/control-plane-dr/escrow/ack | AbilityWriteSensitive | handleAckControlPlaneDREscrow |
+| GET | /api/v1/updates/preflight | AbilityRead | handleUpdatePreflight |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

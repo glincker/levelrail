@@ -15,7 +15,9 @@ import (
 
 // githubLatestReleaseURL is the public, unauthenticated GitHub Releases
 // endpoint for this project's own repo.
-const githubLatestReleaseURL = "https://api.github.com/repos/glincker/levelrail/releases/latest"
+const githubRepo = "glincker/levelrail"
+
+const githubLatestReleaseURL = "https://api.github.com/repos/" + githubRepo + "/releases/latest"
 
 // updatesCacheTTL bounds how often handleGetUpdates hits GitHub's API,
 // so a busy Settings > Updates page can't risk rate limiting.
@@ -29,6 +31,10 @@ type githubRelease struct {
 	TagName     string `json:"tag_name"`
 	HTMLURL     string `json:"html_url"`
 	PublishedAt string `json:"published_at"`
+	Body        string `json:"body"`
+	Assets      []struct {
+		Name string `json:"name"`
+	} `json:"assets"`
 }
 
 // fetchLatestReleaseFunc matches defaultFetchLatestRelease's signature;

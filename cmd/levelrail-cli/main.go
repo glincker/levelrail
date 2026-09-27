@@ -128,6 +128,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
 		return runStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "upgrade":
+		return runUpgrade(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
 	case "audit-log":
@@ -238,6 +240,7 @@ Usage:
   %[1]s nodes cordon|uncordon|drain|health|workloads <id> [flags]   node scheduling and maintenance
   %[1]s nodes mesh|rotate-key [id] [flags]                          WireGuard mesh status and key rotation
   %[1]s status [flags]                                        control plane status, including local Docker daemon reachability
+  %[1]s upgrade [--no-backup] [flags]                          preflight checks, backup, and the command that upgrades (never upgrades itself)
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
   %[1]s audit-purge [flags]                                   delete audit log entries past the retention window now
