@@ -1,4 +1,8 @@
-import type { CreateModelRequest, ModelEngine } from '../types/models'
+import type {
+  CreateModelRequest,
+  ModelEngine,
+  ModelResidency,
+} from '../types/models'
 
 export const LOCAL_NODE = 'local'
 const NAME_PATTERN = /^[a-z0-9]([a-z0-9-]{0,40}[a-z0-9])?$/
@@ -14,6 +18,8 @@ export interface DeployFormState {
   quantization: string
   domain: string
   hfToken: string
+  residency: ModelResidency
+  idleMinutes: string
 }
 
 export const INITIAL_DEPLOY_FORM: DeployFormState = {
@@ -26,6 +32,8 @@ export const INITIAL_DEPLOY_FORM: DeployFormState = {
   quantization: '',
   domain: '',
   hfToken: '',
+  residency: 'always',
+  idleMinutes: '',
 }
 
 // Returns the first validation problem, or null when the form can submit.
@@ -39,6 +47,13 @@ export function validateDeployForm(f: DeployFormState): string | null {
   }
   if (f.context !== '' && !POSITIVE_INT.test(f.context)) {
     return 'Context length must be a positive number.'
+  }
+  if (
+    f.residency === 'on_demand' &&
+    f.idleMinutes !== '' &&
+    !POSITIVE_INT.test(f.idleMinutes)
+  ) {
+    return 'Idle time must be a positive number of minutes.'
   }
   return null
 }
@@ -58,6 +73,10 @@ export function buildCreateRequest(f: DeployFormState): CreateModelRequest {
   if (f.domain.trim() !== '') req.domain = f.domain.trim()
   if (f.hfToken.trim() !== '' && f.engine !== 'ollama') {
     req.hf_token = f.hfToken.trim()
+  }
+  if (f.residency === 'on_demand') {
+    req.residency = 'on_demand'
+    if (f.idleMinutes !== '') req.idle_ttl_seconds = Number(f.idleMinutes) * 60
   }
   return req
 }

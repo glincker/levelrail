@@ -36,6 +36,8 @@ type deployModelInput struct {
 	Quantization  string   `json:"quantization,omitempty" jsonschema:"quantization method for vllm, e.g. awq"`
 	Domain        string   `json:"domain,omitempty" jsonschema:"hostname for the OpenAI-compatible endpoint"`
 	HFToken       string   `json:"hf_token,omitempty" jsonschema:"HuggingFace access token for gated models, stored encrypted and never returned"`
+	Residency     string   `json:"residency,omitempty" jsonschema:"always (default) or on_demand: stop the engine when idle, start it on the first request"`
+	IdleTTLSecs   int      `json:"idle_ttl_seconds,omitempty" jsonschema:"with on_demand: idle seconds before the engine stops; 0 uses the platform default"`
 }
 
 type modelUsageInput struct {
@@ -117,7 +119,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 		out, err := client.CreateModel(ctx, apiclient.CreateModelRequest{
 			Name: in.Name, Engine: in.Engine, Model: in.Model, NodeID: in.NodeID, GPUCount: in.GPUCount,
 			GPUDeviceIDs: in.GPUDeviceIDs, ContextLength: in.ContextLength, Quantization: in.Quantization,
-			Domain: in.Domain, HFToken: in.HFToken,
+			Domain: in.Domain, HFToken: in.HFToken, Residency: in.Residency, IdleTTLSecs: in.IdleTTLSecs,
 		})
 		if err != nil {
 			return nil, apiclient.CreateModelResponse{}, fmt.Errorf("deploy model %q: %w", in.Name, err)

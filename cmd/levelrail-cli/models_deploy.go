@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
@@ -17,6 +18,7 @@ func runModelsDeploy(prog string, args []string, stdout, stderr io.Writer, looku
 	var req apiclient.CreateModelRequest
 	var gpus, devices string
 	var hfFromEnv bool
+	var idleTTL time.Duration
 	fs.StringVar(&req.Name, "name", "", "model name (lowercase letters, digits, hyphens)")
 	fs.StringVar(&req.Engine, "engine", "", "inference engine: ollama, vllm or llamacpp")
 	fs.StringVar(&req.Model, "model", "", "model reference: an Ollama tag (llama3.1:8b) or a HuggingFace repo (org/name)")
@@ -27,6 +29,8 @@ func runModelsDeploy(prog string, args []string, stdout, stderr io.Writer, looku
 	fs.StringVar(&req.Quantization, "quantization", "", "quantization method for vllm (for example awq, gptq, fp8)")
 	fs.StringVar(&req.Domain, "domain", "", "hostname for the OpenAI-compatible endpoint (default: a zero-config hostname when APP_PUBLIC_HOST is a public IP)")
 	fs.BoolVar(&hfFromEnv, "hf-token-from-env", false, "read a HuggingFace token from the "+envHFToken+" environment variable and store it encrypted")
+	fs.StringVar(&req.Residency, "residency", "", "always (default) or on_demand: stop the engine when idle and start it on the first request")
+	fs.DurationVar(&idleTTL, "idle-ttl", 0, "with --residency on_demand: how long unused before the engine stops (default: the platform's APP_MODEL_IDLE_TTL)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, modelsDeployUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -41,6 +45,10 @@ func runModelsDeploy(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 	req.GPUCount = count
+	if idleTTL < 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--idle-ttl must not be negative"))
+	}
+	req.IdleTTLSecs = int(idleTTL / time.Second)
 	if devices != "" {
 		req.GPUDeviceIDs = strings.Split(devices, ",")
 	}
@@ -102,6 +110,8 @@ Flags:
   --quantization string      vllm quantization method
   --domain string            hostname for the endpoint
   --hf-token-from-env        read a HuggingFace token from %[5]s
+  --residency string         always (default) or on_demand
+  --idle-ttl duration        idle time before an on_demand engine stops
   --token string             API token (default: %[2]s env var, then the credentials file)
   --api-url string           control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string           named credentials profile to read

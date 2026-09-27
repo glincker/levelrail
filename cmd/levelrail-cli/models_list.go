@@ -95,6 +95,9 @@ func printModelHuman(out io.Writer, m apiclient.ModelResource) {
 	if m.EndpointURL != "" {
 		_, _ = fmt.Fprintf(out, "base url:    %s\n", m.EndpointURL)
 	}
+	if m.Residency == "on_demand" {
+		_, _ = fmt.Fprintf(out, "residency:   on_demand, idle after %ds (state: %s)\n", m.EffectiveIdleTTLSeconds, m.ResidencyState)
+	}
 	_, _ = fmt.Fprintf(out, "api key:     %s... (shown once at deploy time)\n", m.APIKeyPrefix)
 	_, _ = fmt.Fprintf(out, "limits:      %s\n", modelLimitsSummary(m.Limits))
 }

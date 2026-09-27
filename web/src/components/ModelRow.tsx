@@ -5,6 +5,7 @@ import {
   CheckCircleIcon,
   CircleNotchIcon,
   KeyIcon,
+  MoonIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
@@ -41,6 +42,8 @@ function ModelStatusBadge({ model }: { model: ModelResource }) {
       return (
         <StatusBadge variant="muted" label="Deleting" icon={CircleNotchIcon} />
       )
+    case 'idle':
+      return <StatusBadge variant="muted" label="Idle" icon={MoonIcon} />
     default:
       return (
         <StatusBadge

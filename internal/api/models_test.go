@@ -43,6 +43,9 @@ func TestModelsRoutes_RequireAuth(t *testing.T) {
 		{http.MethodGet, "/api/v1/models/chat/logs"},
 		{http.MethodGet, "/api/v1/models/chat/engine-metrics"},
 		{http.MethodGet, "/api/v1/models/chat/fit"},
+		{http.MethodPut, "/api/v1/models/chat/residency"},
+		{http.MethodPost, "/api/v1/models/chat/wake"},
+		{http.MethodPost, "/api/v1/models/chat/sleep"},
 		{http.MethodPost, "/api/v1/models/fit"},
 		{http.MethodGet, "/api/v1/models/chat/logs/stream"},
 		{http.MethodGet, "/api/v1/gpus"},
@@ -340,5 +343,55 @@ func TestModels_FitEndpoints(t *testing.T) {
 	}
 	if rep.Model != "chat" || len(rep.Nodes) != 1 || !rep.Nodes[0].Current {
 		t.Fatalf("model fit report = %+v", rep)
+	}
+}
+
+func TestModels_ResidencyFlow(t *testing.T) {
+	rt, db := newModelsTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models", `{"name":"chat","engine":"ollama","model":"llama3.1:8b","residency":"on_demand","idle_ttl_seconds":600}`)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var created createModelResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	if created.Residency != "on_demand" || created.IdleTTLSeconds != 600 || created.EffectiveIdleTTLSeconds != 600 || created.LastActiveAt == nil || created.ResidencyState != "awake" {
+		t.Fatalf("created = %+v", created.modelResource)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models", `{"name":"bad","engine":"ollama","model":"llama3.1:8b","residency":"weekly"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad residency status = %d", rec.Code)
+	}
+
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models/chat/sleep", ""); rec.Code != http.StatusNoContent {
+		t.Fatalf("sleep status = %d", rec.Code)
+	}
+	rec = doModels(t, rt, cookie, http.MethodGet, "/api/v1/models/chat", "")
+	var got modelResource
+	_ = json.Unmarshal(rec.Body.Bytes(), &got)
+	if got.LastActiveAt != nil {
+		t.Fatalf("sleep must clear activity: %+v", got)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models/chat/wake", ""); rec.Code != http.StatusNoContent {
+		t.Fatalf("wake status = %d", rec.Code)
+	}
+
+	if rec := doModels(t, rt, cookie, http.MethodPut, "/api/v1/models/chat/residency", `{"residency":"always"}`); rec.Code != http.StatusNoContent {
+		t.Fatalf("set residency status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	for _, tc := range []struct{ method, path, body string }{
+		{http.MethodPost, "/api/v1/models/chat/wake", ""},
+		{http.MethodPost, "/api/v1/models/chat/sleep", ""},
+	} {
+		if rec := doModels(t, rt, cookie, tc.method, tc.path, tc.body); rec.Code != http.StatusBadRequest {
+			t.Fatalf("%s on an always-resident model status = %d", tc.path, rec.Code)
+		}
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPut, "/api/v1/models/chat/residency", `{"residency":"on_demand","idle_ttl_seconds":-1}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("negative ttl status = %d", rec.Code)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPut, "/api/v1/models/nope/residency", `{"residency":"always"}`); rec.Code != http.StatusNotFound {
+		t.Fatalf("missing model status = %d", rec.Code)
 	}
 }

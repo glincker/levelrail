@@ -2,6 +2,7 @@
 // internal/api/models.go (modelResource, gpuNodeResource).
 
 export type ModelEngine = 'ollama' | 'vllm' | 'llamacpp'
+export type ModelResidency = 'always' | 'on_demand'
 
 export interface ModelStatus {
   ready: boolean
@@ -25,6 +26,11 @@ export interface ModelResource {
   status: ModelStatus
   created_at: string
   updated_at: string
+  residency: ModelResidency
+  idle_ttl_seconds: number
+  effective_idle_ttl_seconds: number
+  residency_state: 'awake' | 'asleep' | 'waking'
+  last_active_at?: string
 }
 
 export interface CreateModelRequest {
@@ -38,6 +44,8 @@ export interface CreateModelRequest {
   quantization?: string
   domain?: string
   hf_token?: string
+  residency?: ModelResidency
+  idle_ttl_seconds?: number
 }
 
 export interface CreateModelResponse extends ModelResource {

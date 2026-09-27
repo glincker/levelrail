@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gpu"
 )
@@ -113,5 +114,65 @@ func TestNodeGPURoundTrip(t *testing.T) {
 	all, err := db.ListNodeGPUs(ctx)
 	if err != nil || len(all) != 1 {
 		t.Fatalf("ListNodeGPUs = %v, %v", all, err)
+	}
+}
+
+func TestModelResidency(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveModel(ctx, testModel("chat", "")); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := db.GetModel(ctx, "chat")
+	if got.Residency != ResidencyAlways || got.ResidencyState != ResidencyAwake || !got.LastActiveAt.IsZero() || got.IdleTTLSeconds != 0 {
+		t.Fatalf("defaults = %+v", got)
+	}
+
+	now := time.Now().UTC().Truncate(time.Millisecond)
+	if err := db.SetModelResidency(ctx, "chat", ResidencyOnDemand, 600, now); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = db.GetModel(ctx, "chat")
+	if got.Residency != ResidencyOnDemand || got.IdleTTLSeconds != 600 || !got.LastActiveAt.Equal(now) {
+		t.Fatalf("on demand = %+v", got)
+	}
+
+	if err := db.SetModelResidencyState(ctx, "chat", ResidencyAsleep); err != nil {
+		t.Fatal(err)
+	}
+	later := now.Add(time.Minute)
+	if err := db.TouchModel(ctx, "chat", later); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = db.GetModel(ctx, "chat")
+	if got.ResidencyState != ResidencyAsleep || !got.LastActiveAt.Equal(later) {
+		t.Fatalf("after touch = %+v", got)
+	}
+
+	if err := db.SleepModel(ctx, "chat"); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = db.GetModel(ctx, "chat")
+	if !got.LastActiveAt.IsZero() {
+		t.Fatalf("sleep must clear activity: %+v", got)
+	}
+
+	if err := db.SetModelResidency(ctx, "chat", ResidencyAlways, 0, now); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = db.GetModel(ctx, "chat")
+	if got.Residency != ResidencyAlways || got.ResidencyState != ResidencyAwake {
+		t.Fatalf("always must clear the asleep state: %+v", got)
+	}
+
+	for name, fn := range map[string]func() error{
+		"touch":  func() error { return db.TouchModel(ctx, "nope", now) },
+		"state":  func() error { return db.SetModelResidencyState(ctx, "nope", ResidencyAwake) },
+		"sleep":  func() error { return db.SleepModel(ctx, "nope") },
+		"config": func() error { return db.SetModelResidency(ctx, "nope", ResidencyAlways, 0, now) },
+	} {
+		if err := fn(); !errors.Is(err, ErrModelNotFound) {
+			t.Errorf("%s on a missing model = %v, want ErrModelNotFound", name, err)
+		}
 	}
 }

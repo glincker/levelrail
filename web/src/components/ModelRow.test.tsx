@@ -42,6 +42,10 @@ function model(overrides: Partial<ModelResource> = {}): ModelResource {
     endpoint_url: 'https://chat.example.com/v1',
     api_key_prefix: 'lr-abcd',
     hf_token_set: false,
+    residency: 'always',
+    idle_ttl_seconds: 0,
+    effective_idle_ttl_seconds: 900,
+    residency_state: 'awake',
     status: {
       ready: false,
       reason: 'Downloading',

@@ -9,6 +9,7 @@ export function modelTone(model: ModelResource): Tone {
     case 'progress':
       return 'warning'
     case 'deleting':
+    case 'idle':
       return 'neutral'
     default:
       return 'danger'

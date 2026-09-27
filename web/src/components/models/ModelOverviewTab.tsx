@@ -7,6 +7,7 @@ import { chatCurlExample } from '../../lib/modelPresentation'
 import type { ModelResource } from '../../types/models'
 import { ModelEnginePanel } from './ModelEnginePanel'
 import { ModelFitCard } from './ModelFitCard'
+import { ModelResidencyCard } from './ModelResidencyCard'
 
 function copy(value: string, label: string) {
   void navigator.clipboard.writeText(value).then(() => {
@@ -65,6 +66,10 @@ export function ModelOverviewTab({ model }: { model: ModelResource }) {
         />
         <Fact label="Quantization" value={model.quantization || 'from model'} />
       </dl>
+      <ModelResidencyCard
+        key={`${model.residency}-${String(model.idle_ttl_seconds)}`}
+        model={model}
+      />
       <ModelFitCard modelName={model.name} />
       <ModelEnginePanel modelName={model.name} engine={model.engine} />
       <section aria-label="Endpoint" className="space-y-2">

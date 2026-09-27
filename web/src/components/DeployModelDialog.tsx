@@ -222,6 +222,43 @@ export function DeployModelDialog({
             </Field>
           ) : null}
           <ModelFitPanel form={form} />
+          <div className="grid grid-cols-2 gap-3">
+            <Field>
+              <FieldLabel htmlFor="model-residency">Residency</FieldLabel>
+              <Select
+                value={form.residency}
+                onValueChange={(v) => {
+                  if (v === 'always' || v === 'on_demand') set('residency', v)
+                }}
+              >
+                <SelectTrigger id="model-residency" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="always">Always loaded</SelectItem>
+                  <SelectItem value="on_demand">On demand</SelectItem>
+                </SelectContent>
+              </Select>
+              <FieldHint>
+                On demand stops the engine when idle and starts it on the first
+                request.
+              </FieldHint>
+            </Field>
+            {form.residency === 'on_demand' ? (
+              <Field>
+                <FieldLabel htmlFor="model-idle">Idle minutes</FieldLabel>
+                <Input
+                  id="model-idle"
+                  value={form.idleMinutes}
+                  onChange={(e) => {
+                    set('idleMinutes', e.target.value)
+                  }}
+                  placeholder="platform default"
+                  inputMode="numeric"
+                />
+              </Field>
+            ) : null}
+          </div>
           <Field>
             <FieldLabel htmlFor="model-domain">Domain</FieldLabel>
             <Input

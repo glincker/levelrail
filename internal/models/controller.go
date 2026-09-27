@@ -30,6 +30,7 @@ func ControllerName(name string) string { return controllerNamePref + name }
 type Store interface {
 	GetModel(ctx context.Context, name string) (*store.Model, error)
 	SetModelEndpoint(ctx context.Context, name, dial string) error
+	SetModelResidencyState(ctx context.Context, name, state string) error
 	DeleteModel(ctx context.Context, name string) error
 }
 
@@ -64,6 +65,7 @@ type Controller struct {
 	secrets Secrets
 	prefix  string
 	images  map[string]string
+	now     func() time.Time
 }
 
 // Option configures a Controller.
@@ -76,6 +78,9 @@ func WithContainerPrefix(p string) Option { return func(c *Controller) { c.prefi
 // WithImages overrides engine images by engine name.
 func WithImages(images map[string]string) Option { return func(c *Controller) { c.images = images } }
 
+// WithClock overrides the clock used for idle decisions.
+func WithClock(now func() time.Time) Option { return func(c *Controller) { c.now = now } }
+
 // WithSecrets enables resolving the model's HuggingFace token and
 // deleting its secrets on teardown. Without it, a model with a token set
 // stays blocked.
@@ -83,7 +88,7 @@ func WithSecrets(s Secrets) Option { return func(c *Controller) { c.secrets = s 
 
 // New builds the Controller for model name.
 func New(name string, st Store, nodes Nodes, rt docker.Runtime, prober Prober, opts ...Option) *Controller {
-	c := &Controller{name: name, store: st, nodes: nodes, runtime: rt, prober: prober}
+	c := &Controller{name: name, store: st, nodes: nodes, runtime: rt, prober: prober, now: time.Now}
 	for _, o := range opts {
 		o(c)
 	}
@@ -166,6 +171,16 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("InspectFailed", err.Error()), fmt.Errorf("models/%s: inspect %q: %w", c.name, target, err)
 	}
+	if m.Residency == store.ResidencyOnDemand {
+		if res, done, err := c.residency(ctx, m, node, state); done {
+			return res, err
+		}
+	}
+	res, err := c.converge(ctx, m, node, state, target, image, hfToken)
+	return c.finishWake(ctx, m, res, err)
+}
+
+func (c *Controller) converge(ctx context.Context, m *store.Model, node NodeInfo, state *docker.ContainerState, target, image, hfToken string) (reconcile.Result, error) {
 	if state == nil {
 		return c.create(ctx, m, node, target, image, hfToken)
 	}

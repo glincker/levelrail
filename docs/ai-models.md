@@ -138,6 +138,9 @@ A model has one `Ready` condition whose reason tells you where it is:
 | `Downloading` | The weights are downloading. Ollama reports percent and bytes; vLLM and llama.cpp download on start, follow `levelrail models logs <name> --follow`. |
 | `Loading` | The model is being loaded into VRAM. |
 | `ModelLoaded` | The model is loaded and serving. This is the readiness signal. |
+| `Idle` | An on-demand model whose engine was stopped after its idle time. It starts on the first request (see On-demand residency). |
+| `WakingUp` | An on-demand model's engine is starting or loading after a wake. |
+| `WaitingForGPU` | An on-demand model would fit the GPUs but other workloads hold too much VRAM right now; it starts when they free it. |
 | `NoGPUOnNode`, `GPURuntimeMissing`, `InsufficientGPUs` | The node cannot serve the request. See GPU nodes above. |
 | `HFTokenUnavailable` | A token is set but cannot be decrypted (no master key). |
 | `EndpointUnreachable` | The node is remote and not on the WireGuard mesh, so the control plane cannot reach the engine. |
@@ -178,6 +181,28 @@ The health pill warns when the KV cache is at or above `APP_MODEL_KV_WARN_PERCEN
 - **MCP.** `get_model_engine_metrics` (read-only).
 
 The scrape is done by the control plane, not by a node agent, so a remote node's engine must be reachable over the mesh (the same requirement as serving it). Numbers depend on the engine version's metric names; vLLM's older `gpu_cache_usage_perc` and current `kv_cache_usage_perc` are both read.
+
+## On-demand residency
+
+By default a model is always loaded. On a shared GPU you can make it **on demand**: after an idle period the engine container is stopped, freeing its VRAM, and the first request starts it again.
+
+```sh
+levelrail models deploy --name chat --engine ollama --model llama3.1:8b --residency on_demand --idle-ttl 20m
+levelrail models residency chat --mode on_demand --idle-ttl 30m
+levelrail models wake chat      # start now
+levelrail models sleep chat     # stop now
+```
+
+How it behaves:
+
+- **Idle.** Every authenticated gateway request marks the model used (a long streaming response keeps refreshing it). When nothing has used it for the idle TTL, the reconciler stops the container and the status reason becomes `Idle`. The TTL is per model (`--idle-ttl`), defaulting to `APP_MODEL_IDLE_TTL` (15m). It cannot be set below `APP_MODEL_MIN_IDLE_TTL` (1m), so a busy model is never judged idle between activity writes (`APP_MODEL_ACTIVITY_TOUCH_INTERVAL`, default 10s).
+- **Wake.** The first authenticated request to an idle model asks the reconciler to start it and is held while the engine loads, for at most `APP_MODEL_WAKE_WAIT` (default 90s). If the engine is not serving by then, or the wait is 0, the client gets `503` with `Retry-After` (`APP_MODEL_WAKE_RETRY_AFTER`, default 15s) and error code `model_waking`; the wake keeps going, so a retry usually succeeds. Unauthenticated or invalid requests never wake a model.
+- **Ollama.** Ollama's own keep-alive is set to forever so weights stay in VRAM; unloading it means stopping the container, which is what on-demand does.
+- **GPU contention.** If a wake would fit an empty GPU set but other workloads hold too much VRAM (per the fit estimate above), the model reports `WaitingForGPU` and starts when memory frees. A model too large for the GPUs is not held back, since waiting would not help. The GPU snapshot refreshes every minute, so this can lag.
+- **State.** The reconciler owns the asleep, waking and awake states. Stop and start are idempotent: a stop that succeeded but failed to record is repaired on the next pass, and a request that lands while the reconciler is deciding to stop wins (the row is re-read right before stopping).
+- **Dashboard.** The model page Overview has a Residency card (mode, idle minutes, Wake now, Sleep now) and the deploy dialog has a Residency field. **API.** `PUT /api/v1/models/{name}/residency`, `POST /api/v1/models/{name}/wake`, `POST /api/v1/models/{name}/sleep` (write ability); the model resource carries `residency`, `idle_ttl_seconds`, `effective_idle_ttl_seconds`, `residency_state` and `last_active_at`. **MCP.** `get_model` returns the same fields and `deploy_model` accepts `residency` and `idle_ttl_seconds`.
+
+Swap groups (several models sharing one GPU, only one loaded at a time) are not built; give each model on a shared GPU an idle TTL instead. Cold start includes the engine's load time (minutes for a large vLLM model), so on-demand suits models used in bursts, not latency-critical ones. No GPU was involved in testing this; the engine start, stop and wake paths are covered with fakes.
 
 ## The endpoint and API key
 
@@ -307,7 +332,7 @@ Listing and reading models and GPUs needs the `read` ability. Deleting and resta
 
 ## Not in version 1
 
-AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, per-model limit overrides, and a Prometheus endpoint for usage.
+AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, per-model limit overrides, swap groups, and a Prometheus endpoint for usage.
 
 ## GPU in Compose templates
 
