@@ -102,6 +102,7 @@ noted per-document since these move between draft, proposed, accepted
 | --- | --- |
 | [roadmap.md](roadmap.md) | What's Done, In progress, and explicitly out of scope, kept current against `main` |
 | [feature-status.md](feature-status.md) | Maturity label and test evidence per feature, and README claims checked against the code |
+| [experimental-features.md](experimental-features.md) | The `APP_EXPERIMENTAL` switch, what each gated feature does while off, and how the CLI, MCP, and web read it |
 | [ci.md](ci.md) | How the CI lanes, required checks and local hooks fit together |
 | [performance.md](performance.md) | Measured idle CPU, memory, and API latency at 0, 100, and 500 apps, and how to reproduce it |
 

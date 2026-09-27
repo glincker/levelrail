@@ -100,6 +100,7 @@ const sidebarGroups = [
     items: [
       { text: 'Roadmap', link: '/roadmap' },
       { text: 'Feature status', link: '/feature-status' },
+      { text: 'Experimental features', link: '/experimental-features' },
       { text: 'Performance', link: '/performance' },
       { text: 'CI', link: '/ci' },
       { text: 'Changelog', link: '/changelog/' },
