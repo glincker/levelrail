@@ -33,12 +33,12 @@ func TestWriteJSONError(t *testing.T) {
 		t.Fatalf("writeJSONError() error = %v", err)
 	}
 
-	var got map[string]string
+	var got map[string]any
 	if err := json.Unmarshal(buf.Bytes(), &got); err != nil {
 		t.Fatalf("output is not valid JSON: %v; got: %s", err, buf.String())
 	}
 	if got["error"] != "boom" {
-		t.Errorf("error field = %q, want %q", got["error"], "boom")
+		t.Errorf("error field = %v, want %q", got["error"], "boom")
 	}
 }
 
