@@ -851,8 +851,8 @@ func TestBuildRoutesConfig_RedirectRoute_JSONShape(t *testing.T) {
 		t.Fatalf("headers missing from redirect handler: %+v", handler)
 	}
 	location, ok := headers["Location"].([]any)
-	if !ok || len(location) != 1 || location[0] != "https://example.internal" {
-		t.Errorf("Location header = %v, want [\"https://example.internal\"]", headers["Location"])
+	if !ok || len(location) != 1 || location[0] != "https://example.internal{http.request.uri}" {
+		t.Errorf("Location header = %v, want [\"https://example.internal{http.request.uri}\"]", headers["Location"])
 	}
 }
 

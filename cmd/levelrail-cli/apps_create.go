@@ -223,6 +223,9 @@ func planFromFile(f createFlags, fileSpec *spec.Spec, detected detectedGit) (cre
 		return createPlan{}, err
 	}
 	svc := fileSpec.Services[key]
+	if err := checkRequiredSecrets(f, key, svc); err != nil {
+		return createPlan{}, err
+	}
 
 	switch svc.Build.Type {
 	case spec.BuildDockerfile, spec.BuildRailpack:

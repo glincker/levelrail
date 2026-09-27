@@ -457,7 +457,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		Service:     svcSpec,
 		SourceDir:   sourceDir,
 		CommitSHA:   commitLabel,
-		ImageRepo:   name,
+		ImageRepo:   defaultImageRepo(name, existing.Image),
 		Order:       order,
 	}
 

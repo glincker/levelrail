@@ -65,6 +65,25 @@ func TestClassifyFixtures(t *testing.T) {
 	}
 }
 
+func TestBuildDiskPreflightIsDiskFull(t *testing.T) {
+	in := Input{Status: "failed", Error: `deploy: service "web": build: build: insufficient disk space at "/tmp/build-1": 957280256 bytes free, need at least 1073741824 bytes (set APP_MIN_BUILD_DISK_MB to override)`}
+	got, ok := Classify(in, Options{})
+	if !ok || got.Code != CodeDiskFull {
+		t.Fatalf("Classify() = %+v, %v, want %s", got, ok, CodeDiskFull)
+	}
+}
+
+func TestDockerfileMissingSuggestsRailpack(t *testing.T) {
+	in := Input{Status: "failed", Error: `deploy: service "web": build: failed to read dockerfile: open Dockerfile: no such file or directory`}
+	got, ok := Classify(in, Options{})
+	if !ok || got.Code != CodeDockerfileError {
+		t.Fatalf("Classify() = %+v, %v, want %s", got, ok, CodeDockerfileError)
+	}
+	if !strings.Contains(got.SuggestedFix, "--build-type railpack") {
+		t.Errorf("SuggestedFix = %q, want it to name --build-type railpack", got.SuggestedFix)
+	}
+}
+
 func readJSON(t *testing.T, path string, v any) {
 	t.Helper()
 	raw, err := os.ReadFile(path) //nolint:gosec // fixture paths come from the repo's own testdata directory

@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"log/slog"
+	"regexp"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
@@ -14,7 +16,7 @@ import (
 func manualBuildRequest(name string, existing store.DesiredService, req triggerBuildRequest, buildType string) deploy.Request {
 	imageRepo := req.ImageRepo
 	if imageRepo == "" {
-		imageRepo = name
+		imageRepo = defaultImageRepo(name, existing.Image)
 	}
 	buildCfg := spec.Build{Type: buildType, Path: req.Build.Path, BaseDirectory: req.Build.BaseDirectory, Args: req.Build.Args}
 	if buildType == spec.BuildImage {
@@ -27,6 +29,25 @@ func manualBuildRequest(name string, existing store.DesiredService, req triggerB
 		ImageRepo:   imageRepo,
 	}
 }
+
+// defaultImageRepo keeps a rebuild or push deploy in the repo the app's builds already
+// use (a pending placeholder or a commit-sha tag), so earlier tags stay
+// listed as rollback targets. Any other image falls back to the app name,
+// never a registry image's repo.
+func defaultImageRepo(name, current string) string {
+	current, _, _ = strings.Cut(current, "@")
+	i := strings.LastIndex(current, ":")
+	if i <= strings.LastIndex(current, "/") {
+		return name
+	}
+	tag := current[i+1:]
+	if spec.IsPendingImage(current) || commitSHATag.MatchString(tag) {
+		return current[:i]
+	}
+	return name
+}
+
+var commitSHATag = regexp.MustCompile(`^[0-9a-f]{40}$`)
 
 // manualBuildRun is one manual build ready to execute: its attempt row exists
 // and the pipeline request is complete.
