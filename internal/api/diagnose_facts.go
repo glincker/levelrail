@@ -52,7 +52,7 @@ func (rt *Router) diagnoseFacts(ctx context.Context, svc *store.DesiredService, 
 	}
 	pctx, cancel := context.WithTimeout(ctx, envDurationOr(envDiagnoseProbeBudget, defaultProbeBudget))
 	defer cancel()
-	container := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
+	container := application.ContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce)
 
 	running := false
 	if ins, ok := runtime.(docker.ExitStateInspector); ok {
