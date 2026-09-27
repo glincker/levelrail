@@ -701,27 +701,36 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 	return nil
 }
 
-// claimServiceDomains replaces serviceName's rows in service_domains
-// with exactly domains: every domain serviceName previously claimed but
-// no longer declares is released, and every domain it now declares is
-// claimed, unless a different service or static site already claims it
-// (domainOwner, migrations/0015, checks both service_domains and
-// static_site_domains), in which case this returns *ErrDomainTaken and
-// the caller's whole transaction rolls back (claimServiceDomains never
-// partially claims a service's domain list). Duplicate entries within
-// domains are claimed once, not reported as a conflict against
-// themselves.
+// claimServiceDomains makes serviceName's service_domains rows match
+// domains, returning *ErrDomainTaken when another service or static site
+// already claims one. Kept domains keep their row: per-domain settings
+// (redirect, basic auth, TLS cert, WAF, maintenance, error pages) cascade
+// from it, so re-inserting would drop them on every save.
 func claimServiceDomains(ctx context.Context, tx *sql.Tx, serviceName string, domains []string) error {
-	if _, err := tx.ExecContext(ctx, `DELETE FROM service_domains WHERE service_name = ?`, serviceName); err != nil {
-		return fmt.Errorf("clear existing domain claims: %w", err)
+	held, err := serviceDomainClaims(ctx, tx, serviceName)
+	if err != nil {
+		return err
 	}
-
 	claimed := make(map[string]bool, len(domains))
 	for _, domain := range domains {
-		if domain == "" || claimed[domain] {
+		if domain != "" {
+			claimed[domain] = true
+		}
+	}
+	for domain := range held {
+		if claimed[domain] {
 			continue
 		}
-		claimed[domain] = true
+		if _, err := tx.ExecContext(ctx, `DELETE FROM service_domains WHERE domain = ? AND service_name = ?`, domain, serviceName); err != nil {
+			return fmt.Errorf("release domain %q: %w", domain, err)
+		}
+	}
+
+	for _, domain := range domains {
+		if domain == "" || held[domain] {
+			continue
+		}
+		held[domain] = true
 
 		owner, found, err := domainOwner(ctx, tx, domain)
 		if err != nil {
@@ -738,6 +747,26 @@ func claimServiceDomains(ctx context.Context, tx *sql.Tx, serviceName string, do
 		}
 	}
 	return nil
+}
+
+func serviceDomainClaims(ctx context.Context, tx *sql.Tx, serviceName string) (map[string]bool, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT domain FROM service_domains WHERE service_name = ?`, serviceName)
+	if err != nil {
+		return nil, fmt.Errorf("list existing domain claims: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	held := make(map[string]bool)
+	for rows.Next() {
+		var domain string
+		if err := rows.Scan(&domain); err != nil {
+			return nil, fmt.Errorf("scan existing domain claim: %w", err)
+		}
+		held[domain] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("list existing domain claims: %w", err)
+	}
+	return held, nil
 }
 
 // UpdateServiceNode reassigns svc to run on nodeID ("" for this control

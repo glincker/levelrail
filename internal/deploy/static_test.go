@@ -350,6 +350,14 @@ func TestPipeline_DeployStatic_SourceDirMissing_Errors(t *testing.T) {
 	if err == nil {
 		t.Fatal("Deploy() error = nil, want an error: build.path does not exist in the checkout")
 	}
+	for _, want := range []string{`build.path "dist"`, "runs no build step", "railpack"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("Deploy() error = %q, want it to contain %q", err, want)
+		}
+	}
+	if strings.Contains(err.Error(), sourceDir) {
+		t.Errorf("Deploy() error = %q, want no temporary checkout path in it", err)
+	}
 	if staticStore.saveCalls != 0 {
 		t.Errorf("SaveStaticSite called %d times, want 0: a missing source dir must never reach the store", staticStore.saveCalls)
 	}

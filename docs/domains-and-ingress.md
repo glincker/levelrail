@@ -264,8 +264,11 @@ This uses Caddy's `static_response` handler with a `Location` header and redirec
 
 ### Requirements
 
+- The domain must already be one of the app's domains. Add it first (`apps domains add <app> www.example.com`).
 - Target must be an absolute URL, e.g. `https://example.com` or `https://newapp.example.com/promo`.
 - Bare hostnames, relative paths, and non-HTTP(S) schemes are rejected.
+
+A target that is only an origin, such as `https://example.com`, keeps the request path and query, so `www.example.com/pricing?plan=pro` goes to `https://example.com/pricing?plan=pro`. A target with its own path, query, or fragment always redirects to exactly that URL.
 
 ### Interaction with maintenance mode
 

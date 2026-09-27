@@ -76,7 +76,7 @@ var classes = []class{
 		code:     CodeDiskFull,
 		cause:    "The host ran out of disk space.",
 		fix:      "Free disk on the node (prune unused images and build cache, remove old logs), then retry.",
-		patterns: []string{"no space left on device", "disk quota exceeded"},
+		patterns: []string{"no space left on device", "disk quota exceeded", "insufficient disk space"},
 	},
 	{
 		code: CodeDockerUnreachable, retryable: true,
@@ -111,7 +111,7 @@ var classes = []class{
 	{
 		code:     CodeDockerfileError,
 		cause:    "The Dockerfile is invalid or a file it references is missing from the build context.",
-		fix:      "Check build.path and build.baseDirectory in the app spec, fix the Dockerfile syntax, and make sure every COPY source is committed and not excluded by .dockerignore.",
+		fix:      "Check build.path and build.baseDirectory in the app spec, fix the Dockerfile syntax, and make sure every COPY source is committed and not excluded by .dockerignore. A repo with no Dockerfile builds with build.type railpack (--build-type railpack), which a manual rebuild does not remember.",
 		patterns: []string{"failed to read dockerfile", "dockerfile parse error", "unknown instruction", "cannot locate dockerfile", "unable to prepare context", "failed to compute cache key", "failed to calculate checksum", "dockerfile: no such file", "no such file or directory: dockerfile", "copy failed: file not found"},
 	},
 	{

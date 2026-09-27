@@ -1,49 +1,56 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"strings"
 )
 
-// runAppsRollback implements "apps rollback <name> --image <ref>". There
-// is no dedicated rollback endpoint or wire shape server-side: this sends
-// the exact same POST /api/v1/apps/{name}/deploys request "apps deploy"
-// does (client.go's own DeployApp, internal/api/deploys.go's
-// handleTriggerDeploy), an older, already-known image tag standing in
-// for a newer one, per that handler's own doc comment framing a redeploy
-// to an older tag as identical to one to a newer tag.
-//
-// This mirrors how the web frontend already treats rollback:
-// web/src/components/DeployAttemptsList.tsx's "Rollback to this build"
-// button calls useTriggerDeploy, the same mutation its "existing image"
-// deploy form uses, and only changes the toast copy ("Rollback
-// triggered" / "Rolling back...") around it. This command does the same
-// thing at the CLI layer: a thin, discoverability wrapper around
-// DeployApp with rollback-framed usage text and diagnostics, not a
-// second code path, so there is exactly one place ("apps deploy") that
-// could ever drift from what the server actually does with this
-// request. runAppsDeployOrRollback (apps_deploy.go) is the shared
-// implementation both this command and "apps deploy" call.
-//
-// Flag shape matches "apps deploy" exactly (--image, not a second
-// positional argument): a caller who already knows that command's shape
-// gets an identical one here, and there is no server-side image-history
-// endpoint this CLI could use to resolve "the previous tag" on its own,
-// so the caller must already know which tag to roll back to either way
-// (see apps_deploy.go's own doc comment on that same gap).
-//
-// --confirm/interactive-prompt behavior on a protected environment
-// mirrors apps_deploy.go's own doc comment exactly: same server-side
-// gate, same client-side fallback.
+// runAppsRollback implements "apps rollback <name> --image <ref>", the
+// deploy request framed as a rollback and limited to known local tags.
 func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	return runAppsDeployOrRollback(prog, args, stdout, stderr, lookupEnv, stdin, deployOrRollbackConfig{
-		cmdLabel:      "apps rollback",
-		imageHelp:     "older, already-built image reference to roll back to, e.g. registry.example.com/org/app:tag (required)",
-		confirmHelp:   "confirm rolling back into a protected environment; omit to be prompted interactively if needed",
-		usage:         appsRollbackUsage,
-		errContext:    "roll back",
-		successFormat: "app %q rolling back to image %q; reconcile is asynchronous, check \"%s apps status %s\"\n",
+		cmdLabel:        "apps rollback",
+		imageHelp:       "older, already-built image reference to roll back to, e.g. registry.example.com/org/app:tag (required)",
+		confirmHelp:     "confirm rolling back into a protected environment; omit to be prompted interactively if needed",
+		usage:           appsRollbackUsage,
+		errContext:      "roll back",
+		successFormat:   "app %q rolling back to image %q; reconcile is asynchronous, check \"%s apps status %s\"\n",
+		knownImagesOnly: true,
 	})
+}
+
+// checkRollbackTarget rejects image when it shares the app's image repo but
+// is not one of its locally present tags. A different repo, or an empty or
+// unreadable tag list (a remote node, a registry image), is let through.
+func checkRollbackTarget(ctx context.Context, client *Client, prog, name, image string) error {
+	images, err := client.ListAppImages(ctx, name)
+	if err != nil || len(images) == 0 {
+		return nil
+	}
+	want := unpinnedImage(image)
+	if imageRepoOf(want) != imageRepoOf(unpinnedImage(images[0].Tag)) {
+		return nil
+	}
+	known := make([]string, 0, len(images))
+	for _, img := range images {
+		if unpinnedImage(img.Tag) == want {
+			return nil
+		}
+		known = append(known, img.Tag)
+	}
+	return newValidationError("image %q is not a locally built tag of app %q, and rolling back to it would stop the app; known tags: %s. Roll back by deploy id with \"%s apps deploys rollback-to %s <deploy-id>\", or use \"%s apps deploy\" for a registry image",
+		image, name, strings.Join(known, ", "), prog, name, prog)
+}
+
+// imageRepoOf strips the tag from an unpinned image reference, leaving a
+// registry port such as host:5000 intact.
+func imageRepoOf(ref string) string {
+	if i := strings.LastIndex(ref, ":"); i > strings.LastIndex(ref, "/") {
+		return ref[:i]
+	}
+	return ref
 }
 
 func appsRollbackUsage(prog string) string {
@@ -52,20 +59,15 @@ func appsRollbackUsage(prog string) string {
 
 Points an existing app's desired image back at an older, already-built
 IMAGE and returns immediately; the next reconcile converges the running
-container to it. This is the same request "%[1]s apps deploy <name>
---image IMAGE" sends (there is no separate rollback endpoint), given as
-its own command for a caller who wants to say "rollback" rather than
-"deploy" and get a rollback-framed message back. There is no image
-history lookup here: pass the exact older tag you want to roll back to
-("%[1]s apps get <name> --json" or "%[1]s apps logs <name>" can help you
-find it).
+container to it. This sends the same request "%[1]s apps deploy <name>
+--image IMAGE" does. "%[1]s apps images <name>" lists the tags you can
+roll back to, and "%[1]s apps deploys rollback-to <name> <deploy-id>"
+rolls back to a past deploy pinned by digest.
 
-This command does not validate that IMAGE exists or ever ran
-successfully before returning: exit 0 only means the server accepted
-the request, not that the rollback converged. A typo'd or never-built
-tag, or the app's already-current image, both report the same success
-here; check "%[1]s apps status <name>" to confirm the rollback
-actually landed before treating this as done.
+A tag under the app's own image repo that is not locally present is
+refused, since a container that cannot be created takes the app offline.
+Exit 0 only means the server accepted the request; check "%[1]s apps
+status <name>" to confirm the rollback landed.
 
 If the app is tagged with a protected environment, this fails unless
 --confirm is set or you type "yes" at the interactive prompt.

@@ -41,7 +41,7 @@ The first stage is a table of known classes. When none matches, the runtime caus
 ## Failure codes
 
 ### dockerfile_error
-The Dockerfile is invalid or a file it references is missing. Check `build.path` and `build.baseDirectory`, fix the syntax, and make sure every `COPY` source is committed and not excluded by `.dockerignore`.
+The Dockerfile is invalid or a file it references is missing. Check `build.path` and `build.baseDirectory`, fix the syntax, and make sure every `COPY` source is committed and not excluded by `.dockerignore`. A repo with no Dockerfile builds with `build.type: railpack` (`--build-type railpack`), which a manual rebuild does not remember.
 
 ### dependency_install_failed
 A dependency install step in the build failed. Read the failing command in the excerpt, fix the lockfile or version pin, and confirm the package registry is reachable from the build node.
@@ -80,7 +80,7 @@ A required environment variable or secret has no value. Set it on the app and re
 Pushing the built image failed. Retryable. Check the registry credential, repository permissions and reachability.
 
 ### disk_full
-The host ran out of disk. Prune unused images and build cache, then retry.
+The host ran out of disk, or the build disk preflight found less free space than `APP_MIN_BUILD_DISK_MB`. Prune unused images and build cache, then retry.
 
 ### docker_unreachable
 The control plane could not reach the Docker daemon on the target node. Retryable once the daemon is back.

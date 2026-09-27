@@ -18,6 +18,9 @@ type deployOrRollbackConfig struct {
 	usage         func(string) string
 	errContext    string
 	successFormat string
+	// knownImagesOnly refuses a tag the app never built locally, since a
+	// typo'd rollback target fails to create and takes the app offline.
+	knownImagesOnly bool
 }
 
 // runAppsDeploy implements "apps deploy <name> --image <ref>": POST
@@ -98,6 +101,11 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	}
 	if image == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--image is required (or --pull to re-resolve the current tag)"))
+	}
+	if cfg.knownImagesOnly {
+		if err := checkRollbackTarget(ctx, client, prog, name, image); err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
 	}
 
 	result, err := confirmProtectedEnvironment(confirm, stdin, stderr, func(confirm bool) (deployTriggerResult, error) {
