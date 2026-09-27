@@ -1,0 +1,63 @@
+name: VPS smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: 'SSH target of an already-provisioned Ubuntu VPS, e.g. root@203.0.113.10'
+        required: true
+        type: string
+      domain_base:
+        description: 'Domain whose wildcard A record points at the host'
+        required: true
+        type: string
+      repo:
+        description: 'Scratch GitHub repo (owner/name) the run pushes a branch to'
+        required: true
+        type: string
+      from_tag:
+        description: 'Release tag to install first'
+        required: true
+        type: string
+      to_tag:
+        description: 'Release tag to upgrade to under load'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vps-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install ssh key
+        env:
+          SMOKE_SSH_KEY: ${{ secrets.SMOKE_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SMOKE_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+      - name: Run smoke
+        env:
+          SMOKE_HOST: ${{ inputs.host }}
+          SMOKE_DOMAIN_BASE: ${{ inputs.domain_base }}
+          SMOKE_REPO: ${{ inputs.repo }}
+          SMOKE_FROM_TAG: ${{ inputs.from_tag }}
+          SMOKE_TO_TAG: ${{ inputs.to_tag }}
+          SMOKE_GH_TOKEN: ${{ secrets.SMOKE_GH_TOKEN }}
+        run: scripts/vps-smoke.sh
