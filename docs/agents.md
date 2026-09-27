@@ -52,16 +52,18 @@ See [Agent tooling audit](agent-tooling-audit.md) for how the numbers are measur
 Give each agent its own token so its actions are attributable and it can be revoked alone.
 
 ```
-levelrail-cli tokens create --name ci-agent --abilities read,deploy --agent "Claude Code"
+levelrail-cli tokens create --name ci-agent --preset deployer --agent "Claude Code"
 ```
 
-The `--agent` label is shown on the tokens page and recorded on every audit entry the token makes. Filter the audit log by it with `audit-log --agent NAME` or the agent chip on the audit log page. Settings > Agents in the dashboard has the same flow with three presets:
+`--preset` takes `observer`, `deployer` or `operator` (see the table below); `--abilities` sets an explicit list instead.
+
+The `--agent` label is shown on the tokens page and recorded on every audit entry the token makes. Filter the audit log by it with `audit-log --agent NAME` or the agent chip on the audit log page. Settings > Agents in the dashboard shows the MCP connect snippet (copyable, per mode), lists agent tokens with their last used time, and has a "Create agent token" flow with the same three presets:
 
 | Preset | Abilities | Can do |
 | --- | --- | --- |
 | Read-only observer | `read` | Look at apps, logs, metrics and deploys. |
 | Deployer | `read`, `deploy` | Also trigger deploys and rollbacks. |
-| Full operator | `read`, `write`, `deploy` | Also change config, env and domains. |
+| Full operator | `read`, `read:sensitive`, `write`, `write:sensitive`, `deploy` | Also change config, env vars, domains and secrets. Never `root`. |
 
 The token is shown once, when it is created. Store it in your shell profile or secret manager as `APP_API_TOKEN`, not in the repo.
 
