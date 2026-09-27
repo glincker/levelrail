@@ -398,6 +398,8 @@ type LogEntryResource struct {
 	Message    string          `json:"message"`
 	Structured bool            `json:"structured"`
 	FieldsJSON json.RawMessage `json:"fields,omitempty"`
+	// Level is the server-detected level, empty when the line has none.
+	Level string `json:"level,omitempty"`
 }
 
 // LogStreamEntry mirrors internal/api's sseLogEvent
@@ -413,6 +415,8 @@ type LogStreamEntry struct {
 // logsResponse mirrors internal/api's logsResponse (internal/api/logs.go).
 type logsResponse struct {
 	Entries []LogEntryResource `json:"entries"`
+	// Total is how many entries matched before limit trimmed the list.
+	Total int `json:"total"`
 }
 
 // SlowQueryEntryResource mirrors internal/api's slowQueryEntryResource

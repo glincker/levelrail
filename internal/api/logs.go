@@ -22,10 +22,15 @@ type logEntryResource struct {
 	// contract), and json.Marshal would otherwise escape it as a string
 	// instead of embedding it as a JSON value.
 	FieldsJSON json.RawMessage `json:"fields,omitempty"`
+	// Level is the detected log level, empty when the line carries none.
+	Level string `json:"level,omitempty"`
 }
 
+// logsResponse is the log query result. Total counts the entries that
+// matched the time window, q and level before limit trimmed them.
 type logsResponse struct {
 	Entries []logEntryResource `json:"entries"`
+	Total   int                `json:"total"`
 }
 
 // handleQueryLogs handles GET /api/v1/apps/{name}/logs; see
@@ -39,7 +44,8 @@ func (rt *Router) handleQueryLogs(w http.ResponseWriter, r *http.Request) {
 // then apply the same query params to both resource kinds (from/to
 // RFC3339, same default window as handleQueryMetrics; q, a full-text
 // search phrase, empty meaning every log line in range per
-// telemetry.QueryLogs' own "empty query" contract). opName and noun feed
+// telemetry.QueryLogs' own "empty query" contract; level, a minimum
+// level; limit, keep only the newest N matches). opName and noun feed
 // the log lines and 404 message so an app 404 reads "app not found" and
 // a database 404 reads "database not found".
 func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, lookup resourceLookup, opName, noun string) {
@@ -66,6 +72,16 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 		return
 	}
 	query := r.URL.Query().Get("q")
+	minLevel, err := parseLevelParam(r.URL.Query().Get("level"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	limit, err := parseLimitParam(r.URL.Query().Get("limit"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	entries, err := rt.telemetry.QueryLogs(r.Context(), resourceID, from, to, query)
 	if err != nil {
@@ -80,11 +96,17 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 		rt.logger.Warn("api: "+opName+": partial result", slog.String("error", err.Error()), slog.String("name", name))
 	}
 
+	entries = filterLogsByLevel(entries, minLevel)
+	total := len(entries)
+	if limit > 0 && len(entries) > limit {
+		entries = entries[len(entries)-limit:]
+	}
+
 	out := make([]logEntryResource, len(entries))
 	for i, e := range entries {
 		out[i] = toLogEntryResource(e)
 	}
-	writeJSON(w, http.StatusOK, logsResponse{Entries: out})
+	writeJSON(w, http.StatusOK, logsResponse{Entries: out, Total: total})
 }
 
 func toLogEntryResource(e telemetry.LogEntry) logEntryResource {
@@ -93,6 +115,7 @@ func toLogEntryResource(e telemetry.LogEntry) logEntryResource {
 		Stream:     e.Stream,
 		Message:    e.Message,
 		Structured: e.Structured,
+		Level:      classifyLogLevel(e),
 	}
 	if e.Structured && e.FieldsJSON != "" {
 		r.FieldsJSON = json.RawMessage(e.FieldsJSON)
