@@ -111,6 +111,9 @@ func (rt *Router) handleDiagnoseApp(w http.ResponseWriter, r *http.Request) {
 		recentLogs = rt.diagnoseBuildLogs(ctx, name, attempt.ID)
 	} else {
 		recentLogs = rt.diagnoseRecentLogs(ctx, name)
+		if len(recentLogs) == 0 {
+			recentLogs = rt.containerLogTail(ctx, svc)
+		}
 	}
 
 	in := diagnose.Input{

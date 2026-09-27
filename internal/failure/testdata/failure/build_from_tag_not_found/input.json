@@ -1,0 +1,14 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"web\": build: failed to solve: node:99-alpine: failed to resolve source metadata for docker.io/library/node:99-alpine: docker.io/library/node:99-alpine: not found",
+  "LogLines": [
+    "#3 [internal] load metadata for docker.io/library/node:99-alpine",
+    "#3 ERROR: docker.io/library/node:99-alpine: not found",
+    "------",
+    " > [internal] load metadata for docker.io/library/node:99-alpine:",
+    "------",
+    "Dockerfile:1",
+    "ERROR: failed to solve: node:99-alpine: failed to resolve source metadata for docker.io/library/node:99-alpine: docker.io/library/node:99-alpine: not found"
+  ]
+}

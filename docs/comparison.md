@@ -5,6 +5,8 @@ description: An honest comparison of Levelrail with Coolify, Dokploy, CapRover, 
 
 # Comparison
 
+This page compares architecture and feature breadth, not maturity. Levelrail has no stable release yet, and most feature areas are labeled beta in [feature status](feature-status.md).
+
 Positioning, not a ranking. Coolify, Dokploy, CapRover, Dokku and Kamal are all real, useful projects with active users, and any of them may be the right choice for you. This page explains where Levelrail makes different design choices, so you can decide.
 
 ## How to read this page

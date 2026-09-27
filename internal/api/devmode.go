@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+
+	"github.com/GLINCKER/levelrail/internal/experimental"
 )
 
 // devModeUsername and devModePassword are fixed and deliberately
@@ -46,7 +48,8 @@ func MaybeBootstrapDevAdmin(ctx context.Context, s AuthStore, logger *slog.Logge
 }
 
 type devModeResponse struct {
-	Enabled bool `json:"enabled"`
+	Enabled      bool                   `json:"enabled"`
+	Experimental []experimental.Feature `json:"experimental"`
 }
 
 // handleDevMode serves GET /api/v1/dev-mode: public, no auth required,
@@ -59,5 +62,5 @@ type devModeResponse struct {
 // this package's own devModeUsername/devModePassword constants, not a
 // secret this endpoint could leak.
 func (rt *Router) handleDevMode(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, devModeResponse{Enabled: devModeEnabled()})
+	writeJSON(w, http.StatusOK, devModeResponse{Enabled: devModeEnabled(), Experimental: experimental.EnabledList()})
 }

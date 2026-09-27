@@ -46,6 +46,12 @@ The Dockerfile is invalid or a file it references is missing. Check `build.path`
 ### dependency_install_failed
 A dependency install step in the build failed. Read the failing command in the excerpt, fix the lockfile or version pin, and confirm the package registry is reachable from the build node.
 
+### compile_error
+The application code failed to compile (tsc, Next.js, go build, cargo, javac). The excerpt shows the compiler line with the file and position. Fix it, confirm it builds locally, then redeploy.
+
+### build_config_error
+The build could not tell what to build or run: a script the build calls is missing from `package.json`, or no start command was detected. Add the script or set an explicit start command or Dockerfile in the app spec.
+
 ### build_out_of_memory
 The build was killed for memory. Give the build node more memory, lower build parallelism, or build a smaller target.
 

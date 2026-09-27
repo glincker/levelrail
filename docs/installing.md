@@ -59,6 +59,8 @@ The dashboard shows a "connection is not encrypted" banner until you point a dom
 
 To skip the setup token and create the admin non-interactively, set `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` in the unit (again via `systemctl edit levelrail`) before the first start.
 
+AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel are hidden until you opt in with `APP_EXPERIMENTAL`, see [experimental features](experimental-features.md).
+
 ::: details Optional environment variables
 
 | Variable | Default | What it does |

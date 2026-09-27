@@ -1,0 +1,7 @@
+{
+  "code": "compile_error",
+  "retryable": false,
+  "excerpt_contains": [
+    "error[E0425]: cannot find value `port` in this scope"
+  ]
+}

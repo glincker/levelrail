@@ -8,12 +8,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
-import { settingsNavSections } from '../lib/settingsNav'
+import { visibleSettingsSections } from '../lib/settingsNav'
+import { useExperimentalFeatures } from '../hooks/useExperimental'
 
 // Renders straight from settingsNavSections so this sidebar and the
 // hub page (routes/settings/index.tsx) can never drift out of sync.
 export function SettingsScopedSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const experimental = useExperimentalFeatures()
 
   return (
     <>
@@ -30,7 +32,7 @@ export function SettingsScopedSidebar() {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {settingsNavSections.map((section) => (
+      {visibleSettingsSections(experimental).map((section) => (
         <SidebarGroup key={section.heading}>
           <SidebarGroupLabel>{section.heading}</SidebarGroupLabel>
           <SidebarGroupContent>

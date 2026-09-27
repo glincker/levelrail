@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"github.com/GLINCKER/levelrail/internal/experimental"
 )
 
 // Mode bounds which tool classes a server registers. The API token's own
@@ -114,7 +116,25 @@ type Summary struct {
 	Destruct int
 }
 
+// experimentalFeature returns the gated feature a tool belongs to, if any.
+func experimentalFeature(name string, m Meta) (experimental.Feature, bool) {
+	switch {
+	case m.Group == "models":
+		return experimental.AIModels, true
+	case m.Group == "loadbalancer":
+		return experimental.LoadBalancer, true
+	case m.Group == "iac":
+		return experimental.IaC, true
+	case name == "get_cloudflare_tunnel_status":
+		return experimental.CloudflareTunnel, true
+	}
+	return "", false
+}
+
 func (o Options) allows(name string, m Meta) bool {
+	if f, gated := experimentalFeature(name, m); gated && !experimental.Enabled(f) {
+		return false
+	}
 	if o.Profile == ProfileAgentCore {
 		if _, ok := agentCoreTools[name]; !ok {
 			return false

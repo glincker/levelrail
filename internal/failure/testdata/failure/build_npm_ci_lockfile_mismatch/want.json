@@ -1,0 +1,7 @@
+{
+  "code": "dependency_install_failed",
+  "retryable": false,
+  "excerpt_contains": [
+    "can only install packages when your package.json and package-lock.json"
+  ]
+}

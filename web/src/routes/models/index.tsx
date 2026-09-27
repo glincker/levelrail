@@ -1,3 +1,4 @@
+import { requireExperimental } from '../../lib/experimental'
 import { createFileRoute } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef, useState } from 'react'
@@ -16,6 +17,8 @@ import { useGpuNodes, useModels } from '../../queries/models'
 import type { CreateModelResponse } from '../../types/models'
 
 export const Route = createFileRoute('/models/')({
+  beforeLoad: ({ context: { queryClient } }) =>
+    requireExperimental(queryClient, 'ai-models'),
   component: ModelsPage,
 })
 

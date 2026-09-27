@@ -22,8 +22,9 @@ func TestClassifyFixtures(t *testing.T) {
 	for _, d := range dirs {
 		dir := filepath.Join("testdata/failure", d.Name())
 		var want struct {
-			Code      string `json:"code"`
-			Retryable bool   `json:"retryable"`
+			Code      string   `json:"code"`
+			Retryable bool     `json:"retryable"`
+			Excerpt   []string `json:"excerpt_contains"`
 		}
 		readJSON(t, filepath.Join(dir, "want.json"), &want)
 		seen[want.Code] = true
@@ -40,6 +41,11 @@ func TestClassifyFixtures(t *testing.T) {
 			}
 			if got.Retryable != want.Retryable {
 				t.Errorf("retryable = %v, want %v", got.Retryable, want.Retryable)
+			}
+			for _, frag := range want.Excerpt {
+				if !strings.Contains(got.LogExcerpt, frag) {
+					t.Errorf("excerpt missing decisive line %q:\n%s", frag, got.LogExcerpt)
+				}
 			}
 			if got.SuggestedFix == "" || got.Cause == "" || got.DocsURL != "/deploy-failures#"+want.Code {
 				t.Errorf("incomplete object: %+v", got)

@@ -39,6 +39,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
@@ -327,6 +328,10 @@ func main() {
 
 func run(logger *slog.Logger) error {
 	logger.Info("starting", slog.String("version", version.Version))
+	if err := experimental.Validate(); err != nil {
+		logger.Warn("ignoring unknown experimental feature", slog.String("error", err.Error()))
+	}
+	logger.Info("experimental features", slog.Any("enabled", experimental.EnabledList()))
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -663,7 +668,9 @@ func run(logger *slog.Logger) error {
 	lbRegistry := loadbalancer.NewRegistry()
 	lbStats := loadbalancer.CaddyAdminStats{Addr: ingressreconcile.DefaultAdminListen}
 	apiRouter.SetLoadBalancers(db, lbRegistry, lbStats)
-	go runLoadBalancerTelemetry(ctx, lbRegistry, lbStats, telemetryDB, metricsCollectionInterval, logger)
+	if experimental.Enabled(experimental.LoadBalancer) {
+		go runLoadBalancerTelemetry(ctx, lbRegistry, lbStats, telemetryDB, metricsCollectionInterval, logger)
+	}
 
 	meshCfg, err := setupMesh(ctx, db, b, agentDataDir, agentRegistry, logger)
 	if err != nil {
@@ -718,8 +725,10 @@ func run(logger *slog.Logger) error {
 		lbRegistry:                   lbRegistry,
 		previewNotifier:              previewManager,
 	}))
-	startLocalGPUCollector(ctx, db, client, logger)
-	go models.NewEngineMetricsCollector(db, telemetryDB, nil, logger).Run(ctx, models.EngineMetricsInterval())
+	if experimental.Enabled(experimental.AIModels) {
+		startLocalGPUCollector(ctx, db, client, logger)
+		go models.NewEngineMetricsCollector(db, telemetryDB, nil, logger).Run(ctx, models.EngineMetricsInterval())
+	}
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
@@ -3069,8 +3078,10 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithPublicHost(deps.publicHost),
 			ingressreconcile.WithListenAddr(deps.ingressHTTPSAddr),
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
-			ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}),
 			ingressreconcile.WithRequestStats(),
+		}
+		if experimental.Enabled(experimental.AIModels) {
+			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
 		}
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial))
@@ -3101,10 +3112,12 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// registry being enabled with a Host set (WithRegistryDial's own
 		// doc comment).
 		ingressOpts = append(ingressOpts, ingressreconcile.WithRegistryDial(registryDialAddr()))
-		ingressOpts = append(ingressOpts,
-			ingressreconcile.WithLoadBalancers(deps.db, deps.lbRegistry),
-			ingressreconcile.WithNodeUpstreams(lbNodeUpstreams{db: deps.db, local: deps.runtime, registry: deps.agentRegistry}),
-		)
+		if experimental.Enabled(experimental.LoadBalancer) {
+			ingressOpts = append(ingressOpts,
+				ingressreconcile.WithLoadBalancers(deps.db, deps.lbRegistry),
+				ingressreconcile.WithNodeUpstreams(lbNodeUpstreams{db: deps.db, local: deps.runtime, registry: deps.agentRegistry}),
+			)
+		}
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 
 		// Local runtime unconditionally, same reasoning as the ingress
@@ -3124,7 +3137,9 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		if deps.secretsManager != nil {
 			tunnelTokens = deps.secretsManager
 		}
-		controllers = append(controllers, cloudflaretunnel.New(deps.db, tunnelTokens, deps.runtime, cloudflaretunnel.WithContainerPrefix(deps.networkPrefix)))
+		if experimental.Enabled(experimental.CloudflareTunnel) {
+			controllers = append(controllers, cloudflaretunnel.New(deps.db, tunnelTokens, deps.runtime, cloudflaretunnel.WithContainerPrefix(deps.networkPrefix)))
+		}
 
 		// Built-in container registry: same platform-wide-singleton,
 		// local-runtime-unconditional shape as Cloudflare Tunnel above.

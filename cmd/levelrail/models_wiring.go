@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/models"
@@ -124,6 +125,9 @@ func newModelDeps() *modelDeps {
 // modelControllersFor builds one models.Controller per model, skipping
 // (with a warning) any whose node transport is unavailable this pass.
 func modelControllersFor(deps dynamicSourceDeps, list []store.Model) []reconcile.Controller {
+	if !experimental.Enabled(experimental.AIModels) {
+		return nil
+	}
 	nodes := modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}
 	opts := []models.Option{models.WithContainerPrefix(deps.networkPrefix), models.WithImages(deps.models.images)}
 	if deps.secretsManager != nil {
