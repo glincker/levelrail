@@ -19,6 +19,10 @@ Notable read-oriented tools for day-2 operation:
 - `list_audit_log`: supports `q` (text search) and `status=failed` to find rejected requests.
 - `list_control_plane_backups` and `create_control_plane_backup`: snapshots of the control plane's own database. The create tool writes a backup file, so give an assistant that should not do that a `read`-only token.
 
+Env tools:
+
+- `set_app_env` and `unset_app_env`: change one plain env var or, with `secret: true`, one write-only secret (same routes as `levelrail-cli apps env` and `apps secrets`). Secret values are never returned or logged. The result names the key and says whether a redeploy is needed; follow with `deploy_app` or `restart_app`.
+
 ## Two ways to run it
 
 ### stdio, for a client that spawns it locally

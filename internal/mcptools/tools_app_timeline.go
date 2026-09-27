@@ -54,7 +54,7 @@ func registerAppTimelineTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "set_app_domains",
-		Description: "Replace an app's domain list, changing no other setting; a domain already used by another app is refused with a conflict and nothing is changed. Mutating.",
+		Description: "Replace an app's domain list, changing nothing else. A domain owned by another app is refused with a conflict and nothing changes.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in setAppDomainsInput) (*mcp.CallToolResult, apiclient.EditDomainsResult, error) {
 		domains := make([]string, 0, len(in.Domains))
 		for _, d := range in.Domains {
