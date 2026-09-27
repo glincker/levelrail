@@ -29,6 +29,22 @@ When a node has a GPU but Docker has no `nvidia` runtime, the dashboard card sho
 
 If the agent runs inside a container, `nvidia-smi` must be reachable from it, or run the agent directly on the host.
 
+## GPU attach: CDI and legacy
+
+Containers get GPUs one of two ways. Levelrail prefers **CDI** (the Container Device Interface) when the Docker daemon on the node lists NVIDIA CDI devices (`nvidia.com/gpu=0`, `nvidia.com/gpu=all`), and otherwise uses the **legacy** `nvidia` runtime with a device request. The choice is made per container at create time on the node that runs it, so mixed fleets work. A node with CDI devices needs no `nvidia` runtime registered and is treated as usable.
+
+To use CDI, generate a spec on the node and make sure Docker discovers it (Docker 28.3 or newer does by default; older Docker needs `{"features": {"cdi": true}}` in `/etc/docker/daemon.json`):
+
+```sh
+sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+sudo systemctl restart docker
+docker info | grep -A3 "Discovered Devices"
+```
+
+A request that CDI cannot serve exactly (for example more GPUs than the spec lists) falls back to the legacy runtime instead of failing. With a count, CDI attaches the first N GPUs by index. Set `APP_GPU_ATTACH=legacy` on a node to never use CDI (the default is `auto`). Regenerate the spec after a driver update or GPU change.
+
+`levelrail doctor` (and the Doctor page) checks the control plane host in detail: the driver, per-GPU memory (a warning above `APP_GPU_DOCTOR_VRAM_WARN_PERCENT`, default 90), the NVIDIA container toolkit version, whether a CDI spec exists and Docker lists its devices, whether the `nvidia` runtime is registered, and the resulting attach mode, with the exact fix command for each problem. Remote nodes report only driver, runtime or CDI availability and per-GPU memory; the toolkit and spec files of a remote node are not inspected. None of this was exercised against a real GPU: the detection and the CDI request are covered with fakes.
+
 ## Deploying a model
 
 ```sh

@@ -394,6 +394,11 @@ func (rt *Router) doctorCheckGPUs(ctx context.Context) []doctorCheckResource {
 			check.DocsPath = "/ai-models#gpu-nodes"
 		}
 		out = append(out, check)
+		if n.IsLocal && rt.gpuHostDiagnoser != nil {
+			out = append(out, rt.doctorHostGPUChecks(ctx, n.Name)...)
+		} else {
+			out = append(out, gpuMemoryChecks(n)...)
+		}
 	}
 	return out
 }

@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	"github.com/GLINCKER/levelrail/internal/models"
@@ -257,7 +258,7 @@ func TestGPUsEndpointAndDoctor(t *testing.T) {
 	_ = json.Unmarshal(rec.Body.Bytes(), &doc)
 	var found *doctorCheckResource
 	for i := range doc.Checks {
-		if strings.HasPrefix(doc.Checks[i].Code, "gpu:") {
+		if doc.Checks[i].Code == "gpu:local" {
 			found = &doc.Checks[i]
 		}
 	}
@@ -393,5 +394,53 @@ func TestModels_ResidencyFlow(t *testing.T) {
 	}
 	if rec := doModels(t, rt, cookie, http.MethodPut, "/api/v1/models/nope/residency", `{"residency":"always"}`); rec.Code != http.StatusNotFound {
 		t.Fatalf("missing model status = %d", rec.Code)
+	}
+}
+
+func TestDoctorHostGPUChecks(t *testing.T) {
+	rt, db := newModelsTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	info := gpu.Info{Present: true, DriverVersion: "550.1", RuntimeInstalled: true, Devices: []gpu.Device{{Index: 0, UUID: "GPU-a", Name: "A100", VRAMTotalMiB: 40960, VRAMUsedMiB: 1024}}}
+	if err := db.SetNodeGPU(ctx, store.LocalNodeGPUKey, info); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetNodeGPU(ctx, "remote", gpu.Info{Present: true, RuntimeInstalled: true, Devices: []gpu.Device{{Index: 0, Name: "L4", VRAMTotalMiB: 24576, VRAMUsedMiB: 2048}}}); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	if err := db.SaveNode(ctx, store.Node{ID: "remote", Name: "remote", Status: store.NodeStatusOnline, AcceptsAppWorkloads: true, CreatedAt: now, UpdatedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	rt.gpuHostDiagnoser = func(context.Context) gpu.HostDiagnosis {
+		return gpu.HostDiagnosis{Attach: gpu.AttachLegacy, Findings: []gpu.Finding{
+			{Code: "driver", Name: "NVIDIA driver", Status: gpu.StatusOK, Message: "driver 550.1"},
+			{Code: "cdi", Name: "CDI", Status: gpu.StatusWarn, Message: "spec present, docker lists none", Fix: gpu.CDIEnableHint},
+			{Code: "attach", Name: "GPU attach", Status: gpu.StatusFail, Message: "no path"},
+		}}
+	}
+	rec := doModels(t, rt, cookie, http.MethodGet, "/api/v1/system/doctor", "")
+	var doc systemDoctorResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &doc); err != nil {
+		t.Fatal(err)
+	}
+	byCode := map[string]doctorCheckResource{}
+	for _, c := range doc.Checks {
+		byCode[c.Code] = c
+	}
+	if c := byCode["gpu:local:cdi"]; c.Status != doctorStatusWarn || c.Fix != gpu.CDIEnableHint || c.DocsPath == "" {
+		t.Errorf("cdi check = %+v", c)
+	}
+	if c := byCode["gpu:local:attach"]; c.Status != doctorStatusFail {
+		t.Errorf("attach check = %+v", c)
+	}
+	if doc.OK {
+		t.Error("a failing GPU attach check must fail the doctor report")
+	}
+	if _, ok := byCode["gpu:remote:cdi"]; ok {
+		t.Error("remote nodes are not inspected for CDI")
+	}
+	if c := byCode["gpu:remote:gpu0"]; c.Status != doctorStatusOK || !strings.Contains(c.Message, "L4") {
+		t.Errorf("remote per-GPU memory = %+v", c)
 	}
 }
