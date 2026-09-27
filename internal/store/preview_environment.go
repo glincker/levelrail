@@ -44,8 +44,9 @@ const (
 )
 
 // Occupies reports whether a preview in this status holds a concurrency slot.
+// A failed preview runs nothing, so it does not.
 func (p PreviewEnvironment) Occupies() bool {
-	return p.Status == PreviewStatusDeploying || p.Status == PreviewStatusActive || p.Status == PreviewStatusFailed
+	return p.Status == PreviewStatusDeploying || p.Status == PreviewStatusActive
 }
 
 // ErrPreviewEnvironmentNotFound is returned by GetPreviewEnvironment and

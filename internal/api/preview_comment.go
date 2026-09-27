@@ -114,12 +114,15 @@ func (rt *Router) upsertPreviewComment(ctx context.Context, gs store.GitSource, 
 	}
 	if id != 0 {
 		if err := c.update(ctx, id, body); err != nil {
-			log.Warn("api: update preview pr comment failed", slog.String("error", err.Error()))
+			log.Warn("api: update marker-matched pr comment failed, posting a new one", slog.String("error", err.Error()))
+			id = 0
+		}
+	}
+	if id == 0 {
+		if id, err = c.create(ctx, body); err != nil {
+			log.Warn("api: create preview pr comment failed", slog.String("error", err.Error()))
 			return
 		}
-	} else if id, err = c.create(ctx, body); err != nil {
-		log.Warn("api: create preview pr comment failed", slog.String("error", err.Error()))
-		return
 	}
 
 	p.CommentID = id

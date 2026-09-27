@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -50,7 +49,6 @@ func (rt *Router) teardownPreviewRecordReason(ctx context.Context, preview store
 	if len(failed) > 0 {
 		preview.Status = store.PreviewStatusFailed
 		preview.StatusReason = fmt.Sprintf("teardown left %d resource(s) undeleted: %s", len(failed), strings.Join(failed, ", "))
-		preview.UpdatedAt = time.Now().UTC().Format(time.RFC3339Nano)
 		if err := rt.previewEnvironments.UpdatePreviewEnvironment(ctx, preview); err != nil {
 			rt.logger.Error("api: preview teardown: record failure failed", slog.String("error", err.Error()), slog.String("preview_id", preview.ID))
 		}
@@ -107,6 +105,7 @@ func (rt *Router) teardownPreviewApp(ctx context.Context, previewAppID string) [
 
 	if err := rt.appGroups.DeleteApp(ctx, app.ID); err != nil && !errors.Is(err, store.ErrAppNotFound) {
 		rt.logger.Error("api: teardown preview app: delete app row failed", slog.String("error", err.Error()), slog.String("preview_app_id", previewAppID))
+		return []string{previewAppID}
 	}
 	return nil
 }

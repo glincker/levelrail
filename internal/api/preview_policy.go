@@ -107,6 +107,9 @@ func (rt *Router) admitPreview(ctx context.Context, appName string, existing *st
 		rt.logger.Info("api: evicted oldest preview at the limit",
 			slog.String("app_name", ev.victim.AppName), slog.Int("pr_number", ev.victim.PRNumber),
 			slog.Int("teardown_status", status), slog.String("teardown_message", msg))
+		if status != http.StatusOK {
+			return "Preview limit reached and the oldest preview could not be removed to make room.", nil
+		}
 	}
 	return "", nil
 }
@@ -175,6 +178,9 @@ func (rt *Router) beginPreview(ctx context.Context, appName string, gs store.Git
 		Status: store.PreviewStatusDeploying, IsFork: ev.IsFork(), HeadRepo: ev.HeadRepoFullName,
 	}
 
+	if approved && (existing == nil || existing.Status != store.PreviewStatusDeploying || existing.HeadSHA != ev.HeadSHA) {
+		return nil, true, http.StatusOK, "ignored: approval is no longer current for this pull request\n"
+	}
 	if base.IsFork && !approved && !settings.AllowForkPreviews {
 		held, status, message := rt.holdForkPreview(ctx, gs, existing, base)
 		return held, true, status, message
@@ -217,12 +223,10 @@ func (rt *Router) holdForkPreview(ctx context.Context, gs store.GitSource, exist
 	}
 
 	if existing != nil && existing.Status != store.PreviewStatusAwaitingApproval && existing.Status != store.PreviewStatusLimitReached {
-		if failed := rt.teardownPreviewApp(ctx, existing.PreviewAppID); len(failed) > 0 {
-			rt.logger.Error("api: fork preview hold: remove earlier deployment failed", slog.Any("failed_resources", failed), slog.String("app_name", base.AppName))
-		}
-		failed := rt.teardownPreviewEphemeralDatabases(ctx, existing.ID)
+		failed := append(rt.teardownPreviewApp(ctx, existing.PreviewAppID), rt.teardownPreviewEphemeralDatabases(ctx, existing.ID)...)
 		if len(failed) > 0 {
-			rt.logger.Error("api: fork preview hold: remove earlier databases failed", slog.Any("failed_resources", failed), slog.String("app_name", base.AppName))
+			rt.logger.Error("api: fork preview hold: remove earlier deployment failed", slog.Any("failed_resources", failed), slog.String("app_name", base.AppName))
+			base.StatusReason += " The earlier approved deployment could not be fully removed and may still be running: use Tear down."
 		}
 	}
 
