@@ -65,6 +65,10 @@ The `--agent` label is shown on the tokens page and recorded on every audit entr
 
 The token is shown once, when it is created. Store it in your shell profile or secret manager as `APP_API_TOKEN`, not in the repo.
 
+## Read logs by level
+
+The app Logs page (Search tab) shows a chip per level (error, warn, info, debug) with the number of loaded lines at that level, and a "Showing N of total" line. Each row has a gutter with an icon and the level word, so the level does not depend on color. The search loads the newest 1,000 matches; the total counts every match in the range. Agents get the same view from `levelrail-cli logs query` or the MCP `query_logs` tool, which take a `level` and a `limit`.
+
 ## Dry run before changing anything
 
 - `plan_change` (MCP) previews a change to the declared resources without applying it, and `plan_apply` does the same for resource files. `levelrail-cli apply --dry-run` is the CLI form.
