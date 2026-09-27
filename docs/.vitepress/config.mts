@@ -71,6 +71,7 @@ const sidebarGroups = [
       { text: 'Feature catalog', link: '/feature-catalog' },
       { text: 'CLI reference', link: '/cli-reference' },
       { text: 'API reference', link: '/api-reference' },
+      { text: 'MCP tool surface', link: '/mcp-tool-surface' },
     ],
   },
   {
@@ -80,6 +81,7 @@ const sidebarGroups = [
       { text: 'Architecture', link: '/architecture' },
       { text: 'Security overview', link: '/security' },
       { text: 'Threat model', link: '/threat-model' },
+      { text: 'Security alert verdicts', link: '/security-alert-verdicts' },
       { text: 'Comparison', link: '/comparison' },
     ],
   },
@@ -97,7 +99,9 @@ const sidebarGroups = [
     text: 'Status',
     items: [
       { text: 'Roadmap', link: '/roadmap' },
+      { text: 'Feature status', link: '/feature-status' },
       { text: 'Performance', link: '/performance' },
+      { text: 'CI', link: '/ci' },
       { text: 'Changelog', link: '/changelog/' },
     ],
   },

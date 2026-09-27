@@ -40,7 +40,7 @@ Because tier 4 is empty everywhere, the "real infra" column below reads "none fo
 | Supply chain | beta | Off by default (`docs/supply-chain.md`), unit tests, no e2e. |
 | Status page | beta | Off by default, one internal package test file plus API tests, no e2e. |
 | Multi-node and WireGuard | beta | Built and unit-tested against fakes, the mesh test file says real encryption needs two hosts and root (`internal/network/device_test.go:11`). |
-| AI assistant (MCP server) | beta | 144 tools, 31 test files in `internal/mcptools`, no e2e. |
+| AI assistant (MCP server) | beta | 153 tools in full mode (144 in the default standard mode), 31 test files in `internal/mcptools`, no e2e. |
 | AI assistant (in-app chat) | hide-behind-flag | Tested against fake Anthropic responses only, no e2e, no doc page for the in-app chat. |
 | AI models (GPU) | hide-behind-flag | Needs NVIDIA hardware, every test uses fakes, docs state v1 scope is NVIDIA on Linux only. |
 | Load balancer | hide-behind-flag | No e2e, no live test, outside the 3 to 50 services story in the project plan. |
@@ -206,8 +206,8 @@ Kinds, from `internal/alerting/rules.go:82-98`: generic, slack, discord, telegra
 
 | Claim | Where | What the code shows |
 | --- | --- | --- |
-| "over 70 MCP tools" | `README.md:222`, `docs/index.md:33` | 144 tools are registered in `internal/mcptools/classes.go` (one classification entry per tool). The claim is stale, not wrong in direction. |
-| "82 tools" and "roughly 45" for Coolify | `docs/comparison.md:159`, `docs/comparison.md:168` | 82 is stale (144 now). The Coolify figure is a competitor claim not re-verifiable from this repo. |
+| "over 70 MCP tools" | `README.md:222`, `docs/index.md:33` | 153 tools are registered in full mode and 144 in the default standard mode (`go test -run TestToolListTokenBudget -v ./internal/mcptools`). The claim is stale, not wrong in direction. |
+| "82 tools" and "roughly 45" for Coolify | `docs/comparison.md:159`, `docs/comparison.md:168` | 82 is stale (153 in full mode now). The Coolify figure is a competitor claim not re-verifiable from this repo. |
 | "alerting across nine rule kinds" | `README.md` Status section, `docs/comparison.md:157` | `internal/alerting/rules.go:33-52` defines 13 kinds: the nine listed plus `control_plane_backup_stale`, `node_offline`, `node_cert_expiring`, `log_archive_stale`. |
 | "There is no stable release yet and the project is not ready for production workloads" | `README.md` Status section | Accurate today and must stay until v0.2.0 stable ships. It sits in tension with the feature-depth marketing below it. The latest tag at the time of writing is `v0.2.0-beta.14`. |
 | "Single-node and multi-node both run today" | `README.md` Status section | Overstated. `docs/roadmap.md` says the e2e suite does not exercise a full multi-node mesh, and mesh device tests use fakes (`internal/network/device_test.go:3-11`). |
@@ -221,8 +221,8 @@ Kinds, from `internal/alerting/rules.go:82-98`: generic, slack, discord, telegra
 
 These are proposals only. `README.md` is not edited in this change.
 
-1. `README.md:222` and `docs/index.md:33`: replace "over 70 MCP tools" with "144 MCP tools". Better, remove the number and link to the generated tool list so it cannot drift again.
-2. `docs/comparison.md:159` and `:168`: replace "82 tools" with 144, keep the Coolify figure but mark it as "as of" a date.
+1. `README.md:222` and `docs/index.md:33`: replace "over 70 MCP tools" with "153 MCP tools". Better, remove the number and link to the generated tool list so it cannot drift again.
+2. `docs/comparison.md:159` and `:168`: replace "82 tools" with 153, keep the Coolify figure but mark it as "as of" a date.
 3. `README.md` Status section and `docs/comparison.md:157`: change "nine rule kinds" to "thirteen rule kinds", or drop the count.
 4. `README.md` Status section: keep the "not ready for production workloads" paragraph until v0.2.0 stable ships, then replace it with a link to this page. Add a sentence: "Feature maturity is listed in docs/feature-status.md."
 5. `README.md` Status section: change "Single-node and multi-node both run today" to "Single node is the supported path. Multi-node and the WireGuard mesh are beta."
