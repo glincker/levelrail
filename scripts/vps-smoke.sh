@@ -37,6 +37,7 @@ app_dir() {
 	smoke-nextjs) echo nextjs ;;
 	smoke-goapi) echo goapi ;;
 	smoke-static) echo static ;;
+	*) return 1 ;;
 	esac
 }
 app_port() {
@@ -100,6 +101,7 @@ deploy_settled_after() { # app previous-id
 		DEPLOY_FAILED=1
 		return 0
 		;;
+	*) ;;
 	esac
 	return 1
 }
