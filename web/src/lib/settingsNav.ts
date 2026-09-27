@@ -29,12 +29,14 @@ import {
   SparkleIcon,
   FileCodeIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { filterByFeature, type ExperimentalFeature } from './experimental'
 
 export interface SettingsNavItem {
   to: string
   icon: ComponentType<{ className?: string }>
   title: string
   description: string
+  feature?: ExperimentalFeature
 }
 
 export interface SettingsNavSection {
@@ -192,6 +194,7 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'Cloudflare Tunnel',
         description:
           'Expose this control plane without opening an inbound port.',
+        feature: 'cloudflare-tunnel',
       },
       {
         to: '/settings/vault',
@@ -206,6 +209,7 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'AI Assistant',
         description:
           'Bring your own LLM API key for the platform chat assistant.',
+        feature: 'ai-chat',
       },
     ],
   },
@@ -251,6 +255,7 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'Infrastructure as code',
         description:
           'Plan and apply YAML resource files, and export live state.',
+        feature: 'iac',
       },
       {
         to: '/settings/updates',
@@ -267,3 +272,11 @@ export const settingsNavSections: SettingsNavSection[] = [
     ],
   },
 ]
+
+export function visibleSettingsSections(
+  enabled: readonly string[],
+): SettingsNavSection[] {
+  return settingsNavSections
+    .map((s) => ({ ...s, items: filterByFeature(s.items, enabled) }))
+    .filter((s) => s.items.length > 0)
+}

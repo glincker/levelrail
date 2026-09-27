@@ -28,6 +28,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerSupplyChainRoutes(mux)
 
 	var h http.Handler = mux
+	h = experimentalGateMiddleware(h)
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
 	h = panicRecoveryMiddleware(rt.logger)(h)
 	h = requestIDMiddleware(h)

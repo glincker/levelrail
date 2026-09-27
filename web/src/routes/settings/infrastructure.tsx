@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
+import { requireExperimental } from '../../lib/experimental'
 import { createFileRoute } from '@tanstack/react-router'
 import { FileCodeIcon, UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -30,6 +31,8 @@ import type { IacFile, IacPlan, IacRequest } from '../../queries/iac'
 // files, review the plan, then apply. Every change inside an apply goes
 // through the ordinary API with the signed-in user's own permissions.
 export const Route = createFileRoute('/settings/infrastructure')({
+  beforeLoad: ({ context: { queryClient } }) =>
+    requireExperimental(queryClient, 'iac'),
   component: InfrastructureSettingsPage,
 })
 

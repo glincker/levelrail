@@ -11,13 +11,14 @@ import { Kbd } from '@/components/kit'
 import { CollapsibleSection } from './CollapsibleSection'
 import { NavBadge } from './NavBadge'
 import {
-  GLOBAL_NAV_FOOTER,
-  GLOBAL_NAV_GROUPS,
   chordFor,
   isGlobalItemActive,
   resolveOpen,
+  visibleGlobalFooter,
+  visibleGlobalGroups,
   type GlobalNavItem,
 } from './navModel'
+import { useExperimentalFeatures } from '@/hooks/useExperimental'
 import { useNavCounts } from './useNavCounts'
 import { usePersistedToggles } from './usePersistedToggles'
 
@@ -70,11 +71,12 @@ export function GlobalNav() {
   const rail = state === 'collapsed'
   const [stored, setOpen] = usePersistedToggles(GLOBAL_NAV_STORAGE_KEY)
   const counts = useNavCounts()
+  const experimental = useExperimentalFeatures()
 
   return (
     <>
       <div className="flex flex-col gap-1 p-2">
-        {GLOBAL_NAV_GROUPS.map((group) => {
+        {visibleGlobalGroups(experimental).map((group) => {
           const menu = (
             <SidebarMenu>
               {group.items.map((item) => (
@@ -110,7 +112,7 @@ export function GlobalNav() {
       <SidebarGroup className="mt-auto">
         <SidebarGroupContent>
           <SidebarMenu>
-            {GLOBAL_NAV_FOOTER.map((item) => (
+            {visibleGlobalFooter(experimental).map((item) => (
               <NavLinkItem
                 key={item.id}
                 item={item}

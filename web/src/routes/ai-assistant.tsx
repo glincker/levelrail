@@ -1,3 +1,4 @@
+import { requireExperimental } from '../lib/experimental'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { GearIcon, RobotIcon } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -10,6 +11,8 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 
 export const Route = createFileRoute('/ai-assistant')({
+  beforeLoad: ({ context: { queryClient } }) =>
+    requireExperimental(queryClient, 'ai-chat'),
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(aiAssistantSettingsQueryOptions()),
   component: AiAssistantPage,

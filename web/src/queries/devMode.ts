@@ -13,6 +13,7 @@ export const devModeKeys = {
 
 interface DevModeStatus {
   enabled: boolean
+  experimental: string[]
 }
 
 export async function fetchDevMode(): Promise<DevModeStatus> {
