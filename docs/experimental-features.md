@@ -23,9 +23,9 @@ The value is a comma separated list of feature keys. Unknown keys are logged at 
 ## What "off" means
 
 - **API**: routes of the feature answer `404` with `{"error": "...", "code": "experimental_feature_disabled", "feature": "<key>"}`. The message names `APP_EXPERIMENTAL`.
-- **CLI**: the commands are hidden from `--help` and exit with a usage error naming `APP_EXPERIMENTAL`. Set the variable in the shell you run the CLI from.
-- **MCP**: the tools are not registered. Set the variable in the environment of the MCP server process.
-- **Dashboard**: navigation entries and pages are hidden, and direct visits redirect home.
+- **CLI**: the commands are hidden from `--help` and from shell completion, and exit with a usage error naming `APP_EXPERIMENTAL`. The CLI reads its own environment, not the control plane's: set the variable in the shell you run the CLI from, and regenerate any installed completion script after changing it.
+- **MCP**: the tools are not registered. The MCP server is a separate process and reads its own environment: set the variable there, not only on the control plane.
+- **Dashboard**: navigation entries, command palette entries, `g` shortcuts and in-page pointers are hidden, pages redirect home on direct visits. The dashboard follows the control plane's setting.
 - **Reconcilers**: the model, load balancer routing and Cloudflare Tunnel controllers do not start.
 - **Data**: nothing is deleted. Turning a feature back on restores it as it was.
 
