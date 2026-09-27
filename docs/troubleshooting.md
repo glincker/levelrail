@@ -7,6 +7,7 @@ description: Fixes for the most common problems when deploying, logging in, or r
 Start here for a fast fix. Each entry links to the full page if you need more depth.
 
 ::: details My deploy is stuck or failed
+0. Run `levelrail-cli apps deploys show <name>`: a failed or blocked deploy carries a classified cause and fix, see [Deploy failures](deploy-failures.md).
 1. Check the build log first: dashboard's deploy detail page, or `levelrail-cli apps deploys logs <name> <deploy-id>`.
 2. If the build succeeded but the app never came up, the readiness probe is the usual cause. The `Ready` condition's message names the exact request or command and what came back (a status, a redirect target, a TLS error, an exec exit code). A 302 to a login page wants `follow_redirects` or `expected_status: 200-399`; a self-signed HTTPS endpoint wants `scheme: https` with `tls_skip_verify: true`; a database is better checked with an `exec` probe. See [Health checks](app-spec-reference.md#health-checks). A slow cold start (JVM warm-up, a large migration) can also legitimately take longer than the default 60s readiness budget: raise it with `health.readyTimeout` instead of treating the false `ReadinessFailed` as a real bug.
 3. A crashlooping container gets its last 200 log lines surfaced automatically in the dashboard, no separate log search needed.

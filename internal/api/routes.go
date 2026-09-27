@@ -288,6 +288,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// Deploys.
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleTriggerDeploy))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDeployHistory))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDeploy))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/cancel", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCancelDeploy))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRollbackToDeploy))
 	mux.HandleFunc("GET /api/v1/apps/{name}/cancel-superseded", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetCancelSuperseded))

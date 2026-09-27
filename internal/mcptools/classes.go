@@ -92,6 +92,7 @@ var toolTable = map[string]Meta{
 	"get_app_logs":                          {clsR, "logs", unt},
 	"list_app_images":                       {clsR, "apps", 0},
 	"list_deploys":                          {clsR, "deploys", unt},
+	"get_deploy":                            {clsR, "deploys", unt},
 	"list_deploy_attempts":                  {clsR, "deploys", unt},
 	"get_deploy_sbom":                       {clsR, "deploys", unt},
 	"get_deploy_vulnerabilities":            {clsR, "deploys", unt},

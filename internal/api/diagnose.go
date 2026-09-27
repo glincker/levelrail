@@ -11,6 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/diagnose"
+	"github.com/GLINCKER/levelrail/internal/failure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -37,6 +38,8 @@ type diagnosisResource struct {
 	DeployAttemptID string                    `json:"deploy_attempt_id,omitempty"`
 	Causes          []diagnosisCauseResource  `json:"causes"`
 	Fixable         bool                      `json:"fixable"`
+	// Failure is the shared structured failure object for the diagnosed attempt.
+	Failure *failure.Failure `json:"failure,omitempty"`
 
 	// RecentChanges is what changed on the app in the last
 	// APP_ALERT_CHANGE_WINDOW, with the likely cause flagged.
@@ -124,6 +127,7 @@ func (rt *Router) handleDiagnoseApp(w http.ResponseWriter, r *http.Request) {
 		attemptID = attempt.ID
 	}
 	resp := toDiagnosisResource(diagnose.Diagnose(in), attemptID)
+	resp.Failure = rt.diagnoseFailure(attempt, conditions, in)
 	recent := rt.changeAggregator().Collect(ctx, name, time.Now())
 	resp.RecentChanges = &recent
 	writeJSON(w, http.StatusOK, resp)

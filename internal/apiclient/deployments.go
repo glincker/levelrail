@@ -49,6 +49,7 @@ type DeploymentResource struct {
 	PreviewImageURL *string          `json:"preview_image_url"`
 	SBOMPackages    *int             `json:"sbom_packages"`
 	VulnCounts      *VulnCounts      `json:"vuln_counts"`
+	Failure         *DeployFailure   `json:"failure,omitempty"`
 }
 
 // DeploymentList is the GET /api/v1/deployments response.
