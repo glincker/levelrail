@@ -2489,6 +2489,10 @@ type AuditLogEntryResource struct {
 	RemoteAddr string `json:"remote_addr"`
 	CreatedAt  string `json:"created_at"`
 	ClientKind string `json:"client_kind"`
+	// AgentName labels the AI agent behind the token; AgentClient is the
+	// self-reported MCP client name and version.
+	AgentName   string `json:"agent_name,omitempty"`
+	AgentClient string `json:"agent_client,omitempty"`
 }
 
 // ListAuditLogOptions is ListAuditLog's and DownloadAuditLogCSV's shared
@@ -2503,6 +2507,7 @@ type ListAuditLogOptions struct {
 	ClientKind string
 	Search     string // case-insensitive substring across actor, ability, method, path, remote addr
 	FailedOnly bool   // only entries with status_code >= 400
+	Agent      string // only entries made with a token labeled with this agent name
 }
 
 // PurgeAuditLogResult is POST /api/v1/audit-log/purge's response shape

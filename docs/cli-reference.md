@@ -848,9 +848,9 @@ list configured credentials profiles
 ## Tokens
 
 ```
-levelrail tokens create --name NAME --abilities LIST [flags]
+levelrail tokens create --name NAME --abilities LIST [--agent NAME] [--agent-description TEXT] [flags]
 ```
-mint a new API token
+mint a new API token; `--agent` labels it as issued to an AI agent so audit entries record the agent name
 
 ```
 levelrail tokens list [flags]
@@ -1314,7 +1314,7 @@ levelrail version [flags]
 levelrail audit-log [flags]
 ```
 
-Filter with `--search <text>` (case-insensitive substring across actor, ability, method, path and remote address) and `--failed` (status 400 or higher). Both are applied server side and carry into `--format csv` exports.
+Filter with `--agent <name>` (entries made with a token labeled with that agent name), `--search <text>` (case-insensitive substring across actor, ability, method, path and remote address) and `--failed` (status 400 or higher). Both are applied server side and carry into `--format csv` exports.
 
 ### Audit Purge
 

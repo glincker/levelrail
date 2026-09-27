@@ -103,6 +103,17 @@ levelrail-cli tokens create --name "ai-assistant" --abilities read,deploy
 
 Pick the narrowest ability set the assistant actually needs. A read-only assistant that only diagnoses and reports needs `read` (add `read:sensitive` only if it must see secrets or env values); one that can also trigger rollbacks or redeploys needs `deploy` too. Every request through `levelrail-mcp`, over either transport, is attributed to the `mcp` client kind in the audit log (`GET /api/v1/audit-log`), so scoped-down tokens are traceable the same way CLI and dashboard activity already is.
 
+### Agent identity
+
+Label a token as issued to an agent and every audit entry made with it records who it was:
+
+```bash
+levelrail-cli tokens create --name ci-agent --abilities read,deploy --agent deploy-bot --agent-description "ships main from CI"
+levelrail-cli audit-log --agent deploy-bot
+```
+
+`--agent` sets the agent name (at most 64 characters, description at most 500). Audit entries from that token carry `agent_name`, and when the caller is `levelrail-mcp` also `agent_client`, the MCP client name and version it reported at initialize (self-reported, informational). `GET /api/v1/audit-log?agent=NAME`, the `list_audit_log` MCP tool's `agent` argument and `audit-log --agent` filter on it, and `tokens list` shows an AGENT column. The label changes nothing about what the token may do: a read-only agent token still cannot deploy, and that rejected request is not an audit entry (only permitted requests are recorded).
+
 ## Running a separately licensed AI assistant
 
 `levelrail-mcp` is designed to sit in front of any MCP-compatible AI assistant, including one licensed under terms (for example AGPL) that are incompatible with this project's Apache 2.0 license, or any third-party assistant you do not want coupled to this codebase.
