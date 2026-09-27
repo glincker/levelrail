@@ -236,3 +236,23 @@ func TestRenderPreviewComment(t *testing.T) {
 		t.Errorf("failed comment is %d bytes, want the reason bounded", len(failed))
 	}
 }
+
+func TestPreviewComment_UnwritableMarkerMatchFallsBackToNewComment(t *testing.T) {
+	for name, h := range commentHarnesses(t) {
+		t.Run(name, func(t *testing.T) {
+			h.open()
+			db := previewDB(t, h.rt)
+			p, err := db.GetPreviewEnvironmentByAppAndPR(context.Background(), "web", 42)
+			if err != nil {
+				t.Fatalf("load preview: %v", err)
+			}
+			_ = db.SetPreviewEnvironmentCommentID(context.Background(), p.ID, 0)
+			h.comments.updateErr = errors.New("403 not your comment")
+
+			h.push()
+			if h.created() != 2 {
+				t.Fatalf("created = %d, want a fresh comment when the matched one cannot be edited", h.created())
+			}
+		})
+	}
+}

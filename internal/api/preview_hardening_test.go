@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/webhook"
 )
 
 func previewRow(id, app string, pr int, created, status string) store.PreviewEnvironment {
@@ -331,5 +332,33 @@ func TestPreviewPolicyRoutes(t *testing.T) {
 	var overview previewsOverviewResource
 	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &overview) != nil || overview.Limits.MaxTotal != 9 {
 		t.Errorf("overview: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestSelectEvictions_FailedPreviewsHoldNoSlot(t *testing.T) {
+	all := []store.PreviewEnvironment{
+		previewRow("f", "web", 1, "2026-01-01", store.PreviewStatusFailed),
+		previewRow("a", "web", 2, "2026-01-02", store.PreviewStatusActive),
+	}
+	if got := selectEvictions(all, "web", "", PreviewLimits{MaxPerApp: 2}); len(got) != 0 {
+		t.Fatalf("selectEvictions() = %+v, want none: the failed preview runs nothing", got)
+	}
+}
+
+func TestForkPreview_StaleApprovalDoesNotDeploy(t *testing.T) {
+	rt, db, secret, builder := setUpPreviewApp(t)
+	sendPullRequestWebhook(rt, secret, githubPullRequestBodyFrom("opened", 42, "sha1", "main", "mallory/web"))
+
+	gs, err := db.GetGitSource(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("git source: %v", err)
+	}
+	ev := webhook.PullRequestEvent{
+		Action: webhook.PullRequestSynchronize, Number: 42, HeadRef: "feature-x", HeadSHA: "sha1",
+		BaseRef: "main", HeadRepoFullName: "mallory/web",
+	}
+	status, msg := rt.deployPreviewEnvironment(context.Background(), "web", *gs, ev, true)
+	if status != http.StatusOK || !strings.Contains(msg, "no longer current") || len(builder.calls) != 0 {
+		t.Fatalf("status = %d, msg = %q, builds = %d, want the stale approval ignored", status, msg, len(builder.calls))
 	}
 }
