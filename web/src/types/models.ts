@@ -149,3 +149,37 @@ export interface ModelUsageReport {
   in_flight: number
   note: string
 }
+
+// Wire shapes for /api/v1/models/{name}/engine-metrics, mirroring
+// internal/models/enginemetrics_report.go.
+
+export interface EngineMetricPoint {
+  t: string
+  v: number
+}
+
+export interface EngineMetricSeries {
+  id: string
+  label: string
+  unit: 'percent' | 'count' | 'tokens_per_second' | 'seconds' | 'bytes'
+  supported: boolean
+  latest: number | null
+  points: EngineMetricPoint[]
+}
+
+export interface EngineHealth {
+  state: 'ok' | 'warn' | 'unknown'
+  summary: string
+  reasons: string[]
+}
+
+export interface EngineMetricsReport {
+  model: string
+  engine: ModelEngine
+  from: string
+  to: string
+  collecting: boolean
+  note: string
+  health: EngineHealth
+  series: EngineMetricSeries[]
+}

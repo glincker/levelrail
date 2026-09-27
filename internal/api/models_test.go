@@ -41,6 +41,7 @@ func TestModelsRoutes_RequireAuth(t *testing.T) {
 		{http.MethodPost, "/api/v1/models/chat/api-key"},
 		{http.MethodPut, "/api/v1/models/chat/hf-token"},
 		{http.MethodGet, "/api/v1/models/chat/logs"},
+		{http.MethodGet, "/api/v1/models/chat/engine-metrics"},
 		{http.MethodGet, "/api/v1/models/chat/logs/stream"},
 		{http.MethodGet, "/api/v1/gpus"},
 	})
@@ -268,5 +269,30 @@ func TestGPUsEndpointAndDoctor(t *testing.T) {
 		if strings.HasPrefix(c.Code, "gpu:") && c.Status != doctorStatusOK {
 			t.Errorf("healthy gpu check = %+v, want ok", c)
 		}
+	}
+}
+
+func TestModels_EngineMetricsEndpoint(t *testing.T) {
+	rt, db := newModelsTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if rec := doModels(t, rt, cookie, http.MethodGet, "/api/v1/models/nope/engine-metrics", ""); rec.Code != http.StatusNotFound {
+		t.Fatalf("missing model status = %d", rec.Code)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodPost, "/api/v1/models", `{"name":"chat","engine":"ollama","model":"llama3.1:8b"}`); rec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d", rec.Code)
+	}
+	if rec := doModels(t, rt, cookie, http.MethodGet, "/api/v1/models/chat/engine-metrics?since=bogus", ""); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad since status = %d", rec.Code)
+	}
+	rec := doModels(t, rt, cookie, http.MethodGet, "/api/v1/models/chat/engine-metrics?since=2h", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var rep models.EngineMetricsReport
+	if err := json.Unmarshal(rec.Body.Bytes(), &rep); err != nil {
+		t.Fatal(err)
+	}
+	if rep.Engine != "ollama" || rep.Collecting || rep.Health.State != models.EngineHealthUnknown || len(rep.Series) == 0 {
+		t.Errorf("report = %+v", rep)
 	}
 }

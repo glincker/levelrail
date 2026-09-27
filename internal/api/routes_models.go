@@ -18,6 +18,7 @@ func (rt *Router) registerModelRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/models/{name}/keys/{id}", rt.requireAbilityForResource(AbilityWrite, modelResourceFromPath, rt.handleRevokeModelKey))
 	mux.HandleFunc("POST /api/v1/models/{name}/keys/{id}/rotate", rt.requireAbilityForResource(AbilityWriteSensitive, modelResourceFromPath, rt.handleRotateModelKey))
 	mux.HandleFunc("GET /api/v1/models/{name}/usage", rt.requireAbilityForResource(AbilityRead, modelResourceFromPath, rt.handleModelUsage))
+	mux.HandleFunc("GET /api/v1/models/{name}/engine-metrics", rt.requireAbilityForResource(AbilityRead, modelResourceFromPath, rt.handleModelEngineMetrics))
 	mux.HandleFunc("PUT /api/v1/models/{name}/hf-token", rt.requireAbilityForResource(AbilityWriteSensitive, modelResourceFromPath, rt.handleSetModelHFToken))
 	mux.HandleFunc("GET /api/v1/models/{name}/logs", rt.requireAbilityForResource(AbilityRead, modelResourceFromPath, rt.handleQueryModelLogs))
 	mux.HandleFunc("GET /api/v1/models/{name}/logs/stream", rt.requireAbilityForResource(AbilityRead, modelResourceFromPath, rt.withStreamReauth(modelResourceFromPath, rt.handleLiveModelLogStream)))

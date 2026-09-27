@@ -135,6 +135,29 @@ Each model has its own page at `/models/<name>` (click its name in the list). Ta
 
 The tab is kept in the URL (`?tab=keys`), so a link opens straight to it. From the CLI, `levelrail models get <name>` prints the same overview facts.
 
+## Engine metrics
+
+The Overview tab shows the inference engine's own metrics with a health summary. The control plane scrapes each running engine every `APP_MODEL_ENGINE_METRICS_INTERVAL` (default 15s) over the same path its readiness probe uses, and stores the readings in the telemetry database under `model:<name>`.
+
+| Metric | vLLM | llama.cpp | Ollama |
+| --- | --- | --- | --- |
+| KV cache usage | yes | yes | not available |
+| Queued and running requests | yes | yes | not available |
+| Prefix cache hit rate | yes | not available | not available |
+| Tokens per second | yes | yes | not available |
+| Time to first token | yes | not available | not available |
+| VRAM in use, share running on CPU | not available | not available | yes (from `/api/ps`) |
+
+Rates (tokens per second, prefix hit rate, time to first token) are computed between two scrapes, so they appear one interval after the model starts and skip an engine restart. llama.cpp serves `/metrics` only when started with `--metrics`, which new containers now get; a model deployed earlier needs `levelrail models restart <name>`. Ollama exposes no Prometheus metrics, so the page says "Not available for ollama" instead of guessing; per-key tokens and first-byte latency are on the Usage tab.
+
+The health pill warns when the KV cache is at or above `APP_MODEL_KV_WARN_PERCENT` (default 90), when more than `APP_MODEL_QUEUE_WARN` requests are queued (default 4), or when an Ollama model runs partly on CPU.
+
+- **CLI.** `levelrail models metrics <name> --since 6h`.
+- **API.** `GET /api/v1/models/{name}/engine-metrics?since=1h` (read ability).
+- **MCP.** `get_model_engine_metrics` (read-only).
+
+The scrape is done by the control plane, not by a node agent, so a remote node's engine must be reachable over the mesh (the same requirement as serving it). Numbers depend on the engine version's metric names; vLLM's older `gpu_cache_usage_perc` and current `kv_cache_usage_perc` are both read.
+
 ## The endpoint and API key
 
 The model's hostname is routed through the built-in ingress to the control plane, whose gateway checks the API key and proxies to the engine. It speaks the OpenAI API:
@@ -263,7 +286,7 @@ Listing and reading models and GPUs needs the `read` ability. Deleting and resta
 
 ## Not in version 1
 
-AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, per-model limit overrides, engine metrics (KV cache, queue depth) on the model page, and a Prometheus endpoint for usage.
+AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, per-model limit overrides, and a Prometheus endpoint for usage.
 
 ## GPU in Compose templates
 

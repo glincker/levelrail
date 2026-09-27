@@ -138,7 +138,7 @@ func Command(m Spec, gpus int) []string {
 		}
 		return cmd
 	case EngineLlamaCpp:
-		cmd := []string{"-hf", m.ModelRef, "--alias", m.ModelRef, "--host", "0.0.0.0", "--port", strconv.Itoa(engines[EngineLlamaCpp].Port), "-ngl", "999"}
+		cmd := []string{"-hf", m.ModelRef, "--alias", m.ModelRef, "--host", "0.0.0.0", "--port", strconv.Itoa(engines[EngineLlamaCpp].Port), "-ngl", "999", "--metrics"}
 		if c := m.ContextLength; c > 0 {
 			cmd = append(cmd, "-c", strconv.Itoa(c))
 		}

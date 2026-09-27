@@ -55,7 +55,7 @@ func TestCommandAndEnv(t *testing.T) {
 	}
 
 	l := Spec{Engine: EngineLlamaCpp, ModelRef: "o/m-GGUF:Q4_K_M", ContextLength: 2048}
-	wantL := []string{"-hf", "o/m-GGUF:Q4_K_M", "--alias", "o/m-GGUF:Q4_K_M", "--host", "0.0.0.0", "--port", "8080", "-ngl", "999", "-c", "2048"}
+	wantL := []string{"-hf", "o/m-GGUF:Q4_K_M", "--alias", "o/m-GGUF:Q4_K_M", "--host", "0.0.0.0", "--port", "8080", "-ngl", "999", "--metrics", "-c", "2048"}
 	if got := Command(l, 1); !reflect.DeepEqual(got, wantL) {
 		t.Errorf("llamacpp command = %v, want %v", got, wantL)
 	}

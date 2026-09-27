@@ -711,6 +711,7 @@ func run(logger *slog.Logger) error {
 		previewNotifier:              previewManager,
 	}))
 	startLocalGPUCollector(ctx, db, client, logger)
+	go models.NewEngineMetricsCollector(db, telemetryDB, nil, logger).Run(ctx, models.EngineMetricsInterval())
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
@@ -2240,6 +2241,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 
 	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
 	wireModelPreflight(modelSvc, client, b.ShortName, logger)
+	modelSvc.SetEngineMetricsReader(telemetryDB)
 	opts = append(opts, api.WithModels(modelSvc))
 	rt := api.NewRouter(logger, b, db, opts...)
 	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, web.Handler()))), rt

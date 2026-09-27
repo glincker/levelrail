@@ -65,6 +65,7 @@ type Service struct {
 	liveStats     func() map[string]int
 	preflight     preflightDeps
 	cache         cacheDeps
+	engineMetrics EngineMetricsReader
 }
 
 // NewService builds a Service. secrets may be nil (HuggingFace tokens

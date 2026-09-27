@@ -107,6 +107,19 @@ func TestModelTools_RequestsAndResults(t *testing.T) {
 			},
 		},
 		{
+			tool: "get_model_engine_metrics", args: map[string]any{"name": "chat", "since": "2h"}, wantMethod: http.MethodGet, wantPath: "/api/v1/models/chat/engine-metrics",
+			respond: func(w http.ResponseWriter) {
+				_ = json.NewEncoder(w).Encode(apiclient.EngineMetricsReport{Model: "chat", Engine: "vllm", Collecting: true, Health: apiclient.EngineHealth{State: "ok"}})
+			},
+			check: func(t *testing.T, r *mcp.CallToolResult) {
+				var out apiclient.EngineMetricsReport
+				decodeStructured(t, r, &out)
+				if out.Model != "chat" || !out.Collecting {
+					t.Errorf("out = %+v", out)
+				}
+			},
+		},
+		{
 			tool: "list_gpu_nodes", args: map[string]any{}, wantMethod: http.MethodGet, wantPath: "/api/v1/gpus",
 			respond: func(w http.ResponseWriter) {
 				_ = json.NewEncoder(w).Encode([]apiclient.GPUNodeResource{{Name: "gpu-1", Present: true, GPUCount: 1, TotalVRAMMiB: 24576, Devices: []apiclient.GPUDeviceResource{}}})

@@ -5,6 +5,7 @@ import { RelativeTime } from '@/components/kit'
 import { gpuSummary, nodeLabel } from '../../lib/models'
 import { chatCurlExample } from '../../lib/modelPresentation'
 import type { ModelResource } from '../../types/models'
+import { ModelEnginePanel } from './ModelEnginePanel'
 
 function copy(value: string, label: string) {
   void navigator.clipboard.writeText(value).then(() => {
@@ -63,6 +64,7 @@ export function ModelOverviewTab({ model }: { model: ModelResource }) {
         />
         <Fact label="Quantization" value={model.quantization || 'from model'} />
       </dl>
+      <ModelEnginePanel modelName={model.name} engine={model.engine} />
       <section aria-label="Endpoint" className="space-y-2">
         <h3 className="text-sm font-semibold">Endpoint</h3>
         {url ? (
