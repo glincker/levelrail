@@ -18,7 +18,7 @@ const (
 
 	defaultExcerptLines = 20
 	defaultExcerptBytes = 4000
-	excerptTrailing     = 2
+	excerptTrailing     = 4
 )
 
 // Failure is the structured description of why a deploy did not succeed.

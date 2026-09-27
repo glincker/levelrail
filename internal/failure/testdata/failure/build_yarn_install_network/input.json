@@ -1,0 +1,13 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"web\": build: process \"/bin/sh -c yarn install --frozen-lockfile\" did not complete successfully: exit code: 1",
+  "LogLines": [
+    "#8 [4/6] RUN yarn install --frozen-lockfile",
+    "#8 0.9 yarn install v1.22.22",
+    "#8 1.2 [1/4] Resolving packages...",
+    "#8 31.4 info There appears to be trouble with your network connection. Retrying...",
+    "#8 61.9 error An unexpected error occurred: \"https://registry.yarnpkg.com/react/-/react-18.3.1.tgz: getaddrinfo EAI_AGAIN registry.yarnpkg.com\".",
+    "#8 ERROR: process \"/bin/sh -c yarn install --frozen-lockfile\" did not complete successfully: exit code: 1"
+  ]
+}
