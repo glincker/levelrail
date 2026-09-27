@@ -81,15 +81,6 @@ func writeJSONLine(out io.Writer, v any) error {
 	return err
 }
 
-// writeJSONError writes {"error": "..."} to out: --json mode's error
-// shape, deliberately the same {"error": "..."} field name
-// internal/api/respond.go's own apiError already uses, so a caller
-// parsing this CLI's JSON output and the control plane's own JSON error
-// responses can use one code path for both.
-func writeJSONError(out io.Writer, err error) error {
-	return writeJSONValue(out, map[string]string{"error": err.Error()})
-}
-
 // outputFormat is the resolved --output value.
 type outputFormat string
 
