@@ -9,6 +9,31 @@ import (
 	"testing"
 )
 
+// TestAppsUsage_BuildsTriggerFlagsExist guards the apps summary line
+// against naming a flag the subcommand does not accept.
+func TestAppsUsage_BuildsTriggerFlagsExist(t *testing.T) {
+	var line string
+	for _, l := range strings.Split(appsUsage("cli"), "\n") {
+		if strings.Contains(l, "apps builds trigger") {
+			line = l
+		}
+	}
+	if line == "" {
+		t.Fatal("apps usage has no builds trigger line")
+	}
+	var stdout, stderr bytes.Buffer
+	run("cli", []string{"apps", "builds", "trigger", "-h"}, &stdout, &stderr, envMap())
+	help := stdout.String() + stderr.String()
+	for _, tok := range strings.Fields(line) {
+		if !strings.HasPrefix(tok, "--") {
+			continue
+		}
+		if !strings.Contains(help, "-"+strings.TrimPrefix(tok, "--")+" ") {
+			t.Errorf("summary names %s, which apps builds trigger -h does not list", tok)
+		}
+	}
+}
+
 func TestRun_AppsBuilds_Trigger(t *testing.T) {
 	var gotMethod, gotPath string
 	var gotBody buildTriggerRequest

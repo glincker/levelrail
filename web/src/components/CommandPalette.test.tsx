@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CommandPalette } from './CommandPalette'
 
+let experimentalOn: string[] = ['ai-chat']
 const navigate = vi.fn()
 const setTheme = vi.fn()
 const restartApp = vi.fn()
@@ -21,6 +22,9 @@ vi.mock('@tanstack/react-router', () => ({
   }: {
     select: (s: { location: { pathname: string } }) => unknown
   }) => select({ location: { pathname: '/' } }),
+}))
+vi.mock('../hooks/useExperimental', () => ({
+  useExperimentalFeatures: () => experimentalOn,
 }))
 vi.mock('./ThemeProvider', () => ({
   useTheme: () => ({ theme: 'light', setTheme }),
@@ -50,6 +54,7 @@ function renderPalette() {
 }
 
 beforeEach(() => {
+  experimentalOn = ['ai-chat']
   window.localStorage.clear()
 })
 
@@ -171,5 +176,33 @@ describe('CommandPalette', () => {
     renderPalette()
     await user.type(screen.getByRole('combobox'), 'zzzzqq')
     expect(screen.getByText('No results.')).toBeInTheDocument()
+  })
+
+  it('hides gated destinations and the assistant suggestion while off', () => {
+    experimentalOn = []
+    renderPalette()
+    expect(screen.queryByRole('option', { name: /Load balancers/ })).toBeNull()
+    expect(screen.queryByRole('option', { name: /AI models/ })).toBeNull()
+    expect(screen.queryByRole('option', { name: /AI assistant/ })).toBeNull()
+    expect(
+      screen.queryByRole('option', { name: /Ask the assistant/ }),
+    ).toBeNull()
+    expect(
+      screen.getByRole('option', { name: /Databases/ }),
+    ).toBeInTheDocument()
+  })
+
+  it('shows gated destinations once their feature is on', () => {
+    experimentalOn = ['ai-chat', 'ai-models', 'load-balancer']
+    renderPalette()
+    expect(
+      screen.getByRole('option', { name: /Load balancers/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('option', { name: /AI models/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('option', { name: /AI assistant/ }),
+    ).toBeInTheDocument()
   })
 })

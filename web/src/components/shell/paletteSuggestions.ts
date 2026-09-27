@@ -17,6 +17,7 @@ export function buildPaletteSuggestions(input: {
   currentApp?: string
   apps: { name: string; failing: boolean }[]
   recentKeys: readonly string[]
+  assistantEnabled?: boolean
 }): SuggestionSpec[] {
   const out: SuggestionSpec[] = []
   const seen = new Set<string>()
@@ -65,10 +66,12 @@ export function buildPaletteSuggestions(input: {
       app: name,
     })
   }
-  out.push({
-    key: 'suggest-assistant',
-    kind: 'assistant',
-    label: 'Ask the assistant',
-  })
+  if (input.assistantEnabled) {
+    out.push({
+      key: 'suggest-assistant',
+      kind: 'assistant',
+      label: 'Ask the assistant',
+    })
+  }
   return out
 }

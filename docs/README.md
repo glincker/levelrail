@@ -73,6 +73,7 @@ Four main types, plus two Levelrail-specific categories:
 | [app-spec-reference.md](app-spec-reference.md) | Every `app.yaml` field, validated against `internal/spec`'s JSON Schema |
 | [feature-catalog.md](feature-catalog.md) | Every dashboard page, API resource group, and CLI command group, plus known UI gaps |
 | [cli-reference.md](cli-reference.md) | Every `levelrail` CLI command, organized by command group, extracted from source |
+| [mcp-tool-surface.md](mcp-tool-surface.md) | Estimated model context cost of the MCP tool list per toolset, and the `agent-core` profile |
 | [api-reference.md](api-reference.md) | Every REST route (272 total) grouped by resource, with ability and handler |
 
 ### Explanation
@@ -81,6 +82,7 @@ Four main types, plus two Levelrail-specific categories:
 | --- | --- |
 | [architecture.md](architecture.md) | How Levelrail is actually built today: reconciler, ingress, builds, storage |
 | [threat-model.md](threat-model.md) | Trust boundaries, assets, attackers, mitigations with file references, known gaps, and how to report a vulnerability |
+| [security-alert-verdicts.md](security-alert-verdicts.md) | Verdict and evidence for each code scanning alert: fixed, false positive, or accepted risk |
 | [comparison.md](comparison.md) | How Levelrail differs from Coolify, Dokploy, CapRover, Dokku, Kamal |
 
 ### Design proposals
@@ -99,6 +101,9 @@ noted per-document since these move between draft, proposed, accepted
 | Doc | Covers |
 | --- | --- |
 | [roadmap.md](roadmap.md) | What's Done, In progress, and explicitly out of scope, kept current against `main` |
+| [feature-status.md](feature-status.md) | Maturity label and test evidence per feature, and README claims checked against the code |
+| [experimental-features.md](experimental-features.md) | The `APP_EXPERIMENTAL` switch, what each gated feature does while off, and how the CLI, MCP, and web read it |
+| [ci.md](ci.md) | How the CI lanes, required checks and local hooks fit together |
 | [performance.md](performance.md) | Measured idle CPU, memory, and API latency at 0, 100, and 500 apps, and how to reproduce it |
 
 ## Support and contributing

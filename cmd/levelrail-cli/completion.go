@@ -5,6 +5,8 @@ import (
 	"io"
 	"sort"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/experimental"
 )
 
 // cmdNode is one node of the CLI's command tree: the verbs a command
@@ -231,12 +233,20 @@ type treeEntry struct {
 // walkCommandTree flattens cliCommandTree so every completion script
 // generator (bash/zsh/fish) renders from one traversal instead of three
 // hand-written copies that could drift from each other.
-func walkCommandTree() []treeEntry {
+func walkCommandTree() []treeEntry { return walkTree(true) }
+
+// walkFullCommandTree flattens every command, gated or not, for drift tests.
+func walkFullCommandTree() []treeEntry { return walkTree(false) }
+
+func walkTree(hideDisabled bool) []treeEntry {
 	var entries []treeEntry
 	var walk func(prefix string, node map[string]*cmdNode)
 	walk = func(prefix string, node map[string]*cmdNode) {
 		names := make([]string, 0, len(node))
 		for name := range node {
+			if hideDisabled && completionHidden(prefix, name) {
+				continue
+			}
 			names = append(names, name)
 		}
 		sort.Strings(names)
@@ -255,6 +265,16 @@ func walkCommandTree() []treeEntry {
 	}
 	walk("", cliCommandTree)
 	return entries
+}
+
+// completionHidden reports whether name under prefix is a gated command that is switched off.
+func completionHidden(prefix, name string) bool {
+	args := []string{name}
+	if prefix != "" {
+		args = append(strings.Fields(prefix), name)
+	}
+	f, gated := experimentalFeatureFor(args)
+	return gated && !experimental.Enabled(f)
 }
 
 // renderChildrenFunc renders a shell function named funcName that maps a

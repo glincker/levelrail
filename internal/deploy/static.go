@@ -14,6 +14,7 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -82,6 +83,11 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error
 			return "", fmt.Errorf("deploy: service %q: build.path %q must be a relative path inside the build root", req.ServiceName, buildPath)
 		}
 		srcDir = filepath.Join(buildRoot, buildPath)
+	}
+	if _, statErr := os.Lstat(srcDir); errors.Is(statErr, fs.ErrNotExist) {
+		rel, _ := filepath.Rel(req.SourceDir, srcDir)
+		return "", fmt.Errorf("deploy: service %q: build.path %q is not in the repository at this commit; build.type %q serves files already committed there and runs no build step, so commit the built output or use build.type %q or %q",
+			req.ServiceName, filepath.ToSlash(rel), spec.BuildStatic, spec.BuildDockerfile, spec.BuildRailpack)
 	}
 	checkoutRoot, srcRel, err := openContained(req.SourceDir, srcDir)
 	if err != nil {

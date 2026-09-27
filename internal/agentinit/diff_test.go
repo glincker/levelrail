@@ -1,6 +1,9 @@
 package agentinit
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestDiff(t *testing.T) {
 	tests := []struct{ name, old, next, want string }{
@@ -16,5 +19,14 @@ func TestDiff(t *testing.T) {
 				t.Errorf("Diff = %q, want %q", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestDiff_OversizedFallsBackToReplace(t *testing.T) {
+	old := strings.Repeat("x\n", 3000)
+	next := strings.Repeat("y\n", 3000)
+	got := Diff(old, next)
+	if want := strings.Repeat("- x\n", 3000) + strings.Repeat("+ y\n", 3000); got != want {
+		t.Errorf("Diff on oversized input did not fall back to a whole-file replacement")
 	}
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -136,6 +137,34 @@ func TestRun_AppsEnvImport(t *testing.T) {
 	}
 	if _, leaked := env["API_KEY"]; leaked {
 		t.Errorf("secret key written to plain env: %v", env)
+	}
+}
+
+func TestPrintEnvImportHuman_BuildTimeNote(t *testing.T) {
+	tests := []struct {
+		name     string
+		plan     envImportPlan
+		wantNote string
+	}{
+		{"public keys new and changed", envImportPlan{New: []string{"VITE_API", "DB"}, Changed: []string{"NEXT_PUBLIC_URL"}}, "note: build-time keys (NEXT_PUBLIC_URL, VITE_API) are inlined"},
+		{"unchanged public key needs no note", envImportPlan{Unchanged: []string{"NEXT_PUBLIC_URL"}}, ""},
+		{"server keys only", envImportPlan{New: []string{"DATABASE_URL"}}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			printEnvImportHuman(&buf, "web", envImportResult{Applied: true, Plan: tt.plan})
+			got := buf.String()
+			if tt.wantNote == "" {
+				if strings.Contains(got, "note:") {
+					t.Errorf("output = %q, want no build-time note", got)
+				}
+				return
+			}
+			if !strings.Contains(got, tt.wantNote) || !strings.Contains(got, ".env.production") {
+				t.Errorf("output = %q, want note %q", got, tt.wantNote)
+			}
+		})
 	}
 }
 

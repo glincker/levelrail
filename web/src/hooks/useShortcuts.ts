@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useExperimentalFeatures } from './useExperimental'
 import {
   INITIAL_CHORD,
   findSearchField,
@@ -11,6 +12,7 @@ import {
 
 export function useShortcuts({ onHelp }: { onHelp: () => void }) {
   const navigate = useNavigate()
+  const experimental = useExperimentalFeatures()
   const stateRef = React.useRef<ChordState>(INITIAL_CHORD)
 
   React.useEffect(() => {
@@ -33,6 +35,7 @@ export function useShortcuts({ onHelp }: { onHelp: () => void }) {
           dialogOpen: document.querySelector('[role="dialog"]') !== null,
         },
         e.timeStamp,
+        experimental,
       )
       stateRef.current = result.state
       const action = result.action
@@ -53,5 +56,5 @@ export function useShortcuts({ onHelp }: { onHelp: () => void }) {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [navigate, onHelp])
+  }, [navigate, onHelp, experimental])
 }

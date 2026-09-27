@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -160,6 +161,29 @@ func printEnvImportHuman(w io.Writer, name string, r envImportResult) {
 	default:
 		_, _ = fmt.Fprintf(w, "nothing to change for app %q\n", name)
 	}
+	if keys := buildTimeEnvKeys(r.Plan.New, r.Plan.Changed); len(keys) > 0 {
+		_, _ = fmt.Fprintf(w, "note: build-time keys (%s) are inlined into the frontend bundle at build time, so runtime env does not change the browser code; supply them to the build (build.args with a Dockerfile, or a committed .env.production) and rebuild\n", strings.Join(keys, ", "))
+	}
+}
+
+// buildTimeEnvPrefixes are frontend frameworks' public env prefixes, whose
+// values are compiled into client bundles rather than read at runtime.
+var buildTimeEnvPrefixes = []string{"NEXT_PUBLIC_", "VITE_", "REACT_APP_"}
+
+func buildTimeEnvKeys(groups ...[]string) []string {
+	var out []string
+	for _, keys := range groups {
+		for _, k := range keys {
+			for _, p := range buildTimeEnvPrefixes {
+				if strings.HasPrefix(k, p) {
+					out = append(out, k)
+					break
+				}
+			}
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 func runAppsEnvExport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

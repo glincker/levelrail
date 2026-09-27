@@ -127,6 +127,11 @@ func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress fu
 			continue
 		}
 
+		// A static site has no service row to link: it is a StaticSite.
+		if req.Services[key].Build.Type == spec.BuildStatic {
+			outcomes = append(outcomes, ServiceOutcome{ServiceKey: key, ServiceName: svcName, Image: image})
+			continue
+		}
 		if linkErr := p.apps.UpdateServiceApp(ctx, svcName, appID); linkErr != nil {
 			outcomes = append(outcomes, ServiceOutcome{ServiceKey: key, ServiceName: svcName, Err: fmt.Errorf("link service to app: %w", linkErr)})
 			continue

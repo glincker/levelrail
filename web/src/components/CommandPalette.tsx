@@ -35,6 +35,8 @@ import {
 } from './commandPaletteData'
 import { PaletteFooter, ResultRow } from './commandPaletteEntries'
 import { chordFor } from './shell/navModel'
+import { filterByFeature, isFeatureVisible } from '../lib/experimental'
+import { useExperimentalFeatures } from '../hooks/useExperimental'
 import { buildPaletteSuggestions } from './shell/paletteSuggestions'
 
 const MAX_APP_MATCHES = 3
@@ -75,6 +77,7 @@ export function CommandPalette({
   const { theme, setTheme } = useTheme()
   const { restartApp, redeployApp } = usePaletteAppActions()
   const pageActions = usePageActions()
+  const experimental = useExperimentalFeatures()
   const currentApp = useRouterState({
     select: (st) => /^\/apps\/([^/]+)/.exec(st.location.pathname)?.[1],
   })
@@ -127,7 +130,10 @@ export function CommandPalette({
       ) =>
       () =>
         void navigate(search ? { to, params, search } : { to, params })
-    const items: PaletteItem[] = ROUTE_ENTRIES.map((e) => ({
+    const items: PaletteItem[] = filterByFeature(
+      ROUTE_ENTRIES,
+      experimental,
+    ).map((e) => ({
       key: e.key,
       label: e.label,
       group: e.group,
@@ -178,6 +184,7 @@ export function CommandPalette({
     databasesQuery.data,
     onShowShortcuts,
     pageActions,
+    experimental,
   ])
 
   const groups = React.useMemo(() => {
@@ -202,6 +209,7 @@ export function CommandPalette({
           failing: a.status.variant === 'destructive',
         })),
         recentKeys,
+        assistantEnabled: isFeatureVisible('ai-chat', experimental),
       })
       const image = (n: string) =>
         appsQuery.data?.find((a) => a.name === n)?.image ?? ''
@@ -297,6 +305,7 @@ export function CommandPalette({
     restartApp,
     redeployApp,
     currentApp,
+    experimental,
   ])
 
   const results = React.useMemo(() => groups.flatMap((g) => g.items), [groups])

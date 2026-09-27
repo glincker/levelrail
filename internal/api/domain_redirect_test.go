@@ -42,6 +42,9 @@ func TestHandleGetDomainRedirect_DomainNotOwnedByApp(t *testing.T) {
 	if rec.Code != http.StatusNotFound {
 		t.Errorf("status = %d, want %d for a domain the app does not own", rec.Code, http.StatusNotFound)
 	}
+	if body := rec.Body.String(); !strings.Contains(body, "other.example.com") || !strings.Contains(body, "add it to the app first") {
+		t.Errorf("body = %s, want the domain named and a hint to add it first", body)
+	}
 }
 
 func TestHandleGetDomainRedirect_AppNotFound(t *testing.T) {

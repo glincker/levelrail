@@ -127,6 +127,33 @@ func assertBothServicesLinkedToApp(t *testing.T, apps *fakeAppStore, appID strin
 	}
 }
 
+func TestDeploySpec_StaticService_NotLinkedAsAService(t *testing.T) {
+	apps := newFakeAppStore()
+	apps.updateServiceAppFailOn, apps.updateServiceAppErr = "myapp-site", store.ErrServiceNotFound
+	staticStore := &fakeStaticSiteStore{}
+	p := New(&fakeBuilder{}, &fakeServiceStore{}, WithAppStore(apps), WithStaticSiteStore(staticStore), WithStaticRootDir(t.TempDir()))
+
+	sourceDir := t.TempDir()
+	writeTree(t, sourceDir, map[string]string{"dist/index.html": "<h1>hi</h1>"})
+
+	outcomes, err := p.DeploySpec(context.Background(), MultiRequest{
+		AppName: "myapp", Services: map[string]spec.Service{"site": staticService("site.example.com")},
+		SourceDir: sourceDir, CommitSHA: "abc123", ImageRepoBase: "levelrail/myapp",
+	}, nil)
+	if err != nil {
+		t.Fatalf("DeploySpec() error = %v", err)
+	}
+	if len(outcomes) != 1 || outcomes[0].Err != nil {
+		t.Fatalf("outcomes = %+v, want one successful static outcome", outcomes)
+	}
+	if len(apps.updateServiceAppCalls) != 0 {
+		t.Errorf("updateServiceAppCalls = %+v, want none for a static site", apps.updateServiceAppCalls)
+	}
+	if staticStore.saveCalls != 1 {
+		t.Errorf("SaveStaticSite called %d times, want 1", staticStore.saveCalls)
+	}
+}
+
 func TestDeploySpec_ImageTagging_PerServiceRepoSuffix(t *testing.T) {
 	builder := &fakeBuilder{result: &build.Result{Tag: "ignored-because-fake-returns-its-own-tag:sha"}}
 	svcStore := &fakeServiceStore{}
