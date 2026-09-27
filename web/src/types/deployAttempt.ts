@@ -1,3 +1,4 @@
+import type { DeployFailure } from './deployFailure'
 import type { VulnCounts } from './supplyChain'
 
 // Wire type for GET /api/v1/apps/{name}/deploy-attempts
@@ -70,4 +71,6 @@ export interface DeployAttempt {
   sbom_packages?: number
   /** Findings per severity, absent until the deploy was scanned. */
   vuln_counts?: VulnCounts
+  /** Why the deploy failed or is held; absent otherwise. */
+  failure?: DeployFailure
 }
