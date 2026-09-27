@@ -26,10 +26,17 @@ type tokenResource struct {
 	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
 	ExpiresAt  *time.Time `json:"expires_at,omitempty"`
 	RevokedAt  *time.Time `json:"revoked_at,omitempty"`
+	// Agent is set when the token was issued to an AI agent.
+	Agent *agentIdentity `json:"agent,omitempty"`
 }
 
 func toTokenResource(t store.APIToken) tokenResource {
+	var agent *agentIdentity
+	if t.AgentName != "" {
+		agent = &agentIdentity{Name: t.AgentName, Description: t.AgentDescription}
+	}
 	return tokenResource{
+		Agent:      agent,
 		ID:         t.ID,
 		Name:       t.Name,
 		Abilities:  t.Abilities,
@@ -47,6 +54,8 @@ type createTokenRequest struct {
 	// expires (Dokploy's own "never" option, which Coolify's
 	// forced-expiry-only picker doesn't offer).
 	ExpiresInDays int `json:"expires_in_days,omitempty"`
+	// Agent optionally labels the token as issued to an AI agent.
+	Agent *agentIdentity `json:"agent,omitempty"`
 }
 
 type createTokenResponse struct {
@@ -85,7 +94,12 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 		expiresAt = &expires
 	}
 
-	plaintext, rec, err := MintAPIToken(r.Context(), rt.tokens, req.Name, req.Abilities, expiresAt)
+	agent, err := validateAgentIdentity(req.Agent)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	plaintext, rec, err := MintAgentAPIToken(r.Context(), rt.tokens, req.Name, req.Abilities, expiresAt, agent)
 	if err != nil {
 		rt.logger.Error("api: create token failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -140,6 +154,11 @@ func (rt *Router) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 // human through this handler) can mint through the identical path
 // instead of duplicating it.
 func MintAPIToken(ctx context.Context, tokens TokenStore, name string, abilities []string, expiresAt *time.Time) (string, store.APIToken, error) {
+	return MintAgentAPIToken(ctx, tokens, name, abilities, expiresAt, agentIdentity{})
+}
+
+// MintAgentAPIToken is MintAPIToken for a token labeled with an agent identity.
+func MintAgentAPIToken(ctx context.Context, tokens TokenStore, name string, abilities []string, expiresAt *time.Time, agent agentIdentity) (string, store.APIToken, error) {
 	plaintext, err := randomToken()
 	if err != nil {
 		return "", store.APIToken{}, fmt.Errorf("api: mint token: generate token: %w", err)
@@ -155,6 +174,8 @@ func MintAPIToken(ctx context.Context, tokens TokenStore, name string, abilities
 		Abilities: abilities,
 		CreatedAt: time.Now(),
 		ExpiresAt: expiresAt,
+
+		AgentName: agent.Name, AgentDescription: agent.Description,
 	}
 	if err := tokens.SaveAPIToken(ctx, rec); err != nil {
 		return "", store.APIToken{}, fmt.Errorf("api: mint token: save: %w", err)
