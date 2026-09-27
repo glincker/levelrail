@@ -16,6 +16,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -82,11 +83,12 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error
 		}
 		srcDir = filepath.Join(buildRoot, buildPath)
 	}
-	srcDir, err = containedRealPath(req.SourceDir, srcDir)
+	checkoutRoot, srcRel, err := openContained(req.SourceDir, srcDir)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: static source: %w", req.ServiceName, err)
 	}
-	info, err := os.Stat(srcDir)
+	defer checkoutRoot.Close() //nolint:errcheck // read-only handle
+	info, err := checkoutRoot.Stat(srcRel)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: static source directory %q: %w", req.ServiceName, srcDir, err)
 	}
@@ -94,13 +96,22 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error
 		return "", fmt.Errorf("deploy: service %q: static source path %q is not a directory", req.ServiceName, srcDir)
 	}
 
-	destDir, err := staticDestDir(p.staticRootDir, req.ServiceName, req.CommitSHA)
+	destRel, err := staticDestRel(req.ServiceName, req.CommitSHA)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
+	if err := os.MkdirAll(p.staticRootDir, 0o750); err != nil {
+		return "", fmt.Errorf("deploy: service %q: create static root %q: %w", req.ServiceName, p.staticRootDir, err)
+	}
+	staticRoot, err := os.OpenRoot(p.staticRootDir)
+	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: open static root %q: %w", req.ServiceName, p.staticRootDir, err)
+	}
+	defer staticRoot.Close() //nolint:errcheck // handle only used for confined writes
+	destDir := filepath.Join(p.staticRootDir, destRel)
 
 	start := time.Now()
-	if err := copyStaticDir(srcDir, destDir); err != nil {
+	if err := copyStaticDir(checkoutRoot, srcRel, staticRoot, destRel); err != nil {
 		return "", fmt.Errorf("deploy: service %q: copy static files: %w", req.ServiceName, err)
 	}
 	duration := time.Since(start)
@@ -129,93 +140,88 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error
 	return destDir, nil
 }
 
-// containedRealPath resolves symlinks in dir and refuses a result outside the
+// openContained opens the symlink-resolved checkout as an os.Root and returns
+// it with dir's path relative to it. It refuses a dir that resolves outside the
 // checkout, since a repository could link build.path to a control plane file
-// that the static site would then serve publicly.
-func containedRealPath(checkout, dir string) (string, error) {
+// that the static site would then serve publicly. Callers must Close the root.
+func openContained(checkout, dir string) (*os.Root, string, error) {
 	realRoot, err := filepath.EvalSymlinks(checkout)
 	if err != nil {
-		return "", fmt.Errorf("resolve checkout %q: %w", checkout, err)
+		return nil, "", fmt.Errorf("resolve checkout %q: %w", checkout, err)
 	}
 	realDir, err := filepath.EvalSymlinks(dir)
 	if err != nil {
-		return "", fmt.Errorf("resolve %q: %w", dir, err)
+		return nil, "", fmt.Errorf("resolve %q: %w", dir, err)
 	}
 	rel, err := filepath.Rel(realRoot, realDir)
 	if err != nil || !filepath.IsLocal(rel) {
-		return "", fmt.Errorf("%q resolves outside the repository", dir)
+		return nil, "", fmt.Errorf("%q resolves outside the repository", dir)
 	}
-	return realDir, nil
+	root, err := os.OpenRoot(realRoot)
+	if err != nil {
+		return nil, "", fmt.Errorf("open checkout %q: %w", realRoot, err)
+	}
+	return root, rel, nil
 }
 
-// staticDestDir joins service and commit under root, refusing any value
-// that could leave root: destDir is removed before the copy, so an
-// escaping value would delete a directory outside it. commit may be
-// empty or a ref with slashes, matching what callers already pass.
-func staticDestDir(root, service, commit string) (string, error) {
+// staticDestRel returns the "<service>/<commit>" path under the static root,
+// refusing any value that could leave it: the destination is removed before
+// the copy, so an escaping value would delete a directory outside the root.
+// commit may be empty or a ref with slashes, matching what callers pass.
+func staticDestRel(service, commit string) (string, error) {
 	if !filepath.IsLocal(service) || filepath.Base(service) != service {
 		return "", fmt.Errorf("static site service name %q must be a single relative name", service)
 	}
 	if commit == "" {
-		return filepath.Join(root, service), nil
+		return service, nil
 	}
 	if !filepath.IsLocal(commit) {
 		return "", fmt.Errorf("static site commit %q must be a relative name", commit)
 	}
-	return filepath.Join(root, service, commit), nil
+	return filepath.Join(service, commit), nil
 }
 
-// copyStaticDir replaces dest's entire contents with a copy of every
-// regular file and directory under src. dest is removed first (not
-// merged into) so a redeploy of the same commit SHA, or a source tree
-// that dropped a file since the previous deploy, never leaves a stale
-// file being served that the current source tree no longer has.
-//
-// Symlinks are deliberately skipped, not followed or recreated: a
-// symlink inside a user's repo could point outside src (an "escape" a
-// plain recursive copy has no business resolving), and Caddy's
-// file_server needs actual files under destDir, not a second layer of
-// indirection this package would have to reason about the safety of.
-func copyStaticDir(src, dest string) error {
-	if err := os.RemoveAll(dest); err != nil {
-		return fmt.Errorf("clear destination %q: %w", dest, err)
+// copyStaticDir replaces destRel under destRoot with a copy of every regular
+// file and directory under srcRel in srcRoot. The destination is removed first
+// so a stale file is never served. Symlinks are skipped, and both sides go
+// through os.Root so no path can escape either tree.
+func copyStaticDir(srcRoot *os.Root, srcRel string, destRoot *os.Root, destRel string) error {
+	if err := destRoot.RemoveAll(destRel); err != nil {
+		return fmt.Errorf("clear destination %q: %w", destRel, err)
 	}
-	if err := os.MkdirAll(dest, 0o750); err != nil {
-		return fmt.Errorf("create destination %q: %w", dest, err)
+	if err := destRoot.MkdirAll(destRel, 0o750); err != nil {
+		return fmt.Errorf("create destination %q: %w", destRel, err)
+	}
+	srcFS, err := fs.Sub(srcRoot.FS(), filepath.ToSlash(srcRel))
+	if err != nil {
+		return fmt.Errorf("scope source %q: %w", srcRel, err)
 	}
 
-	return filepath.WalkDir(src, func(path string, d os.DirEntry, err error) error {
+	return fs.WalkDir(srcFS, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("walk %q: %w", path, err)
 		}
-
-		rel, err := filepath.Rel(src, path)
-		if err != nil {
-			return fmt.Errorf("relative path for %q: %w", path, err)
+		if path == "." {
+			return nil
 		}
-		if rel == "." {
-			return nil // src itself, already created above.
-		}
-		target := filepath.Join(dest, rel)
+		target := filepath.Join(destRel, filepath.FromSlash(path))
 
 		switch {
-		case d.Type()&os.ModeSymlink != 0:
-			return nil // See the doc comment above: symlinks are skipped.
+		case d.Type()&fs.ModeSymlink != 0:
+			return nil
 		case d.IsDir():
-			return os.MkdirAll(target, 0o750)
+			return destRoot.MkdirAll(target, 0o750)
 		case d.Type().IsRegular():
-			return copyFile(path, target)
+			return copyFile(srcFS, path, destRoot, target)
 		default:
 			return nil // Sockets, devices, etc.: not valid static site content.
 		}
 	})
 }
 
-// copyFile copies a single regular file's contents from src to dest.
-// dest's parent directory is assumed to already exist (copyStaticDir's
-// WalkDir visits a directory before any of its children).
-func copyFile(src, dest string) (err error) {
-	in, err := os.Open(src) //nolint:gosec // src is a path this package itself derived from a git checkout under SourceDir, not user-supplied request input
+// copyFile copies one regular file from src to dest inside destRoot.
+func copyFile(srcFS fs.FS, src string, destRoot *os.Root, dest string) (err error) {
+	in, err := srcFS.Open(src)
 	if err != nil {
 		return fmt.Errorf("open %q: %w", src, err)
 	}
@@ -225,7 +231,7 @@ func copyFile(src, dest string) (err error) {
 		}
 	}()
 
-	out, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o640) //nolint:gosec // dest is derived from the control plane's own configured static root dir, not user-supplied request input
+	out, err := destRoot.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o640)
 	if err != nil {
 		return fmt.Errorf("create %q: %w", dest, err)
 	}
