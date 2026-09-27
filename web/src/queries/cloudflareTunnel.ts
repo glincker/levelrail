@@ -68,8 +68,8 @@ export function useCloudflareTunnelSettings() {
 // useCloudflareTunnelSettings, so a tab that already visited
 // /settings/cloudflare-tunnel reads this instantly with no extra
 // request.
-export function useCloudflareTunnelStatus() {
-  return useQuery(cloudflareTunnelSettingsQueryOptions())
+export function useCloudflareTunnelStatus(enabled: boolean) {
+  return useQuery({ ...cloudflareTunnelSettingsQueryOptions(), enabled })
 }
 
 // 501 means the control plane was started without APP_MASTER_KEY, the

@@ -17,6 +17,8 @@ import { summarizeAppStatus } from '../lib/appStatus'
 import { formatBytes, formatNanoCpus } from '../lib/format'
 import { useAppNetwork } from '../queries/appNetwork'
 import { useCloudflareTunnelStatus } from '../queries/cloudflareTunnel'
+import { isFeatureVisible } from '../lib/experimental'
+import { useExperimentalFeatures } from '../hooks/useExperimental'
 import { useGitSource } from '../queries/gitSources'
 import { useRestartApp } from '../queries/apps'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -83,9 +85,13 @@ export function AppOverviewHero({
   // the rest of this already-loaded page, the same restraint
   // queries/domainCheck.ts's useDomainCheck already applies.
   const { data: network } = useAppNetwork(app.name)
-  const { data: tunnelStatus } = useCloudflareTunnelStatus()
+  const tunnelGateOn = isFeatureVisible(
+    'cloudflare-tunnel',
+    useExperimentalFeatures(),
+  )
+  const { data: tunnelStatus } = useCloudflareTunnelStatus(tunnelGateOn)
   const tunnelAvailable =
-    tunnelStatus?.enabled && tunnelStatus.status === 'connected'
+    tunnelGateOn && tunnelStatus?.enabled && tunnelStatus.status === 'connected'
   // Same "supplementary signal, plain query" reasoning as network/tunnel
   // above: a 404 here just means no git source is connected yet (its own
   // normal steady state, see queries/gitSources.ts), not an error to show.

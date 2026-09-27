@@ -5,7 +5,8 @@ import {
   DialogPortal,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { SHORTCUT_DOCS } from '@/lib/shortcuts'
+import { shortcutDocsFor } from '@/lib/shortcuts'
+import { useExperimentalFeatures } from '@/hooks/useExperimental'
 
 export function ShortcutsDialog({
   open,
@@ -14,6 +15,7 @@ export function ShortcutsDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const experimental = useExperimentalFeatures()
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
@@ -27,7 +29,7 @@ export function ShortcutsDialog({
             Shortcuts are off while typing in a field or when a dialog is open.
           </DialogDescription>
           <ul className="grid gap-1.5" aria-label="Shortcut list">
-            {SHORTCUT_DOCS.map((s) => (
+            {shortcutDocsFor(experimental).map((s) => (
               <li
                 key={s.description}
                 className="flex items-center justify-between gap-4"

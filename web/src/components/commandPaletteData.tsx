@@ -33,6 +33,7 @@ import {
   RobotIcon,
   BellIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import type { ExperimentalFeature } from '../lib/experimental'
 
 export interface PaletteItem {
   key: string
@@ -50,6 +51,7 @@ export interface RouteEntry {
   icon: React.ReactNode
   to: string
   search?: Record<string, string>
+  feature?: ExperimentalFeature
 }
 
 export const GROUP_ORDER = [
@@ -69,7 +71,8 @@ const nav = (
   icon: React.ReactNode,
   to: string,
   group = 'Navigate',
-): RouteEntry => ({ key, label, group, icon, to })
+  feature?: ExperimentalFeature,
+): RouteEntry => ({ key, label, group, icon, to, feature })
 
 export const ROUTE_ENTRIES: RouteEntry[] = [
   nav('action-status', 'Go to Status', <HeartbeatIcon />, '/status', 'Actions'),
@@ -113,12 +116,28 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'Load balancers',
     <ArrowsSplitIcon />,
     '/loadbalancers',
+    'Navigate',
+    'load-balancer',
   ),
   nav('nav-backups', 'Backups', <CloudArrowUpIcon />, '/backups'),
   nav('nav-deployments', 'Deployments', <RocketLaunchIcon />, '/deployments'),
   nav('nav-approvals', 'Deploy approvals', <GavelIcon />, '/approvals'),
-  nav('nav-models', 'AI models', <CpuIcon />, '/models'),
-  nav('nav-assistant', 'AI assistant', <RobotIcon />, '/ai-assistant'),
+  nav(
+    'nav-models',
+    'AI models',
+    <CpuIcon />,
+    '/models',
+    'Navigate',
+    'ai-models',
+  ),
+  nav(
+    'nav-assistant',
+    'AI assistant',
+    <RobotIcon />,
+    '/ai-assistant',
+    'Navigate',
+    'ai-chat',
+  ),
   nav('nav-help', 'Help', <QuestionIcon />, '/help'),
   nav('settings-hub', 'Settings', <GearIcon />, '/settings', 'Settings'),
   nav(

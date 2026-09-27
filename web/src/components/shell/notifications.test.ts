@@ -76,6 +76,7 @@ describe('palette suggestion ordering', () => {
   it('orders current app actions, failing, recent, assistant', () => {
     const out = buildPaletteSuggestions({
       currentApp: 'web',
+      assistantEnabled: true,
       apps,
       recentKeys: [
         'app-db-admin',
@@ -97,8 +98,16 @@ describe('palette suggestion ordering', () => {
 
   it('has only the assistant with no context', () => {
     expect(
-      buildPaletteSuggestions({ apps: [], recentKeys: [] }).map((s) => s.kind),
+      buildPaletteSuggestions({
+        apps: [],
+        recentKeys: [],
+        assistantEnabled: true,
+      }).map((s) => s.kind),
     ).toEqual(['assistant'])
+  })
+
+  it('omits the assistant while ai-chat is off', () => {
+    expect(buildPaletteSuggestions({ apps: [], recentKeys: [] })).toEqual([])
   })
 })
 
