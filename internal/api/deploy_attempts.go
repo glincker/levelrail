@@ -215,6 +215,9 @@ type deployAttemptResource struct {
 	VulnCounts   *supplychain.Counts `json:"vuln_counts,omitempty"`
 	// Failure classifies why the deploy failed or is blocked; absent otherwise.
 	Failure *failure.Failure `json:"failure,omitempty"`
+	// Outcome is set by the single-deploy endpoint only: in_progress, healthy,
+	// failed, canceled, superseded or blocked.
+	Outcome string `json:"outcome,omitempty"`
 }
 
 // applyWait fills the queue and wait fields of res for attempt a.

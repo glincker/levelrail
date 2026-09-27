@@ -398,6 +398,8 @@ type LogEntryResource struct {
 	Message    string          `json:"message"`
 	Structured bool            `json:"structured"`
 	FieldsJSON json.RawMessage `json:"fields,omitempty"`
+	// Level is the server-detected level, empty when the line has none.
+	Level string `json:"level,omitempty"`
 }
 
 // LogStreamEntry mirrors internal/api's sseLogEvent
@@ -413,6 +415,8 @@ type LogStreamEntry struct {
 // logsResponse mirrors internal/api's logsResponse (internal/api/logs.go).
 type logsResponse struct {
 	Entries []LogEntryResource `json:"entries"`
+	// Total is how many entries matched before limit trimmed the list.
+	Total int `json:"total"`
 }
 
 // SlowQueryEntryResource mirrors internal/api's slowQueryEntryResource
@@ -2490,6 +2494,10 @@ type AuditLogEntryResource struct {
 	RemoteAddr string `json:"remote_addr"`
 	CreatedAt  string `json:"created_at"`
 	ClientKind string `json:"client_kind"`
+	// AgentName labels the AI agent behind the token; AgentClient is the
+	// self-reported MCP client name and version.
+	AgentName   string `json:"agent_name,omitempty"`
+	AgentClient string `json:"agent_client,omitempty"`
 }
 
 // ListAuditLogOptions is ListAuditLog's and DownloadAuditLogCSV's shared
@@ -2504,6 +2512,7 @@ type ListAuditLogOptions struct {
 	ClientKind string
 	Search     string // case-insensitive substring across actor, ability, method, path, remote addr
 	FailedOnly bool   // only entries with status_code >= 400
+	Agent      string // only entries made with a token labeled with this agent name
 }
 
 // PurgeAuditLogResult is POST /api/v1/audit-log/purge's response shape
@@ -2548,6 +2557,9 @@ type DeployAttemptResource struct {
 	VulnCounts    *VulnCounts `json:"vuln_counts,omitempty"`
 	// Failure classifies why the deploy failed or is blocked; absent otherwise.
 	Failure *DeployFailure `json:"failure,omitempty"`
+	// Outcome is set by GetDeploy only: in_progress, healthy, failed,
+	// canceled, superseded or blocked.
+	Outcome string `json:"outcome,omitempty"`
 }
 
 // DeployFailure mirrors internal/failure's Failure: the structured cause of a

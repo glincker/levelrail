@@ -440,6 +440,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 			rt.logger.Warn("api: touch token last_used_at failed", slog.String("error", terr.Error()), slog.String("token_id", rec.ID))
 		}
 
+		r = r.WithContext(withAgentName(r.Context(), rec.AgentName))
 		rt.callAudited(w, r, required, "token", rec.ID, rec.Name, next)
 	}
 }

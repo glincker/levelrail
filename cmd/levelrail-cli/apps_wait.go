@@ -139,6 +139,12 @@ func computeRolloutOutcome(attempt deployAttemptResource, conditions []condition
 	}
 	reference := *attempt.FinishedAt
 
+	// The controller records "serving" against this exact attempt once its
+	// image runs, which no later restart can overwrite with a different result.
+	if attempt.RolloutState == "serving" {
+		return rolloutOutcome{state: "succeeded"}
+	}
+
 	for i := range conditions {
 		c := &conditions[i]
 		if rolloutFailureReasons[c.Reason] && !c.LastTransitionTime.Before(reference) {
@@ -194,6 +200,8 @@ func waitForRollout(ctx context.Context, client deployAttemptFetcher, config rol
 			}
 			return rolloutOutcome{}, fmt.Errorf("app %q has no deploy attempts yet", config.Name)
 		}
+
+		config.AttemptID = attempt.ID
 
 		conditions, err := client.GetDeployStatus(ctx, config.Name)
 		if err != nil {

@@ -1,9 +1,11 @@
 package mcptools
 
 import (
+	"context"
 	"sort"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -90,9 +92,12 @@ var toolTable = map[string]Meta{
 	"get_app_pending_changes":               {clsR, "apps", 0},
 	"set_app_domains":                       {clsM, "domains", 0},
 	"get_app_logs":                          {clsR, "logs", unt},
+	"query_logs":                            {clsR, "logs", unt},
 	"list_app_images":                       {clsR, "apps", 0},
 	"list_deploys":                          {clsR, "deploys", unt},
 	"get_deploy":                            {clsR, "deploys", unt},
+	"wait_for_deploy":                       {clsR, "deploys", unt},
+	"plan_change":                           {clsR, "apps", 0},
 	"list_deploy_attempts":                  {clsR, "deploys", unt},
 	"get_deploy_sbom":                       {clsR, "deploys", unt},
 	"get_deploy_vulnerabilities":            {clsR, "deploys", unt},
@@ -295,5 +300,18 @@ func addTool[In, Out any](s *mcp.Server, t *mcp.Tool, h mcp.ToolHandlerFor[In, O
 	if m, ok := toolTable[t.Name]; ok && m.Untrusted() {
 		h = wrapUntrustedResult(t.Name, h)
 	}
-	mcp.AddTool(s, t, h)
+	mcp.AddTool(s, t, withAgentClient(h))
+}
+
+// withAgentClient reports the calling MCP client's name and version on every
+// API request the tool makes, so audit entries can record it.
+func withAgentClient[In, Out any](h mcp.ToolHandlerFor[In, Out]) mcp.ToolHandlerFor[In, Out] {
+	return func(ctx context.Context, req *mcp.CallToolRequest, in In) (*mcp.CallToolResult, Out, error) {
+		if req != nil && req.Session != nil {
+			if p := req.Session.InitializeParams(); p != nil && p.ClientInfo != nil {
+				ctx = apiclient.WithAgentClient(ctx, p.ClientInfo.Name, p.ClientInfo.Version)
+			}
+		}
+		return h(ctx, req, in)
+	}
 }

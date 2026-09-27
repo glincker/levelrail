@@ -39,6 +39,7 @@ var agentCoreTools = map[string]struct{}{
 	"list_deploys": {}, "cancel_deploy": {}, "diagnose_app_failure": {},
 	"get_app_logs": {}, "preflight_app": {}, "rollback_app": {},
 	"set_app_env": {}, "unset_app_env": {}, "list_domains": {}, "set_app_domains": {},
+	"wait_for_deploy": {},
 }
 
 // AgentCoreTools returns the sorted agent-core allowlist.
