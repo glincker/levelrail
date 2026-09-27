@@ -517,7 +517,9 @@ func gitlabPreviewWebhookPayload(action string, iid int, sourceBranch, targetBra
 			"id": 9001, "iid": %d, "title": "preview e2e",
 			"action": %q, "source_branch": %q, "target_branch": %q,
 			"state": "opened", "merge_status": "unchecked",
-			"last_commit": {"id": %q, "message": "preview e2e commit"}
+			"last_commit": {"id": %q, "message": "preview e2e commit"},
+			"source": {"path_with_namespace": "acme/preview-e2e"},
+			"target": {"path_with_namespace": "acme/preview-e2e"}
 		},
 		"labels": [],
 		"changes": {}
@@ -541,11 +543,13 @@ func bitbucketPreviewWebhookPayload(id int, sourceBranch, sourceHash, destBranch
 			"state": "OPEN",
 			"source": {
 				"branch": {"name": %q},
-				"commit": {"hash": %q}
+				"commit": {"hash": %q},
+				"repository": {"full_name": "acme/preview-e2e"}
 			},
 			"destination": {
 				"branch": {"name": %q},
-				"commit": {"hash": "0000000000000000000000000000000000000000"}
+				"commit": {"hash": "0000000000000000000000000000000000000000"},
+				"repository": {"full_name": "acme/preview-e2e"}
 			}
 		}
 	}`, id, sourceBranch, sourceHash, destBranch))

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -96,8 +97,9 @@ type fakeGitLabAppClient struct {
 	createHookTok  string
 	createHookCall bool
 
-	noteErr   error
-	noteCalls []fakeGitLabNote
+	noteErr    error
+	prComments fakePRComments
+	noteCalls  []fakeGitLabNote
 
 	statusErr   error
 	statusCalls []fakeGitLabCommitStatus
@@ -151,9 +153,20 @@ func (f *fakeGitLabAppClient) CreateProjectWebhook(_ context.Context, _, _ strin
 	return f.createHookErr
 }
 
-func (f *fakeGitLabAppClient) CreateMergeRequestNote(_ context.Context, _, _, projectPath string, mrIID int, body string) error {
+func (f *fakeGitLabAppClient) CreateMergeRequestNote(_ context.Context, _, _, projectPath string, mrIID int, body string) (int64, error) {
 	f.noteCalls = append(f.noteCalls, fakeGitLabNote{projectPath: projectPath, mrIID: mrIID, body: body})
-	return f.noteErr
+	if f.noteErr != nil {
+		return 0, f.noteErr
+	}
+	return f.prComments.create(body), nil
+}
+
+func (f *fakeGitLabAppClient) ListMergeRequestNotes(_ context.Context, _, _, _ string, _ int) ([]gitprovider.Comment, error) {
+	return f.prComments.list()
+}
+
+func (f *fakeGitLabAppClient) UpdateMergeRequestNote(_ context.Context, _, _, _ string, _ int, noteID int64, body string) error {
+	return f.prComments.update(noteID, body)
 }
 
 func (f *fakeGitLabAppClient) CreateCommitStatus(_ context.Context, _, _, projectPath, sha string, state gitlabapp.CommitState, targetURL, description, name string) error {

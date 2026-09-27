@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -96,6 +97,7 @@ type fakeGiteaAppClient struct {
 	createHookCall bool
 
 	commentErr   error
+	prComments   fakePRComments
 	commentCalls []fakeGiteaIssueComment
 
 	statusErr   error
@@ -151,9 +153,20 @@ func (f *fakeGiteaAppClient) CreateRepoWebhook(_ context.Context, _, _, _, hookU
 	return f.createHookErr
 }
 
-func (f *fakeGiteaAppClient) CreateIssueComment(_ context.Context, _, _, fullName string, number int, body string) error {
+func (f *fakeGiteaAppClient) CreateIssueComment(_ context.Context, _, _, fullName string, number int, body string) (int64, error) {
 	f.commentCalls = append(f.commentCalls, fakeGiteaIssueComment{fullName: fullName, number: number, body: body})
-	return f.commentErr
+	if f.commentErr != nil {
+		return 0, f.commentErr
+	}
+	return f.prComments.create(body), nil
+}
+
+func (f *fakeGiteaAppClient) ListIssueComments(_ context.Context, _, _, _ string, _ int) ([]gitprovider.Comment, error) {
+	return f.prComments.list()
+}
+
+func (f *fakeGiteaAppClient) UpdateIssueComment(_ context.Context, _, _, _ string, commentID int64, body string) error {
+	return f.prComments.update(commentID, body)
 }
 
 func (f *fakeGiteaAppClient) CreateCommitStatus(_ context.Context, _, _, fullName, sha string, state giteaapp.CommitStatusState, targetURL, description, statusContext string) error {

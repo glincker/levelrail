@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runAppsPreviews dispatches "apps previews <verb> [flags]" to one of
@@ -35,6 +37,10 @@ func runAppsPreviews(prog string, args []string, stdout, stderr io.Writer, looku
 		return runAppsPreviewsPRStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "sweep":
 		return runAppsPreviewsSweep(prog, args[1:], stdout, stderr, lookupEnv)
+	case "limits":
+		return runAppsPreviewsLimits(prog, args[1:], stdout, stderr, lookupEnv)
+	case "approve":
+		return runAppsPreviewsApprove(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps previews subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsPreviewsUsage(prog))
@@ -44,7 +50,9 @@ func runAppsPreviews(prog string, args []string, stdout, stderr io.Writer, looku
 
 func appsPreviewsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s apps previews list <app-name> [flags]                list active previews for an app
+  %[1]s apps previews list [app-name] [flags]                list previews for an app, or across every app
+  %[1]s apps previews limits [app-name] [flags]              show or change preview caps, fork policy and TTL
+  %[1]s apps previews approve <app-name> <pr-number> --yes   deploy a held fork pull request once
   %[1]s apps previews teardown <app-name> <pr-number> [flags]   tear down one PR's preview right now
   %[1]s apps previews enable <app-name> [flags]              opt an app into preview environments
   %[1]s apps previews disable <app-name> [flags]             opt an app back out
@@ -63,8 +71,10 @@ whose pull-request-closed webhook never arrived (a failed delivery, see
 STALE column shows which ones a sweep would catch right now.
 "pr-status" is independent of "enable"/"disable": once on, every preview
 deploy/update posts a commit status (pending/success/failure) on the
-pull request's head commit, and a successful deploy or a teardown also
-posts a PR comment, using the connected GitHub App installation.
+pull request's head commit, and one PR comment is kept up to date with the
+preview's state (building, ready, failed, removed), using the connected
+provider. Pull requests from forks wait for "approve" unless the app's
+policy ("limits --allow-forks") lets them deploy.
 
 Run "%[1]s apps previews <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -79,15 +89,27 @@ func runAppsPreviewsList(prog string, args []string, stdout, stderr io.Writer, l
 		return exitCode
 	}
 
-	appName, ok := requireOneArg(fs, stderr, prog, "apps previews list", "app name")
-	if !ok {
-		return exitUsage
-	}
-
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	previews, err := client.ListPreviewEnvironments(context.Background(), appName)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list previews for app %q: %w", appName, err))
+	var (
+		previews []previewEnvironmentResource
+		err      error
+	)
+	if fs.NArg() == 0 {
+		var overview apiclient.PreviewsOverview
+		overview, err = client.ListAllPreviews(context.Background())
+		previews = overview.Previews
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list previews: %w", err))
+		}
+	} else {
+		appName, ok := requireOneArg(fs, stderr, prog, "apps previews list", "app name")
+		if !ok {
+			return exitUsage
+		}
+		previews, err = client.ListPreviewEnvironments(context.Background(), appName)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list previews for app %q: %w", appName, err))
+		}
 	}
 
 	return writeScheduledTaskResult(stdout, stderr, of, previews, func() { printPreviewEnvironmentsTable(stdout, previews) })
@@ -99,7 +121,7 @@ func printPreviewEnvironmentsTable(out io.Writer, previews []previewEnvironmentR
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "PR\tPREVIEW APP\tBRANCH\tSTATUS\tDOMAIN\tUPDATED\tSTALE\tEPHEMERAL DATABASES")
+	_, _ = fmt.Fprintln(tw, "PR\tPREVIEW APP\tBRANCH\tSTATUS\tDOMAIN\tUPDATED\tEXPIRES\tSTALE\tEPHEMERAL DATABASES")
 	for _, p := range previews {
 		domain := p.Domain
 		if domain == "" {
@@ -109,7 +131,11 @@ func printPreviewEnvironmentsTable(out io.Writer, previews []previewEnvironmentR
 		if p.Stale {
 			stale = "yes"
 		}
-		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", p.PRNumber, p.PreviewAppID, p.Branch, p.Status, domain, p.UpdatedAt, stale, previewEphemeralDatabasesSummary(p.EphemeralDatabases))
+		expires := p.ExpiresAt
+		if expires == "" {
+			expires = "-"
+		}
+		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", p.PRNumber, p.PreviewAppID, p.Branch, p.Status, domain, p.UpdatedAt, expires, stale, previewEphemeralDatabasesSummary(p.EphemeralDatabases))
 	}
 	_ = tw.Flush()
 }
@@ -137,9 +163,10 @@ func previewEphemeralDatabasesSummary(dbs []previewEphemeralDatabaseResource) st
 
 func appsPreviewsListUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s apps previews list <app-name> [flags]
+  %[1]s apps previews list [app-name] [flags]
 
-Lists an app's active pull-request preview environments.
+Lists an app's pull-request preview environments, or those of every app
+you can read when no app name is given.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

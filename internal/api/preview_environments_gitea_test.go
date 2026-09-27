@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
@@ -18,12 +19,16 @@ import (
 // same PR against the same branch, matching setUpPreviewApp's own
 // fixed-name convention for the app itself.
 func giteaPullRequestBody(action string) []byte {
+	return giteaPullRequestBodyFrom(action, "acme/web")
+}
+
+func giteaPullRequestBodyFrom(action, headRepo string) []byte {
 	b, _ := json.Marshal(map[string]any{
 		"action": action,
 		"number": 42,
 		"pull_request": map[string]any{
-			"head": map[string]any{"ref": "feature-x", "sha": "sha1"},
-			"base": map[string]any{"ref": "main"},
+			"head": map[string]any{"ref": "feature-x", "sha": "sha1", "repo": map[string]any{"full_name": headRepo}},
+			"base": map[string]any{"ref": "main", "repo": map[string]any{"full_name": "acme/web"}},
 		},
 	})
 	return b
@@ -130,8 +135,7 @@ func TestHandlePullRequestWebhook_Gitea_PostPRComments_Disabled_NoGiteaCalls(t *
 }
 
 // TestHandlePullRequestWebhook_Gitea_PostPRComments_DeployFailed_PostsFailureStatusOnly
-// proves a failed deploy posts a failure commit status, and deliberately
-// no issue comment, mirroring the GitHub equivalent.
+// proves a failed deploy posts a failure commit status, and the single status comment ends in the failed state.
 func TestHandlePullRequestWebhook_Gitea_PostPRComments_DeployFailed_PostsFailureStatusOnly(t *testing.T) {
 	rt, secret, builder, fakeClient := setUpPreviewAppWithGiteaNotifications(t, true)
 	builder.errs = []error{context.DeadlineExceeded}
@@ -148,8 +152,8 @@ func TestHandlePullRequestWebhook_Gitea_PostPRComments_DeployFailed_PostsFailure
 	if fakeClient.statusCalls[1].state != giteaapp.CommitStatusFailure {
 		t.Errorf("second status state = %q, want failure", fakeClient.statusCalls[1].state)
 	}
-	if len(fakeClient.commentCalls) != 0 {
-		t.Errorf("CreateIssueComment called %d times, want 0 on a failed deploy", len(fakeClient.commentCalls))
+	if len(fakeClient.commentCalls) != 1 || !strings.Contains(fakeClient.prComments.comments[0].Body, "Preview environment: failed") {
+		t.Errorf("status comment = %+v (created %d), want one comment ending in the failed state", fakeClient.prComments.comments, len(fakeClient.commentCalls))
 	}
 }
 
@@ -171,11 +175,11 @@ func TestHandlePullRequestWebhook_Gitea_PostPRComments_Teardown_PostsComment(t *
 		t.Fatalf("closed: status = %d, body = %s", rec.Code, rec.Body.String())
 	}
 
-	if len(fakeClient.commentCalls) != 1 {
-		t.Fatalf("CreateIssueComment called %d times, want 1 for the teardown notice", len(fakeClient.commentCalls))
+	if len(fakeClient.commentCalls) != 0 {
+		t.Errorf("teardown created %d new comments, want the existing one edited in place", len(fakeClient.commentCalls))
 	}
-	if fakeClient.commentCalls[0].number != 42 {
-		t.Errorf("teardown comment PR number = %d, want 42", fakeClient.commentCalls[0].number)
+	if n := len(fakeClient.prComments.updates); n == 0 || !strings.Contains(fakeClient.prComments.updates[n-1].Body, "Preview environment: removed") {
+		t.Errorf("teardown updates = %+v, want the last edit to say removed", fakeClient.prComments.updates)
 	}
 }
 

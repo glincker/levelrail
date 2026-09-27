@@ -41,15 +41,24 @@ func (rt *Router) effectivePreviewTTL() time.Duration {
 // reason and bumps its UpdatedAt, so the next sweep won't immediately
 // retry the same broken preview every tick.
 func (rt *Router) SweepStalePreviewEnvironments(ctx context.Context) (swept int, err error) {
-	cutoff := time.Now().UTC().Add(-rt.effectivePreviewTTL())
-	stale, listErr := rt.previewEnvironments.ListStalePreviewEnvironments(ctx, cutoff)
+	all, listErr := rt.previewEnvironments.ListPreviewEnvironments(ctx)
 	if listErr != nil {
 		return 0, fmt.Errorf("api: sweep stale preview environments: list: %w", listErr)
 	}
+	settings, listErr := rt.previewEnvironments.ListPreviewAppSettings(ctx)
+	if listErr != nil {
+		return 0, fmt.Errorf("api: sweep stale preview environments: list settings: %w", listErr)
+	}
 
+	now := time.Now().UTC()
 	var errs []error
-	for _, p := range stale {
-		status, message := rt.teardownPreviewRecord(ctx, p)
+	for _, p := range all {
+		ttl := rt.previewTTLFor(settings[p.AppName])
+		updatedAt, parseErr := time.Parse(time.RFC3339Nano, p.UpdatedAt)
+		if parseErr != nil || now.Sub(updatedAt) <= ttl {
+			continue
+		}
+		status, message := rt.teardownPreviewRecordReason(ctx, p, "This preview expired after "+ttl.String()+" without updates and was removed.")
 		if status >= http.StatusInternalServerError {
 			errs = append(errs, fmt.Errorf("preview %q (app %q pr #%d): %s", p.ID, p.AppName, p.PRNumber, message))
 			continue

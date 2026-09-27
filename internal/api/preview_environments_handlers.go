@@ -15,6 +15,7 @@ import (
 // previewEnvironmentResource is the wire shape for one preview
 // environment, GET /api/v1/apps/{name}/previews's own list element.
 type previewEnvironmentResource struct {
+	AppName      string `json:"app_name"`
 	PRNumber     int    `json:"pr_number"`
 	PreviewAppID string `json:"preview_app_id"`
 	Branch       string `json:"branch"`
@@ -31,6 +32,12 @@ type previewEnvironmentResource struct {
 	// time.Now().UTC().Format(time.RFC3339Nano)) is reported as not
 	// stale rather than guessed at.
 	Stale bool `json:"stale"`
+	// ExpiresAt is when the TTL sweep will remove this preview if it stays
+	// untouched: UpdatedAt plus the app's effective TTL.
+	ExpiresAt string `json:"expires_at,omitempty"`
+	// IsFork marks a pull request from another repository; HeadRepo names it.
+	IsFork   bool   `json:"is_fork"`
+	HeadRepo string `json:"head_repo,omitempty"`
 	// EphemeralDatabases is every disposable, preview-scoped database
 	// instance provisioned for this preview (spec.Database.EphemeralInPreviews),
 	// empty when the app declares no such database or none opted in.
@@ -58,12 +65,15 @@ type previewEphemeralDatabaseResource struct {
 	UpdatedAt    string           `json:"updated_at"`
 }
 
-func (rt *Router) toPreviewEnvironmentResource(ctx context.Context, p store.PreviewEnvironment) previewEnvironmentResource {
+func (rt *Router) toPreviewEnvironmentResource(ctx context.Context, p store.PreviewEnvironment, ttl time.Duration) previewEnvironmentResource {
 	stale := false
+	expiresAt := ""
 	if updatedAt, err := time.Parse(time.RFC3339Nano, p.UpdatedAt); err == nil {
-		stale = time.Since(updatedAt) > rt.effectivePreviewTTL()
+		stale = time.Since(updatedAt) > ttl
+		expiresAt = updatedAt.Add(ttl).UTC().Format(time.RFC3339)
 	}
 	return previewEnvironmentResource{
+		AppName: p.AppName, ExpiresAt: expiresAt, IsFork: p.IsFork, HeadRepo: p.HeadRepo,
 		PRNumber: p.PRNumber, PreviewAppID: p.PreviewAppID, Branch: p.Branch, HeadSHA: p.HeadSHA,
 		Domain: p.Domain, Status: p.Status, StatusReason: p.StatusReason,
 		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt, Stale: stale,
@@ -125,9 +135,10 @@ func (rt *Router) handleListPreviewEnvironments(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	ttl := rt.previewTTLFor(rt.previewSettings(r.Context(), name))
 	out := make([]previewEnvironmentResource, 0, len(previews))
 	for _, p := range previews {
-		out = append(out, rt.toPreviewEnvironmentResource(r.Context(), p))
+		out = append(out, rt.toPreviewEnvironmentResource(r.Context(), p, ttl))
 	}
 	writeJSON(w, http.StatusOK, out)
 }

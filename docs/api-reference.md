@@ -117,8 +117,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 108 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 108 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 110 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 110 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -238,6 +238,8 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/deploys/{deployId}/rollback | AbilityDeploy | handleRollbackToDeploy |
 | GET | /api/v1/apps/{name}/cancel-superseded | AbilityRead | handleGetCancelSuperseded |
 | PUT | /api/v1/apps/{name}/cancel-superseded | AbilityDeploy | handleSetCancelSuperseded |
+| GET | /api/v1/apps/{name}/preview-policy | AbilityRead | handleGetPreviewPolicy |
+| PUT | /api/v1/apps/{name}/preview-policy | AbilityWriteSensitive | handleSetPreviewPolicy |
 
 :::
 
@@ -268,6 +270,8 @@ Endpoints for:
 | POST | /api/v1/previews/sweep | AbilityDeploy | handleSweepPreviewEnvironments |
 | DELETE | /api/v1/apps/{name}/secrets/{key} | AbilityWriteSensitive | handleDeleteSecret |
 | PUT | /api/v1/apps/{name}/git-source/deploy-settings | AbilityWriteSensitive | handleSetGitDeploySettings |
+| GET | /api/v1/previews | AbilityRead | handleListAllPreviews |
+| POST | /api/v1/apps/{name}/previews/{number}/approve | AbilityWriteSensitive | handleApprovePreviewEnvironment |
 
 ## Telemetry
 

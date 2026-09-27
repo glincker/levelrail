@@ -18,7 +18,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -342,18 +341,6 @@ type createPRCommentContent struct {
 
 type createPRCommentRequest struct {
 	Content createPRCommentContent `json:"content"`
-}
-
-// CreatePullRequestComment posts a new comment on pull request prID of
-// fullName ("workspace/repo_slug"), authenticated with an OAuth access
-// token the same way CreateRepoWebhook is.
-func (c *Client) CreatePullRequestComment(ctx context.Context, accessToken, fullName string, prID int, body string) error {
-	payload, err := json.Marshal(createPRCommentRequest{Content: createPRCommentContent{Raw: body}})
-	if err != nil {
-		return fmt.Errorf("bitbucketapp: marshal pull request comment request: %w", err)
-	}
-	u := c.apiBaseURL() + repositoriesAPI + fullName + "/pullrequests/" + strconv.Itoa(prID) + "/comments"
-	return c.do(ctx, http.MethodPost, u, bearerPrefix+accessToken, bytes.NewReader(payload), nil)
 }
 
 // BuildStatusState is Bitbucket's own documented "state" enum for

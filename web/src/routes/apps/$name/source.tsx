@@ -3,6 +3,7 @@ import { useApp } from '../../../queries/apps'
 import { GitSourceCard } from '../../../components/GitSourceCard'
 import { GitDeploySettingsCard } from '../../../components/GitDeploySettingsCard'
 import { PreviewEnvironmentsCard } from '../../../components/PreviewEnvironmentsCard'
+import { PreviewPolicyCard } from '../../../components/PreviewPolicyCard'
 import { WebhookDeliveriesPanel } from '../../../components/WebhookDeliveriesPanel'
 import { HelpLink } from '../../../components/HelpLink'
 
@@ -27,6 +28,7 @@ function SourceSection() {
       <GitDeploySettingsCard appName={name} />
       <WebhookDeliveriesPanel app={app} />
       <PreviewEnvironmentsCard app={app} />
+      <PreviewPolicyCard appName={name} />
     </div>
   )
 }

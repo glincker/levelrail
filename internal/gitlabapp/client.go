@@ -280,21 +280,6 @@ type createNoteRequest struct {
 	Body string `json:"body"`
 }
 
-// CreateMergeRequestNote posts a new comment on merge request mrIID of
-// projectPath ("namespace/project"), authenticated with an OAuth access
-// token the same way CreateProjectWebhook is. GitLab's REST API has no
-// separate "merge request comment" endpoint distinct from a note, the
-// same "PR is also an issue" shape GitHub's own CreateIssueComment
-// documents for its own single comment endpoint.
-func (c *Client) CreateMergeRequestNote(ctx context.Context, instanceURL, accessToken, projectPath string, mrIID int, body string) error {
-	payload, err := json.Marshal(createNoteRequest{Body: body})
-	if err != nil {
-		return fmt.Errorf("gitlabapp: marshal merge request note request: %w", err)
-	}
-	u := fmt.Sprintf("%s/projects/%s/merge_requests/%d/notes", apiBaseURL(instanceURL), encodedProjectID(projectPath), mrIID)
-	return c.do(ctx, http.MethodPost, u, "Bearer "+accessToken, bytes.NewReader(payload), nil)
-}
-
 // CommitState is GitLab's own documented "state" enum for
 // POST .../statuses/{sha}.
 type CommitState string

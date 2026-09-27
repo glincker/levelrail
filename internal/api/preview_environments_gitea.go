@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/url"
 	"strings"
@@ -68,10 +67,9 @@ func (rt *Router) notifyPreviewPendingGitea(ctx context.Context, appName string,
 	}
 }
 
-// notifyPreviewSuccessGitea posts the live preview URL as an issue
-// comment and sets a success commit status pointing at it, mirroring
-// notifyPreviewSuccessGitHub's own reasoning.
-func (rt *Router) notifyPreviewSuccessGitea(ctx context.Context, appName string, gs store.GitSource, prNumber int, headSHA, previewURL string) {
+// notifyPreviewSuccessGitea sets a success commit status pointing at the live
+// preview URL. The PR comment is upserted separately (upsertPreviewComment).
+func (rt *Router) notifyPreviewSuccessGitea(ctx context.Context, appName string, gs store.GitSource, headSHA, previewURL string) {
 	instanceURL, accessToken, fullName, ok := rt.previewGiteaTarget(ctx, appName, gs)
 	if !ok {
 		return
@@ -79,26 +77,21 @@ func (rt *Router) notifyPreviewSuccessGitea(ctx context.Context, appName string,
 
 	description := "Preview deployed"
 	targetURL := ""
-	body := fmt.Sprintf("Preview environment deployed for commit `%s`.", headSHA)
 	if previewURL != "" {
 		targetURL = "https://" + previewURL
 		description = "Preview deployed: " + previewURL
-		body = fmt.Sprintf("Preview environment deployed for commit `%s`: %s", headSHA, targetURL)
 	}
 
 	if err := rt.giteaAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, fullName, headSHA,
 		giteaapp.CommitStatusSuccess, targetURL, description, previewStatusContext); err != nil {
 		rt.logger.Warn("api: post preview success gitea commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
 	}
-	if err := rt.giteaAppClient.CreateIssueComment(ctx, instanceURL, accessToken, fullName, prNumber, body); err != nil {
-		rt.logger.Warn("api: post preview success gitea pr comment failed", slog.String("error", err.Error()), slog.String("app_name", appName), slog.Int("pr_number", prNumber))
-	}
 }
 
-// notifyPreviewFailureGitea sets a failure commit status, no issue
-// comment, mirroring notifyPreviewFailureGitHub's own reasoning. reason
-// is sent untruncated: Gitea's commit status "description" field has no
-// documented hard limit the way GitHub's (140) does.
+// notifyPreviewFailureGitea sets a failure commit status. The failure reason
+// also lands in the single PR comment (upsertPreviewComment).
+// reason is sent untruncated: this provider documents no hard limit for the
+// status description.
 func (rt *Router) notifyPreviewFailureGitea(ctx context.Context, appName string, gs store.GitSource, headSHA, reason string) {
 	instanceURL, accessToken, fullName, ok := rt.previewGiteaTarget(ctx, appName, gs)
 	if !ok {
@@ -107,18 +100,5 @@ func (rt *Router) notifyPreviewFailureGitea(ctx context.Context, appName string,
 	if err := rt.giteaAppClient.CreateCommitStatus(ctx, instanceURL, accessToken, fullName, headSHA,
 		giteaapp.CommitStatusFailure, "", reason, previewStatusContext); err != nil {
 		rt.logger.Warn("api: post preview failure gitea commit status failed", slog.String("error", err.Error()), slog.String("app_name", appName))
-	}
-}
-
-// notifyPreviewTornDownGitea posts a teardown notice as an issue
-// comment, mirroring notifyPreviewTornDownGitHub's own reasoning.
-func (rt *Router) notifyPreviewTornDownGitea(ctx context.Context, preview store.PreviewEnvironment, gs store.GitSource) {
-	instanceURL, accessToken, fullName, ok := rt.previewGiteaTarget(ctx, preview.AppName, gs)
-	if !ok {
-		return
-	}
-	body := fmt.Sprintf("Preview environment `%s` torn down.", preview.PreviewAppID)
-	if err := rt.giteaAppClient.CreateIssueComment(ctx, instanceURL, accessToken, fullName, preview.PRNumber, body); err != nil {
-		rt.logger.Warn("api: post preview teardown gitea pr comment failed", slog.String("error", err.Error()), slog.String("app_name", preview.AppName), slog.Int("pr_number", preview.PRNumber))
 	}
 }
