@@ -30,7 +30,11 @@ var (
 	ErrMalformedEnvelope = errors.New("secrets: malformed secret envelope")
 	// ErrInvalidBinding means a Binding has an empty or oversized field.
 	ErrInvalidBinding = errors.New("secrets: invalid binding")
+	// ErrValueTooLarge means a plaintext exceeds maxPlaintextBytes.
+	ErrValueTooLarge = errors.New("secrets: value too large")
 )
+
+const maxPlaintextBytes = 64 << 20
 
 // envelopeV1 prefixes every bound ciphertext and is also its GCM
 // associated data, so stripping it to pass the rest off as legacy fails
@@ -92,6 +96,9 @@ func splitFrame(frame []byte) (headerLen int, value []byte, err error) {
 func EncryptValue(dek []byte, b Binding, plaintext string) ([]byte, error) {
 	if err := b.validate(); err != nil {
 		return nil, err
+	}
+	if len(plaintext) > maxPlaintextBytes {
+		return nil, ErrValueTooLarge
 	}
 	gcm, err := newGCM(dek)
 	if err != nil {

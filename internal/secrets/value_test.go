@@ -321,3 +321,10 @@ func TestFullEnvelope_MasterKeyToValueAndBack(t *testing.T) {
 		t.Errorf("recovered secret = %q, want %q", recoveredSecret, secret)
 	}
 }
+
+func TestEncryptValueRejectsOversizedPlaintext(t *testing.T) {
+	_, err := EncryptValue(testDEK(t), testBinding, strings.Repeat("a", maxPlaintextBytes+1))
+	if !errors.Is(err, ErrValueTooLarge) {
+		t.Fatalf("EncryptValue() error = %v, want ErrValueTooLarge", err)
+	}
+}
