@@ -19,6 +19,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/network"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -341,6 +342,19 @@ func cleanupDocker(t *testing.T, live liveBuildEnv, names ...string) {
 			for _, img := range imgs {
 				_, _ = live.DockerCli.ImageRemove(ctx, img.ID, image.RemoveOptions{Force: true, PruneChildren: true})
 			}
+			// Leaked per-app networks exhaust Docker's address pools after a
+			// few dozen runs.
+			nets, err := live.DockerCli.NetworkList(ctx, network.ListOptions{
+				Filters: filters.NewArgs(filters.Arg("name", name)),
+			})
+			if err != nil {
+				continue
+			}
+			for _, n := range nets {
+				if strings.HasSuffix(n.Name, "-app-"+name) {
+					_ = live.DockerCli.NetworkRemove(ctx, n.ID)
+				}
+			}
 		}
 	}
 	sweep()
@@ -459,10 +473,12 @@ func pollUntil(t *testing.T, timeout time.Duration, what string, check func() (b
 	defer deadline.Stop()
 	tick := time.NewTicker(agentLoopPollTick)
 	defer tick.Stop()
+	start := time.Now()
 	last := ""
 	for {
 		done, reason := check()
 		if done {
+			t.Logf("%s after %s", what, time.Since(start).Round(time.Second))
 			return
 		}
 		last = reason
