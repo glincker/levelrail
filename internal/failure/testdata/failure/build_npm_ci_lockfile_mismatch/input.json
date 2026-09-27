@@ -1,0 +1,14 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"web\": build: process \"/bin/sh -c npm ci\" did not complete successfully: exit code: 1",
+  "LogLines": [
+    "#8 [4/6] RUN npm ci",
+    "#8 1.912 npm error code EUSAGE",
+    "#8 1.913 npm error",
+    "#8 1.913 npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.",
+    "#8 1.913 npm error",
+    "#8 1.913 npm error Missing: zod@3.23.8 from lock file",
+    "#8 ERROR: process \"/bin/sh -c npm ci\" did not complete successfully: exit code: 1"
+  ]
+}

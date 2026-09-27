@@ -4,6 +4,8 @@ package failure
 const (
 	CodeDockerfileError    = "dockerfile_error"
 	CodeDependencyInstall  = "dependency_install_failed"
+	CodeCompileError       = "compile_error"
+	CodeBuildConfigError   = "build_config_error"
 	CodeBuildOOM           = "build_out_of_memory"
 	CodeBuildTimeout       = "build_timeout"
 	CodeImagePullFailed    = "image_pull_failed"
@@ -110,7 +112,7 @@ var classes = []class{
 		code:     CodeDockerfileError,
 		cause:    "The Dockerfile is invalid or a file it references is missing from the build context.",
 		fix:      "Check build.path and build.baseDirectory in the app spec, fix the Dockerfile syntax, and make sure every COPY source is committed and not excluded by .dockerignore.",
-		patterns: []string{"failed to read dockerfile", "dockerfile parse error", "unknown instruction", "cannot locate dockerfile", "unable to prepare context", "failed to compute cache key", "dockerfile: no such file", "no such file or directory: dockerfile", "copy failed: file not found"},
+		patterns: []string{"failed to read dockerfile", "dockerfile parse error", "unknown instruction", "cannot locate dockerfile", "unable to prepare context", "failed to compute cache key", "failed to calculate checksum", "dockerfile: no such file", "no such file or directory: dockerfile", "copy failed: file not found"},
 	},
 	{
 		code: CodeBuildTimeout, buildOnly: true, retryable: true,
@@ -119,10 +121,22 @@ var classes = []class{
 		patterns: []string{"context deadline exceeded", "build timed out", "deadline exceeded"},
 	},
 	{
+		code: CodeBuildConfigError, buildOnly: true,
+		cause:    "The build could not work out what to build or run: a script the build calls is missing, or no start command was detected.",
+		fix:      "Add the missing script to package.json, or set an explicit start command (or a Dockerfile) in the app spec, then redeploy.",
+		patterns: []string{"missing script:", "no start command", "failed to generate build plan", "could not determine how to build"},
+	},
+	{
+		code: CodeCompileError, buildOnly: true,
+		cause:    "The application code failed to compile during the build.",
+		fix:      "Fix the compiler error shown in the log excerpt (the file and line are in the decisive line), confirm it builds locally, then redeploy.",
+		patterns: []string{"error ts", "failed to compile", ": undefined: ", "could not compile", "error[e", "cannot find symbol", "compilation failure", "compilation error", "type error:", "build error occurred"},
+	},
+	{
 		code: CodeDependencyInstall, buildOnly: true,
 		cause:    "A dependency install step in the build failed.",
 		fix:      "Check the failing install command in the log excerpt: fix the lockfile or version pin, and confirm the package registry is reachable from the build node.",
-		patterns: []string{"npm err!", "eresolve", "could not resolve host", "unable to locate package", "no matching distribution found", "err_pnpm", "pip install", "yarn error", "process \"/bin/sh"},
+		patterns: []string{"npm err!", "npm error", "eresolve", "could not resolve host", "unable to locate package", "no matching distribution found", "could not find a version that satisfies", "err_pnpm", "yarn error", "error an unexpected error occurred", "there appears to be trouble with your network", "eai_again", "e: failed to fetch", "temporary failure resolving", "pip install", "process \"/bin/sh"},
 	},
 	{
 		code:     CodePortNotListening,

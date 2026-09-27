@@ -1,0 +1,13 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"web\": build: failed to solve: failed to compute cache key: failed to calculate checksum of ref x1y2z3: \"/dist\": not found",
+  "LogLines": [
+    "#6 [stage-1 3/4] COPY dist ./dist",
+    "#6 ERROR: failed to calculate checksum of ref x1y2z3::k9q: \"/dist\": not found",
+    "------",
+    " > [stage-1 3/4] COPY dist ./dist:",
+    "------",
+    "ERROR: failed to solve: failed to compute cache key: failed to calculate checksum of ref x1y2z3::k9q: \"/dist\": not found"
+  ]
+}
