@@ -37,49 +37,30 @@ function makeApp(name: string, over: Partial<AppListEntry> = {}): AppListEntry {
   } as AppListEntry
 }
 
-function series(hasTraffic: boolean, p95: number, err: number) {
-  return {
-    app: 'x',
-    summary: {
-      has_traffic: hasTraffic,
-      p95_ms: p95,
-      error_rate_5xx: err,
-      rate_per_sec: 2,
-    },
-    points: Array.from({ length: 6 }, (_, i) => ({
-      timestamp: `t${i}`,
-      rate_per_sec: i,
-    })),
-  }
+function batch(names: string[], hasTraffic: boolean, p95: number, err: number) {
+  return names.map((name) => ({
+    name,
+    has_traffic: hasTraffic,
+    p95_ms: p95,
+    error_rate_5xx: err,
+    rate_per_sec: 2,
+    spark: [0, 1, 2, 3, 4, 5],
+    last_deploy_at: new Date().toISOString(),
+  }))
 }
 
-let inflight = 0
-let maxInflight = 0
 const urls: string[] = []
 
-function stubFetch(traffic: ReturnType<typeof series>) {
+function stubFetch(rows: ReturnType<typeof batch>) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string) => {
+    vi.fn((url: string) => {
       urls.push(String(url))
-      inflight += 1
-      maxInflight = Math.max(maxInflight, inflight)
-      await new Promise((r) => setTimeout(r, 5))
-      inflight -= 1
-      const body = String(url).includes('/requests')
-        ? traffic
-        : [
-            {
-              id: '1',
-              status: 'succeeded',
-              started_at: new Date().toISOString(),
-            },
-          ]
-      return {
+      return Promise.resolve({
         ok: true,
         status: 200,
-        json: () => Promise.resolve(body),
-      } as unknown as Response
+        json: () => Promise.resolve(rows),
+      } as unknown as Response)
     }),
   )
 }
@@ -97,14 +78,12 @@ function renderRows(apps: AppListEntry[]) {
 
 afterEach(() => {
   vi.unstubAllGlobals()
-  inflight = 0
-  maxInflight = 0
   urls.length = 0
 })
 
 describe('AppRow', () => {
   it('renders meta chips and traffic numerals, amber over the p95 threshold', async () => {
-    stubFetch(series(true, 800, 0.002))
+    stubFetch(batch(['web'], true, 800, 0.002))
     renderRows([makeApp('web')])
     expect(screen.getByText('production')).toBeInTheDocument()
     expect(screen.getByText('web.example.com')).toBeInTheDocument()
@@ -117,28 +96,33 @@ describe('AppRow', () => {
   })
 
   it('turns errors red past the critical threshold', async () => {
-    stubFetch(series(true, 100, 0.09))
+    stubFetch(batch(['web'], true, 100, 0.09))
     renderRows([makeApp('web')])
     expect((await screen.findByText('9.0%')).className).toContain('destructive')
   })
 
   it('shows placeholders without traffic', async () => {
-    stubFetch(series(false, 0, 0))
+    stubFetch(batch(['web'], false, 0, 0))
     renderRows([makeApp('web')])
     expect(await screen.findByText('No traffic')).toBeInTheDocument()
     expect(screen.queryByText(/ ms$/)).not.toBeInTheDocument()
   })
 
-  it('never fires the fleet-wide summary or more than four requests at once', async () => {
-    stubFetch(series(true, 100, 0))
+  it('issues one batched metrics request for many rows', async () => {
     const apps = Array.from({ length: 10 }, (_, i) => makeApp(`app-${i}`))
+    stubFetch(
+      batch(
+        apps.map((a) => a.name),
+        true,
+        100,
+        0,
+      ),
+    )
     renderRows(apps)
     await waitFor(() => {
-      expect(urls.filter((u) => u.includes('/requests'))).toHaveLength(10)
-      expect(urls.filter((u) => u.includes('deploy-attempts'))).toHaveLength(10)
+      expect(screen.getAllByText('100 ms')).toHaveLength(10)
     })
-    expect(maxInflight).toBeLessThanOrEqual(4)
-    expect(urls.some((u) => u.includes('apps-summary'))).toBe(false)
+    expect(urls).toEqual(['/api/v1/apps-metrics'])
   })
 })
 

@@ -289,6 +289,16 @@ levelrail apps metrics <name> --metric NAME [flags]
 ```
 
 ```
+levelrail apps overview [name ...] [flags]
+```
+
+```
+levelrail upgrade [--no-backup] [flags]
+```
+
+`upgrade` runs the preflight checks, takes a control plane backup and prints the upgrade command. It never upgrades by itself. See [Installing](installing.md#check-first-then-upgrade).
+
+```
 levelrail apps moves list <name> [flags]
 ```
 list every node-to-node move attempt for `<name>`, newest first

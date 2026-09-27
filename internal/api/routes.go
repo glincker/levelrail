@@ -100,6 +100,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// Updates (Settings > Updates page): running version vs. GitHub's
 	// latest published release, AbilityRead like system/status above.
 	mux.HandleFunc("GET /api/v1/updates", rt.requireAbility(AbilityRead, rt.handleGetUpdates))
+	mux.HandleFunc("GET /api/v1/updates/preflight", rt.requireAbility(AbilityRead, rt.handleUpdatePreflight))
 
 	// Auth. Login and first-run registration are necessarily public;
 	// everything else requires an existing session.

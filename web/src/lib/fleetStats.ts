@@ -1,4 +1,4 @@
-import type { RequestSeries } from '../types/requests'
+import type { AppMetricsSummary } from '../types/appsMetrics'
 import type { DeployAttempt } from '../types/deployAttempt'
 
 export interface FleetTraffic {
@@ -8,25 +8,18 @@ export interface FleetTraffic {
   reporting: number
 }
 
-export function summarizeTraffic(
-  all: (RequestSeries | undefined)[],
-): FleetTraffic {
+export function summarizeTraffic(rows: AppMetricsSummary[]): FleetTraffic {
   let rate = 0
   let errWeighted = 0
   let reporting = 0
-  const byTs = new Map<string, number>()
-  for (const s of all) {
-    if (!s) continue
+  let series: number[] = []
+  for (const r of rows) {
+    if (!r.has_traffic) continue
     reporting += 1
-    rate += s.summary.rate_per_sec
-    errWeighted += s.summary.rate_per_sec * s.summary.error_rate_5xx
-    for (const p of s.points) {
-      byTs.set(p.timestamp, (byTs.get(p.timestamp) ?? 0) + p.rate_per_sec)
-    }
+    rate += r.rate_per_sec
+    errWeighted += r.rate_per_sec * r.error_rate_5xx
+    series = r.spark.map((v, i) => v + (series[i] ?? 0))
   }
-  const series = [...byTs.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, v]) => v)
   return {
     ratePerSec: rate,
     errorPct: rate > 0 ? (errWeighted / rate) * 100 : 0,

@@ -22,7 +22,8 @@ import {
 import { useMinuteNow } from '../../hooks/useMinuteNow'
 import { nodeListQueryOptions } from '../../queries/nodes'
 import { useGpuNodes } from '../../queries/models'
-import { useFleetDeploys, useFleetTraffic } from '../../queries/fleetTraffic'
+import { useFleetDeploys } from '../../queries/fleetTraffic'
+import { useAppsMetrics } from '../../queries/appsMetrics'
 
 export const SAMPLE_APP_CAP = 8
 
@@ -30,7 +31,7 @@ export function FleetTiles({ apps }: { apps: AppListEntry[] }) {
   const navigate = useNavigate()
   const now = useMinuteNow()
   const names = useMemo(() => pickSampleApps(apps, SAMPLE_APP_CAP), [apps])
-  const traffic = useFleetTraffic(names)
+  const traffic = useAppsMetrics()
   const deploys = useFleetDeploys(names)
   const nodes = useQuery({
     ...nodeListQueryOptions(),
@@ -40,7 +41,7 @@ export function FleetTiles({ apps }: { apps: AppListEntry[] }) {
   const gpus = useGpuNodes()
 
   const buckets = countBuckets(apps)
-  const t = summarizeTraffic(traffic.series)
+  const t = summarizeTraffic(traffic.data ?? [])
   const d = deploysPerHour(flattenAttempts(deploys.byApp), now)
   const nodeList = nodes.data ?? []
   const online = nodeList.filter((n) => n.status === 'online').length
@@ -48,10 +49,7 @@ export function FleetTiles({ apps }: { apps: AppListEntry[] }) {
     (sum, g) => sum + (g.present ? g.gpu_count : 0),
     0,
   )
-  const sampled =
-    apps.length > names.length
-      ? `Last hour, sampled from ${names.length} of ${apps.length} apps.`
-      : 'Last hour, all apps.'
+  const sampled = 'Last hour, all apps.'
 
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-3">

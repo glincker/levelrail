@@ -906,6 +906,8 @@ type PromotePreviewResource struct {
 	Diff                PromoteDiff          `json:"diff"`
 	Blockers            []string             `json:"blockers"`
 	NeedsConfirmation   bool                 `json:"needs_confirmation"`
+	Frozen              bool                 `json:"frozen"`
+	FreezeReason        string               `json:"freeze_reason,omitempty"`
 }
 
 // PromoteDiff mirrors internal/api's promoteDiff. Env values are never sent.
@@ -932,6 +934,9 @@ type PromoteAppRequest struct {
 	Confirm    bool   `json:"confirm,omitempty"`
 	IncludeEnv bool   `json:"include_env,omitempty"`
 	Force      bool   `json:"force,omitempty"`
+	// OverrideFreeze and OverrideReason bypass an active deploy freeze window.
+	OverrideFreeze bool   `json:"override_freeze,omitempty"`
+	OverrideReason string `json:"override_reason,omitempty"`
 }
 
 // RestoreHistoryResource mirrors internal/api's restoreHistoryResource

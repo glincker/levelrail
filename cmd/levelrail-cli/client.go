@@ -33,6 +33,7 @@ type (
 	logStreamEntry                   = apiclient.LogStreamEntry
 	appMetricsResource               = apiclient.AppMetricsResource
 	appResourceUsageResource         = apiclient.AppResourceUsageResource
+	appMetricsSummary                = apiclient.AppMetricsSummary
 	metricPointResource              = apiclient.MetricPointResource
 	nodeMetricsResource              = apiclient.NodeMetricsResource
 	execRequest                      = apiclient.ExecRequest
@@ -156,6 +157,7 @@ type (
 	containerResource           = apiclient.ContainerResource
 	containerPortResource       = apiclient.ContainerPortResource
 	updatesResource             = apiclient.UpdatesResource
+	updatePreflight             = apiclient.UpdatePreflight
 	nodeResource                = apiclient.NodeResource
 	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest
 	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse

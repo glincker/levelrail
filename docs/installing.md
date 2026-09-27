@@ -218,6 +218,29 @@ Both commands talk to the control plane's API (`GET /api/v1/updates` and `GET /a
 
 ## Upgrading
 
+### Check first, then upgrade
+
+`levelrail-cli upgrade` (or Settings > Updates in the dashboard) runs read-only preflight checks and never upgrades by itself:
+
+- the latest release publishes `checksums.txt` and its cosign signature (the installer verifies both);
+- the Docker Engine version is not on the known-bad list (`internal/upgrade/docker_known_bad.json`, replace it with your own file via `APP_DOCKER_KNOWN_BAD_FILE`);
+- free disk space is above `APP_UPGRADE_MIN_FREE_BYTES` (default 2 GiB);
+- a control plane backup exists and is newer than `APP_UPGRADE_MAX_BACKUP_AGE` (default 26h).
+
+The CLI also takes a fresh control plane backup unless you pass `--no-backup`, then prints the exact command to run. The API is `GET /api/v1/updates/preflight`.
+
+### Rolling back
+
+Before pending migrations run, the control plane snapshots its database as `levelrail-<timestamp>.db` under the data directory's backups folder. To go back after a bad upgrade, install the previous binary, stop the service, then:
+
+```bash
+levelrail restore-snapshot --list              # newest first
+levelrail restore-snapshot --dry-run latest    # verify only, change nothing
+levelrail restore-snapshot latest              # asks for confirmation (--yes to skip)
+```
+
+The live database is kept beside the restored one as `.before-restore-<timestamp>`. The master key is not part of a snapshot.
+
 **If you used install.sh:**
 
 Run the `upgrade` subcommand. It replaces the binary with the newest release, keeps your unit file (and any `systemctl edit` overrides) and data, restarts the service, and waits for it to come back healthy.

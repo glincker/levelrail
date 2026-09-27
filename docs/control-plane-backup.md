@@ -56,6 +56,8 @@ It fires once the newest snapshot is older than 3 days and sends a resolved noti
 
 When the server starts on an existing database and this release carries schema migrations that have not been applied yet, it takes a snapshot first. A brand new database is skipped. If that snapshot fails (for example the disk is full), the failure is logged and the migration still proceeds.
 
+To roll back to that snapshot after a bad upgrade, stop the service, install the previous binary and run `levelrail restore-snapshot --list`, then `levelrail restore-snapshot --dry-run latest` to verify it, then `levelrail restore-snapshot latest` (it asks for confirmation; `--yes` skips the prompt). It uses the same checks and the same `.before-restore-<timestamp>` safety copy as `restore-db`. See [Installing](/installing#rolling-back).
+
 ### Downgrade guard
 
 If the database has a schema version newer than the binary understands, the server refuses to start and says so. Run a newer release, or restore a snapshot taken by this version.

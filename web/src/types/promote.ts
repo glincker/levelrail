@@ -12,6 +12,19 @@ export interface PromotePreviewSide {
   image: string
 }
 
+export interface PromoteDiff {
+  image?: DeployCompareField
+  replicas?: DeployCompareField
+  resources?: DeployCompareField
+  health?: DeployCompareField
+  env_added: string[]
+  env_removed: string[]
+  env_changed: string[]
+  secret_keys_added: string[]
+  secret_keys_removed: string[]
+  untouched: string[]
+}
+
 export interface PromotePreviewResource {
   source_app: string
   target_app: string
@@ -21,4 +34,9 @@ export interface PromotePreviewResource {
   changes: DeployCompareField[]
   unsnapshotted_fields: string[]
   note: string
+  diff?: PromoteDiff
+  blockers?: string[]
+  needs_confirmation?: boolean
+  frozen?: boolean
+  freeze_reason?: string
 }

@@ -15,6 +15,7 @@ import {
 import { updatesQueryOptions } from '../../queries/updates'
 import type { UpdateStatus } from '../../queries/updates'
 import { PageSpinner } from '../../components/ui/page-spinner'
+import { UpgradePreflight } from '../../components/settings/UpgradePreflight'
 
 export const Route = createFileRoute('/settings/updates')({
   loader: ({ context: { queryClient } }) =>
@@ -39,8 +40,7 @@ function UpdatesSettingsPage() {
         <CardHeader>
           <CardTitle>Version</CardTitle>
           <CardDescription>
-            Compared against github.com/glincker/levelrail's published
-            releases.
+            Compared against github.com/glincker/levelrail's published releases.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -51,6 +51,19 @@ function UpdatesSettingsPage() {
             </span>
           </div>
           <UpdateStatusRow status={status} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Upgrade preflight</CardTitle>
+          <CardDescription>
+            Read-only checks before you upgrade. The control plane never
+            upgrades itself.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <UpgradePreflight />
         </CardContent>
       </Card>
     </div>
@@ -78,8 +91,8 @@ function UpdateStatusRow({ status }: { status: UpdateStatus }) {
   return (
     <div className="space-y-2">
       <div className="inline-flex items-center gap-1.5 text-sm text-foreground">
-        <ArrowCircleUpIcon className="size-4" />
-        A new version is available: {status.latest_version}
+        <ArrowCircleUpIcon className="size-4" />A new version is available:{' '}
+        {status.latest_version}
       </div>
       {status.release_url && (
         <a
