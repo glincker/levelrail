@@ -1116,6 +1116,11 @@ levelrail logs ls --target ID [--app NAME]
 levelrail logs fetch --target ID --key KEY [--out FILE]
 ```
 
+```
+levelrail logs query <app> [--level LEVEL] [--since 30m] [--until T] [--deploy ID] [--text PHRASE] [--max-lines N] [--max-bytes N] [flags]
+```
+capped excerpt of an app's newest matching log lines with match counts and a truncation notice; the byte cap defaults to 8 KB or `APP_MCP_LOG_MAX_BYTES`
+
 ## Registry Credentials
 
 ```

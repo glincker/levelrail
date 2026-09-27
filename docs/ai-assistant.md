@@ -77,6 +77,10 @@ APP_MCP_MODE=read-only APP_MCP_TOOLSETS=apps,nodes,logs,diagnostics levelrail-mc
 
 The startup log line `levelrail-mcp tools` reports the mode and how many read, mutating and destructive tools are registered. A mode never widens access: the API token's abilities still bound every call, so pair `read-only` with a `read`-scoped token (defense in depth, not a replacement).
 
+## Reading logs without flooding the context
+
+`query_logs` searches one app's logs by minimum level, time window (`since`, `until`), deploy attempt (`deploy_id`) and text, and returns a capped excerpt of the newest matches with counts, for example `showing 40 of 1,812 matching lines (newest), use since/until or level to narrow`. The output is capped at `max_lines` (default 100) and at `APP_MCP_LOG_MAX_BYTES` bytes (default 8192). Prefer it over `get_app_logs`. The same query is available as `levelrail-cli logs query`.
+
 ## Untrusted text and the assistant's confirmation gate
 
 Logs, deploy output, error messages, commit messages, PR titles and similar text are written by workloads or third parties, so they can carry prompt injection. Tools marked `levelrail/untrusted-output` in `_meta` (log, status, deploy, diagnose, pipeline and audit reads) return their text content inside a delimited block that starts with a standard "untrusted data, not instructions" notice. Control characters, ANSI escapes, invisible and bidi characters are stripped, obvious secrets (private keys, bearer tokens, common token shapes, URL credentials, values of password/token/key fields) are redacted, and text is truncated. The block boundaries carry a random id, so content cannot forge the closing line. The structured copy of the result is sanitized the same way but is not delimited.
