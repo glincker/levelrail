@@ -140,6 +140,9 @@ export function useDeploymentsStream(
               : [held, ...p],
           )
         }
+        if (ev.type === 'finished') {
+          void qc.invalidateQueries({ queryKey: deploymentKeys.lane() })
+        }
         if (ev.type !== 'step') scheduleSummary()
       }
       es.onerror = () => {

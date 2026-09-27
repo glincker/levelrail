@@ -84,7 +84,7 @@ describe('DeploymentRow states', () => {
     })
     expect(row).toHaveAttribute('data-kind', 'superseded')
     expect(row).toHaveClass('opacity-70')
-    expect(screen.getByText('Superseded by ffff0000')).toBeInTheDocument()
+    expect(screen.getByText(/^Superseded by ffff0000/)).toBeInTheDocument()
   })
 
   it('shows a queued deploy without a duration', () => {
@@ -92,12 +92,12 @@ describe('DeploymentRow states', () => {
       status: 'queued',
       duration_ms: null,
       finished_at: null,
-      reason: 'Waiting for another deploy of this app',
+      queue_position: 1,
+      wait_reason: 'waiting for the running deploy',
     })
     expect(row).toHaveAttribute('data-kind', 'queued')
-    expect(screen.getByText('Queued')).toBeInTheDocument()
     expect(
-      screen.getByText('Waiting for another deploy of this app'),
+      screen.getByText('Queued #1, waiting for the running deploy'),
     ).toBeInTheDocument()
   })
 

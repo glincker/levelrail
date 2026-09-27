@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { DeploymentsPage } from '../components/deployments/DeploymentsPage'
 import {
   parseDeploymentsSearch,
@@ -18,9 +18,13 @@ export const Route = createFileRoute('/deployments')({
 function DeploymentsRoute() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
+  const goTo = useNavigate()
   return (
     <DeploymentsPage
       search={parseDeploymentsSearch(search)}
+      onViewApproval={() => {
+        void goTo({ to: '/approvals' })
+      }}
       onSearchChange={(next) => {
         void navigate({ search: next, replace: true })
       }}

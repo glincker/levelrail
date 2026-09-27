@@ -54,7 +54,6 @@ function ActionButton({
 
 export interface DrawerActionsProps {
   d: Deployment
-  cancelSupported: boolean
   hasProject: boolean
   onAction: (kind: DeploymentActionKind, d: Deployment) => void
   onPromote: () => void
@@ -62,14 +61,13 @@ export interface DrawerActionsProps {
 
 export function DrawerActions({
   d,
-  cancelSupported,
   hasProject,
   onAction,
   onPromote,
 }: DrawerActionsProps) {
   const rows: { label: string; reason: string }[] = [
     { label: 'Roll back to this', reason: rollbackReason(d) },
-    { label: 'Cancel', reason: cancelReason(d, cancelSupported) },
+    { label: 'Cancel', reason: cancelReason(d) },
     { label: 'Promote', reason: promoteReason(d, hasProject) },
   ].filter((r) => r.reason !== '')
   return (
@@ -118,7 +116,7 @@ export function DrawerActions({
           label="Cancel"
           keyHint="c"
           icon={<StopCircleIcon aria-hidden="true" />}
-          reason={cancelReason(d, cancelSupported)}
+          reason={cancelReason(d)}
           onClick={() => {
             onAction('cancel', d)
           }}

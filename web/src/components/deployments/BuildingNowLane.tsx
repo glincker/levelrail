@@ -3,12 +3,13 @@ import { cn } from '@/lib/utils'
 import { Progress } from '@/components/ui/progress'
 import type { Deployment } from '../../types/deployment'
 import { headline, stepPercent } from '../../lib/deploymentPresentation'
+import { cancelReason } from '../../lib/deploymentReasons'
+import { DeploymentNote } from './DeploymentNote'
 import { StatusCell } from './DeploymentRow'
 
 export interface BuildingNowLaneProps {
   rows: Deployment[]
   now: number
-  cancelSupported: boolean
   onOpen: (id: string) => void
   onCancel: (d: Deployment) => void
 }
@@ -16,7 +17,6 @@ export interface BuildingNowLaneProps {
 export function BuildingNowLane({
   rows,
   now,
-  cancelSupported,
   onOpen,
   onCancel,
 }: BuildingNowLaneProps) {
@@ -64,25 +64,24 @@ export function BuildingNowLane({
                       <Progress value={pct} aria-label="Step progress" />
                     )}
                   </button>
-                  {d.status === 'queued' || d.status === 'building' ? (
-                    <div className="flex justify-end">
-                      <Button
-                        variant="outline"
-                        size="xs"
-                        disabled={!cancelSupported}
-                        title={
-                          cancelSupported
-                            ? undefined
-                            : 'This server does not support cancelling deploys yet'
-                        }
-                        onClick={() => {
-                          onCancel(d)
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : null}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0">
+                      {d.status === 'queued' && (
+                        <DeploymentNote d={d} onOpen={onOpen} />
+                      )}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      disabled={cancelReason(d) !== ''}
+                      title={cancelReason(d) || undefined}
+                      onClick={() => {
+                        onCancel(d)
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 </li>
               )
             })}

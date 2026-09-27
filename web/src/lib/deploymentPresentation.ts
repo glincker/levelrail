@@ -12,6 +12,7 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 import type { Tone } from '@/components/kit'
 import type { Deployment, DeploymentStatus } from '../types/deployment'
+import { formatRelative } from '@/components/kit/formatRelative'
 import { formatDurationMs } from './deployDuration'
 
 export interface StatusView {
@@ -131,6 +132,19 @@ export function headline(d: Deployment): string {
   return imageTag(d.image) || d.id
 }
 
+/** Whether the drawer should explain the row with a linked note. */
+export function hasNote(d: Deployment): boolean {
+  return (
+    d.status === 'queued' || d.status === 'canceled' || d.superseded_by !== null
+  )
+}
+
+/** "Queued #2, waiting for the running deploy" for a row still in the queue. */
+export function queueLabel(d: Deployment): string {
+  const place = d.queue_position !== null ? ` #${String(d.queue_position)}` : ''
+  return d.wait_reason ? `Queued${place}, ${d.wait_reason}` : `Queued${place}`
+}
+
 /** The reason a non-happy row is in that state, so a status is never bare. */
 export function subtitle(d: Deployment): string {
   switch (d.status) {
@@ -138,13 +152,20 @@ export function subtitle(d: Deployment): string {
       return d.error_summary ?? d.reason
     case 'superseded':
       return d.superseded_by
-        ? `Superseded by ${shortId(d.superseded_by)}`
-        : d.reason
+        ? `Superseded by ${shortId(d.superseded_by)}, a newer deploy replaced it`
+        : d.reason || 'A newer deploy replaced this one'
     case 'awaiting_approval':
       return d.reason || 'Waiting for approval'
-    case 'held':
-    case 'canceled':
     case 'queued':
+      return queueLabel(d)
+    case 'canceled':
+      return [
+        d.canceled_by ? `Canceled by ${d.canceled_by}` : 'Canceled',
+        d.finished_at ? formatRelative(d.finished_at) : '',
+      ]
+        .filter(Boolean)
+        .join(', ')
+    case 'held':
       return d.reason
     default:
       return ''
@@ -214,7 +235,7 @@ export function canRollbackTo(d: Deployment): boolean {
 }
 
 export function canCancel(d: Deployment): boolean {
-  return isInProgress(d)
+  return isInProgress(d) || d.status === 'held'
 }
 
 export function stepPercent(d: Deployment): number | null {
