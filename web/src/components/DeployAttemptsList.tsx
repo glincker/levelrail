@@ -26,6 +26,7 @@ import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
 import { ActionMenu, InfoTip, StatusPill } from './kit'
 import { DigestChip, RolloutChip } from './DeployDigestChips'
 import { DeployPreviewThumb } from './DeployPreviewThumb'
+import { DeployFailureView } from './DeployFailureView'
 import { unpinnedImage } from '../lib/imageDigest'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -396,7 +397,9 @@ function DeployAttemptRow({
         ) : attempt.reason ? (
           <p className="mt-1 text-xs text-muted-foreground">{attempt.reason}</p>
         ) : null}
-        {attempt.error ? (
+        {attempt.failure ? (
+          <DeployFailureView failure={attempt.failure} />
+        ) : attempt.error ? (
           <p className="mt-1 text-xs text-destructive">{attempt.error}</p>
         ) : null}
       </div>
