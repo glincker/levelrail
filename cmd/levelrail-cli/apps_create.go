@@ -93,10 +93,23 @@ type createFlags struct {
 // createPlan is planFromFlags's output: exactly the HTTP requests
 // runAppsCreate needs to make, already validated. Build is nil for the
 // existing-image path, non-nil for the git-build path (whether reached
-// via flags or --file).
+// via flags or --file). DeploySpec is set only for a --file build.type:
+// static service (planFromFileStatic): CreateBody and Build are both left
+// zero in that case, since a static site never goes through POST /apps.
 type createPlan struct {
 	CreateBody appResource
 	Build      *buildTriggerRequest
+	DeploySpec *deploySpecCreatePlan
+}
+
+// deploySpecCreatePlan is planFromFileStatic's output: a single-service
+// POST /apps/{name}/deploy-spec request, the only path that knows how to
+// deploy a build.type: static service (see planFromFileStatic's own doc
+// comment for why POST /apps itself can't be used).
+type deploySpecCreatePlan struct {
+	AppName    string
+	ServiceKey string
+	Request    deploySpecRequest
 }
 
 // pendingImageTag is the placeholder image value POST /apps is sent for
@@ -232,8 +245,10 @@ func planFromFile(f createFlags, fileSpec *spec.Spec, detected detectedGit) (cre
 		return planFromFileBuild(f, key, svc, detected, svc.Build.Type)
 	case spec.BuildImage:
 		return planFromFileImage(f, key, svc)
+	case spec.BuildStatic:
+		return planFromFileStatic(f, key, svc, detected)
 	default:
-		return createPlan{}, newValidationError("service %q has build.type %q; apps create only supports %q, %q, and %q today", key, svc.Build.Type, spec.BuildDockerfile, spec.BuildRailpack, spec.BuildImage)
+		return createPlan{}, newValidationError("service %q has build.type %q; apps create only supports %q, %q, %q, and %q today", key, svc.Build.Type, spec.BuildDockerfile, spec.BuildRailpack, spec.BuildImage, spec.BuildStatic)
 	}
 }
 
@@ -380,6 +395,88 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 			Resources:   resources,
 			Health:      health,
 			Command:     svc.Command,
+		},
+	}, nil
+}
+
+// planFromFileStatic handles a service whose build.type is static: no
+// container, no port, so it cannot go through POST /apps (validateAppResource
+// requires Port > 0). It reuses the same POST /apps/{name}/deploy-spec path
+// "apps deploy-spec" calls (internal/deploy/multi.go's DeploySpec, the only
+// code that knows how to save a store.StaticSite), but sets
+// single_service_name so the deployed site is named after the app itself
+// instead of deploy-spec's own "<app>-<service>" convention (e.g. "site-site"
+// for a single-service app.yaml naming both the app and the service "site").
+func planFromFileStatic(f createFlags, key string, svc spec.Service, detected detectedGit) (createPlan, error) {
+	var unsupported []string
+	if f.port > 0 {
+		unsupported = append(unsupported, "--port")
+	}
+	if f.hostPort > 0 {
+		unsupported = append(unsupported, "--host-port")
+	}
+	if f.bindAddress != "" {
+		unsupported = append(unsupported, "--bind-address")
+	}
+	if len(f.buildArgs) > 0 {
+		unsupported = append(unsupported, "--build-arg")
+	}
+	if f.imageRepo != "" {
+		unsupported = append(unsupported, "--image-repo")
+	}
+	if f.nodeIDSet {
+		unsupported = append(unsupported, "--node-id")
+	}
+	if f.attachDatabase != "" {
+		unsupported = append(unsupported, "--attach-database")
+	}
+	if len(f.vaultSecrets) > 0 {
+		unsupported = append(unsupported, "--vault-secret")
+	}
+	if len(unsupported) > 0 {
+		return createPlan{}, newValidationError("service %q has build.type %q, which has no running container: %s not supported", key, spec.BuildStatic, strings.Join(unsupported, ", "))
+	}
+
+	name := f.name
+	if name == "" {
+		name = key
+	}
+
+	repo := f.repo
+	if repo == "" {
+		repo = detected.RepoURL
+	}
+	if repo == "" {
+		return createPlan{}, newValidationError("--repo is required (no local git remote \"origin\" found to auto-detect)")
+	}
+	ref := resolveRef(f.ref, detected.Ref)
+
+	baseDirectory := f.baseDirectory
+	if baseDirectory == "" {
+		baseDirectory = svc.Build.BaseDirectory
+	}
+	buildPath := f.dockerfile
+	if buildPath == "" {
+		buildPath = svc.Build.Path
+	}
+
+	svcSpec := toDeploySpecService(svc)
+	svcSpec.Build.Type = spec.BuildStatic
+	svcSpec.Build.Path = buildPath
+	svcSpec.Build.BaseDirectory = baseDirectory
+	services := map[string]deploySpecService{key: svcSpec}
+	applyDeploySpecSecrets(services, f.secrets)
+
+	return createPlan{
+		DeploySpec: &deploySpecCreatePlan{
+			AppName:    name,
+			ServiceKey: key,
+			Request: deploySpecRequest{
+				RepoURL:           repo,
+				Ref:               ref,
+				Services:          services,
+				SingleServiceName: name,
+			},
 		},
 	}, nil
 }
@@ -659,6 +756,10 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	client := NewClient(apiURL, token)
 	ctx := context.Background()
 
+	if plan.DeploySpec != nil {
+		return runAppsCreateStatic(ctx, client, plan.DeploySpec, of, stdout, stderr, f.jsonOut)
+	}
+
 	created, err := client.CreateApp(ctx, plan.CreateBody)
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("create app %q: %w", plan.CreateBody.Name, err))
@@ -696,6 +797,27 @@ func triggerCreatePlanBuild(ctx context.Context, client *Client, created appReso
 	}
 	_, err := client.TriggerBuild(ctx, created.Name, *plan.Build)
 	return err
+}
+
+// runAppsCreateStatic executes a build.type: static plan via
+// POST /apps/{name}/deploy-spec (see planFromFileStatic's own doc comment),
+// printing the same deploy-spec result shape "apps deploy-spec" prints.
+func runAppsCreateStatic(ctx context.Context, client *Client, plan *deploySpecCreatePlan, of outputFlags, stdout, stderr io.Writer, jsonOut bool) int {
+	if !jsonOut {
+		_, _ = fmt.Fprintf(stderr, "creating static site %q from %s (ref %s)...\n", plan.AppName, plan.Request.RepoURL, plan.Request.Ref)
+	}
+	result, err := client.DeploySpec(ctx, plan.AppName, plan.Request)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create static site %q: %w", plan.AppName, err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, result, func() { printDeploySpecResultHuman(stdout, result) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	if of.Format == outputTable && !result.AllSucceeded {
+		return exitAPIError
+	}
+	return exitOK
 }
 
 // fetchAndPrintCreatedApp re-fetches name's now-final state and prints
@@ -849,7 +971,10 @@ Manifest path:
   --name, --port, --host-port, --bind-address, --repo, --ref, --dockerfile, --base-directory, --build-arg, --image-repo above
     all override the file's own values or supply what it cannot express (repo location, image name)
   build.type: dockerfile or railpack builds from git (repo/ref/image-repo required, as above);
-    build.type: image creates the app directly with build.image, no build triggered
+    build.type: image creates the app directly with build.image, no build triggered;
+    build.type: static deploys the built output directly (repo/ref required, no port/host-port/
+      bind-address/build-arg/image-repo/node-id/attach-database/vault-secret, static sites have
+      no running container)
   build.args from app.yaml's own build.args flow through automatically for a dockerfile build;
     --build-arg overrides them entirely rather than merging
 

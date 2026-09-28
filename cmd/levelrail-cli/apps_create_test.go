@@ -231,12 +231,119 @@ func TestPlanFromFlags(t *testing.T) {
 			wantErr: "not found",
 		},
 		{
-			name:  "file mode non-dockerfile build type rejected",
+			name:  "file mode unrecognized build type rejected",
 			flags: createFlags{file: "app.yaml", imageRepo: "levelrail/web", repo: "https://example.com/x.git"},
 			fileSpec: &spec.Spec{Services: map[string]spec.Service{
-				"web": {Build: spec.Build{Type: spec.BuildStatic}, Port: 3000},
+				"web": {Build: spec.Build{Type: "nixpacks"}, Port: 3000},
 			}},
 			wantErr: "only supports",
+		},
+		{
+			name:  "file mode static build type success",
+			flags: createFlags{file: "app.yaml", repo: "https://example.com/site.git", ref: "main"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"site": {Build: spec.Build{Type: spec.BuildStatic, Path: "dist"}, Domains: []string{"site.example.com"}},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.Build != nil {
+					t.Errorf("Build = %+v, want nil for the static path: static sites never go through POST /apps", p.Build)
+				}
+				if !reflect.DeepEqual(p.CreateBody, appResource{}) {
+					t.Errorf("CreateBody = %+v, want zero value for the static path", p.CreateBody)
+				}
+				if p.DeploySpec == nil {
+					t.Fatalf("DeploySpec = nil, want non-nil for the static path")
+				}
+				if p.DeploySpec.AppName != "site" || p.DeploySpec.ServiceKey != "site" {
+					t.Errorf("DeploySpec.AppName/ServiceKey = %q/%q, want %q/%q", p.DeploySpec.AppName, p.DeploySpec.ServiceKey, "site", "site")
+				}
+				if p.DeploySpec.Request.SingleServiceName != "site" {
+					t.Errorf("Request.SingleServiceName = %q, want %q (the app's own name, not deploy-spec's <app>-<service> pattern)", p.DeploySpec.Request.SingleServiceName, "site")
+				}
+				svc, ok := p.DeploySpec.Request.Services["site"]
+				if !ok {
+					t.Fatalf("Request.Services[%q] missing", "site")
+				}
+				if svc.Build.Type != spec.BuildStatic || svc.Build.Path != "dist" {
+					t.Errorf("Request.Services[%q].Build = %+v, want type %q path %q", "site", svc.Build, spec.BuildStatic, "dist")
+				}
+				if len(svc.Domains) != 1 || svc.Domains[0] != "site.example.com" {
+					t.Errorf("Request.Services[%q].Domains = %v, want [site.example.com]", "site", svc.Domains)
+				}
+				if p.DeploySpec.Request.RepoURL != "https://example.com/site.git" || p.DeploySpec.Request.Ref != "main" {
+					t.Errorf("Request repo/ref = %q/%q, want %q/%q", p.DeploySpec.Request.RepoURL, p.DeploySpec.Request.Ref, "https://example.com/site.git", "main")
+				}
+			},
+		},
+		{
+			name:  "file mode static build type derives name from --name over service key",
+			flags: createFlags{file: "app.yaml", repo: "https://example.com/site.git", name: "marketing-site"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"site": {Build: spec.Build{Type: spec.BuildStatic}},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				if p.DeploySpec.AppName != "marketing-site" || p.DeploySpec.Request.SingleServiceName != "marketing-site" {
+					t.Errorf("AppName/SingleServiceName = %q/%q, want both %q", p.DeploySpec.AppName, p.DeploySpec.Request.SingleServiceName, "marketing-site")
+				}
+			},
+		},
+		{
+			name:  "file mode static build type requires repo",
+			flags: createFlags{file: "app.yaml"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"site": {Build: spec.Build{Type: spec.BuildStatic}},
+			}},
+			wantErr: "--repo is required",
+		},
+		{
+			name:  "file mode static build type rejects --port",
+			flags: createFlags{file: "app.yaml", repo: "https://example.com/site.git", port: 8080},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"site": {Build: spec.Build{Type: spec.BuildStatic}},
+			}},
+			wantErr: "--port",
+		},
+		{
+			name:  "file mode static build type rejects --image-repo",
+			flags: createFlags{file: "app.yaml", repo: "https://example.com/site.git", imageRepo: "levelrail/site"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"site": {Build: spec.Build{Type: spec.BuildStatic}},
+			}},
+			wantErr: "--image-repo",
+		},
+		{
+			name:  "file mode static build type rejects --node-id",
+			flags: createFlags{file: "app.yaml", repo: "https://example.com/site.git", nodeIDSet: true, nodeID: "node-2"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"site": {Build: spec.Build{Type: spec.BuildStatic}},
+			}},
+			wantErr: "--node-id",
+		},
+		{
+			name:  "file mode static build type rejects --attach-database",
+			flags: createFlags{file: "app.yaml", repo: "https://example.com/site.git", attachDatabase: "main"},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"site": {Build: spec.Build{Type: spec.BuildStatic}},
+			}},
+			wantErr: "--attach-database",
+		},
+		{
+			name:  "file mode static build type applies secret values",
+			flags: createFlags{file: "app.yaml", repo: "https://example.com/site.git", secrets: map[string]string{"API_KEY": "shh"}},
+			fileSpec: &spec.Spec{Services: map[string]spec.Service{
+				"site": {Build: spec.Build{Type: spec.BuildStatic}, Env: map[string]spec.EnvVar{
+					"API_KEY": {Secret: true, Required: true},
+				}},
+			}},
+			wantPlan: func(t *testing.T, p createPlan) {
+				env, ok := p.DeploySpec.Request.Services["site"].Env["API_KEY"]
+				if !ok {
+					t.Fatalf("Services[site].Env[API_KEY] missing")
+				}
+				if env.Value != "shh" {
+					t.Errorf("Env[API_KEY].Value = %q, want %q", env.Value, "shh")
+				}
+			},
 		},
 		{
 			name:  "file mode railpack build type success",
