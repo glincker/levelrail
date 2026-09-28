@@ -1,3 +1,7 @@
+---
+description: Connect an S3-compatible bucket for log archive and database or volume backups, AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, or any custom S3-compatible endpoint.
+---
+
 # Object storage
 
 A storage destination is an S3-compatible bucket the control plane can write to. Log archive uses it today, and database and volume backups use the same destinations (a destination is a backup target with a few extra options, so anything you connect shows up in both places).

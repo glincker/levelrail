@@ -1,3 +1,7 @@
+---
+description: Estimated model context cost of the MCP tool list, by toolset.
+---
+
 # MCP tool surface
 
 Estimated model context cost of the MCP tool list. Tokens are estimated as characters divided by 4 over each tool's name, description and input schema JSON.

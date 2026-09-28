@@ -1,5 +1,5 @@
 ---
-description: Back up and restore the control plane's own database: automatic snapshots, manual snapshots, pre-upgrade safety copies, and the offline restore command.
+description: "Back up and restore the control plane's own database: automatic snapshots, manual snapshots, pre-upgrade safety copies, and the offline restore command."
 ---
 
 # Control plane backup and restore

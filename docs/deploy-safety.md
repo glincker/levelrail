@@ -1,3 +1,7 @@
+---
+description: Four guarantees between a deploy being triggered and that exact content serving, digest-truthful deploys, a stale-deploy guard, deploy freeze windows, and a short hold of the previous release after cutover.
+---
+
 # Deploy safety
 
 Four guarantees sit between "a deploy was triggered" and "that exact
