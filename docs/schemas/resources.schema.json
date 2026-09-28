@@ -151,6 +151,9 @@
         "ephemeralInPreviews": {
           "type": "boolean"
         },
+        "isolatedInPreviews": {
+          "type": "boolean"
+        },
         "version": {
           "minLength": 1,
           "type": "string"
