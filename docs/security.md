@@ -23,7 +23,7 @@ Credentials for backup targets and registry integrations follow the same write-o
 - **Session cookies** are `HttpOnly`, `SameSite=Lax`, and `Secure` whenever the request arrived over HTTPS (directly or through the embedded Caddy ingress). Once an `https://` dashboard URL is set, sign-in over plain HTTP is refused (`APP_ALLOW_INSECURE_LOGIN=true` is the recovery escape hatch).
 - **First admin** registration requires the one-time setup token from `<data dir>/setup-token`, so an exposed fresh install can't be claimed by a stranger.
 - **Token-redeeming routes are rate limited.** `POST /api/v1/auth/reset-password` and `POST /api/v1/invites/accept` are unauthenticated by design, so each gets a per-client-IP budget (`APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM`, default `10` per minute, `0` disables). Over budget returns `429` with `Retry-After`.
-- **API tokens** are minted per-user, scoped by ability, and can be issued through a device-code flow for headless environments.
+- **API tokens** are minted per-user, scoped by ability (a user can only mint a token holding abilities they hold themselves), and can be issued through a device-code flow for headless environments.
 - **Two-factor authentication (TOTP)** is available per user, with recovery codes for account lockout.
 
 Full detail on all three: [Identity and access](identity-and-access.md#principals-a-session-or-a-token).
