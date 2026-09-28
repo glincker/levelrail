@@ -81,7 +81,7 @@ services:
 			},
 		},
 		{
-			name: "list-form depends_on warns that startup order isn't sequenced",
+			name: "list-form depends_on notes that only start order is enforced",
 			yaml: `
 services:
   web:
@@ -91,11 +91,11 @@ services:
     image: postgres:16
 `,
 			wants: []Notice{
-				{Level: NoticeLevelWarning, Message: "depends_on: is parsed but not enforced; the reconciler doesn't sequence container startup order, so a dependent service may start before what it depends on is ready"},
+				{Level: NoticeLevelNote, Message: "depends_on: is enforced as start order only (a dependency's container must exist and be running before its dependent is created), not as a wait for that dependency's own readiness or health check"},
 			},
 		},
 		{
-			name: "map-form depends_on with a condition also warns",
+			name: "map-form depends_on with a condition also notes start-order-only",
 			yaml: `
 services:
   web:
@@ -107,7 +107,7 @@ services:
     image: postgres:16
 `,
 			wants: []Notice{
-				{Level: NoticeLevelWarning, Message: "depends_on: is parsed but not enforced; the reconciler doesn't sequence container startup order, so a dependent service may start before what it depends on is ready"},
+				{Level: NoticeLevelNote, Message: "depends_on: is enforced as start order only (a dependency's container must exist and be running before its dependent is created), not as a wait for that dependency's own readiness or health check"},
 			},
 		},
 	}

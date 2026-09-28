@@ -17,6 +17,12 @@ type rawFile struct {
 	// struct{} and is discarded): Notices only needs to know whether
 	// custom networks were declared at all, not their configuration.
 	Networks map[string]struct{} `yaml:"networks"`
+	// Secrets/Configs are top-level secrets:/configs:, decoded down to
+	// just their keys (same reasoning as Networks): File.HasSecrets/
+	// HasConfigs only need to know either block was declared at all, not
+	// its shape.
+	Secrets map[string]struct{} `yaml:"secrets"`
+	Configs map[string]struct{} `yaml:"configs"`
 }
 
 type rawService struct {
@@ -34,6 +40,8 @@ type rawService struct {
 	Entrypoint  Command           `yaml:"entrypoint"`
 	PullPolicy  string            `yaml:"pull_policy"`
 	Deploy      *Deploy           `yaml:"deploy"`
+	Secrets     []any             `yaml:"secrets"`
+	Configs     []any             `yaml:"configs"`
 }
 
 // Healthcheck is one service's healthcheck: block, Docker Compose's own

@@ -92,6 +92,105 @@ func TestSpec_Validate(t *testing.T) {
 			},
 			wantErr: "is not supported",
 		},
+		{
+			name: "valid dependsOn",
+			spec: &Spec{
+				Services: map[string]Service{
+					"web": {
+						Build:     Build{Type: BuildImage, Image: "nginx"},
+						Port:      80,
+						DependsOn: []string{"db"},
+					},
+					"db": {
+						Build: Build{Type: BuildImage, Image: "postgres"},
+						Port:  5432,
+					},
+				},
+			},
+		},
+		{
+			name: "dependsOn references itself",
+			spec: &Spec{
+				Services: map[string]Service{
+					"web": {
+						Build:     Build{Type: BuildImage, Image: "nginx"},
+						Port:      80,
+						DependsOn: []string{"web"},
+					},
+				},
+			},
+			wantErr: "dependsOn must not reference itself",
+		},
+		{
+			name: "dependsOn references an unknown service",
+			spec: &Spec{
+				Services: map[string]Service{
+					"web": {
+						Build:     Build{Type: BuildImage, Image: "nginx"},
+						Port:      80,
+						DependsOn: []string{"db"},
+					},
+				},
+			},
+			wantErr: `dependsOn references "db", which is not a service in this file`,
+		},
+		{
+			name: "dependsOn references a static service",
+			spec: &Spec{
+				Services: map[string]Service{
+					"web": {
+						Build:     Build{Type: BuildImage, Image: "nginx"},
+						Port:      80,
+						DependsOn: []string{"site"},
+					},
+					"site": {
+						Build: Build{Type: BuildStatic},
+					},
+				},
+			},
+			wantErr: "has no single running container to depend on",
+		},
+		{
+			name: "dependsOn cycle between two services",
+			spec: &Spec{
+				Services: map[string]Service{
+					"web": {
+						Build:     Build{Type: BuildImage, Image: "nginx"},
+						Port:      80,
+						DependsOn: []string{"worker"},
+					},
+					"worker": {
+						Build:     Build{Type: BuildImage, Image: "nginx"},
+						Port:      80,
+						DependsOn: []string{"web"},
+					},
+				},
+			},
+			wantErr: "dependsOn cycle",
+		},
+		{
+			name: "dependsOn self-cycle through a third service",
+			spec: &Spec{
+				Services: map[string]Service{
+					"a": {
+						Build:     Build{Type: BuildImage, Image: "nginx"},
+						Port:      80,
+						DependsOn: []string{"b"},
+					},
+					"b": {
+						Build:     Build{Type: BuildImage, Image: "nginx"},
+						Port:      80,
+						DependsOn: []string{"c"},
+					},
+					"c": {
+						Build:     Build{Type: BuildImage, Image: "nginx"},
+						Port:      80,
+						DependsOn: []string{"a"},
+					},
+				},
+			},
+			wantErr: "dependsOn cycle",
+		},
 	}
 
 	for _, tt := range tests {
