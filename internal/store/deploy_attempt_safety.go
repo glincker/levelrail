@@ -29,6 +29,7 @@ const (
 const (
 	RolloutStateServing  = "serving"
 	RolloutStateMismatch = "mismatch"
+	RolloutStateFailed   = "failed"
 )
 
 // Reasons recorded on held and superseded attempts.
@@ -64,6 +65,25 @@ func (db *DB) RecordRollout(ctx context.Context, serviceName, image, state, runn
 	`, state, runningImageID, serviceName, image, DeployAttemptStatusSucceeded, state, runningImageID)
 	if err != nil {
 		return fmt.Errorf("store: record rollout for %q: %w", serviceName, err)
+	}
+	return nil
+}
+
+// RecordRolloutFailure flips the newest succeeded attempt that deployed
+// image to failed: its container never passed readiness, so the
+// "succeeded" recorded optimistically at trigger time no longer holds.
+func (db *DB) RecordRolloutFailure(ctx context.Context, serviceName, image, reason string) error {
+	_, err := db.ExecContext(ctx, `
+		UPDATE deploy_attempts SET status = ?, rollout_state = ?, error = ?, finished_at = COALESCE(finished_at, ?)
+		WHERE id = (
+			SELECT id FROM deploy_attempts
+			WHERE service_name = ? AND image = ? AND status = ?
+			ORDER BY started_at DESC LIMIT 1
+		)
+	`, DeployAttemptStatusFailed, RolloutStateFailed, reason, time.Now().UTC().Format(time.RFC3339Nano),
+		serviceName, image, DeployAttemptStatusSucceeded)
+	if err != nil {
+		return fmt.Errorf("store: record rollout failure for %q: %w", serviceName, err)
 	}
 	return nil
 }
