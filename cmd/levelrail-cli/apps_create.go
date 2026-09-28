@@ -787,13 +787,24 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 
 // triggerCreatePlanBuild triggers plan's build (a no-op returning nil
 // when plan.Build is nil, the existing-image path), shared between the
-// flag-driven and wizard-driven "apps create" I/O shells.
+// flag-driven and wizard-driven "apps create" I/O shells. Runs the same
+// pre-flight framework detection the "Deploy from git" wizard runs
+// (POST /api/v1/build/detect) so a git-triggered create records a
+// FRAMEWORK column value too, not just a build triggered from the web UI;
+// best-effort, since a failed or inconclusive detection must never block
+// the create that already succeeded.
 func triggerCreatePlanBuild(ctx context.Context, client *Client, created appResource, plan createPlan, stderr io.Writer, jsonOut bool) error {
 	if plan.Build == nil {
 		return nil
 	}
+	if plan.Build.DetectedFramework == "" {
+		if det, err := client.DetectFramework(ctx, plan.Build.RepoURL, plan.Build.Ref); err == nil && det.Detected {
+			plan.Build.DetectedFramework = det.FrameworkName
+		}
+	}
 	if !jsonOut {
 		_, _ = fmt.Fprintf(stderr, "app %q created, building from %s (ref %s)...\n", created.Name, plan.Build.RepoURL, plan.Build.Ref)
+		_, _ = fmt.Fprintf(stderr, "follow it with \"apps deploys wait %s\"\n", created.Name)
 	}
 	_, err := client.TriggerBuild(ctx, created.Name, *plan.Build)
 	return err

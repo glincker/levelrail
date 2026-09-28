@@ -12,7 +12,7 @@ A plan is a preview only. Deploying it uses the existing create, build and compo
 
 | Input | Example | What the plan does |
 | --- | --- | --- |
-| Repo URL | `https://github.com/owner/repo`, `gitlab.com/group/sub/repo`, a Gitea or Bitbucket URL | Reads a few files from the repo and picks a build method, port and health path. Deploys through the build endpoint. |
+| Repo URL | `https://github.com/owner/repo`, `gitlab.com/group/sub/repo`, a Gitea or Bitbucket URL, or a plain `http(s)://` git URL with no owner path (a self-hosted git server, e.g. `https://git.example.com/myrepo.git`) | Reads a few files from the repo and picks a build method, port and health path. Deploys through the build endpoint. github.com, gitlab.com, bitbucket.org and codeberg.org still need a real owner/repo path; any other host just needs a repository path. |
 | `docker run` command | `docker run -d -p 8080:80 -v data:/data nginx:1.27` | Maps the flags onto an app and lists every flag it cannot honour. |
 | Image reference | `ghcr.io/owner/app:1.0.0` | Deploys the image as is. Warns when the tag is `latest` or missing. |
 | Compose file | pasted or uploaded `docker-compose.yml` | One plan per service, validated with the same rules as the Docker Compose deploy. |

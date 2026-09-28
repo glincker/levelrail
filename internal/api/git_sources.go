@@ -127,17 +127,30 @@ type gitSourceResource struct {
 
 // gitSourceWebhookPath is the relative API path GitHub's own webhook
 // config points at for name: POST /api/v1/webhooks/github/{name}
-// (router.go). Relative, not absolute: this server has no reliable way
-// to know its own externally-reachable hostname, so the frontend
-// prepends window.location.origin for display, the same "server
-// stays dumb about its own external address" choice
-// DatabasePublicAccessCard.tsx's connectionString makes with
-// window.location.hostname.
+// (router.go).
 func gitSourceWebhookPath(name string) string {
 	return "/api/v1/webhooks/github/" + name
 }
 
-func toGitSourceResource(g store.GitSource, hasToken bool) gitSourceResource {
+// gitSourceWebhookURL resolves name's webhook URL to an absolute one
+// using controlPlaneBaseURL, the same store.IngressSettings.PrimaryDomain
+// source of truth every git provider connect flow already uses for its
+// own callback URL (control_plane_base_url.go). Falls back to the bare
+// relative path when no primary domain is configured: the frontend still
+// prepends window.location.origin for display in that case, but the CLI
+// and any other non-browser caller have no such fallback of their own, so
+// this is the best answer available without an operator-configured
+// origin.
+func (rt *Router) gitSourceWebhookURL(ctx context.Context, name string) string {
+	path := gitSourceWebhookPath(name)
+	base, err := rt.controlPlaneBaseURL(ctx)
+	if err != nil {
+		return path
+	}
+	return base + path
+}
+
+func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gitSourceResource {
 	return gitSourceResource{
 		ServiceName:        g.ServiceName,
 		RepoURL:            g.RepoURL,
@@ -149,7 +162,7 @@ func toGitSourceResource(g store.GitSource, hasToken bool) gitSourceResource {
 		Databases:          g.Databases,
 		TriggerMode:        effectiveGitSourceTriggerMode(g.TriggerMode),
 		HasToken:           hasToken,
-		WebhookURL:         gitSourceWebhookPath(g.ServiceName),
+		WebhookURL:         webhookURL,
 		PreviewEnabled:     g.PreviewEnabled,
 		PostPRComments:     g.PostPRComments,
 		DeployPaths:        nonNilPaths(g.DeployPaths),
@@ -438,7 +451,7 @@ func (rt *Router) handleGetGitSource(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJSON(w, http.StatusOK, toGitSourceResource(*gs, hasToken))
+	writeJSON(w, http.StatusOK, toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(r.Context(), name)))
 }
 
 // handleSetGitSource handles PUT /api/v1/apps/{name}/git-source: connect
@@ -621,7 +634,7 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 		return connectGitSourceResult{}, fmt.Errorf("check deploy token: %w", err)
 	}
 
-	resource := toGitSourceResource(*saved, hasToken)
+	resource := toGitSourceResource(*saved, hasToken, rt.gitSourceWebhookURL(ctx, name))
 	if creating {
 		resource.WebhookSecret = webhookSecretPlain
 	}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -1010,5 +1011,97 @@ func TestToServiceResources_SwapEqualToMemoryAccepted(t *testing.T) {
 	}
 	if got.SwapMemoryBytes != 512*1024*1024 {
 		t.Errorf("SwapMemoryBytes = %d, want %d", got.SwapMemoryBytes, 512*1024*1024)
+	}
+}
+
+// TestTriggerCreatePlanBuild_DetectsFramework covers F-018's CLI side: a
+// git-triggered "apps create" runs the same pre-flight framework
+// detection the web wizard runs and forwards the result as
+// detected_framework on the build trigger request, so the app's first
+// deploy attempt gets a real FRAMEWORK value instead of always blank.
+func TestTriggerCreatePlanBuild_DetectsFramework(t *testing.T) {
+	tests := []struct {
+		name               string
+		presetFramework    string
+		detectResponse     string
+		wantSentFramework  string
+		wantStderrContains string
+	}{
+		{
+			name:               "detects and forwards when unset",
+			detectResponse:     `{"provider":"node","framework_name":"Next.js","detected":true}`,
+			wantSentFramework:  "Next.js",
+			wantStderrContains: "apps deploys wait",
+		},
+		{
+			name:               "not detected leaves it empty",
+			detectResponse:     `{"detected":false}`,
+			wantSentFramework:  "",
+			wantStderrContains: "apps deploys wait",
+		},
+		{
+			name:               "already set is never overridden",
+			presetFramework:    "Go",
+			detectResponse:     `{"provider":"node","framework_name":"Next.js","detected":true}`,
+			wantSentFramework:  "Go",
+			wantStderrContains: "apps deploys wait",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotBuildReq buildTriggerRequest
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				switch {
+				case r.URL.Path == "/api/v1/build/detect":
+					_, _ = w.Write([]byte(tt.detectResponse))
+				case strings.HasSuffix(r.URL.Path, "/builds"):
+					_ = json.NewDecoder(r.Body).Decode(&gotBuildReq)
+					_ = json.NewEncoder(w).Encode(buildTriggerResponse{ID: "dep_1"})
+				default:
+					t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+				}
+			}))
+			defer srv.Close()
+
+			client := NewClient(srv.URL, "")
+			plan := createPlan{
+				Build: &buildTriggerRequest{
+					RepoURL:           "https://example.com/x.git",
+					Ref:               "main",
+					DetectedFramework: tt.presetFramework,
+				},
+			}
+			var stderr strings.Builder
+			if err := triggerCreatePlanBuild(context.Background(), client, appResource{Name: "web"}, plan, &stderr, false); err != nil {
+				t.Fatalf("triggerCreatePlanBuild() error = %v", err)
+			}
+			if gotBuildReq.DetectedFramework != tt.wantSentFramework {
+				t.Errorf("sent detected_framework = %q, want %q", gotBuildReq.DetectedFramework, tt.wantSentFramework)
+			}
+			if !strings.Contains(stderr.String(), tt.wantStderrContains) {
+				t.Errorf("stderr = %q, want it to contain %q", stderr.String(), tt.wantStderrContains)
+			}
+		})
+	}
+}
+
+// TestTriggerCreatePlanBuild_NilBuildIsNoop covers the existing-image
+// path: no repo/ref to detect against, so no HTTP call is made at all.
+func TestTriggerCreatePlanBuild_NilBuildIsNoop(t *testing.T) {
+	called := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	client := NewClient(srv.URL, "")
+	var stderr strings.Builder
+	if err := triggerCreatePlanBuild(context.Background(), client, appResource{Name: "web"}, createPlan{}, &stderr, false); err != nil {
+		t.Fatalf("triggerCreatePlanBuild() error = %v", err)
+	}
+	if called {
+		t.Error("triggerCreatePlanBuild() made an HTTP call for a nil Build plan")
 	}
 }

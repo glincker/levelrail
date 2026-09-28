@@ -390,6 +390,45 @@ func TestHandleSetGitSource_Create_Success(t *testing.T) {
 	}
 }
 
+// TestHandleSetGitSource_WebhookURL_AbsoluteWhenPrimaryDomainConfigured
+// covers F-020: once the control plane has a public origin configured
+// (store.IngressSettings.PrimaryDomain), both the create and the GET
+// response return an absolute webhook URL, not the bare relative path a
+// caller would otherwise have to guess a base URL for.
+func TestHandleSetGitSource_WebhookURL_AbsoluteWhenPrimaryDomainConfigured(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	setPrimaryDomain(t, db)
+
+	wantURL := "https://" + testPrimaryDomain + "/api/v1/webhooks/github/web"
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git"}`))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var created gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	if created.WebhookURL != wantURL {
+		t.Errorf("create WebhookURL = %q, want %q", created.WebhookURL, wantURL)
+	}
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/git-source", ""))
+	var got gitSourceResource
+	if err := json.NewDecoder(getRec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode get response: %v", err)
+	}
+	if got.WebhookURL != wantURL {
+		t.Errorf("GET WebhookURL = %q, want %q", got.WebhookURL, wantURL)
+	}
+}
+
 func TestHandleSetGitSource_Create_WithToken(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)

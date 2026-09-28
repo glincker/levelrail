@@ -102,8 +102,13 @@ func runAppsBuildsTrigger(prog string, args []string, stdout, stderr io.Writer, 
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	ctx := context.Background()
 
-	result, err := client.TriggerBuild(context.Background(), name, req)
+	if det, detErr := client.DetectFramework(ctx, repo, ref); detErr == nil && det.Detected {
+		req.DetectedFramework = det.FrameworkName
+	}
+
+	result, err := client.TriggerBuild(ctx, name, req)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("trigger build for app %q: %w", name, err))
 	}

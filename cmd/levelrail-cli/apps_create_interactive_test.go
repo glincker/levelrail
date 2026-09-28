@@ -591,7 +591,7 @@ func TestRunWizardCreateViaAPI(t *testing.T) {
 		if got != exitOK {
 			t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitOK, stderr.String())
 		}
-		want := []string{"POST /api/v1/apps", "POST /api/v1/apps/web/builds", "GET /api/v1/apps/web"}
+		want := []string{"POST /api/v1/apps", "POST /api/v1/build/detect", "POST /api/v1/apps/web/builds", "GET /api/v1/apps/web"}
 		if len(paths) != len(want) {
 			t.Fatalf("requests = %v, want %v", paths, want)
 		}
