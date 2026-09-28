@@ -7,6 +7,7 @@ import type {
 export const LOCAL_NODE = 'local'
 const NAME_PATTERN = /^[a-z0-9]([a-z0-9-]{0,40}[a-z0-9])?$/
 const POSITIVE_INT = /^[1-9][0-9]*$/
+const SWAP_GROUP_PATTERN = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/
 
 export interface DeployFormState {
   name: string
@@ -20,6 +21,7 @@ export interface DeployFormState {
   hfToken: string
   residency: ModelResidency
   idleMinutes: string
+  swapGroup: string
 }
 
 export const INITIAL_DEPLOY_FORM: DeployFormState = {
@@ -34,6 +36,7 @@ export const INITIAL_DEPLOY_FORM: DeployFormState = {
   hfToken: '',
   residency: 'always',
   idleMinutes: '',
+  swapGroup: '',
 }
 
 // Returns the first validation problem, or null when the form can submit.
@@ -54,6 +57,9 @@ export function validateDeployForm(f: DeployFormState): string | null {
     !POSITIVE_INT.test(f.idleMinutes)
   ) {
     return 'Idle time must be a positive number of minutes.'
+  }
+  if (f.swapGroup !== '' && !SWAP_GROUP_PATTERN.test(f.swapGroup)) {
+    return 'Swap group must be lowercase letters, digits or hyphens.'
   }
   return null
 }
@@ -78,5 +84,6 @@ export function buildCreateRequest(f: DeployFormState): CreateModelRequest {
     req.residency = 'on_demand'
     if (f.idleMinutes !== '') req.idle_ttl_seconds = Number(f.idleMinutes) * 60
   }
+  if (f.swapGroup.trim() !== '') req.swap_group = f.swapGroup.trim()
   return req
 }

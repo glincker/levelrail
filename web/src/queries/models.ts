@@ -203,6 +203,25 @@ export function useSetModelResidency() {
   })
 }
 
+export function useSetModelSwapGroup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { name: string; swapGroup: string }) =>
+      requestVoid(
+        `/api/v1/models/${encodeURIComponent(v.name)}/swap-group`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ swap_group: v.swapGroup }),
+        },
+        'set swap group',
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: modelKeys.all })
+    },
+  })
+}
+
 export function useWakeModel() {
   return useModelAction('wake model', (name) => ({
     url: `/api/v1/models/${encodeURIComponent(name)}/wake`,

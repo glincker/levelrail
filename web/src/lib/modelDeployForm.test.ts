@@ -27,6 +27,9 @@ describe('validateDeployForm', () => {
     [{ residency: 'on_demand' as const, idleMinutes: 'x' }, 'Idle time'],
     [{ residency: 'on_demand' as const, idleMinutes: '30' }, null],
     [{ residency: 'always' as const, idleMinutes: 'x' }, null],
+    [{ swapGroup: 'Not Valid!' }, 'Swap group must be'],
+    [{ swapGroup: 'gpu0' }, null],
+    [{ swapGroup: '' }, null],
   ])('%j -> %s', (patch, want) => {
     const got = validateDeployForm({ ...valid, ...patch })
     if (want === null) expect(got).toBeNull()
@@ -93,5 +96,12 @@ describe('buildCreateRequest', () => {
     const dflt = buildCreateRequest({ ...valid, residency: 'on_demand' })
     expect(dflt.residency).toBe('on_demand')
     expect(dflt.idle_ttl_seconds).toBeUndefined()
+  })
+
+  it('includes swap_group only when set', () => {
+    expect(buildCreateRequest(valid).swap_group).toBeUndefined()
+    expect(
+      buildCreateRequest({ ...valid, swapGroup: ' gpu0 ' }).swap_group,
+    ).toBe('gpu0')
   })
 })

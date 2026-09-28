@@ -42,6 +42,8 @@ type ServiceStore interface {
 	SetModelResidency(ctx context.Context, name, residency string, idleTTLSeconds int, now time.Time) error
 	TouchModel(ctx context.Context, name string, at time.Time) error
 	SleepModel(ctx context.Context, name string) error
+	SetModelSwapGroup(ctx context.Context, name, group string) error
+	ListModelsInSwapGroup(ctx context.Context, group string) ([]store.Model, error)
 	GetConditions(ctx context.Context, controllerName string) ([]reconcile.Condition, error)
 	GetConditionsForControllers(ctx context.Context, controllerNames []string) (map[string][]reconcile.Condition, error)
 	GetNode(ctx context.Context, id string) (*store.Node, error)
@@ -88,6 +90,9 @@ type CreateInput struct {
 	// platform default.
 	Residency string
 	IdleTTL   time.Duration
+	// SwapGroup is empty (no group) or a name shared by other models on
+	// the same node/GPU; see store.Model.SwapGroup.
+	SwapGroup string
 }
 
 // Created is the result of Create; APIKey is the plaintext, shown once.
@@ -128,6 +133,10 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
 	if err != nil {
 		return Created{}, err
 	}
+	swapGroup, err := validateSwapGroup(in.SwapGroup)
+	if err != nil {
+		return Created{}, err
+	}
 	domain := strings.ToLower(strings.TrimSpace(in.Domain))
 	if domain != "" && !domainRe.MatchString(domain) {
 		return Created{}, fmt.Errorf("%w: domain %q is not a valid hostname", ErrInvalid, in.Domain)
@@ -159,7 +168,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
 		Name: in.Spec.Name, Engine: in.Spec.Engine, ModelRef: in.Spec.ModelRef, NodeID: in.NodeID,
 		GPUCount: in.Spec.GPUCount, GPUDeviceIDs: in.Spec.GPUDeviceIDs, ContextLength: in.Spec.ContextLength,
 		Quantization: in.Spec.Quantization, Domain: domain, APIKeyHash: hash, APIKeyPrefix: prefix,
-		HFTokenSet: in.HFToken != "", Residency: residency, IdleTTLSeconds: idleSecs,
+		HFTokenSet: in.HFToken != "", Residency: residency, IdleTTLSeconds: idleSecs, SwapGroup: swapGroup,
 	}
 	if residency == store.ResidencyOnDemand {
 		m.LastActiveAt = time.Now().UTC()
@@ -229,10 +238,13 @@ type View struct {
 	Reason  string
 	Message string
 	BaseURL string
+	// SharesGPUWith is every other model in the same non-empty
+	// SwapGroup on the same node, excluding this one.
+	SharesGPUWith []string
 }
 
-func (s *Service) view(m store.Model, conds []reconcile.Condition) View {
-	v := View{Model: m, BaseURL: s.hosts.BaseURL(m), Reason: "Pending"}
+func (s *Service) view(m store.Model, conds []reconcile.Condition, peers []string) View {
+	v := View{Model: m, BaseURL: s.hosts.BaseURL(m), Reason: "Pending", SharesGPUWith: peers}
 	if m.Deleting {
 		v.Reason = "Deleting"
 		return v
@@ -244,6 +256,22 @@ func (s *Service) view(m store.Model, conds []reconcile.Condition) View {
 		}
 	}
 	return v
+}
+
+// swapGroupPeers returns every other model's name sharing m's own
+// SwapGroup and NodeID, or nil when m has no group.
+func swapGroupPeers(m store.Model, all []store.Model) []string {
+	if m.SwapGroup == "" {
+		return nil
+	}
+	var peers []string
+	for _, other := range all {
+		if other.Name == m.Name || other.SwapGroup != m.SwapGroup || other.NodeID != m.NodeID {
+			continue
+		}
+		peers = append(peers, other.Name)
+	}
+	return peers
 }
 
 // List returns every model with status.
@@ -262,7 +290,7 @@ func (s *Service) List(ctx context.Context) ([]View, error) {
 	}
 	out := make([]View, len(list))
 	for i, m := range list {
-		out[i] = s.view(m, conds[ControllerName(m.Name)])
+		out[i] = s.view(m, conds[ControllerName(m.Name)], swapGroupPeers(m, list))
 	}
 	return out, nil
 }
@@ -273,9 +301,17 @@ func (s *Service) Get(ctx context.Context, name string) (View, error) {
 	if err != nil {
 		return View{}, err
 	}
+	var peers []string
+	if m.SwapGroup != "" {
+		group, err := s.store.ListModelsInSwapGroup(ctx, m.SwapGroup)
+		if err != nil {
+			return View{}, fmt.Errorf("models: list swap group: %w", err)
+		}
+		peers = swapGroupPeers(*m, group)
+	}
 	conds, err := s.store.GetConditions(ctx, ControllerName(name))
 	if err != nil {
 		return View{}, fmt.Errorf("models: read conditions: %w", err)
 	}
-	return s.view(*m, conds), nil
+	return s.view(*m, conds, peers), nil
 }

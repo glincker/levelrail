@@ -46,6 +46,7 @@ func (rt *Router) teardownPreviewRecord(ctx context.Context, preview store.Previ
 func (rt *Router) teardownPreviewRecordReason(ctx context.Context, preview store.PreviewEnvironment, reason string) (int, string) {
 	failed := rt.teardownPreviewApp(ctx, preview.PreviewAppID)
 	failed = append(failed, rt.teardownPreviewEphemeralDatabases(ctx, preview.ID)...)
+	failed = append(failed, rt.teardownPreviewDatabaseIsolations(ctx, preview.ID)...)
 	if len(failed) > 0 {
 		preview.Status = store.PreviewStatusFailed
 		preview.StatusReason = fmt.Sprintf("teardown left %d resource(s) undeleted: %s", len(failed), strings.Join(failed, ", "))

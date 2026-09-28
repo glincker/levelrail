@@ -260,6 +260,23 @@ export function DeployModelDialog({
             ) : null}
           </div>
           <Field>
+            <FieldLabel htmlFor="model-swap-group">Swap group</FieldLabel>
+            <Input
+              id="model-swap-group"
+              value={form.swapGroup}
+              onChange={(e) => {
+                set('swapGroup', e.target.value)
+              }}
+              placeholder="none (optional)"
+              autoComplete="off"
+            />
+            <FieldHint>
+              Models sharing this name on the same node/GPU cannot both be
+              resident: waking one stops the group's current resident model
+              first to free VRAM.
+            </FieldHint>
+          </Field>
+          <Field>
             <FieldLabel htmlFor="model-domain">Domain</FieldLabel>
             <Input
               id="model-domain"

@@ -44,6 +44,16 @@ type PreviewEnvironmentStore interface {
 	ListPreviewEphemeralDatabasesByPreview(ctx context.Context, previewEnvironmentID string) ([]store.PreviewEphemeralDatabase, error)
 	UpdatePreviewEphemeralDatabaseStatus(ctx context.Context, id, status, statusReason, updatedAt string) error
 	DeletePreviewEphemeralDatabase(ctx context.Context, id string) error
+
+	// SavePreviewDatabaseIsolation through DeletePreviewDatabaseIsolation
+	// back the isolatedInPreviews lifecycle
+	// (preview_environments_database_isolation.go): an isolated Postgres
+	// role on an existing database, one per (preview, sourceKey).
+	SavePreviewDatabaseIsolation(ctx context.Context, p store.PreviewDatabaseIsolation) error
+	GetPreviewDatabaseIsolationByPreviewAndKey(ctx context.Context, previewEnvironmentID, sourceKey string) (*store.PreviewDatabaseIsolation, error)
+	ListPreviewDatabaseIsolationsByPreview(ctx context.Context, previewEnvironmentID string) ([]store.PreviewDatabaseIsolation, error)
+	UpdatePreviewDatabaseIsolationStatus(ctx context.Context, id, status, statusReason, updatedAt string) error
+	DeletePreviewDatabaseIsolation(ctx context.Context, id string) error
 }
 
 // previewAppName is the naming scheme every preview deploys under. Every
@@ -161,6 +171,7 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 		if len(gs.Services) == 0 && len(provisioned) == 1 {
 			rt.attachEphemeralDatabase(ctx, previewName, provisioned[0])
 		}
+		rt.provisionDatabaseIsolations(ctx, preview.ID, previewName, gs.Databases)
 	}
 
 	if _, environmentID, envErr := rt.ensurePreviewEnvironmentTier(ctx, appName); envErr != nil {
@@ -174,6 +185,7 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 	if cur, getErr := rt.previewEnvironments.GetPreviewEnvironmentByAppAndPR(ctx, appName, ev.Number); getErr == nil && cur.Status == store.PreviewStatusAwaitingApproval {
 		rt.teardownPreviewApp(ctx, previewName)
 		rt.teardownPreviewEphemeralDatabases(ctx, preview.ID)
+		rt.teardownPreviewDatabaseIsolations(ctx, preview.ID)
 		return http.StatusOK, "ignored: a newer fork push revoked this approval\n"
 	}
 

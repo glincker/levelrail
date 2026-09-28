@@ -45,6 +45,7 @@ func TestModelsRoutes_RequireAuth(t *testing.T) {
 		{http.MethodGet, "/api/v1/models/chat/engine-metrics"},
 		{http.MethodGet, "/api/v1/models/chat/fit"},
 		{http.MethodPut, "/api/v1/models/chat/residency"},
+		{http.MethodPut, "/api/v1/models/chat/swap-group"},
 		{http.MethodPost, "/api/v1/models/chat/wake"},
 		{http.MethodPost, "/api/v1/models/chat/sleep"},
 		{http.MethodPost, "/api/v1/models/fit"},
@@ -71,6 +72,8 @@ func TestModelsRoutes_AbilityGuards(t *testing.T) {
 		{"write token cannot create (needs write:sensitive)", http.MethodPost, "/api/v1/models", `{}`, "rw-secret", http.StatusForbidden},
 		{"write token cannot rotate key", http.MethodPost, "/api/v1/models/x/api-key", "", "rw-secret", http.StatusForbidden},
 		{"write token cannot set hf token", http.MethodPut, "/api/v1/models/x/hf-token", `{}`, "rw-secret", http.StatusForbidden},
+		{"read token cannot set swap group", http.MethodPut, "/api/v1/models/x/swap-group", `{}`, "ro-secret", http.StatusForbidden},
+		{"write token reaches swap group (404, not 403)", http.MethodPut, "/api/v1/models/x/swap-group", `{"swap_group":"gpu0"}`, "rw-secret", http.StatusNotFound},
 		{"read token cannot delete", http.MethodDelete, "/api/v1/models/x", "", "ro-secret", http.StatusForbidden},
 		{"write token reaches delete (404, not 403)", http.MethodDelete, "/api/v1/models/x", "", "rw-secret", http.StatusNotFound},
 	}

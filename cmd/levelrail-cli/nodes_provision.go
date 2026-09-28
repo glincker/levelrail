@@ -13,12 +13,14 @@ import (
 func runNodesProvision(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes provision", "print the new provision as JSON to stdout and nothing else", stderr)
 	var provider, region, size, name, role, controlPlaneAddr string
-	fs.StringVar(&provider, "provider", "", "hetzner or digitalocean (required)")
+	var allowSSHInbound bool
+	fs.StringVar(&provider, "provider", "", "hetzner, digitalocean, aws, azure or gcp (required)")
 	fs.StringVar(&region, "region", "", "provider region/location id, from \"nodes providers list\"'s regions (required)")
 	fs.StringVar(&size, "size", "", "provider server size/plan id (required)")
 	fs.StringVar(&name, "name", "", "name for the new node: lowercase letters, digits, hyphens (required)")
 	fs.StringVar(&role, "role", "general", "general or build")
 	fs.StringVar(&controlPlaneAddr, "control-plane-addr", "", "host:port the new server dials to reach this control plane's agent listener (default: this command's --api-url host, port 9443)")
+	fs.BoolVar(&allowSSHInbound, "allow-ssh-inbound", false, "aws only: open a dedicated security group's TCP 22 to this instance, off by default")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesProvisionUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -48,6 +50,7 @@ func runNodesProvision(prog string, args []string, stdout, stderr io.Writer, loo
 
 	provisioned, err := client.CreateNodeProvision(context.Background(), createNodeProvisionRequest{
 		Provider: provider, Region: region, Size: size, Name: name, Role: role, ControlPlaneAddr: controlPlaneAddr,
+		AllowSSHInbound: allowSSHInbound,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create node provision: %w", err))
@@ -84,22 +87,23 @@ func nodesProvisionUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s nodes provision --provider NAME --region ID --size ID --name NAME [flags]
 
-Creates a server at a cloud provider (Hetzner or DigitalOcean) and starts
-it enrolling as a new node: a fresh join token is minted, the server
-boots with a cloud-init script that installs Docker if missing and runs
-the node agent, and this command returns immediately with a provision id
-to poll.
+Creates a server at a cloud provider (Hetzner, DigitalOcean, AWS, Azure
+or GCP) and starts it enrolling as a new node: a fresh join token is
+minted, the server boots with a cloud-init script that installs Docker
+if missing and runs the node agent, and this command returns immediately
+with a provision id to poll.
 
 A credential must already be stored for the chosen provider ("nodes
 providers set-credential").
 
 Flags:
-  --provider string             hetzner or digitalocean (required)
+  --provider string             hetzner, digitalocean, aws, azure or gcp (required)
   --region string                provider region/location id, from "nodes providers list"'s regions (required)
   --size string                  provider server size/plan id (required)
   --name string                  name for the new node: lowercase letters, digits, hyphens (required)
   --role string                  general or build (default general)
   --control-plane-addr string   host:port the new server dials to reach this control plane's agent listener (default: --api-url's host, port 9443)
+  --allow-ssh-inbound             aws only: open a dedicated security group's TCP 22 to this instance, off by default
   --token string                 API token (default: %[2]s env var, then the credentials file)
   --api-url string              control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string              named credentials profile to read (overrides APP_PROFILE, default "default")

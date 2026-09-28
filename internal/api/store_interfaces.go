@@ -499,6 +499,7 @@ type Store interface {
 	DomainRedirectStore
 	DomainErrorPagesStore
 	GitSourceStore
+	AppScheduleStore
 	PreviewEnvironmentStore
 	GitHubAppStore
 	GitLabAppStore

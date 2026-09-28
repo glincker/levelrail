@@ -22,7 +22,7 @@ import (
 // nodeProviderNames are the providers this control plane knows how to
 // provision against. Adding a provider is a matter of an
 // internal/provision.Provisioner implementation plus a new entry here.
-var nodeProviderNames = []string{"hetzner", "digitalocean", "azure", "gcp"}
+var nodeProviderNames = []string{"hetzner", "digitalocean", "aws", "azure", "gcp"}
 
 // unknownNodeProviderMessage is the shared "which providers exist" text
 // every unknown-provider validation error uses, derived from
@@ -80,12 +80,19 @@ type NodeProvisioner interface {
 // package.
 type NodeProvisionerFactory func(provider, token string) (NodeProvisioner, error)
 
-func defaultNodeProvisionerFactory(provider, token string) (NodeProvisioner, error) {
+// defaultNodeProvisionerFactory is a Router method rather than a
+// standalone function so the aws case can pass brand.Brand.ShortName
+// through: AWS namespaces the security group it creates with it (the
+// product name never appears in source, so it's passed in, not looked
+// up, the convention internal/network.WithShortName establishes).
+func (rt *Router) defaultNodeProvisionerFactory(provider, token string) (NodeProvisioner, error) {
 	switch provider {
 	case "hetzner":
 		return provision.NewHetzner(token), nil
 	case "digitalocean":
 		return provision.NewDigitalOcean(token), nil
+	case "aws":
+		return provision.NewAWSFromToken(token, rt.brand.ShortName)
 	case "azure":
 		return provision.NewAzure(token)
 	case "gcp":
@@ -169,13 +176,27 @@ func (rt *Router) handleListNodeProviders(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusOK, out)
 }
 
+// setNodeProviderCredentialRequest is POST /api/v1/node-providers' body.
+// For hetzner/digitalocean, Token is that provider's single bearer API
+// token and every field below it is unused. AWS has no single token, so
+// Token there means AccessKeyID and the fields below fill out
+// provision.AWSCredentials, which handleSetNodeProviderCredential
+// JSON-encodes into the very same Token storage slot
+// (store.NodeProviderTokenEnvKey): one credential path, not a second
+// one, per provider.
 type setNodeProviderCredentialRequest struct {
 	Provider string `json:"provider"`
 	Token    string `json:"token"`
+	// The remaining fields are aws-only.
+	SecretAccessKey       string `json:"secret_access_key,omitempty"`
+	SessionToken          string `json:"session_token,omitempty"`
+	Region                string `json:"region,omitempty"`
+	RoleARN               string `json:"role_arn,omitempty"`
+	UseAmbientCredentials bool   `json:"use_ambient_credentials,omitempty"`
 }
 
 // handleSetNodeProviderCredential handles POST /api/v1/node-providers:
-// stores (or replaces) one provider's API token. Returns 501 without
+// stores (or replaces) one provider's credential. Returns 501 without
 // nodeProviderSecrets configured (no master key).
 func (rt *Router) handleSetNodeProviderCredential(w http.ResponseWriter, r *http.Request) {
 	if rt.nodeProviderSecrets == nil {
@@ -191,17 +212,44 @@ func (rt *Router) handleSetNodeProviderCredential(w http.ResponseWriter, r *http
 		writeError(w, http.StatusBadRequest, unknownNodeProviderMessage())
 		return
 	}
-	if req.Token == "" {
-		writeError(w, http.StatusBadRequest, "token is required")
+	value, msg := nodeProviderCredentialValue(req)
+	if msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
-	if err := rt.nodeProviderSecrets.SetValue(r.Context(), store.NodeProviderSecretsKey(req.Provider), store.NodeProviderTokenEnvKey, req.Token); err != nil {
+	if err := rt.nodeProviderSecrets.SetValue(r.Context(), store.NodeProviderSecretsKey(req.Provider), store.NodeProviderTokenEnvKey, value); err != nil {
 		rt.logger.Error("api: save node provider token failed", slog.String("provider", req.Provider), slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 	rt.nodeProviderCatalog.invalidate(req.Provider)
 	writeJSON(w, http.StatusOK, nodeProviderResource{Provider: req.Provider, HasToken: true})
+}
+
+// nodeProviderCredentialValue validates req and returns the string
+// stored under store.NodeProviderTokenEnvKey for req.Provider: the raw
+// token for hetzner/digitalocean, or a JSON-encoded
+// provision.AWSCredentials for aws. msg is non-empty (and value unused)
+// when req fails validation.
+func nodeProviderCredentialValue(req setNodeProviderCredentialRequest) (value, msg string) {
+	if req.Provider != "aws" {
+		if req.Token == "" {
+			return "", "token is required"
+		}
+		return req.Token, ""
+	}
+	creds := provision.AWSCredentials{
+		AccessKeyID: req.Token, SecretAccessKey: req.SecretAccessKey, SessionToken: req.SessionToken,
+		Region: req.Region, RoleARN: req.RoleARN, UseAmbientCredentials: req.UseAmbientCredentials,
+	}
+	if !creds.UseAmbientCredentials && (creds.AccessKeyID == "" || creds.SecretAccessKey == "") {
+		return "", "an access key id (token) and secret_access_key are required, or set use_ambient_credentials"
+	}
+	encoded, err := json.Marshal(creds) //nolint:gosec // the encoded json is the value passed to nodeProviderSecrets.SetValue below, which encrypts it at rest; it is never logged
+	if err != nil {
+		return "", "internal error"
+	}
+	return string(encoded), ""
 }
 
 func isKnownNodeProvider(p string) bool {
@@ -347,7 +395,7 @@ func (rt *Router) resolveNodeProvisioner(ctx context.Context, providerName strin
 	}
 	factory := rt.nodeProvisionerFactory
 	if factory == nil {
-		factory = defaultNodeProvisionerFactory
+		factory = rt.defaultNodeProvisionerFactory
 	}
 	provisioner, err := factory(providerName, token)
 	if err != nil {
@@ -394,6 +442,9 @@ type createNodeProvisionRequest struct {
 	// manual join-token flow asks the operator for it rather than
 	// guessing server-side.
 	ControlPlaneAddr string `json:"control_plane_addr"`
+	// AllowSSHInbound is aws-only (provision.CreateOpts.AllowSSHInbound):
+	// other providers ignore it. Off by default.
+	AllowSSHInbound bool `json:"allow_ssh_inbound,omitempty"`
 }
 
 // handleCreateNodeProvision handles POST /api/v1/nodes/provision: mints
@@ -486,6 +537,7 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 
 	serverID, ipAddr, err := provisioner.CreateServer(r.Context(), provision.CreateOpts{
 		Region: req.Region, Size: req.Size, Name: req.Name, UserData: userData,
+		AllowSSHInbound: req.AllowSSHInbound,
 	})
 	if err != nil {
 		rt.logger.Error("api: node provision: create server failed", slog.String("provision_id", id), slog.String("error", err.Error()))

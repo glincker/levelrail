@@ -53,6 +53,12 @@ type Model struct {
 	IdleTTLSeconds int
 	LastActiveAt   time.Time
 	ResidencyState string
+
+	// SwapGroup is empty (no group) or a name shared by other models on
+	// the same node/GPU: at most one model in a non-empty group may be
+	// resident at once, waking one stops the group's current resident
+	// sibling first.
+	SwapGroup string
 }
 
 // Model residency modes and reconciler-observed states.
@@ -65,7 +71,7 @@ const (
 	ResidencyWaking = "waking"
 )
 
-const modelColumns = `name, engine, model_ref, node_id, gpu_count, gpu_device_ids, context_length, quantization, domain, api_key_hash, api_key_prefix, hf_token_set, endpoint_dial, restart_nonce, deleting, created_at, updated_at, residency, idle_ttl_seconds, last_active_at, residency_state`
+const modelColumns = `name, engine, model_ref, node_id, gpu_count, gpu_device_ids, context_length, quantization, domain, api_key_hash, api_key_prefix, hf_token_set, endpoint_dial, restart_nonce, deleting, created_at, updated_at, residency, idle_ttl_seconds, last_active_at, residency_state, swap_group`
 
 // SaveModel inserts a new model row and its default API key.
 func (db *DB) SaveModel(ctx context.Context, m Model) error {
@@ -81,10 +87,10 @@ func (db *DB) SaveModel(ctx context.Context, m Model) error {
 	now := time.Now().UTC()
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO models (`+modelColumns+`)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', 0, 0, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', 0, 0, ?, ?, ?, ?, ?, ?, ?)
 	`, m.Name, m.Engine, m.ModelRef, m.NodeID, m.GPUCount, string(ids), m.ContextLength, m.Quantization,
 		m.Domain, m.APIKeyHash, m.APIKeyPrefix, boolToInt(m.HFTokenSet), formatTime(now), formatTime(now),
-		residencyOrDefault(m.Residency), m.IdleTTLSeconds, formatOptTime(m.LastActiveAt), ResidencyAwake)
+		residencyOrDefault(m.Residency), m.IdleTTLSeconds, formatOptTime(m.LastActiveAt), ResidencyAwake, m.SwapGroup)
 	if err != nil {
 		_ = tx.Rollback() // the pool has one connection, so release it before the lookup
 		if _, getErr := db.GetModel(ctx, m.Name); getErr == nil {
@@ -122,7 +128,7 @@ func scanModel(scan func(dest ...any) error) (*Model, error) {
 	)
 	if err := scan(&m.Name, &m.Engine, &m.ModelRef, &m.NodeID, &m.GPUCount, &ids, &m.ContextLength, &m.Quantization,
 		&m.Domain, &m.APIKeyHash, &m.APIKeyPrefix, &hfSet, &m.EndpointDial, &m.RestartNonce, &deleting, &createdAt, &updatedAt,
-		&m.Residency, &m.IdleTTLSeconds, &lastActive, &m.ResidencyState); err != nil {
+		&m.Residency, &m.IdleTTLSeconds, &lastActive, &m.ResidencyState, &m.SwapGroup); err != nil {
 		return nil, err
 	}
 	if lastActive != "" {
@@ -333,4 +339,35 @@ func (db *DB) SetModelResidencyState(ctx context.Context, name, state string) er
 		return ErrModelNotFound
 	}
 	return nil
+}
+
+// SetModelSwapGroup sets the swap group name; empty clears it.
+func (db *DB) SetModelSwapGroup(ctx context.Context, name, group string) error {
+	return db.execModelUpdate(ctx, name, "set swap group of", `UPDATE models SET swap_group = ?, updated_at = ? WHERE name = ?`, group)
+}
+
+// ListModelsInSwapGroup returns every model sharing group, ordered by
+// name. group must not be empty: the empty group means "no group" and
+// is never looked up as a set.
+func (db *DB) ListModelsInSwapGroup(ctx context.Context, group string) ([]Model, error) {
+	if group == "" {
+		return nil, nil
+	}
+	rows, err := db.QueryContext(ctx, `SELECT `+modelColumns+` FROM models WHERE swap_group = ? ORDER BY name`, group)
+	if err != nil {
+		return nil, fmt.Errorf("store: list models in swap group %q: %w", group, err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []Model
+	for rows.Next() {
+		m, err := scanModel(rows.Scan)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan model row: %w", err)
+		}
+		out = append(out, *m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate model rows: %w", err)
+	}
+	return out, nil
 }
