@@ -13,6 +13,7 @@ func preserveUnsentAppFields(desired *store.DesiredService, existing store.Desir
 	desired.Entrypoint = existing.Entrypoint
 	desired.PullPolicy = existing.PullPolicy
 	desired.RegistryCredentialID = existing.RegistryCredentialID
+	desired.DependsOn = existing.DependsOn
 	if !imageChanged {
 		desired.ImageID, desired.ImageIDRef = existing.ImageID, existing.ImageIDRef
 	}

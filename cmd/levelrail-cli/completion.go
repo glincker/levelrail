@@ -34,6 +34,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"deploy":                  nil,
 		"wait":                    nil,
 		"deploy-compose":          nil,
+		"validate":                nil,
 		"deploy-spec":             nil,
 		"group":                   nil,
 		"hook-runs":               nil,

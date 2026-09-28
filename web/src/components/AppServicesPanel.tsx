@@ -27,6 +27,9 @@ import {
 // through the route's errorComponent (routes/apps/$name.tsx), not locally.
 export function AppServicesPanel({ appName }: { appName: string }) {
   const { data: group } = useAppGroup(appName)
+  const hasDependsOn = group.services.some(
+    (svc) => svc.depends_on && svc.depends_on.length > 0,
+  )
 
   return (
     <Card>
@@ -58,6 +61,7 @@ export function AppServicesPanel({ appName }: { appName: string }) {
               <TableHead>Image</TableHead>
               <TableHead>Port</TableHead>
               <TableHead>Domains</TableHead>
+              {hasDependsOn ? <TableHead>Depends on</TableHead> : null}
               <TableHead className="w-8" />
             </TableRow>
           </TableHeader>
@@ -102,6 +106,17 @@ export function AppServicesPanel({ appName }: { appName: string }) {
                     </span>
                   )}
                 </TableCell>
+                {hasDependsOn ? (
+                  <TableCell className="text-xs text-muted-foreground">
+                    {svc.depends_on && svc.depends_on.length > 0 ? (
+                      svc.depends_on.join(', ')
+                    ) : (
+                      <span className="italic text-muted-foreground/60">
+                        none
+                      </span>
+                    )}
+                  </TableCell>
+                ) : null}
                 <TableCell>
                   <Link to="/apps/$name/overview" params={{ name: svc.name }}>
                     <CaretRightIcon

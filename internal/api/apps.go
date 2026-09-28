@@ -231,6 +231,11 @@ type appResource struct {
 	// Response-only, same reason Command above is: set through a compose
 	// import's pull_policy:, never through this endpoint.
 	PullPolicy string `json:"pull_policy,omitempty"`
+	// DependsOn names sibling service keys (store.DesiredService.
+	// DependsOn) this service waits on before the reconciler starts its
+	// own containers, set through app.yaml's dependsOn: or a compose
+	// file's depends_on:, response-only here, same reason Command is.
+	DependsOn []string `json:"depends_on,omitempty"`
 	// Tags names every store.Tag (internal/store/tags.go) attached to
 	// this app, response-only like NodeID/ProjectID above: toAppResource
 	// never sets this (tags live in their own join table, not
@@ -306,6 +311,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		BindMounts:          toAppBindMountResources(svc),
 		Command:             svc.Command,
 		PullPolicy:          svc.PullPolicy,
+		DependsOn:           svc.DependsOn,
 	}
 }
 
