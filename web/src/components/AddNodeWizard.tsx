@@ -51,6 +51,17 @@ const PROVIDER_LABELS: Record<ProviderId, string> = {
   gcp: 'Google Cloud',
 }
 
+// Suggests a node name from the provider and region already picked by
+// this point in the wizard, e.g. "hetzner-fsn1". Always starts with the
+// provider id (a fixed lowercase word), so the result always satisfies
+// the name field's own ^[a-z][a-z0-9-]*$ pattern below.
+function nodeNameFrom(provider: ProviderId, region: string): string {
+  return `${provider}-${region}`
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 // A wizard, not a single dialog, for this one flow only: creating a real
 // cloud VM genuinely has sequential steps (provider, region, size, name,
 // confirm, live progress) that a single screen can't collapse the way
@@ -209,7 +220,12 @@ function WizardBody({ onClose }: { onClose: () => void }) {
       <StepShell
         title="Choose a size"
         onBack={() => setStep('region')}
-        onContinue={() => setStep('details')}
+        onContinue={() => {
+          if (!name && provider) {
+            setName(nodeNameFrom(provider, region))
+          }
+          setStep('details')
+        }}
         continueDisabled={!size}
       >
         {sizes.isLoading ? (
