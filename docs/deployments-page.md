@@ -6,6 +6,8 @@ description: The cross-app Deployments page shows every deploy in one live list,
 
 The Deployments page (`/deployments`) lists every deploy across every app you can read, newest first. It updates live, so a deploy that starts or finishes appears without a refresh.
 
+![Levelrail deploy history view with one-click rollback](assets/screenshots/deploy-history.png)
+
 ## What it shows
 
 - **Summary strip**: deploys in progress, failure rate over 24 hours, median duration, deploys that need attention (held, or running a different image than expected), and a 14 day sparkline.

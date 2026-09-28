@@ -105,6 +105,8 @@ The connection also carries an HTTP/2 PING keepalive in both directions (`APP_NO
 
 ### Checking node health
 
+![Levelrail nodes list showing node health and placement](assets/screenshots/nodes.png)
+
 ```bash
 levelrail-cli nodes health <id>
 ```

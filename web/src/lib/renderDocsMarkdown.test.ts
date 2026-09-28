@@ -109,6 +109,27 @@ describe('renderDocsMarkdown', () => {
     expect(html).toContain('func main()')
   })
 
+  it('rewrites a doc-relative image src to /docs-assets/, stripping the assets/ segment', () => {
+    const html = renderDocsMarkdown(
+      '![Deploy history](assets/screenshots/deploy-history.png)',
+      'deployments-page.md',
+      manifest,
+      '',
+    )
+    expect(html).toContain('src="/docs-assets/screenshots/deploy-history.png"')
+    expect(html).toContain('alt="Deploy history"')
+  })
+
+  it('leaves an absolute image URL unchanged', () => {
+    const html = renderDocsMarkdown(
+      '![External](https://example.com/x.png)',
+      'x.md',
+      manifest,
+      '',
+    )
+    expect(html).toContain('src="https://example.com/x.png"')
+  })
+
   it('renders an unresolved internal link as plain text, not a dead link', () => {
     const html = renderDocsMarkdown(
       '[ADR 5](../adr/005-caddy-embedded-ingress.md)',

@@ -9,14 +9,14 @@ export interface ResolvedDocLink {
   linkable: boolean
 }
 
-function isAbsoluteUrl(target: string): boolean {
+export function isAbsoluteUrl(target: string): boolean {
   return /^([a-z][a-z0-9+.-]*:|\/\/)/i.test(target)
 }
 
 // Resolves a relative markdown segment ("../adr/x.md", "./y.md", "z.md")
 // against the directory of the doc that contains the link, collapsing
 // "." and ".." the same way a filesystem path join would.
-function resolveRelative(currentFile: string, target: string): string {
+export function resolveRelative(currentFile: string, target: string): string {
   const currentDir = currentFile.includes('/')
     ? currentFile.slice(0, currentFile.lastIndexOf('/'))
     : ''
@@ -80,4 +80,28 @@ export function resolveDocLink(
     }
   }
   return { href: '', external: false, linkable: false }
+}
+
+// The doc-relative image source an ![]() markdown source writes (so it
+// also renders on GitHub) is not servable as-is by the SPA: the DOCS_ASSETS
+// vite plugin serves the repo's docs/assets/ tree at this URL prefix
+// instead, both in dev and in the built app.
+const DOCS_ASSET_URL_PREFIX = '/docs-assets/'
+
+// Resolves an ![]() markdown image's raw src to something the app can
+// actually serve. Absolute URLs pass through unchanged; a relative path
+// is resolved against the containing doc's directory, exactly like
+// resolveDocLink does for links, then rewritten to DOCS_ASSET_URL_PREFIX.
+// Only docs/assets/ is served this way (not all of docs/, which is
+// already bundled separately via the manifest), so a resolved path's
+// leading "assets/" segment is stripped rather than kept.
+export function resolveDocImageSrc(src: string, currentFile: string): string {
+  if (isAbsoluteUrl(src) || src.startsWith(DOCS_ASSET_URL_PREFIX)) {
+    return src
+  }
+  const resolved = resolveRelative(currentFile, src)
+  const underAssets = resolved.startsWith('assets/')
+    ? resolved.slice('assets/'.length)
+    : resolved
+  return `${DOCS_ASSET_URL_PREFIX}${underAssets}`
 }

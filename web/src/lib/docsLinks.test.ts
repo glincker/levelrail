@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveDocLink } from './docsLinks'
+import { resolveDocLink, resolveDocImageSrc } from './docsLinks'
 import type { DocsManifest } from '../types/docs'
 
 const manifest: DocsManifest = {
@@ -136,5 +136,34 @@ describe('resolveDocLink', () => {
       external: false,
       linkable: true,
     })
+  })
+})
+
+describe('resolveDocImageSrc', () => {
+  it('resolves a doc-root-relative assets/ path for a top-level doc', () => {
+    expect(
+      resolveDocImageSrc(
+        'assets/screenshots/deploy-history.png',
+        'deployments-page.md',
+      ),
+    ).toBe('/docs-assets/screenshots/deploy-history.png')
+  })
+
+  it('resolves a relative assets/ path for a doc in a subdirectory', () => {
+    expect(
+      resolveDocImageSrc('../assets/diagram.png', 'design/proposal.md'),
+    ).toBe('/docs-assets/diagram.png')
+  })
+
+  it('leaves an absolute URL unchanged', () => {
+    expect(resolveDocImageSrc('https://example.com/x.png', 'x.md')).toBe(
+      'https://example.com/x.png',
+    )
+  })
+
+  it('leaves an already-resolved /docs-assets/ path unchanged', () => {
+    expect(
+      resolveDocImageSrc('/docs-assets/screenshots/nodes.png', 'x.md'),
+    ).toBe('/docs-assets/screenshots/nodes.png')
   })
 })

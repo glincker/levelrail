@@ -1,7 +1,7 @@
 import { Marked } from 'marked'
 import type { Tokens } from 'marked'
 import { stripFrontmatter } from './frontmatter'
-import { resolveDocLink } from './docsLinks'
+import { resolveDocLink, resolveDocImageSrc } from './docsLinks'
 import { uniqueSlug } from './slugify'
 import { escapeHtml, vitepressContainerExtension } from './vitepressContainers'
 import type { DocsManifest } from '../types/docs'
@@ -52,6 +52,12 @@ md.use({
           ? ''
           : ' data-internal-doc="true"'
       return `<a href="${resolved.href}"${attrs} class="text-primary underline underline-offset-2 hover:no-underline">${inner}</a>`
+    },
+    image(token: Tokens.Image) {
+      const src = resolveDocImageSrc(token.href, state.currentFile)
+      const alt = escapeHtml(token.text)
+      const title = token.title ? ` title="${escapeHtml(token.title)}"` : ''
+      return `<img src="${src}" alt="${alt}"${title} class="my-4 rounded-lg border border-border" />`
     },
     code(token: Tokens.Code) {
       if (token.lang !== 'mermaid') return false
