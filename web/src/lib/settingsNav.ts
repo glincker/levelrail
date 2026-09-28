@@ -178,6 +178,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         description: 'Pull private images with build.type: image.',
       },
       {
+        to: '/settings/node-providers',
+        icon: HardDrivesIcon,
+        title: 'Cloud node providers',
+        description:
+          'Hetzner and DigitalOcean tokens for automatic node provisioning.',
+      },
+      {
         to: '/settings/import-platform',
         icon: DownloadSimpleIcon,
         title: 'Import from another platform',

@@ -47,6 +47,7 @@ const sidebarGroups = [
       { text: 'Observability', link: '/observability' },
       { text: 'Public status page', link: '/status-page' },
       { text: 'Multi-node', link: '/multi-node' },
+      { text: 'Node provisioning', link: '/node-provisioning' },
       { text: 'AI models', link: '/ai-models' },
       {
         text: 'Projects and organizations',

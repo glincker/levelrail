@@ -554,17 +554,34 @@ type createNodeJoinTokenResponse struct {
 // mints a one-time token an agent redeems at enrollment, returned with
 // the agent CA fingerprint the agent should pin.
 func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Request) {
-	plaintext, err := randomToken()
+	rec, err := rt.mintNodeJoinToken(r.Context())
 	if err != nil {
-		rt.logger.Error("api: create node join token: generate token failed", slog.String("error", err.Error()))
+		rt.logger.Error("api: create node join token failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	writeJSON(w, http.StatusCreated, createNodeJoinTokenResponse{Token: rec.plaintext, ExpiresAt: rec.expiresAt, CAFingerprint: rt.agentCAFingerprint})
+}
+
+// mintedJoinToken is mintNodeJoinToken's result: the plaintext token
+// (never recoverable again once this call returns) plus the expiry
+// every caller needs to surface.
+type mintedJoinToken struct {
+	plaintext string
+	expiresAt time.Time
+}
+
+// mintNodeJoinToken is handleCreateNodeJoinToken's own logic, factored
+// out so node_provision.go's handleCreateNodeProvision calls the exact
+// same minting path instead of a second implementation of it.
+func (rt *Router) mintNodeJoinToken(ctx context.Context) (mintedJoinToken, error) {
+	plaintext, err := randomToken()
+	if err != nil {
+		return mintedJoinToken{}, fmt.Errorf("generate token: %w", err)
+	}
 	id, err := randomNodeJoinTokenID()
 	if err != nil {
-		rt.logger.Error("api: create node join token: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
+		return mintedJoinToken{}, fmt.Errorf("generate id: %w", err)
 	}
 
 	now := time.Now()
@@ -574,13 +591,10 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 		CreatedAt: now,
 		ExpiresAt: now.Add(nodeJoinTokenTTL),
 	}
-	if err := rt.nodes.SaveNodeJoinToken(r.Context(), rec); err != nil {
-		rt.logger.Error("api: create node join token: save failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
+	if err := rt.nodes.SaveNodeJoinToken(ctx, rec); err != nil {
+		return mintedJoinToken{}, fmt.Errorf("save: %w", err)
 	}
-
-	writeJSON(w, http.StatusCreated, createNodeJoinTokenResponse{Token: plaintext, ExpiresAt: rec.ExpiresAt, CAFingerprint: rt.agentCAFingerprint})
+	return mintedJoinToken{plaintext: plaintext, expiresAt: rec.ExpiresAt}, nil
 }
 
 // randomNodeJoinTokenID generates a short, URL-safe, non-secret
