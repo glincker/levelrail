@@ -24,6 +24,8 @@ type cmdNode struct {
 // fails if this tree and the real switches disagree, so drift is caught
 // at test time rather than silently shipped.
 var cliCommandTree = map[string]*cmdNode{
+	"deploy":   nil,
+	"rollback": nil,
 	"apps": {subs: map[string]*cmdNode{
 		"freeze":                  {subs: map[string]*cmdNode{"set": nil, "show": nil, "clear": nil}},
 		"sbom":                    nil,

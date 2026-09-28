@@ -38,6 +38,18 @@ Exit codes are stable and shared by every command:
 
 Codes 3 and 4 are broad on purpose so existing scripts keep working; the JSON error object carries the finer distinction.
 
+## Top-level convenience aliases
+
+```
+levelrail deploy <name> --image IMAGE [flags]
+```
+Alias for `apps deploy`; deploy an image to an existing app.
+
+```
+levelrail rollback <name> --image IMAGE [flags]
+```
+Alias for `apps rollback`; redeploy an older image.
+
 ## Apps
 
 ```
