@@ -222,8 +222,16 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	canSee, err := rt.appVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: list domains: visibility", err)
+		return
+	}
 	out := make([]domainResource, 0, len(domains))
 	for _, d := range domains {
+		if !canSee(d.ServiceName) {
+			continue
+		}
 		out = append(out, domainResource{Domain: d.Domain, ServiceName: d.ServiceName})
 	}
 	writeJSON(w, http.StatusOK, out)

@@ -6,10 +6,12 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -27,6 +29,10 @@ func applicationControllerName(appName string) string {
 type deployTriggerRequest struct {
 	Image   string `json:"image"`
 	Confirm bool   `json:"confirm,omitempty"`
+	// Pull re-resolves the tag against the registry and fails rather than
+	// deploying a cached image when the registry is unreachable.
+	Pull bool `json:"pull,omitempty"`
+	freezeOverride
 }
 
 // deployTriggerResult is POST .../deploys and POST .../promote's shared
@@ -83,12 +89,28 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.applyDeploy(w, r, *existing, req, "")
+}
+
+// applyDeploy runs a deploy request through the freeze gate and the
+// protected-environment gate, then applies it. rollbackTo, when set, marks
+// the attempt as a rollback to that deploy.
+func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing store.DesiredService, req deployTriggerRequest, rollbackTo string) {
+	name := existing.Name
+	note, ok := rt.freezeGate(w, r, name, req.freezeOverride)
+	if !ok {
+		return
+	}
+	if rollbackTo != "" {
+		note = strings.TrimSpace(note + " RollbackTo: " + rollbackTo)
+	}
+
 	env, protected, ok := rt.checkEnvironmentProtection(r.Context(), w, existing.EnvironmentID, req.Confirm)
 	if !ok {
 		return
 	}
 	if protected {
-		approval, ok := rt.requestDeployApproval(w, r, env, existing.Name, "", store.DeployApprovalActionDeploy, req.Image)
+		approval, ok := rt.requestDeployApproval(w, r, env, existing.Name, "", store.DeployApprovalActionDeploy, req.Image, deployApprovalOptions{freezeOverride: note, pull: req.Pull})
 		if !ok {
 			return
 		}
@@ -96,9 +118,13 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := rt.executeConfirmedDeploy(r.Context(), *existing, req.Image)
+	updated, err := rt.executeConfirmedDeploy(r.Context(), existing, req.Image, confirmedDeployOptions{pull: req.Pull, reason: note})
 	if err != nil {
 		rt.logger.Error("api: trigger deploy failed", slog.String("error", err.Error()), slog.String("name", name))
+		if req.Pull {
+			writeError(w, http.StatusBadGateway, "could not resolve the image from its registry; retry without pull to use the cached image")
+			return
+		}
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -115,14 +141,21 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 // auto-rollback (MaybeAutoRollback) also drives, so a manual deploy, an
 // approved one, and an automatic rollback all converge through identical
 // code, never three divergent ones.
-func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.DesiredService, image string) (store.DesiredService, error) {
-	updated, err := deploy.TriggerImageDeploy(ctx, deployTriggerImageStore{rt}, rt.reconcileNudger, existing, image, store.DeployAttemptSourceImage, rt.logger)
+// confirmedDeployOptions carries a manual deploy's pull and freeze
+// override choices into executeConfirmedDeploy.
+type confirmedDeployOptions struct {
+	pull   bool
+	reason string
+}
+
+func (rt *Router) executeConfirmedDeploy(ctx context.Context, existing store.DesiredService, image string, opts confirmedDeployOptions) (store.DesiredService, error) {
+	updated, err := rt.imageTrigger(ctx, existing, opts.pull, opts.reason).Deploy(ctx, existing, image)
 	if err != nil {
 		return store.DesiredService{}, err
 	}
 	if rt.deployNotifier != nil {
 		rt.deployNotifier.Dispatch(ctx, resourceIDForApp(existing.Name), alerting.DeployOutcome{
-			AppName: existing.Name, Image: image, Succeeded: true,
+			AppName: existing.Name, Image: updated.Image, Succeeded: true,
 		})
 	}
 	return updated, nil
@@ -244,18 +277,27 @@ func (rt *Router) recordPlainDeployAttempt(ctx context.Context, svc store.Desire
 // succeeded, so a history-tracking hiccup must never turn an otherwise-
 // successful deploy trigger into a client-visible failure.
 func (rt *Router) recordInstantDeployAttempt(ctx context.Context, svc store.DesiredService, image, source string) {
+	rt.recordResolvedDeployAttempt(ctx, svc, image, source, deploy.ImageResolution{})
+}
+
+// recordResolvedDeployAttempt is recordInstantDeployAttempt carrying the
+// image resolution: the digest, how it was obtained and, for a local-only
+// image, a short reason so history never shows an unexplained blank.
+func (rt *Router) recordResolvedDeployAttempt(ctx context.Context, svc store.DesiredService, image, source string, res deploy.ImageResolution) {
 	serviceName := svc.Name
 	id, err := store.NewDeployAttemptID()
 	if err != nil {
 		rt.logger.Error("api: record deploy attempt: mint id failed", slog.String("error", err.Error()), slog.String("name", serviceName))
 		return
 	}
+	digestReason, reason := describeResolution(res)
 	now := time.Now()
 	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
 		ID: id, ServiceName: serviceName, Image: image,
 		Source: source,
 		Status: store.DeployAttemptStatusRunning, StartedAt: now,
-		Snapshot: store.NewDeployAttemptSnapshot(svc),
+		Snapshot:    store.NewDeployAttemptSnapshot(svc),
+		ImageDigest: res.Digest, DigestReason: digestReason, Reason: reason,
 	}); err != nil {
 		rt.logger.Error("api: record deploy attempt: save failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return
@@ -269,6 +311,20 @@ func (rt *Router) recordInstantDeployAttempt(ctx context.Context, svc store.Desi
 			AppName: serviceName, Image: image, Succeeded: true,
 		})
 	}
+}
+
+// describeResolution maps an image resolution to the digest reason and the
+// short attempt reason to record. A local-only image (no registry digest)
+// is reported as LocalImage instead of a blank.
+func describeResolution(res deploy.ImageResolution) (digestReason, reason string) {
+	digestReason = res.Reason
+	switch {
+	case res.LocalID != "" && docker.ImageDigestOf(res.Image) == "" && res.Reason != store.DigestReasonLocalBuild:
+		return store.DigestReasonLocalImage, "LocalImage: no registry digest, running the local image"
+	case res.Reason == store.DigestReasonUnresolved:
+		return digestReason, "Unresolved: image not found in a registry or locally"
+	}
+	return digestReason, ""
 }
 
 // handleDeployHistory handles GET /api/v1/apps/{name}/deploys. It

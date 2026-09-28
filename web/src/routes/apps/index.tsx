@@ -1,35 +1,54 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useVirtualizer } from '@tanstack/react-virtual'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
-  PackageIcon,
   DatabaseIcon,
+  DownloadSimpleIcon,
   GitBranchIcon,
+  FunnelIcon,
+  PackageIcon,
   PlusIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { EmptyState } from '@/components/kit'
 import { appListQueryOptions } from '../../queries/apps'
 import { staticSitesQueryOptions } from '../../queries/staticSites'
-import { APP_LIST_GRID, AppRow, RowSkeleton } from '../../components/AppRow'
+import { RowSkeleton } from '../../components/AppRow'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { StaticSitesCard } from '../../components/StaticSitesCard'
-import { TagFilter } from '../../components/TagFilter'
+import { AppsBulkBar } from '../../components/AppsBulkBar'
+import { AppsFilterBar } from '../../components/AppsFilterBar'
+import {
+  AppsStatusChips,
+  ViewToggle,
+} from '../../components/apps/AppsStatusChips'
+import { AppsListBody, ListHeader } from '../../components/apps/AppsListBody'
+import {
+  EMPTY_FILTERS,
+  filtersActive,
+  type AppListFilters,
+} from '../../lib/appViews'
+import {
+  countBuckets,
+  filterApps,
+  loadViewMode,
+  parseStatusSearch,
+  storeViewMode,
+  type StatusFilter,
+  type ViewMode,
+} from '../../lib/appsListView'
 import { Button } from '../../components/ui/button'
-import { EmptyState } from '../../components/ui/empty-state'
 
-// Typed loader primes the Query cache, the component only reads that
-// cache via useSuspenseQuery against the same key (no data fetching in
-// the component body is a project-wide rule). The list is virtualized
-// unconditionally (every list that can exceed 50 items must be, per the
-// same rule) rather than branching on row count, even though GET
-// /api/v1/apps returns everything in one response with no server-side
-// pagination to page through.
-//
-// pendingComponent is purely a rendering fallback for the loader's own
-// pending phase (router-level, shown only past TanStack Router's default
-// pendingMs), it does not add or change a data fetch: the loader above
-// is still the one and only ensureQueryData call.
+// The loader primes the Query cache; the component only reads it. The
+// list is virtualized unconditionally (project rule for lists that can
+// exceed 50 items). `status` in the URL lets the command palette and
+// dashboard deep-link into a filtered list.
 export const Route = createFileRoute('/apps/')({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { status?: StatusFilter } => {
+    const status = parseStatusSearch(search.status)
+    return status ? { status } : {}
+  },
   loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(appListQueryOptions()),
@@ -39,69 +58,79 @@ export const Route = createFileRoute('/apps/')({
   pendingComponent: AppListPending,
 })
 
-// Column labels for the sticky header, matching AppRow's APP_LIST_GRID
-// exactly (icon column and trailing chevron column stay blank) so the
-// header never drifts out of alignment with row content.
-function ListHeader() {
-  return (
-    <div
-      className={`${APP_LIST_GRID} sticky top-0 z-10 border-b border-border bg-card px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
-    >
-      <span aria-hidden="true" />
-      <span>Name</span>
-      <span>Image</span>
-      <span>Domain</span>
-      <span>Port</span>
-      <span aria-hidden="true" />
-    </div>
-  )
-}
-
 function AppListPage() {
-  const { data: apps } = useSuspenseQuery(appListQueryOptions())
-  const parentRef = useRef<HTMLDivElement>(null)
-  const [tagFilter, setTagFilter] = useState<string[]>([])
+  const { data: apps } = useSuspenseQuery({
+    ...appListQueryOptions(),
+    refetchInterval: 15_000,
+  })
+  const status = Route.useSearch().status ?? null
+  const navigate = useNavigate({ from: Route.fullPath })
+  const [filters, setFilters] = useState<AppListFilters>(EMPTY_FILTERS)
+  const [selected, setSelected] = useState<string[]>([])
+  const [mode, setMode] = useState<ViewMode>(loadViewMode)
 
-  // Client-side only, the same reasoning TagFilter's own doc comment
-  // gives: GET /api/v1/apps already returns everything in one response,
-  // so filtering the array already in memory needs no new request. OR
-  // semantics: an app matching any selected tag passes.
-  const filteredApps = useMemo(
+  const environments = useMemo(
     () =>
-      tagFilter.length === 0
-        ? apps
-        : apps.filter((app) =>
-            (app.tags ?? []).some((tag) => tagFilter.includes(tag)),
+      [
+        ...new Set(
+          apps.flatMap((app) =>
+            app.environment_name ? [app.environment_name] : [],
           ),
-    [apps, tagFilter],
+        ),
+      ].sort(),
+    [apps],
+  )
+  const counts = useMemo(() => countBuckets(apps), [apps])
+  const filteredApps = useMemo(
+    () => filterApps(apps, filters, status),
+    [apps, filters, status],
   )
 
-  const virtualizer = useVirtualizer({
-    count: filteredApps.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 60,
-    overscan: 8,
-  })
+  const setStatus = (next: StatusFilter) => {
+    void navigate({ search: next ? { status: next } : {}, replace: true })
+  }
+  const changeMode = (next: ViewMode) => {
+    storeViewMode(next)
+    setMode(next)
+  }
+  const toggleSelected = (name: string, checked: boolean) => {
+    setSelected((prev) =>
+      checked ? [...new Set([...prev, name])] : prev.filter((n) => n !== name),
+    )
+  }
+  const allVisibleSelected =
+    filteredApps.length > 0 &&
+    filteredApps.every((app) => selected.includes(app.name))
+  const narrowed = filtersActive(filters) || status !== null
 
   return (
     <div>
-      <div className="mb-4 flex items-baseline justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-semibold text-foreground">Apps</h1>
-        <div className="flex items-baseline gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {apps.length > 0 ? (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-muted-foreground tabular-nums">
               {filteredApps.length}
-              {tagFilter.length > 0 ? ` of ${apps.length}` : ''}{' '}
+              {narrowed ? ` of ${apps.length}` : ''}{' '}
               {apps.length === 1 ? 'app' : 'apps'}
             </span>
           ) : null}
-          <TagFilter selected={tagFilter} onChange={setTagFilter} />
-          {/* Secondary entry point for the databases resource kind,
-              lower-emphasis (outline) than "New app" since the sidebar's
-              Databases nav item is the primary way in: this is here
-              purely so the gap Coolify closes (creating a database at
-              all) is discoverable from the page most operators land on
-              first, not a competing CTA. */}
+          {filteredApps.length > 0 ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setSelected(
+                  allVisibleSelected ? [] : filteredApps.map((a) => a.name),
+                )
+              }}
+            >
+              {allVisibleSelected ? 'Deselect all' : 'Select all'}
+            </Button>
+          ) : null}
+          {apps.length > 0 ? (
+            <ViewToggle mode={mode} onChange={changeMode} />
+          ) : null}
           <Button
             size="sm"
             variant="outline"
@@ -122,35 +151,46 @@ function AppListPage() {
           />
         </div>
       </div>
+      {apps.length > 0 ? (
+        <div className="mb-3 space-y-3">
+          <AppsStatusChips
+            counts={counts}
+            active={status}
+            onChange={setStatus}
+          />
+          <AppsFilterBar
+            filters={filters}
+            environments={environments}
+            onChange={setFilters}
+          />
+        </div>
+      ) : null}
       {apps.length === 0 ? (
         <EmptyState
-          icon={<PackageIcon className="size-5" />}
+          illustration="rocket"
+          icon={<PackageIcon className="size-6" />}
           title="No apps yet"
-          description="Deploy your first app to get started: push to a connected git repo, or create one directly if you already have a built image."
+          description="Deploy your first app in under a minute."
           action={
-            <CreateResourceWizard
-              scope="applications"
-              trigger={
-                <Button size="sm">
-                  <PlusIcon />
-                  New app
-                </Button>
-              }
-            />
-          }
-          secondaryAction={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <CreateResourceWizard
                 scope="applications"
-                initialSelected="browse-templates"
                 trigger={
-                  <Button size="sm" variant="outline">
-                    Browse templates
+                  <Button>
+                    <PlusIcon />
+                    New app
                   </Button>
                 }
               />
               <Button
-                size="sm"
+                variant="outline"
+                render={<Link to="/settings/import-platform" />}
+                nativeButton={false}
+              >
+                <DownloadSimpleIcon />
+                Import
+              </Button>
+              <Button
                 variant="outline"
                 render={<Link to="/settings/github-app" />}
                 nativeButton={false}
@@ -163,72 +203,49 @@ function AppListPage() {
         />
       ) : filteredApps.length === 0 ? (
         <EmptyState
-          icon={<PackageIcon className="size-5" />}
-          title="No apps match these tags"
-          description="Clear the tag filter to see every app again."
+          illustration="chart"
+          icon={<FunnelIcon className="size-6" />}
+          title="No apps match"
+          description="Try a different status or search."
           action={
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setTagFilter([])}
+              onClick={() => {
+                setFilters(EMPTY_FILTERS)
+                setStatus(null)
+              }}
             >
-              Clear filter
+              Clear filters
             </Button>
           }
         />
       ) : (
-        <div
-          ref={parentRef}
-          className="h-[70vh] overflow-auto rounded-lg border border-border bg-card"
-        >
-          <ListHeader />
-          <div
-            style={{
-              height: virtualizer.getTotalSize(),
-              position: 'relative',
-            }}
-          >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const app = filteredApps[virtualRow.index]
-              if (!app) {
-                return null
-              }
-              return (
-                <div
-                  key={virtualRow.key}
-                  data-index={virtualRow.index}
-                  ref={virtualizer.measureElement}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <AppRow app={app} />
-                </div>
-              )
-            })}
-          </div>
-        </div>
+        <AppsListBody
+          apps={filteredApps}
+          mode={mode}
+          selected={selected}
+          onSelect={toggleSelected}
+        />
       )}
       <StaticSitesCard />
+      <AppsBulkBar
+        selected={selected}
+        onClear={() => {
+          setSelected([])
+        }}
+      />
     </div>
   )
 }
 
-// Route-level fallback for the loader's pending phase (slow network,
-// cold cache): a static stack of RowSkeleton rows under the same header
-// and container chrome as the real list, so a slow /api/v1/apps request
-// shows a layout-accurate loading state instead of a blank page.
 function AppListPending() {
   return (
     <div>
       <div className="mb-4 flex items-baseline justify-between">
         <h1 className="text-lg font-semibold text-foreground">Apps</h1>
       </div>
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
         <ListHeader />
         {Array.from({ length: 6 }, (_, i) => (
           <RowSkeleton key={i} />

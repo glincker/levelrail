@@ -85,7 +85,10 @@ export const scheduleSchema = z
 export type ScheduleFormValues = z.infer<typeof scheduleSchema>
 
 export function toCron(
-  values: Pick<CronFieldsValues, 'frequency' | 'time' | 'weekday' | 'customCron'>,
+  values: Pick<
+    CronFieldsValues,
+    'frequency' | 'time' | 'weekday' | 'customCron'
+  >,
 ): string {
   if (values.frequency === 'custom') {
     return values.customCron.trim()

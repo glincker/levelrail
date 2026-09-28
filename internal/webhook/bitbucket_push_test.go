@@ -2,6 +2,7 @@ package webhook
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -15,7 +16,7 @@ func TestParseBitbucketPushEvent(t *testing.T) {
 		{
 			name: "ordinary push",
 			body: `{"push":{"changes":[{"new":{"type":"branch","name":"main","target":{"hash":"abc123"}},"old":{"type":"branch","name":"main","target":{"hash":"def456"}}}]}}`,
-			want: PushEvent{Ref: "refs/heads/main", After: "abc123"},
+			want: PushEvent{Ref: "refs/heads/main", After: "abc123", Before: "def456"},
 		},
 		{
 			name: "new branch push (no old)",
@@ -56,7 +57,7 @@ func TestParseBitbucketPushEvent(t *testing.T) {
 			if err != nil {
 				t.Fatalf("ParseBitbucketPushEvent() error = %v, want nil", err)
 			}
-			if got != tt.want {
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ParseBitbucketPushEvent() = %+v, want %+v", got, tt.want)
 			}
 		})

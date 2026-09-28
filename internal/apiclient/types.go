@@ -55,7 +55,9 @@ type ServiceHooks struct {
 type AppResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
-	Port  int    `json:"port"`
+	// ImageDigest is the content Image is pinned to, empty for a legacy tag.
+	ImageDigest string `json:"image_digest,omitempty"`
+	Port        int    `json:"port"`
 	// HostPort mirrors internal/api's appResource.HostPort: nil means
 	// "let Docker assign one", a value pins the host-side port. Settable
 	// on create and update, like Port.
@@ -109,6 +111,9 @@ type AppResource struct {
 	// Env was saved since the running container was last recreated, so
 	// the change is not live yet. Clears on restart or redeploy.
 	EnvDirty bool `json:"env_dirty"`
+	// PreviousReleaseHeldUntil mirrors internal/api's GET app payload: when
+	// the kept previous release, an instant rollback target, is removed.
+	PreviousReleaseHeldUntil string `json:"previous_release_held_until,omitempty"`
 	// Volumes mirrors internal/api's appResource.Volumes: this app's
 	// declared named Docker volumes, response-only (declared through
 	// app.yaml, not settable here).
@@ -251,6 +256,10 @@ type BuildTriggerRequest struct {
 	Ref       string                   `json:"ref"`
 	ImageRepo string                   `json:"image_repo,omitempty"`
 	Build     BuildTriggerRequestBuild `json:"build,omitempty"`
+	// DetectedFramework mirrors triggerBuildRequest.DetectedFramework: the
+	// human-readable framework name a prior DetectFramework call reported
+	// for this exact repo/ref, stored on the resulting deploy_attempts row.
+	DetectedFramework string `json:"detected_framework,omitempty"`
 }
 
 // BuildTriggerRequestBuild is BuildTriggerRequest's nested build.* input
@@ -279,6 +288,10 @@ type BuildTriggerRequestBuild struct {
 // a git-push-triggered deploy produces.
 type BuildTriggerResponse struct {
 	ID string `json:"id,omitempty"`
+	// Status is "queued" when the build waits behind another deploy.
+	Status        string `json:"status,omitempty"`
+	QueuePosition int    `json:"queue_position,omitempty"`
+	WaitReason    string `json:"wait_reason,omitempty"`
 }
 
 // DeployTriggerRequest mirrors internal/api's deployTriggerRequest
@@ -286,6 +299,10 @@ type BuildTriggerResponse struct {
 type DeployTriggerRequest struct {
 	Image   string `json:"image"`
 	Confirm bool   `json:"confirm,omitempty"`
+	// Pull re-resolves the tag and fails if the registry is unreachable.
+	Pull           bool   `json:"pull,omitempty"`
+	OverrideFreeze bool   `json:"override_freeze,omitempty"`
+	OverrideReason string `json:"override_reason,omitempty"`
 }
 
 // DeployTriggerResult mirrors internal/api's deployTriggerResult
@@ -385,6 +402,8 @@ type LogEntryResource struct {
 	Message    string          `json:"message"`
 	Structured bool            `json:"structured"`
 	FieldsJSON json.RawMessage `json:"fields,omitempty"`
+	// Level is the server-detected level, empty when the line has none.
+	Level string `json:"level,omitempty"`
 }
 
 // LogStreamEntry mirrors internal/api's sseLogEvent
@@ -400,6 +419,8 @@ type LogStreamEntry struct {
 // logsResponse mirrors internal/api's logsResponse (internal/api/logs.go).
 type logsResponse struct {
 	Entries []LogEntryResource `json:"entries"`
+	// Total is how many entries matched before limit trimmed the list.
+	Total int `json:"total"`
 }
 
 // SlowQueryEntryResource mirrors internal/api's slowQueryEntryResource
@@ -715,7 +736,11 @@ type DomainCheckResource struct {
 // (internal/api/apps_clone.go): POST /api/v1/apps/{name}/clone's
 // request body.
 type CloneAppRequest struct {
-	NewName string `json:"new_name"`
+	NewName       string `json:"new_name"`
+	CopySecrets   bool   `json:"copy_secrets,omitempty"`
+	Domains       string `json:"domains,omitempty"`
+	DomainSuffix  string `json:"domain_suffix,omitempty"`
+	EnvironmentID string `json:"environment_id,omitempty"`
 }
 
 // ImageResource mirrors internal/api's imageResource
@@ -882,6 +907,25 @@ type PromotePreviewResource struct {
 	Changes             []DeployCompareField `json:"changes"`
 	UnsnapshottedFields []string             `json:"unsnapshotted_fields"`
 	Note                string               `json:"note"`
+	Diff                PromoteDiff          `json:"diff"`
+	Blockers            []string             `json:"blockers"`
+	NeedsConfirmation   bool                 `json:"needs_confirmation"`
+	Frozen              bool                 `json:"frozen"`
+	FreezeReason        string               `json:"freeze_reason,omitempty"`
+}
+
+// PromoteDiff mirrors internal/api's promoteDiff. Env values are never sent.
+type PromoteDiff struct {
+	Image        *DeployCompareField `json:"image,omitempty"`
+	Replicas     *DeployCompareField `json:"replicas,omitempty"`
+	Resources    *DeployCompareField `json:"resources,omitempty"`
+	Health       *DeployCompareField `json:"health,omitempty"`
+	EnvAdded     []string            `json:"env_added"`
+	EnvRemoved   []string            `json:"env_removed"`
+	EnvChanged   []string            `json:"env_changed"`
+	SecretsAdded []string            `json:"secret_keys_added"`
+	SecretsGone  []string            `json:"secret_keys_removed"`
+	Untouched    []string            `json:"untouched"`
 }
 
 // PromoteAppRequest mirrors internal/api's promoteTriggerRequest:
@@ -889,9 +933,14 @@ type PromotePreviewResource struct {
 // "auto-discover the sole candidate, or disambiguate" contract
 // PromotePreview's own Target query param has.
 type PromoteAppRequest struct {
-	To      string `json:"to"`
-	Target  string `json:"target,omitempty"`
-	Confirm bool   `json:"confirm,omitempty"`
+	To         string `json:"to"`
+	Target     string `json:"target,omitempty"`
+	Confirm    bool   `json:"confirm,omitempty"`
+	IncludeEnv bool   `json:"include_env,omitempty"`
+	Force      bool   `json:"force,omitempty"`
+	// OverrideFreeze and OverrideReason bypass an active deploy freeze window.
+	OverrideFreeze bool   `json:"override_freeze,omitempty"`
+	OverrideReason string `json:"override_reason,omitempty"`
 }
 
 // RestoreHistoryResource mirrors internal/api's restoreHistoryResource
@@ -1174,6 +1223,7 @@ type ServiceTemplateListItem struct {
 	Category               string `json:"category"`
 	DocumentationURL       string `json:"documentation_url"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
+	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
 }
 
 // ServiceTemplateDetail mirrors internal/api's serviceTemplateDetail:
@@ -1187,6 +1237,7 @@ type ServiceTemplateDetail struct {
 	DocumentationURL       string `json:"documentation_url"`
 	Compose                string `json:"compose"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
+	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
 }
 
 // SetSecretRequest mirrors internal/api's setSecretRequest
@@ -1296,9 +1347,29 @@ type GitSourceResource struct {
 	// toggle for a preview deploy's GitHub PR comment/commit status, set
 	// via SetPreviewPostPRComments (preview-settings, same route as
 	// PreviewEnabled).
-	PostPRComments bool   `json:"post_pr_comments"`
-	CreatedAt      string `json:"created_at"`
-	UpdatedAt      string `json:"updated_at"`
+	PostPRComments bool `json:"post_pr_comments"`
+	// DeployPaths, DeployPathsIgnore and ReportStatus mirror the store
+	// fields of the same names, set via SetGitDeploySettings.
+	DeployPaths       []string `json:"deploy_paths"`
+	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
+	ReportStatus      bool     `json:"report_status"`
+	CreatedAt         string   `json:"created_at"`
+	UpdatedAt         string   `json:"updated_at"`
+}
+
+// GitDeploySettings mirrors internal/api's gitDeploySettings.
+type GitDeploySettings struct {
+	DeployPaths       []string `json:"deploy_paths"`
+	DeployPathsIgnore []string `json:"deploy_paths_ignore"`
+	ReportStatus      bool     `json:"report_status"`
+}
+
+// SetGitDeploySettingsRequest mirrors internal/api's
+// setGitDeploySettingsRequest; a nil field keeps its current value.
+type SetGitDeploySettingsRequest struct {
+	DeployPaths       *[]string `json:"deploy_paths,omitempty"`
+	DeployPathsIgnore *[]string `json:"deploy_paths_ignore,omitempty"`
+	ReportStatus      *bool     `json:"report_status,omitempty"`
 }
 
 // SetGitSourceRequest mirrors internal/api's setGitSourceRequest
@@ -1462,10 +1533,18 @@ type CreateAlertRuleRequest struct {
 	BackupDatabaseName string `json:"backup_database_name,omitempty"`
 	BackupServiceName  string `json:"backup_service_name,omitempty"`
 	BackupVolumeName   string `json:"backup_volume_name,omitempty"`
-	ChannelID          string `json:"channel_id,omitempty"`
-	NotifyURL          string `json:"notify_url,omitempty"`
-	NotifyKind         string `json:"notify_kind,omitempty"`
-	Enabled            bool   `json:"enabled"`
+	// SLO is kind=slo_burn-only: the request-based SLO the rule watches.
+	SLO        *AlertSLOConfig `json:"slo,omitempty"`
+	ChannelID  string          `json:"channel_id,omitempty"`
+	NotifyURL  string          `json:"notify_url,omitempty"`
+	NotifyKind string          `json:"notify_kind,omitempty"`
+	Enabled    bool            `json:"enabled"`
+
+	Severity            string            `json:"severity,omitempty"`
+	Labels              map[string]string `json:"labels,omitempty"`
+	ConsecutiveFailures int               `json:"consecutive_failures,omitempty"`
+	FlapThreshold       int               `json:"flap_threshold,omitempty"`
+	FlapWindow          string            `json:"flap_window,omitempty"`
 }
 
 // UpdateAlertRuleRequest is the same shape as CreateAlertRuleRequest:
@@ -1719,6 +1798,7 @@ type SetAppEnvironmentRequest struct {
 // PreviewEnvironmentResource mirrors internal/api's
 // previewEnvironmentResource (internal/api/preview_environments_handlers.go).
 type PreviewEnvironmentResource struct {
+	AppName      string `json:"app_name"`
 	PRNumber     int    `json:"pr_number"`
 	PreviewAppID string `json:"preview_app_id"`
 	Branch       string `json:"branch"`
@@ -1729,6 +1809,9 @@ type PreviewEnvironmentResource struct {
 	CreatedAt    string `json:"created_at"`
 	UpdatedAt    string `json:"updated_at"`
 	Stale        bool   `json:"stale"`
+	ExpiresAt    string `json:"expires_at,omitempty"`
+	IsFork       bool   `json:"is_fork"`
+	HeadRepo     string `json:"head_repo,omitempty"`
 	// EphemeralDatabases mirrors internal/api's own EphemeralDatabases
 	// field: every disposable, preview-scoped database instance
 	// provisioned for this preview (spec.Database.EphemeralInPreviews),
@@ -1871,6 +1954,12 @@ type NodeResource struct {
 	// IsLocal is true for the one node running the control plane process
 	// itself, the only node with real disk/memory host metrics.
 	IsLocal bool `json:"is_local"`
+	// GPU is set when the node reported an NVIDIA GPU.
+	GPU *NodeGPUResource `json:"gpu,omitempty"`
+	// Cert and Agent mirror the node's agent certificate lifecycle and the
+	// agent's self-reported build (node_cert.go in this package).
+	Cert  *NodeCertResource  `json:"cert,omitempty"`
+	Agent *NodeAgentResource `json:"agent,omitempty"`
 }
 
 // NodeAlertStatusResource mirrors internal/api's nodeAlertStatusResource
@@ -2101,9 +2190,35 @@ type RotateMasterKeyRequest struct {
 // key is env-sourced (update APP_MASTER_KEY out of band) or the file
 // write itself failed (update the key file by hand).
 type RotateMasterKeyResult struct {
-	RotatedAt       time.Time `json:"rotatedAt"`
-	PersistedToFile bool      `json:"persistedToFile"`
-	Warning         string    `json:"warning,omitempty"`
+	RotatedAt       time.Time           `json:"rotatedAt"`
+	PersistedToFile bool                `json:"persistedToFile"`
+	Warning         string              `json:"warning,omitempty"`
+	Rebind          *SecretRebindResult `json:"rebind,omitempty"`
+}
+
+// SecretBindingStatus mirrors internal/api's secretBindingResponse.
+type SecretBindingStatus struct {
+	Total  int `json:"total"`
+	Bound  int `json:"bound"`
+	Legacy int `json:"legacy"`
+}
+
+// SecretRebindFailure names one slot a rebind could not bind.
+type SecretRebindFailure struct {
+	Owner  string `json:"owner"`
+	Key    string `json:"key"`
+	Reason string `json:"reason"`
+}
+
+// SecretRebindResult mirrors internal/api's secretRebindResponse.
+type SecretRebindResult struct {
+	Scanned      int                   `json:"scanned"`
+	Rebound      int                   `json:"rebound"`
+	AlreadyBound int                   `json:"alreadyBound"`
+	Changed      int                   `json:"changed"`
+	FailedCount  int                   `json:"failedCount"`
+	Failed       []SecretRebindFailure `json:"failed"`
+	Remaining    int                   `json:"remaining"`
 }
 
 // SetNodeWorkloadsRequest mirrors internal/api's setNodeWorkloadsRequest:
@@ -2132,6 +2247,18 @@ type DrainNodeResponse struct {
 	MovedServices  []string `json:"moved_services"`
 	MovedDatabases []string `json:"moved_databases"`
 	Errors         []string `json:"errors,omitempty"`
+	AutoPlaced     bool     `json:"auto_placed,omitempty"`
+	// Warnings lists checks that could not run, so the drain may be incomplete.
+	Warnings []string `json:"warnings,omitempty"`
+	// Blocked names apps and models left on the node, with the reason.
+	Blocked []DrainBlockedResource `json:"blocked,omitempty"`
+}
+
+// DrainBlockedResource mirrors internal/api's drainBlocked.
+type DrainBlockedResource struct {
+	Kind   string `json:"kind"`
+	Name   string `json:"name"`
+	Reason string `json:"reason"`
 }
 
 // DiagnosisSignal mirrors internal/api's diagnosisSignalResource: one
@@ -2152,6 +2279,12 @@ type DiagnosisResource struct {
 	Confidence      string            `json:"confidence"`
 	MatchedSignals  []DiagnosisSignal `json:"matched_signals"`
 	DeployAttemptID string            `json:"deploy_attempt_id,omitempty"`
+	Causes          []DiagnosisCause  `json:"causes,omitempty"`
+	Fixable         bool              `json:"fixable,omitempty"`
+	Failure         *DeployFailure    `json:"failure,omitempty"`
+
+	// RecentChanges is what changed on the app shortly before the diagnosis.
+	RecentChanges *RecentChangesResource `json:"recent_changes,omitempty"`
 }
 
 // DimensionRecommendationResource mirrors internal/api's
@@ -2227,9 +2360,19 @@ type AlertRuleResource struct {
 	BackupServiceName  string `json:"backup_service_name,omitempty"`
 	BackupVolumeName   string `json:"backup_volume_name,omitempty"`
 
+	SLO *AlertSLOConfig `json:"slo,omitempty"`
+
 	NotifyURL  string `json:"notify_url,omitempty"`
 	NotifyKind string `json:"notify_kind,omitempty"`
 	Enabled    bool   `json:"enabled"`
+
+	Severity            string            `json:"severity,omitempty"`
+	Labels              map[string]string `json:"labels,omitempty"`
+	ConsecutiveFailures int               `json:"consecutive_failures,omitempty"`
+	FlapThreshold       int               `json:"flap_threshold,omitempty"`
+	FlapWindow          string            `json:"flap_window,omitempty"`
+	Silenced            bool              `json:"silenced,omitempty"`
+	SilencedBy          string            `json:"silenced_by,omitempty"`
 
 	Firing          bool       `json:"firing,omitempty"`
 	PendingSince    *time.Time `json:"pending_since,omitempty"`
@@ -2355,6 +2498,10 @@ type AuditLogEntryResource struct {
 	RemoteAddr string `json:"remote_addr"`
 	CreatedAt  string `json:"created_at"`
 	ClientKind string `json:"client_kind"`
+	// AgentName labels the AI agent behind the token; AgentClient is the
+	// self-reported MCP client name and version.
+	AgentName   string `json:"agent_name,omitempty"`
+	AgentClient string `json:"agent_client,omitempty"`
 }
 
 // ListAuditLogOptions is ListAuditLog's and DownloadAuditLogCSV's shared
@@ -2369,6 +2516,7 @@ type ListAuditLogOptions struct {
 	ClientKind string
 	Search     string // case-insensitive substring across actor, ability, method, path, remote addr
 	FailedOnly bool   // only entries with status_code >= 400
+	Agent      string // only entries made with a token labeled with this agent name
 }
 
 // PurgeAuditLogResult is POST /api/v1/audit-log/purge's response shape
@@ -2395,6 +2543,80 @@ type DeployAttemptResource struct {
 	// this build, e.g. "Node.js"; empty when detection was skipped
 	// (a CLI or webhook-triggered build) or found nothing buildable.
 	DetectedFramework string `json:"detected_framework,omitempty"`
+
+	ImageDigest    string `json:"image_digest,omitempty"`
+	DigestReason   string `json:"digest_reason,omitempty"`
+	RolloutState   string `json:"rollout_state,omitempty"`
+	RunningImageID string `json:"running_image_id,omitempty"`
+	Sequence       int64  `json:"sequence,omitempty"`
+	Reason         string `json:"reason,omitempty"`
+
+	QueuedAt      *time.Time  `json:"queued_at,omitempty"`
+	QueuePosition int         `json:"queue_position,omitempty"`
+	WaitReason    string      `json:"wait_reason,omitempty"`
+	BlockedBy     string      `json:"blocked_by,omitempty"`
+	SupersededBy  string      `json:"superseded_by,omitempty"`
+	CanceledBy    string      `json:"canceled_by,omitempty"`
+	SBOMPackages  *int        `json:"sbom_packages,omitempty"`
+	VulnCounts    *VulnCounts `json:"vuln_counts,omitempty"`
+	// Failure classifies why the deploy failed or is blocked; absent otherwise.
+	Failure *DeployFailure `json:"failure,omitempty"`
+	// Outcome is set by GetDeploy only: in_progress, healthy, failed,
+	// canceled, superseded or blocked.
+	Outcome string `json:"outcome,omitempty"`
+}
+
+// DeployFailure mirrors internal/failure's Failure: the structured cause of a
+// failed or blocked deploy, identical across the API, CLI and MCP.
+type DeployFailure struct {
+	Code         string    `json:"code"`
+	Cause        string    `json:"cause"`
+	FailingStep  string    `json:"failing_step,omitempty"`
+	LogExcerpt   string    `json:"log_excerpt,omitempty"`
+	SuggestedFix string    `json:"suggested_fix"`
+	DocsURL      string    `json:"docs_url"`
+	Retryable    bool      `json:"retryable"`
+	DeployID     string    `json:"deploy_id"`
+	App          string    `json:"app"`
+	At           time.Time `json:"at"`
+}
+
+// CancelSupersededResource mirrors internal/api's cancelSupersededResource.
+type CancelSupersededResource struct {
+	Enabled bool `json:"enabled"`
+}
+
+// RollbackToRequest is the optional body of POST .../deploys/{id}/rollback.
+type RollbackToRequest struct {
+	Confirm        bool   `json:"confirm,omitempty"`
+	OverrideFreeze bool   `json:"override_freeze,omitempty"`
+	OverrideReason string `json:"override_reason,omitempty"`
+}
+
+// FreezeWindowResource mirrors internal/api's freezeWindowResource.
+type FreezeWindowResource struct {
+	ID       string `json:"id,omitempty"`
+	Cron     string `json:"cron"`
+	Duration string `json:"duration"`
+	Timezone string `json:"timezone,omitempty"`
+	Reason   string `json:"reason,omitempty"`
+	Scope    string `json:"scope,omitempty"`
+}
+
+// DeployFreezeResource mirrors internal/api's deployFreezeResource.
+type DeployFreezeResource struct {
+	Windows   []FreezeWindowResource `json:"windows"`
+	Inherited []FreezeWindowResource `json:"inherited,omitempty"`
+	Status    struct {
+		Frozen bool       `json:"frozen"`
+		Until  *time.Time `json:"until,omitempty"`
+		Reason string     `json:"reason,omitempty"`
+	} `json:"status"`
+}
+
+// PutDeployFreezeRequest is PUT .../deploy-freeze's body.
+type PutDeployFreezeRequest struct {
+	Windows []FreezeWindowResource `json:"windows"`
 }
 
 // CertificateResource mirrors internal/api's certificateStatus

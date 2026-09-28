@@ -1,11 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
+  ArchiveIcon,
   TerminalIcon,
   MagnifyingGlassIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { useDeployStatus } from '../../../queries/deploys'
 import { LogSearchPanel } from '../../../components/LogSearchPanel'
 import { LiveLogViewer } from '../../../components/LiveLogViewer'
+import { LogArchivePanel } from '../../../components/LogArchivePanel'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 // App-scoped logs section: a live-tailing terminal (default tab, the
@@ -46,6 +48,10 @@ function LogsSection() {
           <MagnifyingGlassIcon className="size-4" aria-hidden="true" />
           Search
         </TabsTrigger>
+        <TabsTrigger value="archive" className="gap-1.5">
+          <ArchiveIcon className="size-4" aria-hidden="true" />
+          Archive
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="live" className="flex-1">
@@ -53,6 +59,9 @@ function LogsSection() {
       </TabsContent>
       <TabsContent value="search" className="flex-1">
         <LogSearchPanel appName={name} />
+      </TabsContent>
+      <TabsContent value="archive" className="flex-1 overflow-y-auto">
+        <LogArchivePanel appName={name} />
       </TabsContent>
     </Tabs>
   )

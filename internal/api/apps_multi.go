@@ -60,6 +60,10 @@ type deploySpecRequest struct {
 	// uses for a single service.
 	ImageRepoBase string                  `json:"image_repo_base,omitempty"`
 	Services      map[string]spec.Service `json:"services"`
+	// SingleServiceName overrides the default "<name>-<serviceKey>"
+	// naming for the sole entry in Services, see deploy.MultiRequest's
+	// own field of the same name.
+	SingleServiceName string `json:"single_service_name,omitempty"`
 }
 
 // deploySpecServiceResult is one service key's own outcome:
@@ -120,12 +124,20 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "repo_url is required")
 		return
 	}
+	if err := requireHTTPOrHTTPSScheme(req.RepoURL); err != nil {
+		writeError(w, http.StatusBadRequest, "repo_url must use http or https")
+		return
+	}
 	if req.Ref == "" {
 		writeError(w, http.StatusBadRequest, "ref is required")
 		return
 	}
 	if len(req.Services) == 0 {
 		writeError(w, http.StatusBadRequest, "services must declare at least one service")
+		return
+	}
+	if req.SingleServiceName != "" && len(req.Services) != 1 {
+		writeError(w, http.StatusBadRequest, "single_service_name requires exactly one service")
 		return
 	}
 	if err := validateDeploySpecServiceTypes(req.Services); err != nil {
@@ -152,10 +164,13 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 	// validateEnv checks a required secret already exists, so a value
 	// given inline here must be stored before that check runs, not once
 	// the deploy has already finished. svcName mirrors
-	// internal/deploy/multi.go's DeploySpec own "<AppName>-<serviceKey>"
-	// naming convention exactly.
+	// internal/deploy/multi.go's DeploySpec own naming convention
+	// exactly, including the SingleServiceName override.
 	for key, values := range inlineSecrets {
 		svcName := name + "-" + key
+		if req.SingleServiceName != "" {
+			svcName = req.SingleServiceName
+		}
 		for envKey, value := range values {
 			if err := rt.secrets.SetValueGuarded(r.Context(), svcName, envKey, value, false); err != nil {
 				if errors.Is(err, secrets.ErrSecretLocked) {
@@ -202,11 +217,12 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 	}
 
 	outcomes, err := rt.builder.DeploySpec(r.Context(), deploy.MultiRequest{
-		AppName:       name,
-		Services:      req.Services,
-		SourceDir:     sourceDir,
-		CommitSHA:     commitLabel,
-		ImageRepoBase: imageRepoBase,
+		AppName:           name,
+		Services:          req.Services,
+		SourceDir:         sourceDir,
+		CommitSHA:         commitLabel,
+		ImageRepoBase:     imageRepoBase,
+		SingleServiceName: req.SingleServiceName,
 	}, progress)
 	if err != nil {
 		rt.logger.Error("api: deploy spec failed", slog.String("error", err.Error()), slog.String("name", name))

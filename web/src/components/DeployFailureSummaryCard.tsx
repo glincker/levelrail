@@ -16,6 +16,7 @@ import {
   summarizeDeployFailure,
 } from '../lib/deployFailureSummary'
 import { useRedeployApp } from '../hooks/useRedeployApp'
+import { DiagnosisFixes } from './DiagnosisFixes'
 import { useTriggerDeploy } from '../queries/deploys'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -152,6 +153,7 @@ export function DeployFailureSummaryCard({
               </div>
             ) : null}
           </dl>
+          <DiagnosisFixes appName={appName} deployId={attempt.id} />
           <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"

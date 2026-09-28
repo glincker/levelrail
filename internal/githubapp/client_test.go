@@ -380,11 +380,15 @@ func TestCreateIssueComment_SendsBody(t *testing.T) {
 			t.Fatalf("decode request body: %v", err)
 		}
 		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":77}`))
 	})
 
-	err := c.CreateIssueComment(context.Background(), "", "install-token", "acme", "widgets", 42, "preview deployed")
+	id, err := c.CreateIssueComment(context.Background(), "", "install-token", "acme", "widgets", 42, "preview deployed")
 	if err != nil {
 		t.Fatalf("CreateIssueComment() error = %v", err)
+	}
+	if id != 77 {
+		t.Errorf("comment id = %d, want 77", id)
 	}
 	if gotMethod != http.MethodPost {
 		t.Errorf("method = %q, want POST", gotMethod)
@@ -405,7 +409,7 @@ func TestCreateIssueComment_ErrorResponse(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 	})
 
-	err := c.CreateIssueComment(context.Background(), "", "install-token", "acme", "widgets", 42, "preview deployed")
+	_, err := c.CreateIssueComment(context.Background(), "", "install-token", "acme", "widgets", 42, "preview deployed")
 	if err == nil {
 		t.Fatal("CreateIssueComment() error = nil, want an error")
 	}

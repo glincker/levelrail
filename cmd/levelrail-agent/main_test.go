@@ -2,79 +2,16 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 )
 
 func testLogger() *slog.Logger {
 	return slog.New(slog.DiscardHandler)
-}
-
-func TestSaveAndLoadIdentity_RoundTrip(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "identity.json")
-	want := &agent.Identity{
-		NodeID:        "node-1",
-		ClientCertPEM: []byte("-----BEGIN CERTIFICATE-----\nfake\n-----END CERTIFICATE-----\n"),
-		ClientKeyPEM:  []byte("-----BEGIN PRIVATE KEY-----\nfake\n-----END PRIVATE KEY-----\n"),
-		CACertPEM:     []byte("-----BEGIN CERTIFICATE-----\nfakeca\n-----END CERTIFICATE-----\n"),
-	}
-
-	if err := saveIdentity(path, want); err != nil {
-		t.Fatalf("saveIdentity() error = %v", err)
-	}
-
-	got, err := loadIdentity(path)
-	if err != nil {
-		t.Fatalf("loadIdentity() error = %v", err)
-	}
-	if got.NodeID != want.NodeID {
-		t.Errorf("NodeID = %q, want %q", got.NodeID, want.NodeID)
-	}
-	if string(got.ClientCertPEM) != string(want.ClientCertPEM) {
-		t.Errorf("ClientCertPEM mismatch")
-	}
-	if string(got.ClientKeyPEM) != string(want.ClientKeyPEM) {
-		t.Errorf("ClientKeyPEM mismatch")
-	}
-	if string(got.CACertPEM) != string(want.CACertPEM) {
-		t.Errorf("CACertPEM mismatch")
-	}
-}
-
-func TestSaveIdentity_FilePermissions(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "identity.json")
-	if err := saveIdentity(path, &agent.Identity{NodeID: "node-1"}); err != nil {
-		t.Fatalf("saveIdentity() error = %v", err)
-	}
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatalf("Stat() error = %v", err)
-	}
-	if info.Mode().Perm() != 0o600 {
-		t.Errorf("file mode = %v, want 0600 (contains a private key)", info.Mode().Perm())
-	}
-}
-
-func TestLoadIdentity_NotFound(t *testing.T) {
-	_, err := loadIdentity(filepath.Join(t.TempDir(), "nonexistent.json"))
-	if !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("loadIdentity() error = %v, want os.ErrNotExist", err)
-	}
-}
-
-func TestLoadIdentity_InvalidJSON(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "identity.json")
-	if err := os.WriteFile(path, []byte("not json"), 0o600); err != nil {
-		t.Fatalf("WriteFile() error = %v", err)
-	}
-	if _, err := loadIdentity(path); err == nil {
-		t.Error("loadIdentity() error = nil, want an error for invalid JSON")
-	}
 }
 
 func TestIdentityFilePath_Default(t *testing.T) {
@@ -94,8 +31,8 @@ func TestIdentityFilePath_EnvOverride(t *testing.T) {
 func TestLoadOrEnroll_LoadsExistingIdentity_NeverCallsEnroll(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "identity.json")
 	want := &agent.Identity{NodeID: "node-1", ClientCertPEM: []byte("cert"), ClientKeyPEM: []byte("key"), CACertPEM: []byte("ca")}
-	if err := saveIdentity(path, want); err != nil {
-		t.Fatalf("saveIdentity() error = %v", err)
+	if err := agent.NewIdentityFile(path).Save(want); err != nil {
+		t.Fatalf("Save() error = %v", err)
 	}
 
 	// addr is deliberately unreachable: if loadOrEnroll tried to dial
@@ -117,5 +54,74 @@ func TestLoadOrEnroll_NoIdentityNoToken_Errors(t *testing.T) {
 	_, err := loadOrEnroll(context.Background(), "127.0.0.1:1", path, testLogger())
 	if err == nil {
 		t.Fatal("loadOrEnroll() error = nil, want an error when no identity exists and no join token is set")
+	}
+}
+
+func issuedIdentity(t *testing.T, ca *agent.CA, validFor time.Duration) *agent.Identity {
+	t.Helper()
+	keyPEM, csr, err := agent.NewKeyAndCSR("node-1")
+	if err != nil {
+		t.Fatalf("NewKeyAndCSR() error = %v", err)
+	}
+	issued, err := ca.SignClientCSR("node-1", csr, validFor, time.Now())
+	if err != nil {
+		t.Fatalf("SignClientCSR() error = %v", err)
+	}
+	return &agent.Identity{NodeID: "node-1", ClientCertPEM: issued.PEM, ClientKeyPEM: keyPEM, CACertPEM: ca.CertPEM()}
+}
+
+func TestAdoptIdentityFromDisk(t *testing.T) {
+	ca, err := agent.GenerateCA()
+	if err != nil {
+		t.Fatalf("GenerateCA() error = %v", err)
+	}
+	expired := issuedIdentity(t, ca, -time.Minute)
+	fresh := issuedIdentity(t, ca, time.Hour)
+
+	tests := []struct {
+		name   string
+		onDisk *agent.Identity
+		want   bool
+	}{
+		{"re-enrolled identity on disk is adopted", fresh, true},
+		{"same identity is not adopted again", expired, false},
+		{"expired identity on disk is ignored", issuedIdentity(t, ca, -time.Hour), false},
+		{"no identity file", nil, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			file := agent.NewIdentityFile(filepath.Join(t.TempDir(), "identity.json"))
+			if tt.onDisk != nil {
+				if err := file.Save(tt.onDisk); err != nil {
+					t.Fatalf("Save() error = %v", err)
+				}
+			}
+			holder := agent.NewIdentityHolder(expired)
+			if got := adoptIdentityFromDisk(holder, file, testLogger()); got != tt.want {
+				t.Fatalf("adoptIdentityFromDisk() = %v, want %v", got, tt.want)
+			}
+			if tt.want && holder.Current() == expired {
+				t.Error("holder was not switched to the identity on disk")
+			}
+		})
+	}
+}
+
+func TestRunReenroll_RequiresToken(t *testing.T) {
+	t.Setenv("APP_REENROLL_TOKEN", "")
+	if err := runReenroll(context.Background(), "127.0.0.1:1", filepath.Join(t.TempDir(), "identity.json"), testLogger()); err == nil {
+		t.Fatal("runReenroll() error = nil, want an error without APP_REENROLL_TOKEN")
+	}
+}
+
+func TestFloatFromEnv(t *testing.T) {
+	for _, tt := range []struct {
+		raw  string
+		want float64
+	}{{"0.5", 0.5}, {"", 0}, {"nope", 0}} {
+		t.Setenv("APP_AGENT_CERT_RENEW_FRACTION", tt.raw)
+		if got := floatFromEnv("APP_AGENT_CERT_RENEW_FRACTION"); got != tt.want {
+			t.Errorf("floatFromEnv(%q) = %v, want %v", tt.raw, got, tt.want)
+		}
 	}
 }

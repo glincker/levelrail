@@ -105,6 +105,19 @@ export function RotateMasterKeyDialog() {
                 </AlertDescription>
               </Alert>
             )}
+            {result.persistedToFile && result.warning ? (
+              <Alert variant="destructive">
+                <WarningIcon />
+                <AlertTitle>Follow-up needed</AlertTitle>
+                <AlertDescription>{result.warning}</AlertDescription>
+              </Alert>
+            ) : null}
+            {result.rebind ? (
+              <p className="text-sm text-muted-foreground">
+                Bound {result.rebind.rebound} legacy secret value(s) to their
+                slot, {result.rebind.remaining} remaining.
+              </p>
+            ) : null}
             <DialogFooter>
               <Button
                 type="button"

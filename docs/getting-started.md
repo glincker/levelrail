@@ -150,6 +150,17 @@ APP_API_TOKEN=dev-root-token ./levelrail-cli apps create \
   --name your-app --image registry.example.com/your-org/your-app:latest --port 8080
 ```
 
+### Importing something you already have
+
+You do not need an `app.yaml` to get started. Paste a GitHub, GitLab, Gitea or Bitbucket repo URL, a `docker run` command, an image reference, a `docker-compose.yml` or a Dockerfile into the "Import anything" box in the New app dialog and Levelrail shows a deployment plan (build method, port, environment variables, volumes, warnings) before creating anything. From the CLI:
+
+```
+./levelrail-cli import https://github.com/your-org/your-app
+./levelrail-cli import https://github.com/your-org/your-app --deploy --env API_TOKEN=abc
+```
+
+See [importing-apps.md](importing-apps.md) for every input type and the list of unsupported `docker run` flags.
+
 ### Other CLI commands
 
 Run `levelrail-cli apps create -h` for the full set of flags.
@@ -286,6 +297,7 @@ A row that your account cannot see (for example a 403 or 404 from its endpoint) 
 
 ## See also
 
+- [importing-apps.md](importing-apps.md) - import a repo, image, docker run command, compose file or Dockerfile with a plan preview
 - [app-spec-reference.md](app-spec-reference.md) - full `app.yaml` schema with all fields and options
 - [domains-and-ingress.md](domains-and-ingress.md) - setting up domains and HTTPS
 - [architecture.md](architecture.md) - how the control plane, agent, and reconciler work together

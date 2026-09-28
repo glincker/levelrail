@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/netguard"
 )
@@ -50,6 +51,9 @@ type Event struct {
 	// NodeOfflineNotices is populated only for a firing node_offline
 	// event: one line per offline node, from EvaluateNodeOffline.
 	NodeOfflineNotices []string
+	// NodeCertNotices is populated only for a firing node_cert_expiring
+	// event: one line per node whose agent certificate needs attention.
+	NodeCertNotices []string
 	// ResourceUsageNotices is populated only for a firing (not resolved)
 	// node_resource_usage event: one line per node over its CPU and/or
 	// memory threshold, from EvaluateNodeResourceUsage. Nil for every
@@ -71,6 +75,21 @@ type Event struct {
 	// overdue summary, from EvaluateBackupMissing. Empty for every other
 	// rule kind and for resolved events.
 	BackupMissingNotice string
+
+	// SLONotice is set only for a firing slo_burn event: which burn-rate tier
+	// tripped and how much error budget is left.
+	SLONotice string
+
+	// Changes is what changed on the app shortly before it fired; set for
+	// firing app-scoped events only. ChangesLink points at its dashboard page.
+	Changes     *changes.Result
+	ChangesLink string
+
+	// Headline replaces the default first line for flapping and grouped
+	// messages; GroupNotices lists the alerts folded into a grouped one.
+	Headline     string
+	GroupNotices []string
+	GroupCount   int
 }
 
 // Notifier sends one Event somewhere. Every notify* function below
@@ -163,9 +182,18 @@ type genericPayload struct {
 	DiskSpaceNotices     []string   `json:"disk_space_notices,omitempty"`
 	ResourceUsageNotices []string   `json:"resource_usage_notices,omitempty"`
 	NodeOfflineNotices   []string   `json:"node_offline_notices,omitempty"`
+	NodeCertNotices      []string   `json:"node_cert_notices,omitempty"`
 	TaskFailureNotice    string     `json:"task_failure_notice,omitempty"`
 	DomainHealthNotices  []string   `json:"domain_health_notices,omitempty"`
 	BackupMissingNotice  string     `json:"backup_missing_notice,omitempty"`
+	Headline             string     `json:"headline,omitempty"`
+	GroupNotices         []string   `json:"group_notices,omitempty"`
+	GroupCount           int        `json:"group_count,omitempty"`
+	Severity             string     `json:"severity,omitempty"`
+
+	SLONotice     string           `json:"slo_notice,omitempty"`
+	RecentChanges []changes.Change `json:"recent_changes,omitempty"`
+	ChangesLink   string           `json:"changes_link,omitempty"`
 }
 
 func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Event) error {
@@ -176,9 +204,19 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		CertNotices: ev.CertNotices, PatchNotices: ev.PatchNotices, DiskSpaceNotices: ev.DiskSpaceNotices,
 		ResourceUsageNotices: ev.ResourceUsageNotices,
 		NodeOfflineNotices:   ev.NodeOfflineNotices,
+		NodeCertNotices:      ev.NodeCertNotices,
 		TaskFailureNotice:    ev.TaskFailureNotice,
 		DomainHealthNotices:  ev.DomainHealthNotices,
 		BackupMissingNotice:  ev.BackupMissingNotice,
+		Headline:             ev.Headline,
+		GroupNotices:         ev.GroupNotices,
+		GroupCount:           ev.GroupCount,
+		Severity:             ev.Rule.Severity,
+		ChangesLink:          ev.ChangesLink,
+		SLONotice:            ev.SLONotice,
+	}
+	if ev.Changes != nil {
+		payload.RecentChanges = ev.Changes.Changes[:min(len(ev.Changes.Changes), changes.NotifyMaxLines)]
 	}
 	return postJSON(ctx, client, url, payload)
 }
@@ -196,6 +234,12 @@ func notifySlack(ctx context.Context, client *http.Client, url string, ev Event)
 	return postJSON(ctx, client, url, slackPayload{Text: summaryText(ev)})
 }
 
+// Receiver hard limits on message length, in bytes.
+const (
+	discordMaxContent   = 2000
+	pagerDutyMaxSummary = 1024
+)
+
 // discordPayload is Discord's incoming-webhook shape: the equivalent
 // top-level "content" field.
 type discordPayload struct {
@@ -203,7 +247,7 @@ type discordPayload struct {
 }
 
 func notifyDiscord(ctx context.Context, client *http.Client, url string, ev Event) error {
-	return postJSON(ctx, client, url, discordPayload{Content: summaryText(ev)})
+	return postJSON(ctx, client, url, discordPayload{Content: summaryTextCapped(ev, discordMaxContent)})
 }
 
 // telegramPayload is the Telegram Bot API's sendMessage body. chat_id is
@@ -303,7 +347,7 @@ func notifyPagerDuty(ctx context.Context, client *http.Client, rawURL string, ev
 		RoutingKey:  rawURL,
 		EventAction: "trigger",
 		Payload: pagerDutyDetails{
-			Summary:  summaryText(ev),
+			Summary:  summaryTextCapped(ev, pagerDutyMaxSummary),
 			Source:   ev.Rule.ResourceID,
 			Severity: severity,
 		},
@@ -615,14 +659,48 @@ func parseTelegramChatID(rawURL string) (chatID string, err error) {
 // fundamentally "one text field," so one summary builder serves all of
 // them rather than duplicating this per channel.
 func summaryText(ev Event) string {
+	return summaryBody(ev) + changesSuffix(ev)
+}
+
+// summaryTextCapped is summaryText limited to limit bytes for receivers with a
+// hard message limit; the changes section survives and the body is cut.
+func summaryTextCapped(ev Event, limit int) string {
+	body, suffix := summaryBody(ev), changesSuffix(ev)
+	if len(body)+len(suffix) <= limit {
+		return body + suffix
+	}
+	keep := limit - len(suffix) - len("...")
+	if keep < 0 {
+		keep = 0
+	}
+	return strings.ToValidUTF8(body[:min(keep, len(body))], "") + "..." + suffix
+}
+
+func changesSuffix(ev Event) string {
+	if ev.Changes == nil || ev.Resolved {
+		return ""
+	}
+	if block := changes.NotifyBlock(*ev.Changes, ev.ChangesLink); block != "" {
+		return "\n" + block
+	}
+	return ""
+}
+
+func summaryBody(ev Event) string {
 	var b strings.Builder
-	if ev.Resolved {
+	switch {
+	case ev.Headline != "":
+		b.WriteString(ev.Headline)
+	case ev.Resolved:
 		fmt.Fprintf(&b, "[RESOLVED] %s (%s) on %s", ev.Rule.Name, ev.Rule.Kind, ev.Rule.ResourceID)
-	} else {
+	default:
 		fmt.Fprintf(&b, "[FIRING] %s (%s) on %s", ev.Rule.Name, ev.Rule.Kind, ev.Rule.ResourceID)
 	}
-	if ev.Rule.LastValue != nil {
+	if ev.Headline == "" && ev.Rule.LastValue != nil {
 		fmt.Fprintf(&b, ", value=%v", *ev.Rule.LastValue)
+	}
+	if len(ev.GroupNotices) > 0 {
+		fmt.Fprintf(&b, "\nAlerts:\n- %s", strings.Join(ev.GroupNotices, "\n- "))
 	}
 	if len(ev.LogLines) > 0 {
 		fmt.Fprintf(&b, "\nLast %d log lines:\n```\n%s\n```", len(ev.LogLines), strings.Join(ev.LogLines, "\n"))
@@ -639,6 +717,9 @@ func summaryText(ev Event) string {
 	if len(ev.NodeOfflineNotices) > 0 {
 		fmt.Fprintf(&b, "\nOffline nodes:\n- %s", strings.Join(ev.NodeOfflineNotices, "\n- "))
 	}
+	if len(ev.NodeCertNotices) > 0 {
+		fmt.Fprintf(&b, "\nNode certificates:\n- %s", strings.Join(ev.NodeCertNotices, "\n- "))
+	}
 	if len(ev.ResourceUsageNotices) > 0 {
 		fmt.Fprintf(&b, "\nResource usage:\n- %s", strings.Join(ev.ResourceUsageNotices, "\n- "))
 	}
@@ -650,6 +731,9 @@ func summaryText(ev Event) string {
 	}
 	if ev.BackupMissingNotice != "" {
 		fmt.Fprintf(&b, "\nBackup: %s", ev.BackupMissingNotice)
+	}
+	if ev.SLONotice != "" {
+		fmt.Fprintf(&b, "\n%s", ev.SLONotice)
 	}
 	return b.String()
 }

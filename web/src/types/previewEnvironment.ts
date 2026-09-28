@@ -5,9 +5,11 @@ import type { AppStatusSummary } from './appDetail'
 // handleListPreviewEnvironments, previewEnvironmentResource): one active
 // preview environment per open pull request against a git-connected,
 // preview-enabled app.
-export type PreviewEnvironmentStatus = 'deploying' | 'active' | 'failed'
+export type PreviewEnvironmentStatus =
+  'deploying' | 'active' | 'failed' | 'awaiting_approval' | 'limit_reached'
 
 export interface PreviewEnvironment {
+  app_name: string
   pr_number: number
   preview_app_id: string
   branch: string
@@ -18,6 +20,9 @@ export interface PreviewEnvironment {
   created_at: string
   updated_at: string
   stale: boolean
+  expires_at?: string
+  is_fork: boolean
+  head_repo?: string
   ephemeral_databases?: PreviewEphemeralDatabase[]
 }
 
@@ -39,4 +44,26 @@ export interface PreviewEphemeralDatabase {
   ready: AppStatusSummary
   created_at: string
   updated_at: string
+}
+
+export type PreviewOnLimit = 'evict_oldest' | 'reject'
+
+// GET/PUT /api/v1/apps/{name}/preview-policy (internal/api's
+// previewPolicyResource): the app's preview policy plus live usage against
+// the platform caps. A cap of 0 means unlimited.
+export interface PreviewPolicy {
+  on_limit: PreviewOnLimit
+  allow_fork_previews: boolean
+  ttl_hours: number
+  effective_ttl_hours: number
+  max_per_app: number
+  live_count: number
+  max_total: number
+  live_total: number
+}
+
+export interface PreviewPolicyUpdate {
+  on_limit?: PreviewOnLimit
+  allow_fork_previews?: boolean
+  ttl_hours?: number
 }

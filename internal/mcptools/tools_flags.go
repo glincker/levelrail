@@ -14,7 +14,7 @@ import (
 // unattended; that's deliberately left to the CLI/dashboard, both of
 // which put a human in the loop before a change takes effect.
 func registerFeatureFlagTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_feature_flags",
 		Description: "List an app's feature flags: key, name, enabled state, and rollout percentage. Read-only; does not create, edit, or toggle a flag.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.FeatureFlagResource, error) {
@@ -25,7 +25,7 @@ func registerFeatureFlagTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, flags, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_feature_flag",
 		Description: "Get one feature flag's full metadata: key, name, description, enabled state, rollout percentage. Read-only; does not create, edit, or toggle a flag.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in featureFlagInput) (*mcp.CallToolResult, apiclient.FeatureFlagResource, error) {

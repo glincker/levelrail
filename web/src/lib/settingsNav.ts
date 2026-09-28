@@ -20,19 +20,24 @@ import {
   ArrowCircleUpIcon,
   ClockCounterClockwiseIcon,
   PackageIcon,
+  DownloadSimpleIcon,
   TerminalWindowIcon,
   HeartbeatIcon,
   StackIcon,
   HardDrivesIcon,
   RobotIcon,
+  PlugsConnectedIcon,
   SparkleIcon,
+  FileCodeIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { filterByFeature, type ExperimentalFeature } from './experimental'
 
 export interface SettingsNavItem {
   to: string
   icon: ComponentType<{ className?: string }>
   title: string
   description: string
+  feature?: ExperimentalFeature
 }
 
 export interface SettingsNavSection {
@@ -65,6 +70,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: KeyIcon,
         title: 'API tokens',
         description: 'Scoped, revocable credentials for the CLI, CI, and MCP.',
+      },
+      {
+        to: '/settings/agents',
+        icon: PlugsConnectedIcon,
+        title: 'Agents',
+        description: 'Connect an AI agent over MCP and manage its tokens.',
       },
       {
         to: '/settings/cli-access',
@@ -141,16 +152,43 @@ export const settingsNavSections: SettingsNavSection[] = [
         description: 'Slack, Discord, Telegram, webhook, and email alerts.',
       },
       {
+        to: '/settings/status-page',
+        icon: HeartbeatIcon,
+        title: 'Status page',
+        description:
+          'Optional public page with component status, uptime and incidents.',
+      },
+      {
         to: '/settings/backup-targets',
         icon: CloudArrowUpIcon,
         title: 'Backup targets',
         description: 'S3-compatible buckets for managed database backups.',
       },
       {
+        to: '/settings/storage',
+        icon: CloudArrowUpIcon,
+        title: 'Storage destinations',
+        description:
+          'AWS S3, R2, B2, MinIO, Wasabi buckets for log archives and backups.',
+      },
+      {
         to: '/settings/registry-credentials',
         icon: PackageIcon,
         title: 'Registry credentials',
         description: 'Pull private images with build.type: image.',
+      },
+      {
+        to: '/settings/node-providers',
+        icon: HardDrivesIcon,
+        title: 'Cloud node providers',
+        description:
+          'Hetzner and DigitalOcean tokens for automatic node provisioning.',
+      },
+      {
+        to: '/settings/import-platform',
+        icon: DownloadSimpleIcon,
+        title: 'Import from another platform',
+        description: 'Bring apps over from Coolify, Dokploy or CapRover.',
       },
       {
         to: '/settings/registry',
@@ -170,6 +208,7 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'Cloudflare Tunnel',
         description:
           'Expose this control plane without opening an inbound port.',
+        feature: 'cloudflare-tunnel',
       },
       {
         to: '/settings/vault',
@@ -184,6 +223,7 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'AI Assistant',
         description:
           'Bring your own LLM API key for the platform chat assistant.',
+        feature: 'ai-chat',
       },
     ],
   },
@@ -224,6 +264,14 @@ export const settingsNavSections: SettingsNavSection[] = [
           'Platform ingress: dashboard domain and ACME certificates.',
       },
       {
+        to: '/settings/infrastructure',
+        icon: FileCodeIcon,
+        title: 'Infrastructure as code',
+        description:
+          'Plan and apply YAML resource files, and export live state.',
+        feature: 'iac',
+      },
+      {
         to: '/settings/updates',
         icon: ArrowCircleUpIcon,
         title: 'Updates',
@@ -238,3 +286,11 @@ export const settingsNavSections: SettingsNavSection[] = [
     ],
   },
 ]
+
+export function visibleSettingsSections(
+  enabled: readonly string[],
+): SettingsNavSection[] {
+  return settingsNavSections
+    .map((s) => ({ ...s, items: filterByFeature(s.items, enabled) }))
+    .filter((s) => s.items.length > 0)
+}

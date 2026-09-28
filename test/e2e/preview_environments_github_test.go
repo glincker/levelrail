@@ -83,8 +83,8 @@ func githubPullRequestWebhookPayload(action string, number int, headRef, baseRef
 		"action": %q,
 		"number": %d,
 		"pull_request": {
-			"head": {"ref": %q, "sha": %q},
-			"base": {"ref": %q}
+			"head": {"ref": %q, "sha": %q, "repo": {"full_name": "acme/preview-e2e"}},
+			"base": {"ref": %q, "repo": {"full_name": "acme/preview-e2e"}}
 		}
 	}`, action, number, headRef, headSHA, baseRef))
 }

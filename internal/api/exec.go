@@ -337,7 +337,7 @@ func (rt *Router) resolveExecContainer(w http.ResponseWriter, r *http.Request, s
 		return nil, nil, false
 	}
 
-	target := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
+	target := application.ContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce)
 	inspectCtx, cancel := context.WithTimeout(r.Context(), dockerInspectTimeout)
 	state, err := nodeRuntime.InspectByName(inspectCtx, target)
 	cancel()

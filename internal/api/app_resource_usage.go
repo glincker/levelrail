@@ -55,8 +55,16 @@ func (rt *Router) handleAppResourceUsage(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	canSee, err := rt.appVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: app resource usage: visibility", err)
+		return
+	}
 	byName := make(map[string]*appResourceUsageResource, len(svcs))
 	for _, svc := range svcs {
+		if !canSee(svc.Name) {
+			continue
+		}
 		byName[svc.Name] = &appResourceUsageResource{Name: svc.Name}
 	}
 

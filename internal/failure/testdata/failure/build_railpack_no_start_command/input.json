@@ -1,0 +1,11 @@
+{
+  "Status": "failed",
+  "FailingStep": "detecting",
+  "Error": "deploy: service \"web\": detect: railpack build plan failed",
+  "LogLines": [
+    "Detected Node",
+    "Detected package manager: npm",
+    "Error: failed to generate build plan: No start command detected. Specify a start command",
+    "Railpack could not find a script named start, a main entry point or a Procfile"
+  ]
+}

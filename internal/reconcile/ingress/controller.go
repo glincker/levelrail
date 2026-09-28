@@ -67,11 +67,13 @@ import (
 	"log/slog"
 	"net"
 	"strconv"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -159,6 +161,8 @@ type ServiceStore interface {
 	// /api/v1/apps/{name}/domains/{domain}/error-pages (internal/api)
 	// must take effect on this controller's very next pass.
 	ListAllDomainErrorPages(ctx context.Context) ([]store.DomainErrorPage, error)
+	// Batched application-controller readiness lookup, used by dialForService.
+	GetConditionsForControllers(ctx context.Context, controllerNames []string) (map[string][]reconcile.Condition, error)
 }
 
 // Applier is the narrow surface this controller needs from
@@ -252,10 +256,13 @@ type Controller struct {
 	logger  *slog.Logger
 
 	serverName     string
+	requestStats   bool
 	listenAddr     string
 	httpListenAddr string
 	adminListen    string
 	storageDir     string
+
+	modelHosts ModelHostSource // nil is valid: no model routes, see WithModelHosts
 
 	// dashboardDial is the control plane's own dashboard bind address
 	// (see WithDashboardDial), reverse-proxied to whenever
@@ -320,10 +327,20 @@ type Controller struct {
 	// unchanged from this controller's behavior before this feature
 	// existed.
 	publicHost string
+
+	lbSource      LoadBalancerSource // nil disables load balancing
+	lbRegistry    *loadbalancer.Registry
+	nodeUpstreams NodeUpstreamResolver
 }
 
 // Option configures optional Controller behavior.
 type Option func(*Controller)
+
+// WithRequestStats makes every proxied route count requests for the
+// per-app request metrics.
+func WithRequestStats() Option {
+	return func(ctrl *Controller) { ctrl.requestStats = true }
+}
 
 // WithServerName overrides the name Caddy's config keys the shared server
 // under (apps.http.servers.<name>). Defaults to "levelrail-ingress".
@@ -485,6 +502,7 @@ func New(svcStore ServiceStore, runtime docker.Runtime, driver Applier, opts ...
 		listenAddr:     defaultListenAddr,
 		httpListenAddr: defaultHTTPListenAddr,
 		adminListen:    defaultAdminListen,
+		lbRegistry:     loadbalancer.NewRegistry(),
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -568,6 +586,20 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain error pages: %w", err)
 	}
+	lbConfigs, err := c.loadBalancerConfigs(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancers: %w", err)
+	}
+	lbAdmin, err := c.lbAdminStates(ctx)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list load balancer admin states: %w", err)
+	}
+	readyByService, err := c.applicationReadyByService(ctx, services)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: get application readiness: %w", err)
+	}
+	var lbPlans []lbPlan
+	now := time.Now()
 
 	var routes []ingress.ProxyRoute
 	var maintenanceRoutes []ingress.MaintenanceRoute
@@ -649,14 +681,29 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			continue
 		}
 
-		dial, ok := c.dialForService(ctx, svc)
+		var lb *ingress.LBRoute
+		var dial string
+		var ok bool
+		if lbCfg, balanced := lbConfigs[svc.Name]; balanced {
+			plan := c.planLoadBalancer(ctx, svc, lbCfg, lbAdmin[svc.Name], now)
+			lbPlans = append(lbPlans, plan)
+			if lb, ok = plan.route, plan.route != nil; ok {
+				dial = lb.Upstreams[0]
+			}
+		} else {
+			dial, ok = c.dialForService(ctx, svc, readyByService[svc.Name])
+		}
 		if !ok {
 			continue
 		}
 		for _, host := range activeHosts {
 			claimedHosts[host] = svc.Name
 		}
-		routes = append(routes, c.routesForService(ctx, activeHosts, dial, authByDomain, wafByDomain, errorPagesByDomain)...)
+		svcRoutes := c.routesForService(ctx, activeHosts, dial, authByDomain, wafByDomain, errorPagesByDomain)
+		for i := range svcRoutes {
+			svcRoutes[i].LB = lb
+		}
+		routes = append(routes, svcRoutes...)
 	}
 
 	var staticRoutes []ingress.StaticRoute
@@ -730,6 +777,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		}
 	}
 
+	modelRoutes, err := c.modelRoutes(ctx, claimedHosts)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list model hosts: %w", err)
+	}
+	routes = append(routes, modelRoutes...)
+
 	cfg, err := ingress.BuildRoutesConfig(ingress.RoutesOptions{
 		ServerName:        c.serverName,
 		ListenAddr:        c.listenAddr,
@@ -747,23 +800,31 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		ACMEDirectoryURL:  settings.ACMEDirectoryURL,
 		DNSProvider:       c.resolveDNSProvider(ctx),
 		TLSCertificates:   tlsCertOverrides,
+		RequestStats:      c.requestStats,
 	})
 	if err != nil {
 		return notReady("BuildConfigFailed", err), fmt.Errorf("ingress: build config: %w", err)
 	}
 
+	c.publishRequestHostOwners(claimedHosts)
 	if err := c.driver.Apply(ctx, cfg); err != nil {
 		return notReady("ApplyFailed", err), fmt.Errorf("ingress: apply config: %w", err)
 	}
 
+	c.recordLoadBalancers(lbPlans, lbConfigs)
+
 	total := len(routes) + len(staticRoutes) + len(maintenanceRoutes) + len(redirectRoutes)
 	reason := fmt.Sprintf("Routed%dServices", total)
-	return reconcile.Result{Conditions: []reconcile.Condition{{
+	conditions := []reconcile.Condition{{
 		Type:    "Ready",
 		Status:  reconcile.ConditionTrue,
 		Reason:  reason,
 		Message: fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly, %d in maintenance mode, %d redirected)", total, len(routes), len(staticRoutes), len(maintenanceRoutes), len(redirectRoutes)),
-	}}}, nil
+	}}
+	if cond := lbCondition(lbPlans); cond != nil {
+		conditions = append(conditions, *cond)
+	}
+	return reconcile.Result{Conditions: conditions}, nil
 }
 
 // httpPortFromAddr extracts the numeric port from addr (a Caddy-style
@@ -886,60 +947,82 @@ func (c *Controller) resolveRoute53DNSProvider(ctx context.Context) ingress.DNS0
 	}
 }
 
-// dialForService derives svc's currently active container the same way
-// the application controller does (application.ContainerName: a
-// deterministic hash of the service name and image), inspects it, and
-// returns its host port binding as a dial address. false means svc has
-// no valid backend to route right now; the caller skips it for this
-// pass rather than failing the whole reconcile.
-func (c *Controller) dialForService(ctx context.Context, svc store.DesiredService) (string, bool) {
-	target := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
+// dialForService resolves svc's dial address. targetReady gates the
+// current desired container on the application controller's Ready
+// condition, not just Running+ports (F-002).
+func (c *Controller) dialForService(ctx context.Context, svc store.DesiredService, targetReady bool) (string, bool) {
+	target := application.ContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce)
 
 	state, err := c.runtime.InspectByName(ctx, target)
 	if err != nil {
-		// A real Docker-level error inspecting one service's container is
-		// still not worth failing every other service's routing over: the
-		// principle that one broken resource should never block
-		// convergence of everything else applies within this single
-		// pass too, not just across controllers. Logged at a level above
-		// debug since, unlike "not found" or "not running," this is a
-		// genuine anomaly worth noticing.
 		c.logger.WarnContext(ctx, "ingress: inspecting service container failed, skipping for this pass",
-			slog.String("service", svc.Name),
-			slog.String("container", target),
-			slog.String("error", err.Error()),
-		)
-		return "", false
-	}
-	if state == nil {
-		c.logger.DebugContext(ctx, "ingress: no container found for service yet, skipping (likely mid-deploy or never deployed)",
-			slog.String("service", svc.Name),
-			slog.String("container", target),
-		)
-		return "", false
-	}
-	if !state.Running {
-		c.logger.DebugContext(ctx, "ingress: service container found but not running, skipping",
-			slog.String("service", svc.Name),
-			slog.String("container", target),
-		)
-		return "", false
-	}
-	if len(state.Ports) == 0 {
-		c.logger.DebugContext(ctx, "ingress: service container running but has no published ports, skipping",
-			slog.String("service", svc.Name),
-			slog.String("container", target),
-		)
-		return "", false
+			slog.String("service", svc.Name), slog.String("container", target), slog.String("error", err.Error()))
+	} else if dial, ok := dialAddr(state); ok && targetReady {
+		return dial, true
 	}
 
-	// See internal/docker.PortBinding's doc comment: routing to the
-	// container's published host port, not its container-network IP, is
-	// the deliberate choice this whole codebase makes, for the same
-	// reason the application controller's readiness probe does (macOS
-	// Docker Desktop's VM boundary makes container IPs unreachable from
-	// this process, host ports are reachable everywhere this runs).
+	if dial, ok := c.dialPreviousRelease(ctx, svc.Name, target); ok {
+		return dial, true
+	}
+
+	c.logger.DebugContext(ctx, "ingress: no ready backend for service, skipping",
+		slog.String("service", svc.Name), slog.String("container", target))
+	return "", false
+}
+
+func dialAddr(state *docker.ContainerState) (string, bool) {
+	if state == nil || !state.Running || len(state.Ports) == 0 {
+		return "", false
+	}
 	return "127.0.0.1:" + strconv.Itoa(state.Ports[0].HostPort), true
+}
+
+// dialPreviousRelease finds another running, ported container for
+// serviceName besides exclude, to keep serving while exclude isn't ready.
+func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName, exclude string) (string, bool) {
+	containers, err := c.runtime.ListByPrefix(ctx, serviceName+"-")
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: list previous release containers failed",
+			slog.String("service", serviceName), slog.String("error", err.Error()))
+		return "", false
+	}
+	var best *docker.ContainerState
+	for i := range containers {
+		cs := &containers[i]
+		if cs.Name == exclude || !cs.Running || len(cs.Ports) == 0 {
+			continue
+		}
+		if best == nil || cs.Created.After(best.Created) {
+			best = cs
+		}
+	}
+	if best == nil {
+		return "", false
+	}
+	return dialAddr(best)
+}
+
+// applicationReadyByService batches the application controller's Ready
+// condition per service, once per pass rather than once per dial.
+func (c *Controller) applicationReadyByService(ctx context.Context, services []store.DesiredService) (map[string]bool, error) {
+	names := make([]string, len(services))
+	for i, svc := range services {
+		names[i] = application.ControllerName(svc.Name)
+	}
+	conditions, err := c.store.GetConditionsForControllers(ctx, names)
+	if err != nil {
+		return nil, err
+	}
+	ready := make(map[string]bool, len(services))
+	for _, svc := range services {
+		for _, cond := range conditions[application.ControllerName(svc.Name)] {
+			if cond.Type == "Ready" && cond.Status == reconcile.ConditionTrue {
+				ready[svc.Name] = true
+				break
+			}
+		}
+	}
+	return ready, nil
 }
 
 // domainBasicAuthByDomain returns every store.DomainBasicAuth row keyed

@@ -65,6 +65,36 @@ type DeployAttempt struct {
 	// step (the CLI, a git-push webhook, or an attempt recorded before
 	// this column existed).
 	DetectedFramework string
+
+	// ImageDigest is the content identity this attempt resolved to: a
+	// registry digest for a pulled image, or the local image ID of a build.
+	ImageDigest string
+	// DigestReason says how ImageDigest was obtained, one of the
+	// DigestReason* constants.
+	DigestReason string
+	// RolloutState is what the application controller last observed for
+	// this attempt's image: one of the RolloutState* constants, empty until
+	// the controller has looked.
+	RolloutState   string
+	RunningImageID string
+	// Sequence is the per-service trigger order (NextDeploySequence).
+	Sequence int64
+	// Reason explains a held or superseded attempt (Frozen, Superseded, Stale).
+	Reason string
+	// HeldRequest is the JSON a held or queued attempt needs to be replayed.
+	HeldRequest string
+	// QueuedAt is when the attempt entered the queue, nil if it never queued.
+	QueuedAt *time.Time
+	// SupersededBy is the newer attempt that replaced a queued one.
+	SupersededBy string
+	// CanceledBy is who canceled the attempt.
+	CanceledBy string
+
+	// Branch, CommitMessage and Author come from the push payload
+	// (migrations/0149), empty when the trigger carried none.
+	Branch        string
+	CommitMessage string
+	Author        string
 }
 
 // DeployAttemptEnvKind classifies one env var key captured in a
@@ -200,6 +230,18 @@ const (
 	DeployAttemptStatusRunning   = "running"
 	DeployAttemptStatusSucceeded = "succeeded"
 	DeployAttemptStatusFailed    = "failed"
+	// DeployAttemptStatusHeld is an automatic deploy parked by a freeze
+	// window, replayed once the window ends.
+	DeployAttemptStatusHeld = "held"
+	// DeployAttemptStatusSuperseded is a deploy that never wrote desired
+	// state because a newer one already had.
+	DeployAttemptStatusSuperseded = "superseded"
+	// DeployAttemptStatusQueued is a deploy waiting for another deploy of
+	// the same app, a freeze window or build capacity.
+	DeployAttemptStatusQueued = "queued"
+	// DeployAttemptStatusCanceled is a deploy stopped by an operator before
+	// it wrote desired state.
+	DeployAttemptStatusCanceled = "canceled"
 )
 
 // Deploy attempt trigger sources, one per real call site: the
@@ -267,10 +309,14 @@ func (db *DB) SaveDeployAttempt(ctx context.Context, a DeployAttempt) error {
 	if err != nil {
 		return fmt.Errorf("store: save deploy attempt %q: marshal snapshot: %w", a.ID, err)
 	}
+	queuedAt := ""
+	if a.QueuedAt != nil {
+		queuedAt = a.QueuedAt.UTC().Format(time.RFC3339Nano)
+	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO deploy_attempts (id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework)
-		VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?)
-	`, a.ID, a.ServiceName, a.Image, a.CommitSHA, a.Source, a.Status, a.StartedAt.UTC().Format(time.RFC3339Nano), string(snapshotJSON), a.DetectedFramework)
+		INSERT INTO deploy_attempts (id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework, image_digest, digest_reason, sequence, reason, held_request, queued_at, branch, commit_message, author)
+		VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, a.ID, a.ServiceName, a.Image, a.CommitSHA, a.Source, a.Status, a.StartedAt.UTC().Format(time.RFC3339Nano), string(snapshotJSON), a.DetectedFramework, a.ImageDigest, a.DigestReason, a.Sequence, a.Reason, a.HeldRequest, queuedAt, a.Branch, a.CommitMessage, a.Author)
 	if err != nil {
 		return fmt.Errorf("store: save deploy attempt %q: %w", a.ID, err)
 	}
@@ -317,8 +363,8 @@ func (db *DB) FinishDeployAttempt(ctx context.Context, id, status string, finish
 		errVal = sql.NullString{String: errMsg, Valid: true}
 	}
 	res, err := db.ExecContext(ctx, `
-		UPDATE deploy_attempts SET status = ?, finished_at = ?, error = ? WHERE id = ?
-	`, status, finishedAt.UTC().Format(time.RFC3339Nano), errVal, id)
+		UPDATE deploy_attempts SET status = ?, finished_at = ?, error = ? WHERE id = ? AND status NOT IN (?, ?)
+	`, status, finishedAt.UTC().Format(time.RFC3339Nano), errVal, id, DeployAttemptStatusCanceled, DeployAttemptStatusSuperseded)
 	if err != nil {
 		return fmt.Errorf("store: finish deploy attempt %q: %w", id, err)
 	}
@@ -327,7 +373,7 @@ func (db *DB) FinishDeployAttempt(ctx context.Context, id, status string, finish
 		return fmt.Errorf("store: finish deploy attempt %q: rows affected: %w", id, err)
 	}
 	if n == 0 {
-		return ErrDeployAttemptNotFound
+		return db.requireDeployAttempt(ctx, id)
 	}
 	return nil
 }
@@ -339,6 +385,13 @@ func (db *DB) FinishDeployAttempt(ctx context.Context, id, status string, finish
 // get its own FinishDeployAttempt call. Returns the number of rows
 // fixed.
 func (db *DB) FailOrphanedDeployAttempts(ctx context.Context, finishedAt time.Time) (int, error) {
+	// A released held deploy goes back to held so the releaser replays it.
+	if _, err := db.ExecContext(ctx, `
+		UPDATE deploy_attempts SET status = ?, reason = ?
+		WHERE status = ? AND held_request != ''
+	`, DeployAttemptStatusHeld, DeployReasonFrozen+": release interrupted by restart", DeployAttemptStatusRunning); err != nil {
+		return 0, fmt.Errorf("store: requeue interrupted held deploy attempts: %w", err)
+	}
 	res, err := db.ExecContext(ctx, `
 		UPDATE deploy_attempts SET status = ?, finished_at = ?, error = ?
 		WHERE status = ?
@@ -361,7 +414,7 @@ func (db *DB) FailOrphanedDeployAttempts(ctx context.Context, finishedAt time.Ti
 // (serve a full persisted replay), see that handler's own doc comment.
 func (db *DB) GetDeployAttempt(ctx context.Context, id string) (*DeployAttempt, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework
+		SELECT `+deployAttemptColumns+`
 		FROM deploy_attempts WHERE id = ?
 	`, id)
 	a, err := scanDeployAttempt(row.Scan)
@@ -384,7 +437,7 @@ func (db *DB) GetDeployAttempt(ctx context.Context, id string) (*DeployAttempt, 
 // here.
 func (db *DB) ListDeployAttempts(ctx context.Context, serviceName string) ([]DeployAttempt, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework
+		SELECT `+deployAttemptColumns+`
 		FROM deploy_attempts
 		WHERE service_name = ?
 		ORDER BY started_at DESC
@@ -408,14 +461,17 @@ func (db *DB) ListDeployAttempts(ctx context.Context, serviceName string) ([]Dep
 	return out, nil
 }
 
+const deployAttemptColumns = "id, service_name, image, commit_sha, source, status, started_at, finished_at, error, config_snapshot, detected_framework, image_digest, digest_reason, rollout_state, running_image_id, sequence, reason, held_request, branch, commit_message, author, queued_at, superseded_by, canceled_by"
+
 func scanDeployAttempt(scan func(dest ...any) error) (*DeployAttempt, error) {
 	var (
 		a                     DeployAttempt
 		startedAt             string
 		finishedAt, errString sql.NullString
 		snapshotJSON          string
+		queuedAt              string
 	)
-	if err := scan(&a.ID, &a.ServiceName, &a.Image, &a.CommitSHA, &a.Source, &a.Status, &startedAt, &finishedAt, &errString, &snapshotJSON, &a.DetectedFramework); err != nil {
+	if err := scan(&a.ID, &a.ServiceName, &a.Image, &a.CommitSHA, &a.Source, &a.Status, &startedAt, &finishedAt, &errString, &snapshotJSON, &a.DetectedFramework, &a.ImageDigest, &a.DigestReason, &a.RolloutState, &a.RunningImageID, &a.Sequence, &a.Reason, &a.HeldRequest, &a.Branch, &a.CommitMessage, &a.Author, &queuedAt, &a.SupersededBy, &a.CanceledBy); err != nil {
 		return nil, err
 	}
 	if snapshotJSON != "" {
@@ -438,6 +494,13 @@ func scanDeployAttempt(scan func(dest ...any) error) (*DeployAttempt, error) {
 		a.FinishedAt = &t
 	}
 	a.Error = errString.String
+	if queuedAt != "" {
+		t, err := time.Parse(time.RFC3339Nano, queuedAt)
+		if err != nil {
+			return nil, fmt.Errorf("parse queued_at %q: %w", queuedAt, err)
+		}
+		a.QueuedAt = &t
+	}
 
 	return &a, nil
 }

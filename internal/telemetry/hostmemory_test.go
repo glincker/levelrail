@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -140,9 +141,22 @@ func TestHostMemoryCollector_CollectOnce_BadPath_ReturnsError(t *testing.T) {
 	}
 }
 
-func TestNewHostMemoryCollector_DefaultsToRealMemInfoPath(t *testing.T) {
+func TestNewHostMemoryCollector_DefaultsToThePlatformSource(t *testing.T) {
 	c := NewHostMemoryCollector("node:local", nil, time.Second, nil)
-	if c.memInfoPath != "/proc/meminfo" {
-		t.Errorf("memInfoPath = %q, want /proc/meminfo", c.memInfoPath)
+	if c.memInfoPath != "" {
+		t.Errorf("memInfoPath = %q, want empty so CollectOnce uses HostMemoryBytes", c.memInfoPath)
+	}
+}
+
+func TestHostMemoryBytes_ThisHost(t *testing.T) {
+	total, available, err := HostMemoryBytes()
+	if errors.Is(err, ErrHostMemoryUnsupported) {
+		t.Skip("no memory source on this operating system")
+	}
+	if err != nil {
+		t.Fatalf("HostMemoryBytes() error = %v", err)
+	}
+	if total <= 0 || available <= 0 || available > total {
+		t.Fatalf("total=%d available=%d, want 0 < available <= total", total, available)
 	}
 }

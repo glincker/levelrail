@@ -9,7 +9,7 @@ import (
 )
 
 func registerDeployApprovalTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_deploy_approvals",
 		Description: "List pending (or, with status 'all', every) two-person approval gate on a deploy/promote into a protected environment. status defaults to 'pending' when omitted; service filters to one app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listDeployApprovalsInput) (*mcp.CallToolResult, []apiclient.DeployApprovalResource, error) {
@@ -20,7 +20,7 @@ func registerDeployApprovalTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, approvals, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_deploy_approval",
 		Description: "Get one deploy approval by ID: who requested it, what it would deploy, and its current status.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployApprovalIDInput) (*mcp.CallToolResult, apiclient.DeployApprovalResource, error) {
@@ -31,7 +31,7 @@ func registerDeployApprovalTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, a, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "approve_deploy_approval",
 		Description: "Approve a pending deploy approval: the gated deploy/promote actually runs through the normal reconcile path once this succeeds. Fails if the caller is the same actor who requested it, or if it's no longer pending.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployApprovalIDInput) (*mcp.CallToolResult, apiclient.DeployApprovalDecisionResult, error) {
@@ -42,7 +42,7 @@ func registerDeployApprovalTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, result, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "reject_deploy_approval",
 		Description: "Reject a pending deploy approval: the app's desired state is left untouched, it never reaches reconcile.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in rejectDeployApprovalInput) (*mcp.CallToolResult, apiclient.DeployApprovalResource, error) {

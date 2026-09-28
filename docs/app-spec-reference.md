@@ -105,6 +105,7 @@ Three additions beyond the project's planning doc, all implemented:
 | `volumes` | list of `Volume` | no | none | Named Docker volumes and host-directory bind mounts this service's container mounts. |
 | `hooks` | `Hooks` | no | none | Pre/post-deploy commands run inside the container. Not meaningful when `build.type` is `static` or `compose`. |
 | `command` | list of string | no | none | Overrides the image's own default `CMD`. A plain argv list, never shell-interpreted. |
+| `loadbalancer` | `LoadBalancer` | no | none | Balances traffic across the service's replicas. See [Load balancing](load-balancing.md). |
 
 ### `Build`
 
@@ -192,6 +193,25 @@ A Compose file's `healthcheck:` is translated into a readiness probe: a `curl`/`
 | `cpu` | number | no | none | Must be greater than 0 if set. |
 | `swapMemory` | string | no | none | Same pattern as `memory`. Docker's `MemorySwap`: the combined memory+swap ceiling, not swap on top of memory, so it must be at least `memory` and requires `memory` to also be set. |
 | `cpuSet` | string | no | none | Docker's `cpuset-cpus` format, for example `0-3` or `0,2`. Pins the container to specific host CPUs. |
+| `gpu` | `all`, integer, or object | no | none | Requests NVIDIA GPUs. `all`, a count such as `2`, or `{count: 2}` / `{devices: ["0", "GPU-uuid"]}` (device indexes or UUIDs win over count). The app is refused on a node without a GPU and the nvidia container runtime, and moving it to such a node is rejected. See [AI models](ai-models.md#gpu-nodes). |
+
+### `LoadBalancer`
+
+All fields are optional. Durations are Go duration strings such as `500ms`, `5s` or `2m`. See [Load balancing](load-balancing.md) for behavior.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `algorithm` | string | `round_robin` (default), `least_conn`, `ip_hash`, `uri_hash`, `cookie` or `weighted`. |
+| `cookie_name` | string | Sticky cookie name. Only with `algorithm: cookie`, default `lb`. |
+| `weights` | list of integer | 1 to 100 per replica, indexed by replica number. Only with `algorithm: weighted`. |
+| `active_health` | object | `path` (required, starts with `/`), `interval`, `timeout` (shorter than `interval`), `passes`, `fails`, `expect_status`. |
+| `passive_health` | object | `max_fails`, `fail_duration`. |
+| `retries` | object | `count` (0 to 10), `try_duration`, `try_interval`. |
+| `slow_start` | duration | Weight ramp for a new replica. Weighted only. |
+| `drain_timeout` | duration | How long open streams survive a cutover. |
+| `request_timeout` | duration | Upstream response header timeout. |
+| `rate_limit` | object | `rps` (required), `burst`. Per client address. |
+| `upstream_tls` | object | `server_name`, `insecure_skip_verify`. Speak HTTPS to replicas. |
 
 ### `Hooks`
 

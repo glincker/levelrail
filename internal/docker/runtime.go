@@ -54,12 +54,25 @@ type Resources struct {
 	CPUSetCPUs string
 }
 
+// GPURequest asks Docker for NVIDIA GPUs via a DeviceRequest. Count -1
+// means every GPU; DeviceIDs (indexes or UUIDs) and Count are mutually
+// exclusive, DeviceIDs wins when both are set.
+type GPURequest struct {
+	Count     int
+	DeviceIDs []string
+}
+
 // ContainerState is the observed state of a single container, trimmed to
 // the fields a controller actually needs to decide what to do next.
 type ContainerState struct {
-	ID      string
-	Name    string
-	Image   string
+	ID    string
+	Name  string
+	Image string
+	// ImageID is the local image ID the container actually runs, empty
+	// when the transport does not report it.
+	ImageID string
+	// Created is when the container was created, zero when unknown.
+	Created time.Time
 	Running bool
 	// Ports reflects live port bindings. Docker only actually binds a
 	// container's published ports once it's running, so this is empty
@@ -136,6 +149,11 @@ type ContainerSpec struct {
 	Ports     []PortBinding
 	Env       map[string]string
 	Resources *Resources
+	// GPU, when non-nil, attaches NVIDIA GPUs through the nvidia
+	// container runtime. nil means no GPU device request.
+	GPU *GPURequest
+	// ShmSizeBytes sizes /dev/shm. 0 keeps Docker's default.
+	ShmSizeBytes int64
 	// Volumes are named Docker volumes to mount at create time. A
 	// database controller is the first caller; ordinary
 	// application containers leave this nil.

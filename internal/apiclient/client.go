@@ -89,6 +89,9 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 	if c.userAgent != "" {
 		req.Header.Set("User-Agent", c.userAgent)
 	}
+	if agent := agentClientFrom(ctx); agent != "" {
+		req.Header.Set(AgentClientHeader, agent)
+	}
 
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
@@ -194,8 +197,29 @@ func (c *Client) ListAppStatuses(ctx context.Context) ([]AppStatusEntry, error) 
 // placement are never copied (see internal/api/apps_clone.go's own doc
 // comment for why).
 func (c *Client) CloneApp(ctx context.Context, name, newName string) (AppResource, error) {
+	return c.CloneAppWith(ctx, name, CloneAppRequest{NewName: newName})
+}
+
+// CloneAppWith is CloneApp with the secret, domain and environment options.
+func (c *Client) CloneAppWith(ctx context.Context, name string, req CloneAppRequest) (AppResource, error) {
 	var out AppResource
-	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/clone", CloneAppRequest{NewName: newName}, &out)
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/clone", req, &out)
+	return out, err
+}
+
+// ClonePreview is GET /api/v1/apps/{name}/clone/preview's body.
+type ClonePreview struct {
+	Source      string   `json:"source"`
+	WillCopy    []string `json:"will_copy"`
+	WillNotCopy []string `json:"will_not_copy"`
+	SecretNames []string `json:"secret_names"`
+	Domains     []string `json:"source_domains"`
+}
+
+// PreviewClone calls GET /api/v1/apps/{name}/clone/preview.
+func (c *Client) PreviewClone(ctx context.Context, name string) (ClonePreview, error) {
+	var out ClonePreview
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/clone/preview", nil, &out)
 	return out, err
 }
 
@@ -230,8 +254,31 @@ func (c *Client) TriggerBuild(ctx context.Context, name string, req BuildTrigger
 // (ApproveDeployApproval below) before this tag actually reaches a
 // running container.
 func (c *Client) DeployApp(ctx context.Context, name, image string, confirm bool) (DeployTriggerResult, error) {
+	return c.DeployAppWith(ctx, name, DeployTriggerRequest{Image: image, Confirm: confirm})
+}
+
+// DeployAppWith is DeployApp with the full request: pull and freeze override.
+func (c *Client) DeployAppWith(ctx context.Context, name string, req DeployTriggerRequest) (DeployTriggerResult, error) {
 	var out DeployTriggerResult
-	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploys", DeployTriggerRequest{Image: image, Confirm: confirm}, &out)
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/deploys", req, &out)
+	return out, err
+}
+
+// GetDeployFreeze calls GET /api/v1/apps/{name}/deploy-freeze.
+func (c *Client) GetDeployFreeze(ctx context.Context, name string) (DeployFreezeResource, error) {
+	var out DeployFreezeResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploy-freeze", nil, &out)
+	return out, err
+}
+
+// SetDeployFreeze calls PUT /api/v1/apps/{name}/deploy-freeze, replacing the
+// app's windows; an empty list clears them.
+func (c *Client) SetDeployFreeze(ctx context.Context, name string, windows []FreezeWindowResource) (DeployFreezeResource, error) {
+	var out DeployFreezeResource
+	if windows == nil {
+		windows = []FreezeWindowResource{}
+	}
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/deploy-freeze", PutDeployFreezeRequest{Windows: windows}, &out)
 	return out, err
 }
 
@@ -1450,6 +1497,13 @@ func (c *Client) SetGitSource(ctx context.Context, name string, req SetGitSource
 	return out, err
 }
 
+// SetGitDeploySettings calls PUT /api/v1/apps/{name}/git-source/deploy-settings.
+func (c *Client) SetGitDeploySettings(ctx context.Context, name string, req SetGitDeploySettingsRequest) (GitDeploySettings, error) {
+	var out GitDeploySettings
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/git-source/deploy-settings", req, &out)
+	return out, err
+}
+
 // DeleteGitSource calls DELETE /api/v1/apps/{name}/git-source.
 func (c *Client) DeleteGitSource(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/git-source", nil, nil)
@@ -2127,6 +2181,36 @@ func (c *Client) SetAutoRollback(ctx context.Context, appName string, enabled bo
 	return out, err
 }
 
+// CancelDeploy calls POST /api/v1/apps/{name}/deploys/{deployId}/cancel and
+// returns the attempt as it is after the cancel.
+func (c *Client) CancelDeploy(ctx context.Context, appName, deployID string) (DeployAttemptResource, error) {
+	var out DeployAttemptResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/deploys/"+PathEscape(deployID)+"/cancel", nil, &out)
+	return out, err
+}
+
+// RollbackToDeploy calls POST /api/v1/apps/{name}/deploys/{deployId}/rollback:
+// redeploys the content that past deploy recorded, pinned by digest.
+func (c *Client) RollbackToDeploy(ctx context.Context, appName, deployID string, req RollbackToRequest) (DeployTriggerResult, error) {
+	var out DeployTriggerResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(appName)+"/deploys/"+PathEscape(deployID)+"/rollback", req, &out)
+	return out, err
+}
+
+// GetCancelSuperseded calls GET /api/v1/apps/{name}/cancel-superseded.
+func (c *Client) GetCancelSuperseded(ctx context.Context, appName string) (CancelSupersededResource, error) {
+	var out CancelSupersededResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/cancel-superseded", nil, &out)
+	return out, err
+}
+
+// SetCancelSuperseded calls PUT /api/v1/apps/{name}/cancel-superseded.
+func (c *Client) SetCancelSuperseded(ctx context.Context, appName string, enabled bool) (CancelSupersededResource, error) {
+	var out CancelSupersededResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/cancel-superseded", CancelSupersededResource{Enabled: enabled}, &out)
+	return out, err
+}
+
 // GetExecAccess calls GET /api/v1/apps/{name}/exec-access: whether
 // appName's shell/exec routes (POST .../exec, GET .../terminal) are even
 // attempted, regardless of the caller's own IAM abilities. On by
@@ -2527,6 +2611,22 @@ func (c *Client) RotateMasterKey(ctx context.Context, newMasterKey string) (Rota
 	return out, err
 }
 
+// GetSecretBinding calls GET /api/v1/system/secrets/binding: how many
+// stored secret values still use the legacy unbound format.
+func (c *Client) GetSecretBinding(ctx context.Context) (SecretBindingStatus, error) {
+	var out SecretBindingStatus
+	err := c.do(ctx, http.MethodGet, "/api/v1/system/secrets/binding", nil, &out)
+	return out, err
+}
+
+// RebindSecrets calls POST /api/v1/system/secrets/rebind: re-encrypts
+// every legacy secret value bound to its slot. Safe to repeat.
+func (c *Client) RebindSecrets(ctx context.Context) (SecretRebindResult, error) {
+	var out SecretRebindResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/system/secrets/rebind", nil, &out)
+	return out, err
+}
+
 // ListAlertRules calls GET /api/v1/apps/{name}/alerts: every alert rule
 // scoped to name, including disabled ones.
 func (c *Client) ListAlertRules(ctx context.Context, name string) ([]AlertRuleResource, error) {
@@ -2762,6 +2862,9 @@ func auditLogQuery(opts ListAuditLogOptions) url.Values {
 	if opts.FailedOnly {
 		q.Set("status", "failed")
 	}
+	if opts.Agent != "" {
+		q.Set("agent", opts.Agent)
+	}
 	return q
 }
 
@@ -2829,6 +2932,14 @@ func (c *Client) PurgeAuditLog(ctx context.Context) (PurgeAuditLogResult, error)
 func (c *Client) ListDeployAttempts(ctx context.Context, name string) ([]DeployAttemptResource, error) {
 	var out []DeployAttemptResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploy-attempts", nil, &out)
+	return out, err
+}
+
+// GetDeploy calls GET /api/v1/apps/{name}/deploys/{deployId}: one deploy
+// attempt with its structured failure. deployID may be "latest".
+func (c *Client) GetDeploy(ctx context.Context, name, deployID string) (DeployAttemptResource, error) {
+	var out DeployAttemptResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploys/"+PathEscape(deployID), nil, &out)
 	return out, err
 }
 

@@ -269,7 +269,7 @@ Recording is best-effort and runs after the real request completes. A failed aud
 
 **Query**
 
-`GET /api/v1/audit-log` is cursor-paginated (`?before`, an RFC3339 timestamp) and filterable by `?path`, `?method`, and `?client_kind`. Use `?format=csv` to return rows as a downloadable attachment instead of JSON, for compliance export.
+`GET /api/v1/audit-log` is cursor-paginated (`?before`, an RFC3339 timestamp) and filterable by `?path`, `?method`, `?client_kind`, and `?agent` (the agent label of the token, see [AI assistant](ai-assistant.md#agent-identity)). Use `?format=csv` to return rows as a downloadable attachment instead of JSON, for compliance export.
 
 **Retention**
 

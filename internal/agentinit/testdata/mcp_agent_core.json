@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "acme": {
+      "command": "acme-mcp",
+      "args": [
+        "--tool-profile",
+        "agent-core"
+      ],
+      "env": {
+        "APP_API_TOKEN": "${APP_API_TOKEN}",
+        "APP_API_URL": "${APP_API_URL:-https://deploy.example.com}"
+      }
+    }
+  }
+}

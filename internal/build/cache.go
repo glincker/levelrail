@@ -42,6 +42,9 @@ type CacheConfig struct {
 	// "insecure" cache attribute. Only meaningful when RegistryRef is
 	// set; ignored otherwise.
 	RegistryInsecure bool
+
+	// S3 enables BuildKit's s3 cache backend for one build.
+	S3 *S3Cache
 }
 
 // ErrCacheRegistryRefRequired is returned by CacheConfig.entries when
@@ -54,7 +57,7 @@ var ErrCacheRegistryRefRequired = errors.New("build: cache registry insecure fla
 
 // empty reports whether c disables caching entirely.
 func (c CacheConfig) empty() bool {
-	return c.Dir == "" && c.RegistryRef == ""
+	return c.Dir == "" && c.RegistryRef == "" && c.S3 == nil
 }
 
 // validate checks c is internally consistent before any entries are
@@ -101,6 +104,15 @@ func (c CacheConfig) entries() (imports, exports []bkclient.CacheOptionsEntry, e
 		exports = append(exports, bkclient.CacheOptionsEntry{Type: "registry", Attrs: attrs})
 	}
 
+	if c.S3 != nil {
+		i, e, err := c.S3.entries()
+		if err != nil {
+			return nil, nil, err
+		}
+		imports = append(imports, i...)
+		exports = append(exports, e...)
+	}
+
 	return imports, exports, nil
 }
 
@@ -109,6 +121,9 @@ func (c CacheConfig) entries() (imports, exports []bkclient.CacheOptionsEntry, e
 // configured credential store, the same as every other registry
 // operation in this codebase, per ensureImage in internal/docker).
 func (c CacheConfig) String() string {
+	if c.S3 != nil {
+		return c.S3.String()
+	}
 	switch {
 	case c.Dir != "" && c.RegistryRef != "":
 		return fmt.Sprintf("dir=%s registry=%s", c.Dir, c.RegistryRef)

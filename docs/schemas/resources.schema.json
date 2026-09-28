@@ -1,0 +1,1035 @@
+{
+  "$defs": {
+    "alertRuleSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "app": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "comparator": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "for": {
+          "pattern": "^[0-9]+(ms|s|m|h)$",
+          "type": "string"
+        },
+        "metric": {
+          "type": "string"
+        },
+        "restartCountThreshold": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "restartWindow": {
+          "pattern": "^[0-9]+(ms|s|m|h)$",
+          "type": "string"
+        },
+        "threshold": {
+          "type": "number"
+        },
+        "type": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "app",
+        "type"
+      ],
+      "type": "object"
+    },
+    "appSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "environment": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "project": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "service": {
+          "$ref": "#/$defs/service"
+        },
+        "tags": {
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "service"
+      ],
+      "type": "object"
+    },
+    "backup": {
+      "additionalProperties": false,
+      "properties": {
+        "retain": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "schedule": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "schedule"
+      ],
+      "type": "object"
+    },
+    "build": {
+      "additionalProperties": false,
+      "properties": {
+        "args": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "baseDirectory": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "image": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "registryCredential": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "dockerfile",
+            "compose",
+            "railpack",
+            "static",
+            "image"
+          ]
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "database": {
+      "additionalProperties": false,
+      "properties": {
+        "backup": {
+          "$ref": "#/$defs/backup"
+        },
+        "engine": {
+          "enum": [
+            "postgres",
+            "redis",
+            "mysql",
+            "mongodb",
+            "mariadb",
+            "keydb",
+            "clickhouse",
+            "dragonfly"
+          ]
+        },
+        "ephemeralInPreviews": {
+          "type": "boolean"
+        },
+        "version": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "engine"
+      ],
+      "type": "object"
+    },
+    "databaseSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "engine": {
+          "$ref": "#/$defs/database/properties/engine"
+        },
+        "project": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "engine"
+      ],
+      "type": "object"
+    },
+    "domainSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "app": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "app"
+      ],
+      "type": "object"
+    },
+    "egress": {
+      "additionalProperties": false,
+      "properties": {
+        "allow": {
+          "items": {
+            "$ref": "#/$defs/egressAllow"
+          },
+          "type": "array"
+        },
+        "mode": {
+          "enum": [
+            "allowlist"
+          ]
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "type": "object"
+    },
+    "egressAllow": {
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "port": {
+          "maximum": 65535,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "host",
+        "port"
+      ],
+      "type": "object"
+    },
+    "envValue": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "from": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "secret": {
+              "type": "boolean"
+            },
+            "vault": {
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "path": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "key"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "secretRef": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "secretRef"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "environmentSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "env": {
+          "$ref": "#/$defs/literalEnv"
+        },
+        "project": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "protected": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "project"
+      ],
+      "type": "object"
+    },
+    "health": {
+      "additionalProperties": false,
+      "properties": {
+        "liveness": {
+          "$ref": "#/$defs/probe"
+        },
+        "readiness": {
+          "$ref": "#/$defs/probe"
+        },
+        "readyTimeout": {
+          "pattern": "^[0-9]+(ms|s|m|h)$",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "hooks": {
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "postDeploy": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "preDeploy": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "literalEnv": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "loadbalancer": {
+      "additionalProperties": false,
+      "properties": {
+        "active_health": {
+          "additionalProperties": false,
+          "properties": {
+            "expect_status": {
+              "maximum": 599,
+              "minimum": 100,
+              "type": "integer"
+            },
+            "fails": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "interval": {
+              "type": "string"
+            },
+            "passes": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "path": {
+              "pattern": "^/",
+              "type": "string"
+            },
+            "timeout": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object"
+        },
+        "algorithm": {
+          "enum": [
+            "round_robin",
+            "least_conn",
+            "ip_hash",
+            "uri_hash",
+            "cookie",
+            "weighted"
+          ]
+        },
+        "cookie_name": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "drain_timeout": {
+          "type": "string"
+        },
+        "passive_health": {
+          "additionalProperties": false,
+          "properties": {
+            "fail_duration": {
+              "type": "string"
+            },
+            "max_fails": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "rate_limit": {
+          "additionalProperties": false,
+          "properties": {
+            "burst": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "rps": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "rps"
+          ],
+          "type": "object"
+        },
+        "request_timeout": {
+          "type": "string"
+        },
+        "retries": {
+          "additionalProperties": false,
+          "properties": {
+            "count": {
+              "maximum": 10,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "try_duration": {
+              "type": "string"
+            },
+            "try_interval": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "slow_start": {
+          "type": "string"
+        },
+        "upstream_tls": {
+          "additionalProperties": false,
+          "properties": {
+            "insecure_skip_verify": {
+              "type": "boolean"
+            },
+            "server_name": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "weights": {
+          "items": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "metadata": {
+      "additionalProperties": false,
+      "properties": {
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "name": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "pipelineSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "app": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "yaml": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "app",
+        "yaml"
+      ],
+      "type": "object"
+    },
+    "probe": {
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "path"
+          ]
+        },
+        {
+          "required": [
+            "exec"
+          ]
+        }
+      ],
+      "properties": {
+        "exec": {
+          "oneOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            }
+          ]
+        },
+        "expected_status": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/statusCode"
+            },
+            {
+              "$ref": "#/$defs/statusList"
+            },
+            {
+              "items": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/statusCode"
+                  },
+                  {
+                    "$ref": "#/$defs/statusRange"
+                  }
+                ]
+              },
+              "minItems": 1,
+              "type": "array"
+            }
+          ]
+        },
+        "failures": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "follow_redirects": {
+          "type": "boolean"
+        },
+        "host": {
+          "pattern": "^[^/\\s]+$",
+          "type": "string"
+        },
+        "interval": {
+          "pattern": "^[0-9]+(ms|s|m|h)$",
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "scheme": {
+          "enum": [
+            "http",
+            "https"
+          ]
+        },
+        "timeout": {
+          "pattern": "^[0-9]+(ms|s|m|h)$",
+          "type": "string"
+        },
+        "tls_skip_verify": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "projectSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "env": {
+          "$ref": "#/$defs/literalEnv"
+        }
+      },
+      "type": "object"
+    },
+    "resources": {
+      "additionalProperties": false,
+      "properties": {
+        "cpu": {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "cpuSet": {
+          "pattern": "^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$",
+          "type": "string"
+        },
+        "gpu": {
+          "oneOf": [
+            {
+              "const": "all"
+            },
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "count": {
+                  "oneOf": [
+                    {
+                      "const": "all"
+                    },
+                    {
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  ]
+                },
+                "devices": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        "memory": {
+          "pattern": "^[0-9]+(Mi|Gi)$",
+          "type": "string"
+        },
+        "swapMemory": {
+          "pattern": "^[0-9]+(Mi|Gi)$",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "service": {
+      "additionalProperties": false,
+      "properties": {
+        "bind_address": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "build": {
+          "$ref": "#/$defs/build"
+        },
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "domains": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "egress": {
+          "$ref": "#/$defs/egress"
+        },
+        "env": {
+          "additionalProperties": {
+            "$ref": "#/$defs/envValue"
+          },
+          "type": "object"
+        },
+        "health": {
+          "$ref": "#/$defs/health"
+        },
+        "hooks": {
+          "$ref": "#/$defs/hooks"
+        },
+        "host_port": {
+          "maximum": 65535,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "loadbalancer": {
+          "$ref": "#/$defs/loadbalancer"
+        },
+        "port": {
+          "maximum": 65535,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "replicas": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "resources": {
+          "$ref": "#/$defs/resources"
+        },
+        "strategy": {
+          "enum": [
+            "rolling",
+            "recreate",
+            "blue-green"
+          ]
+        },
+        "volumes": {
+          "items": {
+            "$ref": "#/$defs/volume"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "build"
+      ],
+      "type": "object"
+    },
+    "statusCode": {
+      "maximum": 599,
+      "minimum": 100,
+      "type": "integer"
+    },
+    "statusList": {
+      "pattern": "^[1-5][0-9]{2}(-[1-5][0-9]{2})?([ ,]+[1-5][0-9]{2}(-[1-5][0-9]{2})?)*$",
+      "type": "string"
+    },
+    "statusRange": {
+      "pattern": "^[1-5][0-9]{2}(-[1-5][0-9]{2})?$",
+      "type": "string"
+    },
+    "volume": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "required": [
+            "name"
+          ]
+        },
+        {
+          "required": [
+            "hostPath"
+          ]
+        }
+      ],
+      "properties": {
+        "hostPath": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "readOnly": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://glinr.com/levelrail/schema/resources.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Project"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/projectSpec"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Environment"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/environmentSpec"
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Tag"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "additionalProperties": false,
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Database"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/databaseSpec"
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "App"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/appSpec"
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Domain"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/domainSpec"
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "LoadBalancer"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/loadbalancer"
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Pipeline"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/pipelineSpec"
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "AlertRule"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/alertRuleSpec"
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    }
+  ],
+  "description": "One document of a multi-document resource file read by apply. The $defs of the app.yaml schema are merged in unchanged, so a service under App.spec.service follows exactly the app.yaml service rules.",
+  "properties": {
+    "kind": {
+      "enum": [
+        "Project",
+        "Environment",
+        "Tag",
+        "Database",
+        "App",
+        "Domain",
+        "LoadBalancer",
+        "Pipeline",
+        "AlertRule"
+      ]
+    },
+    "metadata": {
+      "$ref": "#/$defs/metadata"
+    },
+    "spec": {
+      "type": "object"
+    },
+    "version": {
+      "const": 1
+    }
+  },
+  "required": [
+    "version",
+    "kind",
+    "metadata"
+  ],
+  "title": "Platform resource document",
+  "type": "object"
+}

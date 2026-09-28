@@ -30,6 +30,8 @@ func runAppsSecrets(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsSecretsList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "set":
 		return runAppsSecretsSet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "delete":
+		return runAppsSecretsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "lock":
 		return runAppsSecretsLock(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -44,7 +46,11 @@ func appsSecretsUsage(prog string) string {
   %[1]s apps secrets list <name> [flags]                          list an app's secret keys and their locked state
   %[1]s apps secrets set <name> <key> <value> [flags]              set (or rotate) one secret's value
   %[1]s apps secrets set <name> --env-file <path> [flags]           bulk-set every key in a .env-format file as a secret
+  %[1]s apps secrets delete <name> <key> [--force] [flags]         delete a secret's value and stop injecting it
   %[1]s apps secrets lock <name> <key> --locked=true|false [flags]  toggle a secret's overwrite guard
+
+A secret you set is injected into the app's container from the next restart
+on. Pass --apply to set to restart right away.
 
 Values are never returned: list shows key names and locked state only,
 matching internal/api/secrets.go's own "never echo a value back" rule.
@@ -81,6 +87,8 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, _, _, _ := apiFlagSet(prog, "apps secrets set", "unused for this subcommand", stderr)
 	var overwriteLocked bool
 	var envFile string
+	var apply bool
+	fs.BoolVar(&apply, "apply", false, "restart the app now so the new value reaches the running container")
 	fs.BoolVar(&overwriteLocked, "force", false, "overwrite the value even if the key is locked")
 	fs.StringVar(&envFile, "env-file", "", "bulk-set every key in this .env-format file as a secret, instead of a single key/value pair")
 	fs.Usage = func() {
@@ -102,7 +110,11 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 		if !ok {
 			return exitUsage
 		}
-		return runAppsSecretsSetEnvFile(client, rest[0], envFile, overwriteLocked, stdout, stderr)
+		code := runAppsSecretsSetEnvFile(client, rest[0], envFile, overwriteLocked, stdout, stderr)
+		if code == exitOK {
+			code = afterConfigWrite(context.Background(), client, prog, rest[0], apply, stdout, stderr)
+		}
+		return code
 	}
 
 	rest, ok := requireArgs(fs, stderr, prog, "apps secrets set", "an app name, a key, and a value", 3)
@@ -115,7 +127,35 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 		return reportError(stdout, stderr, false, fmt.Errorf("set secret %q for app %q: %w", key, name, err))
 	}
 	_, _ = fmt.Fprintf(stdout, "secret %q set for app %q\n", key, name)
-	return exitOK
+	return afterConfigWrite(context.Background(), client, prog, name, apply, stdout, stderr)
+}
+
+func runAppsSecretsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, _, _, _ := apiFlagSet(prog, "apps secrets delete", "unused for this subcommand", stderr)
+	var force, apply bool
+	fs.BoolVar(&force, "force", false, "delete the value even if the key is locked")
+	fs.BoolVar(&apply, "apply", false, "restart the app now so the removal reaches the running container")
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps secrets delete <name> <key> [flags]\n\nDeletes a secret's stored value and stops declaring the key as\nsecret-backed, so it is no longer injected.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
+		if err == flag.ErrHelp {
+			return exitOK
+		}
+		return exitUsage
+	}
+	rest, ok := requireArgs(fs, stderr, prog, "apps secrets delete", "an app name and a key", 2)
+	if !ok {
+		return exitUsage
+	}
+	name, key := rest[0], rest[1]
+	client := apiClientFromFlags(prog, *apiURLFlagP, *tokenFlagP, *profileFlagP, lookupEnv)
+	if err := client.DeleteSecret(context.Background(), name, key, force); err != nil {
+		return reportError(stdout, stderr, false, fmt.Errorf("delete secret %q for app %q: %w", key, name, err))
+	}
+	_, _ = fmt.Fprintf(stdout, "secret %q deleted for app %q\n", key, name)
+	return afterConfigWrite(context.Background(), client, prog, name, apply, stdout, stderr)
 }
 
 // runAppsSecretsSetEnvFile reads path as a .env-format file and sets each

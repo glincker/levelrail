@@ -240,6 +240,9 @@ func toServiceResources(r spec.Resources) (store.ServiceResources, error) {
 		out.SwapMemoryBytes = bytes
 	}
 	out.CPUSetCPUs = r.CPUSet
+	if r.GPU != nil && r.GPU.Requested() {
+		out.GPU = &store.ServiceGPU{Count: r.GPU.Count, DeviceIDs: r.GPU.Devices}
+	}
 	return out, nil
 }
 

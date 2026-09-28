@@ -202,6 +202,19 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	canSee, err := rt.databaseVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: list databases: visibility", err)
+		return
+	}
+	visibleDBs := dbs[:0:0]
+	for _, d := range dbs {
+		if canSee(d.Name) {
+			visibleDBs = append(visibleDBs, d)
+		}
+	}
+	dbs = visibleDBs
+
 	controllerNames := make([]string, len(dbs))
 	for i, d := range dbs {
 		controllerNames[i] = databaseControllerName(d.Name)

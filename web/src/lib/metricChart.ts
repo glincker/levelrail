@@ -16,7 +16,8 @@ import { useMemo } from 'react'
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { MetricSeries } from '../types/metrics'
 
-export type ChartUnit = 'percent' | 'bytes' | 'count' | 'seconds'
+export type ChartUnit =
+  'percent' | 'bytes' | 'count' | 'seconds' | 'rate' | 'ms'
 
 export interface ChartRow {
   t: number
@@ -93,6 +94,14 @@ export function formatMetricValue(unit: ChartUnit, value: number): string {
       return formatDurationValue(value)
     case 'count':
       return Number.isFinite(value) ? value.toFixed(0) : '-'
+    case 'rate':
+      return Number.isFinite(value)
+        ? `${value.toFixed(value < 10 ? 2 : 0)}/s`
+        : '-'
+    case 'ms':
+      return Number.isFinite(value)
+        ? `${value.toFixed(value < 10 ? 1 : 0)} ms`
+        : '-'
     default:
       return String(value)
   }

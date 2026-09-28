@@ -2,12 +2,7 @@ import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import {
-  CheckIcon,
-  CopyIcon,
-  KeyIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { KeyIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
@@ -29,6 +24,8 @@ import {
 } from '@/components/ui/select'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { AbilitiesField } from './AbilitiesField'
+import { TokenCreatedView } from './TokenCreatedView'
+import { InfoTip } from './kit'
 import { useCreateToken } from '../queries/tokens'
 import type { CreateTokenResponse } from '../types/token'
 
@@ -51,6 +48,7 @@ const EXPIRATION_OPTIONS = [
 const createTokenSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
   expiration: z.enum(['never', '1', '7', '30', '90', '365']),
+  agentName: z.string().trim().max(64, 'At most 64 characters'),
   abilities: z
     .array(
       z.enum([
@@ -70,12 +68,16 @@ type CreateTokenFormValues = z.infer<typeof createTokenSchema>
 export function CreateTokenDialog() {
   const [open, setOpen] = useState(false)
   const [created, setCreated] = useState<CreateTokenResponse | null>(null)
-  const [copied, setCopied] = useState(false)
   const createToken = useCreateToken()
   const { control, register, handleSubmit, formState, reset } =
     useForm<CreateTokenFormValues>({
       resolver: zodResolver(createTokenSchema),
-      defaultValues: { name: '', expiration: 'never', abilities: [] },
+      defaultValues: {
+        name: '',
+        expiration: 'never',
+        agentName: '',
+        abilities: [],
+      },
     })
 
   const onSubmit = handleSubmit((values) => {
@@ -87,6 +89,9 @@ export function CreateTokenDialog() {
         name: values.name.trim(),
         abilities: values.abilities,
         ...(days ? { expires_in_days: days } : {}),
+        ...(values.agentName.trim()
+          ? { agent: { name: values.agentName.trim() } }
+          : {}),
       },
       { onSuccess: setCreated },
     )
@@ -100,19 +105,9 @@ export function CreateTokenDialog() {
     setOpen(next)
     if (!next) {
       setCreated(null)
-      setCopied(false)
       reset()
       createToken.reset()
     }
-  }
-
-  function copyToken() {
-    if (!created) {
-      return
-    }
-    void navigator.clipboard.writeText(created.token).then(() => {
-      setCopied(true)
-    })
   }
 
   return (
@@ -120,52 +115,12 @@ export function CreateTokenDialog() {
       <DialogTrigger render={<Button />}>Create token</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         {created ? (
-          <>
-            <DialogHeader>
-              <DialogTitle>Token created</DialogTitle>
-              <DialogDescription>
-                &ldquo;{created.name}&rdquo; is ready to use.
-              </DialogDescription>
-            </DialogHeader>
-            {/* The one moment this token's plaintext ever exists in the
-                UI (tokens.go's handleCreateToken never returns it again),
-                so this gets the clearest possible warning treatment, not
-                just a description line: Dokploy's copy-once modal (finding
-                10) is the model here. No "warning" tone exists in
-                badgeVariants/alertVariants, so this reuses the same
-                amber-precedent classes AlertRulesPanel.tsx and the deploy
-                logs route already established for exactly this gap. */}
-            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-              <WarningIcon className="mt-0.5 size-4 shrink-0" />
-              <p className="text-sm">
-                Copy this token now. It will not be shown again.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
-              <code className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
-                {created.token}
-              </code>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={copyToken}
-              >
-                {copied ? <CheckIcon /> : <CopyIcon />}
-                {copied ? 'Copied' : 'Copy'}
-              </Button>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                onClick={() => {
-                  handleOpenChange(false)
-                }}
-              >
-                Done
-              </Button>
-            </DialogFooter>
-          </>
+          <TokenCreatedView
+            created={created}
+            onDone={() => {
+              handleOpenChange(false)
+            }}
+          />
         ) : (
           <>
             <DialogHeader>
@@ -214,6 +169,26 @@ export function CreateTokenDialog() {
                     </Select>
                   )}
                 />
+              </Field>
+
+              <Field>
+                <div className="flex items-center gap-1">
+                  <FieldLabel htmlFor="token-agent">
+                    Agent name (optional)
+                  </FieldLabel>
+                  <InfoTip label="About agent names">
+                    Label the token as issued to an AI agent, for example
+                    &ldquo;Claude Code&rdquo;. The name is shown here and on
+                    every audit log entry the token makes, so you can tell agent
+                    changes from human ones.
+                  </InfoTip>
+                </div>
+                <Input
+                  id="token-agent"
+                  placeholder="e.g. Claude Code"
+                  {...register('agentName')}
+                />
+                <FieldError errors={[formState.errors.agentName]} />
               </Field>
 
               <Controller

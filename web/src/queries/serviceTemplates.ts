@@ -25,6 +25,7 @@ export interface ServiceTemplateListItem {
   // available memory (internal/catalog.Template's own doc comment on
   // why). Absent (omitempty) when a template has no advisory.
   recommended_memory_bytes?: number
+  requires_gpu?: boolean
 }
 
 // Mirrors serviceTemplateDetail's wire shape: the list item's fields plus

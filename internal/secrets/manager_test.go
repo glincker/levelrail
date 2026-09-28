@@ -1,6 +1,7 @@
 package secrets
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"sort"
@@ -25,6 +26,10 @@ type fakeStore struct {
 	failGetDEK error
 	rotatedAt  time.Time
 	rotatedOK  bool
+	// failReplaceAfter, when > 0, fails every ReplaceSecretCiphertext
+	// call after that many have succeeded.
+	failReplaceAfter int
+	replaceCalls     int
 }
 
 func newFakeStore() *fakeStore {
@@ -161,6 +166,52 @@ func (f *fakeStore) RotateServiceDEKs(_ context.Context, rewrap func(serviceName
 
 func (f *fakeStore) GetMasterKeyRotatedAt(_ context.Context) (time.Time, bool, error) {
 	return f.rotatedAt, f.rotatedOK, nil
+}
+
+func (f *fakeStore) CountSecretValuesByPrefix(_ context.Context, prefix []byte) (total, withPrefix int, err error) {
+	for _, byKey := range f.values {
+		for _, ct := range byKey {
+			total++
+			if bytes.HasPrefix(ct, prefix) {
+				withPrefix++
+			}
+		}
+	}
+	return total, withPrefix, nil
+}
+
+func (f *fakeStore) ListSecretCiphertexts(_ context.Context, afterService, afterKey string, limit int) ([]store.SecretCiphertext, error) {
+	var all []store.SecretCiphertext
+	for svc, byKey := range f.values {
+		for key, ct := range byKey {
+			if svc > afterService || (svc == afterService && key > afterKey) {
+				all = append(all, store.SecretCiphertext{ServiceName: svc, EnvKey: key, Ciphertext: ct})
+			}
+		}
+	}
+	sort.Slice(all, func(i, j int) bool {
+		if all[i].ServiceName != all[j].ServiceName {
+			return all[i].ServiceName < all[j].ServiceName
+		}
+		return all[i].EnvKey < all[j].EnvKey
+	})
+	if len(all) > limit {
+		all = all[:limit]
+	}
+	return all, nil
+}
+
+func (f *fakeStore) ReplaceSecretCiphertext(_ context.Context, serviceName, envKey string, old, replacement []byte) (bool, error) {
+	if f.failReplaceAfter > 0 && f.replaceCalls >= f.failReplaceAfter {
+		return false, errors.New("injected replace failure")
+	}
+	f.replaceCalls++
+	current, ok := f.values[serviceName][envKey]
+	if !ok || !bytes.Equal(current, old) {
+		return false, nil
+	}
+	f.values[serviceName][envKey] = replacement
+	return true, nil
 }
 
 func testManager(t *testing.T) (*Manager, *fakeStore) {

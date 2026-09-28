@@ -29,6 +29,8 @@ func runAppsAlerts(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return runAppsAlertsUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runAppsAlertsDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "slo":
+		return runAppsAlertsSLO(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps alerts subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsAlertsUsage(prog))
@@ -49,8 +51,11 @@ func appsAlertsUsage(prog string) string {
   %[1]s apps alerts create <app> --kind node_offline [flags]
   %[1]s apps alerts create <app> --kind domain_health [flags]
   %[1]s apps alerts create <app> --kind control_plane_backup_stale [flags]
+  %[1]s apps alerts create <app> --kind log_archive_stale [flags]
   %[1]s apps alerts create <app> --kind backup_missing --backup-resource-kind database --backup-database-name NAME [flags]
   %[1]s apps alerts create <app> --kind backup_missing --backup-resource-kind volume --backup-volume-name NAME [flags]
+  %[1]s apps alerts create <app> --kind slo_burn --slo 99.9 [--slo-latency-ms N] [flags]
+  %[1]s apps alerts slo <app> [--slo 99.9] [--slo-latency-ms N]
   %[1]s apps alerts update <app> <id> --kind KIND [flags]
   %[1]s apps alerts delete <app> <id> [flags]
 
@@ -141,6 +146,8 @@ func alertRuleCondition(r alertRuleResource) string {
 		return "any node over its pending security-patch threshold (platform-wide)"
 	case "node_offline":
 		return "any node offline (platform-wide)"
+	case "node_cert_expiring":
+		return "any node's agent certificate close to expiry or expired (platform-wide)"
 	case "node_disk_space":
 		return "any node over its disk-usage percentage threshold (platform-wide)"
 	case "node_resource_usage":
@@ -149,6 +156,10 @@ func alertRuleCondition(r alertRuleResource) string {
 		return fmt.Sprintf("task %s fails %d runs in a row", r.ScheduledTaskID, r.RestartCountThreshold)
 	case "control_plane_backup_stale":
 		return "the control plane's newest self-backup snapshot older than its age limit (platform-wide)"
+	case "log_archive_stale":
+		return "a log archive policy failed or has not succeeded within its age limit (platform-wide)"
+	case "slo_burn":
+		return describeSLO(r.SLO)
 	case "domain_health":
 		return "any of this app's own domains not resolving correctly or pointing elsewhere"
 	case "backup_missing":
@@ -205,7 +216,7 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 		if restartWindow == "" {
 			return newValidationError("--restart-window is required for --kind crashloop")
 		}
-	case "cert_expiry", "patch_status", "node_disk_space", "node_resource_usage", "node_offline":
+	case "cert_expiry", "patch_status", "node_disk_space", "node_resource_usage", "node_offline", "node_cert_expiring":
 		// No kind-specific flags: a cert_expiry rule watches every
 		// certificate on the control plane, a patch_status rule watches
 		// every node's pending OS security patches, a node_disk_space rule
@@ -221,6 +232,10 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 		}
 	case "control_plane_backup_stale":
 		// Platform-wide; --for-duration optionally overrides the 3d age limit.
+	case "log_archive_stale":
+		// Platform-wide; --for-duration optionally overrides the per-policy age limit.
+	case "slo_burn":
+		// --slo is validated by sloFlags.apply.
 	case "domain_health":
 		// No required flags: watches every domain already configured on
 		// this app. --for-duration is accepted but optional.
@@ -238,9 +253,9 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 			return newValidationError("--backup-resource-kind must be \"database\" or \"volume\" for --kind backup_missing")
 		}
 	case "":
-		return newValidationError("--kind is required (threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, or control_plane_backup_stale)")
+		return newValidationError("--kind is required (threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, or slo_burn)")
 	default:
-		return newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, or control_plane_backup_stale", kind)
+		return newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, or slo_burn", kind)
 	}
 	return nil
 }
@@ -291,7 +306,7 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
-	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, control_plane_backup_stale (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, slo_burn (required)")
 	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
 	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
 	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold only)")
@@ -304,6 +319,8 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 	fs.StringVar(&notifyURL, "notify-url", "", "legacy alternative to --channel-id: a raw webhook URL/destination")
 	fs.StringVar(&notifyKind, "notify-kind", "", "legacy alternative to --channel-id: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat")
 	fs.BoolVar(&disabled, "disabled", false, "create the rule disabled (default: enabled)")
+	noise := registerAlertNoiseFlags(fs)
+	slo := registerSLOFlags(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsAlertsCreateUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -333,6 +350,13 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		BackupServiceName: backupFields.ServiceName, BackupVolumeName: backupFields.VolumeName,
 	}
 
+	if err := noise.apply(&req); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
+	if err := slo.apply(kind, &req); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
+
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	created, err := client.CreateAlertRule(context.Background(), appName, req)
 	if err != nil {
@@ -359,6 +383,7 @@ func appsAlertsCreateUsage(prog string) string {
   %[1]s apps alerts create <app> --name NAME --kind node_resource_usage [flags]
   %[1]s apps alerts create <app> --name NAME --kind domain_health [flags]
   %[1]s apps alerts create <app> --name NAME --kind control_plane_backup_stale [flags]
+  %[1]s apps alerts create <app> --name NAME --kind log_archive_stale [flags]
   %[1]s apps alerts create <app> --name NAME --kind backup_missing --backup-resource-kind database --backup-database-name NAME [flags]
   %[1]s apps alerts create <app> --name NAME --kind backup_missing --backup-resource-kind volume --backup-volume-name NAME [flags]
 
@@ -385,11 +410,13 @@ backup trails that schedule's own expected interval by more than
 
 Flags:
   --name string                        display name for the rule (required)
-  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, or control_plane_backup_stale (required)
+  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, or slo_burn (required)
   --metric string                      metric name (--kind threshold only)
   --comparator string                  >, <, >=, or <= (--kind threshold only)
   --threshold float                    threshold value (--kind threshold only)
-  --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold or domain_health); overdue grace period, e.g. "6h" (--kind backup_missing, default 6h); max snapshot age (--kind control_plane_backup_stale, default 3d)
+  --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold or domain_health); overdue grace period, e.g. "6h" (--kind backup_missing, default 6h); max snapshot age (--kind control_plane_backup_stale, default 3d); max time since a successful archive (--kind log_archive_stale, default 3 intervals, at least 2h)
+  --slo float                          SLO target percentage of good requests, e.g. 99.9 (--kind slo_burn, required for it)
+  --slo-latency-ms float               make the SLO a latency SLO: good means finishing within this many ms (--kind slo_burn)
   --restart-count-threshold int        restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing
   --restart-window string              time window restarts are counted in, e.g. "5m" (--kind crashloop only)
   --scheduled-task-id string           which of <app>'s scheduled tasks to watch (--kind scheduled_task_failure only)
@@ -400,7 +427,7 @@ Flags:
   --notify-url string                  legacy alternative to --channel-id
   --notify-kind string                 legacy alternative to --channel-id
   --disabled                           create the rule disabled (default: enabled)
-  --token string                       API token (default: %[2]s env var, then the credentials file)
+`+alertNoiseFlagsUsage+`  --token string                       API token (default: %[2]s env var, then the credentials file)
   --api-url string                    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string                    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                                 print the created rule as JSON to stdout, nothing else
@@ -428,7 +455,7 @@ func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, l
 		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
-	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, control_plane_backup_stale (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, slo_burn (required)")
 	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
 	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
 	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold only)")
@@ -441,6 +468,8 @@ func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, l
 	fs.StringVar(&notifyURL, "notify-url", "", "legacy alternative to --channel-id: a raw webhook URL/destination")
 	fs.StringVar(&notifyKind, "notify-kind", "", "legacy alternative to --channel-id: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat")
 	fs.BoolVar(&disabled, "disabled", false, "leave the rule disabled (default: enabled)")
+	noise := registerAlertNoiseFlags(fs)
+	slo := registerSLOFlags(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsAlertsUpdateUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -469,6 +498,13 @@ func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, l
 		Enabled:            !disabled,
 		BackupResourceKind: backupFields.ResourceKind, BackupDatabaseName: backupFields.DatabaseName,
 		BackupServiceName: backupFields.ServiceName, BackupVolumeName: backupFields.VolumeName,
+	}
+
+	if err := noise.apply(&req); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
+	if err := slo.apply(kind, &req); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
@@ -508,11 +544,13 @@ help for what each kind needs.
 
 Flags:
   --name string                        display name for the rule (required)
-  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, or control_plane_backup_stale (required)
+  --kind string                        threshold, crashloop, cert_expiry, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, or slo_burn (required)
   --metric string                      metric name (--kind threshold only)
   --comparator string                  >, <, >=, or <= (--kind threshold only)
   --threshold float                    threshold value (--kind threshold only)
-  --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold or domain_health); overdue grace period (--kind backup_missing, default 6h); max snapshot age (--kind control_plane_backup_stale, default 3d)
+  --for-duration string                how long the condition must hold before firing, e.g. "2m" (--kind threshold or domain_health); overdue grace period (--kind backup_missing, default 6h); max snapshot age (--kind control_plane_backup_stale, default 3d); max time since a successful archive (--kind log_archive_stale, default 3 intervals, at least 2h)
+  --slo float                          SLO target percentage of good requests, e.g. 99.9 (--kind slo_burn, required for it)
+  --slo-latency-ms float               make the SLO a latency SLO: good means finishing within this many ms (--kind slo_burn)
   --restart-count-threshold int        restart count (--kind crashloop) or consecutive-failure count (--kind scheduled_task_failure) that triggers firing
   --restart-window string              time window restarts are counted in, e.g. "5m" (--kind crashloop only)
   --scheduled-task-id string           which of <app>'s scheduled tasks to watch (--kind scheduled_task_failure only)
@@ -523,7 +561,7 @@ Flags:
   --notify-url string                  legacy alternative to --channel-id
   --notify-kind string                 legacy alternative to --channel-id
   --disabled                           leave the rule disabled (default: enabled)
-  --token string                       API token (default: %[2]s env var, then the credentials file)
+`+alertNoiseFlagsUsage+`  --token string                       API token (default: %[2]s env var, then the credentials file)
   --api-url string                    control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string                    named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                                 print the updated rule as JSON to stdout, nothing else

@@ -47,6 +47,13 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			Entrypoint: svc.Entrypoint,
 			PullPolicy: pullPolicy,
 		}
+		gpu, err := gpuFromDeploy(svc.Deploy)
+		if err != nil {
+			return nil, nil, fmt.Errorf("service %q: %w", key, err)
+		}
+		if gpu != nil {
+			d.Resources = &store.ServiceResources{GPU: gpu}
+		}
 		for _, p := range svc.Ports {
 			d.Port = p.ContainerPort
 			break

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -75,12 +76,13 @@ type envImportResult struct {
 func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps env import", "print the import plan as JSON to stdout and nothing else", stderr)
 	var file string
-	var dryRun, keepExisting bool
+	var dryRun, keepExisting, apply bool
+	fs.BoolVar(&apply, "apply", false, "restart the app now so the new env reaches the running container")
 	fs.StringVar(&file, "file", "", "path to the .env file to import (required)")
 	fs.BoolVar(&dryRun, "dry-run", false, "show what would change without saving")
 	fs.BoolVar(&keepExisting, "keep-existing", false, "leave keys that already exist with a different value untouched")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps env import <name> --file .env [flags]\n\nMerges a .env file into an app's plain env vars. Keys already set as\nsecrets are skipped. Env changes take effect on the next restart.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps env import <name> --file .env [flags]\n\nMerges a .env file into an app's plain env vars. Keys already set as\nsecrets are skipped. Env changes take effect on the next restart,\nor now with --apply.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -122,7 +124,17 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 		result.Applied = true
 	}
 
-	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printEnvImportHuman(stdout, name, result) })
+	code := writeScheduledTaskResult(stdout, stderr, of, result, func() { printEnvImportHuman(stdout, name, result) })
+	if result.Applied {
+		hintOut := stdout
+		if of.Format == outputJSON || of.Query != "" {
+			hintOut = io.Discard
+		}
+		if applyCode := afterConfigWrite(ctx, client, prog, name, apply, hintOut, stderr); code == exitOK {
+			code = applyCode
+		}
+	}
+	return code
 }
 
 func printEnvImportHuman(w io.Writer, name string, r envImportResult) {
@@ -149,6 +161,29 @@ func printEnvImportHuman(w io.Writer, name string, r envImportResult) {
 	default:
 		_, _ = fmt.Fprintf(w, "nothing to change for app %q\n", name)
 	}
+	if keys := buildTimeEnvKeys(r.Plan.New, r.Plan.Changed); len(keys) > 0 {
+		_, _ = fmt.Fprintf(w, "note: build-time keys (%s) are inlined into the frontend bundle at build time, so runtime env does not change the browser code; supply them to the build (build.args with a Dockerfile, or a committed .env.production) and rebuild\n", strings.Join(keys, ", "))
+	}
+}
+
+// buildTimeEnvPrefixes are frontend frameworks' public env prefixes, whose
+// values are compiled into client bundles rather than read at runtime.
+var buildTimeEnvPrefixes = []string{"NEXT_PUBLIC_", "VITE_", "REACT_APP_"}
+
+func buildTimeEnvKeys(groups ...[]string) []string {
+	var out []string
+	for _, keys := range groups {
+		for _, k := range keys {
+			for _, p := range buildTimeEnvPrefixes {
+				if strings.HasPrefix(k, p) {
+					out = append(out, k)
+					break
+				}
+			}
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 func runAppsEnvExport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

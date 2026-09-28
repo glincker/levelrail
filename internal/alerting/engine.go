@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
+	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -83,6 +86,21 @@ type Engine struct {
 
 	cpBackups      ControlPlaneBackupSource
 	cpBackupMaxAge time.Duration
+
+	logArchive LogArchiveSource
+
+	nodeCertWarning, nodeCertCritical time.Duration
+
+	noise *NoiseControl
+
+	changes     ChangeSource
+	changesLink func(app string) string
+
+	slo         SLOPolicy
+	sloThrottle *domainHealthThrottle
+
+	sloMu       sync.Mutex
+	sloSeverity map[string]string
 }
 
 // NewEngine builds an Engine. newNotifier defaults to a Notifier with no
@@ -148,6 +166,7 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 		nodeCPUThreshold: nodeCPUThreshold, nodeMemoryThreshold: nodeMemoryThreshold,
 		domainHealthCheckInterval: domainHealthCheckInterval, domainHealthThrottle: newDomainHealthThrottle(),
 		backupMissingGracePeriod: backupMissingGracePeriod,
+		slo:                      SLOPolicyFromEnv(), sloThrottle: newDomainHealthThrottle(), sloSeverity: make(map[string]string),
 	}
 }
 
@@ -172,6 +191,31 @@ func (e *Engine) SetControlPlaneBackups(src ControlPlaneBackupSource, maxAge tim
 	e.cpBackupMaxAge = maxAge
 }
 
+// SetLogArchive enables kind=log_archive_stale rules.
+func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
+
+// SetNodeCertThresholds sets the default warning window and critical
+// threshold for kind=node_cert_expiring rules. Zero keeps the defaults.
+func (e *Engine) SetNodeCertThresholds(warning, critical time.Duration) {
+	e.nodeCertWarning, e.nodeCertCritical = warning, critical
+}
+
+// ChangeSource reports what changed on an app before an alert fired.
+// *changes.Aggregator satisfies it.
+type ChangeSource interface {
+	Collect(ctx context.Context, app string, until time.Time) changes.Result
+}
+
+// SetChanges attaches a "recent changes" section to firing app alerts. link,
+// when non-nil, maps an app name to its dashboard URL.
+func (e *Engine) SetChanges(src ChangeSource, link func(app string) string) {
+	e.changes, e.changesLink = src, link
+}
+
+// SetNoiseControl enables silences, grouping, flapping control and alert
+// history. Unset, every transition notifies directly.
+func (e *Engine) SetNoiseControl(n *NoiseControl) { e.noise = n }
+
 // Tick evaluates every enabled rule once. Errors from individual rules
 // (a metrics query failing, a notification failing to send) are
 // collected and joined, never stopping evaluation of the remaining
@@ -186,11 +230,14 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 	now := time.Now()
 	var errs []error
+	if e.noise != nil {
+		defer e.noise.Sweep(ctx, now, e.sendEvent)
+	}
 
 	for _, r := range rules {
 		var next Rule
-		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeOfflineNotices []string
-		var taskFailureNotice, backupMissingNoticeText string
+		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string
+		var taskFailureNotice, backupMissingNoticeText, sloNotice string
 		switch r.Kind {
 		case KindThreshold:
 			next, err = EvaluateThreshold(ctx, e.metrics, r, now)
@@ -245,7 +292,24 @@ func (e *Engine) Tick(ctx context.Context) error {
 				e.logger.Warn("alerting: node_offline rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
 				continue
 			}
-			next, nodeOfflineNotices, err = EvaluateNodeOffline(ctx, e.nodes, r, now)
+			next, nodeNotices, err = EvaluateNodeOffline(ctx, e.nodes, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
+		case KindNodeCertExpiring:
+			if e.nodes == nil {
+				e.logger.Warn("alerting: node_cert_expiring rule found but no node source configured, skipping", slog.String("rule_id", r.ID))
+				continue
+			}
+			warning, critical := e.nodeCertWarning, e.nodeCertCritical
+			if warning <= 0 {
+				warning = DefaultNodeCertWarning
+			}
+			if critical <= 0 {
+				critical = DefaultNodeCertCritical
+			}
+			next, nodeNotices, err = EvaluateNodeCertExpiring(ctx, e.nodes, r, warning, critical, now)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
@@ -283,6 +347,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindSLOBurn:
+			if !e.sloThrottle.ready(r.ID, e.slo.EvalEvery, now) {
+				continue
+			}
+			next, sloNotice, err = EvaluateSLOBurn(ctx, e.metrics, r, e.slo, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		case KindControlPlaneBackupStale:
 			if e.cpBackups == nil {
 				// Scheduled backups are disabled: nothing to be stale.
@@ -293,11 +366,23 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindLogArchiveStale:
+			if e.logArchive == nil {
+				continue
+			}
+			next, backupMissingNoticeText, err = EvaluateLogArchiveStale(ctx, e.logArchive, r, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		default:
 			e.logger.Warn("alerting: rule has unknown kind, skipping", slog.String("rule_id", r.ID), slog.String("kind", string(r.Kind)))
 			continue
 		}
 
+		if e.noise != nil {
+			next = e.noise.ApplyStreak(r, next, now)
+		}
 		becameFiring := next.Firing && !r.Firing
 		becameResolved := !next.Firing && r.Firing
 		stillFiring := next.Firing && r.Firing
@@ -309,13 +394,24 @@ func (e *Engine) Tick(ctx context.Context) error {
 
 		switch {
 		case becameFiring:
-			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeOfflineNotices, taskFailureNotice, backupMissingNoticeText)
+			if r.Kind == KindSLOBurn {
+				e.sloEscalated(r.ID, next.Severity)
+			}
+			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices, taskFailureNotice, backupMissingNoticeText, sloNotice)
 			if r.Kind == KindCrashloop && e.autoRollback != nil {
 				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
 			}
 		case becameResolved:
-			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, nil, "", "")
+			if r.Kind == KindSLOBurn {
+				e.sloForget(r.ID)
+			}
+			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, nil, "", "", "")
 		case stillFiring:
+			// A ticket-level SLO burn that worsens into a page-level one must
+			// notify again: the operator only heard a warning so far.
+			if r.Kind == KindSLOBurn && e.sloEscalated(r.ID, next.Severity) {
+				e.dispatch(ctx, next, false, nil, nil, nil, nil, nil, nil, "", "", sloNotice)
+			}
 			// No dispatch here: a rule that's still firing sends no repeat
 			// notification (see dispatch's own doc comment on why). But a
 			// second, genuinely different bad deploy inside the same
@@ -335,17 +431,37 @@ func (e *Engine) Tick(ctx context.Context) error {
 	return errors.Join(errs...)
 }
 
+// sloEscalated records severity as the last one seen for rule id and reports
+// whether it just rose from a non-critical level to critical. A rule seen for
+// the first time (for example after a restart) is recorded without escalating.
+func (e *Engine) sloEscalated(id, severity string) bool {
+	e.sloMu.Lock()
+	defer e.sloMu.Unlock()
+	prev, seen := e.sloSeverity[id]
+	e.sloSeverity[id] = severity
+	return seen && prev != SeverityCritical && severity == SeverityCritical
+}
+
+func (e *Engine) sloForget(id string) {
+	e.sloMu.Lock()
+	defer e.sloMu.Unlock()
+	delete(e.sloSeverity, id)
+}
+
 // dispatch sends one notification for r's transition. Failures are
 // logged, not returned: a notification failing to send must never stop
 // evaluation of other rules, and the rule's own state was already
 // persisted successfully before dispatch is called, so a lost
 // notification doesn't leave the rule's stored state inconsistent with
 // reality, only the operator momentarily uninformed.
-func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeOfflineNotices []string, taskFailureNotice, backupMissingNotice string) {
+func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string, taskFailureNotice, backupMissingNotice, sloNotice string) {
 	// r.Enabled is already resolved against its attached channel
 	// (scanRule): a disabled channel silences the rule the same way
 	// DeployDispatcher.Dispatch skips a target with a disabled channel.
 	if !r.Enabled {
+		if e.noise != nil {
+			e.noise.RecordSkipped(ctx, r, resolved, time.Now())
+		}
 		return
 	}
 
@@ -363,7 +479,10 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 		ev.DiskSpaceNotices = diskSpaceNotices
 	}
 	if r.Kind == KindNodeOffline && !resolved {
-		ev.NodeOfflineNotices = nodeOfflineNotices
+		ev.NodeOfflineNotices = nodeNotices
+	}
+	if r.Kind == KindNodeCertExpiring && !resolved {
+		ev.NodeCertNotices = nodeNotices
 	}
 	if r.Kind == KindNodeResourceUsage && !resolved {
 		ev.ResourceUsageNotices = resourceUsageNotices
@@ -374,22 +493,57 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if r.Kind == KindDomainHealth && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
-	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale) && !resolved {
+	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
 	}
 
+	if r.Kind == KindSLOBurn && !resolved {
+		ev.SLONotice = sloNotice
+	}
+
+	if !resolved {
+		e.attachChanges(ctx, &ev)
+	}
+
+	if e.noise != nil {
+		e.noise.Route(ctx, ev, time.Now(), e.sendEvent)
+		return
+	}
+	_ = e.sendEvent(ctx, ev)
+}
+
+func (e *Engine) attachChanges(ctx context.Context, ev *Event) {
+	if e.changes == nil {
+		return
+	}
+	app, ok := strings.CutPrefix(ev.Rule.ResourceID, "service:")
+	if !ok || app == "" {
+		return
+	}
+	res := e.changes.Collect(ctx, app, time.Now())
+	ev.Changes = &res
+	if e.changesLink != nil {
+		ev.ChangesLink = e.changesLink(app)
+	}
+}
+
+// sendEvent delivers ev and records the channel delivery. The error is
+// returned so NoiseControl can record the outcome; it is already logged.
+func (e *Engine) sendEvent(ctx context.Context, ev Event) error {
+	r := ev.Rule
 	sendErr := e.newNotifier(r).Notify(ctx, ev)
 	if sendErr != nil {
 		e.logger.Error("alerting: notification failed",
 			slog.String("rule_id", r.ID), slog.String("resource_id", r.ResourceID),
-			slog.Bool("resolved", resolved), slog.String("error", sendErr.Error()))
+			slog.Bool("resolved", ev.Resolved), slog.String("error", sendErr.Error()))
 	}
 
 	trigger := "alert-fired"
-	if resolved {
+	if ev.Resolved {
 		trigger = "alert-resolved"
 	}
 	recordDelivery(ctx, e.rules, e.logger, r.ChannelID, trigger, sendErr)
+	return sendErr
 }
 
 // fetchRecentLogLines returns the most recent up to crashloopLogLines
@@ -426,6 +580,11 @@ func (e *Engine) Run(ctx context.Context, interval time.Duration) error {
 	for {
 		select {
 		case <-ctx.Done():
+			if e.noise != nil {
+				flushCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+				e.noise.FlushAll(flushCtx, time.Now(), e.sendEvent)
+				cancel()
+			}
 			return ctx.Err()
 		case <-ticker.C:
 			if err := e.Tick(ctx); err != nil {

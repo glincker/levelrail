@@ -89,6 +89,20 @@ func (l Local) InspectExitState(ctx context.Context, name string) (*docker.ExitS
 	return inspector.InspectExitState(ctx, name)
 }
 
+// InspectImageID implements docker.ImageInspector by forwarding; an
+// unsupporting runtime reports "" so digest verification is skipped.
+func (l Local) InspectImageID(ctx context.Context, ref string) (string, error) {
+	inspector, ok := l.Runtime.(docker.ImageInspector)
+	if !ok {
+		return "", nil
+	}
+	id, err := inspector.InspectImageID(ctx, ref)
+	if err != nil {
+		return "", fmt.Errorf("agent: local inspect image: %w", err)
+	}
+	return id, nil
+}
+
 // ErrNodeNotRegistered is Registry.Get's failure mode for an unknown
 // node ID.
 var ErrNodeNotRegistered = errors.New("agent: node not registered in this transport registry")

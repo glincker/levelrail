@@ -1,0 +1,6 @@
+{
+  "Condition": {
+    "Reason": "ReadinessFailed",
+    "Message": "readiness probe returned status 503"
+  }
+}

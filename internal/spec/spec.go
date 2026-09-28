@@ -15,6 +15,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 )
 
 // Spec is a fully parsed, schema-valid app.yaml.
@@ -88,6 +90,10 @@ type Service struct {
 	// tightly-scoped agent sandboxes, and defaulting every existing app
 	// to deny-all egress on upgrade would be a breaking change.
 	Egress *Egress `yaml:"egress,omitempty"`
+
+	// LoadBalancer configures balancing across this service's replicas
+	// (internal/loadbalancer). Nil keeps the plain single-upstream route.
+	LoadBalancer *loadbalancer.Config `yaml:"loadbalancer,omitempty"`
 }
 
 // EgressModeAllowlist is the only meaningful Egress.Mode value today; see
@@ -238,6 +244,9 @@ type Resources struct {
 	// CPUSet pins the container to specific host CPUs, Docker's own
 	// cpuset-cpus format (e.g. "0-3" or "0,2").
 	CPUSet string `yaml:"cpuSet,omitempty"`
+	// GPU requests NVIDIA GPUs; the service is placed only on a node
+	// with a usable GPU. nil means no GPU.
+	GPU *GPU `yaml:"gpu,omitempty"`
 }
 
 // Supported managed database engines: Postgres and Redis shipped as

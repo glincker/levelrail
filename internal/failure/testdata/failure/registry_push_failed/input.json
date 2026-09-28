@@ -1,0 +1,5 @@
+{
+  "Status": "failed",
+  "FailingStep": "pushing",
+  "Error": "deploy: service \"web\": failed to push registry.local/web:abc: 502 Bad Gateway"
+}

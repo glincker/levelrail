@@ -3,7 +3,8 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { appListQueryOptions } from '../queries/apps'
 import { onboardingQueryOptions } from '../queries/onboarding'
 import { userListQueryOptions } from '../queries/users'
-import { DashboardOverview } from '../components/DashboardOverview'
+import { DashboardHome } from '../components/dashboard/DashboardHome'
+import { SkeletonLine, SkeletonTile } from '@/components/kit'
 
 // Same loader/useSuspenseQuery split as routes/apps/index.tsx: the
 // loader primes the cache, the component only reads it. onboarding is
@@ -22,21 +23,24 @@ export const Route = createFileRoute('/')({
 })
 
 function DashboardPage() {
-  const { data: apps } = useSuspenseQuery(appListQueryOptions())
+  const { data: apps } = useSuspenseQuery({
+    ...appListQueryOptions(),
+    refetchInterval: 15_000,
+  })
   const { data: onboarding } = useSuspenseQuery(onboardingQueryOptions())
-  return <DashboardOverview apps={apps} onboarding={onboarding} />
+  return <DashboardHome apps={apps} onboarding={onboarding} />
 }
 
 function DashboardPending() {
   return (
-    <div className="space-y-6">
-      <div className="h-6 w-32 animate-pulse rounded bg-muted" />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />
+    <div className="space-y-8" aria-busy="true">
+      <SkeletonLine width={260} className="h-6" />
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-3">
+        {Array.from({ length: 5 }, (_, i) => (
+          <SkeletonTile key={i} />
         ))}
       </div>
-      <div className="h-40 animate-pulse rounded-lg bg-muted" />
+      <SkeletonTile className="h-40" />
     </div>
   )
 }

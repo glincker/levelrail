@@ -16,7 +16,11 @@
 // easier to table-test in isolation, without starting Caddy at all.
 package ingress
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+	"strings"
+)
 
 // Config is the root of a Caddy JSON config document
 // (https://caddyserver.com/docs/json/), scoped to the subset this spike
@@ -149,6 +153,11 @@ type ReverseProxyHandler struct {
 	// replace a backend-returned status like 404 or 500 with a custom
 	// body while keeping the same status code.
 	HandleResponse []ResponseHandler `json:"handle_response,omitempty"`
+
+	LoadBalancing    *LoadBalancing `json:"load_balancing,omitempty"`
+	HealthChecks     *HealthChecks  `json:"health_checks,omitempty"`
+	Transport        *HTTPTransport `json:"transport,omitempty"`
+	StreamCloseDelay string         `json:"stream_close_delay,omitempty"`
 }
 
 // ResponseMatcher mirrors Caddy's reverse_proxy response matcher: a
@@ -314,8 +323,19 @@ func NewRedirectResponseHandler(targetURL string, statusCode int) StaticResponse
 	return StaticResponseHandler{
 		Handler:    "static_response",
 		StatusCode: statusCode,
-		Headers:    map[string][]string{"Location": {targetURL}},
+		Headers:    map[string][]string{"Location": {redirectLocation(targetURL)}},
 	}
+}
+
+// redirectLocation carries the request path and query over when the target
+// is a bare origin, so a www to apex redirect keeps deep links working. A
+// target with its own path, query, or fragment stays a fixed Location.
+func redirectLocation(targetURL string) string {
+	u, err := url.Parse(targetURL)
+	if err != nil || (u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
+		return targetURL
+	}
+	return strings.TrimSuffix(targetURL, "/") + "{http.request.uri}"
 }
 
 // NewErrorPageResponse builds the fixed response for one custom error

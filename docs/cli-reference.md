@@ -12,6 +12,32 @@ Exhaustive reference of all Levelrail CLI commands, organized by command group a
 - [Feature Catalog](feature-catalog.md) - Complete feature overview
 - [App Spec Reference](app-spec-reference.md) - YAML configuration syntax
 
+## Scripting: `--json` and exit codes
+
+Every command that returns data or a result supports `--json` (shorthand for `--output json`), and `--query` takes a JMESPath expression. With `--json`, stdout carries only the JSON result. The exceptions are `completion bash|zsh|fish` (a shell script) and `control-plane-backups help-dr` (a static runbook). A test walks the command tree and fails when a new command has no `--json` and is not on that exempt list.
+
+On failure, `--json` also prints an error object to stdout (the message still goes to stderr):
+
+```json
+{"error": "server returned 404: app not found", "code": "not_found", "exit_code": 4, "http_status": 404, "hint": "check the resource name with the matching list command"}
+```
+
+`error` is the original field. `code` is one of `validation`, `network`, `unauthorized`, `forbidden`, `not_found`, `conflict`, `rate_limited`, `invalid_request`, `server_error`, `api_error`. `http_status`, `retry_after` (rate limits) and `hint` appear when they apply.
+
+Exit codes are stable and shared by every command:
+
+| Code | Meaning |
+| --- | --- |
+| 0 | Success |
+| 1 | Usage error (unknown command, missing argument, bad flag); also a failed check for `control-plane-backups verify` and a critical item for `attention` |
+| 2 | Validation error: well-formed flags, but the request they describe is invalid |
+| 3 | Network error: the control plane could not be reached |
+| 4 | API error: the control plane replied with a non-2xx status (use `code` and `http_status` in the JSON error to tell auth, not found and conflict apart) |
+| 5 | Deploy failed: `apps wait` reached a failed deploy |
+| 6 | Deploy timeout: `apps wait` gave up before the deploy converged |
+
+Codes 3 and 4 are broad on purpose so existing scripts keep working; the JSON error object carries the finer distinction.
+
 ## Apps
 
 ```
@@ -101,7 +127,24 @@ levelrail apps deploy <name> --image IMAGE [flags]
 ```
 levelrail apps wait <name> [flags]
 ```
-poll until a deploy attempt actually converges, exit accordingly (a CI gate for "apps deploy")
+poll until a deploy attempt actually converges, exit accordingly (a CI gate for "apps deploy"). On success it says what happened: `rolled out`, `already up to date` (the deploy changed nothing) or `restarted`; `--json` carries the same as `outcome`
+
+```
+levelrail apps timeline <name> [--limit N] [flags]
+```
+what happened to an app, newest first: deploys, rollbacks, restarts, env, secret and config changes (key names only, never values), scaling, stop and start
+
+```
+levelrail apps apply <name> [flags]
+```
+restart an app so saved env, secret and config changes reach the running container; does nothing when nothing is pending
+
+```
+levelrail apps domains list <name> [flags]
+levelrail apps domains add <name> <domain>... [flags]
+levelrail apps domains remove <name> <domain>... [flags]
+```
+show or change an app's domains; a domain already used by another app is refused and nothing is changed
 
 ```
 levelrail apps deploy-compose <name> --file compose.yaml [flags]
@@ -139,9 +182,26 @@ levelrail apps deploys logs <name> <deploy-id> [flags]
 one deploy attempt's full build/log output, printed to stdout (redirect to a file to save it)
 
 ```
+levelrail apps deploys wait <name> [deploy-id] [--timeout 10m] [--poll-interval 2s] [flags]
+```
+blocks until one deploy is healthy, failed, canceled, superseded or blocked and prints the result with its failure; exits 0 healthy, 7 not healthy, 6 timeout
+
+```
+levelrail apps deploys show <name> [deploy-id] [flags]
+```
+one deploy attempt (the newest by default) with its structured failure: code, cause, failing step, redacted log excerpt, suggested fix, docs link and retryable, see [Deploy failures](deploy-failures.md)
+
+```
 levelrail apps deploys failed [--since 24h] [flags]
 ```
 every app's latest failed deploy in the window (default set by the server), with the image of its newest good deploy as a rollback target
+
+```
+levelrail deployments list [--status a,b] [--app NAME] [--branch B] [--trigger T] [--environment E] [--since 24h] [--until T] [--q TEXT] [--live] [--pr N] [--limit N] [--cursor C] [flags]
+levelrail deployments summary [--window 24h] [flags]
+levelrail deployments watch [flags]
+```
+deploys across every app you can read: a filterable newest-first list (with `--cursor` paging), a status and duration summary, and a live event stream (`--json` prints one object per event)
 
 ```
 levelrail apps deploys steps <name> <deploy-id> [flags]
@@ -227,6 +287,16 @@ levelrail apps logs <name> [flags]
 ```
 levelrail apps metrics <name> --metric NAME [flags]
 ```
+
+```
+levelrail apps overview [name ...] [flags]
+```
+
+```
+levelrail upgrade [--no-backup] [flags]
+```
+
+`upgrade` runs the preflight checks, takes a control plane backup and prints the upgrade command. It never upgrades by itself. See [Installing](installing.md#check-first-then-upgrade).
 
 ```
 levelrail apps moves list <name> [flags]
@@ -387,9 +457,9 @@ levelrail apps scheduled-tasks update <app> <id> --schedule CRON [--disabled] --
 ```
 
 ```
-levelrail apps env import <name> --file .env [--dry-run] [--keep-existing] [flags]
+levelrail apps env import <name> --file .env [--dry-run] [--keep-existing] [--apply] [flags]
 ```
-merge a .env file into an app's plain env vars, printing which keys are new, changed or unchanged (keys that are secrets are skipped)
+merge a .env file into an app's plain env vars, printing which keys are new, changed or unchanged (keys that are secrets are skipped); prints how many changes are pending, or restarts the app right away with `--apply`
 
 ```
 levelrail apps env export <name> [--out FILE] [flags]
@@ -402,9 +472,14 @@ levelrail apps secrets list <name> [flags]
 list an app's secret keys and their locked state
 
 ```
-levelrail apps secrets set <name> <key> <value> [flags]
+levelrail apps secrets set <name> <key> <value> [--apply] [flags]
 ```
-set or rotate one secret's encrypted value
+set or rotate one secret's encrypted value and declare the key as secret-backed so it is injected; `--apply` restarts the app now
+
+```
+levelrail apps secrets delete <name> <key> [--force] [--apply] [flags]
+```
+delete a secret's value and stop declaring the key
 
 ```
 levelrail apps secrets set <name> --env-file <path> [flags]
@@ -486,6 +561,158 @@ levelrail tags apps <name> [flags]
 ```
 list every app attached to a tag, identified by name
 
+## Pipelines
+
+```
+levelrail pipelines list <app> [flags]
+```
+
+```
+levelrail pipelines validate <file> [--json]
+```
+validate a pipeline file locally, no API call, exit status 2 when it has problems
+
+```
+levelrail pipelines save <app> <file-or-repo-dir> [--name N] [flags]
+```
+create or update pipelines from one file, or from every file in a repository's pipeline directory
+
+```
+levelrail pipelines delete <app> <name> [flags]
+```
+
+```
+levelrail pipelines run <app> <name> [--ref R] [--sha S] [--input k=v]... [--follow] [flags]
+```
+
+```
+levelrail pipelines runs <app> [<run-id>] [--pipeline N] [--limit N] [flags]
+```
+list runs, or show one run's jobs, steps, and approval gates
+
+```
+levelrail pipelines logs <app> <run-id> [--job KEY] [--follow] [flags]
+```
+
+```
+levelrail pipelines cancel <app> <run-id> [flags]
+```
+
+```
+levelrail pipelines approve <app> <run-id> [--reject] [--comment TEXT] [--approval ID] [flags]
+```
+decide approval gates, or release a run held for approval
+
+```
+levelrail pipelines sync <app> [--repo-truth=true|false] [flags]
+```
+sync pipeline files from the repository now, or set repository as source of truth
+
+```
+levelrail pipelines triggers <app> [flags]
+```
+why recent git events did or did not start runs
+## Lb
+
+```
+levelrail lb list [--state balancing|degraded|none] [--search Q] [flags]
+```
+every load balancer across apps with state and healthy upstream counts
+
+```
+levelrail lb show <app> [flags]
+```
+show an app's load balancer config
+
+```
+levelrail lb set <app> [--algorithm ...] [flags]
+```
+create or change the load balancer, only the flags you pass change
+
+```
+levelrail lb clear <app> [flags]
+```
+remove the load balancer, back to a single upstream
+
+```
+levelrail lb status <app> [flags]
+```
+live upstream table: state, weight, active requests, failures
+
+```
+levelrail lb export <app> --format terraform|cdk|cloudformation|caddy|caddy-json [--out FILE]
+```
+generate an infrastructure-as-code definition, no cloud API calls
+
+```
+levelrail lb import <app> --file app.yaml [--service S] [flags]
+```
+load the `loadbalancer:` block of an app.yaml
+
+## Preview
+
+```
+levelrail preview status <app> [flags]
+```
+show the app's deploy preview settings, storage used and latest result
+
+```
+levelrail preview enable <app> [--mode metadata|screenshot] [--path /] [--wait-ms N] [flags]
+```
+turn deploy previews on for the app: `metadata` reads the page title and social image (no browser), `screenshot` (the default here) runs a browser container per deploy
+
+```
+levelrail preview disable <app> [flags]
+```
+turn deploy previews off for the app
+
+```
+levelrail preview capture <app> [flags]
+```
+recapture the current release now
+
+```
+levelrail preview prune <app> [--all] [flags]
+```
+delete old previews now, or every preview of the app with `--all`
+
+## Supply chain
+
+```
+levelrail apps sbom <app> [deploy-id] [--download] [--file PATH] [flags]
+```
+show a deploy's software bill of materials (newest deploy with one by default), or print or save the raw SPDX or CycloneDX document
+
+```
+levelrail apps scan enable <app> [flags]
+```
+turn vulnerability scanning on for the app; the first scan pulls the scanner image
+
+```
+levelrail apps scan disable <app> [flags]
+```
+turn scanning off and reset the gate
+
+```
+levelrail apps scan status <app> [deploy-id] [flags]
+```
+show the scan settings and the latest scan result
+
+```
+levelrail apps scan run <app> [deploy-id] [flags]
+```
+scan a deploy's SBOM now
+
+```
+levelrail apps scan gate <app> off|warn|block_on_critical [flags]
+```
+choose what a scan may do to a release; `block_on_critical` keeps the previous release serving
+
+```
+levelrail apps scan override <app> --reason TEXT [flags]
+```
+let the next blocked release through once, with a recorded reason
+
 ## Databases
 
 ```
@@ -540,6 +767,60 @@ levelrail databases start <name> [flags]
 levelrail databases stop <name> [flags]
 ```
 
+## Models
+
+```
+levelrail models list [flags]
+```
+list AI models with their status
+
+```
+levelrail models get <name> [flags]
+```
+show one model, its status and OpenAI-compatible base URL
+
+```
+levelrail models deploy --name NAME --engine ENGINE --model MODEL [flags]
+```
+deploy a model on a GPU node; prints the API key once. Flags: --node, --gpus, --gpu-devices, --context, --quantization, --domain, --hf-token-from-env
+
+```
+levelrail models logs <name> [flags]
+```
+search stored engine logs, or --follow to stream download and load progress live
+
+```
+levelrail models delete <name> [flags]
+```
+remove a model; the downloaded weights volume is kept
+
+```
+levelrail models restart <name> [flags]
+```
+recreate the engine container
+
+```
+levelrail models rotate-key <name> [flags]
+```
+issue a new API key, printed once
+
+```
+levelrail models gpus [flags]
+```
+list GPU nodes with driver, VRAM, usage and nvidia runtime status
+
+```
+levelrail models preflight <repo> [flags]
+```
+check a Hugging Face repo before deploying: access, size, quantizations with a fit estimate, free disk
+
+```
+levelrail models cache list|prune [flags]
+```
+list cached model weights per node, or prune unused ones (`--dry-run` first)
+
+See [AI models](ai-models.md).
+
 ## Auth
 
 ```
@@ -582,9 +863,9 @@ list configured credentials profiles
 ## Tokens
 
 ```
-levelrail tokens create --name NAME --abilities LIST [flags]
+levelrail tokens create --name NAME --abilities LIST [--agent NAME] [--agent-description TEXT] [flags]
 ```
-mint a new API token
+mint a new API token; `--agent` labels it as issued to an AI agent so audit entries record the agent name
 
 ```
 levelrail tokens list [flags]
@@ -831,6 +1112,61 @@ levelrail backup-targets test <id> [flags]
 levelrail backup-targets update <id> --name NAME --provider PROVIDER --bucket BUCKET [flags]
 ```
 
+## Storage
+
+```
+levelrail storage providers
+```
+list provider presets (aws, r2, b2, minio, wasabi, custom)
+
+```
+levelrail storage list
+```
+
+```
+levelrail storage add --name N --provider P --bucket B --access-key-id ID --secret-access-key KEY [flags]
+```
+
+```
+levelrail storage test <id>
+```
+write, read back and delete a probe object
+
+```
+levelrail storage delete <id>
+```
+
+## Logs
+
+```
+levelrail logs archive set --target ID [--app NAME] [--interval 1h] [--retention-days N] [--disable]
+```
+
+```
+levelrail logs archive status
+```
+
+```
+levelrail logs archive remove [--app NAME]
+```
+
+```
+levelrail logs dump --target ID --from TIME [--to TIME] [--app NAME] [--wait]
+```
+
+```
+levelrail logs ls --target ID [--app NAME]
+```
+
+```
+levelrail logs fetch --target ID --key KEY [--out FILE]
+```
+
+```
+levelrail logs query <app> [--level LEVEL] [--since 30m] [--until T] [--deploy ID] [--text PHRASE] [--max-lines N] [--max-bytes N] [flags]
+```
+capped excerpt of an app's newest matching log lines with match counts and a truncation notice; the byte cap defaults to 8 KB or `APP_MCP_LOG_MAX_BYTES`
+
 ## Registry Credentials
 
 ```
@@ -895,6 +1231,25 @@ levelrail flags list <app> [flags]
 levelrail flags set <app> <id> --name NAME [--description DESC] [--disabled] [--rollout PERCENT] [flags]
 ```
 
+## Apply, Diff and Export
+
+See [Platform as code](platform-as-code.md) for the document format, secrets handling, prune rules and CI use.
+
+```
+levelrail apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NAME] [--project P] [--yes] [--secret K=env:VAR] [--var NAME=VALUE] [--var-file PATH] [--allow-env NAME[,NAME...]] [--no-deploy] [--continue-on-error] [flags]
+```
+validate resource files, print the plan, and apply it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`). `${{ env.NAME }}` placeholders are filled only from `--var`, `--var-file` or the names listed with `--allow-env` (a trailing `*` allows a prefix, but never covers credential looking names such as `AWS_*`, `GITHUB_TOKEN` or anything containing `TOKEN`, `SECRET`, `PASSW` or `_KEY`, which must be named exactly); an unresolved placeholder fails before anything is sent
+
+```
+levelrail diff -f dir [flags]
+```
+drift between the files and live state, exits 2 when they differ
+
+```
+levelrail export [--project P] [--app A] [-o dir|-] [--include-env-values=false] [flags]
+```
+write live state as stable resource files, never containing secret values. Secret looking values become `${{ env.NAME }}` placeholders; supply them at apply time with `--var`, `--var-file` or `--allow-env`
+
 ## Nodes
 
 ```
@@ -942,6 +1297,18 @@ levelrail nodes events <id> [--limit N] [flags]
 levelrail nodes workloads <id> --accepts-app=BOOL --accepts-build=BOOL [flags]
 ```
 
+```
+levelrail nodes reenroll-token <id> [flags]
+```
+mint a one-time token that re-issues a node's agent certificate, keeping its identity; prints the command to run on the node
+
+```
+levelrail nodes revoke-cert <id> [flags]
+```
+revoke a node's agent certificate and close its session; only a re-enroll token brings it back
+
+`nodes list` shows each node's certificate state and days left (CERT) and agent version (AGENT); `nodes get` adds expiry, last renewal, key origin, platform and commit.
+
 ## Status
 
 ```
@@ -962,7 +1329,7 @@ levelrail version [flags]
 levelrail audit-log [flags]
 ```
 
-Filter with `--search <text>` (case-insensitive substring across actor, ability, method, path and remote address) and `--failed` (status 400 or higher). Both are applied server side and carry into `--format csv` exports.
+Filter with `--agent <name>` (entries made with a token labeled with that agent name), `--search <text>` (case-insensitive substring across actor, ability, method, path and remote address) and `--failed` (status 400 or higher). Both are applied server side and carry into `--format csv` exports.
 
 ### Audit Purge
 
@@ -1026,6 +1393,14 @@ levelrail control-plane-backups create [flags]
 levelrail control-plane-backups download <name> [--out FILE] [flags]
 levelrail control-plane-backups verify <name> [flags]
 levelrail control-plane-backups delete <name> [flags]
+levelrail control-plane-backups list --offbox [flags]
+levelrail control-plane-backups schedule show|set [flags]
+levelrail control-plane-backups run-now [--no-wait] [flags]
+levelrail control-plane-backups drill run|status [flags]
+levelrail control-plane-backups escrow [--out FILE] [--recipient KEY] [--upload] [--ack] [flags]
+levelrail control-plane-backups escrow ack [flags]
+levelrail control-plane-backups escrow open <file> --identity FILE [--extract DIR]
+levelrail control-plane-backups keys generate [--out FILE] [--hybrid]
 ```
 
 Snapshots of the control plane's own database, stored under
@@ -1037,6 +1412,17 @@ fails), `delete` removes one. Snapshots never contain
 the master key. Restore is an offline server command, `levelrail
 restore-db <file>`; see [Control plane backup and
 restore](/control-plane-backup).
+
+The `--offbox`, `schedule`, `run-now`, `drill`, `escrow` and `keys`
+subcommands drive encrypted off-box backups: `keys generate` makes an age
+key pair on your machine (private key to a `0600` file, public key to
+stdout), `schedule set` changes only the flags you pass, `run-now` and
+`drill run` wait for the run and exit 1 if it failed, `drill status` exits
+1 when the last drill failed or none has run, and `escrow` writes the master
+key and agent CA key encrypted to your recipients (never uploaded unless `--upload`, and never
+to the backup bucket). Restore an off-box backup on the server with
+`levelrail restore --from <s3://... | file> --identity FILE [--dry-run]`.
+See [Disaster recovery](/disaster-recovery).
 
 ### Orphaned Volumes
 
@@ -1130,6 +1516,16 @@ levelrail iam policies update <id> --name NAME --document DOC [flags]
 levelrail secrets rotate-master-key --new-key-file PATH [flags]
 ```
 
+```
+levelrail secrets binding-status [flags]
+```
+count stored secret values not yet bound to their slot
+
+```
+levelrail secrets rebind [flags]
+```
+bind every legacy secret value to its slot, safe to rerun
+
 ::: details Migrate (one-time platform migration)
 
 ### Migrate
@@ -1146,6 +1542,17 @@ migrate apps from a Coolify instance
 ```
 levelrail migrate dokploy --url URL --token TOKEN [flags]
 ```
+
+:::
+
+::: details Import (from another platform)
+
+### Import platform
+
+```
+levelrail import platform coolify|dokploy|caprover --url URL [flags]
+```
+read apps and databases from another platform and create them here; use `--dry-run` first, see [migrating from Coolify, Dokploy or CapRover](migrating-from-coolify-dokploy-and-caprover.md)
 
 :::
 

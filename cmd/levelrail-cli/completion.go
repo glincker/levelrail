@@ -5,6 +5,8 @@ import (
 	"io"
 	"sort"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/experimental"
 )
 
 // cmdNode is one node of the CLI's command tree: the verbs a command
@@ -23,6 +25,9 @@ type cmdNode struct {
 // at test time rather than silently shipped.
 var cliCommandTree = map[string]*cmdNode{
 	"apps": {subs: map[string]*cmdNode{
+		"freeze":                  {subs: map[string]*cmdNode{"set": nil, "show": nil, "clear": nil}},
+		"sbom":                    nil,
+		"scan":                    {subs: map[string]*cmdNode{"enable": nil, "disable": nil, "status": nil, "run": nil, "gate": nil, "override": nil}},
 		"create":                  nil,
 		"list":                    nil,
 		"get":                     nil,
@@ -34,24 +39,31 @@ var cliCommandTree = map[string]*cmdNode{
 		"hook-runs":               nil,
 		"rollback":                nil,
 		"auto-rollback":           {subs: map[string]*cmdNode{"enable": nil, "disable": nil, "status": nil}},
+		"timeline":                nil,
+		"apply":                   nil,
+		"domains":                 {subs: map[string]*cmdNode{"list": nil, "add": nil, "remove": nil}},
 		"restart":                 nil,
 		"stop":                    nil,
 		"start":                   nil,
 		"delete":                  nil,
 		"status":                  nil,
 		"diagnose":                nil,
+		"preflight":               nil,
 		"resource-recommendation": nil,
-		"deploys":                 {subs: map[string]*cmdNode{"list": nil, "compare": nil, "logs": nil, "failed": nil, "steps": nil}},
+		"deploys":                 {subs: map[string]*cmdNode{"list": nil, "show": nil, "wait": nil, "compare": nil, "logs": nil, "failed": nil, "steps": nil, "cancel": nil, "rollback-to": nil}},
+		"cancel-superseded":       {subs: map[string]*cmdNode{"enable": nil, "disable": nil, "status": nil}},
 		"promote":                 nil,
 		"network":                 nil,
 		"logs":                    nil,
 		"metrics":                 nil,
+		"requests":                nil,
 		"resource-usage":          nil,
+		"overview":                nil,
 		"exec":                    nil,
 		"exec-access":             {subs: map[string]*cmdNode{"enable": nil, "disable": nil, "status": nil}},
 		"log-drain":               {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"scheduled-tasks":         {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "update": nil, "delete": nil, "run": nil}},
-		"alerts":                  {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil}},
+		"alerts":                  {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil, "slo": nil}},
 		"deploy-notify-targets":   {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil}},
 		"organizations": {subs: map[string]*cmdNode{
 			"create": nil, "list": nil, "get": nil, "delete": nil,
@@ -66,13 +78,14 @@ var cliCommandTree = map[string]*cmdNode{
 		"set-node":          nil,
 		"clear-node":        nil,
 		"previews": {subs: map[string]*cmdNode{
-			"list": nil, "teardown": nil, "enable": nil, "disable": nil, "sweep": nil,
+			"list": nil, "teardown": nil, "enable": nil, "disable": nil, "sweep": nil, "limits": nil, "approve": nil,
 			"pr-status": {subs: map[string]*cmdNode{"enable": nil, "disable": nil}},
 		}},
 		"env":                {subs: map[string]*cmdNode{"import": nil, "export": nil}},
-		"secrets":            {subs: map[string]*cmdNode{"list": nil, "set": nil, "lock": nil}},
-		"git-source":         {subs: map[string]*cmdNode{"get": nil, "set": nil, "delete": nil}},
+		"secrets":            {subs: map[string]*cmdNode{"list": nil, "set": nil, "delete": nil, "lock": nil}},
+		"git-source":         {subs: map[string]*cmdNode{"get": nil, "set": nil, "settings": nil, "delete": nil}},
 		"webhook-deliveries": {subs: map[string]*cmdNode{"list": nil, "replay": nil}},
+		"bulk":               nil,
 		"clone":              nil,
 		"images":             nil,
 		"storage":            {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
@@ -85,9 +98,11 @@ var cliCommandTree = map[string]*cmdNode{
 		"tag":                nil,
 		"untag":              nil,
 		"egress":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
+		"build-cache":        {subs: map[string]*cmdNode{"show": nil, "set": nil, "clear": nil, "remove": nil}},
 		"health":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"integrations":       {subs: map[string]*cmdNode{"catalog": nil, "list": nil, "add": nil, "remove": nil}},
 	}},
+	"models":    {subs: map[string]*cmdNode{"list": nil, "get": nil, "deploy": nil, "logs": nil, "delete": nil, "restart": nil, "rotate-key": nil, "metrics": nil, "fit": nil, "residency": nil, "wake": nil, "sleep": nil, "gpus": nil, "preflight": nil, "cache": {subs: map[string]*cmdNode{"list": nil, "prune": nil}}, "keys": {subs: map[string]*cmdNode{"list": nil, "create": nil, "revoke": nil, "rotate": nil}}, "usage": nil}},
 	"databases": {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "status": nil, "delete": nil, "stop": nil, "start": nil, "resource-recommendation": nil, "metrics": nil, "logs": nil, "slow-queries": nil, "set-project": nil, "clear-project": nil, "set-node": nil, "clear-node": nil, "set-resources": nil, "public-access": {subs: map[string]*cmdNode{"set": nil, "clear": nil}}}},
 	"auth": {subs: map[string]*cmdNode{"login": nil, "whoami": nil, "2fa": {subs: map[string]*cmdNode{
 		"status": nil, "setup": nil, "enable": nil, "disable": nil, "recovery-codes": nil,
@@ -119,28 +134,50 @@ var cliCommandTree = map[string]*cmdNode{
 		"list": nil, "trigger": nil, "delete": nil, "download": nil, "restore": nil, "restore-as-new": nil, "restores": nil, "clone-restores": nil, "verify": nil, "verifications": nil,
 		"schedule": {subs: map[string]*cmdNode{"set": nil, "clear": nil}},
 	}},
-	"control-plane-backups": {subs: map[string]*cmdNode{"list": nil, "create": nil, "download": nil, "verify": nil, "delete": nil}},
+	"control-plane-backups": {subs: map[string]*cmdNode{"list": nil, "create": nil, "download": nil, "verify": nil, "delete": nil, "schedule": {subs: map[string]*cmdNode{"show": nil, "set": nil}}, "run-now": nil, "drill": {subs: map[string]*cmdNode{"run": nil, "status": nil}}, "escrow": nil, "keys": {subs: map[string]*cmdNode{"generate": nil}}, "help-dr": nil}},
 	"cloudflare-tunnel":     {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},
 	"vault":                 {subs: map[string]*cmdNode{"get": nil, "set": nil, "disconnect": nil}},
-	"channels":              {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil}},
-	"shared-env":            {subs: map[string]*cmdNode{"list": nil, "set": nil, "delete": nil}},
-	"backup-targets":        {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
-	"registry-credentials":  {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "repositories": nil, "tags": nil}},
-	"registry":              {subs: map[string]*cmdNode{"status": nil, "enable": nil, "disable": nil, "repositories": nil, "tags": nil}},
-	"flags":                 {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "set": nil, "delete": nil}},
-	"tags":                  {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil, "apps": nil}},
+	"alerts": {subs: map[string]*cmdNode{
+		"silences":    {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil}},
+		"silence":     nil,
+		"maintenance": {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil}},
+		"history":     nil,
+	}},
+	"status-page": {subs: map[string]*cmdNode{
+		"get": nil, "set": nil, "preview": nil,
+		"components": {subs: map[string]*cmdNode{"list": nil, "add": nil, "delete": nil}},
+		"incidents":  {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil}},
+	}},
+	"channels":             {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil}},
+	"shared-env":           {subs: map[string]*cmdNode{"list": nil, "set": nil, "delete": nil}},
+	"backup-targets":       {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
+	"storage":              {subs: map[string]*cmdNode{"providers": nil, "list": nil, "add": nil, "test": nil, "delete": nil}},
+	"logs":                 {subs: map[string]*cmdNode{"archive": {subs: map[string]*cmdNode{"set": nil, "status": nil, "remove": nil}}, "dump": nil, "ls": nil, "fetch": nil, "query": nil}},
+	"registry-credentials": {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "repositories": nil, "tags": nil}},
+	"registry":             {subs: map[string]*cmdNode{"status": nil, "enable": nil, "disable": nil, "repositories": nil, "tags": nil}},
+	"flags":                {subs: map[string]*cmdNode{"create": nil, "list": nil, "get": nil, "set": nil, "delete": nil}},
+	"pipelines":            {subs: map[string]*cmdNode{"list": nil, "validate": nil, "save": nil, "delete": nil, "run": nil, "runs": nil, "logs": nil, "cancel": nil, "approve": nil, "sync": nil, "triggers": nil}},
+	"preview":              {subs: map[string]*cmdNode{"status": nil, "enable": nil, "disable": nil, "capture": nil, "prune": nil}},
+	"deployments":          {subs: map[string]*cmdNode{"list": nil, "watch": nil, "summary": nil}},
+	"lb":                   {subs: map[string]*cmdNode{"list": nil, "show": nil, "set": nil, "clear": nil, "status": nil, "check": nil, "history": nil, "upstream": nil, "export": nil, "import": nil}},
+	"tags":                 {subs: map[string]*cmdNode{"list": nil, "create": nil, "delete": nil, "apps": nil}},
 	"nodes": {subs: map[string]*cmdNode{
 		"list": nil, "get": nil, "delete": nil, "join-token": nil,
 		"cordon": nil, "uncordon": nil, "drain": nil, "workloads": nil,
 		"health": nil, "patch-status": nil, "events": nil, "metrics": nil, "resource-usage": nil,
-		"mesh": nil, "rotate-key": nil,
+		"mesh": nil, "rotate-key": nil, "reenroll-token": nil, "revoke-cert": nil,
+		"providers":  {subs: map[string]*cmdNode{"list": nil, "set-credential": nil}},
+		"provision":  nil,
+		"provisions": {subs: map[string]*cmdNode{"list": nil, "show": nil}},
 	}},
 	"status":                   nil,
 	"version":                  nil,
+	"upgrade":                  nil,
 	"audit-log":                nil,
 	"audit-purge":              nil,
 	"attention":                nil,
 	"doctor":                   nil,
+	"init":                     nil,
 	"containers":               nil,
 	"system-prune":             nil,
 	"volumes-orphaned":         nil,
@@ -159,8 +196,11 @@ var cliCommandTree = map[string]*cmdNode{
 			"attachments": nil,
 		}},
 	}},
-	"secrets":    {subs: map[string]*cmdNode{"rotate-master-key": nil}},
+	"secrets":    {subs: map[string]*cmdNode{"rotate-master-key": nil, "binding-status": nil, "rebind": nil}},
 	"migrate":    {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}},
+	"apply":      nil,
+	"diff":       nil,
+	"import":     {subs: map[string]*cmdNode{"platform": {subs: map[string]*cmdNode{"coolify": nil, "dokploy": nil, "caprover": nil}}}},
 	"completion": {subs: map[string]*cmdNode{"bash": nil, "zsh": nil, "fish": nil}},
 	"settings": {subs: map[string]*cmdNode{
 		"oauth":         {subs: map[string]*cmdNode{"list": nil, "set": nil}},
@@ -196,12 +236,20 @@ type treeEntry struct {
 // walkCommandTree flattens cliCommandTree so every completion script
 // generator (bash/zsh/fish) renders from one traversal instead of three
 // hand-written copies that could drift from each other.
-func walkCommandTree() []treeEntry {
+func walkCommandTree() []treeEntry { return walkTree(true) }
+
+// walkFullCommandTree flattens every command, gated or not, for drift tests.
+func walkFullCommandTree() []treeEntry { return walkTree(false) }
+
+func walkTree(hideDisabled bool) []treeEntry {
 	var entries []treeEntry
 	var walk func(prefix string, node map[string]*cmdNode)
 	walk = func(prefix string, node map[string]*cmdNode) {
 		names := make([]string, 0, len(node))
 		for name := range node {
+			if hideDisabled && completionHidden(prefix, name) {
+				continue
+			}
 			names = append(names, name)
 		}
 		sort.Strings(names)
@@ -220,6 +268,16 @@ func walkCommandTree() []treeEntry {
 	}
 	walk("", cliCommandTree)
 	return entries
+}
+
+// completionHidden reports whether name under prefix is a gated command that is switched off.
+func completionHidden(prefix, name string) bool {
+	args := []string{name}
+	if prefix != "" {
+		args = append(strings.Fields(prefix), name)
+	}
+	f, gated := experimentalFeatureFor(args)
+	return gated && !experimental.Enabled(f)
 }
 
 // renderChildrenFunc renders a shell function named funcName that maps a

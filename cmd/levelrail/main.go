@@ -33,14 +33,20 @@ import (
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/gpu"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/netguard"
+	"github.com/GLINCKER/levelrail/internal/objectstore"
 	"github.com/GLINCKER/levelrail/internal/probe"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
@@ -55,6 +61,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/sharedenv"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/supplychain"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/vault"
 	"github.com/GLINCKER/levelrail/internal/version"
@@ -121,16 +128,6 @@ const (
 	// smaller blast radius for an operator to tune without redesigning
 	// the schema.
 	metricsCollectionInterval = 15 * time.Second
-	// defaultMetricsRetention matches the observability design's
-	// "default 15 days" retention.
-	defaultMetricsRetention = 15 * 24 * time.Hour
-	// metricsRetentionSweepInterval: how often the retention sweep runs,
-	// not how long data is kept (that's the retention duration itself).
-	// Hourly is frequent enough that the table never grows much past its
-	// steady-state size, infrequent enough to be a non-event on a
-	// control plane whose idle cost the project's hardening phase wants
-	// measured.
-	metricsRetentionSweepInterval = 1 * time.Hour
 
 	// logTargetsResyncInterval is how often the log collector re-derives
 	// which containers it should be streaming from, kept
@@ -293,6 +290,20 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "restore-snapshot" {
+		if err := runRestoreSnapshot(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdin, os.Stdout); err != nil {
+			logger.Error("restore-snapshot failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "restore" {
+		if err := runRestore(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdout, os.LookupEnv); err != nil {
+			logger.Error("restore failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "setup-token" {
 		if err := runSetupToken(context.Background(), os.Stdout, openStore); err != nil {
 			logger.Error("setup-token failed", slog.String("error", err.Error()))
@@ -317,6 +328,10 @@ func main() {
 
 func run(logger *slog.Logger) error {
 	logger.Info("starting", slog.String("version", version.Version))
+	if err := experimental.Validate(); err != nil {
+		logger.Warn("ignoring unknown experimental feature", slog.String("error", err.Error()))
+	}
+	logger.Info("experimental features", slog.Any("enabled", experimental.EnabledList()))
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -400,6 +415,7 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+	configureTelemetryTiers(telemetryDB)
 	defer func() {
 		if cerr := telemetryDB.Close(); cerr != nil {
 			logger.Error("closing telemetry store", slog.String("error", cerr.Error()))
@@ -493,7 +509,8 @@ func run(logger *slog.Logger) error {
 			PermitWithoutStream: true,
 		}),
 	)
-	agentpb.RegisterAgentServiceServer(agentGRPCServer, agent.NewServer(agentCA, db, agentRegistry, logger))
+	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(), agent.WithGPUSink(db))...)
+	agentpb.RegisterAgentServiceServer(agentGRPCServer, agentServer)
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
 		if err := agentGRPCServer.Serve(agentListener); err != nil {
@@ -502,7 +519,7 @@ func run(logger *slog.Logger) error {
 	}()
 	defer agentGRPCServer.GracefulStop()
 
-	secretsManager, masterKeyFilePath, err := loadSecretsManager(db, agentDataDir)
+	secretsManager, masterKeyFilePath, err := loadSecretsManager(db, agentDataDir, secretsManagerOptions(logger)...)
 	if err != nil {
 		// Not fatal, the same choice bootstrapAdmin makes above: the
 		// control plane still starts. Every route and reconcile path
@@ -580,7 +597,9 @@ func run(logger *slog.Logger) error {
 		Logger: logger,
 	}
 
-	builder, closeBuilder, err := loadBuilder(ctx, logger, db, telemetryDB, secretsManager, agentRegistry)
+	supplyChainSvc := newSupplyChainService(ctx, logger, db, client, agentDataDir, b.ShortName)
+
+	builder, closeBuilder, err := loadBuilder(ctx, logger, db, telemetryDB, secretsManager, agentRegistry, supplyChainSvc)
 	if err != nil {
 		// Not fatal, the same choice as everything else optional above:
 		// the control plane still starts, serving apps deployed by hand
@@ -623,6 +642,11 @@ func run(logger *slog.Logger) error {
 	}()
 
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver)
+	configureNodeCerts(apiRouter, agentServer)
+	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
+	startHeldDeployReleaser(ctx, logger, db, apiRouter)
+	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
+	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
 	httpServer := &http.Server{
 		Addr:              httpAddr(),
 		Handler:           apiHandler,
@@ -639,6 +663,13 @@ func run(logger *slog.Logger) error {
 		// would kill every one of those same long-lived streams.
 		ReadTimeout: 30 * time.Second,
 		IdleTimeout: 120 * time.Second,
+	}
+
+	lbRegistry := loadbalancer.NewRegistry()
+	lbStats := loadbalancer.CaddyAdminStats{Addr: ingressreconcile.DefaultAdminListen}
+	apiRouter.SetLoadBalancers(db, lbRegistry, lbStats)
+	if experimental.Enabled(experimental.LoadBalancer) {
+		go runLoadBalancerTelemetry(ctx, lbRegistry, lbStats, telemetryDB, metricsCollectionInterval, logger)
 	}
 
 	meshCfg, err := setupMesh(ctx, db, b, agentDataDir, agentRegistry, logger)
@@ -662,6 +693,14 @@ func run(logger *slog.Logger) error {
 	// daemon on every tick.
 	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
 
+	previewLocalNodeID := ""
+	if meshCfg != nil {
+		previewLocalNodeID = meshCfg.localNodeID
+	}
+	previewManager := newPreviewManager(ctx, logger, db, client, agentDataDir, b.ShortName, previewLocalNodeID)
+	apiRouter.SetPreview(previewManager)
+	apiRouter.SetSupplyChain(supplyChainSvc)
+
 	engine.SetStore(db)
 	engine.SetSource(dynamicSource(dynamicSourceDeps{
 		db:                           db,
@@ -682,15 +721,22 @@ func run(logger *slog.Logger) error {
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),
 		ingressHTTPAddr:              ingressHTTPAddr(),
+		models:                       newModelDeps(),
+		lbRegistry:                   lbRegistry,
+		previewNotifier:              previewManager,
 	}))
+	if experimental.Enabled(experimental.AIModels) {
+		startLocalGPUCollector(ctx, db, client, logger)
+		go models.NewEngineMetricsCollector(db, telemetryDB, nil, logger).Run(ctx, models.EngineMetricsInterval())
+	}
 
 	collector := telemetry.NewCollector(client, telemetryDB, metricsCollectionInterval, logger)
 	go func() {
-		if err := collector.Run(ctx, telemetryTargets(db, client)); err != nil && !errors.Is(err, context.Canceled) {
+		if err := collector.Run(ctx, withModelTelemetryTargets(telemetryTargets(db, client), db, client, b.ShortName)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("telemetry collector stopped", slog.String("error", err.Error()))
 		}
 	}()
-	go runMetricsRetentionSweep(ctx, telemetryDB, logger)
+	startTelemetryMaintenance(ctx, telemetryDB, metricsCollectionInterval, logger)
 
 	// Host disk space only has a real node to attribute samples to once
 	// meshCfg has bootstrapped this process's own nodes row
@@ -735,7 +781,7 @@ func run(logger *slog.Logger) error {
 	// does (internal/telemetry/drain.go's own doc comment): a pure
 	// additional consumer of the log stream, never touching logCollector
 	// or its store writes.
-	drainForwarder := telemetry.NewDrainForwarder(logBroadcaster, logger, b.ShortName)
+	drainForwarder := telemetry.NewDrainForwarder(logBroadcaster, notifyClient, logger, b.ShortName)
 	go func() {
 		if err := drainForwarder.Run(ctx, logTargetsResyncInterval, drainTargets(db)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("telemetry log drain forwarder stopped", slog.String("error", err.Error()))
@@ -784,8 +830,17 @@ func run(logger *slog.Logger) error {
 		certExpiryWarningWindow(logger), certRenewalStalledThreshold(logger), db, patchStatusThreshold(logger), nodeDiskSpaceThreshold(logger),
 		db, nodeCPUThreshold(logger), nodeMemoryThreshold(logger), db, apiRouter, domainHealthCheckInterval(logger),
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
-	if controlPlaneBackupInterval(logger) > 0 {
-		alertingEngine.SetControlPlaneBackups(cpbackup.NewManager(db, agentDataDir), 0)
+	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
+	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
+	alertingEngine.SetChanges(changes.New(db, db, db, logger), alertDashboardLink())
+	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))
+	go func() {
+		if err := apiRouter.RunStatusPageSampler(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("status page sampler stopped", slog.String("error", err.Error()))
+		}
+	}()
+	if localScheduled := controlPlaneBackupInterval(logger) > 0; localScheduled || cpDR != nil {
+		alertingEngine.SetControlPlaneBackups(cpbackup.AlertSource{Local: cpbackup.NewManager(db, agentDataDir), Svc: cpDR, LocalScheduled: localScheduled}, 0)
 	}
 	// db satisfies alerting.AutoRollbackStore structurally (it already
 	// satisfies deploy.ImageDeployStore, plus GetDesiredService/
@@ -855,6 +910,7 @@ func run(logger *slog.Logger) error {
 	// Always runs, the same "always non-nil, no secretsManager gate"
 	// shape as the scheduled task scheduler just above: nothing about
 	// this loop needs a master key configured.
+	go sweepOrphanPreviewsOnce(ctx, logger, apiRouter)
 	go func() {
 		if err := apiRouter.RunPreviewSweeper(ctx, previewSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("preview sweeper stopped", slog.String("error", err.Error()))
@@ -1340,50 +1396,6 @@ func logsRetention() time.Duration {
 	return d
 }
 
-// runMetricsRetentionSweep deletes samples older than the configured
-// retention window on a fixed interval, until ctx is done. Retention
-// duration is env-configurable (APP_METRICS_RETENTION, a Go duration
-// string like "360h"), following the project's "no hardcoded
-// thresholds, use env vars" rule; the sweep interval itself is not, see
-// metricsRetentionSweepInterval's doc comment for why that one's fixed.
-func runMetricsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.Logger) {
-	ticker := time.NewTicker(metricsRetentionSweepInterval)
-	defer ticker.Stop()
-
-	sweep := func() {
-		cutoff := time.Now().Add(-metricsRetention())
-		deleted, err := db.Retain(ctx, cutoff)
-		if err != nil {
-			logger.Error("metrics retention sweep failed", slog.String("error", err.Error()))
-			return
-		}
-		if deleted > 0 {
-			logger.Info("metrics retention sweep", slog.Int64("deleted", deleted), slog.Time("cutoff", cutoff))
-		}
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			sweep()
-		}
-	}
-}
-
-func metricsRetention() time.Duration {
-	raw := os.Getenv("APP_METRICS_RETENTION")
-	if raw == "" {
-		return defaultMetricsRetention
-	}
-	d, err := time.ParseDuration(raw)
-	if err != nil {
-		return defaultMetricsRetention
-	}
-	return d
-}
-
 // nodeHeartbeatInterval reads APP_NODE_HEARTBEAT_INTERVAL, the same
 // env-var-with-default shape as metricsRetention/logsRetention above.
 // Used by mesh.go's own localNodeHeartbeat, how often the control
@@ -1503,36 +1515,23 @@ func devFixturesFile() string {
 	return path
 }
 
-// loadSecretsManager builds a secrets.Manager, sourcing the master key
-// from APP_MASTER_KEY when an operator has set one (the explicit-config
-// path production deployments managing their own secret store should
-// use), or loading/generating one persisted in dataDir otherwise, the
-// same loadOrGenerateAgentCA pattern just above: unlike Coolify's
-// separate install-script step (which writes its own key to disk before
-// the app process ever starts), this control plane ships as one binary
-// with no install step to run that generation in ahead of time, so the
-// binary does it itself on first boot instead. Regenerating on every
-// restart instead of persisting would make every previously-wrapped DEK
-// permanently unwrappable, the one thing this must never do.
-// loadSecretsManager returns masterKeyFilePath as "" when the key came
-// from APP_MASTER_KEY: api.WithMasterKeyRotation uses that to decide
-// whether a rotation can persist the new key to disk itself, or must
-// warn the operator to update the env var out of band instead (see
-// docs/master-key-rotation.md).
-func loadSecretsManager(db *store.DB, dataDir string) (mgr *secrets.Manager, masterKeyFilePath string, err error) {
+// loadSecretsManager builds a secrets.Manager from APP_MASTER_KEY, or a
+// key persisted in (or first generated into) dataDir. masterKeyFilePath
+// is "" for an env-sourced key, so rotation knows it cannot persist it.
+func loadSecretsManager(db *store.DB, dataDir string, opts ...secrets.ManagerOption) (mgr *secrets.Manager, masterKeyFilePath string, err error) {
 	if serialized := os.Getenv("APP_MASTER_KEY"); serialized != "" {
 		mk, err := secrets.LoadMasterKey(serialized)
 		if err != nil {
 			return nil, "", fmt.Errorf("load master key from APP_MASTER_KEY: %w", err)
 		}
-		return secrets.NewManager(db, mk), "", nil
+		return secrets.NewManager(db, mk, opts...), "", nil
 	}
 
 	mk, keyPath, err := loadOrGenerateMasterKey(dataDir)
 	if err != nil {
 		return nil, "", err
 	}
-	return secrets.NewManager(db, mk), keyPath, nil
+	return secrets.NewManager(db, mk, opts...), keyPath, nil
 }
 
 // loadOrGenerateMasterKey loads a previously persisted master key from
@@ -1601,7 +1600,7 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 // buildNodeSource below, which build.Router consults per build to decide
 // whether to build here or dispatch to a node an operator marked
 // build-capable (migrations/0010_node_workloads.sql).
-func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry) (*deploy.Pipeline, func() error, error) {
+func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, supplyChain *supplychain.Service) (*deploy.Pipeline, func() error, error) {
 	rawDockerCli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, nil, fmt.Errorf("new docker client for buildkit: %w", err)
@@ -1647,9 +1646,14 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithStaticRootDir(staticSitesDir),
 		deploy.WithAppStore(db),
 		deploy.WithVaultConfigChecker(db),
+		deploy.WithLoadBalancerStore(db),
+		deploy.WithOrderedStore(db),
+		deploy.WithAttemptRecorder(db),
 	}
+	deployOpts = append(deployOpts, digestResolverOptions(logger, db, secretsManager)...)
+	deployOpts = append(deployOpts, supplyChainDeployOptions(supplyChain)...)
 	if secretsManager != nil {
-		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager))
+		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager), deploy.WithBuildCache(newBuildCache(logger, db, secretsManager)))
 	}
 
 	router := build.NewRouter(buildClient, buildNodeSource(db, agentRegistry), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger))
@@ -1942,7 +1946,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithReconcileNudger(engine),
 		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
+		api.WithRequestSummaryWindow(requestSummaryWindow()),
 		api.WithAlertRules(alertingDB),
+		api.WithAlertNoise(alertingDB),
+		api.WithStatusPage(db, statusPageConfig(logger), statusPageRateLimit(logger)),
 		api.WithDeployNotifyTargets(alertingDB),
 		api.WithDeployNotifier(deployDispatcher),
 		api.WithNotificationChannels(alertingDB),
@@ -1993,12 +2000,16 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		),
 		api.WithResourceRecommendationLookback(resourceRecommendationLookback(logger)),
 		api.WithPreviewTTL(previewTTL(logger)),
+		api.WithPreviewLimits(previewLimits(logger)),
+		api.WithPreviewStuckAfter(previewStuckAfter(logger)),
 		api.WithInviteTTL(inviteTTL(logger)),
 		api.WithAuditLogRetention(auditLogRetention(logger)),
 		api.WithDeployApprovalTTL(deployApprovalTTL(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
+		api.WithDeploySafety(db, client),
+		api.WithDeployMaxConcurrent(deployMaxConcurrent(logger)),
 		api.WithLogBroadcaster(logBroadcaster),
 		// emailSender is always non-nil (run() builds it unconditionally):
 		// forgot-password always exists, it just fails clearly at send
@@ -2008,6 +2019,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
 		opts = append(opts, api.WithMasterKeyRotation(secretsManager, masterKeyFilePath))
+		opts = append(opts, api.WithSecretBinding(secretsManager))
 		opts = append(opts, api.WithDoctorMasterKeyRotationWarnAge(doctorMasterKeyRotationWarnAge(logger)))
 		// The stale_secrets doctor check counts secret-marked rows across
 		// service_secret_values and the three shared-env tiers, all of
@@ -2029,6 +2041,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		// DNS-01 provider from Cloudflare DNS-01 above) goes through the
 		// same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithRoute53DNSSecrets(secretsManager))
+		// A cloud node provider's API token (Hetzner, DigitalOcean) goes
+		// through the same secretsManager, same nil-interface hazard.
+		opts = append(opts, api.WithNodeProviderSecrets(secretsManager))
 		// The built-in registry's generated password goes through the
 		// same secretsManager, same nil-interface hazard.
 		opts = append(opts, api.WithRegistrySecrets(secretsManager))
@@ -2244,8 +2259,20 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
 
+	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
+	wireModelPreflight(modelSvc, client, b.ShortName, logger)
+	modelSvc.SetEngineMetricsReader(telemetryDB)
+	if engine != nil {
+		modelGateway.SetWakeHook(engine.Nudge)
+	}
+	opts = append(opts, api.WithModels(modelSvc))
+	if client != nil {
+		opts = append(opts, api.WithGPUHostDiagnoser(func(ctx context.Context) gpu.HostDiagnosis {
+			return gpu.DiagnoseHost(ctx, gpu.ExecRunner{}, client, nil)
+		}))
+	}
 	rt := api.NewRouter(logger, b, db, opts...)
-	return composeMux(rt.Handler(), webhookHandler, web.Handler()), rt
+	return rt.StatusHostHandler(modelGateway.Middleware(composeMux(rt.Handler(), webhookHandler, web.Handler()))), rt
 }
 
 // composeMux wires the three top-level handlers rootHandler serves
@@ -2268,6 +2295,7 @@ func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler
 	mux.Handle("/healthz", apiHandler)
 	mux.Handle("/readyz", apiHandler)
 	mux.Handle("/api/", apiHandler)
+	mux.Handle("/public/", apiHandler)
 	if webhookHandler != nil {
 		mux.Handle("POST /webhook", webhookHandler)
 	}
@@ -2979,6 +3007,7 @@ func publicHost() string {
 // field here is fixed for the process lifetime, only the store contents
 // dynamicSource reads change between reconcile passes.
 type dynamicSourceDeps struct {
+	previewNotifier  previewNotifier
 	db               *store.DB
 	runtime          docker.Runtime
 	driver           *ingressdriver.Driver
@@ -3015,6 +3044,9 @@ type dynamicSourceDeps struct {
 	// host can run its ingress on non-default ports.
 	ingressHTTPSAddr string
 	ingressHTTPAddr  string
+	models           *modelDeps
+	// lbRegistry is shared with the API so it can report live upstream status.
+	lbRegistry *loadbalancer.Registry
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -3031,10 +3063,15 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		if err != nil {
 			return nil, fmt.Errorf("list nodes: %w", err)
 		}
+		modelRows, err := deps.db.ListModels(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list models: %w", err)
+		}
 
 		controllers := make([]reconcile.Controller, 0, len(services)+len(databases)+len(nodes)+2)
 		controllers = append(controllers, appControllersFor(deps, services)...)
 		controllers = append(controllers, databaseControllersFor(ctx, deps, databases)...)
+		controllers = append(controllers, modelControllersFor(deps, modelRows)...)
 		for _, n := range nodes {
 			controllers = append(controllers, nodehealth.New(n.ID, deps.db, deps.heartbeatTimeout))
 		}
@@ -3044,6 +3081,10 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithPublicHost(deps.publicHost),
 			ingressreconcile.WithListenAddr(deps.ingressHTTPSAddr),
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
+			ingressreconcile.WithRequestStats(),
+		}
+		if experimental.Enabled(experimental.AIModels) {
+			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
 		}
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial))
@@ -3074,6 +3115,12 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// registry being enabled with a Host set (WithRegistryDial's own
 		// doc comment).
 		ingressOpts = append(ingressOpts, ingressreconcile.WithRegistryDial(registryDialAddr()))
+		if experimental.Enabled(experimental.LoadBalancer) {
+			ingressOpts = append(ingressOpts,
+				ingressreconcile.WithLoadBalancers(deps.db, deps.lbRegistry),
+				ingressreconcile.WithNodeUpstreams(lbNodeUpstreams{db: deps.db, local: deps.runtime, registry: deps.agentRegistry}),
+			)
+		}
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 
 		// Local runtime unconditionally, same reasoning as the ingress
@@ -3093,7 +3140,9 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		if deps.secretsManager != nil {
 			tunnelTokens = deps.secretsManager
 		}
-		controllers = append(controllers, cloudflaretunnel.New(deps.db, tunnelTokens, deps.runtime, cloudflaretunnel.WithContainerPrefix(deps.networkPrefix)))
+		if experimental.Enabled(experimental.CloudflareTunnel) {
+			controllers = append(controllers, cloudflaretunnel.New(deps.db, tunnelTokens, deps.runtime, cloudflaretunnel.WithContainerPrefix(deps.networkPrefix)))
+		}
 
 		// Built-in container registry: same platform-wide-singleton,
 		// local-runtime-unconditional shape as Cloudflare Tunnel above.
@@ -3147,7 +3196,11 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 		application.WithNetworkPrefix(deps.networkPrefix),
 		application.WithInstanceID(deps.instanceID),
 		application.WithLivenessTracker(deps.livenessTracker),
+		application.WithRolloutRecorder(rolloutRecorderFor(deps.db, deps.previewNotifier)),
+		application.WithAppliedConfigRecorder(deps.db),
+		application.WithPreviousReleaseHold(previousReleaseHold(deps.logger)),
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
+		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
 	}
 	if deps.secretsManager != nil {
 		appOpts = append(appOpts, application.WithSecretResolver(deps.secretsManager))

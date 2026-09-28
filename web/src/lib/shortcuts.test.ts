@@ -112,3 +112,19 @@ describe('stepChord', () => {
     }
   })
 })
+
+describe('stepChord experimental gate', () => {
+  const chord = (key: string, enabled: readonly string[]) => {
+    const first = stepChord(INITIAL_CHORD, { ...base, key: 'g' }, 0)
+    return stepChord(first.state, { ...base, key }, 1, enabled).action
+  }
+  it.each([
+    ['m', [], null],
+    ['l', [], null],
+    ['m', ['ai-models'], { type: 'go', to: '/models' }],
+    ['l', ['load-balancer'], { type: 'go', to: '/loadbalancers' }],
+    ['a', [], { type: 'go', to: '/apps' }],
+  ])('g %s with %j', (key, enabled, want) => {
+    expect(chord(key, enabled)).toEqual(want)
+  })
+})

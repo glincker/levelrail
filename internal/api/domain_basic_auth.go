@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -99,7 +100,7 @@ func (rt *Router) requireOwnedDomain(w http.ResponseWriter, r *http.Request) (do
 		return "", false
 	}
 	if !owns {
-		writeError(w, http.StatusNotFound, "domain not found for this app")
+		writeError(w, http.StatusNotFound, fmt.Sprintf("domain %q is not one of app %q's domains; add it to the app first, then configure it", domain, name))
 		return "", false
 	}
 	return domain, true

@@ -1,3 +1,4 @@
+import { pollUnlessMissing } from '../lib/pollUnlessMissing'
 // Data source for the notification bell (components/NotificationBell.tsx):
 // a bounded v1 activity feed built entirely from two endpoints that are
 // already global and already cheap, GET /api/v1/nodes and
@@ -135,12 +136,12 @@ export function useActivityEvents(): {
   const nodes = useQuery({
     ...nodeListQueryOptions(),
     retry: false,
-    refetchInterval: ACTIVITY_POLL_INTERVAL_MS,
+    refetchInterval: pollUnlessMissing(ACTIVITY_POLL_INTERVAL_MS),
   })
   const certificates = useQuery({
     ...certificatesQueryOptions(),
     retry: false,
-    refetchInterval: ACTIVITY_POLL_INTERVAL_MS,
+    refetchInterval: pollUnlessMissing(ACTIVITY_POLL_INTERVAL_MS),
   })
 
   const events = [

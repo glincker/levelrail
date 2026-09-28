@@ -1,0 +1,10 @@
+# Non-test Go files allowed to run host processes (os/exec, os.StartProcess,
+# syscall.Exec). One entry per line: <repo-relative path> | <reason>.
+# Docker and BuildKit are driven through their APIs and must never appear here.
+# A new entry needs a reviewer to confirm no user-influenced string (app name,
+# env value, branch, git URL, domain, file name) reaches the argv, and that no
+# shell (sh -c) is involved.
+internal/gpu/gpu.go | nvidia-smi probe, binary name and args are literals from internal/gpu
+internal/network/link.go | ifconfig and ip on the node's own TUN device, args are the mesh CIDR and device name, argv form, no shell
+internal/telemetry/hostpatch.go | read-only package manager upgrade count, literal binary names and args, argv form
+internal/api/doctor_firewall.go | read-only ufw/firewalld status check, literal binary names and args, argv form

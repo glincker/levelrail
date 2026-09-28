@@ -9,6 +9,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -66,18 +69,67 @@ func (rt *Router) appTagNames(ctx context.Context, appName string) ([]string, er
 	return tagNamesFromStoreTags(tags), nil
 }
 
-// validateTagName checks the one field a tag has: non-empty, trimmed,
-// capped at a reasonable display length so a chip in the UI never wraps
-// unreasonably.
+var tagNamePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,31}(:[a-z0-9][a-z0-9._/-]{0,63})?$`)
+
+// validateTagName lowercases and validates a tag: "key" or "key:value".
 func validateTagName(name string) (string, error) {
-	name = strings.TrimSpace(name)
+	name = strings.ToLower(strings.TrimSpace(name))
 	if name == "" {
 		return "", errors.New("name is required")
 	}
-	if len(name) > 64 {
-		return "", errors.New("name must be 64 characters or fewer")
+	if !tagNamePattern.MatchString(name) {
+		return "", errors.New("tag must be lowercase key or key:value (letters, digits, . _ - and / in the value), key up to 32 and value up to 64 characters")
 	}
 	return name, nil
+}
+
+// maxTagsPerApp reads APP_MAX_TAGS_PER_APP (default 20).
+func maxTagsPerApp() int {
+	if n, err := strconv.Atoi(os.Getenv("APP_MAX_TAGS_PER_APP")); err == nil && n > 0 {
+		return n
+	}
+	return 20
+}
+
+var errTooManyTags = errors.New("app has reached the maximum number of tags")
+
+// attachTagByName get-or-creates the named tag and attaches it to appName,
+// enforcing the per-app cap only when the tag is not already attached.
+func (rt *Router) attachTagByName(ctx context.Context, appName, name string) (store.Tag, error) {
+	tag, err := rt.tags.GetTagByName(ctx, name)
+	if err != nil && !errors.Is(err, store.ErrTagNotFound) {
+		return store.Tag{}, fmt.Errorf("load tag: %w", err)
+	}
+	if errors.Is(err, store.ErrTagNotFound) {
+		id, idErr := randomTagID()
+		if idErr != nil {
+			return store.Tag{}, fmt.Errorf("generate tag id: %w", idErr)
+		}
+		tag = store.Tag{ID: id, Name: name, CreatedAt: time.Now().UTC()}
+		saveErr := rt.tags.SaveTag(ctx, tag)
+		if errors.Is(saveErr, store.ErrTagNameTaken) {
+			if tag, err = rt.tags.GetTagByName(ctx, name); err != nil {
+				return store.Tag{}, fmt.Errorf("reload tag after race: %w", err)
+			}
+		} else if saveErr != nil {
+			return store.Tag{}, fmt.Errorf("create tag: %w", saveErr)
+		}
+	}
+	existing, err := rt.tags.ListTagsForApp(ctx, appName)
+	if err != nil {
+		return store.Tag{}, fmt.Errorf("list app tags: %w", err)
+	}
+	attached := false
+	for _, t := range existing {
+		attached = attached || t.ID == tag.ID
+	}
+	if !attached && len(existing) >= maxTagsPerApp() {
+		return store.Tag{}, errTooManyTags
+	}
+	if err := rt.tags.AttachAppTag(ctx, tag.ID, appName); err != nil {
+		return store.Tag{}, fmt.Errorf("attach tag: %w", err)
+	}
+	return tag, nil
 }
 
 // handleCreateTag handles POST /api/v1/tags.
@@ -240,44 +292,13 @@ func (rt *Router) handleAttachAppTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tag, err := rt.tags.GetTagByName(r.Context(), name)
-	if err != nil && !errors.Is(err, store.ErrTagNotFound) {
-		rt.logger.Error("api: attach app tag: load tag failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	tag, err := rt.attachTagByName(r.Context(), appName, name)
+	if errors.Is(err, errTooManyTags) {
+		writeError(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	if errors.Is(err, store.ErrTagNotFound) {
-		id, idErr := randomTagID()
-		if idErr != nil {
-			rt.logger.Error("api: attach app tag: generate id failed", slog.String("error", idErr.Error()))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-		tag = store.Tag{ID: id, Name: name, CreatedAt: time.Now().UTC()}
-		saveErr := rt.tags.SaveTag(r.Context(), tag)
-		switch {
-		case saveErr == nil:
-			// created
-		case errors.Is(saveErr, store.ErrTagNameTaken):
-			// Lost a create race: someone else created this exact name
-			// between the GetTagByName miss above and this SaveTag
-			// call. Re-read it rather than failing a valid attach.
-			tag, err = rt.tags.GetTagByName(r.Context(), name)
-			if err != nil {
-				rt.logger.Error("api: attach app tag: reload after race failed", slog.String("error", err.Error()), slog.String("name", name))
-				writeError(w, http.StatusInternalServerError, "internal error")
-				return
-			}
-		default:
-			rt.logger.Error("api: attach app tag: create tag failed", slog.String("error", saveErr.Error()), slog.String("name", name))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-	}
-
-	if err := rt.tags.AttachAppTag(r.Context(), tag.ID, appName); err != nil {
-		rt.logger.Error("api: attach app tag failed", slog.String("error", err.Error()), slog.String("name", appName), slog.String("tag_id", tag.ID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	if err != nil {
+		rt.internalError(w, "api: attach app tag failed", err, slog.String("name", appName))
 		return
 	}
 

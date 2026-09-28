@@ -29,8 +29,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
@@ -214,6 +216,7 @@ type Controller struct {
 	secretResolver  SecretResolver          // nil is valid: a service with no secret-backed env vars never needs one
 	deployRecorder  DeployRecorder          // nil is valid: deploy frequency just isn't recorded
 	meshDNSAddr     string                  // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	nodeGPU         NodeGPUChecker          // nil is valid: no GPU placement check, see WithNodeGPU
 	storageTargets  StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
 	projectEnv      ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
 	orgEnv          OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
@@ -236,6 +239,14 @@ type Controller struct {
 	// real 30s production budget.
 	egressReadyBudget       time.Duration
 	egressReadyPollInterval time.Duration
+
+	rollouts            RolloutRecorder       // nil is valid: rollout state just isn't recorded
+	servingImageID      string                // image ID of the last replica proven ready this pass
+	previousReleaseHold time.Duration         // 0 removes the previous release at cutover
+	applied             AppliedConfigRecorder // nil is valid: pending changes just aren't tracked
+	lastHeldUntil       time.Time
+	unconfirmedMu       sync.Mutex
+	unconfirmed         map[string]*store.AppliedConfig // created but not yet proven ready, by container name
 }
 
 // Option configures optional Controller behavior.
@@ -470,7 +481,10 @@ func New(serviceName string, svcStore ServiceStore, runtime docker.Runtime, opts
 }
 
 // Name implements reconcile.Controller.
-func (c *Controller) Name() string { return "application/" + c.serviceName }
+func (c *Controller) Name() string { return ControllerName(c.serviceName) }
+
+// ControllerName is Name's naming convention, usable without a *Controller.
+func ControllerName(serviceName string) string { return "application/" + serviceName }
 
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
@@ -512,6 +526,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return unknownResult("AwaitingFirstBuild"), nil
 	}
 
+	if blocked := c.gpuPlacementBlock(ctx, desired); blocked != nil {
+		return *blocked, nil
+	}
+
 	// Defensive, not redundant: store.SaveDesiredService already
 	// defaults an empty Strategy/zero Replicas before persisting, but
 	// GetDesiredService's caller here is this package's own tests (and
@@ -533,19 +551,18 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 	targets := make([]string, replicas)
 	for i := range targets {
-		targets[i] = replicaContainerName(c.serviceName, desired.Image, desired.RestartNonce, i)
+		targets[i] = replicaContainerName(c.serviceName, NameImage(*desired), desired.RestartNonce, i)
 	}
 
+	c.servingImageID = ""
+	var result reconcile.Result
 	switch strategy {
 	case strategyBlueGreen:
-		result, err := c.reconcileBlueGreen(ctx, targets, desired)
-		return c.appendEgressCondition(ctx, result, targets, desired), err
+		result, err = c.reconcileBlueGreen(ctx, targets, desired)
 	case strategyRecreate:
-		result, err := c.reconcileRecreate(ctx, targets, desired)
-		return c.appendEgressCondition(ctx, result, targets, desired), err
+		result, err = c.reconcileRecreate(ctx, targets, desired)
 	case strategyRolling:
-		result, err := c.reconcileRolling(ctx, targets, desired)
-		return c.appendEgressCondition(ctx, result, targets, desired), err
+		result, err = c.reconcileRolling(ctx, targets, desired)
 	default:
 		// Reachable only if something bypassed internal/spec's schema
 		// validation (a hand-built DesiredService, or the schema's own
@@ -555,6 +572,19 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// remove an old container.
 		return notReady("StrategyUnrecognized", fmt.Errorf("unrecognized deploy strategy %q", strategy)), nil
 	}
+	if isReady(result) {
+		c.recordRollout(ctx, desired, store.RolloutStateServing, c.servingImageID)
+	}
+	return c.appendEgressCondition(ctx, result, targets, desired), err
+}
+
+func isReady(r reconcile.Result) bool {
+	for _, cond := range r.Conditions {
+		if cond.Type == "Ready" {
+			return cond.Status == reconcile.ConditionTrue
+		}
+	}
+	return false
 }
 
 // Teardown stops and removes every container this controller owns,
@@ -592,12 +622,9 @@ func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, d
 		anyDeployed = anyDeployed || deployed.justDeployed
 	}
 
-	// Only reached once every target in this pass's replica set is
-	// confirmed running (and, for any freshly started, ready): safe to
-	// remove every other container for this service, old-image
-	// containers and any excess replica from a replica-count decrease
-	// alike.
-	if err := c.removeStale(ctx, targets); err != nil {
+	// Every target is running and ready: retire the rest, holding the
+	// previous release for WithPreviousReleaseHold if configured.
+	if err := c.removeStaleAfterHold(ctx, targets); err != nil {
 		// The important fact, a healthy set is serving, is still true; a
 		// stray old container is a real problem but a lesser one, so
 		// Status stays True with a reason that says exactly what's
@@ -707,13 +734,16 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 			if err != nil {
 				return notReady("InspectFailed", err), fmt.Errorf("application/%s: list stale containers: %w", c.serviceName, err)
 			}
-			if len(stale) > 0 {
+			// With a hold configured the last old container stays as the
+			// held previous release.
+			if len(stale) > 1 || (len(stale) == 1 && c.previousReleaseHold <= 0) {
+				sort.SliceStable(stale, func(i, j int) bool { return stale[i].Created.Before(stale[j].Created) })
 				_ = c.removeContainers(ctx, stale[:1])
 			}
 		}
 	}
 
-	if err := c.removeStale(ctx, targets); err != nil {
+	if err := c.removeStaleAfterHold(ctx, targets); err != nil {
 		return reconcile.Result{Conditions: []reconcile.Condition{{
 			Type: "Ready", Status: reconcile.ConditionTrue,
 			Reason: "RunningStaleCleanupFailed", Message: err.Error(),
@@ -779,6 +809,7 @@ func (c *Controller) finishReconcile(ctx context.Context, targets []string, desi
 type replicaOutcome struct {
 	justDeployed bool
 	reason       string
+	imageID      string
 }
 
 // ensureReplicaRunning converges one replica: the right container
@@ -846,7 +877,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		if err := c.verifyRunningReady(ctx, state, desired); err != nil {
 			return replicaOutcome{reason: readinessReason(err, "RunningNotReady")}, err
 		}
-		return replicaOutcome{}, nil
+		return c.confirmedOutcome(ctx, target, state, desired, false)
 	}
 
 	// Re-inspect: Docker only reports port bindings once a container is
@@ -885,9 +916,35 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	if err := c.waitReady(ctx, state, desired); err != nil {
+		c.recordRolloutFailure(ctx, desired, err)
 		return replicaOutcome{reason: readinessReason(err, "ReadinessFailed")}, err
 	}
-	return replicaOutcome{justDeployed: true}, nil
+	return c.confirmedOutcome(ctx, target, state, desired, true)
+}
+
+// confirmedOutcome is imageOutcome plus recording target's creation-time
+// snapshot once the replica is proven ready.
+func (c *Controller) confirmedOutcome(ctx context.Context, target string, state *docker.ContainerState, desired *store.DesiredService, justDeployed bool) (replicaOutcome, error) {
+	out, err := c.imageOutcome(ctx, state, desired, justDeployed)
+	if err == nil {
+		c.confirmApplied(ctx, target)
+	}
+	return out, err
+}
+
+// imageOutcome is a ready replica's final verdict: Ready only when it runs
+// the content the deploy resolved to.
+func (c *Controller) imageOutcome(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService, justDeployed bool) (replicaOutcome, error) {
+	if err := c.verifyImage(ctx, state, desired); err != nil {
+		var mismatch *imageMismatchError
+		if errors.As(err, &mismatch) {
+			c.recordRollout(ctx, desired, store.RolloutStateMismatch, mismatch.got)
+			return replicaOutcome{reason: "ImageDigestMismatch"}, err
+		}
+		return replicaOutcome{reason: "ImageInspectFailed"}, err
+	}
+	c.servingImageID = state.ImageID
+	return replicaOutcome{justDeployed: justDeployed, imageID: state.ImageID}, nil
 }
 
 // readinessReason maps a readiness failure to its condition reason,
@@ -960,6 +1017,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if err != nil {
 		return fmt.Errorf("create %q: %w", name, err)
 	}
+	c.holdApplied(name, c.appliedSnapshot(ctx, name, desired))
 	if err := c.runtime.Start(ctx, id); err != nil {
 		return fmt.Errorf("start %q after create: %w", name, err)
 	}
@@ -2117,6 +2175,9 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 			NanoCPUs:        desired.Resources.NanoCPUs,
 			SwapMemoryBytes: desired.Resources.SwapMemoryBytes,
 			CPUSetCPUs:      desired.Resources.CPUSetCPUs,
+		}
+		if g := desired.Resources.GPU; g != nil {
+			spec.GPU = &docker.GPURequest{Count: g.Count, DeviceIDs: g.DeviceIDs}
 		}
 	}
 	for _, v := range desired.Volumes {

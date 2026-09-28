@@ -81,15 +81,6 @@ func writeJSONLine(out io.Writer, v any) error {
 	return err
 }
 
-// writeJSONError writes {"error": "..."} to out: --json mode's error
-// shape, deliberately the same {"error": "..."} field name
-// internal/api/respond.go's own apiError already uses, so a caller
-// parsing this CLI's JSON output and the control plane's own JSON error
-// responses can use one code path for both.
-func writeJSONError(out io.Writer, err error) error {
-	return writeJSONValue(out, map[string]string{"error": err.Error()})
-}
-
 // outputFormat is the resolved --output value.
 type outputFormat string
 
@@ -409,7 +400,7 @@ func printDeployAttemptsHuman(out io.Writer, attempts []deployAttemptResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tIMAGE\tSOURCE\tSTATUS\tFRAMEWORK\tSTARTED\tFINISHED\tERROR")
+	_, _ = fmt.Fprintln(tw, "ID\tIMAGE\tDIGEST\tSOURCE\tSTATUS\tROLLOUT\tREASON\tFRAMEWORK\tSTARTED\tFINISHED\tERROR")
 	for _, a := range attempts {
 		finished := "-"
 		if a.FinishedAt != nil {
@@ -419,8 +410,12 @@ func printDeployAttemptsHuman(out io.Writer, attempts []deployAttemptResource) {
 		if framework == "" {
 			framework = "-"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			a.ID, a.Image, a.Source, a.Status, framework, a.StartedAt.Format(time.RFC3339), finished, a.Error)
+		reason := a.Reason
+		if a.WaitReason != "" {
+			reason = a.WaitReason
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			a.ID, unpinnedImage(a.Image), shortDigest(a.ImageDigest, a.DigestReason), a.Source, a.Status, dashIfEmpty(a.RolloutState), dashIfEmpty(reason), framework, a.StartedAt.Format(time.RFC3339), finished, a.Error)
 	}
 	_ = tw.Flush()
 }
@@ -433,12 +428,20 @@ func printDiagnosisHuman(out io.Writer, d diagnosisResource) {
 	}
 	_, _ = fmt.Fprintf(out, "\n%s\n", d.Explanation)
 	_, _ = fmt.Fprintf(out, "\nsuggested next step:\n  %s\n", d.Suggestion)
-	if len(d.MatchedSignals) == 0 {
-		return
+	if len(d.MatchedSignals) > 0 {
+		_, _ = fmt.Fprintln(out, "\nmatched signals:")
+		for _, s := range d.MatchedSignals {
+			_, _ = fmt.Fprintf(out, "  [%s] %s\n", s.Source, s.Excerpt)
+		}
 	}
-	_, _ = fmt.Fprintln(out, "\nmatched signals:")
-	for _, s := range d.MatchedSignals {
-		_, _ = fmt.Fprintf(out, "  [%s] %s\n", s.Source, s.Excerpt)
+	printDiagnosisCauses(out, d)
+	if d.Failure != nil {
+		_, _ = fmt.Fprintln(out)
+		printDeployFailure(out, d.Failure)
+	}
+	if d.RecentChanges != nil {
+		_, _ = fmt.Fprintln(out)
+		printRecentChanges(out, d.RecentChanges, "")
 	}
 }
 
@@ -827,12 +830,14 @@ func printNodeHuman(out io.Writer, n nodeResource) {
 	_, _ = fmt.Fprintf(out, "accepts app workloads:   %t\n", n.AcceptsAppWorkloads)
 	_, _ = fmt.Fprintf(out, "accepts build workloads: %t\n", n.AcceptsBuildWorkloads)
 	_, _ = fmt.Fprintf(out, "created at:              %s\n", n.CreatedAt.Format(time.RFC3339))
+	printNodeCertHuman(out, n)
 	if n.AlertStatus != nil {
 		_, _ = fmt.Fprintf(out, "alert status:\n")
 		_, _ = fmt.Fprintf(out, "  patch status:          %s\n", n.AlertStatus.PatchStatus)
 		_, _ = fmt.Fprintf(out, "  node disk space:       %s\n", n.AlertStatus.NodeDiskSpace)
 		_, _ = fmt.Fprintf(out, "  node resource usage:   %s\n", n.AlertStatus.NodeResourceUsage)
 	}
+	printNodeGPUHuman(out, n.GPU)
 }
 
 // printNodesTable prints a compact, aligned table of nodes ("nodes list"
@@ -843,9 +848,9 @@ func printNodesTable(out io.Writer, nodes []nodeResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tADDRESS\tSTATUS\tSCHEDULABLE\tCREATED")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tADDRESS\tSTATUS\tSCHEDULABLE\tGPU\tCERT\tAGENT\tCREATED")
 	for _, n := range nodes {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%t\t%s\n", n.ID, n.Name, n.Address, n.Status, n.Schedulable, n.CreatedAt.Format(time.RFC3339))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%t\t%s\t%s\t%s\t%s\n", n.ID, n.Name, n.Address, n.Status, n.Schedulable, nodeGPUColumn(n.GPU), nodeCertColumn(n.Cert), nodeAgentColumn(n.Agent), n.CreatedAt.Format(time.RFC3339))
 	}
 	_ = tw.Flush()
 }

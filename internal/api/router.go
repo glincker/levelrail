@@ -72,6 +72,7 @@
 package api
 
 import (
+	"github.com/GLINCKER/levelrail/internal/statuspage"
 	"log/slog"
 	"sync"
 	"time"
@@ -79,11 +80,14 @@ import (
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/GLINCKER/levelrail/internal/importplan"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -101,13 +105,27 @@ type Router struct {
 	tokens                 TokenStore
 	nodes                  NodeStore
 	agentCAFingerprint     string // empty: join tokens are returned without a CA pin
+	nodeCerts              nodeCertConfig
+	nodeProvisions         NodeProvisionStore     // always set, same "core Store interface" shape as cloudflareDNS above
+	nodeProviderSecrets    NodeProviderSecrets    // nil is valid: POST /api/v1/node-providers and every node-providers/{provider}/... route return 501, same shape as cloudflareDNSSecrets above
+	nodeProviderCatalog    *providerCatalogCache  // always set (NewRouter constructs one unconditionally); purely in-memory, brief cache, see its own doc comment
+	nodeProvisionerFactory NodeProvisionerFactory // nil uses defaultNodeProvisionerFactory, overridable in this package's own tests
 	projects               ProjectStore
 	organizations          OrganizationStore
 	environments           EnvironmentStore
 	secrets                SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	composeSecrets         ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
+	requestSummaryWindow   time.Duration      // 0 keeps defaultRequestSummaryWindow
 	alertRules             AlertRules         // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
+	lb                     lbDeps             // zero value is valid: load balancer routes return 501
+	iac                    iacDeps            // zero value is valid: lazily builds the in-process handler apply calls
+	alertNoise             AlertNoise         // nil is valid: silence, maintenance window and alert history routes return 501
+	statusPage             StatusPageStore    // nil is valid: status page routes return 501 and the public page stays off
+	statusView             StatusPageViewer
+	statusSampler          *statuspage.Service
+	statusLimiter          *apiRateLimiter
+	statusHost             statusHostCache
 	sessions               *sessionStore
 	logins                 *loginLimiter
 	recoveryCodes          RecoveryCodeStore // always set, same "core Store interface" shape as auth above
@@ -126,6 +144,10 @@ type Router struct {
 	orphanedVolumes        OrphanedVolumeManager  // nil is valid: GET/POST /system/volumes/orphaned* return 501, same shape as dockerPruner above
 	registryAuthTester     RegistryAuthTester     // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
 	execRuntime            NodeRuntimeResolver    // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
+	models                 ModelService           // nil is valid: /api/v1/models routes return 501, see WithModels
+	gpuHostDiagnoser       GPUHostDiagnoser       // nil is valid: doctor skips the detailed host GPU checks
+	deploySafety           DeploySafetyStore      // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
+	imageResolver          docker.ImageResolver   // nil deploys image tags unresolved, see WithDeploySafety
 	reconcileNudger        ReconcileNudger        // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
 	certs                  CertStore              // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
 	ingressSettings        IngressSettingsStore   // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
@@ -139,6 +161,7 @@ type Router struct {
 	domainRedirect         DomainRedirectStore    // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainErrorPages       DomainErrorPagesStore  // always set, same "core Store interface" shape as domainWAF above; no secrets dependency either
 	masterKeyRotator       MasterKeyRotator       // nil is valid: POST /system/master-key/rotate returns 501, same shape as domainBasicAuthSecrets above
+	secretBinder           SecretBinder           // nil is valid: the secrets binding routes return 501
 	// masterKeyFilePath is where the currently active master key came
 	// from on disk, "" if it was sourced from APP_MASTER_KEY instead
 	// (see cmd/levelrail/main.go's loadSecretsManager). A successful
@@ -229,6 +252,15 @@ type Router struct {
 	// for a missed pull-request-closed webhook delivery. 0 means "use
 	// the default", set via WithPreviewTTL.
 	previewTTL time.Duration
+	// previewLimits caps live preview environments (WithPreviewLimits);
+	// previewAdmitMu serializes the check-evict-save section that enforces it.
+	previewLimits  PreviewLimits
+	previewAdmitMu sync.Mutex
+	// previewDeploys tracks approval-triggered background deploys.
+	previewDeploys sync.WaitGroup
+	// previewStuckAfter is how long a preview may sit in deploying before the
+	// orphan sweep marks it failed (WithPreviewStuckAfter).
+	previewStuckAfter time.Duration
 	// auditLogRetention overrides defaultAuditLogRetention
 	// (audit_retention.go): how long an audit_log row survives before
 	// PurgeOldAuditEntries removes it. 0 means "use the default", set via
@@ -254,9 +286,11 @@ type Router struct {
 	builder                        Builder                          // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
 	fetch                          fetchFunc                        // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
 	listBranches                   listBranchesFunc                 // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
+	importFiles                    func() importplan.FileSource     // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
 	detect                         detectFunc                       // framework pre-flight detector for handleDetectFramework; always non-nil, defaulted to build.Detect in NewRouter, overridable in this package's own tests
 	staticSites                    StaticSiteStore                  // always set, same "core Store interface, not an optional plug-in" shape as certs above
 	backupTargets                  BackupTargetStore                // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
+	storage                        *StorageDeps                     // nil is valid: /api/v1/storage and /api/v1/log-archive routes return 501
 	backupSecrets                  BackupSecretsSetter              // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
 	registryCredentials            RegistryCredentialStore          // always set, same "core Store interface" shape as backupTargets above
 	registryCredentialSecrets      RegistryCredentialSecretsSetter  // nil is valid: POST /api/v1/registry-credentials returns 501, same shape as backupSecrets above
@@ -285,6 +319,9 @@ type Router struct {
 	volumeCloneRestoreRunner       VolumeCloneRestoreRunner         // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new returns 501, same shape as cloneRestoreRunner above
 	deployAttempts                 DeployAttemptStore               // always set, same "core Store interface" shape as certs/staticSites above
 	buildStartMu                   sync.Mutex                       // serializes the running-attempt check and row insert in handleTriggerBuild
+	cancels                        *deploy.CancelRegistry           // always set by NewRouter: in-flight deploys an operator can cancel
+	startingDeploys                map[string]int                   // guarded by buildStartMu: apps whose webhook deploy is fetching before its attempt row exists
+	deployMaxConcurrent            int                              // 0 means unlimited, set via WithDeployMaxConcurrent
 	deployLogStore                 DeployLogQuerier                 // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
 	deployRecorder                 *deploylog.Recorder              // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
 	logBroadcaster                 *telemetry.LogBroadcaster        // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
@@ -332,6 +369,13 @@ type Router struct {
 	auditLog                       AuditStore                       // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
 	scheduledTasks                 ScheduledTaskStore               // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task needs no runner configuration, only actually running one does
 	scheduledTaskRunner            ScheduledTaskRunner              // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
+	preview                        PreviewService                   // nil is valid: preview routes return 501 (SetPreview)
+	supplyChain                    SupplyChainService               // nil is valid: supply chain routes return 501 (SetSupplyChain)
+	pipelineStore                  PipelineStore                    // nil is valid: pipeline routes return 501 (WithPipelines)
+	pipelineRunner                 PipelineRunner                   // nil is valid: run/cancel/rerun return 501
+	pipelineEvents                 PipelineEvents                   // nil is valid: git events start no pipelines
+	forgeDeployments               ForgeDeploymentStore             // nil is valid: app deploys are not reported to git forges
+	pipelineSync                   *pipelineSyncWiring              // nil is valid: pushes do not sync pipeline files and the sync routes return 501
 	featureFlags                   FeatureFlagStore                 // always set, same "core Store interface" shape as scheduledTasks above
 	tags                           TagStore                         // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
 	appIntegrations                AppIntegrationStore              // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)
@@ -407,6 +451,8 @@ type Router struct {
 
 	cpBackups           ControlPlaneBackupManager // nil is valid: /system/backups routes return 501
 	cpBackupScheduleOff bool                      // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
+	cpDR                ControlPlaneDR            // nil is valid: /system/control-plane-dr routes return 501
+	cpDRMaterial        EscrowMaterialReader
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -416,6 +462,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	}
 	rt := &Router{
 		logger:                      logger,
+		cancels:                     deploy.NewCancelRegistry(),
+		startingDeploys:             map[string]int{},
 		brand:                       b,
 		apps:                        s,
 		appGroups:                   s,
@@ -465,6 +513,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		fetch:                       gitCheckout,
 		listBranches:                listRemoteBranches,
 		detect:                      build.Detect,
+		importFiles:                 func() importplan.FileSource { return importplan.NewHTTPFiles() },
 		gitSourceFetch:              gitCheckoutWithToken,
 		logins:                      newLoginLimiter(),
 		recoveryCodes:               s,
@@ -478,6 +527,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		cloudflareTunnel:            s,
 		cloudflareDNS:               s,
 		route53DNS:                  s,
+		nodeProvisions:              s,
+		nodeProviderCatalog:         newProviderCatalogCache(),
 		registry:                    s,
 		vault:                       s,
 		registryCatalog:             registrycatalog.NewClient(),

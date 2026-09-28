@@ -74,13 +74,13 @@ function TokensPage() {
 }
 
 // Route-level fallback for the loader's pending phase, matching
-// TokenTable's own 7-column shape so the skeleton doesn't jump when real
+// TokenTable's own 8-column shape so the skeleton doesn't jump when real
 // rows swap in.
 function TokensPending() {
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-semibold text-foreground">API tokens</h1>
-      <TableSkeleton columnCount={7} />
+      <TableSkeleton columnCount={8} />
     </div>
   )
 }

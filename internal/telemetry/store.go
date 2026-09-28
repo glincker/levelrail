@@ -57,14 +57,14 @@ func (db *DB) WriteSamples(ctx context.Context, samples []Sample) error {
 	return nil
 }
 
-// Query returns every sample for resourceID/metric with a timestamp in
+// queryRaw returns every raw sample for resourceID/metric with a timestamp in
 // [from, to], oldest first. An empty (nil) result and a nil error both
 // mean "no samples in this range," not an error: a resource with no
 // activity yet, or a range before collection started, is a valid
 // observed state, the same convention docker.InspectByName's "not
 // found is not an error" doc comment already establishes elsewhere in
 // this codebase.
-func (db *DB) Query(ctx context.Context, resourceID, metric string, from, to time.Time) ([]Sample, error) {
+func (db *DB) queryRaw(ctx context.Context, resourceID, metric string, from, to time.Time) ([]Sample, error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT ts, value FROM metric_samples
 		WHERE resource_id = ? AND metric = ? AND ts BETWEEN ? AND ?

@@ -17,7 +17,8 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// GET at AbilityRead, matching GET .../git-source's own
 	// GET=Read/PUT=WriteSensitive split just below: a key NAME is no
 	// more sensitive than a git-source's connection config.
-	mux.HandleFunc("GET /api/v1/apps/{name}/secrets", rt.requireAbility(AbilityRead, rt.handleListSecrets))
+	mux.HandleFunc("GET /api/v1/apps/{name}/secrets", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListSecrets))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/secrets/{key}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteSecret))
 	mux.HandleFunc("POST /api/v1/apps/{name}/secrets/{key}/lock", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetSecretLock))
 
 	// Git source (a deferred follow-up, git_sources.go):
@@ -26,8 +27,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// single-app, env-var-configured Config. AbilityWriteSensitive for
 	// PUT/DELETE, matching PUT .../secrets/{key} above: connecting a repo
 	// accepts an optional live deploy token in the same request body.
-	mux.HandleFunc("GET /api/v1/apps/{name}/git-source", rt.requireAbility(AbilityRead, rt.handleGetGitSource))
+	mux.HandleFunc("GET /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetGitSource))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitSource))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source/deploy-settings", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitDeploySettings))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteGitSource))
 
 	// Git push webhook (git_webhook.go), the per-app-URL evolution of the
@@ -47,7 +49,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// list, matching GET .../git-source; AbilityDeploy for replay,
 	// matching POST .../deploys, since a replay can trigger the same
 	// real build/deploy side effect.
-	mux.HandleFunc("GET /api/v1/apps/{name}/webhook-deliveries", rt.requireAbility(AbilityRead, rt.handleListWebhookDeliveries))
+	mux.HandleFunc("GET /api/v1/apps/{name}/webhook-deliveries", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListWebhookDeliveries))
 	mux.HandleFunc("POST /api/v1/apps/{name}/webhook-deliveries/{id}/replay", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleReplayWebhookDelivery))
 
 	// Preview environments per pull request (preview_environments.go/
@@ -58,7 +60,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// AbilityDeploy for the manual teardown, the same lifecycle-action
 	// tier POST .../restart and POST .../stop already use.
 	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-settings", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetPreviewEnabled))
-	mux.HandleFunc("GET /api/v1/apps/{name}/previews", rt.requireAbility(AbilityRead, rt.handleListPreviewEnvironments))
+	mux.HandleFunc("GET /api/v1/apps/{name}/previews", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListPreviewEnvironments))
 	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/teardown", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleTeardownPreviewEnvironment))
 
 	// Preview environment TTL sweep (preview_environments_sweep.go): the
@@ -68,32 +70,38 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// shape as POST .../previews/{number}/teardown above, same
 	// AbilityDeploy tier.
 	mux.HandleFunc("POST /api/v1/previews/sweep", rt.requireAbility(AbilityDeploy, rt.handleSweepPreviewEnvironments))
+	mux.HandleFunc("GET /api/v1/previews", rt.requireAbility(AbilityRead, rt.handleListAllPreviews))
+	mux.HandleFunc("GET /api/v1/apps/{name}/preview-policy", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetPreviewPolicy))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-policy", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetPreviewPolicy))
+	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/approve", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleApprovePreviewEnvironment))
 
 	// Telemetry query: metrics and logs for one app,
 	// fanned out through a Federator (today, exactly one local source).
-	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryMetrics))
-	mux.HandleFunc("GET /api/v1/apps/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryLogs))
+	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryMetrics))
+	mux.HandleFunc("GET /api/v1/apps/{name}/requests", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryRequests))
+	mux.HandleFunc("GET /api/v1/apps/{name}/logs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryLogs))
 	// Cross-app resource usage ranking (app_resource_usage.go): a
 	// literal segment, so Go's ServeMux resolves it ahead of the
 	// {name} wildcard on GET /api/v1/apps/{name} in routes.go.
+	mux.HandleFunc("GET /api/v1/apps-metrics", rt.requireAbility(AbilityRead, rt.handleBatchAppMetrics))
 	mux.HandleFunc("GET /api/v1/apps/resource-usage", rt.requireAbility(AbilityRead, rt.handleAppResourceUsage))
 	// Live log tail (additive to the historical search route just above,
 	// see handleLiveLogStream's own doc comment): AbilityRead, the same
 	// passive-visibility boundary as every other view of telemetry data
 	// in this router, including the deploy-log stream at
 	// GET .../deploys/{deployId}/logs above.
-	mux.HandleFunc("GET /api/v1/apps/{name}/logs/stream", rt.requireAbility(AbilityRead, rt.handleLiveLogStream))
+	mux.HandleFunc("GET /api/v1/apps/{name}/logs/stream", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.withStreamReauth(appResourceFromPath, rt.handleLiveLogStream)))
 	// Log export (a plain-text attachment of a bounded window, see
 	// logs_download.go): same AbilityRead boundary as the query/stream
 	// routes above, since it reads the same store through the same
 	// telemetry.QueryLogs call, nothing more sensitive than either.
-	mux.HandleFunc("GET /api/v1/apps/{name}/logs/download", rt.requireAbility(AbilityRead, rt.handleDownloadLogs))
+	mux.HandleFunc("GET /api/v1/apps/{name}/logs/download", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDownloadLogs))
 
 	// Alerting: threshold and crashloop rules scoped
 	// to one app, fanned through a *alerting.DB when configured (see
 	// WithAlertRules).
 	mux.HandleFunc("POST /api/v1/apps/{name}/alerts", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCreateAlertRule))
-	mux.HandleFunc("GET /api/v1/apps/{name}/alerts", rt.requireAbility(AbilityRead, rt.handleListAlertRules))
+	mux.HandleFunc("GET /api/v1/apps/{name}/alerts", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAlertRules))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/alerts/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleUpdateAlertRule))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/alerts/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteAlertRule))
 
@@ -105,8 +113,8 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// identical immediate side effect (a real command actually runs
 	// inside a running container right now), not just a config change.
 	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCreateScheduledTask))
-	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks", rt.requireAbility(AbilityRead, rt.handleListScheduledTasks))
-	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbility(AbilityRead, rt.handleGetScheduledTask))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListScheduledTasks))
+	mux.HandleFunc("GET /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetScheduledTask))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleUpdateScheduledTask))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/scheduled-tasks/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteScheduledTask))
 	mux.HandleFunc("POST /api/v1/apps/{name}/scheduled-tasks/{id}/run", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRunScheduledTaskNow))
@@ -122,8 +130,8 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// read-only token, reusing the existing token/ability system with no
 	// new auth surface.
 	mux.HandleFunc("POST /api/v1/apps/{name}/flags", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCreateFeatureFlag))
-	mux.HandleFunc("GET /api/v1/apps/{name}/flags", rt.requireAbility(AbilityRead, rt.handleListFeatureFlags))
-	mux.HandleFunc("GET /api/v1/apps/{name}/flags/{id}", rt.requireAbility(AbilityRead, rt.handleGetFeatureFlag))
+	mux.HandleFunc("GET /api/v1/apps/{name}/flags", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListFeatureFlags))
+	mux.HandleFunc("GET /api/v1/apps/{name}/flags/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetFeatureFlag))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/flags/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleUpdateFeatureFlag))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/flags/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteFeatureFlag))
 	mux.HandleFunc("GET /api/v1/flags/evaluate/{key}", rt.requireAbility(AbilityRead, rt.handleEvaluateFeatureFlag))
@@ -138,7 +146,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/tags", rt.requireAbility(AbilityRead, rt.handleListTags))
 	mux.HandleFunc("DELETE /api/v1/tags/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteTag))
 	mux.HandleFunc("GET /api/v1/tags/{id}/apps", rt.requireAbility(AbilityRead, rt.handleListAppsByTag))
-	mux.HandleFunc("GET /api/v1/apps/{name}/tags", rt.requireAbility(AbilityRead, rt.handleListAppTags))
+	mux.HandleFunc("GET /api/v1/apps/{name}/tags", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppTags))
 	mux.HandleFunc("POST /api/v1/apps/{name}/tags", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleAttachAppTag))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/tags/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDetachAppTag))
 
@@ -149,7 +157,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// value through the app's own secrets namespace, AbilityWriteSensitive
 	// like PUT .../secrets/{key} above.
 	mux.HandleFunc("GET /api/v1/integrations", rt.requireAbility(AbilityRead, rt.handleListIntegrationCatalog))
-	mux.HandleFunc("GET /api/v1/apps/{name}/integrations", rt.requireAbility(AbilityRead, rt.handleListAppIntegrations))
+	mux.HandleFunc("GET /api/v1/apps/{name}/integrations", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppIntegrations))
 	mux.HandleFunc("POST /api/v1/apps/{name}/integrations", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleAttachAppIntegration))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/integrations/{id}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDetachAppIntegration))
 
@@ -160,7 +168,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// internal/alerting/deploy_notify.go's own doc comment). Also fanned
 	// through *alerting.DB when configured (see WithDeployNotifyTargets).
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploy-notify-targets", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCreateDeployNotifyTarget))
-	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-notify-targets", rt.requireAbility(AbilityRead, rt.handleListDeployNotifyTargets))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-notify-targets", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListDeployNotifyTargets))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/deploy-notify-targets/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteDeployNotifyTarget))
 
 	// Notification channels: the global, connect-once destination the
@@ -329,6 +337,20 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// above.
 	mux.HandleFunc("GET /api/v1/mesh", rt.requireAbility(AbilityRoot, rt.handleGetMeshStatus))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/mesh/rotate-key", rt.requireAbility(AbilityRoot, rt.handleRotateNodeMeshKey))
+	// Cloud node provisioning: same AbilityRoot boundary as every other
+	// node route above, a provider credential and the ability to spin up
+	// a VM are at least as sensitive as a join token.
+	mux.HandleFunc("GET /api/v1/node-providers", rt.requireAbility(AbilityRoot, rt.handleListNodeProviders))
+	mux.HandleFunc("POST /api/v1/node-providers", rt.requireAbility(AbilityRoot, rt.handleSetNodeProviderCredential))
+	mux.HandleFunc("GET /api/v1/node-providers/{provider}/regions", rt.requireAbility(AbilityRoot, rt.handleListNodeProviderRegions))
+	mux.HandleFunc("GET /api/v1/node-providers/{provider}/sizes", rt.requireAbility(AbilityRoot, rt.handleListNodeProviderSizes))
+	mux.HandleFunc("POST /api/v1/nodes/provision", rt.requireAbility(AbilityRoot, rt.handleCreateNodeProvision))
+	// A top-level sibling of /api/v1/nodes/{id}/..., not nested under it:
+	// "/api/v1/nodes/provisions/{id}" and "/api/v1/nodes/{id}/health"
+	// would be two equally-specific wildcard patterns net/http's own
+	// ServeMux refuses to register together.
+	mux.HandleFunc("GET /api/v1/node-provisions", rt.requireAbility(AbilityRoot, rt.handleListNodeProvisions))
+	mux.HandleFunc("GET /api/v1/node-provisions/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNodeProvision))
 	// Node-level metrics (sum of per-container samples for everything
 	// placed on this node, see handleQueryNodeMetrics's own doc comment
 	// for exactly what that does and doesn't mean): same AbilityRoot
@@ -347,6 +369,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// series, same AbilityRoot boundary as every other node route.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/patch-status", rt.requireAbility(AbilityRoot, rt.handleGetNodePatchStatus))
 	mux.HandleFunc("GET /api/v1/nodes/{id}/events", rt.requireAbility(AbilityRoot, rt.handleListNodeEvents))
+	// Agent certificate lifecycle (node_cert.go, ADR 021).
+	mux.HandleFunc("POST /api/v1/nodes/{id}/reenroll-token", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleCreateNodeReenrollToken))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/revoke-cert", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleRevokeNodeCert))
 
 	// Certificates (TLS renewal visibility): this project treats
 	// "a cert renewal fails silently at 3am" as its central
@@ -388,7 +413,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// DNS record to add and watch it flip to "connected" once it actually
 	// resolves. AbilityRead, same passive-visibility tier as GET
 	// /apps/{name}/git-source: a live DNS lookup, no write.
-	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/check", rt.requireAbility(AbilityRead, rt.handleCheckDomain))
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/check", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleCheckDomain))
 
 	// Domain basic auth (domain_basic_auth.go): HTTP Basic Auth
 	// protection on one app-owned domain, enforced by Caddy's
@@ -400,7 +425,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// live, currently-routed host is secured, the same "real
 	// infrastructure, high blast radius" class of change Cloudflare
 	// Tunnel/DNS and the ACME toggle already reserve AbilityRoot for.
-	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/auth", rt.requireAbility(AbilityRead, rt.handleGetDomainBasicAuth))
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/auth", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainBasicAuth))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/auth", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetDomainBasicAuth))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/auth", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleClearDomainBasicAuth))
 
@@ -409,7 +434,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// AbilityRoot: this changes an app's runtime routing behavior, the
 	// same "app lifecycle" tier POST .../stop and .../start already
 	// use, not a credential-bearing change like basic auth.
-	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbility(AbilityRead, rt.handleGetDomainMaintenance))
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainMaintenance))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainMaintenance))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearDomainMaintenance))
 
@@ -421,7 +446,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// the same "real infrastructure, high blast radius" tier PUT/DELETE
 	// .../domains/{domain}/auth already reserves for a credential-bearing
 	// change.
-	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbility(AbilityRead, rt.handleGetDomainTLSCert))
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainTLSCert))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetDomainTLSCert))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleClearDomainTLSCert))
 
@@ -433,7 +458,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// behavior, not a credential" tier PUT/DELETE .../maintenance
 	// already uses: unlike basic auth or a BYO cert, nothing here is
 	// secret material.
-	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbility(AbilityRead, rt.handleGetDomainWAF))
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainWAF))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainWAF))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/waf", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearDomainWAF))
 
@@ -444,7 +469,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// tier. PUT/DELETE are AbilityDeploy, the same "app lifecycle,
 	// runtime routing behavior, not a credential" tier PUT/DELETE
 	// .../maintenance and .../waf already use.
-	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/redirect", rt.requireAbility(AbilityRead, rt.handleGetDomainRedirect))
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/redirect", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainRedirect))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/redirect", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainRedirect))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/redirect", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearDomainRedirect))
 
@@ -454,7 +479,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// 502, 503), enforced on the next ingress reconcile pass. GET is
 	// AbilityRead; PUT/DELETE are AbilityDeploy, the same tier
 	// PUT/DELETE .../waf already uses.
-	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/error-pages", rt.requireAbility(AbilityRead, rt.handleGetDomainErrorPages))
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/error-pages", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainErrorPages))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/error-pages", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainErrorPage))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/error-pages", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearDomainErrorPages))
 
@@ -644,7 +669,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// creating or deleting the backup target itself already carries.
 	// History listing is ordinary AbilityRead.
 	mux.HandleFunc("POST /api/v1/databases/{name}/backups", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleTriggerBackup))
-	mux.HandleFunc("GET /api/v1/databases/{name}/backups", rt.requireAbility(AbilityRead, rt.handleListBackupHistory))
+	mux.HandleFunc("GET /api/v1/databases/{name}/backups", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListBackupHistory))
 
 	// Instance-wide backup history across every database and app volume,
 	// the aggregated counterpart of the per-resource routes above and
@@ -667,7 +692,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// gates scoped bearer/MCP tokens), so this choice mainly matters once
 	// Phase 4 mints scoped automation tokens against this ability tier.
 	// See handleDownloadBackup's own doc comment for the full reasoning.
-	mux.HandleFunc("GET /api/v1/databases/{name}/backups/{historyId}/download", rt.requireAbility(AbilityReadSensitive, rt.handleDownloadBackup))
+	mux.HandleFunc("GET /api/v1/databases/{name}/backups/{historyId}/download", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleDownloadBackup))
 
 	// Delete one specific archived backup on demand, rather than waiting
 	// for retention (BackupRetain/BackupRetainDays above) to age it out.
@@ -686,7 +711,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// past attempts is ordinary AbilityRead, matching history listing
 	// above.
 	mux.HandleFunc("POST /api/v1/databases/{name}/backups/{historyId}/verify", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleVerifyBackup))
-	mux.HandleFunc("GET /api/v1/databases/{name}/backups/{historyId}/verifications", rt.requireAbility(AbilityRead, rt.handleListBackupVerifications))
+	mux.HandleFunc("GET /api/v1/databases/{name}/backups/{historyId}/verifications", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListBackupVerifications))
 
 	// Scheduled backup config, per database (wave-2 roadmap item 6):
 	// which backup target, cron schedule, and retention count
@@ -730,7 +755,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// ordinary AbilityRead, the same boundary the backup history route
 	// above already draws.
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleTriggerRestore))
-	mux.HandleFunc("GET /api/v1/databases/{name}/restores", rt.requireAbility(AbilityRead, rt.handleListRestoreHistory))
+	mux.HandleFunc("GET /api/v1/databases/{name}/restores", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListRestoreHistory))
 
 	// Point-in-time restore (pitr.go): enabling/disabling PITR is
 	// AbilityWriteSensitive, the same tier creating a backup target or
@@ -741,11 +766,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// overwrites a live database's actual data with no way back.
 	mux.HandleFunc("POST /api/v1/databases/{name}/pitr", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleEnablePITR))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/pitr", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleDisablePITR))
-	mux.HandleFunc("GET /api/v1/databases/{name}/pitr", rt.requireAbility(AbilityRead, rt.handleGetPITRStatus))
+	mux.HandleFunc("GET /api/v1/databases/{name}/pitr", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetPITRStatus))
 	mux.HandleFunc("POST /api/v1/databases/{name}/base-backups", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleTriggerBaseBackup))
-	mux.HandleFunc("GET /api/v1/databases/{name}/base-backups", rt.requireAbility(AbilityRead, rt.handleListBaseBackupHistory))
+	mux.HandleFunc("GET /api/v1/databases/{name}/base-backups", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListBaseBackupHistory))
 	mux.HandleFunc("POST /api/v1/databases/{name}/pitr-restore", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleTriggerPITRRestore))
-	mux.HandleFunc("GET /api/v1/databases/{name}/pitr-restores", rt.requireAbility(AbilityRead, rt.handleListPITRRestoreHistory))
+	mux.HandleFunc("GET /api/v1/databases/{name}/pitr-restores", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListPITRRestoreHistory))
 
 	// App service volume backups (app_volume_backups.go/
 	// app_volume_backup_download.go/app_volume_backup_verify.go): the
@@ -754,25 +779,25 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// those handlers' own doc comments for the per-route reasoning this
 	// mirrors.
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backups", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleTriggerVolumeBackup))
-	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups", rt.requireAbility(AbilityRead, rt.handleListVolumeBackupHistory))
-	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/download", rt.requireAbility(AbilityReadSensitive, rt.handleDownloadVolumeBackup))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListVolumeBackupHistory))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/download", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleDownloadVolumeBackup))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteVolumeBackup))
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verify", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleVerifyVolumeBackup))
-	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications", rt.requireAbility(AbilityRead, rt.handleListVolumeBackupVerifications))
-	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbility(AbilityRead, rt.handleGetVolumeBackupSchedule))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListVolumeBackupVerifications))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetVolumeBackupSchedule))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetVolumeBackupSchedule))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleClearVolumeBackupSchedule))
 	// AbilityRoot, matching the database restore route above exactly: see
 	// handleTriggerVolumeRestore's own doc comment for why this is not a
 	// lesser risk tier just because the target is a filesystem.
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/restore", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleTriggerVolumeRestore))
-	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/restores", rt.requireAbility(AbilityRead, rt.handleListVolumeRestoreHistory))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/restores", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListVolumeRestoreHistory))
 	// Restore as a new volume (app_volume_clone_restore.go): the
 	// non-destructive counterpart just above, the same AbilityWriteSensitive
 	// tier the database clone-restore route below uses, see
 	// handleVolumeCloneRestore's own doc comment for why.
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleVolumeCloneRestore))
-	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/clone-restores", rt.requireAbility(AbilityRead, rt.handleListVolumeCloneRestores))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/clone-restores", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListVolumeCloneRestores))
 	// Restore as a new database (database_clone_restore.go): the
 	// non-destructive counterpart just above, AbilityWriteSensitive
 	// rather than AbilityRoot, see handleCloneRestore's own doc comment
@@ -780,7 +805,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// restore route does. History listing is ordinary AbilityRead, the
 	// same boundary the in-place restore history route above draws.
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore-as-new", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleCloneRestore))
-	mux.HandleFunc("GET /api/v1/databases/{name}/clone-restores", rt.requireAbility(AbilityRead, rt.handleListCloneRestores))
+	mux.HandleFunc("GET /api/v1/databases/{name}/clone-restores", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListCloneRestores))
 
 	// Object-storage attachment, per app (apps_storage.go): which
 	// connected backup_targets bucket (the same S3-compatible connection
@@ -865,7 +890,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// node-local store. AbilityWriteSensitive for write/clear, the same
 	// tier as storage above (both configure where data leaves this
 	// control plane to); AbilityRead for the GET.
-	mux.HandleFunc("GET /api/v1/apps/{name}/log-drain", rt.requireAbility(AbilityRead, rt.handleGetAppLogDrain))
+	mux.HandleFunc("GET /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppLogDrain))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppLogDrain))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleClearAppLogDrain))
 

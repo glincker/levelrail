@@ -29,11 +29,14 @@ import (
 // describe.
 func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "tokens create", "print the new token resource as JSON to stdout and nothing else", stderr)
-	var name, abilitiesFlag string
+	var name, abilitiesFlag, agentName, agentDescription, presetFlag string
 	var expiresInDays int
 	fs.StringVar(&name, "name", "", "name for the new token (required)")
 	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list, e.g. \"read,deploy\" (required; valid: read, read:sensitive, write, write:sensitive, deploy, root)")
+	fs.StringVar(&presetFlag, "preset", "", "ability preset instead of --abilities: observer (read), deployer (read, deploy) or operator (everything except root)")
 	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 0, never expires)")
+	fs.StringVar(&agentName, "agent", "", "label the token as issued to an AI agent with this name; audit entries made with it record the name")
+	fs.StringVar(&agentDescription, "agent-description", "", "optional description of the agent (requires --agent)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensCreateUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -54,11 +57,29 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name is required"))
 	}
 	abilities := splitAndTrim(abilitiesFlag)
+	if presetFlag != "" {
+		if len(abilities) > 0 {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--preset and --abilities are mutually exclusive"))
+		}
+		preset, ok := agentPresets[presetFlag]
+		if !ok {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--preset must be observer, deployer or operator, got %q", presetFlag))
+		}
+		abilities = append([]string(nil), preset...)
+	}
 	if len(abilities) == 0 {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--abilities is required"))
+		return reportError(stdout, stderr, jsonOut, newValidationError("--abilities is required (or use --preset)"))
 	}
 	if expiresInDays < 0 {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--expires-in-days must not be negative"))
+	}
+
+	if agentName == "" && agentDescription != "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--agent-description requires --agent"))
+	}
+	var agent *tokenAgent
+	if agentName != "" {
+		agent = &tokenAgent{Name: agentName, Description: agentDescription}
 	}
 
 	ctx := context.Background()
@@ -67,7 +88,7 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	created, err := sessionClient.CreateToken(ctx, createTokenRequest{Name: name, Abilities: abilities, ExpiresInDays: expiresInDays})
+	created, err := sessionClient.CreateToken(ctx, createTokenRequest{Name: name, Abilities: abilities, ExpiresInDays: expiresInDays, Agent: agent})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create token %q: %w", name, err))
 	}
@@ -78,9 +99,16 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 	})
 }
 
+// agentPresets mirrors AGENT_PRESETS in web/src/lib/agentConfig.ts.
+var agentPresets = map[string][]string{
+	"observer": {"read"},
+	"deployer": {"read", "deploy"},
+	"operator": {"read", "read:sensitive", "write", "write:sensitive", "deploy"},
+}
+
 func tokensCreateUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s tokens create --name NAME --abilities LIST [flags]
+  %[1]s tokens create --name NAME (--abilities LIST | --preset NAME) [flags]
 
 Mints a new API token, printed once (never recoverable from the server
 again after this call). Requires a live session: --username/--password
@@ -90,7 +118,10 @@ again after this call). Requires a live session: --username/--password
 Flags:
   --name string                 name for the new token (required)
   --abilities string           comma-separated ability list (required; valid: read, read:sensitive, write, write:sensitive, deploy, root)
+  --preset string              ability preset instead of --abilities: observer (read), deployer (read, deploy) or operator (everything except root)
   --expires-in-days int      token lifetime in days (default: 0, never expires)
+  --agent string                label the token as issued to an AI agent; audit entries record the name
+  --agent-description string  optional description of the agent (requires --agent)
   --username string          admin username (prompted if omitted)
   --password string          admin password (prompted without echo if omitted)
   --api-url string             control plane base URL (default: %[2]s env var, then %[3]s)

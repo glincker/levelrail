@@ -9,7 +9,7 @@ import (
 )
 
 func registerEnvironmentTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_environments",
 		Description: "List a project's staging/production-style environment labels: name and whether it's protected (deploying into a protected environment requires the caller to pass confirm=true to deploy_app/rollback_app). Read-only; does not create, edit, or delete an environment.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in projectIDInput) (*mcp.CallToolResult, []apiclient.EnvironmentResource, error) {
@@ -20,7 +20,7 @@ func registerEnvironmentTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, environments, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "preview_clone_environment",
 		Description: "Show what clone_environment would create: one entry per app tagged with the source environment (its suggested new name, current image, domains that will NOT be copied, declared secret env var names, scheduled task count), plus the environment's own shared env var keys. Read-only; creates nothing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneEnvironmentPreviewInput) (*mcp.CallToolResult, apiclient.EnvironmentClonePreviewResource, error) {
@@ -31,7 +31,7 @@ func registerEnvironmentTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, preview, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "clone_environment",
 		Description: "Clone a whole environment: creates a new environment in the same project, then a real, deployed copy of every app tagged with the source environment (image, env vars, resources, health checks, volumes, bind mounts, labels, scheduled tasks). Domains and host port pins are never copied (assign new ones per app if needed). Secret values (per-app and shared) are declared on the clone with no value set unless copy_secret_values is true; every declared secret otherwise behaves like a brand-new required secret. Asynchronous: use get_app_status on each cloned app to watch it converge.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneEnvironmentInput) (*mcp.CallToolResult, apiclient.EnvironmentCloneResultResource, error) {

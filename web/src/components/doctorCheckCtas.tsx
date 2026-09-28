@@ -105,6 +105,22 @@ export function getCheckCta(check: DoctorCheck): CheckCta | null {
       }
       return null
 
+    case 'secret_binding':
+      if (check.status === 'warn') {
+        return {
+          message:
+            'Some secret values predate slot binding. Bind them from General settings, or run the rebind command.',
+          action: (
+            <HelpLink
+              path="/master-key-rotation#binding-secrets-to-their-slot"
+              label="Binding secrets to their slot"
+              variant="inline"
+            />
+          ),
+        }
+      }
+      return null
+
     case 'stale_secrets':
       if (check.status === 'warn') {
         return {

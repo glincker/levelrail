@@ -1,0 +1,13 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"web\": build: process \"/bin/sh -c npm run build\" did not complete successfully: exit code: 2",
+  "LogLines": [
+    "#10 [6/6] RUN npm run build",
+    "#10 0.502 > web@1.0.0 build",
+    "#10 0.502 > tsc -p .",
+    "#10 3.870 src/server.ts(14,19): error TS2304: Cannot find name 'Request'.",
+    "#10 3.871 src/server.ts(27,3): error TS2322: Type 'string' is not assignable to type 'number'.",
+    "#10 ERROR: process \"/bin/sh -c npm run build\" did not complete successfully: exit code: 2"
+  ]
+}

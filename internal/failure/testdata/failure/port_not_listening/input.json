@@ -1,0 +1,6 @@
+{
+  "Condition": {
+    "Reason": "ReadinessFailed",
+    "Message": "GET http://172.18.0.3:3000/healthz: dial tcp 172.18.0.3:3000: connect: connection refused"
+  }
+}

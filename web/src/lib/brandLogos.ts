@@ -52,6 +52,22 @@ export function logoIdForIntegration(key: string): string | undefined {
   return INTEGRATION_LOGOS[key.toLowerCase()]
 }
 
+function endpointHostname(endpoint?: string): string {
+  const raw = (endpoint ?? '').trim()
+  if (!raw) return ''
+  try {
+    return new URL(
+      raw.includes('://') ? raw : `https://${raw}`,
+    ).hostname.toLowerCase()
+  } catch {
+    return ''
+  }
+}
+
+function isHostOrSubdomain(host: string, domain: string): boolean {
+  return host === domain || host.endsWith(`.${domain}`)
+}
+
 // Chooses a backup target's mark from its provider, refined by endpoint
 // host for the S3-compatible "custom" provider (B2, MinIO, GCS).
 export function logoIdForBackupTarget(
@@ -60,11 +76,11 @@ export function logoIdForBackupTarget(
 ): string | undefined {
   if (provider === 'aws') return 'aws-s3'
   if (provider === 'r2') return 'cloudflare'
-  const host = (endpoint ?? '').toLowerCase()
-  if (host.includes('backblazeb2.com')) return 'backblaze'
-  if (host.includes('googleapis.com')) return 'google-cloud-storage'
-  if (host.includes('minio')) return 'minio'
-  if (host.includes('r2.cloudflarestorage.com')) return 'cloudflare'
-  if (host.includes('amazonaws.com')) return 'aws-s3'
+  const host = endpointHostname(endpoint)
+  if (isHostOrSubdomain(host, 'backblazeb2.com')) return 'backblaze'
+  if (isHostOrSubdomain(host, 'googleapis.com')) return 'google-cloud-storage'
+  if (host.split('.').some((label) => label.includes('minio'))) return 'minio'
+  if (isHostOrSubdomain(host, 'r2.cloudflarestorage.com')) return 'cloudflare'
+  if (isHostOrSubdomain(host, 'amazonaws.com')) return 'aws-s3'
   return undefined
 }

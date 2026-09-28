@@ -1,0 +1,7 @@
+{
+  "code": "build_config_error",
+  "retryable": false,
+  "excerpt_contains": [
+    "No start command detected"
+  ]
+}

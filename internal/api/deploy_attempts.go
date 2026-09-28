@@ -12,7 +12,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/failure"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/supplychain"
 )
 
 // This file is the real deploy-attempt history and log surface: a
@@ -55,10 +57,13 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 	noopCommit := func(context.Context, string) {}
 	fallback := build.SlogProgress(rt.logger)
 
-	id, err := store.NewDeployAttemptID()
-	if err != nil {
-		rt.logger.Error("api: trigger build: mint deploy attempt id failed", slog.String("error", err.Error()))
-		return "", fallback, noop, noopCommit
+	id, adopted := adoptedAttemptID(ctx)
+	if !adopted {
+		var err error
+		if id, err = store.NewDeployAttemptID(); err != nil {
+			rt.logger.Error("api: trigger build: mint deploy attempt id failed", slog.String("error", err.Error()))
+			return "", fallback, noop, noopCommit
+		}
 	}
 
 	// Start before SaveDeployAttempt: the row is queryable the instant
@@ -69,18 +74,31 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 	}
 
 	image := req.ImageRepo + ":" + req.CommitSHA
-	if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
-		ID: id, ServiceName: req.ServiceName, Image: image,
-		CommitSHA: req.CommitSHA, Source: source,
-		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
-		Snapshot:          store.NewDeployAttemptSnapshot(svc),
-		DetectedFramework: detectedFramework,
-	}); err != nil {
-		rt.logger.Error("api: trigger build: save deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
-		if rt.deployRecorder != nil {
-			rt.deployRecorder.Finish(ctx, id)
+	var seq int64
+	if req.Order != nil {
+		seq = req.Order.Sequence
+	}
+	rt.cancels.Register(id)
+	defer releaseStartMark(ctx)
+	if !adopted {
+		if err := rt.deployAttempts.SaveDeployAttempt(ctx, store.DeployAttempt{
+			ID: id, ServiceName: req.ServiceName, Image: image,
+			CommitSHA: req.CommitSHA, Source: source,
+			Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
+			Snapshot:          store.NewDeployAttemptSnapshot(svc),
+			DetectedFramework: detectedFramework,
+			Sequence:          seq,
+			Branch:            commitMetaFrom(ctx).Branch,
+			CommitMessage:     commitMetaFrom(ctx).Message,
+			Author:            commitMetaFrom(ctx).Author,
+		}); err != nil {
+			rt.logger.Error("api: trigger build: save deploy attempt failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
+			rt.cancels.Release(id)
+			if rt.deployRecorder != nil {
+				rt.deployRecorder.Finish(ctx, id)
+			}
+			return "", fallback, noop, noopCommit
 		}
-		return "", fallback, noop, noopCommit
 	}
 
 	setCommit = func(setCtx context.Context, commit string) {
@@ -95,8 +113,15 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 
 	finish = func(deployErr error) {
 		finishCtx := context.Background() // survives past r.Context() the same way webhook.Handler.beginDeployAttempt's own finish func does
+		defer rt.drainAfterFinish(finishCtx, id)
 		if rt.deployRecorder != nil {
 			rt.deployRecorder.Finish(finishCtx, id)
+		}
+		if rt.finishCanceled(finishCtx, id, deployErr) {
+			return
+		}
+		if rt.finishSuperseded(finishCtx, id, deployErr) {
+			return
 		}
 		status := store.DeployAttemptStatusSucceeded
 		errMsg := ""
@@ -116,10 +141,28 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 		}
 	}
 
-	if rt.deployRecorder == nil {
-		return id, fallback, finish, setCommit
+	inner := fallback
+	if rt.deployRecorder != nil {
+		inner = rt.deployRecorder.Progress(id)
 	}
-	return id, rt.deployRecorder.Progress(id), finish, setCommit
+	return id, rt.recordCacheWarning(id, inner), finish, setCommit
+}
+
+// recordCacheWarning stores a build cache warning on the attempt row while
+// passing every event through.
+func (rt *Router) recordCacheWarning(id string, next func(build.ProgressEvent)) func(build.ProgressEvent) {
+	setter, ok := rt.deployAttempts.(cacheWarningSetter)
+	if !ok {
+		return next
+	}
+	return func(ev build.ProgressEvent) {
+		if ev.CacheWarning != "" {
+			if err := setter.SetDeployAttemptCacheWarning(context.Background(), id, ev.CacheWarning); err != nil {
+				rt.logger.Warn("api: record cache warning failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
+			}
+		}
+		next(ev)
+	}
 }
 
 // emitStep records one named pipeline-phase transition for id (see
@@ -145,6 +188,45 @@ type deployAttemptResource struct {
 	FinishedAt        *time.Time `json:"finished_at,omitempty"`
 	Error             string     `json:"error,omitempty"`
 	DetectedFramework string     `json:"detected_framework,omitempty"`
+	// CacheWarning is set when the build carried on without its remote cache.
+	CacheWarning string `json:"cache_warning,omitempty"`
+
+	ImageDigest    string `json:"image_digest,omitempty"`
+	DigestReason   string `json:"digest_reason,omitempty"`
+	RolloutState   string `json:"rollout_state,omitempty"`
+	RunningImageID string `json:"running_image_id,omitempty"`
+	Sequence       int64  `json:"sequence,omitempty"`
+	Reason         string `json:"reason,omitempty"`
+
+	// QueuedAt, QueuePosition and WaitReason describe a queued deploy (and
+	// WaitReason a held one); BlockedBy is the deploy it waits for.
+	QueuedAt      *time.Time `json:"queued_at,omitempty"`
+	QueuePosition int        `json:"queue_position,omitempty"`
+	WaitReason    string     `json:"wait_reason,omitempty"`
+	BlockedBy     string     `json:"blocked_by,omitempty"`
+	// SupersededBy is the newer deploy that replaced a queued one.
+	SupersededBy string `json:"superseded_by,omitempty"`
+	// CanceledBy is who canceled the deploy.
+	CanceledBy string `json:"canceled_by,omitempty"`
+	// PreviewImageURL is set when a deploy preview thumbnail exists.
+	PreviewImageURL string `json:"preview_image_url,omitempty"`
+	// SBOMPackages and VulnCounts are set when the build produced an SBOM and it was scanned.
+	SBOMPackages *int                `json:"sbom_packages,omitempty"`
+	VulnCounts   *supplychain.Counts `json:"vuln_counts,omitempty"`
+	// Failure classifies why the deploy failed or is blocked; absent otherwise.
+	Failure *failure.Failure `json:"failure,omitempty"`
+	// Outcome is set by the single-deploy endpoint only: in_progress, healthy,
+	// failed, canceled, superseded or blocked.
+	Outcome string `json:"outcome,omitempty"`
+}
+
+// applyWait fills the queue and wait fields of res for attempt a.
+func (rt *Router) applyWait(ctx context.Context, res *deployAttemptResource, a store.DeployAttempt, app []store.DeployAttempt) {
+	if a.Status != store.DeployAttemptStatusQueued && a.Status != store.DeployAttemptStatusHeld {
+		return
+	}
+	w := rt.waitFor(ctx, a, app)
+	res.QueuePosition, res.WaitReason, res.BlockedBy = w.Position, w.Reason, w.BlockedBy
 }
 
 func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
@@ -159,6 +241,15 @@ func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
 		FinishedAt:        a.FinishedAt,
 		Error:             a.Error,
 		DetectedFramework: a.DetectedFramework,
+		ImageDigest:       a.ImageDigest,
+		DigestReason:      a.DigestReason,
+		RolloutState:      a.RolloutState,
+		RunningImageID:    a.RunningImageID,
+		Sequence:          a.Sequence,
+		Reason:            a.Reason,
+		QueuedAt:          a.QueuedAt,
+		SupersededBy:      a.SupersededBy,
+		CanceledBy:        a.CanceledBy,
 	}
 }
 
@@ -189,11 +280,42 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	var warnings map[string]string
+	if l, ok := rt.deployAttempts.(cacheWarningLister); ok {
+		if warnings, err = l.ListDeployAttemptCacheWarnings(r.Context(), name); err != nil {
+			rt.logger.Warn("api: list deploy attempt cache warnings failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
+	previewURLs := rt.previewImageURLs(r.Context(), name)
+	ids := make([]string, 0, len(attempts))
+	for _, a := range attempts {
+		ids = append(ids, a.ID)
+	}
+	supply := rt.supplyChainRecords(r.Context(), ids)
 	out := make([]deployAttemptResource, 0, len(attempts))
 	for _, a := range attempts {
-		out = append(out, toDeployAttemptResource(a))
+		res := toDeployAttemptResource(a)
+		res.CacheWarning = warnings[a.ID]
+		rt.attachFailure(&res, a)
+		rt.applyWait(r.Context(), &res, a, attempts)
+		res.PreviewImageURL = previewURLs[a.ID]
+		if rec, ok := supply[a.ID]; ok {
+			n, counts := supplyChainRecordSummary(rec)
+			res.SBOMPackages, res.VulnCounts = &n, counts
+		}
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// cacheWarningLister and cacheWarningSetter are optional deployAttempts
+// capabilities, so stores that predate build cache warnings keep working.
+type cacheWarningLister interface {
+	ListDeployAttemptCacheWarnings(ctx context.Context, serviceName string) (map[string]string, error)
+}
+
+type cacheWarningSetter interface {
+	SetDeployAttemptCacheWarning(ctx context.Context, id, warning string) error
 }
 
 // sseLogEvent is the exact JSON shape

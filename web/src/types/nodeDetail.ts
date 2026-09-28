@@ -1,3 +1,5 @@
+import type { NodeAgentResource, NodeCertResource } from './nodeCert'
+
 // Wire type for a node, GET /api/v1/nodes and GET /api/v1/nodes/{id}
 // (internal/api/nodes.go's nodeResource). Same snake_case-matches-wire-
 // shape convention appDetail.ts and databaseDetail.ts document: an
@@ -49,6 +51,25 @@ export interface NodeResource {
   // itself, the only node with real disk_used_bytes/disk_total_bytes/
   // memory_total_bytes/memory_available_bytes host metrics.
   is_local: boolean
+  // Present only when the node reported an NVIDIA GPU.
+  gpu?: NodeGpuResource
+  // Absent from control planes that predate ADR 021.
+  cert?: NodeCertResource
+  agent?: NodeAgentResource
+}
+
+// GPU summary on a node (internal/api/gpu_placement.go's nodeGPUResource).
+// reservations name the apps ("app:x") and models ("model:y") holding GPUs.
+export interface NodeGpuResource {
+  present: boolean
+  runtime_installed: boolean
+  driver_version?: string
+  gpu_count: number
+  reserved_gpus: number
+  free_gpus: number
+  total_vram_mib: number
+  used_vram_mib: number
+  reservations: string[]
 }
 
 // Each field is 'ok' (no recent breach), 'firing' (this node is over
@@ -88,6 +109,16 @@ export interface DrainNodeResponse {
   moved_services: string[]
   moved_databases: string[]
   errors?: string[]
+  // Checks that could not run, so the drain may be incomplete.
+  warnings?: string[]
+  // Apps and models left on the node because no GPU node can host them.
+  blocked?: DrainBlocked[]
+}
+
+export interface DrainBlocked {
+  kind: 'app' | 'model'
+  name: string
+  reason: string
 }
 
 // Response body for GET /api/v1/nodes/{id}/patch-status

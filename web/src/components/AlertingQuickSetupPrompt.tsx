@@ -35,6 +35,7 @@ const RECOMMENDED_RULES: { kind: AlertRuleKind; name: string }[] = [
   { kind: 'node_disk_space', name: 'Node disk space' },
   { kind: 'node_resource_usage', name: 'Node CPU/memory usage' },
   { kind: 'node_offline', name: 'Node offline' },
+  { kind: 'node_cert_expiring', name: 'Node agent certificate expiring' },
   { kind: 'control_plane_backup_stale', name: 'Control plane backup stale' },
 ]
 
@@ -57,7 +58,7 @@ function writeDismissed(): void {
 
 // Dismissible dashboard nudge for the platform-wide alert kinds
 // (cert_expiry, patch_status, node_disk_space, node_resource_usage,
-// node_offline, control_plane_backup_stale),
+// node_offline, node_cert_expiring, control_plane_backup_stale),
 // none of which are seeded by default and none of which the setup wizard
 // ever mentions. Shown once at least one app exists rather than as an
 // onboarding step: a platform-wide rule still has to be created through

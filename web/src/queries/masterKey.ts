@@ -6,8 +6,9 @@
 // different operation (a destructive-if-mishandled write, not a read)
 // even though both concern the same settings area.
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import { secretBindingKeys, type SecretRebindResult } from './secretBinding'
 
 // RotateMasterKeyResult mirrors internal/api/master_key_rotation.go's
 // rotateMasterKeyResponse exactly.
@@ -21,6 +22,7 @@ export interface RotateMasterKeyResult {
   // next restart, explained in `warning`.
   persistedToFile: boolean
   warning?: string
+  rebind?: SecretRebindResult
 }
 
 // 501 means no master key was loaded at startup (no APP_MASTER_KEY, no
@@ -50,12 +52,12 @@ export async function rotateMasterKey(
   return (await res.json()) as RotateMasterKeyResult
 }
 
-// No query invalidation on success: rotation doesn't change anything
-// systemStatus.ts's own query reports (secrets_configured stays true,
-// it's the same master key slot, just re-wrapped under a new value).
-// The caller's own dialog is the only consumer of the result.
+// Rotation also rebinds legacy secret values, so the binding count moves.
 export function useRotateMasterKey() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: rotateMasterKey,
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: secretBindingKeys.status }),
   })
 }

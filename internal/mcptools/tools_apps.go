@@ -24,9 +24,9 @@ const (
 )
 
 func registerAppTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_apps",
-		Description: "List every app on the control plane: name, image, port, domains, and resource limits.",
+		Description: "List every app: name, image, port, domains and resource limits.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.AppResource, error) {
 		apps, err := client.ListApps(ctx)
 		if err != nil {
@@ -35,7 +35,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, apps, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_app",
 		Description: "Get one app's current desired state: image, port, domains, env, resources, health checks, command override, volumes, bind mounts.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
@@ -46,9 +46,9 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, app, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "deploy_app",
-		Description: "Point an existing app's desired image at a new tag. Asynchronous: returns once the desired state is saved, not once the new container is actually running; use get_app_status to watch it converge. Deploying an older, already-known tag is how a rollback is done. If the app is tagged with a protected environment, confirm true is required just to be accepted at all, and even then the result's pending_approval is set instead of the app actually deploying: a different, sufficiently privileged human must approve it (approve_deploy_approval) before it reaches a running container.",
+		Description: "Point an existing app at a new image tag. Asynchronous: returns once desired state is saved, so use get_app_status to watch convergence. Protected environments require confirm true and then yield pending_approval: a different privileged human must approve before anything runs.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
 		result, err := client.DeployApp(ctx, in.Name, in.Image, in.Confirm)
 		if err != nil {
@@ -57,7 +57,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, result, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "deploy_compose",
 		Description: "Deploy a Docker Compose YAML document as an app: one member service per compose service, all created in a single synchronous call.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployComposeInput) (*mcp.CallToolResult, apiclient.ComposeDeployResult, error) {
@@ -68,9 +68,9 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, result, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "rollback_app",
-		Description: "Point an existing app's desired image back at an older, already-built image tag. Identical request to deploy_app (there is no separate rollback endpoint server-side, matching how cmd/levelrail-cli's own 'apps rollback' and the web dashboard's 'Rollback to this build' button both work); given as its own tool so a rollback intent doesn't have to be expressed by re-purposing deploy_app. Asynchronous: use get_app_status to watch it converge. Subject to the same protected-environment approval gate deploy_app describes.",
+		Description: "Point an app back at an older, already-built image tag. Same request and protected-environment approval gate as deploy_app. Asynchronous: use get_app_status to watch it converge.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
 		result, err := client.DeployApp(ctx, in.Name, in.Image, in.Confirm)
 		if err != nil {
@@ -79,18 +79,18 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, result, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "clone_app",
-		Description: "Duplicate an existing app's desired state (image, port, env, secret names, resources, health checks, strategy, replicas, project) under a new name, creating a new app. Domains and secret values never carry over: the clone starts domainless and with its secrets unset, and always starts on the local node regardless of where the source is pinned. Fails with a conflict if the new name already exists. This is a mutating, app-creating action, the same category deploy_app/restart_app already expose here.",
+		Description: "Duplicate an existing app's desired state (image, port, env, secret names, resources, health checks, strategy, replicas, project) under a new name, creating a new app. Domains are left empty unless domain_suffix derives new ones, and secret values are copied only with copy_secrets (needs read:sensitive); volume data is never copied. The clone always starts on the local node regardless of where the source is pinned. Fails with a conflict if the new name already exists. This is a mutating, app-creating action, the same category deploy_app/restart_app already expose here.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneAppInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
-		app, err := client.CloneApp(ctx, in.Name, in.NewName)
+		app, err := client.CloneAppWith(ctx, in.Name, apiclient.CloneAppRequest{NewName: in.NewName, CopySecrets: in.CopySecrets, DomainSuffix: in.DomainSuffix, EnvironmentID: in.EnvironmentID, Domains: cloneDomainMode(in.DomainSuffix)})
 		if err != nil {
 			return nil, apiclient.AppResource{}, fmt.Errorf("clone app %q to %q: %w", in.Name, in.NewName, err)
 		}
 		return nil, app, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_app_images",
 		Description: "List every locally-present image tag under an app's current image's repo, newest first. Useful for finding an exact tag to pass to deploy_app or rollback_app. Read-only; an empty list means nothing to suggest, not an error.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.ImageResource, error) {
@@ -101,7 +101,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, images, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "restart_app",
 		Description: "Force an app's running container to be recreated with no image change.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
@@ -112,9 +112,9 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, app, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_app_status",
-		Description: "Get an app's current stored reconcile conditions (type, status, reason, message) from the application controller. This is current status, not a historical log.",
+		Description: "Get an app's current reconcile conditions (type, status, reason, message). Current status only, not history.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.ConditionResource, error) {
 		conditions, err := client.GetDeployStatus(ctx, in.Name)
 		if err != nil {
@@ -123,9 +123,9 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, conditions, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_deploys",
-		Description: "List an app's deploy/reconcile conditions. Same underlying data as get_app_status: the control plane has no separate deploy history log, only current reconcile conditions.",
+		Description: "List an app's deploy and reconcile conditions. Same data as get_app_status: there is no separate deploy history.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.ConditionResource, error) {
 		conditions, err := client.GetDeployStatus(ctx, in.Name)
 		if err != nil {
@@ -134,9 +134,9 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, conditions, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_app_logs",
-		Description: "Search an app's already-stored log entries in a time window. A bounded historical search, not a live tail: at most 200 entries are returned per call.",
+		Description: "Search an app's stored log entries in a time window. Historical, not a live tail: at most 200 entries per call.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appLogsInput) (*mcp.CallToolResult, []apiclient.LogEntryResource, error) {
 		window := defaultLogsWindow
 		if in.Since != "" {
@@ -156,7 +156,22 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, tailLogEntries(entries, in.Tail), nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
+		Name:        "get_deploy",
+		Description: "Get one deploy attempt (deploy_id, or \"latest\") with its status, image, commit and, when it failed or is blocked, the structured failure object: code, cause, failing_step, a capped and redacted log_excerpt, suggested_fix, docs_url, retryable, deploy_id, app and at. Use this to explain a failed build or deploy. Read-only.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in getDeployInput) (*mcp.CallToolResult, apiclient.DeployAttemptResource, error) {
+		id := in.DeployID
+		if id == "" {
+			id = "latest"
+		}
+		attempt, err := client.GetDeploy(ctx, in.Name, id)
+		if err != nil {
+			return nil, apiclient.DeployAttemptResource{}, fmt.Errorf("get deploy %q for app %q: %w", id, in.Name, err)
+		}
+		return nil, attempt, nil
+	})
+
+	addTool(server, &mcp.Tool{
 		Name:        "list_deploy_attempts",
 		Description: "List an app's real deploy-attempt history: one row per actual trigger call (manual deploy, build, or webhook), newest first, with status, image, commit SHA, and timestamps. Additive to get_app_status/list_deploys' current reconcile conditions, not a replacement: this is a real log of what was tried, not just the latest state.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.DeployAttemptResource, error) {
@@ -166,6 +181,57 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, attempts, nil
 	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "get_deploy_sbom",
+		Description: "Get the software bill of materials summary of one deploy: package count, package types, license counts and the first packages. Without a deploy id the newest deploy that has an SBOM is used. Read only; SBOMs exist only for Dockerfile builds when the server sets APP_BUILD_ATTEST=true.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployRefInput) (*mcp.CallToolResult, apiclient.SBOMSummary, error) {
+		id, err := supplyChainDeploy(ctx, client, in, true)
+		if err != nil {
+			return nil, apiclient.SBOMSummary{}, err
+		}
+		sum, err := client.GetSBOM(ctx, in.Name, id)
+		if err != nil {
+			return nil, apiclient.SBOMSummary{}, fmt.Errorf("get sbom of deploy %q for app %q: %w", id, in.Name, err)
+		}
+		return nil, sum, nil
+	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "get_deploy_vulnerabilities",
+		Description: "Get the vulnerability scan result of one deploy: counts by severity, the top fixable findings and the scan gate decision. Without a deploy id the newest scanned deploy is used. Read only; it never starts a scan.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployRefInput) (*mcp.CallToolResult, apiclient.VulnReport, error) {
+		id, err := supplyChainDeploy(ctx, client, in, false)
+		if err != nil {
+			return nil, apiclient.VulnReport{}, err
+		}
+		rep, err := client.GetVulnerabilities(ctx, in.Name, id)
+		if err != nil {
+			return nil, apiclient.VulnReport{}, fmt.Errorf("get vulnerabilities of deploy %q for app %q: %w", id, in.Name, err)
+		}
+		return nil, rep, nil
+	})
+}
+
+type deployRefInput struct {
+	Name     string `json:"name" jsonschema:"the app's name"`
+	DeployID string `json:"deploy_id,omitempty" jsonschema:"deploy attempt id; omit for the newest deploy with data"`
+}
+
+func supplyChainDeploy(ctx context.Context, client *apiclient.Client, in deployRefInput, needSBOM bool) (string, error) {
+	if in.DeployID != "" {
+		return in.DeployID, nil
+	}
+	attempts, err := client.ListDeployAttempts(ctx, in.Name)
+	if err != nil {
+		return "", fmt.Errorf("list deploy attempts for app %q: %w", in.Name, err)
+	}
+	for _, a := range attempts {
+		if a.SBOMPackages != nil && (needSBOM || a.VulnCounts != nil) {
+			return a.ID, nil
+		}
+	}
+	return "", fmt.Errorf("no deploy of app %q has supply chain data yet", in.Name)
 }
 
 // tailLogEntries applies get_app_logs' client-side "last N entries"
@@ -189,9 +255,17 @@ type appNameInput struct {
 	Name string `json:"name" jsonschema:"the app's name"`
 }
 
+type getDeployInput struct {
+	Name     string `json:"name" jsonschema:"the app's name"`
+	DeployID string `json:"deploy_id,omitempty" jsonschema:"the deploy attempt id, or latest (default)"`
+}
+
 type cloneAppInput struct {
-	Name    string `json:"name" jsonschema:"the app to duplicate"`
-	NewName string `json:"new_name" jsonschema:"name for the new, cloned app"`
+	Name          string `json:"name" jsonschema:"the app to duplicate"`
+	NewName       string `json:"new_name" jsonschema:"name for the new, cloned app"`
+	CopySecrets   bool   `json:"copy_secrets,omitempty" jsonschema:"copy secret values, re-encrypted for the new app; needs read:sensitive"`
+	DomainSuffix  string `json:"domain_suffix,omitempty" jsonschema:"derive domains by adding -SUFFIX to each source domain's first label; omit for no domains"`
+	EnvironmentID string `json:"environment_id,omitempty" jsonschema:"environment of the source's project to place the clone in"`
 }
 
 type deployAppInput struct {
@@ -210,4 +284,11 @@ type appLogsInput struct {
 	Since string `json:"since,omitempty" jsonschema:"how far back to search, e.g. '1h', '30m'; default 1h"`
 	Query string `json:"query,omitempty" jsonschema:"full-text search phrase; empty matches every line in the window"`
 	Tail  int    `json:"tail,omitempty" jsonschema:"max number of most-recent entries to return, default and hard cap 200"`
+}
+
+func cloneDomainMode(suffix string) string {
+	if suffix == "" {
+		return ""
+	}
+	return "suffix"
 }

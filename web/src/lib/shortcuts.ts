@@ -1,11 +1,23 @@
+import { isFeatureVisible, type ExperimentalFeature } from './experimental'
+
 export const CHORD_TIMEOUT_MS = 1500
 
-export const GO_TARGETS: Record<string, { to: string; label: string }> = {
+export const GO_TARGETS: Record<
+  string,
+  { to: string; label: string; feature?: ExperimentalFeature }
+> = {
   a: { to: '/apps', label: 'Apps' },
   n: { to: '/nodes', label: 'Nodes' },
   s: { to: '/status', label: 'Status' },
   d: { to: '/domains', label: 'Domains' },
   b: { to: '/backups', label: 'Backups' },
+  l: {
+    to: '/loadbalancers',
+    label: 'Load balancers',
+    feature: 'load-balancer',
+  },
+  p: { to: '/pipelines', label: 'Pipelines' },
+  m: { to: '/models', label: 'AI models', feature: 'ai-models' },
   t: { to: '/settings', label: 'Settings' },
 }
 
@@ -14,16 +26,30 @@ export interface ShortcutDoc {
   description: string
 }
 
-export const SHORTCUT_DOCS: ShortcutDoc[] = [
+const BASE_DOCS: ShortcutDoc[] = [
   { keys: ['Ctrl/Cmd', 'K'], description: 'Open the command palette' },
   { keys: ['?'], description: 'Show keyboard shortcuts' },
   { keys: ['/'], description: 'Focus the search field on this page' },
   { keys: ['Esc'], description: 'Close a dialog, or leave the search field' },
-  ...Object.entries(GO_TARGETS).map(([key, t]) => ({
-    keys: ['g', key],
-    description: `Go to ${t.label}`,
-  })),
 ]
+
+// Shortcuts whose gated feature is off are left out.
+export function shortcutDocsFor(enabled: readonly string[]): ShortcutDoc[] {
+  return [
+    ...BASE_DOCS,
+    ...Object.entries(GO_TARGETS)
+      .filter(([, t]) => isFeatureVisible(t.feature, enabled))
+      .map(([key, t]) => ({
+        keys: ['g', key],
+        description: `Go to ${t.label}`,
+      })),
+  ]
+}
+
+export const SHORTCUT_DOCS: ShortcutDoc[] = shortcutDocsFor([
+  'load-balancer',
+  'ai-models',
+])
 
 export interface ChordState {
   pending: boolean
@@ -51,6 +77,7 @@ export function stepChord(
   state: ChordState,
   input: KeyInput,
   now: number,
+  enabled: readonly string[] = [],
 ): { state: ChordState; action: ShortcutAction } {
   if (
     input.typing ||
@@ -64,7 +91,7 @@ export function stepChord(
   const live = state.pending && now - state.startedAt <= CHORD_TIMEOUT_MS
   if (live) {
     const target = GO_TARGETS[input.key]
-    if (target) {
+    if (target && isFeatureVisible(target.feature, enabled)) {
       return { state: INITIAL_CHORD, action: { type: 'go', to: target.to } }
     }
   }

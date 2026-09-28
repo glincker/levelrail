@@ -181,6 +181,10 @@ export interface CreateAppRequest {
   node_id?: string
   domains?: string[]
   health?: ServiceHealth
+  env?: Record<string, string>
+  /** Names of env vars backed by encrypted secret storage, values in `secrets`. */
+  secret_env?: string[]
+  secrets?: Record<string, string>
 }
 
 // POST /api/v1/apps. Rejects a name that already exists with a 409
@@ -707,14 +711,56 @@ export function useStartApp() {
 // strategy/replicas/project_id do, domains/secret-values/node_id
 // deliberately don't). Rejects a newName that already exists with a 409,
 // the same conflict shape createApp above already surfaces.
+export interface CloneAppOptions {
+  copySecrets?: boolean
+  domainSuffix?: string
+}
+
+export interface ClonePreview {
+  source: string
+  will_copy: string[]
+  will_not_copy: string[]
+  secret_names: string[]
+  source_domains: string[]
+}
+
+export async function fetchClonePreview(name: string): Promise<ClonePreview> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(name)}/clone/preview`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `clone preview failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as ClonePreview
+}
+
+export function useClonePreview(name: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...appKeys.detail(name), 'clone-preview'] as const,
+    queryFn: () => fetchClonePreview(name),
+    enabled,
+    retry: false,
+  })
+}
+
 export async function cloneApp(
   name: string,
   newName: string,
+  options: CloneAppOptions = {},
 ): Promise<AppDetail> {
+  const suffix = options.domainSuffix?.trim()
   const res = await fetch(`/api/v1/apps/${encodeURIComponent(name)}/clone`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ new_name: newName }),
+    body: JSON.stringify({
+      new_name: newName,
+      copy_secrets: options.copySecrets || undefined,
+      domains: suffix ? 'suffix' : undefined,
+      domain_suffix: suffix || undefined,
+    }),
   })
   if (!res.ok) {
     throw new ApiError(
@@ -733,8 +779,15 @@ export async function cloneApp(
 export function useCloneApp() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ name, newName }: { name: string; newName: string }) =>
-      cloneApp(name, newName),
+    mutationFn: ({
+      name,
+      newName,
+      options,
+    }: {
+      name: string
+      newName: string
+      options?: CloneAppOptions
+    }) => cloneApp(name, newName, options),
     onSuccess: (cloned) => {
       queryClient.setQueryData(appKeys.detail(cloned.name), cloned)
       void queryClient.invalidateQueries({ queryKey: appKeys.list() })

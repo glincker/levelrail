@@ -59,6 +59,8 @@ The dashboard shows a "connection is not encrypted" banner until you point a dom
 
 To skip the setup token and create the admin non-interactively, set `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` in the unit (again via `systemctl edit levelrail`) before the first start.
 
+AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel are hidden until you opt in with `APP_EXPERIMENTAL`, see [experimental features](experimental-features.md).
+
 ::: details Optional environment variables
 
 | Variable | Default | What it does |
@@ -102,6 +104,33 @@ curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh 
 ```
 :::
 
+### Verifying release binaries
+
+Each release publishes `checksums.txt` (SHA-256 of every CLI, agent and control plane binary), a keyless [cosign](https://docs.sigstore.dev/cosign/overview/) signature bundle for it (`checksums.txt.sigstore.json`), and a GitHub build provenance attestation for the binaries. Releases cut before signing was added carry no bundle.
+
+`install.sh` always verifies the SHA-256 checksum and refuses to install on a mismatch. It also verifies the signature when `cosign` is installed and the release ships a bundle. Set `APP_INSTALL_VERIFY=require` to fail unless the signature verifies (no cosign, no bundle, or a bad signature all abort), or `APP_INSTALL_VERIFY=off` to skip only the signature step.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+  | sudo APP_INSTALL_VERIFY=require sh
+```
+
+To verify a download by hand:
+
+```bash
+V=v0.1.0   # the release tag
+BASE=https://github.com/glincker/levelrail/releases/download/$V
+curl -fsSLO $BASE/checksums.txt -O $BASE/checksums.txt.sigstore.json -O $BASE/levelrail-linux-amd64
+
+cosign verify-blob --bundle checksums.txt.sigstore.json \
+  --certificate-identity-regexp 'https://github.com/glincker/levelrail/\.github/workflows/release\.yml@.*' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  checksums.txt
+
+sha256sum --check --ignore-missing checksums.txt
+
+gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
+```
 
 ## Option 2: Docker
 
@@ -190,6 +219,29 @@ levelrail-cli status    # check Docker reachability and system config
 Both commands talk to the control plane's API (`GET /api/v1/updates` and `GET /api/v1/system/status`), confirming it is reachable and authenticating correctly.
 
 ## Upgrading
+
+### Check first, then upgrade
+
+`levelrail-cli upgrade` (or Settings > Updates in the dashboard) runs read-only preflight checks and never upgrades by itself:
+
+- the latest release publishes `checksums.txt` and its cosign signature (the installer verifies both);
+- the Docker Engine version is not on the known-bad list (`internal/upgrade/docker_known_bad.json`, replace it with your own file via `APP_DOCKER_KNOWN_BAD_FILE`);
+- free disk space is above `APP_UPGRADE_MIN_FREE_BYTES` (default 2 GiB);
+- a control plane backup exists and is newer than `APP_UPGRADE_MAX_BACKUP_AGE` (default 26h).
+
+The CLI also takes a fresh control plane backup unless you pass `--no-backup`, then prints the exact command to run. The API is `GET /api/v1/updates/preflight`.
+
+### Rolling back
+
+Before pending migrations run, the control plane snapshots its database as `levelrail-<timestamp>.db` under the data directory's backups folder. To go back after a bad upgrade, install the previous binary, stop the service, then:
+
+```bash
+levelrail restore-snapshot --list              # newest first
+levelrail restore-snapshot --dry-run latest    # verify only, change nothing
+levelrail restore-snapshot latest              # asks for confirmation (--yes to skip)
+```
+
+The live database is kept beside the restored one as `.before-restore-<timestamp>`. The master key is not part of a snapshot.
 
 **If you used install.sh:**
 

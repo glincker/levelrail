@@ -4,16 +4,27 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CommandPalette } from './CommandPalette'
 
+let experimentalOn: string[] = ['ai-chat']
 const navigate = vi.fn()
 const setTheme = vi.fn()
 const restartApp = vi.fn()
 const redeployApp = vi.fn()
 const listApps = vi.fn(() =>
-  Promise.resolve([{ name: 'web', image: 'nginx:1.27' }]),
+  Promise.resolve([
+    { name: 'web', image: 'nginx:1.27', status: { variant: 'success' } },
+  ]),
 )
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigate,
+  useRouterState: ({
+    select,
+  }: {
+    select: (s: { location: { pathname: string } }) => unknown
+  }) => select({ location: { pathname: '/' } }),
+}))
+vi.mock('../hooks/useExperimental', () => ({
+  useExperimentalFeatures: () => experimentalOn,
 }))
 vi.mock('./ThemeProvider', () => ({
   useTheme: () => ({ theme: 'light', setTheme }),
@@ -43,6 +54,7 @@ function renderPalette() {
 }
 
 beforeEach(() => {
+  experimentalOn = ['ai-chat']
   window.localStorage.clear()
 })
 
@@ -62,10 +74,20 @@ describe('CommandPalette', () => {
     expect(screen.getByText('Esc')).toBeInTheDocument()
   })
 
-  it('navigates from the Actions group with Enter', async () => {
+  it('opens the assistant from the first suggestion with Enter', async () => {
     const user = userEvent.setup()
     renderPalette()
     await user.keyboard('{Enter}')
+    expect(navigate).toHaveBeenCalledWith({
+      to: '/ai-assistant',
+      params: undefined,
+    })
+  })
+
+  it('navigates from the Actions group by clicking', async () => {
+    const user = userEvent.setup()
+    renderPalette()
+    await user.click(screen.getByRole('option', { name: /Go to Status/ }))
     expect(navigate).toHaveBeenCalledWith({ to: '/status', params: undefined })
   })
 
@@ -154,5 +176,33 @@ describe('CommandPalette', () => {
     renderPalette()
     await user.type(screen.getByRole('combobox'), 'zzzzqq')
     expect(screen.getByText('No results.')).toBeInTheDocument()
+  })
+
+  it('hides gated destinations and the assistant suggestion while off', () => {
+    experimentalOn = []
+    renderPalette()
+    expect(screen.queryByRole('option', { name: /Load balancers/ })).toBeNull()
+    expect(screen.queryByRole('option', { name: /AI models/ })).toBeNull()
+    expect(screen.queryByRole('option', { name: /AI assistant/ })).toBeNull()
+    expect(
+      screen.queryByRole('option', { name: /Ask the assistant/ }),
+    ).toBeNull()
+    expect(
+      screen.getByRole('option', { name: /Databases/ }),
+    ).toBeInTheDocument()
+  })
+
+  it('shows gated destinations once their feature is on', () => {
+    experimentalOn = ['ai-chat', 'ai-models', 'load-balancer']
+    renderPalette()
+    expect(
+      screen.getByRole('option', { name: /Load balancers/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('option', { name: /AI models/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('option', { name: /AI assistant/ }),
+    ).toBeInTheDocument()
   })
 })

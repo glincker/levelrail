@@ -76,11 +76,18 @@ func printTemplatesTable(out io.Writer, templates []serviceTemplateListItem) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tRAM\tSLOGAN")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tRAM\tGPU\tSLOGAN")
 	for _, t := range templates {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name, t.Category, formatRecommendedMemory(t.RecommendedMemoryBytes), t.Slogan)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name, t.Category, formatRecommendedMemory(t.RecommendedMemoryBytes), gpuColumn(t.RequiresGPU), t.Slogan)
 	}
 	_ = tw.Flush()
+}
+
+func gpuColumn(requires bool) string {
+	if requires {
+		return "nvidia"
+	}
+	return "-"
 }
 
 // formatRecommendedMemory renders a Template.RecommendedMemoryBytes value

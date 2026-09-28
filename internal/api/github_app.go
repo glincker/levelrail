@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -61,7 +62,9 @@ type GitHubAppClient interface {
 	GetRepo(ctx context.Context, instanceURL, token, owner, repo string) (githubapp.Repo, error)
 	ListBranches(ctx context.Context, instanceURL, token, owner, repo string) ([]githubapp.Branch, error)
 	CreateRepoWebhook(ctx context.Context, instanceURL, token, owner, repo, hookURL, secret string) error
-	CreateIssueComment(ctx context.Context, instanceURL, token, owner, repo string, number int, body string) error
+	CreateIssueComment(ctx context.Context, instanceURL, token, owner, repo string, number int, body string) (int64, error)
+	ListIssueComments(ctx context.Context, instanceURL, token, owner, repo string, number int) ([]gitprovider.Comment, error)
+	UpdateIssueComment(ctx context.Context, instanceURL, token, owner, repo string, commentID int64, body string) error
 	CreateCommitStatus(ctx context.Context, instanceURL, token, owner, repo, sha string, state githubapp.CommitStatusState, targetURL, description, statusContext string) error
 }
 

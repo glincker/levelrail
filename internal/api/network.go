@@ -83,7 +83,7 @@ func (rt *Router) handleGetAppNetwork(w http.ResponseWriter, r *http.Request) {
 	// Same target-container derivation handleExecApp and
 	// internal/reconcile/ingress already use to find a service's
 	// currently active container from its own desired state.
-	target := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
+	target := application.ContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce)
 	inspectCtx, cancel := context.WithTimeout(r.Context(), dockerInspectTimeout)
 	state, err := rt2.InspectByName(inspectCtx, target)
 	cancel()

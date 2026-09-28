@@ -1,3 +1,4 @@
+import { requireExperimental } from '../../lib/experimental'
 import { createFileRoute } from '@tanstack/react-router'
 import {
   cloudflareTunnelSettingsQueryOptions,
@@ -15,6 +16,8 @@ import { PageSpinner } from '../../components/ui/page-spinner'
 // dashboard, out of scope here (see the backend package doc comment,
 // internal/reconcile/cloudflaretunnel).
 export const Route = createFileRoute('/settings/cloudflare-tunnel')({
+  beforeLoad: ({ context: { queryClient } }) =>
+    requireExperimental(queryClient, 'cloudflare-tunnel'),
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(cloudflareTunnelSettingsQueryOptions()),
   component: CloudflareTunnelSettingsPage,
@@ -31,8 +34,8 @@ function CloudflareTunnelSettingsPage() {
           Cloudflare Tunnel
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Expose this control plane to the internet without opening an
-          inbound port.
+          Expose this control plane to the internet without opening an inbound
+          port.
         </p>
       </div>
 

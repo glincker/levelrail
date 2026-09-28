@@ -33,6 +33,7 @@ type (
 	logStreamEntry                   = apiclient.LogStreamEntry
 	appMetricsResource               = apiclient.AppMetricsResource
 	appResourceUsageResource         = apiclient.AppResourceUsageResource
+	appMetricsSummary                = apiclient.AppMetricsSummary
 	metricPointResource              = apiclient.MetricPointResource
 	nodeMetricsResource              = apiclient.NodeMetricsResource
 	execRequest                      = apiclient.ExecRequest
@@ -156,6 +157,7 @@ type (
 	containerResource           = apiclient.ContainerResource
 	containerPortResource       = apiclient.ContainerPortResource
 	updatesResource             = apiclient.UpdatesResource
+	updatePreflight             = apiclient.UpdatePreflight
 	nodeResource                = apiclient.NodeResource
 	setNodeWorkloadsRequest     = apiclient.SetNodeWorkloadsRequest
 	createNodeJoinTokenResponse = apiclient.CreateNodeJoinTokenResponse
@@ -167,6 +169,13 @@ type (
 	meshPeerResource            = apiclient.MeshPeerResource
 	meshRotationResource        = apiclient.MeshRotationResource
 	rotateKeyResponse           = apiclient.RotateKeyResponse
+
+	nodeProviderResource             = apiclient.NodeProviderResource
+	nodeProviderRegionResource       = apiclient.NodeProviderRegionResource
+	nodeProviderSizeResource         = apiclient.NodeProviderSizeResource
+	nodeProvisionResource            = apiclient.NodeProvisionResource
+	setNodeProviderCredentialRequest = apiclient.SetNodeProviderCredentialRequest
+	createNodeProvisionRequest       = apiclient.CreateNodeProvisionRequest
 
 	organizationResource             = apiclient.OrganizationResource
 	createOrganizationRequest        = apiclient.CreateOrganizationRequest
@@ -237,6 +246,8 @@ type (
 	purgeAuditLogResult   = apiclient.PurgeAuditLogResult
 
 	rotateMasterKeyResult = apiclient.RotateMasterKeyResult
+	secretBindingStatus   = apiclient.SecretBindingStatus
+	secretRebindResult    = apiclient.SecretRebindResult
 
 	systemPruneResult = apiclient.SystemPruneResult
 

@@ -15,8 +15,20 @@ func (rt *Router) Handler() http.Handler {
 	mux.HandleFunc("GET /readyz", rt.handleReadyz)
 	rt.registerCoreRoutes(mux)
 	rt.registerPlatformRoutes(mux)
+	rt.registerStorageRoutes(mux)
+	rt.registerPipelineRoutes(mux)
+	rt.registerPipelineOverviewRoutes(mux)
+	rt.registerModelRoutes(mux)
+	rt.registerLoadBalancerRoutes(mux)
+	rt.registerPlatformImportRoutes(mux)
+	rt.registerIaCRoutes(mux)
+	rt.registerAlertNoiseRoutes(mux)
+	rt.registerStatusPageRoutes(mux)
+	rt.registerPreviewRoutes(mux)
+	rt.registerSupplyChainRoutes(mux)
 
 	var h http.Handler = mux
+	h = experimentalGateMiddleware(h)
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
 	h = panicRecoveryMiddleware(rt.logger)(h)
 	h = requestIDMiddleware(h)
@@ -55,6 +67,18 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/system/backups/{name}/download", rt.requireAbility(AbilityRoot, rt.handleDownloadControlPlaneBackup))
 	mux.HandleFunc("POST /api/v1/system/backups/{name}/verify", rt.requireAbility(AbilityRoot, rt.handleVerifyControlPlaneBackup))
 	mux.HandleFunc("DELETE /api/v1/system/backups/{name}", rt.requireAbility(AbilityRoot, rt.handleDeleteControlPlaneBackup))
+	// Off-box encrypted control plane backups, restore drills and escrow
+	// (control_plane_dr.go). Status reads are AbilityRead and carry public
+	// recipients only. Changing the destination or recipients is
+	// AbilityWriteSensitive; building an escrow bundle touches the master
+	// key, so it is AbilityRoot. Restore stays an offline CLI action.
+	mux.HandleFunc("GET /api/v1/system/control-plane-dr", rt.requireAbility(AbilityRead, rt.handleGetControlPlaneDR))
+	mux.HandleFunc("PUT /api/v1/system/control-plane-dr/settings", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateControlPlaneDR))
+	mux.HandleFunc("GET /api/v1/system/control-plane-dr/backups", rt.requireAbility(AbilityRead, rt.handleListControlPlaneDRBackups))
+	mux.HandleFunc("POST /api/v1/system/control-plane-dr/run", rt.requireAbility(AbilityWriteSensitive, rt.handleRunControlPlaneDRBackup))
+	mux.HandleFunc("POST /api/v1/system/control-plane-dr/drill", rt.requireAbility(AbilityWriteSensitive, rt.handleRunControlPlaneDRDrill))
+	mux.HandleFunc("POST /api/v1/system/control-plane-dr/escrow", rt.requireAbility(AbilityRoot, rt.handleControlPlaneDREscrow))
+	mux.HandleFunc("POST /api/v1/system/control-plane-dr/escrow/ack", rt.requireAbility(AbilityWriteSensitive, rt.handleAckControlPlaneDREscrow))
 	// Orphaned named volumes: detection is a read (AbilityRead), the
 	// cleanup that actually deletes one is the same AbilityRoot,
 	// fleet-wide, no-undo tier system/prune sits behind, not
@@ -65,6 +89,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// the same fleet-wide-blast-radius tier as prune above, not
 	// AbilityWrite (SecretSetter's own gate for a single app's values).
 	mux.HandleFunc("POST /api/v1/system/master-key/rotate", rt.requireAbility(AbilityRoot, rt.handleRotateMasterKey))
+	mux.HandleFunc("GET /api/v1/system/secrets/binding", rt.requireAbility(AbilityRead, rt.handleGetSecretBinding))
+	mux.HandleFunc("POST /api/v1/system/secrets/rebind", rt.requireAbility(AbilityRoot, rt.handleRebindSecrets))
 
 	// Setup wizard state. Completing stays AbilityWrite so creating a first
 	// app any other way can dismiss it; step progress is admin-only.
@@ -75,6 +101,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// Updates (Settings > Updates page): running version vs. GitHub's
 	// latest published release, AbilityRead like system/status above.
 	mux.HandleFunc("GET /api/v1/updates", rt.requireAbility(AbilityRead, rt.handleGetUpdates))
+	mux.HandleFunc("GET /api/v1/updates/preflight", rt.requireAbility(AbilityRead, rt.handleUpdatePreflight))
 
 	// Auth. Login and first-run registration are necessarily public;
 	// everything else requires an existing session.
@@ -171,6 +198,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 
 	// OAuth settings: GET is AbilityRead, PUT is AbilityRoot, matching
 	// /api/v1/settings/ingress's own tiers.
+	// Global deploy freeze windows apply to every app, so writing them is root-only.
+	mux.HandleFunc("GET /api/v1/settings/deploy-freeze", rt.requireAbility(AbilityRead, rt.handleGetGlobalDeployFreeze))
+	mux.HandleFunc("PUT /api/v1/settings/deploy-freeze", rt.requireAbility(AbilityRoot, rt.handlePutGlobalDeployFreeze))
 	mux.HandleFunc("GET /api/v1/settings/oauth", rt.requireAbility(AbilityRead, rt.handleListOAuthSettings))
 	mux.HandleFunc("PUT /api/v1/settings/oauth/{provider}", rt.requireAbility(AbilityRoot, rt.handleUpdateOAuthProviderSettings))
 
@@ -194,6 +224,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// MCP-issued token is provably unable to reach a write/deploy route,
 	// not just conventionally discouraged from calling it.
 	mux.HandleFunc("GET /api/v1/apps", rt.requireAbility(AbilityRead, rt.handleListApps))
+	mux.HandleFunc("POST /api/v1/apps/bulk", rt.requireAbility(AbilityWrite, rt.handleBulkApps))
+	mux.HandleFunc("GET /api/v1/apps-summary", rt.requireAbility(AbilityRead, rt.handleAppsSummary))
 	mux.HandleFunc("POST /api/v1/apps", rt.requireAbility(AbilityWrite, rt.handleCreateApp))
 	// Resource-scoped (iam.go): a policy can Deny or narrowly Allow
 	// write/delete on one specific app by name, e.g. a token whose flat
@@ -211,12 +243,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// apps_group.go): a service plus its siblings under the same
 	// store.App, with a worst-condition-wins rollup status. Additive,
 	// read-only; GET /api/v1/apps/{name} above is unchanged.
-	mux.HandleFunc("GET /api/v1/apps/{name}/group", rt.requireAbility(AbilityRead, rt.handleGetAppGroup))
+	mux.HandleFunc("GET /api/v1/apps/{name}/group", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppGroup))
 
 	// Latest pre/post-deploy hook outcome (apps_hooks.go,
 	// internal/reconcile/application's own HookRunRecorder). Read-only,
 	// same ability tier as the group route just above.
-	mux.HandleFunc("GET /api/v1/apps/{name}/hook-runs", rt.requireAbility(AbilityRead, rt.handleGetAppHookRuns))
+	mux.HandleFunc("GET /api/v1/apps/{name}/hook-runs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppHookRuns))
 
 	// Compose ingestion (apps_compose.go): fans a compose.yaml's
 	// services: out into one store.App plus its member services.
@@ -235,6 +267,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// clone is a creation shaped as "copy {name}" rather than "start
 	// from scratch": handleCloneApp's own doc comment covers what does
 	// and doesn't carry over.
+	mux.HandleFunc("GET /api/v1/apps/{name}/clone/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleClonePreview))
 	mux.HandleFunc("POST /api/v1/apps/{name}/clone", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCloneApp))
 
 	// Placement: AbilityRoot, not AbilityWrite, matching
@@ -251,14 +284,29 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// sits behind). The two GETs are AbilityRead, matching every other
 	// history listing in this file.
 	mux.HandleFunc("POST /api/v1/apps/{name}/move-with-volumes", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleMoveAppWithVolumes))
-	mux.HandleFunc("GET /api/v1/apps/{name}/moves", rt.requireAbility(AbilityRead, rt.handleListAppVolumeMoves))
-	mux.HandleFunc("GET /api/v1/apps/{name}/moves/{id}", rt.requireAbility(AbilityRead, rt.handleGetAppVolumeMove))
+	mux.HandleFunc("GET /api/v1/apps/{name}/moves", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppVolumeMoves))
+	mux.HandleFunc("GET /api/v1/apps/{name}/moves/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppVolumeMove))
 
 	// Deploys.
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleTriggerDeploy))
-	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbility(AbilityRead, rt.handleDeployHistory))
-	mux.HandleFunc("GET /api/v1/apps/{name}/auto-rollback", rt.requireAbility(AbilityRead, rt.handleGetAutoRollback))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDeployHistory))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDeploy))
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/cancel", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleCancelDeploy))
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/{deployId}/rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRollbackToDeploy))
+	mux.HandleFunc("GET /api/v1/apps/{name}/cancel-superseded", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetCancelSuperseded))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/cancel-superseded", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetCancelSuperseded))
+	mux.HandleFunc("GET /api/v1/apps/{name}/auto-rollback", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAutoRollback))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/auto-rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAutoRollback))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-freeze", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppDeployFreeze))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/deploy-freeze", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutAppDeployFreeze))
+
+	// Timeline and pending changes (app_timeline.go, pending_changes.go).
+	mux.HandleFunc("GET /api/v1/apps/{name}/timeline", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppTimeline))
+	mux.HandleFunc("GET /api/v1/apps/{name}/changes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppChanges))
+	mux.HandleFunc("GET /api/v1/apps/{name}/slo-preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleSLOPreview))
+	mux.HandleFunc("GET /api/v1/apps/{name}/pending-changes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePendingChanges))
+	mux.HandleFunc("POST /api/v1/apps/{name}/apply-pending", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleApplyPending))
+	mux.HandleFunc("PATCH /api/v1/apps/{name}/domains", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleEditAppDomains))
 
 	// Restart (handleRestartApp's own doc comment): AbilityDeploy, the
 	// same boundary as the deploy trigger above, since forcing a
@@ -288,7 +336,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// one-off exec above, since a shell can read the same secrets. A
 	// WebSocket rather than SSE, which that file's own doc comment
 	// argues for at length.
-	mux.HandleFunc("GET /api/v1/apps/{name}/terminal", rt.requireAbility(AbilityRoot, rt.handleAppTerminal))
+	mux.HandleFunc("GET /api/v1/apps/{name}/terminal", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleAppTerminal))
 
 	// Exec access opt-out (exec.go's requireExecAccess): a second,
 	// independent gate the two routes just above both check before
@@ -299,7 +347,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// behind: flipping this back on hands back a root-tier capability,
 	// so re-enabling it needs the same tier as using it, an explicit,
 	// auditable, two-step action even for an already-root token.
-	mux.HandleFunc("GET /api/v1/apps/{name}/exec-access", rt.requireAbility(AbilityRead, rt.handleGetExecAccess))
+	mux.HandleFunc("GET /api/v1/apps/{name}/exec-access", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetExecAccess))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/exec-access", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetExecAccess))
 
 	// Real deploy-attempt history (deploy_attempts.go): a row per
@@ -309,21 +357,24 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// endpoint rather than a change to GET .../deploys's existing
 	// response shape. AbilityRead, matching every other passive view of
 	// an app's own state.
-	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-attempts", rt.requireAbility(AbilityRead, rt.handleListDeployAttempts))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-attempts", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListDeployAttempts))
 	mux.HandleFunc("GET /api/v1/deploys/failed", rt.requireAbility(AbilityRead, rt.handleListFailedDeploys))
+	mux.HandleFunc("GET /api/v1/deployments", rt.requireAbility(AbilityRead, rt.handleListDeployments))
+	mux.HandleFunc("GET /api/v1/deployments/summary", rt.requireAbility(AbilityRead, rt.handleDeploymentsSummary))
+	mux.HandleFunc("GET /api/v1/deployments/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(deploymentsStreamResource, rt.handleDeploymentsStream)))
 
 	// Deploy comparison (deploy_compare.go): a before/after diff between
 	// two attempts, or one attempt against the app's current live state
 	// when ?to is omitted. AbilityRead, same sensitivity as the
 	// deploy-attempts list above.
-	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/compare", rt.requireAbility(AbilityRead, rt.handleCompareDeploys))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/compare", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleCompareDeploys))
 
 	// Promotion (promote.go): move a known-good image from this app to a
 	// sibling app tagged with another environment in the same project,
 	// through the exact same deploy path a plain trigger uses. Preview is
 	// AbilityRead like the comparison view above; the trigger itself is
 	// AbilityDeploy, matching POST .../deploys.
-	mux.HandleFunc("GET /api/v1/apps/{name}/promote/preview", rt.requireAbility(AbilityRead, rt.handlePromotePreview))
+	mux.HandleFunc("GET /api/v1/apps/{name}/promote/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePromotePreview))
 	mux.HandleFunc("POST /api/v1/apps/{name}/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePromoteApp))
 
 	// Deploy-attempt build/log stream (deploy_attempts.go): SSE, serving
@@ -332,25 +383,32 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// web/src/hooks/useDeployLogStream.ts was built against. AbilityRead:
 	// this is a read of one attempt's own output, the same sensitivity
 	// as the deploy-attempts list above.
-	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/logs", rt.requireAbility(AbilityRead, rt.handleDeployLogStream))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/logs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.withStreamReauth(appResourceFromPath, rt.handleDeployLogStream)))
 
 	// Deploy-attempt step stream (deploy_steps.go): SSE, named
 	// pipeline-phase transitions (detecting/building/pushing/deploying)
 	// rather than raw log lines, for a checklist-style progress view.
 	// Same AbilityRead boundary as the log stream above.
-	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/steps", rt.requireAbility(AbilityRead, rt.handleDeployStepStream))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/steps", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.withStreamReauth(appResourceFromPath, rt.handleDeployStepStream)))
 
 	// Deploy-attempt log download (deploy_log_download.go): the same
 	// attempt's full log as a plain-text attachment instead of an SSE
 	// stream, mirroring /apps/{name}/logs/download for runtime logs.
-	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/logs/download", rt.requireAbility(AbilityRead, rt.handleDownloadDeployLog))
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}/logs/download", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDownloadDeployLog))
 
 	// Read-only failure diagnosis (diagnose.go): synthesizes the app's
 	// newest (or ?deploy_id=-pinned) deploy attempt, current reconcile
 	// conditions, and crashloop state into a deterministic explanation.
 	// AbilityRead, same sensitivity as the routes above; never writes
 	// anything.
-	mux.HandleFunc("GET /api/v1/apps/{name}/diagnose", rt.requireAbility(AbilityRead, rt.handleDiagnoseApp))
+	mux.HandleFunc("GET /api/v1/apps/{name}/diagnose", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDiagnoseApp))
+
+	// Preflight checks (preflight.go): read-only probes of an existing
+	// app's stored config (AbilityRead, resource-scoped), or of a not yet
+	// created app described in the body (AbilityWrite, since the body
+	// names hosts the server will contact).
+	mux.HandleFunc("POST /api/v1/apps/{name}/preflight", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePreflightApp))
+	mux.HandleFunc("POST /api/v1/preflight", rt.requireAbility(AbilityWrite, rt.handlePreflightNew))
 
 	// Read-only resource right-sizing suggestion
 	// (resource_recommendation.go): synthesizes the app's historical
@@ -358,7 +416,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// raise/lower/keep suggestion per dimension. AbilityRead, same
 	// sensitivity as diagnose above; never writes anything, never applied
 	// automatically.
-	mux.HandleFunc("GET /api/v1/apps/{name}/resource-recommendation", rt.requireAbility(AbilityRead, rt.handleAppResourceRecommendation))
+	mux.HandleFunc("GET /api/v1/apps/{name}/resource-recommendation", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppResourceRecommendation))
 
 	// Manual build trigger (see Builder/WithBuilder above and
 	// handleTriggerBuild's own doc comment): builds an image from a git
@@ -388,16 +446,20 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// boundary as the branch listing above.
 	mux.HandleFunc("POST /api/v1/build/detect", rt.requireAbility(AbilityDeploy, rt.handleDetectFramework))
 
+	// Import front door: classifies pasted input and returns a plan preview,
+	// creating nothing. AbilityWrite because it makes outbound fetches.
+	mux.HandleFunc("POST /api/v1/imports/plan", rt.requireAbility(AbilityWrite, rt.handleImportPlan))
+
 	// Previously-built image tags for this app's repo, so the deploy
 	// trigger form can offer a dropdown instead of a hand-typed tag
 	// (see ImageLister above). AbilityRead like every other passive
 	// view of an app's own state.
-	mux.HandleFunc("GET /api/v1/apps/{name}/images", rt.requireAbility(AbilityRead, rt.handleListImages))
+	mux.HandleFunc("GET /api/v1/apps/{name}/images", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListImages))
 
 	// Live traffic path (network.go): declared container port plus the
 	// current Docker-assigned host port Caddy is actually proxying to, for
 	// the dashboard's Network tab. AbilityRead, same tier as images above.
-	mux.HandleFunc("GET /api/v1/apps/{name}/network", rt.requireAbility(AbilityRead, rt.handleGetAppNetwork))
+	mux.HandleFunc("GET /api/v1/apps/{name}/network", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppNetwork))
 
 	// Databases CRUD, the database-kind counterpart to apps CRUD above.
 	// No PUT (full-replace update) yet: unlike a service's image/port/
@@ -417,7 +479,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// Resource-scoped, same reasoning as the apps routes above.
 	mux.HandleFunc("GET /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleGetDatabase))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleDeleteDatabase))
-	mux.HandleFunc("GET /api/v1/databases/{name}/status", rt.requireAbility(AbilityRead, rt.handleDatabaseStatus))
+	mux.HandleFunc("GET /api/v1/databases/{name}/status", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleDatabaseStatus))
 
 	// Telemetry query, the database counterpart to
 	// GET /apps/{name}/metrics, /logs, /logs/stream above: same
@@ -427,20 +489,20 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// queryResourceLogs/streamResourceLogs (metrics.go/logs.go/
 	// live_logs.go), parameterized on a resourceLookup, not a
 	// hand-copied duplicate.
-	mux.HandleFunc("GET /api/v1/databases/{name}/metrics", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseMetrics))
-	mux.HandleFunc("GET /api/v1/databases/{name}/logs", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseLogs))
-	mux.HandleFunc("GET /api/v1/databases/{name}/logs/stream", rt.requireAbility(AbilityRead, rt.handleLiveDatabaseLogStream))
+	mux.HandleFunc("GET /api/v1/databases/{name}/metrics", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseMetrics))
+	mux.HandleFunc("GET /api/v1/databases/{name}/logs", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseLogs))
+	mux.HandleFunc("GET /api/v1/databases/{name}/logs/stream", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.withStreamReauth(databaseResourceFromPath, rt.handleLiveDatabaseLogStream)))
 
 	// Slow query log, Postgres/MySQL only (database_slow_queries.go's own
 	// doc comment explains why Redis and every other engine return 400):
 	// parses the same stored container log lines the routes above expose,
 	// rather than a new telemetry source.
-	mux.HandleFunc("GET /api/v1/databases/{name}/slow-queries", rt.requireAbility(AbilityRead, rt.handleQueryDatabaseSlowQueries))
+	mux.HandleFunc("GET /api/v1/databases/{name}/slow-queries", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseSlowQueries))
 
 	// Resource right-sizing, the database counterpart to
 	// GET /apps/{name}/resource-recommendation above
 	// (database_resource_recommendation.go).
-	mux.HandleFunc("GET /api/v1/databases/{name}/resource-recommendation", rt.requireAbility(AbilityRead, rt.handleDatabaseResourceRecommendation))
+	mux.HandleFunc("GET /api/v1/databases/{name}/resource-recommendation", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleDatabaseResourceRecommendation))
 
 	// Placement, the database counterpart to
 	// PUT /apps/{name}/node above: same AbilityRoot gating.

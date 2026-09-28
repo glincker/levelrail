@@ -179,6 +179,49 @@ func TestFinishDeployAttempt_Failed(t *testing.T) {
 	}
 }
 
+func TestRecordRolloutFailure_FlipsNewestSucceededAttempt(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDeployAttempt(ctx, DeployAttempt{
+		ID: "dep_a", ServiceName: "web", Image: "levelrail/web:abc123",
+		Status: DeployAttemptStatusRunning, StartedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if err := db.FinishDeployAttempt(ctx, "dep_a", DeployAttemptStatusSucceeded, time.Now().UTC(), ""); err != nil {
+		t.Fatalf("FinishDeployAttempt() error = %v", err)
+	}
+
+	if err := db.RecordRolloutFailure(ctx, "web", "levelrail/web:abc123", "readiness probe timed out"); err != nil {
+		t.Fatalf("RecordRolloutFailure() error = %v", err)
+	}
+
+	got, err := db.GetDeployAttempt(ctx, "dep_a")
+	if err != nil {
+		t.Fatalf("GetDeployAttempt() error = %v", err)
+	}
+	if got.Status != DeployAttemptStatusFailed {
+		t.Errorf("Status = %q, want %q", got.Status, DeployAttemptStatusFailed)
+	}
+	if got.Error != "readiness probe timed out" {
+		t.Errorf("Error = %q, want %q", got.Error, "readiness probe timed out")
+	}
+	if got.RolloutState != RolloutStateFailed {
+		t.Errorf("RolloutState = %q, want %q", got.RolloutState, RolloutStateFailed)
+	}
+	if got.FinishedAt == nil {
+		t.Error("FinishedAt = nil, want set")
+	}
+}
+
+func TestRecordRolloutFailure_NoMatchingAttempt_NoError(t *testing.T) {
+	db := openTestDB(t)
+	if err := db.RecordRolloutFailure(context.Background(), "ghost", "levelrail/ghost:v1", "readiness probe timed out"); err != nil {
+		t.Errorf("RecordRolloutFailure() error = %v, want nil (no matching row is not an error)", err)
+	}
+}
+
 func TestFailOrphanedDeployAttempts_MarksRunningOnesFailed(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
@@ -241,6 +284,25 @@ func TestFailOrphanedDeployAttempts_MarksRunningOnesFailed(t *testing.T) {
 	}
 	if !untouched.FinishedAt.Equal(finishedEarlier) {
 		t.Errorf("already_done: FinishedAt = %v, want unchanged %v", untouched.FinishedAt, finishedEarlier)
+	}
+}
+
+func TestFailOrphanedDeployAttempts_RequeuesInterruptedRelease(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveDeployAttempt(ctx, DeployAttempt{
+		ID: "dep_released", ServiceName: "web", Image: "nginx:2",
+		Status: DeployAttemptStatusRunning, StartedAt: time.Now().UTC(), HeldRequest: `{"kind":"image","image":"nginx:2"}`,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	n, err := db.FailOrphanedDeployAttempts(ctx, time.Now().UTC())
+	if err != nil || n != 0 {
+		t.Fatalf("FailOrphanedDeployAttempts() = %d, %v; want 0 failed", n, err)
+	}
+	held, err := db.ListHeldDeployAttempts(ctx)
+	if err != nil || len(held) != 1 || held[0].ID != "dep_released" {
+		t.Fatalf("held = %+v, %v; want the interrupted release back in held", held, err)
 	}
 }
 

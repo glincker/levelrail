@@ -117,6 +117,12 @@ type mux struct {
 	// physical stream, the same reasoning eventChanBuffer's own doc
 	// comment gives for deliverEvent never blocking on a slow watcher.
 	onHeartbeat func()
+
+	// onGPU, if set, receives each GPUReport frame. Same set-before-recvLoop
+	// and must-not-block rules as onHeartbeat.
+	onGPU func(*agentpb.GPUReport)
+
+	onHello func(*agentpb.AgentInfo)
 }
 
 // frameSub is one in-flight multi-frame operation's control-plane-side
@@ -153,14 +159,22 @@ type (
 )
 
 // newMux starts dispatching stream immediately (recvLoop runs in its own
-// goroutine from this call onward). onHeartbeat is variadic purely so
-// every existing call site that never cares about heartbeats (every test
-// file, GRPCTransport's own construction) stays unchanged; at most the
-// first value passed is used, and Server.Session is the only caller that
-// ever passes one. Passing it here, before recvLoop starts, is what
-// avoids a data race against recvLoop reading m.onHeartbeat concurrently
-// with it being set afterward.
-func newMux(stream sessionStream, onHeartbeat ...func()) *mux {
+// goroutine from this call onward).
+func newMux(stream sessionStream) *mux {
+	return newMuxWithHandlers(stream, muxHandlers{})
+}
+
+// muxHandlers are optional callbacks for unprompted agent frames. They run
+// on recvLoop and must not block.
+type muxHandlers struct {
+	gpu       func(*agentpb.GPUReport)
+	heartbeat func()
+	hello     func(*agentpb.AgentInfo)
+}
+
+// newMuxWithHandlers is newMux plus h. They are passed here, before
+// recvLoop starts, to avoid racing recvLoop reading them.
+func newMuxWithHandlers(stream sessionStream, h muxHandlers) *mux {
 	m := &mux{
 		stream:   stream,
 		pending:  make(map[string]chan *agentpb.AgentResponse),
@@ -169,9 +183,9 @@ func newMux(stream sessionStream, onHeartbeat ...func()) *mux {
 		builds:   make(map[string]*buildSub),
 		closed:   make(chan struct{}),
 	}
-	if len(onHeartbeat) > 0 {
-		m.onHeartbeat = onHeartbeat[0]
-	}
+	m.onHeartbeat = h.heartbeat
+	m.onGPU = h.gpu
+	m.onHello = h.hello
 	go m.recvLoop()
 	return m
 }
@@ -199,6 +213,14 @@ func (m *mux) recvLoop() {
 		case *agentpb.AgentMessage_Heartbeat:
 			if m.onHeartbeat != nil {
 				m.onHeartbeat()
+			}
+		case *agentpb.AgentMessage_GpuReport:
+			if m.onGPU != nil {
+				m.onGPU(p.GpuReport)
+			}
+		case *agentpb.AgentMessage_Hello:
+			if m.onHello != nil {
+				m.onHello(p.Hello)
 			}
 		}
 	}

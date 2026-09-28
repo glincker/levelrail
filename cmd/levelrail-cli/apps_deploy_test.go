@@ -78,6 +78,10 @@ func protectedEnvironmentDeployServer(t *testing.T) (*httptest.Server, *int) {
 	t.Helper()
 	calls := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`[]`))
+			return
+		}
 		calls++
 		var body deployTriggerRequest
 		_ = json.NewDecoder(r.Body).Decode(&body)

@@ -161,3 +161,34 @@ func TestMigrationsCurrent(t *testing.T) {
 		t.Fatal("want error with latest migration unapplied")
 	}
 }
+
+func TestPendingMigrations(t *testing.T) {
+	all := []migration{{version: 1, name: "a"}, {version: 2, name: "b"}, {version: 3, name: "c"}, {version: 5, name: "e"}}
+	tests := []struct {
+		name    string
+		applied map[int]bool
+		want    []int
+	}{
+		{"fresh database", map[int]bool{}, []int{1, 2, 3, 5}},
+		{"fully applied", map[int]bool{1: true, 2: true, 3: true, 5: true}, nil},
+		{"only newer ones", map[int]bool{1: true, 2: true}, []int{3, 5}},
+		{"older migration merged after a newer one ran", map[int]bool{1: true, 3: true, 5: true}, []int{2}},
+		{"unknown applied version is ignored", map[int]bool{1: true, 2: true, 3: true, 5: true, 9: true}, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got []int
+			for _, m := range pendingMigrations(all, tt.applied) {
+				got = append(got, m.version)
+			}
+			if len(got) != len(tt.want) {
+				t.Fatalf("pending = %v, want %v", got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Fatalf("pending = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}

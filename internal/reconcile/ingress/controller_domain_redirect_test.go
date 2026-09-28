@@ -50,8 +50,8 @@ func TestController_Reconcile_DomainRedirect_NoRunningContainer_StillRouted(t *t
 	if handler.StatusCode != store.DomainRedirectPermanent {
 		t.Errorf("handler.StatusCode = %d, want %d", handler.StatusCode, store.DomainRedirectPermanent)
 	}
-	if got := handler.Headers["Location"]; len(got) != 1 || got[0] != "https://example.com" {
-		t.Errorf("Location header = %v, want [\"https://example.com\"]", handler.Headers["Location"])
+	if got := handler.Headers["Location"]; len(got) != 1 || got[0] != "https://example.com{http.request.uri}" {
+		t.Errorf("Location header = %v, want [\"https://example.com{http.request.uri}\"]", handler.Headers["Location"])
 	}
 }
 

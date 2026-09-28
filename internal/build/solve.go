@@ -49,6 +49,10 @@ func newSolveOpt(req Request, cache CacheConfig, out io.WriteCloser) (*bkclient.
 	if req.NoCache {
 		attrs["no-cache"] = ""
 	}
+	if req.Attest {
+		attrs["attest:sbom"] = ""
+		attrs["attest:provenance"] = "mode=min"
+	}
 	for k, v := range req.BuildArgs {
 		attrs["build-arg:"+k] = v
 	}

@@ -16,7 +16,7 @@ import (
 // reason: "run now" has a real, immediate side effect inside a live
 // container.
 func registerScheduledTaskTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_scheduled_tasks",
 		Description: "List an app's scheduled tasks: command, cron schedule, enabled state, and the most recent run's outcome (status, exit code, consecutive failures). Read-only; does not create, edit, delete, or run a task.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.ScheduledTaskResource, error) {
@@ -27,7 +27,7 @@ func registerScheduledTaskTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, tasks, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_scheduled_task",
 		Description: "Get one scheduled task's full detail: command, cron schedule, enabled state, and the most recent run's status, exit code, and captured output. Read-only; does not create, edit, delete, or run a task.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in scheduledTaskInput) (*mcp.CallToolResult, apiclient.ScheduledTaskResource, error) {

@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Application load balancer for canary
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+  SecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+
+Resources:
+  CanaryLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: canary
+      Type: application
+      Subnets: !Ref SubnetIds
+      SecurityGroups: !Ref SecurityGroupIds
+
+  CanaryTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: canary
+      Port: 9000
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref VpcId
+      HealthCheckPath: /
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 5
+      UnhealthyThresholdCount: 2
+      Matcher:
+        HttpCode: '200-399'
+      TargetGroupAttributes:
+        - Key: load_balancing.algorithm.type
+          Value: weighted_random
+
+  CanaryListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref CanaryLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref CanaryTargetGroup
+
+Outputs:
+  LoadBalancerDNS:
+    Value: !GetAtt CanaryLoadBalancer.DNSName
+
+# warnings
+# weighted: ALB target group weights are set on the listener forward action or via weighted_random, per-target weights [9 1] are not exported
+# slow_start is not supported together with weighted_random on ALB, dropped

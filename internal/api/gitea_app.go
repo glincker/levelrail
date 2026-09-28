@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
+	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -47,7 +48,9 @@ type GiteaAppClient interface {
 	GetRepo(ctx context.Context, instanceURL, accessToken, fullName string) (giteaapp.Repo, error)
 	ListBranches(ctx context.Context, instanceURL, accessToken, fullName string) ([]giteaapp.Branch, error)
 	CreateRepoWebhook(ctx context.Context, instanceURL, accessToken, fullName, hookURL, secret string) error
-	CreateIssueComment(ctx context.Context, instanceURL, accessToken, fullName string, number int, body string) error
+	CreateIssueComment(ctx context.Context, instanceURL, accessToken, fullName string, number int, body string) (int64, error)
+	ListIssueComments(ctx context.Context, instanceURL, accessToken, fullName string, number int) ([]gitprovider.Comment, error)
+	UpdateIssueComment(ctx context.Context, instanceURL, accessToken, fullName string, commentID int64, body string) error
 	CreateCommitStatus(ctx context.Context, instanceURL, accessToken, fullName, sha string, state giteaapp.CommitStatusState, targetURL, description, statusContext string) error
 }
 

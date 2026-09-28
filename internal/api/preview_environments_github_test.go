@@ -102,9 +102,7 @@ func TestHandlePullRequestWebhook_PostPRComments_Disabled_NoGitHubCalls(t *testi
 }
 
 // TestHandlePullRequestWebhook_PostPRComments_DeployFailed_PostsFailureStatusOnly
-// proves a failed deploy posts a failure commit status, and deliberately
-// no PR comment (notifyPreviewFailure's own doc comment): only pending
-// (before the attempt) and failure (after) commit statuses.
+// proves a failed deploy posts a failure commit status, and the single status comment ends in the failed state.
 func TestHandlePullRequestWebhook_PostPRComments_DeployFailed_PostsFailureStatusOnly(t *testing.T) {
 	rt, secret, builder, fakeClient := setUpPreviewAppWithGitHubNotifications(t, true)
 	builder.errs = []error{context.DeadlineExceeded}
@@ -121,14 +119,14 @@ func TestHandlePullRequestWebhook_PostPRComments_DeployFailed_PostsFailureStatus
 	if fakeClient.statusCalls[1].state != githubapp.CommitStatusFailure {
 		t.Errorf("second status state = %q, want failure", fakeClient.statusCalls[1].state)
 	}
-	if len(fakeClient.commentCalls) != 0 {
-		t.Errorf("CreateIssueComment called %d times, want 0 on a failed deploy", len(fakeClient.commentCalls))
+	if len(fakeClient.commentCalls) != 1 || !strings.Contains(fakeClient.prComments.comments[0].Body, "Preview environment: failed") {
+		t.Errorf("status comment = %+v (created %d), want one comment ending in the failed state", fakeClient.prComments.comments, len(fakeClient.commentCalls))
 	}
 }
 
 // TestHandlePullRequestWebhook_PostPRComments_Teardown_PostsComment proves
-// a torn-down preview posts a PR comment noting the teardown, using the
-// same opt-in gate as the deploy-time notifications.
+// a torn-down preview edits the status comment in place to say it was removed,
+// using the same opt-in gate as the deploy-time notifications.
 func TestHandlePullRequestWebhook_PostPRComments_Teardown_PostsComment(t *testing.T) {
 	rt, secret, _, fakeClient := setUpPreviewAppWithGitHubNotifications(t, true)
 
@@ -144,11 +142,11 @@ func TestHandlePullRequestWebhook_PostPRComments_Teardown_PostsComment(t *testin
 		t.Fatalf("closed: status = %d, body = %s", rec.Code, rec.Body.String())
 	}
 
-	if len(fakeClient.commentCalls) != 1 {
-		t.Fatalf("CreateIssueComment called %d times, want 1 for the teardown notice", len(fakeClient.commentCalls))
+	if len(fakeClient.commentCalls) != 0 {
+		t.Errorf("teardown created %d new comments, want the existing one edited in place", len(fakeClient.commentCalls))
 	}
-	if fakeClient.commentCalls[0].number != 42 {
-		t.Errorf("teardown comment PR number = %d, want 42", fakeClient.commentCalls[0].number)
+	if n := len(fakeClient.prComments.updates); n == 0 || !strings.Contains(fakeClient.prComments.updates[n-1].Body, "Preview environment: removed") {
+		t.Errorf("teardown updates = %+v, want the last edit to say removed", fakeClient.prComments.updates)
 	}
 }
 
@@ -228,8 +226,8 @@ func TestGithubOwnerRepoFromURL(t *testing.T) {
 
 // TestNotifyPreviewSuccess_NoPrimaryDomain proves notifyPreviewSuccess's
 // own documented fallback: with previewURL == "" (no control-plane
-// primary domain configured), the commit status and PR comment still
-// post, just without a link to follow, instead of skipping the
+// primary domain configured), the commit status still
+// posts, just without a link to follow, instead of skipping the
 // notification entirely.
 func TestNotifyPreviewSuccess_NoPrimaryDomain(t *testing.T) {
 	rt, secret, _, fakeClient := setUpPreviewAppWithGitHubNotifications(t, true)
@@ -237,7 +235,7 @@ func TestNotifyPreviewSuccess_NoPrimaryDomain(t *testing.T) {
 
 	rt.notifyPreviewSuccess(context.Background(), "web", store.GitSource{
 		PostPRComments: true, RepoURL: "https://github.com/org/web.git",
-	}, 42, "sha1", "")
+	}, "sha1", "")
 
 	if len(fakeClient.statusCalls) != 1 {
 		t.Fatalf("CreateCommitStatus called %d times, want 1", len(fakeClient.statusCalls))
@@ -248,10 +246,7 @@ func TestNotifyPreviewSuccess_NoPrimaryDomain(t *testing.T) {
 	if fakeClient.statusCalls[0].description != "Preview deployed" {
 		t.Errorf("status description = %q, want the no-link default", fakeClient.statusCalls[0].description)
 	}
-	if len(fakeClient.commentCalls) != 1 {
-		t.Fatalf("CreateIssueComment called %d times, want 1", len(fakeClient.commentCalls))
-	}
-	if strings.Contains(fakeClient.commentCalls[0].body, "https://") {
-		t.Errorf("comment body = %q, want no link when no preview URL is available", fakeClient.commentCalls[0].body)
+	if len(fakeClient.commentCalls) != 0 {
+		t.Errorf("notifyPreviewSuccess created %d comments, want 0 (comments go through upsertPreviewComment)", len(fakeClient.commentCalls))
 	}
 }

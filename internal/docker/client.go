@@ -30,6 +30,7 @@ import (
 // per the project's Docker Engine API only rule.
 type Client struct {
 	cli *dockerclient.Client
+	cdi cdiCache
 	// instanceLabelKey/instanceLabelValue, when both set (WithInstanceLabel),
 	// are stamped onto every container and network this Client creates
 	// (Create, EnsureNetwork) and used to scope every by-name lookup this
@@ -40,6 +41,9 @@ type Client struct {
 	// before instance labeling existed.
 	instanceLabelKey   string
 	instanceLabelValue string
+	// hardening is the policy Create applies; the zero value (plain
+	// &Client{} in tests) has no mode and applies nothing.
+	hardening HardeningConfig
 }
 
 // ClientOption configures optional Client behavior at construction time.
@@ -74,7 +78,9 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("docker: new client: %w", err)
 	}
-	c := &Client{cli: cli}
+	hardening, herr := HardeningFromEnv()
+	logHardeningEnv(herr)
+	c := &Client{cli: cli, hardening: hardening}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -134,6 +140,15 @@ func (c *Client) Ping(ctx context.Context) error {
 		return fmt.Errorf("docker: ping: %w", err)
 	}
 	return nil
+}
+
+// ServerVersion returns the Docker Engine version string the daemon reports.
+func (c *Client) ServerVersion(ctx context.Context) (string, error) {
+	v, err := c.cli.ServerVersion(ctx)
+	if err != nil {
+		return "", fmt.Errorf("docker: server version: %w", err)
+	}
+	return v.Version, nil
 }
 
 // TestRegistryAuth asks the daemon to authenticate against host with
@@ -234,10 +249,16 @@ func toContainerState(s container.Summary) *ContainerState {
 	if len(s.Names) > 0 {
 		name = strings.TrimPrefix(s.Names[0], "/")
 	}
+	var created time.Time
+	if s.Created > 0 {
+		created = time.Unix(s.Created, 0).UTC()
+	}
 	return &ContainerState{
 		ID:      s.ID,
 		Name:    name,
 		Image:   s.Image,
+		ImageID: s.ImageID,
+		Created: created,
 		Running: s.State == "running",
 		Ports:   observedPorts(s.Ports),
 		Labels:  s.Labels,
@@ -288,6 +309,10 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 	}
 
 	hostConfig := buildHostConfig(spec, portBindings)
+	if spec.GPU != nil {
+		c.attachGPU(ctx, hostConfig, *spec.GPU)
+	}
+	c.hardening.apply(hostConfig, spec)
 
 	resp, err := c.cli.ContainerCreate(ctx,
 		&container.Config{
@@ -403,6 +428,12 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 			CpusetCpus: spec.Resources.CPUSetCPUs,
 		}
 	}
+	if spec.ShmSizeBytes > 0 {
+		hostConfig.ShmSize = spec.ShmSizeBytes
+	}
+	if spec.GPU != nil {
+		hostConfig.DeviceRequests = []container.DeviceRequest{toDeviceRequest(*spec.GPU)}
+	}
 	if len(spec.DNS) > 0 {
 		hostConfig.DNS = spec.DNS
 	}
@@ -413,6 +444,43 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 		hostConfig.NetworkMode = container.NetworkMode(spec.NetworkMode)
 	}
 	return hostConfig
+}
+
+func toDeviceRequest(g GPURequest) container.DeviceRequest {
+	req := container.DeviceRequest{Driver: "nvidia", Capabilities: [][]string{{"gpu"}}}
+	if len(g.DeviceIDs) > 0 {
+		req.DeviceIDs = g.DeviceIDs
+		return req
+	}
+	req.Count = g.Count
+	if req.Count == 0 {
+		req.Count = -1
+	}
+	return req
+}
+
+// RuntimeNames returns the OCI runtimes the Docker daemon has registered,
+// used to detect whether the nvidia container runtime is installed.
+func (c *Client) RuntimeNames(ctx context.Context) ([]string, error) {
+	info, err := c.cli.Info(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("docker: info: %w", err)
+	}
+	names := make([]string, 0, len(info.Runtimes))
+	for name := range info.Runtimes {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names, nil
+}
+
+// DockerRootDir returns the daemon's storage root, where named volumes live.
+func (c *Client) DockerRootDir(ctx context.Context) (string, error) {
+	info, err := c.cli.Info(ctx)
+	if err != nil {
+		return "", fmt.Errorf("docker: info: %w", err)
+	}
+	return info.DockerRootDir, nil
 }
 
 // BridgeGatewayIP returns the gateway IP of Docker's default "bridge"

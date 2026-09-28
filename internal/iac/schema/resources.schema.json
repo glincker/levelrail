@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://glinr.com/levelrail/schema/resources.json",
+  "title": "Platform resource document",
+  "description": "One document of a multi-document resource file read by apply. The $defs of the app.yaml schema are merged in unchanged, so a service under App.spec.service follows exactly the app.yaml service rules.",
+  "type": "object",
+  "required": ["version", "kind", "metadata"],
+  "properties": {
+    "version": { "const": 1 },
+    "kind": { "enum": ["Project", "Environment", "Tag", "Database", "App", "Domain", "LoadBalancer", "Pipeline", "AlertRule"] },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "spec": { "type": "object" }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    { "if": { "properties": { "kind": { "const": "Project" } }, "required": ["kind"] }, "then": { "properties": { "spec": { "$ref": "#/$defs/projectSpec" } } } },
+    { "if": { "properties": { "kind": { "const": "Environment" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/environmentSpec" } } } },
+    { "if": { "properties": { "kind": { "const": "Tag" } }, "required": ["kind"] }, "then": { "properties": { "spec": { "type": "object", "additionalProperties": false } } } },
+    { "if": { "properties": { "kind": { "const": "Database" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/databaseSpec" } } } },
+    { "if": { "properties": { "kind": { "const": "App" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/appSpec" } } } },
+    { "if": { "properties": { "kind": { "const": "Domain" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/domainSpec" } } } },
+    { "if": { "properties": { "kind": { "const": "LoadBalancer" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/loadbalancer" } } } },
+    { "if": { "properties": { "kind": { "const": "Pipeline" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/pipelineSpec" } } } },
+    { "if": { "properties": { "kind": { "const": "AlertRule" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/alertRuleSpec" } } } }
+  ],
+  "$defs": {
+    "metadata": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+        "labels": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "literalEnv": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "projectSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "env": { "$ref": "#/$defs/literalEnv" } }
+    },
+    "environmentSpec": {
+      "type": "object",
+      "required": ["project"],
+      "additionalProperties": false,
+      "properties": {
+        "project": { "type": "string", "minLength": 1 },
+        "protected": { "type": "boolean" },
+        "env": { "$ref": "#/$defs/literalEnv" }
+      }
+    },
+    "databaseSpec": {
+      "type": "object",
+      "required": ["engine"],
+      "additionalProperties": false,
+      "properties": {
+        "engine": { "$ref": "#/$defs/database/properties/engine" },
+        "version": { "type": "string", "minLength": 1 },
+        "project": { "type": "string", "minLength": 1 }
+      }
+    },
+    "appSpec": {
+      "type": "object",
+      "required": ["service"],
+      "additionalProperties": false,
+      "properties": {
+        "project": { "type": "string", "minLength": 1 },
+        "environment": { "type": "string", "minLength": 1 },
+        "tags": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 64 } },
+        "service": { "$ref": "#/$defs/service" }
+      }
+    },
+    "domainSpec": {
+      "type": "object",
+      "required": ["app"],
+      "additionalProperties": false,
+      "properties": { "app": { "type": "string", "minLength": 1 } }
+    },
+    "pipelineSpec": {
+      "type": "object",
+      "required": ["app", "yaml"],
+      "additionalProperties": false,
+      "properties": {
+        "app": { "type": "string", "minLength": 1 },
+        "yaml": { "type": "string", "minLength": 1 },
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "alertRuleSpec": {
+      "type": "object",
+      "required": ["app", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "app": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "minLength": 1 },
+        "metric": { "type": "string" },
+        "comparator": { "type": "string" },
+        "threshold": { "type": "number" },
+        "for": { "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
+        "restartCountThreshold": { "type": "integer", "minimum": 0 },
+        "restartWindow": { "type": "string", "pattern": "^[0-9]+(ms|s|m|h)$" },
+        "channel": { "type": "string" },
+        "enabled": { "type": "boolean" }
+      }
+    }
+  }
+}

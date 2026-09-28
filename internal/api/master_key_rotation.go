@@ -24,6 +24,8 @@ type rotateMasterKeyResponse struct {
 	// before the next restart.
 	PersistedToFile bool   `json:"persistedToFile"`
 	Warning         string `json:"warning,omitempty"`
+	// Rebind reports the legacy-value binding pass run after the rotation.
+	Rebind *secretRebindResponse `json:"rebind,omitempty"`
 }
 
 // handleRotateMasterKey handles POST /api/v1/system/master-key/rotate:
@@ -72,6 +74,12 @@ func (rt *Router) handleRotateMasterKey(w http.ResponseWriter, r *http.Request) 
 		resp.Warning = "the master key was rotated successfully but could not be written to " + rt.masterKeyFilePath + ": update that file by hand with the new key before this control plane is next restarted, or it will fail to decrypt every stored secret on startup"
 	} else {
 		resp.PersistedToFile = true
+	}
+
+	var rebindWarning string
+	resp.Rebind, rebindWarning = rt.rebindAfterRotation(r.Context())
+	if rebindWarning != "" {
+		resp.Warning = strings.TrimSpace(resp.Warning + " " + rebindWarning)
 	}
 
 	writeJSON(w, http.StatusOK, resp)

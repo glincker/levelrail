@@ -88,9 +88,44 @@ The endpoint `GET /api/v1/nodes/{id}/metrics` returns two types of readings:
 
 The response includes `resource_count`: how many placed services actually contributed a sample (for summed metrics), or `1`/`0` for whether host data exists (for real per-node metrics).
 
-**Not collected today:**
+**Request metrics (RED), measured at the ingress with no app changes:** see [Request metrics](#request-metrics-red) below.
 
-Request rate, response time percentiles, error rate, container restart count, and build duration are called out in the UI as "not yet collected" rather than faked. These are in the required list but lack collectors (restart count/build duration/deploy frequency need follow-up; request rate/response time/error rate need ingress-layer hooks the embedded Caddy doesn't expose yet). Deploy frequency is the exception: it's computed client-side from deploy-attempt history already read by the deploy markers overlay.
+**Not collected today:** container restart count, build duration and deploy frequency are recorded as discrete events or computed client-side from deploy-attempt history, not as continuous collectors.
+
+## Request metrics (RED)
+
+Every proxy and static route in the embedded Caddy is wrapped by a small `request_stats` handler (`internal/ingress/request_stats.go`). It times the request and counts it into fixed in-memory counters per route host, so idle cost is near zero and nothing is written to log files. Paths, query strings and client addresses are never read, and cardinality is bounded by the number of configured hosts. The sampler drains the counters every 15 seconds, maps hosts to apps through the ingress route table (domain to app), and writes only non-zero values under the app's `service:<name>` resource id. Platform routes (dashboard, registry, models) are not attributed to an app. Requests rejected by the WAF or rate limiter count as 4xx. Load balancer and proxy failures (502, 503, 504 raised by the reverse proxy) also count under `http_upstream_errors`.
+
+Metrics (per-tick counter deltas; a tick with no traffic writes nothing):
+
+| Metric | Meaning |
+| --- | --- |
+| `http_requests` | Requests finished |
+| `http_responses_2xx`, `_3xx`, `_4xx`, `_5xx` | Requests by status class |
+| `http_upstream_errors` | Proxy failures (502, 503, 504) returned by the reverse proxy |
+| `http_bytes_in`, `http_bytes_out` | Request content length and response body bytes |
+| `http_latency_bucket_<le>` | Latency histogram, upper bounds 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000 ms plus `inf` |
+
+Percentiles are estimated from the summed histogram buckets (linear interpolation inside a bucket), so they merge correctly across time buckets, rollup tiers and nodes.
+
+Read it with `GET /api/v1/apps/{name}/requests?from=&to=&step=` (rate, 4xx and 5xx error rate, p50, p95, p99, bytes, upstream errors and a summary), `levelrail-cli apps requests <name>` (or `apps metrics <name> --requests`), the `get_app_requests` MCP tool, or the Metrics tab of an app. `GET /api/v1/apps/{name}` also carries a `requests` summary (rate, error rates, p95 over `APP_REQUESTS_SUMMARY_WINDOW`, default 5m) that later features such as auto-rollback and SLO alerts can consume. In Go, use `telemetry.SummarizeRequests(ctx, querier, app, window, now)`.
+
+## Rollups and retention
+
+Raw 15 second samples are rolled up into 1 minute and 1 hour buckets by a background job (`telemetry.Maintainer`). Each run computes at most `APP_METRICS_ROLLUP_MAX_BUCKETS` closed buckets per tier and commits them together with a per-tier watermark in one transaction, so an interrupted run resumes where it stopped and recomputing a bucket is idempotent. Counters (`http_*`) are summed, gauges are averaged. Queries pick a tier by range (raw up to `APP_METRICS_RAW_QUERY_MAX_RANGE`, 1 minute up to `APP_METRICS_MINUTE_QUERY_MAX_RANGE`, otherwise 1 hour), move to a coarser tier when the finer one no longer retains the range start, and fill the not yet rolled up tail from the finer tier.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_METRICS_RETENTION` | 360h (15 days) | Raw sample retention |
+| `APP_METRICS_RETENTION_1M` | 720h (30 days) | 1 minute rollup retention |
+| `APP_METRICS_RETENTION_1H` | 8760h (365 days) | 1 hour rollup retention |
+| `APP_METRICS_MAX_DB_BYTES` | 1073741824 | Live size cap for `telemetry.db`, 0 disables |
+| `APP_METRICS_RAW_QUERY_MAX_RANGE` | 6h | Widest range served from raw samples |
+| `APP_METRICS_MINUTE_QUERY_MAX_RANGE` | 168h | Widest range served from 1 minute rollups |
+| `APP_METRICS_ROLLUP_LAG` | 30s | Delay before a bucket is closed |
+| `APP_METRICS_ROLLUP_MAX_BUCKETS` | 1440 | Buckets computed per tier per run |
+
+When the database exceeds the size cap, the oldest tenth of the finest tier is deleted, but only rows already covered by the next tier, so raw samples that are not yet rolled up are never dropped for size. The cap measures the whole file, which also holds logs; only metric tiers are pruned, so a database dominated by logs can stay over the cap (a warning is logged).
 
 ## Dashboard pages
 
@@ -126,7 +161,14 @@ These are three different reads over the same underlying log store, not separate
 **Stored search** (`GET /api/v1/apps/{name}/logs`)
 - A request/response query over persisted logs.
 - Filtered by `from`/`to` (RFC3339, default last hour) and optional `q` full-text phrase.
+- Optional `level` (minimum level: trace, debug, info, warn, error, fatal) keeps lines at or above it, using the JSON `level`/`severity` field or a level token near the start of a plain line; lines with no detectable level are dropped when it is set. Optional `limit` keeps only the newest N matches.
+- The response carries `total` (matches before `limit`) and each entry a `level` when one was detected.
 - This is what "why was this app slow at 3am last Tuesday" queries.
+
+**Compact query for agents** (`levelrail logs query <app>`, MCP `query_logs`)
+- Filters by level, time window (`--since`/`--until`, a duration or RFC3339), deploy attempt (`--deploy`, the window from that attempt's start to the next attempt's start) and text.
+- Returns an excerpt of the newest matching lines, never a full dump: at most `--max-lines` lines (default 100) and a byte cap (default 8 KB, set with `--max-bytes` or `APP_MCP_LOG_MAX_BYTES`), plus counts and a notice such as `showing 40 of 1,812 matching lines (newest), use since/until or level to narrow`.
+- Uses the stored search above with `level` and `limit`; `--json` prints the excerpt as one object.
 
 **Download** (`GET /api/v1/apps/{name}/logs/download`)
 - Same `from`/`to`/`q` filters as stored search.
@@ -172,6 +214,10 @@ The response includes:
 - Each field (`cpu_percent`, `memory_usage_bytes`, `memory_limit_bytes`, `network_rx_bytes`, `network_tx_bytes`) present only when a sample has been recorded.
 - One `LatestByMetric` call per metric, not one query per app.
 
+## Batched apps overview
+
+`GET /api/v1/apps-metrics` returns, in one response, every app the caller can read with its latest CPU and memory, a one hour request rate, 5xx error rate, p95 latency, a 12 point request-rate sparkline (5 minute buckets) and the last deploy time. Pass `?names=a,b` to limit it. The dashboard apps list and home tiles read only this endpoint, so a page of apps costs one request instead of two per row. The number of apps included is capped by `APP_APPS_METRICS_MAX` (default 200). From the CLI: `levelrail-cli apps overview [name ...]`.
+
 ## Fleet utilization
 
 `GET /api/v1/nodes/resource-usage` answers "how full are my servers" in one call: the node-scoped counterpart to `apps/resource-usage` above, read by both the node list's CPU/memory/disk columns and the dashboard's fleet summary card.
@@ -196,15 +242,17 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 | `patch_status` | platform-wide | every node's pending OS security patch count | none required (threshold is a control-plane default/env var, not a rule field) |
 | `node_disk_space` | platform-wide | every node's disk-used percentage | none required |
 | `node_offline` | platform-wide | any node whose status is offline (agent stopped heartbeating); resolves when all are back | none required |
+| `node_cert_expiring` | platform-wide | any node's agent certificate inside the warning window (renewal failing) or expired; revoked nodes are left out (see [agent certificates](/multi-node#agent-certificates-renewal-and-re-enrollment)) | `for_duration` (optional, overrides `APP_NODE_CERT_EXPIRY_WARNING`, default 21 days) |
 | `node_resource_usage` | platform-wide | every node's summed placed-container CPU and memory | none required |
 | `scheduled_task_failure` | one app's own scheduled task | consecutive failed runs of one task | `scheduled_task_id`, `restart_count_threshold` (reused as the failure-count threshold) |
 | `domain_health` | one app's own domains | a DNS check gone bad (not resolving, or resolving somewhere else) on any of the app's configured domains | `for_duration` (optional debounce) |
 | `backup_missing` | one database (platform-wide) or one app's own volume | last successful backup trailing its own cron schedule's expected interval by more than a grace period | `backup_resource_kind` (`database` or `volume`), `backup_database_name` or `backup_service_name`/`backup_volume_name`, `for_duration` (reused as the overdue grace period, default 6h) |
 | `control_plane_backup_stale` | platform-wide | the newest control plane self-backup snapshot (see [control plane backup](/control-plane-backup)) being older than a maximum age; quiet when scheduled backups are disabled or no snapshot exists yet | `for_duration` (reused as the maximum age, default 3d) |
+| `log_archive_stale` | platform-wide | a log archive policy's last run failed, or it has not succeeded within a maximum age (see [object storage](/object-storage)) | `for_duration` (reused as the maximum age, default three intervals, at least 2h) |
 
 :::
 
-**Platform-wide rule kinds** (`cert_expiry`, `patch_status`, `node_disk_space`, `node_resource_usage`, `node_offline`, `control_plane_backup_stale`)
+**Platform-wide rule kinds** (`cert_expiry`, `patch_status`, `node_disk_space`, `node_resource_usage`, `node_offline`, `node_cert_expiring`, `control_plane_backup_stale`, `log_archive_stale`)
 
 These are created through an app's `/apps/{name}/alerts` URL, but that URL only decides where the rule appears in that app's list. The rule evaluates every certificate, node, or disk across the entire control plane regardless of which app created it.
 
@@ -253,6 +301,98 @@ Guardrails:
 - Fires at most once per crashloop episode: it only runs on the rule's pending-to-firing transition, the same transition the notification itself fires on, so a rule that stays firing across several evaluation ticks doesn't trigger a second rollback.
 - If there's no older successful image to fall back to (the app has never deployed before, or has already been rolled back to its oldest recorded image), auto-rollback does nothing and leaves the crashloop to the alert notification alone, rather than rolling back to nothing.
 - Independent of the `crashloop` alert rule's own notification, which still fires either way.
+
+## Silences, maintenance windows, and noise control
+
+Everything in this section sits between rule evaluation and notification. A rule keeps evaluating, keeps its own firing state, and is always recorded in [alert history](#alert-history); these controls only decide whether a notification goes out.
+
+**`for_duration` and consecutive failures.** `for_duration` (threshold, domain health, and other debounced kinds) keeps a rule pending until its condition has held that long. Consecutive failures is a second, tick-based hold: the condition must be true on N evaluation ticks in a row (30 seconds apart) before the rule fires. Set it per rule with `consecutive_failures`, or for every rule with `APP_ALERT_CONSECUTIVE_FAILURES` (default `1`, meaning off). The streak counter lives in memory, so a control plane restart only delays a rule's first firing.
+
+**Silences.** A silence has matchers (rule IDs, apps, nodes, rule kinds, severities, labels), a start and end, a creator and a reason. Every matcher you give must match; a list inside one matcher matches any of its entries. A silence needs at least one matcher, so it can never mute everything by accident. Silences last at most 90 days, and one that ends early (`End now`, `alerts silences delete`) is kept as history, as are expired ones.
+
+- App matchers apply to app-scoped rules (threshold, crashloop, scheduled task, domain health, backup missing). Platform-wide rules such as certificate expiry have no app and are matched by rule ID, kind, severity or label.
+- Node matchers apply to apps placed on that node (by node name or ID).
+- Rules carry an optional `severity` (`info`, `warning`, default `warning`, or `critical`) and `labels` for silences to match on.
+- If a rule fires while silenced and is still firing when the silence ends, the held notification is sent then, so you are not left unaware of a live problem. If it resolves while silenced, no "resolved" message is sent for a firing you never heard about. Both cases are recorded in history.
+
+**Quick silence.** Silence one rule for 1h, 4h or 24h from the rule's row, from the dashboard's Recent alerts card, with `levelrail-cli alerts silence <app> <rule-id> --for 4h`, or with the `silence_alert_rule` MCP tool.
+
+**Maintenance windows.** A recurring silence: a 5-field cron expression for each start, a duration, and an IANA timezone, applied to all alerts, a set of apps, or a set of nodes. The cron is evaluated on the wall clock in that timezone, so "03:00 Europe/Berlin" stays at 03:00 across daylight saving changes and the window keeps its nominal length. Windows are listed with whether they are active now and their next start.
+
+**Node-down inhibition.** While a node is offline, alerts of apps placed on it are held (recorded as `inhibited`), so a dead node produces one node-offline alert instead of one per app. Held alerts are released if the app is still firing after the node returns. Platform-wide rules, including the node-offline rule itself, are never inhibited.
+
+**Flapping.** A rule that fires more than `flap_threshold` times inside `flap_window` (defaults `APP_ALERT_FLAP_THRESHOLD=5`, `APP_ALERT_FLAP_WINDOW=30m`; `0` disables) is marked flapping. It notifies once with a summary, further fires and resolves are held (recorded as `flapping`), and one "stable" message is sent when its fires drop to half the threshold. Per-rule overrides: `flap_threshold`, `flap_window`.
+
+**Grouping and deduplication.** With `APP_ALERT_GROUP_WINDOW` set (for example `2m`; default off), firing alerts for the same delivery target and app are buffered and sent as one message listing every alert with a count. A rule that fires twice in the window counts once, and a fire that resolves before the window closes sends nothing. Buffered alerts are flushed on shutdown.
+
+**Per-channel rate limit.** At most `APP_ALERT_CHANNEL_RATE_LIMIT` notifications (default `30`; `0` disables) per `APP_ALERT_CHANNEL_RATE_WINDOW` (default `10m`) go to one channel. Excess notifications are recorded as `ratelimited`. Deploy notifications are not counted.
+
+All noise state except silences, windows and history is in memory. A control plane restart forgets pending groups, streaks, flap counters and held notifications; rule firing state itself is persisted, so a still-firing rule does not re-notify after a restart.
+
+**Environment variables:**
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_ALERT_CONSECUTIVE_FAILURES` | `1` | ticks a condition must hold before firing (per rule: `consecutive_failures`) |
+| `APP_ALERT_FLAP_THRESHOLD` | `5` | fires within the window that mark a rule flapping (per rule: `flap_threshold`) |
+| `APP_ALERT_FLAP_WINDOW` | `30m` | flapping window (per rule: `flap_window`) |
+| `APP_ALERT_GROUP_WINDOW` | off | how long firing alerts are buffered into one message |
+| `APP_ALERT_CHANNEL_RATE_LIMIT` | `30` | notifications per channel per rate window |
+| `APP_ALERT_CHANNEL_RATE_WINDOW` | `10m` | rate limit window |
+| `APP_ALERT_HISTORY_RETENTION` | `30d` | how long alert history is kept |
+
+## Alert history
+
+Every state change and notification decision is recorded: the rule, app, node, severity, the event (`fired`, `resolved`, `flapping`, `flap_ended`), and the outcome.
+
+| Outcome | Meaning |
+| --- | --- |
+| `sent` | the notification was delivered |
+| `failed` | delivery failed; the error is stored |
+| `silenced` | a silence or maintenance window matched (`silence_id` names it) |
+| `inhibited` | the app's node was offline |
+| `grouped` | folded into one grouped message, or resolved before its group was sent |
+| `ratelimited` | the channel rate limit was reached |
+| `flapping` | held because the rule is flapping |
+| `skipped` | the rule or its channel is disabled |
+
+Shown per app on `/apps/{name}/alerts`, globally on `/alerts` (with outcome and event filters), and available from the CLI (`levelrail-cli alerts history`), the API (`GET /api/v1/alert-history`) and the `list_alert_history` MCP tool. Entries are pruned after `APP_ALERT_HISTORY_RETENTION`. Who created, changed or removed a silence, window or rule is recorded separately in the generic audit log (`GET /api/v1/audit-log`), which covers every write request.
+
+## What changed before an alert
+
+Every firing app alert, its history entry, `diagnose` and the dashboard alert rows answer "what changed on this app in the last 30 minutes": deploys (with digest and who), rollbacks, config, domain, scaling and load balancer changes, freeze and maintenance events, and env or secret key names (never values). They come from the app event log, deploy attempts and the audit log, merged newest first by `internal/changes`.
+
+The most recent change that took effect before the alert (a deploy, rollback, config, env, secret, domain, scaling or load balancer change) is tagged **Likely cause**. It is a heuristic: it picks the nearest preceding change, not a proven culprit, and never picks a restart, freeze or maintenance event or a failed deploy.
+
+- Notifications (webhook, Slack, Discord, Telegram, email and the rest) carry the top 5 changes, an "and N more" line and a link to the app's alerts page. The generic webhook adds `recent_changes` and `changes_link` fields. Discord and PagerDuty messages are capped to their receiver limits with the changes section kept.
+- `GET /api/v1/apps/{name}/changes?until=&window=` returns the list; `GET /api/v1/alert-history?include=changes` attaches it to fired entries; `GET /api/v1/apps/{name}/diagnose` includes it as `recent_changes`.
+- CLI: `levelrail-cli apps diagnose <app>` and `levelrail-cli alerts history --changes`. MCP: `diagnose_app_failure`, and `list_alert_history` with `include_changes`.
+- Dashboard: expand a fired row in the alert history or the dashboard's recent alerts card; firing rules on an app's alerts page show the block inline.
+
+| Env var | Default | Meaning |
+| --- | --- | --- |
+| `APP_ALERT_CHANGE_WINDOW` | `30m` | how far back changes are collected |
+| `APP_ALERT_CHANGE_MAX` | `20` | cap on entries kept per alert |
+| `APP_DASHBOARD_URL` | unset | base URL for notification links; falls back to `http://<APP_PUBLIC_HOST>:<port>`, and with neither set no link is added |
+
+## SLO burn-rate alerts
+
+A `slo_burn` rule watches a request-based SLO over the app's ingress request metrics: availability (requests without a 5xx) or latency (requests under a limit, rounded down to the nearest histogram bound), with a target such as 99.9 over a 30 day budget window. It uses the multiwindow multi-burn-rate method: a tier fires only when the burn rate is at or above its factor over both its long and its short window, so a brief blip does not page and a real outage does. Burn rate is how many times faster than sustainable the error budget is being spent.
+
+| Tier | Factor | Windows | Severity |
+| --- | --- | --- | --- |
+| `page_fast` | 14.4x | 1h and 5m | critical (page) |
+| `page_slow` | 6x | 6h and 30m | critical (page) |
+| `ticket_fast` | 3x | 1d and 2h | warning (ticket) |
+| `ticket_slow` | 1x | 3d and 6h | warning (ticket) |
+
+An app with no traffic, or fewer than `APP_SLO_MIN_REQUESTS` requests in a tier's long window, never fires. An app newer than a window is judged on the traffic it has. Hysteresis, silences and maintenance windows apply as for any rule.
+
+Override on the control plane with `APP_SLO_<TIER>_FACTOR`, `APP_SLO_<TIER>_LONG` and `APP_SLO_<TIER>_SHORT` (tier is `PAGE_FAST`, `PAGE_SLOW`, `TICKET_FAST` or `TICKET_SLOW`), `APP_SLO_WINDOW` (default `720h`), `APP_SLO_MIN_REQUESTS` (default `10`) and `APP_SLO_EVAL_INTERVAL` (default `1m`).
+
+- Create with `levelrail-cli apps alerts create <app> --name NAME --kind slo_burn --slo 99.9` (add `--slo-latency-ms 300` for a latency SLO), or from the Create rule dialog, which previews the error budget remaining and the current burn rates live.
+- `levelrail-cli apps alerts slo <app> [--slo 99.9]`, `GET /api/v1/apps/{name}/slo-preview` and the `get_slo_status` MCP tool show the budget and burn rates without creating a rule.
+- An app with traffic and no SLO rule gets a suggestion on its alerts page to create a default 99.9% availability SLO.
 
 ## Notification channels
 
@@ -355,6 +495,7 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 | `GET` | `/api/v1/databases/{name}/metrics` | `read` |
 | `GET` | `/api/v1/nodes/{id}/metrics` | `root` |
 | `GET` | `/api/v1/apps/resource-usage` | `read` |
+| `GET` | `/api/v1/apps-metrics` | `read` |
 | `GET` | `/api/v1/nodes/resource-usage` | `root` |
 | `GET` | `/api/v1/apps/{name}/logs?from=...&to=...&q=...` | `read` |
 | `GET` | `/api/v1/apps/{name}/logs/stream` (SSE) | `read` |
@@ -369,6 +510,16 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 | `GET` | `/api/v1/apps/{name}/alerts` | `read` |
 | `PUT` | `/api/v1/apps/{name}/alerts/{id}` | `write` |
 | `DELETE` | `/api/v1/apps/{name}/alerts/{id}` | `write` |
+| `POST` | `/api/v1/apps/{name}/alerts/{id}/silence` | `write` |
+| `GET` | `/api/v1/apps/{name}/alert-history` | `read` |
+| `GET` | `/api/v1/alert-silences?include_expired=true` | `read` |
+| `POST` | `/api/v1/alert-silences` | `write` |
+| `DELETE` | `/api/v1/alert-silences/{id}` (ends the silence now, keeps it in history) | `write` |
+| `GET` | `/api/v1/alert-maintenance-windows` | `read` |
+| `POST` | `/api/v1/alert-maintenance-windows` | `write` |
+| `PUT` | `/api/v1/alert-maintenance-windows/{id}` | `write` |
+| `DELETE` | `/api/v1/alert-maintenance-windows/{id}` | `write` |
+| `GET` | `/api/v1/alert-history?app=...&rule_id=...&outcome=...&event=...&since=...&limit=...` | `read` |
 | `GET` | `/api/v1/notification-channels` | `read` |
 | `POST` | `/api/v1/notification-channels` | `write` |
 | `PUT` | `/api/v1/notification-channels/{id}` | `write` |
@@ -408,6 +559,19 @@ levelrail-cli apps alerts create <app> --name NAME --kind domain_health [--for-d
 levelrail-cli apps alerts create <app> --name NAME --kind control_plane_backup_stale [--for-duration 72h]
 levelrail-cli apps alerts update <app> <id> --name NAME --kind KIND [flags]
 levelrail-cli apps alerts delete <app> <id>
+# any create or update also takes: --severity info|warning|critical --consecutive-failures N
+#   --flap-threshold N --flap-window 30m --label key=value
+# a PUT replaces the whole rule, so pass these again on every update
+
+levelrail-cli alerts silences list [--all]
+levelrail-cli alerts silences create --for 4h [--rule ID] [--app NAME] [--node NAME] [--kind KIND] [--severity S] [--label k=v] [--reason TEXT]
+levelrail-cli alerts silences delete <id>
+levelrail-cli alerts silence <app> <rule-id> [--for 1h] [--reason TEXT]
+levelrail-cli alerts maintenance list
+levelrail-cli alerts maintenance create --name NAME --cron "0 3 * * 0" --duration 2h [--tz Europe/Berlin] [--scope all|app|node] [--target NAME]...
+levelrail-cli alerts maintenance update <id> [same flags]
+levelrail-cli alerts maintenance delete <id>
+levelrail-cli alerts history [--app NAME] [--rule ID] [--outcome OUTCOME] [--event EVENT] [--since TIME] [--limit N]
 
 levelrail-cli channels list
 levelrail-cli channels create --name NAME --kind KIND --notify-url URL
@@ -425,7 +589,7 @@ levelrail-cli channels deliveries <id> [--limit N]
 ## Not built yet (deliberate gaps)
 
 **Missing metrics collectors:**
-- Request rate, response-time percentiles, error rate, container restart count, and build duration. Section 4.8 requires these, but only 7 of 12 are collected. The first three need ingress-layer hooks the embedded Caddy doesn't expose. Deploy frequency is computed client-side from deploy-attempt history.
+- Request metrics only cover traffic that passes through this control plane's embedded Caddy (proxy and static routes). WebSocket and long-lived streams are recorded when they end, so their latency is the connection lifetime. Multi-node request federation reuses the `MetricsSource` interface but has only been exercised in process, since remote nodes do not run their own ingress yet.
 
 **Missing node metrics:**
 - True host-level readings (real free/total CPU or memory) for any node other than the one running the control plane. `GET /api/v1/nodes/{id}/metrics` and `GET /api/v1/nodes/resource-usage` both sum already-collected per-container samples for CPU/memory usage; `internal/agent` has no `/proc` reads today, so a remote node's `memory_total_bytes`/`disk_used_bytes`/`disk_total_bytes` stay absent rather than wrong. A future per-node agent writing host samples under the same `node:<id>` resource-ID format would show up in both endpoints automatically, no handler change needed.
@@ -442,9 +606,13 @@ levelrail-cli channels deliveries <id> [--limit N]
 **Fixed configurations:**
 - Alert evaluation interval (30s) is fixed, not env-configurable (unlike per-kind thresholds).
 - No alert-rule-specific change history (visible only in generic `GET /api/v1/audit-log`).
+- SLO burn-rate rules are not built; the noise pipeline has no special handling for them yet.
+- Grouping, streak, flap and held-notification state is in memory and does not survive a control plane restart.
+- Silences and history are global, not scoped by IAM policy on individual apps: any principal with the base `read` or `write` ability can list or create them for any app.
 
 ## See also
 
+- [Public status page](./status-page.md) - opt-in read-only page with component status, uptime bars and incidents
 - [API Reference](./api-reference.md#telemetry) - full telemetry endpoint documentation
 - [Feature Catalog](./feature-catalog.md) - metrics and logs in the platform overview
 - [Architecture](./architecture.md) - telemetry design decisions and phase 2 rationale

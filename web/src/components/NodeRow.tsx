@@ -4,6 +4,7 @@ import { CaretRightIcon, HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import type { NodeResource, NodeStatus } from '../types/nodeDetail'
 import type { NodeResourceUsage } from '../types/fleetResourceUsage'
 import { DeleteNodeDialog } from './DeleteNodeDialog'
+import { AgentOutdatedBadge, NodeCertBadge } from './NodeCertBadge'
 import {
   NodeCPUCell,
   NodeDiskCell,
@@ -103,6 +104,13 @@ export function NodeRow({
           {STATUS_LABEL[node.status]}
         </Badge>
         {node.schedulable ? null : <Badge variant="warning">Cordoned</Badge>}
+        {node.gpu?.present ? (
+          <Badge variant={node.gpu.runtime_installed ? 'outline' : 'warning'}>
+            GPU {node.gpu.free_gpus}/{node.gpu.gpu_count} free
+          </Badge>
+        ) : null}
+        <NodeCertBadge cert={node.cert} />
+        <AgentOutdatedBadge agent={node.agent} />
       </span>
 
       <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">

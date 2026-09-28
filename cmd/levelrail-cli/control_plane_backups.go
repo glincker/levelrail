@@ -20,11 +20,22 @@ func runControlPlaneBackups(prog string, args []string, stdout, stderr io.Writer
 		return exitUsage
 	}
 	switch args[0] {
+	case "help-dr":
+		_, _ = fmt.Fprint(stdout, controlPlaneDRUsage(prog))
+		return exitOK
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, controlPlaneBackupsUsage(prog))
 		return exitOK
 	case "list":
-		return runControlPlaneBackupsList(prog, args[1:], stdout, stderr, lookupEnv)
+		rest := args[1:]
+		for _, a := range rest {
+			if a == "--offbox" || a == "-offbox" {
+				return listOffbox(prog, rest, stdout, stderr, lookupEnv)
+			}
+		}
+		return runControlPlaneBackupsList(prog, rest, stdout, stderr, lookupEnv)
+	case "schedule", "run-now", "drill", "escrow", "keys":
+		return runControlPlaneDR(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "create":
 		return runControlPlaneBackupsCreate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "download":
@@ -47,9 +58,14 @@ func controlPlaneBackupsUsage(prog string) string {
   %[1]s control-plane-backups download <name> [--out FILE]    save a snapshot (default: raw bytes to stdout)
   %[1]s control-plane-backups verify <name> [flags]           check a snapshot's checksum, integrity and schema (exit 1 if not ok)
   %[1]s control-plane-backups delete <name> [flags]           delete one snapshot
+  %[1]s control-plane-backups list --offbox                   list encrypted off-box backups (see "control-plane-backups help-dr")
 
 Snapshots hold the control plane database only, never the master key.
-Restore offline with "levelrail restore-db <file>" on the server.
+Restore offline with "levelrail restore-db <file>" on the server, or restore an
+encrypted off-box backup with "levelrail restore --from s3://... --identity FILE".
+
+Disaster recovery subcommands: schedule show|set, run-now, drill run|status, escrow, keys generate.
+Run "%[1]s control-plane-backups help-dr" for details.
 All subcommands need a root-scoped token.
 
 Run "%[1]s control-plane-backups <subcommand> -h" for a subcommand's own flags.

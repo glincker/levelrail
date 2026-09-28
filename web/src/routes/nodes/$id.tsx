@@ -13,7 +13,9 @@ import type { NodeStatus } from '../../types/nodeDetail'
 import { ConditionsPanel } from '../../components/ConditionsPanel'
 import { CordonNodeDialog } from '../../components/CordonNodeDialog'
 import { DrainNodeDialog } from '../../components/DrainNodeDialog'
+import { NodeAgentCard } from '../../components/NodeAgentCard'
 import { NodeAlertStatusCard } from '../../components/NodeAlertStatusCard'
+import { NodeGpuCard } from '../../components/NodeGpuCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
@@ -23,6 +25,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
+import { InfoTip } from '../../components/kit/InfoTip'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { PageSpinner } from '@/components/ui/page-spinner'
@@ -165,6 +168,8 @@ function NodeDetailPage() {
         </CardContent>
       </Card>
 
+      <NodeAgentCard node={node} />
+
       <Card>
         <CardHeader>
           <CardTitle>Workload capabilities</CardTitle>
@@ -228,13 +233,23 @@ function NodeDetailPage() {
                 )
               }}
             />
-            <FieldLabel htmlFor="node-accepts-build-workloads">
+            <FieldLabel
+              htmlFor="node-accepts-build-workloads"
+              className="flex items-center gap-1.5"
+            >
               Accepts build workloads
+              <InfoTip label="What accepts build workloads does">
+                Sets whether new builds prefer this node. It does not move apps
+                or databases already running here, and it does not guarantee
+                builds never run here: if no node that accepts builds is
+                currently healthy, a build still runs on the primary node rather
+                than failing.
+              </InfoTip>
             </FieldLabel>
           </Field>
           <FieldDescription>
-            Whether this node is considered for dedicated build placement
-            (internal/build.SelectBuildNode).
+            A routing preference for where new builds run, not a hard placement
+            rule.
           </FieldDescription>
 
           {setWorkloads.isError ? (
@@ -246,6 +261,8 @@ function NodeDetailPage() {
       </Card>
 
       <NodeAlertStatusCard nodeId={id} />
+
+      <NodeGpuCard gpu={node.gpu} />
 
       <NodeMeshCard nodeId={id} nodeName={node.name} />
 

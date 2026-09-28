@@ -305,6 +305,19 @@ func (h *Handler) beginDeployAttempt(ctx context.Context, req deploy.Request) (p
 	}
 
 	progress = h.recorder.Progress(id)
+	if setter, ok := h.attempts.(interface {
+		SetDeployAttemptCacheWarning(ctx context.Context, id, warning string) error
+	}); ok {
+		recorded := progress
+		progress = func(ev build.ProgressEvent) {
+			if ev.CacheWarning != "" {
+				if err := setter.SetDeployAttemptCacheWarning(context.Background(), id, ev.CacheWarning); err != nil {
+					h.log.Warn("webhook: record cache warning failed", "attempt_id", id, "error", err)
+				}
+			}
+			recorded(ev)
+		}
+	}
 	finish = func(_ string, deployErr error) {
 		// Background, not ctx: must still flush and finish even if the
 		// triggering request's own context is on its way out.
@@ -357,6 +370,56 @@ func resourceIDForService(name string) string {
 type PushEvent struct {
 	Ref   string `json:"ref"`
 	After string `json:"after"`
+	// Before is the commit the branch moved from, the stale-deploy guard's
+	// strongest ordering signal.
+	Before string `json:"before"`
+	// HeadCommitAt is the pushed head commit's timestamp, zero if unknown.
+	HeadCommitAt time.Time `json:"-"`
+	// HeadMessage and HeadAuthor are the pushed head commit's message and
+	// author name, empty when the payload carries none.
+	HeadMessage string `json:"-"`
+	HeadAuthor  string `json:"-"`
+	// Changed lists the files the pushed commits touched. Nil means the
+	// payload did not say (no commit list, or a list the provider truncates).
+	Changed []string `json:"-"`
+}
+
+// maxPayloadCommits is the commit count at which GitHub, Gitea and GitLab
+// truncate a push payload's commit list, so the file list cannot be trusted.
+const maxPayloadCommits = 20
+
+// pushCommit is one commit entry in a GitHub, Gitea or GitLab push payload.
+type pushCommit struct {
+	ID        string `json:"id"`
+	Timestamp string `json:"timestamp"`
+	Message   string `json:"message"`
+	Author    struct {
+		Name string `json:"name"`
+	} `json:"author"`
+	Added    []string `json:"added"`
+	Modified []string `json:"modified"`
+	Removed  []string `json:"removed"`
+}
+
+// changedFromCommits unions the per-commit file lists, or returns nil when
+// the list may be incomplete.
+func changedFromCommits(commits []pushCommit) []string {
+	if len(commits) == 0 || len(commits) >= maxPayloadCommits {
+		return nil
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, c := range commits {
+		for _, list := range [][]string{c.Added, c.Modified, c.Removed} {
+			for _, f := range list {
+				if !seen[f] {
+					seen[f] = true
+					out = append(out, f)
+				}
+			}
+		}
+	}
+	return out
 }
 
 // ErrPushEventFieldsMissing is returned by ParsePushEvent when body
@@ -371,12 +434,30 @@ var ErrPushEventFieldsMissing = errors.New("webhook: payload missing ref or afte
 // only the commit SHA and target ref matter to this package, everything
 // else in GitHub's much larger push payload is ignored).
 func ParsePushEvent(body []byte) (PushEvent, error) {
-	var ev PushEvent
-	if err := json.Unmarshal(body, &ev); err != nil {
+	var payload struct {
+		PushEvent
+		HeadCommit *pushCommit  `json:"head_commit"`
+		Commits    []pushCommit `json:"commits"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
 		return PushEvent{}, fmt.Errorf("webhook: malformed payload: %w", err)
 	}
+	ev := payload.PushEvent
 	if ev.After == "" || ev.Ref == "" {
 		return ev, ErrPushEventFieldsMissing
+	}
+	ev.Changed = changedFromCommits(payload.Commits)
+	head := payload.HeadCommit
+	for i := range payload.Commits {
+		if head == nil && payload.Commits[i].ID == ev.After {
+			head = &payload.Commits[i]
+		}
+	}
+	if head != nil {
+		if t, err := time.Parse(time.RFC3339, head.Timestamp); err == nil {
+			ev.HeadCommitAt = t
+		}
+		ev.HeadMessage, ev.HeadAuthor = head.Message, head.Author.Name
 	}
 	return ev, nil
 }

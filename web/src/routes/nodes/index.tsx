@@ -5,7 +5,8 @@ import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import { nodeListQueryOptions, useNodes } from '../../queries/nodes'
 import { useFleetResourceUsage } from '../../queries/fleetResourceUsage'
 import { NODE_LIST_GRID, NodeRow, RowSkeleton } from '../../components/NodeRow'
-import { AddNodeDialog } from '../../components/AddNodeDialog'
+import { AddNodeWizard } from '../../components/AddNodeWizard'
+import { BuildStrainSuggestion } from '../../components/BuildStrainSuggestion'
 import { EmptyState } from '../../components/ui/empty-state'
 import { HelpLink } from '../../components/HelpLink'
 
@@ -75,15 +76,16 @@ function NodeListPage() {
               {nodes.length} {nodes.length === 1 ? 'node' : 'nodes'}
             </span>
           ) : null}
-          <AddNodeDialog />
+          <AddNodeWizard />
         </div>
       </div>
+      <BuildStrainSuggestion nodes={nodes} />
       {nodes.length === 0 ? (
         <EmptyState
           icon={<HardDrivesIcon className="size-5" />}
           title="Running on this single control plane node"
           description="Join another machine as a node to scale out: spread apps and databases across more than one server, isolate builds from production workloads, or add capacity without resizing this box."
-          action={<AddNodeDialog />}
+          action={<AddNodeWizard />}
         />
       ) : (
         <div

@@ -257,6 +257,12 @@ The deploy/rollback/promote flow shows `ProtectedEnvironmentNotice`, an amber wa
 
 Toggle `protected` on the environment detail page (`ProtectedEnvironmentToggle`), backed by `PATCH /api/v1/environments/{id}`. That's the only field that endpoint changes.
 
+## Promote and clone dialogs
+
+**Promote to...** on an app page loads `GET /api/v1/apps/{name}/promote/preview` and shows the plan before you confirm: the image change, replicas, resources and health differences, and the env key names that would be added, removed or differ (values are never shown). Tick "Also apply the env key changes" to send `include_env`. If the source is unhealthy or its last deploy failed, the blockers are listed and "Promote anyway" sends `force`. Promotion honors deploy freeze windows: while the target is frozen the dialog requires an override reason (`override_freeze` and `override_reason`, also `--override-freeze` and `--override-reason` on the CLI), and into a protected environment it still becomes a pending approval.
+
+**Clone** on an app page shows what a clone copies and what it leaves behind (`GET /api/v1/apps/{name}/clone/preview`). Secret values are copied only if you tick the box, re-encrypted for the clone and never displayed (needs `read:sensitive`); domains are not copied unless you opt in to derived names. A clone never starts a deploy, so freeze windows and approvals apply when you first deploy it. Cloning does not attach or copy databases.
+
 ## Cloning an environment
 
 `POST /api/v1/environments/{id}/clone` (implementation: `internal/api/environment_clone.go`) copies a whole environment: every app tagged with it, plus its own shared env vars, into a brand-new environment in the same project. This is a different operation from `POST /apps/{name}/promote`, which only ever moves one app's image tag onto an existing sibling app. Cloning creates new apps and a new environment from scratch, and actually deploys them through the normal reconcile path, the same as creating an app through the API directly.

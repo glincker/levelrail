@@ -34,6 +34,7 @@ import {
   useMoveAppWithVolumes,
 } from '../queries/appVolumeMove'
 import type { AppVolumeMoveStatus } from '../types/appVolumeMove'
+import { MovePlan } from './MovePlan'
 
 // Local-node sentinel, mirrors DrainNodeDialog's own: Base UI's Select
 // can't use an empty string as an item value (reads as "no selection"),
@@ -94,6 +95,7 @@ export function MoveToNodeDialog({
   name,
   currentNodeId,
   volumeCount = 0,
+  volumeNames = [],
 }: {
   kind: MoveToNodeKind
   name: string
@@ -104,6 +106,7 @@ export function MoveToNodeDialog({
   // container and has no equivalent move path yet, so this is never
   // passed for kind="database".
   volumeCount?: number
+  volumeNames?: string[]
 }) {
   const [open, setOpen] = useState(false)
   const [targetNodeId, setTargetNodeId] = useState(LOCAL_NODE_VALUE)
@@ -291,6 +294,9 @@ export function MoveToNodeDialog({
                   destination before the app starts again there.
                 </span>
               </p>
+            ) : null}
+            {withVolumes ? (
+              <MovePlan appName={name} volumeNames={volumeNames} />
             ) : null}
           </div>
         ) : null}

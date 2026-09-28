@@ -140,6 +140,144 @@ body {
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Kit tokens. Tones: success, warning, danger, info, accent, neutral, each with
+   fg (text/icon), soft (tinted surface), border, solid (dots, bars).
+   Spacing: 8px scale (gap-2/4/6). Radii: rounded-xl (12) and rounded-2xl (16). */
+:root {
+  --tone-neutral-fg: oklch(0.44 0.015 260);
+  --tone-neutral-soft: oklch(0.965 0.004 260);
+  --tone-neutral-border: oklch(0.91 0.006 260);
+  --tone-neutral-solid: oklch(0.62 0.015 260);
+  --tone-success-fg: oklch(0.42 0.11 155);
+  --tone-success-soft: oklch(0.965 0.03 155);
+  --tone-success-border: oklch(0.90 0.06 155);
+  --tone-success-solid: oklch(0.62 0.15 155);
+  --tone-warning-fg: oklch(0.48 0.11 75);
+  --tone-warning-soft: oklch(0.97 0.04 75);
+  --tone-warning-border: oklch(0.90 0.08 75);
+  --tone-warning-solid: oklch(0.75 0.15 75);
+  --tone-danger-fg: oklch(0.48 0.19 25);
+  --tone-danger-soft: oklch(0.97 0.02 25);
+  --tone-danger-border: oklch(0.90 0.07 25);
+  --tone-danger-solid: oklch(0.62 0.21 25);
+  --tone-info-fg: oklch(0.46 0.14 240);
+  --tone-info-soft: oklch(0.965 0.025 240);
+  --tone-info-border: oklch(0.90 0.06 240);
+  --tone-info-solid: oklch(0.62 0.15 240);
+  --tone-accent-fg: oklch(0.46 0.19 285);
+  --tone-accent-soft: oklch(0.965 0.025 285);
+  --tone-accent-border: oklch(0.90 0.06 285);
+  --tone-accent-solid: oklch(0.58 0.21 285);
+  --elev-1: 0 1px 2px oklch(0.2 0.01 260 / 6%), 0 1px 1px oklch(0.2 0.01 260 / 4%);
+  --elev-2: 0 8px 24px oklch(0.2 0.01 260 / 10%), 0 2px 6px oklch(0.2 0.01 260 / 6%);
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-slow: 250ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dark {
+  --tone-neutral-fg: oklch(0.80 0.012 260);
+  --tone-neutral-soft: oklch(0.27 0.006 260);
+  --tone-neutral-border: oklch(0.36 0.008 260);
+  --tone-neutral-solid: oklch(0.68 0.012 260);
+  --tone-success-fg: oklch(0.82 0.14 155);
+  --tone-success-soft: oklch(0.26 0.05 155);
+  --tone-success-border: oklch(0.37 0.07 155);
+  --tone-success-solid: oklch(0.72 0.16 155);
+  --tone-warning-fg: oklch(0.85 0.13 75);
+  --tone-warning-soft: oklch(0.28 0.05 75);
+  --tone-warning-border: oklch(0.40 0.08 75);
+  --tone-warning-solid: oklch(0.80 0.15 75);
+  --tone-danger-fg: oklch(0.80 0.13 25);
+  --tone-danger-soft: oklch(0.27 0.07 25);
+  --tone-danger-border: oklch(0.40 0.12 25);
+  --tone-danger-solid: oklch(0.70 0.19 25);
+  --tone-info-fg: oklch(0.82 0.10 240);
+  --tone-info-soft: oklch(0.26 0.05 240);
+  --tone-info-border: oklch(0.38 0.09 240);
+  --tone-info-solid: oklch(0.72 0.13 240);
+  --tone-accent-fg: oklch(0.82 0.11 285);
+  --tone-accent-soft: oklch(0.27 0.07 285);
+  --tone-accent-border: oklch(0.40 0.13 285);
+  --tone-accent-solid: oklch(0.70 0.17 285);
+  --elev-1: 0 1px 2px oklch(0 0 0 / 40%);
+  --elev-2: 0 8px 24px oklch(0 0 0 / 50%), 0 0 0 1px oklch(1 0 0 / 6%);
+}
+
+@theme inline {
+  --color-tone-neutral: var(--tone-neutral-fg);
+  --color-tone-neutral-soft: var(--tone-neutral-soft);
+  --color-tone-neutral-border: var(--tone-neutral-border);
+  --color-tone-neutral-solid: var(--tone-neutral-solid);
+  --color-tone-success: var(--tone-success-fg);
+  --color-tone-success-soft: var(--tone-success-soft);
+  --color-tone-success-border: var(--tone-success-border);
+  --color-tone-success-solid: var(--tone-success-solid);
+  --color-tone-warning: var(--tone-warning-fg);
+  --color-tone-warning-soft: var(--tone-warning-soft);
+  --color-tone-warning-border: var(--tone-warning-border);
+  --color-tone-warning-solid: var(--tone-warning-solid);
+  --color-tone-danger: var(--tone-danger-fg);
+  --color-tone-danger-soft: var(--tone-danger-soft);
+  --color-tone-danger-border: var(--tone-danger-border);
+  --color-tone-danger-solid: var(--tone-danger-solid);
+  --color-tone-info: var(--tone-info-fg);
+  --color-tone-info-soft: var(--tone-info-soft);
+  --color-tone-info-border: var(--tone-info-border);
+  --color-tone-info-solid: var(--tone-info-solid);
+  --color-tone-accent: var(--tone-accent-fg);
+  --color-tone-accent-soft: var(--tone-accent-soft);
+  --color-tone-accent-border: var(--tone-accent-border);
+  --color-tone-accent-solid: var(--tone-accent-solid);
+  --shadow-raised: var(--elev-1);
+  --shadow-floating: var(--elev-2);
+}
+
+@keyframes kit-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@keyframes kit-pulse-ring {
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
+@keyframes kit-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes kit-exit {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-4px); }
+}
+
+.kit-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklch, var(--foreground) 7%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: kit-shimmer 1.6s linear infinite;
+}
+
+.kit-pulse-ring { animation: kit-pulse-ring 1.8s var(--motion-ease) infinite; }
+.kit-enter { animation: kit-enter var(--motion-slow) var(--motion-ease) both; }
+.kit-exit { animation: kit-exit var(--motion-base) var(--motion-ease) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kit-shimmer,
+  .kit-pulse-ring,
+  .kit-enter,
+  .kit-exit {
+    animation: none !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

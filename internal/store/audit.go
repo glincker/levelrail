@@ -28,6 +28,11 @@ type AuditEntry struct {
 	RemoteAddr string
 	CreatedAt  string
 	ClientKind string // "cli", "dashboard", "mcp", or "api" (migrations/0077), derived from User-Agent
+	// AgentName is the agent label of the token that made the request, empty
+	// for a session or an unlabeled token. AgentClient is the self-reported
+	// MCP client name and version.
+	AgentName   string
+	AgentClient string
 }
 
 // auditTimeLayout formats a CreatedAt value with a fixed 9-digit
@@ -69,9 +74,9 @@ func NewAuditEntryID() (string, error) {
 // key constraint rather than silently overwriting history.
 func (db *DB) SaveAuditEntry(ctx context.Context, e AuditEntry) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO audit_log (id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, e.ID, e.ActorType, e.ActorID, e.ActorName, e.Ability, e.Method, e.Path, e.StatusCode, e.RemoteAddr, e.CreatedAt, e.ClientKind)
+		INSERT INTO audit_log (id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, e.ID, e.ActorType, e.ActorID, e.ActorName, e.Ability, e.Method, e.Path, e.StatusCode, e.RemoteAddr, e.CreatedAt, e.ClientKind, e.AgentName, e.AgentClient)
 	if err != nil {
 		return fmt.Errorf("store: save audit entry %q: %w", e.ID, err)
 	}
@@ -91,6 +96,8 @@ type AuditEntryFilter struct {
 	Search string
 	// FailedOnly restricts results to status_code >= 400.
 	FailedOnly bool
+	// AgentName restricts results to entries made by this agent label.
+	AgentName string
 }
 
 // auditLikeEscaper escapes LIKE wildcards so Search is a literal substring.
@@ -106,7 +113,7 @@ var auditLikeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 // exact path and/or method match.
 func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time, filter AuditEntryFilter) ([]AuditEntry, error) {
 	query := `
-		SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind
+		SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client
 		FROM audit_log
 	`
 	var (
@@ -137,6 +144,10 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 	if filter.FailedOnly {
 		conditions = append(conditions, "status_code >= 400")
 	}
+	if filter.AgentName != "" {
+		conditions = append(conditions, "agent_name = ?")
+		args = append(args, filter.AgentName)
+	}
 	if len(conditions) > 0 {
 		query += "WHERE " + strings.Join(conditions, " AND ") + "\n"
 	}
@@ -152,7 +163,7 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 	var out []AuditEntry
 	for rows.Next() {
 		var e AuditEntry
-		if err := rows.Scan(&e.ID, &e.ActorType, &e.ActorID, &e.ActorName, &e.Ability, &e.Method, &e.Path, &e.StatusCode, &e.RemoteAddr, &e.CreatedAt, &e.ClientKind); err != nil {
+		if err := rows.Scan(&e.ID, &e.ActorType, &e.ActorID, &e.ActorName, &e.Ability, &e.Method, &e.Path, &e.StatusCode, &e.RemoteAddr, &e.CreatedAt, &e.ClientKind, &e.AgentName, &e.AgentClient); err != nil {
 			return nil, fmt.Errorf("store: scan audit entry row: %w", err)
 		}
 		out = append(out, e)

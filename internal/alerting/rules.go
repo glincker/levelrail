@@ -43,6 +43,13 @@ const (
 	// KindControlPlaneBackupStale is platform-wide: it watches the newest control plane snapshot's age.
 	KindControlPlaneBackupStale Kind = "control_plane_backup_stale"
 	KindNodeOffline             Kind = "node_offline"
+
+	// KindNodeCertExpiring is platform-wide: it fires while any node's agent
+	// certificate is close to expiry or expired (node_cert_expiring.go).
+	KindNodeCertExpiring Kind = "node_cert_expiring"
+
+	// KindLogArchiveStale is platform-wide: it fires when a log archive policy fails or stops succeeding.
+	KindLogArchiveStale Kind = "log_archive_stale"
 )
 
 // Comparator is how a threshold Rule compares the latest sample value
@@ -141,6 +148,9 @@ type Rule struct {
 
 	// ChannelID attaches an already-connected NotificationChannel; empty
 	// for legacy rules, which use NotifyURL/NotifyKind below directly.
+	// SLO is the KindSLOBurn-only request-based SLO; nil for every other kind.
+	SLO *SLOConfig
+
 	ChannelID  string
 	NotifyURL  string
 	NotifyKind NotifyKind
@@ -149,6 +159,15 @@ type Rule struct {
 	// read (GetRule/ListRules*), its attached channel's: a disabled
 	// channel silences the rule too.
 	Enabled bool
+
+	// Noise control: Severity and Labels feed silence matchers;
+	// ConsecutiveFailures, FlapThreshold and FlapWindow override the
+	// control plane defaults when non-zero.
+	Severity            string
+	Labels              map[string]string
+	ConsecutiveFailures int
+	FlapThreshold       int
+	FlapWindow          time.Duration
 
 	// Evaluation state, read-only from a caller's perspective: only the
 	// evaluator (evaluate.go, crashloop.go) writes these, via
@@ -189,8 +208,9 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 			restart_count_threshold, restart_window_seconds, scheduled_task_id,
 			backup_resource_kind, backup_database_name, backup_service_name, backup_volume_name,
 			channel_id, notify_url, notify_kind, enabled,
-			created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			severity, labels_json, consecutive_failures, flap_threshold, flap_window_seconds,
+			slo_json, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET
 			name = excluded.name,
 			kind = excluded.kind,
@@ -210,6 +230,12 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 			notify_url = excluded.notify_url,
 			notify_kind = excluded.notify_kind,
 			enabled = excluded.enabled,
+			severity = excluded.severity,
+			labels_json = excluded.labels_json,
+			consecutive_failures = excluded.consecutive_failures,
+			flap_threshold = excluded.flap_threshold,
+			flap_window_seconds = excluded.flap_window_seconds,
+			slo_json = excluded.slo_json,
 			updated_at = excluded.updated_at
 	`,
 		r.ID, r.Name, string(r.Kind), r.ResourceID,
@@ -217,7 +243,8 @@ func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 		r.RestartCountThreshold, int64(r.RestartWindow.Seconds()), r.ScheduledTaskID,
 		r.BackupResourceKind, r.BackupDatabaseName, r.BackupServiceName, r.BackupVolumeName,
 		nullIfEmpty(r.ChannelID), r.NotifyURL, string(r.NotifyKind), boolToInt(r.Enabled),
-		now, now,
+		severityOrDefault(r.Severity), encodeLabels(r.Labels), r.ConsecutiveFailures, r.FlapThreshold, int64(r.FlapWindow.Seconds()),
+		encodeSLO(r.SLO), now, now,
 	)
 	if err != nil {
 		return fmt.Errorf("alerting: save rule %q: %w", r.ID, err)
@@ -357,6 +384,8 @@ const ruleSelectColumns = `
 		r.backup_resource_kind, r.backup_database_name, r.backup_service_name, r.backup_volume_name,
 		r.channel_id, COALESCE(c.notify_url, r.notify_url), COALESCE(c.kind, r.notify_kind),
 		r.enabled, c.enabled,
+		r.severity, r.labels_json, r.consecutive_failures, r.flap_threshold, r.flap_window_seconds,
+		r.slo_json,
 		r.pending_since, r.firing, r.firing_since, r.last_evaluated_at, r.last_value
 	FROM alert_rules r
 	LEFT JOIN notification_channels c ON c.id = r.channel_id`
@@ -373,6 +402,9 @@ func scanRule(scan func(dest ...any) error) (*Rule, error) {
 		pendingSince, firingSince    sql.NullString
 		lastEvaluatedAt              sql.NullString
 		lastValue                    sql.NullFloat64
+		labelsJSON                   string
+		flapWindowSeconds            int64
+		sloJSON                      string
 	)
 	err := scan(
 		&r.ID, &r.Name, &kind, &r.ResourceID,
@@ -381,6 +413,8 @@ func scanRule(scan func(dest ...any) error) (*Rule, error) {
 		&r.BackupResourceKind, &r.BackupDatabaseName, &r.BackupServiceName, &r.BackupVolumeName,
 		&channelID, &r.NotifyURL, &notifyKind,
 		&enabledInt, &channelEnabled,
+		&r.Severity, &labelsJSON, &r.ConsecutiveFailures, &r.FlapThreshold, &flapWindowSeconds,
+		&sloJSON,
 		&pendingSince, &firingInt, &firingSince, &lastEvaluatedAt, &lastValue,
 	)
 	if err != nil {
@@ -397,6 +431,9 @@ func scanRule(scan func(dest ...any) error) (*Rule, error) {
 	// just ones explicitly disabled themselves.
 	r.Enabled = enabledInt != 0 && (!channelEnabled.Valid || channelEnabled.Int64 != 0)
 	r.Firing = firingInt != 0
+	r.Labels = decodeLabels(labelsJSON)
+	r.FlapWindow = time.Duration(flapWindowSeconds) * time.Second
+	r.SLO = decodeSLO(sloJSON)
 
 	pendingT, err := parseNullableTime(pendingSince)
 	if err != nil {

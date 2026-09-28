@@ -9,7 +9,7 @@ import (
 )
 
 func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_system_doctor",
 		Description: "Run the control plane's local preflight health check: Docker daemon reachability, disk space and write access, ingress port availability, database reachability. Read-only, changes nothing; the same report 'levelrail-cli doctor' prints.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.SystemDoctorResource, error) {
@@ -20,7 +20,7 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, report, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_system_status",
 		Description: "Get the control plane's own configured/not-configured signals: whether secrets, telemetry, and alerts are set up, local Docker daemon reachability, and data directory disk usage. A smaller, faster read than get_system_doctor's full preflight bundle. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.SystemStatusResource, error) {
@@ -31,7 +31,7 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, status, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_onboarding_status",
 		Description: "Get whether the control plane's first-run onboarding flow has been completed. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.OnboardingStateResource, error) {
@@ -42,7 +42,7 @@ func registerSystemTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, state, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "prune_system",
 		Description: "Remove every stopped container, dangling image, and unused volume or build cache the reconciler's current desired state doesn't need, fleet-wide. A routine day-2 cleanup action, same one 'levelrail-cli system-prune' runs; never touches a container, image, or volume any app or database still desires. Mutating.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.SystemPruneResult, error) {

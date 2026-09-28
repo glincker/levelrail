@@ -20,6 +20,10 @@ func TestRun_AppsRollback(t *testing.T) {
 	var gotMethod, gotPath string
 	var gotBody deployTriggerRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`[]`))
+			return
+		}
 		gotMethod = r.Method
 		gotPath = r.URL.Path
 		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
@@ -147,5 +151,50 @@ func TestRun_AppsRollback_Help(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "apps rollback") {
 		t.Errorf("stderr = %q, want usage text", stderr.String())
+	}
+}
+
+func TestRun_AppsRollback_KnownImagesOnly(t *testing.T) {
+	tests := []struct {
+		name       string
+		images     string
+		image      string
+		wantExit   int
+		wantDeploy bool
+		wantStderr string
+	}{
+		{"known tag", `[{"tag":"shop/web:aaa"},{"tag":"shop/web:bbb"}]`, "shop/web:bbb", exitOK, true, ""},
+		{"known tag pinned by digest", `[{"tag":"shop/web:aaa"}]`, "shop/web:aaa@sha256:abc", exitOK, true, ""},
+		{"typo in same repo is refused", `[{"tag":"shop/web:aaa"}]`, "shop/web:doesnotexist", exitValidation, false, "apps deploys rollback-to web"},
+		{"other repo is let through", `[{"tag":"shop/web:aaa"}]`, "registry.example.com/shop/web:old", exitOK, true, ""},
+		{"registry port repo compared without tag", `[{"tag":"host:5000/web:aaa"}]`, "host:5000/web:zzz", exitValidation, false, "host:5000/web:aaa"},
+		{"no local images is let through", `[]`, "shop/web:old", exitOK, true, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			deployed := false
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				if r.Method == http.MethodGet {
+					_, _ = w.Write([]byte(tt.images))
+					return
+				}
+				deployed = true
+				_ = json.NewEncoder(w).Encode(appResource{Name: "web", Image: tt.image, Port: 3000})
+			}))
+			defer srv.Close()
+
+			var stdout, stderr bytes.Buffer
+			got := run("levelrail-cli-test", []string{"apps", "rollback", "web", "--image", tt.image, "--api-url", srv.URL}, &stdout, &stderr, envMap())
+			if got != tt.wantExit {
+				t.Fatalf("exit = %d, want %d (stderr=%q)", got, tt.wantExit, stderr.String())
+			}
+			if deployed != tt.wantDeploy {
+				t.Errorf("deploy sent = %v, want %v", deployed, tt.wantDeploy)
+			}
+			if tt.wantStderr != "" && !strings.Contains(stderr.String(), tt.wantStderr) {
+				t.Errorf("stderr = %q, want it to contain %q", stderr.String(), tt.wantStderr)
+			}
+		})
 	}
 }

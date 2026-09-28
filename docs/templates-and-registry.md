@@ -18,11 +18,13 @@ A template is not a separate deploy mechanism bolted on. It is a curated `compos
 
 ## How it actually works
 
-`internal/catalog/catalog.go` holds `Templates`, a hardcoded Go slice of `Template` structs (`ID`, `Name`, `Slogan`, `Category`, `DocumentationURL`, `Compose`, `RecommendedMemoryBytes`). It is written fresh for this platform, not copied from other projects, and served straight out of memory. No database table, no admin UI, no version field.
+`internal/catalog/` holds `Templates`, assembled in `catalog.go` from per-category Go slices (`templates_*.go`) of `Template` structs (`ID`, `Name`, `Slogan`, `Category`, `DocumentationURL`, `Compose`, `RecommendedMemoryBytes`, `RequiresGPU`). It is written fresh for this platform, not copied from other projects, and served straight out of memory. No database table, no admin UI, no version field.
 
 Adding a template means adding an entry to that Go slice and shipping a new control plane binary.
 
 `RecommendedMemoryBytes` is a static, pre-deploy advisory shown as a badge in the wizard (e.g. "~6 GiB RAM recommended"). It is not checked against any node's real available memory: no host memory monitoring exists anywhere in this codebase today (see [Architecture](architecture.md)), so treat it as a rule-of-thumb hint, not a live capacity check.
+
+`RequiresGPU` marks entries (vLLM, Text Generation Inference, ComfyUI, Stable Diffusion WebUI, Jupyter GPU) that are only practical with an NVIDIA GPU. Their Compose bodies ship CPU defaults because `internal/compose` does not translate `deploy.resources.reservations.devices`, so GPU passthrough is not available yet.
 
 ::: details Local AI model templates (Ollama)
 Six `Category: "AI"` entries run models locally through [Ollama](https://ollama.com): a bare `ollama` runtime plus five pre-configured to auto-pull one specific model on first start (Mistral 7B, Llama 3 8B, Qwen 2.5 7B, Phi-3 Mini, DeepSeek-R1 7B). Each pins an explicit parameter-size tag (e.g. `mistral:7b-instruct-v0.3`, not the bare `mistral` alias), since Ollama's own library docs note a bare alias's default can change when the publisher updates it. `RecommendedMemoryBytes` on these is computed from Q4 quantization's well-known rule of thumb (roughly 0.6 GB per billion parameters, plus ~1.5 GB of runtime overhead), not guessed. CPU-only: no GPU passthrough exists in this codebase yet.
@@ -188,7 +190,7 @@ The catalog is a hardcoded Go slice shipped with the binary. Adding, editing, or
 
 **No third-party catalog import**
 
-ADR 015 leaves open whether a full third-party dataset gets imported verbatim. Today's 153-entry catalog is Levelrail's own curated set, not an import.
+ADR 015 leaves open whether a full third-party dataset gets imported verbatim. Today's 206-entry catalog is Levelrail's own curated set, not an import.
 
 **No static site creation or delete surface beyond git push**
 

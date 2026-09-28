@@ -1,0 +1,4 @@
+{
+  "applicationId": "a-img", "name": "worker", "sourceType": "docker", "dockerImage": "ghcr.io/acme/worker:1.4",
+  "env": "QUEUE=default", "replicas": 0, "domains": [], "mounts": []
+}

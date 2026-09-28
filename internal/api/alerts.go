@@ -69,9 +69,26 @@ type ruleResource struct {
 	BackupServiceName  string `json:"backup_service_name,omitempty"`
 	BackupVolumeName   string `json:"backup_volume_name,omitempty"`
 
+	// KindSLOBurn-only field: the request-based SLO the rule watches.
+	SLO *alerting.SLOConfig `json:"slo,omitempty"`
+
 	NotifyURL  string `json:"notify_url,omitempty"`
 	NotifyKind string `json:"notify_kind,omitempty"`
 	Enabled    bool   `json:"enabled"`
+
+	// Noise control. Severity and Labels feed silence matchers;
+	// ConsecutiveFailures, FlapThreshold and FlapWindow override the
+	// control plane defaults (zero keeps the default).
+	Severity            string            `json:"severity,omitempty"`
+	Labels              map[string]string `json:"labels,omitempty"`
+	ConsecutiveFailures int               `json:"consecutive_failures,omitempty"`
+	FlapThreshold       int               `json:"flap_threshold,omitempty"`
+	FlapWindow          string            `json:"flap_window,omitempty"`
+
+	// Response-only: set when an active silence or maintenance window
+	// currently mutes this rule.
+	Silenced   bool   `json:"silenced,omitempty"`
+	SilencedBy string `json:"silenced_by,omitempty"`
 
 	// Evaluation state: response-only. A request body that happens to
 	// set these is simply ignored, toRule below never reads them; only
@@ -101,9 +118,14 @@ func toRuleResource(r alerting.Rule) ruleResource {
 		BackupDatabaseName:    r.BackupDatabaseName,
 		BackupServiceName:     r.BackupServiceName,
 		BackupVolumeName:      r.BackupVolumeName,
+		SLO:                   r.SLO,
 		NotifyURL:             r.NotifyURL,
 		NotifyKind:            string(r.NotifyKind),
 		Enabled:               r.Enabled,
+		Severity:              r.Severity,
+		Labels:                r.Labels,
+		ConsecutiveFailures:   r.ConsecutiveFailures,
+		FlapThreshold:         r.FlapThreshold,
 		Firing:                r.Firing,
 		PendingSince:          r.PendingSince,
 		FiringSince:           r.FiringSince,
@@ -115,6 +137,9 @@ func toRuleResource(r alerting.Rule) ruleResource {
 	}
 	if r.RestartWindow > 0 {
 		out.RestartWindow = r.RestartWindow.String()
+	}
+	if r.FlapWindow > 0 {
+		out.FlapWindow = r.FlapWindow.String()
 	}
 	return out
 }
@@ -129,10 +154,10 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 
 	kind := alerting.Kind(a.Kind)
 	switch kind {
-	case alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindControlPlaneBackupStale:
+	case alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindSLOBurn:
 	default:
-		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, or %q",
-			alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindControlPlaneBackupStale)
+		return alerting.Rule{}, fmt.Errorf("kind must be %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, %q, or %q",
+			alerting.KindThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindNodeDiskSpace, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindSLOBurn)
 	}
 
 	forDuration, err := parseOptionalDuration(a.ForDuration)
@@ -144,7 +169,23 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		return alerting.Rule{}, fmt.Errorf("restart_window: %w", err)
 	}
 
+	flapWindow, err := parseOptionalDuration(a.FlapWindow)
+	if err != nil {
+		return alerting.Rule{}, fmt.Errorf("flap_window: %w", err)
+	}
+	if a.Severity != "" && a.Severity != alerting.SeverityInfo && a.Severity != alerting.SeverityWarning && a.Severity != alerting.SeverityCritical {
+		return alerting.Rule{}, fmt.Errorf("severity must be %q, %q or %q", alerting.SeverityInfo, alerting.SeverityWarning, alerting.SeverityCritical)
+	}
+	if a.ConsecutiveFailures < 0 || a.FlapThreshold < 0 {
+		return alerting.Rule{}, errors.New("consecutive_failures and flap_threshold must not be negative")
+	}
+
 	r := alerting.Rule{
+		Severity:              a.Severity,
+		Labels:                a.Labels,
+		ConsecutiveFailures:   a.ConsecutiveFailures,
+		FlapThreshold:         a.FlapThreshold,
+		FlapWindow:            flapWindow,
 		ID:                    id,
 		Name:                  a.Name,
 		Kind:                  kind,
@@ -161,6 +202,7 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		BackupServiceName:     a.BackupServiceName,
 		BackupVolumeName:      a.BackupVolumeName,
 		ChannelID:             a.ChannelID,
+		SLO:                   a.SLO,
 		NotifyURL:             a.NotifyURL,
 		NotifyKind:            alerting.NotifyKind(a.NotifyKind),
 		Enabled:               a.Enabled,
@@ -190,6 +232,13 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 		}
 		if r.RestartCountThreshold <= 0 {
 			return alerting.Rule{}, errors.New("restart_count_threshold must be a positive integer for a scheduled_task_failure rule")
+		}
+	case alerting.KindSLOBurn:
+		if r.SLO == nil {
+			return alerting.Rule{}, errors.New("slo is required for an slo_burn rule")
+		}
+		if err := r.SLO.Validate(); err != nil {
+			return alerting.Rule{}, fmt.Errorf("slo: %w", err)
 		}
 	case alerting.KindBackupMissing:
 		switch r.BackupResourceKind {
@@ -460,6 +509,7 @@ func (rt *Router) handleListAlertRules(w http.ResponseWriter, r *http.Request) {
 	for _, rl := range rules {
 		out = append(out, toRuleResource(rl))
 	}
+	rt.annotateSilenced(r.Context(), name, rules, out)
 	writeJSON(w, http.StatusOK, out)
 }
 

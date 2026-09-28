@@ -23,6 +23,9 @@ export interface AuditLogEntry {
   remote_addr: string
   created_at: string
   client_kind: string
+  // Set when the request used a token labeled as an AI agent.
+  agent_name?: string
+  agent_client?: string
 }
 
 export const auditLogKeys = {
@@ -41,6 +44,7 @@ export interface AuditLogQueryOptions {
   clientKind?: string
   search?: string
   failedOnly?: boolean
+  agent?: string
 }
 
 // buildAuditLogParams is the one place that turns AuditLogQueryOptions
@@ -59,12 +63,20 @@ export function buildAuditLogParams(
   const search = opts.search?.trim()
   if (search) params.set('q', search)
   if (opts.failedOnly) params.set('status', 'failed')
+  if (opts.agent) params.set('agent', opts.agent)
   return params
 }
 
 // CLIENT_KIND_OPTIONS mirrors internal/api's ClientKindCLI/Dashboard/MCP/API
 // constants: the caller surfaces the audit log's Client column and filter
 // can show, in the same order the CLI's own --client-kind flag documents.
+export const CLIENT_KIND_LABELS: Record<string, string> = {
+  cli: 'CLI',
+  dashboard: 'Dashboard',
+  mcp: 'MCP',
+  api: 'API',
+}
+
 export const CLIENT_KIND_OPTIONS = ['cli', 'dashboard', 'mcp', 'api'] as const
 
 export async function fetchAuditLog(

@@ -34,10 +34,13 @@ import {
   useCertificates,
 } from '../../queries/certificates'
 import type { CertificateStatus } from '../../queries/certificates'
+import { DockerCleanupFallbackCard } from '../../components/DockerCleanupFallbackCard'
 import { CleanUpDockerDialog } from '../../components/CleanUpDockerDialog'
 import { ControlPlaneBackupsCard } from '../../components/ControlPlaneBackupsCard'
+import { ControlPlaneDrCard } from '../../components/ControlPlaneDrCard'
 import { OrphanedVolumesCard } from '../../components/OrphanedVolumesCard'
 import { RotateMasterKeyDialog } from '../../components/RotateMasterKeyDialog'
+import { SecretBindingCard } from '../../components/SecretBindingCard'
 import { HelpLink } from '@/components/HelpLink'
 import { PageSpinner } from '@/components/ui/page-spinner'
 
@@ -436,15 +439,20 @@ function GeneralSettingsPage() {
 
       {status.docker_disk_usage ? (
         <DockerDiskUsageCard usage={status.docker_disk_usage} />
-      ) : null}
+      ) : (
+        <DockerCleanupFallbackCard />
+      )}
 
       <OrphanedVolumesCard />
 
       <ControlPlaneBackupsCard />
 
+      <ControlPlaneDrCard />
+
       <CertificatesCard />
 
       {status.secrets_configured ? <MasterKeyCard /> : null}
+      {status.secrets_configured ? <SecretBindingCard /> : null}
 
       <Card>
         <CardHeader>

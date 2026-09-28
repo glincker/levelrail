@@ -7,6 +7,7 @@ description: Fixes for the most common problems when deploying, logging in, or r
 Start here for a fast fix. Each entry links to the full page if you need more depth.
 
 ::: details My deploy is stuck or failed
+0. Run `levelrail-cli apps deploys show <name>`: a failed or blocked deploy carries a classified cause and fix, see [Deploy failures](deploy-failures.md).
 1. Check the build log first: dashboard's deploy detail page, or `levelrail-cli apps deploys logs <name> <deploy-id>`.
 2. If the build succeeded but the app never came up, the readiness probe is the usual cause. The `Ready` condition's message names the exact request or command and what came back (a status, a redirect target, a TLS error, an exec exit code). A 302 to a login page wants `follow_redirects` or `expected_status: 200-399`; a self-signed HTTPS endpoint wants `scheme: https` with `tls_skip_verify: true`; a database is better checked with an `exec` probe. See [Health checks](app-spec-reference.md#health-checks). A slow cold start (JVM warm-up, a large migration) can also legitimately take longer than the default 60s readiness budget: raise it with `health.readyTimeout` instead of treating the false `ReadinessFailed` as a real bug.
 3. A crashlooping container gets its last 200 log lines surfaced automatically in the dashboard, no separate log search needed.
@@ -97,6 +98,10 @@ The `ram`/`cpu` checks warn when this host is below the recommended minimums (`A
 
 The `control_plane_backup` check warns when the newest control plane snapshot is more than 3 days old. Scheduled snapshots may be failing (check the server log for `scheduled control plane backup failed`, often a full disk) or the server restarts more often than `APP_CONTROL_PLANE_BACKUP_INTERVAL` (default 24h). Take one now with `levelrail-cli control-plane-backups create`. See [Control plane backup and restore](/control-plane-backup).
 
+## Control plane disaster recovery warning
+
+The `control_plane_dr` check warns when encrypted off-box backups are off or unhealthy. The message names the problem: no recipient set, last run failed (the error is shown; a rejected credential or a full bucket are the usual causes), run overdue, no escrow bundle, no drill yet, a failed or overdue drill, or the escrow destination being the backup bucket. `levelrail-cli control-plane-backups schedule show` lists every warning. See [Disaster recovery](/disaster-recovery).
+
 ## "Can't reach the control plane" banner
 
 The dashboard shows a red banner at the top when the API stops answering: network errors, or 502/503/504 responses from a reverse proxy, on two or more requests within 10 seconds. While it is showing, the dashboard pauses its 30 second polling so it does not pile up failing requests.
@@ -106,6 +111,54 @@ It probes the unauthenticated `GET /healthz` on its own with exponential backoff
 Common causes: the control plane restarted (check `systemctl status` or `docker logs`), your reverse proxy lost its upstream, or your own network dropped. If `/healthz` answers from the server itself but not through your proxy, the proxy is the problem.
 
 An expired session is different: a 401 sends you to the login page, and after signing in you land back on the page you were on.
+
+## Deploy preflight and failure diagnosis
+
+Two read-only tools catch the common failures before and after a deploy. Both are deterministic rules over signals the platform already collects, with no model call, and neither changes anything by itself.
+
+### Preflight
+
+Run preflight from the app overview ("Run preflight"), the create-app dialog ("Check before creating"), `levelrail-cli apps preflight <name> [--require-env A,B]`, or the `preflight_app` MCP tool. Each check reports pass, warn or fail with a reason and a fix. The CLI exits 1 when any check fails.
+
+| Check | Fails when | Warns when |
+| --- | --- | --- |
+| DNS for each domain | it resolves to an IP that is not this server's public IP | it does not resolve yet, it is proxied by Cloudflare, or the server IP could not be detected |
+| Host port | a pinned host port is taken by another app or a process on the node | the check could not run |
+| Image | the registry has no such image or tag | the registry needs credentials, is rate limiting, or is unreachable |
+| Disk space | free space is below the image size times `APP_PREFLIGHT_DISK_FACTOR` (default 3) | free space is below `APP_PREFLIGHT_MIN_FREE_DISK_BYTES` (default 2 GiB) |
+| Memory limit | the limit exceeds the node's total memory | the limit is below `APP_PREFLIGHT_MIN_MEMORY_BYTES` (default 128 MiB) or above the memory currently free |
+| Git source | the branch does not exist or the host is unreachable | the repository is private (checked anonymously) or uses an SSH URL |
+| Required env | a required variable is not set (including variables declared with an empty value) | never |
+| Volumes and bind mounts | a bind mount path is relative or under a protected system path, or a volume path is not absolute | never |
+| GPU | the node has no free GPU for the request | never |
+
+Each check is bounded by `APP_PREFLIGHT_TIMEOUT` (default 8s). Image lookups are cached for `APP_PREFLIGHT_IMAGE_CACHE_TTL` (default 5m). Disk and memory are only known for the control plane's own node. A Cloudflare proxied domain is a warning, not a failure: it works with SSL mode Full (strict), or switch the record to DNS only until the certificate is issued.
+
+### Failure diagnosis and one-click fixes
+
+`GET /api/v1/apps/{name}/diagnose`, `levelrail-cli apps diagnose <name>`, the deploy failure card and the `diagnose_app_failure` MCP tool return typed causes, each with evidence lines and numbered fixes. A fix is one of:
+
+- **patch**: exact field changes, previewed as a diff, then applied through the normal app update with your own permissions (and recorded in the audit log). Optionally followed by a redeploy.
+- **input**: the same, but you supply a value (for example an env var).
+- **manual**: no API setter exists (volume ownership, image architecture); the hint says what to do.
+
+Apply from the CLI with `levelrail-cli apps diagnose <name> --apply-fix N [--input env.NAME=value] [--redeploy]`. A fix refuses to apply if the app changed since the diagnosis. The attention list marks apps that have a one-click fix.
+
+| Cause | Evidence | Fix |
+| --- | --- | --- |
+| `WRONG_PORT` | listening sockets from `/proc/net/tcp` (needs exec access enabled and a running container), else a "listening on" log line or the image's exposed ports, together with a failing readiness check | patch `port` to the port the app actually listens on |
+| `OOM_KILLED` | exit code 137 with the OOMKilled flag, or OOM lines in the logs | patch `resources.memory_bytes` up by `APP_DIAGNOSE_OOM_FACTOR` (default 2, at least 256 MiB more) |
+| `MISSING_ENV` | "is not set", "is undefined", "required environment variable", Python `KeyError`, pydantic "Field required", zod "Required", Go envconfig | input `env.NAME` for each missing variable |
+| `PORT_IN_USE` | "port is already allocated", `EADDRINUSE`, "address already in use" | manual: free the port or pin another host port |
+| `PERMISSION_DENIED` | `EACCES`, `PermissionError`, "cannot create directory ... Permission denied" | manual: chown the host directory or volume to the container user |
+| `EXEC_FORMAT_ERROR` | "exec format error", "no matching manifest for", platform mismatch | manual: rebuild for the node architecture or publish a multi-arch image |
+| `COMMAND_NOT_FOUND` | "executable file not found in $PATH", "not found" from sh, exit code 127, entrypoint "no such file" | manual: fix the entrypoint, shebang, line endings or executable bit |
+| `HEALTHCHECK_FAILING` | readiness probe timeout, refused connection, or a 404 | patch `health.readiness.path` to a candidate (`/healthz`, `/health`, `/`, ...) on a 404, otherwise a manual hint |
+| `IMAGE_PULL_FAILED` | manifest unknown (not found), unauthorized (credentials), toomanyrequests (rate limit) | manual: fix the reference or add a registry credential |
+| `BUILD_OUT_OF_DISK` | "no space left on device", `ENOSPC` | manual: prune images and build cache or add disk |
+| `CRASHLOOP_GENERIC` | crashloop alert firing or a non-zero exit, with no more specific cause | manual: read the logs right after startup |
+
+Log text is untrusted: every excerpt is cleaned and secret-redacted before it leaves the server, and the MCP tools mark their output as untrusted.
 
 ## Readiness (`/readyz`)
 

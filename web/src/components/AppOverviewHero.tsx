@@ -8,6 +8,8 @@ import {
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Link } from '@tanstack/react-router'
+import { DigestChip } from './DeployDigestChips'
+import { unpinnedImage } from '../lib/imageDigest'
 import type { Icon } from '@phosphor-icons/react'
 import type { AppDetail } from '../types/appDetail'
 import type { ReconcileCondition } from '../types/deploy'
@@ -15,6 +17,8 @@ import { summarizeAppStatus } from '../lib/appStatus'
 import { formatBytes, formatNanoCpus } from '../lib/format'
 import { useAppNetwork } from '../queries/appNetwork'
 import { useCloudflareTunnelStatus } from '../queries/cloudflareTunnel'
+import { isFeatureVisible } from '../lib/experimental'
+import { useExperimentalFeatures } from '../hooks/useExperimental'
 import { useGitSource } from '../queries/gitSources'
 import { useRestartApp } from '../queries/apps'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -81,9 +85,13 @@ export function AppOverviewHero({
   // the rest of this already-loaded page, the same restraint
   // queries/domainCheck.ts's useDomainCheck already applies.
   const { data: network } = useAppNetwork(app.name)
-  const { data: tunnelStatus } = useCloudflareTunnelStatus()
+  const tunnelGateOn = isFeatureVisible(
+    'cloudflare-tunnel',
+    useExperimentalFeatures(),
+  )
+  const { data: tunnelStatus } = useCloudflareTunnelStatus(tunnelGateOn)
   const tunnelAvailable =
-    tunnelStatus?.enabled && tunnelStatus.status === 'connected'
+    tunnelGateOn && tunnelStatus?.enabled && tunnelStatus.status === 'connected'
   // Same "supplementary signal, plain query" reasoning as network/tunnel
   // above: a 404 here just means no git source is connected yet (its own
   // normal steady state, see queries/gitSources.ts), not an error to show.
@@ -138,7 +146,14 @@ export function AppOverviewHero({
             )}
           </HeroField>
           <HeroField label="Image">
-            <span className="font-mono">{app.image}</span>
+            <span className="font-mono" title={app.image}>
+              {unpinnedImage(app.image)}
+            </span>
+            {app.image_digest ? (
+              <span className="ml-2">
+                <DigestChip digest={app.image_digest} />
+              </span>
+            ) : null}
             {app.pull_policy === 'always' ? (
               <Badge variant="outline" className="ml-2">
                 always pulls latest

@@ -13,7 +13,7 @@ type controlPlaneBackupsOutput struct {
 }
 
 func registerControlPlaneBackupTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_control_plane_backups",
 		Description: "List snapshots of the control plane's own database: name, size, creation time, sha256. Read-only; not app database backups.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, controlPlaneBackupsOutput, error) {
@@ -24,7 +24,7 @@ func registerControlPlaneBackupTools(server *mcp.Server, client *apiclient.Clien
 		return nil, controlPlaneBackupsOutput{Backups: backups}, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "create_control_plane_backup",
 		Description: "Take a snapshot of the control plane's own database now and return its name, size and sha256. Mutating (writes a backup file, changes no app or config).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.ControlPlaneBackup, error) {
@@ -35,7 +35,7 @@ func registerControlPlaneBackupTools(server *mcp.Server, client *apiclient.Clien
 		return nil, backup, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "verify_control_plane_backup",
 		Description: "Verify a control plane database snapshot by name (see list_control_plane_backups): runs integrity checks and returns ok plus each check's name, result and detail. A failed check is a normal result with ok false. Mutating only in that it records the verification time on the backup; restores nothing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in controlPlaneBackupNameInput) (*mcp.CallToolResult, apiclient.ControlPlaneBackupVerification, error) {

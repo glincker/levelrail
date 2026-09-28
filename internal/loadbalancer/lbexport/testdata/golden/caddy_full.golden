@@ -1,0 +1,42 @@
+{
+	order rate_limit before basic_auth
+}
+
+api.example.com, api2.example.com {
+	rate_limit {
+		zone sustained {
+			key {remote_host}
+			events 200
+			window 10s
+		}
+		zone burst {
+			key {remote_host}
+			events 50
+			window 1s
+		}
+	}
+	reverse_proxy 10.0.0.1:8080 10.0.0.2:8080 {
+		lb_policy least_conn
+		lb_retries 2
+		lb_try_duration 5s
+		lb_try_interval 250ms
+		health_uri /healthz
+		health_interval 10s
+		health_timeout 3s
+		health_passes 3
+		health_fails 2
+		health_status 204
+		fail_duration 45s
+		max_fails 3
+		stream_close_delay 20s
+		transport http {
+			tls
+			tls_server_name api.internal
+			response_header_timeout 30s
+		}
+	}
+}
+
+# warnings
+# rate_limit needs a Caddy build that includes github.com/mholt/caddy-ratelimit
+# slow_start is applied by the platform reconciler and has no Caddyfile equivalent

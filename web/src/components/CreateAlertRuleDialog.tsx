@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useForm, type Control } from 'react-hook-form'
+import {
+  Controller,
+  useForm,
+  type Control,
+  type FieldErrors,
+} from 'react-hook-form'
 import { z } from 'zod'
 import {
   GaugeIcon,
@@ -56,6 +61,8 @@ import type {
   Comparator,
   CreateAlertRuleRequest,
 } from '../types/alerts'
+import { SloRuleFields, type SloFormShape } from './SloRuleFields'
+import { sloConfigFromForm } from '../queries/sloPreview'
 import type { AppVolume } from '../types/appDetail'
 
 // Sanity-check regex for a Go `time.Duration` string ("2m", "30s",
@@ -119,10 +126,17 @@ const KIND_OPTIONS: {
   { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveIcon },
   { value: 'node_offline', label: 'Node offline', Icon: HardDriveIcon },
   {
+    value: 'node_cert_expiring',
+    label: 'Node agent certificate expiring',
+    Icon: HardDriveIcon,
+  },
+  {
     value: 'control_plane_backup_stale',
     label: 'Control plane backup stale',
     Icon: ArchiveIcon,
   },
+  { value: 'log_archive_stale', label: 'Log archive stale', Icon: ArchiveIcon },
+  { value: 'slo_burn', label: 'SLO burn rate', Icon: GaugeIcon },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -152,7 +166,10 @@ const createAlertRuleSchema = z
       'domain_health',
       'backup_missing',
       'node_offline',
+      'node_cert_expiring',
       'control_plane_backup_stale',
+      'log_archive_stale',
+      'slo_burn',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -164,6 +181,9 @@ const createAlertRuleSchema = z
     backupResourceKind: z.enum(['database', 'volume', '']),
     backupDatabaseName: z.string(),
     backupVolumeName: z.string(),
+    sloObjective: z.enum(['availability', 'latency']),
+    sloTarget: z.coerce.number({ error: 'Must be a number' }),
+    sloLatencyMs: z.coerce.number({ error: 'Must be a number' }),
     channelId: z.string(),
     enabled: z.boolean(),
   })
@@ -179,7 +199,9 @@ const createAlertRuleSchema = z
       data.kind === 'node_disk_space' ||
       data.kind === 'node_resource_usage' ||
       data.kind === 'node_offline' ||
-      data.kind === 'control_plane_backup_stale'
+      data.kind === 'node_cert_expiring' ||
+      data.kind === 'control_plane_backup_stale' ||
+      data.kind === 'log_archive_stale'
     ) {
       return
     }
@@ -211,6 +233,24 @@ const createAlertRuleSchema = z
           code: 'custom',
           message: 'Must look like a duration, e.g. "2m" or "30s"',
           path: ['forDuration'],
+        })
+      }
+      return
+    }
+
+    if (data.kind === 'slo_burn') {
+      if (!(data.sloTarget >= 50 && data.sloTarget < 100)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be at least 50 and below 100, e.g. 99.9',
+          path: ['sloTarget'],
+        })
+      }
+      if (data.sloObjective === 'latency' && !(data.sloLatencyMs >= 5)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be at least 5 ms',
+          path: ['sloLatencyMs'],
         })
       }
       return
@@ -322,6 +362,9 @@ const DEFAULT_VALUES: CreateAlertRuleFormInput = {
   backupResourceKind: '',
   backupDatabaseName: '',
   backupVolumeName: '',
+  sloObjective: 'availability',
+  sloTarget: 99.9,
+  sloLatencyMs: 300,
   channelId: '',
   enabled: true,
 }
@@ -355,6 +398,9 @@ export function CreateAlertRuleDialog({
     })
   const kind = watch('kind')
   const backupResourceKind = watch('backupResourceKind')
+  const sloObjective = watch('sloObjective')
+  const sloTarget = watch('sloTarget')
+  const sloLatencyMs = watch('sloLatencyMs')
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -384,9 +430,16 @@ export function CreateAlertRuleDialog({
       req.restart_count_threshold = values.restartCountThreshold
     } else if (
       values.kind === 'domain_health' ||
-      values.kind === 'control_plane_backup_stale'
+      values.kind === 'control_plane_backup_stale' ||
+      values.kind === 'log_archive_stale'
     ) {
       req.for_duration = values.forDuration.trim() || undefined
+    } else if (values.kind === 'slo_burn') {
+      req.slo = sloConfigFromForm(
+        values.sloObjective,
+        values.sloTarget,
+        values.sloLatencyMs,
+      )
     } else if (values.kind === 'backup_missing') {
       req.backup_resource_kind = values.backupResourceKind || undefined
       req.for_duration = values.forDuration.trim() || undefined
@@ -512,6 +565,14 @@ export function CreateAlertRuleDialog({
               plane&apos;s configured threshold, overridable via
               APP_ALERT_NODE_DISK_SPACE_THRESHOLD_PERCENT).
             </p>
+          ) : kind === 'node_cert_expiring' ? (
+            <p className="text-sm text-muted-foreground">
+              Watches every node&apos;s agent certificate and fires when one is
+              inside the control plane&apos;s warning window
+              (APP_NODE_CERT_EXPIRY_WARNING, 21 days by default) or already
+              expired. Healthy agents renew well before that, so this means
+              renewal is failing or the node needs re-enrolling.
+            </p>
           ) : kind === 'node_offline' ? (
             <p className="text-sm text-muted-foreground">
               Watches every node on the whole control plane and fires as soon as
@@ -530,13 +591,13 @@ export function CreateAlertRuleDialog({
               node-capacity percentage to compare against today, so unlike CPU
               it&apos;s an absolute floor, not a proportion.
             </p>
-          ) : kind === 'control_plane_backup_stale' ? (
+          ) : kind === 'control_plane_backup_stale' ||
+            kind === 'log_archive_stale' ? (
             <>
               <p className="text-sm text-muted-foreground">
-                Watches the control plane&apos;s own newest self-backup snapshot
-                and fires when it gets too old. Stays quiet when scheduled
-                control plane backups are disabled
-                (APP_CONTROL_PLANE_BACKUP_INTERVAL=0).
+                {kind === 'log_archive_stale'
+                  ? 'Watches every log archive policy and fires when one fails or has not shipped logs successfully within its age limit.'
+                  : 'Watches the newest control plane self-backup snapshot and fires when it gets too old. Stays quiet when scheduled control plane backups are disabled (APP_CONTROL_PLANE_BACKUP_INTERVAL=0).'}
               </p>
               <Field>
                 <FieldLabel htmlFor="rule-cp-backup-max-age">
@@ -555,8 +616,9 @@ export function CreateAlertRuleDialog({
                   )}
                 />
                 <FieldDescription>
-                  Fire once the newest snapshot is older than this. Leave blank
-                  for 3 days.
+                  {kind === 'log_archive_stale'
+                    ? 'Fire once a policy has gone this long without a successful archive. Leave blank for three intervals (at least 2 hours).'
+                    : 'Fire once the newest snapshot is older than this. Leave blank for 3 days.'}
                 </FieldDescription>
                 <FieldError errors={[formState.errors.forDuration]} />
               </Field>
@@ -594,6 +656,16 @@ export function CreateAlertRuleDialog({
                 <FieldError errors={[formState.errors.forDuration]} />
               </Field>
             </>
+          ) : kind === 'slo_burn' ? (
+            <SloRuleFields
+              idPrefix="rule"
+              app={appName}
+              control={control as unknown as Control<SloFormShape>}
+              errors={formState.errors as FieldErrors<SloFormShape>}
+              objective={sloObjective}
+              target={sloTarget as string | number}
+              latencyMs={sloLatencyMs as string | number}
+            />
           ) : kind === 'threshold' ? (
             <>
               <Field>

@@ -55,8 +55,16 @@ func (rt *Router) handleListStaticSites(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	canSee, err := rt.appVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: list static sites: visibility", err)
+		return
+	}
 	out := make([]staticSiteResource, 0, len(sites))
 	for _, s := range sites {
+		if !canSee(s.Name) {
+			continue
+		}
 		out = append(out, staticSiteResource{
 			Name:    s.Name,
 			Domains: s.Domains,

@@ -1,0 +1,5 @@
+{
+  "Status": "failed",
+  "FailingStep": "building",
+  "Error": "deploy: service \"web\": build: process \"/bin/sh -c npm run build\" did not complete successfully: signal: killed"
+}

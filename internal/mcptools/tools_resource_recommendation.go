@@ -9,7 +9,7 @@ import (
 )
 
 func registerResourceRecommendationTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_resource_recommendation",
 		Description: "Suggest memory and CPU limits for an app based on its own historical usage (p95/p99 over a lookback window) and current limits: a deterministic engine, never a call to an external model. Weighs a real OOM-kill signal heavily when one was found in recent logs. Read-only, changes nothing, and the suggestion is never applied automatically.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in resourceRecommendationInput) (*mcp.CallToolResult, apiclient.ResourceRecommendationResource, error) {
@@ -20,7 +20,7 @@ func registerResourceRecommendationTools(server *mcp.Server, client *apiclient.C
 		return nil, result, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_database_resource_recommendation",
 		Description: "Suggest memory and CPU limits for a managed database based on its own historical usage (p95/p99 over a lookback window) and current limits: the database-kind counterpart to get_resource_recommendation, same deterministic engine and same OOM-signal weighting. Read-only, changes nothing, and the suggestion is never applied automatically.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in databaseResourceRecommendationInput) (*mcp.CallToolResult, apiclient.ResourceRecommendationResource, error) {

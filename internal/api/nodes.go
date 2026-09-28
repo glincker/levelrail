@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/gpu"
+	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -35,6 +37,7 @@ type NodeStore interface {
 	UpdateNodeWorkloads(ctx context.Context, id string, acceptsApp, acceptsBuild bool) error
 	// SetNodeSchedulable is the cordon/uncordon mutation.
 	SetNodeSchedulable(ctx context.Context, id string, schedulable bool) error
+	RevokeNodeCert(ctx context.Context, id string, now time.Time) error
 }
 
 // nodeResource is the wire shape for a node.
@@ -67,6 +70,12 @@ type nodeResource struct {
 	// node_metrics.go), stamped by the caller since toNodeResource is a
 	// plain store.Node -> wire mapper with no Router access.
 	IsLocal bool `json:"is_local"`
+	// GPU is set when the node has reported an NVIDIA GPU.
+	GPU *nodeGPUResource `json:"gpu,omitempty"`
+	// Cert and Agent are the agent certificate lifecycle and the agent's
+	// self-reported build (node_cert.go, ADR 021).
+	Cert  *nodeCertResource  `json:"cert,omitempty"`
+	Agent *nodeAgentResource `json:"agent,omitempty"`
 }
 
 // nodeAlertStatusResource is alerting.NodeAlertStatus's wire shape: each
@@ -162,10 +171,14 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	gpus := rt.nodeGPUResources(r.Context())
+	now := time.Now()
 	out := make([]nodeResource, 0, len(nodes))
 	for _, n := range nodes {
 		res := toNodeResource(n)
 		res.IsLocal = n.ID == rt.localNodeID
+		res.GPU = gpus[n.ID]
+		res.Cert, res.Agent = rt.nodeCertAndAgent(n, now)
 		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -192,6 +205,8 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 
 	res := toNodeResource(*n)
 	res.IsLocal = n.ID == rt.localNodeID
+	res.GPU = rt.nodeGPUResources(r.Context())[n.ID]
+	res.Cert, res.Agent = rt.nodeCertAndAgent(*n, time.Now())
 	if rt.telemetry != nil {
 		th := rt.nodeAlertThresholds
 		status := alerting.CheckNodeAlertStatus(r.Context(), *n, rt.apps, rt.telemetry,
@@ -350,6 +365,12 @@ type drainNodeResponse struct {
 	MovedServices  []string `json:"moved_services"`
 	MovedDatabases []string `json:"moved_databases"`
 	Errors         []string `json:"errors,omitempty"`
+	// Warnings lists checks that could not run (e.g. models could not be
+	// listed), so a 207 with no errors still says the drain may be incomplete.
+	Warnings []string `json:"warnings,omitempty"`
+	// Blocked names apps left on the node because no GPU node can host
+	// them, with the per-node reason.
+	Blocked []drainBlocked `json:"blocked,omitempty"`
 }
 
 // handleDrainNode handles POST /api/v1/nodes/{id}/drain?target_node_id=:
@@ -421,55 +442,20 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 		MovedDatabases: make([]string, 0, len(databases)),
 	}
 
-	// nextTarget resolves where one resource goes: the explicit override
-	// when given, otherwise this drain's own per-resource pick from
-	// simple spread scheduling. candidateNodes/counts are loaded lazily,
-	// only when there is auto-placing left to do.
-	var (
-		candidatesLoaded bool
-		candidateNodes   []store.Node
-		counts           map[string]int
-	)
-	nextTarget := func() (string, error) {
-		if targetSpecified {
-			return targetNodeID, nil
-		}
-		if !rt.autoPlacementEnabled {
-			return "", nil
-		}
-		if !candidatesLoaded {
-			nodes, err := rt.nodes.ListNodes(r.Context())
-			if err != nil {
-				return "", err
-			}
-			allServices, err := rt.apps.ListDesiredServices(r.Context())
-			if err != nil {
-				return "", err
-			}
-			allDatabases, err := rt.databases.ListDesiredDatabases(r.Context())
-			if err != nil {
-				return "", err
-			}
-			counts = make(map[string]int, len(nodes))
-			for _, s := range allServices {
-				counts[s.NodeID]++
-			}
-			for _, d := range allDatabases {
-				counts[d.NodeID]++
-			}
-			candidateNodes = nodes
-			candidatesLoaded = true
-		}
-		picked := selectLeastLoadedNodeExcluding(candidateNodes, counts, id)
-		if picked != "" {
-			counts[picked]++
-			resp.AutoPlaced = true
-		}
-		return picked, nil
-	}
+	placer := &drainPlacer{rt: rt, fromID: id, explicit: targetSpecified, target: targetNodeID}
 
 	for _, svc := range services {
-		target, err := nextTarget()
+		var claim *gpu.Claim
+		if c, ok := models.ServiceClaim(svc); ok {
+			claim = &c
+		}
+		target, err := placer.next(r.Context(), claim)
+		var blocked *errNoGPUTarget
+		if errors.As(err, &blocked) {
+			resp.Blocked = append(resp.Blocked, drainBlocked{Kind: "app", Name: svc.Name, Reason: blocked.reason})
+			resp.Errors = append(resp.Errors, fmt.Sprintf("service %s: %s", svc.Name, blocked.reason))
+			continue
+		}
 		if err != nil {
 			rt.logger.Error("api: drain node: select placement failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("service", svc.Name))
 			resp.Errors = append(resp.Errors, fmt.Sprintf("service %s: %s", svc.Name, err.Error()))
@@ -480,11 +466,12 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 			resp.Errors = append(resp.Errors, fmt.Sprintf("service %s: %s", svc.Name, err.Error()))
 			continue
 		}
+		placer.commit()
 		resp.MovedServices = append(resp.MovedServices, svc.Name)
 		rt.teardownServiceContainers(svc.Name, id)
 	}
 	for _, d := range databases {
-		target, err := nextTarget()
+		target, err := placer.next(r.Context(), nil)
 		if err != nil {
 			rt.logger.Error("api: drain node: select placement failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("database", d.Name))
 			resp.Errors = append(resp.Errors, fmt.Sprintf("database %s: %s", d.Name, err.Error()))
@@ -495,12 +482,22 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 			resp.Errors = append(resp.Errors, fmt.Sprintf("database %s: %s", d.Name, err.Error()))
 			continue
 		}
+		placer.commit()
 		resp.MovedDatabases = append(resp.MovedDatabases, d.Name)
 		rt.teardownDatabaseContainer(d.Name, id)
 	}
 
+	resp.AutoPlaced = placer.autoPlaced
+	modelBlocks, modelErr := rt.drainModelBlocks(r.Context(), id)
+	if modelErr != nil {
+		resp.Warnings = append(resp.Warnings, "models on this node could not be checked: "+modelErr.Error())
+	}
+	for _, b := range modelBlocks {
+		resp.Blocked = append(resp.Blocked, b)
+		resp.Errors = append(resp.Errors, fmt.Sprintf("model %s: %s", b.Name, b.Reason))
+	}
 	status := http.StatusOK
-	if len(resp.Errors) > 0 {
+	if len(resp.Errors) > 0 || len(resp.Warnings) > 0 {
 		status = http.StatusMultiStatus
 	}
 	writeJSON(w, status, resp)
@@ -557,17 +554,36 @@ type createNodeJoinTokenResponse struct {
 // mints a one-time token an agent redeems at enrollment, returned with
 // the agent CA fingerprint the agent should pin.
 func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Request) {
-	plaintext, err := randomToken()
+	rec, err := rt.mintNodeJoinToken(r.Context(), nodeJoinTokenTTL)
 	if err != nil {
-		rt.logger.Error("api: create node join token: generate token failed", slog.String("error", err.Error()))
+		rt.logger.Error("api: create node join token failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	writeJSON(w, http.StatusCreated, createNodeJoinTokenResponse{Token: rec.plaintext, ExpiresAt: rec.expiresAt, CAFingerprint: rt.agentCAFingerprint})
+}
+
+// mintedJoinToken is mintNodeJoinToken's result: the plaintext token
+// (never recoverable again once this call returns) plus the expiry
+// every caller needs to surface.
+type mintedJoinToken struct {
+	plaintext string
+	expiresAt time.Time
+}
+
+// mintNodeJoinToken is handleCreateNodeJoinToken's own logic, factored
+// out so node_provision.go's handleCreateNodeProvision calls the exact
+// same minting path instead of a second implementation of it, passing
+// its own longer TTL (nodeProvisionJoinTokenTTL) rather than
+// nodeJoinTokenTTL.
+func (rt *Router) mintNodeJoinToken(ctx context.Context, ttl time.Duration) (mintedJoinToken, error) {
+	plaintext, err := randomToken()
+	if err != nil {
+		return mintedJoinToken{}, fmt.Errorf("generate token: %w", err)
+	}
 	id, err := randomNodeJoinTokenID()
 	if err != nil {
-		rt.logger.Error("api: create node join token: generate id failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
+		return mintedJoinToken{}, fmt.Errorf("generate id: %w", err)
 	}
 
 	now := time.Now()
@@ -575,15 +591,12 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 		ID:        id,
 		TokenHash: hashToken(plaintext),
 		CreatedAt: now,
-		ExpiresAt: now.Add(nodeJoinTokenTTL),
+		ExpiresAt: now.Add(ttl),
 	}
-	if err := rt.nodes.SaveNodeJoinToken(r.Context(), rec); err != nil {
-		rt.logger.Error("api: create node join token: save failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
+	if err := rt.nodes.SaveNodeJoinToken(ctx, rec); err != nil {
+		return mintedJoinToken{}, fmt.Errorf("save: %w", err)
 	}
-
-	writeJSON(w, http.StatusCreated, createNodeJoinTokenResponse{Token: plaintext, ExpiresAt: rec.ExpiresAt, CAFingerprint: rt.agentCAFingerprint})
+	return mintedJoinToken{plaintext: plaintext, expiresAt: rec.ExpiresAt}, nil
 }
 
 // randomNodeJoinTokenID generates a short, URL-safe, non-secret

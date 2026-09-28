@@ -3,6 +3,7 @@ package webhook
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 // bitbucketEventKeyHeader is the header Bitbucket sets on every webhook
@@ -29,6 +30,7 @@ type bitbucketPushPayload struct {
 
 type bitbucketPushChange struct {
 	New *bitbucketPushRef `json:"new"`
+	Old *bitbucketPushRef `json:"old"`
 }
 
 type bitbucketPushRef struct {
@@ -38,6 +40,7 @@ type bitbucketPushRef struct {
 
 type bitbucketPushTarget struct {
 	Hash string `json:"hash"`
+	Date string `json:"date"`
 }
 
 // ParseBitbucketPushEvent decodes body as a Bitbucket repo:push webhook
@@ -60,7 +63,14 @@ func ParseBitbucketPushEvent(body []byte) (PushEvent, error) {
 		if change.New == nil || change.New.Name == "" || change.New.Target.Hash == "" {
 			continue
 		}
-		return PushEvent{Ref: "refs/heads/" + change.New.Name, After: change.New.Target.Hash}, nil
+		ev := PushEvent{Ref: "refs/heads/" + change.New.Name, After: change.New.Target.Hash}
+		if change.Old != nil {
+			ev.Before = change.Old.Target.Hash
+		}
+		if t, err := time.Parse(time.RFC3339, change.New.Target.Date); err == nil {
+			ev.HeadCommitAt = t
+		}
+		return ev, nil
 	}
 	return PushEvent{}, ErrPushEventFieldsMissing
 }

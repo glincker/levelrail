@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -147,7 +148,7 @@ func TestWaitForRollout_SucceedsOnASubsequentPoll(t *testing.T) {
 	var ticks int
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	outcome, err := waitForRollout(ctx, fake, "web", "", 5*time.Millisecond, func(rolloutOutcome) { ticks++ })
+	outcome, err := waitForRollout(ctx, fake, rolloutWaitConfig{Name: "web", AttemptID: "", PollInterval: 5 * time.Millisecond, OnTick: func(rolloutOutcome) { ticks++ }})
 	if err != nil {
 		t.Fatalf("waitForRollout() error = %v", err)
 	}
@@ -172,7 +173,7 @@ func TestWaitForRollout_SpecificAttemptID(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	outcome, err := waitForRollout(ctx, fake, "web", "dep_1", 5*time.Millisecond, nil)
+	outcome, err := waitForRollout(ctx, fake, rolloutWaitConfig{Name: "web", AttemptID: "dep_1", PollInterval: 5 * time.Millisecond})
 	if err != nil {
 		t.Fatalf("waitForRollout() error = %v", err)
 	}
@@ -185,7 +186,7 @@ func TestWaitForRollout_AttemptIDNotFound(t *testing.T) {
 	fake := &fakeDeployAttemptFetcher{
 		attempts: [][]deployAttemptResource{{{ID: "dep_1", Status: "succeeded"}}},
 	}
-	_, err := waitForRollout(context.Background(), fake, "web", "dep_ghost", time.Millisecond, nil)
+	_, err := waitForRollout(context.Background(), fake, rolloutWaitConfig{Name: "web", AttemptID: "dep_ghost", PollInterval: time.Millisecond})
 	if err == nil || !strings.Contains(err.Error(), "not found") {
 		t.Errorf("waitForRollout() error = %v, want a not-found error", err)
 	}
@@ -198,7 +199,7 @@ func TestWaitForRollout_ContextTimeout(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
-	outcome, err := waitForRollout(ctx, fake, "web", "", 5*time.Millisecond, nil)
+	outcome, err := waitForRollout(ctx, fake, rolloutWaitConfig{Name: "web", AttemptID: "", PollInterval: 5 * time.Millisecond})
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("waitForRollout() error = %v, want context.DeadlineExceeded", err)
 	}
@@ -209,7 +210,7 @@ func TestWaitForRollout_ContextTimeout(t *testing.T) {
 
 func TestWaitForRollout_ListError(t *testing.T) {
 	fake := &fakeDeployAttemptFetcher{err: errors.New("network down")}
-	_, err := waitForRollout(context.Background(), fake, "web", "", time.Millisecond, nil)
+	_, err := waitForRollout(context.Background(), fake, rolloutWaitConfig{Name: "web", AttemptID: "", PollInterval: time.Millisecond})
 	if err == nil || !strings.Contains(err.Error(), "network down") {
 		t.Errorf("waitForRollout() error = %v, want the underlying error wrapped", err)
 	}
@@ -239,8 +240,8 @@ func TestRun_AppsWait_SucceedsImmediately(t *testing.T) {
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "converged successfully") {
-		t.Errorf("stdout = %q, want a success message", stdout.String())
+	if !strings.Contains(stdout.String(), `"web" rolled out`) {
+		t.Errorf("stdout = %q, want a first deploy reported as rolled out", stdout.String())
 	}
 }
 
@@ -312,5 +313,37 @@ func TestRun_AppsWait_Help(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "apps wait") {
 		t.Errorf("stderr = %q, want usage text", stderr.String())
+	}
+}
+
+func TestSummarizeRollout(t *testing.T) {
+	finished := mustParseRFC3339(t, "2026-01-01T00:00:05Z")
+	restartAt := "2026-01-01T00:01:00Z"
+	older := mustParseRFC3339(t, "2025-12-31T00:00:00Z")
+	att := func(id, image, digest string) deployAttemptResource {
+		return deployAttemptResource{ID: id, Image: image, ImageDigest: digest, Status: "succeeded", FinishedAt: &finished}
+	}
+	tests := []struct {
+		name     string
+		attempts []deployAttemptResource
+		target   int
+		cond     *conditionResource
+		timeline []apiclient.TimelineItem
+		want     string
+	}{
+		{"fresh Deployed reason", []deployAttemptResource{att("b", "web:2", "sha256:2"), att("a", "web:1", "sha256:1")}, 0, &conditionResource{Reason: "Deployed"}, nil, rolloutRolledOut},
+		{"AlreadyRunning after a real change", []deployAttemptResource{att("b", "web:2", "sha256:2"), att("a", "web:1", "sha256:1")}, 0, &conditionResource{Reason: "AlreadyRunning"}, nil, rolloutRolledOut},
+		{"redeploy of identical digest", []deployAttemptResource{att("b", "web:1", "sha256:1"), att("a", "web:1", "sha256:1")}, 0, &conditionResource{Reason: "AlreadyRunning"}, nil, rolloutUpToDate},
+		{"identical tag without digests", []deployAttemptResource{att("b", "web:1", ""), att("a", "web:1", "")}, 0, &conditionResource{Reason: "AlreadyRunning"}, nil, rolloutUpToDate},
+		{"first ever deploy", []deployAttemptResource{att("a", "web:1", "sha256:1")}, 0, &conditionResource{Reason: "AlreadyRunning"}, nil, rolloutRolledOut},
+		{"restart after the attempt", []deployAttemptResource{att("b", "web:1", "sha256:1"), att("a", "web:1", "sha256:1")}, 0, &conditionResource{Reason: "AlreadyRunning"}, []apiclient.TimelineItem{{Kind: "restart", At: restartAt}}, rolloutRestarted},
+		{"restart before the attempt is ignored", []deployAttemptResource{att("b", "web:2", "sha256:2"), att("a", "web:1", "sha256:1")}, 0, &conditionResource{Reason: "AlreadyRunning"}, []apiclient.TimelineItem{{Kind: "restart", At: older.Format(time.RFC3339)}}, rolloutRolledOut},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := summarizeRollout(tt.attempts, tt.attempts[tt.target], tt.cond, tt.timeline); got != tt.want {
+				t.Fatalf("summarizeRollout() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }

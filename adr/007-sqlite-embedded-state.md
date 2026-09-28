@@ -148,3 +148,15 @@ standard against designing for hypothetical future requirements
 rules out; `reconcile_status` was chosen as the first real migration
 specifically because it persists something that already exists in the
 codebase, not something anticipated.
+
+## Addendum: off-box disaster recovery of the control plane database
+
+Local snapshots do not survive losing the machine, so the control plane can also ship each snapshot to a storage destination (ADR 019), encrypted with age to operator-held public keys, with a JSON manifest written last as the commit marker. Decisions:
+
+- **Recipients, never the master key.** Backups are encrypted to public recipients the operator configures, so a bucket read alone yields nothing. Encrypting to the master key was rejected: the master key must stay recoverable only from the escrow bundle, and using it for backups would tie backup recovery to a secret that rotates.
+- **Escrow is a separate artifact.** The master key and the agent CA key (the CA lives in files beside the database, so a database backup does not carry it and losing it forces every agent to re-enroll) are age-encrypted to the operator's recipients and handed to the operator as a file, built server-side so the plaintext key never crosses the wire. It is uploaded only on explicit opt-in and never to the backup bucket (refused, and warned about in the UI and doctor). Rejected: bundling the wrapped key inside the backup (same-bucket compromise gets both), and an API that returns the plaintext key.
+- **Restore stays offline and CLI-only.** A live restore over the API would swap a database under a running server; rejected. `levelrail restore` verifies the manifest and checksums, refuses a newer schema or another install id, and installs with one rename after keeping the old database as `.pre-restore`.
+- **Slot-bound secrets survive a restore.** Ciphertext bindings name the storage slot (scope, owner, key), not the instance, so a backup restored elsewhere decrypts with the same master key. No install-specific value goes into a binding.
+- **Drills need a decrypting key to be complete.** An optional drill identity (file, env) is added as a backup recipient so the server can prove a full restore; without it drills verify checksums and manifest only and report themselves as partial. Rejected: storing the drill private key in the database, and silently reporting partial drills as passed.
+- **Alerting reuses `control_plane_backup_stale`.** Off-box failures and failed or overdue drills fire the existing rule through an optional interface, instead of a new alert kind that every client would have to learn.
+- **Env-sourced master keys are not re-read after rotation.** The server can only export the key from its file or `APP_MASTER_KEY`, since the secrets manager exposes no export, so escrow reads those. Operators refresh escrow after rotating.

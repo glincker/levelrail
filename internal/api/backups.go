@@ -321,7 +321,17 @@ func (rt *Router) handleListAllBackups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	history, err := rt.backupHistory.ListAllBackupHistory(r.Context(), limit, before)
+	canSeeApp, err := rt.appVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: list all backup history: app visibility", err)
+		return
+	}
+	canSeeDB, err := rt.databaseVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: list all backup history: database visibility", err)
+		return
+	}
+	history, err := rt.pageBackups(r.Context(), limit, before, canSeeApp, canSeeDB)
 	if err != nil {
 		rt.logger.Error("api: list all backup history failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")

@@ -27,7 +27,7 @@ Backups do contain token hashes and encrypted secrets, so every backup route req
 
 Snapshots are written to `<data dir>/control-plane-backups/` and named `levelrail-YYYYMMDDTHHMMSSZ.db` (UTC). Each one is copied with `VACUUM INTO`, checked with SQLite's `integrity_check`, and hashed with SHA-256.
 
-Snapshots sit on the same disk as the database. To survive losing the machine, download them and store them elsewhere.
+Snapshots sit on the same disk as the database. To survive losing the machine, set up [encrypted off-box backups, key escrow and restore drills](/disaster-recovery), or download snapshots and store them elsewhere.
 
 ## Automatic snapshots
 
@@ -55,6 +55,8 @@ It fires once the newest snapshot is older than 3 days and sends a resolved noti
 ### Before an upgrade
 
 When the server starts on an existing database and this release carries schema migrations that have not been applied yet, it takes a snapshot first. A brand new database is skipped. If that snapshot fails (for example the disk is full), the failure is logged and the migration still proceeds.
+
+To roll back to that snapshot after a bad upgrade, stop the service, install the previous binary and run `levelrail restore-snapshot --list`, then `levelrail restore-snapshot --dry-run latest` to verify it, then `levelrail restore-snapshot latest` (it asks for confirmation; `--yes` skips the prompt). It uses the same checks and the same `.before-restore-<timestamp>` safety copy as `restore-db`. See [Installing](/installing#rolling-back).
 
 ### Downgrade guard
 

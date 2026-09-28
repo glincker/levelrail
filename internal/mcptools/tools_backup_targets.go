@@ -9,7 +9,7 @@ import (
 )
 
 func registerBackupTargetTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_backup_targets",
 		Description: "List every connected S3-compatible backup destination on the control plane: name, provider, endpoint, region, bucket. No credential fields, ever. Read-only; does not create, edit, delete, or test a target.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.BackupTargetResource, error) {
@@ -20,7 +20,7 @@ func registerBackupTargetTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, targets, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "test_backup_target_connection",
 		Description: "Probe a connected backup target's stored credentials against its configured bucket right now, catching a bad or stale credential or a renamed/deleted bucket before the next scheduled backup fails against it silently. Exercises the connection only: never uploads, downloads, or deletes an object, and never changes the target's own configuration.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in backupTargetIDInput) (*mcp.CallToolResult, backupTargetTestResult, error) {

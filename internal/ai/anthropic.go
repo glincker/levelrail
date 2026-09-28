@@ -96,7 +96,7 @@ func toAnthropicRequest(req ChatRequest) anthropicRequest {
 		out.Messages = append(out.Messages, toAnthropicMessage(m))
 	}
 	for _, t := range req.Tools {
-		out.Tools = append(out.Tools, anthropicTool(t))
+		out.Tools = append(out.Tools, anthropicTool{Name: t.Name, Description: t.Description, InputSchema: t.InputSchema})
 	}
 	return out
 }

@@ -13,7 +13,7 @@ import (
 // registerCloudflareTools' own precedent of no set/update tool for a
 // credential-bearing platform-wide resource.
 func registerSettingsTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_oauth_providers",
 		Description: "List every OAuth sign-in provider (google, github, oidc) and its settings: enabled, client_id, allowed_email_domain, issuer_url, display_name, and a has_client_secret boolean. The client secret itself is never returned. Read-only; does not enable, disable, or edit a provider.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.OAuthProviderSettingsResource, error) {
@@ -24,7 +24,7 @@ func registerSettingsTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, settings, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_email_settings",
 		Description: "Get the control plane's outbound email settings: backend (smtp/ses/disabled) and its non-secret fields (host, port, username, from address). SMTP password and SES secret access key are never returned, only smtp_password_set/ses_secret_access_key_set booleans reporting whether one is stored. Read-only; does not configure or test outbound email.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.EmailSettingsResource, error) {

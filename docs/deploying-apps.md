@@ -73,6 +73,8 @@ The reconciler tracks both containers until the old one exits. If the new contai
 
 `SaveDesiredService` via `PUT /api/v1/apps/{name}` is a full replace, not a patch. It overwrites every field with whatever the request body carries (same as an app.yaml apply).
 
+A save keeps the stored settings a request body cannot express (volumes, bind mounts, entrypoint, database env, registry credential, pull policy, pinned image ID). `secret_env` and `vault_env` are applied only when the body carries them: omit them to keep the stored set, send `[]` to clear. Secret values are never accepted here (a body with `secrets` is rejected): use `PUT /api/v1/apps/{name}/secrets/{key}`.
+
 Fields managed separately (`node_id`, `project_id`, `environment_id`, `storage_target_id`, `suspended`, `database_attachment`, `log_drain`) have their own dedicated endpoints. This ensures an ordinary edit can never silently move an app between nodes or projects.
 
 ### Core primitives
@@ -91,6 +93,16 @@ Every state-changing action funnels through these:
 `EnvDirty` tracks when env vars change without an image change. Saving new env vars sets this flag, and it stays set until a redeploy or restart lands.
 
 The dashboard shows this as an amber "Environment changes pending restart" banner at the top of the app's Overview page with a one-click restart action.
+
+### Pending changes
+
+The reconciler records what each new container was created with (short hashes of the app's env and secret values, plus port, command, entrypoint and labels). `GET /api/v1/apps/{name}/pending-changes` compares that with the desired state and returns `{ pending, changes: [{ kind: env | secret | config, keys, since }], apply_action }`. Key names only, never values. Rotating a secret counts as a pending `secret` change; resources and health checks apply live and are not listed. `POST /api/v1/apps/{name}/apply-pending` restarts the app to apply them (202). For a container created before this tracking existed, only the `env_dirty` flag is known.
+
+CLI: `levelrail apps status <name>` prints a "pending changes" line, `apps env import` and `apps secrets set` print "N changes pending. Run: levelrail apps apply <name> (or pass --apply)", and `apps apply <name>` restarts. MCP: `get_app_pending_changes`.
+
+### App timeline
+
+`GET /api/v1/apps/{name}/timeline?limit=50&before=<cursor>` merges recorded events (`restart`, `env_change`, `secret_change`, `config_change`, `scale`, `suspend`, `resume`, `freeze_override`) with deploy attempts (`deploy`, `rollback`; an in-flight one is `in_progress`), newest first. Each item has `id`, `at`, `kind`, `status`, `actor` (a user, `token:<name>` or `system`), `title`, optional `detail` and, for deploys, `ref: { type: "deploy_attempt", id }`. Events carry env and secret key names and non-secret scalar from and to values only. Pass the previous page's `next_cursor` as `before`. CLI: `levelrail apps timeline <name>`. MCP: `get_app_timeline`.
 
 ## The four ways to create an app
 
@@ -169,14 +181,14 @@ Currently supported, matching the Railpack build path itself:
 
 | Provider | Framework name shown |
 | --- | --- |
-| Node.js | `Node.js` |
+| Node.js | `Node.js` (`Next.js` when `package.json` depends on `next`, App Router or Pages Router alike) |
 | Go | `Go` |
 | Java (Maven/Gradle, Spring Boot) | `Java (Spring Boot)` |
 | Python (Django) | `Python (Django)` |
 
 A repository Railpack can't place into one of these (or can't clone at all, e.g. private/unreachable) responds `{"detected": false}`, never an error: the wizard falls back to its normal manual build-type tabs (Auto-detect/Dockerfile/Static site/Prebuilt image), which stay fully usable and overridable regardless of what detection found.
 
-The detected framework name, once known, is stored on the resulting `deploy_attempts` row (`detected_framework`) and shown back on the deploy detail page once the deploy finishes, as a one-line summary above the usual metadata grid, e.g. "Node.js app, built in 42s, image levelrail/web:a1b2c3d", built entirely from data already on that row (framework name, computed duration, image tag), not a new metrics collection. It's also visible in `levelrail-cli apps deploys list` (a `FRAMEWORK` column) and in `--output json` for either the deploy-attempts list or a single build's response.
+The detected framework name, once known, is stored on the resulting `deploy_attempts` row (`detected_framework`) and shown back on the deploy detail page once the deploy finishes, as a one-line summary above the usual metadata grid, e.g. "Node.js app, built in 42s, image levelrail/web:a1b2c3d", built entirely from data already on that row (framework name, computed duration, image tag), not a new metrics collection. It's also visible in `levelrail-cli apps deploys list` (a `FRAMEWORK` column) and in `--output json` for either the deploy-attempts list or a single build's response. `apps create` (git-build path) and `apps builds trigger` run this same detection before triggering the build, so a CLI-triggered build gets a `FRAMEWORK` value too, not just one triggered from the web wizard.
 
 #### Live deploy view
 
@@ -205,6 +217,18 @@ This stream is a pure observability layer: it reads the same build-trigger flow 
 When an attempt fails (a failed build, or a roll out that never became ready), the deploy detail page opens with a "What went wrong" card: the failing stage, the recorded error (trimmed, with Show more), a likely cause and suggested fix, and three actions: View full logs (jumps to the failing stage), Retry deploy, and Roll back to last good (only shown when an earlier attempt succeeded).
 
 The cause is a heuristic match, not a diagnosis. The error text and failing reconcile conditions are checked first, then the newest build log lines, against a fixed rule table covering: missing environment variable, port mismatch, container killed for memory (OOMKilled or exit 137), registry auth, image or tag not found, health check timeout, wrong Dockerfile path, dependency install failure, plus the older npm, pip, heap, disk and permission rules. It never changes the attempt's real status. Everything runs in the browser over data the page already loads.
+
+#### Deployments across all apps
+
+`GET /api/v1/deployments` lists deploy attempts across every app the caller can read, newest first, with cursor pagination (`limit` default 50, max 200; pass `next_cursor` back as `cursor`). Results are filtered to apps the caller may read: a token or user with an IAM Deny on `app:web` never sees web's deployments, in the list, the summary or the stream.
+
+Filters: `status` (building, ready, failed, canceled, rolled_back, superseded, held; comma separated or repeated), `app`, `branch`, `trigger` (git push, manual, rollback, api, preview), `environment` (name or id), `since` and `until` (RFC3339 or a duration ago such as `24h`, `7d`), `q` (commit message, sha prefix, app name), `live=true` (only the release currently serving each app) and `pr` (previews of one pull request). `queued`, `awaiting_approval`, `schedule` and `pipeline` are accepted values that match nothing today.
+
+Status and trigger are derived from what the deploy attempt already records: `rolled_back` is a succeeded deploy that a later rollback replaced (`rolled_back_by`), a rollback has `rollback_of` pointing at the attempt whose image it re-deployed, `held` is a deploy parked by a freeze window, and `canceled` is a failed attempt whose error is a canceled context. `image_ref` pins the tag to its digest only when the digest is registry verified; otherwise it is just the tag, and `digest_reason` says why. Commit message, author and branch are recorded for git push deploys from the push payload and are empty for other triggers and for attempts recorded before this feature. `steps` and the failing step are only known while an attempt is running, because step history is not persisted.
+
+`GET /api/v1/deployments/summary?window=24h` returns counts by status for the window (up to 30d), `in_progress`, `needs_attention` (held plus digest mismatch), `failure_rate_24h`, median and p95 `duration`, and `per_day` for 14 days. `GET /api/v1/deployments/stream` is server-sent events: each message is `{type: created|step|finished, step?, deployment}`, with the same item shape as the list. Only deploys that run through the build recorder emit events; a plain image redeploy shows up in the list but not on the stream.
+
+From the CLI: `levelrail deployments list [--status failed --app web --since 24h --json]`, `levelrail deployments summary`, and `levelrail deployments watch`. The MCP tools `list_deployments` and `deployments_summary` are read-only.
 
 ### 3. Docker Compose
 
@@ -336,7 +360,9 @@ levelrail-cli apps secrets set <name> DATABASE_PASSWORD --value "new-password"
 ```
 
 - Dashboard: app Environment tab, edit the secret field
-- API: `PUT /api/v1/apps/{name}/secrets/<key>` with JSON `{ value: "..." }`
+- API: `PUT /api/v1/apps/{name}/secrets/<key>` with JSON `{ value: "..." }`; `DELETE /api/v1/apps/{name}/secrets/<key>` removes it (`?force=true` for a locked key)
+
+Setting a secret declares its key as secret-backed on the app (the same list `secret_env` shows), which is what makes the container receive it. Deleting the secret undeclares it. The value reaches the container the next time it is created: run `levelrail-cli apps apply <name>` or pass `--apply`.
 
 Secrets are never returned in plaintext, even from the API. The dashboard and CLI confirm receipt but don't echo the value back.
 

@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Application load balancer for api
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+  SecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+
+Resources:
+  ApiLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: api
+      Type: application
+      Subnets: !Ref SubnetIds
+      SecurityGroups: !Ref SecurityGroupIds
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '30'
+
+  ApiTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: api
+      Port: 8080
+      Protocol: HTTPS
+      TargetType: ip
+      VpcId: !Ref VpcId
+      HealthCheckPath: /healthz
+      HealthCheckIntervalSeconds: 10
+      HealthCheckTimeoutSeconds: 3
+      HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 2
+      Matcher:
+        HttpCode: '204'
+      TargetGroupAttributes:
+        - Key: load_balancing.algorithm.type
+          Value: least_outstanding_requests
+        - Key: deregistration_delay.timeout_seconds
+          Value: '20'
+        - Key: slow_start.duration_seconds
+          Value: '60'
+
+  ApiListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApiLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ApiTargetGroup
+
+Outputs:
+  LoadBalancerDNS:
+    Value: !GetAtt ApiLoadBalancer.DNSName
+
+# warnings
+# passive_health has no ALB equivalent, ALB only uses active health checks
+# retries have no ALB equivalent
+# rate_limit has no ALB equivalent, use an AWS WAF rate-based rule

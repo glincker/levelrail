@@ -10,6 +10,7 @@ import {
   UserIcon,
   ShieldIcon,
   KeyIcon,
+  PlugsConnectedIcon,
   CloudArrowUpIcon,
   WebhooksLogoIcon,
   GithubLogoIcon,
@@ -24,7 +25,15 @@ import {
   PlusIcon,
   SquaresFourIcon,
   CircleHalfIcon,
+  ArrowsSplitIcon,
+  TreeStructureIcon,
+  CpuIcon,
+  GavelIcon,
+  RocketLaunchIcon,
+  RobotIcon,
+  BellIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import type { ExperimentalFeature } from '../lib/experimental'
 
 export interface PaletteItem {
   key: string
@@ -32,6 +41,7 @@ export interface PaletteItem {
   group: string
   icon: React.ReactNode
   run: () => void
+  hint?: string[]
 }
 
 export interface RouteEntry {
@@ -40,9 +50,12 @@ export interface RouteEntry {
   group: string
   icon: React.ReactNode
   to: string
+  search?: Record<string, string>
+  feature?: ExperimentalFeature
 }
 
 export const GROUP_ORDER = [
+  'Suggested',
   'Recent',
   'Actions',
   'App actions',
@@ -58,11 +71,13 @@ const nav = (
   icon: React.ReactNode,
   to: string,
   group = 'Navigate',
-): RouteEntry => ({ key, label, group, icon, to })
+  feature?: ExperimentalFeature,
+): RouteEntry => ({ key, label, group, icon, to, feature })
 
 export const ROUTE_ENTRIES: RouteEntry[] = [
   nav('action-status', 'Go to Status', <HeartbeatIcon />, '/status', 'Actions'),
   nav('action-apps', 'Go to Apps', <StackIcon />, '/apps', 'Actions'),
+  nav('action-alerts', 'Go to Alerts', <BellIcon />, '/alerts', 'Actions'),
   nav('action-nodes', 'Go to Nodes', <HardDrivesIcon />, '/nodes', 'Actions'),
   nav('action-create-app', 'Create app', <PlusIcon />, '/apps', 'Actions'),
   nav(
@@ -72,10 +87,57 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     '/apps',
     'Actions',
   ),
+  nav('action-dashboard', 'Go to dashboard', <GaugeIcon />, '/', 'Actions'),
+  nav('action-new-app', 'New app', <PlusIcon />, '/apps', 'Actions'),
+  nav(
+    'action-import',
+    'Import',
+    <CloudArrowUpIcon />,
+    '/settings/import-platform',
+    'Actions',
+  ),
+  {
+    ...nav(
+      'action-filter-failing',
+      'Filter failing apps',
+      <HeartbeatIcon />,
+      '/apps',
+      'Actions',
+    ),
+    search: { status: 'failing' },
+  },
   nav('nav-dashboard', 'Dashboard', <GaugeIcon />, '/'),
   nav('nav-databases', 'Databases', <DatabaseIcon />, '/databases'),
   nav('nav-projects', 'Projects', <FolderIcon />, '/projects'),
+  nav('nav-pipelines', 'Pipelines', <TreeStructureIcon />, '/pipelines'),
   nav('nav-domains', 'Domains', <GlobeIcon />, '/domains'),
+  nav(
+    'nav-loadbalancers',
+    'Load balancers',
+    <ArrowsSplitIcon />,
+    '/loadbalancers',
+    'Navigate',
+    'load-balancer',
+  ),
+  nav('nav-backups', 'Backups', <CloudArrowUpIcon />, '/backups'),
+  nav('nav-deployments', 'Deployments', <RocketLaunchIcon />, '/deployments'),
+  nav('nav-approvals', 'Deploy approvals', <GavelIcon />, '/approvals'),
+  nav(
+    'nav-models',
+    'AI models',
+    <CpuIcon />,
+    '/models',
+    'Navigate',
+    'ai-models',
+  ),
+  nav(
+    'nav-assistant',
+    'AI assistant',
+    <RobotIcon />,
+    '/ai-assistant',
+    'Navigate',
+    'ai-chat',
+  ),
   nav('nav-help', 'Help', <QuestionIcon />, '/help'),
   nav('settings-hub', 'Settings', <GearIcon />, '/settings', 'Settings'),
   nav(
@@ -100,6 +162,13 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'Settings',
   ),
   nav(
+    'settings-agents',
+    'Agents',
+    <PlugsConnectedIcon />,
+    '/settings/agents',
+    'Settings',
+  ),
+  nav(
     'settings-backup-targets',
     'Backup targets',
     <CloudArrowUpIcon />,
@@ -107,10 +176,24 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'Settings',
   ),
   nav(
+    'settings-storage',
+    'Storage destinations',
+    <CloudArrowUpIcon />,
+    '/settings/storage',
+    'Settings',
+  ),
+  nav(
     'settings-registry-credentials',
     'Registry credentials',
     <PackageIcon />,
     '/settings/registry-credentials',
+    'Settings',
+  ),
+  nav(
+    'settings-status-page',
+    'Status page',
+    <HeartbeatIcon />,
+    '/settings/status-page',
     'Settings',
   ),
   nav(

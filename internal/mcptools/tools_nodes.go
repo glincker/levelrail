@@ -9,7 +9,7 @@ import (
 )
 
 func registerNodeTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_nodes",
 		Description: "List every node enrolled in the control plane: id, name, address, status, schedulable/cordon state, and which workload kinds (app, build) it accepts. Useful for diagnosing which machine an app runs on.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.NodeResource, error) {
@@ -20,7 +20,7 @@ func registerNodeTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, nodes, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_node",
 		Description: "Get one node's current state: address, status, schedulable/cordon state, accepted workload kinds, join/last-seen timestamps.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in nodeIDInput) (*mcp.CallToolResult, apiclient.NodeResource, error) {
@@ -31,7 +31,7 @@ func registerNodeTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, node, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_node_health",
 		Description: "Get one node's current stored reconcile conditions (type, status, reason, message) from the node health controller. This is current status, not a historical log.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in nodeIDInput) (*mcp.CallToolResult, []apiclient.ConditionResource, error) {
@@ -42,7 +42,7 @@ func registerNodeTools(server *mcp.Server, client *apiclient.Client) {
 		return nil, conditions, nil
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "get_node_status_history",
 		Description: "List a node's recent status transitions (from, to, timestamp), newest first. Read-only; use get_node_health for current conditions.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in nodeEventsInput) (*mcp.CallToolResult, []apiclient.NodeStatusEventResource, error) {

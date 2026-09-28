@@ -1,0 +1,52 @@
+variable "vpc_id" {
+  type = string
+}
+
+variable "subnet_ids" {
+  type = list(string)
+}
+
+variable "security_group_ids" {
+  type    = list(string)
+  default = []
+}
+
+resource "aws_lb" "canary" {
+  name               = "canary"
+  load_balancer_type = "application"
+  subnets            = var.subnet_ids
+  security_groups    = var.security_group_ids
+}
+
+resource "aws_lb_target_group" "canary" {
+  name                           = "canary"
+  port                           = 9000
+  protocol                       = "HTTP"
+  target_type                    = "ip"
+  vpc_id                         = var.vpc_id
+  load_balancing_algorithm_type  = "weighted_random"
+
+  health_check {
+    path                = "/"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
+    unhealthy_threshold = 2
+    matcher             = "200-399"
+  }
+}
+
+resource "aws_lb_listener" "canary_http" {
+  load_balancer_arn = aws_lb.canary.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.canary.arn
+  }
+}
+
+# warnings
+# weighted: ALB target group weights are set on the listener forward action or via weighted_random, per-target weights [9 1] are not exported
+# slow_start is not supported together with weighted_random on ALB, dropped

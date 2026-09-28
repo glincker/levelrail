@@ -37,6 +37,13 @@ type MultiRequest struct {
 	// suffix, e.g. "levelrail/myapp"; each service tags as
 	// "<ImageRepoBase>-<serviceKey>:<CommitSHA>".
 	ImageRepoBase string
+	// SingleServiceName, when set, replaces "<AppName>-<serviceKey>" as
+	// the sole service's name. DeploySpec rejects it alongside more than
+	// one service. Set only by "apps create --file"'s build.type: static
+	// path (internal/api/apps_multi.go), so the deployed site is named
+	// after the app itself rather than a redundant "<app>-<service>"
+	// suffix; every other caller leaves it empty.
+	SingleServiceName string
 }
 
 // ServiceOutcome is one service's own fan-out result: Image is set on
@@ -91,6 +98,9 @@ func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress fu
 		return nil, fmt.Errorf("deploy: app %q: %w", req.AppName, err)
 	}
 	req.Services = services
+	if req.SingleServiceName != "" && len(req.Services) != 1 {
+		return nil, fmt.Errorf("deploy: app %q: single_service_name requires exactly one service, got %d", req.AppName, len(req.Services))
+	}
 	for _, warning := range healthWarnings {
 		p.logger.Warn("deploy: compose healthcheck not translatable to a readiness probe", slog.String("app", req.AppName), slog.String("detail", warning))
 	}
@@ -109,6 +119,9 @@ func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress fu
 	outcomes := make([]ServiceOutcome, 0, len(keys))
 	for _, key := range keys {
 		svcName := req.AppName + "-" + key
+		if req.SingleServiceName != "" {
+			svcName = req.SingleServiceName
+		}
 
 		var svcProgress func(build.ProgressEvent)
 		if progress != nil {
@@ -127,6 +140,14 @@ func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress fu
 			continue
 		}
 
+		// A static site has no service row to link: it is a StaticSite.
+		// image here is deployStatic's own destination directory, a server
+		// filesystem path that must never reach a caller (API response or
+		// CLI table): report the commit it was built from instead.
+		if req.Services[key].Build.Type == spec.BuildStatic {
+			outcomes = append(outcomes, ServiceOutcome{ServiceKey: key, ServiceName: svcName, Image: staticOutcomeImage(req.CommitSHA)})
+			continue
+		}
 		if linkErr := p.apps.UpdateServiceApp(ctx, svcName, appID); linkErr != nil {
 			outcomes = append(outcomes, ServiceOutcome{ServiceKey: key, ServiceName: svcName, Err: fmt.Errorf("link service to app: %w", linkErr)})
 			continue
@@ -135,6 +156,16 @@ func (p *Pipeline) DeploySpec(ctx context.Context, req MultiRequest, progress fu
 		outcomes = append(outcomes, ServiceOutcome{ServiceKey: key, ServiceName: svcName, Image: image})
 	}
 	return outcomes, nil
+}
+
+// staticOutcomeImage is a static site's ServiceOutcome.Image: the commit
+// it was built from, or "static" when no commit is known, never
+// deployStatic's own destination directory.
+func staticOutcomeImage(commitSHA string) string {
+	if commitSHA != "" {
+		return commitSHA
+	}
+	return "static"
 }
 
 // expandComposeServices replaces every build.type: compose entry in

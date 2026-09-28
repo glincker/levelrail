@@ -234,7 +234,18 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 			rt.logger.Warn("api: git push webhook: malformed pull request payload", slog.String("error", err.Error()), slog.String("name", name))
 			return http.StatusBadRequest, "malformed payload"
 		}
+		rt.firePipelinePullRequest(ctx, name, prEv)
 		return rt.handlePullRequestWebhookEvent(ctx, name, gs, prEv)
+	}
+
+	if webhook.IsMergeGroupEvent(header) {
+		mg, err := webhook.ParseMergeGroupEvent(body)
+		if err != nil {
+			rt.logger.Warn("api: git push webhook: malformed merge_group payload", slog.String("error", err.Error()), slog.String("name", name))
+			return http.StatusBadRequest, "malformed payload"
+		}
+		rt.firePipelineMergeGroup(ctx, name, mg)
+		return http.StatusOK, "merge_group event handled\n"
 	}
 
 	if isGitHubReleaseEvent(header) {
@@ -247,13 +258,28 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return http.StatusBadRequest, "malformed payload"
 	}
 
+	rt.firePipelinePushEvent(ctx, name, ev)
+	ctx = withPushCommitMeta(ctx, ev)
+
 	triggered, ignoredMsg := gitSourceTriggerMatchesPush(gs, ev.Ref)
 	if !triggered {
 		rt.logger.Info("api: git push webhook: ignoring push", slog.String("name", name), slog.String("ref", ev.Ref), slog.String("trigger_mode", effectiveGitSourceTriggerMode(gs.TriggerMode)))
 		return http.StatusOK, ignoredMsg
 	}
+	if msg := rt.skipPushForPaths(ctx, name, gs, ev.Ref, ev.Before, ev.After, ev.Changed); msg != "" {
+		rt.logger.Info("api: git push webhook: push skipped by path filter", slog.String("name", name), slog.String("ref", ev.Ref))
+		return http.StatusOK, msg
+	}
 
-	return rt.deployFromGitSource(ctx, name, gs, ev.After, ev.After)
+	if held, msg := rt.holdIfFrozen(ctx, name, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt}, name+":"+ev.After); held {
+		return http.StatusAccepted, msg
+	}
+	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt, Branch: strings.TrimPrefix(ev.Ref, "refs/heads/")}, name+":"+ev.After)
+	defer release()
+	if queued {
+		return http.StatusAccepted, msg
+	}
+	return rt.deployFromGitSource(withStartRelease(ctx, release), name, gs, ev.After, ev.After, rt.nextOrder(ctx, name, ev.After, ev.Before, ev.HeadCommitAt))
 }
 
 // isGitHubReleaseEvent reports whether header names GitHub's own
@@ -345,7 +371,16 @@ func (rt *Router) processGitHubReleaseWebhookEvent(ctx context.Context, name str
 		return http.StatusBadRequest, "malformed payload"
 	}
 
-	return rt.deployFromGitSource(ctx, name, gs, "refs/tags/"+rel.TagName, dockerSafeTag(rel.TagName))
+	label := dockerSafeTag(rel.TagName)
+	if held, msg := rt.holdIfFrozen(ctx, name, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}, name+":"+label); held {
+		return http.StatusAccepted, msg
+	}
+	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}, name+":"+label)
+	defer release()
+	if queued {
+		return http.StatusAccepted, msg
+	}
+	return rt.deployFromGitSource(withStartRelease(ctx, release), name, gs, "refs/tags/"+rel.TagName, label, rt.nextOrder(ctx, name, "", "", time.Time{}))
 }
 
 // dockerSafeTag makes tagName safe to use as a Docker image tag
@@ -362,7 +397,14 @@ func dockerSafeTag(tagName string) string {
 // through the identical services:/AdditionalServices/single-service
 // routing decision handleGitPushWebhook's own doc comment already
 // establishes.
-func (rt *Router) deployFromGitSource(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string) (status int, message string) {
+func (rt *Router) deployFromGitSource(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder) (status int, message string) {
+	dep := rt.beginForgeDeployment(ctx, name, gs, checkoutRef, forgeEnvProduction, forgeEnvProduction, "")
+	status, message = rt.deployFromGitSourceInner(ctx, name, gs, checkoutRef, commitLabel, order)
+	dep.finish(ctx, deploymentStateFor(status, message), strings.TrimSpace(message))
+	return status, message
+}
+
+func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder) (status int, message string) {
 	if rt.builder == nil {
 		return http.StatusNotImplemented, "git push deploys are not configured on this control plane"
 	}
@@ -415,12 +457,27 @@ func (rt *Router) deployFromGitSource(ctx context.Context, name string, gs store
 		Service:     svcSpec,
 		SourceDir:   sourceDir,
 		CommitSHA:   commitLabel,
-		ImageRepo:   name,
+		ImageRepo:   defaultImageRepo(name, existing.Image),
+		Order:       order,
 	}
 
-	_, progress, finishAttempt, _ := rt.beginBuildDeployAttempt(ctx, buildReq, *existing, store.DeployAttemptSourceWebhook, "")
-	tag, err := rt.builder.Deploy(ctx, buildReq, progress)
+	attemptID, progress, finishAttempt, _ := rt.beginBuildDeployAttempt(ctx, buildReq, *existing, store.DeployAttemptSourceWebhook, "")
+	buildReq.AttemptID = attemptID
+	buildCtx := ctx
+	if attemptID != "" {
+		buildReq.Commit = func() error { return rt.cancels.Commit(attemptID) }
+		buildCtx = rt.cancels.Bind(ctx, attemptID)
+	}
+	tag, err := rt.builder.Deploy(buildCtx, buildReq, progress)
+	_, canceled := rt.cancels.Canceled(attemptID)
 	finishAttempt(err)
+	if canceled && err != nil {
+		return http.StatusOK, "not deployed: deploy canceled\n"
+	}
+	if errors.Is(err, deploy.ErrSuperseded) {
+		rt.logger.Info("api: git push webhook: deploy superseded", slog.String("name", name), slog.String("commit", commitLabel), slog.String("reason", err.Error()))
+		return http.StatusOK, "not deployed: " + err.Error() + "\n"
+	}
 	if err != nil {
 		rt.logger.Error("api: git push webhook: deploy failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("commit", commitLabel))
 		return http.StatusInternalServerError, "deploy failed"

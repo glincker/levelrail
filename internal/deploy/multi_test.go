@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -124,6 +125,143 @@ func assertBothServicesLinkedToApp(t *testing.T, apps *fakeAppStore, appID strin
 		if call.appID != appID {
 			t.Errorf("UpdateServiceApp call %+v, want appID %q", call, appID)
 		}
+	}
+}
+
+func TestDeploySpec_StaticService_NotLinkedAsAService(t *testing.T) {
+	apps := newFakeAppStore()
+	apps.updateServiceAppFailOn, apps.updateServiceAppErr = "myapp-site", store.ErrServiceNotFound
+	staticStore := &fakeStaticSiteStore{}
+	p := New(&fakeBuilder{}, &fakeServiceStore{}, WithAppStore(apps), WithStaticSiteStore(staticStore), WithStaticRootDir(t.TempDir()))
+
+	sourceDir := t.TempDir()
+	writeTree(t, sourceDir, map[string]string{"dist/index.html": "<h1>hi</h1>"})
+
+	outcomes, err := p.DeploySpec(context.Background(), MultiRequest{
+		AppName: "myapp", Services: map[string]spec.Service{"site": staticService("site.example.com")},
+		SourceDir: sourceDir, CommitSHA: "abc123", ImageRepoBase: "levelrail/myapp",
+	}, nil)
+	if err != nil {
+		t.Fatalf("DeploySpec() error = %v", err)
+	}
+	if len(outcomes) != 1 || outcomes[0].Err != nil {
+		t.Fatalf("outcomes = %+v, want one successful static outcome", outcomes)
+	}
+	if len(apps.updateServiceAppCalls) != 0 {
+		t.Errorf("updateServiceAppCalls = %+v, want none for a static site", apps.updateServiceAppCalls)
+	}
+	if staticStore.saveCalls != 1 {
+		t.Errorf("SaveStaticSite called %d times, want 1", staticStore.saveCalls)
+	}
+}
+
+// TestDeploySpec_StaticService_OutcomeImageNeverLeaksPath proves a static
+// site's ServiceOutcome.Image is the commit it was built from (or the
+// literal "static" with none), never deployStatic's own destination
+// directory: a caller (API response, CLI table) must never see a server
+// filesystem path in a field named "image".
+func TestDeploySpec_StaticService_OutcomeImageNeverLeaksPath(t *testing.T) {
+	tests := []struct {
+		name      string
+		commitSHA string
+		wantImage string
+	}{
+		{name: "commit known", commitSHA: "abc123", wantImage: "abc123"},
+		{name: "commit unknown", commitSHA: "", wantImage: "static"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			apps := newFakeAppStore()
+			staticStore := &fakeStaticSiteStore{}
+			p := New(&fakeBuilder{}, &fakeServiceStore{}, WithAppStore(apps), WithStaticSiteStore(staticStore), WithStaticRootDir(t.TempDir()))
+
+			sourceDir := t.TempDir()
+			writeTree(t, sourceDir, map[string]string{"dist/index.html": "<h1>hi</h1>"})
+
+			outcomes, err := p.DeploySpec(context.Background(), MultiRequest{
+				AppName: "myapp", Services: map[string]spec.Service{"site": staticService("site.example.com")},
+				SourceDir: sourceDir, CommitSHA: tt.commitSHA, ImageRepoBase: "levelrail/myapp",
+			}, nil)
+			if err != nil {
+				t.Fatalf("DeploySpec() error = %v", err)
+			}
+			if len(outcomes) != 1 || outcomes[0].Err != nil {
+				t.Fatalf("outcomes = %+v, want one successful static outcome", outcomes)
+			}
+			if outcomes[0].Image != tt.wantImage {
+				t.Errorf("outcomes[0].Image = %q, want %q", outcomes[0].Image, tt.wantImage)
+			}
+			if outcomes[0].Image == staticStore.saved.RootDir {
+				t.Errorf("outcomes[0].Image = %q, leaks the static site's server filesystem path", outcomes[0].Image)
+			}
+		})
+	}
+}
+
+// TestDeploySpec_SingleServiceName tables the SingleServiceName override
+// this method's own doc comment describes: used only for a single-service
+// request, renaming the sole service instead of "<AppName>-<serviceKey>".
+func TestDeploySpec_SingleServiceName(t *testing.T) {
+	tests := []struct {
+		name              string
+		services          map[string]spec.Service
+		singleServiceName string
+		wantErr           string
+		wantServiceName   string
+	}{
+		{
+			name:              "overrides the default name for a static service",
+			services:          map[string]spec.Service{"site": staticService()},
+			singleServiceName: "myapp",
+			wantServiceName:   "myapp",
+		},
+		{
+			name:              "overrides the default name for an ordinary service",
+			services:          map[string]spec.Service{"web": {Build: spec.Build{Type: spec.BuildDockerfile}, Port: 3000}},
+			singleServiceName: "myapp",
+			wantServiceName:   "myapp",
+		},
+		{
+			name:              "rejected alongside more than one service",
+			services:          multiServices(),
+			singleServiceName: "myapp",
+			wantErr:           "single_service_name",
+		},
+		{
+			name:            "empty override leaves the default <app>-<key> naming",
+			services:        map[string]spec.Service{"site": staticService()},
+			wantServiceName: "myapp-site",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			apps := newFakeAppStore()
+			p := New(&fakeBuilder{result: &build.Result{Tag: "img:sha"}}, &fakeServiceStore{},
+				WithAppStore(apps), WithStaticSiteStore(&fakeStaticSiteStore{}), WithStaticRootDir(t.TempDir()))
+
+			sourceDir := t.TempDir()
+			writeTree(t, sourceDir, map[string]string{"dist/index.html": "<h1>hi</h1>"})
+
+			outcomes, err := p.DeploySpec(context.Background(), MultiRequest{
+				AppName: "myapp", Services: tt.services, SourceDir: sourceDir, CommitSHA: "sha1",
+				ImageRepoBase: "levelrail/myapp", SingleServiceName: tt.singleServiceName,
+			}, nil)
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("err = %v, want it to contain %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("DeploySpec() error = %v", err)
+			}
+			if len(outcomes) != 1 || outcomes[0].Err != nil {
+				t.Fatalf("outcomes = %+v, want one successful outcome", outcomes)
+			}
+			if outcomes[0].ServiceName != tt.wantServiceName {
+				t.Errorf("ServiceName = %q, want %q", outcomes[0].ServiceName, tt.wantServiceName)
+			}
+		})
 	}
 }
 

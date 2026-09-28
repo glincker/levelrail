@@ -1,0 +1,28 @@
+{
+  "match": [
+    {
+      "host": [
+        "example.com"
+      ]
+    }
+  ],
+  "handle": [
+    {
+      "handler": "reverse_proxy",
+      "upstreams": [
+        {
+          "dial": "localhost:80"
+        }
+      ],
+      "load_balancing": {
+        "selection_policy": {
+          "policy": "cookie",
+          "name": "sid",
+          "fallback": {
+            "policy": "round_robin"
+          }
+        }
+      }
+    }
+  ]
+}

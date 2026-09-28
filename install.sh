@@ -24,6 +24,14 @@
 #                            GitHub release (no checksum verification)
 #   LEVELRAIL_SKIP_CHECKSUM=1  install even when checksums.txt is missing or
 #                            does not list the binary (unverified; opt-out only)
+#   APP_INSTALL_VERIFY       signature check on checksums.txt (cosign keyless):
+#                            auto (default) verifies when cosign is installed
+#                            and the release ships a signature; require fails
+#                            unless the signature verifies; off skips it. The
+#                            SHA-256 checksum is always verified.
+#   LEVELRAIL_RELEASE_BASE_URL  download release assets from this https mirror
+#                            directory instead of GitHub (LEVELRAIL_INSECURE_MIRROR=1
+#                            permits http, for tests only)
 #   LEVELRAIL_PUBLIC_IP      skip public IP discovery
 #   LEVELRAIL_SKIP_REACHABILITY=1  skip the external port 80/443 self-test
 #   LEVELRAIL_MIN_RAM_MB     RAM warning threshold (default: 1024)
@@ -50,6 +58,9 @@ MIN_RAM_MB="${LEVELRAIL_MIN_RAM_MB:-1024}"
 MIN_DISK_GB="${LEVELRAIL_MIN_DISK_GB:-10}"
 MIN_DOCKER_MAJOR="${LEVELRAIL_MIN_DOCKER_MAJOR:-24}"
 HEALTH_WAIT="${LEVELRAIL_HEALTH_WAIT:-60}"
+VERIFY_MODE="${APP_INSTALL_VERIFY:-auto}"
+COSIGN_IDENTITY_REGEXP="https://github.com/${REPO}/\\.github/workflows/release\\.yml@.*"
+COSIGN_OIDC_ISSUER="https://token.actions.githubusercontent.com"
 
 log() { printf '%s\n' "$*"; }
 warn() { printf 'warning: %s\n' "$*" >&2; }
@@ -84,6 +95,10 @@ for arg in "$@"; do
 	esac
 done
 [ "$PURGE" -eq 0 ] || [ "$MODE" = "uninstall" ] || fatal "--purge only applies to uninstall"
+case "$VERIFY_MODE" in
+auto | require | off) ;;
+*) fatal "APP_INSTALL_VERIFY must be auto, require or off, got: $VERIFY_MODE" ;;
+esac
 
 [ "$(id -u)" -eq 0 ] || fatal "must run as root, e.g.: curl -fsSL <url> | sudo sh"
 
@@ -284,13 +299,23 @@ fetch_binary() {
 
 	resolve_version
 	asset="levelrail-linux-${GOARCH}"
-	base_url="https://github.com/${REPO}/releases/download/${VERSION}"
+	base_url="${LEVELRAIL_RELEASE_BASE_URL:-https://github.com/${REPO}/releases/download/${VERSION}}"
+	proto="$HTTPS_ONLY"
+	case "$base_url" in
+	https://*) ;;
+	http://*)
+		[ "${LEVELRAIL_INSECURE_MIRROR:-}" = "1" ] || fatal "LEVELRAIL_RELEASE_BASE_URL must be https (LEVELRAIL_INSECURE_MIRROR=1 allows http for tests)"
+		proto="=http"
+		;;
+	*) fatal "LEVELRAIL_RELEASE_BASE_URL must start with https://" ;;
+	esac
 	log "Downloading ${asset} ${VERSION}..."
-	curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 300 -o "$dest" "${base_url}/${asset}" ||
+	curl -fsSL --proto "$proto" --tlsv1.2 --connect-timeout 10 --max-time 300 -o "$dest" "${base_url}/${asset}" ||
 		fatal "download failed: ${base_url}/${asset}. The release may not ship this binary; pick another with LEVELRAIL_VERSION."
 
 	sums="${dest}.checksums"
-	if curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 60 -o "$sums" "${base_url}/checksums.txt" 2>/dev/null; then
+	if curl -fsSL --proto "$proto" --tlsv1.2 --connect-timeout 10 --max-time 60 -o "$sums" "${base_url}/checksums.txt" 2>/dev/null; then
+		verify_signature "$sums" "$base_url" "$proto"
 		expected="$(grep " ${asset}\$" "$sums" | awk '{ print $1 }')"
 		if [ -n "$expected" ]; then
 			actual="$(sha256sum "$dest" | awk '{ print $1 }')"
@@ -304,7 +329,36 @@ fetch_binary() {
 	fi
 }
 
+# verify_signature checks the cosign keyless bundle over checksums.txt. A
+# failed verification is always fatal; only a missing cosign or bundle is
+# tolerated, and never under APP_INSTALL_VERIFY=require.
+verify_signature() {
+	sums="$1"
+	base_url="$2"
+	proto="$3"
+	[ "$VERIFY_MODE" != "off" ] || return 0
+	if ! command -v cosign >/dev/null 2>&1; then
+		[ "$VERIFY_MODE" != "require" ] || fatal "APP_INSTALL_VERIFY=require but cosign is not installed. Install it from https://docs.sigstore.dev/cosign/system_config/installation/ or unset APP_INSTALL_VERIFY."
+		log "cosign not found: verifying the SHA-256 checksum only (install cosign to also verify the release signature)."
+		return 0
+	fi
+	bundle="${sums}.sigstore.json"
+	if ! curl -fsSL --proto "$proto" --tlsv1.2 --connect-timeout 10 --max-time 60 -o "$bundle" "${base_url}/checksums.txt.sigstore.json" 2>/dev/null; then
+		[ "$VERIFY_MODE" != "require" ] || fatal "APP_INSTALL_VERIFY=require but ${VERSION} publishes no checksums.txt.sigstore.json"
+		warn "${VERSION} publishes no signature for checksums.txt, verifying the SHA-256 checksum only"
+		return 0
+	fi
+	cosign verify-blob --bundle "$bundle" \
+		--certificate-identity-regexp "$COSIGN_IDENTITY_REGEXP" \
+		--certificate-oidc-issuer "$COSIGN_OIDC_ISSUER" "$sums" >/dev/null 2>&1 ||
+		fatal "cosign signature verification of checksums.txt failed for ${VERSION}, refusing to install"
+	log "Signature verified (cosign, keyless)."
+}
+
 checksum_unavailable() {
+	if [ "$VERIFY_MODE" = "require" ]; then
+		fatal "$1, and APP_INSTALL_VERIFY=require does not allow an unverified install"
+	fi
 	if [ "${LEVELRAIL_SKIP_CHECKSUM:-}" = "1" ]; then
 		warn "$1, skipping verification because LEVELRAIL_SKIP_CHECKSUM=1"
 		return 0

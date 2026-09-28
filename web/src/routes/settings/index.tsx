@@ -1,5 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import type { ComponentType } from 'react'
+import { useExperimentalFeatures } from '../../hooks/useExperimental'
+import {
+  filterByFeature,
+  type ExperimentalFeature,
+} from '../../lib/experimental'
 import {
   UserIcon,
   ShieldIcon,
@@ -19,8 +24,10 @@ import {
   ArrowCircleUpIcon,
   ClockCounterClockwiseIcon,
   PackageIcon,
+  DownloadSimpleIcon,
   VaultIcon,
   RobotIcon,
+  PlugsConnectedIcon,
   SparkleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -39,6 +46,7 @@ interface SettingsCardDef {
   icon: ComponentType<{ className?: string }>
   title: string
   description: string
+  feature?: ExperimentalFeature
 }
 
 interface SettingsSection {
@@ -67,6 +75,12 @@ const sections: SettingsSection[] = [
         icon: KeyIcon,
         title: 'API tokens',
         description: 'Scoped, revocable credentials for the CLI, CI, and MCP.',
+      },
+      {
+        to: '/settings/agents',
+        icon: PlugsConnectedIcon,
+        title: 'Agents',
+        description: 'Connect an AI agent over MCP and manage its tokens.',
       },
     ],
   },
@@ -135,6 +149,12 @@ const sections: SettingsSection[] = [
         description: 'Pull private images with build.type: image.',
       },
       {
+        to: '/settings/import-platform',
+        icon: DownloadSimpleIcon,
+        title: 'Import from another platform',
+        description: 'Bring apps over from Coolify, Dokploy or CapRover.',
+      },
+      {
         to: '/settings/email',
         icon: EnvelopeIcon,
         title: 'Email',
@@ -146,6 +166,7 @@ const sections: SettingsSection[] = [
         title: 'Cloudflare Tunnel',
         description:
           'Expose this control plane without opening an inbound port.',
+        feature: 'cloudflare-tunnel',
       },
       {
         to: '/settings/vault',
@@ -160,6 +181,7 @@ const sections: SettingsSection[] = [
         title: 'AI Assistant',
         description:
           'Bring your own LLM API key for the platform chat assistant.',
+        feature: 'ai-chat',
       },
     ],
   },
@@ -202,6 +224,7 @@ const sections: SettingsSection[] = [
 ]
 
 function SettingsHubPage() {
+  const experimental = useExperimentalFeatures()
   return (
     <div className="space-y-8">
       <div>
@@ -217,7 +240,7 @@ function SettingsHubPage() {
             {section.heading}
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {section.cards.map((card) => (
+            {filterByFeature(section.cards, experimental).map((card) => (
               <Link key={card.to} to={card.to} className="block">
                 <Card className="h-full transition-colors hover:ring-foreground/20">
                   <CardHeader>

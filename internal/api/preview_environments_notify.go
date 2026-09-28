@@ -34,14 +34,14 @@ func (rt *Router) notifyPreviewPending(ctx context.Context, appName string, gs s
 	rt.notifyPreviewPendingGitea(ctx, appName, gs, headSHA)
 }
 
-// notifyPreviewSuccess fans out a success commit-status and PR/MR
-// comment notification, the same "exactly one provider matches" shape
-// notifyPreviewPending's own doc comment describes.
-func (rt *Router) notifyPreviewSuccess(ctx context.Context, appName string, gs store.GitSource, prNumber int, headSHA, previewURL string) {
-	rt.notifyPreviewSuccessGitHub(ctx, appName, gs, prNumber, headSHA, previewURL)
-	rt.notifyPreviewSuccessGitLab(ctx, appName, gs, prNumber, headSHA, previewURL)
-	rt.notifyPreviewSuccessBitbucket(ctx, appName, gs, prNumber, headSHA, previewURL)
-	rt.notifyPreviewSuccessGitea(ctx, appName, gs, prNumber, headSHA, previewURL)
+// notifyPreviewSuccess fans out a success commit status, the same
+// "exactly one provider matches" shape notifyPreviewPending's own doc
+// comment describes.
+func (rt *Router) notifyPreviewSuccess(ctx context.Context, appName string, gs store.GitSource, headSHA, previewURL string) {
+	rt.notifyPreviewSuccessGitHub(ctx, appName, gs, headSHA, previewURL)
+	rt.notifyPreviewSuccessGitLab(ctx, appName, gs, headSHA, previewURL)
+	rt.notifyPreviewSuccessBitbucket(ctx, appName, gs, headSHA, previewURL)
+	rt.notifyPreviewSuccessGitea(ctx, appName, gs, headSHA, previewURL)
 }
 
 // notifyPreviewFailure fans out a failure commit-status notification,
@@ -54,19 +54,12 @@ func (rt *Router) notifyPreviewFailure(ctx context.Context, appName string, gs s
 	rt.notifyPreviewFailureGitea(ctx, appName, gs, headSHA, reason)
 }
 
-// notifyPreviewTornDown fans out a teardown notice, the same "exactly
-// one provider matches" shape notifyPreviewPending's own doc comment
-// describes. Loads gs once here (rather than each provider's own
-// function loading it independently) since teardown is called from
-// three sites (the pull-request-closed webhook, the manual teardown
-// route, and the TTL sweep), only one of which already has gs in scope.
-func (rt *Router) notifyPreviewTornDown(ctx context.Context, preview store.PreviewEnvironment) {
+// notifyPreviewRemoved edits the pull request's status comment to say the
+// preview is gone and why.
+func (rt *Router) notifyPreviewRemoved(ctx context.Context, preview store.PreviewEnvironment, reason string) {
 	gs, err := rt.gitSources.GetGitSource(ctx, preview.AppName)
 	if err != nil {
 		return
 	}
-	rt.notifyPreviewTornDownGitHub(ctx, preview, *gs)
-	rt.notifyPreviewTornDownGitLab(ctx, preview, *gs)
-	rt.notifyPreviewTornDownBitbucket(ctx, preview, *gs)
-	rt.notifyPreviewTornDownGitea(ctx, preview, *gs)
+	rt.upsertPreviewComment(ctx, *gs, &preview, previewCommentRemoved, reason)
 }

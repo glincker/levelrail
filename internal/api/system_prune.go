@@ -141,7 +141,7 @@ func desiredServiceContainerNames(svc store.DesiredService) []string {
 	if replicas < 1 {
 		replicas = 1
 	}
-	base := application.ContainerName(svc.Name, svc.Image, svc.RestartNonce)
+	base := application.ContainerName(svc.Name, application.NameImage(svc), svc.RestartNonce)
 	names := make([]string, 0, replicas)
 	names = append(names, base)
 	for i := 1; i < replicas; i++ {

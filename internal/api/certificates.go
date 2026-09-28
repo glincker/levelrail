@@ -98,8 +98,21 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 	}
 	renewal := alerting.CertRenewalStates(infos, obs, rt.certRenewalStalledThreshold, time.Now())
 
+	canSee, err := rt.appVisibilityFilter(r)
+	if err != nil {
+		rt.internalError(w, "api: list certificates: visibility", err)
+		return
+	}
+	owners, err := rt.domainOwners(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: list certificates: domain owners", err)
+		return
+	}
 	out := make([]certificateStatus, 0, len(infos))
 	for _, info := range infos {
+		if !certVisible(info.Domain, info.SANs, owners, canSee) {
+			continue
+		}
 		out = append(out, certificateStatus{
 			Domain:    info.Domain,
 			SANs:      info.SANs,

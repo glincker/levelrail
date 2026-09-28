@@ -10,13 +10,17 @@ import (
 	"maps"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
+	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 // appResource is the wire shape for an app: store.DesiredService plus
@@ -29,7 +33,10 @@ import (
 type appResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
-	Port  int    `json:"port"`
+	// ImageDigest is the content Image is pinned to, or a build's local
+	// image ID; empty for a legacy unpinned tag.
+	ImageDigest string `json:"image_digest,omitempty"`
+	Port        int    `json:"port"`
 	// HostPort pins the host-side port Docker binds Port to
 	// (store.DesiredService.HostPort, migrations/0056). nil means "let
 	// Docker assign one", the ordinary case; a real conflict at deploy
@@ -267,6 +274,7 @@ func toAppResource(svc store.DesiredService) appResource {
 	}
 
 	return appResource{
+		ImageDigest:         appImageDigest(svc),
 		Name:                svc.Name,
 		Image:               svc.Image,
 		Port:                svc.Port,
@@ -436,49 +444,6 @@ func validateAppResource(a appResource) error {
 	return nil
 }
 
-// handleListApps handles GET /api/v1/apps. Status is computed from one
-// batched conditions query (store.GetConditionsForControllers), not a
-// GetConditions call per app: see appListResource's own doc comment for
-// why that matters at 50+ rows.
-func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
-	svcs, err := rt.apps.ListDesiredServices(r.Context())
-	if err != nil {
-		rt.logger.Error("api: list apps failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	controllerNames := make([]string, len(svcs))
-	appNames := make([]string, len(svcs))
-	for i, s := range svcs {
-		controllerNames[i] = applicationControllerName(s.Name)
-		appNames[i] = s.Name
-	}
-	conditionsByController, err := rt.deploys.GetConditionsForControllers(r.Context(), controllerNames)
-	if err != nil {
-		rt.logger.Error("api: list apps: batch load conditions failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	tagsByApp, err := rt.tags.ListTagsForApps(r.Context(), appNames)
-	if err != nil {
-		rt.logger.Error("api: list apps: batch load tags failed", slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	out := make([]appListResource, 0, len(svcs))
-	for _, s := range svcs {
-		resource := toAppResource(s)
-		resource.Tags = tagNamesFromStoreTags(tagsByApp[s.Name])
-		out = append(out, appListResource{
-			appResource: resource,
-			Status:      summarizeAppConditions(conditionsByController[applicationControllerName(s.Name)]),
-		})
-	}
-	writeJSON(w, http.StatusOK, out)
-}
-
 // handleCreateApp handles POST /api/v1/apps. Rejects a name that already
 // exists rather than silently overwriting it: that's what PUT
 // (handleUpdateApp) is for. A domain conflict (store.ErrDomainTaken,
@@ -539,6 +504,9 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, "api: create app") {
 		return
 	}
+	if !rt.settleGPUCreatePlacement(w, r, body, &req) {
+		return
+	}
 
 	_, err = rt.apps.GetDesiredService(r.Context(), req.Name)
 	if err == nil {
@@ -583,6 +551,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 			desired.VaultEnv[k] = store.VaultEnvRef{Path: v.Path, Key: v.Key}
 		}
 	}
+	resolution := rt.resolveCreateImage(r.Context(), &desired)
 	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
@@ -629,8 +598,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// pendingImageTag): its own POST .../builds call records the real
 	// history entry once a build actually succeeds.
 	if !spec.IsPendingImage(req.Image) {
-		rt.recordPlainDeployAttempt(r.Context(), desired, req.Image)
+		rt.recordResolvedDeployAttempt(r.Context(), desired, desired.Image, store.DeployAttemptSourceImage, resolution)
 	}
+	req.Image = desired.Image
+	req.ImageDigest = appImageDigest(desired)
 
 	// A new app is never dirty regardless of what the client sent:
 	// toDesiredService never carries EnvDirty into the INSERT (it's
@@ -650,6 +621,28 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)
+}
+
+// resolveCreateImage pins desired's image the way a deploy does (registry
+// digest, or the local image ID when only a local image exists) and returns
+// the resolution to record on the first deploy attempt. A resolver failure
+// leaves the image as given: creating an app must not depend on a registry.
+func (rt *Router) resolveCreateImage(ctx context.Context, desired *store.DesiredService) deploy.ImageResolution {
+	res := deploy.ImageResolution{Image: desired.Image}
+	if spec.IsPendingImage(desired.Image) {
+		return res
+	}
+	got, err := deploy.ResolveImage(ctx, rt.imageResolver, desired.Image, nil, false)
+	if err != nil {
+		rt.logger.Warn("api: create app: resolve image failed, deploying it unresolved", slog.String("error", err.Error()), slog.String("name", desired.Name))
+		return res
+	}
+	desired.Image = got.Image
+	desired.ImageID, desired.ImageIDRef = "", ""
+	if got.LocalID != "" && docker.ImageDigestOf(got.Image) == "" {
+		desired.ImageID, desired.ImageIDRef = got.LocalID, got.Image
+	}
+	return got
 }
 
 // handleGetApp handles GET /api/v1/apps/{name}.
@@ -674,7 +667,36 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resource.Tags = tagNames
-	writeJSON(w, http.StatusOK, resource)
+	writeJSON(w, http.StatusOK, appWithRequests{
+		appResource:              resource,
+		Requests:                 rt.requestSummaryFor(r, name),
+		PreviousReleaseHeldUntil: rt.previousReleaseHeldUntil(r.Context(), name),
+	})
+}
+
+// previousReleaseHeldUntil is when the held previous release is due for
+// removal, nil when none is held or the hold has already lapsed.
+func (rt *Router) previousReleaseHeldUntil(ctx context.Context, name string) *time.Time {
+	events := rt.appEvents()
+	if events == nil {
+		return nil
+	}
+	applied, err := events.GetAppliedConfig(ctx, name)
+	if err != nil || applied == nil || !applied.HeldUntil.After(time.Now()) {
+		return nil
+	}
+	until := applied.HeldUntil.UTC()
+	return &until
+}
+
+// appWithRequests is GET /api/v1/apps/{name}'s body: the app plus its recent
+// ingress request summary (rate, error rate, p95), omitted without telemetry.
+type appWithRequests struct {
+	appResource
+	Requests *telemetry.RequestSummary `json:"requests,omitempty"`
+	// PreviousReleaseHeldUntil is when the kept previous release, an instant
+	// rollback target, is removed. Omitted when none is held.
+	PreviousReleaseHeldUntil *time.Time `json:"previous_release_held_until,omitempty"`
 }
 
 // handleUpdateApp handles PUT /api/v1/apps/{name}. Full replace, same as
@@ -692,6 +714,10 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 
 	if err := validateAppResource(req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if len(req.Secrets) > 0 {
+		writeError(w, http.StatusBadRequest, "secret values cannot be set through this endpoint: use PUT /api/v1/apps/{name}/secrets/{key}")
 		return
 	}
 
@@ -718,6 +744,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// every save: SaveDesiredService, unlike NodeID/StorageTargetID,
 	// always writes this column.
 	desired.Egress = existing.Egress
+	preserveUnsentAppFields(&desired, *existing, req, imageChanged)
 	if imageChanged {
 		desired.EnvDirty = false
 	} else {
@@ -740,6 +767,9 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	if imageChanged {
 		rt.recordPlainDeployAttempt(r.Context(), desired, req.Image)
 	}
+	for _, ev := range updateEvents(name, *existing, desired) {
+		rt.recordAppEvent(r, ev)
+	}
 	// SaveDesiredService never touches node_id or project_id (their own
 	// doc comments explain why), so the response reflects existing's
 	// placement and project, not req's: req.NodeID/req.ProjectID are
@@ -750,6 +780,8 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// value happening to look right.
 	req.NodeID = existing.NodeID
 	req.ProjectID = existing.ProjectID
+	req.SecretEnv = store.SecretEnvNames(desired.SecretEnv)
+	req.VaultEnv = toAppResource(desired).VaultEnv
 	// Re-fetch rather than reusing req.toDesiredService(): NodeID and
 	// RestartNonce (both needed to compute the real running container's
 	// name, desiredServiceContainerNames) are response-only fields this
@@ -816,6 +848,14 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		rt.logger.Error("api: set app node: load existing failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	if msg, err := rt.gpuPlacementError(r.Context(), existing, req.NodeID); err != nil {
+		rt.logger.Error("api: set app node: gpu check failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	} else if msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
 	if err := rt.applyPlainNodeMove(r.Context(), name, existing.NodeID, req.NodeID); errors.Is(err, store.ErrServiceNotFound) {
@@ -910,6 +950,7 @@ func (rt *Router) handleRestartApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventRestart, Title: "Restarted"})
 	rt.reloadAndWriteApp(w, r, name, "restart app")
 }
 
@@ -930,6 +971,7 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSuspend, Title: "Stopped"})
 	rt.reloadAndWriteApp(w, r, name, "stop app")
 }
 
@@ -948,6 +990,7 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventResume, Title: "Started"})
 	rt.reloadAndWriteApp(w, r, name, "start app")
 }
 
@@ -966,41 +1009,45 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 // down once its App row disappears would never actually go away.
 func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-
-	existing, err := rt.apps.GetDesiredService(r.Context(), name)
+	err := rt.deleteApp(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	}
 	if err != nil {
-		rt.logger.Error("api: delete app: load existing failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		rt.internalError(w, "api: delete app failed", err, slog.String("name", name))
 		return
 	}
-	appID := existing.AppID
-
-	if err := rt.apps.DeleteDesiredService(r.Context(), name); err != nil {
-		if errors.Is(err, store.ErrServiceNotFound) {
-			writeError(w, http.StatusNotFound, "app not found")
-			return
-		}
-		rt.logger.Error("api: delete app failed", slog.String("error", err.Error()), slog.String("name", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-
-	rt.teardownServiceContainers(name, existing.NodeID)
-
-	if appID != "" {
-		rt.deleteAppIfOrphaned(r.Context(), appID)
-	}
-
-	// teardownServiceContainers above already removes this app's own
-	// containers directly, not via the reconciler; the nudge here is for
-	// application/network-cleanup, the other controller with work to do
-	// once this app's App row is gone.
 	rt.nudgeReconciler()
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// deleteApp removes name's desired state, tears its containers down in the
+// background and drops its App row if it was the last member. Callers nudge
+// the reconciler afterwards.
+func (rt *Router) deleteApp(ctx context.Context, name string) error {
+	existing, err := rt.apps.GetDesiredService(ctx, name)
+	if err != nil {
+		return fmt.Errorf("load app %q: %w", name, err)
+	}
+	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
+		return fmt.Errorf("delete app %q: %w", name, err)
+	}
+	rt.teardownServiceContainers(name, existing.NodeID)
+	if rt.preview != nil {
+		if err := rt.preview.DeleteApp(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove previews failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
+	if rt.supplyChain != nil {
+		if err := rt.supplyChain.DeleteApp(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove supply chain data failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
+	if existing.AppID != "" {
+		rt.deleteAppIfOrphaned(ctx, existing.AppID)
+	}
+	return nil
 }
 
 // teardownServiceContainers stops name's running containers in the

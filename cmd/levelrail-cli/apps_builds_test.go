@@ -9,6 +9,31 @@ import (
 	"testing"
 )
 
+// TestAppsUsage_BuildsTriggerFlagsExist guards the apps summary line
+// against naming a flag the subcommand does not accept.
+func TestAppsUsage_BuildsTriggerFlagsExist(t *testing.T) {
+	var line string
+	for _, l := range strings.Split(appsUsage("cli"), "\n") {
+		if strings.Contains(l, "apps builds trigger") {
+			line = l
+		}
+	}
+	if line == "" {
+		t.Fatal("apps usage has no builds trigger line")
+	}
+	var stdout, stderr bytes.Buffer
+	run("cli", []string{"apps", "builds", "trigger", "-h"}, &stdout, &stderr, envMap())
+	help := stdout.String() + stderr.String()
+	for _, tok := range strings.Fields(line) {
+		if !strings.HasPrefix(tok, "--") {
+			continue
+		}
+		if !strings.Contains(help, "-"+strings.TrimPrefix(tok, "--")+" ") {
+			t.Errorf("summary names %s, which apps builds trigger -h does not list", tok)
+		}
+	}
+}
+
 func TestRun_AppsBuilds_Trigger(t *testing.T) {
 	var gotMethod, gotPath string
 	var gotBody buildTriggerRequest
@@ -56,6 +81,37 @@ func TestRun_AppsBuilds_Trigger_BuildArgs(t *testing.T) {
 
 	if gotBody.Build.Args["FOO"] != "bar" {
 		t.Errorf("request body build.args = %+v, want FOO=bar", gotBody.Build.Args)
+	}
+}
+
+// TestRun_AppsBuilds_Trigger_DetectsFramework covers F-018's CLI side
+// for a manual rebuild: "apps builds trigger" runs the same pre-flight
+// framework detection the web wizard runs and forwards the result as
+// detected_framework, so a rebuild triggered from the CLI records a
+// FRAMEWORK value too.
+func TestRun_AppsBuilds_Trigger_DetectsFramework(t *testing.T) {
+	var gotBody buildTriggerRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/v1/build/detect":
+			_, _ = w.Write([]byte(`{"provider":"node","framework_name":"Next.js","detected":true}`))
+		default:
+			_ = json.NewDecoder(r.Body).Decode(&gotBody)
+			w.WriteHeader(http.StatusAccepted)
+			_ = json.NewEncoder(w).Encode(buildTriggerResponse{ID: "deploy_1"})
+		}
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{
+		"apps", "builds", "trigger", "web",
+		"--repo", "https://example.com/org/web.git", "--ref", "main",
+		"--api-url", srv.URL,
+	})
+
+	if gotBody.DetectedFramework != "Next.js" {
+		t.Errorf("request body detected_framework = %q, want %q", gotBody.DetectedFramework, "Next.js")
 	}
 }
 

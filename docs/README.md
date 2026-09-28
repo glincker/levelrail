@@ -44,8 +44,15 @@ Four main types, plus two Levelrail-specific categories:
 | [master-key-rotation.md](master-key-rotation.md) | Rotate the envelope-encryption master key without losing access to stored secrets |
 | [migrating-from-coolify-dokploy-and-caprover.md](migrating-from-coolify-dokploy-and-caprover.md) | Move apps off a live Coolify, Dokploy, or CapRover instance with `levelrail-cli migrate` |
 | [github-actions.md](github-actions.md) | Deploy from a GitHub Actions workflow with the bundled composite Action |
+| [pipelines.md](pipelines.md) | Test, build, approve, and deploy with YAML pipelines: triggers, matrix, secrets, and approvals |
+| [platform-as-code.md](platform-as-code.md) | Describe projects, environments, apps, domains and databases as YAML, then export, diff, plan and apply them from the CLI, the dashboard, MCP or CI |
+| [deployments-page.md](deployments-page.md) | The cross-app Deployments page: live feed, filters, details drawer, actions and keyboard shortcuts |
+| [load-balancing.md](load-balancing.md) | Balance traffic across replicas and nodes with health checks, sticky sessions, weights and graceful cutovers, and export the setup as Terraform, CDK, CloudFormation or Caddy |
+| [deploy-previews.md](deploy-previews.md) | Opt-in thumbnails of each deploy, captured by a short-lived browser container: cost, privacy, retention and every `APP_PREVIEW_*` setting |
+| [supply-chain.md](supply-chain.md) | SBOM per Dockerfile build, an optional vulnerability scan in a short-lived container and a release gate: cost, coverage, retention and every `APP_BUILD_ATTEST` and `APP_SCAN_*` setting |
 | [domains-and-ingress.md](domains-and-ingress.md) | Why there's no reverse proxy to install, how `app.yaml` domains route to containers, and TLS's current honest status |
 | [acme-verification-runbook.md](acme-verification-runbook.md) | Verify real ACME certificate issuance against a live domain, step by step |
+| [importing-apps.md](importing-apps.md) | The New app import front door: repo URL, docker run, image, compose or Dockerfile in, deployment plan preview out |
 | [deploying-apps.md](deploying-apps.md) | An app's lifecycle: create, deploy, roll back, promote, health checks, resource limits, exec, and scheduled tasks |
 | [managing-databases.md](managing-databases.md) | Create and manage Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse resources |
 | [tags.md](tags.md) | Label and organize apps with arbitrary tags for filtering and grouping |
@@ -57,6 +64,7 @@ Four main types, plus two Levelrail-specific categories:
 | [backups-and-storage.md](backups-and-storage.md) | Backup targets, registry credentials, and app volume backups |
 | [templates-and-registry.md](templates-and-registry.md) | Deploy curated service templates from the catalog as Compose-backed apps |
 | [ai-assistant.md](ai-assistant.md) | Run `levelrail-mcp` over stdio or the network for an MCP-compatible AI assistant, and scope a token for it |
+| [agent-tooling-audit.md](agent-tooling-audit.md) | Tool counts and estimated token cost per MCP mode, the heaviest and overlapping tools, and the budget test |
 
 ### Reference
 
@@ -65,6 +73,7 @@ Four main types, plus two Levelrail-specific categories:
 | [app-spec-reference.md](app-spec-reference.md) | Every `app.yaml` field, validated against `internal/spec`'s JSON Schema |
 | [feature-catalog.md](feature-catalog.md) | Every dashboard page, API resource group, and CLI command group, plus known UI gaps |
 | [cli-reference.md](cli-reference.md) | Every `levelrail` CLI command, organized by command group, extracted from source |
+| [mcp-tool-surface.md](mcp-tool-surface.md) | Estimated model context cost of the MCP tool list per toolset, and the `agent-core` profile |
 | [api-reference.md](api-reference.md) | Every REST route (272 total) grouped by resource, with ability and handler |
 
 ### Explanation
@@ -72,6 +81,9 @@ Four main types, plus two Levelrail-specific categories:
 | Doc | Covers |
 | --- | --- |
 | [architecture.md](architecture.md) | How Levelrail is actually built today: reconciler, ingress, builds, storage |
+| [resilience.md](resilience.md) | What survives a control plane process crash and what does not, measured live: running containers, node agents, and the embedded ingress outage window |
+| [threat-model.md](threat-model.md) | Trust boundaries, assets, attackers, mitigations with file references, known gaps, and how to report a vulnerability |
+| [security-alert-verdicts.md](security-alert-verdicts.md) | Verdict and evidence for each code scanning alert: fixed, false positive, or accepted risk |
 | [comparison.md](comparison.md) | How Levelrail differs from Coolify, Dokploy, CapRover, Dokku, Kamal |
 
 ### Design proposals
@@ -90,6 +102,9 @@ noted per-document since these move between draft, proposed, accepted
 | Doc | Covers |
 | --- | --- |
 | [roadmap.md](roadmap.md) | What's Done, In progress, and explicitly out of scope, kept current against `main` |
+| [feature-status.md](feature-status.md) | Maturity label and test evidence per feature, and README claims checked against the code |
+| [experimental-features.md](experimental-features.md) | The `APP_EXPERIMENTAL` switch, what each gated feature does while off, and how the CLI, MCP, and web read it |
+| [ci.md](ci.md) | How the CI lanes, required checks and local hooks fit together |
 | [performance.md](performance.md) | Measured idle CPU, memory, and API latency at 0, 100, and 500 apps, and how to reproduce it |
 
 ## Support and contributing

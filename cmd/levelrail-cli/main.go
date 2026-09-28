@@ -58,6 +58,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return exitUsage
 	}
 
+	if rejectDisabledExperimental(prog, args, stderr) {
+		return exitUsage
+	}
+
 	switch args[0] {
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, rootUsage(prog))
@@ -66,6 +70,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
 	case "databases":
 		return runDatabases(prog, args[1:], stdout, stderr, lookupEnv)
+	case "models":
+		return runModels(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth":
 		return runAuth(prog, args[1:], stdout, stderr, lookupEnv)
 	case "profile":
@@ -90,8 +96,16 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runRegistry(prog, args[1:], stdout, stderr, lookupEnv)
 	case "channels":
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
+	case "alerts":
+		return runAlerts(prog, args[1:], stdout, stderr, lookupEnv)
+	case "status-page":
+		return runStatusPage(prog, args[1:], stdout, stderr, lookupEnv)
 	case "shared-env":
 		return runSharedEnv(prog, args[1:], stdout, stderr, lookupEnv)
+	case "storage":
+		return runStorage(prog, args[1:], stdout, stderr, lookupEnv)
+	case "logs":
+		return runLogs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backup-targets":
 		return runBackupTargets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "registry-credentials":
@@ -100,10 +114,26 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runFlags(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tags":
 		return runTags(prog, args[1:], stdout, stderr, lookupEnv)
+	case "pipelines":
+		return runPipelines(prog, args[1:], stdout, stderr, lookupEnv)
+	case "deployments":
+		return runDeployments(prog, args[1:], stdout, stderr, lookupEnv)
+	case "lb":
+		return runLB(prog, args[1:], stdout, stderr, lookupEnv)
+	case "preview":
+		return runPreview(prog, args[1:], stdout, stderr, lookupEnv)
+	case "apply":
+		return runApply(prog, args[1:], stdout, stderr, lookupEnv)
+	case "diff":
+		return runDiff(prog, args[1:], stdout, stderr, lookupEnv)
+	case "export":
+		return runExport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "nodes":
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
 		return runStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "upgrade":
+		return runUpgrade(prog, args[1:], stdout, stderr, lookupEnv)
 	case "version":
 		return runVersion(prog, args[1:], stdout, stderr, lookupEnv)
 	case "audit-log":
@@ -112,6 +142,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAuditPurge(prog, args[1:], stdout, stderr, lookupEnv)
 	case "attention":
 		return runAttention(prog, args[1:], stdout, stderr, lookupEnv)
+	case "init":
+		return runInit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "containers":
@@ -132,6 +164,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runSecrets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "migrate":
 		return runMigrate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "import":
+		return runImport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "completion":
 		return runCompletion(prog, args[1:], stdout, stderr, lookupEnv)
 	case "settings":
@@ -162,7 +196,7 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 }
 
 func rootUsage(prog string) string {
-	return fmt.Sprintf(`%[1]s: a scriptable client for the control plane API.
+	return filterExperimentalUsage(fmt.Sprintf(`%[1]s: a scriptable client for the control plane API.
 
 Usage:
   %[1]s apps create [flags]         create an app
@@ -170,6 +204,7 @@ Usage:
   %[1]s apps get <name> [flags]       show one app
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
   %[1]s apps deploy-compose <name> --file compose.yaml [flags]   deploy a Docker Compose file as an app
+  %[1]s import <repo-url|image|-f file|--docker-run "..."> [--deploy] [flags]   preview or deploy anything: repo, image, docker run, compose, Dockerfile
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps restart <name> [flags]     recreate the running container, no image change
   %[1]s apps status <name> [flags]   show an app's current reconcile conditions
@@ -179,19 +214,31 @@ Usage:
   %[1]s databases create [flags]     create a managed database
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
+  %[1]s models list|get|deploy|logs|delete|restart|rotate-key|gpus [flags]   AI models on GPU nodes
   %[1]s domains list [flags]           list every app's domains in one call
+  %[1]s preview status|enable|disable|capture|prune <app> [flags]   deploy preview screenshots (opt-in per app)
+  %[1]s deployments list|summary|watch [flags]   deploys across all apps, filterable, with live stream
   %[1]s backups list|trigger|restore <database> [flags]   database backup history, manual trigger, and restore
   %[1]s pitr enable|disable|status|base-backups|restore <database> [flags]   point-in-time restore (postgres only)
   %[1]s app-volume-backups list|trigger|restore <app> <volume> [flags]   app volume backup history, manual trigger, and restore
   %[1]s cloudflare-tunnel get|set|disconnect [flags]   expose the control plane through a Cloudflare Tunnel
   %[1]s vault get|set|disconnect [flags]               configure resolving app secrets from an external HashiCorp Vault
   %[1]s channels list|create|delete|test [flags]           manage notification channels (Slack, Discord, Telegram, email, Pushover, webhook)
+  %[1]s alerts silences|silence|maintenance|history        mute alerts, schedule maintenance windows, review alert history
+  %[1]s status-page get|set|preview|components|incidents    manage the opt-in public status page
   %[1]s shared-env list|set|delete --scope SCOPE --id ID [flags]   manage project/organization/environment-scoped shared env vars, plain or secret
   %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations
+  %[1]s storage providers|list|add|test|delete [flags]   manage S3-compatible storage destinations (AWS S3, R2, B2, MinIO, Wasabi, custom)
+  %[1]s logs archive set|status|remove, logs dump|ls|fetch [flags]   archive node-local logs to a storage destination
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s registry status|enable|disable [flags]                 manage Levelrail's own built-in container registry
   %[1]s flags create|list|get|set|delete [flags]              manage feature flags, read live by a running app via GET /api/v1/flags/evaluate/{key}
+  %[1]s pipelines list|validate|save|delete|run|runs|logs|cancel|approve [flags]   CI/CD pipelines: run, watch, approve, cancel
   %[1]s tags list|create|delete|apps [flags]                  manage tags, always identified by name, arbitrary labels for organizing and filtering apps
+  %[1]s lb show|set|clear|status|export|import <app> [flags]  load balancer across an app's replicas: config, live upstreams, terraform/cdk/cloudformation/caddy export
+  %[1]s apply -f file|dir|- [--dry-run] [--prune --source S] [flags]   converge to YAML resource files: plan, diff, apply
+  %[1]s diff -f dir [flags]                                    drift between the files and live state, exit 2 when they differ
+  %[1]s export [--project P] [--app A] [-o dir|-] [flags]      write live state as stable resource files
   %[1]s apps tag <name> <tag> [flags]                          attach a tag (by name) to an app
   %[1]s apps untag <name> <tag> [flags]                        detach a tag (by name) from an app
   %[1]s nodes list|get|delete [flags]                        manage nodes
@@ -199,10 +246,12 @@ Usage:
   %[1]s nodes cordon|uncordon|drain|health|workloads <id> [flags]   node scheduling and maintenance
   %[1]s nodes mesh|rotate-key [id] [flags]                          WireGuard mesh status and key rotation
   %[1]s status [flags]                                        control plane status, including local Docker daemon reachability
+  %[1]s upgrade [--no-backup] [flags]                          preflight checks, backup, and the command that upgrades (never upgrades itself)
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
   %[1]s audit-purge [flags]                                   delete audit log entries past the retention window now
   %[1]s attention [flags]                                     everything failing right now: apps, nodes, certificates, doctor checks
+  %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database
@@ -213,12 +262,14 @@ Usage:
   %[1]s invites create|list|revoke [flags]                     invite a teammate by email, list or revoke pending invites
   %[1]s iam policies create|list|get|update|delete|attach|detach|attachments [flags]   resource-scoped Allow/Deny policies, additive on top of --abilities
   %[1]s secrets rotate-master-key --new-key-file PATH [flags]   rotate the envelope-encryption master key
+  %[1]s secrets binding-status|rebind [flags]   count and bind secret values not yet bound to their slot
   %[1]s auth login [flags]             authenticate and persist a new API token
   %[1]s auth login --profile NAME [flags]   authenticate and save it under a named profile instead of overwriting "default"
   %[1]s auth whoami [flags]           show who the current token authenticates as
   %[1]s profile list [flags]           list configured credentials profiles and their API URLs
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
+  %[1]s import platform coolify|dokploy|caprover --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
   %[1]s settings oauth|email|ingress|ai-assistant get|set [flags]   configure OAuth sign-in, outbound email, ingress/ACME, and the BYOK AI assistant
   %[1]s git-providers [flags]                             connection status and capabilities for every git provider in one call
@@ -249,5 +300,5 @@ Auth and target:
   command in this CLI already follows.
 
 Run "%[1]s apps -h", "%[1]s databases -h", or "%[1]s <command> <subcommand> -h" for more.
-`, prog, envAPIToken, envAPIURL, defaultAPIURL, envProfile, defaultProfile)
+`, prog, envAPIToken, envAPIURL, defaultAPIURL, envProfile, defaultProfile))
 }

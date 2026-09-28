@@ -5,9 +5,14 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"regexp"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// egressHostRe restricts allow hosts to a hostname or IPv4 literal: the
+// value is later word-split by the egress sidecar's shell script.
+var egressHostRe = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$`)
 
 // egressAllowResource is one host+port pair in an
 // egressPolicyResource's allow list, the wire shape of
@@ -99,8 +104,8 @@ func (rt *Router) handleSetAppEgressPolicy(w http.ResponseWriter, r *http.Reques
 	}
 	allow := make([]store.ServiceEgressAllow, len(req.Allow))
 	for i, a := range req.Allow {
-		if a.Host == "" {
-			writeError(w, http.StatusBadRequest, "allow entries require a non-empty host")
+		if !egressHostRe.MatchString(a.Host) {
+			writeError(w, http.StatusBadRequest, "allow entries require a hostname or IPv4 address")
 			return
 		}
 		if a.Port < 1 || a.Port > 65535 {

@@ -123,12 +123,18 @@ func (f *failingDeleteAppStore) DeleteDesiredService(ctx context.Context, name s
 // commit, and base branch ever vary, so it's hardcoded rather than a
 // parameter every call site would just repeat identically.
 func githubPullRequestBody(action string, number int, headSHA, baseRef string) []byte {
+	return githubPullRequestBodyFrom(action, number, headSHA, baseRef, "org/web")
+}
+
+// githubPullRequestBodyFrom is githubPullRequestBody with an explicit head
+// repository, so a fork pull request differs from the base "org/web".
+func githubPullRequestBodyFrom(action string, number int, headSHA, baseRef, headRepo string) []byte {
 	b, _ := json.Marshal(map[string]any{
 		"action": action,
 		"number": number,
 		"pull_request": map[string]any{
-			"head": map[string]any{"ref": "feature-x", "sha": headSHA},
-			"base": map[string]any{"ref": baseRef},
+			"head": map[string]any{"ref": "feature-x", "sha": headSHA, "repo": map[string]any{"full_name": headRepo}},
+			"base": map[string]any{"ref": baseRef, "repo": map[string]any{"full_name": "org/web"}},
 		},
 	})
 	return b

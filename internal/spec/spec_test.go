@@ -232,6 +232,15 @@ services:
 	}
 }
 
+func TestParse_EgressHostMustBeHostnameOrIPv4(t *testing.T) {
+	for _, host := range []string{"'a b'", "'a;reboot'", "'$(id)'", "'*'", "'-x'", "''"} {
+		yaml := "version: 1\nservices:\n  web:\n    build: { type: dockerfile }\n    port: 8080\n    egress:\n      mode: allowlist\n      allow:\n        - { host: " + host + ", port: 443 }\n"
+		if _, err := Parse([]byte(yaml)); err == nil {
+			t.Errorf("Parse accepted egress host %s", host)
+		}
+	}
+}
+
 func TestParse_NoEgressBlock_IsOpenEgressByDefault(t *testing.T) {
 	yaml := `
 version: 1

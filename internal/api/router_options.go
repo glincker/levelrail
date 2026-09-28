@@ -14,6 +14,12 @@ import (
 // Option configures optional Router behavior.
 type Option func(*Router)
 
+// WithDeployMaxConcurrent caps how many deploys run at once across all apps;
+// deploys over the cap wait as queued. Zero or less means unlimited.
+func WithDeployMaxConcurrent(n int) Option {
+	return func(rt *Router) { rt.deployMaxConcurrent = n }
+}
+
 // WithSecretSetter enables PUT /api/v1/apps/{name}/secrets/{key}.
 // Without one configured (the default), that route returns 501: an
 // operator running Levelrail without APP_MASTER_KEY set gets a clear
@@ -455,6 +461,9 @@ func WithDataDir(path string) Option {
 // time before the HTTP server starts accepting requests.
 func (rt *Router) SetLocalNodeID(id string) {
 	rt.localNodeID = id
+	if rt.models != nil {
+		rt.models.SetLocalNodeID(id)
+	}
 }
 
 // SetMesh wires GET /api/v1/mesh and POST /api/v1/nodes/{id}/mesh/rotate-key
@@ -547,6 +556,31 @@ func WithDBPinger(p DBPinger) Option {
 // new node join token, so the enrollment command can pin it.
 func WithAgentCAFingerprint(fp string) Option {
 	return func(rt *Router) { rt.agentCAFingerprint = fp }
+}
+
+// WithNodeProviderSecrets enables POST /api/v1/node-providers and every
+// node-providers/{provider}/... route. Without it (the default), those
+// routes return 501, the same shape WithCloudflareDNSSecrets establishes
+// for its own credential.
+func WithNodeProviderSecrets(s NodeProviderSecrets) Option {
+	return func(rt *Router) { rt.nodeProviderSecrets = s }
+}
+
+// WithNodeProvisions overrides the node provision store NewRouter
+// otherwise wires to s (the *store.DB passed to NewRouter, which
+// satisfies NodeProvisionStore structurally). This package's own tests
+// use it to inject a store that fails a specific call, for the
+// half-succeeded-write path handleCreateNodeProvision must handle.
+func WithNodeProvisions(s NodeProvisionStore) Option {
+	return func(rt *Router) { rt.nodeProvisions = s }
+}
+
+// WithNodeProvisionerFactory overrides how a NodeProvisioner is built
+// from a provider name and resolved token, for this package's own tests.
+// Production callers leave this unset; NewRouter's default,
+// defaultNodeProvisionerFactory, builds real internal/provision clients.
+func WithNodeProvisionerFactory(f NodeProvisionerFactory) Option {
+	return func(rt *Router) { rt.nodeProvisionerFactory = f }
 }
 
 // WithIngressPortOwner lets GET /api/v1/system/doctor's port_<n>

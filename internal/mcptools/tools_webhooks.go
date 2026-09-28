@@ -13,7 +13,7 @@ import (
 // deploy, and unlike deploy_app/rollback_app there is no close
 // precedent for a write tool here, so replay is left to the CLI/dashboard.
 func registerWebhookTools(server *mcp.Server, client *apiclient.Client) {
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, &mcp.Tool{
 		Name:        "list_webhook_deliveries",
 		Description: "List an app's recent inbound git-provider webhook requests, newest first, whether or not they verified or matched a connected git source. Useful for debugging why a push didn't trigger a deploy. Read-only; does not replay a delivery.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in webhookDeliveriesInput) (*mcp.CallToolResult, []apiclient.WebhookDeliveryResource, error) {

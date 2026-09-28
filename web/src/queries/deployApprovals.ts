@@ -1,3 +1,4 @@
+import { pollUnlessMissing } from '../lib/pollUnlessMissing'
 // Query-key factory, fetchers, and mutation hooks for
 // GET/POST /api/v1/deploy-approvals* (internal/api/deploy_approvals.go):
 // the two-person approval queue a deploy/promote into a protected
@@ -82,7 +83,7 @@ export function useDeployApprovalsOptional(
     // matters enough to notice promptly without a manual refresh; 30s
     // matches this dashboard's other "quietly stay fresh" polls (e.g.
     // ConvergenceIndicator's own reconcile-status poll).
-    refetchInterval: 30_000,
+    refetchInterval: pollUnlessMissing(30_000),
   })
 }
 

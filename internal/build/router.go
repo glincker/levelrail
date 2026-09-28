@@ -73,6 +73,9 @@ func (r *Router) Build(ctx context.Context, req Request, progress func(ProgressE
 		return r.local.Build(ctx, req, progress)
 	}
 
+	if req.S3Cache != nil {
+		emitCacheWarning(progress, "build cache skipped: this build runs on a remote build node, which does not receive bucket credentials")
+	}
 	remoteReq, err := NewRemoteRequest(req, r.local.cache)
 	if err != nil {
 		return nil, err
@@ -105,7 +108,7 @@ func (r *Router) selectNode(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("build: list build nodes: %w", err)
 	}
-	return SelectBuildNode(nodes)
+	return SelectBuildNode(nodes), nil
 }
 
 // dispatch runs req on nodeID and loads the image it streams back into

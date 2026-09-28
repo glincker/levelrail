@@ -1,5 +1,6 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import {
+  BookOpenIcon,
   ChatCircleTextIcon,
   GithubLogoIcon,
   HeartbeatIcon,
@@ -16,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useBrand } from '../hooks/useBrand'
+import { helpDocForPath } from './shell/contextHelp'
 
 // Header-level help entry point, next to NotificationBell/ThemeToggle.
 // Documentation and Troubleshooting go to the bundled in-app /help
@@ -24,6 +26,9 @@ import { useBrand } from '../hooks/useBrand'
 // same "no invented link" rule HelpLink follows.
 export function HelpMenu() {
   const brand = useBrand()
+  const contextDoc = useRouterState({
+    select: (st) => helpDocForPath(st.location.pathname),
+  })
 
   return (
     <DropdownMenu>
@@ -40,6 +45,14 @@ export function HelpMenu() {
         <QuestionIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        {contextDoc ? (
+          <DropdownMenuItem
+            render={<Link to="/help/$" params={{ _splat: contextDoc }} />}
+          >
+            <BookOpenIcon />
+            Help for this page
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuItem render={<Link to="/help" />}>
           <LifebuoyIcon />
           Documentation

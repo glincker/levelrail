@@ -1,0 +1,44 @@
+import { Duration, Stack, StackProps } from 'aws-cdk-lib';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import { Construct } from 'constructs';
+
+export interface CanaryLbProps extends StackProps {
+  vpc: ec2.IVpc;
+}
+
+export class CanaryLbStack extends Stack {
+  constructor(scope: Construct, id: string, props: CanaryLbProps) {
+    super(scope, id, props);
+
+    const lb = new elbv2.ApplicationLoadBalancer(this, 'CanaryLb', {
+      vpc: props.vpc,
+      internetFacing: true,
+    });
+
+    const targetGroup = new elbv2.ApplicationTargetGroup(this, 'CanaryTargets', {
+      vpc: props.vpc,
+      port: 9000,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      targetType: elbv2.TargetType.IP,
+      loadBalancingAlgorithmType: elbv2.TargetGroupLoadBalancingAlgorithmType.WEIGHTED_RANDOM,
+      healthCheck: {
+        path: '/',
+        interval: Duration.seconds(30),
+        timeout: Duration.seconds(5),
+        healthyThresholdCount: 5,
+        unhealthyThresholdCount: 2,
+        healthyHttpCodes: '200-399',
+      },
+    });
+
+    lb.addListener('CanaryHttp', {
+      port: 80,
+      defaultAction: elbv2.ListenerAction.forward([targetGroup]),
+    });
+  }
+}
+
+# warnings
+# weighted: ALB target group weights are set on the listener forward action or via weighted_random, per-target weights [9 1] are not exported
+# slow_start is not supported together with weighted_random on ALB, dropped

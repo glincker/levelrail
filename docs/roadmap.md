@@ -5,6 +5,8 @@ description: Status of Levelrail by phase - what is shipped, in progress, and pl
 
 # Roadmap
 
+There is no stable release yet. For per-feature maturity (stable, beta, hidden behind a flag) and the evidence behind each label, see [feature status](feature-status.md). "Shipped" on this page means built and merged, not proven in production.
+
 Status as of 2026-09-24 (refreshed against current `main`), not the aspirational plan. See `/adr` for the phase-by-phase architectural decisions behind this build order.
 
 The build has moved further and less linearly than the phase plan implies: parts of Phase 3 (multi-node, the WireGuard mesh) ship while some Phase 1 items (real public ACME against a live domain) remain open. This page describes what is actually true today.
@@ -82,7 +84,7 @@ flowchart LR
   services built from one shared checkout, each scoped to its own
   `build.baseDirectory`, linked under one `store.App`, and
   independently reachable over HTTPS.
-- A curated 153-entry service template catalog (ADR 015: reverses the
+- A curated 206-entry service template catalog (ADR 015: reverses the
   original "not chasing Coolify's 280 templates" non-goal, once Compose
   support existed to build it on), served over the API and browsable
   from the creation wizard, with a category-specific icon per card.
@@ -340,7 +342,10 @@ flowchart LR
   abilities than a tool needs gets the same 403 the REST API itself
   returns.
   
-  Fifty-six tools today, covering:
+  144 registered tools today (see [MCP tool surface](mcp-tool-surface.md)
+  for the per-toolset count, and [feature status](feature-status.md) for
+  maturity: the MCP server is beta). The list below is a partial summary
+  of the areas covered:
   
   - **Apps**: list, get, deploy, deploy-compose, rollback, restart,
     status, deploy-history, deploy-attempt history, logs, metrics, network,

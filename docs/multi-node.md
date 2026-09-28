@@ -22,6 +22,8 @@ This shows up in three ways:
 
 Enrollment uses a one-time join token exchanged for a client certificate (the agent dials out to the control plane; the control plane never initiates a connection).
 
+Before enrolling a real (non-local) node, set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP a remote agent will actually use in `APP_CONTROL_PLANE_ADDR`. It defaults to `127.0.0.1`, which only ever matches a local, single-machine test. With a mismatched value, enrollment itself still succeeds (the initial certificate exchange pins by CA fingerprint, not hostname) and the node appears in `nodes list`, but its persistent session then fails TLS hostname verification on every connection attempt, and the node stays stuck at `status: pending` forever instead of flipping to `online`.
+
 ### Enrollment flow
 
 ```mermaid
@@ -66,9 +68,9 @@ APP_CA_FINGERPRINT=<ca fingerprint from step 1> \
 - `APP_NODE_NAME`: Optional, defaults to machine hostname.
 - `APP_AGENT_IDENTITY_FILE`: Where to save the identity (default `./levelrail-agent-identity.json`, mode `0600`).
 
-**On first run:** The agent redeems the join token for a client certificate and the control plane's CA cert, then persists that identity locally.
+**On first run:** The agent generates its own private key, sends only a certificate signing request with the join token, and persists the signed certificate, its key and the control plane's CA cert locally. The private key never leaves the machine.
 
-**On subsequent runs:** The agent skips enrollment and reconnects using the saved certificate. The join token is single-use.
+**On subsequent runs:** The agent skips enrollment and reconnects using the saved certificate, which it renews on its own (see [Agent certificates](#agent-certificates-renewal-and-re-enrollment)). The join token is single-use.
 
 ### Step 3: Confirm it registered
 
@@ -120,6 +122,58 @@ The control plane's own local node uses the same health system: it heartbeats it
 
 **Note on cordoning:** `cordoned` is a defined status but nothing sets it. Cordon is tracked as a separate boolean field (`schedulable`). A node can be `online` and cordoned, or `offline` and schedulable.
 
+## Agent certificates: renewal and re-enrollment
+
+Each agent authenticates with a client certificate issued by the control plane's own CA (90 days by default, `APP_AGENT_CERT_VALIDITY` on the control plane). The design and its rejected alternatives are in [ADR 021](../adr/021-agent-cert-lifecycle.md).
+
+### Automatic renewal
+
+When a certificate is two thirds of the way through its lifetime (`APP_AGENT_CERT_RENEW_FRACTION` on the agent, default `0.67`, plus a little random jitter so nodes enrolled together do not renew together), the agent generates a fresh key and asks the control plane to sign it over its existing authenticated connection. Nothing needs restarting:
+
+1. The control plane signs the request and records the new certificate. The previous one stays accepted for a grace window (`APP_AGENT_CERT_RENEW_GRACE`, default `24h`), so a renewal whose response is lost, or one that races a control plane restart, never locks the node out.
+2. The agent writes the new identity next to the old one (temp file, fsync, rename, the old one kept as `<identity file>.prev`) and tests it with a separate connection.
+3. If the test passes the agent switches to the new certificate and drops the backup; if it fails the agent restores the old identity and retries later with backoff (1 minute doubling to 1 hour).
+
+An agent stopped in the middle of this settles it on its next start: it keeps whichever identity the control plane accepts.
+
+Nodes enrolled before agents generated their own keys keep working. Their first renewal moves them to an agent-generated key (the node page shows the key origin). Agents older than this change still enroll against a newer control plane and get a server-generated key; set `APP_AGENT_REQUIRE_CSR=true` on the control plane to refuse that once every agent is upgraded.
+
+### Seeing expiry
+
+- **Dashboard:** every node row shows "Cert expires in N days", amber inside the warning window and red once critical, expired or revoked. The node page has an Agent card with expiry, last renewal, key origin, fingerprint, agent version, platform and commit.
+- **CLI:** `nodes list` has `CERT` and `AGENT` columns; `nodes get` shows the details.
+- **API:** `GET /api/v1/nodes` and `GET /api/v1/nodes/{id}` carry `cert` (`state` is `ok`, `expiring`, `critical`, `expired`, `revoked` or `unknown`, plus `days_remaining`, `not_after`, `renewed_at`, `generation`, `key_origin`) and `agent` (`version`, `commit`, `os`, `arch`, `outdated`).
+- **Alerts:** a `node_cert_expiring` rule fires while any node's certificate is inside `APP_NODE_CERT_EXPIRY_WARNING` (default `504h`, 21 days; a rule's `for_duration` overrides it) or has expired. `APP_NODE_CERT_EXPIRY_CRITICAL` (default `168h`) sets when the badge turns red. Healthy agents renew with about 30 days left, so either one firing means renewal is failing.
+- **Attention:** expiring, expired and revoked certificates and outdated agents appear on the status page and in `levelrail-cli attention`.
+
+Existing nodes get an estimated expiry (enrollment time plus 90 days) until they next connect, when the real certificate's expiry replaces it.
+
+### Re-enrolling a node
+
+A node that was offline past its certificate's expiry, or whose certificate was revoked, cannot renew. Re-enroll it instead; it keeps its node ID, placements and history:
+
+1. Dashboard: open the node and click **Re-enroll node**. CLI: `levelrail-cli nodes reenroll-token <id>`. Both mint a single-use token bound to that node, valid for 15 minutes, and show the command once.
+2. Run the command on the node:
+
+```bash
+APP_CONTROL_PLANE_ADDR=<control-plane-host>:9443 \
+APP_REENROLL_TOKEN=<token> \
+APP_CA_FINGERPRINT=<fingerprint> \
+./levelrail-agent reenroll
+```
+
+The agent verifies the control plane against the CA in its existing identity file (or the fingerprint when the file is gone), generates a new key, and saves the new identity. A running agent picks it up at its next reconnect, so no restart is needed; an agent that was stopped just needs starting. A token minted for one node cannot re-enroll another, and a join token cannot be used to re-enroll.
+
+When the agent sees its certificate expired or refused it logs the exact re-enroll command instead of retrying in a tight loop.
+
+### Revoking a certificate
+
+**Revoke certificate** on the node page, `levelrail-cli nodes revoke-cert <id>`, or `POST /api/v1/nodes/{id}/revoke-cert` makes the control plane refuse the node's certificate and closes its live session immediately. Workloads already on the node keep running but can no longer be managed. Only a re-enroll token brings the node back.
+
+### Agent version
+
+Every agent reports its version, commit, OS and architecture when its session opens. Set `APP_AGENT_MIN_VERSION` on the control plane (for example `v0.9.0`) to flag older agents, and agents too old to report a version, as outdated in the node list, node page, CLI and attention list. Unset, no agent is flagged. Upgrading agents is still manual: stop the agent, replace the binary, start it again.
+
 ## Cordon, drain, uncordon
 
 **Cordon** marks a node unschedulable for new placements without moving anything already running.
@@ -152,6 +206,7 @@ Effects:
 **Behavior:**
 - Only changes desired placement immediately. The reconciler actually relocates containers on its next pass.
 - One resource failing to move does not stop the rest.
+- GPU apps (`resources.gpu`) only move to a node with a working nvidia runtime and enough free GPUs. An app no node can host stays where it is and is listed under `blocked` with a per-node reason (`no GPU node available (gpu-2: not enough free GPUs: needs 2, 1 free of 2)`). Models cannot be moved, so any model on the node is always listed as blocked. See [GPU scheduling](ai-models.md#gpu-scheduling).
 - Response: `200` on full success, `207 Multi-Status` when some resources failed (lists exactly what moved and what didn't). Never a bare `500` for a partial result.
 
 ### Deleting a node
@@ -247,6 +302,8 @@ When you create an app or database without specifying a node, the server decides
 - If enabled: `autoPlaceNode` picks the schedulable, online node with the fewest resources (apps + databases). Tie broken by lexicographically smallest node ID.
 - With no eligible remote node: Falls back to local node.
 
+**GPU apps:** a new app with `resources.gpu` is only auto-placed on a node with a working nvidia runtime and enough free GPUs (least loaded among those), falling back to the local host if it fits. If none fits, the create is refused with `409` and the reason per node; pass `node_id` to override. See [GPU scheduling](ai-models.md#gpu-scheduling).
+
 **Important:** This is simple spread counting, not bin-packing. It counts resources only, never CPU, memory, or disk headroom. See CLAUDE.md non-goals for v1.
 
 **Explicit placement:** An explicit `node_id` (or explicit empty string meaning "local, on purpose") always overrides auto-placement and is validated against cordoned/unknown-node checks.
@@ -257,7 +314,7 @@ When you create an app or database without specifying a node, the server decides
 
 **Simple move:** `PUT /apps/{name}/node` changes only `node_id`. The reconciler creates fresh empty volumes on the new node. Old volumes stay behind. Fine for stateless apps, wrong for apps with state.
 
-**Move with volumes:** `POST /api/v1/apps/{name}/move-with-volumes` (dashboard: "Take its volumes with it" checkbox; CLI: `levelrail-cli apps set-node <name> <node-id> --with-volumes`) does a proper migration.
+**Move with volumes:** `POST /api/v1/apps/{name}/move-with-volumes` (dashboard: "Take its volumes with it" checkbox; CLI: `levelrail-cli apps set-node <name> <node-id> --with-volumes`) does a proper migration. The dashboard dialog previews the plan before you confirm: stop the app, copy each named volume, switch placement, start it on the destination, with the expected downtime and the rollback story spelled out (there is no automatic health gate or rollback; a failed step leaves the app stopped and the move can be retried).
 
 ### Steps
 
@@ -395,6 +452,8 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 | `GET` | `/api/v1/nodes/{id}/patch-status` | `root` |
 | `GET` | `/api/v1/nodes/{id}/events` | `root` |
 | `POST` | `/api/v1/nodes/{id}/mesh/rotate-key` | `root` |
+| `POST` | `/api/v1/nodes/{id}/reenroll-token` | `root` (scoped to `node:{id}`) |
+| `POST` | `/api/v1/nodes/{id}/revoke-cert` | `root` (scoped to `node:{id}`) |
 | `GET` | `/api/v1/mesh` | `root` |
 | `PUT` | `/api/v1/apps/{name}/node` | `root` |
 | `POST` | `/api/v1/apps/{name}/move-with-volumes` | `root` |
@@ -427,6 +486,8 @@ levelrail-cli nodes patch-status <id> [flags]
 levelrail-cli nodes metrics <id> --metric NAME [--since DURATION | --from TIME --to TIME] [--step DURATION] [flags]
 levelrail-cli nodes mesh [flags]
 levelrail-cli nodes rotate-key <id> [flags]
+levelrail-cli nodes reenroll-token <id> [flags]
+levelrail-cli nodes revoke-cert <id> [flags]
 levelrail-cli apps set-node <name> <node-id> [--with-volumes] [flags]
 levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 ```

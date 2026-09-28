@@ -8,33 +8,6 @@ import (
 	"testing"
 )
 
-func TestAuthorizeURL(t *testing.T) {
-	tests := []struct {
-		name        string
-		instanceURL string
-		want        string
-	}{
-		{
-			name:        "gitlab.com",
-			instanceURL: "https://gitlab.com",
-			want:        "https://gitlab.com/oauth/authorize?client_id=abc&redirect_uri=https%3A%2F%2Fexample.com%2Fcb&response_type=code&scope=api&state=xyz",
-		},
-		{
-			name:        "self-hosted with trailing slash",
-			instanceURL: "https://gitlab.internal.example.com/",
-			want:        "https://gitlab.internal.example.com/oauth/authorize?client_id=abc&redirect_uri=https%3A%2F%2Fexample.com%2Fcb&response_type=code&scope=api&state=xyz",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := AuthorizeURL(tt.instanceURL, "abc", "https://example.com/cb", "xyz")
-			if got != tt.want {
-				t.Errorf("AuthorizeURL() = %q, want %q", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestClient_ExchangeCode(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/oauth/token" {
@@ -264,13 +237,17 @@ func TestClient_CreateMergeRequestNote(t *testing.T) {
 			t.Fatalf("decode body: %v", err)
 		}
 		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":9}`))
 	}))
 	defer srv.Close()
 
 	c := &Client{HTTP: srv.Client()}
-	err := c.CreateMergeRequestNote(context.Background(), srv.URL, "at-1", "org/web", 42, "preview deployed")
+	id, err := c.CreateMergeRequestNote(context.Background(), srv.URL, "at-1", "org/web", 42, "preview deployed")
 	if err != nil {
 		t.Fatalf("CreateMergeRequestNote() error = %v", err)
+	}
+	if id != 9 {
+		t.Errorf("note id = %d, want 9", id)
 	}
 	if gotBody.Body != "preview deployed" {
 		t.Errorf("body = %q, want %q", gotBody.Body, "preview deployed")
@@ -285,7 +262,7 @@ func TestClient_CreateMergeRequestNote_ErrorResponse(t *testing.T) {
 	defer srv.Close()
 
 	c := &Client{HTTP: srv.Client()}
-	err := c.CreateMergeRequestNote(context.Background(), srv.URL, "at-1", "org/web", 42, "body")
+	_, err := c.CreateMergeRequestNote(context.Background(), srv.URL, "at-1", "org/web", 42, "body")
 	if err == nil {
 		t.Fatal("CreateMergeRequestNote() error = nil, want an error for a 403 response")
 	}

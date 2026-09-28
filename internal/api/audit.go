@@ -116,6 +116,10 @@ func (rt *Router) recordAudit(ctx context.Context, r *http.Request, required, ac
 		CreatedAt:  store.FormatAuditTime(time.Now()),
 		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
 	}
+	if actorType == "token" {
+		entry.AgentName = agentNameFrom(ctx)
+		entry.AgentClient = sanitizeAgentClient(r.Header.Get(AgentClientHeader))
+	}
 	if err := rt.auditLog.SaveAuditEntry(ctx, entry); err != nil {
 		rt.logger.Warn("api: save audit entry failed", slog.String("error", err.Error()), slog.String("path", r.URL.Path))
 	}
@@ -135,6 +139,10 @@ type auditLogEntryResource struct {
 	RemoteAddr string `json:"remote_addr"`
 	CreatedAt  string `json:"created_at"`
 	ClientKind string `json:"client_kind"`
+	// AgentName labels the AI agent behind a token; AgentClient is the
+	// self-reported MCP client name and version.
+	AgentName   string `json:"agent_name,omitempty"`
+	AgentClient string `json:"agent_client,omitempty"`
 }
 
 func toAuditLogEntryResource(e store.AuditEntry) auditLogEntryResource {
@@ -150,6 +158,7 @@ func toAuditLogEntryResource(e store.AuditEntry) auditLogEntryResource {
 		RemoteAddr: e.RemoteAddr,
 		CreatedAt:  e.CreatedAt,
 		ClientKind: e.ClientKind,
+		AgentName:  e.AgentName, AgentClient: e.AgentClient,
 	}
 }
 
@@ -190,6 +199,7 @@ func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, befo
 		Method:     r.URL.Query().Get("method"),
 		ClientKind: r.URL.Query().Get("client_kind"),
 		Search:     strings.TrimSpace(r.URL.Query().Get("q")),
+		AgentName:  strings.TrimSpace(r.URL.Query().Get("agent")),
 	}
 	switch status := r.URL.Query().Get("status"); status {
 	case "":

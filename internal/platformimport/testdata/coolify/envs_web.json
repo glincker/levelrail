@@ -1,0 +1,7 @@
+[
+  {"key": "NODE_ENV", "value": "production", "real_value": "production", "is_preview": false, "is_shown_once": false},
+  {"key": "SESSION_SECRET", "value": "", "real_value": "s3cr3t-fixture", "is_preview": false, "is_shown_once": false},
+  {"key": "PLAIN_HIDDEN", "value": "hidden-fixture", "real_value": "hidden-fixture", "is_preview": false, "is_shown_once": true},
+  {"key": "NODE_ENV", "value": "preview", "real_value": "preview", "is_preview": true, "is_shown_once": false},
+  {"key": "API_TOKEN", "value": "", "real_value": "", "is_preview": false, "is_shown_once": false}
+]

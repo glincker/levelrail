@@ -86,10 +86,9 @@ func genSelfSignedCertKeyPEM(t *testing.T, domain string) (certPEM, keyPEM strin
 func TestDomainTLSCert_Live_ServesUploadedCertificateInsteadOfACME(t *testing.T) {
 	env := newLiveBuildEnv(t)
 
-	const (
-		serviceName = "levelrail-test-e2e-tls-cert"
-		domain      = "e2e-tls-cert.levelrail.internal"
-	)
+	const serviceName = "levelrail-test-e2e-tls-cert"
+	// Unique per run: Caddy's in-process cert cache outlives Driver.Stop, so a fixed host serves the previous -count iteration's cert.
+	domain := fmt.Sprintf("e2e-tls-cert-%d.levelrail.internal", time.Now().UnixNano())
 	repo := "levelrail/test-e2e-tls-cert"
 	tag := repo + ":e2etlscert1"
 
@@ -129,6 +128,7 @@ func TestDomainTLSCert_Live_ServesUploadedCertificateInsteadOfACME(t *testing.T)
 	if len(appResult.Conditions) == 0 || appResult.Conditions[0].Status != "True" {
 		t.Fatalf("application Controller.Reconcile() result = %+v, want a True Ready condition", appResult)
 	}
+	persistReadyCondition(buildCtx, t, svcStore, appCtrl.Name(), appResult.Conditions)
 
 	certPEM, keyPEM, wantLeaf := genSelfSignedCertKeyPEM(t, domain)
 	uploadedAt := time.Now().UTC()

@@ -86,8 +86,9 @@ func checkNoDuplicateVersions(migrations []migration) error {
 	return nil
 }
 
-// migrate applies every migration newer than the database's current
-// version, each in its own transaction. If any migration fails, that
+// migrate applies every embedded migration not yet recorded as applied,
+// each in its own transaction, so a lower-numbered migration that merged
+// after a higher one already ran is still applied. If any migration fails, that
 // transaction rolls back and migrate returns immediately; migrations
 // already committed in prior calls stay applied, matching forward-only
 // semantics (there's nothing to roll back to except "run again after
@@ -113,26 +114,57 @@ func (db *DB) migrate(ctx context.Context, preMigrate PreMigrateHook) error {
 		return err
 	}
 
+	applied, err := db.appliedVersions(ctx)
+	if err != nil {
+		return err
+	}
+	pending := pendingMigrations(migrations, applied)
+
 	if len(migrations) > 0 {
 		latest := migrations[len(migrations)-1].version
 		if current > latest {
 			return fmt.Errorf("%w: database is at version %d, this binary supports up to %d; run a newer release or restore a backup taken by this version", ErrSchemaNewer, current, latest)
 		}
-		if current > 0 && current < latest && preMigrate != nil {
+		if current > 0 && len(pending) > 0 && preMigrate != nil {
 			preMigrate(ctx, db, current, latest)
 		}
 	}
 
-	for _, m := range migrations {
-		if m.version <= current {
-			continue
-		}
+	for _, m := range pending {
 		if err := db.applyMigration(ctx, m); err != nil {
 			return fmt.Errorf("apply migration %04d_%s: %w", m.version, m.name, err)
 		}
 	}
 
 	return nil
+}
+
+// pendingMigrations returns the migrations not in applied, in version order.
+func pendingMigrations(all []migration, applied map[int]bool) []migration {
+	var out []migration
+	for _, m := range all {
+		if !applied[m.version] {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+func (db *DB) appliedVersions(ctx context.Context) (map[int]bool, error) {
+	rows, err := db.QueryContext(ctx, `SELECT version FROM schema_migrations`)
+	if err != nil {
+		return nil, fmt.Errorf("read applied schema versions: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	applied := map[int]bool{}
+	for rows.Next() {
+		var v int
+		if err := rows.Scan(&v); err != nil {
+			return nil, fmt.Errorf("scan applied schema version: %w", err)
+		}
+		applied[v] = true
+	}
+	return applied, rows.Err()
 }
 
 func (db *DB) currentVersion(ctx context.Context) (int, error) {
@@ -174,19 +206,16 @@ func (db *DB) applyMigration(ctx context.Context, m migration) error {
 // MigrationsCurrent returns an error unless every embedded migration has
 // been applied to this database.
 func (db *DB) MigrationsCurrent(ctx context.Context) error {
-	current, err := db.currentVersion(ctx)
-	if err != nil {
-		return err
-	}
 	migrations, err := loadMigrations()
 	if err != nil {
 		return err
 	}
-	if len(migrations) == 0 {
-		return nil
+	applied, err := db.appliedVersions(ctx)
+	if err != nil {
+		return err
 	}
-	if latest := migrations[len(migrations)-1].version; current != latest {
-		return fmt.Errorf("schema at version %d, want %d", current, latest)
+	if pending := pendingMigrations(migrations, applied); len(pending) > 0 {
+		return fmt.Errorf("schema is missing migration %04d_%s (%d unapplied)", pending[0].version, pending[0].name, len(pending))
 	}
 	return nil
 }

@@ -188,7 +188,7 @@ func TestHandlePromoteApp(t *testing.T) {
 	ctx := context.Background()
 
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web-staging/promote", `{"to":"env_prod"}`))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web-staging/promote", `{"to":"env_prod","confirm":true}`))
 	if rec.Code != http.StatusAccepted {
 		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
 	}
@@ -309,5 +309,40 @@ func TestHandlePromoteApp_MissingTo(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web-staging/promote", `{}`))
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandlePromoteApp_DeployFreeze(t *testing.T) {
+	rt, db, cookie := newSafetyRouter(t, nil)
+	seedPromotionFixture(t, db)
+	if put := serve(rt, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web-prod/deploy-freeze", alwaysFrozen())); put.Code != http.StatusOK {
+		t.Fatalf("freeze put = %d %s", put.Code, put.Body.String())
+	}
+
+	prev := serve(rt, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web-staging/promote/preview?to=env_prod", ""))
+	var got promotePreviewResource
+	if err := json.Unmarshal(prev.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.Frozen || got.FreezeReason == "" {
+		t.Errorf("preview frozen = %v reason = %q, want frozen with a reason", got.Frozen, got.FreezeReason)
+	}
+
+	tests := []struct {
+		name string
+		body string
+		want int
+	}{
+		{"blocked", `{"to":"env_prod","confirm":true}`, http.StatusLocked},
+		{"override needs reason", `{"to":"env_prod","confirm":true,"override_freeze":true}`, http.StatusBadRequest},
+		{"override with reason", `{"to":"env_prod","confirm":true,"override_freeze":true,"override_reason":"hotfix"}`, http.StatusAccepted},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := serve(rt, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web-staging/promote", tc.body))
+			if rec.Code != tc.want {
+				t.Fatalf("status = %d, want %d; body = %s", rec.Code, tc.want, rec.Body.String())
+			}
+		})
 	}
 }

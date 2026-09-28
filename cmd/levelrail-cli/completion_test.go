@@ -139,7 +139,7 @@ func TestCommandTree_MatchesDispatchSwitches(t *testing.T) {
 	dispatched := extractDispatchedVerbs(t)
 
 	tree := map[string]bool{}
-	for _, e := range walkCommandTree() {
+	for _, e := range walkFullCommandTree() {
 		for _, c := range e.children {
 			tree[c] = true
 		}

@@ -1,0 +1,5 @@
+:80 {
+	reverse_proxy localhost:4000 {
+		lb_policy ip_hash
+	}
+}

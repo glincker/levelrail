@@ -9,7 +9,11 @@
 // matches, Diagnose returns the fallback response rather than a guess.
 package diagnose
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/untrusted"
+)
 
 // Confidence levels Result.Confidence can hold.
 const (
@@ -31,6 +35,7 @@ type Result struct {
 	Suggestion     string
 	Confidence     string
 	MatchedSignals []Signal
+	Causes         []Cause
 }
 
 // AttemptInput is the deploy attempt signal, nil if the caller found no
@@ -65,6 +70,7 @@ type Input struct {
 	Conditions     []ConditionInput
 	Crashloop      *CrashloopInput
 	RecentLogLines []string
+	Facts          Facts
 }
 
 type textSource struct {
@@ -181,6 +187,21 @@ const maxExcerptLen = 400
 // and suggested next action. Deterministic: the same Input always
 // produces the same Result.
 func Diagnose(in Input) Result {
+	res := diagnoseLegacy(in)
+	res.Causes = Analyze(in)
+	if res.Confidence == ConfidenceNone && len(res.Causes) > 0 {
+		top := res.Causes[0]
+		res.Explanation = top.Explanation
+		res.Confidence = top.Confidence
+		if len(top.Fixes) > 0 {
+			res.Suggestion = top.Fixes[0].Label
+		}
+		res.MatchedSignals = append(res.MatchedSignals, top.Evidence...)
+	}
+	return res
+}
+
+func diagnoseLegacy(in Input) Result {
 	sources := in.textSources()
 
 	var matched []match
@@ -243,7 +264,10 @@ func excerptFor(ts textSource, pattern string) string {
 	return truncate(strings.TrimSpace(ts.text))
 }
 
+// truncate cleans and redacts an excerpt of workload-authored text before
+// it leaves this package, then caps its length.
 func truncate(s string) string {
+	s = untrusted.Redact(untrusted.Clean(s))
 	if len(s) <= maxExcerptLen {
 		return s
 	}

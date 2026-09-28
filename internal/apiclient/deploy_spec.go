@@ -102,6 +102,10 @@ type DeploySpecRequest struct {
 	Ref           string                       `json:"ref"`
 	ImageRepoBase string                       `json:"image_repo_base,omitempty"`
 	Services      map[string]DeploySpecService `json:"services"`
+	// SingleServiceName overrides the default "<name>-<serviceKey>"
+	// naming for the sole entry in Services. Rejected unless Services has
+	// exactly one entry.
+	SingleServiceName string `json:"single_service_name,omitempty"`
 }
 
 // DeploySpecServiceResult mirrors internal/api's deploySpecServiceResult:

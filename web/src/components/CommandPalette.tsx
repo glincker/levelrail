@@ -1,12 +1,14 @@
 import * as React from 'react'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowClockwiseIcon,
   ClockCounterClockwiseIcon,
   DatabaseIcon,
   KeyboardIcon,
+  RobotIcon,
+  WarningCircleIcon,
   MagnifyingGlassIcon,
   RocketLaunchIcon,
   StackIcon,
@@ -21,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { fuzzyFilter } from '@/lib/fuzzy'
 import { loadRecentKeys, pushRecentKey } from '@/lib/recentItems'
 import { usePaletteAppActions } from '../hooks/usePaletteAppActions'
+import { usePageActions } from '@/lib/pageActions'
 import { appListQueryOptions } from '../queries/apps'
 import { databaseListQueryOptions } from '../queries/databases'
 import { useTheme, type Theme } from './ThemeProvider'
@@ -31,8 +34,13 @@ import {
   type PaletteItem,
 } from './commandPaletteData'
 import { PaletteFooter, ResultRow } from './commandPaletteEntries'
+import { chordFor } from './shell/navModel'
+import { filterByFeature, isFeatureVisible } from '../lib/experimental'
+import { useExperimentalFeatures } from '../hooks/useExperimental'
+import { buildPaletteSuggestions } from './shell/paletteSuggestions'
 
 const MAX_APP_MATCHES = 3
+const NO_HINT_KEYS = new Set(['action-create-app', 'action-templates'])
 const NEXT_THEME: Record<Theme, Theme> = {
   light: 'dark',
   dark: 'system',
@@ -68,6 +76,11 @@ export function CommandPalette({
   const navigate = useNavigate()
   const { theme, setTheme } = useTheme()
   const { restartApp, redeployApp } = usePaletteAppActions()
+  const pageActions = usePageActions()
+  const experimental = useExperimentalFeatures()
+  const currentApp = useRouterState({
+    select: (st) => /^\/apps\/([^/]+)/.exec(st.location.pathname)?.[1],
+  })
 
   // Both lists come from the shared query cache: they only refetch when
   // stale on open, never per keystroke (filtering is client-side).
@@ -109,15 +122,28 @@ export function CommandPalette({
   }, [open])
 
   const baseItems = React.useMemo<PaletteItem[]>(() => {
-    const go = (to: string, params?: Record<string, string>) => () =>
-      void navigate({ to, params })
-    const items: PaletteItem[] = ROUTE_ENTRIES.map((e) => ({
+    const go =
+      (
+        to: string,
+        params?: Record<string, string>,
+        search?: Record<string, string>,
+      ) =>
+      () =>
+        void navigate(search ? { to, params, search } : { to, params })
+    const items: PaletteItem[] = filterByFeature(
+      ROUTE_ENTRIES,
+      experimental,
+    ).map((e) => ({
       key: e.key,
       label: e.label,
       group: e.group,
       icon: e.icon,
-      run: go(e.to),
+      run: go(e.to, undefined, e.search),
+      hint: NO_HINT_KEYS.has(e.key) ? undefined : chordFor(e.to),
     }))
+    for (const a of pageActions) {
+      items.push({ ...a, group: 'Actions' })
+    }
     items.push({
       ...THEME_ACTION,
       run: () => setTheme(NEXT_THEME[theme]),
@@ -157,11 +183,15 @@ export function CommandPalette({
     appsQuery.data,
     databasesQuery.data,
     onShowShortcuts,
+    pageActions,
+    experimental,
   ])
 
   const groups = React.useMemo(() => {
     const q = query.trim()
     const byGroup = new Map<string, PaletteItem[]>()
+    const go = (to: string, params?: Record<string, string>) => () =>
+      void navigate({ to, params })
 
     if (!q) {
       const byKey = new Map(baseItems.map((i) => [i.key, i]))
@@ -171,6 +201,46 @@ export function CommandPalette({
           ? [{ ...item, key: `recent-${item.key}`, group: 'Recent' }]
           : []
       })
+      const appName = currentApp ? decodeURIComponent(currentApp) : undefined
+      const specs = buildPaletteSuggestions({
+        currentApp: appName,
+        apps: (appsQuery.data ?? []).map((a) => ({
+          name: a.name,
+          failing: a.status.variant === 'destructive',
+        })),
+        recentKeys,
+        assistantEnabled: isFeatureVisible('ai-chat', experimental),
+      })
+      const image = (n: string) =>
+        appsQuery.data?.find((a) => a.name === n)?.image ?? ''
+      const suggested: PaletteItem[] = specs.map((sp) => {
+        const app = sp.app ?? ''
+        const base = { key: sp.key, label: sp.label, group: 'Suggested' }
+        if (sp.kind === 'app-action' && sp.action === 'restart') {
+          return {
+            ...base,
+            icon: <ArrowClockwiseIcon />,
+            run: () => restartApp(app),
+          }
+        }
+        if (sp.kind === 'app-action') {
+          return {
+            ...base,
+            icon: <RocketLaunchIcon />,
+            run: () => redeployApp(app, image(app)),
+          }
+        }
+        if (sp.kind === 'assistant') {
+          return { ...base, icon: <RobotIcon />, run: go('/ai-assistant') }
+        }
+        return {
+          ...base,
+          icon:
+            sp.kind === 'failing-app' ? <WarningCircleIcon /> : <StackIcon />,
+          run: go('/apps/$name', { name: app }),
+        }
+      })
+      byGroup.set('Suggested', suggested)
       if (recent.length > 0) byGroup.set('Recent', recent)
       for (const item of baseItems) {
         byGroup.set(item.group, [...(byGroup.get(item.group) ?? []), item])
@@ -234,6 +304,8 @@ export function CommandPalette({
     navigate,
     restartApp,
     redeployApp,
+    currentApp,
+    experimental,
   ])
 
   const results = React.useMemo(() => groups.flatMap((g) => g.items), [groups])
@@ -241,7 +313,10 @@ export function CommandPalette({
   const select = React.useCallback(
     (item: PaletteItem) => {
       const originalKey = item.key.replace(/^recent-/, '')
-      if (!originalKey.startsWith('app-action-')) {
+      if (
+        !originalKey.startsWith('app-action-') &&
+        !originalKey.startsWith('suggest-')
+      ) {
         setRecentKeys(pushRecentKey(originalKey))
       }
       item.run()
@@ -345,6 +420,7 @@ export function CommandPalette({
                         item={item}
                         optionId={optionId(item)}
                         active={index === activeIndex}
+                        query={query}
                         onSelect={() => select(item)}
                       />
                     )

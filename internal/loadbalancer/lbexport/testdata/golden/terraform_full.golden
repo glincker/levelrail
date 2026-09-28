@@ -1,0 +1,56 @@
+variable "vpc_id" {
+  type = string
+}
+
+variable "subnet_ids" {
+  type = list(string)
+}
+
+variable "security_group_ids" {
+  type    = list(string)
+  default = []
+}
+
+resource "aws_lb" "api" {
+  name               = "api"
+  load_balancer_type = "application"
+  subnets            = var.subnet_ids
+  security_groups    = var.security_group_ids
+  idle_timeout       = 30
+}
+
+resource "aws_lb_target_group" "api" {
+  name                           = "api"
+  port                           = 8080
+  protocol                       = "HTTPS"
+  target_type                    = "ip"
+  vpc_id                         = var.vpc_id
+  load_balancing_algorithm_type  = "least_outstanding_requests"
+  deregistration_delay           = 20
+  slow_start                     = 60
+
+  health_check {
+    path                = "/healthz"
+    interval            = 10
+    timeout             = 3
+    healthy_threshold   = 3
+    unhealthy_threshold = 2
+    matcher             = "204"
+  }
+}
+
+resource "aws_lb_listener" "api_http" {
+  load_balancer_arn = aws_lb.api.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.api.arn
+  }
+}
+
+# warnings
+# passive_health has no ALB equivalent, ALB only uses active health checks
+# retries have no ALB equivalent
+# rate_limit has no ALB equivalent, use an AWS WAF rate-based rule

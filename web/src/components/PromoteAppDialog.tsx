@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { DialogControl } from './dialogControl'
 import { RocketLaunchIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -29,6 +30,12 @@ import {
 } from '../queries/promote'
 import { ApiError } from '../lib/apiError'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
+import { PromotePlan } from './PromotePlan'
+import {
+  EMPTY_PROMOTE_OPTIONS,
+  promoteOptionsReady,
+  type PromoteOptions,
+} from '../lib/promoteOptions'
 
 // Sentinel for "let the server auto-detect the target app", the same
 // reasoning PlacementFields.tsx's LOCAL_NODE_VALUE/NO_PROJECT_VALUE give:
@@ -48,14 +55,22 @@ const AUTO_DETECT_VALUE = '__auto__'
 export function PromoteAppDialog({
   appName,
   projectId,
+  control,
 }: {
   appName: string
   projectId?: string
+  control?: DialogControl
 }) {
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = control?.open ?? internalOpen
+  const setOpen = (next: boolean) => {
+    setInternalOpen(next)
+    control?.onOpenChange?.(next)
+  }
   const [environmentId, setEnvironmentId] = useState('')
   const [target, setTarget] = useState('')
   const [ackProtected, setAckProtected] = useState(false)
+  const [options, setOptions] = useState<PromoteOptions>(EMPTY_PROMOTE_OPTIONS)
 
   const environmentList = useEnvironmentListOptional(projectId ?? '')
   const environments = environmentList.data ?? []
@@ -81,13 +96,14 @@ export function PromoteAppDialog({
       setEnvironmentId('')
       setTarget('')
       setAckProtected(false)
+      setOptions(EMPTY_PROMOTE_OPTIONS)
       promote.reset()
     }
   }
 
   function handlePromote() {
     promote.mutate(
-      { to: environmentId, target, confirm: ackProtected },
+      { to: environmentId, target, confirm: ackProtected, ...options },
       {
         onSuccess: (result) => {
           setOpen(false)
@@ -116,12 +132,14 @@ export function PromoteAppDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
-        render={<Button type="button" variant="outline" size="sm" />}
-      >
-        <RocketLaunchIcon className="size-3.5" aria-hidden="true" />
-        Promote to...
-      </DialogTrigger>
+      {control?.hideTrigger ? null : (
+        <DialogTrigger
+          render={<Button type="button" variant="outline" size="sm" />}
+        >
+          <RocketLaunchIcon className="size-3.5" aria-hidden="true" />
+          Promote to...
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Promote &ldquo;{appName}&rdquo;</DialogTitle>
@@ -243,6 +261,11 @@ export function PromoteAppDialog({
                     </span>
                   </p>
                 )}
+                <PromotePlan
+                  preview={preview.data}
+                  options={options}
+                  onChange={setOptions}
+                />
               </div>
             ) : null}
 
@@ -279,7 +302,8 @@ export function PromoteAppDialog({
             disabled={
               !environmentId ||
               !preview.data ||
-              isNoop ||
+              (isNoop && !options.includeEnv) ||
+              !promoteOptionsReady(preview.data, options) ||
               promote.isPending ||
               (selectedEnvironment?.protected && !ackProtected)
             }

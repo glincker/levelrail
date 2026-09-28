@@ -18,15 +18,29 @@ import (
 // (mcp.NewInMemoryTransports), without spawning a real process or
 // touching stdio.
 func NewServer(client *apiclient.Client) *mcp.Server {
+	server, _ := NewServerWithOptions(client, Options{Mode: ModeFull})
+	return server
+}
+
+// NewServerWithOptions builds the MCP server and then unregisters every
+// tool the mode and toolsets exclude, so a hidden tool costs no model
+// context and cannot be called.
+func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, Summary) {
 	server := mcp.NewServer(&mcp.Implementation{Name: "levelrail-mcp", Version: version.Version}, nil)
 
 	registerAppTools(server, client)
+	registerDeployFreezeTools(server, client)
+	registerDeployCancelTools(server, client)
+	registerAppTimelineTools(server, client)
+	registerBulkAppTools(server, client)
 	registerDatabaseTools(server, client)
 	registerServiceTemplateTools(server, client)
 	registerNodeTools(server, client)
 	registerPreviewTools(server, client)
 	registerAlertTools(server, client)
+	registerAlertNoiseTools(server, client)
 	registerAppMetricsTools(server, client)
+	registerAppRequestsTool(server, client)
 	registerDiagnosticTools(server, client)
 	registerResourceRecommendationTools(server, client)
 	registerFeatureFlagTools(server, client)
@@ -41,11 +55,14 @@ func NewServer(client *apiclient.Client) *mcp.Server {
 	registerOrganizationTools(server, client)
 	registerRegistryCredentialTools(server, client)
 	registerAppConfigTools(server, client)
+	registerEnvTools(server, client)
+	registerGetEnvTool(server, client)
 	registerBackupTargetTools(server, client)
 	registerVolumeBackupTools(server, client)
 	registerScheduledTaskTools(server, client)
 	registerEnvironmentTools(server, client)
 	registerDomainTools(server, client)
+	registerImportTools(server, client)
 	registerCloudflareTools(server, client)
 	registerCertificateTools(server, client)
 	registerLogDrainTools(server, client)
@@ -53,7 +70,20 @@ func NewServer(client *apiclient.Client) *mcp.Server {
 	registerDeployApprovalTools(server, client)
 	registerAttentionTools(server, client)
 	registerControlPlaneBackupTools(server, client)
+	registerControlPlaneDRTools(server, client)
 	registerFailedDeployTools(server, client)
+	registerDeploymentTools(server, client)
+	registerWaitDeployTool(server, client)
+	registerPlanTools(server, client)
+	registerLogArchiveTools(server, client)
+	registerQueryLogsTool(server, client)
+	registerBuildCacheTools(server, client)
+	registerPipelineTools(server, client)
+	registerModelTools(server, client)
+	registerModelServingTools(server, client)
+	registerLoadBalancerTools(server, client)
+	registerIaCTools(server, client)
 
-	return server
+	summary := applyOptions(server, opts)
+	return server, summary
 }

@@ -64,8 +64,8 @@ func anyServiceHasHealthcheck(f *compose.File) bool {
 }
 
 func TestTemplates_MinimumCatalogSize(t *testing.T) {
-	if len(Templates) < 12 {
-		t.Fatalf("got %d templates, want at least 12", len(Templates))
+	if len(Templates) < 180 {
+		t.Fatalf("got %d templates, want at least 180", len(Templates))
 	}
 }
 

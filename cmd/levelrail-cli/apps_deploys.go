@@ -25,6 +25,10 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return exitOK
 	case "list":
 		return runAppsDeploysList(prog, args[1:], stdout, stderr, lookupEnv)
+	case "wait":
+		return runAppsDeploysWait(prog, args[1:], stdout, stderr, lookupEnv)
+	case "show":
+		return runAppsDeploysShow(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compare":
 		return runAppsDeploysCompare(prog, args[1:], stdout, stderr, lookupEnv)
 	case "logs":
@@ -33,6 +37,10 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsDeploysFailed(prog, args[1:], stdout, stderr, lookupEnv)
 	case "steps":
 		return runAppsDeploysSteps(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cancel":
+		return runAppsDeploysCancel(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rollback-to":
+		return runAppsDeploysRollbackTo(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps deploys subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsDeploysUsage(prog))
@@ -43,10 +51,14 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 func appsDeploysUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first
+  %[1]s apps deploys wait <name> [deploy-id] [--timeout 10m]      block until a deploy is healthy or fails, exit 7 when it does not succeed
+  %[1]s apps deploys show <name> [deploy-id] [flags]              one deploy attempt with its structured failure (newest by default)
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
   %[1]s apps deploys logs <name> <deploy-id> [flags]              one deploy attempt's full build/log output
   %[1]s apps deploys failed [--since 24h] [flags]                 every app's latest failed deploy in the window, fleet-wide
   %[1]s apps deploys steps <name> <deploy-id> [flags]             one deploy attempt's pipeline steps, live until it ends
+  %[1]s apps deploys cancel <name> <deploy-id> [flags]            cancel a queued or in-progress deploy before it cuts traffic
+  %[1]s apps deploys rollback-to <name> <deploy-id> [flags]       redeploy a past succeeded deploy's exact image, pinned by digest
 
 Run "%[1]s apps deploys <subcommand> -h" for a subcommand's own flags.
 `, prog)

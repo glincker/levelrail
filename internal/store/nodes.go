@@ -79,6 +79,24 @@ type Node struct {
 	MeshPublicKey string
 	MeshAddress   string
 
+	// Certificate lifecycle state (migration 0135, ADR 021).
+	CertNotAfter        *time.Time
+	CertSerial          string
+	CertRenewedAt       *time.Time
+	CertGeneration      int
+	CertKeyOrigin       string
+	PrevCertFingerprint string
+	PrevCertValidUntil  *time.Time
+	CertRevokedAt       *time.Time
+
+	// Agent self-report (migration 0136); empty until an agent that sends
+	// it connects.
+	AgentVersion    string
+	AgentCommit     string
+	AgentOS         string
+	AgentArch       string
+	AgentReportedAt *time.Time
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -108,12 +126,14 @@ var ErrNodeNameTaken = errors.New("store: node name already taken")
 // establishes for a different unique-constraint conflict.
 func (db *DB) SaveNode(ctx context.Context, n Node) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO nodes (id, name, address, status, cert_fingerprint, joined_at, last_seen_at, schedulable, accepts_app_workloads, accepts_build_workloads, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
+		INSERT INTO nodes (id, name, address, status, cert_fingerprint, joined_at, last_seen_at, schedulable, accepts_app_workloads, accepts_build_workloads,
+			cert_not_after, cert_serial, cert_key_origin, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		n.ID, n.Name, n.Address, string(n.Status), n.CertFingerprint,
 		formatTimePtr(n.JoinedAt), formatTimePtr(n.LastSeenAt),
 		boolToInt(n.AcceptsAppWorkloads), boolToInt(n.AcceptsBuildWorkloads),
+		formatTimePtr(n.CertNotAfter), n.CertSerial, certKeyOriginOrDefault(n.CertKeyOrigin),
 		formatTime(n.CreatedAt), formatTime(n.UpdatedAt),
 	)
 	if err == nil {
@@ -395,7 +415,10 @@ func intToBool(i int) bool {
 }
 
 const nodeSelectColumns = `
-	SELECT id, name, address, status, cert_fingerprint, joined_at, last_seen_at, schedulable, accepts_app_workloads, accepts_build_workloads, mesh_public_key, mesh_address, created_at, updated_at`
+	SELECT id, name, address, status, cert_fingerprint, joined_at, last_seen_at, schedulable, accepts_app_workloads, accepts_build_workloads, mesh_public_key, mesh_address,
+		cert_not_after, cert_serial, cert_renewed_at, cert_generation, cert_key_origin, prev_cert_fingerprint, prev_cert_valid_until, cert_revoked_at,
+		agent_version, agent_commit, agent_os, agent_arch, agent_reported_at,
+		created_at, updated_at`
 
 func scanNode(scan func(dest ...any) error) (*Node, error) {
 	var (
@@ -405,12 +428,18 @@ func scanNode(scan func(dest ...any) error) (*Node, error) {
 		schedulable                                int
 		acceptsAppWorkloads, acceptsBuildWorkloads int
 		createdAt, updatedAt                       string
+		certTimes                                  [nodeCertTimeCount]sql.NullString
 	)
 	if err := scan(&n.ID, &n.Name, &n.Address, &status, &n.CertFingerprint,
 		&joinedAt, &lastSeenAt, &schedulable,
 		&acceptsAppWorkloads, &acceptsBuildWorkloads,
 		&n.MeshPublicKey, &n.MeshAddress,
+		&certTimes[0], &n.CertSerial, &certTimes[1], &n.CertGeneration, &n.CertKeyOrigin, &n.PrevCertFingerprint, &certTimes[2], &certTimes[3],
+		&n.AgentVersion, &n.AgentCommit, &n.AgentOS, &n.AgentArch, &certTimes[4],
 		&createdAt, &updatedAt); err != nil {
+		return nil, err
+	}
+	if err := parseNodeCertTimes(&n, certTimes); err != nil {
 		return nil, err
 	}
 	n.Status = NodeStatus(status)

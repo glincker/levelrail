@@ -36,3 +36,42 @@ export function updatesQueryOptions() {
     queryFn: fetchUpdateStatus,
   })
 }
+
+export type UpgradeCheckStatus = 'ok' | 'warn' | 'fail' | 'unknown'
+
+export interface UpgradeCheck {
+  code: string
+  name: string
+  status: UpgradeCheckStatus
+  message: string
+}
+
+export interface UpdatePreflight {
+  current_version: string
+  latest_version: string | null
+  update_available: boolean
+  release_url: string | null
+  release_notes: string
+  checks: UpgradeCheck[]
+  blocked: boolean
+  upgrade_command: string
+  rollback_command: string
+}
+
+export function preflightQueryOptions() {
+  return queryOptions({
+    queryKey: [...updatesKeys.all, 'preflight'] as const,
+    queryFn: async (): Promise<UpdatePreflight> => {
+      const res = await fetch('/api/v1/updates/preflight')
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `fetch preflight failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as UpdatePreflight
+    },
+    staleTime: 60_000,
+    retry: false,
+  })
+}

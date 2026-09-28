@@ -62,7 +62,7 @@ func (tc *ToolCaller) ListTools(ctx context.Context) ([]ToolSpec, error) {
 			if err != nil {
 				return nil, fmt.Errorf("ai: marshal input schema for tool %q: %w", t.Name, err)
 			}
-			out = append(out, ToolSpec{Name: t.Name, Description: t.Description, InputSchema: schema})
+			out = append(out, ToolSpec{Name: t.Name, Description: t.Description, InputSchema: schema, Traits: TraitsFromMCP(t.Annotations, t.Meta)})
 		}
 		if res.NextCursor == "" {
 			break

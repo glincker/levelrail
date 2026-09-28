@@ -1,0 +1,43 @@
+import { Duration, Stack, StackProps } from 'aws-cdk-lib';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import { Construct } from 'constructs';
+
+export interface WsLbProps extends StackProps {
+  vpc: ec2.IVpc;
+}
+
+export class WsLbStack extends Stack {
+  constructor(scope: Construct, id: string, props: WsLbProps) {
+    super(scope, id, props);
+
+    const lb = new elbv2.ApplicationLoadBalancer(this, 'WsLb', {
+      vpc: props.vpc,
+      internetFacing: true,
+    });
+
+    const targetGroup = new elbv2.ApplicationTargetGroup(this, 'WsTargets', {
+      vpc: props.vpc,
+      port: 4000,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      targetType: elbv2.TargetType.IP,
+      loadBalancingAlgorithmType: elbv2.TargetGroupLoadBalancingAlgorithmType.ROUND_ROBIN,
+      healthCheck: {
+        path: '/',
+        interval: Duration.seconds(30),
+        timeout: Duration.seconds(5),
+        healthyThresholdCount: 5,
+        unhealthyThresholdCount: 2,
+        healthyHttpCodes: '200-399',
+      },
+    });
+
+    lb.addListener('WsHttp', {
+      port: 80,
+      defaultAction: elbv2.ListenerAction.forward([targetGroup]),
+    });
+  }
+}
+
+# warnings
+# ip_hash has no ALB equivalent, exported as round_robin

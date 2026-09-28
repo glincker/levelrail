@@ -4,7 +4,10 @@ import {
   CheckCircleIcon,
   ClockIcon,
   DatabaseIcon,
+  GitForkIcon,
   GitPullRequestIcon,
+  HandPalmIcon,
+  ProhibitIcon,
   SpinnerIcon,
   TrashIcon,
   WarningCircleIcon,
@@ -16,6 +19,8 @@ import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { RelativeTime } from './kit'
+import { ApprovePreviewDialog } from './ApprovePreviewDialog'
 import { useGitSource } from '../queries/gitSources'
 import {
   useSetPreviewEnabled,
@@ -45,6 +50,8 @@ const STATUS_LABEL: Record<PreviewEnvironmentStatus, string> = {
   deploying: 'Deploying',
   active: 'Active',
   failed: 'Failed',
+  awaiting_approval: 'Awaiting approval',
+  limit_reached: 'Not deployed (limit)',
 }
 
 const STATUS_BADGE_VARIANT: Record<
@@ -54,12 +61,16 @@ const STATUS_BADGE_VARIANT: Record<
   deploying: 'muted',
   active: 'success',
   failed: 'destructive',
+  awaiting_approval: 'warning',
+  limit_reached: 'muted',
 }
 
 const STATUS_ICON: Record<PreviewEnvironmentStatus, Icon> = {
   deploying: SpinnerIcon,
   active: CheckCircleIcon,
   failed: WarningCircleIcon,
+  awaiting_approval: HandPalmIcon,
+  limit_reached: ProhibitIcon,
 }
 
 function PreviewStatusBadge({ status }: { status: PreviewEnvironmentStatus }) {
@@ -257,10 +268,11 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                 PR comments and status checks
               </p>
               <p className="text-sm text-muted-foreground">
-                Post a comment with the preview URL (or a teardown notice) and a
-                commit status (pending/success/failure) on the pull request,
-                using the connected GitHub App, GitLab OAuth application,
-                Bitbucket OAuth consumer, or Gitea OAuth2 application.
+                Keep one comment on the pull request up to date (building, ready
+                with the URL, failed, removed) and set a commit status, using
+                the connected GitHub App, GitLab OAuth application, Bitbucket
+                OAuth consumer, or Gitea OAuth2 application. Also explains why a
+                fork pull request was not deployed.
               </p>
             </div>
             <Switch
@@ -291,6 +303,12 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                         PR #{preview.pr_number}
                       </span>
                       <PreviewStatusBadge status={preview.status} />
+                      {preview.is_fork ? (
+                        <Badge variant="muted" className="rounded-full">
+                          <GitForkIcon className="size-3" aria-hidden="true" />
+                          Fork
+                        </Badge>
+                      ) : null}
                       {preview.stale ? (
                         <Badge variant="warning" className="rounded-full">
                           <ClockIcon className="size-3" aria-hidden="true" />
@@ -315,6 +333,12 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                         </>
                       ) : null}
                     </p>
+                    {preview.expires_at ? (
+                      <p className="text-xs text-muted-foreground">
+                        Expires <RelativeTime at={preview.expires_at} live /> if
+                        nothing changes
+                      </p>
+                    ) : null}
                     {preview.status_reason ? (
                       <p className="text-xs text-amber-700 dark:text-amber-400">
                         {preview.status_reason}
@@ -332,18 +356,26 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                       </ul>
                     ) : null}
                   </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    disabled={teardown.isPending}
-                    onClick={() => {
-                      tearDown(preview.pr_number)
-                    }}
-                  >
-                    <TrashIcon />
-                    Tear down
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {preview.status === 'awaiting_approval' ? (
+                      <ApprovePreviewDialog
+                        appName={app.name}
+                        preview={preview}
+                      />
+                    ) : null}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={teardown.isPending}
+                      onClick={() => {
+                        tearDown(preview.pr_number)
+                      }}
+                    >
+                      <TrashIcon />
+                      Tear down
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>

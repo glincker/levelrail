@@ -25,6 +25,30 @@ vi.mock('./CreateDatabaseFields', () => ({
   CreateDatabaseFields: () => <div>create-database-fields-stub</div>,
 }))
 
+vi.mock('./ImportFrontDoor', () => ({
+  ImportFrontDoor: ({
+    onPlan,
+  }: {
+    onPlan: (p: unknown, r: unknown) => void
+  }) => (
+    <button
+      type="button"
+      onClick={() => {
+        onPlan({ source: 'image' }, { text: 'nginx' })
+      }}
+    >
+      front-door-stub
+    </button>
+  ),
+}))
+vi.mock('./ImportPlanPreview', () => ({
+  ImportPlanPreview: ({ onBack }: { onBack: () => void }) => (
+    <button type="button" onClick={onBack}>
+      plan-preview-stub
+    </button>
+  ),
+}))
+
 vi.mock('../queries/databaseEngines', () => ({
   useDatabaseEnginesOptional: () => ({ data: [] }),
 }))
@@ -37,6 +61,21 @@ describe('CreateResourceWizard', () => {
     expect(
       screen.getByRole('heading', { name: 'New resource' }),
     ).toBeInTheDocument()
+    expect(screen.getByText('Pick a starting point.')).toBeInTheDocument()
+  })
+
+  it('shows the plan preview once the front door returns a plan, and goes back', async () => {
+    const user = userEvent.setup()
+    render(
+      <CreateResourceWizard
+        scope="applications"
+        trigger={<Button>New app</Button>}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: 'New app' }))
+    await user.click(screen.getByRole('button', { name: 'front-door-stub' }))
+    expect(screen.getByText('Deployment plan')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'plan-preview-stub' }))
     expect(screen.getByText('Pick a starting point.')).toBeInTheDocument()
   })
 

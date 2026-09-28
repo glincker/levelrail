@@ -80,6 +80,8 @@ export interface LogDrain {
 export interface AppDetail {
   name: string
   image: string
+  /** The content image is pinned to; absent for a legacy unpinned tag. */
+  image_digest?: string
   port: number
   // host_port pins the host-side port Docker binds `port` to
   // (internal/api/apps.go's appResource.HostPort). undefined/null means
@@ -255,6 +257,8 @@ export interface AppBindMount {
 // as possibly-present.
 export interface AppListEntry extends AppDetail {
   status: AppStatusSummary
+  // Resolved name of environment_id, empty when the app has none.
+  environment_name?: string
 }
 
 // Mirrors internal/api/apps.go's appStatusSummary exactly. `variant`

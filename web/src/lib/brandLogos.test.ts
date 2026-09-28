@@ -53,6 +53,15 @@ describe('logoIdForBackupTarget', () => {
       undefined,
     )
     expect(logoIdForBackupTarget('custom')).toBeUndefined()
+    expect(
+      logoIdForBackupTarget('custom', 'https://backblazeb2.com.evil.example'),
+    ).toBeUndefined()
+    expect(
+      logoIdForBackupTarget('custom', 'https://evil.example/amazonaws.com'),
+    ).toBeUndefined()
+    expect(logoIdForBackupTarget('custom', 's3.eu-west-1.amazonaws.com')).toBe(
+      'aws-s3',
+    )
   })
 })
 

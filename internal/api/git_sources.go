@@ -38,6 +38,10 @@ type GitSourceStore interface {
 	// /api/v1/apps/{name}/preview-settings route: the opt-in toggle for
 	// posting a GitHub PR comment/commit status about a preview deploy.
 	SetGitSourcePostPRComments(ctx context.Context, serviceName string, enabled bool) error
+	// SetGitSourceDeploySettings backs PUT
+	// /api/v1/apps/{name}/git-source/deploy-settings: push path filters
+	// and forge status reporting.
+	SetGitSourceDeploySettings(ctx context.Context, serviceName string, paths, pathsIgnore []string, reportStatus bool) error
 }
 
 // GitSourceSecrets is the surface a git source's connect flow and the
@@ -111,24 +115,42 @@ type gitSourceResource struct {
 	// PostPRComments mirrors store.GitSource.PostPRComments: same
 	// read-only-here, set-via-preview-settings shape as PreviewEnabled
 	// above.
-	PostPRComments bool      `json:"post_pr_comments"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	PostPRComments bool `json:"post_pr_comments"`
+	// DeployPaths, DeployPathsIgnore and ReportStatus mirror the store
+	// fields of the same names, set via PUT .../git-source/deploy-settings.
+	DeployPaths       []string  `json:"deploy_paths"`
+	DeployPathsIgnore []string  `json:"deploy_paths_ignore"`
+	ReportStatus      bool      `json:"report_status"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // gitSourceWebhookPath is the relative API path GitHub's own webhook
 // config points at for name: POST /api/v1/webhooks/github/{name}
-// (router.go). Relative, not absolute: this server has no reliable way
-// to know its own externally-reachable hostname, so the frontend
-// prepends window.location.origin for display, the same "server
-// stays dumb about its own external address" choice
-// DatabasePublicAccessCard.tsx's connectionString makes with
-// window.location.hostname.
+// (router.go).
 func gitSourceWebhookPath(name string) string {
 	return "/api/v1/webhooks/github/" + name
 }
 
-func toGitSourceResource(g store.GitSource, hasToken bool) gitSourceResource {
+// gitSourceWebhookURL resolves name's webhook URL to an absolute one
+// using controlPlaneBaseURL, the same store.IngressSettings.PrimaryDomain
+// source of truth every git provider connect flow already uses for its
+// own callback URL (control_plane_base_url.go). Falls back to the bare
+// relative path when no primary domain is configured: the frontend still
+// prepends window.location.origin for display in that case, but the CLI
+// and any other non-browser caller have no such fallback of their own, so
+// this is the best answer available without an operator-configured
+// origin.
+func (rt *Router) gitSourceWebhookURL(ctx context.Context, name string) string {
+	path := gitSourceWebhookPath(name)
+	base, err := rt.controlPlaneBaseURL(ctx)
+	if err != nil {
+		return path
+	}
+	return base + path
+}
+
+func toGitSourceResource(g store.GitSource, hasToken bool, webhookURL string) gitSourceResource {
 	return gitSourceResource{
 		ServiceName:        g.ServiceName,
 		RepoURL:            g.RepoURL,
@@ -140,9 +162,12 @@ func toGitSourceResource(g store.GitSource, hasToken bool) gitSourceResource {
 		Databases:          g.Databases,
 		TriggerMode:        effectiveGitSourceTriggerMode(g.TriggerMode),
 		HasToken:           hasToken,
-		WebhookURL:         gitSourceWebhookPath(g.ServiceName),
+		WebhookURL:         webhookURL,
 		PreviewEnabled:     g.PreviewEnabled,
 		PostPRComments:     g.PostPRComments,
+		DeployPaths:        nonNilPaths(g.DeployPaths),
+		DeployPathsIgnore:  nonNilPaths(g.DeployPathsIgnore),
+		ReportStatus:       g.ReportStatus,
 		CreatedAt:          g.CreatedAt,
 		UpdatedAt:          g.UpdatedAt,
 	}
@@ -426,7 +451,7 @@ func (rt *Router) handleGetGitSource(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJSON(w, http.StatusOK, toGitSourceResource(*gs, hasToken))
+	writeJSON(w, http.StatusOK, toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(r.Context(), name)))
 }
 
 // handleSetGitSource handles PUT /api/v1/apps/{name}/git-source: connect
@@ -609,7 +634,7 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 		return connectGitSourceResult{}, fmt.Errorf("check deploy token: %w", err)
 	}
 
-	resource := toGitSourceResource(*saved, hasToken)
+	resource := toGitSourceResource(*saved, hasToken, rt.gitSourceWebhookURL(ctx, name))
 	if creating {
 		resource.WebhookSecret = webhookSecretPlain
 	}

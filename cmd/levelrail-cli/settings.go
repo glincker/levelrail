@@ -42,7 +42,7 @@ func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 }
 
 func settingsUsage(prog string) string {
-	return fmt.Sprintf(`Usage:
+	return filterExperimentalUsage(fmt.Sprintf(`Usage:
   %[1]s settings oauth list [flags]                     show every OAuth sign-in provider's current settings
   %[1]s settings oauth set <provider> [flags]           enable/configure/disable one OAuth sign-in provider
   %[1]s settings email get [flags]                        show the current outbound email (SMTP/SES) settings
@@ -60,5 +60,5 @@ write. <provider> for "settings oauth set" is one of "google", "github",
 or "oidc".
 
 Run "%[1]s settings <resource> <subcommand> -h" for a subcommand's own flags.
-`, prog)
+`, prog))
 }

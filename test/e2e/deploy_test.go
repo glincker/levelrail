@@ -32,6 +32,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -125,6 +126,7 @@ func TestDeploy_Live_BuildToHTTPS(t *testing.T) {
 	if len(appResult.Conditions) == 0 || appResult.Conditions[0].Status != "True" {
 		t.Fatalf("application Controller.Reconcile() result = %+v, want a True Ready condition", appResult)
 	}
+	persistReadyCondition(buildCtx, t, svcStore, appCtrl.Name(), appResult.Conditions)
 
 	// Independent verification, not trusting the returned Result: inspect
 	// the container directly through docker.Runtime, the same rigor
@@ -210,6 +212,21 @@ func TestDeploy_Live_BuildToHTTPS(t *testing.T) {
 	body := getBodyWithRetry(t, client, "https://"+domain+"/")
 	if !strings.Contains(body, helloBody) {
 		t.Fatalf("response for %s = %q, want it to contain the fixture's distinctive body %q", domain, body, helloBody)
+	}
+}
+
+// persistReadyCondition writes appResult's conditions to store the same
+// way reconcile.Engine's reconcileOne does after every controller call in
+// production. These tests drive application.Controller and
+// ingress.Controller directly instead of through the Engine, so without
+// this call the ingress controller's own readiness gate (F-002) never
+// sees the application controller's Ready condition and refuses to
+// route, exactly the failure this fix exists to prevent for a real
+// unready deploy.
+func persistReadyCondition(ctx context.Context, t *testing.T, svcStore *store.DB, controllerName string, conditions []reconcile.Condition) {
+	t.Helper()
+	if err := svcStore.UpsertConditions(ctx, controllerName, conditions); err != nil {
+		t.Fatalf("UpsertConditions() error = %v", err)
 	}
 }
 

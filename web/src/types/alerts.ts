@@ -24,6 +24,8 @@
 // grace period. control_plane_backup_stale is platform-wide too: it watches
 // the control plane's own newest snapshot and reuses for_duration as the
 // maximum allowed age (default 3d).
+import type { Severity } from './alertNoise'
+
 export type AlertRuleKind =
   | 'threshold'
   | 'crashloop'
@@ -36,6 +38,19 @@ export type AlertRuleKind =
   | 'backup_missing'
   | 'control_plane_backup_stale'
   | 'node_offline'
+  | 'node_cert_expiring'
+  | 'log_archive_stale'
+  | 'slo_burn'
+
+export type SloObjective = 'availability' | 'latency'
+
+// slo_burn-only: a request-based SLO over the app's ingress request
+// metrics (internal/alerting.SLOConfig). target is a percentage, 99.9.
+export interface SloConfig {
+  objective: SloObjective
+  target: number
+  latency_ms?: number
+}
 
 export type BackupResourceKind = 'database' | 'volume'
 
@@ -89,6 +104,8 @@ export interface AlertRule {
   backup_service_name?: string
   backup_volume_name?: string
 
+  slo?: SloConfig
+
   // notify_url/notify_kind are the *resolved* values: the attached
   // channel's own when channel_id is set, this rule's legacy columns
   // otherwise (rules created before notification channels existed).
@@ -96,6 +113,17 @@ export interface AlertRule {
   notify_url?: string
   notify_kind?: NotifyKind
   enabled: boolean
+
+  // Noise control (silences, flapping, consecutive failures).
+  severity?: Severity
+  labels?: Record<string, string>
+  consecutive_failures?: number
+  flap_threshold?: number
+  flap_window?: string
+
+  // Response-only: an active silence or maintenance window mutes this rule.
+  silenced?: boolean
+  silenced_by?: string
 
   // Evaluation state, response-only: only the evaluator ever sets these
   // (internal/alerting's Engine via UpdateState), a create request never
@@ -127,8 +155,14 @@ export interface CreateAlertRuleRequest {
   backup_database_name?: string
   backup_service_name?: string
   backup_volume_name?: string
+  slo?: SloConfig
   channel_id?: string
   notify_url?: string
   notify_kind?: NotifyKind
   enabled: boolean
+  severity?: Severity
+  labels?: Record<string, string>
+  consecutive_failures?: number
+  flap_threshold?: number
+  flap_window?: string
 }

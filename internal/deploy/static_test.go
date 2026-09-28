@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -292,6 +293,50 @@ func TestPipeline_DeployStatic_EscapingPaths_Rejected(t *testing.T) {
 	}
 }
 
+func TestPipeline_DeployStatic_SymlinkEscape_Rejected(t *testing.T) {
+	for _, tc := range []struct{ name, link, buildPath string }{
+		{name: "build.path is a link", link: "dist", buildPath: "dist"},
+		{name: "a parent of build.path is a link", link: "out", buildPath: "out/private"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			outside := t.TempDir()
+			writeTree(t, outside, map[string]string{"private/master.key": "do not serve", "master.key": "do not serve"})
+			sourceDir := t.TempDir()
+			if err := os.Symlink(outside, filepath.Join(sourceDir, tc.link)); err != nil {
+				t.Fatal(err)
+			}
+			staticRoot := t.TempDir()
+			staticStore := &fakeStaticSiteStore{}
+			p := New(&fakeBuilder{}, &fakeServiceStore{}, WithStaticSiteStore(staticStore), WithStaticRootDir(staticRoot))
+			svc := staticService("docs.example.com")
+			svc.Build.Path = tc.buildPath
+			_, err := p.Deploy(context.Background(), Request{ServiceName: "docs", Service: svc, SourceDir: sourceDir, CommitSHA: "abc1234"}, nil)
+			if err == nil || !strings.Contains(err.Error(), "outside the repository") {
+				t.Fatalf("Deploy() error = %v, want a refusal", err)
+			}
+			if staticStore.saveCalls != 0 {
+				t.Errorf("SaveStaticSite called %d times, want 0", staticStore.saveCalls)
+			}
+		})
+	}
+}
+
+func TestPipeline_DeployStatic_InRepoSymlinkAllowed(t *testing.T) {
+	sourceDir := t.TempDir()
+	writeTree(t, sourceDir, map[string]string{"build/index.html": "<h1>ok</h1>"})
+	if err := os.Symlink(filepath.Join(sourceDir, "build"), filepath.Join(sourceDir, "dist")); err != nil {
+		t.Fatal(err)
+	}
+	staticStore := &fakeStaticSiteStore{}
+	p := New(&fakeBuilder{}, &fakeServiceStore{}, WithStaticSiteStore(staticStore), WithStaticRootDir(t.TempDir()))
+	if _, err := p.Deploy(context.Background(), Request{ServiceName: "docs", Service: staticService("docs.example.com"), SourceDir: sourceDir, CommitSHA: "abc1234"}, nil); err != nil {
+		t.Fatalf("Deploy() error = %v", err)
+	}
+	if staticStore.saveCalls != 1 {
+		t.Fatalf("SaveStaticSite called %d times, want 1", staticStore.saveCalls)
+	}
+}
+
 func TestPipeline_DeployStatic_SourceDirMissing_Errors(t *testing.T) {
 	builder := &fakeBuilder{}
 	staticStore := &fakeStaticSiteStore{}
@@ -304,6 +349,14 @@ func TestPipeline_DeployStatic_SourceDirMissing_Errors(t *testing.T) {
 	}, nil)
 	if err == nil {
 		t.Fatal("Deploy() error = nil, want an error: build.path does not exist in the checkout")
+	}
+	for _, want := range []string{`build.path "dist"`, "runs no build step", "railpack"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("Deploy() error = %q, want it to contain %q", err, want)
+		}
+	}
+	if strings.Contains(err.Error(), sourceDir) {
+		t.Errorf("Deploy() error = %q, want no temporary checkout path in it", err)
 	}
 	if staticStore.saveCalls != 0 {
 		t.Errorf("SaveStaticSite called %d times, want 0: a missing source dir must never reach the store", staticStore.saveCalls)
@@ -428,5 +481,99 @@ func TestPipeline_DeployStatic_ProgressCallback_NeverCalled(t *testing.T) {
 	}
 	if called {
 		t.Error("progress callback was called, want it never invoked for a static deploy")
+	}
+}
+
+func TestStaticDestRel(t *testing.T) {
+	tests := []struct {
+		name, service, commit string
+		want                  string
+		wantErr               bool
+	}{
+		{name: "service and commit", service: "docs", commit: "abc1234", want: filepath.Join("docs", "abc1234")},
+		{name: "empty commit", service: "docs", want: "docs"},
+		{name: "ref with slash", service: "docs", commit: "feat/x", want: filepath.Join("docs", "feat", "x")},
+		{name: "percent encoded dots are a literal name", service: "docs", commit: "%2e%2e", want: filepath.Join("docs", "%2e%2e")},
+		{name: "service dotdot", service: "..", commit: "c", wantErr: true},
+		{name: "service absolute", service: "/etc", commit: "c", wantErr: true},
+		{name: "service nested", service: "a/b", commit: "c", wantErr: true},
+		{name: "commit dotdot", service: "docs", commit: "../x", wantErr: true},
+		{name: "commit nested dotdot", service: "docs", commit: "a/../../x", wantErr: true},
+		{name: "commit absolute", service: "docs", commit: "/tmp/x", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := staticDestRel(tt.service, tt.commit)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("staticDestRel() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("staticDestRel() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestOpenContained_Rejects(t *testing.T) {
+	outside := t.TempDir()
+	checkout := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(checkout, "link")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(checkout, "ok"), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name    string
+		dir     string
+		wantErr bool
+	}{
+		{name: "inside", dir: filepath.Join(checkout, "ok")},
+		{name: "symlink escape", dir: filepath.Join(checkout, "link"), wantErr: true},
+		{name: "dotdot escape", dir: filepath.Join(checkout, "ok", "..", ".."), wantErr: true},
+		{name: "absolute outside", dir: outside, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root, _, err := openContained(checkout, tt.dir)
+			if err == nil {
+				_ = root.Close()
+			}
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("openContained() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCopyStaticDir_SkipsSymlinksAndStaysConfined(t *testing.T) {
+	outside := t.TempDir()
+	writeTree(t, outside, map[string]string{"secret": "no"})
+	src := t.TempDir()
+	writeTree(t, src, map[string]string{"index.html": "hi", "sub/a.txt": "a"})
+	if err := os.Symlink(outside, filepath.Join(src, "dirlink")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(outside, "secret"), filepath.Join(src, "filelink")); err != nil {
+		t.Fatal(err)
+	}
+	destParent := t.TempDir()
+	srcRoot, err := os.OpenRoot(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = srcRoot.Close() })
+	destRoot, err := os.OpenRoot(destParent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = destRoot.Close() })
+
+	if err := copyStaticDir(srcRoot, ".", destRoot, "site"); err != nil {
+		t.Fatalf("copyStaticDir() error = %v", err)
+	}
+	got := readTree(t, filepath.Join(destParent, "site"))
+	if len(got) != 2 || got["index.html"] != "hi" || got["sub/a.txt"] != "a" {
+		t.Errorf("copied tree = %v, want only index.html and sub/a.txt", got)
 	}
 }

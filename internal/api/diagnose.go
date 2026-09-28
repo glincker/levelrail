@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/diagnose"
+	"github.com/GLINCKER/levelrail/internal/failure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -34,6 +36,14 @@ type diagnosisResource struct {
 	Confidence      string                    `json:"confidence"`
 	MatchedSignals  []diagnosisSignalResource `json:"matched_signals"`
 	DeployAttemptID string                    `json:"deploy_attempt_id,omitempty"`
+	Causes          []diagnosisCauseResource  `json:"causes"`
+	Fixable         bool                      `json:"fixable"`
+	// Failure is the shared structured failure object for the diagnosed attempt.
+	Failure *failure.Failure `json:"failure,omitempty"`
+
+	// RecentChanges is what changed on the app in the last
+	// APP_ALERT_CHANGE_WINDOW, with the likely cause flagged.
+	RecentChanges *changes.Result `json:"recent_changes,omitempty"`
 }
 
 func toDiagnosisResource(res diagnose.Result, attemptID string) diagnosisResource {
@@ -47,6 +57,8 @@ func toDiagnosisResource(res diagnose.Result, attemptID string) diagnosisResourc
 		Confidence:      res.Confidence,
 		MatchedSignals:  signals,
 		DeployAttemptID: attemptID,
+		Causes:          toCauseResources(res.Causes),
+		Fixable:         anyPatchFix(res.Causes),
 	}
 }
 
@@ -61,7 +73,7 @@ func (rt *Router) handleDiagnoseApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	ctx := r.Context()
 
-	_, err := rt.apps.GetDesiredService(ctx, name)
+	svc, err := rt.apps.GetDesiredService(ctx, name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -99,6 +111,9 @@ func (rt *Router) handleDiagnoseApp(w http.ResponseWriter, r *http.Request) {
 		recentLogs = rt.diagnoseBuildLogs(ctx, name, attempt.ID)
 	} else {
 		recentLogs = rt.diagnoseRecentLogs(ctx, name)
+		if len(recentLogs) == 0 {
+			recentLogs = rt.containerLogTail(ctx, svc)
+		}
 	}
 
 	in := diagnose.Input{
@@ -107,13 +122,18 @@ func (rt *Router) handleDiagnoseApp(w http.ResponseWriter, r *http.Request) {
 		Conditions:     toConditionSignals(conditions),
 		Crashloop:      rt.diagnoseCrashloop(ctx, name),
 		RecentLogLines: recentLogs,
+		Facts:          rt.diagnoseFacts(ctx, svc, attemptFailedDuringBuild(attempt)),
 	}
 
 	attemptID := ""
 	if attempt != nil {
 		attemptID = attempt.ID
 	}
-	writeJSON(w, http.StatusOK, toDiagnosisResource(diagnose.Diagnose(in), attemptID))
+	resp := toDiagnosisResource(diagnose.Diagnose(in), attemptID)
+	resp.Failure = rt.diagnoseFailure(attempt, conditions, in)
+	recent := rt.changeAggregator().Collect(ctx, name, time.Now())
+	resp.RecentChanges = &recent
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // resolveDiagnosisAttempt returns deployID's attempt if given (scoped to

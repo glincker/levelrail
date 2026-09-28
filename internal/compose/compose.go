@@ -84,6 +84,8 @@ type Service struct {
 	// empty too; "never" and "build" are rejected, see
 	// normalizePullPolicy.
 	PullPolicy string
+	// Deploy carries only the GPU device reservation (gpu.go).
+	Deploy *Deploy
 }
 
 // PullPolicyAlways is pull_policy: always, the only non-default value

@@ -10,6 +10,15 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { buttonVariants } from './ui/button'
 import { Input } from './ui/input'
 import { LogSearchEmptyState } from './LogSearchEmptyState'
+import { LogLevelChips, LogLevelGutter } from './LogLevelChips'
+import {
+  bucketOf,
+  countLevels,
+  filterByLevels,
+  summarizeShown,
+  toggleLevel,
+  type LevelBucket,
+} from '../lib/logLevels'
 import { Skeleton } from './ui/skeleton'
 import {
   DEFAULT_TIME_RANGE_KEY,
@@ -34,6 +43,8 @@ import { TimeRangeControls } from './TimeRangeControls'
 
 const ROW_HEIGHT_PX = 22
 const SEARCH_DEBOUNCE_MS = 300
+// Newest entries fetched per search; the response total says how many matched.
+const LOG_SEARCH_LIMIT = 1000
 
 // Log-line-shaped placeholder for the search's own in-flight window,
 // varying bar widths so it reads as text rather than a generic block,
@@ -58,6 +69,7 @@ export function LogSearchPanel({ appName }: { appName: string }) {
   const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS)
   const [rangeKey, setRangeKey] = useState<TimeRangeKey>(DEFAULT_TIME_RANGE_KEY)
   const [refreshNonce, setRefreshNonce] = useState(0)
+  const [levels, setLevels] = useState<ReadonlySet<LevelBucket>>(new Set())
 
   const range = useMemo(
     () => resolveTimeRange(rangeKey),
@@ -69,8 +81,14 @@ export function LogSearchPanel({ appName }: { appName: string }) {
     from: range.from,
     to: range.to,
     q: debouncedQuery.trim() || undefined,
+    limit: LOG_SEARCH_LIMIT,
   })
-  const entries = data ?? []
+  const loaded = useMemo(() => data?.entries ?? [], [data])
+  const counts = useMemo(() => countLevels(loaded), [loaded])
+  const entries = useMemo(
+    () => filterByLevels(loaded, levels),
+    [loaded, levels],
+  )
   const search = { query: debouncedQuery, rangeKey, setQuery, setRangeKey }
 
   // A state-backed callback ref (not useRef): useVirtualizer needs a
@@ -163,15 +181,28 @@ export function LogSearchPanel({ appName }: { appName: string }) {
           <LogSearchSkeleton />
         ) : error ? (
           <p className="px-1 py-2 text-sm text-destructive">{error.message}</p>
-        ) : entries.length === 0 ? (
+        ) : loaded.length === 0 ? (
           <LogSearchEmptyState resourceKind="app" search={search} />
         ) : (
           <>
-            <p className="mb-1.5 px-1 text-xs text-muted-foreground">
-              {entries.length.toLocaleString()}{' '}
-              {entries.length === 1 ? 'entry' : 'entries'}
-              {debouncedQuery ? ` matching "${debouncedQuery}"` : ''}
-            </p>
+            <div className="mb-2 space-y-1.5">
+              <LogLevelChips
+                counts={counts}
+                selected={levels}
+                onToggle={(bucket) => {
+                  setLevels((prev) => toggleLevel(prev, bucket))
+                }}
+              />
+              <p className="px-1 text-xs text-muted-foreground">
+                {summarizeShown(
+                  entries.length,
+                  loaded.length,
+                  data?.total ?? loaded.length,
+                  levels.size > 0,
+                )}
+                {debouncedQuery ? ` matching "${debouncedQuery}"` : ''}
+              </p>
+            </div>
             <div
               ref={setScrollEl}
               className="h-[50vh] overflow-auto rounded-lg border border-neutral-800 bg-neutral-950 font-mono text-xs leading-5 text-neutral-200"
@@ -200,8 +231,12 @@ export function LogSearchPanel({ appName }: { appName: string }) {
                         height: ROW_HEIGHT_PX,
                         transform: `translateY(${virtualRow.start}px)`,
                       }}
-                      className="flex items-baseline gap-2 truncate px-3"
+                      className="flex items-baseline gap-2 truncate pr-3"
                     >
+                      <LogLevelGutter
+                        level={entry.level}
+                        bucket={bucketOf(entry.level)}
+                      />
                       <span className="shrink-0 text-neutral-500">
                         {new Date(entry.timestamp).toLocaleTimeString()}
                       </span>
