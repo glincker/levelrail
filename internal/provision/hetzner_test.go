@@ -37,6 +37,37 @@ func TestHetzner_ListRegions(t *testing.T) {
 	}
 }
 
+func TestHetzner_ListRegions_FollowsPagination(t *testing.T) {
+	var pages []string
+	h := newTestHetzner(t, func(w http.ResponseWriter, r *http.Request) {
+		page := r.URL.Query().Get("page")
+		pages = append(pages, page)
+		switch page {
+		case "1", "":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"locations": []map[string]any{{"name": "fsn1", "description": "Falkenstein"}},
+				"meta":      map[string]any{"pagination": map[string]any{"next_page": 2}},
+			})
+		default:
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"locations": []map[string]any{{"name": "nbg1", "description": "Nuremberg"}},
+				"meta":      map[string]any{"pagination": map[string]any{"next_page": 0}},
+			})
+		}
+	})
+
+	regions, err := h.ListRegions(context.Background())
+	if err != nil {
+		t.Fatalf("ListRegions: %v", err)
+	}
+	if len(pages) != 2 {
+		t.Fatalf("fetched %d pages, want 2 (pages=%v)", len(pages), pages)
+	}
+	if len(regions) != 2 || regions[0].ID != "fsn1" || regions[1].ID != "nbg1" {
+		t.Errorf("regions = %+v", regions)
+	}
+}
+
 func TestHetzner_ListSizes_FiltersByRegionAvailability(t *testing.T) {
 	h := newTestHetzner(t, func(w http.ResponseWriter, _ *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -61,10 +62,13 @@ type fakeNodeProvisioner struct {
 	getIPAddr string
 	getErr    error
 
+	deleteErr error
+
 	regionCalls int
 	sizeCalls   int
 	createCalls int
 	getCalls    int
+	deletedIDs  []string
 }
 
 func (f *fakeNodeProvisioner) ListRegions(context.Context) ([]provision.Region, error) {
@@ -87,7 +91,10 @@ func (f *fakeNodeProvisioner) GetServer(context.Context, string) (provision.Serv
 	return f.getStatus, f.getIPAddr, f.getErr
 }
 
-func (f *fakeNodeProvisioner) DeleteServer(context.Context, string) error { return nil }
+func (f *fakeNodeProvisioner) DeleteServer(_ context.Context, id string) error {
+	f.deletedIDs = append(f.deletedIDs, id)
+	return f.deleteErr
+}
 
 func newTestRouterWithNodeProvisioning(t *testing.T, secrets NodeProviderSecrets, fake *fakeNodeProvisioner) (*Router, *store.DB) {
 	t.Helper()
@@ -431,5 +438,164 @@ func TestHandleListNodeProvisions_DoesNotRefresh(t *testing.T) {
 	}
 	if fake.getCalls != 0 {
 		t.Errorf("getCalls = %d, want 0 (list must not live-refresh each row)", fake.getCalls)
+	}
+}
+
+func TestHandleCreateNodeProvision_RejectsNameAlreadyUsedByANode(t *testing.T) {
+	secrets := newFakeNodeProviderSecrets()
+	_ = secrets.SetValue(context.Background(), store.NodeProviderSecretsKey("hetzner"), store.NodeProviderTokenEnvKey, "tok")
+	rt, db := newTestRouterWithNodeProvisioning(t, secrets, &fakeNodeProvisioner{})
+	cookie := loginTestSession(t, rt, db)
+
+	now := time.Now()
+	if err := db.SaveNode(context.Background(), store.Node{ID: "node_existing", Name: "web-1", Status: store.NodeStatusOnline, CreatedAt: now, UpdatedAt: now}); err != nil {
+		t.Fatalf("SaveNode: %v", err)
+	}
+
+	body := `{"provider":"hetzner","region":"fsn1","size":"cx22","name":"web-1","control_plane_addr":"cp.example.com:9443"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/provision", body))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandleCreateNodeProvision_RejectsNameAlreadyUsedByAnActiveProvision(t *testing.T) {
+	secrets := newFakeNodeProviderSecrets()
+	_ = secrets.SetValue(context.Background(), store.NodeProviderSecretsKey("hetzner"), store.NodeProviderTokenEnvKey, "tok")
+	rt, db := newTestRouterWithNodeProvisioning(t, secrets, &fakeNodeProvisioner{})
+	cookie := loginTestSession(t, rt, db)
+
+	now := time.Now()
+	if err := db.SaveNodeProvision(context.Background(), store.NodeProvision{
+		ID: "npv_existing", Provider: "hetzner", Region: "fsn1", Size: "cx22", Name: "web-1", Role: "general",
+		Status: store.NodeProvisionStatusBooting, CreatedAt: now, UpdatedAt: now,
+	}); err != nil {
+		t.Fatalf("SaveNodeProvision: %v", err)
+	}
+
+	body := `{"provider":"hetzner","region":"fsn1","size":"cx22","name":"web-1","control_plane_addr":"cp.example.com:9443"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/provision", body))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandleCreateNodeProvision_AllowsNameFromAFailedProvision(t *testing.T) {
+	secrets := newFakeNodeProviderSecrets()
+	_ = secrets.SetValue(context.Background(), store.NodeProviderSecretsKey("hetzner"), store.NodeProviderTokenEnvKey, "tok")
+	fake := &fakeNodeProvisioner{createServerID: "1", createIPAddr: "1.2.3.4"}
+	rt, db := newTestRouterWithNodeProvisioning(t, secrets, fake)
+	cookie := loginTestSession(t, rt, db)
+
+	now := time.Now()
+	if err := db.SaveNodeProvision(context.Background(), store.NodeProvision{
+		ID: "npv_failed", Provider: "hetzner", Region: "fsn1", Size: "cx22", Name: "web-1", Role: "general",
+		Status: store.NodeProvisionStatusFailed, CreatedAt: now, UpdatedAt: now,
+	}); err != nil {
+		t.Fatalf("SaveNodeProvision: %v", err)
+	}
+
+	body := `{"provider":"hetzner","region":"fsn1","size":"cx22","name":"web-1","control_plane_addr":"cp.example.com:9443"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/provision", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want 201, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestRefreshNodeProvision_AppliesRoleToTheEnrolledNode(t *testing.T) {
+	cases := []struct {
+		role      string
+		wantApp   bool
+		wantBuild bool
+	}{
+		{role: "general", wantApp: true, wantBuild: false},
+		{role: "build", wantApp: false, wantBuild: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.role, func(t *testing.T) {
+			secrets := newFakeNodeProviderSecrets()
+			_ = secrets.SetValue(context.Background(), store.NodeProviderSecretsKey("hetzner"), store.NodeProviderTokenEnvKey, "tok")
+			fake := &fakeNodeProvisioner{getStatus: provision.ServerStatusRunning}
+			rt, db := newTestRouterWithNodeProvisioning(t, secrets, fake)
+			cookie := loginTestSession(t, rt, db)
+
+			now := time.Now()
+			p := store.NodeProvision{
+				ID: "npv_role_" + tc.role, Provider: "hetzner", Region: "fsn1", Size: "cx22",
+				Name: "web-role-" + tc.role, Role: tc.role,
+				Status: store.NodeProvisionStatusEnrolling, ProviderServerID: "999", CreatedAt: now, UpdatedAt: now,
+			}
+			if err := db.SaveNodeProvision(context.Background(), p); err != nil {
+				t.Fatalf("SaveNodeProvision: %v", err)
+			}
+			if err := db.SaveNode(context.Background(), store.Node{
+				ID: "node_" + tc.role, Name: p.Name, Status: store.NodeStatusOnline, CreatedAt: now, UpdatedAt: now,
+			}); err != nil {
+				t.Fatalf("SaveNode: %v", err)
+			}
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/node-provisions/"+p.ID, ""))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+			}
+
+			node, err := db.GetNode(context.Background(), "node_"+tc.role)
+			if err != nil {
+				t.Fatalf("GetNode: %v", err)
+			}
+			if node.AcceptsAppWorkloads != tc.wantApp || node.AcceptsBuildWorkloads != tc.wantBuild {
+				t.Errorf("role %q: AcceptsAppWorkloads=%t AcceptsBuildWorkloads=%t, want app=%t build=%t",
+					tc.role, node.AcceptsAppWorkloads, node.AcceptsBuildWorkloads, tc.wantApp, tc.wantBuild)
+			}
+		})
+	}
+}
+
+// failOnceNodeProvisionStore wraps a real NodeProvisionStore, failing the
+// Nth call to UpdateNodeProvisionStatus (1-indexed) and delegating every
+// other call, for the half-succeeded "CreateServer worked, persisting it
+// didn't" path handleCreateNodeProvision must handle.
+type failOnceNodeProvisionStore struct {
+	NodeProvisionStore
+	failOnCall int
+	calls      int
+}
+
+func (f *failOnceNodeProvisionStore) UpdateNodeProvisionStatus(ctx context.Context, id, status, providerServerID, ipAddress, nodeID, failureReason string, updatedAt time.Time) error {
+	f.calls++
+	if f.calls == f.failOnCall {
+		return fmt.Errorf("simulated write failure")
+	}
+	return f.NodeProvisionStore.UpdateNodeProvisionStatus(ctx, id, status, providerServerID, ipAddress, nodeID, failureReason, updatedAt)
+}
+
+func TestHandleCreateNodeProvision_CleansUpOrphanedServerOnPersistFailure(t *testing.T) {
+	secrets := newFakeNodeProviderSecrets()
+	_ = secrets.SetValue(context.Background(), store.NodeProviderSecretsKey("hetzner"), store.NodeProviderTokenEnvKey, "tok")
+	fake := &fakeNodeProvisioner{createServerID: "srv-orphan", createIPAddr: "1.2.3.4"}
+
+	db := openTestDB(t)
+	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
+	failingStore := &failOnceNodeProvisionStore{NodeProvisionStore: db, failOnCall: 1}
+	factory := func(string, string) (NodeProvisioner, error) { return fake, nil }
+	rt := NewRouter(logger, testBrand(), db,
+		WithNodeProviderSecrets(secrets),
+		WithNodeProvisionerFactory(factory),
+		WithNodeProvisions(failingStore),
+	)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"provider":"hetzner","region":"fsn1","size":"cx22","name":"web-1","control_plane_addr":"cp.example.com:9443"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/provision", body))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500, body = %s", rec.Code, rec.Body.String())
+	}
+	if len(fake.deletedIDs) != 1 || fake.deletedIDs[0] != "srv-orphan" {
+		t.Errorf("deletedIDs = %v, want [srv-orphan]", fake.deletedIDs)
 	}
 }

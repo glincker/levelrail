@@ -1,10 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 	"text/tabwriter"
+
+	"golang.org/x/term"
 )
 
 // runNodesProviders dispatches "nodes providers <verb> [flags]" to one
@@ -102,7 +107,7 @@ func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr i
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes providers set-credential", "print the updated provider as JSON to stdout and nothing else", stderr)
 	var provider, providerToken string
 	fs.StringVar(&provider, "provider", "", "hetzner or digitalocean (required)")
-	fs.StringVar(&providerToken, "provider-token", "", "the provider's API token (required)")
+	fs.StringVar(&providerToken, "provider-token", "", "the provider's API token; prefer piping it on stdin or the interactive prompt instead, a flag value is visible in shell history and the process list")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesProvidersSetCredentialUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -113,7 +118,14 @@ func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr i
 		return reportError(stdout, stderr, jsonOut, newValidationError("--provider is required"))
 	}
 	if providerToken == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--provider-token is required"))
+		read, err := readNodeProviderToken(stderr)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		providerToken = read
+	}
+	if providerToken == "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("a provider token is required: pass --provider-token, pipe it on stdin, or run interactively"))
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
@@ -134,15 +146,22 @@ func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr i
 
 func nodesProvidersSetCredentialUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s nodes providers set-credential --provider NAME --provider-token TOKEN [flags]
+  %[1]s nodes providers set-credential --provider NAME [--provider-token TOKEN] [flags]
+  echo "$TOKEN" | %[1]s nodes providers set-credential --provider NAME
 
 Stores (or replaces) a cloud provider's API token, encrypted the same way
 every other integration credential in this platform is. The token is
 never echoed back.
 
+--provider-token is accepted for scripting but its value ends up in
+shell history and the process list while the command runs. Prefer
+piping the token on stdin (a non-terminal stdin is read directly, one
+line, trimmed), or omit both and run interactively: a terminal stdin
+gets a no-echo "Provider token:" prompt instead.
+
 Flags:
   --provider string       hetzner or digitalocean (required)
-  --provider-token string  the provider's API token (required)
+  --provider-token string  the provider's API token, see above
   --api-url string       control plane base URL (default: %[2]s env var, then %[3]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the updated provider as JSON to stdout, nothing else
@@ -150,4 +169,31 @@ Flags:
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIURL, defaultAPIURL)
+}
+
+// readNodeProviderToken is a seam for tests; production callers get
+// defaultReadNodeProviderToken.
+var readNodeProviderToken = defaultReadNodeProviderToken
+
+// defaultReadNodeProviderToken resolves the token when --provider-token
+// was omitted: a piped, non-terminal stdin is read directly (one line,
+// trimmed, the same "docker login --password-stdin" shape), a real
+// terminal gets a no-echo prompt instead so the token is never displayed
+// either way.
+func defaultReadNodeProviderToken(stderr io.Writer) (string, error) {
+	fd := int(os.Stdin.Fd()) //nolint:gosec // a file descriptor always fits in int
+	if !term.IsTerminal(fd) {
+		line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		if err != nil && line == "" {
+			return "", newValidationError("read provider token from stdin: %v", err)
+		}
+		return strings.TrimSpace(line), nil
+	}
+	_, _ = fmt.Fprint(stderr, "Provider token: ")
+	b, err := term.ReadPassword(fd)
+	_, _ = fmt.Fprintln(stderr)
+	if err != nil {
+		return "", newValidationError("read provider token: %v", err)
+	}
+	return strings.TrimSpace(string(b)), nil
 }

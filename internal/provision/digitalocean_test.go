@@ -37,6 +37,37 @@ func TestDigitalOcean_ListRegions_SkipsUnavailable(t *testing.T) {
 	}
 }
 
+func TestDigitalOcean_ListRegions_FollowsPagination(t *testing.T) {
+	var requests []string
+	d := newTestDigitalOcean(t, func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r.URL.String())
+		if r.URL.Query().Get("page") == "2" {
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"regions": []map[string]any{{"slug": "ams3", "name": "Amsterdam 3", "available": true}},
+				"links":   map[string]any{"pages": map[string]any{}},
+			})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"regions": []map[string]any{{"slug": "nyc1", "name": "New York 1", "available": true}},
+			"links": map[string]any{
+				"pages": map[string]any{"next": "http://" + r.Host + "/regions?page=2"},
+			},
+		})
+	})
+
+	regions, err := d.ListRegions(context.Background())
+	if err != nil {
+		t.Fatalf("ListRegions: %v", err)
+	}
+	if len(requests) != 2 {
+		t.Fatalf("made %d requests, want 2 (requests=%v)", len(requests), requests)
+	}
+	if len(regions) != 2 || regions[0].ID != "nyc1" || regions[1].ID != "ams3" {
+		t.Errorf("regions = %+v", regions)
+	}
+}
+
 func TestDigitalOcean_ListSizes_FiltersByRegion(t *testing.T) {
 	d := newTestDigitalOcean(t, func(w http.ResponseWriter, _ *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{

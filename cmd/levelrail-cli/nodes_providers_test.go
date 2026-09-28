@@ -2,11 +2,22 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 )
+
+// stubNodeProviderToken swaps readNodeProviderToken for the duration of
+// the test, the same pattern importPromptFn's own tests already use for
+// its own stdin/terminal-reading seam.
+func stubNodeProviderToken(t *testing.T, token string, err error) {
+	t.Helper()
+	orig := readNodeProviderToken
+	readNodeProviderToken = func(io.Writer) (string, error) { return token, err }
+	t.Cleanup(func() { readNodeProviderToken = orig })
+}
 
 func TestRun_NodesProvidersList(t *testing.T) {
 	var gotPath string
@@ -52,10 +63,34 @@ func TestRun_NodesProvidersSetCredential(t *testing.T) {
 	}
 }
 
-func TestRun_NodesProvidersSetCredential_MissingFlags(t *testing.T) {
-	stderr := runCLIExpectValidationError(t, []string{"nodes", "providers", "set-credential", "--provider", "hetzner"})
-	if !strings.Contains(stderr, "--provider-token is required") {
+func TestRun_NodesProvidersSetCredential_MissingProvider(t *testing.T) {
+	stderr := runCLIExpectValidationError(t, []string{"nodes", "providers", "set-credential", "--provider-token", "secret"})
+	if !strings.Contains(stderr, "--provider is required") {
 		t.Errorf("stderr = %q", stderr)
+	}
+}
+
+func TestRun_NodesProvidersSetCredential_NoTokenAnywhere(t *testing.T) {
+	stubNodeProviderToken(t, "", nil)
+	stderr := runCLIExpectValidationError(t, []string{"nodes", "providers", "set-credential", "--provider", "hetzner"})
+	if !strings.Contains(stderr, "a provider token is required") {
+		t.Errorf("stderr = %q", stderr)
+	}
+}
+
+func TestRun_NodesProvidersSetCredential_TokenFromStdinOrPrompt(t *testing.T) {
+	stubNodeProviderToken(t, "piped-secret", nil)
+	var gotBody setNodeProviderCredentialRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(nodeProviderResource{Provider: gotBody.Provider, HasToken: true})
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"nodes", "providers", "set-credential", "--provider", "hetzner", "--api-url", srv.URL})
+	if gotBody.Token != "piped-secret" {
+		t.Errorf("Token = %q, want piped-secret", gotBody.Token)
 	}
 }
 

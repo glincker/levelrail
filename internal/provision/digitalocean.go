@@ -25,26 +25,41 @@ func NewDigitalOcean(token string) *DigitalOcean {
 	return &DigitalOcean{client: newHTTPClient(digitaloceanBaseURL, token)}
 }
 
+// doLinks mirrors the "links.pages" object every paginated DigitalOcean
+// list endpoint returns; Next is empty on the last page.
+type doLinks struct {
+	Links struct {
+		Pages struct {
+			Next string `json:"next"`
+		} `json:"pages"`
+	} `json:"links"`
+}
+
 type doRegionsResponse struct {
 	Regions []struct {
 		Slug      string `json:"slug"`
 		Name      string `json:"name"`
 		Available bool   `json:"available"`
 	} `json:"regions"`
+	doLinks
 }
 
-// ListRegions calls GET /v2/regions.
+// ListRegions calls GET /v2/regions, following every page.
 func (d *DigitalOcean) ListRegions(ctx context.Context) ([]Region, error) {
-	var out doRegionsResponse
-	if err := d.client.do(ctx, http.MethodGet, "/regions", nil, &out); err != nil {
-		return nil, fmt.Errorf("provision: digitalocean list regions: %w", err)
-	}
-	regions := make([]Region, 0, len(out.Regions))
-	for _, r := range out.Regions {
-		if !r.Available {
-			continue
+	var regions []Region
+	path := "/regions"
+	for path != "" {
+		var out doRegionsResponse
+		if err := d.client.do(ctx, http.MethodGet, path, nil, &out); err != nil {
+			return nil, fmt.Errorf("provision: digitalocean list regions: %w", err)
 		}
-		regions = append(regions, Region{ID: r.Slug, Name: r.Name})
+		for _, r := range out.Regions {
+			if !r.Available {
+				continue
+			}
+			regions = append(regions, Region{ID: r.Slug, Name: r.Name})
+		}
+		path = d.client.relativePath(out.Links.Pages.Next)
 	}
 	return regions, nil
 }
@@ -59,27 +74,33 @@ type doSizesResponse struct {
 		Regions      []string `json:"regions"`
 		Available    bool     `json:"available"`
 	} `json:"sizes"`
+	doLinks
 }
 
-// ListSizes calls GET /v2/sizes. When region is non-empty, only sizes
-// DigitalOcean lists as available in that region are returned.
+// ListSizes calls GET /v2/sizes, following every page. When region is
+// non-empty, only sizes DigitalOcean lists as available in that region
+// are returned.
 func (d *DigitalOcean) ListSizes(ctx context.Context, region string) ([]Size, error) {
-	var out doSizesResponse
-	if err := d.client.do(ctx, http.MethodGet, "/sizes", nil, &out); err != nil {
-		return nil, fmt.Errorf("provision: digitalocean list sizes: %w", err)
-	}
 	var sizes []Size
-	for _, s := range out.Sizes {
-		if !s.Available {
-			continue
+	path := "/sizes"
+	for path != "" {
+		var out doSizesResponse
+		if err := d.client.do(ctx, http.MethodGet, path, nil, &out); err != nil {
+			return nil, fmt.Errorf("provision: digitalocean list sizes: %w", err)
 		}
-		if region != "" && !containsString(s.Regions, region) {
-			continue
+		for _, s := range out.Sizes {
+			if !s.Available {
+				continue
+			}
+			if region != "" && !containsString(s.Regions, region) {
+				continue
+			}
+			sizes = append(sizes, Size{
+				ID: s.Slug, Name: s.Slug, VCPUs: s.VCPUs, Memory: s.Memory, Disk: s.Disk,
+				PriceMonthly: strconv.FormatFloat(s.PriceMonthly, 'f', 2, 64), Currency: "USD",
+			})
 		}
-		sizes = append(sizes, Size{
-			ID: s.Slug, Name: s.Slug, VCPUs: s.VCPUs, Memory: s.Memory, Disk: s.Disk,
-			PriceMonthly: strconv.FormatFloat(s.PriceMonthly, 'f', 2, 64), Currency: "USD",
-		})
+		path = d.client.relativePath(out.Links.Pages.Next)
 	}
 	return sizes, nil
 }
