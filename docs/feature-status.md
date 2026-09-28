@@ -19,9 +19,9 @@ Evidence tiers used below, weakest to strongest:
 1. **Unit**: `*_test.go` against fakes or `httptest` servers.
 2. **Live Docker**: tests named `*_Live_*` or `*_live_test.go` that skip when no Docker daemon is reachable and run against a real local daemon (for example `internal/pipeline/live_test.go`, `internal/backup/pitr_live_test.go`). `nightly.yml` has a `docker` lane, but `test/e2e` itself is only named in the flake sweep (`.github/workflows/nightly.yml:111`).
 3. **E2E**: `test/e2e/*_test.go`, which drive the real HTTP API and a real reconciler against real containers on one machine.
-4. **Real infrastructure**: a fresh VPS, a real public domain, real vendor endpoints. **No feature has this evidence in the repository.** `docs/roadmap.md` ("In progress") states real public ACME was never verified against a live domain, and its e2e note says the suite "does not yet exercise a full multi-node mesh or real ACME against a live domain". `docs/acme-verification-runbook.md` exists but has no recorded run.
+4. **Real infrastructure**: a fresh VPS, a real public domain, real vendor endpoints. **Almost no feature has this evidence in the repository**; multi-node enrollment is the one documented exception so far, verified locally across two real Docker daemons (see its own section below), not against a real VPS or a real WAN. `docs/roadmap.md` ("In progress") states real public ACME was never verified against a live domain, and its e2e note says the suite "does not yet exercise a full multi-node mesh or real ACME against a live domain". `docs/acme-verification-runbook.md` exists but has no recorded run.
 
-Because tier 4 is empty everywhere, the "real infra" column below reads "none found" for every row. The distinction that matters is tier 3 versus tiers 1 and 2.
+Because tier 4 is empty for almost every row, the "real infra" column below reads "none found" outside multi-node. The distinction that matters is tier 3 versus tiers 1 and 2.
 
 ## Summary
 
@@ -39,7 +39,7 @@ Because tier 4 is empty everywhere, the "real infra" column below reads "none fo
 | Log archive | beta | Unit tests only, no dedicated doc page. |
 | Supply chain | beta | Off by default (`docs/supply-chain.md`), unit tests, no e2e. |
 | Status page | beta | Off by default, one internal package test file plus API tests, no e2e. |
-| Multi-node and WireGuard | beta | Built and unit-tested against fakes, the mesh test file says real encryption needs two hosts and root (`internal/network/device_test.go:11`). |
+| Multi-node and WireGuard | beta | Join flow verified locally across two real Docker daemons (enrollment, cordon, drain with real container relocation); the WireGuard mesh itself and cross-host remote transport are still unverified. |
 | AI assistant (MCP server) | beta | 153 tools in full mode (144 in the default standard mode), 31 test files in `internal/mcptools`, no e2e. |
 | AI assistant (in-app chat) | hide-behind-flag | Tested against fake Anthropic responses only, no e2e, no doc page for the in-app chat. |
 | AI models (GPU) | hide-behind-flag | Needs NVIDIA hardware, every test uses fakes, docs state v1 scope is NVIDIA on Linux only. |
@@ -101,8 +101,8 @@ Kinds, from `internal/alerting/rules.go:82-98`: generic, slack, discord, telegra
 - Live Docker: `internal/agent/live_test.go`, `internal/agent/build_live_test.go`, `internal/reconcile/application/placement_live_test.go`.
 - E2E: `test/e2e/node_placement_test.go`. Its own header says one Docker daemon cannot exercise the NodeID-to-remote-agent resolution and that it only proves each controller uses the runtime it was built with.
 - Docs: `docs/multi-node.md` (542 lines).
-- Real infra: none found. `internal/network/device_test.go:3-11` states the device tests run against fakes because real encryption "needs two real hosts and root". `docs/roadmap.md` says the e2e suite "does not yet exercise a full multi-node mesh".
-- Label: **beta**. Single node is the stable promise, multi-node ships labeled beta.
+- Real infra: the join flow was verified against two real agent processes, each with its own real Docker daemon (separate `docker:27-dind` containers), running against a real control plane binary. Enrollment, cordon, drain with actual container relocation between the two daemons, and explicit node-id placement pinning all behaved as documented; this also surfaced a real gap, now noted in `docs/multi-node.md`, where a control plane started without `APP_AGENT_ADVERTISE_HOST` set lets enrollment succeed but leaves the node stuck at `pending` on a TLS hostname mismatch. This was not run across a real WAN or a second physical host, and the WireGuard mesh itself is unchanged: `internal/network/device_test.go:3-11` still runs against fakes because real encryption "needs two real hosts and root", and the mesh's remote arm (`internal/network.ConfigSink`) does not span nodes yet.
+- Label: **beta**. Single node is the stable promise. Multi-node enrollment now has a real, documented verification behind it, but the mesh and cross-host remote transport remain unverified, so the area as a whole stays beta.
 
 ### Platform as code (iac)
 
