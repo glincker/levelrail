@@ -790,6 +790,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/node-providers/{provider}/sizes | AbilityRoot | handleListNodeProviderSizes |
 | GET | /api/v1/node-provisions | AbilityRoot | handleListNodeProvisions |
 | GET | /api/v1/node-provisions/{id} | AbilityRoot | handleGetNodeProvision |
+| GET | /.well-known/jwks.json | Public | handleOIDCJWKS |
+| GET | /api/v1/pipelines/oidc | AbilityRead | handleGetPipelineOIDCInfo |
 
 ## See also
 

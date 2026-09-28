@@ -2558,6 +2558,15 @@ func (c *Client) GetSystemDoctor(ctx context.Context) (SystemDoctorResource, err
 	return out, err
 }
 
+// GetPipelineOIDCInfo calls GET /api/v1/pipelines/oidc: whether pipeline
+// jobs can mint OIDC tokens on this control plane, and the URLs an
+// operator wires into a cloud provider's OIDC trust policy.
+func (c *Client) GetPipelineOIDCInfo(ctx context.Context) (PipelineOIDCResource, error) {
+	var out PipelineOIDCResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/pipelines/oidc", nil, &out)
+	return out, err
+}
+
 // ListContainers calls GET /api/v1/system/containers: every container
 // on this node, whether or not Levelrail manages it.
 func (c *Client) ListContainers(ctx context.Context) ([]ContainerResource, error) {

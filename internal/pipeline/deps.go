@@ -62,6 +62,27 @@ type SecretResolver interface {
 // ErrNoRepo is returned by Source when an app has no connected repository.
 var ErrNoRepo = errors.New("pipeline: app has no connected repository")
 
+// OIDCTokenRequest is what a job's `oidc: {audience: ...}` config asks
+// OIDCIssuer to mint a token for.
+type OIDCTokenRequest struct {
+	Audience   string
+	Subject    string
+	Repo       string
+	Ref        string
+	PipelineID string
+}
+
+// OIDCIssuer mints a short-lived signed token for a job that opts in via
+// `oidc: {audience: ...}` (Job.OIDC), for cloud OIDC federation (AWS IAM,
+// GCP workload identity, Vault JWT auth) without a long-lived credential.
+// Optional: nil means a job requesting oidc fails with a clear per-job
+// error rather than silently getting no token. internal/oidc.Manager's
+// IssueToken satisfies this once its request/response types are adapted
+// by the caller (cmd/levelrail/pipelines.go), keeping this package
+// unaware of internal/oidc entirely, the same "translation is the
+// caller's job" shape RunEnv above already establishes.
+type OIDCIssuer func(ctx context.Context, req OIDCTokenRequest) (string, error)
+
 // Source resolves the repository a job checks out.
 type Source interface {
 	RepoInfo(ctx context.Context, app string) (url, token string, err error)
@@ -108,9 +129,12 @@ type Config struct {
 	// RunEnv returns extra environment variables for a run's steps, for
 	// example the preview environment a pull request run belongs to. Optional.
 	RunEnv func(ctx context.Context, run store.PipelineRun) map[string]string
-	Logger *slog.Logger
-	Now    func() time.Time
-	NewID  func() string
+	// OIDCIssuer mints a job's oidc token; nil means opting a job into
+	// oidc fails with a clear error rather than silently getting none.
+	OIDCIssuer OIDCIssuer
+	Logger     *slog.Logger
+	Now        func() time.Time
+	NewID      func() string
 
 	// NamePrefix namespaces containers and volumes (the brand short name).
 	NamePrefix string

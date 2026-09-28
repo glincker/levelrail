@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"context"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -15,7 +16,7 @@ func TestStepEnv_IncludesRunEnvWithoutInterpolating(t *testing.T) {
 		runEnv: map[string]string{"PREVIEW_PR_NUMBER": "42", "PREVIEW_BRANCH": "${{ secrets.X }}"},
 	}
 
-	env, err := jr.stepEnv(Step{}, Scope{})
+	env, err := jr.stepEnv(context.Background(), Step{}, Scope{})
 	if err != nil {
 		t.Fatalf("stepEnv() error = %v", err)
 	}

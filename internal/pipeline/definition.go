@@ -210,6 +210,16 @@ type CacheSpec struct {
 	Path string `yaml:"path" json:"path"`
 }
 
+// OIDCRequest opts a job into a minted OIDC token, injected as the
+// LEVELRAIL_OIDC_TOKEN env var, for cloud provider federation (AWS IAM,
+// GCP workload identity, Vault JWT auth) without a long-lived credential.
+// See docs/pipelines-oidc.md.
+type OIDCRequest struct {
+	// Audience is the token's "aud" claim, the value the cloud
+	// provider's trust policy expects (e.g. "sts.amazonaws.com").
+	Audience string `yaml:"audience" json:"audience"`
+}
+
 // Job is a group of steps run in one container on one node.
 type Job struct {
 	Name            string            `yaml:"name,omitempty" json:"name,omitempty"`
@@ -226,6 +236,7 @@ type Job struct {
 	ContinueOnError bool              `yaml:"continue_on_error,omitempty" json:"continue_on_error,omitempty"`
 	Checkout        *bool             `yaml:"checkout,omitempty" json:"checkout,omitempty"`
 	Cache           []CacheSpec       `yaml:"cache,omitempty" json:"cache,omitempty"`
+	OIDC            *OIDCRequest      `yaml:"oidc,omitempty" json:"oidc,omitempty"`
 	Steps           []Step            `yaml:"steps" json:"steps"`
 }
 

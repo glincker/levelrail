@@ -21,6 +21,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/oidc"
 	"github.com/GLINCKER/levelrail/internal/pipeline"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -75,6 +76,7 @@ func startPipelines(ctx context.Context, logger *slog.Logger, b *brand.Brand, db
 	apiRouter.SetForgeDeployments(db)
 	if secretsManager != nil {
 		cfg.Secrets = secretsManager
+		wireOIDC(&cfg, apiRouter, secretsManager, logger)
 	}
 	engine := pipeline.New(cfg)
 	apiRouter.SetPipelines(db, engine)
@@ -314,6 +316,63 @@ func (a *pipelineActions) Rollback(ctx context.Context, service string, log func
 		return "", err
 	}
 	return image, nil
+}
+
+// wireOIDC configures pipeline jobs' `oidc: {audience: ...}` support when
+// an issuer URL is available, and leaves it unconfigured (a job that
+// opts in fails with a clear per-job error) otherwise: minting a token
+// with no real, externally reachable issuer URL would only mislead an
+// operator into thinking cloud federation works when AWS, GCP, or Vault
+// could never actually fetch the JWKS to verify it.
+func wireOIDC(cfg *pipeline.Config, apiRouter *api.Router, secretsManager *secrets.Manager, logger *slog.Logger) {
+	issuerURL := oidcIssuerURL()
+	if issuerURL == "" {
+		return
+	}
+	mgr, err := oidc.NewManager(oidc.Config{
+		KeyStore:  secretsManager,
+		IssuerURL: issuerURL,
+		TTL:       envDuration("APP_OIDC_TOKEN_TTL", 0),
+	})
+	if err != nil {
+		logger.Warn("pipeline: oidc not configured", slog.String("error", err.Error()))
+		return
+	}
+	cfg.OIDCIssuer = func(ctx context.Context, req pipeline.OIDCTokenRequest) (string, error) {
+		return mgr.IssueToken(ctx, oidc.TokenRequest{
+			Audience: req.Audience, Subject: req.Subject, Repo: req.Repo, Ref: req.Ref, PipelineID: req.PipelineID,
+		})
+	}
+	apiRouter.SetOIDCManager(mgr, issuerURL, oidcJWKSRateLimit())
+}
+
+// oidcJWKSRateLimit reads APP_OIDC_JWKS_RATE_LIMIT_PER_MINUTE; 0 (the
+// default, whether unset or invalid) tells api.Router to apply its own
+// default. A dedicated reader rather than reusing envInt: every one of
+// envInt's other call sites also passes 0, which makes golangci-lint's
+// unparam check flag that parameter as dead across the whole file.
+func oidcJWKSRateLimit() int {
+	if v, err := strconv.Atoi(os.Getenv("APP_OIDC_JWKS_RATE_LIMIT_PER_MINUTE")); err == nil && v > 0 {
+		return v
+	}
+	return 0
+}
+
+// oidcIssuerURL resolves the "iss" claim and JWKS base URL for pipeline
+// OIDC tokens: APP_OIDC_ISSUER_URL wins, then APP_DASHBOARD_URL (already
+// used for notification links, see alert_changes.go), then publicHost()
+// over HTTPS. Empty means no configured issuer.
+func oidcIssuerURL() string {
+	if v := strings.TrimRight(strings.TrimSpace(os.Getenv("APP_OIDC_ISSUER_URL")), "/"); v != "" {
+		return v
+	}
+	if v := strings.TrimRight(strings.TrimSpace(os.Getenv("APP_DASHBOARD_URL")), "/"); v != "" {
+		return v
+	}
+	if host := publicHost(); host != "" {
+		return "https://" + host
+	}
+	return ""
 }
 
 func (a *pipelineActions) Notify(ctx context.Context, app string, succeeded bool, message string) error {

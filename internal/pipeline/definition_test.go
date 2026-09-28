@@ -86,6 +86,7 @@ func TestValidateRejects(t *testing.T) {
 		{"deploy w/o promote args", "version: 1\njobs:\n  a:\n    steps:\n      - uses: promote\n", "requires with.from"},
 		{"unknown template", "version: 1\njobs:\n  a:\n    image: x\n    steps:\n      - uses: template/nope\n", "unknown template"},
 		{"unknown stage", "version: 1\nstages: [a]\njobs:\n  j:\n    stage: b\n    image: x\n    steps:\n      - run: x\n", "not listed in stages"},
+		{"oidc without audience", "version: 1\njobs:\n  a:\n    image: x\n    oidc: {}\n    steps:\n      - run: x\n", "audience is required"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -101,6 +102,16 @@ func TestValidateRejects(t *testing.T) {
 				t.Errorf("issues %v do not mention %q", all, tc.want)
 			}
 		})
+	}
+}
+
+func TestValidateAccepts_OIDC(t *testing.T) {
+	def, issues := Validate([]byte("version: 1\njobs:\n  a:\n    image: x\n    oidc:\n      audience: sts.amazonaws.com\n    steps:\n      - run: x\n"))
+	if len(issues) > 0 {
+		t.Fatalf("issues: %v", issues)
+	}
+	if def.Jobs["a"].OIDC == nil || def.Jobs["a"].OIDC.Audience != "sts.amazonaws.com" {
+		t.Fatalf("OIDC = %+v", def.Jobs["a"].OIDC)
 	}
 }
 

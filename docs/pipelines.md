@@ -312,6 +312,22 @@ Secrets come from the app's existing secrets (`PUT /api/v1/apps/{name}/secrets/{
 
 Pipeline steps can read every secret of their own app, so treat write access to a pipeline as write access to those secrets.
 
+### Cloud credentials via OIDC
+
+A job can opt into a short-lived, signed OIDC token instead of a long-lived cloud credential stored as a secret:
+
+```yaml
+jobs:
+  deploy:
+    image: amazon/aws-cli
+    oidc:
+      audience: sts.amazonaws.com
+    steps:
+      - run: aws sts assume-role-with-web-identity --role-arn $AWS_ROLE_ARN --web-identity-token "$PIPELINE_OIDC_TOKEN" --role-session-name pipeline
+```
+
+The token arrives as the `PIPELINE_OIDC_TOKEN` env var (masked in logs, same as a secret), valid for 10 minutes. See [Pipelines: OIDC federation](pipelines-oidc.md) for the full claim shape and how to wire it to AWS IAM, GCP workload identity federation, or Vault.
+
 ## Concurrency, timeouts, and retries
 
 ```yaml
