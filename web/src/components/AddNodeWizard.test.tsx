@@ -142,6 +142,11 @@ describe('AddNodeWizard', () => {
         ? within(digitalOceanCard).getByText('Connect one')
         : null,
     ).toBeVisible()
+    const awsCard = screen.getByText('AWS').closest('button')
+    expect(awsCard).toBeDisabled()
+    expect(
+      awsCard ? within(awsCard).getByText('Connect one') : null,
+    ).toBeVisible()
     expect(
       screen.getByRole('button', { name: /I already have a server/ }),
     ).toBeEnabled()

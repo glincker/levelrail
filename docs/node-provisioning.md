@@ -17,14 +17,15 @@ the same way it always does.
 
 - **Hetzner Cloud** (`https://docs.hetzner.cloud`)
 - **DigitalOcean** (`https://docs.digitalocean.com/reference/api/`)
+- **AWS EC2** (`https://docs.aws.amazon.com/ec2/`)
 - **Azure** (`https://learn.microsoft.com/en-us/rest/api/compute/`)
 - **GCP** (`https://cloud.google.com/compute/docs/reference/rest/v1`)
 
-AWS is not supported yet. Hetzner and DigitalOcean each have a small,
-single-token REST API; Azure and GCP need materially more setup (a service
-principal or a service account, a resource group or project, network
-resources created alongside the VM) before a "paste a credential, get a
-server" flow works, covered under Required token scopes below.
+Hetzner and DigitalOcean each have a small, single-token REST API. AWS,
+Azure and GCP need materially more setup (IAM credentials or a service
+principal/service account, a resource group or project or default VPC,
+network resources created alongside the VM) before a "paste a credential,
+get a server" flow works, covered under Required token scopes below.
 
 ## Required token scopes
 
@@ -32,11 +33,14 @@ server" flow works, covered under Required token scopes below.
   tokens are scoped to one project; provisioning creates servers in
   whichever project the token belongs to.
 - **DigitalOcean**: a personal access token with **read and write** scope.
+- **AWS**: see "AWS credentials" below.
 - **Azure**: a service principal (Azure AD app registration) with
   **Contributor** access on one resource group, entered as a single-line
   JSON object: `{"tenant_id","client_id","client_secret","subscription_id","resource_group"}`.
   The resource group must already exist; provisioning creates a VNet,
   subnet, public IP, NIC and VM inside it, but never the group itself.
+  A workload-identity-federation (OIDC) mode is also available, see
+  "Azure workload identity federation" below.
 - **GCP**: a service account JSON key with the **Compute Instance Admin**
   role on the project, pasted as-is (minified to one line). The project ID
   is read from the key's own `project_id` field; there is no separate
@@ -55,6 +59,69 @@ Prefer piping the credential instead (`echo "$TOKEN" | levelrail-cli nodes
 providers set-credential --provider hetzner`), or omit the flag entirely
 and run interactively for a no-echo prompt.
 
+## AWS credentials
+
+EC2 has no single bearer token the way Hetzner and DigitalOcean do.
+`nodes providers set-credential --provider aws` (or the Settings page)
+takes one of two credential shapes, both stored under the same encrypted
+credential slot the other providers use:
+
+- **Access key and secret** (`--provider-token` as the access key id,
+  `--secret-access-key` for the secret). Optional `--session-token` for
+  temporary credentials, `--region` to set the default region, and
+  `--role-arn` to assume an IAM role via STS before every call: with a
+  role set, the stored key only needs `sts:AssumeRole` on that one role,
+  not direct EC2 permissions.
+- **This control plane's own AWS identity** (`--use-ambient-credentials`):
+  resolves credentials from the environment, shared config, or an EC2
+  instance profile instead of a stored key. Only useful when the control
+  plane itself runs on AWS. Combine with `--role-arn` to still narrow the
+  effective permissions via STS.
+
+Full OIDC federation (`AssumeRoleWithWebIdentity`, the way GitHub Actions
+authenticates to AWS) is not implemented: it requires this control plane
+to be its own trusted OIDC token issuer, which does not exist yet. The
+role-ARN and ambient-credential paths above are the supported ways to
+avoid a long-lived key with direct EC2 permissions.
+
+A minimal least-privilege IAM policy for the static-key path:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "ec2:RunInstances",
+      "ec2:TerminateInstances",
+      "ec2:CreateSecurityGroup",
+      "ec2:CreateTags",
+      "ec2:Describe*"
+    ],
+    "Resource": "*"
+  }]
+}
+```
+
+`ec2:Describe*` covers the regions, instance types, images, VPCs, subnets
+and security groups provisioning looks up; a tighter policy can narrow it
+to the specific `Describe*` actions above if you'd rather enumerate them.
+`RunInstances`/`CreateSecurityGroup`/`CreateTags` need broader `Resource`
+scoping in AWS's own IAM model than a single ARN can express for a
+not-yet-created instance, so this policy is not resource-scoped further.
+
+AWS provisioning currently requires the target region to have a **default
+VPC** (true for every AWS account created since December 2013, unless it
+was explicitly deleted): CreateOpts, shared across every provider this
+platform supports, has no field yet to name a specific VPC or subnet.
+Every AWS-provisioned instance shares one security group per control
+plane (created on first use, reused after), with no inbound rules at all,
+matching this platform's "no inbound ports on managed servers"
+architecture; optional SSH inbound for manual access is not wired through
+yet. `ListSizes` for AWS returns a small curated list of common `t3.*`
+instance types rather than EC2's full catalog, the same reasoning
+Hetzner/DigitalOcean's own short size lists already follow.
+
 ## Cost expectations
 
 Every provider bills by the hour (or fractions of one) for however long the
@@ -63,14 +130,22 @@ a provision fails partway through, or you decide not to use a node anymore,
 delete the server from the provider's own dashboard, or with
 `levelrail-cli nodes delete <id>` once it has enrolled (that removes the
 registry row, not the underlying VM; see that command's own known gap).
-The cheapest size on any of the four providers (roughly 3-7 EUR/USD a month
-as of this writing) is enough for a `general` role node; a `build` role
-node benefits from more CPU and memory since builds run there.
+The cheapest size on Hetzner or DigitalOcean (roughly 3-5 EUR/USD a month
+as of this writing) is enough for a `general` role node; AWS's cheapest
+curated size (`t3.micro`) is comparable. A `build` role node benefits from
+more CPU and memory since builds run there.
 
 Azure and GCP also bill for the small networking resources provisioning
 creates alongside the VM (a public IP on Azure, none extra on GCP, whose
 external IP is ephemeral and free while attached to a running instance).
 These are pennies a month, not a meaningful addition to the VM's own cost.
+
+The wizard's size picker shows a live `$X.XX/mo` estimate for Hetzner and
+DigitalOcean, since both return a size's price inline from their own API.
+AWS, Azure and GCP don't expose live pricing from their instance-list APIs
+without a separate pricing-catalog call this integration doesn't make; the
+picker shows "pricing varies, see provider console" for those three rather
+than a hardcoded, driftable price table.
 
 ## How it works
 
@@ -166,12 +241,17 @@ trusted infrastructure, the same way you would a manually enrolled one.
 ## What was not tested
 
 This feature was built and reviewed without real cloud accounts available
-for any of the four providers: the provider clients
-(`internal/provision`) are tested against fake HTTP servers standing in
-for each API, not the real thing. Azure and GCP in particular were not
-exercised against a real subscription or project at all, so beyond the
-individual gaps called out above, the entire multi-step resource chain
-(resource group, VNet/subnet, public IP, NIC, VM for Azure; the OAuth2
-JWT bearer token exchange and instance creation for GCP) is unverified
-end to end. Before relying on this in production, provision one real
-node per provider and confirm it reaches `ready` end to end.
+for any of the five providers: the provider clients (`internal/provision`)
+are tested against fake HTTP servers standing in for each API (Hetzner,
+DigitalOcean, Azure, GCP) or a hand-written fake implementing the same
+narrow interface the real EC2 SDK client does (AWS), not the real thing.
+Azure and GCP in particular were not exercised against a real subscription
+or project at all, so beyond the individual gaps called out above, the
+entire multi-step resource chain (resource group, VNet/subnet, public IP,
+NIC, VM for Azure; the OAuth2 JWT bearer token exchange and instance
+creation for GCP) is unverified end to end. AWS's default-VPC lookup, AMI
+resolution, security group creation/cleanup, and the STS-assume-role and
+ambient-credential paths are likewise only as correct as the fake
+responses they were tested against. Before relying on this in production,
+provision one real node per provider and confirm it reaches `ready` end
+to end.
