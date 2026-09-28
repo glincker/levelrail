@@ -2,6 +2,7 @@ package compose
 
 import (
 	"os"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -31,7 +32,6 @@ func TestFixtures_Validate(t *testing.T) {
 		{
 			file: "unsupported_keys.yaml",
 			wantErrs: []string{
-				"deploy.replicas is not supported",
 				"deploy.restart_policy is not supported",
 				`service "web": secrets: is not supported yet`,
 				`service "web": configs: is not supported yet`,
@@ -72,6 +72,39 @@ func TestFixtures_Validate(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestFixtures_DeployReplicas confirms deploy.replicas: N in a real
+// compose file validates cleanly and maps onto the right
+// store.DesiredService.Replicas per service, including a service that
+// omits deploy: entirely (0, resolved to store.DefaultReplicas later by
+// SaveDesiredService).
+func TestFixtures_DeployReplicas(t *testing.T) {
+	data, err := os.ReadFile("testdata/deploy_replicas.yaml")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+	f, err := Parse(data)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if err := f.Validate(); err != nil {
+		t.Fatalf("Validate() error = %v, want nil", err)
+	}
+
+	services, _, err := ToDesiredServices("app", f)
+	if err != nil {
+		t.Fatalf("ToDesiredServices() error = %v", err)
+	}
+
+	want := map[string]int{"app-web": 3, "app-worker": 1, "app-cache": 0}
+	got := make(map[string]int, len(services))
+	for _, svc := range services {
+		got[svc.Name] = svc.Replicas
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("replicas by service = %+v, want %+v", got, want)
 	}
 }
 
