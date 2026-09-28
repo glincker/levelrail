@@ -5,6 +5,7 @@ import { DeployStrategyEditor } from '../../../components/DeployStrategyEditor'
 import { HooksEditor } from '../../../components/HooksEditor'
 import { BuildCacheCard } from '../../../components/BuildCacheCard'
 import { DeployFreezeCard } from '../../../components/DeployFreezeCard'
+import { ScheduledDeployCard } from '../../../components/ScheduledDeployCard'
 import { CancelSupersededCard } from '../../../components/CancelSupersededCard'
 import { PreviewSettingsCard } from '../../../components/PreviewSettingsCard'
 import { SupplyChainSettingsCard } from '../../../components/SupplyChainSettingsCard'
@@ -26,6 +27,7 @@ function DeploySettingsSection() {
       <DeployStrategyEditor app={app} />
       <HooksEditor app={app} />
       <DeployFreezeCard appName={name} />
+      <ScheduledDeployCard appName={name} />
       <CancelSupersededCard appName={name} />
       <BuildCacheCard appName={name} />
       <PreviewSettingsCard appName={name} />

@@ -272,6 +272,11 @@ const (
 	// history can tell "created by cloning environment X" apart from an
 	// ordinary manual create.
 	DeployAttemptSourceClone = "clone"
+	// DeployAttemptSourceSchedule marks a redeploy internal/scheduledeploy.
+	// Scheduler fired for a due store.AppSchedule: the latest commit on
+	// its configured branch, deployed through the same
+	// internal/api.deployFromGitSourceAs path a webhook push uses.
+	DeployAttemptSourceSchedule = "schedule"
 )
 
 // deployAttemptIDPrefix mirrors internal/api/tokens.go's "tok_" prefix

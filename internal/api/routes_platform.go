@@ -32,6 +32,14 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source/deploy-settings", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitDeploySettings))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteGitSource))
 
+	// Scheduled deploys (app_schedule.go): a per-app cron schedule that
+	// redeploys the latest commit on a branch, checked by
+	// internal/scheduledeploy.Scheduler. Same GET=Read/PUT=WriteSensitive
+	// split as git-source just above.
+	mux.HandleFunc("GET /api/v1/apps/{name}/schedule", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppSchedule))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppSchedule))
+	mux.HandleFunc("GET /api/v1/apps/{name}/schedule/history", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppScheduleHistory))
+
 	// Git push webhook (git_webhook.go), the per-app-URL evolution of the
 	// original static POST /webhook (still mounted separately by
 	// cmd/levelrail/main.go for the single-app, env-var-configured path).

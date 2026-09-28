@@ -398,13 +398,22 @@ func dockerSafeTag(tagName string) string {
 // routing decision handleGitPushWebhook's own doc comment already
 // establishes.
 func (rt *Router) deployFromGitSource(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder) (status int, message string) {
+	return rt.deployFromGitSourceAs(ctx, name, gs, checkoutRef, commitLabel, order, store.DeployAttemptSourceWebhook)
+}
+
+// deployFromGitSourceAs is deployFromGitSource with an explicit deploy
+// attempt source: store.DeployAttemptSourceWebhook for every push/release
+// caller, store.DeployAttemptSourceSchedule for TriggerScheduledDeploy,
+// so store.DeploymentTrigger and ListDeployments' own trigger filter can
+// tell a scheduled redeploy apart from a git push.
+func (rt *Router) deployFromGitSourceAs(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder, source string) (status int, message string) {
 	dep := rt.beginForgeDeployment(ctx, name, gs, checkoutRef, forgeEnvProduction, forgeEnvProduction, "")
-	status, message = rt.deployFromGitSourceInner(ctx, name, gs, checkoutRef, commitLabel, order)
+	status, message = rt.deployFromGitSourceInner(ctx, name, gs, checkoutRef, commitLabel, order, source)
 	dep.finish(ctx, deploymentStateFor(status, message), strings.TrimSpace(message))
 	return status, message
 }
 
-func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder) (status int, message string) {
+func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder, source string) (status int, message string) {
 	if rt.builder == nil {
 		return http.StatusNotImplemented, "git push deploys are not configured on this control plane"
 	}
@@ -461,7 +470,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		Order:       order,
 	}
 
-	attemptID, progress, finishAttempt, _ := rt.beginBuildDeployAttempt(ctx, buildReq, *existing, store.DeployAttemptSourceWebhook, "")
+	attemptID, progress, finishAttempt, _ := rt.beginBuildDeployAttempt(ctx, buildReq, *existing, source, "")
 	buildReq.AttemptID = attemptID
 	buildCtx := ctx
 	if attemptID != "" {

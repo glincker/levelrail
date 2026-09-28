@@ -56,6 +56,7 @@ import (
 	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
 	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
+	"github.com/GLINCKER/levelrail/internal/scheduledeploy"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/sharedenv"
@@ -219,6 +220,14 @@ const (
 	// the same reasoning as defaultBackupSchedulerInterval just above:
 	// standard 5-field cron has no granularity finer than a minute.
 	defaultScheduledTaskSchedulerInterval = 1 * time.Minute
+
+	// defaultAppScheduleSchedulerInterval is how often
+	// internal/scheduledeploy.Scheduler checks which apps have a due
+	// redeploy schedule, env-overridable via
+	// APP_SCHEDULE_DEPLOY_SCHEDULER_INTERVAL
+	// (appScheduleSchedulerInterval below). Same one-minute value and the
+	// same reasoning as defaultBackupSchedulerInterval above.
+	defaultAppScheduleSchedulerInterval = 1 * time.Minute
 
 	// defaultPreviewSweepInterval is how often api.Router.RunPreviewSweeper
 	// checks for preview environments stale past their TTL
@@ -892,6 +901,18 @@ func run(logger *slog.Logger) error {
 	go func() {
 		if err := scheduledTaskScheduler.Run(ctx, scheduledTaskSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("scheduled task scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	// Scheduled deploys: internal/scheduledeploy.Scheduler checks, on its
+	// own tick, which apps have a due redeploy schedule
+	// (store.AppSchedule, migrations/0250_app_schedules.sql) and fires
+	// them through apiRouter.TriggerScheduledDeploy, the same git-source
+	// deploy path a webhook push uses.
+	appScheduleScheduler := scheduledeploy.NewScheduler(db, db, apiRouter, logger)
+	go func() {
+		if err := appScheduleScheduler.Run(ctx, appScheduleSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("scheduled deploy scheduler stopped", slog.String("error", err.Error()))
 		}
 	}()
 
@@ -2338,6 +2359,19 @@ func scheduledTaskSchedulerInterval(logger *slog.Logger) time.Duration {
 	if err != nil {
 		logger.Warn("invalid APP_SCHEDULED_TASK_SCHEDULER_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return defaultScheduledTaskSchedulerInterval
+	}
+	return d
+}
+
+func appScheduleSchedulerInterval(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_SCHEDULE_DEPLOY_SCHEDULER_INTERVAL")
+	if raw == "" {
+		return defaultAppScheduleSchedulerInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_SCHEDULE_DEPLOY_SCHEDULER_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return defaultAppScheduleSchedulerInterval
 	}
 	return d
 }
