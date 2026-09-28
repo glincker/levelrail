@@ -1384,6 +1384,36 @@ type SetGitSourceRequest struct {
 	TriggerMode string `json:"trigger_mode,omitempty"`
 }
 
+// AppScheduleResource mirrors internal/api's appScheduleResource
+// (GET/PUT /api/v1/apps/{name}/schedule).
+type AppScheduleResource struct {
+	ServiceName string     `json:"service_name"`
+	Cron        string     `json:"cron"`
+	Branch      string     `json:"branch"`
+	Timezone    string     `json:"timezone"`
+	Enabled     bool       `json:"enabled"`
+	NextRunAt   *time.Time `json:"next_run_at,omitempty"`
+}
+
+// SetAppScheduleRequest mirrors internal/api's setAppScheduleRequest.
+// Enabled defaults to true server-side when nil.
+type SetAppScheduleRequest struct {
+	Cron     string `json:"cron"`
+	Branch   string `json:"branch"`
+	Timezone string `json:"timezone,omitempty"`
+	Enabled  *bool  `json:"enabled,omitempty"`
+}
+
+// AppScheduleHistoryEntry mirrors internal/api's appScheduleHistoryResource
+// (GET /api/v1/apps/{name}/schedule/history).
+type AppScheduleHistoryEntry struct {
+	ID           string    `json:"id"`
+	ScheduledFor time.Time `json:"scheduled_for"`
+	FiredAt      time.Time `json:"fired_at"`
+	Status       string    `json:"status"`
+	Reason       string    `json:"reason,omitempty"`
+}
+
 // NotificationChannelResource mirrors internal/api's
 // notificationChannelResource (internal/api/notification_channels.go).
 type NotificationChannelResource struct {

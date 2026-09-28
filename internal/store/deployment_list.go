@@ -31,6 +31,7 @@ const (
 	DeploymentTriggerRollback = "rollback"
 	DeploymentTriggerAPI      = "api"
 	DeploymentTriggerPreview  = "preview"
+	DeploymentTriggerSchedule = "schedule"
 )
 
 // Deployment is one deploy attempt joined with its derived status,
@@ -196,6 +197,8 @@ func deploymentTriggerSQL(triggers []string) string {
 			ors = append(ors, "(d.source IN ('manual','clone','compose') OR (d.source = 'image' AND "+rollbackTargetForD+" IS NULL))")
 		case DeploymentTriggerAPI:
 			ors = append(ors, "d.source = 'promote'")
+		case DeploymentTriggerSchedule:
+			ors = append(ors, "d.source = '"+DeployAttemptSourceSchedule+"'")
 		default:
 			ors = append(ors, "0")
 		}
@@ -296,6 +299,8 @@ func DeploymentTrigger(source string, hasRollbackTarget bool, prNumber int) stri
 		return DeploymentTriggerRollback
 	case DeployAttemptSourcePromote:
 		return DeploymentTriggerAPI
+	case DeployAttemptSourceSchedule:
+		return DeploymentTriggerSchedule
 	case DeployAttemptSourceImage:
 		if hasRollbackTarget {
 			return DeploymentTriggerRollback

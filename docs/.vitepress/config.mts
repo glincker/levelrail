@@ -43,6 +43,7 @@ const sidebarGroups = [
       { text: 'Screenshots', link: '/screenshots' },
       { text: 'Deploying apps', link: '/deploying-apps' },
       { text: 'Deploy safety', link: '/deploy-safety' },
+      { text: 'Scheduled deploys', link: '/scheduled-deploys' },
       { text: 'Managing databases', link: '/managing-databases' },
       { text: 'Observability', link: '/observability' },
       { text: 'Public status page', link: '/status-page' },

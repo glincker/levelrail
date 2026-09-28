@@ -10,6 +10,8 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -115,4 +117,37 @@ func (rt *Router) handleListGitBranches(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeJSON(w, http.StatusOK, gitBranchesResponse{Branches: branches})
+}
+
+// resolveBranchSHAFunc resolves branch's current commit hash on repoURL's
+// remote, authenticating with token when non-empty, with no clone. A seam
+// (the same "overridable in tests, defaults to a real implementation"
+// shape listBranchesFunc already establishes) so TriggerScheduledDeploy's
+// tests don't need real network access.
+type resolveBranchSHAFunc func(ctx context.Context, repoURL, branch, token string) (string, error)
+
+// resolveRemoteBranchSHA is resolveBranchSHAFunc's real implementation:
+// listRemoteBranchesUnchecked's advertised-refs listing narrowed to one
+// branch's hash instead of every branch's name, authenticating the same
+// way gitCheckoutWithToken does for a private repo.
+func resolveRemoteBranchSHA(ctx context.Context, repoURL, branch, token string) (string, error) {
+	remote := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{repoURL},
+	})
+	opts := &git.ListOptions{}
+	if token != "" {
+		opts.Auth = &githttp.BasicAuth{Username: "x-access-token", Password: token}
+	}
+	refs, err := remote.ListContext(ctx, opts)
+	if err != nil {
+		return "", fmt.Errorf("api: resolve branch %q on %q: %w", branch, repoURL, err)
+	}
+	want := plumbing.NewBranchReferenceName(branch)
+	for _, ref := range refs {
+		if ref.Name() == want {
+			return ref.Hash().String(), nil
+		}
+	}
+	return "", fmt.Errorf("api: branch %q not found on %q", branch, repoURL)
 }
