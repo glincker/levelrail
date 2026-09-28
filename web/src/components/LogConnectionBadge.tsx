@@ -15,18 +15,13 @@ const CONNECTION_LABEL: Record<LogStreamConnectionState, string> = {
   error: 'Reconnecting...',
 }
 
-// "open" and "error" source their color from the shared success/warning
-// badge variants (components/ui/badge.tsx) instead of duplicating
-// bg-green-100/bg-amber-100 locally. "connecting" has no green/red/amber
-// equivalent in badgeVariants, it is a neutral state, so it keeps its
-// literal Tailwind classes.
-const CONNECTING_BADGE_CLASS =
-  'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
-
+// All three states source their color from badgeVariants
+// (components/ui/badge.tsx) instead of duplicating its classes locally.
 const CONNECTION_VARIANT: Record<
-  Exclude<LogStreamConnectionState, 'connecting'>,
-  'success' | 'warning'
+  LogStreamConnectionState,
+  'success' | 'warning' | 'muted'
 > = {
+  connecting: 'muted',
   open: 'success',
   error: 'warning',
 }
@@ -46,12 +41,7 @@ export function LogConnectionBadge({
   state: LogStreamConnectionState
 }) {
   return (
-    <Badge
-      variant={state === 'connecting' ? undefined : CONNECTION_VARIANT[state]}
-      className={`gap-1.5 rounded-full ${
-        state === 'connecting' ? CONNECTING_BADGE_CLASS : ''
-      }`}
-    >
+    <Badge variant={CONNECTION_VARIANT[state]} className="gap-1.5 rounded-full">
       <span className="relative inline-flex size-2" aria-hidden="true">
         {state === 'open' ? (
           <span
