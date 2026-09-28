@@ -182,6 +182,7 @@ func reconcileAndAssertRunning(ctx context.Context, t *testing.T, svcStore *stor
 	if len(result.Conditions) == 0 || result.Conditions[0].Status != "True" {
 		t.Fatalf("application Controller.Reconcile(%q) result = %+v, want a True Ready condition", serviceName, result)
 	}
+	persistReadyCondition(ctx, t, svcStore, ctrl.Name(), result.Conditions)
 
 	state, err := runtime.InspectByName(ctx, application.ContainerName(serviceName, tag, ""))
 	if err != nil {
