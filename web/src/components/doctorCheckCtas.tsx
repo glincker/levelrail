@@ -135,6 +135,22 @@ export function getCheckCta(check: DoctorCheck): CheckCta | null {
       }
       return null
 
+    case 'container_runtime':
+      if (check.status === 'warn') {
+        return {
+          message:
+            'Rootless Docker and Podman support is best-effort: verify bind-mount ownership and UID mapping for your workload before relying on it in production.',
+          action: (
+            <HelpLink
+              path="/security#rootless-and-podman"
+              label="Rootless and Podman support"
+              variant="inline"
+            />
+          ),
+        }
+      }
+      return null
+
     case 'firewall':
       if (check.status === 'warn' || check.status === 'unknown') {
         return {
