@@ -131,7 +131,9 @@ describe('AddNodeWizard', () => {
     expect(screen.getByText('Hetzner')).toBeVisible()
     const digitalOceanCard = screen.getByText('DigitalOcean').closest('button')
     expect(digitalOceanCard).toBeDisabled()
-    expect(screen.getByText('Connect one')).toBeVisible()
+    const awsCard = screen.getByText('AWS').closest('button')
+    expect(awsCard).toBeDisabled()
+    expect(screen.getAllByText('Connect one')).toHaveLength(2)
     expect(
       screen.getByRole('button', { name: /I already have a server/ }),
     ).toBeEnabled()

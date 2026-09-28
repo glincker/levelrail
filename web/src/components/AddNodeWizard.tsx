@@ -38,13 +38,14 @@ import {
   useNodeProvision,
 } from '../queries/nodeProvision'
 
-type ProviderId = 'hetzner' | 'digitalocean'
+type ProviderId = 'hetzner' | 'digitalocean' | 'aws'
 type Step =
   'method' | 'region' | 'size' | 'details' | 'confirm' | 'progress' | 'manual'
 
 const PROVIDER_LABELS: Record<ProviderId, string> = {
   hetzner: 'Hetzner',
   digitalocean: 'DigitalOcean',
+  aws: 'AWS',
 }
 
 // A wizard, not a single dialog, for this one flow only: creating a real
@@ -110,7 +111,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-          {(['hetzner', 'digitalocean'] as ProviderId[]).map((p) => {
+          {(['hetzner', 'digitalocean', 'aws'] as ProviderId[]).map((p) => {
             const info = providers.data?.find((x) => x.provider === p)
             const hasToken = info?.has_token ?? false
             return (

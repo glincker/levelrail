@@ -17,14 +17,15 @@ the same way it always does.
 
 - **Hetzner Cloud** (`https://docs.hetzner.cloud`)
 - **DigitalOcean** (`https://docs.digitalocean.com/reference/api/`)
+- **AWS EC2** (`https://docs.aws.amazon.com/ec2/`)
 
-AWS, Azure and GCP are not supported yet. This is a known, explicit gap
-(tracked as a follow-up), not an oversight: both supported providers here
-have a small, single-token REST API and a widely used, cheap VM tier that
-matches this product's own 1-10 machine target audience. The three big
-clouds each need materially more setup (IAM roles, VPC/network config,
-image selection across regions) before a "paste a token, get a server"
-flow is honest.
+Azure and GCP are not supported yet. This is a known, explicit gap
+(tracked as a follow-up), not an oversight: Hetzner and DigitalOcean have
+a small, single-token REST API and a widely used, cheap VM tier that
+matches this product's own 1-10 machine target audience. AWS needed
+materially more setup to support honestly (IAM credentials, VPC/subnet
+discovery, AMI lookup, a curated instance type list instead of EC2's full
+catalog, see below); Azure and GCP would need the same treatment again.
 
 ## Required token scopes
 
@@ -32,6 +33,7 @@ flow is honest.
   tokens are scoped to one project; provisioning creates servers in
   whichever project the token belongs to.
 - **DigitalOcean**: a personal access token with **read and write** scope.
+- **AWS**: see "AWS credentials" below.
 
 Store the token once, under Settings -> Cloud node providers
 (`/settings/node-providers`), or via `nodes providers set-credential`. It is
@@ -44,16 +46,80 @@ Prefer piping the token instead (`echo "$TOKEN" | levelrail-cli nodes
 providers set-credential --provider hetzner`), or omit the flag entirely
 and run interactively for a no-echo prompt.
 
+## AWS credentials
+
+EC2 has no single bearer token the way Hetzner and DigitalOcean do.
+`nodes providers set-credential --provider aws` (or the Settings page)
+takes one of two credential shapes, both stored under the same encrypted
+credential slot the other providers use:
+
+- **Access key and secret** (`--provider-token` as the access key id,
+  `--secret-access-key` for the secret). Optional `--session-token` for
+  temporary credentials, `--region` to set the default region, and
+  `--role-arn` to assume an IAM role via STS before every call: with a
+  role set, the stored key only needs `sts:AssumeRole` on that one role,
+  not direct EC2 permissions.
+- **This control plane's own AWS identity** (`--use-ambient-credentials`):
+  resolves credentials from the environment, shared config, or an EC2
+  instance profile instead of a stored key. Only useful when the control
+  plane itself runs on AWS. Combine with `--role-arn` to still narrow the
+  effective permissions via STS.
+
+Full OIDC federation (`AssumeRoleWithWebIdentity`, the way GitHub Actions
+authenticates to AWS) is not implemented: it requires this control plane
+to be its own trusted OIDC token issuer, which does not exist yet. The
+role-ARN and ambient-credential paths above are the supported ways to
+avoid a long-lived key with direct EC2 permissions.
+
+A minimal least-privilege IAM policy for the static-key path:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "ec2:RunInstances",
+      "ec2:TerminateInstances",
+      "ec2:CreateSecurityGroup",
+      "ec2:CreateTags",
+      "ec2:Describe*"
+    ],
+    "Resource": "*"
+  }]
+}
+```
+
+`ec2:Describe*` covers the regions, instance types, images, VPCs, subnets
+and security groups provisioning looks up; a tighter policy can narrow it
+to the specific `Describe*` actions above if you'd rather enumerate them.
+`RunInstances`/`CreateSecurityGroup`/`CreateTags` need broader `Resource`
+scoping in AWS's own IAM model than a single ARN can express for a
+not-yet-created instance, so this policy is not resource-scoped further.
+
+AWS provisioning currently requires the target region to have a **default
+VPC** (true for every AWS account created since December 2013, unless it
+was explicitly deleted): CreateOpts, shared across every provider this
+platform supports, has no field yet to name a specific VPC or subnet.
+Every AWS-provisioned instance shares one security group per control
+plane (created on first use, reused after), with no inbound rules at all,
+matching this platform's "no inbound ports on managed servers"
+architecture; optional SSH inbound for manual access is not wired through
+yet. `ListSizes` for AWS returns a small curated list of common `t3.*`
+instance types rather than EC2's full catalog, the same reasoning
+Hetzner/DigitalOcean's own short size lists already follow.
+
 ## Cost expectations
 
-Both providers bill by the hour (or fractions of one) for however long the
-server exists. Provisioning here never deletes a server on your behalf: if
-a provision fails partway through, or you decide not to use a node anymore,
-delete the server from the provider's own dashboard, or with
-`levelrail-cli nodes delete <id>` once it has enrolled (that removes the
-registry row, not the underlying VM; see that command's own known gap).
-The cheapest size on either provider (roughly 3-5 EUR/USD a month as of
-this writing) is enough for a `general` role node; a `build` role node
+Every provider bills by the hour (or fractions of one) for however long
+the server exists. Provisioning here never deletes a server on your
+behalf: if a provision fails partway through, or you decide not to use a
+node anymore, delete the server from the provider's own dashboard, or
+with `levelrail-cli nodes delete <id>` once it has enrolled (that removes
+the registry row, not the underlying VM; see that command's own known
+gap). The cheapest size on Hetzner or DigitalOcean (roughly 3-5 EUR/USD a
+month as of this writing) is enough for a `general` role node; AWS's
+cheapest curated size (`t3.micro`) is comparable. A `build` role node
 benefits from more CPU and memory since builds run there.
 
 ## How it works
@@ -130,8 +196,14 @@ trusted infrastructure, the same way you would a manually enrolled one.
 
 ## What was not tested
 
-This feature was built and reviewed without a real Hetzner or DigitalOcean
-account available: the provider clients (`internal/provision`) are tested
-against fake HTTP servers standing in for each API, not the real thing.
-Before relying on this in production, provision one real node per provider
-and confirm it reaches `ready` end to end.
+This feature was built and reviewed without a real Hetzner, DigitalOcean
+or AWS account available: the Hetzner/DigitalOcean clients
+(`internal/provision`) are tested against fake HTTP servers standing in
+for each API, and the AWS client against a hand-written fake implementing
+the same narrow interface the real EC2 SDK client does, not the real
+thing. Before relying on this in production, provision one real node per
+provider and confirm it reaches `ready` end to end. AWS in particular has
+not been exercised against a real account at all: the default-VPC lookup,
+AMI resolution, security group creation, and the STS-assume-role and
+ambient-credential paths are all only as correct as the fake responses
+they were tested against.

@@ -49,9 +49,18 @@ export function useNodeProviders() {
   return useQuery(nodeProviderListQueryOptions())
 }
 
+// The fields after token are aws-only: hetzner/digitalocean use token
+// alone as their single bearer API token, aws uses token as the access
+// key id paired with secretAccessKey (or useAmbientCredentials to skip
+// both and use this control plane's own AWS identity instead).
 interface SetNodeProviderCredentialInput {
   provider: string
   token: string
+  secret_access_key?: string
+  session_token?: string
+  region?: string
+  role_arn?: string
+  use_ambient_credentials?: boolean
 }
 
 async function setNodeProviderCredential(

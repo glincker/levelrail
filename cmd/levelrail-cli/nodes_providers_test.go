@@ -94,6 +94,52 @@ func TestRun_NodesProvidersSetCredential_TokenFromStdinOrPrompt(t *testing.T) {
 	}
 }
 
+func TestRun_NodesProvidersSetCredential_AWS(t *testing.T) {
+	var gotBody setNodeProviderCredentialRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(nodeProviderResource{Provider: gotBody.Provider, HasToken: true})
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{
+		"nodes", "providers", "set-credential", "--provider", "aws",
+		"--provider-token", "AKIA...", "--secret-access-key", "shh", "--region", "eu-west-1",
+		"--api-url", srv.URL,
+	})
+	if gotBody.Provider != "aws" || gotBody.Token != "AKIA..." || gotBody.SecretAccessKey != "shh" || gotBody.Region != "eu-west-1" {
+		t.Errorf("request body = %+v", gotBody)
+	}
+}
+
+func TestRun_NodesProvidersSetCredential_AWS_MissingSecretAccessKey(t *testing.T) {
+	stderr := runCLIExpectValidationError(t, []string{
+		"nodes", "providers", "set-credential", "--provider", "aws", "--provider-token", "AKIA...",
+	})
+	if !strings.Contains(stderr, "--secret-access-key") {
+		t.Errorf("stderr = %q", stderr)
+	}
+}
+
+func TestRun_NodesProvidersSetCredential_AWS_AmbientCredentialsSkipsKeyRequirement(t *testing.T) {
+	var gotBody setNodeProviderCredentialRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(nodeProviderResource{Provider: gotBody.Provider, HasToken: true})
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{
+		"nodes", "providers", "set-credential", "--provider", "aws", "--use-ambient-credentials",
+		"--api-url", srv.URL,
+	})
+	if !gotBody.UseAmbientCredentials {
+		t.Errorf("UseAmbientCredentials = false, want true")
+	}
+}
+
 func TestRun_NodesProviders_Help(t *testing.T) {
 	stdout, _ := runCLIExpectOK(t, []string{"nodes", "providers", "-h"})
 	if !strings.Contains(stdout, "nodes providers") {
