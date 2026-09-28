@@ -32,6 +32,10 @@ type Store interface {
 	SetModelEndpoint(ctx context.Context, name, dial string) error
 	SetModelResidencyState(ctx context.Context, name, state string) error
 	DeleteModel(ctx context.Context, name string) error
+	// ListModelsInSwapGroup backs swap group eviction (residency.go's
+	// waitForGPUWithSwap): finding a resident sibling to stop before
+	// waking a model that would otherwise not fit.
+	ListModelsInSwapGroup(ctx context.Context, group string) ([]store.Model, error)
 }
 
 // Secrets is the narrow secrets surface the controller needs.

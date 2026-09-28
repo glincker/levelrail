@@ -49,6 +49,12 @@ type ModelResource struct {
 	EffectiveIdleTTLSeconds int        `json:"effective_idle_ttl_seconds"`
 	ResidencyState          string     `json:"residency_state"`
 	LastActiveAt            *time.Time `json:"last_active_at,omitempty"`
+
+	// SwapGroup is empty (no group) or a name shared by other models on
+	// the same node/GPU. SharesGPUWith lists every other model
+	// currently in that same group on the same node.
+	SwapGroup     string   `json:"swap_group,omitempty"`
+	SharesGPUWith []string `json:"shares_gpu_with,omitempty"`
 }
 
 // CreateModelRequest mirrors internal/api's createModelRequest.
@@ -65,6 +71,7 @@ type CreateModelRequest struct {
 	HFToken       string   `json:"hf_token,omitempty"`
 	Residency     string   `json:"residency,omitempty"`
 	IdleTTLSecs   int      `json:"idle_ttl_seconds,omitempty"`
+	SwapGroup     string   `json:"swap_group,omitempty"`
 }
 
 // CreateModelResponse is a ModelResource plus the one-time API key.
@@ -197,6 +204,13 @@ func (c *Client) ListGPUNodes(ctx context.Context) ([]GPUNodeResource, error) {
 func (c *Client) SetModelResidency(ctx context.Context, name, residency string, idleTTLSeconds int) error {
 	body := map[string]any{"residency": residency, "idle_ttl_seconds": idleTTLSeconds}
 	return c.do(ctx, http.MethodPut, "/api/v1/models/"+PathEscape(name)+"/residency", body, nil)
+}
+
+// SetModelSwapGroup calls PUT /api/v1/models/{name}/swap-group. An
+// empty group clears it.
+func (c *Client) SetModelSwapGroup(ctx context.Context, name, group string) error {
+	body := map[string]any{"swap_group": group}
+	return c.do(ctx, http.MethodPut, "/api/v1/models/"+PathEscape(name)+"/swap-group", body, nil)
 }
 
 // WakeModel calls POST /api/v1/models/{name}/wake.

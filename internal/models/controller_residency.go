@@ -21,7 +21,7 @@ func (c *Controller) residency(ctx context.Context, m *store.Model, node NodeInf
 	if m.ResidencyState != store.ResidencyAsleep {
 		return reconcile.Result{}, false, nil
 	}
-	if blocked := waitingForGPU(m, node); blocked != nil {
+	if blocked := c.waitForGPUWithSwap(ctx, m, node); blocked != nil {
 		return *blocked, true, nil
 	}
 	if err := c.store.SetModelResidencyState(ctx, m.Name, store.ResidencyWaking); err != nil {
@@ -78,6 +78,76 @@ func waitingForGPU(m *store.Model, node NodeInfo) *reconcile.Result {
 	}
 	res := notReady(reasonWaitingOnGPU, "waiting for other workloads to free VRAM: "+got.Arithmetic)
 	return &res
+}
+
+// waitForGPUWithSwap wraps waitingForGPU with swap group eviction: when
+// m does not fit and belongs to a non-empty swap_group, it stops the
+// group's current resident sibling on the same node (if any) and
+// re-checks fit against the freed VRAM. Locked per swap_group so two
+// models in the same group can never race each other's eviction
+// decision (see swap_lock.go).
+func (c *Controller) waitForGPUWithSwap(ctx context.Context, m *store.Model, node NodeInfo) *reconcile.Result {
+	blocked := waitingForGPU(m, node)
+	if blocked == nil || m.SwapGroup == "" {
+		return blocked
+	}
+
+	unlock := lockSwapGroup(m.SwapGroup)
+	defer unlock()
+
+	evicted, err := c.evictSwapGroupSibling(ctx, m)
+	if err != nil {
+		res := notReady(reasonWaitingOnGPU, "evict swap group sibling: "+err.Error())
+		return &res
+	}
+	if evicted == "" {
+		return blocked
+	}
+
+	fresh, err := c.nodes.NodeInfo(ctx, m.NodeID)
+	if err != nil {
+		return blocked
+	}
+	return waitingForGPU(m, fresh)
+}
+
+// evictSwapGroupSibling stops the first resident (awake or waking)
+// sibling of m's own swap_group on the same node, marking it asleep so
+// the reconciler leaves it stopped rather than restarting it next pass.
+// Returns the evicted model's name, or "" if no evictable sibling was
+// found. Best effort per sibling: a sibling whose containers cannot be
+// listed is skipped, not fatal, matching "one broken resource must not
+// block others" elsewhere in this codebase.
+func (c *Controller) evictSwapGroupSibling(ctx context.Context, m *store.Model) (string, error) {
+	siblings, err := c.store.ListModelsInSwapGroup(ctx, m.SwapGroup)
+	if err != nil {
+		return "", fmt.Errorf("list swap group %q: %w", m.SwapGroup, err)
+	}
+	for _, s := range siblings {
+		if s.Name == m.Name || s.NodeID != m.NodeID {
+			continue
+		}
+		if s.ResidencyState != store.ResidencyAwake && s.ResidencyState != store.ResidencyWaking {
+			continue
+		}
+		all, err := c.runtime.ListByPrefix(ctx, ContainerPrefix(c.prefix, s.Name))
+		if err != nil {
+			continue
+		}
+		for _, cs := range all {
+			if !cs.Running {
+				continue
+			}
+			if err := c.runtime.Stop(ctx, cs.ID, stopTimeout); err != nil {
+				return "", fmt.Errorf("stop sibling %q: %w", s.Name, err)
+			}
+		}
+		if err := c.store.SetModelResidencyState(ctx, s.Name, store.ResidencyAsleep); err != nil {
+			return "", fmt.Errorf("mark sibling %q asleep: %w", s.Name, err)
+		}
+		return s.Name, nil
+	}
+	return "", nil
 }
 
 // finishWake reports WakingUp while a woken engine loads and records the

@@ -33,6 +33,29 @@ func (rt *Router) handleSetModelResidency(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+type setModelSwapGroupRequest struct {
+	SwapGroup string `json:"swap_group"`
+}
+
+// handleSetModelSwapGroup handles PUT /api/v1/models/{name}/swap-group.
+// An empty swap_group clears the model's group.
+func (rt *Router) handleSetModelSwapGroup(w http.ResponseWriter, r *http.Request) {
+	if !rt.modelsConfigured(w) {
+		return
+	}
+	var req setModelSwapGroupRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if err := rt.models.SetSwapGroup(r.Context(), r.PathValue("name"), req.SwapGroup); err != nil {
+		rt.writeModelError(w, "set model swap group", err)
+		return
+	}
+	rt.nudgeReconciler()
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // handleWakeModel handles POST /api/v1/models/{name}/wake.
 func (rt *Router) handleWakeModel(w http.ResponseWriter, r *http.Request) {
 	if !rt.modelsConfigured(w) {

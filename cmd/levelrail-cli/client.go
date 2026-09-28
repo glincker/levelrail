@@ -199,6 +199,7 @@ type (
 	environmentCloneResultResource   = apiclient.EnvironmentCloneResultResource
 	previewEnvironmentResource       = apiclient.PreviewEnvironmentResource
 	previewEphemeralDatabaseResource = apiclient.PreviewEphemeralDatabaseResource
+	previewDatabaseIsolationResource = apiclient.PreviewDatabaseIsolationResource
 	setPreviewSettingsRequest        = apiclient.SetPreviewSettingsRequest
 	previewSettingsResource          = apiclient.PreviewSettingsResource
 	sweepPreviewEnvironmentsResult   = apiclient.SweepPreviewEnvironmentsResult

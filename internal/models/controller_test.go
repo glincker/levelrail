@@ -25,6 +25,19 @@ type fakeStore struct {
 	// onRead runs before the n-th GetModel (1-based) returns, so a test can
 	// change the row between reads.
 	onRead func(n int, m *store.Model)
+
+	// swapGroupModels backs ListModelsInSwapGroup: returned as-is
+	// regardless of the group argument, the same "ignore the arg, return
+	// whatever the test configured" shape GetModel already has above.
+	swapGroupModels []store.Model
+	swapGroupErr    error
+}
+
+func (f *fakeStore) ListModelsInSwapGroup(context.Context, string) ([]store.Model, error) {
+	if f.swapGroupErr != nil {
+		return nil, f.swapGroupErr
+	}
+	return f.swapGroupModels, nil
 }
 
 func (f *fakeStore) GetModel(context.Context, string) (*store.Model, error) {

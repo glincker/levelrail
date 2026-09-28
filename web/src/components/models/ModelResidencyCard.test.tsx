@@ -65,7 +65,7 @@ describe('ModelResidencyCard', () => {
     const input = screen.getByLabelText('Idle minutes')
     await userEvent.clear(input)
     await userEvent.type(input, '30')
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await userEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]!)
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(1)
     })
@@ -75,6 +75,35 @@ describe('ModelResidencyCard', () => {
       residency: 'on_demand',
       idle_ttl_seconds: 1800,
     })
+  })
+
+  it('saves a swap group', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(null, { status: 204 }))
+    renderCard(model({ residency: 'always', residency_state: 'awake' }))
+    const input = screen.getByLabelText('Group name')
+    await userEvent.type(input, 'gpu0')
+    await userEvent.click(screen.getAllByRole('button', { name: 'Save' })[1]!)
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('/api/v1/models/chat/swap-group')
+    expect(JSON.parse(init.body as string)).toEqual({ swap_group: 'gpu0' })
+  })
+
+  it('shows which models it shares a GPU with', () => {
+    renderCard(
+      model({
+        residency: 'always',
+        residency_state: 'awake',
+        swap_group: 'gpu0',
+        shares_gpu_with: ['other-model'],
+      }),
+    )
+    expect(screen.getByText('Shares a GPU with:')).toBeInTheDocument()
+    expect(screen.getByText('other-model')).toBeInTheDocument()
   })
 
   it('has no wake, sleep or idle minutes for an always-loaded model', () => {

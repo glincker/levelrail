@@ -31,6 +31,7 @@ func runModelsDeploy(prog string, args []string, stdout, stderr io.Writer, looku
 	fs.BoolVar(&hfFromEnv, "hf-token-from-env", false, "read a HuggingFace token from the "+envHFToken+" environment variable and store it encrypted")
 	fs.StringVar(&req.Residency, "residency", "", "always (default) or on_demand: stop the engine when idle and start it on the first request")
 	fs.DurationVar(&idleTTL, "idle-ttl", 0, "with --residency on_demand: how long unused before the engine stops (default: the platform's APP_MODEL_IDLE_TTL)")
+	fs.StringVar(&req.SwapGroup, "swap-group", "", "models sharing this name on the same node/GPU cannot both be resident; waking one stops the group's current resident model")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, modelsDeployUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -112,6 +113,7 @@ Flags:
   --hf-token-from-env        read a HuggingFace token from %[5]s
   --residency string         always (default) or on_demand
   --idle-ttl duration        idle time before an on_demand engine stops
+  --swap-group string        models sharing this name on the same node/GPU cannot both be resident
   --token string             API token (default: %[2]s env var, then the credentials file)
   --api-url string           control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string           named credentials profile to read

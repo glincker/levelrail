@@ -291,6 +291,14 @@ type Database struct {
 	// this codebase; only meaningful for a database attached to an app
 	// with preview environments enabled (store.GitSource.PreviewEnabled).
 	EphemeralInPreviews bool `yaml:"ephemeralInPreviews,omitempty"`
+	// IsolatedInPreviews opts this database into an isolated Postgres
+	// role per preview, created on this same existing database (no new
+	// container, no new volume) rather than the whole disposable
+	// instance EphemeralInPreviews creates. Ignored when
+	// EphemeralInPreviews is also set, since an ephemeral instance
+	// already has its own credentials. Postgres only today. Off by
+	// default.
+	IsolatedInPreviews bool `yaml:"isolatedInPreviews,omitempty"`
 }
 
 // Backup describes a database's backup schedule.

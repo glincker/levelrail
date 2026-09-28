@@ -1847,6 +1847,24 @@ type PreviewEnvironmentResource struct {
 	// provisioned for this preview (spec.Database.EphemeralInPreviews),
 	// empty when none were declared or none opted in.
 	EphemeralDatabases []PreviewEphemeralDatabaseResource `json:"ephemeral_databases,omitempty"`
+	// DatabaseIsolations mirrors internal/api's own DatabaseIsolations
+	// field: every isolated Postgres role provisioned on an existing
+	// database for this preview (spec.Database.IsolatedInPreviews).
+	DatabaseIsolations []PreviewDatabaseIsolationResource `json:"database_isolations,omitempty"`
+}
+
+// PreviewDatabaseIsolationResource mirrors internal/api's
+// previewDatabaseIsolationResource (preview_environments_handlers.go).
+// The role's password is never included here.
+type PreviewDatabaseIsolationResource struct {
+	SourceKey    string `json:"source_key"`
+	DatabaseName string `json:"database_name"`
+	RoleName     string `json:"role_name"`
+	Isolated     bool   `json:"isolated"`
+	Status       string `json:"status"`
+	StatusReason string `json:"status_reason,omitempty"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
 }
 
 // PreviewEphemeralDatabaseResource mirrors internal/api's
