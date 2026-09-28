@@ -26,6 +26,10 @@ type fakeEC2 struct {
 	createSGErr error
 	createdSG   string
 
+	authorizeIngressErr error
+
+	deleteSGErr error
+
 	runOut *ec2.RunInstancesOutput
 	runErr error
 
@@ -36,9 +40,12 @@ type fakeEC2 struct {
 
 	authErr error // when set, every call fails with this (simulates bad credentials)
 
-	runCalls       int
-	describeCalls  int
-	terminateCalls int
+	runCalls              int
+	describeCalls         int
+	terminateCalls        int
+	createSGCalls         int
+	authorizeIngressCalls int
+	deleteSGCalls         int
 }
 
 func (f *fakeEC2) DescribeRegions(context.Context, *ec2.DescribeRegionsInput, ...func(*ec2.Options)) (*ec2.DescribeRegionsOutput, error) {
@@ -77,6 +84,7 @@ func (f *fakeEC2) DescribeSecurityGroups(context.Context, *ec2.DescribeSecurityG
 }
 
 func (f *fakeEC2) CreateSecurityGroup(_ context.Context, in *ec2.CreateSecurityGroupInput, _ ...func(*ec2.Options)) (*ec2.CreateSecurityGroupOutput, error) {
+	f.createSGCalls++
 	if f.authErr != nil {
 		return nil, f.authErr
 	}
@@ -89,6 +97,28 @@ func (f *fakeEC2) CreateSecurityGroup(_ context.Context, in *ec2.CreateSecurityG
 	}
 	_ = in
 	return &ec2.CreateSecurityGroupOutput{GroupId: aws.String(id)}, nil
+}
+
+func (f *fakeEC2) AuthorizeSecurityGroupIngress(context.Context, *ec2.AuthorizeSecurityGroupIngressInput, ...func(*ec2.Options)) (*ec2.AuthorizeSecurityGroupIngressOutput, error) {
+	f.authorizeIngressCalls++
+	if f.authErr != nil {
+		return nil, f.authErr
+	}
+	if f.authorizeIngressErr != nil {
+		return nil, f.authorizeIngressErr
+	}
+	return &ec2.AuthorizeSecurityGroupIngressOutput{}, nil
+}
+
+func (f *fakeEC2) DeleteSecurityGroup(context.Context, *ec2.DeleteSecurityGroupInput, ...func(*ec2.Options)) (*ec2.DeleteSecurityGroupOutput, error) {
+	f.deleteSGCalls++
+	if f.authErr != nil {
+		return nil, f.authErr
+	}
+	if f.deleteSGErr != nil {
+		return nil, f.deleteSGErr
+	}
+	return &ec2.DeleteSecurityGroupOutput{}, nil
 }
 
 func (f *fakeEC2) RunInstances(context.Context, *ec2.RunInstancesInput, ...func(*ec2.Options)) (*ec2.RunInstancesOutput, error) {
@@ -396,6 +426,104 @@ func TestAWS_DeleteServer_ProviderError(t *testing.T) {
 	}
 }
 
+func TestAWS_CreateServer_SSHInboundUsesDedicatedGroup(t *testing.T) {
+	fake := defaultCreateFixture()
+	fake.createdSG = "sg-ssh"
+	a := newTestAWS(fake)
+
+	if _, _, err := a.CreateServer(context.Background(), CreateOpts{
+		Region: "us-east-1", Size: "t3.small", Name: "web-1", UserData: "x", AllowSSHInbound: true,
+	}); err != nil {
+		t.Fatalf("CreateServer: %v", err)
+	}
+	if fake.createSGCalls != 1 {
+		t.Errorf("createSGCalls = %d, want 1", fake.createSGCalls)
+	}
+	if fake.authorizeIngressCalls != 1 {
+		t.Errorf("authorizeIngressCalls = %d, want 1 (ssh ingress rule)", fake.authorizeIngressCalls)
+	}
+}
+
+func TestAWS_CreateServer_NoSSHInboundSkipsAuthorize(t *testing.T) {
+	fake := defaultCreateFixture()
+	a := newTestAWS(fake)
+
+	if _, _, err := a.CreateServer(context.Background(), CreateOpts{
+		Region: "us-east-1", Size: "t3.small", Name: "web-1", UserData: "x",
+	}); err != nil {
+		t.Fatalf("CreateServer: %v", err)
+	}
+	if fake.authorizeIngressCalls != 0 {
+		t.Errorf("authorizeIngressCalls = %d, want 0 for a default (no ssh) create", fake.authorizeIngressCalls)
+	}
+}
+
+func TestAWS_DeleteServer_DeletesDedicatedGroupWhenUnreferenced(t *testing.T) {
+	fake := &fakeEC2{
+		describeOut: &ec2.DescribeInstancesOutput{
+			Reservations: []types.Reservation{{Instances: []types.Instance{{
+				InstanceId:     aws.String("i-abc123"),
+				SecurityGroups: []types.GroupIdentifier{{GroupId: aws.String("sg-ssh")}},
+			}}}},
+		},
+		securityGroups: []types.SecurityGroup{{
+			GroupId: aws.String("sg-ssh"),
+			Tags:    []types.Tag{{Key: aws.String(awsDedicatedSecurityGroupTagKey), Value: aws.String("true")}},
+		}},
+	}
+	a := newTestAWS(fake)
+	if err := a.DeleteServer(context.Background(), "us-east-1/i-abc123"); err != nil {
+		t.Fatalf("DeleteServer: %v", err)
+	}
+	if fake.deleteSGCalls != 1 {
+		t.Errorf("deleteSGCalls = %d, want 1", fake.deleteSGCalls)
+	}
+}
+
+func TestAWS_DeleteServer_KeepsDedicatedGroupStillReferenced(t *testing.T) {
+	fake := &fakeEC2{
+		describeOut: &ec2.DescribeInstancesOutput{
+			Reservations: []types.Reservation{{Instances: []types.Instance{
+				{InstanceId: aws.String("i-abc123"), SecurityGroups: []types.GroupIdentifier{{GroupId: aws.String("sg-ssh")}}},
+				{InstanceId: aws.String("i-other"), SecurityGroups: []types.GroupIdentifier{{GroupId: aws.String("sg-ssh")}}},
+			}}},
+		},
+		securityGroups: []types.SecurityGroup{{
+			GroupId: aws.String("sg-ssh"),
+			Tags:    []types.Tag{{Key: aws.String(awsDedicatedSecurityGroupTagKey), Value: aws.String("true")}},
+		}},
+	}
+	a := newTestAWS(fake)
+	if err := a.DeleteServer(context.Background(), "us-east-1/i-abc123"); err != nil {
+		t.Fatalf("DeleteServer: %v", err)
+	}
+	if fake.deleteSGCalls != 0 {
+		t.Errorf("deleteSGCalls = %d, want 0: sg-ssh is still referenced by i-other", fake.deleteSGCalls)
+	}
+}
+
+func TestAWS_DeleteServer_NeverDeletesSharedGroup(t *testing.T) {
+	fake := &fakeEC2{
+		describeOut: &ec2.DescribeInstancesOutput{
+			Reservations: []types.Reservation{{Instances: []types.Instance{{
+				InstanceId:     aws.String("i-abc123"),
+				SecurityGroups: []types.GroupIdentifier{{GroupId: aws.String("sg-shared")}},
+			}}}},
+		},
+		securityGroups: []types.SecurityGroup{{
+			GroupId: aws.String("sg-shared"),
+			Tags:    []types.Tag{{Key: aws.String(awsManagedTagKey), Value: aws.String("app")}},
+		}},
+	}
+	a := newTestAWS(fake)
+	if err := a.DeleteServer(context.Background(), "us-east-1/i-abc123"); err != nil {
+		t.Fatalf("DeleteServer: %v", err)
+	}
+	if fake.deleteSGCalls != 0 {
+		t.Errorf("deleteSGCalls = %d, want 0: sg-shared has no dedicated tag", fake.deleteSGCalls)
+	}
+}
+
 func TestAWSSecurityGroupName(t *testing.T) {
 	tests := []struct{ shortName, want string }{
 		{"Acme", "acme-node"},
@@ -405,6 +533,19 @@ func TestAWSSecurityGroupName(t *testing.T) {
 	for _, tt := range tests {
 		if got := awsSecurityGroupName(tt.shortName); got != tt.want {
 			t.Errorf("awsSecurityGroupName(%q) = %q, want %q", tt.shortName, got, tt.want)
+		}
+	}
+}
+
+func TestAWSDedicatedSecurityGroupName(t *testing.T) {
+	tests := []struct{ shortName, instanceName, want string }{
+		{"Acme", "web-1", "acme-web-1-ssh"},
+		{"", "web-1", "app-web-1-ssh"},
+		{"Acme", "", "acme-instance-ssh"},
+	}
+	for _, tt := range tests {
+		if got := awsDedicatedSecurityGroupName(tt.shortName, tt.instanceName); got != tt.want {
+			t.Errorf("awsDedicatedSecurityGroupName(%q, %q) = %q, want %q", tt.shortName, tt.instanceName, got, tt.want)
 		}
 	}
 }

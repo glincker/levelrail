@@ -95,6 +95,8 @@ A minimal least-privilege IAM policy for the static-key path:
       "ec2:RunInstances",
       "ec2:TerminateInstances",
       "ec2:CreateSecurityGroup",
+      "ec2:AuthorizeSecurityGroupIngress",
+      "ec2:DeleteSecurityGroup",
       "ec2:CreateTags",
       "ec2:Describe*"
     ],
@@ -115,12 +117,52 @@ VPC** (true for every AWS account created since December 2013, unless it
 was explicitly deleted): CreateOpts, shared across every provider this
 platform supports, has no field yet to name a specific VPC or subnet.
 Every AWS-provisioned instance shares one security group per control
-plane (created on first use, reused after), with no inbound rules at all,
-matching this platform's "no inbound ports on managed servers"
-architecture; optional SSH inbound for manual access is not wired through
-yet. `ListSizes` for AWS returns a small curated list of common `t3.*`
+plane by default (created on first use, reused after), with no inbound
+rules at all, matching this platform's "no inbound ports on managed
+servers" architecture.
+
+Passing `--allow-ssh-inbound` (CLI) or the wizard's SSH toggle opts a
+single instance out of that shared group into its own dedicated one
+instead, with TCP 22 open to any source (there is no per-operator SSH
+key or source-IP input yet). The dedicated group is tagged at creation
+time so `DeleteServer` can safely remove it once the instance is
+terminated and no other instance still references it, without ever
+touching the shared, reused group. `DeleteServer` currently only runs
+from the orphaned-server rollback path (a provision that failed to
+persist after the server was already created); `nodes delete <id>`
+itself does not call it yet (see that command's own known gap below),
+so a dedicated group from a normally-deleted AWS node is not
+automatically cleaned up until that gap closes.
+
+`ListSizes` for AWS returns a small curated list of common `t3.*`
 instance types rather than EC2's full catalog, the same reasoning
 Hetzner/DigitalOcean's own short size lists already follow.
+
+## Azure workload identity federation
+
+The default Azure credential is a service principal's client secret
+(`client_secret` in the JSON blob under Required token scopes above), an
+OAuth2 client-credentials flow. As an alternative, set
+`federated_token_file` instead of `client_secret` to use workload
+identity federation (OIDC): the path to a file holding a JWT signed by an
+external OIDC issuer this app registration trusts, exchanged for an
+Azure AD access token via the OAuth2 jwt-bearer client-assertion grant,
+the same mechanism Kubernetes and GitHub Actions use to avoid a
+long-lived secret. `client_secret` takes precedence if both are set.
+
+```json
+{"tenant_id":"...","client_id":"...","federated_token_file":"/var/run/secrets/azure/tokens/token","subscription_id":"...","resource_group":"..."}
+```
+
+Two things this control plane does not do: mint or sign the JWT itself
+(the token file's issuer, e.g. Kubernetes' projected service account
+tokens, is entirely external), and cache the file's content across
+requests longer than the resulting Azure AD access token stays valid
+(the file is re-read whenever a fresh access token is needed, so a
+rotated file is picked up automatically without a restart). Configuring
+the federated credential on the Azure AD app registration side (trusting
+that external issuer, subject and audience) is unchanged from Microsoft's
+own workload identity federation docs and outside this platform's scope.
 
 ## Cost expectations
 
@@ -233,10 +275,13 @@ trusted infrastructure, the same way you would a manually enrolled one.
   call. This was not verified against a real subscription (see below); if
   it doesn't behave as documented, a deleted Azure node can leave a NIC and
   public IP behind, billable until removed by hand from the Azure console.
-- **Azure and GCP catalogs have no pricing.** `ListSizes` returns an empty
-  `price_monthly` for both: Azure's retail pricing and GCP's billing
-  catalog are both separate APIs this integration doesn't call, unlike
-  Hetzner and DigitalOcean, which return a size's price inline.
+- **AWS, Azure and GCP catalogs have no pricing.** `ListSizes` returns an
+  empty `price_monthly` for all three: AWS's curated size list is static
+  (see AWS credentials above), and Azure's retail pricing and GCP's
+  billing catalog are both separate APIs this integration doesn't call,
+  unlike Hetzner and DigitalOcean, which return a size's price inline.
+  The size picker shows "pricing varies, see provider console" for these
+  three instead of a hardcoded, driftable price table.
 
 ## What was not tested
 

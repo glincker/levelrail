@@ -162,6 +162,10 @@ export interface CreateNodeProvisionInput {
   name: string
   role: 'general' | 'build'
   control_plane_addr: string
+  // aws only: opts into a dedicated security group with TCP 22 open,
+  // off by default (internal/provision.CreateOpts.AllowSSHInbound).
+  // Other providers ignore this field.
+  allow_ssh_inbound?: boolean
 }
 
 async function createNodeProvision(

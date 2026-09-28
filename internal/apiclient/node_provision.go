@@ -69,6 +69,9 @@ type CreateNodeProvisionRequest struct {
 	Name             string `json:"name"`
 	Role             string `json:"role,omitempty"`
 	ControlPlaneAddr string `json:"control_plane_addr"`
+	// AllowSSHInbound is aws-only; other providers ignore it. Off by
+	// default, matching this platform's no-inbound-ports architecture.
+	AllowSSHInbound bool `json:"allow_ssh_inbound,omitempty"`
 }
 
 func nodeProvidersPath() string { return "/api/v1/node-providers" }

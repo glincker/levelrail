@@ -40,6 +40,48 @@ func TestRun_NodesProvision(t *testing.T) {
 	}
 }
 
+func TestRun_NodesProvision_AllowSSHInbound(t *testing.T) {
+	var gotBody createNodeProvisionRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(nodeProvisionResource{ID: "npv_3", Provider: gotBody.Provider, Status: "booting"})
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{
+		"nodes", "provision",
+		"--provider", "aws", "--region", "us-east-1", "--size", "t3.small", "--name", "web-3",
+		"--control-plane-addr", "cp.example.com:9443", "--allow-ssh-inbound",
+		"--api-url", srv.URL,
+	})
+	if !gotBody.AllowSSHInbound {
+		t.Error("AllowSSHInbound = false, want true when --allow-ssh-inbound is passed")
+	}
+}
+
+func TestRun_NodesProvision_AllowSSHInboundDefaultsFalse(t *testing.T) {
+	var gotBody createNodeProvisionRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(nodeProvisionResource{ID: "npv_4", Provider: gotBody.Provider, Status: "booting"})
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{
+		"nodes", "provision",
+		"--provider", "hetzner", "--region", "fsn1", "--size", "cx22", "--name", "web-4",
+		"--control-plane-addr", "cp.example.com:9443",
+		"--api-url", srv.URL,
+	})
+	if gotBody.AllowSSHInbound {
+		t.Error("AllowSSHInbound = true, want false by default")
+	}
+}
+
 func TestRun_NodesProvision_DerivesControlPlaneAddrFromAPIURL(t *testing.T) {
 	var gotBody createNodeProvisionRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

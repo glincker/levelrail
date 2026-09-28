@@ -442,6 +442,9 @@ type createNodeProvisionRequest struct {
 	// manual join-token flow asks the operator for it rather than
 	// guessing server-side.
 	ControlPlaneAddr string `json:"control_plane_addr"`
+	// AllowSSHInbound is aws-only (provision.CreateOpts.AllowSSHInbound):
+	// other providers ignore it. Off by default.
+	AllowSSHInbound bool `json:"allow_ssh_inbound,omitempty"`
 }
 
 // handleCreateNodeProvision handles POST /api/v1/nodes/provision: mints
@@ -534,6 +537,7 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 
 	serverID, ipAddr, err := provisioner.CreateServer(r.Context(), provision.CreateOpts{
 		Region: req.Region, Size: req.Size, Name: req.Name, UserData: userData,
+		AllowSSHInbound: req.AllowSSHInbound,
 	})
 	if err != nil {
 		rt.logger.Error("api: node provision: create server failed", slog.String("provision_id", id), slog.String("error", err.Error()))

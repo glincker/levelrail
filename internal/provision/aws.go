@@ -196,7 +196,12 @@ func (a *AWS) CreateServer(ctx context.Context, opts CreateOpts) (serverID, ipAd
 	if err != nil {
 		return "", "", fmt.Errorf("provision: aws create server: %w", err)
 	}
-	sgID, err := ensureSecurityGroup(ctx, client, vpcID, a.shortName)
+	var sgID string
+	if opts.AllowSSHInbound {
+		sgID, err = ensureDedicatedSSHSecurityGroup(ctx, client, vpcID, a.shortName, opts.Name)
+	} else {
+		sgID, err = ensureSecurityGroup(ctx, client, vpcID, a.shortName)
+	}
 	if err != nil {
 		return "", "", fmt.Errorf("provision: aws create server: %w", err)
 	}
@@ -256,13 +261,17 @@ func (a *AWS) GetServer(ctx context.Context, id string) (ServerStatus, string, e
 	return "", "", fmt.Errorf("provision: aws get server %q: not found", id)
 }
 
-// DeleteServer terminates the EC2 instance. It does not delete the
-// shared security group ensureSecurityGroup creates or reuses: that
-// group is shared across every AWS-provisioned node, not created fresh
-// per instance, so a single DeleteServer call is never its sole owner
-// and cannot safely tell whether other nodes still depend on it. No key
-// pair is created (SSH access is off by default, see
-// ensureSecurityGroup), so there is nothing to clean up there either.
+// DeleteServer terminates the EC2 instance. The shared security group
+// ensureSecurityGroup creates or reuses is never deleted here: it's
+// shared across every AWS-provisioned node, not created fresh per
+// instance, so a single DeleteServer call is never its sole owner and
+// cannot safely tell whether other nodes still depend on it. A group
+// ensureDedicatedSSHSecurityGroup created for this one instance
+// (CreateOpts.AllowSSHInbound) is a different story: it's tagged as
+// dedicated at creation, so cleanupDedicatedSecurityGroups can safely
+// delete it once confirmed no other instance references it. No key pair
+// is created either way (there is no SSH key input yet), so there is
+// nothing to clean up there.
 func (a *AWS) DeleteServer(ctx context.Context, id string) error {
 	region, instanceID, err := decodeAWSServerID(id)
 	if err != nil {
@@ -272,8 +281,10 @@ func (a *AWS) DeleteServer(ctx context.Context, id string) error {
 	if err != nil {
 		return fmt.Errorf("provision: aws delete server %q: %w", id, err)
 	}
+	groupIDs := instanceSecurityGroupIDs(ctx, client, instanceID)
 	if _, err := client.TerminateInstances(ctx, &ec2.TerminateInstancesInput{InstanceIds: []string{instanceID}}); err != nil {
 		return fmt.Errorf("provision: aws terminate instance %q: %w", instanceID, err)
 	}
+	cleanupDedicatedSecurityGroups(ctx, client, instanceID, groupIDs)
 	return nil
 }

@@ -18,6 +18,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import {
   Select,
@@ -82,6 +83,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
   const [size, setSize] = useState('')
   const [name, setName] = useState('')
   const [role, setRole] = useState<'general' | 'build'>('general')
+  const [allowSSHInbound, setAllowSSHInbound] = useState(false)
   const [controlPlaneAddr, setControlPlaneAddr] = useState(
     () => `${window.location.hostname}:9443`,
   )
@@ -237,9 +239,16 @@ function WizardBody({ onClose }: { onClose: () => void }) {
                 </span>
                 {s.price_monthly ? (
                   <span className="shrink-0 text-muted-foreground">
-                    {s.price_monthly} {s.currency}/mo
+                    {s.currency === 'USD' ? '$' : ''}
+                    {s.price_monthly}
+                    {s.currency && s.currency !== 'USD' ? ` ${s.currency}` : ''}
+                    /mo
                   </span>
-                ) : null}
+                ) : (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    pricing varies, see provider console
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -301,6 +310,22 @@ function WizardBody({ onClose }: { onClose: () => void }) {
             9443 by default.
           </FieldDescription>
         </Field>
+        {provider === 'aws' ? (
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="node-provision-aws-ssh"
+              checked={allowSSHInbound}
+              onCheckedChange={(v) => setAllowSSHInbound(v === true)}
+            />
+            <FieldLabel
+              htmlFor="node-provision-aws-ssh"
+              className="font-normal"
+            >
+              Allow SSH inbound (opt-in; off matches this platform&apos;s
+              default of no inbound ports)
+            </FieldLabel>
+          </div>
+        ) : null}
       </StepShell>
     )
   }
@@ -320,6 +345,9 @@ function WizardBody({ onClose }: { onClose: () => void }) {
               name,
               role,
               control_plane_addr: controlPlaneAddr,
+              ...(provider === 'aws'
+                ? { allow_ssh_inbound: allowSSHInbound }
+                : {}),
             },
             {
               onSuccess: (created) => {
@@ -343,6 +371,12 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           <dd className="font-mono">{name}</dd>
           <dt className="text-muted-foreground">Role</dt>
           <dd className="capitalize">{role}</dd>
+          {provider === 'aws' ? (
+            <>
+              <dt className="text-muted-foreground">SSH inbound</dt>
+              <dd>{allowSSHInbound ? 'Allowed' : 'Off (default)'}</dd>
+            </>
+          ) : null}
         </dl>
         {createProvision.isError ? (
           <Alert variant="destructive">

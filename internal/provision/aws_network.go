@@ -22,6 +22,8 @@ type ec2API interface {
 	DescribeSubnets(ctx context.Context, in *ec2.DescribeSubnetsInput, optFns ...func(*ec2.Options)) (*ec2.DescribeSubnetsOutput, error)
 	DescribeSecurityGroups(ctx context.Context, in *ec2.DescribeSecurityGroupsInput, optFns ...func(*ec2.Options)) (*ec2.DescribeSecurityGroupsOutput, error)
 	CreateSecurityGroup(ctx context.Context, in *ec2.CreateSecurityGroupInput, optFns ...func(*ec2.Options)) (*ec2.CreateSecurityGroupOutput, error)
+	AuthorizeSecurityGroupIngress(ctx context.Context, in *ec2.AuthorizeSecurityGroupIngressInput, optFns ...func(*ec2.Options)) (*ec2.AuthorizeSecurityGroupIngressOutput, error)
+	DeleteSecurityGroup(ctx context.Context, in *ec2.DeleteSecurityGroupInput, optFns ...func(*ec2.Options)) (*ec2.DeleteSecurityGroupOutput, error)
 	RunInstances(ctx context.Context, in *ec2.RunInstancesInput, optFns ...func(*ec2.Options)) (*ec2.RunInstancesOutput, error)
 	DescribeInstances(ctx context.Context, in *ec2.DescribeInstancesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
 	TerminateInstances(ctx context.Context, in *ec2.TerminateInstancesInput, optFns ...func(*ec2.Options)) (*ec2.TerminateInstancesOutput, error)
@@ -140,11 +142,11 @@ func awsShortNameOrFallback(shortName string) string {
 	return shortName
 }
 
-// awsSecurityGroupName derives a valid, stable EC2 security group name
-// from shortName so repeated calls find and reuse the same group rather
-// than creating a new one every time.
-func awsSecurityGroupName(shortName string) string {
-	clean := strings.Map(func(r rune) rune {
+// awsSanitizeGroupNameComponent lowercases and strips shortName (or any
+// other free-text component) down to the characters valid in an EC2
+// security group name.
+func awsSanitizeGroupNameComponent(s string) string {
+	return strings.Map(func(r rune) rune {
 		switch {
 		case r >= 'a' && r <= 'z', r >= '0' && r <= '9', r == '-':
 			return r
@@ -153,21 +155,43 @@ func awsSecurityGroupName(shortName string) string {
 		default:
 			return -1
 		}
-	}, shortName)
+	}, s)
+}
+
+// awsSecurityGroupName derives a valid, stable EC2 security group name
+// from shortName so repeated calls find and reuse the same group rather
+// than creating a new one every time.
+func awsSecurityGroupName(shortName string) string {
+	clean := awsSanitizeGroupNameComponent(shortName)
 	if clean == "" {
 		clean = awsManagedTagValue
 	}
 	return clean + "-node"
 }
 
+// awsDedicatedSecurityGroupName derives a per-instance group name from
+// shortName and the instance's own (already name-collision-checked)
+// name, distinct from awsSecurityGroupName's shared group.
+func awsDedicatedSecurityGroupName(shortName, instanceName string) string {
+	cleanShort := awsSanitizeGroupNameComponent(shortName)
+	if cleanShort == "" {
+		cleanShort = awsManagedTagValue
+	}
+	cleanName := awsSanitizeGroupNameComponent(instanceName)
+	if cleanName == "" {
+		cleanName = "instance"
+	}
+	return cleanShort + "-" + cleanName + "-ssh"
+}
+
 // ensureSecurityGroup finds or creates the shared security group every
-// AWS-provisioned instance uses: outbound only, no ingress rules at all
-// (the agent always dials out, never accepts inbound, see
+// AWS-provisioned instance uses by default: outbound only, no ingress
+// rules at all (the agent always dials out, never accepts inbound, see
 // docs/node-provisioning.md), matching this platform's "no inbound
-// ports on managed servers" architecture (CLAUDE.md 4.3). Optional SSH
-// inbound for manual access is not wired here: CreateOpts (shared across
-// every Provisioner) has no field to opt into it, so it stays off,
-// which is also the requested default.
+// ports on managed servers" architecture (CLAUDE.md 4.3).
+// CreateOpts.AllowSSHInbound opts a specific instance out of this shared
+// group into its own dedicated one instead, see
+// ensureDedicatedSSHSecurityGroup.
 func ensureSecurityGroup(ctx context.Context, client ec2API, vpcID, shortName string) (string, error) {
 	name := awsSecurityGroupName(shortName)
 	describeOut, err := client.DescribeSecurityGroups(ctx, &ec2.DescribeSecurityGroupsInput{
@@ -195,6 +219,159 @@ func ensureSecurityGroup(ctx context.Context, client ec2API, vpcID, shortName st
 		return "", fmt.Errorf("create security group: %w", err)
 	}
 	return aws.ToString(createOut.GroupId), nil
+}
+
+// awsDedicatedSecurityGroupTagKey marks a security group as created
+// dedicated to one instance (CreateOpts.AllowSSHInbound), distinct from
+// the shared, reused group ensureSecurityGroup manages: only a group
+// carrying this tag is ever a candidate for deletion in AWS.DeleteServer.
+const awsDedicatedSecurityGroupTagKey = "DedicatedSecurityGroup"
+
+const awsSSHPort int32 = 22
+
+// ensureDedicatedSSHSecurityGroup finds or creates a security group
+// scoped to one instance (awsDedicatedSecurityGroupName), with TCP 22
+// open to any source: there is no per-operator SSH key or source-IP
+// input yet, so this is deliberately opt-in (CreateOpts.AllowSSHInbound)
+// rather than a default. Tagged so AWS.DeleteServer can tell it apart
+// from the shared no-inbound group and safely delete it once the
+// instance it belongs to is gone.
+func ensureDedicatedSSHSecurityGroup(ctx context.Context, client ec2API, vpcID, shortName, instanceName string) (string, error) {
+	name := awsDedicatedSecurityGroupName(shortName, instanceName)
+	describeOut, err := client.DescribeSecurityGroups(ctx, &ec2.DescribeSecurityGroupsInput{
+		Filters: []types.Filter{
+			{Name: aws.String("group-name"), Values: []string{name}},
+			{Name: aws.String("vpc-id"), Values: []string{vpcID}},
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("describe dedicated security group: %w", err)
+	}
+	if len(describeOut.SecurityGroups) > 0 {
+		return aws.ToString(describeOut.SecurityGroups[0].GroupId), nil
+	}
+	createOut, err := client.CreateSecurityGroup(ctx, &ec2.CreateSecurityGroupInput{
+		GroupName:   aws.String(name),
+		Description: aws.String("Dedicated to one provisioned instance: SSH inbound opted in at creation, deleted with the instance."),
+		VpcId:       aws.String(vpcID),
+		TagSpecifications: []types.TagSpecification{{
+			ResourceType: types.ResourceTypeSecurityGroup,
+			Tags: []types.Tag{
+				{Key: aws.String(awsManagedTagKey), Value: aws.String(awsShortNameOrFallback(shortName))},
+				{Key: aws.String(awsDedicatedSecurityGroupTagKey), Value: aws.String("true")},
+			},
+		}},
+	})
+	if err != nil {
+		return "", fmt.Errorf("create dedicated security group: %w", err)
+	}
+	groupID := aws.ToString(createOut.GroupId)
+	if _, err := client.AuthorizeSecurityGroupIngress(ctx, &ec2.AuthorizeSecurityGroupIngressInput{
+		GroupId: aws.String(groupID),
+		IpPermissions: []types.IpPermission{{
+			IpProtocol: aws.String("tcp"),
+			FromPort:   aws.Int32(awsSSHPort),
+			ToPort:     aws.Int32(awsSSHPort),
+			IpRanges:   []types.IpRange{{CidrIp: aws.String("0.0.0.0/0"), Description: aws.String("SSH, opted in at provision time")}},
+		}},
+	}); err != nil {
+		return "", fmt.Errorf("authorize ssh ingress on dedicated security group: %w", err)
+	}
+	return groupID, nil
+}
+
+// instanceSecurityGroupIDs returns the security groups attached to
+// instanceID, filtered defensively to that instance's own entries even
+// though the DescribeInstances call already scopes to it: best-effort,
+// errors are swallowed (nil) since a failure here should not block
+// AWS.DeleteServer from still terminating the instance itself.
+func instanceSecurityGroupIDs(ctx context.Context, client ec2API, instanceID string) []string {
+	out, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{InstanceIds: []string{instanceID}})
+	if err != nil || out == nil {
+		return nil
+	}
+	var ids []string
+	for _, res := range out.Reservations {
+		for _, inst := range res.Instances {
+			if aws.ToString(inst.InstanceId) != instanceID {
+				continue
+			}
+			for _, sg := range inst.SecurityGroups {
+				ids = append(ids, aws.ToString(sg.GroupId))
+			}
+		}
+	}
+	return ids
+}
+
+// securityGroupIsDedicated reports whether groupID carries
+// awsDedicatedSecurityGroupTagKey, i.e. was created by
+// ensureDedicatedSSHSecurityGroup for one specific instance rather than
+// shared across every AWS-provisioned node.
+func securityGroupIsDedicated(ctx context.Context, client ec2API, groupID string) bool {
+	out, err := client.DescribeSecurityGroups(ctx, &ec2.DescribeSecurityGroupsInput{GroupIds: []string{groupID}})
+	if err != nil || out == nil {
+		return false
+	}
+	for _, sg := range out.SecurityGroups {
+		if aws.ToString(sg.GroupId) != groupID {
+			continue
+		}
+		for _, t := range sg.Tags {
+			if aws.ToString(t.Key) == awsDedicatedSecurityGroupTagKey && aws.ToString(t.Value) == "true" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// securityGroupOtherInstanceCount counts non-terminated instances that
+// reference groupID, excluding excludeInstanceID (the one DeleteServer
+// just terminated): a dedicated group is only ever safe to delete when
+// this comes back zero.
+func securityGroupOtherInstanceCount(ctx context.Context, client ec2API, groupID, excludeInstanceID string) int {
+	out, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+		Filters: []types.Filter{
+			{Name: aws.String("instance.group-id"), Values: []string{groupID}},
+			{Name: aws.String("instance-state-name"), Values: []string{"pending", "running", "shutting-down", "stopping", "stopped"}},
+		},
+	})
+	if err != nil || out == nil {
+		// Unknown is treated as "in use": erring toward leaving a group
+		// behind (a cosmetic, non-billable leftover) rather than risking
+		// deletion of one another instance still depends on.
+		return 1
+	}
+	count := 0
+	for _, res := range out.Reservations {
+		for _, inst := range res.Instances {
+			if aws.ToString(inst.InstanceId) == excludeInstanceID {
+				continue
+			}
+			count++
+		}
+	}
+	return count
+}
+
+// cleanupDedicatedSecurityGroups deletes every group in groupIDs that is
+// both dedicated (securityGroupIsDedicated) and no longer referenced by
+// any other instance. Best-effort and silent: called after
+// TerminateInstances already succeeded, so a security group still
+// attached to a not-yet-detached network interface during the
+// instance's shutting-down window is an expected, transient failure, not
+// one worth surfacing on top of an otherwise successful delete.
+func cleanupDedicatedSecurityGroups(ctx context.Context, client ec2API, terminatedInstanceID string, groupIDs []string) {
+	for _, groupID := range groupIDs {
+		if !securityGroupIsDedicated(ctx, client, groupID) {
+			continue
+		}
+		if securityGroupOtherInstanceCount(ctx, client, groupID, terminatedInstanceID) > 0 {
+			continue
+		}
+		_, _ = client.DeleteSecurityGroup(ctx, &ec2.DeleteSecurityGroupInput{GroupId: aws.String(groupID)})
+	}
 }
 
 // encodeAWSServerID packs region into the returned server id: GetServer

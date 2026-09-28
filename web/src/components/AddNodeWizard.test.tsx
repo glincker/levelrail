@@ -64,6 +64,7 @@ vi.mock('../queries/nodes', () => ({
 const providers: NodeProviderResource[] = [
   { provider: 'hetzner', has_token: true },
   { provider: 'digitalocean', has_token: false },
+  { provider: 'aws', has_token: true },
 ]
 const regions: NodeProviderRegionResource[] = [
   { id: 'fsn1', name: 'Falkenstein' },
@@ -77,6 +78,13 @@ const sizes: NodeProviderSizeResource[] = [
     disk_gb: 40,
     price_monthly: '4.90',
     currency: 'EUR',
+  },
+  {
+    id: 't3.small',
+    name: 't3.small',
+    vcpus: 2,
+    memory_mb: 2048,
+    disk_gb: 20,
   },
 ]
 
@@ -142,10 +150,10 @@ describe('AddNodeWizard', () => {
         ? within(digitalOceanCard).getByText('Connect one')
         : null,
     ).toBeVisible()
-    const awsCard = screen.getByText('AWS').closest('button')
-    expect(awsCard).toBeDisabled()
+    const azureCard = screen.getByText('Azure').closest('button')
+    expect(azureCard).toBeDisabled()
     expect(
-      awsCard ? within(awsCard).getByText('Connect one') : null,
+      azureCard ? within(azureCard).getByText('Connect one') : null,
     ).toBeVisible()
     expect(
       screen.getByRole('button', { name: /I already have a server/ }),
@@ -227,5 +235,59 @@ describe('AddNodeWizard', () => {
       expect.anything(),
     )
     expect(screen.getByText('Creating node')).toBeVisible()
+  })
+
+  it('shows a live price for a size that has one, and a fallback for one that does not', async () => {
+    const user = userEvent.setup()
+    render(<AddNodeWizard />)
+    fireEvent.click(screen.getByRole('button', { name: /Add node/ }))
+    fireEvent.click(screen.getByText('Hetzner'))
+    await pickOption(
+      user,
+      document.querySelector('[data-slot="select-trigger"]') as Element,
+      'Falkenstein',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(screen.getByText('4.90 EUR/mo')).toBeVisible()
+    expect(
+      screen.getByText('pricing varies, see provider console'),
+    ).toBeVisible()
+  })
+
+  it('opts an AWS provision into SSH inbound via the wizard toggle', async () => {
+    const user = userEvent.setup()
+    createNodeProvisionMutate.mockImplementation(() => {})
+
+    render(<AddNodeWizard />)
+    fireEvent.click(screen.getByRole('button', { name: /Add node/ }))
+    fireEvent.click(screen.getByText('AWS'))
+    await pickOption(
+      user,
+      document.querySelector('[data-slot="select-trigger"]') as Element,
+      'Falkenstein',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    fireEvent.click(screen.getByText(/t3\.small/))
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+
+    // Details step: the SSH toggle only renders for aws.
+    fireEvent.change(screen.getByLabelText('Name'), {
+      target: { value: 'web-2' },
+    })
+    const sshToggle = screen.getByRole('checkbox', {
+      name: /Allow SSH inbound/,
+    })
+    expect(sshToggle).toBeVisible()
+    fireEvent.click(sshToggle)
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(screen.getByText('Allowed')).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+
+    expect(createNodeProvisionMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ provider: 'aws', allow_ssh_inbound: true }),
+      expect.anything(),
+    )
   })
 })
