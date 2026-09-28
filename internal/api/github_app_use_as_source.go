@@ -92,7 +92,7 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 	}
 	resp := useGitHubRepoAsSourceResponse{gitSourceResource: result.Resource}
 
-	baseURL, err := rt.controlPlaneBaseURL(ctx)
+	_, err = rt.controlPlaneBaseURL(ctx)
 	if err != nil {
 		if !errors.Is(err, errNoPrimaryDomain) {
 			rt.logger.Error("api: get base url for github webhook registration failed", slog.String("error", err.Error()))
@@ -112,7 +112,7 @@ func (rt *Router) handleUseGitHubRepoAsSource(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := rt.githubAppClient.CreateRepoWebhook(ctx, instanceURL, token, owner, repo, baseURL+result.Resource.WebhookURL, webhookSecret); err != nil {
+	if err := rt.githubAppClient.CreateRepoWebhook(ctx, instanceURL, token, owner, repo, result.Resource.WebhookURL, webhookSecret); err != nil {
 		if errors.Is(err, githubapp.ErrPermissionDenied) {
 			rt.logger.Warn("api: github repo connected as git source, but webhook registration was denied by the installation's permissions", slog.String("owner", owner), slog.String("repo", repo), slog.String("app_name", req.AppName))
 			resp.WebhookError = "this github app installation doesn't have permission to register webhooks yet (it predates that permission being requested); add the webhook below manually, or reinstall the app to grant it and reconnect"
