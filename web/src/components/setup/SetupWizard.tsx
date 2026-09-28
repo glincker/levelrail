@@ -30,6 +30,7 @@ import type {
   SetupStepStatus,
 } from '../../lib/setupWizard'
 import { ServerCheckStep } from './ServerCheckStep'
+import { TopologyStep } from './TopologyStep'
 import { DomainStep } from './DomainStep'
 import { GitProviderStep } from './GitProviderStep'
 import { FirstAppStep } from './FirstAppStep'
@@ -151,6 +152,7 @@ export function SetupWizard() {
         </h2>
 
         {step === 'server' ? <ServerCheckStep {...stepProps} /> : null}
+        {step === 'topology' ? <TopologyStep {...stepProps} /> : null}
         {step === 'domain' ? <DomainStep {...stepProps} /> : null}
         {step === 'git' ? <GitProviderStep {...stepProps} /> : null}
         {step === 'app' ? <FirstAppStep {...stepProps} /> : null}

@@ -108,7 +108,7 @@ func (r *Router) selectNode(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("build: list build nodes: %w", err)
 	}
-	return SelectBuildNode(nodes)
+	return SelectBuildNode(nodes), nil
 }
 
 // dispatch runs req on nodeID and loads the image it streams back into

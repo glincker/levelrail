@@ -49,16 +49,16 @@ func TestRouter_SelectNode(t *testing.T) {
 			want:   "",
 		},
 		{
-			name:   "an online build node is selected",
+			name:   "a build-only secondary node is preferred over a marked-no-build primary",
 			nodes:  staticNodes(NodeInfo{ID: "n2", AcceptsBuildWorkloads: true, Online: true}, NodeInfo{ID: "n1", Online: true}),
 			remote: &stubNodeBuilder{},
 			want:   "n2",
 		},
 		{
-			name:    "a build node that is offline fails rather than falling back",
-			nodes:   staticNodes(NodeInfo{ID: "n2", AcceptsBuildWorkloads: true}),
-			remote:  &stubNodeBuilder{},
-			wantErr: ErrNoBuildNodeAvailable,
+			name:   "a build node that is offline falls back to the primary rather than failing the build",
+			nodes:  staticNodes(NodeInfo{ID: "n2", AcceptsBuildWorkloads: true}),
+			remote: &stubNodeBuilder{},
+			want:   "",
 		},
 		{
 			name:    "a node lookup failure is not silently treated as no build nodes",
@@ -122,6 +122,41 @@ func TestRouter_BuildRailpack_Dispatches(t *testing.T) {
 	}
 	if remote.req.Kind != RemoteKindRailpack {
 		t.Errorf("dispatched kind = %q, want %q", remote.req.Kind, RemoteKindRailpack)
+	}
+}
+
+// unreachableMidBuildStub simulates a node that accepted a dispatched
+// build, streamed part of the image back, and then the connection to it
+// was lost, the half-succeeded case a node going offline mid-dispatch
+// produces in practice (agent.GRPCTransport.BuildOnNode returning
+// ErrSessionClosed partway through receiveBuildOutput).
+type unreachableMidBuildStub struct{ calls []string }
+
+func (s *unreachableMidBuildStub) BuildOnNode(_ context.Context, nodeID string, _ RemoteRequest, image io.Writer, progress func(ProgressEvent)) (*Result, error) {
+	s.calls = append(s.calls, nodeID)
+	progress(ProgressEvent{Step: "exporting"})
+	_, _ = image.Write([]byte("partial-image-bytes"))
+	return nil, errors.New("agent: session closed")
+}
+
+// TestRouter_Build_NodeUnreachableMidDispatch covers a build that already
+// started routing to a node before that node went unreachable: the
+// failure must surface to the caller, naming the node, rather than being
+// swallowed or silently retried on a different node (a build already in
+// flight has no well-defined "elsewhere" to safely resume on).
+func TestRouter_Build_NodeUnreachableMidDispatch(t *testing.T) {
+	remote := &unreachableMidBuildStub{}
+	r := dispatchRouter(remote, staticNodes(NodeInfo{ID: "builder-1", AcceptsBuildWorkloads: true, Online: true}))
+
+	_, err := r.Build(t.Context(), Request{ContextDir: t.TempDir(), Tag: "app:sha"}, nil)
+	if err == nil {
+		t.Fatal("Build() error = nil, want the mid-dispatch failure surfaced")
+	}
+	if got := err.Error(); !strings.Contains(got, "builder-1") {
+		t.Errorf("Build() error = %q, want it to name the node that went unreachable", got)
+	}
+	if len(remote.calls) != 1 || remote.calls[0] != "builder-1" {
+		t.Errorf("dispatched to %v, want exactly one attempt on builder-1, no silent retry elsewhere", remote.calls)
 	}
 }
 

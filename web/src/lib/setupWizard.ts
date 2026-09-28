@@ -8,7 +8,14 @@ import type { IngressDomainCheckResult } from '../queries/domains'
 import type { AppNetwork } from '../queries/appNetwork'
 import type { GitProviderStatus } from '../types/gitProviders'
 
-export const SETUP_STEPS = ['server', 'domain', 'git', 'app', 'done'] as const
+export const SETUP_STEPS = [
+  'server',
+  'topology',
+  'domain',
+  'git',
+  'app',
+  'done',
+] as const
 export type SetupStepId = (typeof SETUP_STEPS)[number]
 export type SetupStepStatus = 'completed' | 'skipped'
 export type SetupStepMap = Partial<Record<SetupStepId, SetupStepStatus>>
@@ -18,6 +25,7 @@ export const SETUP_STEP_META: Record<
   { title: string; optional: boolean }
 > = {
   server: { title: 'Server check', optional: false },
+  topology: { title: 'Single or multi-node', optional: true },
   domain: { title: 'Dashboard domain', optional: true },
   git: { title: 'Git provider', optional: true },
   app: { title: 'First app', optional: true },

@@ -6,6 +6,7 @@ import { nodeListQueryOptions, useNodes } from '../../queries/nodes'
 import { useFleetResourceUsage } from '../../queries/fleetResourceUsage'
 import { NODE_LIST_GRID, NodeRow, RowSkeleton } from '../../components/NodeRow'
 import { AddNodeDialog } from '../../components/AddNodeDialog'
+import { BuildStrainSuggestion } from '../../components/BuildStrainSuggestion'
 import { EmptyState } from '../../components/ui/empty-state'
 import { HelpLink } from '../../components/HelpLink'
 
@@ -78,6 +79,7 @@ function NodeListPage() {
           <AddNodeDialog />
         </div>
       </div>
+      <BuildStrainSuggestion nodes={nodes} />
       {nodes.length === 0 ? (
         <EmptyState
           icon={<HardDrivesIcon className="size-5" />}
