@@ -8,6 +8,7 @@ import {
   GitPullRequestIcon,
   HandPalmIcon,
   ProhibitIcon,
+  ShieldCheckIcon,
   SpinnerIcon,
   TrashIcon,
   WarningCircleIcon,
@@ -19,7 +20,7 @@ import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
-import { RelativeTime } from './kit'
+import { InfoTip, RelativeTime } from './kit'
 import { ApprovePreviewDialog } from './ApprovePreviewDialog'
 import { useGitSource } from '../queries/gitSources'
 import {
@@ -32,6 +33,7 @@ import {
 import { ApiError } from '../lib/apiError'
 import type { AppDetail } from '../types/appDetail'
 import type {
+  PreviewDatabaseIsolation,
   PreviewEnvironmentStatus,
   PreviewEphemeralDatabase,
 } from '../types/previewEnvironment'
@@ -125,6 +127,48 @@ function EphemeralDatabaseRow({
           </Badge>
         )}
       </div>
+    </li>
+  )
+}
+
+// DatabaseIsolationRow renders one preview's own isolated Postgres role
+// on an existing database (spec.Database.IsolatedInPreviews): its role
+// name and provisioning status. The role's password is never fetched or
+// shown here, only its name and where it lives.
+function DatabaseIsolationRow({
+  isolation,
+}: {
+  isolation: PreviewDatabaseIsolation
+}) {
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-border/70 bg-muted/30 px-2 py-1.5">
+      <div className="flex min-w-0 items-center gap-2">
+        <ShieldCheckIcon
+          className="size-3.5 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <span className="truncate font-mono text-xs text-foreground">
+          {isolation.database_name}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          role {isolation.role_name}
+        </span>
+        <InfoTip label="About database isolation">
+          A dedicated Postgres role scoped to this preview, on the same database
+          as production. Its generated password is stored encrypted and is never
+          shown or logged in plaintext.
+        </InfoTip>
+      </div>
+      <Badge
+        variant={
+          isolation.status === 'teardown_failed' ? 'destructive' : 'success'
+        }
+        className="rounded-full text-[10px]"
+      >
+        {isolation.status === 'teardown_failed'
+          ? 'Teardown failed'
+          : 'Isolated'}
+      </Badge>
     </li>
   )
 }
@@ -351,6 +395,17 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                           <EphemeralDatabaseRow
                             key={database.source_key}
                             database={database}
+                          />
+                        ))}
+                      </ul>
+                    ) : null}
+                    {preview.database_isolations &&
+                    preview.database_isolations.length > 0 ? (
+                      <ul className="space-y-1 pt-1">
+                        {preview.database_isolations.map((isolation) => (
+                          <DatabaseIsolationRow
+                            key={isolation.source_key}
+                            isolation={isolation}
                           />
                         ))}
                       </ul>

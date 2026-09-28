@@ -224,6 +224,7 @@ func (rt *Router) holdForkPreview(ctx context.Context, gs store.GitSource, exist
 
 	if existing != nil && existing.Status != store.PreviewStatusAwaitingApproval && existing.Status != store.PreviewStatusLimitReached {
 		failed := append(rt.teardownPreviewApp(ctx, existing.PreviewAppID), rt.teardownPreviewEphemeralDatabases(ctx, existing.ID)...)
+		failed = append(failed, rt.teardownPreviewDatabaseIsolations(ctx, existing.ID)...)
 		if len(failed) > 0 {
 			rt.logger.Error("api: fork preview hold: remove earlier deployment failed", slog.Any("failed_resources", failed), slog.String("app_name", base.AppName))
 			base.StatusReason += " The earlier approved deployment could not be fully removed and may still be running: use Tear down."
