@@ -24,30 +24,57 @@ export function DocsOnThisPage({ headings, className }: DocsOnThisPageProps) {
   useEffect(() => {
     if (headings.length === 0) return
 
-    const elements = headings
-      .map((h) => document.getElementById(h.id))
-      .filter((el): el is HTMLElement => el !== null)
+    let cancelled = false
+    let frame: number
+    let cleanupObserver: (() => void) | undefined
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            visibleIds.current.add(entry.target.id)
-          } else {
-            visibleIds.current.delete(entry.target.id)
+    // The doc's own content (and so its heading elements) loads through
+    // /help/$'s separate route loader, independently of the manifest
+    // this component's headings prop comes from: on navigation, this
+    // effect can easily run before those elements exist yet. Retry each
+    // frame until at least one shows up, rather than silently observing
+    // nothing and leaving the highlight stuck on the first heading.
+    function trySetup() {
+      const elements = headings
+        .map((h) => document.getElementById(h.id))
+        .filter((el): el is HTMLElement => el !== null)
+
+      if (elements.length === 0) {
+        frame = requestAnimationFrame(trySetup)
+        return
+      }
+      if (cancelled) return
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              visibleIds.current.add(entry.target.id)
+            } else {
+              visibleIds.current.delete(entry.target.id)
+            }
           }
-        }
-        // The topmost currently-visible heading wins, matching reading
-        // order rather than intersection-observer callback order.
-        const firstVisible = headings.find((h) => visibleIds.current.has(h.id))
-        if (firstVisible) setActiveId(firstVisible.id)
-      },
-      { rootMargin: '-80px 0px -70% 0px', threshold: 0 },
-    )
+          // The topmost currently-visible heading wins, matching reading
+          // order rather than intersection-observer callback order.
+          const firstVisible = headings.find((h) =>
+            visibleIds.current.has(h.id),
+          )
+          if (firstVisible) setActiveId(firstVisible.id)
+        },
+        { rootMargin: '-80px 0px -70% 0px', threshold: 0 },
+      )
 
-    for (const el of elements) observer.observe(el)
+      for (const el of elements) observer.observe(el)
+      cleanupObserver = () => observer.disconnect()
+    }
 
-    return () => observer.disconnect()
+    trySetup()
+
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(frame)
+      cleanupObserver?.()
+    }
   }, [headings])
 
   if (headings.length === 0) return null

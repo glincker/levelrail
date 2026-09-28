@@ -46,10 +46,19 @@ function filePathToRoutePath(relFile: string): string {
   return `/${relFile.replace(/\.md$/, '')}`
 }
 
+// docs/changelog/ is VitePress-templated (Vue <script setup>, v-for,
+// $params, @content injection, see docs/changelog/[slug].md), not the
+// "plain Markdown, deliberately" every other page here promises
+// (docs/README.md). It's built for the separate hosted VitePress site,
+// not this in-app viewer, so it's excluded the same way .vitepress/
+// itself already is.
+const EXCLUDED_TOP_LEVEL_DIRS = new Set(['changelog'])
+
 function listMarkdownFiles(dir: string, base = ''): string[] {
   const out: string[] = []
   for (const entry of readdirSync(dir)) {
     if (entry.startsWith('.')) continue
+    if (!base && EXCLUDED_TOP_LEVEL_DIRS.has(entry)) continue
     const full = path.join(dir, entry)
     const rel = base ? `${base}/${entry}` : entry
     if (statSync(full).isDirectory()) {
