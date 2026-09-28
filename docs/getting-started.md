@@ -137,9 +137,7 @@ APP_API_TOKEN=dev-root-token ./levelrail-cli apps status your-app
 
 Once deployed, the dashboard shows live metrics and deploy history in one view:
 
-<p align="center">
-  <img src="/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="800">
-</p>
+![Levelrail app overview: live metrics and deploy history in one view](assets/screenshots/app-overview.png)
 
 ### Using a prebuilt image
 

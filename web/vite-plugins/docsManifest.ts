@@ -46,10 +46,19 @@ function filePathToRoutePath(relFile: string): string {
   return `/${relFile.replace(/\.md$/, '')}`
 }
 
+// docs/changelog/ is VitePress-templated (Vue <script setup>, v-for,
+// $params, @content injection, see docs/changelog/[slug].md), not the
+// "plain Markdown, deliberately" every other page here promises
+// (docs/README.md). It's built for the separate hosted VitePress site,
+// not this in-app viewer, so it's excluded the same way .vitepress/
+// itself already is.
+const EXCLUDED_TOP_LEVEL_DIRS = new Set(['changelog'])
+
 function listMarkdownFiles(dir: string, base = ''): string[] {
   const out: string[] = []
   for (const entry of readdirSync(dir)) {
     if (entry.startsWith('.')) continue
+    if (!base && EXCLUDED_TOP_LEVEL_DIRS.has(entry)) continue
     const full = path.join(dir, entry)
     const rel = base ? `${base}/${entry}` : entry
     if (statSync(full).isDirectory()) {
@@ -67,6 +76,50 @@ function stripFrontmatter(text: string): string {
   if (end === -1) return text
   const rest = text.slice(end + 4)
   return rest.startsWith('\n') ? rest.slice(1) : rest
+}
+
+// How much of a page's plain-text body docsSearch.ts gets to substring-match
+// against. A slice, not the full page: the raw markdown per page is loaded
+// lazily on open (see src/lib/docsContent.ts), and stuffing full bodies into
+// this manifest would reintroduce the eager-load cost that design avoids.
+// Raising this to help search on long docs (cli-reference.md etc.) isn't
+// a safe constant bump: even 1800 pushed virtual:docs-manifest's chunk
+// from 581KB to 709KB, over check-bundle-size.js's 600KB budget. Needs a
+// separate search-only chunk, not a bigger cap here.
+const BODY_EXCERPT_MAX_CHARS = 1200
+
+function cleanMarkdownLine(line: string): string {
+  return line
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_~]{1,3}/g, '')
+    .replace(/^\s*[-*+]\s+/, '')
+    .replace(/^\s*\d+\.\s+/, '')
+    .replace(/^>\s?/, '')
+    .replace(/\|/g, ' ')
+    .trim()
+}
+
+function extractBody(lines: string[]): string {
+  const parts: string[] = []
+  let length = 0
+  let inFence = false
+  for (const line of lines) {
+    if (/^\s*```/.test(line)) {
+      inFence = !inFence
+      continue
+    }
+    if (inFence) continue
+    if (/^#{1,6}\s+/.test(line)) continue
+    if (/^:::/.test(line.trim())) continue
+    const cleaned = cleanMarkdownLine(line)
+    if (!cleaned) continue
+    parts.push(cleaned)
+    length += cleaned.length + 1
+    if (length >= BODY_EXCERPT_MAX_CHARS) break
+  }
+  return parts.join(' ').slice(0, BODY_EXCERPT_MAX_CHARS)
 }
 
 function extractPage(relFile: string): DocPageMeta {
@@ -89,7 +142,12 @@ function extractPage(relFile: string): DocPageMeta {
       headings.push({ id: uniqueSlug(text, seen), text, level })
     }
   }
-  return { file: relFile, title: title ?? relFile, headings }
+  return {
+    file: relFile,
+    title: title ?? relFile,
+    headings,
+    body: extractBody(lines),
+  }
 }
 
 function extractCategories(
