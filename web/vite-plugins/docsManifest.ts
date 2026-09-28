@@ -69,6 +69,46 @@ function stripFrontmatter(text: string): string {
   return rest.startsWith('\n') ? rest.slice(1) : rest
 }
 
+// How much of a page's plain-text body docsSearch.ts gets to substring-match
+// against. A slice, not the full page: the raw markdown per page is loaded
+// lazily on open (see src/lib/docsContent.ts), and stuffing full bodies into
+// this manifest would reintroduce the eager-load cost that design avoids.
+const BODY_EXCERPT_MAX_CHARS = 1200
+
+function cleanMarkdownLine(line: string): string {
+  return line
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_~]{1,3}/g, '')
+    .replace(/^\s*[-*+]\s+/, '')
+    .replace(/^\s*\d+\.\s+/, '')
+    .replace(/^>\s?/, '')
+    .replace(/\|/g, ' ')
+    .trim()
+}
+
+function extractBody(lines: string[]): string {
+  const parts: string[] = []
+  let length = 0
+  let inFence = false
+  for (const line of lines) {
+    if (/^\s*```/.test(line)) {
+      inFence = !inFence
+      continue
+    }
+    if (inFence) continue
+    if (/^#{1,6}\s+/.test(line)) continue
+    if (/^:::/.test(line.trim())) continue
+    const cleaned = cleanMarkdownLine(line)
+    if (!cleaned) continue
+    parts.push(cleaned)
+    length += cleaned.length + 1
+    if (length >= BODY_EXCERPT_MAX_CHARS) break
+  }
+  return parts.join(' ').slice(0, BODY_EXCERPT_MAX_CHARS)
+}
+
 function extractPage(relFile: string): DocPageMeta {
   const raw = readFileSync(path.join(docsDir, relFile), 'utf8')
   const body = stripFrontmatter(raw)
@@ -89,7 +129,12 @@ function extractPage(relFile: string): DocPageMeta {
       headings.push({ id: uniqueSlug(text, seen), text, level })
     }
   }
-  return { file: relFile, title: title ?? relFile, headings }
+  return {
+    file: relFile,
+    title: title ?? relFile,
+    headings,
+    body: extractBody(lines),
+  }
 }
 
 function extractCategories(
