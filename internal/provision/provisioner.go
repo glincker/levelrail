@@ -1,7 +1,7 @@
-// Package provision creates and tears down cloud VMs at a provider (Hetzner,
-// DigitalOcean) so a fresh node can join the fleet through the existing
-// join-token enrollment flow, without an operator manually clicking through a
-// cloud console first.
+// Package provision creates and tears down cloud VMs at a provider
+// (Hetzner, DigitalOcean, Azure, GCP) so a fresh node can join the fleet
+// through the existing join-token enrollment flow, without an operator
+// manually clicking through a cloud console first.
 package provision
 
 import "context"
@@ -47,9 +47,9 @@ type CreateOpts struct {
 	UserData string
 }
 
-// Provisioner creates and manages servers at a cloud provider. hetzner.go
-// and digitalocean.go are the two real implementations; both talk to their
-// provider's REST API directly over net/http, no SDK.
+// Provisioner creates and manages servers at a cloud provider. hetzner.go,
+// digitalocean.go, azure.go and gcp.go are the real implementations; all
+// four talk to their provider's REST API directly over net/http, no SDK.
 type Provisioner interface {
 	ListRegions(ctx context.Context) ([]Region, error)
 	ListSizes(ctx context.Context, region string) ([]Size, error)
