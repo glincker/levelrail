@@ -170,6 +170,13 @@ type (
 	meshRotationResource        = apiclient.MeshRotationResource
 	rotateKeyResponse           = apiclient.RotateKeyResponse
 
+	nodeProviderResource             = apiclient.NodeProviderResource
+	nodeProviderRegionResource       = apiclient.NodeProviderRegionResource
+	nodeProviderSizeResource         = apiclient.NodeProviderSizeResource
+	nodeProvisionResource            = apiclient.NodeProvisionResource
+	setNodeProviderCredentialRequest = apiclient.SetNodeProviderCredentialRequest
+	createNodeProvisionRequest       = apiclient.CreateNodeProvisionRequest
+
 	organizationResource             = apiclient.OrganizationResource
 	createOrganizationRequest        = apiclient.CreateOrganizationRequest
 	projectResource                  = apiclient.ProjectResource

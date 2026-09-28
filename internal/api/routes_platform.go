@@ -337,6 +337,20 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// above.
 	mux.HandleFunc("GET /api/v1/mesh", rt.requireAbility(AbilityRoot, rt.handleGetMeshStatus))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/mesh/rotate-key", rt.requireAbility(AbilityRoot, rt.handleRotateNodeMeshKey))
+	// Cloud node provisioning: same AbilityRoot boundary as every other
+	// node route above, a provider credential and the ability to spin up
+	// a VM are at least as sensitive as a join token.
+	mux.HandleFunc("GET /api/v1/node-providers", rt.requireAbility(AbilityRoot, rt.handleListNodeProviders))
+	mux.HandleFunc("POST /api/v1/node-providers", rt.requireAbility(AbilityRoot, rt.handleSetNodeProviderCredential))
+	mux.HandleFunc("GET /api/v1/node-providers/{provider}/regions", rt.requireAbility(AbilityRoot, rt.handleListNodeProviderRegions))
+	mux.HandleFunc("GET /api/v1/node-providers/{provider}/sizes", rt.requireAbility(AbilityRoot, rt.handleListNodeProviderSizes))
+	mux.HandleFunc("POST /api/v1/nodes/provision", rt.requireAbility(AbilityRoot, rt.handleCreateNodeProvision))
+	// A top-level sibling of /api/v1/nodes/{id}/..., not nested under it:
+	// "/api/v1/nodes/provisions/{id}" and "/api/v1/nodes/{id}/health"
+	// would be two equally-specific wildcard patterns net/http's own
+	// ServeMux refuses to register together.
+	mux.HandleFunc("GET /api/v1/node-provisions", rt.requireAbility(AbilityRoot, rt.handleListNodeProvisions))
+	mux.HandleFunc("GET /api/v1/node-provisions/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNodeProvision))
 	// Node-level metrics (sum of per-container samples for everything
 	// placed on this node, see handleQueryNodeMetrics's own doc comment
 	// for exactly what that does and doesn't mean): same AbilityRoot

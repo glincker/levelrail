@@ -558,6 +558,22 @@ func WithAgentCAFingerprint(fp string) Option {
 	return func(rt *Router) { rt.agentCAFingerprint = fp }
 }
 
+// WithNodeProviderSecrets enables POST /api/v1/node-providers and every
+// node-providers/{provider}/... route. Without it (the default), those
+// routes return 501, the same shape WithCloudflareDNSSecrets establishes
+// for its own credential.
+func WithNodeProviderSecrets(s NodeProviderSecrets) Option {
+	return func(rt *Router) { rt.nodeProviderSecrets = s }
+}
+
+// WithNodeProvisionerFactory overrides how a NodeProvisioner is built
+// from a provider name and resolved token, for this package's own tests.
+// Production callers leave this unset; NewRouter's default,
+// defaultNodeProvisionerFactory, builds real internal/provision clients.
+func WithNodeProvisionerFactory(f NodeProvisionerFactory) Option {
+	return func(rt *Router) { rt.nodeProvisionerFactory = f }
+}
+
 // WithIngressPortOwner lets GET /api/v1/system/doctor's port_<n>
 // checks recognize a bind failure caused by this control plane's own
 // embedded ingress (internal/ingress.Driver) as expected rather than a

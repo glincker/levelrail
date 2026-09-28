@@ -437,6 +437,7 @@ Endpoints for:
 | POST | /api/v1/nodes/{id}/revoke-cert | AbilityRoot | handleRevokeNodeCert |
 | POST | /api/v1/nodes/{id}/mesh/rotate-key | AbilityRoot | handleRotateNodeMeshKey |
 | GET | /api/v1/nodes/resource-usage | AbilityRoot | handleFleetResourceUsage |
+| POST | /api/v1/nodes/provision | AbilityRoot | handleCreateNodeProvision |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -783,6 +784,12 @@ Routes that do not fit an existing group.
 | POST | /api/v1/model-cache/prune | AbilityRoot | handlePruneModelCache |
 | POST | /api/v1/pipelines/filters | AbilityRead | handlePipelineFilters |
 | GET | /api/v1/apps-metrics | AbilityRead | handleBatchAppMetrics |
+| GET | /api/v1/node-providers | AbilityRoot | handleListNodeProviders |
+| POST | /api/v1/node-providers | AbilityRoot | handleSetNodeProviderCredential |
+| GET | /api/v1/node-providers/{provider}/regions | AbilityRoot | handleListNodeProviderRegions |
+| GET | /api/v1/node-providers/{provider}/sizes | AbilityRoot | handleListNodeProviderSizes |
+| GET | /api/v1/node-provisions | AbilityRoot | handleListNodeProvisions |
+| GET | /api/v1/node-provisions/{id} | AbilityRoot | handleGetNodeProvision |
 
 ## See also
 
