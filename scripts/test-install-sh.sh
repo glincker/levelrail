@@ -76,6 +76,7 @@ in_ct 'test ! -e /var/lib/levelrail-data' || { echo "--purge should delete the d
 
 echo "== release verification (mirror, no cosign in the container)"
 in_ct 'command -v cosign' >/dev/null 2>&1 && { echo "test expects no cosign in the container"; exit 1; }
+# shellcheck disable=SC2016 # runs inside the container, expands there
 in_ct 'goarch=amd64; [ "$(uname -m)" = x86_64 ] || goarch=arm64
 	asset=levelrail-linux-$goarch
 	mkdir -p /srv/rel/v9.9.9/good /srv/rel/v9.9.9/tampered
