@@ -334,3 +334,44 @@ func TestRepoParts(t *testing.T) {
 		t.Error("expected error")
 	}
 }
+
+// TestRepoParts_SelfHostedNoOwner covers F-023 (FRICTION.md): a plain git
+// HTTP(S) URL with no owner segment, the shape a self-hosted git server
+// (no forge owner namespace) actually serves, must be accepted, while a
+// known forge host (github.com, gitlab.com, bitbucket.org, codeberg.org)
+// still requires a real owner/repo path since a bare "owner" segment
+// there can never be a real repo.
+func TestRepoParts_SelfHostedNoOwner(t *testing.T) {
+	tests := []struct {
+		name     string
+		raw      string
+		wantURL  string
+		wantRepo string
+		wantErr  bool
+	}{
+		{name: "self-hosted single segment accepted", raw: "https://git.example.com/myrepo.git", wantURL: "https://git.example.com/myrepo", wantRepo: "myrepo"},
+		{name: "self-hosted single segment no .git suffix", raw: "http://127.0.0.1:8080/dogfood-nextjs.git", wantURL: "http://127.0.0.1:8080/dogfood-nextjs", wantRepo: "dogfood-nextjs"},
+		{name: "self-hosted with no path at all is still rejected", raw: "https://git.example.com", wantErr: true},
+		{name: "self-hosted with no path at all, trailing slash", raw: "https://git.example.com/", wantErr: true},
+		{name: "known forge host without owner/repo still rejected", raw: "https://github.com/onlyowner", wantErr: true},
+		{name: "known forge host with owner/repo still works", raw: "https://github.com/acme/web.git", wantURL: "https://github.com/acme/web", wantRepo: "web"},
+		{name: "bitbucket without owner/repo still rejected", raw: "https://bitbucket.org/onlyworkspace", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotURL, gotRepo, err := repoParts(tt.raw)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("repoParts(%q) error = nil, want an error", tt.raw)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("repoParts(%q) error = %v", tt.raw, err)
+			}
+			if gotURL != tt.wantURL || gotRepo != tt.wantRepo {
+				t.Errorf("repoParts(%q) = (%q, %q), want (%q, %q)", tt.raw, gotURL, gotRepo, tt.wantURL, tt.wantRepo)
+			}
+		})
+	}
+}

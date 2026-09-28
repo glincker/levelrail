@@ -26,6 +26,11 @@ var (
 	repoHostRe  = regexp.MustCompile(`^(github\.com|gitlab\.com|bitbucket\.org|codeberg\.org)/[^/\s]+/[^/\s]+`)
 )
 
+// knownForgeHosts are the hosts repoParts requires a real owner/repo path
+// for, the same set repoHostRe names. Any other host (a self-hosted git
+// server) has no such convention to check.
+var knownForgeHosts = map[string]bool{"github.com": true, "gitlab.com": true, "bitbucket.org": true, "codeberg.org": true}
+
 // Deps are the outside effects Plan may use; every field is optional.
 type Deps struct {
 	// Files reads repository files; nil disables repo inspection.
@@ -310,11 +315,34 @@ func repoParts(raw string) (normalized, repo string, err error) {
 	}
 	u.User, u.RawQuery, u.Fragment = nil, "", ""
 	segs := strings.Split(strings.Trim(u.Path, "/"), "/")
-	if len(segs) < 2 || segs[0] == "" || segs[1] == "" {
-		return "", "", fmt.Errorf("importplan: repo URL needs an owner and a repository: %q", raw)
+	host := strings.ToLower(u.Hostname())
+	if segs[0] == "" {
+		// No path at all (e.g. "https://git.example.com"): nothing here
+		// to name the app after.
+		return "", "", fmt.Errorf("importplan: repo URL has no path to name the app after: %q", raw)
 	}
-	last := len(segs) - 1
-	if !strings.Contains(strings.ToLower(u.Hostname()), "gitlab") {
+	if knownForgeHosts[host] && (len(segs) < 2 || segs[1] == "") {
+		// github.com/gitlab.com/bitbucket.org/codeberg.org all require a
+		// real owner/repo path; a bare "github.com/onlyowner" can't be a
+		// real repo there. A self-hosted git server has no such
+		// convention to check, so it falls through to the single-segment
+		// case below instead: see F-023 (FRICTION.md), a plain git HTTP
+		// URL like "https://git.example.com/myrepo.git" with no owner
+		// segment at all.
+		return "", "", fmt.Errorf("importplan: repo URL needs an owner and a repository on %s: %q", host, raw)
+	}
+	// GitLab supports arbitrary-depth subgroups, so its repo is always
+	// the path's last segment. Every other known forge host is a fixed
+	// owner/repo (segs[1]); a self-hosted git server with just one path
+	// segment (no owner namespace) uses that segment directly. This
+	// owner/repo split is best-effort metadata for the suggested app
+	// name, not a hard requirement: any syntactically valid http(s) git
+	// URL that reaches this point gets a plan.
+	last := 0
+	switch {
+	case strings.Contains(host, "gitlab"):
+		last = len(segs) - 1
+	case len(segs) >= 2:
 		last = 1
 	}
 	repo = strings.TrimSuffix(segs[last], ".git")

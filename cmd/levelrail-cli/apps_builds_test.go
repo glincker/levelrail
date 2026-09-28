@@ -84,6 +84,37 @@ func TestRun_AppsBuilds_Trigger_BuildArgs(t *testing.T) {
 	}
 }
 
+// TestRun_AppsBuilds_Trigger_DetectsFramework covers F-018's CLI side
+// for a manual rebuild: "apps builds trigger" runs the same pre-flight
+// framework detection the web wizard runs and forwards the result as
+// detected_framework, so a rebuild triggered from the CLI records a
+// FRAMEWORK value too.
+func TestRun_AppsBuilds_Trigger_DetectsFramework(t *testing.T) {
+	var gotBody buildTriggerRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/v1/build/detect":
+			_, _ = w.Write([]byte(`{"provider":"node","framework_name":"Next.js","detected":true}`))
+		default:
+			_ = json.NewDecoder(r.Body).Decode(&gotBody)
+			w.WriteHeader(http.StatusAccepted)
+			_ = json.NewEncoder(w).Encode(buildTriggerResponse{ID: "deploy_1"})
+		}
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{
+		"apps", "builds", "trigger", "web",
+		"--repo", "https://example.com/org/web.git", "--ref", "main",
+		"--api-url", srv.URL,
+	})
+
+	if gotBody.DetectedFramework != "Next.js" {
+		t.Errorf("request body detected_framework = %q, want %q", gotBody.DetectedFramework, "Next.js")
+	}
+}
+
 func TestRun_AppsBuilds_Trigger_MissingRepo(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"apps", "builds", "trigger", "web", "--ref", "main", "--api-url", "http://unused"}, &stdout, &stderr, envMap())

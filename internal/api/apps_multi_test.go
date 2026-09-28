@@ -394,6 +394,49 @@ func TestHandleDeploySpec_NoServices_Rejected(t *testing.T) {
 	}
 }
 
+// TestHandleDeploySpec_SingleServiceName tables single_service_name's own
+// contract (deploy.MultiRequest.SingleServiceName): accepted and forwarded
+// for exactly one service, rejected outright for more than one.
+func TestHandleDeploySpec_SingleServiceName(t *testing.T) {
+	tests := []struct {
+		name           string
+		body           string
+		wantStatus     int
+		wantSingleName string
+	}{
+		{
+			name:           "forwarded for a single service",
+			body:           `{"repo_url":"https://example.com/x.git","ref":"main","single_service_name":"site","services":{"site":{"build":{"type":"static"}}}}`,
+			wantStatus:     http.StatusCreated,
+			wantSingleName: "site",
+		},
+		{
+			name:       "rejected alongside more than one service",
+			body:       `{"repo_url":"https://example.com/x.git","ref":"main","single_service_name":"site","services":{"web":{"build":{"type":"dockerfile"}},"worker":{"build":{"type":"dockerfile"}}}}`,
+			wantStatus: http.StatusBadRequest,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			builder := &fakeBuilder{tag: "img:sha"}
+			rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))
+			cookie := loginTestSession(t, rt, db)
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", tt.body))
+			if rec.Code != tt.wantStatus {
+				t.Fatalf("status = %d, want %d; body = %s", rec.Code, tt.wantStatus, rec.Body.String())
+			}
+			if tt.wantSingleName == "" {
+				return
+			}
+			if builder.lastMultiReq.SingleServiceName != tt.wantSingleName {
+				t.Errorf("MultiRequest.SingleServiceName = %q, want %q", builder.lastMultiReq.SingleServiceName, tt.wantSingleName)
+			}
+		})
+	}
+}
+
 // TestHandleDeploySpec_SingleServiceDeployStillWorks proves stage 2's
 // fan-out endpoint existing alongside the pre-existing single-service
 // paths (POST /api/v1/apps, POST /api/v1/apps/{name}/builds) doesn't
