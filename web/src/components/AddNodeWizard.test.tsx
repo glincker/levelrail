@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -131,7 +137,11 @@ describe('AddNodeWizard', () => {
     expect(screen.getByText('Hetzner')).toBeVisible()
     const digitalOceanCard = screen.getByText('DigitalOcean').closest('button')
     expect(digitalOceanCard).toBeDisabled()
-    expect(screen.getByText('Connect one')).toBeVisible()
+    expect(
+      digitalOceanCard
+        ? within(digitalOceanCard).getByText('Connect one')
+        : null,
+    ).toBeVisible()
     expect(
       screen.getByRole('button', { name: /I already have a server/ }),
     ).toBeEnabled()
