@@ -3,7 +3,7 @@ import type { Tokens } from 'marked'
 import { stripFrontmatter } from './frontmatter'
 import { resolveDocLink } from './docsLinks'
 import { uniqueSlug } from './slugify'
-import { vitepressContainerExtension } from './vitepressContainers'
+import { escapeHtml, vitepressContainerExtension } from './vitepressContainers'
 import type { DocsManifest } from '../types/docs'
 
 interface RenderState {
@@ -52,6 +52,14 @@ md.use({
           ? ''
           : ' data-internal-doc="true"'
       return `<a href="${resolved.href}"${attrs} class="text-primary underline underline-offset-2 hover:no-underline">${inner}</a>`
+    },
+    code(token: Tokens.Code) {
+      if (token.lang !== 'mermaid') return false
+      // DocsRenderer hydrates this placeholder into an SVG in a useEffect
+      // (mermaid needs a live DOM node); the raw source stays visible
+      // here as a fallback if that render pass never runs.
+      const source = encodeURIComponent(token.text)
+      return `<div class="mermaid-diagram not-prose my-4" data-mermaid-source="${source}"><pre class="overflow-x-auto rounded-lg bg-muted p-3 text-xs">${escapeHtml(token.text)}</pre></div>`
     },
   },
 })

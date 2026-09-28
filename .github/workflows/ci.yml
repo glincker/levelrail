@@ -539,6 +539,10 @@ jobs:
       WEB: ${{ needs.changes.outputs.web }}
       VITEST: ${{ needs.changes.outputs.vitest }}
       BASE: ${{ needs.changes.outputs.base }}
+      # Only this job's build needs a manifest, for the mermaid-chunk
+      # exemption in scripts/check-bundle-size.js; release.yml's build
+      # leaves it unset so nothing extra gets embedded into the binary.
+      BUNDLE_MANIFEST: 'true'
     steps:
       - name: Change detection passed
         if: needs.changes.result != 'success'

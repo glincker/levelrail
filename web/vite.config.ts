@@ -8,6 +8,15 @@ import { docsManifestPlugin } from './vite-plugins/docsManifest.js'
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    // Off by default (including for release.yml's build): the manifest
+    // is only useful to scripts/check-bundle-size.js's mermaid-chunk
+    // exemption, not to the shipped app, and would otherwise get pulled
+    // into the embedded binary by handler.go's `//go:embed all:dist`.
+    // CI's web-check job sets BUNDLE_MANIFEST=true right before running
+    // that check.
+    manifest: process.env.BUNDLE_MANIFEST === 'true',
+  },
   server: {
     // src/lib/docsContent.ts imports ../../../docs/**/*.md; Vite 8 refuses
     // to serve files outside this list, so the Help page 403s without it.

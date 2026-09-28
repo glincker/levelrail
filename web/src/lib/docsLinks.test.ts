@@ -9,16 +9,19 @@ const manifest: DocsManifest = {
       file: 'getting-started.md',
       title: 'Getting started',
       headings: [],
+      body: '',
     },
     '/troubleshooting': {
       file: 'troubleshooting.md',
       title: 'Troubleshooting',
       headings: [],
+      body: '',
     },
     '/design/git-provider-integrations': {
       file: 'design/git-provider-integrations.md',
       title: 'Git provider integrations',
       headings: [],
+      body: '',
     },
   },
 }
