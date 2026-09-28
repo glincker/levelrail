@@ -1,3 +1,7 @@
+---
+description: How the GitHub Actions checks on a pull request are chosen, what they cost, and which ones branch protection relies on.
+---
+
 # CI
 
 How the GitHub Actions checks on a pull request are chosen, what they cost,

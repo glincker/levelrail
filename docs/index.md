@@ -1,5 +1,6 @@
 ---
 layout: home
+description: Push to a git repo, get a running app with TLS, logs, metrics, and rollback. The agent talks to Docker's own Engine API directly, no SSH, no CLI shelling.
 
 hero:
   name: Levelrail

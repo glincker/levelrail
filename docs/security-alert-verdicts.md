@@ -1,3 +1,7 @@
+---
+description: Verdict, evidence, and dismissal command for each code scanning alert open when this page was written.
+---
+
 # Security alert verdicts
 
 Verdict, evidence and dismissal command for each code scanning alert that was open when this page was written. Earlier triage landed in #609 and #717; this page covers what remained.
