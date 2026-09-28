@@ -67,6 +67,8 @@ Picking it opens `BrowseTemplatesFields.tsx`: a searchable, category-grouped gri
 
 Submitting calls the same `useDeployCompose()` mutation, which is the same `POST /api/v1/apps/{name}/compose` request either path makes. There is no template-specific result screen. Success shows one row per deployed service with a link to that service's app page.
 
+The `Starter Kits` category holds seven templates that demonstrate multi-service wiring patterns (a web tier plus a database, a worker plus a queue, a reverse proxy fanning out to two backends) rather than deploying a single known project; see [Starter kit templates](/templates) for the full list and what each one demonstrates.
+
 ## End-to-end integration walkthrough
 
 1. **Browse the catalog**:
