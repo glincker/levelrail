@@ -41,11 +41,24 @@ func TestAzure_ParseCredential_ValidationError(t *testing.T) {
 		`{}`,
 		`{"tenant_id":"t"}`,
 		`{"tenant_id":"t","client_id":"c","client_secret":"s","subscription_id":"sub"}`,
+		// Neither client_secret nor federated_token_file: still invalid.
+		`{"tenant_id":"t","client_id":"c","subscription_id":"sub","resource_group":"rg"}`,
 	}
 	for _, raw := range cases {
 		if _, err := parseAzureCredential(raw); err == nil {
 			t.Errorf("parseAzureCredential(%q): expected an error", raw)
 		}
+	}
+}
+
+func TestAzure_ParseCredential_FederatedTokenFileSatisfiesAuth(t *testing.T) {
+	raw := `{"tenant_id":"t","client_id":"c","federated_token_file":"/var/run/secrets/azure/token","subscription_id":"sub","resource_group":"rg"}`
+	cred, err := parseAzureCredential(raw)
+	if err != nil {
+		t.Fatalf("parseAzureCredential: %v", err)
+	}
+	if cred.FederatedTokenFile != "/var/run/secrets/azure/token" || cred.ClientSecret != "" {
+		t.Errorf("cred = %+v", cred)
 	}
 }
 

@@ -57,6 +57,7 @@ type fakeNodeProvisioner struct {
 	createServerID string
 	createIPAddr   string
 	createErr      error
+	lastCreateOpts provision.CreateOpts
 
 	getStatus provision.ServerStatus
 	getIPAddr string
@@ -81,8 +82,9 @@ func (f *fakeNodeProvisioner) ListSizes(context.Context, string) ([]provision.Si
 	return f.sizes, nil
 }
 
-func (f *fakeNodeProvisioner) CreateServer(context.Context, provision.CreateOpts) (string, string, error) {
+func (f *fakeNodeProvisioner) CreateServer(_ context.Context, opts provision.CreateOpts) (string, string, error) {
 	f.createCalls++
+	f.lastCreateOpts = opts
 	return f.createServerID, f.createIPAddr, f.createErr
 }
 
@@ -129,6 +131,9 @@ func TestHandleListNodeProviders(t *testing.T) {
 		if p.Provider == "digitalocean" && p.HasToken {
 			t.Errorf("digitalocean HasToken = true, want false")
 		}
+		if p.Provider == "aws" && p.HasToken {
+			t.Errorf("aws HasToken = true, want false")
+		}
 	}
 }
 
@@ -153,9 +158,57 @@ func TestHandleSetNodeProviderCredential_UnknownProvider(t *testing.T) {
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/node-providers", `{"provider":"aws","token":"secret"}`))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/node-providers", `{"provider":"linode","token":"secret"}`))
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("status = %d, want 400", rec.Code)
+	}
+}
+
+func TestHandleSetNodeProviderCredential_AWS(t *testing.T) {
+	secrets := newFakeNodeProviderSecrets()
+	rt, db := newTestRouterWithNodeProvisioning(t, secrets, &fakeNodeProvisioner{})
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"provider":"aws","token":"AKIA...","secret_access_key":"shh","region":"eu-west-1"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/node-providers", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	stored, err := secrets.Resolve(context.Background(), store.NodeProviderSecretsKey("aws"), store.NodeProviderTokenEnvKey)
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	var creds provision.AWSCredentials
+	if err := json.Unmarshal([]byte(stored), &creds); err != nil {
+		t.Fatalf("stored value is not aws credentials json: %v", err)
+	}
+	if creds.AccessKeyID != "AKIA..." || creds.SecretAccessKey != "shh" || creds.Region != "eu-west-1" {
+		t.Errorf("creds = %+v", creds)
+	}
+}
+
+func TestHandleSetNodeProviderCredential_AWS_MissingSecretAccessKey(t *testing.T) {
+	rt, db := newTestRouterWithNodeProvisioning(t, newFakeNodeProviderSecrets(), &fakeNodeProvisioner{})
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/node-providers", `{"provider":"aws","token":"AKIA..."}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", rec.Code)
+	}
+}
+
+func TestHandleSetNodeProviderCredential_AWS_AmbientCredentialsSkipsKeyCheck(t *testing.T) {
+	secrets := newFakeNodeProviderSecrets()
+	rt, db := newTestRouterWithNodeProvisioning(t, secrets, &fakeNodeProvisioner{})
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"provider":"aws","use_ambient_credentials":true,"role_arn":"arn:aws:iam::123456789012:role/example-provisioner"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/node-providers", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
 }
 
@@ -248,6 +301,24 @@ func TestHandleCreateNodeProvision(t *testing.T) {
 	}
 }
 
+func TestHandleCreateNodeProvision_PassesAllowSSHInboundThrough(t *testing.T) {
+	secrets := newFakeNodeProviderSecrets()
+	_ = secrets.SetValue(context.Background(), store.NodeProviderSecretsKey("aws"), store.NodeProviderTokenEnvKey, "tok")
+	fake := &fakeNodeProvisioner{createServerID: "i-1", createIPAddr: "1.2.3.4"}
+	rt, db := newTestRouterWithNodeProvisioning(t, secrets, fake)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"provider":"aws","region":"us-east-1","size":"t3.small","name":"web-2","control_plane_addr":"cp.example.com:9443","allow_ssh_inbound":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/provision", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if !fake.lastCreateOpts.AllowSSHInbound {
+		t.Error("CreateOpts.AllowSSHInbound = false, want true when allow_ssh_inbound is set in the request")
+	}
+}
+
 func TestHandleCreateNodeProvision_ValidationErrors(t *testing.T) {
 	secrets := newFakeNodeProviderSecrets()
 	_ = secrets.SetValue(context.Background(), store.NodeProviderSecretsKey("hetzner"), store.NodeProviderTokenEnvKey, "tok")
@@ -258,7 +329,7 @@ func TestHandleCreateNodeProvision_ValidationErrors(t *testing.T) {
 		name string
 		body string
 	}{
-		{"unknown provider", `{"provider":"aws","region":"r","size":"s","name":"web-1","control_plane_addr":"cp:9443"}`},
+		{"unknown provider", `{"provider":"linode","region":"r","size":"s","name":"web-1","control_plane_addr":"cp:9443"}`},
 		{"missing region", `{"provider":"hetzner","size":"s","name":"web-1","control_plane_addr":"cp:9443"}`},
 		{"missing control plane addr", `{"provider":"hetzner","region":"r","size":"s","name":"web-1"}`},
 		{"invalid name", `{"provider":"hetzner","region":"r","size":"s","name":"Web_1","control_plane_addr":"cp:9443"}`},
