@@ -285,13 +285,14 @@ func TestRestartTracker_Run_ResolvesAndTracksRealEvents(t *testing.T) {
 // history, and a record of every SaveDesiredService/SaveDeployAttempt
 // call so a test can assert whether a rollback was actually triggered.
 type fakeAutoRollbackStore struct {
-	svc           store.DesiredService
-	getErr        error
-	attempts      []store.DeployAttempt
-	listErr       error
-	savedServices []store.DesiredService
-	savedAttempts []store.DeployAttempt
-	finishedIDs   []string
+	svc            store.DesiredService
+	getErr         error
+	attempts       []store.DeployAttempt
+	listErr        error
+	saveAttemptErr error
+	savedServices  []store.DesiredService
+	savedAttempts  []store.DeployAttempt
+	finishedIDs    []string
 }
 
 func (f *fakeAutoRollbackStore) GetDesiredService(_ context.Context, _ string) (*store.DesiredService, error) {
@@ -326,6 +327,9 @@ func (f *fakeAutoRollbackStore) SaveDesiredService(_ context.Context, svc store.
 // store.
 func (f *fakeAutoRollbackStore) SaveDeployAttempt(_ context.Context, a store.DeployAttempt) error {
 	f.savedAttempts = append(f.savedAttempts, a)
+	if f.saveAttemptErr != nil {
+		return f.saveAttemptErr
+	}
 	f.attempts = append([]store.DeployAttempt{a}, f.attempts...)
 	return nil
 }
@@ -365,6 +369,37 @@ func TestMaybeAutoRollback_Enabled_RollsBackToPreviousImage(t *testing.T) {
 	}
 	if nudger.calls != 1 {
 		t.Errorf("nudger.calls = %d, want 1", nudger.calls)
+	}
+}
+
+// TestMaybeAutoRollback_AttemptRecordFails_DesiredStateStillMovesAndTrackerStillRecords
+// covers the half-succeeded case: recordImageDeployAttempt
+// (internal/deploy/rollback.go) only logs a SaveDeployAttempt failure, it
+// never fails Deploy, because the desired-state write already landed by
+// that point. MaybeAutoRollback must still nudge the reconciler and mark
+// the incident handled, exactly as if the attempt record had saved fine.
+func TestMaybeAutoRollback_AttemptRecordFails_DesiredStateStillMovesAndTrackerStillRecords(t *testing.T) {
+	st := &fakeAutoRollbackStore{
+		svc: store.DesiredService{Name: "web", Image: "web:v3", AutoRollbackOnCrashloop: true},
+		attempts: []store.DeployAttempt{
+			{Image: "web:v3", Status: store.DeployAttemptStatusSucceeded},
+			{Image: "web:v2", Status: store.DeployAttemptStatusSucceeded},
+		},
+		saveAttemptErr: errors.New("db unavailable"),
+	}
+	nudger := &fakeAutoRollbackNudger{}
+	tracker := NewAutoRollbackTracker()
+
+	MaybeAutoRollback(context.Background(), st, nudger, tracker, "service:web", nil)
+
+	if len(st.savedServices) != 1 || st.savedServices[0].Image != "web:v2" {
+		t.Fatalf("savedServices = %+v, want one save with image web:v2 despite the attempt-record failure", st.savedServices)
+	}
+	if nudger.calls != 1 {
+		t.Errorf("nudger.calls = %d, want 1: desired state landed, the reconciler must still be nudged", nudger.calls)
+	}
+	if !tracker.alreadyHandled("service:web", "web:v2") {
+		t.Error("tracker did not record the rollback: a retry on the next tick would fire again for the same incident")
 	}
 }
 
