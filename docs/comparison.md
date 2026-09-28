@@ -1,6 +1,6 @@
 ---
 title: vs Coolify, Dokploy, CapRover, Dokku, and Kamal
-description: An honest comparison of Levelrail with Coolify, Dokploy, CapRover, Dokku, and Kamal: architecture, what each is good at, and what Levelrail ships without a paywall.
+description: "An honest comparison of Levelrail with Coolify, Dokploy, CapRover, Dokku, and Kamal: architecture, what each is good at, and what Levelrail ships without a paywall."
 ---
 
 # Comparison
