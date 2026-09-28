@@ -20,6 +20,7 @@ import {
   MagnifyingGlassIcon,
   PackageIcon,
   PlayCircleIcon,
+  RocketLaunchIcon,
   ShieldCheckIcon,
   SparkleIcon,
   SquaresFourIcon,
@@ -86,6 +87,7 @@ const CATEGORY_ICONS: Record<string, Icon> = {
   Productivity: CheckSquareIcon,
   Security: ShieldCheckIcon,
   Storage: HardDrivesIcon,
+  'Starter Kits': RocketLaunchIcon,
 }
 
 function matchesSearch(

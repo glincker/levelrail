@@ -62,6 +62,7 @@ const sidebarGroups = [
       { text: 'Backups and storage', link: '/backups-and-storage' },
       { text: 'Object storage', link: '/object-storage' },
       { text: 'Templates and registry', link: '/templates-and-registry' },
+      { text: 'Starter kit templates', link: '/templates' },
     ],
   },
   {
