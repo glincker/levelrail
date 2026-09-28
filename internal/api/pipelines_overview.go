@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/pipeline"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -29,8 +30,22 @@ const (
 )
 
 var (
-	overviewStatuses = map[string]bool{"running": true, "failed": true, "succeeded": true, "cancelled": true, "waiting_approval": true, "held": true}
-	overviewTriggers = map[string]bool{"push": true, "pull_request": true, "tag": true, "manual": true, "schedule": true, "api": true}
+	overviewStatuses = map[string]bool{
+		store.PipelineStatusRunning:         true,
+		store.PipelineStatusFailed:          true,
+		store.PipelineStatusSucceeded:       true,
+		store.PipelineStatusCancelled:       true,
+		store.PipelineStatusWaitingApproval: true,
+		store.PipelineFilterHeld:            true,
+	}
+	overviewTriggers = map[string]bool{
+		pipeline.TriggerPush:        true,
+		pipeline.TriggerPullRequest: true,
+		pipeline.TriggerTag:         true,
+		pipeline.TriggerManual:      true,
+		pipeline.TriggerSchedule:    true,
+		pipeline.TriggerAPI:         true,
+	}
 )
 
 type pipelineRunRowResource struct {
