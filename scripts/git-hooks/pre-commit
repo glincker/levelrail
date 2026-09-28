@@ -50,7 +50,8 @@ fi
 
 echo "pre-commit: golangci-lint"
 if command -v golangci-lint >/dev/null; then
-	if ! golangci-lint run ./...; then
+	# Per-worktree cache: avoids phantom issues from other worktrees.
+	if ! GOLANGCI_LINT_CACHE="$(git rev-parse --absolute-git-dir)/golangci-lint-cache" golangci-lint run ./...; then
 		fail=1
 	fi
 else
