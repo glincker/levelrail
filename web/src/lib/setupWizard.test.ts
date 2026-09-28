@@ -64,7 +64,11 @@ describe('resumeStep', () => {
     {
       name: 'unknown saved step falls back to first unfinished',
       current: 'billing',
-      steps: { server: 'completed' as const, domain: 'skipped' as const },
+      steps: {
+        server: 'completed' as const,
+        topology: 'skipped' as const,
+        domain: 'skipped' as const,
+      },
       want: 'git',
     },
     {
@@ -72,6 +76,7 @@ describe('resumeStep', () => {
       current: '',
       steps: {
         server: 'completed' as const,
+        topology: 'skipped' as const,
         domain: 'skipped' as const,
         git: 'skipped' as const,
         app: 'completed' as const,
@@ -84,7 +89,8 @@ describe('resumeStep', () => {
   })
 
   it('nextStep advances and stops at done', () => {
-    expect(nextStep('server')).toBe('domain')
+    expect(nextStep('server')).toBe('topology')
+    expect(nextStep('topology')).toBe('domain')
     expect(nextStep('app')).toBe('done')
     expect(nextStep('done')).toBe('done')
   })

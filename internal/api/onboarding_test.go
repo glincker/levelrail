@@ -103,6 +103,26 @@ func TestHandleUpdateOnboardingProgress(t *testing.T) {
 	}
 }
 
+func TestHandleUpdateOnboardingProgress_AcceptsTopologyStep(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"current_step":"topology","steps":{"server":"completed","topology":"skipped"}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/onboarding/progress", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got onboardingStateResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.CurrentStep != "topology" || got.Steps["topology"] != "skipped" {
+		t.Errorf("state = %+v, want current_step topology, steps.topology skipped", got)
+	}
+}
+
 func TestHandleUpdateOnboardingProgress_Validation(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

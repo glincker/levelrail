@@ -33,55 +33,46 @@ type NodeInfo struct {
 	Online bool
 }
 
-// ErrNoBuildNodeAvailable is returned by SelectBuildNode when at least
-// one node is marked AcceptsBuildWorkloads but none of them is
-// currently Online. This is distinct from "no node was ever configured
-// as build-capable at all", which is not an error (SelectBuildNode
-// returns "" for the control plane's own local node in that case): an
-// operator who deliberately dedicated capacity to builds almost
-// certainly does not want a deploy to silently fall back onto the
-// control plane's own resources the moment that capacity blips offline.
-// That surprise is worse than a clear, loud failure a caller can retry
-// or alert on.
+// ErrNoBuildNodeAvailable is no longer returned by SelectBuildNode: the
+// build-node-routing initiative made falling back to the local node the
+// default instead (SelectBuildNode's own doc comment). Kept as an
+// exported sentinel in case anything outside this package still
+// references it.
 var ErrNoBuildNodeAvailable = errors.New("build: no build-capable node is currently online")
 
 // SelectBuildNode picks which node a build should run on, given every
-// known node.
+// known node. AcceptsBuildWorkloads is a routing preference, not a hard
+// requirement: a build is never failed just because the node an operator
+// would rather use is unavailable right now.
 //
 //   - No node in nodes has AcceptsBuildWorkloads set: returns "" (this
-//     control plane's own local node) and a nil error. This is the
-//     default, zero-configuration behavior every deployment already had
-//     before dedicated build nodes, matching the "" == local convention
-//     migrations/0009_node_placement.sql established for service and
-//     database placement: an operator who has never configured a
-//     dedicated build node keeps building locally, unchanged.
-//   - At least one node has AcceptsBuildWorkloads set: the Online one
-//     with the lexicographically smallest ID is selected, a
+//     control plane's own local node), matching the "" == local
+//     convention migrations/0009_node_placement.sql established for
+//     service and database placement. This is also what a single-node
+//     deployment sees unchanged.
+//   - At least one node has AcceptsBuildWorkloads set and is Online: the
+//     Online one with the lexicographically smallest ID is selected, a
 //     deterministic, easy-to-reason-about tie-break rather than
 //     anything load-aware; real load-based scheduling is explicitly out
 //     of scope, this project's stated non-goal against building a
 //     scheduler with bin-packing, affinity rules, or autoscaling in v1,
 //     and this is the build-node equivalent of that same non-goal.
 //   - At least one node has AcceptsBuildWorkloads set but none is
-//     Online: returns ErrNoBuildNodeAvailable rather than silently
-//     falling back to the local node; see the sentinel's own doc
-//     comment for why.
-func SelectBuildNode(nodes []NodeInfo) (string, error) {
+//     Online: falls back to "" (local) rather than failing the build,
+//     since a build routing preference blipping offline should never be
+//     the reason a deploy fails.
+func SelectBuildNode(nodes []NodeInfo) string {
 	candidates := make([]NodeInfo, 0, len(nodes))
 	for _, n := range nodes {
 		if n.AcceptsBuildWorkloads {
 			candidates = append(candidates, n)
 		}
 	}
-	if len(candidates) == 0 {
-		return "", nil
-	}
-
 	sort.Slice(candidates, func(i, j int) bool { return candidates[i].ID < candidates[j].ID })
 	for _, n := range candidates {
 		if n.Online {
-			return n.ID, nil
+			return n.ID
 		}
 	}
-	return "", ErrNoBuildNodeAvailable
+	return ""
 }
