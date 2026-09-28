@@ -114,6 +114,7 @@ func TestDetectUnchecked(t *testing.T) {
 		wantFramework string
 	}{
 		{name: "node", fixture: "testdata/railpack-node", wantProvider: "node", wantFramework: "Node.js"},
+		{name: "next.js app router", fixture: "testdata/railpack-nextjs", wantProvider: "node", wantFramework: "Next.js"},
 		{name: "go", fixture: "testdata/railpack-go", wantProvider: "golang", wantFramework: "Go"},
 		{name: "python", fixture: "testdata/railpack-python", wantProvider: "python", wantFramework: "Python (Django)"},
 		// Railpack itself detects a real provider here (ruby), just one
@@ -144,6 +145,33 @@ func TestDetectUnchecked_NonexistentRemote(t *testing.T) {
 	_, err := detectUnchecked(context.Background(), DetectRequest{RepoURL: filepath.Join(t.TempDir(), "does-not-exist")})
 	if err == nil {
 		t.Fatal("detectUnchecked() error = nil, want a clone error for a nonexistent remote")
+	}
+}
+
+func TestNextJSLabel(t *testing.T) {
+	tests := []struct {
+		name    string
+		pkgJSON string // empty means no package.json is written at all
+		want    string
+	}{
+		{name: "next dependency", pkgJSON: `{"dependencies":{"next":"15.5.0"}}`, want: "Next.js"},
+		{name: "next devDependency", pkgJSON: `{"devDependencies":{"next":"15.5.0"}}`, want: "Next.js"},
+		{name: "no next dependency", pkgJSON: `{"dependencies":{"express":"4.19.0"}}`, want: ""},
+		{name: "missing package.json", pkgJSON: "", want: ""},
+		{name: "malformed package.json", pkgJSON: `{not json`, want: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if tt.pkgJSON != "" {
+				if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte(tt.pkgJSON), 0o600); err != nil {
+					t.Fatalf("write package.json: %v", err)
+				}
+			}
+			if got := nextJSLabel(dir); got != tt.want {
+				t.Errorf("nextJSLabel() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 

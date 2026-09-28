@@ -256,6 +256,10 @@ type BuildTriggerRequest struct {
 	Ref       string                   `json:"ref"`
 	ImageRepo string                   `json:"image_repo,omitempty"`
 	Build     BuildTriggerRequestBuild `json:"build,omitempty"`
+	// DetectedFramework mirrors triggerBuildRequest.DetectedFramework: the
+	// human-readable framework name a prior DetectFramework call reported
+	// for this exact repo/ref, stored on the resulting deploy_attempts row.
+	DetectedFramework string `json:"detected_framework,omitempty"`
 }
 
 // BuildTriggerRequestBuild is BuildTriggerRequest's nested build.* input

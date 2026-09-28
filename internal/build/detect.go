@@ -2,6 +2,7 @@ package build
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -158,7 +159,39 @@ func detectUnchecked(ctx context.Context, req DetectRequest) (*DetectResult, err
 
 	provider := result.DetectedProviders[0]
 	frameworkName, _ := FrameworkLabel(provider)
+	if provider == "node" {
+		if label := nextJSLabel(dir); label != "" {
+			frameworkName = label
+		}
+	}
 	return &DetectResult{Provider: provider, FrameworkName: frameworkName}, nil
+}
+
+// nextJSLabel reports "Next.js" when dir's package.json declares "next" as
+// a dependency, refining Railpack's generic "node" provider id: Railpack
+// itself has no framework granularity below the provider level, so a
+// Next.js app (App Router or Pages Router alike) otherwise reports as the
+// same plain "Node.js" any other Node project would. Empty for anything
+// else, including an unreadable or malformed package.json.
+func nextJSLabel(dir string) string {
+	raw, err := os.ReadFile(filepath.Join(dir, "package.json")) //nolint:gosec // dir is this call's own freshly cloned temp checkout, not user input
+	if err != nil {
+		return ""
+	}
+	var pkg struct {
+		Dependencies    map[string]string `json:"dependencies"`
+		DevDependencies map[string]string `json:"devDependencies"`
+	}
+	if err := json.Unmarshal(raw, &pkg); err != nil {
+		return ""
+	}
+	if _, ok := pkg.Dependencies["next"]; ok {
+		return "Next.js"
+	}
+	if _, ok := pkg.DevDependencies["next"]; ok {
+		return "Next.js"
+	}
+	return ""
 }
 
 // dirSize sums file sizes under dir, stopping as soon as the running
