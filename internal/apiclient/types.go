@@ -2127,6 +2127,15 @@ type SystemDoctorResource struct {
 	Checks []DoctorCheckResource `json:"checks"`
 }
 
+// PipelineOIDCResource mirrors internal/api's oidcInfoResource: whether
+// pipeline jobs can mint OIDC tokens on this control plane, and the URLs
+// an operator wires into a cloud provider's OIDC trust policy.
+type PipelineOIDCResource struct {
+	Configured bool   `json:"configured"`
+	IssuerURL  string `json:"issuer_url,omitempty"`
+	JWKSURL    string `json:"jwks_url,omitempty"`
+}
+
 // ControlPlaneBackup mirrors internal/cpbackup.Info: one control plane
 // database snapshot.
 type ControlPlaneBackup struct {

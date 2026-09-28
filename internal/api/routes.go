@@ -13,6 +13,7 @@ func (rt *Router) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", rt.handleHealthz)
 	mux.HandleFunc("GET /readyz", rt.handleReadyz)
+	mux.HandleFunc("GET /.well-known/jwks.json", rt.handleOIDCJWKS)
 	rt.registerCoreRoutes(mux)
 	rt.registerPlatformRoutes(mux)
 	rt.registerStorageRoutes(mux)

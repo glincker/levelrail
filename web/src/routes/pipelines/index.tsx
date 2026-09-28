@@ -4,6 +4,7 @@ import { TreeStructureIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PipelineAttentionStrip } from '../../components/PipelineAttentionStrip'
+import { PipelineOIDCCard } from '../../components/PipelineOIDCCard'
 import { PipelineOverviewFilters } from '../../components/PipelineOverviewFilters'
 import { PipelineOverviewTable } from '../../components/PipelineOverviewTable'
 import { PipelineSummaryTiles } from '../../components/PipelineSummaryTiles'
@@ -42,6 +43,7 @@ function PipelinesPage() {
         <PipelinesEmptyState />
       ) : (
         <>
+          <PipelineOIDCCard />
           <PipelineSummaryTiles />
           <PipelineAttentionStrip />
           <PipelineOverviewFilters filters={filters} onChange={setFilters} />

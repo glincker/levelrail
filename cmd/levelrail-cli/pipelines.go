@@ -45,6 +45,7 @@ func pipelinesUsage(prog string) string {
   %[1]s pipelines approve <app> <run-id> [--reject] [--comment TEXT] [--approval ID] [flags]   decide approval gates, or release a run held for approval
   %[1]s pipelines sync <app> [--repo-truth=true|false] [flags]   sync pipeline files from the repository now, or set repository as source of truth
   %[1]s pipelines triggers <app> [flags]                   why recent git events did or did not start runs
+  %[1]s pipelines oidc [flags]                             whether pipeline jobs can mint OIDC tokens, and the JWKS URL to wire to a cloud provider
 
 Pipelines live in the control plane per app, or in the repository under a
 pipeline directory. Run "%[1]s pipelines <subcommand> -h" for its flags.
@@ -83,6 +84,8 @@ func runPipelines(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runPipelinesSync(prog, rest, stdout, stderr, lookupEnv)
 	case "triggers":
 		return runPipelinesTriggers(prog, rest, stdout, stderr, lookupEnv)
+	case "oidc":
+		return runPipelinesOIDC(prog, rest, stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "%s: unknown pipelines subcommand %q\n\n%s", prog, args[0], pipelinesUsage(prog))
 	return exitUsage

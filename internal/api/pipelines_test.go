@@ -75,6 +75,7 @@ func TestPipelineRoutes_RequireAuth(t *testing.T) {
 		{http.MethodPost, "/api/v1/pipelines/validate"},
 		{http.MethodPost, "/api/v1/pipelines/filters"},
 		{http.MethodGet, "/api/v1/pipelines/schema"},
+		{http.MethodGet, "/api/v1/pipelines/oidc"},
 	})
 }
 
