@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { PageSpinner } from '@/components/ui/page-spinner'
 import { DocsRenderer } from '../../components/DocsRenderer'
+import { DocsPageToolbar } from '../../components/DocsPageToolbar'
 import { loadDocContent } from '../../lib/docsContent'
 import { loadDocsManifest } from '../../lib/docsManifestLoader'
 import { useBrand } from '../../hooks/useBrand'
@@ -44,11 +45,18 @@ function HelpDocPage() {
   }
 
   return (
-    <DocsRenderer
-      markdown={content}
-      currentFile={page.file}
-      manifest={manifest}
-      docsBaseUrl={brand.DocsURL}
-    />
+    <>
+      <DocsPageToolbar
+        markdown={content}
+        file={page.file}
+        routePath={routePath}
+      />
+      <DocsRenderer
+        markdown={content}
+        currentFile={page.file}
+        manifest={manifest}
+        docsBaseUrl={brand.DocsURL}
+      />
+    </>
   )
 }
