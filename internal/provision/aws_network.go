@@ -23,6 +23,7 @@ type ec2API interface {
 	DescribeSecurityGroups(ctx context.Context, in *ec2.DescribeSecurityGroupsInput, optFns ...func(*ec2.Options)) (*ec2.DescribeSecurityGroupsOutput, error)
 	CreateSecurityGroup(ctx context.Context, in *ec2.CreateSecurityGroupInput, optFns ...func(*ec2.Options)) (*ec2.CreateSecurityGroupOutput, error)
 	AuthorizeSecurityGroupIngress(ctx context.Context, in *ec2.AuthorizeSecurityGroupIngressInput, optFns ...func(*ec2.Options)) (*ec2.AuthorizeSecurityGroupIngressOutput, error)
+	RevokeSecurityGroupIngress(ctx context.Context, in *ec2.RevokeSecurityGroupIngressInput, optFns ...func(*ec2.Options)) (*ec2.RevokeSecurityGroupIngressOutput, error)
 	DeleteSecurityGroup(ctx context.Context, in *ec2.DeleteSecurityGroupInput, optFns ...func(*ec2.Options)) (*ec2.DeleteSecurityGroupOutput, error)
 	RunInstances(ctx context.Context, in *ec2.RunInstancesInput, optFns ...func(*ec2.Options)) (*ec2.RunInstancesOutput, error)
 	DescribeInstances(ctx context.Context, in *ec2.DescribeInstancesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
@@ -204,7 +205,11 @@ func ensureSecurityGroup(ctx context.Context, client ec2API, vpcID, shortName st
 		return "", fmt.Errorf("describe security groups: %w", err)
 	}
 	if len(describeOut.SecurityGroups) > 0 {
-		return aws.ToString(describeOut.SecurityGroups[0].GroupId), nil
+		sg := describeOut.SecurityGroups[0]
+		if err := revokeUnexpectedIngress(ctx, client, sg); err != nil {
+			return "", err
+		}
+		return aws.ToString(sg.GroupId), nil
 	}
 	createOut, err := client.CreateSecurityGroup(ctx, &ec2.CreateSecurityGroupInput{
 		GroupName:   aws.String(name),
@@ -219,6 +224,25 @@ func ensureSecurityGroup(ctx context.Context, client ec2API, vpcID, shortName st
 		return "", fmt.Errorf("create security group: %w", err)
 	}
 	return aws.ToString(createOut.GroupId), nil
+}
+
+// revokeUnexpectedIngress keeps a reused shared security group converged on
+// ensureSecurityGroup's own "no inbound ports" invariant: if an operator
+// (or anything else) has added ingress rules to a group with the derived
+// name, reusing it as-is would silently attach those rules to every future
+// node. Revoking on reuse, not just on creation, is what a level-triggered
+// reconciler does with any other drifted resource.
+func revokeUnexpectedIngress(ctx context.Context, client ec2API, sg types.SecurityGroup) error {
+	if len(sg.IpPermissions) == 0 {
+		return nil
+	}
+	if _, err := client.RevokeSecurityGroupIngress(ctx, &ec2.RevokeSecurityGroupIngressInput{
+		GroupId:       sg.GroupId,
+		IpPermissions: sg.IpPermissions,
+	}); err != nil {
+		return fmt.Errorf("revoke unexpected ingress on reused security group %q: %w", aws.ToString(sg.GroupId), err)
+	}
+	return nil
 }
 
 // awsDedicatedSecurityGroupTagKey marks a security group as created

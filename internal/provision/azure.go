@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -227,17 +228,51 @@ func (a *Azure) CreateServer(ctx context.Context, opts CreateOpts) (serverID, ip
 	}
 	nicID, err := a.createNIC(ctx, opts.Region, opts.Name, subnetID, pipID)
 	if err != nil {
+		a.rollbackPublicIP(ctx, opts.Name)
 		return "", "", err
 	}
 	if err := a.createVM(ctx, opts, nicID); err != nil {
+		a.rollbackNIC(ctx, opts.Name)
+		a.rollbackPublicIP(ctx, opts.Name)
 		return "", "", err
 	}
 	return opts.Name, pipAddr, nil
 }
 
+// rollbackPublicIP and rollbackNIC delete a public IP or NIC CreateServer
+// already created once a later step fails: without this, a partial create
+// leaves an untracked, billable public IP behind (DeleteServer only ever
+// targets a VM, which was never created in this case). Best-effort and
+// silent, the same reasoning cleanupDedicatedSecurityGroups (aws_network.go)
+// gives for its own post-failure cleanup; context.WithoutCancel so a
+// timeout or cancellation on the failing step's own ctx doesn't also skip
+// this cleanup call.
+func (a *Azure) rollbackPublicIP(ctx context.Context, name string) {
+	path := a.rgPath(fmt.Sprintf("/providers/Microsoft.Network/publicIPAddresses/%s-pip?api-version=%s", name, azureAPIVersionNetwork))
+	_ = a.client.do(context.WithoutCancel(ctx), http.MethodDelete, path, nil, nil)
+}
+
+func (a *Azure) rollbackNIC(ctx context.Context, name string) {
+	path := a.rgPath(fmt.Sprintf("/providers/Microsoft.Network/networkInterfaces/%s-nic?api-version=%s", name, azureAPIVersionNetwork))
+	_ = a.client.do(context.WithoutCancel(ctx), http.MethodDelete, path, nil, nil)
+}
+
+// ensureResourceGroup checks for the resource group before creating it: a
+// PUT unconditionally, as this used to do, asks Azure to move an existing
+// group to location if it already lives elsewhere, which Azure rejects,
+// failing provisioning even though the documented setup only requires the
+// group to exist, not to be in this particular region.
 func (a *Azure) ensureResourceGroup(ctx context.Context, location string) error {
-	body := map[string]any{"location": location}
 	path := fmt.Sprintf("/subscriptions/%s/resourcegroups/%s?api-version=%s", a.subscriptionID, a.resourceGroup, azureAPIVersionResources)
+	getErr := a.client.do(ctx, http.MethodGet, path, nil, nil)
+	if getErr == nil {
+		return nil
+	}
+	var perr *ProviderError
+	if !errors.As(getErr, &perr) || perr.Status != http.StatusNotFound {
+		return fmt.Errorf("provision: azure ensure resource group: %w", getErr)
+	}
+	body := map[string]any{"location": location}
 	if err := a.client.do(ctx, http.MethodPut, path, body, nil); err != nil {
 		return fmt.Errorf("provision: azure ensure resource group: %w", err)
 	}

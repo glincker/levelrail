@@ -114,6 +114,7 @@ func TestAzure_ListSizes_RequiresRegion(t *testing.T) {
 
 func TestAzure_CreateServer(t *testing.T) {
 	var methods, paths []string
+	rgCalls := 0
 	a := newTestAzure(t, func(w http.ResponseWriter, r *http.Request) {
 		methods = append(methods, r.Method)
 		paths = append(paths, r.URL.Path)
@@ -134,6 +135,13 @@ func TestAzure_CreateServer(t *testing.T) {
 		case strings.Contains(r.URL.Path, "/virtualMachines/"):
 			_ = json.NewEncoder(w).Encode(map[string]any{"properties": map[string]any{"provisioningState": "Creating"}})
 		case strings.Contains(r.URL.Path, "/resourcegroups/"):
+			rgCalls++
+			if r.Method == http.MethodGet {
+				// Not found yet: ensureResourceGroup must fall through to
+				// a PUT to create it.
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 			w.WriteHeader(http.StatusOK)
 		default:
 			t.Errorf("unexpected path %q", r.URL.Path)
@@ -149,13 +157,147 @@ func TestAzure_CreateServer(t *testing.T) {
 	if id != "build-1" || ip != "20.1.2.3" {
 		t.Errorf("id=%q ip=%q", id, ip)
 	}
-	if len(paths) != 5 {
-		t.Fatalf("made %d calls, want 5 (resource group, vnet, public ip, nic, vm): %v", len(paths), paths)
+	if rgCalls != 2 {
+		t.Errorf("resource group calls = %d, want 2 (GET then PUT, group didn't exist yet)", rgCalls)
 	}
-	for _, m := range methods {
-		if m != http.MethodPut {
-			t.Errorf("method = %s, want PUT for every create call", m)
+	if len(paths) != 6 {
+		t.Fatalf("made %d calls, want 6 (resource group GET+PUT, vnet, public ip, nic, vm): %v", len(paths), paths)
+	}
+	for i, p := range paths {
+		if strings.Contains(p, "/resourcegroups/") {
+			continue
 		}
+		if methods[i] != http.MethodPut {
+			t.Errorf("method for %s = %s, want PUT", p, methods[i])
+		}
+	}
+}
+
+// TestAzure_CreateServer_ExistingResourceGroupNotRelocated covers the fix
+// for ensureResourceGroup unconditionally PUTing the resource group even
+// when it already exists in a different Azure location than the one being
+// provisioned into: Azure rejects that as an attempted relocation, so
+// CreateServer must not attempt it once the group is confirmed to exist.
+func TestAzure_CreateServer_ExistingResourceGroupNotRelocated(t *testing.T) {
+	rgPUTCalls := 0
+	a := newTestAzure(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.Path, "/resourcegroups/"):
+			if r.Method == http.MethodPut {
+				rgPUTCalls++
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"location": "westeurope"})
+		case strings.Contains(r.URL.Path, "/virtualNetworks/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"properties": map[string]any{"subnets": []map[string]any{{"id": "/subnets/default"}}},
+			})
+		case strings.Contains(r.URL.Path, "/publicIPAddresses/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id": "/pips/build-1-pip", "properties": map[string]any{"ipAddress": "20.1.2.3"},
+			})
+		case strings.Contains(r.URL.Path, "/networkInterfaces/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"id": "/nics/build-1-nic"})
+		case strings.Contains(r.URL.Path, "/virtualMachines/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"properties": map[string]any{"provisioningState": "Creating"}})
+		default:
+			t.Errorf("unexpected path %q", r.URL.Path)
+		}
+	})
+
+	if _, _, err := a.CreateServer(context.Background(), CreateOpts{
+		Name: "build-1", Region: "eastus", Size: "Standard_B1s", UserData: "x",
+	}); err != nil {
+		t.Fatalf("CreateServer: %v (an existing group in a different region must not block creation)", err)
+	}
+	if rgPUTCalls != 0 {
+		t.Errorf("rgPUTCalls = %d, want 0 (must not attempt to relocate an existing resource group)", rgPUTCalls)
+	}
+}
+
+// TestAzure_CreateServer_NICFailureRollsBackPublicIP covers the fix for a
+// partial Azure create leaving an untracked, billable public IP: if NIC
+// creation fails after the public IP was already created, CreateServer
+// must delete that public IP before returning.
+func TestAzure_CreateServer_NICFailureRollsBackPublicIP(t *testing.T) {
+	pipDeleteCalls := 0
+	a := newTestAzure(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.Path, "/resourcegroups/"):
+			w.WriteHeader(http.StatusOK)
+		case strings.Contains(r.URL.Path, "/virtualNetworks/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"properties": map[string]any{"subnets": []map[string]any{{"id": "/subnets/default"}}},
+			})
+		case strings.Contains(r.URL.Path, "/publicIPAddresses/"):
+			if r.Method == http.MethodDelete {
+				pipDeleteCalls++
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id": "/pips/build-1-pip", "properties": map[string]any{"ipAddress": "20.1.2.3"},
+			})
+		case strings.Contains(r.URL.Path, "/networkInterfaces/"):
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error":"nic create failed"}`))
+		default:
+			t.Errorf("unexpected path %q", r.URL.Path)
+		}
+	})
+
+	if _, _, err := a.CreateServer(context.Background(), CreateOpts{
+		Name: "build-1", Region: "eastus", Size: "Standard_B1s", UserData: "x",
+	}); err == nil {
+		t.Fatal("CreateServer: want an error when NIC creation fails")
+	}
+	if pipDeleteCalls != 1 {
+		t.Errorf("pipDeleteCalls = %d, want 1", pipDeleteCalls)
+	}
+}
+
+// TestAzure_CreateServer_VMFailureRollsBackNICAndPublicIP is the same
+// coverage one step later: a VM creation failure must roll back both the
+// NIC and the public IP it and the VM would otherwise leave orphaned.
+func TestAzure_CreateServer_VMFailureRollsBackNICAndPublicIP(t *testing.T) {
+	var deletedPaths []string
+	a := newTestAzure(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.Path, "/resourcegroups/"):
+			w.WriteHeader(http.StatusOK)
+		case strings.Contains(r.URL.Path, "/virtualNetworks/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"properties": map[string]any{"subnets": []map[string]any{{"id": "/subnets/default"}}},
+			})
+		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "/publicIPAddresses/"):
+			deletedPaths = append(deletedPaths, r.URL.Path)
+			w.WriteHeader(http.StatusOK)
+		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "/networkInterfaces/"):
+			deletedPaths = append(deletedPaths, r.URL.Path)
+			w.WriteHeader(http.StatusOK)
+		case strings.Contains(r.URL.Path, "/publicIPAddresses/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id": "/pips/build-1-pip", "properties": map[string]any{"ipAddress": "20.1.2.3"},
+			})
+		case strings.Contains(r.URL.Path, "/networkInterfaces/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"id": "/nics/build-1-nic"})
+		case strings.Contains(r.URL.Path, "/virtualMachines/"):
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error":"vm create failed"}`))
+		default:
+			t.Errorf("unexpected path %q", r.URL.Path)
+		}
+	})
+
+	if _, _, err := a.CreateServer(context.Background(), CreateOpts{
+		Name: "build-1", Region: "eastus", Size: "Standard_B1s", UserData: "x",
+	}); err == nil {
+		t.Fatal("CreateServer: want an error when VM creation fails")
+	}
+	if len(deletedPaths) != 2 {
+		t.Fatalf("deleted %d resources, want 2 (nic, public ip): %v", len(deletedPaths), deletedPaths)
+	}
+	if !strings.Contains(deletedPaths[0], "/networkInterfaces/") || !strings.Contains(deletedPaths[1], "/publicIPAddresses/") {
+		t.Errorf("delete order = %v, want nic before public ip", deletedPaths)
 	}
 }
 

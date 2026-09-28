@@ -109,7 +109,7 @@ func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr i
 	var useAmbient bool
 	fs.StringVar(&provider, "provider", "", "hetzner, digitalocean, aws, azure or gcp (required)")
 	fs.StringVar(&providerToken, "provider-token", "", "the provider's credential (an API token for hetzner/digitalocean, the AWS access key id for aws, a single-line JSON object for azure, a service account JSON key for gcp); prefer piping it on stdin or the interactive prompt instead, a flag value is visible in shell history and the process list")
-	fs.StringVar(&secretAccessKey, "secret-access-key", "", "aws only: the secret access key matching --provider-token's access key id (required unless --use-ambient-credentials; no stdin/prompt fallback, a flag value is visible in shell history and the process list)")
+	fs.StringVar(&secretAccessKey, "secret-access-key", "", "aws only: the secret access key matching --provider-token's access key id (required unless --use-ambient-credentials); prefer piping it on stdin or the interactive prompt instead, a flag value is visible in shell history and the process list")
 	fs.StringVar(&sessionToken, "session-token", "", "aws only: a session token, for temporary credentials (optional)")
 	fs.StringVar(&region, "region", "", "aws only: the region these credentials default to when a provision doesn't pick one explicitly (optional, default us-east-1)")
 	fs.StringVar(&roleARN, "role-arn", "", "aws only: an IAM role ARN to assume via STS before use, so the stored key only needs sts:AssumeRole on this role rather than direct EC2 permissions (optional)")
@@ -134,6 +134,13 @@ func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr i
 				return reportError(stdout, stderr, jsonOut, err)
 			}
 			providerToken = read
+		}
+		if secretAccessKey == "" {
+			read, err := readNodeProviderSecret(stderr)
+			if err != nil {
+				return reportError(stdout, stderr, jsonOut, err)
+			}
+			secretAccessKey = read
 		}
 		if providerToken == "" || secretAccessKey == "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("--provider-token (access key id) and --secret-access-key are required for aws, or pass --use-ambient-credentials"))
@@ -192,17 +199,19 @@ an optional workload-identity-federation mode. For gcp it is a service
 account JSON key's raw content, minified to one line; its project_id
 field is used directly, no separate project flag exists.
 
---provider-token is accepted for scripting but its value ends up in
-shell history and the process list while the command runs. Prefer
-piping it on stdin (a non-terminal stdin is read directly, one line,
-trimmed), or omit it and run interactively: a terminal stdin gets a
-no-echo "Provider token:" prompt instead. --secret-access-key has no
-such stdin/prompt fallback and must be passed as a flag.
+--provider-token and --secret-access-key are both accepted for
+scripting but their values end up in shell history and the process
+list while the command runs. Prefer piping them on stdin (a
+non-terminal stdin is read one line at a time, trimmed: the access key
+id first if --provider-token was omitted, then the secret access key
+if --secret-access-key was omitted), or omit them and run
+interactively: a terminal stdin gets a no-echo prompt for each one in
+turn instead.
 
 Flags:
   --provider string             hetzner, digitalocean, aws, azure or gcp (required)
   --provider-token string        the provider's credential, or the AWS access key id, see above
-  --secret-access-key string    aws only: the secret access key (required unless --use-ambient-credentials)
+  --secret-access-key string    aws only: the secret access key (required unless --use-ambient-credentials); stdin/prompt fallback like --provider-token
   --session-token string        aws only: a session token, for temporary credentials (optional)
   --region string                aws only: default region for these credentials (optional, default us-east-1)
   --role-arn string              aws only: an IAM role ARN to assume via STS before use (optional)
@@ -216,9 +225,18 @@ Flags:
 `, prog, envAPIURL, defaultAPIURL)
 }
 
-// readNodeProviderToken is a seam for tests; production callers get
-// defaultReadNodeProviderToken.
-var readNodeProviderToken = defaultReadNodeProviderToken
+// readNodeProviderToken and readNodeProviderSecret are seams for tests;
+// production callers get defaultReadNodeProviderToken/Secret.
+var (
+	readNodeProviderToken  = defaultReadNodeProviderToken
+	readNodeProviderSecret = defaultReadNodeProviderSecret
+)
+
+// nodeProviderStdinReader is shared across both defaultReadNodeProviderToken
+// and defaultReadNodeProviderSecret so a piped, non-terminal stdin can carry
+// two lines (access key id, then secret access key) without the second read
+// losing bytes the first read had already buffered from the pipe.
+var nodeProviderStdinReader = bufio.NewReader(os.Stdin)
 
 // defaultReadNodeProviderToken resolves the token when --provider-token
 // was omitted: a piped, non-terminal stdin is read directly (one line,
@@ -226,19 +244,31 @@ var readNodeProviderToken = defaultReadNodeProviderToken
 // terminal gets a no-echo prompt instead so the token is never displayed
 // either way.
 func defaultReadNodeProviderToken(stderr io.Writer) (string, error) {
+	return readNodeProviderProtectedValue(stderr, "Provider token: ", "provider token")
+}
+
+// defaultReadNodeProviderSecret resolves --secret-access-key the same way
+// defaultReadNodeProviderToken resolves --provider-token: a protected input
+// path so the AWS secret access key never has to be passed as a flag, where
+// it would be visible in shell history and the process list.
+func defaultReadNodeProviderSecret(stderr io.Writer) (string, error) {
+	return readNodeProviderProtectedValue(stderr, "Secret access key: ", "secret access key")
+}
+
+func readNodeProviderProtectedValue(stderr io.Writer, prompt, label string) (string, error) {
 	fd := int(os.Stdin.Fd()) //nolint:gosec // a file descriptor always fits in int
 	if !term.IsTerminal(fd) {
-		line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		line, err := nodeProviderStdinReader.ReadString('\n')
 		if err != nil && line == "" {
-			return "", newValidationError("read provider token from stdin: %v", err)
+			return "", newValidationError("read %s from stdin: %v", label, err)
 		}
 		return strings.TrimSpace(line), nil
 	}
-	_, _ = fmt.Fprint(stderr, "Provider token: ")
+	_, _ = fmt.Fprint(stderr, prompt)
 	b, err := term.ReadPassword(fd)
 	_, _ = fmt.Fprintln(stderr)
 	if err != nil {
-		return "", newValidationError("read provider token: %v", err)
+		return "", newValidationError("read %s: %v", label, err)
 	}
 	return strings.TrimSpace(string(b)), nil
 }

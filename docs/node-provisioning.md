@@ -39,6 +39,15 @@ get a server" flow works, covered under Required token scopes below.
   JSON object: `{"tenant_id","client_id","client_secret","subscription_id","resource_group"}`.
   The resource group must already exist; provisioning creates a VNet,
   subnet, public IP, NIC and VM inside it, but never the group itself.
+  Region and VM-size lookup (`ListRegions`/`ListSizes`) call Azure's
+  subscription-scoped locations and `vmSizes` APIs, which a
+  resource-group-scoped role assignment alone does not authorize: also
+  grant the service principal a **Reader** role (or a custom role with
+  just `Microsoft.Resources/subscriptions/locations/read` and
+  `Microsoft.Compute/locations/vmSizes/read`) at the **subscription**
+  scope, in addition to Contributor on the one resource group. Without it,
+  the Add-node wizard's region and size pickers fail even though VM
+  creation itself still works.
   A workload-identity-federation (OIDC) mode is also available, see
   "Azure workload identity federation" below.
 - **GCP**: a service account JSON key with the **Compute Instance Admin**
@@ -96,6 +105,7 @@ A minimal least-privilege IAM policy for the static-key path:
       "ec2:TerminateInstances",
       "ec2:CreateSecurityGroup",
       "ec2:AuthorizeSecurityGroupIngress",
+      "ec2:RevokeSecurityGroupIngress",
       "ec2:DeleteSecurityGroup",
       "ec2:CreateTags",
       "ec2:Describe*"
@@ -119,7 +129,9 @@ platform supports, has no field yet to name a specific VPC or subnet.
 Every AWS-provisioned instance shares one security group per control
 plane by default (created on first use, reused after), with no inbound
 rules at all, matching this platform's "no inbound ports on managed
-servers" architecture.
+servers" architecture. Reuse revokes any ingress rule found on that group
+(from drift, or from something else sharing the derived name) so it stays
+converged on that no-inbound invariant rather than trusting it as-is.
 
 Passing `--allow-ssh-inbound` (CLI) or the wizard's SSH toggle opts a
 single instance out of that shared group into its own dedicated one
@@ -209,9 +221,11 @@ curated size (`t3.micro`) is comparable. A `build` role node benefits from
 more CPU and memory since builds run there.
 
 Azure and GCP also bill for the small networking resources provisioning
-creates alongside the VM (a public IP on Azure, none extra on GCP, whose
-external IP is ephemeral and free while attached to a running instance).
-These are pennies a month, not a meaningful addition to the VM's own cost.
+creates alongside the VM: a public IP on Azure, and on GCP an external
+IPv4 address, which GCP bills hourly whether or not it's attached to a
+running instance (its "free while in use" pricing ended in 2024). These
+are pennies a month, not a meaningful addition to the VM's own cost, but
+they are not free.
 
 The wizard's size picker shows a live `$X.XX/mo` estimate for Hetzner and
 DigitalOcean, since both return a size's price inline from their own API.

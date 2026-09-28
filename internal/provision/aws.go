@@ -207,13 +207,22 @@ func (a *AWS) CreateServer(ctx context.Context, opts CreateOpts) (serverID, ipAd
 	}
 
 	out, err := client.RunInstances(ctx, &ec2.RunInstancesInput{
-		ImageId:          aws.String(amiID),
-		InstanceType:     types.InstanceType(opts.Size),
-		MinCount:         aws.Int32(1),
-		MaxCount:         aws.Int32(1),
-		UserData:         aws.String(base64.StdEncoding.EncodeToString([]byte(opts.UserData))),
-		SubnetId:         aws.String(subnetID),
-		SecurityGroupIds: []string{sgID},
+		ImageId:      aws.String(amiID),
+		InstanceType: types.InstanceType(opts.Size),
+		MinCount:     aws.Int32(1),
+		MaxCount:     aws.Int32(1),
+		UserData:     aws.String(base64.StdEncoding.EncodeToString([]byte(opts.UserData))),
+		// A network interface spec with AssociatePublicIpAddress explicit,
+		// not the top-level SubnetId/SecurityGroupIds fields: those defer
+		// to the subnet's own MapPublicIpOnLaunch setting, which can be
+		// off, leaving the node with no route to download its first-boot
+		// dependencies or dial the control plane.
+		NetworkInterfaces: []types.InstanceNetworkInterfaceSpecification{{
+			DeviceIndex:              aws.Int32(0),
+			SubnetId:                 aws.String(subnetID),
+			Groups:                   []string{sgID},
+			AssociatePublicIpAddress: aws.Bool(true),
+		}},
 		BlockDeviceMappings: []types.BlockDeviceMapping{{
 			DeviceName: aws.String(rootDevice),
 			Ebs: &types.EbsBlockDevice{

@@ -142,6 +142,80 @@ func TestGCP_CreateServer(t *testing.T) {
 	}
 }
 
+// TestGCP_CreateServer_CreatesDenyIngressFirewallWhenMissing covers the
+// fix for GCP instances inheriting a project's default network's own
+// public-ingress firewall rules: CreateServer must ensure a deny-all
+// ingress rule exists for its managed instance tag before it ever creates
+// an instance with an external IP.
+func TestGCP_CreateServer_CreatesDenyIngressFirewallWhenMissing(t *testing.T) {
+	var firewallCreateBody map[string]any
+	var instanceBody map[string]any
+	firewallCreatePosts := 0
+	g := newTestGCP(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/global/firewalls/"+gcpFirewallName:
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{"errors": []map[string]any{{"message": "not found"}}}})
+		case r.Method == http.MethodPost && r.URL.Path == "/global/firewalls":
+			firewallCreatePosts++
+			_ = json.NewDecoder(r.Body).Decode(&firewallCreateBody)
+			_ = json.NewEncoder(w).Encode(map[string]any{})
+		case r.URL.Path == "/zones/us-central1-a/instances":
+			_ = json.NewDecoder(r.Body).Decode(&instanceBody)
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "RUNNING"})
+		default:
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+	})
+
+	if _, _, err := g.CreateServer(context.Background(), CreateOpts{
+		Name: "build-1", Region: "us-central1-a", Size: "e2-micro", UserData: "#cloud-init\n",
+	}); err != nil {
+		t.Fatalf("CreateServer: %v", err)
+	}
+	if firewallCreatePosts != 1 {
+		t.Fatalf("firewallCreatePosts = %d, want 1", firewallCreatePosts)
+	}
+	if firewallCreateBody["name"] != gcpFirewallName || firewallCreateBody["direction"] != "INGRESS" {
+		t.Errorf("firewall create body = %+v", firewallCreateBody)
+	}
+	tags, ok := instanceBody["tags"].(map[string]any)
+	if !ok {
+		t.Fatalf("instance body has no tags: %+v", instanceBody)
+	}
+	items, ok := tags["items"].([]any)
+	if !ok || len(items) != 1 || items[0] != gcpManagedLabelKey {
+		t.Errorf("instance tags.items = %+v, want [%q]", tags["items"], gcpManagedLabelKey)
+	}
+}
+
+// TestGCP_CreateServer_SkipsFirewallCreateWhenAlreadyPresent covers the
+// idempotent side of ensureDenyIngressFirewall: a firewall rule found on
+// the GET must not be recreated.
+func TestGCP_CreateServer_SkipsFirewallCreateWhenAlreadyPresent(t *testing.T) {
+	firewallCreatePosts := 0
+	g := newTestGCP(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/global/firewalls/"+gcpFirewallName:
+			_ = json.NewEncoder(w).Encode(map[string]any{"name": gcpFirewallName})
+		case r.Method == http.MethodPost && r.URL.Path == "/global/firewalls":
+			firewallCreatePosts++
+			_ = json.NewEncoder(w).Encode(map[string]any{})
+		default:
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "RUNNING"})
+		}
+	})
+
+	if _, _, err := g.CreateServer(context.Background(), CreateOpts{
+		Name: "build-1", Region: "us-central1-a", Size: "e2-micro", UserData: "#cloud-init\n",
+	}); err != nil {
+		t.Fatalf("CreateServer: %v", err)
+	}
+	if firewallCreatePosts != 0 {
+		t.Errorf("firewallCreatePosts = %d, want 0 (firewall already existed)", firewallCreatePosts)
+	}
+}
+
 func TestGCP_CreateServer_RequiresFields(t *testing.T) {
 	g := newTestGCP(t, func(http.ResponseWriter, *http.Request) {
 		t.Fatal("must not call the API with missing required fields")

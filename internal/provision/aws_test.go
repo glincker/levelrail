@@ -28,6 +28,9 @@ type fakeEC2 struct {
 
 	authorizeIngressErr error
 
+	revokeIngressErr   error
+	revokeIngressCalls int
+
 	deleteSGErr error
 
 	runOut *ec2.RunInstancesOutput
@@ -108,6 +111,17 @@ func (f *fakeEC2) AuthorizeSecurityGroupIngress(context.Context, *ec2.AuthorizeS
 		return nil, f.authorizeIngressErr
 	}
 	return &ec2.AuthorizeSecurityGroupIngressOutput{}, nil
+}
+
+func (f *fakeEC2) RevokeSecurityGroupIngress(context.Context, *ec2.RevokeSecurityGroupIngressInput, ...func(*ec2.Options)) (*ec2.RevokeSecurityGroupIngressOutput, error) {
+	f.revokeIngressCalls++
+	if f.authErr != nil {
+		return nil, f.authErr
+	}
+	if f.revokeIngressErr != nil {
+		return nil, f.revokeIngressErr
+	}
+	return &ec2.RevokeSecurityGroupIngressOutput{}, nil
 }
 
 func (f *fakeEC2) DeleteSecurityGroup(context.Context, *ec2.DeleteSecurityGroupInput, ...func(*ec2.Options)) (*ec2.DeleteSecurityGroupOutput, error) {
@@ -306,6 +320,36 @@ func TestAWS_CreateServer_CreatesSecurityGroupOnceThenReuses(t *testing.T) {
 	fake.createSGErr = errors.New("CreateSecurityGroup should not be called again")
 	if _, _, err := a.CreateServer(context.Background(), CreateOpts{Region: "us-east-1", Size: "t3.small", Name: "web-2", UserData: "x"}); err != nil {
 		t.Fatalf("CreateServer 2: %v", err)
+	}
+	if fake.revokeIngressCalls != 0 {
+		t.Errorf("revokeIngressCalls = %d, want 0 (reused group had no ingress rules)", fake.revokeIngressCalls)
+	}
+}
+
+// TestAWS_CreateServer_ReusedSecurityGroupWithIngressGetsRevoked covers the
+// fix for a reused shared security group silently keeping ingress rules an
+// operator (or anything else) had added to it: ensureSecurityGroup's own
+// contract is outbound-only, no inbound ports, so reuse must converge a
+// drifted group back to that invariant rather than trust it as-is.
+func TestAWS_CreateServer_ReusedSecurityGroupWithIngressGetsRevoked(t *testing.T) {
+	fake := defaultCreateFixture()
+	fake.securityGroups = []types.SecurityGroup{{
+		GroupId: aws.String("sg-drifted"),
+		IpPermissions: []types.IpPermission{{
+			IpProtocol: aws.String("tcp"),
+			FromPort:   aws.Int32(22),
+			ToPort:     aws.Int32(22),
+			IpRanges:   []types.IpRange{{CidrIp: aws.String("0.0.0.0/0")}},
+		}},
+	}}
+	fake.createSGErr = errors.New("CreateSecurityGroup should not be called: the group already exists")
+	a := newTestAWS(fake)
+
+	if _, _, err := a.CreateServer(context.Background(), CreateOpts{Region: "us-east-1", Size: "t3.small", Name: "web-1", UserData: "x"}); err != nil {
+		t.Fatalf("CreateServer: %v", err)
+	}
+	if fake.revokeIngressCalls != 1 {
+		t.Errorf("revokeIngressCalls = %d, want 1", fake.revokeIngressCalls)
 	}
 }
 
