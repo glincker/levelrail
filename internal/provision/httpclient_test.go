@@ -40,7 +40,7 @@ func TestHTTPClient_RetriesOn429ThenSucceeds(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	c := newHTTPClient(srv.URL, "t")
-	c.sleep = func(time.Duration) {} // no real waiting in tests
+	c.sleep = noopSleep // no real waiting in tests
 
 	var out struct {
 		OK bool `json:"ok"`
@@ -65,7 +65,7 @@ func TestHTTPClient_GivesUpAfterMaxRetries(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	c := newHTTPClient(srv.URL, "t")
-	c.sleep = func(time.Duration) {}
+	c.sleep = noopSleep
 
 	err := c.do(context.Background(), http.MethodGet, "/x", nil, nil)
 	if err == nil {
@@ -91,7 +91,10 @@ func TestHTTPClient_HonorsRetryAfterHeader(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	c := newHTTPClient(srv.URL, "t")
-	c.sleep = func(d time.Duration) { delays = append(delays, d) }
+	c.sleep = func(_ context.Context, d time.Duration) error {
+		delays = append(delays, d)
+		return nil
+	}
 
 	if err := c.do(context.Background(), http.MethodGet, "/x", nil, nil); err != nil {
 		t.Fatalf("do: %v", err)
@@ -100,6 +103,54 @@ func TestHTTPClient_HonorsRetryAfterHeader(t *testing.T) {
 		t.Errorf("delays = %v, want [7s]", delays)
 	}
 }
+
+func TestHTTPClient_CapsRetryAfterDelay(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Retry-After", "9999")
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	t.Cleanup(srv.Close)
+
+	c := newHTTPClient(srv.URL, "t")
+	var delays []time.Duration
+	c.sleep = func(_ context.Context, d time.Duration) error {
+		delays = append(delays, d)
+		return nil
+	}
+
+	_ = c.do(context.Background(), http.MethodGet, "/x", nil, nil)
+	for _, d := range delays {
+		if d > maxRetryDelay {
+			t.Errorf("delay %v exceeds maxRetryDelay %v", d, maxRetryDelay)
+		}
+	}
+}
+
+func TestHTTPClient_RetryStopsOnContextCancel(t *testing.T) {
+	var calls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		calls++
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	t.Cleanup(srv.Close)
+
+	c := newHTTPClient(srv.URL, "t")
+	ctx, cancel := context.WithCancel(context.Background())
+	c.sleep = func(sleepCtx context.Context, _ time.Duration) error {
+		cancel()
+		return sleepCtx.Err()
+	}
+
+	err := c.do(ctx, http.MethodGet, "/x", nil, nil)
+	if err == nil {
+		t.Fatal("expected an error when the context is cancelled mid-retry")
+	}
+	if calls != 1 {
+		t.Errorf("calls = %d, want 1 (retry loop must stop on cancellation)", calls)
+	}
+}
+
+func noopSleep(context.Context, time.Duration) error { return nil }
 
 func TestHTTPClient_NonRetryableError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

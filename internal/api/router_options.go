@@ -566,6 +566,15 @@ func WithNodeProviderSecrets(s NodeProviderSecrets) Option {
 	return func(rt *Router) { rt.nodeProviderSecrets = s }
 }
 
+// WithNodeProvisions overrides the node provision store NewRouter
+// otherwise wires to s (the *store.DB passed to NewRouter, which
+// satisfies NodeProvisionStore structurally). This package's own tests
+// use it to inject a store that fails a specific call, for the
+// half-succeeded-write path handleCreateNodeProvision must handle.
+func WithNodeProvisions(s NodeProvisionStore) Option {
+	return func(rt *Router) { rt.nodeProvisions = s }
+}
+
 // WithNodeProvisionerFactory overrides how a NodeProvisioner is built
 // from a provider name and resolved token, for this package's own tests.
 // Production callers leave this unset; NewRouter's default,

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,11 @@ const (
 	requestTimeout = 30 * time.Second
 	maxRetries     = 3
 	retryBaseDelay = 500 * time.Millisecond
+	// maxRetryDelay bounds a provider-supplied Retry-After: an unbounded
+	// numeric value would otherwise tie up a catalog or creation handler
+	// for however long the provider asks, even past its own caller having
+	// given up.
+	maxRetryDelay = 30 * time.Second
 )
 
 // httpClient is the small REST helper hetzner.go and digitalocean.go both
@@ -25,9 +31,11 @@ type httpClient struct {
 	base  string
 	token string
 	http  *http.Client
-	// sleep is a seam for tests: real callers get time.Sleep, tests can
-	// skip the wait entirely.
-	sleep func(time.Duration)
+	// sleep is a seam for tests: real callers get contextSleep, tests can
+	// skip the wait entirely. Context-aware so a caller's cancellation
+	// (or its own deadline) ends a retry wait immediately rather than
+	// riding out a provider's own Retry-After.
+	sleep func(context.Context, time.Duration) error
 }
 
 func newHTTPClient(base, token string) *httpClient {
@@ -35,7 +43,29 @@ func newHTTPClient(base, token string) *httpClient {
 		base:  base,
 		token: token,
 		http:  &http.Client{Timeout: requestTimeout},
-		sleep: time.Sleep,
+		sleep: contextSleep,
+	}
+}
+
+// relativePath strips c.base from an absolute URL a paginated response
+// handed back (DigitalOcean's own links.pages.next), so do can still be
+// called the normal way instead of needing a second, absolute-URL entry
+// point. Returns fullURL unchanged if it doesn't start with c.base.
+func (c *httpClient) relativePath(fullURL string) string {
+	if rest, ok := strings.CutPrefix(fullURL, c.base); ok {
+		return rest
+	}
+	return fullURL
+}
+
+func contextSleep(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
 	}
 }
 
@@ -88,7 +118,9 @@ func (c *httpClient) do(ctx context.Context, method, path string, body, out any)
 
 		if resp.StatusCode == http.StatusTooManyRequests && attempt < maxRetries {
 			lastErr = &ProviderError{Status: resp.StatusCode, Body: string(respBody)}
-			c.sleep(retryDelay(resp.Header.Get("Retry-After"), attempt))
+			if sleepErr := c.sleep(ctx, retryDelay(resp.Header.Get("Retry-After"), attempt)); sleepErr != nil {
+				return fmt.Errorf("provision: %s %s: %w", method, path, sleepErr)
+			}
 			continue
 		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -105,10 +137,15 @@ func (c *httpClient) do(ctx context.Context, method, path string, body, out any)
 }
 
 // retryDelay honors a numeric Retry-After (seconds) when the provider sends
-// one, otherwise backs off by attempt number.
+// one, otherwise backs off by attempt number. Capped at maxRetryDelay
+// either way.
 func retryDelay(retryAfter string, attempt int) time.Duration {
+	d := retryBaseDelay * time.Duration(attempt+1)
 	if secs, err := strconv.Atoi(retryAfter); err == nil && secs > 0 {
-		return time.Duration(secs) * time.Second
+		d = time.Duration(secs) * time.Second
 	}
-	return retryBaseDelay * time.Duration(attempt+1)
+	if d > maxRetryDelay {
+		d = maxRetryDelay
+	}
+	return d
 }

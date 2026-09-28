@@ -554,7 +554,7 @@ type createNodeJoinTokenResponse struct {
 // mints a one-time token an agent redeems at enrollment, returned with
 // the agent CA fingerprint the agent should pin.
 func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Request) {
-	rec, err := rt.mintNodeJoinToken(r.Context())
+	rec, err := rt.mintNodeJoinToken(r.Context(), nodeJoinTokenTTL)
 	if err != nil {
 		rt.logger.Error("api: create node join token failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -573,8 +573,10 @@ type mintedJoinToken struct {
 
 // mintNodeJoinToken is handleCreateNodeJoinToken's own logic, factored
 // out so node_provision.go's handleCreateNodeProvision calls the exact
-// same minting path instead of a second implementation of it.
-func (rt *Router) mintNodeJoinToken(ctx context.Context) (mintedJoinToken, error) {
+// same minting path instead of a second implementation of it, passing
+// its own longer TTL (nodeProvisionJoinTokenTTL) rather than
+// nodeJoinTokenTTL.
+func (rt *Router) mintNodeJoinToken(ctx context.Context, ttl time.Duration) (mintedJoinToken, error) {
 	plaintext, err := randomToken()
 	if err != nil {
 		return mintedJoinToken{}, fmt.Errorf("generate token: %w", err)
@@ -589,7 +591,7 @@ func (rt *Router) mintNodeJoinToken(ctx context.Context) (mintedJoinToken, error
 		ID:        id,
 		TokenHash: hashToken(plaintext),
 		CreatedAt: now,
-		ExpiresAt: now.Add(nodeJoinTokenTTL),
+		ExpiresAt: now.Add(ttl),
 	}
 	if err := rt.nodes.SaveNodeJoinToken(ctx, rec); err != nil {
 		return mintedJoinToken{}, fmt.Errorf("save: %w", err)

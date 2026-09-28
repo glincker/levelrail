@@ -38,6 +38,12 @@ Store the token once, under Settings -> Cloud node providers
 encrypted at rest the same way every other integration credential in this
 platform is (envelope encryption, ADR 010) and never echoed back once saved.
 
+The CLI's `--provider-token` flag is accepted for scripting, but its value
+ends up in shell history and the process list while the command runs.
+Prefer piping the token instead (`echo "$TOKEN" | levelrail-cli nodes
+providers set-credential --provider hetzner`), or omit the flag entirely
+and run interactively for a no-echo prompt.
+
 ## Cost expectations
 
 Both providers bill by the hour (or fractions of one) for however long the
@@ -67,6 +73,17 @@ benefits from more CPU and memory since builds run there.
    node with the expected name has enrolled yet. Status moves through
    `creating` -> `booting` -> `enrolling` -> `ready`, or `failed` with a
    reason.
+4. Once that node is found, its accepted workload kinds are set to match
+   the `role` the provision was created with (`general`:
+   `accepts_app_workloads=true`, `build`: `accepts_build_workloads=true`):
+   enrollment itself always starts a node as a plain app node, with no way
+   to carry an operator's chosen role through the join-token exchange, so
+   this is the first point after enrollment this feature controls.
+
+A name already used by an enrolled node, or by another provision that
+hasn't failed, is rejected up front (409): the same name is how step 3
+recognizes which node belongs to which provision, and reusing one would
+let a provision report ready against an unrelated, pre-existing VM.
 
 ### Why there's no "installing" stage in practice
 
@@ -102,6 +119,14 @@ inspect levelrail-agent` on the node itself will show them for as long as
 the container exists. This is the same exposure any container's env vars
 have; it's not specific to provisioning. Treat a provisioned node as
 trusted infrastructure, the same way you would a manually enrolled one.
+
+## Known limitations
+
+- **Closing the wizard's progress view stops the browser from tracking
+  that provision.** The server keeps provisioning either way (nothing
+  server-side is cancelled), and `nodes provisions show <id>` or `GET
+  /api/v1/node-provisions/{id}` still work; there is just no UI screen
+  yet to reopen and watch it from. Use the CLI or the API meanwhile.
 
 ## What was not tested
 

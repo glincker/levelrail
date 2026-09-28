@@ -33,8 +33,14 @@ func (p CloudInitParams) agentImage() string {
 		return p.AgentImage
 	}
 	tag := p.AgentVersion
-	if tag == "" {
-		tag = "latest"
+	// "" (never set) and "dev" (internal/version.Version's own default for
+	// an unreleased build) both mean "not a tagged release": the release
+	// pipeline never publishes an image tagged "dev", only "edge" for a
+	// main-branch build and a version tag for a real release, so either
+	// case must fall back to "edge" or the agent's image pull 404s and
+	// the node never enrolls.
+	if tag == "" || tag == "dev" {
+		tag = "edge"
 	}
 	return defaultAgentImageRepo + ":" + tag
 }
@@ -45,7 +51,11 @@ func (p CloudInitParams) agentImage() string {
 // control plane with a one-time token. The join token and CA fingerprint
 // go in a root-only env file, not container run args, so they don't show
 // up in `ps`; they remain visible via `docker inspect`, a known limitation
-// documented in docs/node-provisioning.md.
+// documented in docs/node-provisioning.md. The bind-mounted identity
+// directory is chowned to 65532 (Dockerfile.levelrail-agent's distroless
+// nonroot base image's fixed UID/GID): mkdir on a fresh host creates it
+// root-owned, which that nonroot container user could not otherwise write
+// its persisted identity file into.
 func RenderCloudInit(p CloudInitParams) (string, error) {
 	if p.ControlPlaneAddr == "" || p.JoinToken == "" || p.NodeName == "" {
 		return "", fmt.Errorf("provision: render cloud-init: control plane address, join token and node name are required")
@@ -101,6 +111,7 @@ runcmd:
   - command -v docker >/dev/null 2>&1 || (curl -fsSL https://get.docker.com | sh)
   - systemctl enable --now docker
   - mkdir -p /var/lib/levelrail-agent-data
+  - chown 65532:65532 /var/lib/levelrail-agent-data
   - systemctl daemon-reload
   - systemctl enable --now levelrail-agent
 `

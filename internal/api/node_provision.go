@@ -44,6 +44,16 @@ const nodeProvisionTimeoutEnv = "APP_NODE_PROVISION_TIMEOUT"
 
 const defaultNodeProvisionTimeout = 20 * time.Minute
 
+// nodeProvisionJoinTokenTTL is how long the join token minted for a
+// cloud provision stays redeemable: comfortably longer than
+// defaultNodeProvisionTimeout, so a slow-booting VM (provider queue,
+// Docker install, agent image pull) never silently loses its one-shot
+// token before cloud-init even gets to redeem it. nodeJoinTokenTTL
+// (nodes.go) stays 15 minutes for the manual flow, where an operator is
+// watching and can mint a fresh one immediately if it lapses; here
+// nobody is watching until the provision either succeeds or times out.
+const nodeProvisionJoinTokenTTL = 60 * time.Minute
+
 // NodeProvisioner is the surface internal/provision.Provisioner
 // implementations satisfy: a narrow, consumer-defined interface so this
 // package's own tests inject a fake instead of hitting a real cloud API.
@@ -410,13 +420,22 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if taken, err := rt.nodeNameTaken(r.Context(), req.Name); err != nil {
+		rt.logger.Error("api: node provision: check name collision failed", slog.String("error", err.Error()))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	} else if taken {
+		writeError(w, http.StatusConflict, "a node or an in-progress provision already uses this name")
+		return
+	}
+
 	provisioner, ok, status, msg := rt.resolveNodeProvisioner(r.Context(), req.Provider)
 	if !ok {
 		writeError(w, status, msg)
 		return
 	}
 
-	token, err := rt.mintNodeJoinToken(r.Context())
+	token, err := rt.mintNodeJoinToken(r.Context(), nodeProvisionJoinTokenTTL)
 	if err != nil {
 		rt.logger.Error("api: node provision: mint join token failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -469,11 +488,52 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 	rec.Status = store.NodeProvisionStatusBooting
 	rec.UpdatedAt = time.Now()
 	if err := rt.nodeProvisions.UpdateNodeProvisionStatus(r.Context(), id, rec.Status, rec.ProviderServerID, rec.IPAddress, "", "", rec.UpdatedAt); err != nil {
-		rt.logger.Error("api: node provision: record booting failed", slog.String("provision_id", id), slog.String("error", err.Error()))
+		// The server exists at the provider but its ID never made it into
+		// this row: without it, no later read can query or delete that
+		// server again, an untracked, still-billable VM despite a
+		// successful CreateServer call. Best-effort delete it now, while
+		// this handler still has the ID in memory, rather than leave that
+		// behind a 201 that claims otherwise.
+		rt.logger.Error("api: node provision: record booting failed, deleting the orphaned server", slog.String("provision_id", id), slog.String("provider_server_id", serverID), slog.String("error", err.Error()))
+		if derr := provisioner.DeleteServer(r.Context(), serverID); derr != nil {
+			rt.logger.Error("api: node provision: delete orphaned server failed, it may still be running and billable", slog.String("provision_id", id), slog.String("provider_server_id", serverID), slog.String("error", derr.Error()))
+		}
+		if uerr := rt.nodeProvisions.UpdateNodeProvisionStatus(r.Context(), id, store.NodeProvisionStatusFailed, "", "", "", "created the server but could not record it, so it was deleted", time.Now()); uerr != nil {
+			rt.logger.Error("api: node provision: record failure failed", slog.String("provision_id", id), slog.String("error", uerr.Error()))
+		}
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
 	}
 
 	rt.logger.Info("api: node provision created", slog.String("provision_id", id), slog.String("provider", req.Provider), slog.String("name", req.Name))
 	writeJSON(w, http.StatusCreated, toNodeProvisionResource(rec))
+}
+
+// nodeNameTaken reports whether name is already used by an enrolled node
+// or by another provision that has not yet failed: refreshNodeProvision
+// matches an enrolling provision to a real node purely by Name, so a
+// second provision (or a pre-existing node) reusing that name would let
+// it report false readiness against an unrelated VM.
+func (rt *Router) nodeNameTaken(ctx context.Context, name string) (bool, error) {
+	nodes, err := rt.nodes.ListNodes(ctx)
+	if err != nil {
+		return false, fmt.Errorf("list nodes: %w", err)
+	}
+	for _, n := range nodes {
+		if n.Name == name {
+			return true, nil
+		}
+	}
+	provisions, err := rt.nodeProvisions.ListNodeProvisions(ctx)
+	if err != nil {
+		return false, fmt.Errorf("list node provisions: %w", err)
+	}
+	for _, p := range provisions {
+		if p.Name == name && p.Status != store.NodeProvisionStatusFailed {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // handleListNodeProvisions handles GET /api/v1/node-provisions: every
@@ -531,6 +591,15 @@ func (rt *Router) refreshNodeProvision(ctx context.Context, p store.NodeProvisio
 	if nodes, err := rt.nodes.ListNodes(ctx); err == nil {
 		for _, n := range nodes {
 			if n.Name == p.Name {
+				// Enrollment (internal/agent/server.go, frozen) always sets
+				// AcceptsAppWorkloads true and leaves AcceptsBuildWorkloads
+				// false, with no way to carry the operator's chosen Role
+				// through the join-token exchange itself: apply it here,
+				// the first point after enrollment this handler controls.
+				acceptsApp, acceptsBuild := p.Role != "build", p.Role == "build"
+				if werr := rt.nodes.UpdateNodeWorkloads(ctx, n.ID, acceptsApp, acceptsBuild); werr != nil {
+					rt.logger.Error("api: node provision: apply role to node failed", slog.String("provision_id", p.ID), slog.String("node_id", n.ID), slog.String("error", werr.Error()))
+				}
 				return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusReady, p.IPAddress, n.ID, "")
 			}
 		}

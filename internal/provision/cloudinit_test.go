@@ -24,6 +24,7 @@ func TestRenderCloudInit(t *testing.T) {
 		"APP_NODE_NAME=web-1",
 		"ghcr.io/glincker/levelrail-agent:v1.2.3",
 		"levelrail-agent.service",
+		"chown 65532:65532 /var/lib/levelrail-agent-data",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("rendered cloud-init missing %q", want)
@@ -31,7 +32,7 @@ func TestRenderCloudInit(t *testing.T) {
 	}
 }
 
-func TestRenderCloudInit_DefaultsToLatestWithNoVersion(t *testing.T) {
+func TestRenderCloudInit_FallsBackToEdgeWithNoVersion(t *testing.T) {
 	out, err := RenderCloudInit(CloudInitParams{
 		ControlPlaneAddr: "cp.example.com:9443",
 		JoinToken:        "tok",
@@ -40,8 +41,23 @@ func TestRenderCloudInit_DefaultsToLatestWithNoVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderCloudInit: %v", err)
 	}
-	if !strings.Contains(out, "ghcr.io/glincker/levelrail-agent:latest") {
-		t.Errorf("expected the default tag, got:\n%s", out)
+	if !strings.Contains(out, "ghcr.io/glincker/levelrail-agent:edge") {
+		t.Errorf("expected the edge tag, got:\n%s", out)
+	}
+}
+
+func TestRenderCloudInit_FallsBackToEdgeForDevBuilds(t *testing.T) {
+	out, err := RenderCloudInit(CloudInitParams{
+		ControlPlaneAddr: "cp.example.com:9443",
+		JoinToken:        "tok",
+		NodeName:         "web-1",
+		AgentVersion:     "dev",
+	})
+	if err != nil {
+		t.Fatalf("RenderCloudInit: %v", err)
+	}
+	if !strings.Contains(out, "ghcr.io/glincker/levelrail-agent:edge") {
+		t.Errorf("expected the edge tag for a dev build, got:\n%s", out)
 	}
 }
 
