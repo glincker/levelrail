@@ -98,7 +98,7 @@ The dashboard shows this as an amber "Environment changes pending restart" banne
 
 The reconciler records what each new container was created with (short hashes of the app's env and secret values, plus port, command, entrypoint and labels). `GET /api/v1/apps/{name}/pending-changes` compares that with the desired state and returns `{ pending, changes: [{ kind: env | secret | config, keys, since }], apply_action }`. Key names only, never values. Rotating a secret counts as a pending `secret` change; resources and health checks apply live and are not listed. `POST /api/v1/apps/{name}/apply-pending` restarts the app to apply them (202). For a container created before this tracking existed, only the `env_dirty` flag is known.
 
-CLI: `levelrail apps status <name>` prints a "pending changes" line, `apps env import` and `apps secrets set` print "N changes pending. Run: levelrail apps apply <name> (or pass --apply)", and `apps apply <name>` restarts. MCP: `get_app_pending_changes`.
+CLI: `levelrail apps status <name>` prints a "pending changes" line, `apps env import` and `apps secrets set` print "N changes pending. Run: `levelrail apps apply <name>` (or pass --apply)", and `apps apply <name>` restarts. MCP: `get_app_pending_changes`.
 
 ### App timeline
 
