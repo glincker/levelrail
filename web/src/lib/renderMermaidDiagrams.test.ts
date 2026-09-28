@@ -63,4 +63,15 @@ describe('renderMermaidDiagrams', () => {
 
     expect(container.innerHTML).toContain('not a real diagram')
   })
+
+  it('skips initialize and the DOM write once superseded, so a stale run cannot overwrite a newer theme', async () => {
+    render.mockResolvedValue({ svg: '<svg data-testid="diagram"></svg>' })
+    const container = withPlaceholder('flowchart TD\n  A --> B')
+
+    await renderMermaidDiagrams(container, false, () => false)
+
+    expect(initialize).not.toHaveBeenCalled()
+    expect(render).not.toHaveBeenCalled()
+    expect(container.innerHTML).toContain('flowchart TD')
+  })
 })

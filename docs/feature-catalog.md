@@ -28,7 +28,7 @@ This section lists what you can see and do for each app, database, and system ar
 | Deploys | View deploy history, inspect each deploy with its commit message and duration, watch live build logs as they stream in, or compare two deploys side by side |
 | Deploy settings | Configure deploy strategy (rolling, blue-green, or recreate), add pre and post-deploy hooks (shell commands that run before and after deploy), and see the outcome from the last hook run |
 | Domains | Add, remove, and manage custom domains pointing to this app, and view TLS certificate status for each |
-| Environment | Add, edit, and delete environment variables; mark sensitive ones as secrets so they do not appear in logs |
+| Environment | Add, edit, and delete environment variables; mark sensitive ones as secrets so their value is envelope-encrypted at rest and never written to app.yaml or the git repo |
 | Exec | Run one-off commands inside running containers without stopping the app |
 | Feature flags | Toggle app behavior at runtime without redeploying, and see which flag values are currently active |
 | Health | Set up readiness and liveness probes so the platform knows when your app is ready to serve traffic and when it has crashed |
@@ -49,7 +49,7 @@ This section lists what you can see and do for each app, database, and system ar
 | --- | --- |
 | Overview | Manage backups and restore points, expose the database outside the Docker network for external tools, attach it to apps, and check TLS certificate status |
 | Logs | View detailed activity logs from the database engine |
-| Metrics | Monitor database performance (query latency, connection count) and resource usage (CPU, memory) |
+| Metrics | Monitor resource usage over time: CPU, memory, network I/O, and disk I/O |
 | Resources | Set CPU and memory limits and see platform recommendations based on usage |
 
 ### System and organization

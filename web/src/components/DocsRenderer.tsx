@@ -43,9 +43,15 @@ export function DocsRenderer({
     const container = containerRef.current
     if (!container) return
 
+    let generation = 0
     const renderForCurrentTheme = () => {
+      const myGeneration = ++generation
       const isDark = document.documentElement.classList.contains('dark')
-      void renderMermaidDiagrams(container, isDark)
+      void renderMermaidDiagrams(
+        container,
+        isDark,
+        () => myGeneration === generation,
+      )
     }
 
     renderForCurrentTheme()

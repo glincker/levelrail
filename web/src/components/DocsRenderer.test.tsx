@@ -9,9 +9,13 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 
 const renderMermaidDiagrams = vi.hoisted(() =>
-  vi.fn<(container: HTMLElement, isDark: boolean) => Promise<void>>(
-    async () => {},
-  ),
+  vi.fn<
+    (
+      container: HTMLElement,
+      isDark: boolean,
+      isCurrent: () => boolean,
+    ) => Promise<void>
+  >(async () => {}),
 )
 vi.mock('../lib/renderMermaidDiagrams', () => ({ renderMermaidDiagrams }))
 
@@ -60,7 +64,34 @@ describe('DocsRenderer', () => {
       expect(renderMermaidDiagrams).toHaveBeenCalledWith(
         expect.anything(),
         true,
+        expect.any(Function),
       )
     })
+  })
+
+  it('a second theme toggle marks the first call stale, so a slow first render cannot win', async () => {
+    render(
+      <DocsRenderer
+        markdown={'```mermaid\nflowchart TD\n  A --> B\n```\n'}
+        currentFile="architecture.md"
+        manifest={manifest}
+        docsBaseUrl=""
+      />,
+    )
+    await waitFor(() => {
+      expect(renderMermaidDiagrams).toHaveBeenCalledTimes(1)
+    })
+    const [, , firstIsCurrent] = renderMermaidDiagrams.mock.calls[0] ?? []
+    if (!firstIsCurrent) throw new Error('expected an isCurrent function')
+
+    document.documentElement.classList.add('dark')
+    await waitFor(() => {
+      expect(renderMermaidDiagrams).toHaveBeenCalledTimes(2)
+    })
+    const [, , secondIsCurrent] = renderMermaidDiagrams.mock.calls[1] ?? []
+    if (!secondIsCurrent) throw new Error('expected an isCurrent function')
+
+    expect(firstIsCurrent()).toBe(false)
+    expect(secondIsCurrent()).toBe(true)
   })
 })

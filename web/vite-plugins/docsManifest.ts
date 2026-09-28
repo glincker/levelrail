@@ -73,6 +73,10 @@ function stripFrontmatter(text: string): string {
 // against. A slice, not the full page: the raw markdown per page is loaded
 // lazily on open (see src/lib/docsContent.ts), and stuffing full bodies into
 // this manifest would reintroduce the eager-load cost that design avoids.
+// Raising this to help search on long docs (cli-reference.md etc.) isn't
+// a safe constant bump: even 1800 pushed virtual:docs-manifest's chunk
+// from 581KB to 709KB, over check-bundle-size.js's 600KB budget. Needs a
+// separate search-only chunk, not a bigger cap here.
 const BODY_EXCERPT_MAX_CHARS = 1200
 
 function cleanMarkdownLine(line: string): string {
