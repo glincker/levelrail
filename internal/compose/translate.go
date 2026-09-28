@@ -55,6 +55,11 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 		if gpu != nil {
 			d.Resources = &store.ServiceResources{GPU: gpu}
 		}
+		replicas, err := replicasFromDeploy(svc.Deploy)
+		if err != nil {
+			return nil, nil, fmt.Errorf("service %q: %w", key, err)
+		}
+		d.Replicas = replicas
 		for _, p := range svc.Ports {
 			d.Port = p.ContainerPort
 			break

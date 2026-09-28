@@ -94,7 +94,8 @@ type Service struct {
 	// empty too; "never" and "build" are rejected, see
 	// normalizePullPolicy.
 	PullPolicy string
-	// Deploy carries only the GPU device reservation (gpu.go).
+	// Deploy carries the GPU device reservation and replicas count
+	// (gpu.go).
 	Deploy *Deploy
 	// Secrets/Configs are this service's own secrets:/configs: references
 	// (short string form or long {source, target,...} map form, either
@@ -244,7 +245,7 @@ func validateUnsupportedTopLevel(f *File) []error {
 		}
 		if svc.Deploy != nil {
 			for _, key := range svc.Deploy.unsupported {
-				errs = append(errs, fmt.Errorf("service %q: deploy.%s is not supported yet; it is a Swarm-specific field with no meaning outside a Swarm cluster (only deploy.resources.reservations.devices, for GPU reservations, is read)", name, key))
+				errs = append(errs, fmt.Errorf("service %q: deploy.%s is not supported yet; it is a Swarm-specific field with no meaning outside a Swarm cluster (only deploy.resources.reservations.devices, for GPU reservations, and deploy.replicas are read)", name, key))
 			}
 		}
 	}

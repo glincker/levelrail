@@ -57,10 +57,22 @@ services:
   web:
     image: nginx:latest
     deploy:
-      replicas: 3
+      restart_policy:
+        condition: on-failure
 `,
 			wantExit:      exitValidation,
-			wantStderrHas: "deploy.replicas is not supported",
+			wantStderrHas: "deploy.restart_policy is not supported",
+		},
+		{
+			name: "compose file with deploy.replicas validates cleanly",
+			content: `services:
+  web:
+    image: nginx:latest
+    deploy:
+      replicas: 3
+`,
+			wantExit:   exitOK,
+			wantStdout: "valid compose, 1 service(s)",
 		},
 		{
 			name: "compose file with a top-level secrets block fails clearly",

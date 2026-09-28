@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  web:
+    image: myorg/web:1.4.0
+    ports:
+      - "8080:8080"
+    deploy:
+      replicas: 3
+  worker:
+    image: myorg/worker:1.4.0
+    deploy:
+      replicas: 1
+  cache:
+    image: redis:7
