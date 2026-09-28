@@ -56,7 +56,7 @@ the same dependency-graph walk the pre-push hook uses. A change only a
 package's own tests can see (`_test.go`, `testdata/`, a doc a test reads)
 selects that package alone, not its dependents. Lanes:
 
-- `internal/api` in three shards by test name whenever it is affected. It is
+- `internal/api` in four shards by test name whenever it is affected. It is
   the slowest package by far, and most backend changes reach it.
 - Up to `CI_SMALL_LANE_MAX` (default 8) other affected packages share one
   `rest` lane. Above that, Docker-backed packages get their own `docker`
@@ -195,7 +195,8 @@ Add two app checks (SonarCloud, Greptile) to the listed counts after, three
 (plus CodeQL) before. Across the 30 PRs: 1370 billed minutes before, about
 1040 after, roughly 24% less, most of it on PRs that do not reach
 `internal/api`. A Go PR that does reach it (most backend work) still pays
-for its three shards, about 21 of its minutes.
+for its shards (four as of the latest sharding change), about 21 of its
+minutes.
 
 ## Dry run against real PR diffs
 
