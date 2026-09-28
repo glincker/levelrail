@@ -23,14 +23,20 @@ const (
 	maxRetryDelay = 30 * time.Second
 )
 
-// httpClient is the small REST helper hetzner.go and digitalocean.go both
-// build on: bearer auth, JSON in and out, and a bounded retry on 429 so a
+// httpClient is the small REST helper every provider in this package
+// builds on: bearer auth, JSON in and out, and a bounded retry on 429 so a
 // burst of provisioning calls doesn't fail outright on a provider's rate
 // limit.
 type httpClient struct {
 	base  string
 	token string
-	http  *http.Client
+	// tokenFunc, when set, is called before every request to obtain the
+	// bearer token instead of the static token field: azure.go and gcp.go
+	// use it for an OAuth2 access token that expires and must be
+	// refreshed, unlike hetzner.go/digitalocean.go's long-lived static
+	// token.
+	tokenFunc func(context.Context) (string, error)
+	http      *http.Client
 	// sleep is a seam for tests: real callers get contextSleep, tests can
 	// skip the wait entirely. Context-aware so a caller's cancellation
 	// (or its own deadline) ends a retry wait immediately rather than
@@ -44,6 +50,19 @@ func newHTTPClient(base, token string) *httpClient {
 		token: token,
 		http:  &http.Client{Timeout: requestTimeout},
 		sleep: contextSleep,
+	}
+}
+
+// newHTTPClientWithTokenFunc returns an httpClient authenticating every
+// request with a bearer token tokenFunc resolves fresh each time, for a
+// provider whose credential is an OAuth2 token source rather than a
+// static API token.
+func newHTTPClientWithTokenFunc(base string, tokenFunc func(context.Context) (string, error)) *httpClient {
+	return &httpClient{
+		base:      base,
+		tokenFunc: tokenFunc,
+		http:      &http.Client{Timeout: requestTimeout},
+		sleep:     contextSleep,
 	}
 }
 
@@ -94,13 +113,22 @@ func (c *httpClient) do(ctx context.Context, method, path string, body, out any)
 		}
 	}
 
+	bearer := c.token
+	if c.tokenFunc != nil {
+		t, err := c.tokenFunc(ctx)
+		if err != nil {
+			return fmt.Errorf("provision: obtain access token: %w", err)
+		}
+		bearer = t
+	}
+
 	var lastErr error
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		req, err := http.NewRequestWithContext(ctx, method, c.base+path, bytes.NewReader(payload))
 		if err != nil {
 			return fmt.Errorf("provision: build request: %w", err)
 		}
-		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set("Authorization", "Bearer "+bearer)
 		if body != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}

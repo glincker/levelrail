@@ -38,13 +38,15 @@ import {
   useNodeProvision,
 } from '../queries/nodeProvision'
 
-type ProviderId = 'hetzner' | 'digitalocean'
+type ProviderId = 'hetzner' | 'digitalocean' | 'azure' | 'gcp'
 type Step =
   'method' | 'region' | 'size' | 'details' | 'confirm' | 'progress' | 'manual'
 
 const PROVIDER_LABELS: Record<ProviderId, string> = {
   hetzner: 'Hetzner',
   digitalocean: 'DigitalOcean',
+  azure: 'Azure',
+  gcp: 'Google Cloud',
 }
 
 // A wizard, not a single dialog, for this one flow only: creating a real
@@ -110,45 +112,47 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-          {(['hetzner', 'digitalocean'] as ProviderId[]).map((p) => {
-            const info = providers.data?.find((x) => x.provider === p)
-            const hasToken = info?.has_token ?? false
-            return (
-              <button
-                key={p}
-                type="button"
-                disabled={providers.isLoading || !hasToken}
-                onClick={() => {
-                  setProvider(p)
-                  setStep('region')
-                }}
-                className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <CloudIcon className="size-5 shrink-0 text-muted-foreground" />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium text-foreground">
-                    {PROVIDER_LABELS[p]}
-                  </div>
-                  {!providers.isLoading && !hasToken ? (
-                    <div className="text-xs text-muted-foreground">
-                      No API token stored yet.{' '}
-                      <Link
-                        to="/settings/node-providers"
-                        className="underline underline-offset-2"
-                      >
-                        Connect one
-                      </Link>
+          {(['hetzner', 'digitalocean', 'azure', 'gcp'] as ProviderId[]).map(
+            (p) => {
+              const info = providers.data?.find((x) => x.provider === p)
+              const hasToken = info?.has_token ?? false
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  disabled={providers.isLoading || !hasToken}
+                  onClick={() => {
+                    setProvider(p)
+                    setStep('region')
+                  }}
+                  className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <CloudIcon className="size-5 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium text-foreground">
+                      {PROVIDER_LABELS[p]}
                     </div>
-                  ) : null}
-                </div>
-                <InfoTip label={`About ${PROVIDER_LABELS[p]} provisioning`}>
-                  We only use the provider API to create the VM; day to day
-                  operation never touches SSH, matching how the rest of
-                  Levelrail&apos;s multi-node works.
-                </InfoTip>
-              </button>
-            )
-          })}
+                    {!providers.isLoading && !hasToken ? (
+                      <div className="text-xs text-muted-foreground">
+                        No API token stored yet.{' '}
+                        <Link
+                          to="/settings/node-providers"
+                          className="underline underline-offset-2"
+                        >
+                          Connect one
+                        </Link>
+                      </div>
+                    ) : null}
+                  </div>
+                  <InfoTip label={`About ${PROVIDER_LABELS[p]} provisioning`}>
+                    We only use the provider API to create the VM; day to day
+                    operation never touches SSH, matching how the rest of
+                    Levelrail&apos;s multi-node works.
+                  </InfoTip>
+                </button>
+              )
+            },
+          )}
           <button
             type="button"
             onClick={() => setStep('manual')}

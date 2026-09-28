@@ -21,6 +21,23 @@ import type { NodeProviderResource } from '../types/nodeProvision'
 const PROVIDER_LABELS: Record<string, string> = {
   hetzner: 'Hetzner',
   digitalocean: 'DigitalOcean',
+  azure: 'Azure',
+  gcp: 'Google Cloud',
+}
+
+// Hetzner and DigitalOcean take a plain API token; Azure and GCP take a
+// JSON credential pasted into the same single-line field (see
+// docs/node-provisioning.md), so the field's own label and helper text
+// differ by provider instead of always reading "API token".
+const PROVIDER_FIELD_LABEL: Record<string, string> = {
+  azure: 'Service principal (JSON)',
+  gcp: 'Service account key (JSON)',
+}
+
+const PROVIDER_PLACEHOLDER: Record<string, string> = {
+  azure:
+    '{"tenant_id":"...","client_id":"...","client_secret":"...","subscription_id":"...","resource_group":"..."}',
+  gcp: 'Paste the service account key JSON, minified to one line',
 }
 
 // Instance-level cloud provider credentials for "nodes provision" and the
@@ -66,6 +83,7 @@ function ProviderForm({ provider }: { provider: NodeProviderResource }) {
   const [token, setToken] = useState('')
   const setCredential = useSetNodeProviderCredential()
   const label = PROVIDER_LABELS[provider.provider] ?? provider.provider
+  const fieldLabel = PROVIDER_FIELD_LABEL[provider.provider] ?? 'API token'
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -91,7 +109,7 @@ function ProviderForm({ provider }: { provider: NodeProviderResource }) {
       </div>
       <Field>
         <FieldLabel htmlFor={`node-provider-token-${provider.provider}`}>
-          API token
+          {fieldLabel}
         </FieldLabel>
         <Input
           id={`node-provider-token-${provider.provider}`}
@@ -102,7 +120,8 @@ function ProviderForm({ provider }: { provider: NodeProviderResource }) {
           placeholder={
             provider.has_token
               ? '••••••••••••'
-              : `Paste your ${label} API token`
+              : (PROVIDER_PLACEHOLDER[provider.provider] ??
+                `Paste your ${label} API token`)
           }
         />
         <FieldDescription>

@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,9 +20,16 @@ import (
 )
 
 // nodeProviderNames are the providers this control plane knows how to
-// provision against. Adding a third provider is a matter of an
+// provision against. Adding a provider is a matter of an
 // internal/provision.Provisioner implementation plus a new entry here.
-var nodeProviderNames = []string{"hetzner", "digitalocean"}
+var nodeProviderNames = []string{"hetzner", "digitalocean", "azure", "gcp"}
+
+// unknownNodeProviderMessage is the shared "which providers exist" text
+// every unknown-provider validation error uses, derived from
+// nodeProviderNames so it can't drift from the list it describes.
+func unknownNodeProviderMessage() string {
+	return "unknown provider, want one of " + strings.Join(nodeProviderNames, ", ")
+}
 
 // nodeProvisionNameRe mirrors gitSourceDatabaseNamePattern's own
 // convention: lowercase alphanumeric and hyphens, since this name also
@@ -78,6 +86,10 @@ func defaultNodeProvisionerFactory(provider, token string) (NodeProvisioner, err
 		return provision.NewHetzner(token), nil
 	case "digitalocean":
 		return provision.NewDigitalOcean(token), nil
+	case "azure":
+		return provision.NewAzure(token)
+	case "gcp":
+		return provision.NewGCP(token)
 	default:
 		return nil, fmt.Errorf("unknown provider %q", provider)
 	}
@@ -176,7 +188,7 @@ func (rt *Router) handleSetNodeProviderCredential(w http.ResponseWriter, r *http
 		return
 	}
 	if !isKnownNodeProvider(req.Provider) {
-		writeError(w, http.StatusBadRequest, "unknown provider, want one of hetzner, digitalocean")
+		writeError(w, http.StatusBadRequest, unknownNodeProviderMessage())
 		return
 	}
 	if req.Token == "" {
@@ -396,7 +408,7 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if !isKnownNodeProvider(req.Provider) {
-		writeError(w, http.StatusBadRequest, "unknown provider, want one of hetzner, digitalocean")
+		writeError(w, http.StatusBadRequest, unknownNodeProviderMessage())
 		return
 	}
 	if req.Region == "" || req.Size == "" {
