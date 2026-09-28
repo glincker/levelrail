@@ -1,24 +1,20 @@
 package build
 
-import (
-	"errors"
-	"testing"
-)
+import "testing"
 
 func TestSelectBuildNode(t *testing.T) {
 	tests := []struct {
-		name    string
-		nodes   []NodeInfo
-		want    string
-		wantErr error
+		name  string
+		nodes []NodeInfo
+		want  string
 	}{
 		{
-			name:  "no nodes at all: local",
+			name:  "no nodes at all: local (single node unchanged)",
 			nodes: nil,
 			want:  "",
 		},
 		{
-			name: "no node is build-capable: local",
+			name: "no node is build-capable: local (single node unchanged)",
 			nodes: []NodeInfo{
 				{ID: "node_a", AcceptsBuildWorkloads: false, Online: true},
 				{ID: "node_b", AcceptsBuildWorkloads: false, Online: true},
@@ -26,12 +22,12 @@ func TestSelectBuildNode(t *testing.T) {
 			want: "",
 		},
 		{
-			name: "one build-capable node, online: selected",
+			name: "build-only secondary preferred over a marked-no-build primary",
 			nodes: []NodeInfo{
-				{ID: "node_a", AcceptsBuildWorkloads: false, Online: true},
-				{ID: "node_b", AcceptsBuildWorkloads: true, Online: true},
+				{ID: "primary", AcceptsBuildWorkloads: false, Online: true},
+				{ID: "secondary", AcceptsBuildWorkloads: true, Online: true},
 			},
-			want: "node_b",
+			want: "secondary",
 		},
 		{
 			name: "multiple build-capable online nodes: deterministic, smallest ID wins",
@@ -51,36 +47,26 @@ func TestSelectBuildNode(t *testing.T) {
 			want: "node_b",
 		},
 		{
-			name: "build-capable node configured but unavailable: explicit error, no silent local fallback",
+			name: "the only build-capable node is unhealthy: falls back to the primary rather than failing the build",
 			nodes: []NodeInfo{
 				{ID: "node_a", AcceptsBuildWorkloads: true, Online: false},
 			},
-			wantErr: ErrNoBuildNodeAvailable,
+			want: "",
 		},
 		{
-			name: "every build-capable node offline: explicit error",
+			name: "every build-capable node offline: falls back to the primary rather than failing the build",
 			nodes: []NodeInfo{
 				{ID: "node_a", AcceptsBuildWorkloads: true, Online: false},
 				{ID: "node_b", AcceptsBuildWorkloads: true, Online: false},
 				{ID: "node_c", AcceptsBuildWorkloads: false, Online: true},
 			},
-			wantErr: ErrNoBuildNodeAvailable,
+			want: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := SelectBuildNode(tt.nodes)
-			if tt.wantErr != nil {
-				if !errors.Is(err, tt.wantErr) {
-					t.Fatalf("SelectBuildNode() err = %v, want %v", err, tt.wantErr)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("SelectBuildNode() unexpected error: %v", err)
-			}
-			if got != tt.want {
+			if got := SelectBuildNode(tt.nodes); got != tt.want {
 				t.Errorf("SelectBuildNode() = %q, want %q", got, tt.want)
 			}
 		})
