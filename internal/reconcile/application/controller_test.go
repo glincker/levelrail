@@ -760,6 +760,30 @@ func TestController_Reconcile_FreshDeploy_ReadinessFails(t *testing.T) {
 	}
 }
 
+// TestController_Reconcile_FreshDeploy_ReadinessFails_RecordsRolloutFailure
+// is F-002's other half: a container that never passes readiness must
+// correct the deploy_attempts row a synchronous "succeeded" was already
+// written to, not just fail the in-memory condition.
+func TestController_Reconcile_FreshDeploy_ReadinessFails_RecordsRolloutFailure(t *testing.T) {
+	srv := neverHealthy()
+	defer srv.Close()
+
+	rt := newFakeRuntime(serverPort(t, srv))
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+	}
+	rec := &fakeRollouts{}
+	c := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(150*time.Millisecond), WithRolloutRecorder(rec))
+
+	if _, err := c.Reconcile(context.Background()); err == nil {
+		t.Fatal("Reconcile() error = nil, want a readiness timeout error")
+	}
+	if len(rec.failed) != 1 || !strings.HasPrefix(rec.failed[0], "img:v1|") {
+		t.Fatalf("rollout failures = %v, want exactly one recorded for img:v1", rec.failed)
+	}
+}
+
 // TestController_Reconcile_ServiceReadyTimeoutOverride_OutlastsControllerDefault
 // proves store.ServiceHealth.ReadyTimeout (app.yaml's health.readyTimeout)
 // actually overrides the controller-level readyBudget per deploy: the
