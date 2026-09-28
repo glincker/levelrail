@@ -13,6 +13,7 @@ func (rt *Router) registerModelRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/models/{name}", rt.requireAbilityForResource(AbilityWrite, modelResourceFromPath, rt.handleDeleteModel))
 	mux.HandleFunc("POST /api/v1/models/{name}/restart", rt.requireAbilityForResource(AbilityWrite, modelResourceFromPath, rt.handleRestartModel))
 	mux.HandleFunc("PUT /api/v1/models/{name}/residency", rt.requireAbilityForResource(AbilityWrite, modelResourceFromPath, rt.handleSetModelResidency))
+	mux.HandleFunc("PUT /api/v1/models/{name}/swap-group", rt.requireAbilityForResource(AbilityWrite, modelResourceFromPath, rt.handleSetModelSwapGroup))
 	mux.HandleFunc("POST /api/v1/models/{name}/wake", rt.requireAbilityForResource(AbilityWrite, modelResourceFromPath, rt.handleWakeModel))
 	mux.HandleFunc("POST /api/v1/models/{name}/sleep", rt.requireAbilityForResource(AbilityWrite, modelResourceFromPath, rt.handleSleepModel))
 	mux.HandleFunc("POST /api/v1/models/{name}/api-key", rt.requireAbilityForResource(AbilityWriteSensitive, modelResourceFromPath, rt.handleRotateModelAPIKey))

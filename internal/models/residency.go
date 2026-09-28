@@ -3,10 +3,25 @@ package models
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+var swapGroupRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
+
+// validateSwapGroup normalizes and validates a swap group name. Empty
+// means no group and is always valid.
+func validateSwapGroup(group string) (string, error) {
+	if group == "" {
+		return "", nil
+	}
+	if !swapGroupRe.MatchString(group) {
+		return "", fmt.Errorf("%w: swap_group must be lowercase alphanumeric and hyphens, 1-63 characters", ErrInvalid)
+	}
+	return group, nil
+}
 
 const (
 	envIdleTTL         = "APP_MODEL_IDLE_TTL"
@@ -76,6 +91,15 @@ func (s *Service) SetResidency(ctx context.Context, name, residency string, idle
 		return err
 	}
 	return s.store.SetModelResidency(ctx, name, mode, secs, time.Now().UTC())
+}
+
+// SetSwapGroup changes a model's swap group. Empty clears it.
+func (s *Service) SetSwapGroup(ctx context.Context, name, group string) error {
+	group, err := validateSwapGroup(group)
+	if err != nil {
+		return err
+	}
+	return s.store.SetModelSwapGroup(ctx, name, group)
 }
 
 // Wake marks an on-demand model active so its engine starts now.

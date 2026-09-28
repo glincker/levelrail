@@ -31,6 +31,7 @@ type ModelService interface {
 	EngineMetrics(ctx context.Context, name string, window time.Duration) (models.EngineMetricsReport, error)
 	FitCheck(ctx context.Context, req models.FitRequest) (models.FitReport, error)
 	SetResidency(ctx context.Context, name, residency string, idleTTL time.Duration) error
+	SetSwapGroup(ctx context.Context, name, group string) error
 	Wake(ctx context.Context, name string) error
 	Sleep(ctx context.Context, name string) error
 	ModelFit(ctx context.Context, name string) (models.FitReport, error)
@@ -81,6 +82,12 @@ type modelResource struct {
 	Status                  modelStatusResource `json:"status"`
 	CreatedAt               time.Time           `json:"created_at"`
 	UpdatedAt               time.Time           `json:"updated_at"`
+	// SwapGroup is empty (no group) or a name shared by other models on
+	// the same node/GPU: at most one may be resident at once.
+	// SharesGPUWith lists every other model currently in the same group
+	// on the same node.
+	SwapGroup     string   `json:"swap_group,omitempty"`
+	SharesGPUWith []string `json:"shares_gpu_with,omitempty"`
 }
 
 func toModelResource(v models.View) modelResource {
@@ -95,6 +102,7 @@ func toModelResource(v models.View) modelResource {
 		Residency: m.Residency, IdleTTLSeconds: m.IdleTTLSeconds, ResidencyState: m.ResidencyState,
 		EffectiveIdleTTLSeconds: int(models.IdleTTL(m) / time.Second),
 		LastActiveAt:            optTime(m.LastActiveAt),
+		SwapGroup:               m.SwapGroup, SharesGPUWith: v.SharesGPUWith,
 	}
 }
 
@@ -118,6 +126,7 @@ type createModelRequest struct {
 	HFToken       string   `json:"hf_token"`
 	Residency     string   `json:"residency"`
 	IdleTTLSecs   int      `json:"idle_ttl_seconds"`
+	SwapGroup     string   `json:"swap_group"`
 }
 
 type createModelResponse struct {
@@ -243,6 +252,7 @@ func (rt *Router) handleCreateModel(w http.ResponseWriter, r *http.Request) {
 		},
 		NodeID: req.NodeID, Domain: req.Domain, HFToken: req.HFToken,
 		Residency: req.Residency, IdleTTL: time.Duration(req.IdleTTLSecs) * time.Second,
+		SwapGroup: req.SwapGroup,
 	})
 	if err != nil {
 		rt.writeModelError(w, "create model", err)

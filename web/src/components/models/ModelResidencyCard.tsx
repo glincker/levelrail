@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { MoonIcon, SunIcon } from '@phosphor-icons/react/dist/ssr'
+import { Badge } from '@/components/ui/badge'
 import { InfoTip, RelativeTime, StatusPill } from '@/components/kit'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -14,6 +15,7 @@ import {
 import { toast } from '@/components/ui/toast'
 import {
   useSetModelResidency,
+  useSetModelSwapGroup,
   useSleepModel,
   useWakeModel,
 } from '../../queries/models'
@@ -38,7 +40,9 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
   const [minutes, setMinutes] = useState(
     model.idle_ttl_seconds > 0 ? String(model.idle_ttl_seconds / 60) : '',
   )
+  const [swapGroup, setSwapGroup] = useState(model.swap_group ?? '')
   const save = useSetModelResidency()
+  const saveSwapGroup = useSetModelSwapGroup()
   const wake = useWakeModel()
   const sleep = useSleepModel()
   const invalid =
@@ -166,6 +170,62 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
           )}
         </p>
       ) : null}
+      <div className="space-y-2 border-t border-border pt-3">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold">Swap group</h3>
+          <InfoTip label="About swap groups">
+            Models sharing this name on the same node/GPU cannot both be
+            resident. Waking one stops the group's current resident model first
+            to free VRAM.
+          </InfoTip>
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <Field>
+            <FieldLabel htmlFor="swap-group-input">Group name</FieldLabel>
+            <Input
+              id="swap-group-input"
+              className="w-44"
+              value={swapGroup}
+              onChange={(e) => {
+                setSwapGroup(e.target.value)
+              }}
+              placeholder="none"
+            />
+          </Field>
+          <Button
+            type="button"
+            size="sm"
+            disabled={saveSwapGroup.isPending}
+            onClick={() => {
+              saveSwapGroup.mutate(
+                { name: model.name, swapGroup: swapGroup.trim() },
+                {
+                  onSuccess: () => {
+                    toast.add({ title: 'Swap group saved.', type: 'success' })
+                  },
+                  onError: fail('Could not save swap group.'),
+                },
+              )
+            }}
+          >
+            Save
+          </Button>
+        </div>
+        {model.shares_gpu_with && model.shares_gpu_with.length > 0 ? (
+          <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+            Shares a GPU with:
+            {model.shares_gpu_with.map((name) => (
+              <Badge
+                key={name}
+                variant="muted"
+                className="rounded-full text-[10px]"
+              >
+                {name}
+              </Badge>
+            ))}
+          </p>
+        ) : null}
+      </div>
     </section>
   )
 }

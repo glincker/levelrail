@@ -31,6 +31,8 @@ export interface ModelResource {
   effective_idle_ttl_seconds: number
   residency_state: 'awake' | 'asleep' | 'waking'
   last_active_at?: string
+  swap_group?: string
+  shares_gpu_with?: string[]
 }
 
 export interface CreateModelRequest {
@@ -46,6 +48,7 @@ export interface CreateModelRequest {
   hf_token?: string
   residency?: ModelResidency
   idle_ttl_seconds?: number
+  swap_group?: string
 }
 
 export interface CreateModelResponse extends ModelResource {

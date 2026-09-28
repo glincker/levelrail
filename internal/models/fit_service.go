@@ -173,7 +173,7 @@ func (s *Service) loadedModels(ctx context.Context, all []store.Model) (map[stri
 	}
 	out := make(map[string]bool, len(all))
 	for _, m := range all {
-		out[m.Name] = s.view(m, conds[ControllerName(m.Name)]).Ready
+		out[m.Name] = s.view(m, conds[ControllerName(m.Name)], nil).Ready
 	}
 	return out, nil
 }
