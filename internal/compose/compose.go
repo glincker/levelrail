@@ -9,12 +9,14 @@
 // otherwise: environment/ports/volumes accept both Compose's short and
 // long forms (see yaml.go), but only the fields Levelrail's own model
 // has room for: no port ranges, no UDP, no tmpfs/npipe mounts.
-// restart:, networks:, and depends_on: all parse and are
-// surfaced as non-blocking Notices instead of being silently dropped or
-// translated: see Notices for why none of the three has a real
-// translation onto how Levelrail runs a service (depends_on: in
-// particular is never used to sequence container startup order, that's
-// reconciler-level work out of scope here). command: and
+// restart: and networks: both parse and are surfaced as non-blocking
+// Notices instead of being silently dropped or translated: see Notices
+// for why neither has a real translation onto how Levelrail runs a
+// service. depends_on: parses into spec.Service.DependsOn / store.
+// DesiredService.DependsOn and IS enforced: internal/reconcile/
+// application.Controller waits for a dependency's container to start
+// before creating this service's own, real Docker Compose's own default
+// depends_on semantic (service_started, not service_healthy). command: and
 // entrypoint: both parse and translate into store.DesiredService's own
 // Command and Entrypoint fields. volumes: additionally accepts an
 // absolute host path on the left side as a bind mount (ValidateForBuild
@@ -49,6 +51,14 @@ type File struct {
 	// Only used by Notices to detect that custom networks were declared
 	// at all; Levelrail doesn't create per-network isolation from this.
 	Networks []string
+	// HasSecrets/HasConfigs record whether this file declares a top-level
+	// secrets: or configs: block: neither has a translation onto this
+	// platform's own env-var/Levelrail-secrets model, so validate rejects
+	// either outright (unlike restart:/networks:/depends_on:, which parse
+	// and are merely non-blocking Notices) rather than silently dropping
+	// values an operator would reasonably expect to reach a container.
+	HasSecrets bool
+	HasConfigs bool
 }
 
 // Service is one entry under services:.
@@ -62,8 +72,8 @@ type Service struct {
 	Networks    Networks
 	Restart     string
 	Healthcheck *Healthcheck
-	// DependsOn is depends_on:, never used to sequence container startup
-	// order (see Notices); kept only so Notices can tell it was declared.
+	// DependsOn is depends_on:, enforced by the reconciler as a start-
+	// order guarantee (see this file's own doc comment and Notices).
 	DependsOn DependsOn
 	// Command overrides the image's own default CMD
 	// (store.DesiredService.Command), parsed from command:'s own
@@ -86,6 +96,13 @@ type Service struct {
 	PullPolicy string
 	// Deploy carries only the GPU device reservation (gpu.go).
 	Deploy *Deploy
+	// Secrets/Configs are this service's own secrets:/configs: references
+	// (short string form or long {source, target,...} map form, either
+	// decodes fine into []any since only their presence matters here),
+	// the per-service counterpart to File.HasSecrets/HasConfigs; same
+	// rejection reasoning, see validateComposeServices.
+	Secrets []any
+	Configs []any
 }
 
 // PullPolicyAlways is pull_policy: always, the only non-default value
@@ -143,7 +160,13 @@ func Parse(data []byte) (*File, error) {
 		return nil, fmt.Errorf("compose: parse: %w", err)
 	}
 
-	f := &File{Version: raw.Version, Services: make(map[string]Service, len(raw.Services)), Domains: raw.Domains}
+	f := &File{
+		Version:    raw.Version,
+		Services:   make(map[string]Service, len(raw.Services)),
+		Domains:    raw.Domains,
+		HasSecrets: len(raw.Secrets) > 0,
+		HasConfigs: len(raw.Configs) > 0,
+	}
 	for name, svc := range raw.Services {
 		f.Services[name] = Service(svc)
 	}
@@ -188,11 +211,44 @@ func (f *File) validate(allowBuild, allowBindMounts bool) error {
 
 	errs := validateComposeServices(f, allowBuild, allowBindMounts)
 	errs = append(errs, validateComposeDomainRefs(f)...)
+	errs = append(errs, validateComposeDependsOn(f)...)
+	errs = append(errs, validateUnsupportedTopLevel(f)...)
 
 	if len(errs) == 0 {
 		return nil
 	}
 	return joinErrors(errs)
+}
+
+// validateUnsupportedTopLevel rejects the blocks that have no
+// translation onto this platform's model at all (unlike restart:/
+// networks:, which parse into a non-blocking Notice): secrets: and
+// configs: name external sources this platform has no way to fetch or
+// mount, so a referencing service would otherwise silently start
+// without whatever it expected there.
+func validateUnsupportedTopLevel(f *File) []error {
+	var errs []error
+	if f.HasSecrets {
+		errs = append(errs, fmt.Errorf("top-level secrets: is not supported yet; move the value into your app's own env vars or Levelrail secrets instead"))
+	}
+	if f.HasConfigs {
+		errs = append(errs, fmt.Errorf("top-level configs: is not supported yet; move the value into your app's own env vars, a baked-in file, or a named volume instead"))
+	}
+	for _, name := range sortedServiceNames(f) {
+		svc := f.Services[name]
+		if len(svc.Secrets) > 0 {
+			errs = append(errs, fmt.Errorf("service %q: secrets: is not supported yet; move the value into env or Levelrail secrets instead", name))
+		}
+		if len(svc.Configs) > 0 {
+			errs = append(errs, fmt.Errorf("service %q: configs: is not supported yet; move the value into env, a baked-in file, or a named volume instead", name))
+		}
+		if svc.Deploy != nil {
+			for _, key := range svc.Deploy.unsupported {
+				errs = append(errs, fmt.Errorf("service %q: deploy.%s is not supported yet; it is a Swarm-specific field with no meaning outside a Swarm cluster (only deploy.resources.reservations.devices, for GPU reservations, is read)", name, key))
+			}
+		}
+	}
+	return errs
 }
 
 // validateBindMountHostPath delegates to internal/bindmount, shared with
@@ -245,6 +301,75 @@ func validateComposeDomainRefs(f *File) []error {
 		}
 	}
 	return errs
+}
+
+// validateComposeDependsOn checks that every depends_on: entry names a
+// real sibling service in this file, and that no dependency cycle
+// exists: internal/spec.detectDependsOnCycle's own doc comment explains
+// why a cycle must be rejected rather than left to deadlock the
+// reconciler. Reference checks and cycle detection run on this file's
+// own service graph, independent of internal/spec's identical check on
+// app.yaml's services: map, since a compose file is validated (and its
+// depends_on: entries only ever mean something) on its own, before
+// internal/spec.Service.DependsOn is populated from it.
+func validateComposeDependsOn(f *File) []error {
+	var errs []error
+	for _, name := range sortedServiceNames(f) {
+		svc := f.Services[name]
+		for _, dep := range svc.DependsOn {
+			if dep == name {
+				errs = append(errs, fmt.Errorf("service %q: depends_on must not reference itself", name))
+				continue
+			}
+			if _, ok := f.Services[dep]; !ok {
+				errs = append(errs, fmt.Errorf("service %q: depends_on references %q, which is not a service in this file", name, dep))
+			}
+		}
+	}
+	if len(errs) > 0 {
+		return errs
+	}
+	if err := detectComposeDependsOnCycle(f); err != nil {
+		return []error{err}
+	}
+	return nil
+}
+
+// detectComposeDependsOnCycle is internal/spec.detectDependsOnCycle's own
+// algorithm, duplicated rather than shared: the two packages' service
+// graphs (compose.Service vs. spec.Service) are different types, and this
+// is the only place either package needs it.
+func detectComposeDependsOnCycle(f *File) error {
+	const (
+		visiting = 1
+		done     = 2
+	)
+	state := make(map[string]int, len(f.Services))
+
+	var visit func(name string, path []string) error
+	visit = func(name string, path []string) error {
+		switch state[name] {
+		case done:
+			return nil
+		case visiting:
+			return fmt.Errorf("depends_on cycle: %s -> %s", strings.Join(path, " -> "), name)
+		}
+		state[name] = visiting
+		for _, dep := range f.Services[name].DependsOn {
+			if err := visit(dep, append(path, name)); err != nil {
+				return err
+			}
+		}
+		state[name] = done
+		return nil
+	}
+
+	for _, name := range sortedServiceNames(f) {
+		if err := visit(name, nil); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func sortedServiceNames(f *File) []string {

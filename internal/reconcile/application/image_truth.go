@@ -15,6 +15,7 @@ import (
 // *store.DB satisfies this structurally.
 type RolloutRecorder interface {
 	RecordRollout(ctx context.Context, serviceName, image, state, runningImageID string) error
+	RecordRolloutFailure(ctx context.Context, serviceName, image, reason string) error
 }
 
 // WithRolloutRecorder records, per reconcile, whether the running
@@ -101,6 +102,17 @@ func (c *Controller) recordRollout(ctx context.Context, desired *store.DesiredSe
 	}
 	// Best effort: history annotation must never fail a reconcile.
 	_ = c.rollouts.RecordRollout(ctx, c.serviceName, desired.Image, state, runningImageID)
+}
+
+// recordRolloutFailure corrects a deploy attempt's status once its
+// container is confirmed to have never passed readiness (F-002): the
+// attempt was recorded succeeded synchronously at trigger time, before
+// this outcome was knowable.
+func (c *Controller) recordRolloutFailure(ctx context.Context, desired *store.DesiredService, cause error) {
+	if c.rollouts == nil {
+		return
+	}
+	_ = c.rollouts.RecordRolloutFailure(ctx, c.serviceName, desired.Image, cause.Error())
 }
 
 // removeStaleAfterHold is removeStale that keeps the most recent previous

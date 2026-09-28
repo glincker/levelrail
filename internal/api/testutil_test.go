@@ -317,8 +317,13 @@ func assertGitSourceWebhookRegistered(t *testing.T, gitSourceSecrets GitSourceSe
 	if !hookCalled {
 		t.Fatal("CreateWebhook was not called")
 	}
-	if !strings.HasSuffix(hookURL, "/api/v1/webhooks/github/"+appName) {
-		t.Errorf("hookURL = %q, want it to end with the generic git-push webhook path", hookURL)
+	// Exact match, not just a suffix check: every caller here configures
+	// testPrimaryDomain first (setPrimaryDomain), so the registered hook
+	// URL must be that single absolute origin plus the path, never a
+	// doubled-up "https://host https://host/..." from adding a base URL
+	// on top of a WebhookURL that is already absolute.
+	if want := "https://" + testPrimaryDomain + "/api/v1/webhooks/github/" + appName; hookURL != want {
+		t.Errorf("hookURL = %q, want %q", hookURL, want)
 	}
 	storedSecret, err := gitSourceSecrets.Resolve(context.Background(), store.GitSourceSecretsKey(appName), gitSourceSecretKey)
 	if err != nil {

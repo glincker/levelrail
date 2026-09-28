@@ -106,6 +106,10 @@ type Router struct {
 	nodes                  NodeStore
 	agentCAFingerprint     string // empty: join tokens are returned without a CA pin
 	nodeCerts              nodeCertConfig
+	nodeProvisions         NodeProvisionStore     // always set, same "core Store interface" shape as cloudflareDNS above
+	nodeProviderSecrets    NodeProviderSecrets    // nil is valid: POST /api/v1/node-providers and every node-providers/{provider}/... route return 501, same shape as cloudflareDNSSecrets above
+	nodeProviderCatalog    *providerCatalogCache  // always set (NewRouter constructs one unconditionally); purely in-memory, brief cache, see its own doc comment
+	nodeProvisionerFactory NodeProvisionerFactory // nil uses defaultNodeProvisionerFactory, overridable in this package's own tests
 	projects               ProjectStore
 	organizations          OrganizationStore
 	environments           EnvironmentStore
@@ -523,6 +527,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		cloudflareTunnel:            s,
 		cloudflareDNS:               s,
 		route53DNS:                  s,
+		nodeProvisions:              s,
+		nodeProviderCatalog:         newProviderCatalogCache(),
 		registry:                    s,
 		vault:                       s,
 		registryCatalog:             registrycatalog.NewClient(),

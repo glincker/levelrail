@@ -55,7 +55,12 @@
           "minItems": 1
         },
         "egress": { "$ref": "#/$defs/egress" },
-        "loadbalancer": { "$ref": "#/$defs/loadbalancer" }
+        "loadbalancer": { "$ref": "#/$defs/loadbalancer" },
+        "dependsOn": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        }
       }
     },
     "loadbalancer": {

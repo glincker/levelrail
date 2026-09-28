@@ -128,6 +128,7 @@ func TestDomainTLSCert_Live_ServesUploadedCertificateInsteadOfACME(t *testing.T)
 	if len(appResult.Conditions) == 0 || appResult.Conditions[0].Status != "True" {
 		t.Fatalf("application Controller.Reconcile() result = %+v, want a True Ready condition", appResult)
 	}
+	persistReadyCondition(buildCtx, t, svcStore, appCtrl.Name(), appResult.Conditions)
 
 	certPEM, keyPEM, wantLeaf := genSelfSignedCertKeyPEM(t, domain)
 	uploadedAt := time.Now().UTC()

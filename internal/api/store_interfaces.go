@@ -511,6 +511,7 @@ type Store interface {
 	RegistryStore
 	CloudflareDNSStore
 	Route53DNSStore
+	NodeProvisionStore
 	VaultSettingsStore
 	PasswordResetTokenStore
 	InviteStore

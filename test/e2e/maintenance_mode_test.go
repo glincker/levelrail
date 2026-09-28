@@ -78,6 +78,7 @@ func TestMaintenanceMode_Live_TogglesResponseWithoutStoppingContainer(t *testing
 	if len(appResult.Conditions) == 0 || appResult.Conditions[0].Status != "True" {
 		t.Fatalf("application Controller.Reconcile() result = %+v, want a True Ready condition", appResult)
 	}
+	persistReadyCondition(buildCtx, t, svcStore, appCtrl.Name(), appResult.Conditions)
 
 	caddyPort := freePort(t)
 	caddyAddr := fmt.Sprintf("127.0.0.1:%d", caddyPort)

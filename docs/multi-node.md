@@ -22,6 +22,8 @@ This shows up in three ways:
 
 Enrollment uses a one-time join token exchanged for a client certificate (the agent dials out to the control plane; the control plane never initiates a connection).
 
+Before enrolling a real (non-local) node, set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP a remote agent will actually use in `APP_CONTROL_PLANE_ADDR`. It defaults to `127.0.0.1`, which only ever matches a local, single-machine test. With a mismatched value, enrollment itself still succeeds (the initial certificate exchange pins by CA fingerprint, not hostname) and the node appears in `nodes list`, but its persistent session then fails TLS hostname verification on every connection attempt, and the node stays stuck at `status: pending` forever instead of flipping to `online`.
+
 ### Enrollment flow
 
 ```mermaid

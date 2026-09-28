@@ -151,6 +151,11 @@ levelrail apps deploy-compose <name> --file compose.yaml [flags]
 ```
 
 ```
+levelrail apps validate --file <app.yaml|compose.yaml> [flags]
+```
+parse and validate an app.yaml or a Docker Compose file locally, no API call and no deploy; prints the detected format, service count, and every non-blocking `notices` entry a real deploy would also surface
+
+```
 levelrail apps deploy-notify-targets create <app> --channel-id ID [flags]
 ```
 

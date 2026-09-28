@@ -57,6 +57,12 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesReenrollToken(prog, rest, stdout, stderr, lookupEnv)
 	case "revoke-cert":
 		return runNodesRevokeCert(prog, rest, stdout, stderr, lookupEnv)
+	case "providers":
+		return runNodesProviders(prog, rest, stdout, stderr, lookupEnv)
+	case "provision":
+		return runNodesProvision(prog, rest, stdout, stderr, lookupEnv)
+	case "provisions":
+		return runNodesProvisions(prog, rest, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown nodes subcommand %q\n\n", prog, sub)
 		_, _ = fmt.Fprint(stderr, nodesUsage(prog))
@@ -83,6 +89,9 @@ func nodesUsage(prog string) string {
   %[1]s nodes rotate-key <id> [flags]                                rotate a node's WireGuard key (only the local node today)
   %[1]s nodes reenroll-token <id> [flags]                            mint a one-time token to re-issue a node's agent certificate, shown once
   %[1]s nodes revoke-cert <id> [flags]                               revoke a node's agent certificate and disconnect it
+  %[1]s nodes providers list|set-credential [flags]                  manage cloud provider credentials (hetzner, digitalocean)
+  %[1]s nodes provision --provider --region --size --name [flags]    create a server at a cloud provider and enroll it as a node
+  %[1]s nodes provisions list|show <id> [flags]                      track a cloud node provision through to enrollment
 
 Run "%[1]s nodes <subcommand> -h" for a subcommand's own flags.
 `, prog)

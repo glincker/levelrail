@@ -181,14 +181,14 @@ Currently supported, matching the Railpack build path itself:
 
 | Provider | Framework name shown |
 | --- | --- |
-| Node.js | `Node.js` |
+| Node.js | `Node.js` (`Next.js` when `package.json` depends on `next`, App Router or Pages Router alike) |
 | Go | `Go` |
 | Java (Maven/Gradle, Spring Boot) | `Java (Spring Boot)` |
 | Python (Django) | `Python (Django)` |
 
 A repository Railpack can't place into one of these (or can't clone at all, e.g. private/unreachable) responds `{"detected": false}`, never an error: the wizard falls back to its normal manual build-type tabs (Auto-detect/Dockerfile/Static site/Prebuilt image), which stay fully usable and overridable regardless of what detection found.
 
-The detected framework name, once known, is stored on the resulting `deploy_attempts` row (`detected_framework`) and shown back on the deploy detail page once the deploy finishes, as a one-line summary above the usual metadata grid, e.g. "Node.js app, built in 42s, image levelrail/web:a1b2c3d", built entirely from data already on that row (framework name, computed duration, image tag), not a new metrics collection. It's also visible in `levelrail-cli apps deploys list` (a `FRAMEWORK` column) and in `--output json` for either the deploy-attempts list or a single build's response.
+The detected framework name, once known, is stored on the resulting `deploy_attempts` row (`detected_framework`) and shown back on the deploy detail page once the deploy finishes, as a one-line summary above the usual metadata grid, e.g. "Node.js app, built in 42s, image levelrail/web:a1b2c3d", built entirely from data already on that row (framework name, computed duration, image tag), not a new metrics collection. It's also visible in `levelrail-cli apps deploys list` (a `FRAMEWORK` column) and in `--output json` for either the deploy-attempts list or a single build's response. `apps create` (git-build path) and `apps builds trigger` run this same detection before triggering the build, so a CLI-triggered build gets a `FRAMEWORK` value too, not just one triggered from the web wizard.
 
 #### Live deploy view
 
@@ -245,12 +245,19 @@ with raw `compose.yaml` body. Each service gets its own `deploy_attempts` row.
 - Anything Levelrail can't translate (e.g., health check with no readiness-probe equivalent) comes back as a `notices` entry, not dropped silently.
 - `pull_policy: always` forces a fresh image pull on every deploy, even if the tag exists locally (useful for mutable tags like `:latest`). Default is pull-if-absent.
 - `ports:` and `volumes:` accept both Compose's short form (`"8080:80"`, `web-data:/data`) and long mapping form (`target`/`published`/`protocol`, `type`/`source`/`target`), so an upstream project's own `docker-compose.yml` usually pastes in unchanged. Port ranges, UDP, and `tmpfs`/`npipe` mounts have no Levelrail equivalent and are rejected.
+- `depends_on:` (list or map form; a map form's `condition:` is read only to confirm it was declared, not to distinguish `service_started` from `service_healthy`) is enforced as start order: a dependent service's container is not created until every service it names has at least one running container. This matches real Compose's own default `depends_on:` semantic (`service_started`), not `service_healthy`: it is not a wait for the dependency's own readiness or health check to pass, only for its container to exist and be running. A `depends_on:` entry must reference a real sibling service in the same file, and a cycle between services (`a` depends on `b` depends on `a`) fails validation rather than deadlocking the reconciler.
+- `restart:` and `networks:` parse but have no effect (Levelrail's reconciler is the sole authority on keeping a container running, and every service in an app already shares one flat network), surfaced as non-blocking `notices` rather than silently dropped.
 
-**Dashboard:** "Docker Compose" wizard card (`CreateComposeFields.tsx`)
+**Explicitly not supported** (validation fails with a clear message naming exactly what to remove, rather than a silent drop or a confusing runtime error):
+- `deploy:` subkeys other than `resources.reservations.devices` (GPU reservations): `replicas`, `mode`, `placement`, `restart_policy`, `update_config`, and the rest of the Swarm-specific `deploy:` surface have no meaning outside a Swarm cluster.
+- Top-level `secrets:` and `configs:` blocks, and a service's own `secrets:`/`configs:` references: neither has a translation onto Levelrail's own model. Move the value into the app's env vars (or Levelrail secrets) instead.
+
+**Dashboard:** "Docker Compose" wizard card (`CreateComposeFields.tsx`); an app deployed from multiple services (Compose or `deploy-spec`) shows every sibling service, including its `depends_on:`, on the app's Services panel.
 
 **CLI:**
 ```bash
 levelrail-cli apps deploy-compose <name> --file compose.yaml
+levelrail-cli apps validate --file compose.yaml   # parse and validate locally, no API call, no deploy
 ```
 
 ### 4. app.yaml deploy-spec (multi-service)

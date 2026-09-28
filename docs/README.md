@@ -128,6 +128,7 @@ Four main types, plus two Levelrail-specific categories:
 | Doc | Covers |
 | --- | --- |
 | [architecture.md](architecture.md) | How Levelrail is actually built today: reconciler, ingress, builds, storage |
+| [resilience.md](resilience.md) | What survives a control plane process crash and what does not, measured live: running containers, node agents, and the embedded ingress outage window |
 | [threat-model.md](threat-model.md) | Trust boundaries, assets, attackers, mitigations with file references, known gaps, and how to report a vulnerability |
 | [security-alert-verdicts.md](security-alert-verdicts.md) | Verdict and evidence for each code scanning alert: fixed, false positive, or accepted risk |
 | [comparison.md](comparison.md) | How Levelrail differs from Coolify, Dokploy, CapRover, Dokku, Kamal |

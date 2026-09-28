@@ -56,14 +56,22 @@ func (d *digestRuntime) seedRunning(name, imageID string, created time.Time) {
 }
 
 type fakeRollouts struct {
-	mu    sync.Mutex
-	calls []string
+	mu     sync.Mutex
+	calls  []string
+	failed []string
 }
 
 func (f *fakeRollouts) RecordRollout(_ context.Context, _, image, state, running string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.calls = append(f.calls, image+"|"+state+"|"+running)
+	return nil
+}
+
+func (f *fakeRollouts) RecordRolloutFailure(_ context.Context, _, image, reason string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.failed = append(f.failed, image+"|"+reason)
 	return nil
 }
 

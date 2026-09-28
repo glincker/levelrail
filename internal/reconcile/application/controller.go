@@ -481,7 +481,10 @@ func New(serviceName string, svcStore ServiceStore, runtime docker.Runtime, opts
 }
 
 // Name implements reconcile.Controller.
-func (c *Controller) Name() string { return "application/" + c.serviceName }
+func (c *Controller) Name() string { return ControllerName(c.serviceName) }
+
+// ControllerName is Name's naming convention, usable without a *Controller.
+func ControllerName(serviceName string) string { return "application/" + serviceName }
 
 // Reconcile implements reconcile.Controller.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
@@ -521,6 +524,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	// broken deploy rather than one that has not happened yet.
 	if appspec.IsPendingImage(desired.Image) {
 		return unknownResult("AwaitingFirstBuild"), nil
+	}
+
+	if blocked := c.dependencyBlock(ctx, desired); blocked != nil {
+		return *blocked, nil
 	}
 
 	if blocked := c.gpuPlacementBlock(ctx, desired); blocked != nil {
@@ -913,6 +920,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	if err := c.waitReady(ctx, state, desired); err != nil {
+		c.recordRolloutFailure(ctx, desired, err)
 		return replicaOutcome{reason: readinessReason(err, "ReadinessFailed")}, err
 	}
 	return c.confirmedOutcome(ctx, target, state, desired, true)

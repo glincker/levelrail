@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -151,6 +152,116 @@ func TestDeploySpec_StaticService_NotLinkedAsAService(t *testing.T) {
 	}
 	if staticStore.saveCalls != 1 {
 		t.Errorf("SaveStaticSite called %d times, want 1", staticStore.saveCalls)
+	}
+}
+
+// TestDeploySpec_StaticService_OutcomeImageNeverLeaksPath proves a static
+// site's ServiceOutcome.Image is the commit it was built from (or the
+// literal "static" with none), never deployStatic's own destination
+// directory: a caller (API response, CLI table) must never see a server
+// filesystem path in a field named "image".
+func TestDeploySpec_StaticService_OutcomeImageNeverLeaksPath(t *testing.T) {
+	tests := []struct {
+		name      string
+		commitSHA string
+		wantImage string
+	}{
+		{name: "commit known", commitSHA: "abc123", wantImage: "abc123"},
+		{name: "commit unknown", commitSHA: "", wantImage: "static"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			apps := newFakeAppStore()
+			staticStore := &fakeStaticSiteStore{}
+			p := New(&fakeBuilder{}, &fakeServiceStore{}, WithAppStore(apps), WithStaticSiteStore(staticStore), WithStaticRootDir(t.TempDir()))
+
+			sourceDir := t.TempDir()
+			writeTree(t, sourceDir, map[string]string{"dist/index.html": "<h1>hi</h1>"})
+
+			outcomes, err := p.DeploySpec(context.Background(), MultiRequest{
+				AppName: "myapp", Services: map[string]spec.Service{"site": staticService("site.example.com")},
+				SourceDir: sourceDir, CommitSHA: tt.commitSHA, ImageRepoBase: "levelrail/myapp",
+			}, nil)
+			if err != nil {
+				t.Fatalf("DeploySpec() error = %v", err)
+			}
+			if len(outcomes) != 1 || outcomes[0].Err != nil {
+				t.Fatalf("outcomes = %+v, want one successful static outcome", outcomes)
+			}
+			if outcomes[0].Image != tt.wantImage {
+				t.Errorf("outcomes[0].Image = %q, want %q", outcomes[0].Image, tt.wantImage)
+			}
+			if outcomes[0].Image == staticStore.saved.RootDir {
+				t.Errorf("outcomes[0].Image = %q, leaks the static site's server filesystem path", outcomes[0].Image)
+			}
+		})
+	}
+}
+
+// TestDeploySpec_SingleServiceName tables the SingleServiceName override
+// this method's own doc comment describes: used only for a single-service
+// request, renaming the sole service instead of "<AppName>-<serviceKey>".
+func TestDeploySpec_SingleServiceName(t *testing.T) {
+	tests := []struct {
+		name              string
+		services          map[string]spec.Service
+		singleServiceName string
+		wantErr           string
+		wantServiceName   string
+	}{
+		{
+			name:              "overrides the default name for a static service",
+			services:          map[string]spec.Service{"site": staticService()},
+			singleServiceName: "myapp",
+			wantServiceName:   "myapp",
+		},
+		{
+			name:              "overrides the default name for an ordinary service",
+			services:          map[string]spec.Service{"web": {Build: spec.Build{Type: spec.BuildDockerfile}, Port: 3000}},
+			singleServiceName: "myapp",
+			wantServiceName:   "myapp",
+		},
+		{
+			name:              "rejected alongside more than one service",
+			services:          multiServices(),
+			singleServiceName: "myapp",
+			wantErr:           "single_service_name",
+		},
+		{
+			name:            "empty override leaves the default <app>-<key> naming",
+			services:        map[string]spec.Service{"site": staticService()},
+			wantServiceName: "myapp-site",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			apps := newFakeAppStore()
+			p := New(&fakeBuilder{result: &build.Result{Tag: "img:sha"}}, &fakeServiceStore{},
+				WithAppStore(apps), WithStaticSiteStore(&fakeStaticSiteStore{}), WithStaticRootDir(t.TempDir()))
+
+			sourceDir := t.TempDir()
+			writeTree(t, sourceDir, map[string]string{"dist/index.html": "<h1>hi</h1>"})
+
+			outcomes, err := p.DeploySpec(context.Background(), MultiRequest{
+				AppName: "myapp", Services: tt.services, SourceDir: sourceDir, CommitSHA: "sha1",
+				ImageRepoBase: "levelrail/myapp", SingleServiceName: tt.singleServiceName,
+			}, nil)
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("err = %v, want it to contain %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("DeploySpec() error = %v", err)
+			}
+			if len(outcomes) != 1 || outcomes[0].Err != nil {
+				t.Fatalf("outcomes = %+v, want one successful outcome", outcomes)
+			}
+			if outcomes[0].ServiceName != tt.wantServiceName {
+				t.Errorf("ServiceName = %q, want %q", outcomes[0].ServiceName, tt.wantServiceName)
+			}
+		})
 	}
 }
 
@@ -376,6 +487,57 @@ services:
 	}
 	if got := svcStore.savedByName["myapp-web"].Port; got != 3000 {
 		t.Errorf("myapp-web port = %d, want 3000 (from the compose file's own ports:)", got)
+	}
+}
+
+// TestDeploySpec_ComposeService_DependsOnSurvivesExpansion confirms a
+// compose file's depends_on: reaches the saved store.DesiredService
+// (internal/reconcile/application.Controller's own dependencyBlock gate
+// reads it from there), keyed by the same bare compose service name the
+// dependency itself gets saved under, all the way through DeploySpec's
+// own fan-out.
+func TestDeploySpec_ComposeService_DependsOnSurvivesExpansion(t *testing.T) {
+	sourceDir := t.TempDir()
+	writeComposeFixture(t, sourceDir, "docker-compose.yml", `
+services:
+  web:
+    build: ./web
+    ports:
+      - "8080:3000"
+    depends_on:
+      - redis
+  redis:
+    image: redis:7
+`)
+
+	builder := &fakeBuilder{result: &build.Result{Tag: "irrelevant:sha"}}
+	svcStore := &fakeServiceStore{}
+	apps := newFakeAppStore()
+	p := New(builder, svcStore, WithAppStore(apps))
+
+	outcomes, err := p.DeploySpec(context.Background(), MultiRequest{
+		AppName: "myapp",
+		Services: map[string]spec.Service{
+			"stack": {Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}},
+		},
+		SourceDir: sourceDir, CommitSHA: "abc123", ImageRepoBase: "levelrail/myapp",
+	}, nil)
+	if err != nil {
+		t.Fatalf("DeploySpec() error = %v", err)
+	}
+	for _, o := range outcomes {
+		if o.Err != nil {
+			t.Fatalf("outcome %+v has an error, want none", o)
+		}
+	}
+
+	web := svcStore.savedByName["myapp-web"]
+	if len(web.DependsOn) != 1 || web.DependsOn[0] != "redis" {
+		t.Errorf("myapp-web.DependsOn = %v, want [redis]", web.DependsOn)
+	}
+	redis := svcStore.savedByName["myapp-redis"]
+	if len(redis.DependsOn) != 0 {
+		t.Errorf("myapp-redis.DependsOn = %v, want none", redis.DependsOn)
 	}
 }
 

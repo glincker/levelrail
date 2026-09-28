@@ -33,6 +33,10 @@ func (p previewRolloutRecorder) RecordRollout(ctx context.Context, serviceName, 
 	return err
 }
 
+func (p previewRolloutRecorder) RecordRolloutFailure(ctx context.Context, serviceName, image, reason string) error {
+	return p.inner.RecordRolloutFailure(ctx, serviceName, image, reason)
+}
+
 // rolloutRecorderFor wraps db with the preview hook when a manager exists.
 func rolloutRecorderFor(db *store.DB, notify previewNotifier) application.RolloutRecorder {
 	if notify == nil {
