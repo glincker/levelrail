@@ -164,6 +164,37 @@ the federated credential on the Azure AD app registration side (trusting
 that external issuer, subject and audience) is unchanged from Microsoft's
 own workload identity federation docs and outside this platform's scope.
 
+## GCP workload identity federation: known gap
+
+GCP has no equivalent to `federated_token_file` above. Only the service
+account JSON key mode under Required token scopes is supported.
+
+The reason this doesn't mirror Azure's pattern is a real difference in the
+two credential formats, not an oversight. Azure's credential blob is this
+platform's own JSON shape (`tenant_id`, `client_id`, ...), so adding
+`federated_token_file` alongside `client_secret` was a field on a format
+this package already controls. GCP's credential blob, by contrast, is
+Google's own service account key file pasted through as-is (`parseGCPProjectID`
+reads its `project_id` field directly), and Google's own workload identity
+federation format (an `external_account` credential JSON, per
+`golang.org/x/oauth2/google`) has no `project_id` field at all: the project
+is only reachable indirectly, via the `audience` field's workload identity
+pool resource path, which isn't a documented stable contract to parse a
+project ID out of. `google.CredentialsFromJSONWithType(ctx, json,
+google.ExternalAccount, ...)` would exchange the external token correctly,
+but still returns an empty `ProjectID` for that type, leaving no reliable
+source for the project ID `CreateServer`'s Compute API URL needs. The
+untyped auto-detecting `google.CredentialsFromJSON` helper is not a
+shortcut either: it is deprecated upstream specifically over the security
+risk of loading an unvalidated credential type.
+
+Revisiting this would mean either accepting a second, GCP-specific field
+this platform adds on top of Google's own file format (breaking the
+"paste the key as-is" property the service-account mode has today), or
+parsing the project number out of `audience`, which is fragile. Neither is
+a small change, so it's deferred rather than forced in to match Azure's
+shape.
+
 ## Cost expectations
 
 Every provider bills by the hour (or fractions of one) for however long the
@@ -255,6 +286,10 @@ trusted infrastructure, the same way you would a manually enrolled one.
 
 ## Known limitations
 
+- **GCP has no workload identity federation mode.** Only the service
+  account JSON key mode is supported; see "GCP workload identity
+  federation: known gap" above for why this doesn't mirror Azure's
+  federation option.
 - **Closing the wizard's progress view stops the browser from tracking
   that provision.** The server keeps provisioning either way (nothing
   server-side is cancelled), and `nodes provisions show <id>` or `GET
