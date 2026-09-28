@@ -1166,6 +1166,65 @@ func TestHandleUpdateApp_DoesNotClearEgressPolicy(t *testing.T) {
 	}
 }
 
+// TestHandleUpdateApp_DoesNotClearDependsOn is DependsOn's own
+// counterpart to TestHandleUpdateApp_DoesNotClearEgressPolicy: DependsOn
+// is response-only on this endpoint (like PullPolicy, set only through
+// app.yaml's dependsOn: or a compose import), so an ordinary PUT must
+// not silently wipe it.
+func TestHandleUpdateApp_DoesNotClearDependsOn(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "myapp-web", Image: "levelrail/web:1", Port: 3000, DependsOn: []string{"db"},
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/myapp-web", `{"image":"levelrail/web:2","port":4000}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	svc, err := db.GetDesiredService(context.Background(), "myapp-web")
+	if err != nil {
+		t.Fatalf("GetDesiredService after update: %v", err)
+	}
+	if len(svc.DependsOn) != 1 || svc.DependsOn[0] != "db" {
+		t.Errorf("DependsOn = %v, want [db] to survive an unrelated general PUT", svc.DependsOn)
+	}
+}
+
+// TestHandleGetApp_SurfacesDependsOn proves toAppResource carries
+// DependsOn through for display, the read half of the
+// display-only/set-elsewhere split
+// TestHandleUpdateApp_DoesNotClearDependsOn proves for writes.
+func TestHandleGetApp_SurfacesDependsOn(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{
+		Name: "myapp-web", Image: "levelrail/web:1", Port: 3000, DependsOn: []string{"db"},
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/myapp-web", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got appResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(got.DependsOn) != 1 || got.DependsOn[0] != "db" {
+		t.Errorf("DependsOn = %v, want [db] surfaced in GET", got.DependsOn)
+	}
+}
+
 // TestHandleGetApp_SurfacesEgressPolicy proves toAppResource carries
 // Egress through for display, the read half of the
 // display-only/dedicated-write-endpoint split

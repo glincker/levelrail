@@ -526,6 +526,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return unknownResult("AwaitingFirstBuild"), nil
 	}
 
+	if blocked := c.dependencyBlock(ctx, desired); blocked != nil {
+		return *blocked, nil
+	}
+
 	if blocked := c.gpuPlacementBlock(ctx, desired); blocked != nil {
 		return *blocked, nil
 	}

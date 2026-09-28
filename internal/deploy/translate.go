@@ -46,10 +46,11 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 		// comment on these two fields requires them to always be the
 		// already-resolved value, matching Resources/Health's own
 		// resolve-before-storing shape below.
-		Strategy: svc.EffectiveStrategy(),
-		Replicas: svc.EffectiveReplicas(),
-		Labels:   svc.Labels,
-		Command:  svc.Command,
+		Strategy:  svc.EffectiveStrategy(),
+		Replicas:  svc.EffectiveReplicas(),
+		Labels:    svc.Labels,
+		Command:   svc.Command,
+		DependsOn: svc.DependsOn,
 	}
 
 	if svc.HostPort != 0 {

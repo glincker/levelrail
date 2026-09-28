@@ -94,6 +94,18 @@ type Service struct {
 	// LoadBalancer configures balancing across this service's replicas
 	// (internal/loadbalancer). Nil keeps the plain single-upstream route.
 	LoadBalancer *loadbalancer.Config `yaml:"loadbalancer,omitempty"`
+
+	// DependsOn names sibling services: keys (within this same Spec, or
+	// within the same compose file for a compose-expanded service, see
+	// internal/compose.ExpandBuildService) this service waits on before
+	// the reconciler starts its own containers: internal/reconcile/
+	// application.Controller does not create a container for this
+	// service until every named dependency has at least one running
+	// container. This matches real Docker Compose's own default
+	// depends_on: semantic (service_started, not service_healthy): a
+	// start-order guarantee, not a health-based wait. See Validate for
+	// the reference and cycle checks.
+	DependsOn []string `yaml:"dependsOn,omitempty"`
 }
 
 // EgressModeAllowlist is the only meaningful Egress.Mode value today; see

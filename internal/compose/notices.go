@@ -36,11 +36,12 @@ type Notice struct {
 //     here the way they would under real Compose. That's a real
 //     semantic gap for a file that expressed isolation intent, worth a
 //     warning rather than a silent drop.
-//   - depends_on: (NoticeLevelWarning): parsed but never used to
-//     sequence container startup order, so a service can start before
-//     what it depends on is ready. A real semantic gap, worth a warning
-//     so an operator whose service crashloops on startup isn't left
-//     guessing why.
+//   - depends_on: (NoticeLevelNote): parses into DependsOn and IS
+//     enforced (a dependent's container is not created until its
+//     dependency has at least one running container), but only as real
+//     Compose's own default start-order semantic (service_started), not
+//     service_healthy: a dependency's own container starting does not
+//     mean its own readiness/health probe has passed yet.
 func (f *File) Notices() []Notice {
 	var notices []Notice
 	for _, name := range sortedServiceNames(f) {
@@ -60,8 +61,8 @@ func (f *File) Notices() []Notice {
 	}
 	if f.declaresDependsOn() {
 		notices = append(notices, Notice{
-			Level:   NoticeLevelWarning,
-			Message: "depends_on: is parsed but not enforced; the reconciler doesn't sequence container startup order, so a dependent service may start before what it depends on is ready",
+			Level:   NoticeLevelNote,
+			Message: "depends_on: is enforced as start order only (a dependency's container must exist and be running before its dependent is created), not as a wait for that dependency's own readiness or health check",
 		})
 	}
 	return notices

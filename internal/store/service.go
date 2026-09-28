@@ -242,6 +242,16 @@ type DesiredService struct {
 	// compose-only sourcing as Command above, from
 	// internal/compose.Service.Entrypoint.
 	Entrypoint []string
+	// DependsOn names sibling services (by their own bare service key,
+	// e.g. "db", not the full "<app>-db" DesiredService.Name) this
+	// service's containers wait on: internal/reconcile/application.
+	// Controller resolves each name against this service's own AppID
+	// before creating a container, matching real Docker Compose's
+	// default depends_on: semantic (service_started), see
+	// internal/spec.Service.DependsOn's own doc comment. Populated from
+	// app.yaml's dependsOn: or a compose file's depends_on: (both
+	// internal/compose.Service.DependsOn and the compose-expand path).
+	DependsOn []string
 	// PullPolicy is PullPolicyAlways to force a fresh image pull at
 	// deploy time even when the tag already exists locally
 	// (internal/docker.ContainerSpec.ForcePull), or empty for today's
@@ -563,6 +573,10 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 	if err != nil {
 		return fmt.Errorf("store: marshal command for service %q: %w", svc.Name, err)
 	}
+	dependsOnJSON, err := json.Marshal(nonNilSlice(svc.DependsOn))
+	if err != nil {
+		return fmt.Errorf("store: marshal depends_on for service %q: %w", svc.Name, err)
+	}
 	entrypointJSON, err := json.Marshal(nonNilSlice(svc.Entrypoint))
 	if err != nil {
 		return fmt.Errorf("store: marshal entrypoint for service %q: %w", svc.Name, err)
@@ -652,8 +666,8 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 	}
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, host_port, bind_address, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, pull_policy, image_id, image_id_ref, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, host_port, bind_address, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, pull_policy, image_id, image_id_ref, depends_on, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -680,8 +694,9 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 			pull_policy = excluded.pull_policy,
 			image_id = excluded.image_id,
 			image_id_ref = excluded.image_id_ref,
+			depends_on = excluded.depends_on,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), bindAddress, string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), string(egressJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""}, svc.PullPolicy, svc.ImageID, svc.ImageIDRef)
+	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), bindAddress, string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), string(egressJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""}, svc.PullPolicy, svc.ImageID, svc.ImageIDRef, string(dependsOnJSON))
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -1349,7 +1364,7 @@ func (s DesiredService) LocalImageID() string {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref"
+const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref, depends_on"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
@@ -1361,8 +1376,9 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		projectID, storageTargetID, appID, logDrainJSON, environmentID                                                                                                                      sql.NullString
 		hostPort                                                                                                                                                                            sql.NullInt64
 		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                                                             string
+		dependsOnJSON                                                                                                                                                                       string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef, &dependsOnJSON); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
@@ -1428,6 +1444,9 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 	}
 	if err := json.Unmarshal([]byte(entrypoint), &svc.Entrypoint); err != nil {
 		return nil, fmt.Errorf("unmarshal entrypoint: %w", err)
+	}
+	if err := json.Unmarshal([]byte(dependsOnJSON), &svc.DependsOn); err != nil {
+		return nil, fmt.Errorf("unmarshal depends_on: %w", err)
 	}
 	if err := json.Unmarshal([]byte(previewEnvOverridesJSON), &svc.PreviewEnvOverrides); err != nil {
 		return nil, fmt.Errorf("unmarshal preview_env_overrides: %w", err)

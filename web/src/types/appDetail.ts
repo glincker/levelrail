@@ -227,6 +227,13 @@ export interface AppDetail {
   // POST/DELETE /api/v1/apps/{name}/tags (queries/tags.ts's
   // useAttachAppTag/useDetachAppTag), never through this endpoint's PUT.
   tags?: string[]
+  // depends_on names sibling service keys (within the same app group)
+  // this service waits on before the reconciler starts its own
+  // containers (internal/api/apps.go's appResource.DependsOn),
+  // response-only like pull_policy above: set via app.yaml's
+  // dependsOn: or a compose file's depends_on:, never through this
+  // endpoint's PUT.
+  depends_on?: string[]
 }
 
 // Matches internal/api/apps.go's appVolumeResource exactly: one of an
