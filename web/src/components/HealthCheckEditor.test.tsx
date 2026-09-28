@@ -17,6 +17,7 @@ vi.mock('../hooks/useBrand', () => ({
     LogoSVG: '',
     DocsURL: 'https://test.example/docs',
     DiscussionsURL: '',
+    RepoURL: '',
   }),
 }))
 

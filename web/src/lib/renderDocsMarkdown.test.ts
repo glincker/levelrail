@@ -9,6 +9,7 @@ const manifest: DocsManifest = {
       file: 'getting-started.md',
       title: 'Getting started',
       headings: [],
+      body: '',
     },
   },
 }
@@ -80,6 +81,53 @@ describe('renderDocsMarkdown', () => {
     )
     expect(html).toContain('target="_blank"')
     expect(html).toContain('rel="noreferrer"')
+  })
+
+  it('renders a ```mermaid fence as a placeholder carrying the raw source, not literal text', () => {
+    const html = renderDocsMarkdown(
+      '```mermaid\nflowchart TD\n  A --> B\n```\n',
+      'architecture.md',
+      manifest,
+      '',
+    )
+    expect(html).toContain('data-mermaid-source=')
+    expect(html).toContain('mermaid-diagram')
+    // The raw source stays legible as text too, as a fallback if the
+    // client-side mermaid render pass never runs.
+    expect(html).toContain('flowchart TD')
+  })
+
+  it('leaves a non-mermaid fenced code block rendered as a normal code block', () => {
+    const html = renderDocsMarkdown(
+      '```go\nfunc main() {}\n```\n',
+      'x.md',
+      manifest,
+      '',
+    )
+    expect(html).not.toContain('data-mermaid-source')
+    expect(html).toContain('<pre>')
+    expect(html).toContain('func main()')
+  })
+
+  it('rewrites a doc-relative image src to /docs-assets/, stripping the assets/ segment', () => {
+    const html = renderDocsMarkdown(
+      '![Deploy history](assets/screenshots/deploy-history.png)',
+      'deployments-page.md',
+      manifest,
+      '',
+    )
+    expect(html).toContain('src="/docs-assets/screenshots/deploy-history.png"')
+    expect(html).toContain('alt="Deploy history"')
+  })
+
+  it('leaves an absolute image URL unchanged', () => {
+    const html = renderDocsMarkdown(
+      '![External](https://example.com/x.png)',
+      'x.md',
+      manifest,
+      '',
+    )
+    expect(html).toContain('src="https://example.com/x.png"')
   })
 
   it('renders an unresolved internal link as plain text, not a dead link', () => {

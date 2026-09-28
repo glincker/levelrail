@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-router'
 import { QuestionIcon } from '@phosphor-icons/react/dist/ssr'
 import { HelpSearchBox } from '../components/HelpSearchBox'
+import { DocsOnThisPage } from '../components/DocsOnThisPage'
 import { loadDocsManifest } from '../lib/docsManifestLoader'
 
 // Bundled help layout: every page under it renders from /docs, imported
@@ -28,6 +29,8 @@ export const Route = createFileRoute('/help')({
 function HelpLayout() {
   const manifest = Route.useLoaderData()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const currentRoutePath = pathname.replace(/^\/help/, '') || '/'
+  const currentPage = manifest.pages[currentRoutePath]
 
   return (
     <div className="space-y-6">
@@ -37,7 +40,7 @@ function HelpLayout() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
-        <nav className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+        <nav className="space-y-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto">
           <HelpSearchBox manifest={manifest} />
           <div className="space-y-4">
             {manifest.categories.map((category) => (
@@ -62,6 +65,13 @@ function HelpLayout() {
                         >
                           {doc.title}
                         </Link>
+                        {active && currentPage ? (
+                          <DocsOnThisPage
+                            key={pathname}
+                            headings={currentPage.headings}
+                            className="mt-1 mb-1 ml-2"
+                          />
+                        ) : null}
                       </li>
                     )
                   })}

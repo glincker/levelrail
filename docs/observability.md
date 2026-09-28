@@ -4,14 +4,15 @@ description: Node-local metrics, logs, and alerts with federated queries, no cen
 
 # Observability: metrics, logs, and alerts
 
-This platform keeps metrics and logs on each node's local store, with a federated query layer and alert engine on top.
+This platform keeps metrics and logs on each node's local store, with a federated query layer and alert engine on top. Every app gets CPU, memory, and request metrics automatically, full-text log search with live tail, and alert rules you can route to email, Slack, Discord, or a webhook, with no separate observability stack to install.
 
-**Core packages:**
+::: details For contributors: where this lives in the source
 - `internal/telemetry` - storage and query
 - `internal/alerting` - rule evaluation and notification
 - `internal/api/metrics.go`, `node_metrics.go`, `database_metrics.go` - metrics handlers
 - `logs.go`, `live_logs.go`, `logs_download.go` - log handlers
 - `app_resource_usage.go`, `alerts.go`, `notification_channels.go` - supporting handlers
+:::
 
 ## Why node-local, not a central store
 
@@ -150,6 +151,8 @@ When the database exceeds the size cap, the oldest tenth of the finest tier is d
 - **Settings -> Notification channels** - `NotificationChannelTable` to connect, edit, delete, test, and view delivery history for channels.
 
 ## Live tailing vs stored search vs download
+
+![Levelrail live log viewer with full-text search](assets/screenshots/logs.png)
 
 These are three different reads over the same underlying log store, not separate systems:
 

@@ -14,6 +14,8 @@ An **environment** (production, staging, or any name you create) belongs to a pr
 
 ## The apps list
 
+![Levelrail apps list showing all services across nodes at a glance](assets/screenshots/apps-list.png)
+
 The dashboard list at `/apps` has a status strip (running, deploying, failing, stopped), a search box, environment chips, a tag filter, and a checkbox on every row. The list is virtualized, so hundreds of apps stay responsive.
 
 **Saved views** store the current search, environments and tags under a name. They are kept in your browser's local storage, not on the server: the control plane has no per-user preference store, and a view is a convenience rather than shared state.

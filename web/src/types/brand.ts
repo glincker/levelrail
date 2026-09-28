@@ -17,4 +17,5 @@ export interface Brand {
   LogoSVG: string
   DocsURL: string
   DiscussionsURL: string
+  RepoURL: string
 }

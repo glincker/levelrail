@@ -4,6 +4,8 @@ description: Core architecture of Levelrail's reconciler, agent, builds, ingress
 
 # Architecture
 
+> This is a developer-facing explanation of how Levelrail is built internally. If you are an operator looking for how to use the platform, start with [Getting started](getting-started.md) or browse the [How-to guides](README.md#how-to-guides) instead.
+
 This is how Levelrail is actually built today, not just how the phase plan
 describes it. Where "shipped" and "designed for later" differ, this page
 says which one you're looking at.

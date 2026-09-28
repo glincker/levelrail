@@ -16,75 +16,75 @@ reference: every dashboard page, every API resource group, every CLI
 command group, in one place. When in doubt about whether something has
 a UI, an API, or a CLI surface, check the corresponding row here first.
 
-## Dashboard pages (`web/src/routes/`)
+## Dashboard pages
 
-Every route is a thin wrapper (loader + a real component from
-`web/src/components/`); a short route file is not itself a sign of a
-stub, the substance lives in the imported component.
+This section lists what you can see and do for each app, database, and system area. Descriptions focus on what the operator sees and controls, not the implementation.
 
 ### Apps (`/apps/$name/*`)
 
-| Page | Component |
+| Page | What you can do |
 | --- | --- |
-| Overview | Hero, conditions, `DiagnosisPanel` |
-| Deploys | History, live/replay log stream, `deploys/compare` |
-| Deploy settings | Strategy config, `HooksEditor` (pre/post-deploy commands + last run outcome) |
-| Domains | `DomainEditor` |
-| Environment | Env var editor |
-| Exec | `ExecPanel` (one-off container exec) |
-| Feature flags | `FeatureFlagsPanel` |
-| Health | Health-check editor |
-| Integrations | `LogDrainCard` |
-| Logs | `LogSearchPanel` |
-| Metrics | `MetricsDashboard` |
-| Network | `AppNetworkPanel` |
-| Resources | `ResourceLimitsEditor` + recommendation |
-| Scheduled tasks | `ScheduledTasksPanel` |
-| Services | Multi-service group view |
-| Source | `GitRepoSourcePicker`, `PreviewEnvironmentsCard`, `WebhookDeliveriesPanel` |
-| Volumes | `AppVolumeBackupsSection` |
-| Alerts | `AlertRulesPanel`, `DeployNotifyTargetsPanel` |
+| Overview | See live metrics (CPU, memory, disk), app status, health check results, and automatic diagnosis when something fails |
+| Deploys | View deploy history, inspect each deploy with its commit message and duration, watch live build logs as they stream in, or compare two deploys side by side |
+| Deploy settings | Configure deploy strategy (rolling, blue-green, or recreate), add pre and post-deploy hooks (shell commands that run before and after deploy), and see the outcome from the last hook run |
+| Domains | Add, remove, and manage custom domains pointing to this app, and view TLS certificate status for each |
+| Environment | Add, edit, and delete environment variables; mark sensitive ones as secrets so their value is envelope-encrypted at rest and never written to app.yaml or the git repo |
+| Exec | Run one-off commands inside running containers without stopping the app |
+| Feature flags | Toggle app behavior at runtime without redeploying, and see which flag values are currently active |
+| Health | Set up readiness and liveness probes so the platform knows when your app is ready to serve traffic and when it has crashed |
+| Integrations | Send app logs to external log drains (Datadog, Papertrail, etc.) |
+| Logs | Search and filter logs from running containers with full-text search, or tail live logs in real time |
+| Metrics | View CPU, memory, disk I/O, network I/O, request rate, response times, error rate, and container restart counts over time |
+| Network | See which node the app is running on and internal DNS names for communicating with other apps and databases |
+| Resources | Set CPU and memory limits so the app does not starve others or consume unbounded resources; see platform recommendations based on actual usage |
+| Scheduled tasks | Set up cron-like tasks that run inside the app on a schedule |
+| Services | Manage multi-service apps: a web frontend plus a background worker, both under the same app.yaml |
+| Source | Connect a git repository and configure branch-to-environment mapping, preview environments per pull request, and inspect webhook deliveries from your git provider |
+| Volumes | Back up app storage volumes to S3, restore from a backup, or browse backup history |
+| Alerts | Set up alerts that fire when metrics cross a threshold, and choose notification channels (email, Slack, Discord, Telegram) |
 
 ### Databases (`/databases/$name/*`)
 
-| Page | Features |
+| Page | What you can do |
 | --- | --- |
-| Overview | Backups, public access, attachment, TLS status badge |
-| Logs | Database activity logs |
-| Metrics | Performance and resource metrics |
-| Resources | Resource limits and recommendations |
+| Overview | Manage backups and restore points, expose the database outside the Docker network for external tools, attach it to apps, and check TLS certificate status |
+| Logs | View detailed activity logs from the database engine |
+| Metrics | Monitor resource usage over time: CPU, memory, network I/O, and disk I/O |
+| Resources | Set CPU and memory limits and see platform recommendations based on usage |
 
-### System / org structure
+### System and organization
 
-- **Nodes** - list view, detailed health, cordon/drain, workload management, metrics
-- **Cross-app domains** - shared domain configuration
-- **Projects** - grouping and organization
-- **Environments** - environment-scoped settings
-- **Organizations** - multi-tenant structure
+- **Nodes** - List all managed servers, check their health status, drain workloads before maintenance, prevent scheduling new apps on a node, and view node metrics
+- **Cross-app domains** - Configure shared domain routing and TLS settings that apply to all apps using them
+- **Projects** - Group apps and databases by project for better organization
+- **Environments** - Create environment tiers (staging, production) and scope app settings and variables per environment
+- **Organizations** - Set up multi-tenant structure for teams or separate business units
 
-### Settings (`/settings/*`)
+### Settings
 
-- Account
-- Security (2FA, TOTP)
-- General (system status, Docker cleanup, orphaned volume cleanup, certificates, master key rotation)
-- Tokens
-- CLI access
-- Users
-- IAM policies
-- Audit log and purge
-- Backup targets
-- Registry credentials
-- Container registry (built-in)
-- Notification channels
-- Organizations
-- OAuth sign-in
-- GitHub/GitLab/Bitbucket apps
-- Cloudflare Tunnel
-- Vault (external secrets)
-- Email
-- System status (doctor bundle), plus a Status page (`/status`) and an `attention` CLI command listing everything failing right now (failing apps, failed deploys from the last 24 hours with Redeploy and Rollback buttons on the Status page, disk pressure under 10 percent free as a warning and under 5 percent as critical, offline nodes, bad certificates, doctor findings)
-- Containers
-- Updates
+| Category | What you can do |
+| --- | --- |
+| Account | Update your profile and preferences |
+| Security | Enable two-factor authentication and TOTP |
+| General | Check system health status, clean up unused Docker containers and volumes, view and rotate certificates, rotate the master encryption key |
+| Tokens | Create and revoke API tokens for CLI and automation |
+| CLI access | Set up CLI authentication |
+| Users | Invite team members and manage accounts |
+| IAM policies | Define granular access control rules for team members |
+| Audit log | View all actions taken by any user, with filtering and exports |
+| Backup targets | Configure S3 or S3-compatible storage for app and database backups |
+| Registry credentials | Store Docker registry credentials for private image pulls |
+| Container registry | Use the built-in container registry to host images |
+| Notification channels | Set up email, Slack, Discord, or Telegram for alert notifications |
+| Organizations | Manage organization-level settings |
+| OAuth sign-in | Enable single sign-on via GitHub, Google, or other OAuth providers |
+| Git provider apps | Connect GitHub Apps, GitLab integrations, and Bitbucket connections for automatic deployments |
+| Cloudflare Tunnel | Route traffic through Cloudflare instead of opening ports directly |
+| Vault | Connect external secret management (HashiCorp Vault) for credential storage |
+| Email | Configure outgoing email for invites and notifications |
+| System status | Run the doctor diagnostic, view the status page, and check the attention panel for critical issues |
+| Containers | View all containers running on the control plane |
+| Updates | Check and install platform updates |
 
 ## API resource groups (`internal/api/routes.go`, `routes_platform.go`)
 
