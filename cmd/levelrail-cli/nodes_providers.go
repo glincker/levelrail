@@ -43,7 +43,7 @@ func nodesProvidersUsage(prog string) string {
   %[1]s nodes providers list [flags]                                          list known cloud providers and whether each has a stored credential
   %[1]s nodes providers set-credential --provider NAME --provider-token TOKEN [flags]   store (or replace) a provider's API token
 
-NAME must be "hetzner" or "digitalocean".
+NAME must be "hetzner", "digitalocean", "azure" or "gcp".
 
 Run "%[1]s nodes providers <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -76,8 +76,8 @@ func nodesProvidersListUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s nodes providers list [flags]
 
-Lists every known cloud provider (hetzner, digitalocean) and whether a
-credential is currently stored for it.
+Lists every known cloud provider (hetzner, digitalocean, azure, gcp) and
+whether a credential is currently stored for it.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
@@ -106,8 +106,8 @@ func printNodeProvidersTable(out io.Writer, providers []nodeProviderResource) {
 func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes providers set-credential", "print the updated provider as JSON to stdout and nothing else", stderr)
 	var provider, providerToken string
-	fs.StringVar(&provider, "provider", "", "hetzner or digitalocean (required)")
-	fs.StringVar(&providerToken, "provider-token", "", "the provider's API token; prefer piping it on stdin or the interactive prompt instead, a flag value is visible in shell history and the process list")
+	fs.StringVar(&provider, "provider", "", "hetzner, digitalocean, azure or gcp (required)")
+	fs.StringVar(&providerToken, "provider-token", "", "the provider's credential (an API token for hetzner/digitalocean, a single-line JSON object for azure, a service account JSON key for gcp); prefer piping it on stdin or the interactive prompt instead, a flag value is visible in shell history and the process list")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesProvidersSetCredentialUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -149,19 +149,26 @@ func nodesProvidersSetCredentialUsage(prog string) string {
   %[1]s nodes providers set-credential --provider NAME [--provider-token TOKEN] [flags]
   echo "$TOKEN" | %[1]s nodes providers set-credential --provider NAME
 
-Stores (or replaces) a cloud provider's API token, encrypted the same way
-every other integration credential in this platform is. The token is
-never echoed back.
+Stores (or replaces) a cloud provider's credential, encrypted the same way
+every other integration credential in this platform is. It is never
+echoed back.
+
+For hetzner and digitalocean the credential is a plain API token. For
+azure it is a single-line JSON object with tenant_id, client_id,
+client_secret, subscription_id and resource_group (an Azure AD service
+principal with Contributor access on that resource group). For gcp it is
+a service account JSON key's raw content, minified to one line; its
+project_id field is used directly, no separate project flag exists.
 
 --provider-token is accepted for scripting but its value ends up in
 shell history and the process list while the command runs. Prefer
-piping the token on stdin (a non-terminal stdin is read directly, one
-line, trimmed), or omit both and run interactively: a terminal stdin
-gets a no-echo "Provider token:" prompt instead.
+piping the credential on stdin (a non-terminal stdin is read directly,
+one line, trimmed), or omit both and run interactively: a terminal
+stdin gets a no-echo "Provider token:" prompt instead.
 
 Flags:
-  --provider string       hetzner or digitalocean (required)
-  --provider-token string  the provider's API token, see above
+  --provider string       hetzner, digitalocean, azure or gcp (required)
+  --provider-token string  the provider's credential, see above
   --api-url string       control plane base URL (default: %[2]s env var, then %[3]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the updated provider as JSON to stdout, nothing else

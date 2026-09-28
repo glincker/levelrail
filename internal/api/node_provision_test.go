@@ -119,8 +119,8 @@ func TestHandleListNodeProviders(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(out) != 2 {
-		t.Fatalf("providers = %+v, want 2", out)
+	if len(out) != len(nodeProviderNames) {
+		t.Fatalf("providers = %+v, want %d", out, len(nodeProviderNames))
 	}
 	for _, p := range out {
 		if p.Provider == "hetzner" && !p.HasToken {

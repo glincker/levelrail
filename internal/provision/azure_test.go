@@ -1,0 +1,219 @@
+package provision
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"golang.org/x/oauth2"
+)
+
+func newTestAzure(t *testing.T, handler http.HandlerFunc) *Azure {
+	t.Helper()
+	srv := httptest.NewServer(handler)
+	t.Cleanup(srv.Close)
+	cred := azureCredential{
+		TenantID: "tenant", ClientID: "client", ClientSecret: "secret",
+		SubscriptionID: "sub-1", ResourceGroup: "rg-1",
+	}
+	ts := fakeTokenSource{token: &oauth2.Token{AccessToken: "fake-access-token"}}
+	return newAzure(cred, ts, srv.URL)
+}
+
+func TestAzure_ParseCredential_Valid(t *testing.T) {
+	raw := `{"tenant_id":"t","client_id":"c","client_secret":"s","subscription_id":"sub","resource_group":"rg"}`
+	cred, err := parseAzureCredential(raw)
+	if err != nil {
+		t.Fatalf("parseAzureCredential: %v", err)
+	}
+	if cred.TenantID != "t" || cred.ClientID != "c" || cred.ClientSecret != "s" || cred.SubscriptionID != "sub" || cred.ResourceGroup != "rg" {
+		t.Errorf("cred = %+v", cred)
+	}
+}
+
+func TestAzure_ParseCredential_ValidationError(t *testing.T) {
+	cases := []string{
+		`not json`,
+		`{}`,
+		`{"tenant_id":"t"}`,
+		`{"tenant_id":"t","client_id":"c","client_secret":"s","subscription_id":"sub"}`,
+	}
+	for _, raw := range cases {
+		if _, err := parseAzureCredential(raw); err == nil {
+			t.Errorf("parseAzureCredential(%q): expected an error", raw)
+		}
+	}
+}
+
+func TestAzure_ListRegions_SkipsNonPhysical(t *testing.T) {
+	a := newTestAzure(t, func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.Path, "/locations") {
+			t.Errorf("path = %q", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"value": []map[string]any{
+				{"name": "eastus", "displayName": "East US", "metadata": map[string]any{"regionType": "Physical"}},
+				{"name": "eastus-dr", "displayName": "East US DR", "metadata": map[string]any{"regionType": "Logical"}},
+			},
+		})
+	})
+	regions, err := a.ListRegions(context.Background())
+	if err != nil {
+		t.Fatalf("ListRegions: %v", err)
+	}
+	if len(regions) != 1 || regions[0].ID != "eastus" {
+		t.Errorf("regions = %+v", regions)
+	}
+}
+
+func TestAzure_ListSizes(t *testing.T) {
+	a := newTestAzure(t, func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.Path, "/vmSizes") {
+			t.Errorf("path = %q", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"value": []map[string]any{
+				{"name": "Standard_B1s", "numberOfCores": 1, "memoryInMB": 1024, "osDiskSizeInMB": 30720},
+			},
+		})
+	})
+	sizes, err := a.ListSizes(context.Background(), "eastus")
+	if err != nil {
+		t.Fatalf("ListSizes: %v", err)
+	}
+	if len(sizes) != 1 || sizes[0].ID != "Standard_B1s" || sizes[0].VCPUs != 1 || sizes[0].Memory != 1024 || sizes[0].Disk != 30 {
+		t.Errorf("sizes = %+v", sizes)
+	}
+}
+
+func TestAzure_ListSizes_RequiresRegion(t *testing.T) {
+	a := newTestAzure(t, func(http.ResponseWriter, *http.Request) {
+		t.Fatal("must not call the API without a region")
+	})
+	if _, err := a.ListSizes(context.Background(), ""); err == nil {
+		t.Fatal("expected an error")
+	}
+}
+
+func TestAzure_CreateServer(t *testing.T) {
+	var methods, paths []string
+	a := newTestAzure(t, func(w http.ResponseWriter, r *http.Request) {
+		methods = append(methods, r.Method)
+		paths = append(paths, r.URL.Path)
+		switch {
+		case strings.Contains(r.URL.Path, "/virtualNetworks/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"properties": map[string]any{
+					"subnets": []map[string]any{{"id": "/subnets/default"}},
+				},
+			})
+		case strings.Contains(r.URL.Path, "/publicIPAddresses/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":         "/pips/build-1-pip",
+				"properties": map[string]any{"ipAddress": "20.1.2.3"},
+			})
+		case strings.Contains(r.URL.Path, "/networkInterfaces/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"id": "/nics/build-1-nic"})
+		case strings.Contains(r.URL.Path, "/virtualMachines/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"properties": map[string]any{"provisioningState": "Creating"}})
+		case strings.Contains(r.URL.Path, "/resourcegroups/"):
+			w.WriteHeader(http.StatusOK)
+		default:
+			t.Errorf("unexpected path %q", r.URL.Path)
+		}
+	})
+
+	id, ip, err := a.CreateServer(context.Background(), CreateOpts{
+		Name: "build-1", Region: "eastus", Size: "Standard_B1s", UserData: "#cloud-init\n",
+	})
+	if err != nil {
+		t.Fatalf("CreateServer: %v", err)
+	}
+	if id != "build-1" || ip != "20.1.2.3" {
+		t.Errorf("id=%q ip=%q", id, ip)
+	}
+	if len(paths) != 5 {
+		t.Fatalf("made %d calls, want 5 (resource group, vnet, public ip, nic, vm): %v", len(paths), paths)
+	}
+	for _, m := range methods {
+		if m != http.MethodPut {
+			t.Errorf("method = %s, want PUT for every create call", m)
+		}
+	}
+}
+
+func TestAzure_CreateServer_RequiresFields(t *testing.T) {
+	a := newTestAzure(t, func(http.ResponseWriter, *http.Request) {
+		t.Fatal("must not call the API with missing required fields")
+	})
+	if _, _, err := a.CreateServer(context.Background(), CreateOpts{Name: "build-1"}); err == nil {
+		t.Fatal("expected an error")
+	}
+}
+
+func TestAzure_GetServer_StatusMapping(t *testing.T) {
+	cases := []struct {
+		raw  string
+		want ServerStatus
+	}{
+		{"Succeeded", ServerStatusRunning},
+		{"Creating", ServerStatusPending},
+		{"Failed", ServerStatusError},
+	}
+	for _, tc := range cases {
+		t.Run(tc.raw, func(t *testing.T) {
+			a := newTestAzure(t, func(w http.ResponseWriter, r *http.Request) {
+				if strings.Contains(r.URL.Path, "/publicIPAddresses/") {
+					_ = json.NewEncoder(w).Encode(map[string]any{"properties": map[string]any{"ipAddress": "1.2.3.4"}})
+					return
+				}
+				_ = json.NewEncoder(w).Encode(map[string]any{"properties": map[string]any{"provisioningState": tc.raw}})
+			})
+			status, ip, err := a.GetServer(context.Background(), "build-1")
+			if err != nil {
+				t.Fatalf("GetServer: %v", err)
+			}
+			if status != tc.want {
+				t.Errorf("status = %q, want %q", status, tc.want)
+			}
+			if ip != "1.2.3.4" {
+				t.Errorf("ip = %q", ip)
+			}
+		})
+	}
+}
+
+func TestAzure_DeleteServer_ErrorResponse(t *testing.T) {
+	a := newTestAzure(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("method = %s, want DELETE", r.Method)
+		}
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":{"code":"NotFound"}}`))
+	})
+	if err := a.DeleteServer(context.Background(), "build-1"); err == nil {
+		t.Fatal("expected an error")
+	}
+}
+
+func TestAzure_AuthFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Fatal("must not call the management API when token acquisition fails")
+	}))
+	t.Cleanup(srv.Close)
+	cred := azureCredential{TenantID: "t", ClientID: "c", ClientSecret: "s", SubscriptionID: "sub", ResourceGroup: "rg"}
+	ts := fakeTokenSource{err: errors.New("invalid_client: bad client secret")}
+	a := newAzure(cred, ts, srv.URL)
+
+	_, err := a.ListRegions(context.Background())
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if !strings.Contains(err.Error(), "invalid_client") {
+		t.Errorf("error = %v, want it to mention invalid_client", err)
+	}
+}
