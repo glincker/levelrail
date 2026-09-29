@@ -584,7 +584,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 func isReady(r reconcile.Result) bool {
 	for _, cond := range r.Conditions {
-		if cond.Type == "Ready" {
+		if cond.Type == reconcile.ConditionTypeReady {
 			return cond.Status == reconcile.ConditionTrue
 		}
 	}
@@ -635,7 +635,7 @@ func (c *Controller) reconcileBlueGreen(ctx context.Context, targets []string, d
 		// incomplete, and the error still surfaces (and this step
 		// retries, safely, on the next reconcile).
 		return reconcile.Result{Conditions: []reconcile.Condition{{
-			Type: "Ready", Status: reconcile.ConditionTrue,
+			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue,
 			Reason: "RunningStaleCleanupFailed", Message: err.Error(),
 		}}}, fmt.Errorf("application/%s: cleanup stale containers: %w", c.serviceName, err)
 	}
@@ -741,7 +741,15 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 			// With a hold configured the last old container stays as the
 			// held previous release.
 			if len(stale) > 1 || (len(stale) == 1 && c.previousReleaseHold <= 0) {
-				sort.SliceStable(stale, func(i, j int) bool { return stale[i].Created.Before(stale[j].Created) })
+				// Created is often tied at test/fake-clock resolution, so
+				// break ties on name to keep this deterministic rather
+				// than following ListByPrefix's map-iteration order.
+				sort.SliceStable(stale, func(i, j int) bool {
+					if !stale[i].Created.Equal(stale[j].Created) {
+						return stale[i].Created.Before(stale[j].Created)
+					}
+					return stale[i].Name < stale[j].Name
+				})
 				_ = c.removeContainers(ctx, stale[:1])
 			}
 		}
@@ -749,7 +757,7 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 
 	if err := c.removeStaleAfterHold(ctx, targets); err != nil {
 		return reconcile.Result{Conditions: []reconcile.Condition{{
-			Type: "Ready", Status: reconcile.ConditionTrue,
+			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue,
 			Reason: "RunningStaleCleanupFailed", Message: err.Error(),
 		}}}, fmt.Errorf("application/%s: cleanup stale containers: %w", c.serviceName, err)
 	}
@@ -782,7 +790,7 @@ func (c *Controller) finishReconcile(ctx context.Context, targets []string, desi
 	// succeeded: see runPostDeployHookIfConfigured's own doc comment.
 	if err := c.runPostDeployHookIfConfigured(ctx, targets, desired); err != nil {
 		return reconcile.Result{Conditions: []reconcile.Condition{{
-			Type: "Ready", Status: reconcile.ConditionTrue,
+			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue,
 			Reason: "PostDeployHookFailed", Message: err.Error(),
 		}}}, fmt.Errorf("application/%s: post-deploy hook: %w", c.serviceName, err)
 	}
@@ -797,7 +805,7 @@ func (c *Controller) finishReconcile(ctx context.Context, targets []string, desi
 	if c.deployRecorder != nil {
 		if err := c.deployRecorder.RecordDeploy(ctx, c.serviceName, time.Now()); err != nil {
 			return reconcile.Result{Conditions: []reconcile.Condition{{
-				Type: "Ready", Status: reconcile.ConditionTrue,
+				Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue,
 				Reason: "DeployedMetricRecordFailed", Message: err.Error(),
 			}}}, fmt.Errorf("application/%s: record deploy metric: %w", c.serviceName, err)
 		}
@@ -2195,7 +2203,7 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 
 func ready(reason string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionTrue, Reason: reason,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue, Reason: reason,
 	}}}
 }
 
@@ -2207,7 +2215,7 @@ func readyWithDetail(reason string, err error) reconcile.Result {
 		msg = err.Error()
 	}
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionTrue, Reason: reason, Message: msg,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue, Reason: reason, Message: msg,
 	}}}
 }
 
@@ -2217,12 +2225,12 @@ func notReady(reason string, err error) reconcile.Result {
 		msg = err.Error()
 	}
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
 	}}}
 }
 
 func unknownResult(reason string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionUnknown, Reason: reason,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: reason,
 	}}}
 }

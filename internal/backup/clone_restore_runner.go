@@ -126,7 +126,7 @@ func (r *CloneRestoreRunner) waitAndRestore(ctx context.Context, controllerName,
 }
 
 // waitUntilReady polls controllerName's stored reconcile conditions until
-// a "Ready"/ConditionTrue condition appears or readyTimeout elapses,
+// a reconcile.ConditionTypeReady/ConditionTrue condition appears or readyTimeout elapses,
 // mirroring the deadline-loop shape test/e2e's own getBodyWithRetry
 // helper uses for an analogous "something is still coming up
 // asynchronously" wait, at control-plane scale instead of test scale: a
@@ -150,7 +150,7 @@ func (r *CloneRestoreRunner) waitUntilReady(ctx context.Context, controllerName 
 			return fmt.Errorf("get conditions for %q: %w", controllerName, err)
 		}
 		for _, c := range conditions {
-			if c.Type == "Ready" && c.Status == reconcile.ConditionTrue {
+			if c.Type == reconcile.ConditionTypeReady && c.Status == reconcile.ConditionTrue {
 				return nil
 			}
 		}

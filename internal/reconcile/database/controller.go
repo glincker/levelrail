@@ -946,7 +946,7 @@ func walArchiveVolumeName(dbName string) string {
 
 func ready(reason string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionTrue, Reason: reason,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue, Reason: reason,
 	}}}
 }
 
@@ -956,13 +956,13 @@ func notReady(reason string, err error) reconcile.Result {
 		msg = err.Error()
 	}
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
 	}}}
 }
 
 func unknownResult(reason string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionUnknown, Reason: reason,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: reason,
 	}}}
 }
 
@@ -971,7 +971,7 @@ func unknownResult(reason string) reconcile.Result {
 // than running unauthenticated. See the package doc comment.
 func credentialsBlockedResult() reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type:   "Ready",
+		Type:   reconcile.ConditionTypeReady,
 		Status: reconcile.ConditionFalse,
 		Reason: "CredentialsNotConfigured",
 		Message: "no credentials available for this database; either the control plane has no secrets master key configured, " +
