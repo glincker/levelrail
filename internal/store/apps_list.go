@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -18,7 +19,7 @@ type AppListFilter struct {
 
 var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
-func (f AppListFilter) where() (string, []any) {
+func (f AppListFilter) where() (string, []any, error) {
 	var clauses []string
 	var args []any
 	if q := strings.ToLower(strings.TrimSpace(f.Query)); q != "" {
@@ -35,26 +36,29 @@ func (f AppListFilter) where() (string, []any) {
 		args = append(args, f.Environment, f.Environment)
 	}
 	if n := len(f.Tags); n > 0 {
-		marks := strings.TrimSuffix(strings.Repeat("?,", n), ",")
+		bTags, err := json.Marshal(f.Tags)
+		if err != nil {
+			return "", nil, fmt.Errorf("marshal tags: %w", err)
+		}
 		clauses = append(clauses, `name IN (
 			SELECT at.app_name FROM app_tags at JOIN tags t ON t.id = at.tag_id
-			WHERE t.name IN (`+marks+`)
+			WHERE t.name IN (SELECT value FROM json_each(?))
 			GROUP BY at.app_name HAVING COUNT(DISTINCT t.name) = ?)`)
-		for _, t := range f.Tags {
-			args = append(args, t)
-		}
-		args = append(args, n)
+		args = append(args, string(bTags), n)
 	}
 	if len(clauses) == 0 {
-		return "", nil
+		return "", nil, nil
 	}
-	return " WHERE " + strings.Join(clauses, " AND "), args
+	return " WHERE " + strings.Join(clauses, " AND "), args, nil
 }
 
 // ListDesiredServicesFiltered returns one page of services matching f,
 // plus the total match count before paging.
 func (db *DB) ListDesiredServicesFiltered(ctx context.Context, f AppListFilter) ([]DesiredService, int, error) {
-	where, args := f.where()
+	where, args, err := f.where()
+	if err != nil {
+		return nil, 0, err
+	}
 	var total int
 	if err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM desired_services`+where, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("store: count filtered services: %w", err)
@@ -86,7 +90,10 @@ func (db *DB) ListDesiredServicesFiltered(ctx context.Context, f AppListFilter) 
 // ListAppNamesFiltered returns every matching app name, unpaged and
 // without loading service graphs, for summary counts and bulk targeting.
 func (db *DB) ListAppNamesFiltered(ctx context.Context, f AppListFilter) ([]string, error) {
-	where, args := f.where()
+	where, args, err := f.where()
+	if err != nil {
+		return nil, err
+	}
 	rows, err := db.QueryContext(ctx, `SELECT name FROM desired_services`+where+` ORDER BY name`, args...)
 	if err != nil {
 		return nil, fmt.Errorf("store: list filtered app names: %w", err)
