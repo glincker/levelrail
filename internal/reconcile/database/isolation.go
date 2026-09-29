@@ -5,20 +5,24 @@ import (
 	"encoding/base64"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
 // maxIsolatedRoleNameLen keeps the role name under Postgres' 63-byte
-// identifier limit with room to spare.
+// identifier limit with room to spare. Reused as-is for Redis ACL
+// usernames (no such limit there, but sharing one naming scheme across
+// engines avoids a second one).
 const maxIsolatedRoleNameLen = 48
 
 var roleUnsafeChars = regexp.MustCompile(`[^a-z0-9_]+`)
 
-// IsolatedRoleName derives a deterministic, Postgres-safe role name for
-// one preview's isolated credential on sourceKey: lowercase, only
-// [a-z0-9_], truncated to stay well under the 63-byte identifier limit.
-// Deterministic so a redeploy of the same preview finds the same role
-// rather than minting a new one.
+// IsolatedRoleName derives a deterministic, safe identifier for one
+// preview's isolated credential on sourceKey: lowercase, only
+// [a-z0-9_], truncated to stay well under Postgres' 63-byte identifier
+// limit. Used both as a Postgres role name and, unchanged, as a Redis
+// ACL username. Deterministic so a redeploy of the same preview finds
+// the same role/user rather than minting a new one.
 func IsolatedRoleName(previewName, sourceKey string) string {
 	raw := "pv_" + previewName + "_" + sourceKey
 	safe := roleUnsafeChars.ReplaceAllString(strings.ToLower(raw), "_")
@@ -87,4 +91,32 @@ REVOKE ALL PRIVILEGES ON SCHEMA public FROM %s;
 REVOKE CONNECT ON DATABASE %s FROM %s;
 DROP ROLE IF EXISTS %s;
 `, r, r, r, d, r, r)
+}
+
+// CreateIsolatedRedisACLCommand returns the redis-cli argv that creates
+// or resets username's ACL entry: password-authenticated, restricted to
+// keys under its own "username:" prefix (~prefix:* per Redis 6+ ACL key
+// patterns), every command category except @admin/@dangerous/@scripting
+// (scripting is excluded because a Lua script's own key access isn't
+// reliably bound by the caller's key-pattern ACL). "reset" first clears
+// any prior state for this username so a redeploy converges to the same
+// rules rather than layering onto whatever ran before; idempotent, safe
+// to run again against a username that already exists.
+func CreateIsolatedRedisACLCommand(username, password string) []string {
+	return []string{
+		"redis-cli", "-p", strconv.Itoa(redisContainerPort),
+		"ACL", "SETUSER", username,
+		"reset", "on", ">" + password,
+		"resetkeys", "~" + username + ":*",
+		"resetchannels",
+		"+@all", "-@admin", "-@dangerous", "-@scripting",
+	}
+}
+
+// DropIsolatedRedisACLCommand returns the redis-cli argv that removes
+// username's ACL entry. ACL DELUSER on a username that doesn't exist
+// returns 0 deleted rather than erroring, so this is idempotent, safe to
+// retry the same way DropIsolatedRoleSQL's DROP ROLE IF EXISTS is.
+func DropIsolatedRedisACLCommand(username string) []string {
+	return []string{"redis-cli", "-p", strconv.Itoa(redisContainerPort), "ACL", "DELUSER", username}
 }
