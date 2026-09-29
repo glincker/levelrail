@@ -1959,6 +1959,85 @@ func TestSetServiceExecEnabled_NotFound(t *testing.T) {
 	}
 }
 
+// TestSaveDesiredService_AutoRollbackOnSLOBurn_DefaultsToOff mirrors
+// TestSaveDesiredService_ExecEnabled_DefaultsToTrue: a service that
+// never touches this column must read back as "off", not an empty
+// string a caller has to special-case.
+func TestSaveDesiredService_AutoRollbackOnSLOBurn_DefaultsToOff(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.AutoRollbackOnSLOBurn != AutoRollbackSLOBurnOff {
+		t.Errorf("AutoRollbackOnSLOBurn = %q, want %q", got.AutoRollbackOnSLOBurn, AutoRollbackSLOBurnOff)
+	}
+}
+
+func TestSetServiceAutoRollbackOnSLOBurn(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	for _, mode := range []string{AutoRollbackSLOBurnAuto, AutoRollbackSLOBurnDryRun, AutoRollbackSLOBurnPauseForHuman, AutoRollbackSLOBurnOff} {
+		if err := db.SetServiceAutoRollbackOnSLOBurn(ctx, "web", mode); err != nil {
+			t.Fatalf("SetServiceAutoRollbackOnSLOBurn(%q) error = %v", mode, err)
+		}
+		got, err := db.GetDesiredService(ctx, "web")
+		if err != nil {
+			t.Fatalf("GetDesiredService() error = %v", err)
+		}
+		if got.AutoRollbackOnSLOBurn != mode {
+			t.Errorf("AutoRollbackOnSLOBurn = %q, want %q", got.AutoRollbackOnSLOBurn, mode)
+		}
+	}
+}
+
+func TestSetServiceAutoRollbackOnSLOBurn_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetServiceAutoRollbackOnSLOBurn(context.Background(), "nonexistent", AutoRollbackSLOBurnAuto)
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("SetServiceAutoRollbackOnSLOBurn() error = %v, want ErrServiceNotFound", err)
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetAutoRollbackOnSLOBurn mirrors
+// TestSaveDesiredService_RedeployDoesNotResetExecEnabled: SaveDesiredService
+// never writes auto_rollback_on_slo_burn, so a plain redeploy must never
+// silently reset an operator's chosen mode back to off.
+func TestSaveDesiredService_RedeployDoesNotResetAutoRollbackOnSLOBurn(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v1", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+	if err := db.SetServiceAutoRollbackOnSLOBurn(ctx, "web", AutoRollbackSLOBurnPauseForHuman); err != nil {
+		t.Fatalf("SetServiceAutoRollbackOnSLOBurn() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "img:v2", Port: 8080}); err != nil {
+		t.Fatalf("SaveDesiredService() redeploy error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.AutoRollbackOnSLOBurn != AutoRollbackSLOBurnPauseForHuman {
+		t.Errorf("AutoRollbackOnSLOBurn = %q after redeploy, want %q", got.AutoRollbackOnSLOBurn, AutoRollbackSLOBurnPauseForHuman)
+	}
+}
+
 // TestSaveDesiredService_RedeployDoesNotResetExecEnabled mirrors
 // TestSaveDesiredService_RedeployDoesNotResetSuspended: SaveDesiredService
 // never writes exec_enabled, so a plain redeploy must never silently

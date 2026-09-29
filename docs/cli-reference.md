@@ -81,6 +81,14 @@ levelrail apps auto-rollback status <app-name> [flags]
 ```
 
 ```
+levelrail apps auto-rollback-slo-burn set <app-name> off|auto|dry_run|pause_for_human [flags]
+```
+
+```
+levelrail apps auto-rollback-slo-burn status <app-name> [flags]
+```
+
+```
 levelrail apps health get <name> [flags]
 ```
 

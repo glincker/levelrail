@@ -2208,6 +2208,25 @@ func (c *Client) SetAutoRollback(ctx context.Context, appName string, enabled bo
 	return out, err
 }
 
+// GetAutoRollbackSLOBurn calls GET /api/v1/apps/{name}/auto-rollback-slo-burn:
+// which mode appName reacts in the next time a kind=slo_burn alert rule
+// fires for it.
+func (c *Client) GetAutoRollbackSLOBurn(ctx context.Context, appName string) (AutoRollbackSLOBurnSettingResource, error) {
+	var out AutoRollbackSLOBurnSettingResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(appName)+"/auto-rollback-slo-burn", nil, &out)
+	return out, err
+}
+
+// SetAutoRollbackSLOBurn calls PUT
+// /api/v1/apps/{name}/auto-rollback-slo-burn, setting appName's mode for
+// automatic rollback on an SLO burn-rate alert. mode is one of "off",
+// "auto", "dry_run", "pause_for_human"; "off" by default.
+func (c *Client) SetAutoRollbackSLOBurn(ctx context.Context, appName, mode string) (AutoRollbackSLOBurnSettingResource, error) {
+	var out AutoRollbackSLOBurnSettingResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/auto-rollback-slo-burn", SetAutoRollbackSLOBurnRequest{Mode: mode}, &out)
+	return out, err
+}
+
 // CancelDeploy calls POST /api/v1/apps/{name}/deploys/{deployId}/cancel and
 // returns the attempt as it is after the cancel.
 func (c *Client) CancelDeploy(ctx context.Context, appName, deployID string) (DeployAttemptResource, error) {

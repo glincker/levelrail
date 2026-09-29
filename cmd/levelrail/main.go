@@ -860,6 +860,12 @@ func run(logger *slog.Logger) error {
 	// wiring this unconditionally does not change behavior for any app
 	// that hasn't turned it on.
 	alertingEngine.SetAutoRollback(db, engine)
+	// db also satisfies alerting.SLOAutoRollbackStore (AutoRollbackStore
+	// plus SaveDeployApproval); alertingDB satisfies
+	// alerting.SLOBurnHistoryRecorder via its own RecordHistory. Opt-in
+	// per app (store.DesiredService.AutoRollbackOnSLOBurn, off by
+	// default), same reasoning as SetAutoRollback above.
+	alertingEngine.SetSLOBurnAutoRollback(db, engine, alertingDB)
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))

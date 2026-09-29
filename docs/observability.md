@@ -305,6 +305,24 @@ Guardrails:
 - If there's no older successful image to fall back to (the app has never deployed before, or has already been rolled back to its oldest recorded image), auto-rollback does nothing and leaves the crashloop to the alert notification alone, rather than rolling back to nothing.
 - Independent of the `crashloop` alert rule's own notification, which still fires either way.
 
+**Auto-rollback on SLO burn**
+
+The same escape hatch as crashloop auto-rollback above, for a `slo_burn` rule instead, with three modes rather than a plain on/off:
+
+```
+levelrail-cli apps auto-rollback-slo-burn set <app> auto             # roll back immediately, same as crashloop
+levelrail-cli apps auto-rollback-slo-burn set <app> dry_run          # log what would have rolled back, never deploy
+levelrail-cli apps auto-rollback-slo-burn set <app> pause_for_human  # open a pending deploy approval instead of deploying directly
+levelrail-cli apps auto-rollback-slo-burn set <app> off              # default
+levelrail-cli apps auto-rollback-slo-burn status <app>
+```
+
+Or from the dashboard: the app's Deploys tab has an "Auto-rollback on SLO burn" mode selector next to the crashloop toggle.
+
+`auto` mode rolls back through the exact same `TriggerImageDeploy` path crashloop auto-rollback uses, on the rule's pending-to-firing transition (and again if a genuinely new bad deploy lands while the rule stays continuously firing). `dry_run` never deploys; it records a `slo_burn_would_rollback` event in [alert history](#alert-history) so you can see what would have happened before turning `auto` on. `pause_for_human` opens a pending entry in `GET /api/v1/deploy-approvals` (the same queue a deploy or promote into a protected environment uses) instead of deploying directly, so a teammate approves or rejects the rollback; it shows up on the app's Deploys tab and in the cross-app `/approvals` page like any other pending approval.
+
+Same guardrails as crashloop auto-rollback: fires at most once per firing episode, and does nothing (leaving the alert to notify alone) when there's no older successful image to fall back to.
+
 ## Silences, maintenance windows, and noise control
 
 Everything in this section sits between rule evaluation and notification. A rule keeps evaluating, keeps its own firing state, and is always recorded in [alert history](#alert-history); these controls only decide whether a notification goes out.
@@ -346,7 +364,7 @@ All noise state except silences, windows and history is in memory. A control pla
 
 ## Alert history
 
-Every state change and notification decision is recorded: the rule, app, node, severity, the event (`fired`, `resolved`, `flapping`, `flap_ended`), and the outcome.
+Every state change and notification decision is recorded: the rule, app, node, severity, the event (`fired`, `resolved`, `flapping`, `flap_ended`, plus `slo_burn_would_rollback` for auto-rollback on SLO burn's `dry_run` mode, see above), and the outcome.
 
 | Outcome | Meaning |
 | --- | --- |
@@ -357,7 +375,7 @@ Every state change and notification decision is recorded: the rule, app, node, s
 | `grouped` | folded into one grouped message, or resolved before its group was sent |
 | `ratelimited` | the channel rate limit was reached |
 | `flapping` | held because the rule is flapping |
-| `skipped` | the rule or its channel is disabled |
+| `skipped` | the rule or its channel is disabled, or (on a `slo_burn_would_rollback` event) `dry_run` mode logging what it would have done |
 
 Shown per app on `/apps/{name}/alerts`, globally on `/alerts` (with outcome and event filters), and available from the CLI (`levelrail-cli alerts history`), the API (`GET /api/v1/alert-history`) and the `list_alert_history` MCP tool. Entries are pruned after `APP_ALERT_HISTORY_RETENTION`. Who created, changed or removed a silence, window or rule is recorded separately in the generic audit log (`GET /api/v1/audit-log`), which covers every write request.
 

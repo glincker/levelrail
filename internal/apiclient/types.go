@@ -1923,6 +1923,22 @@ type AutoRollbackSettingResource struct {
 	Enabled bool `json:"enabled"`
 }
 
+// SetAutoRollbackSLOBurnRequest mirrors internal/api's
+// setAutoRollbackSLOBurnRequest (deploys.go): PUT
+// /api/v1/apps/{name}/auto-rollback-slo-burn's body. Mode is one of
+// "off", "auto", "dry_run", "pause_for_human".
+type SetAutoRollbackSLOBurnRequest struct {
+	Mode string `json:"mode"`
+}
+
+// AutoRollbackSLOBurnSettingResource mirrors internal/api's
+// autoRollbackSLOBurnSettingResource: both GET and PUT
+// /api/v1/apps/{name}/auto-rollback-slo-burn's response, how this app
+// reacts the next time a kind=slo_burn alert rule fires.
+type AutoRollbackSLOBurnSettingResource struct {
+	Mode string `json:"mode"`
+}
+
 // SetExecAccessRequest mirrors internal/api's setExecAccessRequest
 // (exec.go): PUT /api/v1/apps/{name}/exec-access's body.
 type SetExecAccessRequest struct {

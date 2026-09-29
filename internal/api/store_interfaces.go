@@ -96,6 +96,13 @@ type AppStore interface {
 	// separation-from-ordinary-update reasoning as UpdateServiceStorageTarget,
 	// see store.DB.SetServiceAutoRollbackOnCrashloop's own doc comment.
 	SetServiceAutoRollbackOnCrashloop(ctx context.Context, name string, enabled bool) error
+	// SetServiceAutoRollbackOnSLOBurn backs PUT
+	// /api/v1/apps/{name}/auto-rollback-slo-burn (deploys.go): which mode
+	// internal/alerting.MaybeAutoRollbackOnSLOBurn acts in the next time a
+	// KindSLOBurn rule fires for this app. Same separation-from-ordinary-
+	// update reasoning as SetServiceAutoRollbackOnCrashloop, see
+	// store.DB.SetServiceAutoRollbackOnSLOBurn's own doc comment.
+	SetServiceAutoRollbackOnSLOBurn(ctx context.Context, name, mode string) error
 	// SetServiceExecEnabled backs PUT /api/v1/apps/{name}/exec-access
 	// (exec.go): whether POST .../exec and GET .../terminal are even
 	// attempted for this app, independent of the caller's own IAM

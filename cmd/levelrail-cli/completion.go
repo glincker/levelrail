@@ -42,6 +42,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"hook-runs":               nil,
 		"rollback":                nil,
 		"auto-rollback":           {subs: map[string]*cmdNode{"enable": nil, "disable": nil, "status": nil}},
+		"auto-rollback-slo-burn":  {subs: map[string]*cmdNode{"set": nil, "status": nil}},
 		"timeline":                nil,
 		"apply":                   nil,
 		"domains":                 {subs: map[string]*cmdNode{"list": nil, "add": nil, "remove": nil}},

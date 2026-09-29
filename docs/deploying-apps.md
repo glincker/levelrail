@@ -512,7 +512,7 @@ Cloning is config-focused, not data-focused. For each app tagged with the source
 - Volumes and bind mounts
 - Labels, command/entrypoint, pull policy
 - Scheduled tasks (each gets a fresh run history)
-- Registry credentials, auto-rollback, exec-enabled, and log drain settings
+- Registry credentials, auto-rollback (crashloop and SLO burn), exec-enabled, and log drain settings
 - Egress allowlist policy
 - Hooks (pre-start, post-start, pre-stop, post-stop)
 - Service replicas and deployment strategy
@@ -909,6 +909,7 @@ levelrail-cli apps get <name> [flags]
 levelrail-cli apps deploy <name> --image IMAGE [--confirm] [flags]
 levelrail-cli apps rollback <name> --image IMAGE [--confirm] [flags]
 levelrail-cli apps auto-rollback enable|disable|status <name> [flags]   # opt-in automatic rollback on crashloop, see Observability
+levelrail-cli apps auto-rollback-slo-burn set|status <name> [mode] [flags]   # off/auto/dry_run/pause_for_human on an SLO burn alert, see Observability
 levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--preview] [--confirm] [flags]
 levelrail-cli apps restart <name> [flags]
 levelrail-cli apps stop <name> [flags]

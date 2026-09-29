@@ -172,6 +172,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/moves/{id} | AbilityRead | handleGetAppVolumeMove |
 | GET | /api/v1/apps/{name}/auto-rollback | AbilityRead | handleGetAutoRollback |
 | PUT | /api/v1/apps/{name}/auto-rollback | AbilityDeploy | handleSetAutoRollback |
+| GET | /api/v1/apps/{name}/auto-rollback-slo-burn | AbilityRead | handleGetAutoRollbackSLOBurn |
+| PUT | /api/v1/apps/{name}/auto-rollback-slo-burn | AbilityDeploy | handleSetAutoRollbackSLOBurn |
 | GET | /api/v1/apps/{name}/exec-access | AbilityRead | handleGetExecAccess |
 | PUT | /api/v1/apps/{name}/exec-access | AbilityRoot | handleSetExecAccess |
 | GET | /api/v1/apps/{name}/deploys/{deployId}/steps | AbilityRead | handleDeployStepStream |
