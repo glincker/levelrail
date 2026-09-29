@@ -5,8 +5,9 @@ import {
   TimerIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { EmptyState, MetricTile, SkeletonTile } from '@/components/kit'
+import { MetricTile, SkeletonTile } from '@/components/kit'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import {
   percentChange,

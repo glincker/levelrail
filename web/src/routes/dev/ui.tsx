@@ -13,10 +13,10 @@ import {
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   ActionMenu,
   AnimatedNumber,
-  EmptyState,
   InfoTip,
   Kbd,
   MetricTile,

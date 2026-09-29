@@ -9,7 +9,7 @@ import {
   PackageIcon,
   PlusIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { EmptyState } from '@/components/kit'
+import { EmptyState } from '@/components/ui/empty-state'
 import { appListQueryOptions } from '../../queries/apps'
 import { staticSitesQueryOptions } from '../../queries/staticSites'
 import { RowSkeleton } from '../../components/AppRow'

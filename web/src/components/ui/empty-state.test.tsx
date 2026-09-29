@@ -99,4 +99,22 @@ describe('EmptyState', () => {
     )
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
+
+  it('renders the illustration instead of the icon when set', () => {
+    vi.mocked(useBrand).mockReturnValue(baseBrand)
+    render(
+      <EmptyState
+        icon={<PackageIcon className="size-5" />}
+        illustration="rocket"
+        title="Nothing yet"
+        description="Deploy one."
+        action={<button type="button">Deploy</button>}
+      />,
+    )
+    expect(screen.getByText('Nothing yet')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Deploy' })).toBeInTheDocument()
+    expect(
+      document.querySelector('[data-illustration="rocket"]'),
+    ).not.toBeNull()
+  })
 })

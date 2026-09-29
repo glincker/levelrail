@@ -16,7 +16,6 @@ export {
   type SuggestionListProps,
   type SuggestionItem,
 } from './SuggestionList'
-export { EmptyState, type EmptyStateProps } from './EmptyState'
 export { SkeletonLine, SkeletonTile, SkeletonList } from './Skeleton'
 export { Kbd, type KbdProps } from './Kbd'
 export {
