@@ -454,6 +454,13 @@ type Router struct {
 	doctorClockSkewWarnAge time.Duration // 0 means "use defaultDoctorClockSkewWarnAge", set via WithDoctorClockSkewWarnAge
 	doctorMinRAMBytes      int64         // 0 means "use defaultDoctorMinRAMBytes", set via WithDoctorMinRAMBytes
 	doctorMinCPUCount      int           // 0 means "use defaultDoctorMinCPUCount", set via WithDoctorMinCPUCount
+	// doctorAgentAdvertiseHost/doctorAgentAdvertisePort are the
+	// APP_AGENT_ADVERTISE_HOST/APP_AGENT_ADDR-derived address agents dial
+	// to reach this control plane, set via WithDoctorAgentAdvertise. Empty
+	// host/zero port means agent_advertise_reachability reports unknown.
+	doctorAgentAdvertiseHost string
+	doctorAgentAdvertisePort int
+	doctorDiskIOWarnLatency  time.Duration // 0 means "use defaultDoctorDiskIOWarnLatency", set via WithDoctorDiskIOWarnLatency
 
 	cpBackups           ControlPlaneBackupManager // nil is valid: /system/backups routes return 501
 	cpBackupScheduleOff bool                      // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled

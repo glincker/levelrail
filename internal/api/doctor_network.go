@@ -84,13 +84,14 @@ func (rt *Router) doctorRunNetworkChecks(ctx context.Context, httpPort, httpsPor
 
 	publicIPCheck, publicIP := rt.doctorCheckPublicIP(netCtx)
 
-	rest := make([]doctorCheckResource, 4)
+	rest := make([]doctorCheckResource, 5)
 	var wg sync.WaitGroup
 	wg.Add(len(rest))
 	go func() { defer wg.Done(); rest[0] = rt.doctorCheckExternalReachability(netCtx, publicIP, httpPort) }()
 	go func() { defer wg.Done(); rest[1] = rt.doctorCheckExternalReachability(netCtx, publicIP, httpsPort) }()
 	go func() { defer wg.Done(); rest[2] = rt.doctorCheckACMEReachability(netCtx) }()
 	go func() { defer wg.Done(); rest[3] = rt.doctorCheckClockSkew(netCtx) }()
+	go func() { defer wg.Done(); rest[4] = rt.doctorCheckAgentAdvertiseHost(netCtx) }()
 	wg.Wait()
 
 	return append([]doctorCheckResource{publicIPCheck}, rest...)
@@ -261,6 +262,63 @@ func (rt *Router) doctorCheckClockSkew(ctx context.Context) doctorCheckResource 
 		}
 	}
 	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("off by about %s", skew.Round(time.Second))}
+}
+
+// doctorCheckAgentAdvertiseHost confirms APP_AGENT_ADVERTISE_HOST is
+// actually something a remote agent could dial, the gap the real 2-node
+// verification run into: this control plane accepting connections fine
+// on 127.0.0.1 while every remote agent's TLS dial to that same address
+// fails silently. A loopback host is only a problem once a node has
+// actually enrolled; before that it's this option's own documented
+// single-machine default.
+func (rt *Router) doctorCheckAgentAdvertiseHost(ctx context.Context) doctorCheckResource {
+	const code, name = "agent_advertise_reachability", "Agent advertise host"
+	const docsPath = "/troubleshooting#agent-advertise-host-is-unreachable"
+
+	host := rt.doctorAgentAdvertiseHost
+	port := rt.doctorAgentAdvertisePort
+	if host == "" || port == 0 {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "agent advertise host not configured"}
+	}
+
+	if doctorIsLoopbackHost(host) {
+		nodes, err := rt.nodes.ListNodes(ctx)
+		if err == nil && len(nodes) > 0 {
+			return doctorCheckResource{
+				Code: code, Name: name, Status: doctorStatusFail,
+				Message:  fmt.Sprintf("APP_AGENT_ADVERTISE_HOST is %q (loopback) but %d node(s) are enrolled; a remote agent can never dial its own control plane at a loopback address", host, len(nodes)),
+				Fix:      "Set APP_AGENT_ADVERTISE_HOST to this control plane's real reachable hostname or IP and restart it, then re-enroll or re-issue certificates for the affected nodes.",
+				DocsPath: docsPath,
+			}
+		}
+		return doctorCheckResource{
+			Code: code, Name: name, Status: doctorStatusOK,
+			Message: fmt.Sprintf("using the default loopback address %q, correct for a single-node deployment; set APP_AGENT_ADVERTISE_HOST before enrolling a remote node", host),
+		}
+	}
+
+	addr := net.JoinHostPort(host, strconv.Itoa(port))
+	conn, err := rt.doctorDialContextOrDefault()(ctx, "tcp", addr)
+	if err != nil {
+		return doctorCheckResource{
+			Code: code, Name: name, Status: doctorStatusWarn,
+			Message:  fmt.Sprintf("could not reach %s from this host itself: %s", addr, err),
+			Fix:      fmt.Sprintf("Confirm %s is an address a remote agent can actually resolve and reach (DNS, firewall, port %d open), not just a name valid on this host.", host, port),
+			DocsPath: docsPath,
+		}
+	}
+	_ = conn.Close()
+	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("%s is reachable", addr)}
+}
+
+// doctorIsLoopbackHost reports whether host is a loopback name/address:
+// "localhost", or an IP net.ParseIP resolves as loopback.
+func doctorIsLoopbackHost(host string) bool {
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 // doctorFetchRemoteTime GETs endpoint and parses its response's Date

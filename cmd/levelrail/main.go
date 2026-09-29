@@ -2004,6 +2004,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDoctorClockSkewWarnAge(doctorClockSkewWarnAge(logger)),
 		api.WithDoctorMinRAMBytes(doctorMinRAMBytes(logger)),
 		api.WithDoctorMinCPUCount(doctorMinCPUCount(logger)),
+		api.WithDoctorAgentAdvertise(agentAdvertiseHost(), ingressPortFromAddr(agentAddr())),
+		api.WithDoctorDiskIOWarnLatency(doctorDiskIOWarnLatency(logger)),
 		api.WithExecRuntime(func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)
 		}),
@@ -2938,6 +2940,23 @@ func doctorClockSkewWarnAge(logger *slog.Logger) time.Duration {
 		return 0
 	}
 	return d
+}
+
+// doctorDiskIOWarnLatency reads APP_DOCTOR_DISK_IO_WARN_MS in
+// milliseconds, applied to api.WithDoctorDiskIOWarnLatency. Returns 0
+// (api's own signal to fall back to its internal default) when unset or
+// unparseable.
+func doctorDiskIOWarnLatency(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_DOCTOR_DISK_IO_WARN_MS")
+	if raw == "" {
+		return 0
+	}
+	ms, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		logger.Warn("invalid APP_DOCTOR_DISK_IO_WARN_MS, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return time.Duration(ms) * time.Millisecond
 }
 
 // doctorMinRAMBytes reads APP_DOCTOR_MIN_RAM_BYTES, the same

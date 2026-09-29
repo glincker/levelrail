@@ -16,6 +16,10 @@ const inlineLinkClassName =
 // APP_INGRESS_HTTPS_ADDR), not just the literal port_80/port_443 codes
 // a default-port instance reports.
 const PORT_CHECK_CODE = /^port_\d+$/
+// REGISTRY_REACHABILITY_CODE matches registry_reachability_<host>, the
+// same "handle generically for any configured host" shape PORT_CHECK_CODE
+// already establishes for port_<n>.
+const REGISTRY_REACHABILITY_CODE = /^registry_reachability_/
 
 // One CTA per failure mode that actually has a useful next step, keyed by
 // doctorCheckResource.code (internal/api/doctor.go) and status. Checks
@@ -42,7 +46,58 @@ export function getCheckCta(check: DoctorCheck): CheckCta | null {
     return null
   }
 
+  // Handle registry checks generically for any configured host, not just
+  // the Docker Hub default.
+  if (REGISTRY_REACHABILITY_CODE.test(check.code)) {
+    if (check.status === 'warn') {
+      return {
+        message:
+          'Builds and deploys that pull or push images against this registry will fail until this host can reach it over HTTPS.',
+        action: (
+          <HelpLink
+            path="/troubleshooting"
+            label="Diagnose registry reachability"
+            variant="inline"
+          />
+        ),
+      }
+    }
+    return null
+  }
+
   switch (check.code) {
+    case 'agent_advertise_reachability':
+      if (check.status === 'fail' || check.status === 'warn') {
+        return {
+          message:
+            'A remote agent dials this address to reach the control plane. If it is wrong or unreachable, every node enrolled after the mistake fails to connect with a confusing TLS error.',
+          action: (
+            <HelpLink
+              path="/troubleshooting"
+              label="Fix the agent advertise host"
+              variant="inline"
+            />
+          ),
+        }
+      }
+      return null
+
+    case 'disk_io_latency':
+      if (check.status === 'warn') {
+        return {
+          message:
+            'Free disk space alone does not catch this: a disk can have plenty of room left and still write slowly enough to make deploys and log writes feel stuck.',
+          action: (
+            <HelpLink
+              path="/troubleshooting"
+              label="Diagnose slow disk writes"
+              variant="inline"
+            />
+          ),
+        }
+      }
+      return null
+
     case 'docker':
       if (check.status === 'fail') {
         return {
