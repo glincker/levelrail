@@ -91,6 +91,37 @@ Once connected, it is a normal placement target:
 
 **Build workloads:** A node accepts app workloads by default but not build workloads. Explicitly enable `accepts_build_workloads` to dispatch builds there.
 
+## Enrolling over SSH instead of by hand
+
+Steps 1 and 2 above can be automated: instead of minting a token and running the agent command yourself on the new machine, the control plane can SSH into it and do both for you.
+
+::: code-group
+```bash [CLI]
+levelrail-cli nodes ssh-provision \
+  --host 192.0.2.10 --user root --key-file ~/.ssh/id_ed25519 \
+  --name home-server --control-plane-addr controlplane.example.com:9443
+```
+
+```text [Dashboard]
+Nodes page -> "Add node" -> "Connect over SSH"
+```
+:::
+
+`POST /api/v1/nodes/ssh-provision` accepts a host, port (default 22), username, and either a private key (optionally passphrase-protected) or a password. It mints a join token the same way step 1 does, then in the background:
+
+1. Connects over SSH and detects the OS, kernel architecture, and whether Docker and systemd are already present. Only Linux with systemd is supported (the same requirement `install.sh` has); an unsupported host fails here with a clear reason before anything is changed.
+2. Installs Docker via `get.docker.com` if it's missing.
+3. Writes the agent's environment file and a systemd unit, then enables and starts it, the same shell steps cloud-init runs on a freshly created VM (see `docs/node-provisioning.md`), just executed directly over the SSH session instead of embedded in a cloud-init document.
+4. Confirms the service actually stays active, surfacing the last `journalctl` lines as the failure reason if it doesn't.
+
+The SSH credential (key or password) is held only in memory for this one call and is never written to the database or logged; the join token itself is written to a root-only (`0600`) environment file on the target host, the same handling `docs/node-provisioning.md`'s cloud-init path already uses and documents.
+
+Poll progress with `GET /api/v1/ssh-node-provisions/{id}` (CLI: `nodes ssh-provisions show <id>`), which also carries the accumulated install log and the detected OS/architecture. Status moves through `connecting` -> `detecting` -> `installing` -> `enrolling` -> `ready`, or `failed` with a reason. The dashboard wizard's SSH step shows the same stages plus a live log tail.
+
+### Known limitation: no host key verification
+
+There is no `known_hosts` store or trust-on-first-use pinning for an operator's own arbitrary machine yet: the client accepts whatever host key the target presents. This is a real gap versus a properly pinned SSH client, not an oversight; the mitigation is the same one this feature's own credential handling relies on, that the operator is connecting to a machine they already control, over a network path they already trust enough to type a password or paste a key into.
+
 ## Node health and heartbeat
 
 ### How heartbeats work
@@ -448,6 +479,9 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 | `DELETE` | `/api/v1/nodes/{id}` | `root` |
 | `PUT` | `/api/v1/nodes/{id}/workloads` | `root` |
 | `POST` | `/api/v1/nodes/join-tokens` | `root` |
+| `POST` | `/api/v1/nodes/ssh-provision` | `root` |
+| `GET` | `/api/v1/ssh-node-provisions` | `root` |
+| `GET` | `/api/v1/ssh-node-provisions/{id}` | `root` |
 | `GET` | `/api/v1/nodes/{id}/health` | `root` |
 | `POST` | `/api/v1/nodes/{id}/cordon` | `root` |
 | `POST` | `/api/v1/nodes/{id}/uncordon` | `root` |
@@ -481,6 +515,8 @@ levelrail-cli nodes list [flags]
 levelrail-cli nodes get <id> [flags]
 levelrail-cli nodes delete <id> [flags]
 levelrail-cli nodes join-token [flags]
+levelrail-cli nodes ssh-provision --host ADDR --user NAME (--key-file PATH | --password) --name NAME [flags]
+levelrail-cli nodes ssh-provisions list|show <id> [flags]
 levelrail-cli nodes cordon <id> [flags]
 levelrail-cli nodes uncordon <id> [flags]
 levelrail-cli nodes drain <id> [--target <node-id>] [flags]

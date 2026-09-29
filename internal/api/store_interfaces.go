@@ -528,6 +528,7 @@ type Store interface {
 	CloudflareDNSStore
 	Route53DNSStore
 	NodeProvisionStore
+	SSHNodeProvisionStore
 	VaultSettingsStore
 	PasswordResetTokenStore
 	InviteStore

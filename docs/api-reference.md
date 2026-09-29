@@ -118,13 +118,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-<<<<<<< HEAD
 ::: details 121 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 121 endpoints for app management, deployment, lifecycle control, and diagnostics
-=======
-::: details 121 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 121 endpoints for app management, deployment, lifecycle control, and diagnostics
->>>>>>> 4e36aaa1 (feat: add whole-mesh network topology view)
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -454,6 +448,7 @@ Endpoints for:
 | GET | /api/v1/nodes/resource-usage | AbilityRoot | handleFleetResourceUsage |
 | POST | /api/v1/nodes/provision | AbilityRoot | handleCreateNodeProvision |
 | PUT | /api/v1/nodes/{id}/region | AbilityRoot | handleSetNodeRegion |
+| POST | /api/v1/nodes/ssh-provision | AbilityRoot | handleCreateSSHNodeProvision |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -813,6 +808,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/pipelines/oidc | AbilityRead | handleGetPipelineOIDCInfo |
 | POST | /api/v1/pipelines/oidc/rotate-key | AbilityRoot | handleRotatePipelineOIDCKey |
 | GET | /api/v1/network/topology | AbilityRead | handleGetNetworkTopology |
+| GET | /api/v1/ssh-node-provisions | AbilityRoot | handleListSSHNodeProvisions |
+| GET | /api/v1/ssh-node-provisions/{id} | AbilityRoot | handleGetSSHNodeProvision |
 
 ## See also
 

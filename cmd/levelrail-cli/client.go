@@ -180,6 +180,10 @@ type (
 	setNodeProviderCredentialRequest = apiclient.SetNodeProviderCredentialRequest
 	createNodeProvisionRequest       = apiclient.CreateNodeProvisionRequest
 
+	sshNodeProvisionResource          = apiclient.SSHNodeProvisionResource
+	createSSHNodeProvisionAuthRequest = apiclient.SSHNodeProvisionAuthRequest
+	createSSHNodeProvisionRequest     = apiclient.CreateSSHNodeProvisionRequest
+
 	organizationResource             = apiclient.OrganizationResource
 	createOrganizationRequest        = apiclient.CreateOrganizationRequest
 	projectResource                  = apiclient.ProjectResource

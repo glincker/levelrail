@@ -367,6 +367,20 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// ServeMux refuses to register together.
 	mux.HandleFunc("GET /api/v1/node-provisions", rt.requireAbility(AbilityRoot, rt.handleListNodeProvisions))
 	mux.HandleFunc("GET /api/v1/node-provisions/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNodeProvision))
+	// SSH-based node provisioning: adopts a machine the operator already
+	// has instead of creating one at a cloud provider, same AbilityRoot
+	// boundary as every other node route above (an SSH credential is at
+	// least as sensitive as a join token or a provider credential). The
+	// create route has no path wildcard, so it can live under
+	// /api/v1/nodes/ like /api/v1/nodes/provision does; the show route
+	// needs a wildcard {id} and so, like /api/v1/node-provisions/{id}
+	// above, must be a top-level sibling rather than nested under
+	// /api/v1/nodes/{id}/...: "/api/v1/nodes/ssh-provisions/{id}" would
+	// conflict with "/api/v1/nodes/{id}/health" the exact way that
+	// comment already explains for the cloud path.
+	mux.HandleFunc("POST /api/v1/nodes/ssh-provision", rt.requireAbility(AbilityRoot, rt.handleCreateSSHNodeProvision))
+	mux.HandleFunc("GET /api/v1/ssh-node-provisions", rt.requireAbility(AbilityRoot, rt.handleListSSHNodeProvisions))
+	mux.HandleFunc("GET /api/v1/ssh-node-provisions/{id}", rt.requireAbility(AbilityRoot, rt.handleGetSSHNodeProvision))
 	// Node-level metrics (sum of per-container samples for everything
 	// placed on this node, see handleQueryNodeMetrics's own doc comment
 	// for exactly what that does and doesn't mean): same AbilityRoot

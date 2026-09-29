@@ -592,6 +592,21 @@ func WithNodeProvisionerFactory(f NodeProvisionerFactory) Option {
 	return func(rt *Router) { rt.nodeProvisionerFactory = f }
 }
 
+// WithSSHNodeProvisions overrides the SSH node provision store NewRouter
+// otherwise wires to s (the *store.DB passed to NewRouter, which
+// satisfies SSHNodeProvisionStore structurally), the same "seam for a
+// failing fake" shape WithNodeProvisions establishes for the cloud path.
+func WithSSHNodeProvisions(s SSHNodeProvisionStore) Option {
+	return func(rt *Router) { rt.sshProvisions = s }
+}
+
+// WithSSHProvisioner overrides the SSH provisioner NewRouter otherwise
+// defaults to (sshprovision.New()), for this package's own tests: a fake
+// that never dials a real network.
+func WithSSHProvisioner(p SSHProvisioner) Option {
+	return func(rt *Router) { rt.sshProvisioner = p }
+}
+
 // WithIngressPortOwner lets GET /api/v1/system/doctor's port_<n>
 // checks recognize a bind failure caused by this control plane's own
 // embedded ingress (internal/ingress.Driver) as expected rather than a

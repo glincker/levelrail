@@ -4,6 +4,7 @@ import {
   CloudIcon,
   HardDrivesIcon,
   PlusIcon,
+  TerminalIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -30,6 +31,7 @@ import {
 import { SkeletonList } from './kit/Skeleton'
 import { InfoTip } from './kit/InfoTip'
 import { ManualEnrollFields } from './AddNodeDialog'
+import { SSHEnrollFields } from './AddNodeWizardSSH'
 import { ProvisionProgress, StepShell } from './AddNodeWizardSteps'
 import {
   useCreateNodeProvision,
@@ -41,7 +43,14 @@ import {
 
 type ProviderId = 'hetzner' | 'digitalocean' | 'aws' | 'azure' | 'gcp'
 type Step =
-  'method' | 'region' | 'size' | 'details' | 'confirm' | 'progress' | 'manual'
+  | 'method'
+  | 'region'
+  | 'size'
+  | 'details'
+  | 'confirm'
+  | 'progress'
+  | 'manual'
+  | 'ssh'
 
 const PROVIDER_LABELS: Record<ProviderId, string> = {
   hetzner: 'Hetzner',
@@ -112,6 +121,10 @@ function WizardBody({ onClose }: { onClose: () => void }) {
     )
   }
 
+  if (step === 'ssh') {
+    return <SSHEnrollFields onDone={onClose} onBack={() => setStep('method')} />
+  }
+
   if (step === 'method') {
     return (
       <>
@@ -167,6 +180,22 @@ function WizardBody({ onClose }: { onClose: () => void }) {
               </button>
             )
           })}
+          <button
+            type="button"
+            onClick={() => setStep('ssh')}
+            className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/50"
+          >
+            <TerminalIcon className="size-5 shrink-0 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium text-foreground">
+                Connect over SSH
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Adopt a machine you already have: a VPS, home server, or
+                Raspberry Pi.
+              </div>
+            </div>
+          </button>
           <button
             type="button"
             onClick={() => setStep('manual')}
