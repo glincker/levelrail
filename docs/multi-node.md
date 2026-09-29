@@ -356,7 +356,7 @@ This section has two parts: what works today (viewing mesh status, key rotation 
 
 An app's database connection string is baked into container environment at creation time. When a database moves to another node, the string doesn't rewrite itself.
 
-Solution: Use DNS names from the start. The name resolves to wherever the service currently lives. `internal/reconcile/mesh` keeps that mapping current: every pass it reads node and placement data, distributes WireGuard configuration, and rebuilds the internal DNS zone (`<brand-short-name>.internal`, e.g., `levelrail.internal`).
+Solution: Use DNS names from the start. The name resolves to wherever the service currently lives. `internal/reconcile/mesh` keeps that mapping current: every pass it reads node and placement data, distributes WireGuard configuration, and rebuilds the internal DNS zone (the lowercased brand short name, e.g., `levelrail`, not `levelrail.internal`).
 
 When mesh is enabled, database env vars (like `DATABASE_URL` or any field from an app.yaml `{ from: postgres.main.url }` reference) automatically resolve to the database's mesh DNS name, allowing an app on one node to connect to a database on another node. Without mesh, they resolve to the database container's Docker name, reachable only within that node's own Docker network. This happens automatically: no app-side changes needed when mesh is enabled.
 
