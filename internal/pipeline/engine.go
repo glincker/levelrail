@@ -29,13 +29,22 @@ type Engine struct {
 	mu     sync.Mutex
 	active map[string]context.CancelCauseFunc
 	ticks  int
+
+	// oidcRequests backs the runtime OIDC token request endpoint (see
+	// oidc_request.go): one entry per running job that opted into oidc,
+	// so a job needing tokens for more than one audience can request
+	// each on demand instead of pre-minting every combination.
+	oidcRequests *oidcRequestRegistry
 }
 
 // New builds an Engine. Call Run to drive it, or Tick from tests.
 func New(cfg Config) *Engine {
 	cfg.applyDefaults()
 	base, cancel := context.WithCancel(context.Background())
-	return &Engine{cfg: cfg, base: base, baseCancel: cancel, nudge: make(chan struct{}, 1), active: map[string]context.CancelCauseFunc{}}
+	return &Engine{
+		cfg: cfg, base: base, baseCancel: cancel, nudge: make(chan struct{}, 1),
+		active: map[string]context.CancelCauseFunc{}, oidcRequests: newOIDCRequestRegistry(),
+	}
 }
 
 // Nudge asks the Run loop to tick soon.

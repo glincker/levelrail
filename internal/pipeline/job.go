@@ -31,11 +31,12 @@ type jobRun struct {
 
 	runEnv map[string]string
 
-	mu          sync.Mutex
-	outputs     map[string]string
-	containerID string
-	failed      bool
-	failReason  string
+	mu           sync.Mutex
+	outputs      map[string]string
+	containerID  string
+	failed       bool
+	failReason   string
+	oidcReqToken string
 }
 
 // outcome of running a job's plan.
@@ -166,7 +167,12 @@ func (jr *jobRun) teardown(ctx context.Context) {
 	jr.e.removeJobContainers(ctx, jr.run, jr.row)
 	jr.mu.Lock()
 	jr.containerID = ""
+	reqToken := jr.oidcReqToken
+	jr.oidcReqToken = ""
 	jr.mu.Unlock()
+	if reqToken != "" && jr.e.oidcRequests != nil {
+		jr.e.oidcRequests.unregister(reqToken)
+	}
 }
 
 func (jr *jobRun) persistOutputs(ctx context.Context) {

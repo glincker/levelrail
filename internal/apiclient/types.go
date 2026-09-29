@@ -2131,9 +2131,18 @@ type SystemDoctorResource struct {
 // pipeline jobs can mint OIDC tokens on this control plane, and the URLs
 // an operator wires into a cloud provider's OIDC trust policy.
 type PipelineOIDCResource struct {
-	Configured bool   `json:"configured"`
-	IssuerURL  string `json:"issuer_url,omitempty"`
-	JWKSURL    string `json:"jwks_url,omitempty"`
+	Configured        bool   `json:"configured"`
+	IssuerURL         string `json:"issuer_url,omitempty"`
+	JWKSURL           string `json:"jwks_url,omitempty"`
+	RotationSupported bool   `json:"rotation_supported"`
+}
+
+// PipelineOIDCRotation mirrors internal/api's rotatePipelineOIDCKeyResponse.
+type PipelineOIDCRotation struct {
+	OldKID        string    `json:"old_kid"`
+	NewKID        string    `json:"new_kid"`
+	RetireAt      time.Time `json:"retire_at"`
+	RetiringCount int       `json:"retiring_count"`
 }
 
 // ControlPlaneBackup mirrors internal/cpbackup.Info: one control plane

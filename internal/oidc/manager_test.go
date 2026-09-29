@@ -228,6 +228,241 @@ func TestManager_IssueToken_SignatureVerifiesAgainstJWKS(t *testing.T) {
 	}
 }
 
+func TestManager_RotateKey_OldTokenVerifiesUntilRetireAtThenIsRemoved(t *testing.T) {
+	ks := newFakeKeyStore()
+	now := fixedNow()
+	clock := func() time.Time { return now }
+	m, err := NewManager(Config{KeyStore: ks, IssuerURL: "https://cp.example.com", Now: clock})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	oldToken, err := m.IssueToken(context.Background(), TokenRequest{Audience: "aud"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldKID := decodeJWTHeaderKID(t, oldToken)
+
+	res, err := m.RotateKey(context.Background(), time.Hour)
+	if err != nil {
+		t.Fatalf("RotateKey: %v", err)
+	}
+	if res.OldKID != oldKID || res.NewKID == "" || res.NewKID == res.OldKID {
+		t.Fatalf("RotationResult = %+v", res)
+	}
+	if want := now.Add(time.Hour); !res.RetireAt.Equal(want) {
+		t.Errorf("RetireAt = %v, want %v", res.RetireAt, want)
+	}
+
+	// Immediately after rotation, both keys must be published: the new
+	// one to sign with, the old one so the token minted before rotation
+	// still verifies.
+	jwks, err := m.JWKS(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !jwksHasKID(jwks, oldKID) {
+		t.Fatal("old key missing from JWKS right after rotation")
+	}
+	if !jwksHasKID(jwks, res.NewKID) {
+		t.Fatal("new key missing from JWKS right after rotation")
+	}
+
+	// New tokens sign with the new key.
+	newToken, err := m.IssueToken(context.Background(), TokenRequest{Audience: "aud"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if kid := decodeJWTHeaderKID(t, newToken); kid != res.NewKID {
+		t.Errorf("new token signed with kid %q, want %q", kid, res.NewKID)
+	}
+
+	// Just before the grace period elapses, the old key is still there.
+	now = now.Add(time.Hour - time.Second)
+	jwks, err = m.JWKS(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !jwksHasKID(jwks, oldKID) {
+		t.Fatal("old key removed from JWKS before its retire deadline")
+	}
+
+	// Once the grace period has fully elapsed, the old key is gone.
+	now = now.Add(2 * time.Second)
+	jwks, err = m.JWKS(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if jwksHasKID(jwks, oldKID) {
+		t.Fatal("old key still published in JWKS after its retire deadline passed")
+	}
+	if !jwksHasKID(jwks, res.NewKID) {
+		t.Fatal("new key missing from JWKS after old key retired")
+	}
+}
+
+func TestManager_RotateKey_ZeroRetireAfterUsesDefaultGrace(t *testing.T) {
+	m, err := NewManager(Config{KeyStore: newFakeKeyStore(), IssuerURL: "https://cp.example.com", Now: fixedNow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.IssueToken(context.Background(), TokenRequest{Audience: "aud"}); err != nil {
+		t.Fatal(err)
+	}
+	res, err := m.RotateKey(context.Background(), 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := fixedNow().Add(DefaultKeyRetireGrace); !res.RetireAt.Equal(want) {
+		t.Errorf("RetireAt = %v, want %v", res.RetireAt, want)
+	}
+}
+
+func TestManager_RotateKey_PersistsAcrossManagers(t *testing.T) {
+	ks := newFakeKeyStore()
+	m1, err := NewManager(Config{KeyStore: ks, IssuerURL: "https://cp.example.com", Now: fixedNow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m1.IssueToken(context.Background(), TokenRequest{Audience: "aud"}); err != nil {
+		t.Fatal(err)
+	}
+	res, err := m1.RotateKey(context.Background(), time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	m2, err := NewManager(Config{KeyStore: ks, IssuerURL: "https://cp.example.com", Now: fixedNow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	jwks, err := m2.JWKS(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !jwksHasKID(jwks, res.OldKID) || !jwksHasKID(jwks, res.NewKID) {
+		t.Fatalf("reloaded manager JWKS = %+v, want both %q and %q", jwks, res.OldKID, res.NewKID)
+	}
+}
+
+func TestManager_RotateKey_PersistFailureRollsBackInMemoryState(t *testing.T) {
+	ks := newFakeKeyStore()
+	m, err := NewManager(Config{KeyStore: ks, IssuerURL: "https://cp.example.com", Now: fixedNow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.IssueToken(context.Background(), TokenRequest{Audience: "aud"}); err != nil {
+		t.Fatal(err)
+	}
+	before, err := m.JWKS(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ks.failSet = errors.New("store unavailable")
+	if _, err := m.RotateKey(context.Background(), time.Hour); err == nil {
+		t.Fatal("expected error when persisting the rotated key set fails")
+	}
+	ks.failSet = nil
+
+	after, err := m.JWKS(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(after.Keys) != len(before.Keys) || after.Keys[0].Kid != before.Keys[0].Kid {
+		t.Errorf("in-memory state changed despite failed persist: before %+v, after %+v", before, after)
+	}
+}
+
+func TestManager_RemoveRetiringKey(t *testing.T) {
+	m, err := NewManager(Config{KeyStore: newFakeKeyStore(), IssuerURL: "https://cp.example.com", Now: fixedNow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.IssueToken(context.Background(), TokenRequest{Audience: "aud"}); err != nil {
+		t.Fatal(err)
+	}
+	res, err := m.RotateKey(context.Background(), time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := m.RemoveRetiringKey(context.Background(), res.OldKID); err != nil {
+		t.Fatalf("RemoveRetiringKey: %v", err)
+	}
+	jwks, err := m.JWKS(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if jwksHasKID(jwks, res.OldKID) {
+		t.Fatal("key still published after RemoveRetiringKey")
+	}
+
+	if err := m.RemoveRetiringKey(context.Background(), "does-not-exist"); err == nil {
+		t.Fatal("expected error removing a kid that is not retiring")
+	}
+}
+
+func TestManager_LoadsLegacySingleKeyFormat(t *testing.T) {
+	ks := newFakeKeyStore()
+	m1, err := NewManager(Config{KeyStore: ks, IssuerURL: "https://cp.example.com", Now: fixedNow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m1.IssueToken(context.Background(), TokenRequest{Audience: "aud"}); err != nil {
+		t.Fatal(err)
+	}
+	// Rewrite storage in the pre-rotation single-key shape to prove a
+	// key persisted by the old code still loads.
+	raw, _ := ks.Resolve(context.Background(), oidcSigningKeyServiceName, oidcSigningKeyEnvKey)
+	set, err := decodeStoredKeySet(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacy, _ := json.Marshal(set.Active)
+	if err := ks.SetValue(context.Background(), oidcSigningKeyServiceName, oidcSigningKeyEnvKey, string(legacy)); err != nil {
+		t.Fatal(err)
+	}
+
+	m2, err := NewManager(Config{KeyStore: ks, IssuerURL: "https://cp.example.com", Now: fixedNow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	jwks, err := m2.JWKS(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(jwks.Keys) != 1 || jwks.Keys[0].Kid != set.Active.KID {
+		t.Errorf("jwks = %+v, want single key %q", jwks, set.Active.KID)
+	}
+}
+
+func decodeJWTHeaderKID(t *testing.T, token string) string {
+	t.Helper()
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		t.Fatalf("token has %d parts, want 3", len(parts))
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		t.Fatalf("decode header: %v", err)
+	}
+	var h jwtHeader
+	if err := json.Unmarshal(raw, &h); err != nil {
+		t.Fatalf("unmarshal header: %v", err)
+	}
+	return h.Kid
+}
+
+func jwksHasKID(j JWKS, kid string) bool {
+	for _, k := range j.Keys {
+		if k.Kid == kid {
+			return true
+		}
+	}
+	return false
+}
+
 func TestManager_EnsureKey_ResolveFails(t *testing.T) {
 	ks := newFakeKeyStore()
 	ks.values[ks.key(oidcSigningKeyServiceName, oidcSigningKeyEnvKey)] = "irrelevant"

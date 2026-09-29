@@ -154,7 +154,10 @@
         "oidc": {
           "type": "object",
           "additionalProperties": false,
-          "properties": { "audience": { "type": "string" } }
+          "properties": {
+            "audience": { "type": "string" },
+            "audiences": { "type": "array", "items": { "type": "string" } }
+          }
         },
         "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/step" } }
       }

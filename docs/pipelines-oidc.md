@@ -42,7 +42,35 @@ jobs:
 
 `audience` is required and becomes the token's `aud` claim, the value the provider's trust policy checks. The token arrives as the `PIPELINE_OIDC_TOKEN` env var, masked in logs the same way a secret is, valid for 10 minutes (`APP_OIDC_TOKEN_TTL` overrides this).
 
-A job that needs more than one audience (for example, both AWS and Vault in the same job) opts in once per audience by running separate jobs, or repeats the request-a-token pattern GitHub Actions uses if that becomes a real need; today, Levelrail controls the whole job lifecycle, so it injects the token directly as an env var rather than a request-URL indirection.
+## Multiple audiences in one job
+
+A job whose steps need tokens for more than one provider (one step calls AWS, another GCP) lists every extra audience under `audiences`:
+
+```yaml
+jobs:
+  deploy:
+    image: amazon/aws-cli
+    oidc:
+      audience: sts.amazonaws.com
+      audiences:
+        - https://iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/ci/providers/gh
+    steps:
+      - run: |
+          aws sts assume-role-with-web-identity \
+            --role-arn "$AWS_ROLE_ARN" \
+            --web-identity-token "$PIPELINE_OIDC_TOKEN" \
+            --role-session-name pipeline
+      - run: |
+          gcp_token=$(curl -sf -H "Authorization: Bearer $PIPELINE_OIDC_REQUEST_TOKEN" \
+            "$PIPELINE_OIDC_REQUEST_URL?audience=https://iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/ci/providers/gh" \
+            | jq -r .token)
+```
+
+`audience` (singular) still pre-mints a token at job start into `PIPELINE_OIDC_TOKEN`, unchanged. Every audience listed under `audiences`, or `audience` itself, can also be requested at runtime instead: the same "request a token for a given audience" pattern GitHub Actions' own `ACTIONS_ID_TOKEN_REQUEST_URL`/`ACTIONS_ID_TOKEN_REQUEST_TOKEN` uses, rather than pre-minting every combination up front.
+
+`PIPELINE_OIDC_REQUEST_URL` and `PIPELINE_OIDC_REQUEST_TOKEN` (masked in logs like the token itself) are injected whenever a job's `oidc` config allows more than one audience. The URL is a local endpoint reachable only from inside a job's own container on this host, never exposed externally; the bearer token scopes each request to that one job run and its own allowed audiences. `GET $PIPELINE_OIDC_REQUEST_URL?audience=<aud>` returns `{"token": "<jwt>"}` for any audience the job listed, and a `403` for one it did not.
+
+This requires the control plane to have resolved a container-reachable address for the endpoint at startup (logged as a warning if it could not, for example no Docker bridge network); a job listing `audiences` fails clearly at start rather than getting an unreachable URL if that did not happen.
 
 ## Claims
 
@@ -106,8 +134,20 @@ The signing key is ES256 (ECDSA P-256), generated once and persisted encrypted a
 2. Create a role with `bound_audiences` matching `oidc.audience`, and `bound_claims` matching `sub`, `repo`, or `ref` as needed.
 3. In the job, `vault write auth/jwt/login role=<role> jwt="$PIPELINE_OIDC_TOKEN"`.
 
+## Key rotation
+
+Rotate the signing key from the CLI:
+
+```
+levelrail-cli pipelines oidc rotate-key
+levelrail-cli pipelines oidc rotate-key --retire-after=2h
+```
+
+Or from the dashboard: the **Pipelines** page's OIDC card has a **Rotate signing key** control, with the same warning below.
+
+Rotation generates a fresh key and signs every new token with it immediately. The previous key is not removed: it stays published in `/.well-known/jwks.json` alongside the new one until `--retire-after` elapses (default 24 hours), so a token minted moments before rotation, and any provider still holding an unrefreshed copy of the JWKS document (AWS, GCP, and Vault all cache it), keeps verifying. Only once that window passes does the old key actually disappear from the published set; nothing removes it sooner. Rotating again before an earlier key's window elapses keeps both old keys published until each retires on its own schedule.
+
 ## What this does not cover
 
-- No support yet for a job requesting more than one audience from a single `oidc:` block.
-- No UI to browse past-issued tokens or their claims; nothing is persisted beyond the signing key itself, by design, since a token is meant to be short-lived and never logged.
-- Key rotation is not yet exposed as an operator action; the signing key is generated once and reused. Rotating it (removing the persisted key so a new one generates) invalidates the JWKS a provider might have cached, which needs a re-fetch on their end.
+- No UI to browse past-issued tokens or their claims; nothing is persisted beyond the signing key set itself, by design, since a token is meant to be short-lived and never logged.
+- No way to force-remove a retiring key before its `retire_after` deadline from the CLI or UI; that override exists internally for a genuinely compromised key but is not wired to an operator action yet.

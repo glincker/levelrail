@@ -2594,6 +2594,19 @@ func (c *Client) GetPipelineOIDCInfo(ctx context.Context) (PipelineOIDCResource,
 	return out, err
 }
 
+// RotatePipelineOIDCKey calls POST /api/v1/pipelines/oidc/rotate-key.
+// retireAfter is a Go duration string (e.g. "1h"); empty uses the
+// control plane's default grace period.
+func (c *Client) RotatePipelineOIDCKey(ctx context.Context, retireAfter string) (PipelineOIDCRotation, error) {
+	var out PipelineOIDCRotation
+	body := map[string]string{}
+	if retireAfter != "" {
+		body["retire_after"] = retireAfter
+	}
+	err := c.do(ctx, http.MethodPost, "/api/v1/pipelines/oidc/rotate-key", body, &out)
+	return out, err
+}
+
 // ListContainers calls GET /api/v1/system/containers: every container
 // on this node, whether or not Levelrail manages it.
 func (c *Client) ListContainers(ctx context.Context) ([]ContainerResource, error) {

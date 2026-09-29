@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { HelpLink } from '@/components/HelpLink'
 import { usePipelineOIDCInfo } from '../queries/pipelineOidc'
+import { RotatePipelineOIDCKeyDialog } from './RotatePipelineOIDCKeyDialog'
 
 // Surfaces GET /api/v1/pipelines/oidc so a job's `oidc: {audience: ...}`
 // config (docs/pipelines.md#cloud-credentials-via-oidc) has a visible,
@@ -54,6 +55,11 @@ export function PipelineOIDCCard() {
             {copied ? 'Copied' : 'Copy'}
           </Button>
         </div>
+        {data.rotation_supported ? (
+          <div>
+            <RotatePipelineOIDCKeyDialog />
+          </div>
+        ) : null}
       </AlertDescription>
     </Alert>
   )

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/oidc"
 )
@@ -17,6 +18,17 @@ type fakeOIDCJWKS struct {
 }
 
 func (f fakeOIDCJWKS) JWKS(context.Context) (oidc.JWKS, error) { return f.jwks, f.err }
+
+type fakeOIDCRotator struct {
+	res            oidc.RotationResult
+	err            error
+	gotRetireAfter time.Duration
+}
+
+func (f *fakeOIDCRotator) RotateKey(_ context.Context, retireAfter time.Duration) (oidc.RotationResult, error) {
+	f.gotRetireAfter = retireAfter
+	return f.res, f.err
+}
 
 func TestHandleOIDCJWKS_NotConfigured(t *testing.T) {
 	rt, _ := newTestRouter(t)
@@ -91,6 +103,88 @@ func TestHandleGetPipelineOIDCInfo(t *testing.T) {
 			t.Errorf("got %+v", got)
 		}
 	})
+}
+
+func TestHandleRotatePipelineOIDCKey_NotConfigured(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/pipelines/oidc/rotate-key", ""))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
+	}
+}
+
+func TestHandleRotatePipelineOIDCKey_RequiresAuth(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	rt.SetOIDCRotator(&fakeOIDCRotator{})
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/pipelines/oidc/rotate-key", nil))
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestHandleRotatePipelineOIDCKey_Success(t *testing.T) {
+	rt, db := newTestRouter(t)
+	retireAt := time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC)
+	fake := &fakeOIDCRotator{res: oidc.RotationResult{OldKID: "old1", NewKID: "new1", RetireAt: retireAt, RetiringCount: 1}}
+	rt.SetOIDCRotator(fake)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/pipelines/oidc/rotate-key", `{"retire_after":"2h"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if fake.gotRetireAfter != 2*time.Hour {
+		t.Errorf("gotRetireAfter = %v, want 2h", fake.gotRetireAfter)
+	}
+	var got rotatePipelineOIDCKeyResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.OldKID != "old1" || got.NewKID != "new1" || got.RetiringCount != 1 || !got.RetireAt.Equal(retireAt) {
+		t.Errorf("got %+v", got)
+	}
+}
+
+func TestHandleRotatePipelineOIDCKey_InvalidRetireAfter(t *testing.T) {
+	rt, db := newTestRouter(t)
+	rt.SetOIDCRotator(&fakeOIDCRotator{})
+	cookie := loginTestSession(t, rt, db)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/pipelines/oidc/rotate-key", `{"retire_after":"not-a-duration"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+}
+
+func TestHandleRotatePipelineOIDCKey_RotateError(t *testing.T) {
+	rt, db := newTestRouter(t)
+	rt.SetOIDCRotator(&fakeOIDCRotator{err: errors.New("key store unavailable")})
+	cookie := loginTestSession(t, rt, db)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/pipelines/oidc/rotate-key", ""))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
+	}
+}
+
+func TestHandleGetPipelineOIDCInfo_RotationSupported(t *testing.T) {
+	rt, db := newTestRouter(t)
+	rt.SetOIDCManager(fakeOIDCJWKS{}, "https://cp.example.com", 0)
+	rt.SetOIDCRotator(&fakeOIDCRotator{})
+	cookie := loginTestSession(t, rt, db)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/pipelines/oidc", ""))
+	var got oidcInfoResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if !got.RotationSupported {
+		t.Error("expected RotationSupported = true")
+	}
 }
 
 func TestHandleOIDCJWKS_RateLimited(t *testing.T) {
