@@ -378,6 +378,9 @@ type Router struct {
 	pipelineEvents                 PipelineEvents                   // nil is valid: git events start no pipelines
 	forgeDeployments               ForgeDeploymentStore             // nil is valid: app deploys are not reported to git forges
 	pipelineSync                   *pipelineSyncWiring              // nil is valid: pushes do not sync pipeline files and the sync routes return 501
+	oidcJWKS                       OIDCJWKSProvider                 // nil is valid: GET /.well-known/jwks.json returns 404, no pipeline job can mint an oidc token either (internal/pipeline.Config.OIDCIssuer is left unset by cmd wiring in that case)
+	oidcJWKSLimiter                *apiRateLimiter                  // per-IP budget for the unauthenticated JWKS endpoint, set alongside oidcJWKS
+	oidcIssuerURL                  string                           // "" means not configured, set alongside oidcJWKS via SetOIDCManager
 	featureFlags                   FeatureFlagStore                 // always set, same "core Store interface" shape as scheduledTasks above
 	tags                           TagStore                         // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
 	appIntegrations                AppIntegrationStore              // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)

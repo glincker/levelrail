@@ -72,7 +72,7 @@ func mapText(m map[string]string) []string {
 	return out
 }
 
-func (jr *jobRun) stepEnv(step Step, sc Scope) (map[string]string, error) {
+func (jr *jobRun) stepEnv(ctx context.Context, step Step, sc Scope) (map[string]string, error) {
 	env := map[string]string{
 		"CI": "true", "PIPELINE_RUN_ID": jr.run.ID, "PIPELINE_RUN_NUMBER": fmt.Sprint(jr.run.Number), "PIPELINE_JOB": jr.row.Key,
 		"PIPELINE_SHA": jr.run.CommitSHA, "PIPELINE_REF": jr.run.Ref, "PIPELINE_APP": jr.run.AppName,
@@ -90,7 +90,36 @@ func (jr *jobRun) stepEnv(step Step, sc Scope) (map[string]string, error) {
 	for _, n := range step.Secrets {
 		env[n] = sc.Vars["secrets."+n]
 	}
+	if jr.jd.OIDC != nil {
+		token, err := jr.oidcToken(ctx)
+		if err != nil {
+			return nil, err
+		}
+		env["PIPELINE_OIDC_TOKEN"] = token
+		jr.mask.add(token)
+	}
 	return env, nil
+}
+
+// oidcToken mints this job's opted-in OIDC token via the engine's
+// configured OIDCIssuer, or fails clearly when none is configured:
+// a job silently getting no token would surface as a confusing cloud
+// provider auth failure with no clue why.
+func (jr *jobRun) oidcToken(ctx context.Context) (string, error) {
+	if jr.e.cfg.OIDCIssuer == nil {
+		return "", errors.New("job requests an oidc token but no OIDC issuer is configured on this control plane")
+	}
+	token, err := jr.e.cfg.OIDCIssuer(ctx, OIDCTokenRequest{
+		Audience:   jr.jd.OIDC.Audience,
+		Subject:    fmt.Sprintf("repo:%s:ref:%s:job:%s", jr.run.AppName, jr.run.Ref, jr.row.Key),
+		Repo:       jr.run.AppName,
+		Ref:        jr.run.Ref,
+		PipelineID: jr.run.PipelineID,
+	})
+	if err != nil {
+		return "", fmt.Errorf("mint oidc token: %w", err)
+	}
+	return token, nil
 }
 
 func (jr *jobRun) execContainerStep(ctx context.Context, k int, p plannedStep, step Step) (*int, error) {
@@ -106,7 +135,7 @@ func (jr *jobRun) execContainerStep(ctx context.Context, k int, p plannedStep, s
 	if err != nil {
 		return nil, err
 	}
-	env, err := jr.stepEnv(step, sc)
+	env, err := jr.stepEnv(ctx, step, sc)
 	if err != nil {
 		return nil, err
 	}
