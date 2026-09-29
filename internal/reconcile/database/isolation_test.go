@@ -1,6 +1,8 @@
 package database
 
 import (
+	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -75,6 +77,71 @@ func TestDropIsolatedRoleSQLContainsExpectedStatements(t *testing.T) {
 		if !strings.Contains(sql, want) {
 			t.Errorf("DropIsolatedRoleSQL missing %q\ngot:\n%s", want, sql)
 		}
+	}
+}
+
+func TestCreateIsolatedRedisACLCommand(t *testing.T) {
+	cases := []struct {
+		name     string
+		username string
+		password string
+	}{
+		{"simple", "pv_app_main", "s3cr3t"},
+		{"different user and password", "pv_other_cache", "another-pass"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := CreateIsolatedRedisACLCommand(tc.username, tc.password)
+			want := []string{
+				"redis-cli", "-p", strconv.Itoa(redisContainerPort),
+				"ACL", "SETUSER", tc.username,
+				"reset", "on", ">" + tc.password,
+				"resetkeys", "~" + tc.username + ":*",
+				"resetchannels",
+				"+@all", "-@admin", "-@dangerous", "-@scripting",
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Fatalf("CreateIsolatedRedisACLCommand(%q, %q) = %v, want %v", tc.username, tc.password, got, want)
+			}
+		})
+	}
+}
+
+// TestCreateIsolatedRedisACLCommand_RestrictsCommands checks the
+// command-restriction contract directly: the generated ACL grants every
+// category (+@all) then explicitly strips the three categories a
+// preview's own key-prefix-scoped user must never reach, and scopes
+// keys to its own "username:*" prefix rather than "*".
+func TestCreateIsolatedRedisACLCommand_RestrictsCommands(t *testing.T) {
+	got := CreateIsolatedRedisACLCommand("pv_app_main", "s3cr3t")
+
+	for _, want := range []string{"+@all", "-@admin", "-@dangerous", "-@scripting"} {
+		if !containsArg(got, want) {
+			t.Errorf("CreateIsolatedRedisACLCommand missing %q in %v", want, got)
+		}
+	}
+	if containsArg(got, "~*") {
+		t.Errorf("CreateIsolatedRedisACLCommand grants unscoped key pattern ~* in %v, want only ~pv_app_main:*", got)
+	}
+	if !containsArg(got, "~pv_app_main:*") {
+		t.Errorf("CreateIsolatedRedisACLCommand missing scoped key pattern in %v", got)
+	}
+}
+
+func containsArg(args []string, want string) bool {
+	for _, a := range args {
+		if a == want {
+			return true
+		}
+	}
+	return false
+}
+
+func TestDropIsolatedRedisACLCommand(t *testing.T) {
+	got := DropIsolatedRedisACLCommand("pv_app_main")
+	want := []string{"redis-cli", "-p", strconv.Itoa(redisContainerPort), "ACL", "DELUSER", "pv_app_main"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("DropIsolatedRedisACLCommand(%q) = %v, want %v", "pv_app_main", got, want)
 	}
 }
 

@@ -48,11 +48,11 @@ export interface PreviewEphemeralDatabase {
 }
 
 // PreviewDatabaseIsolation mirrors internal/api's
-// previewDatabaseIsolationResource: one isolated Postgres role
-// provisioned on an existing (not preview-owned) database for a
-// databases: entry with isolatedInPreviews set
-// (internal/spec.Database.IsolatedInPreviews). The role's password is
-// never included here.
+// previewDatabaseIsolationResource: one isolated credential (a Postgres
+// role, or a Redis ACL user) provisioned on an existing (not
+// preview-owned) database for a databases: entry with isolatedInPreviews
+// set (internal/spec.Database.IsolatedInPreviews). The credential's
+// password is never included here.
 export interface PreviewDatabaseIsolation {
   source_key: string
   database_name: string

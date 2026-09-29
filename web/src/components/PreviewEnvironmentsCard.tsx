@@ -131,10 +131,11 @@ function EphemeralDatabaseRow({
   )
 }
 
-// DatabaseIsolationRow renders one preview's own isolated Postgres role
-// on an existing database (spec.Database.IsolatedInPreviews): its role
-// name and provisioning status. The role's password is never fetched or
-// shown here, only its name and where it lives.
+// DatabaseIsolationRow renders one preview's own isolated credential
+// (a Postgres role, or a Redis ACL user) on an existing database
+// (spec.Database.IsolatedInPreviews): its name and provisioning status.
+// The credential's password is never fetched or shown here, only its
+// name and where it lives.
 function DatabaseIsolationRow({
   isolation,
 }: {
@@ -154,9 +155,9 @@ function DatabaseIsolationRow({
           role {isolation.role_name}
         </span>
         <InfoTip label="About database isolation">
-          A dedicated Postgres role scoped to this preview, on the same database
-          as production. Its generated password is stored encrypted and is never
-          shown or logged in plaintext.
+          A dedicated Postgres role or Redis ACL user scoped to this preview, on
+          the same database as production. Its generated password is stored
+          encrypted and is never shown or logged in plaintext.
         </InfoTip>
       </div>
       <Badge
