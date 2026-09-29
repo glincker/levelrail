@@ -741,7 +741,15 @@ func (c *Controller) reconcileRolling(ctx context.Context, targets []string, des
 			// With a hold configured the last old container stays as the
 			// held previous release.
 			if len(stale) > 1 || (len(stale) == 1 && c.previousReleaseHold <= 0) {
-				sort.SliceStable(stale, func(i, j int) bool { return stale[i].Created.Before(stale[j].Created) })
+				// Created is often tied at test/fake-clock resolution, so
+				// break ties on name to keep this deterministic rather
+				// than following ListByPrefix's map-iteration order.
+				sort.SliceStable(stale, func(i, j int) bool {
+					if !stale[i].Created.Equal(stale[j].Created) {
+						return stale[i].Created.Before(stale[j].Created)
+					}
+					return stale[i].Name < stale[j].Name
+				})
 				_ = c.removeContainers(ctx, stale[:1])
 			}
 		}
