@@ -227,6 +227,22 @@ func (s *Schedule) Next(t time.Time) time.Time {
 	return time.Time{}
 }
 
+// NextInLocation returns the next time schedule matches strictly after
+// after, evaluated on loc's wall clock. Schedule.Next works in UTC only
+// (see its own doc comment); this shifts after's wall-clock fields in loc
+// into UTC fields, asks Next for the next match against those, then
+// reinterprets the result's fields back as loc's wall clock, the same
+// trick internal/deploy.WindowActive already uses for a freeze window's
+// own timezone. Every caller that needs a cron schedule's next
+// occurrence in a specific timezone (not just UTC) should use this
+// instead of duplicating the shift.
+func NextInLocation(schedule *Schedule, after time.Time, loc *time.Location) time.Time {
+	local := after.In(loc)
+	wall := time.Date(local.Year(), local.Month(), local.Day(), local.Hour(), local.Minute(), local.Second(), local.Nanosecond(), time.UTC)
+	nextWall := schedule.Next(wall)
+	return time.Date(nextWall.Year(), nextWall.Month(), nextWall.Day(), nextWall.Hour(), nextWall.Minute(), nextWall.Second(), 0, loc)
+}
+
 // dayMatches applies the standard cron day-of-month/day-of-week
 // disjunction: when only one of the two fields is a real restriction
 // (the other is "*"), only the restricted one has to match, the ordinary

@@ -125,6 +125,9 @@ func TestHandleSetAndGetAppSchedule_Success(t *testing.T) {
 	if !saved.Enabled {
 		t.Errorf("saved.Enabled = false, want true (default when enabled is omitted)")
 	}
+	if saved.NextRunAt == nil {
+		t.Error("saved.NextRunAt = nil, want it armed synchronously by the PUT itself, not left for the scheduler's next tick")
+	}
 
 	rec = httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/schedule", ""))
@@ -137,6 +140,9 @@ func TestHandleSetAndGetAppSchedule_Success(t *testing.T) {
 	}
 	if got.Cron != "0 3 * * *" || got.Branch != "main" || got.Timezone != "UTC" {
 		t.Errorf("GET schedule = %+v, want the saved values", got)
+	}
+	if got.NextRunAt == nil || !got.NextRunAt.Equal(*saved.NextRunAt) {
+		t.Errorf("GET NextRunAt = %v, want it to match what the PUT armed (%v)", got.NextRunAt, saved.NextRunAt)
 	}
 }
 

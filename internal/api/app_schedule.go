@@ -26,6 +26,7 @@ const (
 type AppScheduleStore interface {
 	GetAppSchedule(ctx context.Context, serviceName string) (*store.AppSchedule, error)
 	SetAppSchedule(ctx context.Context, serviceName, cron, branch, timezone string, enabled bool) error
+	ArmAppScheduleNextRun(ctx context.Context, serviceName string, next time.Time) error
 	ListAppScheduleHistory(ctx context.Context, serviceName string, limit int) ([]store.AppScheduleHistoryEntry, error)
 }
 
@@ -116,7 +117,8 @@ func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "cron is required")
 		return
 	}
-	if _, err := cronexpr.Parse(req.Cron); err != nil {
+	sched, err := cronexpr.Parse(req.Cron)
+	if err != nil {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid cron expression: %s", err.Error()))
 		return
 	}
@@ -124,7 +126,8 @@ func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 	if timezone == "" {
 		timezone = "UTC"
 	}
-	if _, err := time.LoadLocation(timezone); err != nil {
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid timezone: %s", err.Error()))
 		return
 	}
@@ -139,7 +142,24 @@ func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, appScheduleResource{ServiceName: name, Cron: req.Cron, Branch: req.Branch, Timezone: timezone, Enabled: enabled})
+	resource := appScheduleResource{ServiceName: name, Cron: req.Cron, Branch: req.Branch, Timezone: timezone, Enabled: enabled}
+	// Arm the next occurrence immediately rather than leaving next_fire_at
+	// NULL until the scheduler's own next tick: otherwise a client that
+	// just saved a schedule sees no next-run time at all until that tick
+	// happens, which can be minutes away. This mirrors exactly what the
+	// scheduler itself would compute on first sight of the schedule
+	// (internal/scheduledeploy.Scheduler.tickOne), so it changes nothing
+	// about when the schedule actually fires.
+	if enabled {
+		next := cronexpr.NextInLocation(sched, time.Now(), loc)
+		if err := rt.appSchedules.ArmAppScheduleNextRun(r.Context(), name, next); err != nil {
+			rt.logger.Error("api: arm app schedule next run failed", slog.String("error", err.Error()), slog.String("name", name))
+		} else {
+			resource.NextRunAt = &next
+		}
+	}
+
+	writeJSON(w, http.StatusOK, resource)
 }
 
 type appScheduleHistoryResource struct {

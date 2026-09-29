@@ -7,6 +7,7 @@ import {
   StackIcon,
   ShieldCheckIcon,
   GlobeIcon,
+  InfoIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -197,6 +198,23 @@ function SystemStatusPage() {
       </div>
 
       <SummaryBanner ok={data.ok} checks={data.checks} />
+
+      <Alert>
+        <InfoIcon />
+        <AlertTitle>Ingress is a single point of failure</AlertTitle>
+        <AlertDescription>
+          Domain-based HTTPS routing runs embedded in this control plane
+          process. If it crashes or restarts, routing is down until it comes
+          back up, even though already-running containers keep serving traffic
+          on their own ports the whole time.{' '}
+          <HelpLink
+            path="/resilience"
+            label="What survives a control plane crash"
+            variant="inline"
+          />
+          .
+        </AlertDescription>
+      </Alert>
 
       <CheckGroupCard
         title="Infrastructure"

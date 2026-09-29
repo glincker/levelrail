@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/cronexpr"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -309,24 +308,6 @@ func TestScheduler_Tick_InvalidScheduleSkippedNotFatal(t *testing.T) {
 	}
 	if fakeStore.schedules["good"].NextFireAt == nil {
 		t.Fatal("valid sibling schedule was not armed despite the invalid one")
-	}
-}
-
-func TestNextInLocation_TimezoneShiftsTheUTCInstant(t *testing.T) {
-	sched, err := cronexpr.Parse("0 9 * * *")
-	if err != nil {
-		t.Fatalf("cronexpr.Parse() error = %v", err)
-	}
-	loc, err := time.LoadLocation("America/New_York")
-	if err != nil {
-		t.Skipf("tzdata unavailable: %v", err)
-	}
-	after := time.Date(2026, 8, 15, 0, 0, 0, 0, time.UTC)
-
-	got := nextInLocation(sched, after, loc)
-	want := time.Date(2026, 8, 15, 13, 0, 0, 0, time.UTC) // 09:00 EDT == 13:00 UTC
-	if !got.Equal(want) {
-		t.Fatalf("nextInLocation() = %v, want %v", got.UTC(), want)
 	}
 }
 

@@ -141,7 +141,7 @@ func (s *Scheduler) tickOne(ctx context.Context, sch store.AppSchedule, now time
 	}
 
 	if sch.NextFireAt == nil {
-		next := nextInLocation(sched, now, loc)
+		next := cronexpr.NextInLocation(sched, now, loc)
 		if err := s.Store.ArmAppScheduleNextRun(ctx, sch.ServiceName, next); err != nil {
 			return fmt.Errorf("arm first run: %w", err)
 		}
@@ -152,7 +152,7 @@ func (s *Scheduler) tickOne(ctx context.Context, sch store.AppSchedule, now time
 	}
 
 	due := *sch.NextFireAt
-	next := nextInLocation(sched, now, loc)
+	next := cronexpr.NextInLocation(sched, now, loc)
 	if err := s.Store.ArmAppScheduleNextRun(ctx, sch.ServiceName, next); err != nil {
 		return fmt.Errorf("re-arm next run: %w", err)
 	}
@@ -191,20 +191,6 @@ func (s *Scheduler) recordHistory(ctx context.Context, serviceName string, due, 
 		return fmt.Errorf("record history: %w", err)
 	}
 	return nil
-}
-
-// nextInLocation returns the next time sched matches strictly after
-// after, evaluated on loc's wall clock. cronexpr.Schedule works in UTC
-// only (its own Next doc comment); this shifts after's wall-clock fields
-// in loc into UTC fields, asks cronexpr for the next match against those,
-// then reinterprets the result's fields back as loc's wall clock, the
-// same trick internal/deploy.WindowActive already uses for a freeze
-// window's own timezone.
-func nextInLocation(sched *cronexpr.Schedule, after time.Time, loc *time.Location) time.Time {
-	local := after.In(loc)
-	wall := time.Date(local.Year(), local.Month(), local.Day(), local.Hour(), local.Minute(), local.Second(), local.Nanosecond(), time.UTC)
-	nextWall := sched.Next(wall)
-	return time.Date(nextWall.Year(), nextWall.Month(), nextWall.Day(), nextWall.Hour(), nextWall.Minute(), nextWall.Second(), 0, loc)
 }
 
 // Run calls Tick on interval until ctx is done, matching the shape of
