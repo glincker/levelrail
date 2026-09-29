@@ -19,8 +19,11 @@ forum on the [GLINR Discord](https://discord.gg/Ar5pcaZB99).
 - Branch names: `type/short-description`, e.g. `fix/rollback-image-gc`
   or `feat/agent-reconnect-backoff`.
 - Commit messages follow conventional commits: `type: description`, for
-  example `fix: prevent image gc from pruning rollback targets`. Common
-  types are `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `chore`.
+  example `fix: prevent image gc from pruning rollback targets`. The
+  commit-msg hook enforces the allowed types: `feat`, `fix`, `perf`,
+  `refactor`, `docs`, `test`, `chore`, `ci`, `security`. Use `security`
+  for a fix whose primary purpose is closing a vulnerability, so it gets
+  its own changelog section instead of blending into Bug Fixes.
 - No em dashes or en dashes in commit messages or code comments. Use
   commas, periods, or parentheses instead.
 - Keep each PR to one logical change. Do not mix a refactor with a
