@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/diagnose"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/untrusted"
 )
 
@@ -214,7 +215,7 @@ func fromDiagnose(in Input) *class {
 	din := diagnose.Input{RecentLogLines: in.LogLines}
 	din.Attempt = &diagnose.AttemptInput{Status: in.Status, Error: in.Error}
 	if in.Condition != nil {
-		din.Conditions = []diagnose.ConditionInput{{Type: "Ready", Status: "False", Reason: in.Condition.Reason, Message: in.Condition.Message}}
+		din.Conditions = []diagnose.ConditionInput{{Type: reconcile.ConditionTypeReady, Status: "False", Reason: in.Condition.Reason, Message: in.Condition.Message}}
 	}
 	if in.Crashloop {
 		din.Crashloop = &diagnose.CrashloopInput{Firing: true}

@@ -31,3 +31,9 @@ linters:
       # this, but a contributor who ran `npm install` locally would hit
       # a false positive on every `golangci-lint run ./...` otherwise.
       - web/node_modules
+      # .claude/worktrees holds parallel agent worktrees, each a full
+      # checkout with its own go.mod. Gitignored, never seen by CI, but
+      # a local `golangci-lint run ./...` would otherwise pick up their
+      # files and, once one is removed mid-run, replay stale cached
+      # issues against paths that no longer exist.
+      - .claude/worktrees

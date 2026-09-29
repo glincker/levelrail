@@ -86,7 +86,7 @@ func (rt *Router) toRegistrySettingsResource(ctx context.Context, s store.Regist
 // controller.
 func registryStatus(conditions []reconcile.Condition) (status, message string) {
 	for _, c := range conditions {
-		if c.Type != "Ready" {
+		if c.Type != reconcile.ConditionTypeReady {
 			continue
 		}
 		switch c.Status {

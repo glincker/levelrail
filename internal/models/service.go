@@ -250,7 +250,7 @@ func (s *Service) view(m store.Model, conds []reconcile.Condition, peers []strin
 		return v
 	}
 	for _, c := range conds {
-		if c.Type == "Ready" {
+		if c.Type == reconcile.ConditionTypeReady {
 			v.Ready = c.Status == reconcile.ConditionTrue
 			v.Reason, v.Message = c.Reason, c.Message
 		}
