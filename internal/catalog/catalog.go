@@ -55,6 +55,7 @@ var Templates = concat(
 	selfhosted1Templates,
 	selfhosted2Templates,
 	selfhosted3Templates,
+	selfhosted4Templates,
 	aiTemplates,
 )
 
