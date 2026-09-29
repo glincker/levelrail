@@ -216,6 +216,7 @@ type Controller struct {
 	secretResolver  SecretResolver          // nil is valid: a service with no secret-backed env vars never needs one
 	deployRecorder  DeployRecorder          // nil is valid: deploy frequency just isn't recorded
 	meshDNSAddr     string                  // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	meshZone        string                  // empty is valid: resolveDatabaseField falls back to the database's container name, see WithMeshZone
 	nodeGPU         NodeGPUChecker          // nil is valid: no GPU placement check, see WithNodeGPU
 	storageTargets  StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
 	projectEnv      ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
@@ -301,6 +302,20 @@ func WithDeployRecorder(r DeployRecorder) Option {
 // not validate it.
 func WithMeshDNSAddr(addr string) Option {
 	return func(ctrl *Controller) { ctrl.meshDNSAddr = addr }
+}
+
+// WithMeshZone makes resolveDatabaseField resolve a database env var's
+// host to that database's mesh DNS name (<dbName>.<zone>, the same name
+// internal/reconcile/mesh's own refreshDNS already publishes for every
+// database Placement) instead of its Docker container name. Without one
+// configured (the default, empty string), host resolution is unchanged:
+// the container name, reachable only via Docker's own embedded DNS on
+// the database's own node. A zone with no matching WithMeshDNSAddr is
+// still valid (the container's resolv.conf just wouldn't query it), but
+// cmd/levelrail always wires both together from the same live mesh
+// setup, never one without the other.
+func WithMeshZone(zone string) Option {
+	return func(ctrl *Controller) { ctrl.meshZone = zone }
 }
 
 // WithStorageTargets enables container creation to resolve
@@ -1343,13 +1358,18 @@ func (c *Controller) resolveDatabaseEnv(ctx context.Context, desired *store.Desi
 }
 
 // resolveDatabaseField resolves one (database, field) pair to its real
-// value. host is always the referenced database's own container name
-// (database.ContainerName, the same deterministic name
-// internal/reconcile/database's own controller creates); port is the
-// engine's standard port (database.ContainerPort); username is the
-// database's own name, mirroring Postgres/MySQL/MongoDB's own
-// "role/user equals database name" convention this platform's
-// credential generators already establish (cmd/levelrail's
+// value. host is the referenced database's mesh DNS name
+// (<dbName>.<zone>, see WithMeshZone) when mesh networking is
+// configured, so a database on another node stays reachable exactly as
+// CLAUDE.md section 4.6 requires ("Apps get stable internal DNS names
+// that resolve across machines"); otherwise it falls back to the
+// database's own container name (database.ContainerName, the same
+// deterministic name internal/reconcile/database's own controller
+// creates), reachable only via Docker's embedded DNS on that database's
+// own node. port is the engine's standard port (database.ContainerPort);
+// username is the database's own name, mirroring Postgres/MySQL/
+// MongoDB's own "role/user equals database name" convention this
+// platform's credential generators already establish (cmd/levelrail's
 // postgresCredentialsFor and its siblings); password comes from the same
 // internal/secrets storage those generators already write to
 // (database.PasswordSecretKey).
@@ -1366,6 +1386,9 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, dbName, field str
 	}
 
 	host := database.ContainerName(dbName)
+	if c.meshZone != "" {
+		host = strings.ToLower(dbName) + "." + c.meshZone
+	}
 	port, _ := database.ContainerPort(desiredDB.Engine) // ok already confirmed by SupportsField above
 
 	tlsEnabled, err := c.databaseTLSEnabled(ctx, dbName, desiredDB.Engine)

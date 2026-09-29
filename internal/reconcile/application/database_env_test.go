@@ -123,6 +123,62 @@ func TestController_Reconcile_DatabaseEnv_Postgres_URL_Injected(t *testing.T) {
 	}
 }
 
+// TestController_Reconcile_DatabaseEnv_WithMeshZone_UsesMeshDNSName locks
+// in the cross-node database connectivity fix: with WithMeshZone
+// configured, resolveDatabaseField must resolve host to the database's
+// mesh DNS name (<dbName>.<zone>, the same name
+// internal/reconcile/mesh's refreshDNS already publishes for every
+// database Placement), not the container name that only resolves on the
+// database's own node.
+func TestController_Reconcile_DatabaseEnv_WithMeshZone_UsesMeshDNSName(t *testing.T) {
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"main": {Name: "main", Engine: store.EnginePostgres},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"DATABASE_URL": {Database: "main", Field: "url"},
+			"DB_HOST":      {Database: "main", Field: "host"},
+		},
+	}
+	rt := newFakeRuntime(0)
+	c := New("web", &fakeStore{svc: desired}, rt,
+		WithDatabaseAttachments(dbStore),
+		WithSecretResolver(newFakeSecretResolver(map[string]string{
+			"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
+		})),
+		WithMeshZone("levelrail"),
+	)
+
+	reconcileAndAssertEnv(t, c, rt, map[string]string{ //nolint:gosec // fake fixture, not a real credential
+		"DB_HOST":      "main.levelrail",
+		"DATABASE_URL": "postgres://main:s3cr3t@main.levelrail:5432/main",
+	})
+}
+
+// TestController_Reconcile_DatabaseEnv_WithoutMeshZone_UsesContainerName
+// is the regression-safety half of the mesh-zone test: single-node/
+// mesh-disabled installs (the default, no WithMeshZone) must keep
+// resolving to the container name exactly as before this option
+// existed, since that's the only name Docker's own embedded DNS
+// resolves when there's no mesh DNS server pointed to.
+func TestController_Reconcile_DatabaseEnv_WithoutMeshZone_UsesContainerName(t *testing.T) {
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"main": {Name: "main", Engine: store.EnginePostgres},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{
+			"DB_HOST": {Database: "main", Field: "host"},
+		},
+	}
+	c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{
+		"main/" + database.PostgresPasswordEnvKey: "s3cr3t",
+	})
+
+	reconcileAndAssertEnv(t, c, rt, map[string]string{"DB_HOST": "db-main"})
+}
+
 func TestController_Reconcile_DatabaseEnv_PerFieldVariants(t *testing.T) {
 	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
 		"main": {Name: "main", Engine: store.EngineMySQL},
