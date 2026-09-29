@@ -3267,6 +3267,9 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 	if deps.meshDNSAddr != "" {
 		appOpts = append(appOpts, application.WithMeshDNSAddr(deps.meshDNSAddr))
 	}
+	if deps.meshDNSAddr != "" && deps.meshCfg != nil && deps.meshCfg.resolver != nil {
+		appOpts = append(appOpts, application.WithMeshZone(deps.meshCfg.resolver.Zone()))
+	}
 
 	controllers := make([]reconcile.Controller, 0, len(services))
 	for _, svc := range services {
