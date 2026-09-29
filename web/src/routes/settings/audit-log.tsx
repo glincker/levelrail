@@ -29,6 +29,7 @@ import { AuditLogTable } from '../../components/AuditLogTable'
 import { AgentFilterChips } from '../../components/AgentFilterChips'
 import { collectAgentNames } from '../../lib/agentNames'
 import { tokenListQueryOptions } from '../../queries/tokens'
+import { EmptyState } from '../../components/ui/empty-state'
 
 // ALL_CLIENT_KINDS is the filter dropdown's "no filter" sentinel: Base
 // UI's Select cannot use an empty string as an item value (it reads as
@@ -250,16 +251,15 @@ function AuditLogSettingsPage() {
       {filterLoading ? (
         <TableSkeleton columnCount={8} rowCount={8} />
       ) : entries.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
-          <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <ClockCounterClockwiseIcon className="size-5" />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {filtersActive
+        <EmptyState
+          icon={<ClockCounterClockwiseIcon className="size-5" />}
+          title="No entries found"
+          description={
+            filtersActive
               ? 'No entries match these filters.'
-              : 'No audited requests recorded yet.'}
-          </p>
-        </div>
+              : 'No audited requests recorded yet.'
+          }
+        />
       ) : (
         <AuditLogTable entries={entries} />
       )}

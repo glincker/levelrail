@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { DatabaseIcon, PackageIcon } from '@phosphor-icons/react/dist/ssr'
+import { DatabaseIcon, PackageIcon, FolderIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   projectDetailQueryOptions,
   useProject,
@@ -29,6 +29,7 @@ import { ProjectEnvEditor } from '../../../components/ProjectEnvEditor'
 import { SharedEnvSecretsCard } from '../../../components/SharedEnvSecretsCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { EmptyState } from '../../../components/ui/empty-state'
 
 // Project detail route: the project's own name plus every app and
 // database currently filed under it. Deliberately not a new,
@@ -130,17 +131,11 @@ function ProjectDetailPage() {
       <SharedEnvSecretsCard scope="project" id={project.id} />
 
       {isEmpty ? (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-16 text-center">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">
-              Nothing filed under this project yet
-            </p>
-            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-              Assign a project when creating a new app or database, or move an
-              existing one here from its own Overview page.
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          icon={<FolderIcon className="size-5" />}
+          title="Nothing filed under this project yet"
+          description="Assign a project when creating a new app or database, or move an existing one here from its own Overview page."
+        />
       ) : (
         <>
           {projectApps.length > 0 ? (
