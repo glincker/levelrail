@@ -5,6 +5,7 @@ import {
   domainProgress,
   firstAppPhase,
   gitGate,
+  groupServerChecks,
   liveUrl,
   nextStep,
   normalizeDomain,
@@ -128,6 +129,49 @@ describe('serverCheckGate', () => {
       ]),
     )
     expect(gate).toEqual({ canContinue: true })
+  })
+})
+
+describe('groupServerChecks', () => {
+  it('puts a hard failure in blocking, not attention', () => {
+    const groups = groupServerChecks(
+      report([
+        { code: 'docker', name: 'Docker daemon', status: 'fail' },
+        { code: 'ram', name: 'Memory', status: 'ok' },
+      ]),
+    )
+    expect(groups.blocking.map((c) => c.code)).toEqual(['docker'])
+    expect(groups.attention).toEqual([])
+    expect(groups.passed.map((c) => c.code)).toEqual(['ram'])
+  })
+
+  it('puts a soft failure and a warning in attention, not blocking', () => {
+    const groups = groupServerChecks(
+      report([
+        { code: 'port_80', name: 'Port 80', status: 'fail' },
+        { code: 'firewall', name: 'Firewall', status: 'warn' },
+        { code: 'public_ip', name: 'Public IP', status: 'unknown' },
+      ]),
+    )
+    expect(groups.blocking).toEqual([])
+    expect(groups.attention.map((c) => c.code)).toEqual([
+      'port_80',
+      'firewall',
+      'public_ip',
+    ])
+    expect(groups.passed).toEqual([])
+  })
+
+  it('sorts nothing into blocking or attention when everything passes', () => {
+    const groups = groupServerChecks(
+      report([
+        { code: 'docker', status: 'ok' },
+        { code: 'ram', status: 'ok' },
+      ]),
+    )
+    expect(groups.blocking).toEqual([])
+    expect(groups.attention).toEqual([])
+    expect(groups.passed).toHaveLength(2)
   })
 })
 
