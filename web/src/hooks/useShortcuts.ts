@@ -4,6 +4,7 @@ import { useExperimentalFeatures } from './useExperimental'
 import {
   INITIAL_CHORD,
   findSearchField,
+  isDialogOpen,
   isSearchField,
   isTypingTarget,
   stepChord,
@@ -32,7 +33,7 @@ export function useShortcuts({ onHelp }: { onHelp: () => void }) {
           meta: e.metaKey,
           alt: e.altKey,
           typing: isTypingTarget(e.target),
-          dialogOpen: document.querySelector('[role="dialog"]') !== null,
+          dialogOpen: isDialogOpen(),
         },
         e.timeStamp,
         experimental,

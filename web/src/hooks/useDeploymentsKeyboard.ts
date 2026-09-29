@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react'
-import { isTypingTarget } from '../lib/shortcuts'
+import { OPEN_OVERLAY_ATTR, isTypingTarget } from '../lib/shortcuts'
 import {
   deploymentKeyAction,
   type DeploymentKeyAction,
 } from '../lib/deploymentsKeyboard'
 
 function hasBlockingOverlay(): boolean {
-  const dialogs = document.querySelectorAll('[role="dialog"], [role="menu"]')
+  const dialogs = document.querySelectorAll(
+    `[role="dialog"]${OPEN_OVERLAY_ATTR}, [role="menu"]${OPEN_OVERLAY_ATTR}`,
+  )
   for (const el of dialogs) {
     if (!el.closest('[data-deployment-drawer]')) return true
   }

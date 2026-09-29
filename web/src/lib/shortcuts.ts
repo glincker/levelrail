@@ -107,6 +107,17 @@ export function stepChord(
   return { state: INITIAL_CHORD, action: null }
 }
 
+// Base UI popups (dialog, menu, ...) keep their DOM node mounted with
+// role="dialog"/role="menu" during the closing exit animation, and stay
+// mounted indefinitely if that animation never resolves. `data-open` is
+// only present while a popup is genuinely open, so appending it to a role
+// selector is what tells "actually open" apart from "closed but mounted".
+export const OPEN_OVERLAY_ATTR = '[data-open]'
+
+export function isDialogOpen(root: ParentNode = document): boolean {
+  return root.querySelector(`[role="dialog"]${OPEN_OVERLAY_ATTR}`) !== null
+}
+
 export function isTypingTarget(el: EventTarget | null): boolean {
   if (!(el instanceof HTMLElement)) return false
   if (el.isContentEditable) return true

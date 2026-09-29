@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import {
   CHORD_TIMEOUT_MS,
   INITIAL_CHORD,
+  isDialogOpen,
   stepChord,
   type ChordState,
   type KeyInput,
@@ -110,6 +111,35 @@ describe('stepChord', () => {
       expect(res.action).toEqual(step.action)
       state = res.state
     }
+  })
+})
+
+describe('isDialogOpen', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('is false when no dialog is mounted', () => {
+    expect(isDialogOpen()).toBe(false)
+  })
+
+  it('is true for a dialog that is actually open', () => {
+    const dialog = document.createElement('div')
+    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('data-open', '')
+    document.body.appendChild(dialog)
+    expect(isDialogOpen()).toBe(true)
+  })
+
+  // Base UI dialogs stay mounted with data-closed (not removed) during and
+  // after their exit animation. A dialog in that state must not permanently
+  // disable every shortcut, which is exactly what happened before this fix.
+  it('is false for a closed dialog that stays mounted for its exit animation', () => {
+    const dialog = document.createElement('div')
+    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('data-closed', '')
+    document.body.appendChild(dialog)
+    expect(isDialogOpen()).toBe(false)
   })
 })
 
