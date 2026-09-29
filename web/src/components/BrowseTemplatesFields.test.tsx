@@ -1,7 +1,34 @@
+import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { BrowseTemplatesFields } from './BrowseTemplatesFields'
+
+// ServiceTemplateGrid's card links each template's name/logo to
+// /templates/$id (outside any dialog), the same reason ModelRow.test.tsx
+// stubs Link: useLinkProps throws without a real <RouterProvider>, which
+// this suite never mounts since it only exercises the grid/form, not
+// navigation.
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
+  return {
+    ...actual,
+    Link: ({
+      children,
+      to,
+      params,
+      ...rest
+    }: {
+      children?: ReactNode
+      to?: string
+      params?: Record<string, string>
+    } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
+      <a href={`${to?.replace('$id', params?.id ?? '') ?? ''}`} {...rest}>
+        {children}
+      </a>
+    ),
+  }
+})
 
 function fakeJsonResponse(body: unknown, status = 200): Response {
   return {
