@@ -550,6 +550,8 @@ Endpoints for:
 | DELETE | /api/v1/settings/registry | AbilityRoot | handleDisableRegistry |
 | GET | /api/v1/registry/repositories | AbilityRead | handleListRegistryRepositories |
 | GET | /api/v1/registry/tags | AbilityRead | handleListRegistryTags |
+| GET | /api/v1/dockerhub/search | AbilityRead | handleDockerHubSearch |
+| GET | /api/v1/dockerhub/repositories/{namespace}/{repo}/tags | AbilityRead | handleDockerHubTags |
 
 ## Git Provider Apps
 

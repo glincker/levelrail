@@ -83,6 +83,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/dockerhub"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
@@ -365,6 +366,7 @@ type Router struct {
 	vaultSecrets                   VaultSecrets                     // nil is valid: PUT/DELETE /api/v1/settings/vault return 501, same shape as cloudflareTunnelSecrets above
 	registryCatalog                RegistryCatalogClient            // always set (NewRouter defaults it to a real *registrycatalog.Client, which needs no configuration to construct), overridable in this package's own tests the same way githubAppClient is
 	registryCatalogSecrets         RegistryCatalogSecrets           // nil is valid: GET /api/v1/registry/repositories and /api/v1/registry/tags return 501, same shape as registrySecrets above
+	dockerHubClient                DockerHubClient                  // always set (NewRouter defaults it to a real *dockerhub.Client, unauthenticated so no secrets wiring needed), overridable in this package's own tests the same way registryCatalog is
 	emailSender                    email.Sender                     // nil is valid: forgot-password still returns its generic success response
 	passwordResetTokens            PasswordResetTokenStore          // always set, same shape as backupTargets above
 	forgotPasswordByIP             *loginLimiter                    // per-IP forgot-password budget, distinct from logins above
@@ -549,6 +551,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		registry:                    s,
 		vault:                       s,
 		registryCatalog:             registrycatalog.NewClient(),
+		dockerHubClient:             dockerhub.NewClient(),
 		passwordResetTokens:         s,
 		forgotPasswordByIP:          newLoginLimiter(),
 		forgotPasswordByEmail:       newLoginLimiter(),
