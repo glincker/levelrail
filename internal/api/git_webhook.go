@@ -252,7 +252,7 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return rt.processGitHubReleaseWebhookEvent(ctx, name, gs, body)
 	}
 
-	ev, err := webhook.ParsePushEventForProvider(body, header.Get("X-Event-Key"))
+	ev, err := webhook.ParsePushEventForProvider(body, header.Get(webhook.HeaderBitbucketEventKey))
 	if err != nil {
 		rt.logger.Warn("api: git push webhook: malformed payload", slog.String("error", err.Error()), slog.String("name", name))
 		return http.StatusBadRequest, "malformed payload"
@@ -290,7 +290,7 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 // today, see gitSourceTriggerMatchesPush's own doc comment for how a
 // tag push covers spec.TriggerModeRelease for them instead.
 func isGitHubReleaseEvent(header http.Header) bool {
-	return header.Get("X-GitHub-Event") == "release"
+	return header.Get(webhook.HeaderGitHubEvent) == "release"
 }
 
 // gitSourceTriggerMatchesPush decides whether a push event's ref should
@@ -513,24 +513,24 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 // needs to take the identical branch on replay.
 func detectWebhookProviderAndEvent(header http.Header) (provider, eventType string, headerFields map[string]string) {
 	headerFields = map[string]string{
-		"X-GitHub-Event":     header.Get("X-GitHub-Event"),
-		"X-Gitlab-Event":     header.Get("X-Gitlab-Event"),
-		"X-Event-Key":        header.Get("X-Event-Key"),
-		"X-Gitea-Event-Type": header.Get("X-Gitea-Event-Type"),
+		webhook.HeaderGitHubEvent:       header.Get(webhook.HeaderGitHubEvent),
+		webhook.HeaderGitLabEvent:       header.Get(webhook.HeaderGitLabEvent),
+		webhook.HeaderBitbucketEventKey: header.Get(webhook.HeaderBitbucketEventKey),
+		webhook.HeaderGiteaEventType:    header.Get(webhook.HeaderGiteaEventType),
 	}
 	switch {
-	case headerFields["X-Gitlab-Event"] != "":
-		return "gitlab", headerFields["X-Gitlab-Event"], headerFields
-	case headerFields["X-Gitea-Event-Type"] != "":
+	case headerFields[webhook.HeaderGitLabEvent] != "":
+		return "gitlab", headerFields[webhook.HeaderGitLabEvent], headerFields
+	case headerFields[webhook.HeaderGiteaEventType] != "":
 		// Checked before X-GitHub-Event: Gitea also sends
 		// X-Hub-Signature-256 for GitHub compatibility (verifyGitPushWebhookAuth's
 		// own doc comment), but never X-GitHub-Event, so this branch never
 		// shadows a real GitHub delivery.
-		return "gitea", headerFields["X-Gitea-Event-Type"], headerFields
-	case headerFields["X-GitHub-Event"] != "":
-		return "github", headerFields["X-GitHub-Event"], headerFields
-	case headerFields["X-Event-Key"] != "":
-		return "bitbucket", headerFields["X-Event-Key"], headerFields
+		return "gitea", headerFields[webhook.HeaderGiteaEventType], headerFields
+	case headerFields[webhook.HeaderGitHubEvent] != "":
+		return "github", headerFields[webhook.HeaderGitHubEvent], headerFields
+	case headerFields[webhook.HeaderBitbucketEventKey] != "":
+		return "bitbucket", headerFields[webhook.HeaderBitbucketEventKey], headerFields
 	default:
 		return "unknown", "unknown", headerFields
 	}
@@ -672,11 +672,11 @@ func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, 
 // with no dedicated case needed. No known-header case present, or a
 // mismatch, fails closed.
 func verifyGitPushWebhookAuth(secret string, body []byte, header http.Header) bool {
-	if token := header.Get("X-Gitlab-Token"); token != "" {
+	if token := header.Get(webhook.HeaderGitLabToken); token != "" {
 		return secret != "" && subtle.ConstantTimeCompare([]byte(token), []byte(secret)) == 1
 	}
-	if sig := header.Get("X-Hub-Signature-256"); sig != "" {
+	if sig := header.Get(webhook.HeaderHubSignature256); sig != "" {
 		return webhook.VerifySignature([]byte(secret), body, sig)
 	}
-	return webhook.VerifySignature([]byte(secret), body, header.Get("X-Hub-Signature"))
+	return webhook.VerifySignature([]byte(secret), body, header.Get(webhook.HeaderHubSignature))
 }

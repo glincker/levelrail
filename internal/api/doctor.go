@@ -90,9 +90,14 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 	if httpsPort == 0 {
 		httpsPort = defaultDoctorHTTPSPort
 	}
-	hardeningCfg, hardeningErr := docker.HardeningFromEnv()
+	runtimeInfo := docker.DetectRuntimeSocket(os.LookupEnv)
+	if reporter, ok := rt.dockerPinger.(runtimeReporter); ok {
+		runtimeInfo = reporter.Runtime()
+	}
+	hardeningCfg, hardeningErr := docker.HardeningFromEnv(runtimeInfo)
 	checks := []doctorCheckResource{
 		rt.doctorCheckDocker(ctx),
+		rt.doctorCheckContainerRuntime(ctx),
 		rt.doctorCheckDiskSpace(),
 		rt.doctorCheckDataDirWritable(),
 		rt.doctorCheckPort(httpPort),

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -44,6 +45,9 @@ type Client struct {
 	// hardening is the policy Create applies; the zero value (plain
 	// &Client{} in tests) has no mode and applies nothing.
 	hardening HardeningConfig
+	// runtime is DetectRuntimeSocket's result at construction time,
+	// exposed via Runtime() for the doctor's container_runtime check.
+	runtime RuntimeInfo
 }
 
 // ClientOption configures optional Client behavior at construction time.
@@ -70,21 +74,35 @@ func WithInstanceLabel(key, value string) ClientOption {
 // NewClient builds a Client from the standard Docker environment
 // (DOCKER_HOST, DOCKER_CERT_PATH, etc.), negotiating API version against
 // whatever daemon is actually running rather than pinning one.
+// APP_CONTAINER_RUNTIME_SOCKET, when set, takes precedence over
+// DOCKER_HOST for the connection itself (DetectRuntimeSocket applies the
+// same precedence when only reporting, not connecting).
 func NewClient(opts ...ClientOption) (*Client, error) {
-	cli, err := dockerclient.NewClientWithOpts(
-		dockerclient.FromEnv,
-		dockerclient.WithAPIVersionNegotiation(),
-	)
+	runtime := DetectRuntimeSocket(os.LookupEnv)
+	dockerOpts := []dockerclient.Opt{dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation()}
+	if runtime.Source == envRuntimeSocket {
+		dockerOpts = append(dockerOpts, dockerclient.WithHost(runtime.Host))
+	}
+	cli, err := dockerclient.NewClientWithOpts(dockerOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("docker: new client: %w", err)
 	}
-	hardening, herr := HardeningFromEnv()
+	hardening, herr := HardeningFromEnv(runtime)
 	logHardeningEnv(herr)
-	c := &Client{cli: cli, hardening: hardening}
+	c := &Client{cli: cli, hardening: hardening, runtime: runtime}
 	for _, opt := range opts {
 		opt(c)
 	}
 	return c, nil
+}
+
+// Runtime reports which container engine and privilege mode this Client
+// is likely talking to. Consumed by GET /api/v1/system/doctor's
+// container_runtime check through a narrow, consumer-defined interface,
+// the same pattern ServerVersion's engineVersioner already establishes in
+// internal/api.
+func (c *Client) Runtime() RuntimeInfo {
+	return c.runtime
 }
 
 // hasInstanceLabel reports whether WithInstanceLabel configured this

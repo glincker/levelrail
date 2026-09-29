@@ -82,12 +82,22 @@ func ParseHardeningMode(s string) (HardeningMode, error) {
 }
 
 // HardeningFromEnv reads the hardening policy from the environment. On an
-// invalid value it returns the safe default (warn) together with the error.
-func HardeningFromEnv() (HardeningConfig, error) {
+// invalid value it returns the safe default (warn) together with the
+// error. runtime.Rootless auto-disables PidsLimit unless
+// APP_CONTAINER_PIDS_LIMIT is set explicitly: rootless Docker without a
+// delegated cgroup v2 controller rejects a pids-limit HostConfig at
+// container-create time, so imposing it unconditionally would break every
+// deploy on such a host. CapDrop, CapAdd and no-new-privileges are
+// unaffected: those operate inside the container's own user namespace
+// regardless of rootless mode, so nothing needs to come off the minimal
+// capability list for Podman or rootless Docker.
+func HardeningFromEnv(runtime RuntimeInfo) (HardeningConfig, error) {
 	cfg := HardeningConfig{PidsLimit: DefaultPidsLimit}
 	mode, firstErr := ParseHardeningMode(os.Getenv(envHardening))
 	cfg.Mode = mode
+	pidsExplicit := false
 	if v := strings.TrimSpace(os.Getenv(envHardeningPids)); v != "" {
+		pidsExplicit = true
 		n, err := strconv.ParseInt(v, 10, 64)
 		switch {
 		case err != nil || n < 0:
@@ -97,6 +107,9 @@ func HardeningFromEnv() (HardeningConfig, error) {
 		default:
 			cfg.PidsLimit = n
 		}
+	}
+	if !pidsExplicit && runtime.Rootless {
+		cfg.PidsLimit = 0
 	}
 	for _, c := range strings.Split(os.Getenv(envHardeningCaps), ",") {
 		if c = strings.ToUpper(strings.TrimSpace(c)); c != "" {

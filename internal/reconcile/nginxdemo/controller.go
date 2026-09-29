@@ -98,7 +98,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 func ready(reason string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type:   "Ready",
+		Type:   reconcile.ConditionTypeReady,
 		Status: reconcile.ConditionTrue,
 		Reason: reason,
 	}}}
@@ -106,7 +106,7 @@ func ready(reason string) reconcile.Result {
 
 func notReady(reason string, err error) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type:    "Ready",
+		Type:    reconcile.ConditionTypeReady,
 		Status:  reconcile.ConditionFalse,
 		Reason:  reason,
 		Message: err.Error(),

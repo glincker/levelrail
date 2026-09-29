@@ -816,7 +816,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	total := len(routes) + len(staticRoutes) + len(maintenanceRoutes) + len(redirectRoutes)
 	reason := fmt.Sprintf("Routed%dServices", total)
 	conditions := []reconcile.Condition{{
-		Type:    "Ready",
+		Type:    reconcile.ConditionTypeReady,
 		Status:  reconcile.ConditionTrue,
 		Reason:  reason,
 		Message: fmt.Sprintf("%d service(s)/static site(s) with domains are routed (%d with a running backend, %d served directly, %d in maintenance mode, %d redirected)", total, len(routes), len(staticRoutes), len(maintenanceRoutes), len(redirectRoutes)),
@@ -1016,7 +1016,7 @@ func (c *Controller) applicationReadyByService(ctx context.Context, services []s
 	ready := make(map[string]bool, len(services))
 	for _, svc := range services {
 		for _, cond := range conditions[application.ControllerName(svc.Name)] {
-			if cond.Type == "Ready" && cond.Status == reconcile.ConditionTrue {
+			if cond.Type == reconcile.ConditionTypeReady && cond.Status == reconcile.ConditionTrue {
 				ready[svc.Name] = true
 				break
 			}
@@ -1274,6 +1274,6 @@ func notReady(reason string, err error) reconcile.Result {
 		msg = err.Error()
 	}
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
 	}}}
 }

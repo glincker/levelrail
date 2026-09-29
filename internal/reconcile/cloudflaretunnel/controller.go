@@ -261,7 +261,7 @@ func (c *Controller) remove(ctx context.Context, old *docker.ContainerState) err
 
 func ready(reason string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionTrue, Reason: reason,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue, Reason: reason,
 	}}}
 }
 
@@ -271,7 +271,7 @@ func notReady(reason string, err error) reconcile.Result {
 		msg = err.Error()
 	}
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
 	}}}
 }
 
@@ -285,11 +285,11 @@ func notReady(reason string, err error) reconcile.Result {
 func absentResult(settings store.CloudflareTunnelSettings, hasToken bool) reconcile.Result {
 	if settings.Enabled && !hasToken {
 		return reconcile.Result{Conditions: []reconcile.Condition{{
-			Type: "Ready", Status: reconcile.ConditionFalse, Reason: "TokenNotConfigured",
+			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: "TokenNotConfigured",
 			Message: "cloudflare tunnel is enabled but no token has been set",
 		}}}
 	}
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionUnknown, Reason: "Disabled",
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: "Disabled",
 	}}}
 }

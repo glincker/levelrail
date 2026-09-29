@@ -59,7 +59,7 @@ func (db *DB) ListPipelineRunRows(ctx context.Context, f PipelineRunFilter) ([]P
 	var args []any
 	switch f.Status {
 	case "":
-	case "held":
+	case PipelineFilterHeld:
 		conds = append(conds, `r.hold_state = 'pending'`)
 	case PipelineStatusRunning:
 		conds = append(conds, `r.status IN ('queued', 'running')`)

@@ -102,7 +102,7 @@ func (c *NetworkCleanupController) Reconcile(ctx context.Context) (reconcile.Res
 	}
 	if firstErr != nil {
 		return reconcile.Result{Conditions: []reconcile.Condition{{
-			Type: "Ready", Status: reconcile.ConditionTrue,
+			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue,
 			Reason: "OrphanedNetworkCleanupFailed", Message: firstErr.Error(),
 		}}}, fmt.Errorf("application/network-cleanup: %w", firstErr)
 	}

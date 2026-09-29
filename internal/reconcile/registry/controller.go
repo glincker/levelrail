@@ -297,7 +297,7 @@ func (c *Controller) remove(ctx context.Context, old *docker.ContainerState) err
 
 func ready(reason string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionTrue, Reason: reason,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue, Reason: reason,
 	}}}
 }
 
@@ -307,7 +307,7 @@ func notReady(reason string, err error) reconcile.Result {
 		msg = err.Error()
 	}
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
 	}}}
 }
 
@@ -320,11 +320,11 @@ func notReady(reason string, err error) reconcile.Result {
 func absentResult(settings store.RegistrySettings, hasCreds bool) reconcile.Result {
 	if settings.Enabled && !hasCreds {
 		return reconcile.Result{Conditions: []reconcile.Condition{{
-			Type: "Ready", Status: reconcile.ConditionFalse, Reason: "CredentialsNotConfigured",
+			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: "CredentialsNotConfigured",
 			Message: "the built-in registry is enabled but no credentials have been generated",
 		}}}
 	}
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionUnknown, Reason: "Disabled",
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: "Disabled",
 	}}}
 }

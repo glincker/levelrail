@@ -47,11 +47,11 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /api/v1/auth/oauth/{provider}/callback": "OAuth sign-in callback, authenticated by state and code",
 	"POST /api/v1/auth/forgot-password":          "always generic response, rate limited",
 	"POST /api/v1/auth/reset-password":           "authenticated by the single-use reset token",
+	"GET /.well-known/jwks.json":                 "OIDC discovery document, public by spec; 404 when no pipeline OIDC issuer is configured",
 	"POST /api/v1/webhooks/github/{name}":        "authenticated by the HMAC signature of the app's webhook secret",
 	"GET /public/status":                         "opt-in public status page, serves only operator-chosen names and statuses, rate limited and cacheable",
 	"GET /public/status.json":                    "JSON form of the opt-in public status page, same whitelisted view",
 	"GET /public/status.rss":                     "RSS feed of operator-authored incidents on the opt-in public status page",
-	"GET /.well-known/jwks.json":                 "pipeline OIDC verification key set, meant to be fetched by AWS/GCP/Vault with no session; answers 404 rather than 401 when OIDC is unconfigured (router.go's oidcJWKS is nil), which leaks nothing either",
 }
 
 // readOnlyMayMutate lists mutating routes a read-only token may call:
