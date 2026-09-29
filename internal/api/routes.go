@@ -263,6 +263,14 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/service-templates", rt.requireAbility(AbilityRead, rt.handleListServiceTemplates))
 	mux.HandleFunc("GET /api/v1/service-templates/{id}", rt.requireAbility(AbilityRead, rt.handleGetServiceTemplate))
 
+	// One-click template deploy (handleDeployServiceTemplateNow): not
+	// scoped to an existing app (the app doesn't exist until this
+	// request creates it), same "no resource to scope to yet" shape as
+	// POST /api/v1/git/branches and POST /api/v1/build/detect below.
+	// AbilityDeploy, matching POST /api/v1/apps/{name}/compose above,
+	// since deployComposeBody is the same create-and-deploy core.
+	mux.HandleFunc("POST /api/v1/service-templates/{id}/deploy", rt.requireAbility(AbilityDeploy, rt.handleDeployServiceTemplateNow))
+
 	// Clone: duplicates an app's desired state under a new name.
 	// AbilityWrite, the same gate POST /api/v1/apps itself uses, since a
 	// clone is a creation shaped as "copy {name}" rather than "start

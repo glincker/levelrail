@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import {
   AppWindowIcon,
   ArrowLeftIcon,
@@ -38,10 +38,12 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
+import { toast } from '@/components/ui/toast'
 import { formatBytes } from '../lib/format'
 import { RamFitBadge } from './RamFitBadge'
 import { useDeployCompose } from '../queries/compose'
 import {
+  useDeployServiceTemplateNow,
   useServiceTemplate,
   useServiceTemplates,
   type ServiceTemplateListItem,
@@ -104,46 +106,72 @@ function matchesSearch(
 
 // A single template card in the browse grid, styled after
 // CreateResourceWizard's own OptionCard so both pickers read as one
-// family of controls.
+// family of controls. The card body still opens the pre-filled preview/
+// confirm step (onSelect, unchanged); "Deploy now" is a second, explicit
+// action, so it's a sibling button rather than nested inside the card's
+// own button (invalid HTML, and would fire both handlers on one click).
 function TemplateCard({
   template,
   onSelect,
+  onDeployNow,
+  deploying,
 }: {
   template: ServiceTemplateListItem
   onSelect: (id: string) => void
+  onDeployNow: (template: ServiceTemplateListItem) => void
+  deploying: boolean
 }) {
   const CategoryIcon = CATEGORY_ICONS[template.category] ?? PackageIcon
   return (
-    <button
-      type="button"
-      onClick={() => {
-        onSelect(template.id)
-      }}
-      className="flex flex-col items-start gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-    >
-      <div className="flex w-full items-center justify-between gap-2">
-        <TemplateLogo
-          id={template.id}
-          className="size-6"
-          fallback={<CategoryIcon className="size-6 text-muted-foreground" />}
-        />
-        <Badge variant="outline">{template.category}</Badge>
-      </div>
-      <span className="text-sm font-medium text-foreground">
-        {template.name}
-      </span>
-      <span className="text-xs text-muted-foreground">{template.slogan}</span>
-      {!!template.recommended_memory_bytes && (
-        <Badge variant="muted" className="text-xs">
-          ~{formatBytes(template.recommended_memory_bytes)} RAM recommended
-        </Badge>
-      )}
-      {template.requires_gpu && (
-        <Badge variant="muted" className="text-xs">
-          Needs NVIDIA GPU
-        </Badge>
-      )}
-    </button>
+    <div className="flex flex-col items-start gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted">
+      <button
+        type="button"
+        onClick={() => {
+          onSelect(template.id)
+        }}
+        className="flex w-full flex-col items-start gap-2 rounded-md text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        <div className="flex w-full items-center justify-between gap-2">
+          <TemplateLogo
+            id={template.id}
+            className="size-6"
+            fallback={<CategoryIcon className="size-6 text-muted-foreground" />}
+          />
+          <Badge variant="outline">{template.category}</Badge>
+        </div>
+        <span className="text-sm font-medium text-foreground">
+          {template.name}
+        </span>
+        <span className="text-xs text-muted-foreground">{template.slogan}</span>
+        {!!template.recommended_memory_bytes && (
+          <Badge variant="muted" className="text-xs">
+            ~{formatBytes(template.recommended_memory_bytes)} RAM recommended
+          </Badge>
+        )}
+        {template.requires_gpu && (
+          <Badge variant="muted" className="text-xs">
+            Needs NVIDIA GPU
+          </Badge>
+        )}
+      </button>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="w-full"
+        disabled={deploying}
+        onClick={() => {
+          onDeployNow(template)
+        }}
+      >
+        <RocketLaunchIcon />
+        {deploying
+          ? 'Deploying...'
+          : template.requires_configuration
+            ? 'Deploy now (needs setup)'
+            : 'Deploy now'}
+      </Button>
+    </div>
   )
 }
 
@@ -155,8 +183,12 @@ function TemplateCard({
 // and pre-fills the exact same deploy form CreateComposeFields already
 // owns: same useDeployCompose() mutation, same POST
 // /api/v1/apps/{name}/compose request, same per-service results panel on
-// success. The only new pieces here are the grid itself and the
-// name/compose pre-fill; deploy semantics are not duplicated.
+// success. Each card also has its own "Deploy now" action
+// (handleDeployNow): for a template with no required, default-less
+// secret this skips straight to POST /api/v1/service-templates/{id}/deploy
+// and lands on the new app's own page; for one that does need
+// configuration it falls back to this same preview/confirm step. Deploy
+// semantics are not duplicated anywhere in this file.
 export function BrowseTemplatesFields({
   open,
   onCreated,
@@ -181,6 +213,8 @@ export function BrowseTemplatesFields({
   const templatesQuery = useServiceTemplates()
   const templateDetail = useServiceTemplate(templateId ?? '')
   const deployCompose = useDeployCompose()
+  const deployNow = useDeployServiceTemplateNow()
+  const navigate = useNavigate()
 
   const { register, handleSubmit, formState, reset, setValue } = useForm<
     FormInput,
@@ -195,9 +229,10 @@ export function BrowseTemplatesFields({
     if (!open) {
       reset(DEFAULT_VALUES)
       deployCompose.reset()
+      deployNow.reset()
     }
     // Only reacting to the dialog's open transition, not to reset/
-    // deployCompose identity churn on every render.
+    // deployCompose/deployNow identity churn on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
@@ -223,6 +258,47 @@ export function BrowseTemplatesFields({
   function backToGrid() {
     setTemplateId(null)
     deployCompose.reset()
+  }
+
+  // The genuine one-click path: a template with no required, default-
+  // less secret (requires_configuration, computed server-side from its
+  // Compose body, internal/api/service_templates.go's
+  // templateRequiresConfiguration) deploys immediately under a
+  // generated name. A template that does need configuration falls back
+  // to the existing pre-filled step (setTemplateId), the same screen a
+  // plain card click already opens, rather than deploying with an
+  // empty or fake secret.
+  function handleDeployNow(template: ServiceTemplateListItem) {
+    if (template.requires_configuration) {
+      setTemplateId(template.id)
+      return
+    }
+    deployNow.mutate(template.id, {
+      onSuccess: (result) => {
+        onCreated()
+        // Lands on the first service's own page rather than a bare app
+        // id: /apps/$name is per-service (AppServicesPanel there already
+        // surfaces the rest of a multi-service app's siblings), the same
+        // target each "View" link in the results panel below already
+        // uses.
+        const landingName = result.services[0]?.name ?? result.app_id
+        toast.add({
+          title: `"${result.app_id}" deployed`,
+          description: `${result.services.length} ${
+            result.services.length === 1 ? 'service' : 'services'
+          } running now.`,
+          type: 'success',
+        })
+        void navigate({ to: '/apps/$name', params: { name: landingName } })
+      },
+      onError: (error) => {
+        toast.add({
+          title: 'Deploy failed',
+          description: error.message,
+          type: 'error',
+        })
+      },
+    })
   }
 
   if (deployCompose.isSuccess) {
@@ -445,6 +521,11 @@ export function BrowseTemplatesFields({
                       key={template.id}
                       template={template}
                       onSelect={setTemplateId}
+                      onDeployNow={handleDeployNow}
+                      deploying={
+                        deployNow.isPending &&
+                        deployNow.variables === template.id
+                      }
                     />
                   ))}
               </div>
