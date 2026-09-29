@@ -35,36 +35,83 @@ Four main types, plus two Levelrail-specific categories:
 
 ### How-to guides
 
+#### Getting Started and Installation
+
 | Doc | Covers |
 | --- | --- |
 | [installing.md](installing.md) | Pre-flight requirements, every install path (`install.sh`, Docker, source), verifying, upgrading, and uninstalling |
 | [docker.md](docker.md) | Run the control plane and node agent as containers instead of `install.sh` |
-| [feature-flags.md](feature-flags.md) | Toggle app behavior at runtime without a redeploy |
-| [screenshots.md](screenshots.md) | Regenerate the dashboard screenshots used in the README |
-| [master-key-rotation.md](master-key-rotation.md) | Rotate the envelope-encryption master key without losing access to stored secrets |
-| [migrating-from-coolify-dokploy-and-caprover.md](migrating-from-coolify-dokploy-and-caprover.md) | Move apps off a live Coolify, Dokploy, or CapRover instance with `levelrail-cli migrate` |
-| [github-actions.md](github-actions.md) | Deploy from a GitHub Actions workflow with the bundled composite Action |
-| [pipelines.md](pipelines.md) | Test, build, approve, and deploy with YAML pipelines: triggers, matrix, secrets, and approvals |
-| [platform-as-code.md](platform-as-code.md) | Describe projects, environments, apps, domains and databases as YAML, then export, diff, plan and apply them from the CLI, the dashboard, MCP or CI |
-| [deployments-page.md](deployments-page.md) | The cross-app Deployments page: live feed, filters, details drawer, actions and keyboard shortcuts |
-| [load-balancing.md](load-balancing.md) | Balance traffic across replicas and nodes with health checks, sticky sessions, weights and graceful cutovers, and export the setup as Terraform, CDK, CloudFormation or Caddy |
-| [deploy-previews.md](deploy-previews.md) | Opt-in thumbnails of each deploy, captured by a short-lived browser container: cost, privacy, retention and every `APP_PREVIEW_*` setting |
-| [supply-chain.md](supply-chain.md) | SBOM per Dockerfile build, an optional vulnerability scan in a short-lived container and a release gate: cost, coverage, retention and every `APP_BUILD_ATTEST` and `APP_SCAN_*` setting |
-| [domains-and-ingress.md](domains-and-ingress.md) | Why there's no reverse proxy to install, how `app.yaml` domains route to containers, and TLS's current honest status |
-| [acme-verification-runbook.md](acme-verification-runbook.md) | Verify real ACME certificate issuance against a live domain, step by step |
+
+#### Deploying Apps and Git Sources
+
+| Doc | Covers |
+| --- | --- |
 | [importing-apps.md](importing-apps.md) | The New app import front door: repo URL, docker run, image, compose or Dockerfile in, deployment plan preview out |
 | [deploying-apps.md](deploying-apps.md) | An app's lifecycle: create, deploy, roll back, promote, health checks, resource limits, exec, and scheduled tasks |
+| [github-actions.md](github-actions.md) | Deploy from a GitHub Actions workflow with the bundled composite Action |
+| [git-integrations.md](git-integrations.md) | Connect GitHub, GitLab, and Bitbucket, webhooks, and preview environments |
+| [pipelines.md](pipelines.md) | Test, build, approve, and deploy with YAML pipelines: triggers, matrix, secrets, and approvals |
+
+#### Build and Deployment Options
+
+| Doc | Covers |
+| --- | --- |
+| [deploy-previews.md](deploy-previews.md) | Opt-in thumbnails of each deploy, captured by a short-lived browser container: cost, privacy, retention and every `APP_PREVIEW_*` setting |
+| [supply-chain.md](supply-chain.md) | SBOM per Dockerfile build, an optional vulnerability scan in a short-lived container and a release gate: cost, coverage, retention and every `APP_BUILD_ATTEST` and `APP_SCAN_*` setting |
+
+#### Domains, TLS, and Ingress
+
+| Doc | Covers |
+| --- | --- |
+| [domains-and-ingress.md](domains-and-ingress.md) | Why there's no reverse proxy to install, how `app.yaml` domains route to containers, and TLS's current honest status |
+| [acme-verification-runbook.md](acme-verification-runbook.md) | Verify real ACME certificate issuance against a live domain, step by step |
+| [load-balancing.md](load-balancing.md) | Balance traffic across replicas and nodes with health checks, sticky sessions, weights and graceful cutovers, and export the setup as Terraform, CDK, CloudFormation or Caddy |
+
+#### Databases and Backups
+
+| Doc | Covers |
+| --- | --- |
 | [managing-databases.md](managing-databases.md) | Create and manage Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse resources |
-| [tags.md](tags.md) | Label and organize apps with arbitrary tags for filtering and grouping |
+| [backups-and-storage.md](backups-and-storage.md) | Backup targets, registry credentials, and app volume backups |
+
+#### Observability and Monitoring
+
+| Doc | Covers |
+| --- | --- |
 | [observability.md](observability.md) | Node-local metrics and log storage, federated queries, and the alert engine |
+| [deployments-page.md](deployments-page.md) | The cross-app Deployments page: live feed, filters, details drawer, actions and keyboard shortcuts |
+
+#### Multi-Node Setup
+
+| Doc | Covers |
+| --- | --- |
 | [multi-node.md](multi-node.md) | Add and manage additional nodes, node health, and simple spread placement |
+
+#### Organization and Access Control
+
+| Doc | Covers |
+| --- | --- |
 | [projects-and-organizations.md](projects-and-organizations.md) | The optional organization/project/environment grouping hierarchy for apps and databases |
 | [identity-and-access.md](identity-and-access.md) | Users, roles, abilities, IAM policies, invites, tokens, 2FA, OAuth, and audit logging |
-| [git-integrations.md](git-integrations.md) | Connect GitHub, GitLab, and Bitbucket, webhooks, and preview environments |
-| [backups-and-storage.md](backups-and-storage.md) | Backup targets, registry credentials, and app volume backups |
+| [tags.md](tags.md) | Label and organize apps with arbitrary tags for filtering and grouping |
+
+#### Security and Advanced Topics
+
+| Doc | Covers |
+| --- | --- |
+| [master-key-rotation.md](master-key-rotation.md) | Rotate the envelope-encryption master key without losing access to stored secrets |
+| [migrating-from-coolify-dokploy-and-caprover.md](migrating-from-coolify-dokploy-and-caprover.md) | Move apps off a live Coolify, Dokploy, or CapRover instance with `levelrail-cli migrate` |
+| [feature-flags.md](feature-flags.md) | Toggle app behavior at runtime without a redeploy |
+| [platform-as-code.md](platform-as-code.md) | Describe projects, environments, apps, domains and databases as YAML, then export, diff, plan and apply them from the CLI, the dashboard, MCP or CI |
 | [templates-and-registry.md](templates-and-registry.md) | Deploy curated service templates from the catalog as Compose-backed apps |
 | [ai-assistant.md](ai-assistant.md) | Run `levelrail-mcp` over stdio or the network for an MCP-compatible AI assistant, and scope a token for it |
 | [agent-tooling-audit.md](agent-tooling-audit.md) | Tool counts and estimated token cost per MCP mode, the heaviest and overlapping tools, and the budget test |
+
+#### Maintenance and Documentation
+
+| Doc | Covers |
+| --- | --- |
+| [screenshots.md](screenshots.md) | Regenerate the dashboard screenshots used in the README |
 
 ### Reference
 
@@ -81,6 +128,7 @@ Four main types, plus two Levelrail-specific categories:
 | Doc | Covers |
 | --- | --- |
 | [architecture.md](architecture.md) | How Levelrail is actually built today: reconciler, ingress, builds, storage |
+| [resilience.md](resilience.md) | What survives a control plane process crash and what does not, measured live: running containers, node agents, and the embedded ingress outage window |
 | [threat-model.md](threat-model.md) | Trust boundaries, assets, attackers, mitigations with file references, known gaps, and how to report a vulnerability |
 | [security-alert-verdicts.md](security-alert-verdicts.md) | Verdict and evidence for each code scanning alert: fixed, false positive, or accepted risk |
 | [comparison.md](comparison.md) | How Levelrail differs from Coolify, Dokploy, CapRover, Dokku, Kamal |
@@ -120,3 +168,12 @@ noted per-document since these move between draft, proposed, accepted
 2. Add it to the matching heading in the Index section above.
 
 3. Link it from the root README only if it is something a new user or contributor would hit early. Leave specialized how-tos and reference pages reachable only from here, so the root README stays focused.
+
+## Writing style
+
+- **Write for the operator, not the codebase.** A how-to or tutorial explains what a reader can do and why it matters to them. Package names, file paths, and Go/TS identifiers belong in an Explanation doc (architecture.md and friends), or in a `::: details For contributors: ...` block at the point where a contributor would actually need them, never in the opening paragraph of a page a new user lands on first.
+- **Show, don't just tell.** If a real screenshot exists or would help (`docs/assets/screenshots/`, regenerated by `scripts/screenshots/capture.sh`, see [screenshots.md](screenshots.md)), embed it with `![alt text](assets/screenshots/name.png)`. If a flow has more than two or three steps that branch or loop, a `\`\`\`mermaid` diagram usually reads faster than the same steps in prose. Don't add either decoratively: a diagram earns its place only if it actually clarifies something prose alone wouldn't.
+- **State what's true, not what's aspirational.** "Not built yet" belongs in a dedicated section (see observability.md's "Not built yet") or in roadmap.md, never blended into the middle of a paragraph describing what exists today.
+- **No hedging, no filler.** Skip "simply," "just," "basically," "note that," and sentences that restate the heading above them. If a sentence would be identical with the qualifier removed, remove the qualifier.
+- **No em dashes or en dashes anywhere** (repo-wide rule, enforced by the pre-commit hook): use commas, periods, or parentheses instead.
+- **Short paragraphs, real headings.** A reader scanning for one answer should be able to find it from the heading list alone. If a section covers more than one question, split it.

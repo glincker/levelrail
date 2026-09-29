@@ -118,8 +118,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 111 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 111 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 114 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 114 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -242,6 +242,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/preview-policy | AbilityRead | handleGetPreviewPolicy |
 | PUT | /api/v1/apps/{name}/preview-policy | AbilityWriteSensitive | handleSetPreviewPolicy |
 | GET | /api/v1/apps/{name}/deploys/{deployId} | AbilityRead | handleGetDeploy |
+| GET | /api/v1/apps/{name}/schedule | AbilityRead | handleGetAppSchedule |
+| PUT | /api/v1/apps/{name}/schedule | AbilityWriteSensitive | handleSetAppSchedule |
+| GET | /api/v1/apps/{name}/schedule/history | AbilityRead | handleListAppScheduleHistory |
 
 :::
 
@@ -692,6 +695,7 @@ AI model resources on GPU nodes and the GPU node snapshots they schedule against
 | PUT | /api/v1/models/{name}/residency | AbilityWrite | handleSetModelResidency |
 | POST | /api/v1/models/{name}/wake | AbilityWrite | handleWakeModel |
 | POST | /api/v1/models/{name}/sleep | AbilityWrite | handleSleepModel |
+| PUT | /api/v1/models/{name}/swap-group | AbilityWrite | handleSetModelSwapGroup |
 
 ## Other
 

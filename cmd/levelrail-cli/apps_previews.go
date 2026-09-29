@@ -121,7 +121,7 @@ func printPreviewEnvironmentsTable(out io.Writer, previews []previewEnvironmentR
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "PR\tPREVIEW APP\tBRANCH\tSTATUS\tDOMAIN\tUPDATED\tEXPIRES\tSTALE\tEPHEMERAL DATABASES")
+	_, _ = fmt.Fprintln(tw, "PR\tPREVIEW APP\tBRANCH\tSTATUS\tDOMAIN\tUPDATED\tEXPIRES\tSTALE\tEPHEMERAL DATABASES\tISOLATED DATABASES")
 	for _, p := range previews {
 		domain := p.Domain
 		if domain == "" {
@@ -135,9 +135,28 @@ func printPreviewEnvironmentsTable(out io.Writer, previews []previewEnvironmentR
 		if expires == "" {
 			expires = "-"
 		}
-		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", p.PRNumber, p.PreviewAppID, p.Branch, p.Status, domain, p.UpdatedAt, expires, stale, previewEphemeralDatabasesSummary(p.EphemeralDatabases))
+		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", p.PRNumber, p.PreviewAppID, p.Branch, p.Status, domain, p.UpdatedAt, expires, stale,
+			previewEphemeralDatabasesSummary(p.EphemeralDatabases), previewDatabaseIsolationsSummary(p.DatabaseIsolations))
 	}
 	_ = tw.Flush()
+}
+
+// previewDatabaseIsolationsSummary is previewEphemeralDatabasesSummary's
+// own counterpart for isolated roles: "name(role@status)" per entry,
+// "-" when there are none.
+func previewDatabaseIsolationsSummary(rows []previewDatabaseIsolationResource) string {
+	if len(rows) == 0 {
+		return "-"
+	}
+	parts := make([]string, len(rows))
+	for i, r := range rows {
+		status := r.Status
+		if status == "teardown_failed" {
+			status = "teardown failed"
+		}
+		parts[i] = fmt.Sprintf("%s(%s@%s)", r.SourceKey, r.RoleName, status)
+	}
+	return strings.Join(parts, ", ")
 }
 
 // previewEphemeralDatabasesSummary renders one preview row's own

@@ -1,3 +1,7 @@
+---
+description: scripts/vps-smoke.sh checks a real install end to end on a VPS you already have, without creating or deleting cloud resources.
+---
+
 # VPS smoke test
 
 `scripts/vps-smoke.sh` checks a real install end to end on a VPS you already have. It never creates or deletes cloud resources.

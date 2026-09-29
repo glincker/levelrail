@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev .",
+    "check:descriptions": "../scripts/check-docs-descriptions.sh",
+    "prebuild": "npm run check:descriptions",
     "build": "vitepress build .",
     "preview": "vitepress preview ."
   },

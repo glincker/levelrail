@@ -90,8 +90,9 @@ func toSpecService(key string, csvc Service, domain string, composeDir string) (
 	// command field yet, unlike store.DesiredService.Command, which the
 	// direct-import path (ToDesiredServices) does populate.
 	s := spec.Service{
-		Build:  build,
-		Labels: csvc.Labels,
+		Build:     build,
+		Labels:    csvc.Labels,
+		DependsOn: []string(csvc.DependsOn),
 	}
 	if domain != "" {
 		s.Domains = []string{domain}

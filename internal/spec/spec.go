@@ -94,6 +94,18 @@ type Service struct {
 	// LoadBalancer configures balancing across this service's replicas
 	// (internal/loadbalancer). Nil keeps the plain single-upstream route.
 	LoadBalancer *loadbalancer.Config `yaml:"loadbalancer,omitempty"`
+
+	// DependsOn names sibling services: keys (within this same Spec, or
+	// within the same compose file for a compose-expanded service, see
+	// internal/compose.ExpandBuildService) this service waits on before
+	// the reconciler starts its own containers: internal/reconcile/
+	// application.Controller does not create a container for this
+	// service until every named dependency has at least one running
+	// container. This matches real Docker Compose's own default
+	// depends_on: semantic (service_started, not service_healthy): a
+	// start-order guarantee, not a health-based wait. See Validate for
+	// the reference and cycle checks.
+	DependsOn []string `yaml:"dependsOn,omitempty"`
 }
 
 // EgressModeAllowlist is the only meaningful Egress.Mode value today; see
@@ -279,6 +291,14 @@ type Database struct {
 	// this codebase; only meaningful for a database attached to an app
 	// with preview environments enabled (store.GitSource.PreviewEnabled).
 	EphemeralInPreviews bool `yaml:"ephemeralInPreviews,omitempty"`
+	// IsolatedInPreviews opts this database into an isolated Postgres
+	// role per preview, created on this same existing database (no new
+	// container, no new volume) rather than the whole disposable
+	// instance EphemeralInPreviews creates. Ignored when
+	// EphemeralInPreviews is also set, since an ephemeral instance
+	// already has its own credentials. Postgres only today. Off by
+	// default.
+	IsolatedInPreviews bool `yaml:"isolatedInPreviews,omitempty"`
 }
 
 // Backup describes a database's backup schedule.

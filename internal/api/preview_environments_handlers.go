@@ -42,6 +42,27 @@ type previewEnvironmentResource struct {
 	// instance provisioned for this preview (spec.Database.EphemeralInPreviews),
 	// empty when the app declares no such database or none opted in.
 	EphemeralDatabases []previewEphemeralDatabaseResource `json:"ephemeral_databases,omitempty"`
+	// DatabaseIsolations is every isolated Postgres role provisioned on
+	// an existing database for this preview
+	// (spec.Database.IsolatedInPreviews), empty when none opted in.
+	DatabaseIsolations []previewDatabaseIsolationResource `json:"database_isolations,omitempty"`
+}
+
+// previewDatabaseIsolationResource is previewEnvironmentResource's own
+// DatabaseIsolations element: store.PreviewDatabaseIsolation's wire
+// shape. Isolated is always true here (only isolations that exist are
+// ever listed); the field lets a frontend render a fixed "isolated:
+// true/false" badge without a separate lookup. The role's password is
+// never returned, only its role name and where its secret lives.
+type previewDatabaseIsolationResource struct {
+	SourceKey    string `json:"source_key"`
+	DatabaseName string `json:"database_name"`
+	RoleName     string `json:"role_name"`
+	Isolated     bool   `json:"isolated"`
+	Status       string `json:"status"`
+	StatusReason string `json:"status_reason,omitempty"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
 }
 
 // previewEphemeralDatabaseResource is previewEnvironmentResource's own
@@ -78,7 +99,31 @@ func (rt *Router) toPreviewEnvironmentResource(ctx context.Context, p store.Prev
 		Domain: p.Domain, Status: p.Status, StatusReason: p.StatusReason,
 		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt, Stale: stale,
 		EphemeralDatabases: rt.listPreviewEphemeralDatabaseResources(ctx, p.ID),
+		DatabaseIsolations: rt.listPreviewDatabaseIsolationResources(ctx, p.ID),
 	}
+}
+
+// listPreviewDatabaseIsolationResources loads p's database isolations.
+// A load failure is logged and reported as an empty list rather than
+// failing the whole preview list response, the same display-nicety
+// tolerance listPreviewEphemeralDatabaseResources already has.
+func (rt *Router) listPreviewDatabaseIsolationResources(ctx context.Context, previewEnvironmentID string) []previewDatabaseIsolationResource {
+	rows, err := rt.previewEnvironments.ListPreviewDatabaseIsolationsByPreview(ctx, previewEnvironmentID)
+	if err != nil {
+		rt.logger.Error("api: list preview database isolations failed", slog.String("error", err.Error()), slog.String("preview_environment_id", previewEnvironmentID))
+		return nil
+	}
+	if len(rows) == 0 {
+		return nil
+	}
+	out := make([]previewDatabaseIsolationResource, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, previewDatabaseIsolationResource{
+			SourceKey: r.SourceKey, DatabaseName: r.DatabaseName, RoleName: r.RoleName, Isolated: true,
+			Status: r.Status, StatusReason: r.StatusReason, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+		})
+	}
+	return out
 }
 
 // listPreviewEphemeralDatabaseResources loads p's ephemeral databases

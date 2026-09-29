@@ -45,6 +45,12 @@ type CreateOpts struct {
 	Name   string
 	// UserData is the cloud-init script run on first boot.
 	UserData string
+	// AllowSSHInbound opts into an inbound rule for TCP 22, off by
+	// default to match this platform's "no inbound ports needed" node
+	// architecture (CLAUDE.md 4.3): the agent always dials out. Only AWS
+	// currently acts on this; other providers ignore it, the same way
+	// AWS.ListSizes ignores the region parameter other providers use.
+	AllowSSHInbound bool
 }
 
 // Provisioner creates and manages servers at a cloud provider. hetzner.go,

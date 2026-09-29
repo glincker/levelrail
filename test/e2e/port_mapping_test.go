@@ -135,6 +135,7 @@ func TestPortMapping_Live_NonDefaultPortRouting(t *testing.T) {
 	if len(appResult.Conditions) == 0 || appResult.Conditions[0].Status != "True" {
 		t.Fatalf("application Controller.Reconcile() result = %+v, want a True Ready condition", appResult)
 	}
+	persistReadyCondition(buildCtx, t, svcStore, appCtrl.Name(), appResult.Conditions)
 
 	// Independent verification, not trusting the returned Result: inspect
 	// the container directly through docker.Runtime before trusting

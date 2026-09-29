@@ -151,6 +151,9 @@
         "ephemeralInPreviews": {
           "type": "boolean"
         },
+        "isolatedInPreviews": {
+          "type": "boolean"
+        },
         "version": {
           "minLength": 1,
           "type": "string"
@@ -680,6 +683,14 @@
         },
         "command": {
           "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "dependsOn": {
+          "items": {
+            "minLength": 1,
             "type": "string"
           },
           "minItems": 1,

@@ -18,6 +18,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import {
   Select,
@@ -38,15 +39,27 @@ import {
   useNodeProvision,
 } from '../queries/nodeProvision'
 
-type ProviderId = 'hetzner' | 'digitalocean' | 'azure' | 'gcp'
+type ProviderId = 'hetzner' | 'digitalocean' | 'aws' | 'azure' | 'gcp'
 type Step =
   'method' | 'region' | 'size' | 'details' | 'confirm' | 'progress' | 'manual'
 
 const PROVIDER_LABELS: Record<ProviderId, string> = {
   hetzner: 'Hetzner',
   digitalocean: 'DigitalOcean',
+  aws: 'AWS',
   azure: 'Azure',
   gcp: 'Google Cloud',
+}
+
+// Suggests a node name from the provider and region already picked by
+// this point in the wizard, e.g. "hetzner-fsn1". Always starts with the
+// provider id (a fixed lowercase word), so the result always satisfies
+// the name field's own ^[a-z][a-z0-9-]*$ pattern below.
+function nodeNameFrom(provider: ProviderId, region: string): string {
+  return `${provider}-${region}`
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
 // A wizard, not a single dialog, for this one flow only: creating a real
@@ -81,6 +94,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
   const [size, setSize] = useState('')
   const [name, setName] = useState('')
   const [role, setRole] = useState<'general' | 'build'>('general')
+  const [allowSSHInbound, setAllowSSHInbound] = useState(false)
   const [controlPlaneAddr, setControlPlaneAddr] = useState(
     () => `${window.location.hostname}:9443`,
   )
@@ -112,47 +126,47 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-          {(['hetzner', 'digitalocean', 'azure', 'gcp'] as ProviderId[]).map(
-            (p) => {
-              const info = providers.data?.find((x) => x.provider === p)
-              const hasToken = info?.has_token ?? false
-              return (
-                <button
-                  key={p}
-                  type="button"
-                  disabled={providers.isLoading || !hasToken}
-                  onClick={() => {
-                    setProvider(p)
-                    setStep('region')
-                  }}
-                  className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <CloudIcon className="size-5 shrink-0 text-muted-foreground" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium text-foreground">
-                      {PROVIDER_LABELS[p]}
-                    </div>
-                    {!providers.isLoading && !hasToken ? (
-                      <div className="text-xs text-muted-foreground">
-                        No API token stored yet.{' '}
-                        <Link
-                          to="/settings/node-providers"
-                          className="underline underline-offset-2"
-                        >
-                          Connect one
-                        </Link>
-                      </div>
-                    ) : null}
+          {(
+            ['hetzner', 'digitalocean', 'aws', 'azure', 'gcp'] as ProviderId[]
+          ).map((p) => {
+            const info = providers.data?.find((x) => x.provider === p)
+            const hasToken = info?.has_token ?? false
+            return (
+              <button
+                key={p}
+                type="button"
+                disabled={providers.isLoading || !hasToken}
+                onClick={() => {
+                  setProvider(p)
+                  setStep('region')
+                }}
+                className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <CloudIcon className="size-5 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-foreground">
+                    {PROVIDER_LABELS[p]}
                   </div>
-                  <InfoTip label={`About ${PROVIDER_LABELS[p]} provisioning`}>
-                    We only use the provider API to create the VM; day to day
-                    operation never touches SSH, matching how the rest of
-                    Levelrail&apos;s multi-node works.
-                  </InfoTip>
-                </button>
-              )
-            },
-          )}
+                  {!providers.isLoading && !hasToken ? (
+                    <div className="text-xs text-muted-foreground">
+                      No API token stored yet.{' '}
+                      <Link
+                        to="/settings/node-providers"
+                        className="underline underline-offset-2"
+                      >
+                        Connect one
+                      </Link>
+                    </div>
+                  ) : null}
+                </div>
+                <InfoTip label={`About ${PROVIDER_LABELS[p]} provisioning`}>
+                  We only use the provider API to create the VM; day to day
+                  operation never touches SSH, matching how the rest of
+                  Levelrail&apos;s multi-node works.
+                </InfoTip>
+              </button>
+            )
+          })}
           <button
             type="button"
             onClick={() => setStep('manual')}
@@ -206,7 +220,12 @@ function WizardBody({ onClose }: { onClose: () => void }) {
       <StepShell
         title="Choose a size"
         onBack={() => setStep('region')}
-        onContinue={() => setStep('details')}
+        onContinue={() => {
+          if (!name && provider) {
+            setName(nodeNameFrom(provider, region))
+          }
+          setStep('details')
+        }}
         continueDisabled={!size}
       >
         {sizes.isLoading ? (
@@ -236,9 +255,16 @@ function WizardBody({ onClose }: { onClose: () => void }) {
                 </span>
                 {s.price_monthly ? (
                   <span className="shrink-0 text-muted-foreground">
-                    {s.price_monthly} {s.currency}/mo
+                    {s.currency === 'USD' ? '$' : ''}
+                    {s.price_monthly}
+                    {s.currency && s.currency !== 'USD' ? ` ${s.currency}` : ''}
+                    /mo
                   </span>
-                ) : null}
+                ) : (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    pricing varies, see provider console
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -300,6 +326,22 @@ function WizardBody({ onClose }: { onClose: () => void }) {
             9443 by default.
           </FieldDescription>
         </Field>
+        {provider === 'aws' ? (
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="node-provision-aws-ssh"
+              checked={allowSSHInbound}
+              onCheckedChange={(v) => setAllowSSHInbound(v === true)}
+            />
+            <FieldLabel
+              htmlFor="node-provision-aws-ssh"
+              className="font-normal"
+            >
+              Allow SSH inbound (opt-in; off matches this platform&apos;s
+              default of no inbound ports)
+            </FieldLabel>
+          </div>
+        ) : null}
       </StepShell>
     )
   }
@@ -319,6 +361,9 @@ function WizardBody({ onClose }: { onClose: () => void }) {
               name,
               role,
               control_plane_addr: controlPlaneAddr,
+              ...(provider === 'aws'
+                ? { allow_ssh_inbound: allowSSHInbound }
+                : {}),
             },
             {
               onSuccess: (created) => {
@@ -342,6 +387,12 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           <dd className="font-mono">{name}</dd>
           <dt className="text-muted-foreground">Role</dt>
           <dd className="capitalize">{role}</dd>
+          {provider === 'aws' ? (
+            <>
+              <dt className="text-muted-foreground">SSH inbound</dt>
+              <dd>{allowSSHInbound ? 'Allowed' : 'Off (default)'}</dd>
+            </>
+          ) : null}
         </dl>
         {createProvision.isError ? (
           <Alert variant="destructive">

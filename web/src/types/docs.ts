@@ -1,7 +1,8 @@
 // Shape of the 'virtual:docs-manifest' module (vite-plugins/docsManifest.
-// mjs builds it from /docs at build/dev/test time). Titles and headings
-// only, never full page bodies, so this stays small enough to import
-// eagerly from HelpLink and the /help layout alike.
+// mjs builds it from /docs at build/dev/test time). Only the /help route's
+// own lazy chunk loads this (see docsManifestLoader.ts), never the main
+// bundle, so `body` can hold a search-sized excerpt without it costing
+// anything on first load.
 export interface DocHeading {
   id: string
   text: string
@@ -13,6 +14,8 @@ export interface DocPageMeta {
   file: string
   title: string
   headings: DocHeading[]
+  /** Plain-text excerpt of the page's paragraph content, for full-text search (see docsSearch.ts). */
+  body: string
 }
 
 export interface DocCategory {

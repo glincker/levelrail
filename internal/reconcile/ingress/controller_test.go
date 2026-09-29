@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -44,6 +45,24 @@ type fakeStore struct {
 	redirectsErr       error
 	errorPages         []store.DomainErrorPage
 	errorPagesErr      error
+	notReadyServices   map[string]bool
+	conditionsErr      error
+}
+
+// GetConditionsForControllers defaults every requested controller to
+// Ready=true, opt out per service via notReadyServices.
+func (f *fakeStore) GetConditionsForControllers(_ context.Context, names []string) (map[string][]reconcile.Condition, error) {
+	if f.conditionsErr != nil {
+		return nil, f.conditionsErr
+	}
+	out := make(map[string][]reconcile.Condition, len(names))
+	for _, name := range names {
+		if f.notReadyServices[strings.TrimPrefix(name, "application/")] {
+			continue
+		}
+		out[name] = []reconcile.Condition{{Type: "Ready", Status: reconcile.ConditionTrue}}
+	}
+	return out, nil
 }
 
 func (f *fakeStore) ListDesiredServices(_ context.Context) ([]store.DesiredService, error) {
@@ -234,8 +253,16 @@ func (f *fakeRuntime) Events(_ context.Context) (<-chan docker.Event, <-chan err
 func (f *fakeRuntime) ListImages(_ context.Context, _ string) ([]docker.ImageInfo, error) {
 	return nil, nil
 }
-func (f *fakeRuntime) ListByPrefix(_ context.Context, _ string) ([]docker.ContainerState, error) {
-	return nil, nil
+func (f *fakeRuntime) ListByPrefix(_ context.Context, prefix string) ([]docker.ContainerState, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var out []docker.ContainerState
+	for name, cs := range f.containers {
+		if strings.HasPrefix(name, prefix) {
+			out = append(out, *cs)
+		}
+	}
+	return out, nil
 }
 func (f *fakeRuntime) Stop(_ context.Context, _ string, _ time.Duration) error { return nil }
 func (f *fakeRuntime) Remove(_ context.Context, _ string, _ bool) error        { return nil }

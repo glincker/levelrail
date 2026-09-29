@@ -24,7 +24,7 @@ cd "$(git rev-parse --show-toplevel)"
 
 small_max="${CI_SMALL_LANE_MAX:-8}"
 api_pkg="github.com/GLINCKER/levelrail/internal/api"
-api_shards=3
+api_shards=4
 flaky_file=.github/flaky-tests.txt
 
 scope=some

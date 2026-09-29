@@ -48,9 +48,17 @@ type NodeProvisionResource struct {
 }
 
 // SetNodeProviderCredentialRequest is POST /api/v1/node-providers' body.
+// The fields after Token mirror internal/api's own request struct and
+// are aws-only: for hetzner/digitalocean, Token alone is the provider's
+// bearer API token.
 type SetNodeProviderCredentialRequest struct {
-	Provider string `json:"provider"`
-	Token    string `json:"token"`
+	Provider              string `json:"provider"`
+	Token                 string `json:"token"`
+	SecretAccessKey       string `json:"secret_access_key,omitempty"`
+	SessionToken          string `json:"session_token,omitempty"`
+	Region                string `json:"region,omitempty"`
+	RoleARN               string `json:"role_arn,omitempty"`
+	UseAmbientCredentials bool   `json:"use_ambient_credentials,omitempty"`
 }
 
 // CreateNodeProvisionRequest is POST /api/v1/nodes/provision's body.
@@ -61,6 +69,9 @@ type CreateNodeProvisionRequest struct {
 	Name             string `json:"name"`
 	Role             string `json:"role,omitempty"`
 	ControlPlaneAddr string `json:"control_plane_addr"`
+	// AllowSSHInbound is aws-only; other providers ignore it. Off by
+	// default, matching this platform's no-inbound-ports architecture.
+	AllowSSHInbound bool `json:"allow_ssh_inbound,omitempty"`
 }
 
 func nodeProvidersPath() string { return "/api/v1/node-providers" }

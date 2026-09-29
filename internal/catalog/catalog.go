@@ -30,6 +30,7 @@ type Template struct {
 // Templates is the full catalog, served by GET /api/v1/service-templates
 // and GET /api/v1/service-templates/{id}.
 var Templates = concat(
+	starterKitsTemplates,
 	automationTemplates,
 	monitoringTemplates,
 	storageTemplates,

@@ -29,6 +29,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsWait(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-compose":
 		return runAppsDeployCompose(prog, args[1:], stdout, stderr, lookupEnv)
+	case "validate":
+		return runAppsValidate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-spec":
 		return runAppsDeploySpec(prog, args[1:], stdout, stderr, lookupEnv)
 	case "group":
@@ -39,6 +41,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "freeze":
 		return runAppsFreeze(prog, args[1:], stdout, stderr, lookupEnv)
+	case "schedule":
+		return runAppsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback":
 		return runAppsAutoRollback(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "cancel-superseded":
@@ -48,7 +52,7 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "promote":
 		return runAppsPromote(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin) //nolint:gosec // same guard as below
 	case "timeline":
-		return runAppsTimeline(prog, args[1:], stdout, stderr, lookupEnv)
+		return runAppsTimeline(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "apply":
 		return runAppsApply(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "domains":
@@ -172,11 +176,13 @@ func appsUsage(prog string) string {
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
   %[1]s apps wait <name> [flags]        poll until a deploy attempt actually converges, exit accordingly (a CI gate for "apps deploy")
   %[1]s apps deploy-compose <name> --file compose.yaml [flags]   deploy a Docker Compose file as an app
+  %[1]s apps validate --file <app.yaml|compose.yaml> [flags]   locally parse and validate a spec file, no API call
   %[1]s apps deploy-spec <name> --file app.yaml --repo-url <url> --ref <ref> [flags]   fan an app.yaml's services: map out into N independent builds under one app
   %[1]s apps group <name> [flags]   show name's sibling services under the same multi-service app
   %[1]s apps hook-runs <name> [flags]   show the most recent outcome of name's pre/post-deploy hooks
   %[1]s apps rollback <name> [flags]   redeploy an older image (same endpoint as deploy)
   %[1]s apps freeze set|show|clear <name> [flags]   deploy freeze windows: hold automatic deploys on a cron schedule
+  %[1]s apps schedule set|get|history <name> [flags]   recurring redeploy of a branch's latest commit on a cron schedule
   %[1]s apps cancel-superseded enable|disable|status <name> [flags]   let a newer queued deploy replace older queued ones of the same branch
   %[1]s apps auto-rollback enable|disable|status <name> [flags]   opt an app into (or out of) automatic rollback when a crashloop alert fires
   %[1]s apps deploys list <name> [flags]                          real, row-per-attempt deploy history, newest first

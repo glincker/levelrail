@@ -100,16 +100,16 @@ func normalizePullRequestAction(raw string) (PullRequestAction, bool) {
 // already read for its own push detection (ParsePushEventForProvider),
 // just with a "pullrequest:"-prefixed value instead of "repo:push".
 func IsPullRequestEvent(header http.Header) bool {
-	if header.Get("X-GitHub-Event") == "pull_request" {
+	if header.Get(HeaderGitHubEvent) == "pull_request" {
 		return true
 	}
-	if header.Get("X-Gitlab-Event") == "Merge Request Hook" {
+	if header.Get(HeaderGitLabEvent) == "Merge Request Hook" {
 		return true
 	}
-	if header.Get("X-Gitea-Event-Type") == "pull_request" {
+	if header.Get(HeaderGiteaEventType) == "pull_request" {
 		return true
 	}
-	return strings.HasPrefix(header.Get("X-Event-Key"), "pullrequest:")
+	return strings.HasPrefix(header.Get(HeaderBitbucketEventKey), "pullrequest:")
 }
 
 // ParsePullRequestEventForProvider dispatches to the right provider's
@@ -117,13 +117,13 @@ func IsPullRequestEvent(header http.Header) bool {
 // IsPullRequestEvent already uses to decide this function should even
 // be called.
 func ParsePullRequestEventForProvider(body []byte, header http.Header) (PullRequestEvent, error) {
-	if header.Get("X-Gitlab-Event") == "Merge Request Hook" {
+	if header.Get(HeaderGitLabEvent) == "Merge Request Hook" {
 		return parseGitLabPullRequestEvent(body)
 	}
-	if header.Get("X-Gitea-Event-Type") == "pull_request" {
+	if header.Get(HeaderGiteaEventType) == "pull_request" {
 		return parseGiteaPullRequestEvent(body)
 	}
-	if eventKey := header.Get("X-Event-Key"); strings.HasPrefix(eventKey, "pullrequest:") {
+	if eventKey := header.Get(HeaderBitbucketEventKey); strings.HasPrefix(eventKey, "pullrequest:") {
 		return parseBitbucketPullRequestEvent(body, eventKey)
 	}
 	return parseGitHubPullRequestEvent(body)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
@@ -46,6 +47,10 @@ func (s *Spec) Validate() error {
 			}
 			seenDomains[domain] = name
 		}
+	}
+
+	if err := s.validateDependsOn(); err != nil {
+		return err
 	}
 
 	for name, db := range s.Databases {
@@ -319,4 +324,72 @@ func (svc *Service) EffectiveBindAddress() string {
 		return bindaddr.Default
 	}
 	return svc.BindAddress
+}
+
+// validateDependsOn checks every service's dependsOn: entries reference a
+// real sibling service with a single running container to gate on
+// (BuildStatic never runs one, BuildCompose is a wrapper that expands
+// into others at deploy time, not a container itself), and that no cycle
+// exists: a cycle would deadlock the reconciler, since every member of
+// it would wait forever for another member that is itself waiting.
+func (s *Spec) validateDependsOn() error {
+	for name, svc := range s.Services {
+		for _, dep := range svc.DependsOn {
+			if dep == name {
+				return fmt.Errorf("spec: service %q: dependsOn must not reference itself", name)
+			}
+			target, ok := s.Services[dep]
+			if !ok {
+				return fmt.Errorf("spec: service %q: dependsOn references %q, which is not a service in this file", name, dep)
+			}
+			if target.Build.Type == BuildStatic || target.Build.Type == BuildCompose {
+				return fmt.Errorf("spec: service %q: dependsOn references %q, whose build.type %q has no single running container to depend on", name, dep, target.Build.Type)
+			}
+		}
+	}
+	return detectDependsOnCycle(s.Services)
+}
+
+// detectDependsOnCycle runs a depth-first search over services' dependsOn
+// edges, returning an error naming the cycle's path the first time one is
+// found. Service names are visited in sorted order so the same cyclic
+// spec always reports the same path, not whichever map iteration order
+// Go happened to pick.
+func detectDependsOnCycle(services map[string]Service) error {
+	const (
+		unvisited = 0
+		visiting  = 1
+		done      = 2
+	)
+	state := make(map[string]int, len(services))
+
+	var visit func(name string, path []string) error
+	visit = func(name string, path []string) error {
+		switch state[name] {
+		case done:
+			return nil
+		case visiting:
+			return fmt.Errorf("spec: dependsOn cycle: %s -> %s", strings.Join(path, " -> "), name)
+		}
+		state[name] = visiting
+		for _, dep := range services[name].DependsOn {
+			if err := visit(dep, append(path, name)); err != nil {
+				return err
+			}
+		}
+		state[name] = done
+		return nil
+	}
+
+	names := make([]string, 0, len(services))
+	for name := range services {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if err := visit(name, nil); err != nil {
+			return err
+		}
+	}
+	return nil
 }

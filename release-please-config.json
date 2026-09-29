@@ -24,10 +24,6 @@
       "section": "Security"
     },
     {
-      "type": "revert",
-      "section": "Reverts"
-    },
-    {
       "type": "docs",
       "section": "Documentation"
     },
@@ -47,18 +43,8 @@
       "hidden": true
     },
     {
-      "type": "build",
-      "section": "Build",
-      "hidden": true
-    },
-    {
       "type": "chore",
       "section": "Miscellaneous",
-      "hidden": true
-    },
-    {
-      "type": "style",
-      "section": "Style",
       "hidden": true
     }
   ],

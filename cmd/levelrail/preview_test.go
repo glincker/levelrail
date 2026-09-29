@@ -18,6 +18,10 @@ func (r *recordingRollouts) RecordRollout(context.Context, string, string, strin
 	return r.err
 }
 
+func (r *recordingRollouts) RecordRolloutFailure(context.Context, string, string, string) error {
+	return r.err
+}
+
 type recordingNotifier struct{ got [][3]string }
 
 func (n *recordingNotifier) NotifyReady(app, image, runningImageID string) {

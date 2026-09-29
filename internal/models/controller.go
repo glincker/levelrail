@@ -32,6 +32,10 @@ type Store interface {
 	SetModelEndpoint(ctx context.Context, name, dial string) error
 	SetModelResidencyState(ctx context.Context, name, state string) error
 	DeleteModel(ctx context.Context, name string) error
+	// ListModelsInSwapGroup backs swap group eviction (residency.go's
+	// waitForGPUWithSwap): finding a resident sibling to stop before
+	// waking a model that would otherwise not fit.
+	ListModelsInSwapGroup(ctx context.Context, group string) ([]store.Model, error)
 }
 
 // Secrets is the narrow secrets surface the controller needs.
@@ -288,7 +292,7 @@ func (c *Controller) observe(ctx context.Context, m *store.Model, node NodeInfo,
 	switch st.Phase {
 	case PhaseReady:
 		return reconcile.Result{Conditions: []reconcile.Condition{{
-			Type: "Ready", Status: reconcile.ConditionTrue, Reason: "ModelLoaded", Message: m.ModelRef + " is loaded and serving",
+			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue, Reason: "ModelLoaded", Message: m.ModelRef + " is loaded and serving",
 		}}}, nil
 	case PhaseDownloading:
 		return notReady("Downloading", st.Detail), nil
@@ -354,12 +358,12 @@ func (c *Controller) teardown(ctx context.Context, m *store.Model) (reconcile.Re
 
 func notReady(reason, msg string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reason, Message: msg,
 	}}}
 }
 
 func unknown(reason, msg string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
-		Type: "Ready", Status: reconcile.ConditionUnknown, Reason: reason, Message: msg,
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: reason, Message: msg,
 	}}}
 }

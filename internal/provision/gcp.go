@@ -3,6 +3,7 @@ package provision
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -20,8 +21,21 @@ const (
 	gcpBootDiskGB     = "20"
 
 	// gcpManagedLabelKey mirrors azureManagedTagKey's own reasoning: a
-	// fixed, brand-independent label, not brand.ShortName.
+	// fixed, brand-independent label, not brand.ShortName. Also used as a
+	// network tag (see ensureDenyIngressFirewall) since GCP instance tags
+	// and labels are separate fields with separate character rules, but
+	// this value satisfies both.
 	gcpManagedLabelKey = "platform-managed"
+
+	// gcpFirewallName is the fixed, project-wide deny-ingress rule
+	// ensureDenyIngressFirewall creates once and every CreateServer call
+	// then relies on.
+	gcpFirewallName = "platform-managed-deny-ingress"
+	// gcpFirewallPriority is lower than GCP's own default-allow-* rules
+	// (priority 65534 on the default network), so it is evaluated first
+	// and wins for any instance carrying gcpManagedLabelKey as a tag,
+	// regardless of whether a project has kept or deleted those defaults.
+	gcpFirewallPriority = 900
 )
 
 // gcpServiceAccountKey is the subset of a GCP service account JSON key
@@ -184,6 +198,9 @@ func (g *GCP) CreateServer(ctx context.Context, opts CreateOpts) (serverID, ipAd
 	if opts.Region == "" || opts.Size == "" || opts.Name == "" {
 		return "", "", fmt.Errorf("provision: gcp create server: zone, size and name are required")
 	}
+	if err := g.ensureDenyIngressFirewall(ctx); err != nil {
+		return "", "", err
+	}
 	body := map[string]any{
 		"name":        opts.Name,
 		"machineType": fmt.Sprintf("zones/%s/machineTypes/%s", opts.Region, opts.Size),
@@ -206,6 +223,7 @@ func (g *GCP) CreateServer(ctx context.Context, opts CreateOpts) (serverID, ipAd
 			"items": []map[string]string{{"key": "user-data", "value": opts.UserData}},
 		},
 		"labels": map[string]string{gcpManagedLabelKey: "true"},
+		"tags":   map[string]any{"items": []string{gcpManagedLabelKey}},
 	}
 	var out gcpOperationResponse
 	path := "/zones/" + opts.Region + "/instances"
@@ -216,6 +234,41 @@ func (g *GCP) CreateServer(ctx context.Context, opts CreateOpts) (serverID, ipAd
 		return "", "", fmt.Errorf("provision: gcp create server: %s", out.Error.Errors[0].Message)
 	}
 	return opts.Region + "/" + opts.Name, "", nil
+}
+
+// ensureDenyIngressFirewall makes sure gcpFirewallName exists: a rule
+// denying all inbound traffic to every instance tagged gcpManagedLabelKey,
+// at gcpFirewallPriority. Without it, a project that has kept the default
+// network's standard default-allow-ssh/rdp/icmp rules (which apply
+// regardless of tags) would leave a freshly provisioned instance's SSH port
+// reachable from the internet the moment CreateServer gives it an external
+// IP, contrary to this platform's documented no-inbound-ports default.
+func (g *GCP) ensureDenyIngressFirewall(ctx context.Context) error {
+	err := g.client.do(ctx, http.MethodGet, "/global/firewalls/"+gcpFirewallName, nil, nil)
+	if err == nil {
+		return nil
+	}
+	var perr *ProviderError
+	if !errors.As(err, &perr) || perr.Status != http.StatusNotFound {
+		return fmt.Errorf("provision: gcp ensure firewall: %w", err)
+	}
+	body := map[string]any{
+		"name":         gcpFirewallName,
+		"network":      "global/networks/default",
+		"direction":    "INGRESS",
+		"priority":     gcpFirewallPriority,
+		"sourceRanges": []string{"0.0.0.0/0"},
+		"targetTags":   []string{gcpManagedLabelKey},
+		"denied":       []map[string]any{{"IPProtocol": "all"}},
+	}
+	var out gcpOperationResponse
+	if err := g.client.do(ctx, http.MethodPost, "/global/firewalls", body, &out); err != nil {
+		return fmt.Errorf("provision: gcp create firewall: %w", err)
+	}
+	if out.Error != nil && len(out.Error.Errors) > 0 {
+		return fmt.Errorf("provision: gcp create firewall: %s", out.Error.Errors[0].Message)
+	}
+	return nil
 }
 
 func splitGCPServerID(id string) (zone, name string, err error) {

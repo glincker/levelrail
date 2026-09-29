@@ -9,7 +9,7 @@ interface ContainerToken extends Tokens.Generic {
 const OPEN_RE =
   /^:::[ \t]*(tip|warning|danger|info|details)\b[ \t]*([^\n]*)\n([\s\S]*?)\n:::[ \t]*(?:\n+|$)/
 
-function escapeHtml(text: string): string {
+export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

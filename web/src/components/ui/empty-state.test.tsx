@@ -14,6 +14,7 @@ const baseBrand: Brand = {
   LogoSVG: '',
   DocsURL: 'https://test.example/docs',
   DiscussionsURL: '',
+  RepoURL: '',
 }
 
 vi.mock('../../hooks/useBrand', () => ({

@@ -24,6 +24,7 @@ export interface PreviewEnvironment {
   is_fork: boolean
   head_repo?: string
   ephemeral_databases?: PreviewEphemeralDatabase[]
+  database_isolations?: PreviewDatabaseIsolation[]
 }
 
 // PreviewEphemeralDatabase mirrors internal/api's
@@ -42,6 +43,23 @@ export interface PreviewEphemeralDatabase {
   status: 'provisioned' | 'teardown_failed'
   status_reason?: string
   ready: AppStatusSummary
+  created_at: string
+  updated_at: string
+}
+
+// PreviewDatabaseIsolation mirrors internal/api's
+// previewDatabaseIsolationResource: one isolated Postgres role
+// provisioned on an existing (not preview-owned) database for a
+// databases: entry with isolatedInPreviews set
+// (internal/spec.Database.IsolatedInPreviews). The role's password is
+// never included here.
+export interface PreviewDatabaseIsolation {
+  source_key: string
+  database_name: string
+  role_name: string
+  isolated: boolean
+  status: 'provisioned' | 'teardown_failed'
+  status_reason?: string
   created_at: string
   updated_at: string
 }

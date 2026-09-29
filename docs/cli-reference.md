@@ -38,6 +38,18 @@ Exit codes are stable and shared by every command:
 
 Codes 3 and 4 are broad on purpose so existing scripts keep working; the JSON error object carries the finer distinction.
 
+## Top-level convenience aliases
+
+```
+levelrail deploy <name> --image IMAGE [flags]
+```
+Alias for `apps deploy`; deploy an image to an existing app.
+
+```
+levelrail rollback <name> --image IMAGE [flags]
+```
+Alias for `apps rollback`; redeploy an older image.
+
 ## Apps
 
 ```
@@ -149,6 +161,11 @@ show or change an app's domains; a domain already used by another app is refused
 ```
 levelrail apps deploy-compose <name> --file compose.yaml [flags]
 ```
+
+```
+levelrail apps validate --file <app.yaml|compose.yaml> [flags]
+```
+parse and validate an app.yaml or a Docker Compose file locally, no API call and no deploy; prints the detected format, service count, and every non-blocking `notices` entry a real deploy would also surface
 
 ```
 levelrail apps deploy-notify-targets create <app> --channel-id ID [flags]
@@ -1238,7 +1255,7 @@ See [Platform as code](platform-as-code.md) for the document format, secrets han
 ```
 levelrail apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NAME] [--project P] [--yes] [--secret K=env:VAR] [--var NAME=VALUE] [--var-file PATH] [--allow-env NAME[,NAME...]] [--no-deploy] [--continue-on-error] [flags]
 ```
-validate resource files, print the plan, and apply it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`). `${{ env.NAME }}` placeholders are filled only from `--var`, `--var-file` or the names listed with `--allow-env` (a trailing `*` allows a prefix, but never covers credential looking names such as `AWS_*`, `GITHUB_TOKEN` or anything containing `TOKEN`, `SECRET`, `PASSW` or `_KEY`, which must be named exactly); an unresolved placeholder fails before anything is sent
+validate resource files, print the plan, and apply it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`). <span v-pre>`${{ env.NAME }}`</span> placeholders are filled only from `--var`, `--var-file` or the names listed with `--allow-env` (a trailing `*` allows a prefix, but never covers credential looking names such as `AWS_*`, `GITHUB_TOKEN` or anything containing `TOKEN`, `SECRET`, `PASSW` or `_KEY`, which must be named exactly); an unresolved placeholder fails before anything is sent
 
 ```
 levelrail diff -f dir [flags]
@@ -1248,7 +1265,7 @@ drift between the files and live state, exits 2 when they differ
 ```
 levelrail export [--project P] [--app A] [-o dir|-] [--include-env-values=false] [flags]
 ```
-write live state as stable resource files, never containing secret values. Secret looking values become `${{ env.NAME }}` placeholders; supply them at apply time with `--var`, `--var-file` or `--allow-env`
+write live state as stable resource files, never containing secret values. Secret looking values become <span v-pre>`${{ env.NAME }}`</span> placeholders; supply them at apply time with `--var`, `--var-file` or `--allow-env`
 
 ## Nodes
 

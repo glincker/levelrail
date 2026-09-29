@@ -24,6 +24,10 @@ type Brand struct {
 	// Discussions board or equivalent). Optional, same "empty means
 	// don't render the link" rule as DocsURL and SupportURL.
 	DiscussionsURL string `yaml:"discussions_url"`
+	// RepoURL is the source repository root (e.g. for a doc page's "View
+	// on GitHub" link, source.go/gh, or a hosted git server for a fork).
+	// Same "empty means don't render the link" rule as DocsURL.
+	RepoURL string `yaml:"repo_url"`
 }
 
 const envPrefix = "APP_BRAND_"
@@ -67,6 +71,7 @@ func (b *Brand) applyEnvOverrides() {
 	override(&b.LogoSVG, envPrefix+"LOGO_SVG")
 	override(&b.DocsURL, envPrefix+"DOCS_URL")
 	override(&b.DiscussionsURL, envPrefix+"DISCUSSIONS_URL")
+	override(&b.RepoURL, envPrefix+"REPO_URL")
 }
 
 func override(field *string, envVar string) {

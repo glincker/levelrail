@@ -1497,6 +1497,33 @@ func (c *Client) SetGitSource(ctx context.Context, name string, req SetGitSource
 	return out, err
 }
 
+// GetAppSchedule calls GET /api/v1/apps/{name}/schedule.
+func (c *Client) GetAppSchedule(ctx context.Context, name string) (AppScheduleResource, error) {
+	var out AppScheduleResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/schedule", nil, &out)
+	return out, err
+}
+
+// SetAppSchedule calls PUT /api/v1/apps/{name}/schedule: sets or replaces
+// the app's recurring redeploy schedule.
+func (c *Client) SetAppSchedule(ctx context.Context, name string, req SetAppScheduleRequest) (AppScheduleResource, error) {
+	var out AppScheduleResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/schedule", req, &out)
+	return out, err
+}
+
+// ListAppScheduleHistory calls GET /api/v1/apps/{name}/schedule/history.
+// limit <= 0 uses the server default.
+func (c *Client) ListAppScheduleHistory(ctx context.Context, name string, limit int) ([]AppScheduleHistoryEntry, error) {
+	path := "/api/v1/apps/" + PathEscape(name) + "/schedule/history"
+	if limit > 0 {
+		path += "?limit=" + strconv.Itoa(limit)
+	}
+	var out []AppScheduleHistoryEntry
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
 // SetGitDeploySettings calls PUT /api/v1/apps/{name}/git-source/deploy-settings.
 func (c *Client) SetGitDeploySettings(ctx context.Context, name string, req SetGitDeploySettingsRequest) (GitDeploySettings, error) {
 	var out GitDeploySettings

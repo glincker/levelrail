@@ -68,6 +68,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return exitOK
 	case "apps":
 		return runApps(prog, args[1:], stdout, stderr, lookupEnv)
+	case "deploy":
+		return runAliasedDeploy(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rollback":
+		return runAliasedRollback(prog, args[1:], stdout, stderr, lookupEnv)
 	case "databases":
 		return runDatabases(prog, args[1:], stdout, stderr, lookupEnv)
 	case "models":
@@ -211,6 +215,8 @@ Usage:
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps logs <name> [flags]     search an app's stored log entries
   %[1]s apps exec <name> -- <cmd> [args...]   run a command in the app's container, exits with its real exit code
+  %[1]s deploy <name> [flags]        convenience alias for apps deploy
+  %[1]s rollback <name> [flags]      convenience alias for apps rollback
   %[1]s databases create [flags]     create a managed database
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database

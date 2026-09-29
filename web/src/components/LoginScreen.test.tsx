@@ -27,6 +27,7 @@ const brand: Brand = {
   LogoSVG: '',
   DocsURL: '',
   DiscussionsURL: '',
+  RepoURL: '',
 }
 
 function mockFetch(needsSetup: boolean) {

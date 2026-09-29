@@ -36,6 +36,8 @@ func runModels(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runModelsUsage(prog, rest, stdout, stderr, lookupEnv)
 	case "residency":
 		return runModelsResidency(prog, rest, stdout, stderr, lookupEnv)
+	case "swap-group":
+		return runModelsSwapGroup(prog, rest, stdout, stderr, lookupEnv)
 	case "wake":
 		return runModelsWake(prog, rest, stdout, stderr, lookupEnv)
 	case "sleep":
@@ -69,6 +71,7 @@ func modelsUsage(prog string) string {
   %[1]s models keys list|create|revoke|rotate   named API keys with limits, expiry and rotation grace
   %[1]s models usage <name> [flags]         gateway requests, tokens, errors and latency per key
   %[1]s models residency <name> --mode M    always resident, or on_demand (stop when idle, start on first request)
+  %[1]s models swap-group <name> --group G  share a GPU with other models in group G (--clear to remove)
   %[1]s models wake|sleep <name> [flags]    start or stop an on-demand model's engine now
   %[1]s models fit --engine E --model M     estimate VRAM fit (fits, tight, no) on each GPU node
   %[1]s models metrics <name> [flags]       engine metrics: KV cache, queue, prefix hits, tokens per second, first token

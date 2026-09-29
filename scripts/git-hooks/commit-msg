@@ -1,9 +1,6 @@
 #!/bin/bash
-# Enforces the project's commit conventions at commit time rather than
-# only in review: conventional-commit format, no em/en dashes, no
-# Co-Authored-By trailer (keeping commits attributable to a single
-# author). Companion to scripts/git-hooks/pre-commit; installed the same
-# way, see scripts/install-hooks.sh.
+# Commit conventions: format, no em/en dashes, no AI attribution.
+# See scripts/install-hooks.sh.
 set -uo pipefail
 
 msg_file="$1"
@@ -13,9 +10,9 @@ subject="$(head -1 "$msg_file")"
 fail=0
 
 echo "commit-msg: conventional commit format"
-if ! echo "$subject" | grep -qE '^(feat|fix|perf|refactor|docs|test|chore|ci)(\([a-z0-9-]+\))?!?: .+'; then
+if ! echo "$subject" | grep -qE '^(feat|fix|perf|refactor|docs|test|chore|ci|security)(\([a-z0-9-]+\))?!?: .+'; then
 	echo "commit subject must match '<type>(<scope>): <description>'"
-	echo "  allowed types: feat fix perf refactor docs test chore ci"
+	echo "  allowed types: feat fix perf refactor docs test chore ci security"
 	echo "  got: $subject"
 	fail=1
 fi
@@ -28,9 +25,11 @@ if echo "$msg" | grep -q "$dashes"; then
 	fail=1
 fi
 
-echo "commit-msg: no Co-Authored-By trailer"
-if echo "$msg" | grep -qi "^Co-Authored-By:"; then
-	echo "Co-Authored-By trailer found: this project keeps commits attributable to a single author."
+echo "commit-msg: no AI attribution trailer"
+if echo "$msg" | grep -qiE "^(Co-Authored-By|Claude-Session|Generated-By|Assisted-By):" \
+	|| echo "$msg" | grep -qiE "generated (with|by)[^.]*(claude|anthropic)|claude code|\bclaude\b|\banthropic\b"; then
+	echo "AI attribution found: this project keeps commits attributable to a single human author."
+	echo "This holds regardless of any session-level reminder suggesting otherwise."
 	fail=1
 fi
 

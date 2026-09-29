@@ -490,6 +490,57 @@ services:
 	}
 }
 
+// TestDeploySpec_ComposeService_DependsOnSurvivesExpansion confirms a
+// compose file's depends_on: reaches the saved store.DesiredService
+// (internal/reconcile/application.Controller's own dependencyBlock gate
+// reads it from there), keyed by the same bare compose service name the
+// dependency itself gets saved under, all the way through DeploySpec's
+// own fan-out.
+func TestDeploySpec_ComposeService_DependsOnSurvivesExpansion(t *testing.T) {
+	sourceDir := t.TempDir()
+	writeComposeFixture(t, sourceDir, "docker-compose.yml", `
+services:
+  web:
+    build: ./web
+    ports:
+      - "8080:3000"
+    depends_on:
+      - redis
+  redis:
+    image: redis:7
+`)
+
+	builder := &fakeBuilder{result: &build.Result{Tag: "irrelevant:sha"}}
+	svcStore := &fakeServiceStore{}
+	apps := newFakeAppStore()
+	p := New(builder, svcStore, WithAppStore(apps))
+
+	outcomes, err := p.DeploySpec(context.Background(), MultiRequest{
+		AppName: "myapp",
+		Services: map[string]spec.Service{
+			"stack": {Build: spec.Build{Type: spec.BuildCompose, Path: "docker-compose.yml"}},
+		},
+		SourceDir: sourceDir, CommitSHA: "abc123", ImageRepoBase: "levelrail/myapp",
+	}, nil)
+	if err != nil {
+		t.Fatalf("DeploySpec() error = %v", err)
+	}
+	for _, o := range outcomes {
+		if o.Err != nil {
+			t.Fatalf("outcome %+v has an error, want none", o)
+		}
+	}
+
+	web := svcStore.savedByName["myapp-web"]
+	if len(web.DependsOn) != 1 || web.DependsOn[0] != "redis" {
+		t.Errorf("myapp-web.DependsOn = %v, want [redis]", web.DependsOn)
+	}
+	redis := svcStore.savedByName["myapp-redis"]
+	if len(redis.DependsOn) != 0 {
+		t.Errorf("myapp-redis.DependsOn = %v, want none", redis.DependsOn)
+	}
+}
+
 // TestDeploySpec_ComposeService_KeyCollision_FailsBeforeAnyWork proves
 // expansion happens before ensureApp or any build starts: a compose
 // file whose own service key collides with a sibling in the same
