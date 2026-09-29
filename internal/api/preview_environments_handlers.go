@@ -42,9 +42,10 @@ type previewEnvironmentResource struct {
 	// instance provisioned for this preview (spec.Database.EphemeralInPreviews),
 	// empty when the app declares no such database or none opted in.
 	EphemeralDatabases []previewEphemeralDatabaseResource `json:"ephemeral_databases,omitempty"`
-	// DatabaseIsolations is every isolated Postgres role provisioned on
-	// an existing database for this preview
-	// (spec.Database.IsolatedInPreviews), empty when none opted in.
+	// DatabaseIsolations is every isolated credential (a Postgres role,
+	// or a Redis ACL user) provisioned on an existing database for this
+	// preview (spec.Database.IsolatedInPreviews), empty when none opted
+	// in.
 	DatabaseIsolations []previewDatabaseIsolationResource `json:"database_isolations,omitempty"`
 }
 
@@ -52,8 +53,9 @@ type previewEnvironmentResource struct {
 // DatabaseIsolations element: store.PreviewDatabaseIsolation's wire
 // shape. Isolated is always true here (only isolations that exist are
 // ever listed); the field lets a frontend render a fixed "isolated:
-// true/false" badge without a separate lookup. The role's password is
-// never returned, only its role name and where its secret lives.
+// true/false" badge without a separate lookup. The credential's
+// password is never returned, only its role/user name and where its
+// secret lives.
 type previewDatabaseIsolationResource struct {
 	SourceKey    string `json:"source_key"`
 	DatabaseName string `json:"database_name"`

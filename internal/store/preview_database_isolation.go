@@ -31,11 +31,11 @@ const (
 var ErrPreviewDatabaseIsolationNotFound = errors.New("store: preview database isolation not found")
 
 // PreviewDatabaseIsolation links a PreviewEnvironment to an isolated
-// Postgres role provisioned on an existing (not preview-owned)
-// DesiredDatabase: one row per (PreviewEnvironmentID, SourceKey).
-// DatabaseName is the existing desired_databases.name the role was
-// created on; this table owns nothing about that database's own
-// lifecycle, only the role's.
+// role or ACL user (a Postgres role, or a Redis ACL user) provisioned
+// on an existing (not preview-owned) DesiredDatabase: one row per
+// (PreviewEnvironmentID, SourceKey). DatabaseName is the existing
+// desired_databases.name the role/user was created on; this table owns
+// nothing about that database's own lifecycle, only the credential's.
 type PreviewDatabaseIsolation struct {
 	ID                   string
 	PreviewEnvironmentID string
