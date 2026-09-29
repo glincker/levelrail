@@ -18,6 +18,20 @@ func TestTemplates_ImagesAreTagged(t *testing.T) {
 	}
 }
 
+func TestTemplateByID(t *testing.T) {
+	tpl, ok := TemplateByID("redis-cache-starter")
+	if !ok {
+		t.Fatal("TemplateByID(\"redis-cache-starter\") ok = false, want true")
+	}
+	if tpl.Name != "Redis Cache Starter" {
+		t.Errorf("TemplateByID(\"redis-cache-starter\").Name = %q, want %q", tpl.Name, "Redis Cache Starter")
+	}
+
+	if _, ok := TemplateByID("does-not-exist"); ok {
+		t.Error("TemplateByID(\"does-not-exist\") ok = true, want false")
+	}
+}
+
 func TestTemplates_RequiresGPU(t *testing.T) {
 	tests := []struct {
 		id   string

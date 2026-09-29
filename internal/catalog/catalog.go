@@ -59,6 +59,17 @@ var Templates = concat(
 	aiTemplates,
 )
 
+// TemplateByID returns the Templates entry with this ID, or false if
+// none matches.
+func TemplateByID(id string) (Template, bool) {
+	for _, tpl := range Templates {
+		if tpl.ID == id {
+			return tpl, true
+		}
+	}
+	return Template{}, false
+}
+
 func concat(groups ...[]Template) []Template {
 	var n int
 	for _, g := range groups {
