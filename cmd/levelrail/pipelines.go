@@ -368,7 +368,7 @@ func wireOIDC(ctx context.Context, cfg *pipeline.Config, apiRouter *api.Router, 
 		return ""
 	}
 	addr := net.JoinHostPort(gateway, strconv.Itoa(oidcTokenRequestPort()))
-	cfg.OIDCRequestURL = "http://" + addr + "/oidc/token"
+	cfg.OIDCRequestURL = "http://" + addr + "/oidc/token" // NOSONAR: addr is the Docker bridge gateway IP, reachable only from job containers on that internal network, never a real network HTTPS gap
 	return addr
 }
 
