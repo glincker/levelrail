@@ -118,10 +118,16 @@ doesn't do yet.
 
 ## Status
 
-Early, active development. Single-node and multi-node both run today:
-agent enrollment, the WireGuard mesh, internal DNS, and node
-placement/cordon/drain are built. Beyond the core deploy path, an
-IAM-style policy engine, audit logging, feature flags, alerting across
+Early, active development. Single node is the well-tested path. Multi-node
+runs too: agent enrollment, cordon, and drain with real container
+relocation have now been verified against two real Docker daemons,
+alongside internal DNS and node placement (see
+[docs/multi-node-quickstart.md](docs/multi-node-quickstart.md)); the
+WireGuard mesh itself and cross-host remote transport are still
+unverified. Cloud node provisioning now covers five providers (Hetzner,
+DigitalOcean, AWS, Azure, GCP), and apps can redeploy a branch's latest
+commit on a cron schedule. Beyond the core deploy path, an IAM-style
+policy engine, audit logging, feature flags, alerting across
 nine rule kinds and seventeen notification channels, a self-service
 team invite flow, and eight managed database engines with
 backup/restore/verification are also shipped
@@ -142,9 +148,13 @@ GitHub previews are labeled stable (each has a live end-to-end test).
 Most other areas, including IAM, multi-node and WireGuard, the 17
 notification channels, and the MCP server, are beta, and the in-app AI
 chat, GPU models, load balancer, platform as code, and Cloudflare tunnel
-are hidden behind flags. No feature has been verified on a fresh VPS with
-a real public domain yet. The full per-feature list is in
-[docs/feature-status.md](docs/feature-status.md).
+are hidden behind flags. Multi-node's join flow is the one area with a
+documented real-infrastructure run, across two real Docker daemons
+rather than a fresh VPS; see
+[docs/multi-node-quickstart.md](docs/multi-node-quickstart.md) for what
+that verification did and did not cover. No feature has been verified on
+a fresh VPS with a real public domain yet. The full per-feature list is
+in [docs/feature-status.md](docs/feature-status.md).
 
 From the team behind [thesvg](https://github.com/glincker/thesvg) (6,400+ brand SVG icons) and [theauth-go](https://github.com/glincker/theauth-go) (OAuth 2.1 auth library for Go).
 
