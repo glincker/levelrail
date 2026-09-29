@@ -536,6 +536,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/registry/repositories", rt.requireAbility(AbilityRead, rt.handleListRegistryRepositories))
 	mux.HandleFunc("GET /api/v1/registry/tags", rt.requireAbility(AbilityRead, rt.handleListRegistryTags))
 
+	// Public Docker Hub search (dockerhub_search.go): the same picker's
+	// third source, for a well-known public image that isn't in the
+	// built-in registry or a connected credential. AbilityRead, same tier
+	// as the built-in catalog just above: a read of a public,
+	// unauthenticated upstream, proxied server-side only to avoid a
+	// browser-to-hub.docker.com CORS call.
+	mux.HandleFunc("GET /api/v1/dockerhub/search", rt.requireAbility(AbilityRead, rt.handleDockerHubSearch))
+	mux.HandleFunc("GET /api/v1/dockerhub/repositories/{namespace}/{repo}/tags", rt.requireAbility(AbilityRead, rt.handleDockerHubTags))
+
 	// Domains (centralized cross-app list, web/src/routes/domains):
 	// every service_domains row, AbilityRead like GET /api/v1/apps,
 	// no new ability tier: this is the same data DomainEditor already

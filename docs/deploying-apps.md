@@ -119,7 +119,7 @@ POST /api/v1/apps
 ```
 with `image`, `port`.
 
-**Dashboard:** "Docker image" wizard card (`CreateAppFields.tsx`)
+**Dashboard:** "Docker image" wizard card (`CreateAppFields.tsx`). The image field is backed by a picker (`RegistryImagePicker.tsx`) that browses the built-in registry, a connected registry credential, or searches public Docker Hub (`GET /api/v1/dockerhub/search`, `GET /api/v1/dockerhub/repositories/{namespace}/{repo}/tags`) for a well-known public image, so a reference does not have to be typed by hand. The plain text field alongside it always works regardless.
 
 **CLI:**
 ```bash

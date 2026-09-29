@@ -102,20 +102,29 @@ describe('RegistryImagePicker', () => {
     document.body.style.pointerEvents = ''
   })
 
-  it('renders nothing when the built-in registry is disabled', async () => {
+  it('falls back to Docker Hub search when neither the built-in registry nor a credential is available', async () => {
     mockFetchRoutes({
-      'GET /api/v1/settings/registry': jsonRoute({ enabled: false, status: 'stopped', has_credentials: false }),
+      'GET /api/v1/settings/registry': jsonRoute({
+        enabled: false,
+        status: 'stopped',
+        has_credentials: false,
+      }),
       'GET /api/v1/registry-credentials': noCredentials,
     })
 
     const { container } = renderPicker()
 
     await waitFor(() => {
-      expect(container.querySelector('#registry-picker-repo')).not.toBeInTheDocument()
+      expect(
+        container.querySelector('#registry-picker-repo'),
+      ).not.toBeInTheDocument()
     })
+    expect(await screen.findByText('Search Docker Hub')).toBeInTheDocument()
+    // Docker Hub is the only source: no source selector, nothing to pick.
+    expect(screen.queryByText('Registry')).not.toBeInTheDocument()
   })
 
-  it('renders nothing when enabled but not yet running', async () => {
+  it('falls back to Docker Hub search when the built-in registry is enabled but not yet running', async () => {
     mockFetchRoutes({
       'GET /api/v1/settings/registry': jsonRoute({
         enabled: true,
@@ -129,8 +138,11 @@ describe('RegistryImagePicker', () => {
     const { container } = renderPicker()
 
     await waitFor(() => {
-      expect(container.querySelector('#registry-picker-repo')).not.toBeInTheDocument()
+      expect(
+        container.querySelector('#registry-picker-repo'),
+      ).not.toBeInTheDocument()
     })
+    expect(await screen.findByText('Search Docker Hub')).toBeInTheDocument()
   })
 
   it('shows the repository picker once the registry is running, and an empty-state note when there are none', async () => {
@@ -144,25 +156,37 @@ describe('RegistryImagePicker', () => {
 
     expect(await screen.findByText('Repository')).toBeInTheDocument()
     expect(
-      await screen.findByText('No images have been pushed to the built-in registry yet.'),
+      await screen.findByText(
+        'No images have been pushed to the built-in registry yet.',
+      ),
     ).toBeInTheDocument()
     expect(screen.queryByText('Tag')).not.toBeInTheDocument()
-    expect(screen.queryByText('Registry')).not.toBeInTheDocument()
+    // Docker Hub is always a second source alongside the built-in
+    // registry, so the source selector now shows even with zero
+    // connected credentials.
+    expect(await screen.findByText('Registry')).toBeInTheDocument()
   })
 
   it('picking a repository then a tag calls onSelect with the full host/repository:tag reference', async () => {
     mockFetchRoutes({
       'GET /api/v1/settings/registry': jsonRoute(runningRegistry),
       'GET /api/v1/registry-credentials': noCredentials,
-      'GET /api/v1/registry/repositories': jsonRoute({ repositories: ['myapp'] }),
-      'GET /api/v1/registry/tags?repository=myapp': jsonRoute({ repository: 'myapp', tags: ['latest', 'v1'] }),
+      'GET /api/v1/registry/repositories': jsonRoute({
+        repositories: ['myapp'],
+      }),
+      'GET /api/v1/registry/tags?repository=myapp': jsonRoute({
+        repository: 'myapp',
+        tags: ['latest', 'v1'],
+      }),
     })
 
     const { onSelect, container } = renderPicker()
 
     await screen.findByText('Repository')
     await pickOption(container, 'registry-picker-repo', 'myapp', () => {
-      expect(container.querySelector('#registry-picker-tag')).toBeInTheDocument()
+      expect(
+        container.querySelector('#registry-picker-tag'),
+      ).toBeInTheDocument()
     })
 
     await screen.findByText('Tag')
@@ -175,7 +199,10 @@ describe('RegistryImagePicker', () => {
     mockFetchRoutes({
       'GET /api/v1/settings/registry': jsonRoute(runningRegistry),
       'GET /api/v1/registry-credentials': noCredentials,
-      'GET /api/v1/registry/repositories': jsonRoute({ error: 'internal error' }, 500),
+      'GET /api/v1/registry/repositories': jsonRoute(
+        { error: 'internal error' },
+        500,
+      ),
     })
 
     renderPicker()
@@ -187,7 +214,9 @@ describe('RegistryImagePicker', () => {
     mockFetchRoutes({
       'GET /api/v1/settings/registry': jsonRoute(runningRegistry),
       'GET /api/v1/registry-credentials': jsonRoute([oneCredential]),
-      'GET /api/v1/registry/repositories': jsonRoute({ repositories: ['myapp'] }),
+      'GET /api/v1/registry/repositories': jsonRoute({
+        repositories: ['myapp'],
+      }),
     })
 
     const { container } = renderPicker()
@@ -195,26 +224,37 @@ describe('RegistryImagePicker', () => {
     expect(await screen.findByText('Registry')).toBeInTheDocument()
 
     await pickOption(container, 'registry-picker-repo', 'myapp', () => {
-      expect(container.querySelector('#registry-picker-tag')).toBeInTheDocument()
+      expect(
+        container.querySelector('#registry-picker-tag'),
+      ).toBeInTheDocument()
     })
   })
 
   it('browsing a connected credential queries its own catalog and calls onSelect with its host', async () => {
     mockFetchRoutes({
-      'GET /api/v1/settings/registry': jsonRoute({ enabled: false, status: 'stopped', has_credentials: false }),
-      'GET /api/v1/registry-credentials': jsonRoute([oneCredential]),
-      'GET /api/v1/registry-credentials/cred-1/repositories': jsonRoute({ repositories: ['org/app'] }),
-      'GET /api/v1/registry-credentials/cred-1/tags?repository=org%2Fapp': jsonRoute({
-        repository: 'org/app',
-        tags: ['v2'],
+      'GET /api/v1/settings/registry': jsonRoute({
+        enabled: false,
+        status: 'stopped',
+        has_credentials: false,
       }),
+      'GET /api/v1/registry-credentials': jsonRoute([oneCredential]),
+      'GET /api/v1/registry-credentials/cred-1/repositories': jsonRoute({
+        repositories: ['org/app'],
+      }),
+      'GET /api/v1/registry-credentials/cred-1/tags?repository=org%2Fapp':
+        jsonRoute({
+          repository: 'org/app',
+          tags: ['v2'],
+        }),
     })
 
     const { onSelect, container } = renderPicker()
 
     await screen.findByText('Registry')
     await pickOption(container, 'registry-picker-repo', 'org/app', () => {
-      expect(container.querySelector('#registry-picker-tag')).toBeInTheDocument()
+      expect(
+        container.querySelector('#registry-picker-tag'),
+      ).toBeInTheDocument()
     })
 
     await screen.findByText('Tag')
@@ -225,15 +265,115 @@ describe('RegistryImagePicker', () => {
 
   it('shows an empty-state note and surfaces fetch errors for a connected credential with no repositories', async () => {
     mockFetchRoutes({
-      'GET /api/v1/settings/registry': jsonRoute({ enabled: false, status: 'stopped', has_credentials: false }),
+      'GET /api/v1/settings/registry': jsonRoute({
+        enabled: false,
+        status: 'stopped',
+        has_credentials: false,
+      }),
       'GET /api/v1/registry-credentials': jsonRoute([oneCredential]),
-      'GET /api/v1/registry-credentials/cred-1/repositories': jsonRoute({ repositories: [] }),
+      'GET /api/v1/registry-credentials/cred-1/repositories': jsonRoute({
+        repositories: [],
+      }),
     })
 
     renderPicker()
 
     expect(
       await screen.findByText('No repositories found in this registry yet.'),
+    ).toBeInTheDocument()
+  })
+
+  it('searching Docker Hub shows matched repositories with an official badge, and picking one then a tag calls onSelect with the docker.io reference', async () => {
+    mockFetchRoutes({
+      'GET /api/v1/settings/registry': jsonRoute({
+        enabled: false,
+        status: 'stopped',
+        has_credentials: false,
+      }),
+      'GET /api/v1/registry-credentials': noCredentials,
+      'GET /api/v1/dockerhub/search?q=postgres': jsonRoute({
+        results: [
+          {
+            repo_name: 'postgres',
+            short_description: 'The PostgreSQL database',
+            star_count: 12000,
+            is_official: true,
+            is_automated: false,
+          },
+        ],
+      }),
+      'GET /api/v1/dockerhub/repositories/library/postgres/tags': jsonRoute({
+        namespace: 'library',
+        repository: 'postgres',
+        tags: [{ name: '16' }, { name: 'latest' }],
+      }),
+    })
+
+    const { onSelect, container } = renderPicker()
+
+    const input = await screen.findByLabelText('Search Docker Hub')
+    fireEvent.change(input, { target: { value: 'postgres' } })
+
+    const repoButton = await screen.findByText('postgres', undefined, {
+      timeout: 2000,
+    })
+    expect(screen.getByText('Official')).toBeInTheDocument()
+    fireEvent.click(repoButton)
+
+    await screen.findByText('Tag')
+    await pickOption(container, 'dockerhub-tag', '16', () => {
+      expect(onSelect).toHaveBeenCalledWith('docker.io/postgres:16')
+    })
+  })
+
+  it('shows an empty-state note when a Docker Hub search returns nothing', async () => {
+    mockFetchRoutes({
+      'GET /api/v1/settings/registry': jsonRoute({
+        enabled: false,
+        status: 'stopped',
+        has_credentials: false,
+      }),
+      'GET /api/v1/registry-credentials': noCredentials,
+      'GET /api/v1/dockerhub/search?q=zzzznosuchimage': jsonRoute({
+        results: [],
+      }),
+    })
+
+    renderPicker()
+
+    const input = await screen.findByLabelText('Search Docker Hub')
+    fireEvent.change(input, { target: { value: 'zzzznosuchimage' } })
+
+    expect(
+      await screen.findByText('No matching public images found.', undefined, {
+        timeout: 2000,
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('surfaces a Docker Hub search fetch error inline', async () => {
+    mockFetchRoutes({
+      'GET /api/v1/settings/registry': jsonRoute({
+        enabled: false,
+        status: 'stopped',
+        has_credentials: false,
+      }),
+      'GET /api/v1/registry-credentials': noCredentials,
+      'GET /api/v1/dockerhub/search?q=postgres': jsonRoute(
+        { error: 'could not reach Docker Hub' },
+        502,
+      ),
+    })
+
+    renderPicker()
+
+    const input = await screen.findByLabelText('Search Docker Hub')
+    fireEvent.change(input, { target: { value: 'postgres' } })
+
+    expect(
+      await screen.findByText(/could not reach Docker Hub/i, undefined, {
+        timeout: 2000,
+      }),
     ).toBeInTheDocument()
   })
 })

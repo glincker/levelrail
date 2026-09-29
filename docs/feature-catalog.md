@@ -106,6 +106,7 @@ the exact method/path/ability of every one), grouped by resource:
 | Ingress / certs / domains / email / Cloudflare | 19 | `/certificates`, `/settings/ingress*`, `/settings/cloudflare-tunnel*`, `/domains/{domain}/tls-cert` |
 | Static sites / backup targets / registry credentials | 15 | `/static-sites`, `/backup-targets*`, `/registry-credentials*` |
 | Built-in container registry | 5 | `/settings/registry`, `/registry/repositories`, `/registry/tags` |
+| Public Docker Hub search (docker-image deploy picker) | 2 | `/dockerhub/search`, `/dockerhub/repositories/{namespace}/{repo}/tags` |
 | Git provider apps (GitHub/GitLab/Bitbucket/Gitea) | 34 | `/github-app*`, `/gitlab-app*`, `/bitbucket-app*`, `/gitea-app*` |
 | DB backups/restore/clone-restore | 17 | `/databases/{name}/backups*`, `/restore-as-new`, `/backup-schedule`, `/backups` |
 | DB point-in-time restore (PITR, postgres only) | 7 | `/databases/{name}/pitr*`, `/base-backups*`, `/pitr-restore*` |
