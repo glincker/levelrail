@@ -39,6 +39,11 @@ export interface NodeResource {
   // PUT /api/v1/nodes/{id}/workloads, never patched individually.
   accepts_app_workloads: boolean
   accepts_build_workloads: boolean
+  // Region is an optional, free-text operator-facing location label
+  // (internal/store.Node.Region), e.g. "hetzner-fsn1" or "home-lab":
+  // display/grouping metadata for the network topology view, not a
+  // routing or access-control input. Set via PUT /api/v1/nodes/{id}/region.
+  region?: string
   created_at: string
   // AlertStatus is only present on GET /api/v1/nodes/{id} (the single-
   // node fetch), never the list response, and is absent when telemetry

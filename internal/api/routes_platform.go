@@ -332,6 +332,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNode))
 	mux.HandleFunc("DELETE /api/v1/nodes/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteNode))
 	mux.HandleFunc("PUT /api/v1/nodes/{id}/workloads", rt.requireAbility(AbilityRoot, rt.handleSetNodeWorkloads))
+	mux.HandleFunc("PUT /api/v1/nodes/{id}/region", rt.requireAbility(AbilityRoot, rt.handleSetNodeRegion))
 	mux.HandleFunc("POST /api/v1/nodes/join-tokens", rt.requireAbility(AbilityRoot, rt.handleCreateNodeJoinToken))
 	// Health, cordon, drain, same AbilityRoot boundary as
 	// every other node route above.
@@ -345,6 +346,13 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// above.
 	mux.HandleFunc("GET /api/v1/mesh", rt.requireAbility(AbilityRoot, rt.handleGetMeshStatus))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/mesh/rotate-key", rt.requireAbility(AbilityRoot, rt.handleRotateNodeMeshKey))
+	// Network topology: a read-only, whole-mesh summary (nodes, apps,
+	// databases, load balancers, app-to-database connections). Unlike
+	// every other node/mesh route above, AbilityRead rather than
+	// AbilityRoot: it exposes no key material, no join tokens, and no
+	// mutation, just the same placement/DNS-name facts already visible
+	// piecemeal across GET /apps, /databases and /nodes.
+	mux.HandleFunc("GET /api/v1/network/topology", rt.requireAbility(AbilityRead, rt.handleGetNetworkTopology))
 	// Cloud node provisioning: same AbilityRoot boundary as every other
 	// node route above, a provider credential and the ability to spin up
 	// a VM are at least as sensitive as a join token.

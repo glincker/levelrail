@@ -399,3 +399,38 @@ export function useSetNodeWorkloads() {
     },
   })
 }
+
+// PUT /api/v1/nodes/{id}/region (internal/api/nodes.go's
+// handleSetNodeRegion): a free-text location label, no fixed provider/
+// region list validated against.
+export async function setNodeRegion({
+  id,
+  region,
+}: {
+  id: string
+  region: string
+}): Promise<NodeResource> {
+  const res = await fetch(`/api/v1/nodes/${encodeURIComponent(id)}/region`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ region }),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set node region failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as NodeResource
+}
+
+export function useSetNodeRegion() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: setNodeRegion,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(nodeKeys.detail(updated.id), updated)
+      void queryClient.invalidateQueries({ queryKey: nodeKeys.list() })
+    },
+  })
+}
