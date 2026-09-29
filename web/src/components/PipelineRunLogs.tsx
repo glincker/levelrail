@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useLogStream, type LogLine } from '../hooks/useLogStream'
 import { LogTerminal } from './LogTerminal'
 import { pipelineLogStreamUrl, usePipelineRunLogs } from '../queries/pipelines'
@@ -54,7 +56,12 @@ function StoredLogs({
     [data],
   )
   if (error) {
-    return <p className="text-sm text-destructive">{error.message}</p>
+    return (
+      <Alert variant="destructive">
+        <WarningIcon />
+        <AlertDescription>{error.message}</AlertDescription>
+      </Alert>
+    )
   }
   return (
     <LogTerminal

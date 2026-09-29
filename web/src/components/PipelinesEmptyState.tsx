@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { HelpLink } from '@/components/HelpLink'
+import { EmptyState } from '@/components/ui/empty-state'
 import { appListQueryOptions } from '../queries/apps'
 
 export const MINIMAL_PIPELINE_YAML = `version: 1
@@ -86,37 +86,28 @@ function AppPickerDialog({
 export function PipelinesEmptyState() {
   const [picking, setPicking] = useState(false)
   return (
-    <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-border bg-card/50 px-4 py-12 text-center">
-      <span
-        className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground"
-        aria-hidden="true"
+    <>
+      <EmptyState
+        icon={<TreeStructureIcon className="size-5" />}
+        title="No pipeline runs yet"
+        description="A pipeline is a YAML file that runs tests, builds an image, waits for an approval, and deploys when code changes. Each pipeline belongs to one app and runs on your own nodes."
+        action={
+          <Button onClick={() => setPicking(true)}>
+            <PlusIcon aria-hidden="true" />
+            Create a pipeline
+          </Button>
+        }
+        helpPath="/pipelines"
+        helpLabel="Pipelines docs"
       >
-        <TreeStructureIcon className="size-5" />
-      </span>
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">
-          No pipeline runs yet
-        </p>
-        <p className="mx-auto max-w-md text-sm text-muted-foreground">
-          A pipeline is a YAML file that runs tests, builds an image, waits for
-          an approval, and deploys when code changes. Each pipeline belongs to
-          one app and runs on your own nodes.
-        </p>
-      </div>
-      <pre
-        aria-label="Example pipeline"
-        className="w-full max-w-md overflow-x-auto rounded-md border border-border bg-muted p-3 text-left font-mono text-xs text-foreground"
-      >
-        <code>{MINIMAL_PIPELINE_YAML}</code>
-      </pre>
-      <div className="flex items-center gap-2">
-        <Button onClick={() => setPicking(true)}>
-          <PlusIcon aria-hidden="true" />
-          Create a pipeline
-        </Button>
-        <HelpLink path="/pipelines" label="Pipelines docs" variant="inline" />
-      </div>
+        <pre
+          aria-label="Example pipeline"
+          className="w-full max-w-md overflow-x-auto rounded-md border border-border bg-muted p-3 text-left font-mono text-xs text-foreground"
+        >
+          <code>{MINIMAL_PIPELINE_YAML}</code>
+        </pre>
+      </EmptyState>
       <AppPickerDialog open={picking} onOpenChange={setPicking} />
-    </div>
+    </>
   )
 }

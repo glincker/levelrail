@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useCordonNode, useUncordonNode } from '../queries/nodes'
@@ -77,7 +78,10 @@ export function CordonNodeDialog({ node }: { node: NodeResource }) {
           </DialogDescription>
         </DialogHeader>
         {mutation.isError ? (
-          <p className="text-sm text-destructive">{mutation.error.message}</p>
+          <Alert variant="destructive">
+            <WarningIcon />
+            <AlertDescription>{mutation.error.message}</AlertDescription>
+          </Alert>
         ) : null}
         <DialogFooter>
           <Button

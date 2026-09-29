@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useRevokeNodeCert } from '../queries/nodeCert'
@@ -57,7 +58,10 @@ export function RevokeNodeCertDialog({ node }: { node: NodeResource }) {
           </DialogDescription>
         </DialogHeader>
         {revoke.isError ? (
-          <p className="text-sm text-destructive">{revoke.error.message}</p>
+          <Alert variant="destructive">
+            <WarningIcon />
+            <AlertDescription>{revoke.error.message}</AlertDescription>
+          </Alert>
         ) : null}
         <DialogFooter>
           <Button

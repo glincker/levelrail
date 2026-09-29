@@ -253,9 +253,9 @@ function NodeDetailPage() {
           </FieldDescription>
 
           {setWorkloads.isError ? (
-            <p className="text-sm text-destructive">
-              {setWorkloads.error.message}
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>{setWorkloads.error.message}</AlertDescription>
+            </Alert>
           ) : null}
         </CardContent>
       </Card>

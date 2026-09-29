@@ -13,6 +13,7 @@ export function EmptyState({
   illustration,
   title,
   description,
+  children,
   action,
   secondaryAction,
   hint,
@@ -26,6 +27,8 @@ export function EmptyState({
   illustration?: IllustrationName
   title: string
   description: string
+  /** Extra content between the description and the action row, e.g. a short code sample. */
+  children?: ReactNode
   /** Primary action, typically a Button or a dialog/wizard trigger rendering one. Omit for a purely informational state. */
   action?: ReactNode
   /** Lower-emphasis action next to the primary one, e.g. "Start from a template". */
@@ -65,6 +68,7 @@ export function EmptyState({
       {hint ? (
         <p className="mx-auto max-w-sm text-xs text-muted-foreground">{hint}</p>
       ) : null}
+      {children}
       {action || secondaryAction ? (
         <div className="flex items-center gap-2">
           {action}

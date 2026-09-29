@@ -1,5 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  CloudArrowUpIcon,
+  WarningCircleIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { useQuery } from '@tanstack/react-query'
 import {
   storageDestinationsQueryOptions,
@@ -7,6 +10,8 @@ import {
 } from '../../queries/storage'
 import { ApiError } from '../../lib/apiError'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { CreateStorageDestinationDialog } from '../../components/CreateStorageDestinationDialog'
 import { StorageDestinationTable } from '../../components/StorageDestinationTable'
 import { LogArchivePanel } from '../../components/LogArchivePanel'
@@ -56,9 +61,22 @@ function StoragePage() {
           </AlertDescription>
         </Alert>
       ) : destinations.isError ? (
-        <p role="alert" className="text-sm text-destructive">
-          {destinations.error.message}
-        </p>
+        <EmptyState
+          icon={<WarningCircleIcon className="size-5" />}
+          title="Storage destinations could not be loaded"
+          description={destinations.error.message}
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                void destinations.refetch()
+              }}
+            >
+              Retry
+            </Button>
+          }
+        />
       ) : destinations.data ? (
         <>
           <StorageDestinationTable

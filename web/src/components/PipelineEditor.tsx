@@ -6,6 +6,7 @@ import {
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -142,7 +143,24 @@ export function PipelineEditor({
     return <Skeleton className="h-96 w-full" />
   }
   if (isEdit && existing.error) {
-    return <p className="text-sm text-destructive">{existing.error.message}</p>
+    return (
+      <EmptyState
+        icon={<WarningCircleIcon className="size-5" />}
+        title="Pipeline could not be loaded"
+        description={existing.error.message}
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              void existing.refetch()
+            }}
+          >
+            Retry
+          </Button>
+        }
+      />
+    )
   }
 
   const issues = validate.data?.issues ?? []
