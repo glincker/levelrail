@@ -6,7 +6,9 @@ import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import {
   ClockCounterClockwiseIcon,
   DownloadSimpleIcon,
+  WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '../../components/ui/button'
 import {
   Select,
@@ -265,7 +267,10 @@ function AuditLogSettingsPage() {
       )}
 
       {loadMoreError ? (
-        <p className="text-sm text-destructive">{loadMoreError}</p>
+        <Alert variant="destructive">
+          <WarningIcon />
+          <AlertDescription>{loadMoreError}</AlertDescription>
+        </Alert>
       ) : null}
 
       {!exhausted && entries.length > 0 ? (

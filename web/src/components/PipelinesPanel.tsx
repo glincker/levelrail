@@ -7,6 +7,7 @@ import {
   TrashIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -95,7 +96,10 @@ function DeletePipelineDialog({
           </DialogDescription>
         </DialogHeader>
         {del.isError ? (
-          <p className="text-sm text-destructive">{del.error.message}</p>
+          <Alert variant="destructive">
+            <WarningIcon />
+            <AlertDescription>{del.error.message}</AlertDescription>
+          </Alert>
         ) : null}
         <DialogFooter>
           <Button
@@ -192,7 +196,7 @@ function PipelineRow({
 }
 
 export function PipelinesPanel({ appName }: { appName: string }) {
-  const { data, isLoading, error } = usePipelines(appName)
+  const { data, isLoading, error, refetch } = usePipelines(appName)
   const pipelines = data ?? []
   const newLink = (
     <Link
@@ -228,7 +232,22 @@ export function PipelinesPanel({ appName }: { appName: string }) {
           {isLoading ? (
             <TableSkeleton columnCount={4} rowCount={2} />
           ) : error ? (
-            <p className="text-sm text-destructive">{error.message}</p>
+            <EmptyState
+              icon={<WarningIcon className="size-5" />}
+              title="Pipelines could not be loaded"
+              description={error.message}
+              action={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    void refetch()
+                  }}
+                >
+                  Retry
+                </Button>
+              }
+            />
           ) : pipelines.length === 0 ? (
             <EmptyState
               icon={<TreeStructureIcon className="size-5" />}

@@ -5,8 +5,10 @@ import {
   StopIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
+  WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
@@ -161,16 +163,31 @@ export function PipelineRunDetail({
   step?: number
   onPick: (job: string, step?: number) => void
 }) {
-  const { data: run, isLoading, error } = usePipelineRun(app, runId)
+  const { data: run, isLoading, error, refetch } = usePipelineRun(app, runId)
 
   if (isLoading) {
     return <Skeleton className="h-64 w-full" />
   }
   if (error || !run) {
     return (
-      <p className="text-sm text-destructive">
-        {error?.message ?? 'Run not found'}
-      </p>
+      <EmptyState
+        icon={<WarningCircleIcon className="size-5" />}
+        title={error ? 'Run could not be loaded' : 'Run not found'}
+        description={error?.message ?? 'This run no longer exists.'}
+        action={
+          error ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                void refetch()
+              }}
+            >
+              Retry
+            </Button>
+          ) : undefined
+        }
+      />
     )
   }
   const jobs = run.jobs ?? []
