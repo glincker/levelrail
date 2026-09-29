@@ -169,3 +169,18 @@ func TestSchedule_Next_ListOfMinutes(t *testing.T) {
 		t.Errorf("Next() = %v, want %v", got, want)
 	}
 }
+
+func TestNextInLocation_TimezoneShiftsTheUTCInstant(t *testing.T) {
+	s := mustParse(t, "0 9 * * *")
+	loc, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		t.Skipf("tzdata unavailable: %v", err)
+	}
+	after := utc(2026, 8, 15, 0, 0)
+
+	got := NextInLocation(s, after, loc)
+	want := utc(2026, 8, 15, 13, 0) // 09:00 EDT == 13:00 UTC
+	if !got.Equal(want) {
+		t.Fatalf("NextInLocation() = %v, want %v", got.UTC(), want)
+	}
+}
