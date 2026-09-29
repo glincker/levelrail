@@ -192,4 +192,9 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   'code-server': () => import('@thesvg/react/coder'),
   grist: () => import('@thesvg/react/grist-badge'),
   tolgee: () => import('@thesvg/react/tolgee-badge'),
+  affine: () => import('@thesvg/react/affine'),
+  karakeep: () => import('@thesvg/react/karakeep'),
+  netbox: () => import('@thesvg/react/netbox'),
+  postiz: () => import('@thesvg/react/postiz'),
+  zabbix: () => import('@thesvg/react/zabbix'),
 }
