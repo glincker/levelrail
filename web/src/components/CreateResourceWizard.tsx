@@ -149,11 +149,17 @@ export function CreateResourceWizard({
   trigger,
   scope,
   initialSelected,
+  initialTemplateId,
 }: {
   trigger: React.ReactElement
   scope?: 'applications' | 'databases'
   /** Opens straight to step 2 on this option instead of step 1's picker, e.g. "browse-templates" for a "Start from a template" entry point. */
   initialSelected?: FixedWizardOption
+  /** Paired with `initialSelected="browse-templates"`: skips that step's
+   *  own grid too and opens straight to this template's preview/
+   *  configure form, e.g. the /templates/$id detail page's "Configure and
+   *  deploy" button. Ignored otherwise. */
+  initialTemplateId?: string
 }) {
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<string | null>(
@@ -482,6 +488,7 @@ export function CreateResourceWizard({
                 key={selected}
                 open={open}
                 onCreated={handleCreated}
+                initialTemplateId={initialTemplateId}
               />
             ) : null}
             {!isFixedOption(selected) ? (
