@@ -10,9 +10,9 @@ subject="$(head -1 "$msg_file")"
 fail=0
 
 echo "commit-msg: conventional commit format"
-if ! echo "$subject" | grep -qE '^(feat|fix|perf|refactor|docs|test|chore|ci)(\([a-z0-9-]+\))?!?: .+'; then
+if ! echo "$subject" | grep -qE '^(feat|fix|perf|refactor|docs|test|chore|ci|security)(\([a-z0-9-]+\))?!?: .+'; then
 	echo "commit subject must match '<type>(<scope>): <description>'"
-	echo "  allowed types: feat fix perf refactor docs test chore ci"
+	echo "  allowed types: feat fix perf refactor docs test chore ci security"
 	echo "  got: $subject"
 	fail=1
 fi
