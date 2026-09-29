@@ -120,6 +120,14 @@ type AppStore interface {
 	// UpdateServiceDatabaseAttachment, see store.DB.SetServiceVaultEnvVar's
 	// own doc comment.
 	SetServiceVaultEnvVar(ctx context.Context, name, envVar string, ref *store.VaultEnvRef) error
+	// SetServiceDatabaseEnvVar backs POST/DELETE
+	// /api/v1/apps/{name}/connections[/{env_var}] (apps_connections.go):
+	// the UI/CLI-facing way to declare (or remove) one entry in an app's
+	// DatabaseEnv map, letting an app connect to more than one managed
+	// database without app.yaml. Same separation-from-ordinary-update
+	// reasoning as SetServiceVaultEnvVar, see
+	// store.DB.SetServiceDatabaseEnvVar's own doc comment.
+	SetServiceDatabaseEnvVar(ctx context.Context, name, envVar string, ref *store.DatabaseEnvRef) error
 	// SetServicePreviewEnvOverride backs PUT/DELETE
 	// /api/v1/apps/{name}/preview-env/{key} (apps_preview_env.go): the
 	// UI/CLI-facing way to declare (or remove), on an app that already

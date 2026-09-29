@@ -3,6 +3,7 @@ import { useApp } from '../../../queries/apps'
 import { StorageAttachmentCard } from '../../../components/StorageAttachmentCard'
 import { LogDrainCard } from '../../../components/LogDrainCard'
 import { DatabaseAttachmentCard } from '../../../components/DatabaseAttachmentCard'
+import { DatabaseConnectionsCard } from '../../../components/DatabaseConnectionsCard'
 import { AppIntegrationsCard } from '../../../components/AppIntegrationsCard'
 
 // Former Overview-page cards (bucket/log-sink/database attachment)
@@ -23,6 +24,7 @@ function IntegrationsSection() {
       <StorageAttachmentCard app={app} />
       <LogDrainCard app={app} />
       <DatabaseAttachmentCard app={app} />
+      <DatabaseConnectionsCard app={app} />
     </div>
   )
 }

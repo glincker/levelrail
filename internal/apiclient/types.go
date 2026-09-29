@@ -1971,6 +1971,44 @@ type AppDatabaseResource struct {
 	Field        string `json:"field"`
 }
 
+// CreateAppConnectionRequest mirrors internal/api's
+// createAppConnectionRequest (apps_connections.go). Field and EnvVar are
+// both optional: the server defaults Field to "url" and generates a
+// collision-safe EnvVar (see defaultConnectionEnvVar's own doc comment)
+// when left blank.
+type CreateAppConnectionRequest struct {
+	Database string `json:"database"`
+	Field    string `json:"field,omitempty"`
+	EnvVar   string `json:"env_var,omitempty"`
+}
+
+// AppConnectionResource mirrors internal/api's appConnectionResource:
+// GET/POST /api/v1/apps/{name}/connections' wire shape for one
+// DatabaseEnv entry, including a resolved-host preview so a caller can
+// tell whether a connection is cross-node-capable without deploying.
+type AppConnectionResource struct {
+	EnvVar       string `json:"env_var"`
+	DatabaseName string `json:"database_name"`
+	Field        string `json:"field"`
+	Host         string `json:"host"`
+	MeshDNS      bool   `json:"mesh_dns"`
+	NodeID       string `json:"node_id,omitempty"`
+	CrossNode    bool   `json:"cross_node"`
+}
+
+// ConnectableDatabaseResource mirrors internal/api's
+// connectableDatabaseResource: GET
+// /api/v1/apps/{name}/connectable-databases' wire shape for one
+// candidate database.
+type ConnectableDatabaseResource struct {
+	Name             string   `json:"name"`
+	Engine           string   `json:"engine"`
+	NodeID           string   `json:"node_id,omitempty"`
+	CrossNode        bool     `json:"cross_node"`
+	AlreadyConnected bool     `json:"already_connected"`
+	ConnectedEnvVars []string `json:"connected_env_vars,omitempty"`
+}
+
 // AppEgressAllow mirrors internal/api's egressAllowResource: one host+port
 // pair in an app's outbound network allowlist.
 type AppEgressAllow struct {

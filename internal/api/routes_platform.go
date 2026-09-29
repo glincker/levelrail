@@ -847,6 +847,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// later" shape PUT .../storage/.../node/.../project already have).
 	mux.HandleFunc("PUT /api/v1/apps/{name}/database", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppDatabase))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/database", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleClearAppDatabase))
+	// Multi-connection app-to-database (apps_connections.go): the
+	// DatabaseEnv-map-backed sibling of PUT/DELETE .../database just
+	// above, for an app that connects to more than one managed database.
+	// Same AbilityWrite tier and "config write, not a deploy trigger"
+	// reasoning; GET is AbilityRead like any other app-detail read.
+	mux.HandleFunc("GET /api/v1/apps/{name}/connections", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppConnections))
+	mux.HandleFunc("POST /api/v1/apps/{name}/connections", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCreateAppConnection))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/connections/{env_var}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteAppConnection))
+	mux.HandleFunc("GET /api/v1/apps/{name}/connectable-databases", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListConnectableDatabases))
 	// One Vault-sourced env var declaration at a time (apps_vault_env.go):
 	// same AbilityWrite tier and "config write, not a deploy trigger"
 	// reasoning as PUT/DELETE .../database just above.

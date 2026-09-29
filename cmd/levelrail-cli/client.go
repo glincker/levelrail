@@ -106,6 +106,9 @@ type (
 	triggerVolumeCloneRestoreRequest = apiclient.TriggerVolumeCloneRestoreRequest
 	setAppDatabaseRequest            = apiclient.SetAppDatabaseRequest
 	appDatabaseResource              = apiclient.AppDatabaseResource
+	createAppConnectionRequest       = apiclient.CreateAppConnectionRequest
+	appConnectionResource            = apiclient.AppConnectionResource
+	connectableDatabaseResource      = apiclient.ConnectableDatabaseResource
 	appStatusSummary                 = apiclient.AppStatusSummary
 	appGroupResource                 = apiclient.AppGroupResource
 	hookRunResource                  = apiclient.HookRunResource
