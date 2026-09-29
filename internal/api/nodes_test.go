@@ -917,6 +917,9 @@ func (f *fakeDrainAppStore) UpdateServiceDatabaseAttachment(context.Context, str
 func (f *fakeDrainAppStore) SetServiceAutoRollbackOnCrashloop(context.Context, string, bool) error {
 	return nil
 }
+func (f *fakeDrainAppStore) SetServiceAutoRollbackOnSLOBurn(context.Context, string, string) error {
+	return nil
+}
 func (f *fakeDrainAppStore) SetServiceExecEnabled(context.Context, string, bool) error {
 	return nil
 }

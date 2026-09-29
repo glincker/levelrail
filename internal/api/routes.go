@@ -298,6 +298,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/cancel-superseded", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetCancelSuperseded))
 	mux.HandleFunc("GET /api/v1/apps/{name}/auto-rollback", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAutoRollback))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/auto-rollback", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAutoRollback))
+	mux.HandleFunc("GET /api/v1/apps/{name}/auto-rollback-slo-burn", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAutoRollbackSLOBurn))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/auto-rollback-slo-burn", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAutoRollbackSLOBurn))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploy-freeze", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppDeployFreeze))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/deploy-freeze", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePutAppDeployFreeze))
 

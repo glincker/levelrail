@@ -240,6 +240,9 @@ func (f *fakeProjectLifecycleAppStore) SetServiceVaultEnvVar(context.Context, st
 func (f *fakeProjectLifecycleAppStore) SetServiceAutoRollbackOnCrashloop(context.Context, string, bool) error {
 	return nil
 }
+func (f *fakeProjectLifecycleAppStore) SetServiceAutoRollbackOnSLOBurn(context.Context, string, string) error {
+	return nil
+}
 func (f *fakeProjectLifecycleAppStore) SetServiceExecEnabled(context.Context, string, bool) error {
 	return nil
 }

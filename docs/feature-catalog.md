@@ -125,7 +125,7 @@ All command groups available:
 
 **apps**
 
-`create`, `list`, `get`, `deploy`, `deploy-compose`, `deploy-spec`, `validate` (local app.yaml/compose parse, no API call), `group`, `hook-runs`, `rollback`, `auto-rollback`, `deploys`, `promote`, `restart`, `stop`, `start`, `delete`, `status`, `diagnose`, `resource-recommendation`, `network`, `logs` (with `--follow`/`-f` for live tail), `metrics`, `exec`, `log-drain`, `scheduled-tasks`, `alerts`, `organizations`, `projects`, `environments`, `previews`, `secrets`, `git-source`, `webhook-deliveries`, `storage`, `tag`, `untag`.
+`create`, `list`, `get`, `deploy`, `deploy-compose`, `deploy-spec`, `validate` (local app.yaml/compose parse, no API call), `group`, `hook-runs`, `rollback`, `auto-rollback`, `auto-rollback-slo-burn`, `deploys`, `promote`, `restart`, `stop`, `start`, `delete`, `status`, `diagnose`, `resource-recommendation`, `network`, `logs` (with `--follow`/`-f` for live tail), `metrics`, `exec`, `log-drain`, `scheduled-tasks`, `alerts`, `organizations`, `projects`, `environments`, `previews`, `secrets`, `git-source`, `webhook-deliveries`, `storage`, `tag`, `untag`.
 
 **databases**
 

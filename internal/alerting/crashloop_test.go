@@ -289,6 +289,7 @@ type fakeAutoRollbackStore struct {
 	getErr         error
 	attempts       []store.DeployAttempt
 	listErr        error
+	saveErr        error
 	saveAttemptErr error
 	savedServices  []store.DesiredService
 	savedAttempts  []store.DeployAttempt
@@ -314,7 +315,13 @@ func (f *fakeAutoRollbackStore) ListDeployAttempts(_ context.Context, _ string) 
 // it to f.svc, mirroring a real store: GetDesiredService must reflect the
 // image a prior rollback just set, or a test can't exercise the rearm
 // path (a second MaybeAutoRollback call re-reading the same stale image).
+// A non-nil saveErr fails before recording or applying anything, the
+// half-succeeded-at-the-earliest-point case (TriggerImageDeploy itself
+// fails, desired state never moves).
 func (f *fakeAutoRollbackStore) SaveDesiredService(_ context.Context, svc store.DesiredService) error {
+	if f.saveErr != nil {
+		return f.saveErr
+	}
 	f.savedServices = append(f.savedServices, svc)
 	f.svc = svc
 	return nil

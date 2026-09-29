@@ -74,6 +74,17 @@ type Engine struct {
 	autoRollbackNudger  deploy.ReconcileNudger
 	autoRollbackTracker *AutoRollbackTracker
 
+	// sloAutoRollback/sloAutoRollbackNudger/sloAutoRollbackHistory back
+	// MaybeAutoRollbackOnSLOBurn (slo_burn_rollback.go), set via
+	// SetSLOBurnAutoRollback. A separate tracker from autoRollbackTracker
+	// above: crashloop and SLO-burn rollback are independent opt-ins
+	// (different DesiredService fields), so one kind's dedup state must
+	// never suppress the other's.
+	sloAutoRollback        SLOAutoRollbackStore
+	sloAutoRollbackNudger  deploy.ReconcileNudger
+	sloAutoRollbackHistory SLOBurnHistoryRecorder
+	sloAutoRollbackTracker *AutoRollbackTracker
+
 	certExpiryWarningWindow     time.Duration
 	certRenewalStalledThreshold time.Duration
 	patchStatusThreshold        float64
@@ -159,8 +170,9 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 	return &Engine{
 		rules: rules, metrics: metrics, logs: logs, tracker: tracker, certs: certs, nodes: nodes, nodeServices: nodeServices, scheduledTasks: scheduledTasks,
 		domainApps: domainApps, domainChecker: domainChecker, backups: backups,
-		autoRollbackTracker: NewAutoRollbackTracker(),
-		newNotifier:         newNotifier, logger: logger,
+		autoRollbackTracker:    NewAutoRollbackTracker(),
+		sloAutoRollbackTracker: NewAutoRollbackTracker(),
+		newNotifier:            newNotifier, logger: logger,
 		certExpiryWarningWindow: certExpiryWarningWindow, certRenewalStalledThreshold: certRenewalStalledThreshold,
 		patchStatusThreshold: patchStatusThreshold, nodeDiskSpaceThreshold: nodeDiskSpaceThreshold,
 		nodeCPUThreshold: nodeCPUThreshold, nodeMemoryThreshold: nodeMemoryThreshold,
@@ -181,6 +193,21 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 func (e *Engine) SetAutoRollback(st AutoRollbackStore, nudger deploy.ReconcileNudger) {
 	e.autoRollback = st
 	e.autoRollbackNudger = nudger
+}
+
+// SetSLOBurnAutoRollback wires SLO-burn auto-rollback into e: once set, a
+// KindSLOBurn rule that transitions to firing, or stays firing across a
+// desired-image change, checks its app's own AutoRollbackOnSLOBurn mode
+// and acts accordingly (MaybeAutoRollbackOnSLOBurn,
+// slo_burn_rollback.go). A setter rather than a NewEngine parameter, and
+// history a separate argument from st, for the same reasons SetAutoRollback
+// already documents plus one more: st and history are always two
+// different *DB instances in this codebase (store.DB vs alerting.DB, see
+// alerting.DB's own doc comment on why they're separate databases).
+func (e *Engine) SetSLOBurnAutoRollback(st SLOAutoRollbackStore, nudger deploy.ReconcileNudger, history SLOBurnHistoryRecorder) {
+	e.sloAutoRollback = st
+	e.sloAutoRollbackNudger = nudger
+	e.sloAutoRollbackHistory = history
 }
 
 // SetControlPlaneBackups enables kind=control_plane_backup_stale rules. It is
@@ -401,6 +428,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 			if r.Kind == KindCrashloop && e.autoRollback != nil {
 				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
 			}
+			if r.Kind == KindSLOBurn && e.sloAutoRollback != nil {
+				MaybeAutoRollbackOnSLOBurn(ctx, e.sloAutoRollback, e.sloAutoRollbackHistory, e.sloAutoRollbackNudger, e.sloAutoRollbackTracker, next, sloNotice, e.logger)
+			}
 		case becameResolved:
 			if r.Kind == KindSLOBurn {
 				e.sloForget(r.ID)
@@ -424,6 +454,14 @@ func (e *Engine) Tick(ctx context.Context) error {
 			// avoids a store round trip for every other still-firing rule.
 			if r.Kind == KindCrashloop && e.autoRollback != nil && e.autoRollbackTracker.armed(next.ResourceID) {
 				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
+			}
+			// Same reasoning as the crashloop check above: a still-firing
+			// SLO-burn rule sends no repeat notification, but a second,
+			// genuinely different bad deploy inside the same firing
+			// episode never produces its own becameFiring transition, so
+			// this still needs a chance to re-examine the rule each tick.
+			if r.Kind == KindSLOBurn && e.sloAutoRollback != nil && e.sloAutoRollbackTracker.armed(next.ResourceID) {
+				MaybeAutoRollbackOnSLOBurn(ctx, e.sloAutoRollback, e.sloAutoRollbackHistory, e.sloAutoRollbackNudger, e.sloAutoRollbackTracker, next, sloNotice, e.logger)
 			}
 		}
 	}

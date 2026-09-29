@@ -474,6 +474,19 @@ type DesiredService struct {
 	// this field: only SetServiceAutoRollbackOnCrashloop does.
 	AutoRollbackOnCrashloop bool
 
+	// AutoRollbackOnSLOBurn opts this app into automatic rollback on a
+	// KindSLOBurn alert rule (migrations/0251), one of the
+	// AutoRollbackSLOBurn* constants below. "" behaves like
+	// AutoRollbackSLOBurnOff, the same off-by-default shape
+	// AutoRollbackOnCrashloop already establishes, but as a mode rather
+	// than a bool: auto mirrors AutoRollbackOnCrashloop's own immediate
+	// rollback, dry_run only records what would have happened, and
+	// pause_for_human opens a pending DeployApproval for a human to
+	// decide instead of deploying directly. Like AutoRollbackOnCrashloop,
+	// SaveDesiredService never writes this field: only
+	// SetServiceAutoRollbackOnSLOBurn does.
+	AutoRollbackOnSLOBurn string
+
 	// ExecEnabled gates POST /apps/{name}/exec and GET
 	// /apps/{name}/terminal (migrations/0112_service_exec_enabled.sql,
 	// internal/api/exec.go and terminal.go): both check this in addition
@@ -487,6 +500,15 @@ type DesiredService struct {
 	// SetServiceExecEnabled does.
 	ExecEnabled bool
 }
+
+// AutoRollbackSLOBurn* are DesiredService.AutoRollbackOnSLOBurn's valid
+// values.
+const (
+	AutoRollbackSLOBurnOff           = "off"
+	AutoRollbackSLOBurnAuto          = "auto"
+	AutoRollbackSLOBurnDryRun        = "dry_run"
+	AutoRollbackSLOBurnPauseForHuman = "pause_for_human"
+)
 
 // DefaultDeployStrategy and DefaultReplicas mirror internal/spec's
 // StrategyBlueGreen/DefaultReplicas exactly (same values), kept as this
@@ -1061,6 +1083,29 @@ func (db *DB) SetServiceAutoRollbackOnCrashloop(ctx context.Context, name string
 	return nil
 }
 
+// SetServiceAutoRollbackOnSLOBurn is the only way
+// auto_rollback_on_slo_burn ever changes, the same "own single-purpose
+// setter, excluded from SaveDesiredService" reasoning
+// SetServiceAutoRollbackOnCrashloop already establishes. mode must be one
+// of the AutoRollbackSLOBurn* constants; the caller (handleSetAutoRollbackSLOBurn)
+// validates that before calling this.
+func (db *DB) SetServiceAutoRollbackOnSLOBurn(ctx context.Context, name, mode string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_services SET auto_rollback_on_slo_burn = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, mode, name)
+	if err != nil {
+		return fmt.Errorf("store: update auto rollback on slo burn for service %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: update auto rollback on slo burn for service %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
+}
+
 // SetServiceExecEnabled is the only way exec_enabled ever changes, the
 // same "own single-purpose setter, excluded from SaveDesiredService"
 // reasoning SetServiceAutoRollbackOnCrashloop and
@@ -1364,7 +1409,7 @@ func (s DesiredService) LocalImageID() string {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref, depends_on"
+const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref, depends_on, auto_rollback_on_slo_burn"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
@@ -1378,7 +1423,7 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                                                             string
 		dependsOnJSON                                                                                                                                                                       string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef, &dependsOnJSON); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef, &dependsOnJSON, &svc.AutoRollbackOnSLOBurn); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String
