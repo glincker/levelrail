@@ -51,6 +51,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /public/status":                         "opt-in public status page, serves only operator-chosen names and statuses, rate limited and cacheable",
 	"GET /public/status.json":                    "JSON form of the opt-in public status page, same whitelisted view",
 	"GET /public/status.rss":                     "RSS feed of operator-authored incidents on the opt-in public status page",
+	"GET /.well-known/jwks.json":                 "pipeline OIDC verification key set, meant to be fetched by AWS/GCP/Vault with no session; answers 404 rather than 401 when OIDC is unconfigured (router.go's oidcJWKS is nil), which leaks nothing either",
 }
 
 // readOnlyMayMutate lists mutating routes a read-only token may call:
