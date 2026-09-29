@@ -132,9 +132,15 @@ type Config struct {
 	// OIDCIssuer mints a job's oidc token; nil means opting a job into
 	// oidc fails with a clear error rather than silently getting none.
 	OIDCIssuer OIDCIssuer
-	Logger     *slog.Logger
-	Now        func() time.Time
-	NewID      func() string
+	// OIDCRequestURL is the base URL for the runtime "request a token
+	// for this audience" endpoint (Engine.OIDCTokenRequestHandler),
+	// reachable from inside a job's own container, never externally.
+	// Empty means a job that lists more than one oidc.audiences entry
+	// fails with a clear error instead of getting an unreachable URL.
+	OIDCRequestURL string
+	Logger         *slog.Logger
+	Now            func() time.Time
+	NewID          func() string
 
 	// NamePrefix namespaces containers and volumes (the brand short name).
 	NamePrefix string

@@ -7,6 +7,7 @@ import {
   StackIcon,
   ShieldCheckIcon,
   GlobeIcon,
+  InfoIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -48,13 +49,19 @@ export const Route = createFileRoute('/settings/system-status')({
 const INFRASTRUCTURE_CODES = [
   'docker',
   'disk_space',
+  'disk_io_latency',
   'data_dir_writable',
   'ram',
   'cpu',
 ]
 const INFRASTRUCTURE_CODES_AFTER_PORTS = ['database']
 const SECURITY_CODES = ['firewall', 'master_key_rotation', 'stale_secrets']
-const NETWORK_CODES = ['public_ip', 'acme_reachability', 'clock_skew']
+const NETWORK_CODES = [
+  'public_ip',
+  'acme_reachability',
+  'clock_skew',
+  'agent_advertise_reachability',
+]
 
 // PORT_CHECK_CODE matches port_<n> for whatever ports this instance's
 // ingress is actually configured on (APP_INGRESS_HTTP_ADDR/
@@ -65,6 +72,10 @@ const PORT_CHECK_CODE = /^port_\d+$/
 // way PORT_CHECK_CODE matches port_<n>, for whatever ports this
 // instance's ingress is configured on.
 const EXTERNAL_REACHABILITY_CODE = /^external_reachability_\d+$/
+// REGISTRY_REACHABILITY_CODE matches registry_reachability_<host> for
+// however many registry hosts this instance has configured (external
+// credentials, the built-in registry, or the Docker Hub default).
+const REGISTRY_REACHABILITY_CODE = /^registry_reachability_/
 
 function groupChecks(checks: DoctorCheck[]) {
   const byCode = new Map(checks.map((c) => [c.code, c]))
@@ -76,6 +87,9 @@ function groupChecks(checks: DoctorCheck[]) {
   const externalReachabilityChecks = checks.filter((c) =>
     EXTERNAL_REACHABILITY_CODE.test(c.code),
   )
+  const registryReachabilityChecks = checks.filter((c) =>
+    REGISTRY_REACHABILITY_CODE.test(c.code),
+  )
   const infrastructure = [
     ...take(INFRASTRUCTURE_CODES),
     ...portChecks,
@@ -85,7 +99,12 @@ function groupChecks(checks: DoctorCheck[]) {
   const network = [
     ...take(['public_ip']),
     ...externalReachabilityChecks,
-    ...take(['acme_reachability', 'clock_skew']),
+    ...registryReachabilityChecks,
+    ...take([
+      'acme_reachability',
+      'clock_skew',
+      'agent_advertise_reachability',
+    ]),
   ]
   const seen = new Set([
     ...INFRASTRUCTURE_CODES,
@@ -94,6 +113,7 @@ function groupChecks(checks: DoctorCheck[]) {
     ...NETWORK_CODES,
     ...portChecks.map((c) => c.code),
     ...externalReachabilityChecks.map((c) => c.code),
+    ...registryReachabilityChecks.map((c) => c.code),
   ])
   const other = checks.filter((c) => !seen.has(c.code))
   return { infrastructure, security, network, other }
@@ -197,6 +217,23 @@ function SystemStatusPage() {
       </div>
 
       <SummaryBanner ok={data.ok} checks={data.checks} />
+
+      <Alert>
+        <InfoIcon />
+        <AlertTitle>Ingress is a single point of failure</AlertTitle>
+        <AlertDescription>
+          Domain-based HTTPS routing runs embedded in this control plane
+          process. If it crashes or restarts, routing is down until it comes
+          back up, even though already-running containers keep serving traffic
+          on their own ports the whole time.{' '}
+          <HelpLink
+            path="/resilience"
+            label="What survives a control plane crash"
+            variant="inline"
+          />
+          .
+        </AlertDescription>
+      </Alert>
 
       <CheckGroupCard
         title="Infrastructure"

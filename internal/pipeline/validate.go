@@ -128,8 +128,16 @@ func semanticIssues(def *Definition, root *yaml.Node) []Issue {
 		if _, err := job.Matrix.Expand(); err != nil {
 			add(jp+".matrix", err.Error())
 		}
-		if job.OIDC != nil && strings.TrimSpace(job.OIDC.Audience) == "" {
-			add(jp+".oidc.audience", "audience is required when oidc is set")
+		if job.OIDC != nil {
+			hasAudience := strings.TrimSpace(job.OIDC.Audience) != ""
+			for _, a := range job.OIDC.Audiences {
+				if strings.TrimSpace(a) != "" {
+					hasAudience = true
+				}
+			}
+			if !hasAudience {
+				add(jp+".oidc.audience", "audience or audiences is required when oidc is set")
+			}
 		}
 		issues = append(issues, stepIssues(root, jp, job)...)
 	}

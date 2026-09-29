@@ -210,14 +210,21 @@ type CacheSpec struct {
 	Path string `yaml:"path" json:"path"`
 }
 
-// OIDCRequest opts a job into a minted OIDC token, injected as the
-// LEVELRAIL_OIDC_TOKEN env var, for cloud provider federation (AWS IAM,
-// GCP workload identity, Vault JWT auth) without a long-lived credential.
-// See docs/pipelines-oidc.md.
+// OIDCRequest opts a job into minted OIDC tokens for cloud provider
+// federation (AWS IAM, GCP workload identity, Vault JWT auth) without a
+// long-lived credential. See docs/pipelines-oidc.md.
 type OIDCRequest struct {
 	// Audience is the token's "aud" claim, the value the cloud
 	// provider's trust policy expects (e.g. "sts.amazonaws.com").
-	Audience string `yaml:"audience" json:"audience"`
+	// Pre-minted at job start and injected as PIPELINE_OIDC_TOKEN.
+	Audience string `yaml:"audience,omitempty" json:"audience,omitempty"`
+	// Audiences lists every additional audience this job may request a
+	// token for at runtime, one at a time, via PIPELINE_OIDC_REQUEST_URL
+	// (Audience is always implicitly allowed too). A job that needs
+	// tokens for more than one audience in the same run (e.g. one step
+	// calling AWS, another GCP) uses this instead of pre-minting every
+	// combination up front.
+	Audiences []string `yaml:"audiences,omitempty" json:"audiences,omitempty"`
 }
 
 // Job is a group of steps run in one container on one node.

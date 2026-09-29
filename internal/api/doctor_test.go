@@ -83,10 +83,10 @@ func TestHandleSystemDoctor_NothingConfigured(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got.Checks) != 21 {
-		t.Fatalf("len(Checks) = %d, want 21", len(got.Checks))
+	if len(got.Checks) != 24 {
+		t.Fatalf("len(Checks) = %d, want 24", len(got.Checks))
 	}
-	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable", "master_key_rotation", "secret_binding", "stale_secrets", "control_plane_backup", "control_plane_dr", "public_ip", "external_reachability_80", "external_reachability_443", "clock_skew"} {
+	for _, code := range []string{"docker", "database", "disk_space", "data_dir_writable", "master_key_rotation", "secret_binding", "stale_secrets", "control_plane_backup", "control_plane_dr", "public_ip", "external_reachability_80", "external_reachability_443", "clock_skew", "agent_advertise_reachability"} {
 		if c := doctorCheckByCode(t, got.Checks, code); c.Status != doctorStatusUnknown {
 			t.Errorf("%s status = %q, want %q (nothing configured / offline)", code, c.Status, doctorStatusUnknown)
 		}
@@ -96,6 +96,11 @@ func TestHandleSystemDoctor_NothingConfigured(t *testing.T) {
 	// unreachable directory URL is a heads-up, not a real problem.
 	if c := doctorCheckByCode(t, got.Checks, "acme_reachability"); c.Status != doctorStatusWarn {
 		t.Errorf("acme_reachability status = %q, want %q (offline, but ACME isn't enabled)", c.Status, doctorStatusWarn)
+	}
+	// No registry credential and no built-in registry configured, so this
+	// falls back to the Docker Hub default and, offline, degrades to warn.
+	if c := doctorCheckByCode(t, got.Checks, "registry_reachability_"+defaultDoctorRegistryHost); c.Status != doctorStatusWarn {
+		t.Errorf("registry_reachability status = %q, want %q (offline, no registry configured)", c.Status, doctorStatusWarn)
 	}
 }
 

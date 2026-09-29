@@ -94,6 +94,18 @@ The `external_reachability_80`/`external_reachability_443` checks dial this host
 
 The `ram`/`cpu` checks warn when this host is below the recommended minimums (`APP_DOCTOR_MIN_RAM_BYTES`/`APP_DOCTOR_MIN_CPU_COUNT`, defaults 1GiB and 2 cores). This is a heads-up, not a hard requirement: a single small app can run fine below it. If you're seeing real slowness or OOM kills, add RAM/CPU or reduce the number of apps and concurrent builds on this box.
 
+## Disk write latency is high
+
+The `disk_io_latency` check writes and fsyncs a 1MiB file to the data directory and warns when that took longer than `APP_DOCTOR_DISK_IO_WARN_MS` (default 200ms). Free space (`disk_space`) says nothing about this: a disk can have plenty of room left and still write slowly enough to make every deploy, log write, and SQLite commit feel stuck. Check for a saturated disk with `iostat`/`iotop`, a network volume under load, or a nearly-full disk whose remaining space is fragmented.
+
+## Agent advertise host is unreachable
+
+The `agent_advertise_reachability` check confirms `APP_AGENT_ADVERTISE_HOST`, the address a remote agent dials to reach this control plane, is actually reachable. It fails when that address is still the loopback default (`127.0.0.1`) while one or more nodes are enrolled, since a remote agent can never dial its own machine's loopback address to reach a different host. It warns when the configured address doesn't accept a connection from this host itself. Set `APP_AGENT_ADVERTISE_HOST` to this control plane's real, reachable hostname or IP before enrolling a second node, restart, then re-enroll or re-issue certificates for any node that joined before the fix.
+
+## Registry reachability failed
+
+The `registry_reachability_<host>` checks probe outbound HTTPS connectivity to every registry this control plane actually pulls or pushes against: each external registry credential's host, the built-in registry when enabled, and Docker Hub (`registry-1.docker.io`) when neither is configured. A warning here means builds and deploys against that specific registry will fail with a pull or push error until the connection is fixed (egress firewall rules, `HTTP(S)_PROXY` settings, or the registry itself being down).
+
 ## Control plane backup is stale
 
 The `control_plane_backup` check warns when the newest control plane snapshot is more than 3 days old. Scheduled snapshots may be failing (check the server log for `scheduled control plane backup failed`, often a full disk) or the server restarts more often than `APP_CONTROL_PLANE_BACKUP_INTERVAL` (default 24h). Take one now with `levelrail-cli control-plane-backups create`. See [Control plane backup and restore](/control-plane-backup).

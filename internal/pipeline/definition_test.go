@@ -86,7 +86,7 @@ func TestValidateRejects(t *testing.T) {
 		{"deploy w/o promote args", "version: 1\njobs:\n  a:\n    steps:\n      - uses: promote\n", "requires with.from"},
 		{"unknown template", "version: 1\njobs:\n  a:\n    image: x\n    steps:\n      - uses: template/nope\n", "unknown template"},
 		{"unknown stage", "version: 1\nstages: [a]\njobs:\n  j:\n    stage: b\n    image: x\n    steps:\n      - run: x\n", "not listed in stages"},
-		{"oidc without audience", "version: 1\njobs:\n  a:\n    image: x\n    oidc: {}\n    steps:\n      - run: x\n", "audience is required"},
+		{"oidc without audience", "version: 1\njobs:\n  a:\n    image: x\n    oidc: {}\n    steps:\n      - run: x\n", "audience or audiences is required"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

@@ -20,13 +20,14 @@ import (
 // preview deploy instead of hanging it.
 const isolatedRoleExecTimeout = 15 * time.Second
 
-// provisionDatabaseIsolations provisions an isolated Postgres role for
-// every databases entry with IsolatedInPreviews set (and
-// EphemeralInPreviews not set: that flag already gets its own instance
-// with its own credentials, so isolation is redundant there). Best
-// effort per entry, matching provisionEphemeralDatabases' own "one
-// broken resource must not block others" reasoning: a failure is logged
-// and skipped, never fails the whole preview deploy.
+// provisionDatabaseIsolations provisions an isolated credential (a
+// Postgres role, or a Redis ACL user) for every databases entry with
+// IsolatedInPreviews set (and EphemeralInPreviews not set: that flag
+// already gets its own instance with its own credentials, so isolation
+// is redundant there). Best effort per entry, matching
+// provisionEphemeralDatabases' own "one broken resource must not block
+// others" reasoning: a failure is logged and skipped, never fails the
+// whole preview deploy.
 func (rt *Router) provisionDatabaseIsolations(ctx context.Context, previewEnvironmentID, previewName string, databases map[string]spec.Database) {
 	for key, d := range databases {
 		if d.EphemeralInPreviews || !d.IsolatedInPreviews {
@@ -55,8 +56,8 @@ func (rt *Router) provisionOneDatabaseIsolation(ctx context.Context, previewEnvi
 	if err != nil {
 		return fmt.Errorf("load database %q: %w", sourceKey, err)
 	}
-	if desired.Engine != store.EnginePostgres {
-		return fmt.Errorf("database %q: isolatedInPreviews only supports engine %q, got %q", sourceKey, store.EnginePostgres, desired.Engine)
+	if desired.Engine != store.EnginePostgres && desired.Engine != store.EngineRedis {
+		return fmt.Errorf("database %q: isolatedInPreviews only supports engines %q and %q, got %q", sourceKey, store.EnginePostgres, store.EngineRedis, desired.Engine)
 	}
 	if rt.execRuntime == nil || rt.secrets == nil {
 		return fmt.Errorf("database %q: isolation needs both exec and secrets configured on this control plane", sourceKey)
@@ -68,8 +69,15 @@ func (rt *Router) provisionOneDatabaseIsolation(ctx context.Context, previewEnvi
 		return fmt.Errorf("generate role password: %w", err)
 	}
 
-	if err := rt.execIsolatedRoleSQL(ctx, sourceKey, desired.NodeID, database.CreateIsolatedRoleSQL(role, desired.Name, password)); err != nil {
-		return fmt.Errorf("create role %q on database %q: %w", role, sourceKey, err)
+	switch desired.Engine {
+	case store.EngineRedis:
+		if err := rt.execIsolatedRedisACLCommand(ctx, sourceKey, desired.NodeID, database.CreateIsolatedRedisACLCommand(role, password)); err != nil {
+			return fmt.Errorf("create ACL user %q on database %q: %w", role, sourceKey, err)
+		}
+	default:
+		if err := rt.execIsolatedRoleSQL(ctx, sourceKey, desired.NodeID, database.CreateIsolatedRoleSQL(role, desired.Name, password)); err != nil {
+			return fmt.Errorf("create role %q on database %q: %w", role, sourceKey, err)
+		}
 	}
 
 	secretEnvKey := "password"
@@ -100,14 +108,15 @@ func (rt *Router) provisionOneDatabaseIsolation(ctx context.Context, previewEnvi
 	return nil
 }
 
-// teardownPreviewDatabaseIsolations drops every isolated role
-// previewEnvironmentID owns, then deletes its own tracking row, in that
-// order so a crash always leaves something concrete behind for a retry
-// to find: the tracking row survives (with status teardown_failed and a
-// reason) until the role is actually gone. Returns the role name of any
-// isolation left undeleted, for teardownPreviewRecordReason to fold into
-// its own partial-failure reporting; nil means every isolation (zero or
-// more) was fully torn down.
+// teardownPreviewDatabaseIsolations drops every isolated role or ACL
+// user previewEnvironmentID owns, then deletes its own tracking row, in
+// that order so a crash always leaves something concrete behind for a
+// retry to find: the tracking row survives (with status
+// teardown_failed and a reason) until the role/user is actually gone.
+// Returns the role name of any isolation left undeleted, for
+// teardownPreviewRecordReason to fold into its own partial-failure
+// reporting; nil means every isolation (zero or more) was fully torn
+// down.
 func (rt *Router) teardownPreviewDatabaseIsolations(ctx context.Context, previewEnvironmentID string) []string {
 	isolations, err := rt.previewEnvironments.ListPreviewDatabaseIsolationsByPreview(ctx, previewEnvironmentID)
 	if err != nil {
@@ -130,18 +139,26 @@ func (rt *Router) teardownPreviewDatabaseIsolations(ctx context.Context, preview
 	return failed
 }
 
-// teardownOneDatabaseIsolation drops p's role (if the database it lived
-// on still exists; one already deleted is treated as the role being
-// gone too), deletes its secret, then its own tracking row. Idempotent:
-// a database, role, or secret already gone at any step is success, not
-// failure, so a retried teardown always converges.
+// teardownOneDatabaseIsolation drops p's role or ACL user (if the
+// database it lived on still exists; one already deleted is treated as
+// the role/user being gone too), deletes its secret, then its own
+// tracking row. Idempotent: a database, role, user, or secret already
+// gone at any step is success, not failure, so a retried teardown
+// always converges.
 func (rt *Router) teardownOneDatabaseIsolation(ctx context.Context, p store.PreviewDatabaseIsolation) error {
 	desired, err := rt.databases.GetDesiredDatabase(ctx, p.DatabaseName)
 	if err != nil && !errors.Is(err, store.ErrDatabaseNotFound) {
 		return fmt.Errorf("load database: %w", err)
 	}
 	if err == nil && rt.execRuntime != nil {
-		if execErr := rt.execIsolatedRoleSQL(ctx, p.DatabaseName, desired.NodeID, database.DropIsolatedRoleSQL(p.RoleName, p.DatabaseName)); execErr != nil {
+		var execErr error
+		switch desired.Engine {
+		case store.EngineRedis:
+			execErr = rt.execIsolatedRedisACLCommand(ctx, p.DatabaseName, desired.NodeID, database.DropIsolatedRedisACLCommand(p.RoleName))
+		default:
+			execErr = rt.execIsolatedRoleSQL(ctx, p.DatabaseName, desired.NodeID, database.DropIsolatedRoleSQL(p.RoleName, p.DatabaseName))
+		}
+		if execErr != nil {
 			return fmt.Errorf("drop role: %w", execErr)
 		}
 	}
@@ -171,6 +188,25 @@ func previewDatabaseIsolationSecretService(previewEnvironmentID, sourceKey strin
 // internal/backup/pitr_runner.go already uses for its own read-only
 // exec), so no admin credential needs resolving here.
 func (rt *Router) execIsolatedRoleSQL(ctx context.Context, dbName, nodeID, sql string) error {
+	cmd := []string{"sh", "-c", `exec psql --no-password -U "$POSTGRES_USER" -v ON_ERROR_STOP=1 -c ` + shellSingleQuote(sql)}
+	return rt.execIsolationCommand(ctx, dbName, nodeID, cmd, "psql")
+}
+
+// execIsolatedRedisACLCommand runs a redis-cli ACL command (see
+// database.CreateIsolatedRedisACLCommand/DropIsolatedRedisACLCommand)
+// against dbName's running container. No shell involved: redis-cli
+// takes its ACL rule tokens as plain argv, unlike psql's single -c SQL
+// script argument execIsolatedRoleSQL needs a shell to build.
+func (rt *Router) execIsolatedRedisACLCommand(ctx context.Context, dbName, nodeID string, cmd []string) error {
+	return rt.execIsolationCommand(ctx, dbName, nodeID, cmd, "redis-cli")
+}
+
+// execIsolationCommand is the exec plumbing execIsolatedRoleSQL and
+// execIsolatedRedisACLCommand share: resolve the node's runtime, find
+// dbName's running container, run cmd against it, and read back its
+// output up to execMaxOutputBytes. toolName only labels a non-zero-exit
+// error.
+func (rt *Router) execIsolationCommand(ctx context.Context, dbName, nodeID string, cmd []string, toolName string) error {
 	runtime, err := rt.execRuntime(nodeID)
 	if err != nil {
 		return fmt.Errorf("resolve node runtime: %w", err)
@@ -186,7 +222,6 @@ func (rt *Router) execIsolatedRoleSQL(ctx context.Context, dbName, nodeID, sql s
 		return fmt.Errorf("database %q has no running container", dbName)
 	}
 
-	cmd := []string{"sh", "-c", `exec psql --no-password -U "$POSTGRES_USER" -v ON_ERROR_STOP=1 -c ` + shellSingleQuote(sql)}
 	execCtx, execCancel := context.WithTimeout(ctx, isolatedRoleExecTimeout)
 	defer execCancel()
 	rc, err := runtime.Exec(execCtx, state.ID, cmd)
@@ -199,7 +234,7 @@ func (rt *Router) execIsolatedRoleSQL(ctx context.Context, dbName, nodeID, sql s
 	if _, err := io.Copy(capped, rc); err != nil {
 		var execErr *docker.ExecExitError
 		if errors.As(err, &execErr) {
-			return fmt.Errorf("psql exited %d: %s", execErr.ExitCode, execErr.Stderr)
+			return fmt.Errorf("%s exited %d: %s", toolName, execErr.ExitCode, execErr.Stderr)
 		}
 		return fmt.Errorf("read exec output: %w", err)
 	}

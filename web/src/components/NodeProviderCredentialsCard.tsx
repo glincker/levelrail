@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { StatusPill } from './kit/StatusPill'
+import { HelpLink } from '@/components/HelpLink'
 import {
   useNodeProviders,
   useSetNodeProviderCredential,
@@ -160,6 +161,20 @@ function ProviderForm({ provider }: { provider: NodeProviderResource }) {
             {provider.has_token
               ? 'A token is already stored. Paste a new one to replace it.'
               : 'Never echoed back once saved.'}
+            {provider.provider === 'azure' ? (
+              <>
+                {' '}
+                Prefer workload identity federation over a long-lived
+                client_secret? Use a &quot;federated_token_file&quot; key
+                instead, see{' '}
+                <HelpLink
+                  path="/node-provisioning#azure-workload-identity-federation"
+                  label="Azure workload identity federation"
+                  variant="inline"
+                />
+                .
+              </>
+            ) : null}
           </FieldDescription>
         </Field>
       ) : null}

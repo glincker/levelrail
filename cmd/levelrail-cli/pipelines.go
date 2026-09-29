@@ -46,6 +46,7 @@ func pipelinesUsage(prog string) string {
   %[1]s pipelines sync <app> [--repo-truth=true|false] [flags]   sync pipeline files from the repository now, or set repository as source of truth
   %[1]s pipelines triggers <app> [flags]                   why recent git events did or did not start runs
   %[1]s pipelines oidc [flags]                             whether pipeline jobs can mint OIDC tokens, and the JWKS URL to wire to a cloud provider
+  %[1]s pipelines oidc rotate-key [--retire-after D] [flags]   rotate the OIDC signing key; the old key stays published in the JWKS until it retires
 
 Pipelines live in the control plane per app, or in the repository under a
 pipeline directory. Run "%[1]s pipelines <subcommand> -h" for its flags.

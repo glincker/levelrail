@@ -655,6 +655,24 @@ func WithDoctorMinCPUCount(n int) Option {
 	return func(rt *Router) { rt.doctorMinCPUCount = n }
 }
 
+// WithDoctorAgentAdvertise tells the agent_advertise_reachability check
+// which address a real agent would dial: APP_AGENT_ADVERTISE_HOST and the
+// port cmd/levelrail/main.go's own agentAddr() binds the agent gRPC
+// service on. Empty host or zero port makes that check report unknown.
+func WithDoctorAgentAdvertise(host string, port int) Option {
+	return func(rt *Router) {
+		rt.doctorAgentAdvertiseHost = host
+		rt.doctorAgentAdvertisePort = port
+	}
+}
+
+// WithDoctorDiskIOWarnLatency overrides the write+fsync latency the
+// disk_io_latency check warns above, in place of
+// defaultDoctorDiskIOWarnLatency. Zero keeps that default.
+func WithDoctorDiskIOWarnLatency(d time.Duration) Option {
+	return func(rt *Router) { rt.doctorDiskIOWarnLatency = d }
+}
+
 // WithDockerPruner enables POST /api/v1/system/prune. Without one
 // configured (the default), that route returns 501, the same
 // "not configured" shape WithBuilder's own absence produces.

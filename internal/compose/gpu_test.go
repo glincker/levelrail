@@ -51,3 +51,36 @@ func TestToDesiredServicesGPU(t *testing.T) {
 		})
 	}
 }
+
+func TestToDesiredServicesReplicas(t *testing.T) {
+	tests := []struct {
+		name    string
+		deploy  string
+		want    int
+		wantErr bool
+	}{
+		{"no deploy block", "", 0, false},
+		{"replicas 3", "    deploy:\n      replicas: 3\n", 3, false},
+		{"replicas unset defers to store default", "    deploy:\n      replicas: 0\n", 0, false},
+		{"negative replicas rejected", "    deploy:\n      replicas: -1\n", 0, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			src := "services:\n  m:\n    image: x:1\n" + tt.deploy
+			f, err := Parse([]byte(src))
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			got, _, err := ToDesiredServices("app", f)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err != nil {
+				return
+			}
+			if got[0].Replicas != tt.want {
+				t.Fatalf("replicas = %d, want %d", got[0].Replicas, tt.want)
+			}
+		})
+	}
+}

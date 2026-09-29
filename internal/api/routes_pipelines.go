@@ -29,6 +29,7 @@ func (rt *Router) registerPipelineRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/pipelines/filters", rt.requireAbility(AbilityRead, rt.handlePipelineFilters))
 	mux.HandleFunc("GET /api/v1/pipelines/schema", rt.requireAbility(AbilityRead, rt.handlePipelineSchema))
 	mux.HandleFunc("GET /api/v1/pipelines/oidc", rt.requireAbility(AbilityRead, rt.handleGetPipelineOIDCInfo))
+	mux.HandleFunc("POST /api/v1/pipelines/oidc/rotate-key", rt.requireAbility(AbilityRoot, rt.handleRotatePipelineOIDCKey))
 }
 
 // WithPipelines enables the pipeline endpoints. runner may be nil, in which

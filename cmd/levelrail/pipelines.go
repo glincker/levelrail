@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -74,9 +76,10 @@ func startPipelines(ctx context.Context, logger *slog.Logger, b *brand.Brand, db
 		ReportTimeout:   envDuration("APP_GIT_STATUS_TIMEOUT", 0),
 	}
 	apiRouter.SetForgeDeployments(db)
+	oidcRequestAddr := ""
 	if secretsManager != nil {
 		cfg.Secrets = secretsManager
-		wireOIDC(&cfg, apiRouter, secretsManager, logger)
+		oidcRequestAddr = wireOIDC(ctx, &cfg, apiRouter, secretsManager, client, logger)
 	}
 	engine := pipeline.New(cfg)
 	apiRouter.SetPipelines(db, engine)
@@ -84,6 +87,9 @@ func startPipelines(ctx context.Context, logger *slog.Logger, b *brand.Brand, db
 	apiRouter.SetPipelineSync(pipeline.NewSyncer(pipeline.SyncConfig{
 		Store: db, Source: acts, Fetcher: pipeline.GitFetcher{}, BrandName: b.ShortName, Logger: logger,
 	}), db)
+	if oidcRequestAddr != "" {
+		go serveOIDCTokenRequests(ctx, oidcRequestAddr, engine, logger)
+	}
 
 	go func() {
 		if err := engine.Run(ctx, envDuration("APP_PIPELINE_TICK_INTERVAL", 2*time.Second)); err != nil && !errors.Is(err, context.Canceled) {
@@ -324,19 +330,28 @@ func (a *pipelineActions) Rollback(ctx context.Context, service string, log func
 // with no real, externally reachable issuer URL would only mislead an
 // operator into thinking cloud federation works when AWS, GCP, or Vault
 // could never actually fetch the JWKS to verify it.
-func wireOIDC(cfg *pipeline.Config, apiRouter *api.Router, secretsManager *secrets.Manager, logger *slog.Logger) {
+//
+// It also resolves the address for the runtime "request a token for
+// this audience" endpoint (a job needing more than one audience calls
+// this instead of getting every combination pre-minted), returned so
+// the caller can start the actual listener once the Engine exists. Empty
+// means that endpoint is unavailable this run (oidc unconfigured, or the
+// bridge gateway lookup failed): a job listing oidc.audiences then fails
+// clearly instead of getting an unreachable URL.
+func wireOIDC(ctx context.Context, cfg *pipeline.Config, apiRouter *api.Router, secretsManager *secrets.Manager, client *docker.Client, logger *slog.Logger) string {
 	issuerURL := oidcIssuerURL()
 	if issuerURL == "" {
-		return
+		return ""
 	}
 	mgr, err := oidc.NewManager(oidc.Config{
-		KeyStore:  secretsManager,
-		IssuerURL: issuerURL,
-		TTL:       envDuration("APP_OIDC_TOKEN_TTL", 0),
+		KeyStore:       secretsManager,
+		IssuerURL:      issuerURL,
+		TTL:            envDuration("APP_OIDC_TOKEN_TTL", 0),
+		KeyRetireGrace: envDuration("APP_OIDC_KEY_RETIRE_GRACE", 0),
 	})
 	if err != nil {
 		logger.Warn("pipeline: oidc not configured", slog.String("error", err.Error()))
-		return
+		return ""
 	}
 	cfg.OIDCIssuer = func(ctx context.Context, req pipeline.OIDCTokenRequest) (string, error) {
 		return mgr.IssueToken(ctx, oidc.TokenRequest{
@@ -344,6 +359,52 @@ func wireOIDC(cfg *pipeline.Config, apiRouter *api.Router, secretsManager *secre
 		})
 	}
 	apiRouter.SetOIDCManager(mgr, issuerURL, oidcJWKSRateLimit())
+	apiRouter.SetOIDCRotator(mgr)
+
+	gateway, err := client.BridgeGatewayIP(ctx)
+	if err != nil {
+		logger.Warn("pipeline: oidc runtime token request endpoint not configured, jobs listing oidc.audiences will fail clearly instead of getting an unreachable URL",
+			slog.String("error", err.Error()))
+		return ""
+	}
+	addr := net.JoinHostPort(gateway, strconv.Itoa(oidcTokenRequestPort()))
+	cfg.OIDCRequestURL = "http://" + addr + "/oidc/token"
+	return addr
+}
+
+// defaultOIDCTokenRequestPort is where the runtime OIDC token request
+// endpoint listens on the Docker bridge gateway IP, reachable from every
+// job container attached to the default bridge network and nowhere
+// else. An unprivileged port, no relation to any other service in this
+// codebase. Overridable via APP_OIDC_TOKEN_REQUEST_PORT.
+const defaultOIDCTokenRequestPort = 9095
+
+func oidcTokenRequestPort() int {
+	if v, err := strconv.Atoi(os.Getenv("APP_OIDC_TOKEN_REQUEST_PORT")); err == nil && v > 0 {
+		return v
+	}
+	return defaultOIDCTokenRequestPort
+}
+
+// serveOIDCTokenRequests runs the runtime OIDC token request endpoint
+// (internal/pipeline.Engine.OIDCTokenRequestHandler) on addr until ctx
+// is cancelled. The bearer token a job presents, not network placement
+// alone, is what actually scopes access to that job's own allowed
+// audiences; addr being the bridge gateway IP only keeps it off any
+// externally reachable interface.
+func serveOIDCTokenRequests(ctx context.Context, addr string, engine *pipeline.Engine, logger *slog.Logger) {
+	mux := http.NewServeMux()
+	mux.Handle("/oidc/token", engine.OIDCTokenRequestHandler())
+	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(shutdownCtx)
+	}()
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		logger.Error("pipeline: oidc token request server stopped", slog.String("error", err.Error()))
+	}
 }
 
 // oidcJWKSRateLimit reads APP_OIDC_JWKS_RATE_LIMIT_PER_MINUTE; 0 (the

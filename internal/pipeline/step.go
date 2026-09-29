@@ -91,35 +91,91 @@ func (jr *jobRun) stepEnv(ctx context.Context, step Step, sc Scope) (map[string]
 		env[n] = sc.Vars["secrets."+n]
 	}
 	if jr.jd.OIDC != nil {
-		token, err := jr.oidcToken(ctx)
+		if jr.jd.OIDC.Audience != "" {
+			token, err := jr.oidcToken(ctx, jr.jd.OIDC.Audience)
+			if err != nil {
+				return nil, err
+			}
+			env["PIPELINE_OIDC_TOKEN"] = token
+			jr.mask.add(token)
+		}
+		reqURL, reqToken, err := jr.oidcRequestCreds()
 		if err != nil {
 			return nil, err
 		}
-		env["PIPELINE_OIDC_TOKEN"] = token
-		jr.mask.add(token)
+		if reqURL != "" {
+			env["PIPELINE_OIDC_REQUEST_URL"] = reqURL
+			env["PIPELINE_OIDC_REQUEST_TOKEN"] = reqToken
+			jr.mask.add(reqToken)
+		}
 	}
 	return env, nil
 }
 
-// oidcToken mints this job's opted-in OIDC token via the engine's
-// configured OIDCIssuer, or fails clearly when none is configured:
-// a job silently getting no token would surface as a confusing cloud
-// provider auth failure with no clue why.
-func (jr *jobRun) oidcToken(ctx context.Context) (string, error) {
-	if jr.e.cfg.OIDCIssuer == nil {
-		return "", errors.New("job requests an oidc token but no OIDC issuer is configured on this control plane")
-	}
-	token, err := jr.e.cfg.OIDCIssuer(ctx, OIDCTokenRequest{
-		Audience:   jr.jd.OIDC.Audience,
+// oidcTokenReq builds the request template every oidc token this job
+// mints shares, minus the audience itself.
+func (jr *jobRun) oidcTokenReq() OIDCTokenRequest {
+	return OIDCTokenRequest{
 		Subject:    fmt.Sprintf("repo:%s:ref:%s:job:%s", jr.run.AppName, jr.run.Ref, jr.row.Key),
 		Repo:       jr.run.AppName,
 		Ref:        jr.run.Ref,
 		PipelineID: jr.run.PipelineID,
-	})
+	}
+}
+
+// oidcToken mints this job's opted-in OIDC token for audience via the
+// engine's configured OIDCIssuer, or fails clearly when none is
+// configured: a job silently getting no token would surface as a
+// confusing cloud provider auth failure with no clue why.
+func (jr *jobRun) oidcToken(ctx context.Context, audience string) (string, error) {
+	if jr.e.cfg.OIDCIssuer == nil {
+		return "", errors.New("job requests an oidc token but no OIDC issuer is configured on this control plane")
+	}
+	req := jr.oidcTokenReq()
+	req.Audience = audience
+	token, err := jr.e.cfg.OIDCIssuer(ctx, req)
 	if err != nil {
 		return "", fmt.Errorf("mint oidc token: %w", err)
 	}
 	return token, nil
+}
+
+// oidcRequestCreds returns the runtime token request URL and bearer
+// token for this job run, registering them with the engine on first
+// call and reusing the same token for every step after. audiences
+// beyond Audience (Job.OIDC.Audiences) require cfg.OIDCRequestURL to be
+// configured; asking for them with no such endpoint wired fails clearly
+// instead of handing the job an unreachable URL it can't debug from
+// inside a container.
+func (jr *jobRun) oidcRequestCreds() (url, token string, err error) {
+	audiences := oidcAllowedAudiences(jr.jd)
+	if len(audiences) == 0 {
+		return "", "", nil
+	}
+	if len(jr.jd.OIDC.Audiences) > 0 && jr.e.cfg.OIDCRequestURL == "" {
+		return "", "", errors.New("job lists oidc.audiences but no runtime token request endpoint is configured on this control plane")
+	}
+	if jr.e.cfg.OIDCRequestURL == "" {
+		return "", "", nil
+	}
+	jr.mu.Lock()
+	existing := jr.oidcReqToken
+	jr.mu.Unlock()
+	if existing != "" {
+		return jr.e.cfg.OIDCRequestURL, existing, nil
+	}
+	if jr.e.cfg.OIDCIssuer == nil {
+		return "", "", errors.New("job requests an oidc token but no OIDC issuer is configured on this control plane")
+	}
+	reqToken, terr := newOIDCRequestToken()
+	if terr != nil {
+		return "", "", terr
+	}
+	jr.e.oidcRequests.register(reqToken, audiences, jr.oidcTokenReq())
+	jr.mu.Lock()
+	jr.oidcReqToken = reqToken
+	jr.mu.Unlock()
+	return jr.e.cfg.OIDCRequestURL, reqToken, nil
 }
 
 func (jr *jobRun) execContainerStep(ctx context.Context, k int, p plannedStep, step Step) (*int, error) {

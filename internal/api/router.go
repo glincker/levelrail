@@ -381,6 +381,7 @@ type Router struct {
 	oidcJWKS                       OIDCJWKSProvider                 // nil is valid: GET /.well-known/jwks.json returns 404, no pipeline job can mint an oidc token either (internal/pipeline.Config.OIDCIssuer is left unset by cmd wiring in that case)
 	oidcJWKSLimiter                *apiRateLimiter                  // per-IP budget for the unauthenticated JWKS endpoint, set alongside oidcJWKS
 	oidcIssuerURL                  string                           // "" means not configured, set alongside oidcJWKS via SetOIDCManager
+	oidcRotator                    OIDCKeyRotator                   // nil is valid: POST /pipelines/oidc/rotate-key returns 501
 	featureFlags                   FeatureFlagStore                 // always set, same "core Store interface" shape as scheduledTasks above
 	tags                           TagStore                         // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
 	appIntegrations                AppIntegrationStore              // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)
@@ -453,6 +454,13 @@ type Router struct {
 	doctorClockSkewWarnAge time.Duration // 0 means "use defaultDoctorClockSkewWarnAge", set via WithDoctorClockSkewWarnAge
 	doctorMinRAMBytes      int64         // 0 means "use defaultDoctorMinRAMBytes", set via WithDoctorMinRAMBytes
 	doctorMinCPUCount      int           // 0 means "use defaultDoctorMinCPUCount", set via WithDoctorMinCPUCount
+	// doctorAgentAdvertiseHost/doctorAgentAdvertisePort are the
+	// APP_AGENT_ADVERTISE_HOST/APP_AGENT_ADDR-derived address agents dial
+	// to reach this control plane, set via WithDoctorAgentAdvertise. Empty
+	// host/zero port means agent_advertise_reachability reports unknown.
+	doctorAgentAdvertiseHost string
+	doctorAgentAdvertisePort int
+	doctorDiskIOWarnLatency  time.Duration // 0 means "use defaultDoctorDiskIOWarnLatency", set via WithDoctorDiskIOWarnLatency
 
 	cpBackups           ControlPlaneBackupManager // nil is valid: /system/backups routes return 501
 	cpBackupScheduleOff bool                      // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled

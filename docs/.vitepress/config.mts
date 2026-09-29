@@ -32,6 +32,7 @@ const sidebarGroups = [
       { text: 'Master key rotation', link: '/master-key-rotation' },
       { text: 'Control plane backup', link: '/control-plane-backup' },
       { text: 'Disaster recovery', link: '/disaster-recovery' },
+      { text: 'Resilience', link: '/resilience' },
       {
         text: 'Migrating from Coolify, Dokploy, or CapRover',
         link: '/migrating-from-coolify-dokploy-and-caprover',
@@ -48,7 +49,12 @@ const sidebarGroups = [
       { text: 'Observability', link: '/observability' },
       { text: 'Public status page', link: '/status-page' },
       { text: 'Multi-node', link: '/multi-node' },
+      { text: 'Multi-node quickstart', link: '/multi-node-quickstart' },
       { text: 'Node provisioning', link: '/node-provisioning' },
+      {
+        text: 'Multi-cloud provisioning quickstart',
+        link: '/multi-cloud-provisioning',
+      },
       { text: 'AI models', link: '/ai-models' },
       {
         text: 'Projects and organizations',

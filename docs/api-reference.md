@@ -796,6 +796,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/node-provisions/{id} | AbilityRoot | handleGetNodeProvision |
 | GET | /.well-known/jwks.json | Public | handleOIDCJWKS |
 | GET | /api/v1/pipelines/oidc | AbilityRead | handleGetPipelineOIDCInfo |
+| POST | /api/v1/pipelines/oidc/rotate-key | AbilityRoot | handleRotatePipelineOIDCKey |
 
 ## See also
 

@@ -320,6 +320,9 @@ export function CreateComposeFields({
                     {service.name}
                   </span>
                   <Badge variant="success">Created</Badge>
+                  {service.replicas > 1 ? (
+                    <Badge variant="outline">{service.replicas} replicas</Badge>
+                  ) : null}
                   {service.pull_policy === 'always' ? (
                     <Badge variant="outline">always pulls latest</Badge>
                   ) : null}
