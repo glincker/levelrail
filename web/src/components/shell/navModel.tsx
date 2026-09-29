@@ -44,6 +44,7 @@ export type GlobalTo =
   | '/databases'
   | '/backups'
   | '/nodes'
+  | '/network'
   | '/domains'
   | '/loadbalancers'
   | '/models'
@@ -135,6 +136,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
     label: 'Infrastructure',
     items: [
       { id: 'nodes', label: 'Nodes', to: '/nodes', icon: <HardDrivesIcon /> },
+      {
+        id: 'network',
+        label: 'Network',
+        to: '/network',
+        icon: <ShareNetworkIcon />,
+      },
       { id: 'domains', label: 'Domains', to: '/domains', icon: <GlobeIcon /> },
       {
         id: 'loadbalancers',

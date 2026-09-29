@@ -118,8 +118,13 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
+<<<<<<< HEAD
 ::: details 121 endpoints for app management, deployment, lifecycle control, and diagnostics
 ::: details 121 endpoints for app management, deployment, lifecycle control, and diagnostics
+=======
+::: details 121 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 121 endpoints for app management, deployment, lifecycle control, and diagnostics
+>>>>>>> 4e36aaa1 (feat: add whole-mesh network topology view)
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -448,6 +453,7 @@ Endpoints for:
 | POST | /api/v1/nodes/{id}/mesh/rotate-key | AbilityRoot | handleRotateNodeMeshKey |
 | GET | /api/v1/nodes/resource-usage | AbilityRoot | handleFleetResourceUsage |
 | POST | /api/v1/nodes/provision | AbilityRoot | handleCreateNodeProvision |
+| PUT | /api/v1/nodes/{id}/region | AbilityRoot | handleSetNodeRegion |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -806,6 +812,7 @@ Routes that do not fit an existing group.
 | GET | /.well-known/jwks.json | Public | handleOIDCJWKS |
 | GET | /api/v1/pipelines/oidc | AbilityRead | handleGetPipelineOIDCInfo |
 | POST | /api/v1/pipelines/oidc/rotate-key | AbilityRoot | handleRotatePipelineOIDCKey |
+| GET | /api/v1/network/topology | AbilityRead | handleGetNetworkTopology |
 
 ## See also
 

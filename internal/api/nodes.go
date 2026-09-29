@@ -35,6 +35,9 @@ type NodeStore interface {
 	DeleteNode(ctx context.Context, id string) error
 	SaveNodeJoinToken(ctx context.Context, t store.NodeJoinToken) error
 	UpdateNodeWorkloads(ctx context.Context, id string, acceptsApp, acceptsBuild bool) error
+	// UpdateNodeRegion sets a node's optional location label, backing
+	// PUT /api/v1/nodes/{id}/region.
+	UpdateNodeRegion(ctx context.Context, id, region string) error
 	// SetNodeSchedulable is the cordon/uncordon mutation.
 	SetNodeSchedulable(ctx context.Context, id string, schedulable bool) error
 	RevokeNodeCert(ctx context.Context, id string, now time.Time) error
@@ -54,10 +57,14 @@ type nodeResource struct {
 	// whatever's already running there keeps running, see
 	// store.Node.Schedulable's own doc comment for why this is a
 	// separate field from Status rather than folded into it.
-	Schedulable           bool      `json:"schedulable"`
-	AcceptsAppWorkloads   bool      `json:"accepts_app_workloads"`
-	AcceptsBuildWorkloads bool      `json:"accepts_build_workloads"`
-	CreatedAt             time.Time `json:"created_at"`
+	Schedulable           bool `json:"schedulable"`
+	AcceptsAppWorkloads   bool `json:"accepts_app_workloads"`
+	AcceptsBuildWorkloads bool `json:"accepts_build_workloads"`
+	// Region is the node's optional, free-text location label (migration
+	// 0252), display/grouping metadata only. "" (omitted on the wire)
+	// means unset.
+	Region    string    `json:"region,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
 	// AlertStatus is only populated by handleGetNode (a single-node
 	// fetch), never handleListNodes: it costs a handful of live metrics
 	// queries per kind, which is fine for one node on its own detail page
@@ -106,6 +113,7 @@ func toNodeResource(n store.Node) nodeResource {
 		Schedulable:           n.Schedulable,
 		AcceptsAppWorkloads:   n.AcceptsAppWorkloads,
 		AcceptsBuildWorkloads: n.AcceptsBuildWorkloads,
+		Region:                n.Region,
 		CreatedAt:             n.CreatedAt,
 	}
 }
@@ -300,6 +308,42 @@ func (rt *Router) handleSetNodeWorkloads(w http.ResponseWriter, r *http.Request)
 	n, err := rt.nodes.GetNode(r.Context(), id)
 	if err != nil {
 		rt.logger.Error("api: set node workloads: reload after update failed", slog.String("error", err.Error()), slog.String("node_id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, toNodeResource(*n))
+}
+
+// setNodeRegionRequest is the body PUT /api/v1/nodes/{id}/region expects.
+type setNodeRegionRequest struct {
+	Region string `json:"region"`
+}
+
+// handleSetNodeRegion handles PUT /api/v1/nodes/{id}/region: the only way
+// a node's operator-facing location label changes. Free text, no fixed
+// provider/region list validated against, per store.Node.Region's own doc
+// comment.
+func (rt *Router) handleSetNodeRegion(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	var req setNodeRegionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := rt.nodes.UpdateNodeRegion(r.Context(), id, req.Region); errors.Is(err, store.ErrNodeNotFound) {
+		writeError(w, http.StatusNotFound, "node not found")
+		return
+	} else if err != nil {
+		rt.logger.Error("api: set node region failed", slog.String("error", err.Error()), slog.String("node_id", id))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	n, err := rt.nodes.GetNode(r.Context(), id)
+	if err != nil {
+		rt.logger.Error("api: set node region: reload after update failed", slog.String("error", err.Error()), slog.String("node_id", id))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
