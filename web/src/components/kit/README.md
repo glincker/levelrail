@@ -50,7 +50,7 @@ Tones: `neutral | success | warning | danger | info | accent`. Tokens live in `i
 - Prefer a number, sparkline, pill or icon over a sentence. One short sentence at most.
 - Put help copy in an `InfoTip`, not inline.
 - Use `Suggestion` with a one-click action for anything the app can fix itself.
-- Show skeletons while loading and an `EmptyState` with a next action when empty.
+- Show skeletons while loading and an `EmptyState` (`@/components/ui/empty-state`) with a next action when empty.
 - Use `RelativeTime` with `live` for times that should keep updating.
 - Keep destructive actions in `ActionMenu` with `tone: 'danger'`.
 - Show shortcuts with `Kbd`.

@@ -1,5 +1,5 @@
 import { ArrowRightIcon, ArrowsSplitIcon } from '@phosphor-icons/react/dist/ssr'
-import { EmptyState } from '@/components/kit'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import {
   LB_PRESETS,

@@ -1,11 +1,16 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { HelpLink } from '@/components/HelpLink'
+import {
+  Illustration,
+  type IllustrationName,
+} from '@/components/kit/illustrations'
 
 // Shared zero-item state for list pages and tables. Presentation only:
 // the caller owns whichever create-resource flow the action opens.
 export function EmptyState({
   icon,
+  illustration,
   title,
   description,
   action,
@@ -17,6 +22,8 @@ export function EmptyState({
 }: {
   /** A single Phosphor icon element, e.g. `<PackageIcon className="size-5" />`. */
   icon: ReactNode
+  /** Decorative SVG shown in place of the icon on higher-emphasis, top-of-funnel zero states (e.g. the first-ever app). */
+  illustration?: IllustrationName
   title: string
   description: string
   /** Primary action, typically a Button or a dialog/wizard trigger rendering one. Omit for a purely informational state. */
@@ -37,12 +44,18 @@ export function EmptyState({
         className,
       )}
     >
-      <span
-        className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground"
-        aria-hidden="true"
-      >
-        {icon}
-      </span>
+      {illustration ? (
+        <span className="text-muted-foreground/70" aria-hidden="true">
+          <Illustration name={illustration} />
+        </span>
+      ) : (
+        <span
+          className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground"
+          aria-hidden="true"
+        >
+          {icon}
+        </span>
+      )}
       <div className="space-y-1">
         <p className="text-sm font-medium text-foreground">{title}</p>
         <p className="mx-auto max-w-sm text-sm text-muted-foreground">

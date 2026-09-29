@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { CaretDownIcon, RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
-import { EmptyState } from '@/components/kit'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import type { AppListEntry } from '../../types/appDetail'
 import { useCompleteOnboarding } from '../../queries/onboarding'
