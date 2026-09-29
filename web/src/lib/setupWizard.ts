@@ -3,7 +3,7 @@
 
 import type { AppListEntry } from '../types/appDetail'
 import type { CertificateStatus } from '../queries/certificates'
-import type { DoctorReport } from '../queries/systemDoctor'
+import type { DoctorCheck, DoctorReport } from '../queries/systemDoctor'
 import type { IngressDomainCheckResult } from '../queries/domains'
 import type { AppNetwork } from '../queries/appNetwork'
 import type { GitProviderStatus } from '../types/gitProviders'
@@ -77,6 +77,25 @@ export function hardFailures(report: DoctorReport) {
   return report.checks.filter(
     (c) => c.status === 'fail' && HARD_FAILURE_CODES.includes(c.code),
   )
+}
+
+export interface ServerCheckGroups {
+  /** Nothing can deploy until these pass; the step gate blocks on these alone. */
+  blocking: DoctorCheck[]
+  /** Optional hardening: worth fixing eventually, does not block anything now. */
+  attention: DoctorCheck[]
+  passed: DoctorCheck[]
+}
+
+/** groupServerChecks splits checks by urgency so the wizard can show a compact summary instead of every check expanded at once. */
+export function groupServerChecks(report: DoctorReport): ServerCheckGroups {
+  const blocking = hardFailures(report)
+  const blockingCodes = new Set(blocking.map((c) => c.code))
+  const attention = report.checks.filter(
+    (c) => c.status !== 'ok' && !blockingCodes.has(c.code),
+  )
+  const passed = report.checks.filter((c) => c.status === 'ok')
+  return { blocking, attention, passed }
 }
 
 /** serverCheckGate decides whether the server step can continue. */
