@@ -860,6 +860,61 @@ func TestSetServiceVaultEnvVar_UnknownService(t *testing.T) {
 	}
 }
 
+func TestSetServiceDatabaseEnvVar(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	svc := DesiredService{Name: "web", Image: "img:v1", Port: 8080}
+	if err := db.SaveDesiredService(ctx, svc); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SetServiceDatabaseEnvVar(ctx, "web", "DATABASE_URL", &DatabaseEnvRef{Database: "main", Field: "url"}); err != nil {
+		t.Fatalf("SetServiceDatabaseEnvVar() error = %v", err)
+	}
+	if err := db.SetServiceDatabaseEnvVar(ctx, "web", "CACHE_URL", &DatabaseEnvRef{Database: "cache", Field: "url"}); err != nil {
+		t.Fatalf("SetServiceDatabaseEnvVar() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.DatabaseEnv) != 2 {
+		t.Fatalf("DatabaseEnv = %+v, want 2 entries", got.DatabaseEnv)
+	}
+	if got.DatabaseEnv["DATABASE_URL"] != (DatabaseEnvRef{Database: "main", Field: "url"}) {
+		t.Errorf("DatabaseEnv[DATABASE_URL] = %+v", got.DatabaseEnv["DATABASE_URL"])
+	}
+
+	// Removing one key leaves the other untouched: this is a narrow,
+	// single-key mutation, not a full-record replace.
+	if err := db.SetServiceDatabaseEnvVar(ctx, "web", "DATABASE_URL", nil); err != nil {
+		t.Fatalf("SetServiceDatabaseEnvVar(nil) error = %v", err)
+	}
+	got, err = db.GetDesiredService(ctx, "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if len(got.DatabaseEnv) != 1 {
+		t.Fatalf("DatabaseEnv = %+v, want 1 entry after removal", got.DatabaseEnv)
+	}
+	if _, ok := got.DatabaseEnv["CACHE_URL"]; !ok {
+		t.Errorf("DatabaseEnv = %+v, want CACHE_URL to remain", got.DatabaseEnv)
+	}
+	if got.Image != "img:v1" || got.Port != 8080 {
+		t.Errorf("SetServiceDatabaseEnvVar must not touch other fields: got Image=%q Port=%d", got.Image, got.Port)
+	}
+}
+
+func TestSetServiceDatabaseEnvVar_UnknownService(t *testing.T) {
+	db := openTestDB(t)
+	err := db.SetServiceDatabaseEnvVar(context.Background(), "missing", "DATABASE_URL", &DatabaseEnvRef{Database: "main", Field: "url"})
+	if !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("error = %v, want ErrServiceNotFound", err)
+	}
+}
+
 func TestUpdateServiceDatabaseAttachment(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

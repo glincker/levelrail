@@ -118,8 +118,8 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 115 endpoints for app management, deployment, lifecycle control, and diagnostics
-::: details 115 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 121 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 121 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -248,6 +248,10 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/schedule | AbilityWriteSensitive | handleSetAppSchedule |
 | GET | /api/v1/apps/{name}/schedule/history | AbilityRead | handleListAppScheduleHistory |
 | POST | /api/v1/service-templates/{id}/deploy | AbilityDeploy | handleDeployServiceTemplateNow |
+| GET | /api/v1/apps/{name}/connections | AbilityRead | handleListAppConnections |
+| POST | /api/v1/apps/{name}/connections | AbilityWrite | handleCreateAppConnection |
+| DELETE | /api/v1/apps/{name}/connections/{env_var} | AbilityWrite | handleDeleteAppConnection |
+| GET | /api/v1/apps/{name}/connectable-databases | AbilityRead | handleListConnectableDatabases |
 
 :::
 

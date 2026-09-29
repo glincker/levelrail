@@ -342,6 +342,39 @@ func (c *Client) ClearAppDatabaseAttachment(ctx context.Context, name string) er
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/database", nil, nil)
 }
 
+// CreateAppConnection calls POST /api/v1/apps/{name}/connections: adds
+// (or replaces) one entry in name's DatabaseEnv map, the multi-
+// connection sibling of SetAppDatabaseAttachment above.
+func (c *Client) CreateAppConnection(ctx context.Context, name string, req CreateAppConnectionRequest) (AppConnectionResource, error) {
+	var out AppConnectionResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/connections", req, &out)
+	return out, err
+}
+
+// DeleteAppConnection calls DELETE /api/v1/apps/{name}/connections/{env_var}.
+func (c *Client) DeleteAppConnection(ctx context.Context, name, envVar string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/connections/"+PathEscape(envVar), nil, nil)
+}
+
+// ListAppConnections calls GET /api/v1/apps/{name}/connections: every
+// DatabaseEnv entry, each resolved against its database's real
+// placement so the response says whether it's cross-node-capable today.
+func (c *Client) ListAppConnections(ctx context.Context, name string) ([]AppConnectionResource, error) {
+	var out []AppConnectionResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/connections", nil, &out)
+	return out, err
+}
+
+// ListConnectableDatabases calls GET
+// /api/v1/apps/{name}/connectable-databases: every managed database name
+// could connect to, marked with whether it's already connected and
+// whether it's on a different node.
+func (c *Client) ListConnectableDatabases(ctx context.Context, name string) ([]ConnectableDatabaseResource, error) {
+	var out []ConnectableDatabaseResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/connectable-databases", nil, &out)
+	return out, err
+}
+
 // SetAppVaultEnv calls PUT /api/v1/apps/{name}/vault-env/{key}: declares
 // (or replaces) one env var as resolving live from the platform's
 // configured external Vault instance, for an app that already exists.

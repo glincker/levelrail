@@ -118,6 +118,21 @@ levelrail apps clone <name> <new-name> [flags]
 ```
 
 ```
+levelrail apps connect <app> <database> [--field FIELD] [--env-var NAME] [flags]
+```
+connect `<app>` to a managed database, injecting its resolved connection value as an env var; unlike `apps database`, an app can have any number of these
+
+```
+levelrail apps connections list <app> [flags]
+```
+list `<app>`'s current database connections, including whether each resolves to a mesh DNS name (cross-node-capable) or a container name
+
+```
+levelrail apps connections suggest <app> [flags]
+```
+list managed databases `<app>` could connect to, marking which are already connected
+
+```
 levelrail apps create --name NAME --image IMAGE --port PORT [flags]
 ```
 
@@ -139,6 +154,11 @@ detach the database `<name>` currently resolves its connection env var from
 ```
 levelrail apps delete <name> [flags]
 ```
+
+```
+levelrail apps disconnect <app> <env-var> [flags]
+```
+remove one database connection from `<app>` by its env var name
 
 ```
 levelrail apps deploy <name> --image IMAGE [flags]

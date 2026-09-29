@@ -466,6 +466,15 @@ func (rt *Router) SetLocalNodeID(id string) {
 	}
 }
 
+// SetMeshZone mirrors SetLocalNodeID's own late-setter shape, for the
+// identical reason: cmd/levelrail's mesh setup (the only source of this
+// value, application.WithMeshZone's own call site) runs after NewRouter
+// is called. Empty means mesh DNS resolution is off, the same "not
+// configured, not broken" default application.Controller itself uses.
+func (rt *Router) SetMeshZone(zone string) {
+	rt.meshZone = zone
+}
+
 // SetMesh wires GET /api/v1/mesh and POST /api/v1/nodes/{id}/mesh/rotate-key
 // to this node's live mesh device and coordinator. A late setter for the
 // same reason SetLocalNodeID is: cmd/levelrail's mesh setup runs after

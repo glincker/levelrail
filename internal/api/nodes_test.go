@@ -926,6 +926,9 @@ func (f *fakeDrainAppStore) SetServiceExecEnabled(context.Context, string, bool)
 func (f *fakeDrainAppStore) SetServiceVaultEnvVar(context.Context, string, string, *store.VaultEnvRef) error {
 	return nil
 }
+func (f *fakeDrainAppStore) SetServiceDatabaseEnvVar(context.Context, string, string, *store.DatabaseEnvRef) error {
+	return nil
+}
 func (f *fakeDrainAppStore) UpdateServiceSuspended(context.Context, string, bool) error {
 	return nil
 }

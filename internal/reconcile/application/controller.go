@@ -1357,6 +1357,20 @@ func (c *Controller) resolveDatabaseEnv(ctx context.Context, desired *store.Desi
 	return env, nil
 }
 
+// DatabaseHost returns the host name resolveDatabaseField resolves
+// dbName to: its mesh DNS name (<dbName>.<zone>) when zone is non-empty,
+// otherwise its Docker container name (database.ContainerName).
+// Exported so internal/api can preview a connection's resolved host
+// (GET /api/v1/apps/{name}/connections) without duplicating this
+// package's own host-selection logic, the single source of truth
+// resolveDatabaseField itself defers to.
+func DatabaseHost(dbName, zone string) string {
+	if zone != "" {
+		return strings.ToLower(dbName) + "." + zone
+	}
+	return database.ContainerName(dbName)
+}
+
 // resolveDatabaseField resolves one (database, field) pair to its real
 // value. host is the referenced database's mesh DNS name
 // (<dbName>.<zone>, see WithMeshZone) when mesh networking is
@@ -1385,10 +1399,7 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, dbName, field str
 		return "", fmt.Errorf("field %q is not supported for %s databases", field, desiredDB.Engine)
 	}
 
-	host := database.ContainerName(dbName)
-	if c.meshZone != "" {
-		host = strings.ToLower(dbName) + "." + c.meshZone
-	}
+	host := DatabaseHost(dbName, c.meshZone)
 	port, _ := database.ContainerPort(desiredDB.Engine) // ok already confirmed by SupportsField above
 
 	tlsEnabled, err := c.databaseTLSEnabled(ctx, dbName, desiredDB.Engine)

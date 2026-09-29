@@ -384,3 +384,28 @@ func TestController_Reconcile_DatabaseAttachment_Injected(t *testing.T) {
 	want := "postgres://main:s3cr3t@db-main:5432/main" //nolint:gosec // fake fixture, not a real credential
 	reconcileAndAssertEnv(t, c, rt, map[string]string{"DATABASE_URL": want})
 }
+
+// TestDatabaseHost locks in DatabaseHost as resolveDatabaseField's own
+// exported single source of truth for host selection: internal/api's
+// GET /api/v1/apps/{name}/connections calls this directly to preview a
+// connection's resolved host without duplicating the mesh-zone-vs-
+// container-name logic.
+func TestDatabaseHost(t *testing.T) {
+	tests := []struct {
+		name   string
+		dbName string
+		zone   string
+		want   string
+	}{
+		{"no mesh zone falls back to container name", "main", "", "db-main"},
+		{"mesh zone resolves to mesh DNS name", "main", "levelrail", "main.levelrail"},
+		{"database name lowercased in mesh DNS name", "Main", "levelrail", "main.levelrail"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := DatabaseHost(tt.dbName, tt.zone); got != tt.want {
+				t.Errorf("DatabaseHost(%q, %q) = %q, want %q", tt.dbName, tt.zone, got, tt.want)
+			}
+		})
+	}
+}

@@ -701,6 +701,9 @@ func run(logger *slog.Logger) error {
 	// shares the one lookup instead of each re-querying the Docker
 	// daemon on every tick.
 	meshDNSAddr := containerDNSAddr(ctx, client, meshCfg, logger)
+	if meshDNSAddr != "" && meshCfg != nil && meshCfg.resolver != nil {
+		apiRouter.SetMeshZone(meshCfg.resolver.Zone())
+	}
 
 	previewLocalNodeID := ""
 	if meshCfg != nil {

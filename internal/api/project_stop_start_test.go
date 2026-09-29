@@ -237,6 +237,9 @@ func (f *fakeProjectLifecycleAppStore) UpdateServiceDatabaseAttachment(context.C
 func (f *fakeProjectLifecycleAppStore) SetServiceVaultEnvVar(context.Context, string, string, *store.VaultEnvRef) error {
 	return nil
 }
+func (f *fakeProjectLifecycleAppStore) SetServiceDatabaseEnvVar(context.Context, string, string, *store.DatabaseEnvRef) error {
+	return nil
+}
 func (f *fakeProjectLifecycleAppStore) SetServiceAutoRollbackOnCrashloop(context.Context, string, bool) error {
 	return nil
 }

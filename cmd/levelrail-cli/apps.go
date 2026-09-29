@@ -143,6 +143,12 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsStorage(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "database":
 		return runAppsDatabase(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "connect":
+		return runAppsConnect(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "disconnect":
+		return runAppsDisconnect(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "connections":
+		return runAppsConnections(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "builds":
 		return runAppsBuilds(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "moves":
@@ -235,6 +241,9 @@ func appsUsage(prog string) string {
   %[1]s apps images <name> [flags]   list locally-present image tags under an app's current image repo
   %[1]s apps storage <verb> [flags]   attach/detach a connected bucket as this app's object storage
   %[1]s apps database <verb> [flags]   attach/detach a managed database as this app's connection-env-var source
+  %[1]s apps connect <app> <database> [--field FIELD] [--env-var NAME] [flags]   connect <app> to a managed database (multiple connections allowed, unlike "apps database")
+  %[1]s apps disconnect <app> <env-var> [flags]                                  remove one connection by its env var name
+  %[1]s apps connections list|suggest <app> [flags]                              list current connections, or managed databases <app> could connect to
   %[1]s apps builds trigger <name> --repo URL --ref REF [flags]   build and deploy an image from a git source
   %[1]s apps moves <verb> [flags]      inspect "apps set-node --with-volumes" move-with-volumes history
   %[1]s apps vault-env <verb> [flags]   declare/remove an env var resolved live from an external Vault instance

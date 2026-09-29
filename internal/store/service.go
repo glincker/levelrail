@@ -1007,6 +1007,62 @@ func (db *DB) SetServiceVaultEnvVar(ctx context.Context, name, envVar string, re
 	return nil
 }
 
+// SetServiceDatabaseEnvVar adds or replaces (ref non-nil) or removes
+// (ref nil) exactly one entry in name's DatabaseEnv map, the narrow
+// single-key mutation POST/DELETE /api/v1/apps/{name}/connections needs
+// for an app to declare more than one database connection without
+// app.yaml. Same read-modify-write-in-one-transaction shape as
+// SetServiceVaultEnvVar just above, since DatabaseEnv is a JSON blob
+// (like VaultEnv), not one column per key; DatabaseAttachment remains
+// its own single-slot field with its own setter
+// (UpdateServiceDatabaseAttachment), untouched by this method.
+func (db *DB) SetServiceDatabaseEnvVar(ctx context.Context, name, envVar string, ref *DatabaseEnvRef) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: set database env var for service %q: begin transaction: %w", name, err)
+	}
+	defer func() {
+		_ = tx.Rollback() // no-op if Commit already succeeded
+	}()
+
+	var databaseEnvJSON string
+	err = tx.QueryRowContext(ctx, `SELECT database_env FROM desired_services WHERE name = ?`, name).Scan(&databaseEnvJSON)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrServiceNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("store: set database env var for service %q: read existing: %w", name, err)
+	}
+
+	databaseEnv := map[string]DatabaseEnvRef{}
+	if databaseEnvJSON != "" {
+		if err := json.Unmarshal([]byte(databaseEnvJSON), &databaseEnv); err != nil {
+			return fmt.Errorf("store: set database env var for service %q: decode existing: %w", name, err)
+		}
+	}
+	if ref == nil {
+		delete(databaseEnv, envVar)
+	} else {
+		databaseEnv[envVar] = *ref
+	}
+
+	updated, err := json.Marshal(databaseEnv)
+	if err != nil {
+		return fmt.Errorf("store: set database env var for service %q: encode: %w", name, err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE desired_services SET database_env = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, string(updated), name); err != nil {
+		return fmt.Errorf("store: set database env var for service %q: %w", name, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: set database env var for service %q: commit: %w", name, err)
+	}
+	return nil
+}
+
 // UpdateServiceApp assigns svc to app appID, the only way
 // desired_services.app_id ever changes outside migrations/0039_apps.sql's
 // own backfill: SaveDesiredService's own doc comment explains why this
