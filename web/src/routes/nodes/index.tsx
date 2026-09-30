@@ -8,7 +8,7 @@ import { NODE_LIST_GRID, NodeRow, RowSkeleton } from '../../components/NodeRow'
 import { AddNodeWizard } from '../../components/AddNodeWizard'
 import { BuildStrainSuggestion } from '../../components/BuildStrainSuggestion'
 import { EmptyState } from '../../components/ui/empty-state'
-import { HelpLink } from '../../components/HelpLink'
+import { PageHeader } from '../../components/shell/PageHeader'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useNodes() (suspense), mirroring routes/databases/index.tsx
@@ -65,19 +65,22 @@ function NodeListPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-baseline justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold text-foreground">Nodes</h1>
-          <HelpLink path="/multi-node" label="Multi-node guide" />
-        </div>
-        <div className="flex items-baseline gap-3">
-          {nodes.length > 0 ? (
-            <span className="text-sm text-muted-foreground">
-              {nodes.length} {nodes.length === 1 ? 'node' : 'nodes'}
-            </span>
-          ) : null}
-          <AddNodeWizard />
-        </div>
+      <div className="mb-4">
+        <PageHeader
+          title="Nodes"
+          helpPath="/multi-node"
+          helpLabel="Multi-node guide"
+          actions={
+            <>
+              {nodes.length > 0 ? (
+                <span className="text-sm text-muted-foreground">
+                  {nodes.length} {nodes.length === 1 ? 'node' : 'nodes'}
+                </span>
+              ) : null}
+              <AddNodeWizard />
+            </>
+          }
+        />
       </div>
       <BuildStrainSuggestion nodes={nodes} />
       {nodes.length === 0 ? (
@@ -134,8 +137,8 @@ function NodeListPage() {
 function NodeListPending() {
   return (
     <div>
-      <div className="mb-4 flex items-baseline justify-between">
-        <h1 className="text-lg font-semibold text-foreground">Nodes</h1>
+      <div className="mb-4">
+        <PageHeader title="Nodes" />
       </div>
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <ListHeader />
