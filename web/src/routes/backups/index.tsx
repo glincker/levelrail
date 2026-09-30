@@ -15,6 +15,8 @@ import {
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { HelpLink } from '../../components/HelpLink'
+import { ControlPlaneBackupsCard } from '../../components/ControlPlaneBackupsCard'
+import { ControlPlaneDrCard } from '../../components/ControlPlaneDrCard'
 import { formatBytes, formatDate } from '../../lib/format'
 import { useBackupTargetsOptional } from '../../queries/backupTargets'
 import {
@@ -178,6 +180,9 @@ function AllBackupsPage() {
           </p>
         </div>
       </div>
+
+      <ControlPlaneBackupsCard />
+      <ControlPlaneDrCard />
 
       {history.length === 0 ? (
         noBackupTarget ? (
