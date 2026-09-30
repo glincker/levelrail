@@ -217,6 +217,7 @@ export default withMermaid({
         content: `${siteUrl}/assets/screenshots/app-overview.png`,
       },
     ],
+    ['meta', { name: 'theme-color', content: '#0b0e14' }],
     ['link', { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }],
     [
       'script',
@@ -236,6 +237,11 @@ export default withMermaid({
         license: 'https://www.apache.org/licenses/LICENSE-2.0',
         url: `${siteUrl}/`,
         codeRepository: 'https://github.com/glincker/levelrail',
+        publisher: {
+          '@type': 'Organization',
+          name: 'GLINCKER',
+          url: 'https://glincker.com',
+        },
       }),
     ],
   ],

@@ -1,5 +1,6 @@
 ---
 layout: home
+title: Self-hosted deployment platform
 description: Push to a git repo, get a running app with TLS, logs, metrics, and rollback. The agent talks to Docker's own Engine API directly, no SSH, no CLI shelling.
 
 hero:
@@ -34,9 +35,13 @@ features:
     details: 144 MCP tools (beta) backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a crashloop directly.
 ---
 
-<div class="vp-doc" style="max-width: 1152px; margin: 0 auto; padding: 0 24px 64px;">
+<div class="vp-doc landing-body">
+
+<section class="landing-section landing-section--quickstart">
 
 ## Quickstart
+
+<div class="quickstart-shell">
 
 ::: code-group
 
@@ -61,16 +66,24 @@ Then deploy it:
 levelrail-cli apps create --name your-app --file app.yaml --repo https://github.com/your-org/your-app
 ```
 
+</div>
+
 That is a running app with HTTPS, logs, and rollback. The full walkthrough, including the setup wizard and database attachment, is in [Getting started](/getting-started).
+
+</section>
+
+<section class="landing-section landing-section--screenshots">
 
 ## See it running
 
 <div class="screenshot-grid">
-  <img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list showing all services across nodes at a glance" loading="lazy">
-  <img src="/assets/screenshots/deploy-history.png" alt="Levelrail deploy history view with one-click rollback" loading="lazy">
-  <img src="/assets/screenshots/logs.png" alt="Levelrail live log viewer with full-text search" loading="lazy">
-  <img src="/assets/screenshots/nodes.png" alt="Levelrail nodes list showing node health and placement" loading="lazy">
+  <div class="screenshot-frame"><img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list showing all services across nodes at a glance" loading="lazy" width="1280" height="800"></div>
+  <div class="screenshot-frame"><img src="/assets/screenshots/deploy-history.png" alt="Levelrail deploy history view with one-click rollback" loading="lazy" width="1280" height="800"></div>
+  <div class="screenshot-frame"><img src="/assets/screenshots/logs.png" alt="Levelrail live log viewer with full-text search" loading="lazy" width="1280" height="800"></div>
+  <div class="screenshot-frame"><img src="/assets/screenshots/nodes.png" alt="Levelrail nodes list showing node health and placement" loading="lazy" width="1280" height="700"></div>
 </div>
+
+</section>
 
 </div>
 
