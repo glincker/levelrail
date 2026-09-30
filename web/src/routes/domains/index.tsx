@@ -60,6 +60,7 @@ function ListHeader() {
       <span aria-hidden="true" />
       <span>Domain</span>
       <span>App</span>
+      <span>Status</span>
       <span>Certificate</span>
       <span aria-hidden="true" />
     </div>

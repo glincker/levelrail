@@ -19,6 +19,10 @@ type DomainBasicAuthStore interface {
 	GetDomainBasicAuth(ctx context.Context, domain string) (store.DomainBasicAuth, bool, error)
 	SetDomainBasicAuth(ctx context.Context, domain, username string) error
 	DeleteDomainBasicAuth(ctx context.Context, domain string) error
+	// ListDomainBasicAuth backs GET /api/v1/domains's has_basic_auth
+	// flag: one bulk read instead of a per-domain GetDomainBasicAuth
+	// call, avoiding an N+1 query over the domain list.
+	ListDomainBasicAuth(ctx context.Context) ([]store.DomainBasicAuth, error)
 }
 
 // DomainBasicAuthSecrets is the surface these handlers need from

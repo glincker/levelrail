@@ -4,9 +4,15 @@ import {
   CopyIcon,
   GlobeIcon,
   CaretRightIcon,
+  LockKeyIcon,
+  ShieldCheckIcon,
+  SignpostIcon,
+  WrenchIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { Badge } from '@/components/ui/badge'
+import type { Icon } from '@phosphor-icons/react'
+import { Badge, type badgeVariants } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import type { VariantProps } from 'class-variance-authority'
 import {
   CERT_RENEWAL_STALLED_HINT,
   certExpiryLabel,
@@ -22,9 +28,72 @@ import type { Domain } from '../queries/domains'
 // pixel-for-pixel" reasoning APP_LIST_GRID (AppRow.tsx) already
 // establishes for the apps list. The domain column gets its own copy
 // button (below), so its cell needs room for both the text and the
-// button without the grid itself changing shape.
+// button without the grid itself changing shape. The status column is
+// icon-only badges, so it only needs enough room for four small badges
+// on one line.
 export const DOMAIN_LIST_GRID =
-  'grid grid-cols-[2rem_minmax(0,1.5fr)_minmax(0,1fr)_8rem_1rem] items-center gap-3'
+  'grid grid-cols-[2rem_minmax(0,1.5fr)_minmax(0,1fr)_6.5rem_8rem_1rem] items-center gap-3'
+
+// STATUS_FLAGS drives the status column: one icon badge per read-only
+// flag domainResource (internal/api/ingress_settings.go) reports,
+// rendered only when true so a domain with nothing configured shows an
+// empty cell rather than four "off" badges.
+const STATUS_FLAGS: {
+  key: keyof Pick<
+    Domain,
+    'waf_enabled' | 'has_redirect' | 'maintenance_enabled' | 'has_basic_auth'
+  >
+  icon: Icon
+  label: string
+  variant: VariantProps<typeof badgeVariants>['variant']
+}[] = [
+  {
+    key: 'waf_enabled',
+    icon: ShieldCheckIcon,
+    label: 'WAF enabled',
+    variant: 'success',
+  },
+  {
+    key: 'has_redirect',
+    icon: SignpostIcon,
+    label: 'Redirect configured',
+    variant: 'outline',
+  },
+  {
+    key: 'maintenance_enabled',
+    icon: WrenchIcon,
+    label: 'Maintenance mode on',
+    variant: 'warning',
+  },
+  {
+    key: 'has_basic_auth',
+    icon: LockKeyIcon,
+    label: 'Basic auth configured',
+    variant: 'muted',
+  },
+]
+
+function DomainStatusFlags({ domain }: { domain: Domain }) {
+  const active = STATUS_FLAGS.filter((flag) => domain[flag.key])
+  if (active.length === 0) {
+    return <span className="text-xs text-muted-foreground/60">-</span>
+  }
+  return (
+    <span className="flex flex-wrap items-center gap-1">
+      {active.map((flag) => (
+        <Badge
+          key={flag.key}
+          variant={flag.variant}
+          className="gap-0 px-1"
+          title={flag.label}
+        >
+          <flag.icon className="size-3" aria-hidden="true" />
+          <span className="sr-only">{flag.label}</span>
+        </Badge>
+      ))}
+    </span>
+  )
+}
 
 // This page is deliberately read-mostly: editing a domain (add/remove)
 // stays on the owning app's own Domains tab (DomainEditor.tsx), reached
@@ -44,6 +113,7 @@ export function RowSkeleton() {
       <div className="size-8 animate-pulse rounded-md bg-muted" />
       <div className="h-4 w-40 animate-pulse rounded bg-muted" />
       <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+      <div className="h-5 w-14 animate-pulse rounded bg-muted" />
       <div className="h-4 w-16 animate-pulse rounded bg-muted" />
       <div className="h-4 w-4 animate-pulse justify-self-end rounded bg-muted" />
     </div>
@@ -95,6 +165,8 @@ export function DomainRow({
       <span className="min-w-0 truncate text-xs text-muted-foreground">
         {domain.service_name}
       </span>
+
+      <DomainStatusFlags domain={domain} />
 
       <span className="min-w-0">
         {cert ? (
