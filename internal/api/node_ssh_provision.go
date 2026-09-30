@@ -245,9 +245,10 @@ func (rt *Router) runSSHNodeProvision(id string, creds sshprovision.Credentials,
 			status = store.SSHNodeProvisionStatusConnecting
 		case sshprovision.StepDetect, sshprovision.StepPrereqs:
 			status = store.SSHNodeProvisionStatusDetecting
-		case sshprovision.StepDone:
-			status = store.SSHNodeProvisionStatusEnrolling
 		}
+		// StepDone stays Installing here (no DetectedHost yet); Enrolling
+		// is set exactly once below, with the real host, to avoid a
+		// window where a reader sees Enrolling with blank detected_os/arch.
 		rt.updateSSHNodeProvision(ctx, id, status, "", "", log.String(), "", "")
 	})
 
