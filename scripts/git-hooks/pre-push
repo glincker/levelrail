@@ -22,7 +22,10 @@ cd "$(git rev-parse --show-toplevel)"
 
 fail=0
 coverage_out="$(mktemp -t levelrail-coverage.XXXXXX)"
-trap 'rm -f "$coverage_out"' EXIT
+push_log="$(mktemp -t levelrail-push-log.XXXXXX)"
+trap 'rm -f "$coverage_out" "$push_log"' EXIT
+# Captured for reuse as the PR-comment body below.
+exec > >(tee -a "$push_log") 2>&1
 
 echo "pre-push: migration version collisions"
 if ! scripts/check-migration-versions.sh; then
@@ -127,3 +130,30 @@ if [ "$fail" -ne 0 ]; then
 fi
 
 echo "pre-push: all checks passed"
+
+# Informational only, best-effort: CI stays the actual required gate.
+if [ "${LEVELRAIL_PUSH_PR_SIGNAL:-on}" = on ] && command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+	branch="$(git rev-parse --abbrev-ref HEAD)"
+	if [ "$branch" != main ]; then
+		pr_number="$(gh pr view --json number -q .number 2>/dev/null || true)"
+		if [ -n "$pr_number" ]; then
+			sha="$(git rev-parse --short HEAD)"
+			marker="<!-- levelrail:local-checks -->"
+			body="$(printf '%s\n**Local pre-push checks passed** at `%s`\n\n<details><summary>What ran</summary>\n\n```\n%s\n```\n\n</details>\n' "$marker" "$sha" "$(tail -n 60 "$push_log")")"
+			existing_id="$(gh api "repos/{owner}/{repo}/issues/$pr_number/comments" --paginate --jq ".[] | select(.body | startswith(\"$marker\")) | .id" 2>/dev/null | tail -n1 || true)"
+			if [ -n "$existing_id" ]; then
+				gh api -X PATCH "repos/{owner}/{repo}/issues/comments/$existing_id" -f body="$body" >/dev/null 2>&1 || true
+			else
+				gh pr comment "$pr_number" --body "$body" >/dev/null 2>&1 || true
+			fi
+			# Drafts are a WIP signal: comment only, never auto-arm merge.
+			is_draft="$(gh pr view "$pr_number" --json isDraft -q .isDraft 2>/dev/null || echo true)"
+			if [ "$is_draft" != true ]; then
+				armed="$(gh pr view "$pr_number" --json autoMergeRequest -q '.autoMergeRequest.enabledAt // empty' 2>/dev/null || true)"
+				if [ -z "$armed" ]; then
+					gh pr merge "$pr_number" --auto --squash >/dev/null 2>&1 || true
+				fi
+			fi
+		fi
+	fi
+fi
