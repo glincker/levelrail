@@ -1,7 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   BookOpenIcon,
   CheckCircleIcon,
+  CloudArrowUpIcon,
   WarningCircleIcon,
   XCircleIcon,
   EnvelopeIcon,
@@ -37,8 +38,6 @@ import {
 import type { CertificateStatus } from '../../queries/certificates'
 import { DockerCleanupFallbackCard } from '../../components/DockerCleanupFallbackCard'
 import { CleanUpDockerDialog } from '../../components/CleanUpDockerDialog'
-import { ControlPlaneBackupsCard } from '../../components/ControlPlaneBackupsCard'
-import { ControlPlaneDrCard } from '../../components/ControlPlaneDrCard'
 import { OrphanedVolumesCard } from '../../components/OrphanedVolumesCard'
 import { RotateMasterKeyDialog } from '../../components/RotateMasterKeyDialog'
 import { SecretBindingCard } from '../../components/SecretBindingCard'
@@ -457,9 +456,32 @@ function GeneralSettingsPage() {
 
       <OrphanedVolumesCard />
 
-      <ControlPlaneBackupsCard />
-
-      <ControlPlaneDrCard />
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                <CloudArrowUpIcon className="size-4" />
+              </div>
+              <div>
+                <CardTitle>Control plane backups and disaster recovery</CardTitle>
+                <CardDescription>
+                  Snapshots of this instance&apos;s own database, off-box
+                  encrypted backups, and restore drills.
+                </CardDescription>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              render={<Link to="/backups" />}
+              nativeButton={false}
+            >
+              Open Backups
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
 
       <CertificatesCard />
 

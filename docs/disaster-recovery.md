@@ -32,7 +32,7 @@ What the drill identity changes: if you set `APP_CONTROL_PLANE_DRILL_IDENTITY_FI
 
 ## Set it up
 
-The dashboard has a guided checklist under Settings, Disaster recovery. The same steps on the CLI:
+The dashboard has a guided checklist under Backups, Disaster recovery. The same steps on the CLI:
 
 1. Add a storage destination (Settings, Storage, or see [object storage](/object-storage)). Use a bucket with versioning enabled.
 2. Make a key pair on your own machine, not the server:
