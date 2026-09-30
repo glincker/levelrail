@@ -16,6 +16,7 @@ vi.mock('../hooks/useBrand', () => ({ useBrand: vi.fn() }))
 
 import { useBrand } from '../hooks/useBrand'
 import { LoginScreen } from './LoginScreen'
+import { ThemeProvider } from './ThemeProvider'
 
 const brand: Brand = {
   Name: 'Test Brand',
@@ -60,7 +61,9 @@ function renderScreen(setup?: string) {
   })
   return render(
     <QueryClientProvider client={client}>
-      <LoginScreen setup={setup} />
+      <ThemeProvider>
+        <LoginScreen setup={setup} />
+      </ThemeProvider>
     </QueryClientProvider>,
   )
 }
@@ -68,6 +71,18 @@ function renderScreen(setup?: string) {
 describe('LoginScreen', () => {
   beforeEach(() => {
     vi.mocked(useBrand).mockReturnValue(brand)
+    window.localStorage.clear()
+    // jsdom has no matchMedia; ThemeProvider (via ThemeToggle) needs it.
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }))
   })
   afterEach(() => {
     vi.unstubAllGlobals()
@@ -88,6 +103,18 @@ describe('LoginScreen', () => {
     })
     expect(await findTitle('Sign in')).toBeInTheDocument()
     expect(screen.queryByLabelText('Setup token')).not.toBeInTheDocument()
+  })
+
+  it('hides the setup admin account tab once an admin already exists', async () => {
+    mockFetch(false)
+    renderScreen()
+    await findTitle('Sign in')
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('tab', { name: 'Set up admin account' }),
+      ).not.toBeInTheDocument()
+    })
+    expect(screen.getAllByLabelText('Username')).toHaveLength(1)
   })
 
   it('opens the setup form with the token pre-filled from ?setup=', async () => {

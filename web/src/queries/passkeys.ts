@@ -44,8 +44,12 @@ export class PasskeyUnsupportedError extends Error {
   }
 }
 
+export function isPasskeySupported(): boolean {
+  return typeof window !== 'undefined' && !!window.PublicKeyCredential
+}
+
 function assertPasskeySupport(): void {
-  if (typeof window === 'undefined' || !window.PublicKeyCredential) {
+  if (!isPasskeySupported()) {
     throw new PasskeyUnsupportedError()
   }
 }
@@ -158,27 +162,52 @@ interface PasskeyLoginBeginResponse {
   options: { publicKey: PublicKeyCredentialRequestOptionsJSON }
 }
 
-// loginWithPasskey drives the public sign-in ceremony: username-first
-// (handleBeginPasskeyLogin looks up that account's own credentials),
-// not usernameless/discoverable, the same tradeoff the backend's own
-// doc comment explains.
-export async function loginWithPasskey(username: string): Promise<AuthUser> {
-  assertPasskeySupport()
-  const beginRes = await fetch('/api/v1/auth/passkey-login/begin', {
+export interface PasskeyLoginChallenge {
+  sessionId: string
+  options: PublicKeyCredentialRequestOptionsJSON
+}
+
+// Thrown by beginPasskeyLogin for both an unknown username and a known
+// one with no passkey, same generic 401 handleBeginPasskeyLogin (Go)
+// returns for both, so this stays as enumeration-resistant as the
+// backend already is.
+export class NoPasskeyForAccountError extends Error {
+  constructor() {
+    super('No passkey is registered for this account.')
+    this.name = 'NoPasskeyForAccountError'
+  }
+}
+
+// beginPasskeyLogin only fetches the challenge, it never touches
+// navigator.credentials: the progressive sign-in flow (LoginScreen)
+// calls this first to decide whether to offer a passkey prompt or fall
+// back to a password field, without committing to the ceremony yet.
+export async function beginPasskeyLogin(
+  username: string,
+): Promise<PasskeyLoginChallenge> {
+  const res = await fetch('/api/v1/auth/passkey-login/begin', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username }),
   })
-  if (!beginRes.ok) {
-    await throwPasskeyError(
-      beginRes,
-      `begin passkey login failed: ${beginRes.status}`,
-    )
+  if (res.status === 401) {
+    throw new NoPasskeyForAccountError()
   }
-  const begin = (await beginRes.json()) as PasskeyLoginBeginResponse
+  if (!res.ok) {
+    await throwPasskeyError(res, `begin passkey login failed: ${res.status}`)
+  }
+  const body = (await res.json()) as PasskeyLoginBeginResponse
+  return { sessionId: body.session_id, options: body.options.publicKey }
+}
 
+// finishPasskeyLogin prompts the platform authenticator for an
+// already-fetched challenge and completes the sign-in.
+export async function finishPasskeyLogin(
+  challenge: PasskeyLoginChallenge,
+): Promise<AuthUser> {
+  assertPasskeySupport()
   const options = PublicKeyCredential.parseRequestOptionsFromJSON(
-    begin.options.publicKey,
+    challenge.options,
   )
   const credential = await navigator.credentials.get({ publicKey: options })
   if (!(credential instanceof PublicKeyCredential)) {
@@ -186,7 +215,7 @@ export async function loginWithPasskey(username: string): Promise<AuthUser> {
   }
 
   const finishRes = await fetch(
-    `/api/v1/auth/passkey-login/finish?session_id=${encodeURIComponent(begin.session_id)}`,
+    `/api/v1/auth/passkey-login/finish?session_id=${encodeURIComponent(challenge.sessionId)}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -202,11 +231,17 @@ export async function loginWithPasskey(username: string): Promise<AuthUser> {
   return (await finishRes.json()) as AuthUser
 }
 
-export function useLoginWithPasskey() {
+export function useBeginPasskeyLogin() {
+  return useMutation<PasskeyLoginChallenge, Error, string>({
+    mutationFn: beginPasskeyLogin,
+  })
+}
+
+export function useFinishPasskeyLogin() {
   const navigate = useNavigate()
   const router = useRouter()
-  return useMutation<AuthUser, Error, string>({
-    mutationFn: loginWithPasskey,
+  return useMutation<AuthUser, Error, PasskeyLoginChallenge>({
+    mutationFn: finishPasskeyLogin,
     onSuccess: (user) => {
       setStoredUsername(user.username)
       goAfterLogin(navigate, router)
