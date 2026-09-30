@@ -32,7 +32,7 @@ import { InfoTip } from '../../components/kit/InfoTip'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
-import { PageSpinner } from '@/components/ui/page-spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 import type { VariantProps } from 'class-variance-authority'
 
 // Node detail route, mirroring routes/databases/$name.tsx's shape: three
@@ -66,7 +66,7 @@ export const Route = createFileRoute('/nodes/$id')({
       queryClient.ensureQueryData(nodeListQueryOptions()),
     ]),
   component: NodeDetailPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: NodeDetailSkeleton,
   errorComponent: NodeDetailError,
 })
 
@@ -278,6 +278,62 @@ function NodeDetailPage() {
       <NodeMetricsDashboard nodeId={id} />
 
       <ConditionsPanel conditions={conditions} />
+    </div>
+  )
+}
+
+// Mirrors NodeDetailPage's own card stack (Overview, Location, Agent,
+// Workload capabilities, Alert status, GPU, Mesh, Patch status, Events,
+// Metrics, Conditions) so the loader's pending phase renders the same
+// outline that fills in once node/health/node-list resolve.
+function NodeDetailSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <div>
+        <Skeleton className="h-3 w-14" />
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Skeleton className="h-6 w-36" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-20 rounded-md" />
+            <Skeleton className="h-9 w-20 rounded-md" />
+          </div>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <Skeleton className="h-4 w-20" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {Array.from({ length: 3 }, (_, i) => (
+              <div key={i} className="space-y-1">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {Array.from({ length: 8 }, (_, i) => (
+        <Card key={i}>
+          <CardHeader>
+            <CardTitle>
+              <Skeleton className="h-4 w-28" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </CardContent>
+        </Card>
+      ))}
     </div>
   )
 }
