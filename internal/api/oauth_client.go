@@ -13,6 +13,7 @@ import (
 	"golang.org/x/oauth2"
 	xgithub "golang.org/x/oauth2/github"
 	xgoogle "golang.org/x/oauth2/google"
+	xmicrosoft "golang.org/x/oauth2/microsoft"
 )
 
 // oauthUserInfo is what any provider's flow reduces to: enough to look
@@ -55,6 +56,17 @@ func defaultOAuthClientFactory(provider string, settings store.OAuthProviderSett
 			RedirectURL:  redirectURL,
 			Endpoint:     xgithub.Endpoint,
 			Scopes:       []string{"read:user", "user:email"},
+		}}, nil
+	case store.OAuthProviderMicrosoft:
+		return &microsoftOAuthClient{cfg: oauth2.Config{
+			ClientID:     settings.ClientID,
+			ClientSecret: clientSecret,
+			RedirectURL:  redirectURL,
+			// "" selects the "common" multi-tenant endpoint (any work,
+			// school, or personal Microsoft account), not a single
+			// tenant's own directory.
+			Endpoint: xmicrosoft.AzureADEndpoint(""),
+			Scopes:   []string{"openid", "email", "profile", "https://graph.microsoft.com/User.Read"},
 		}}, nil
 	case store.OAuthProviderOIDC:
 		return newOIDCOAuthClient(settings, clientSecret, redirectURL)
@@ -158,6 +170,51 @@ func (c *githubOAuthClient) FetchUserInfo(ctx context.Context, token *oauth2.Tok
 		Email:          email,
 		DisplayName:    name,
 	}, nil
+}
+
+type microsoftOAuthClient struct {
+	cfg oauth2.Config
+}
+
+func (c *microsoftOAuthClient) AuthCodeURL(state string) string {
+	return c.cfg.AuthCodeURL(state)
+}
+
+func (c *microsoftOAuthClient) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
+	return c.cfg.Exchange(ctx, code)
+}
+
+// FetchUserInfo calls Microsoft Graph's /v1.0/me. mail is preferred;
+// userPrincipalName is Graph's own documented fallback for an account
+// with no mailbox (mail comes back null), the same "email may be null,
+// fall back to a second field" shape githubOAuthClient's own
+// FetchUserInfo already has for a private GitHub email.
+func (c *microsoftOAuthClient) FetchUserInfo(ctx context.Context, token *oauth2.Token) (oauthUserInfo, error) {
+	client := c.cfg.Client(ctx, token)
+	var body struct {
+		ID                string `json:"id"`
+		Mail              string `json:"mail"`
+		UserPrincipalName string `json:"userPrincipalName"`
+		DisplayName       string `json:"displayName"`
+	}
+	if err := getJSON(ctx, client, "https://graph.microsoft.com/v1.0/me", &body); err != nil {
+		return oauthUserInfo{}, fmt.Errorf("fetch microsoft userinfo: %w", err)
+	}
+	if body.ID == "" {
+		return oauthUserInfo{}, fmt.Errorf("microsoft userinfo: missing id")
+	}
+	email := body.Mail
+	if email == "" {
+		email = body.UserPrincipalName
+	}
+	if email == "" {
+		return oauthUserInfo{}, fmt.Errorf("microsoft userinfo: no email available")
+	}
+	name := body.DisplayName
+	if name == "" {
+		name = email
+	}
+	return oauthUserInfo{ProviderUserID: body.ID, Email: email, DisplayName: name}, nil
 }
 
 type oidcOAuthClient struct {

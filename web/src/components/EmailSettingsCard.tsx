@@ -40,7 +40,7 @@ const BACKEND_UNSET = 'unset'
 // (blank means "leave whatever is stored alone").
 const emailSettingsSchema = z
   .object({
-    backend: z.enum(['', 'smtp', 'ses']),
+    backend: z.enum(['', 'smtp', 'ses', 'resend']),
     smtpHost: z.string().trim(),
     smtpPort: z.coerce.number().int().min(0).max(65535),
     smtpUsername: z.string().trim(),
@@ -50,6 +50,8 @@ const emailSettingsSchema = z
     sesAccessKeyId: z.string().trim(),
     sesFrom: z.string().trim(),
     sesSecretAccessKey: z.string(),
+    resendFrom: z.string().trim(),
+    resendApiKey: z.string(),
   })
   .superRefine((data, ctx) => {
     if (data.backend === 'smtp') {
@@ -98,6 +100,13 @@ const emailSettingsSchema = z
         })
       }
     }
+    if (data.backend === 'resend' && !data.resendFrom) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'From address is required',
+        path: ['resendFrom'],
+      })
+    }
   })
 
 // z.coerce.number() (smtpPort) has a wider input type than output type,
@@ -119,6 +128,8 @@ function toFieldValues(s: EmailSettings): EmailSettingsFormInput {
     sesAccessKeyId: s.ses_access_key_id ?? '',
     sesFrom: s.ses_from ?? '',
     sesSecretAccessKey: '',
+    resendFrom: s.resend_from ?? '',
+    resendApiKey: '',
   }
 }
 
@@ -134,10 +145,12 @@ function toEmailSettings(v: EmailSettingsFormOutput): EmailSettings {
     ses_access_key_id: v.sesAccessKeyId,
     ses_from: v.sesFrom,
     ses_secret_access_key: v.sesSecretAccessKey,
+    resend_from: v.resendFrom,
+    resend_api_key: v.resendApiKey,
   }
 }
 
-// Platform-wide email backend (SMTP or AWS SES): GET/PUT
+// Platform-wide email backend (SMTP, AWS SES, or Resend): GET/PUT
 // /api/v1/settings/email. Used by both internal/alerting's
 // notifications and the forgot-password flow.
 export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
@@ -201,6 +214,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                     </SelectItem>
                     <SelectItem value="smtp">SMTP</SelectItem>
                     <SelectItem value="ses">AWS SES</SelectItem>
+                    <SelectItem value="resend">Resend</SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -302,6 +316,31 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                       {settings.ses_secret_access_key_set
                         ? 'A secret key is already configured. Leave blank to keep it.'
                         : 'No secret key set yet.'}
+                    </FieldDescription>
+                  </Field>
+                </FieldGroup>
+              ) : field.value === 'resend' ? (
+                <FieldGroup className="gap-3 rounded-md border border-border p-3">
+                  <Field>
+                    <FieldLabel htmlFor="resend-from">From address</FieldLabel>
+                    <Input
+                      id="resend-from"
+                      {...register('resendFrom')}
+                      placeholder="no-reply@example.com"
+                    />
+                    <FieldError errors={[formState.errors.resendFrom]} />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="resend-api-key">API key</FieldLabel>
+                    <Input
+                      id="resend-api-key"
+                      type="password"
+                      {...register('resendApiKey')}
+                    />
+                    <FieldDescription>
+                      {settings.resend_api_key_set
+                        ? 'An API key is already configured. Leave blank to keep it.'
+                        : 'No API key set yet.'}
                     </FieldDescription>
                   </Field>
                 </FieldGroup>

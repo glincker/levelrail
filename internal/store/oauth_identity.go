@@ -11,9 +11,10 @@ import (
 // OAuth provider names the migrations/0035_users.sql and 0052's CHECK
 // constraints accept.
 const (
-	OAuthProviderGoogle = "google"
-	OAuthProviderGitHub = "github"
-	OAuthProviderOIDC   = "oidc"
+	OAuthProviderGoogle    = "google"
+	OAuthProviderGitHub    = "github"
+	OAuthProviderOIDC      = "oidc"
+	OAuthProviderMicrosoft = "microsoft"
 )
 
 // OAuthIdentity is one linked external account. Uniqueness (at most one

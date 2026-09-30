@@ -129,6 +129,17 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/2fa/recovery-codes/regenerate", rt.requireAuth(rt.handleRegenerateRecoveryCodes))
 	mux.HandleFunc("POST /api/v1/auth/2fa/verify", rt.handleVerifyTwoFactor)
 
+	// Passkeys (WebAuthn, passkeys.go). Registration acts on the
+	// caller's own account, so requireAuth like the 2FA routes above.
+	// /passkey-login/... is the sign-in ceremony, necessarily public,
+	// same shape as /2fa/verify.
+	mux.HandleFunc("GET /api/v1/auth/passkeys", rt.requireAuth(rt.handleListPasskeys))
+	mux.HandleFunc("POST /api/v1/auth/passkeys/register/begin", rt.requireAuth(rt.handleBeginPasskeyRegistration))
+	mux.HandleFunc("POST /api/v1/auth/passkeys/register/finish", rt.requireAuth(rt.handleFinishPasskeyRegistration))
+	mux.HandleFunc("DELETE /api/v1/auth/passkeys/{id}", rt.requireAuth(rt.handleDeletePasskey))
+	mux.HandleFunc("POST /api/v1/auth/passkey-login/begin", rt.handleBeginPasskeyLogin)
+	mux.HandleFunc("POST /api/v1/auth/passkey-login/finish", rt.handleFinishPasskeyLogin)
+
 	// Multi-user: creating another local-password user (see
 	// handleRegister's own doc comment) is AbilityRoot, not merely
 	// requireAuth: the caller also picks the new user's Abilities, so

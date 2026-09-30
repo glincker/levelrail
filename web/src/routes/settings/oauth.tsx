@@ -17,14 +17,16 @@ export const Route = createFileRoute('/settings/oauth')({
   pendingComponent: OAuthSettingsSkeleton,
 })
 
-// Two provider cards (Google, GitHub today): a fixed approximation of
-// the real settings.map grid, which only ever grows by adding another
-// provider to the backend list.
+// Four provider cards (Google, GitHub, Microsoft, OIDC today): a fixed
+// approximation of the real settings.map grid, which only ever grows by
+// adding another provider to the backend list.
 function OAuthSettingsSkeleton() {
   return (
     <div className="space-y-6" aria-hidden="true">
       <SettingsHeaderSkeleton icon />
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <SettingsCardSkeleton description={false} rows={3} />
+        <SettingsCardSkeleton description={false} rows={3} />
         <SettingsCardSkeleton description={false} rows={3} />
         <SettingsCardSkeleton description={false} rows={3} />
       </div>
@@ -46,13 +48,13 @@ function OAuthSettingsPage() {
             OAuth sign-in
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Let people sign in with Google or GitHub instead of a password.
-            Every signed-in account has identical access, there are no roles
-            yet.
+            Let people sign in with Google, GitHub, Microsoft, or a self-hosted
+            identity provider instead of a password. Every signed-in account has
+            identical access, there are no roles yet.
           </p>
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {settings.map((s) => (
           <OAuthProviderCard key={s.provider} settings={s} />
         ))}

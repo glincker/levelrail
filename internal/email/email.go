@@ -1,6 +1,7 @@
 // Package email is the platform's one email-sending capability: a
-// narrow Sender interface plus SMTP and SES implementations, shared by
-// internal/alerting and internal/api so neither imports the other.
+// narrow Sender interface plus SMTP, SES, and Resend implementations,
+// shared by internal/alerting and internal/api so neither imports the
+// other.
 package email
 
 import (
@@ -12,10 +13,11 @@ import (
 // Backend names which transport a Config uses to actually send.
 type Backend string
 
-// The two backends NewSender supports.
+// The backends NewSender supports.
 const (
-	BackendSMTP Backend = "smtp"
-	BackendSES  Backend = "ses"
+	BackendSMTP   Backend = "smtp"
+	BackendSES    Backend = "ses"
+	BackendResend Backend = "resend"
 )
 
 // ErrNotConfigured is returned by NewSender when a Config names no
@@ -45,6 +47,7 @@ type Config struct {
 	Backend Backend
 	SMTP    *SMTPConfig
 	SES     *SESConfig
+	Resend  *ResendConfig
 }
 
 // Sender sends one plain-text email.
@@ -66,6 +69,11 @@ func NewSender(cfg Config) (Sender, error) {
 			return nil, fmt.Errorf("email: ses backend selected with no SES config")
 		}
 		return sesSender{cfg: *cfg.SES}, nil
+	case BackendResend:
+		if cfg.Resend == nil {
+			return nil, fmt.Errorf("email: resend backend selected with no Resend config")
+		}
+		return resendSender{cfg: *cfg.Resend}, nil
 	default:
 		return nil, ErrNotConfigured
 	}

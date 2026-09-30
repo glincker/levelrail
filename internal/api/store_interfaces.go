@@ -356,6 +356,17 @@ type RecoveryCodeStore interface {
 	DeleteUserRecoveryCodes(ctx context.Context, userID string) error
 }
 
+// PasskeyStore is the store surface the passkey handlers (passkeys.go)
+// need: always set, part of the core Store interface, the same
+// "no secrets configuration needed" shape RecoveryCodeStore has (a
+// credential's public key is ordinary key material, not a secret).
+type PasskeyStore interface {
+	SavePasskeyCredential(ctx context.Context, c store.PasskeyCredential) error
+	ListPasskeyCredentialsForUser(ctx context.Context, userID string) ([]store.PasskeyCredential, error)
+	UpdatePasskeySignCountByCredentialID(ctx context.Context, credentialID string, signCount uint32, usedAt time.Time) error
+	DeletePasskeyCredential(ctx context.Context, id, userID string) error
+}
+
 // EmailSettingsStore is the store surface GET/PUT
 // /api/v1/settings/email need: the single platform-wide row, always
 // present, the same shape IngressSettingsStore has for its own row.
@@ -533,6 +544,7 @@ type Store interface {
 	PasswordResetTokenStore
 	InviteStore
 	RecoveryCodeStore
+	PasskeyStore
 	AuditStore
 	ScheduledTaskStore
 	FeatureFlagStore

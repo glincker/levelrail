@@ -133,14 +133,18 @@ type Router struct {
 	statusHost             statusHostCache
 	sessions               *sessionStore
 	logins                 *loginLimiter
-	recoveryCodes          RecoveryCodeStore // always set, same "core Store interface" shape as auth above
-	twoFactorSecrets       TwoFactorSecrets  // nil is valid: POST /api/v1/auth/2fa/setup (and confirm/disable/regenerate) return 501, same "not configured" shape as githubAppSecrets above
-	mfaPending             *mfaPendingStore  // always set, same "always present, not an Option" shape sessions itself has
-	mfaVerify              *loginLimiter     // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
-	sessionTTL             time.Duration     // 0 means "use defaultSessionTTL", set via WithSessionTTL
-	dataDir                string            // "" means "don't report disk usage", set via WithDataDir
-	localNodeID            string            // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
-	meshZone               string            // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
+	recoveryCodes          RecoveryCodeStore     // always set, same "core Store interface" shape as auth above
+	twoFactorSecrets       TwoFactorSecrets      // nil is valid: POST /api/v1/auth/2fa/setup (and confirm/disable/regenerate) return 501, same "not configured" shape as githubAppSecrets above
+	mfaPending             *mfaPendingStore      // always set, same "always present, not an Option" shape sessions itself has
+	mfaVerify              *loginLimiter         // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
+	passkeys               PasskeyStore          // always set, same "core Store interface" shape as recoveryCodes above
+	passkeyRegSessions     *passkeyCeremonyStore // always set; short-TTL, single-use WebAuthn registration challenges (passkeys.go)
+	passkeyLoginSessions   *passkeyCeremonyStore // always set; short-TTL, single-use WebAuthn login challenges (passkeys.go)
+	passkeyLogin           *loginLimiter         // separate budget from logins/mfaVerify above, same reasoning: a distinct attack surface gets its own independent rate limit
+	sessionTTL             time.Duration         // 0 means "use defaultSessionTTL", set via WithSessionTTL
+	dataDir                string                // "" means "don't report disk usage", set via WithDataDir
+	localNodeID            string                // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
+	meshZone               string                // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness              ReadinessProbes
 	dockerPinger           DockerPinger           // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
 	images                 ImageLister            // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
@@ -559,6 +563,10 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		recoveryCodes:               s,
 		mfaPending:                  newMFAPendingStore(),
 		mfaVerify:                   newLoginLimiter(),
+		passkeys:                    s,
+		passkeyRegSessions:          newPasskeyCeremonyStore(),
+		passkeyLoginSessions:        newPasskeyCeremonyStore(),
+		passkeyLogin:                newLoginLimiter(),
 		oauthSettings:               s,
 		oauthIdentities:             s,
 		oauthState:                  newOAuthStateStore(),

@@ -39,6 +39,8 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/auth/register":                 "first-run setup, refuses once an admin exists",
 	"GET /api/v1/auth/setup-status":              "tells the SPA whether to show first-run setup",
 	"POST /api/v1/auth/2fa/verify":               "step two of login, gated by an MFA pending token and rate limit",
+	"POST /api/v1/auth/passkey-login/begin":      "passkey sign-in ceremony start, rate limited, same shape as /auth/login",
+	"POST /api/v1/auth/passkey-login/finish":     "passkey sign-in ceremony finish, authenticated by the signed WebAuthn assertion",
 	"POST /api/v1/invites/accept":                "authenticated by the single-use invite token in the body",
 	"POST /api/v1/auth/device/start":             "CLI device login start, rate limited",
 	"POST /api/v1/auth/device/token":             "CLI device login poll, authenticated by the device code",
