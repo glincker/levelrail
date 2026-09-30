@@ -95,6 +95,8 @@ The single node case and the multi-node case use the same code path. For a servi
 
 ## Live status
 
+![Levelrail load balancer view showing two healthy replicas behind a round robin proxy](assets/screenshots/load-balancer.png)
+
 **Load balancer** in the dashboard shows an upstream table refreshed every five seconds: state (`healthy`, `unhealthy`, `draining`), weight, active requests, recent failures, last check time and the reason a replica is out of the pool. The same data is available from `levelrail lb status web`, `GET /api/v1/apps/web/loadbalancer/status`, and the `get_app_load_balancer_status` MCP tool.
 
 The ingress controller reports a `LoadBalancer` condition with these reasons:
