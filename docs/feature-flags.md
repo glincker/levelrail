@@ -4,8 +4,12 @@ description: Toggle app behavior at runtime without a redeploy using consistent-
 
 # Feature flags
 
-Toggle behavior in a running app without a redeploy. Package:
-`internal/api/feature_flags.go`, `internal/store/feature_flag.go`.
+Toggle behavior in a running app at runtime, with no redeploy or restart: create a flag, have your app call the evaluate endpoint, and flip it live from the dashboard or CLI whenever you want.
+
+::: details For contributors: where this lives in the source
+- `internal/api/feature_flags.go` - API handlers
+- `internal/store/feature_flag.go` - flag storage and rollout evaluation
+:::
 
 ## Why this isn't an env var
 
