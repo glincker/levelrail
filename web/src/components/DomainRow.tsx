@@ -178,13 +178,14 @@ export function DomainRow({
               <Badge variant="destructive" title={CERT_RENEWAL_STALLED_HINT}>
                 {certRenewalBadge(cert)?.label}
               </Badge>
-            ) : null}
-            <span
-              className="truncate text-[11px] text-muted-foreground"
-              title={cert.not_after}
-            >
-              {certExpiryLabel(cert.not_after)}
-            </span>
+            ) : (
+              <span
+                className="truncate text-[11px] text-muted-foreground"
+                title={cert.not_after}
+              >
+                {certExpiryLabel(cert.not_after)}
+              </span>
+            )}
           </span>
         ) : (
           <span className="text-xs text-muted-foreground/60 italic">
