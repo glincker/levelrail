@@ -2150,4 +2150,27 @@ func TestController_Reconcile_MySQL_WithSlowQueryThreshold_ConvertsMsToSeconds(t
 	}
 }
 
+func TestController_Reconcile_MariaDB_SetsSlowQueryLogFlagsByDefault(t *testing.T) {
+	rt := newFakeRuntime()
+	desired := &store.DesiredDatabase{Name: "main", Engine: store.EngineMariaDB, Version: "11"}
+	c := New("main", &fakeStore{db: desired}, rt, WithMariaDBCredentials(&MariaDBCredentials{
+		Username: "main",
+		Password: "s3cret",
+	}))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	wantCommand := []string{
+		"--slow-query-log=1",
+		"--long-query-time=1",
+		"--slow-query-log-file=" + MySQLSlowQueryLogPath,
+		"--log-output=FILE",
+	}
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+}
+
 func boolPtr(v bool) *bool { return &v }
