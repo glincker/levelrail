@@ -346,7 +346,10 @@ onUnmounted(() => {
 
 <style scoped>
 .hero-field {
-  position: fixed;
+  /* Absolute, not fixed: contained by .VPHero (position: relative,
+     overflow: hidden in custom.css) so the field scrolls away with the
+     hero section instead of persisting as a page-wide backdrop. */
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
