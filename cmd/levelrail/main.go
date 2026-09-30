@@ -1115,6 +1115,18 @@ func emailConfigLoader(db *store.DB, secretsManager *secrets.Manager, envFallbac
 				SecretAccessKey: secret,
 				From:            settings.SESFrom,
 			}}, nil
+		case store.EmailBackendResend:
+			if secretsManager == nil {
+				return email.Config{}, fmt.Errorf("email settings: resend backend selected but no master key is configured")
+			}
+			apiKey, err := resolveEmailSecret(ctx, secretsManager, "resend_api_key")
+			if err != nil {
+				return email.Config{}, err
+			}
+			return email.Config{Backend: email.BackendResend, Resend: &email.ResendConfig{
+				APIKey: apiKey,
+				From:   settings.ResendFrom,
+			}}, nil
 		default:
 			if envFallback == nil {
 				return email.Config{}, nil // NewSender turns this into email.ErrNotConfigured
