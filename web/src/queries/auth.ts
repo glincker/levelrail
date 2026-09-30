@@ -186,7 +186,9 @@ export function setupStatusQueryOptions() {
 // second-step UI, this hook has no navigation to do until that second
 // step succeeds too.
 // Returns to the path a 401 bounced the user from (?redirect=), else home.
-function goAfterLogin(
+// Exported for queries/passkeys.ts's own useLoginWithPasskey, which
+// reaches the same "signed in" end state through a different mutation.
+export function goAfterLogin(
   navigate: ReturnType<typeof useNavigate>,
   router: ReturnType<typeof useRouter>,
 ): void {

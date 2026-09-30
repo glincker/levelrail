@@ -17,6 +17,7 @@ import { LoginForm } from './LoginForm'
 import { RegisterForm } from './RegisterForm'
 import { OAuthButtons } from './OAuthButtons'
 import { OAuthErrorBanner } from './OAuthErrorBanner'
+import { PasskeyLoginButton } from './PasskeyLoginButton'
 
 // internal/api/devmode.go's fixed pair; release builds ignore dev mode entirely (ADR 013).
 const DEV_MODE_USERNAME = 'dev'
@@ -78,8 +79,9 @@ export function LoginScreen({ setup }: { setup?: string }) {
               <TabsTrigger value="sign-in">Sign in</TabsTrigger>
               <TabsTrigger value="register">Set up admin account</TabsTrigger>
             </TabsList>
-            <TabsContent value="sign-in">
+            <TabsContent value="sign-in" className="space-y-3">
               <LoginForm />
+              <PasskeyLoginButton />
             </TabsContent>
             <TabsContent value="register">
               <RegisterForm

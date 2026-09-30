@@ -23,6 +23,8 @@ import {
   useSetupTwoFactor,
   useTwoFactorStatus,
 } from '../../queries/twoFactor'
+import { passkeysQueryOptions } from '../../queries/passkeys'
+import { PasskeysCard } from '../../components/PasskeysCard'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import {
   Card,
@@ -58,19 +60,22 @@ export const Route = createFileRoute('/settings/security')({
     Promise.all([
       queryClient.ensureQueryData(sessionQueryOptions()),
       queryClient.ensureQueryData(twoFactorStatusQueryOptions()),
+      queryClient.ensureQueryData(passkeysQueryOptions()),
     ]),
   component: SecuritySettingsPage,
   pendingComponent: SecuritySettingsSkeleton,
 })
 
-// Mirrors this page's own four cards (current session, other sessions,
-// two-factor, login protection): each renders mostly text and a button
-// rather than form fields, so every card uses the 'line' row variant.
+// Mirrors this page's own five cards (current session, other sessions,
+// two-factor, passkeys, login protection): each renders mostly text and
+// a button rather than form fields, so every card uses the 'line' row
+// variant.
 function SecuritySettingsSkeleton() {
   return (
     <div className="space-y-6" aria-hidden="true">
       <SettingsHeaderSkeleton />
       <SettingsCardSkeleton rows={2} rowVariant="line" />
+      <SettingsCardSkeleton rows={1} rowVariant="line" />
       <SettingsCardSkeleton rows={1} rowVariant="line" />
       <SettingsCardSkeleton rows={1} rowVariant="line" />
       <SettingsCardSkeleton description={false} rows={1} rowVariant="line" />
@@ -123,6 +128,8 @@ function SecuritySettingsPage() {
       <OtherSessionsCard />
 
       <TwoFactorCard />
+
+      <PasskeysCard />
 
       <Card>
         <CardHeader>
