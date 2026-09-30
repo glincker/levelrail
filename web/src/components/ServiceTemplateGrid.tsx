@@ -194,7 +194,7 @@ export function ServiceTemplateGrid({
         />
       </div>
       {templatesQuery.isLoading ? (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
           {Array.from({ length: 6 }).map((_, index) => (
             <Skeleton key={index} className="h-24 w-full" />
           ))}
@@ -211,7 +211,7 @@ export function ServiceTemplateGrid({
               <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                 {category}
               </h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
                 {filtered
                   .filter((template) => template.category === category)
                   .map((template) => (
