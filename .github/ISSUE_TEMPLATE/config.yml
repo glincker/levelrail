@@ -12,3 +12,6 @@ contact_links:
   - name: Documentation
     url: https://github.com/glincker/levelrail/tree/main/docs
     about: Getting started, architecture, app spec reference, roadmap.
+  - name: Email support
+    url: mailto:support@levelrail.com
+    about: Anything that doesn't fit the options above.

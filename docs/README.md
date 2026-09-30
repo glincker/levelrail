@@ -158,6 +158,7 @@ noted per-document since these move between draft, proposed, accepted
 
 - **Bug or question?** Open an issue on [GitHub](https://github.com/glincker/levelrail/issues).
 - **Quick question?** Ask in the `#levelrail` forum on the [GLINR Discord](https://discord.gg/Ar5pcaZB99).
+- **Everything else?** Email [support@levelrail.com](mailto:support@levelrail.com).
 - **Security vulnerability?** Don't open a public issue; see [Security overview](security.md#reporting-a-vulnerability) or the repository's [SECURITY.md](../SECURITY.md).
 - **Want to contribute code?** See the repository's [CONTRIBUTING.md](../CONTRIBUTING.md) for branch naming, commit conventions, and how to run tests and the linter before opening a PR.
 

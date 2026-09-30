@@ -4,6 +4,7 @@ import {
   CheckCircleIcon,
   WarningCircleIcon,
   XCircleIcon,
+  EnvelopeIcon,
   HardDriveIcon,
   LifebuoyIcon,
   GearIcon,
@@ -363,7 +364,7 @@ function GeneralSettingsPage() {
             logs, metrics, and rollback handled for you. This instance and
             everything it manages runs on your own infrastructure.
           </p>
-          {(brand.SupportURL || brand.DocsURL) && (
+          {(brand.SupportURL || brand.SupportEmail || brand.DocsURL) && (
             <div className="flex flex-wrap gap-2 pt-1">
               {brand.SupportURL ? (
                 <Button
@@ -380,6 +381,17 @@ function GeneralSettingsPage() {
                 >
                   <LifebuoyIcon />
                   <span>Support</span>
+                </Button>
+              ) : null}
+              {brand.SupportEmail ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  render={<a href={`mailto:${brand.SupportEmail}`} />}
+                  nativeButton={false}
+                >
+                  <EnvelopeIcon />
+                  <span>{brand.SupportEmail}</span>
                 </Button>
               ) : null}
               {brand.DocsURL ? (

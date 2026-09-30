@@ -306,7 +306,8 @@ docker volume rm levelrail-data
 ## Getting help
 
 - Ran into a specific error? Check [Troubleshooting](troubleshooting.md) first.
-- Everything else (bugs, questions, feature requests): open an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+- Bugs, questions, feature requests: open an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+- Everything else: email [support@levelrail.com](mailto:support@levelrail.com).
 
 ## See also
 
