@@ -337,9 +337,99 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 60%);
 }
 
-.quickstart-shell .vp-code-group,
-.quickstart-shell div[class*='language-'] {
-  margin: 0;
+/* Comparison strip and 3-step "how it works": reuse the same hairline-card
+   language as .VPFeature and .screenshot-frame above instead of a new
+   pattern. */
+.compare-grid,
+.steps-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+@media (min-width: 640px) {
+  .compare-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 960px) {
+  .compare-grid,
+  .steps-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.compare-card,
+.step-card {
+  padding: 22px 24px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 16px;
+  background: var(--vp-c-bg-soft);
+}
+
+.compare-card p:first-child strong,
+.step-card p:nth-child(2) strong {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--vp-c-brand-1);
+}
+
+.compare-card p:last-child,
+.step-card p:last-child {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--vp-c-text-2);
+}
+
+.step-card__index {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vp-c-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.compare-cta {
+  display: inline-block;
+  margin-top: 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vp-c-brand-1);
+}
+
+/* Trust strip: license, live star count, and a data-ownership line right
+   under the hero CTAs. */
+.trust-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.trust-strip__item {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  color: var(--vp-c-text-2);
+}
+
+a.trust-strip__item:hover {
+  color: var(--vp-c-brand-1);
+}
+
+.trust-strip__item--stars img {
+  display: block;
+}
+
+.trust-strip__item--text {
+  color: var(--vp-c-text-3);
+  max-width: 46ch;
 }
 
 .screenshot-grid {

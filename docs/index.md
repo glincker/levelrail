@@ -35,6 +35,10 @@ features:
     details: 144 MCP tools (beta) backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a crashloop directly.
 ---
 
+<script setup lang="ts">
+import TerminalDemo from './.vitepress/theme/TerminalDemo.vue'
+</script>
+
 <div class="vp-doc landing-body">
 
 <section class="landing-section landing-section--quickstart">
@@ -42,33 +46,110 @@ features:
 ## Quickstart
 
 <div class="quickstart-shell">
+  <TerminalDemo />
+</div>
 
-::: code-group
+That install script checks the host, installs Docker if it's missing, and starts the control plane as a systemd service. `deploy` builds from `app.yaml` and only cuts traffic to the new container once its readiness probe passes. The full walkthrough, including the setup wizard and database attachment, is in [Getting started](/getting-started).
 
-```bash [Install]
-curl -fsSL https://levelrail.com/install.sh | sudo sh
-```
+</section>
 
-```yaml [app.yaml]
-version: 1
-services:
-  web:
-    build:
-      type: dockerfile
-    port: 8080
-```
+<section class="landing-section landing-section--compare">
 
-:::
+## How it compares
 
-Then deploy it:
+<div class="compare-grid">
 
-```bash
-levelrail-cli apps create --name your-app --file app.yaml --repo https://github.com/your-org/your-app
-```
+<div class="compare-card">
+
+**Server management**
+
+An agent dials out over mTLS and talks to the Docker Engine API directly. Nothing shells out to the `docker` CLI.
 
 </div>
 
-That is a running app with HTTPS, logs, and rollback. The full walkthrough, including the setup wizard and database attachment, is in [Getting started](/getting-started).
+<div class="compare-card">
+
+**Orchestration**
+
+A level-triggered reconciler diffs desired against observed state and writes a status condition with a reason after every pass.
+
+</div>
+
+<div class="compare-card">
+
+**Observability**
+
+Node-local metrics at 15 second resolution and full-text log search are built in, no separate Grafana or Loki install.
+
+</div>
+
+<div class="compare-card">
+
+**Multi-node networking**
+
+A WireGuard mesh and internal DNS connect nodes, with no inbound ports required on any managed server.
+
+</div>
+
+<div class="compare-card">
+
+**Rollback**
+
+Prior images are pinned, so garbage collection cannot remove a rollback target.
+
+</div>
+
+<div class="compare-card">
+
+**Footprint**
+
+SQLite in WAL mode, an embedded Caddy, and an embedded dashboard: one binary on one node.
+
+</div>
+
+</div>
+
+<a class="compare-cta" href="/comparison">See the full comparison against Coolify, Dokploy, CapRover, Dokku, and Kamal</a>
+
+</section>
+
+<section class="landing-section landing-section--steps">
+
+## How it works
+
+<div class="steps-grid">
+
+<div class="step-card">
+
+<span class="step-card__index">01</span>
+
+**Push to your git repo**
+
+GitHub, GitLab, or Bitbucket webhooks trigger a deploy on every push, with preview environments per pull request.
+
+</div>
+
+<div class="step-card">
+
+<span class="step-card__index">02</span>
+
+**Build**
+
+A Dockerfile, a Compose file, or Railpack auto-detection builds through BuildKit, with remote cache and live log streaming.
+
+</div>
+
+<div class="step-card">
+
+<span class="step-card__index">03</span>
+
+**Live app**
+
+TLS from the embedded Caddy ingress, node-local metrics and logs, and rollback to a pinned prior image, with no extra setup.
+
+</div>
+
+</div>
 
 </section>
 

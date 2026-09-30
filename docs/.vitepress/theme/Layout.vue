@@ -13,6 +13,35 @@ const { Layout } = DefaultTheme
     <template #home-hero-image>
       <HeroField />
     </template>
+    <template #home-hero-actions-after>
+      <div class="trust-strip">
+        <a
+          class="trust-strip__item"
+          href="https://github.com/glincker/levelrail/blob/main/LICENSE"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Apache 2.0
+        </a>
+        <a
+          class="trust-strip__item trust-strip__item--stars"
+          href="https://github.com/glincker/levelrail/stargazers"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <img
+            src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&label=stars&color=f59e0b"
+            alt="GitHub stars"
+            width="104"
+            height="20"
+            loading="lazy"
+          />
+        </a>
+        <span class="trust-strip__item trust-strip__item--text">
+          Runs on your own servers: secrets, metrics, and logs stay node-local, nothing shipped to a third party.
+        </span>
+      </div>
+    </template>
     <template #layout-bottom>
       <div class="site-footer-extra">
         <div class="site-footer-extra__inner">
