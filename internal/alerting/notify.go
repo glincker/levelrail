@@ -75,6 +75,11 @@ type Event struct {
 	// overdue summary, from EvaluateBackupMissing. Empty for every other
 	// rule kind and for resolved events.
 	BackupMissingNotice string
+	// VersionSkewNotice is populated only for a firing (not resolved)
+	// version_skew event: the running version vs. the configured
+	// channel's latest, from EvaluateVersionSkew. Empty for every other
+	// rule kind and for resolved events.
+	VersionSkewNotice string
 
 	// SLONotice is set only for a firing slo_burn event: which burn-rate tier
 	// tripped and how much error budget is left.
@@ -186,6 +191,7 @@ type genericPayload struct {
 	TaskFailureNotice    string     `json:"task_failure_notice,omitempty"`
 	DomainHealthNotices  []string   `json:"domain_health_notices,omitempty"`
 	BackupMissingNotice  string     `json:"backup_missing_notice,omitempty"`
+	VersionSkewNotice    string     `json:"version_skew_notice,omitempty"`
 	Headline             string     `json:"headline,omitempty"`
 	GroupNotices         []string   `json:"group_notices,omitempty"`
 	GroupCount           int        `json:"group_count,omitempty"`
@@ -208,6 +214,7 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 		TaskFailureNotice:    ev.TaskFailureNotice,
 		DomainHealthNotices:  ev.DomainHealthNotices,
 		BackupMissingNotice:  ev.BackupMissingNotice,
+		VersionSkewNotice:    ev.VersionSkewNotice,
 		Headline:             ev.Headline,
 		GroupNotices:         ev.GroupNotices,
 		GroupCount:           ev.GroupCount,
@@ -731,6 +738,9 @@ func summaryBody(ev Event) string {
 	}
 	if ev.BackupMissingNotice != "" {
 		fmt.Fprintf(&b, "\nBackup: %s", ev.BackupMissingNotice)
+	}
+	if ev.VersionSkewNotice != "" {
+		fmt.Fprintf(&b, "\nVersion: %s", ev.VersionSkewNotice)
 	}
 	if ev.SLONotice != "" {
 		fmt.Fprintf(&b, "\n%s", ev.SLONotice)

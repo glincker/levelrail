@@ -12,6 +12,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/upgrade"
+	"github.com/GLINCKER/levelrail/internal/version"
 )
 
 // LogsSource is the narrow surface Engine needs to attach log lines to
@@ -101,6 +103,13 @@ type Engine struct {
 	logArchive LogArchiveSource
 
 	nodeCertWarning, nodeCertCritical time.Duration
+
+	// versionSkew* back kind=version_skew rules, set via SetVersionSkew.
+	// nil versionSkewSettings (the default) means the feature is off, the
+	// same "absence degrades, never errors" shape logArchive above follows.
+	versionSkewSettings VersionSkewSettingsSource
+	versionSkewFetchers upgrade.Fetchers
+	versionSkewCache    *upgrade.Cache
 
 	noise *NoiseControl
 
@@ -221,6 +230,16 @@ func (e *Engine) SetControlPlaneBackups(src ControlPlaneBackupSource, maxAge tim
 // SetLogArchive enables kind=log_archive_stale rules.
 func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
 
+// SetVersionSkew enables kind=version_skew rules: settings supplies the
+// configured update channel, fetchers is the shared GitHub lookup
+// (internal/upgrade), the same one GET /api/v1/updates and
+// internal/updatecheck.Scheduler both use.
+func (e *Engine) SetVersionSkew(settings VersionSkewSettingsSource, fetchers upgrade.Fetchers) {
+	e.versionSkewSettings = settings
+	e.versionSkewFetchers = fetchers
+	e.versionSkewCache = upgrade.NewCache()
+}
+
 // SetNodeCertThresholds sets the default warning window and critical
 // threshold for kind=node_cert_expiring rules. Zero keeps the defaults.
 func (e *Engine) SetNodeCertThresholds(warning, critical time.Duration) {
@@ -264,7 +283,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 	for _, r := range rules {
 		var next Rule
 		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string
-		var taskFailureNotice, backupMissingNoticeText, sloNotice string
+		var taskFailureNotice, backupMissingNoticeText, sloNotice, versionSkewNotice string
 		switch r.Kind {
 		case KindThreshold:
 			next, err = EvaluateThreshold(ctx, e.metrics, r, now)
@@ -402,6 +421,15 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
+		case KindVersionSkew:
+			if e.versionSkewSettings == nil {
+				continue
+			}
+			next, versionSkewNotice, err = EvaluateVersionSkew(ctx, e.versionSkewSettings, e.versionSkewFetchers, e.versionSkewCache, r, version.Version, now)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
+				continue
+			}
 		default:
 			e.logger.Warn("alerting: rule has unknown kind, skipping", slog.String("rule_id", r.ID), slog.String("kind", string(r.Kind)))
 			continue
@@ -424,7 +452,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 			if r.Kind == KindSLOBurn {
 				e.sloEscalated(r.ID, next.Severity)
 			}
-			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices, taskFailureNotice, backupMissingNoticeText, sloNotice)
+			e.dispatch(ctx, next, false, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices, taskFailureNotice, backupMissingNoticeText, sloNotice, versionSkewNotice)
 			if r.Kind == KindCrashloop && e.autoRollback != nil {
 				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
 			}
@@ -435,12 +463,12 @@ func (e *Engine) Tick(ctx context.Context) error {
 			if r.Kind == KindSLOBurn {
 				e.sloForget(r.ID)
 			}
-			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, nil, "", "", "")
+			e.dispatch(ctx, next, true, nil, nil, nil, nil, nil, nil, "", "", "", "")
 		case stillFiring:
 			// A ticket-level SLO burn that worsens into a page-level one must
 			// notify again: the operator only heard a warning so far.
 			if r.Kind == KindSLOBurn && e.sloEscalated(r.ID, next.Severity) {
-				e.dispatch(ctx, next, false, nil, nil, nil, nil, nil, nil, "", "", sloNotice)
+				e.dispatch(ctx, next, false, nil, nil, nil, nil, nil, nil, "", "", sloNotice, "")
 			}
 			// No dispatch here: a rule that's still firing sends no repeat
 			// notification (see dispatch's own doc comment on why). But a
@@ -492,7 +520,7 @@ func (e *Engine) sloForget(id string) {
 // persisted successfully before dispatch is called, so a lost
 // notification doesn't leave the rule's stored state inconsistent with
 // reality, only the operator momentarily uninformed.
-func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string, taskFailureNotice, backupMissingNotice, sloNotice string) {
+func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string, taskFailureNotice, backupMissingNotice, sloNotice, versionSkewNotice string) {
 	// r.Enabled is already resolved against its attached channel
 	// (scanRule): a disabled channel silences the rule the same way
 	// DeployDispatcher.Dispatch skips a target with a disabled channel.
@@ -533,6 +561,9 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	}
 	if (r.Kind == KindBackupMissing || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale) && !resolved {
 		ev.BackupMissingNotice = backupMissingNotice
+	}
+	if r.Kind == KindVersionSkew && !resolved {
+		ev.VersionSkewNotice = versionSkewNotice
 	}
 
 	if r.Kind == KindSLOBurn && !resolved {

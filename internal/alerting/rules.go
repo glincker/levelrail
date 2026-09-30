@@ -50,6 +50,11 @@ const (
 
 	// KindLogArchiveStale is platform-wide: it fires when a log archive policy fails or stops succeeding.
 	KindLogArchiveStale Kind = "log_archive_stale"
+
+	// KindVersionSkew is platform-wide: it fires while the running build
+	// is behind the configured update channel's latest release
+	// (update_settings.channel, migrations/0258_update_settings.sql).
+	KindVersionSkew Kind = "version_skew"
 )
 
 // Comparator is how a threshold Rule compares the latest sample value
