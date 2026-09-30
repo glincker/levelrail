@@ -6,7 +6,10 @@ import { toast } from '@/components/ui/toast'
 import { GiteaAppConnectionCard } from '../../components/GiteaAppConnectionCard'
 import { GiteaAppReposCard } from '../../components/GiteaAppReposCard'
 import { giteaAppStatusQueryOptions } from '../../queries/giteaApp'
-import { PageSpinner } from '@/components/ui/page-spinner'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '@/components/settings/SettingsSkeletons'
 
 // Account-level, mirroring routes/settings/bitbucket-app.tsx's own
 // structure and placement.
@@ -14,8 +17,18 @@ export const Route = createFileRoute('/settings/gitea-app')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(giteaAppStatusQueryOptions()),
   component: GiteaAppSettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: GiteaAppSettingsSkeleton,
 })
+
+function GiteaAppSettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton icon />
+      <SettingsCardSkeleton rows={1} rowVariant="status" />
+      <SettingsCardSkeleton headerIcon rows={3} rowVariant="list" />
+    </div>
+  )
+}
 
 function GiteaAppSettingsPage() {
   useSuspenseQuery(giteaAppStatusQueryOptions())

@@ -4,7 +4,10 @@ import {
   useRegistrySettings,
 } from '../../queries/registry'
 import { RegistrySettingsCard } from '../../components/RegistrySettingsCard'
-import { PageSpinner } from '../../components/ui/page-spinner'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '../../components/settings/SettingsSkeletons'
 
 // Instance-level, not scoped to one app: lives under routes/settings/
 // next to cloudflare-tunnel.tsx, the same reasoning that file's own
@@ -18,8 +21,17 @@ export const Route = createFileRoute('/settings/registry')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(registrySettingsQueryOptions()),
   component: RegistrySettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: RegistrySettingsSkeleton,
 })
+
+function RegistrySettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton />
+      <SettingsCardSkeleton rows={1} />
+    </div>
+  )
+}
 
 function RegistrySettingsPage() {
   const { data: settings } = useRegistrySettings()

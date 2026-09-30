@@ -1,7 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { nodeProviderListQueryOptions } from '../../queries/nodeProvision'
 import { NodeProviderCredentialsCard } from '../../components/NodeProviderCredentialsCard'
-import { PageSpinner } from '../../components/ui/page-spinner'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '../../components/settings/SettingsSkeletons'
 
 // Instance-level, not scoped to one app: lives under routes/settings/
 // next to registry-credentials.tsx and backup-targets.tsx, the same
@@ -13,8 +16,17 @@ export const Route = createFileRoute('/settings/node-providers')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(nodeProviderListQueryOptions()),
   component: NodeProvidersSettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: NodeProvidersSettingsSkeleton,
 })
+
+function NodeProvidersSettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton />
+      <SettingsCardSkeleton rows={3} />
+    </div>
+  )
+}
 
 function NodeProvidersSettingsPage() {
   return (

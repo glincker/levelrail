@@ -44,7 +44,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { PageSpinner } from '@/components/ui/page-spinner'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '@/components/settings/SettingsSkeletons'
 
 // Loader-primed the same way routes/settings/tokens.tsx primes
 // tokenListQueryOptions: the component below only ever reads that warm
@@ -57,8 +60,23 @@ export const Route = createFileRoute('/settings/security')({
       queryClient.ensureQueryData(twoFactorStatusQueryOptions()),
     ]),
   component: SecuritySettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: SecuritySettingsSkeleton,
 })
+
+// Mirrors this page's own four cards (current session, other sessions,
+// two-factor, login protection): each renders mostly text and a button
+// rather than form fields, so every card uses the 'line' row variant.
+function SecuritySettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton />
+      <SettingsCardSkeleton rows={2} rowVariant="line" />
+      <SettingsCardSkeleton rows={1} rowVariant="line" />
+      <SettingsCardSkeleton rows={1} rowVariant="line" />
+      <SettingsCardSkeleton description={false} rows={1} rowVariant="line" />
+    </div>
+  )
+}
 
 // Matches TokenTable.tsx's own formatDate convention: toLocaleString(),
 // no separate date-formatting library, same as every other date already

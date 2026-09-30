@@ -5,7 +5,10 @@ import {
   useCloudflareTunnelSettings,
 } from '../../queries/cloudflareTunnel'
 import { CloudflareTunnelCard } from '../../components/CloudflareTunnelCard'
-import { PageSpinner } from '../../components/ui/page-spinner'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '../../components/settings/SettingsSkeletons'
 
 // Instance-level, not scoped to one app: lives under routes/settings/
 // next to email.tsx and github-app.tsx, the same reasoning those files'
@@ -21,8 +24,17 @@ export const Route = createFileRoute('/settings/cloudflare-tunnel')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(cloudflareTunnelSettingsQueryOptions()),
   component: CloudflareTunnelSettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: CloudflareTunnelSettingsSkeleton,
 })
+
+function CloudflareTunnelSettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton />
+      <SettingsCardSkeleton rows={1} />
+    </div>
+  )
+}
 
 function CloudflareTunnelSettingsPage() {
   const { data: settings } = useCloudflareTunnelSettings()
