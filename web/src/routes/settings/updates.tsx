@@ -14,15 +14,28 @@ import {
 } from '../../components/ui/card'
 import { updatesQueryOptions } from '../../queries/updates'
 import type { UpdateStatus } from '../../queries/updates'
-import { PageSpinner } from '../../components/ui/page-spinner'
 import { UpgradePreflight } from '../../components/settings/UpgradePreflight'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '../../components/settings/SettingsSkeletons'
 
 export const Route = createFileRoute('/settings/updates')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(updatesQueryOptions()),
   component: UpdatesSettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: UpdatesSettingsSkeleton,
 })
+
+function UpdatesSettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton />
+      <SettingsCardSkeleton rows={2} rowVariant="line" />
+      <SettingsCardSkeleton rows={3} rowVariant="list" />
+    </div>
+  )
+}
 
 function UpdatesSettingsPage() {
   const { data: status } = useSuspenseQuery(updatesQueryOptions())

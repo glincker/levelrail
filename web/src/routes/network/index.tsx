@@ -8,7 +8,7 @@ import { NetworkTopologyView } from '../../components/network/NetworkTopologyVie
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { EmptyState } from '@/components/ui/empty-state'
-import { PageSpinner } from '@/components/ui/page-spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 
 // The whole-mesh topology page: one "VPC" (the flat mesh every node
 // joins) with each node rendered as a zone. See
@@ -19,7 +19,7 @@ export const Route = createFileRoute('/network/')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(networkTopologyQueryOptions()),
   component: NetworkPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: NetworkPageSkeleton,
   errorComponent: NetworkPageError,
 })
 
@@ -56,6 +56,31 @@ function NetworkPage() {
       ) : (
         <NetworkTopologyView topology={topology} />
       )}
+    </div>
+  )
+}
+
+// The topology diagram's connector lines aren't worth faking, so this
+// mirrors just the outer chrome: header, then a row of zone-shaped boxes.
+function NetworkPageSkeleton() {
+  return (
+    <div className="space-y-4" aria-hidden="true">
+      <div>
+        <Skeleton className="h-6 w-24" />
+        <Skeleton className="mt-1 h-4 w-72" />
+      </div>
+      <div className="flex flex-wrap gap-4">
+        {Array.from({ length: 3 }, (_, i) => (
+          <div
+            key={i}
+            className="min-w-[18rem] flex-1 space-y-3 rounded-xl border border-dashed border-border bg-muted/20 p-3"
+          >
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-16 w-full rounded-lg" />
+            <Skeleton className="h-16 w-full rounded-lg" />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
