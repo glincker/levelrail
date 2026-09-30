@@ -63,6 +63,10 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesProvision(prog, rest, stdout, stderr, lookupEnv)
 	case "provisions":
 		return runNodesProvisions(prog, rest, stdout, stderr, lookupEnv)
+	case "ssh-provision":
+		return runNodesSSHProvision(prog, rest, stdout, stderr, lookupEnv)
+	case "ssh-provisions":
+		return runNodesSSHProvisions(prog, rest, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown nodes subcommand %q\n\n", prog, sub)
 		_, _ = fmt.Fprint(stderr, nodesUsage(prog))
@@ -92,6 +96,8 @@ func nodesUsage(prog string) string {
   %[1]s nodes providers list|set-credential [flags]                  manage cloud provider credentials (hetzner, digitalocean)
   %[1]s nodes provision --provider --region --size --name [flags]    create a server at a cloud provider and enroll it as a node
   %[1]s nodes provisions list|show <id> [flags]                      track a cloud node provision through to enrollment
+  %[1]s nodes ssh-provision --host --user (--key-file|--password) --name [flags]   adopt a machine you already have over SSH and enroll it as a node
+  %[1]s nodes ssh-provisions list|show <id> [flags]                  track an SSH node provision through to enrollment
 
 Run "%[1]s nodes <subcommand> -h" for a subcommand's own flags.
 `, prog)
