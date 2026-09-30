@@ -45,7 +45,7 @@ func WithOAuthSecrets(s OAuthSecrets) Option {
 }
 
 func isValidOAuthProvider(p string) bool {
-	return p == store.OAuthProviderGoogle || p == store.OAuthProviderGitHub || p == store.OAuthProviderOIDC
+	return p == store.OAuthProviderGoogle || p == store.OAuthProviderGitHub || p == store.OAuthProviderOIDC || p == store.OAuthProviderMicrosoft
 }
 
 // Sentinel errors completeOAuthSignin/completeOAuthLink return, mapped

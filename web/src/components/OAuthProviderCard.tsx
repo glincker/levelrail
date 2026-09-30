@@ -1,22 +1,38 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { GithubLogoIcon, GoogleLogoIcon, ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  GithubLogoIcon,
+  GoogleLogoIcon,
+  ShieldCheckIcon,
+  WindowsLogoIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import type { OAuthProviderSettings } from '../queries/oauth'
 import { useUpdateOAuthProviderSettings } from '../queries/oauth'
 import { Alert, AlertDescription } from './ui/alert'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from './ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from './ui/field'
 import { Input } from './ui/input'
 import { Switch } from './ui/switch'
 import { toast } from './ui/toast'
 
-const PROVIDER_META: Record<string, { label: string; icon: React.ReactNode }> = {
-  google: { label: 'Google', icon: <GoogleLogoIcon className="size-4" /> },
-  github: { label: 'GitHub', icon: <GithubLogoIcon className="size-4" /> },
-  oidc: { label: 'OIDC / SSO', icon: <ShieldCheckIcon className="size-4" /> },
-}
+const PROVIDER_META: Record<string, { label: string; icon: React.ReactNode }> =
+  {
+    google: { label: 'Google', icon: <GoogleLogoIcon className="size-4" /> },
+    github: { label: 'GitHub', icon: <GithubLogoIcon className="size-4" /> },
+    microsoft: {
+      label: 'Microsoft',
+      icon: <WindowsLogoIcon className="size-4" />,
+    },
+    oidc: { label: 'OIDC / SSO', icon: <ShieldCheckIcon className="size-4" /> },
+  }
 
 function buildSchema(provider: string, hasClientSecret: boolean) {
   return z
@@ -42,7 +58,8 @@ function buildSchema(provider: string, hasClientSecret: boolean) {
       if (!hasClientSecret && !data.clientSecret) {
         ctx.addIssue({
           code: 'custom',
-          message: 'Client secret is required the first time this provider is enabled',
+          message:
+            'Client secret is required the first time this provider is enabled',
           path: ['clientSecret'],
         })
       }
@@ -69,7 +86,9 @@ export function OAuthProviderCard({
   const meta = PROVIDER_META[settings.provider]
   const isOIDC = settings.provider === 'oidc'
   const { control, register, handleSubmit, formState } = useForm<FormValues>({
-    resolver: zodResolver(buildSchema(settings.provider, settings.has_client_secret)),
+    resolver: zodResolver(
+      buildSchema(settings.provider, settings.has_client_secret),
+    ),
     values: {
       enabled: settings.enabled,
       clientId: settings.client_id ?? '',
@@ -96,7 +115,10 @@ export function OAuthProviderCard({
       },
       {
         onSuccess: () => {
-          toast.add({ title: `${meta?.label ?? settings.provider} settings saved.`, type: 'success' })
+          toast.add({
+            title: `${meta?.label ?? settings.provider} settings saved.`,
+            type: 'success',
+          })
         },
       },
     )
@@ -164,8 +186,8 @@ export function OAuthProviderCard({
                   placeholder="Okta"
                 />
                 <FieldDescription>
-                  Shown on the login button as "Continue with ...". Defaults
-                  to "SSO".
+                  Shown on the login button as "Continue with ...". Defaults to
+                  "SSO".
                 </FieldDescription>
               </Field>
             ) : null}
@@ -207,8 +229,8 @@ export function OAuthProviderCard({
                 placeholder="example.com"
               />
               <FieldDescription>
-                Only new sign-ins from this email domain get an account
-                created automatically. Leave blank to allow any email.
+                Only new sign-ins from this email domain get an account created
+                automatically. Leave blank to allow any email.
               </FieldDescription>
             </Field>
           </FieldGroup>
@@ -218,7 +240,9 @@ export function OAuthProviderCard({
           </Button>
           {updateSettings.isError ? (
             <Alert variant="destructive">
-              <AlertDescription>{updateSettings.error.message}</AlertDescription>
+              <AlertDescription>
+                {updateSettings.error.message}
+              </AlertDescription>
             </Alert>
           ) : null}
         </form>

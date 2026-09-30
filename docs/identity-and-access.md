@@ -184,9 +184,19 @@ Regenerating recovery codes invalidates the entire previous set.
 
 Both the login-time verify step and every setup/confirm/disable call are rate limited (exponential backoff with a handful of free failures). This is separate from the password rate limiter.
 
+### Passkeys (WebAuthn)
+
+Sign in with Touch ID, Windows Hello, or a security key instead of a password. No master key required: a credential's public key is ordinary key material, not a secret, so it never goes through `internal/secrets`.
+
+**Registering a passkey** (`POST /api/v1/auth/passkeys/register/begin` then `.../register/finish`) requires an existing session: it adds a credential to the account you're already signed in as. `GET /api/v1/auth/passkeys` lists an account's own credentials; `DELETE /api/v1/auth/passkeys/{id}` revokes one.
+
+**Signing in with a passkey** (`POST /api/v1/auth/passkey-login/begin` then `.../finish`) is username-first, not usernameless: the operator types their username, the server looks up that account's own credentials, and the browser's passkey prompt proves possession. A successful passkey sign-in completes the session the same way a password does, without an additional TOTP prompt even if the account has 2FA enabled, the same shape OAuth sign-in already has.
+
+Every registration and login challenge is single-use and expires in 5 minutes; the relying party ID and origin are derived from the request's own `Host` header, since there is no single fixed domain to configure on a self-hosted platform.
+
 ### OAuth sign-in
 
-Three providers are supported: `google`, `github`, `oidc` (generic OpenID Connect, requires an issuer URL).
+Four providers are supported: `google`, `github`, `microsoft` (Azure AD, common multi-tenant endpoint), `oidc` (generic OpenID Connect, requires an issuer URL).
 
 Settings are per-provider rows (`GET`/`PUT /api/v1/settings/oauth[/{provider}]`), gated at `AbilityRoot` to change. Enabling a provider requires a client ID and a client secret (OIDC also requires an issuer URL). The secret is write-only over the API; `GET` only reveals `has_client_secret`.
 
@@ -392,6 +402,17 @@ Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automati
 | `POST` | `/api/v1/auth/2fa/recovery-codes/regenerate` | session |
 | `POST` | `/api/v1/auth/2fa/verify` | public (mfa_token required) |
 
+**Passkeys**
+
+| Method | Path | Ability |
+| --- | --- | --- |
+| `GET` | `/api/v1/auth/passkeys` | session |
+| `POST` | `/api/v1/auth/passkeys/register/begin` | session |
+| `POST` | `/api/v1/auth/passkeys/register/finish` | session |
+| `DELETE` | `/api/v1/auth/passkeys/{id}` | session |
+| `POST` | `/api/v1/auth/passkey-login/begin` | public |
+| `POST` | `/api/v1/auth/passkey-login/finish` | public |
+
 **OAuth sign-in**
 
 | Method | Path | Ability |
@@ -517,7 +538,7 @@ levelrail-cli audit-purge
   IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. There is no organization- or project-level grouping in the permission model. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.
 
 - **No SSO/SAML and no SCIM provisioning**
-  OAuth covers Google, GitHub, and generic OIDC. Nothing beyond that today.
+  OAuth covers Google, GitHub, Microsoft, and generic OIDC. Nothing beyond that today.
 
 - **No policy dry-run or simulation**
   A newly attached Deny statement takes effect on the very next request. The only way to check its effect is to make that request and see what happens.

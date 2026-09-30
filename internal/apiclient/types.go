@@ -598,9 +598,10 @@ type RegistryTagsResource struct {
 // redeclared from internal/store.OAuthProvider* rather than imported, the
 // same reasoning as ServiceResources above.
 const (
-	OAuthProviderGoogle = "google"
-	OAuthProviderGitHub = "github"
-	OAuthProviderOIDC   = "oidc"
+	OAuthProviderGoogle    = "google"
+	OAuthProviderGitHub    = "github"
+	OAuthProviderOIDC      = "oidc"
+	OAuthProviderMicrosoft = "microsoft"
 )
 
 // Email backends accepted by EmailSettingsResource.Backend.

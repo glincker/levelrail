@@ -1,19 +1,39 @@
 import { useQuery } from '@tanstack/react-query'
-import { GithubLogoIcon, GoogleLogoIcon, ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  GithubLogoIcon,
+  GoogleLogoIcon,
+  ShieldCheckIcon,
+  WindowsLogoIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import type { PublicOAuthProvider } from '../queries/oauth'
 import { publicOAuthProvidersQueryOptions } from '../queries/oauth'
 import { Button } from './ui/button'
 
-const PROVIDER_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
+const PROVIDER_LABELS: Record<
+  string,
+  { label: string; icon: React.ReactNode }
+> = {
   google: { label: 'Continue with Google', icon: <GoogleLogoIcon /> },
   github: { label: 'Continue with GitHub', icon: <GithubLogoIcon /> },
+  microsoft: { label: 'Continue with Microsoft', icon: <WindowsLogoIcon /> },
 }
 
-function buttonMeta(p: PublicOAuthProvider): { label: string; icon: React.ReactNode } {
+function buttonMeta(p: PublicOAuthProvider): {
+  label: string
+  icon: React.ReactNode
+} {
   if (p.provider === 'oidc') {
-    return { label: `Continue with ${p.display_name || 'SSO'}`, icon: <ShieldCheckIcon /> }
+    return {
+      label: `Continue with ${p.display_name || 'SSO'}`,
+      icon: <ShieldCheckIcon />,
+    }
   }
-  return PROVIDER_LABELS[p.provider] ?? { label: `Continue with ${p.provider}`, icon: null }
+  return (
+    PROVIDER_LABELS[p.provider] ?? {
+      label: `Continue with ${p.provider}`,
+      icon: null,
+    }
+  )
 }
 
 // Real top-level navigation (<a href>, not a fetch): the browser must

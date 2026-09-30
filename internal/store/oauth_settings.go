@@ -52,7 +52,7 @@ func (db *DB) GetOAuthProviderSettings(ctx context.Context, provider string) (OA
 	return s, nil
 }
 
-// ListOAuthProviderSettings returns both provider rows, ordered by
+// ListOAuthProviderSettings returns every provider row, ordered by
 // provider name: GET /api/v1/settings/oauth's read model.
 func (db *DB) ListOAuthProviderSettings(ctx context.Context) ([]OAuthProviderSettings, error) {
 	rows, err := db.QueryContext(ctx, `
