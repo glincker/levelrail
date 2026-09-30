@@ -23,7 +23,7 @@ import { Button } from '../../components/ui/button'
 import { DashboardUrlCard } from '../../components/DashboardUrlCard'
 import { dashboardUrlQueryOptions } from '../../queries/dashboardUrl'
 import { EmptyState } from '../../components/ui/empty-state'
-import { HelpLink } from '../../components/HelpLink'
+import { PageHeader } from '../../components/shell/PageHeader'
 
 // Centralized domains page: every domain currently claimed by an app
 // (GET /api/v1/domains, service_domains) merged client-side with
@@ -98,19 +98,12 @@ function DomainsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Domains</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Every domain routed through this platform, and the ingress settings
-            that decide how their certificates are issued.
-          </p>
-        </div>
-        <HelpLink
-          path="/domains-and-ingress"
-          label="Domains and ingress guide"
-        />
-      </div>
+      <PageHeader
+        title="Domains"
+        description="Every domain routed through this platform, and the ingress settings that decide how their certificates are issued."
+        helpPath="/domains-and-ingress"
+        helpLabel="Domains and ingress guide"
+      />
 
       <IngressSettingsCard
         settings={settings}
@@ -213,9 +206,7 @@ function DomainsPage() {
 function DomainsPending() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Domains</h1>
-      </div>
+      <PageHeader title="Domains" />
       <div className="h-32 animate-pulse rounded-lg border border-border bg-card" />
       <div className="h-24 animate-pulse rounded-lg border border-border bg-card" />
       <div>

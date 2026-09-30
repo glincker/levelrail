@@ -5,17 +5,23 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { HelpLink } from '@/components/HelpLink'
 
 export interface InfoTipProps {
   children: ReactNode
   label?: string
   side?: 'top' | 'right' | 'bottom' | 'left'
+  /** Docs path passed straight through to HelpLink; renders nothing if it resolves to neither a bundled page nor a configured docs URL. */
+  helpPath?: string
+  helpLabel?: string
 }
 
 export function InfoTip({
   children,
   label = 'More info',
   side = 'top',
+  helpPath,
+  helpLabel,
 }: InfoTipProps) {
   const [open, setOpen] = useState(false)
   const id = useId()
@@ -36,6 +42,14 @@ export function InfoTip({
         className="w-64 rounded-xl p-3 text-xs leading-relaxed shadow-floating"
       >
         {children}
+        {helpPath ? (
+          <HelpLink
+            path={helpPath}
+            label={helpLabel ?? 'Learn more'}
+            variant="inline"
+            className="mt-2"
+          />
+        ) : null}
       </PopoverContent>
     </Popover>
   )

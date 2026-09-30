@@ -13,6 +13,7 @@ import {
   ModelRowSkeleton,
 } from '../../components/ModelRow'
 import { EmptyState } from '../../components/ui/empty-state'
+import { PageHeader } from '../../components/shell/PageHeader'
 import { useGpuNodes, useModels } from '../../queries/models'
 import type { CreateModelResponse } from '../../types/models'
 
@@ -136,10 +137,10 @@ function ModelsPage() {
   const [created, setCreated] = useState<CreateModelResponse | null>(null)
   return (
     <div className="space-y-6">
-      <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-lg font-semibold text-foreground">AI models</h1>
-        <DeployModelDialog onDeployed={setCreated} />
-      </div>
+      <PageHeader
+        title="AI models"
+        actions={<DeployModelDialog onDeployed={setCreated} />}
+      />
       <section aria-labelledby="gpu-nodes-heading" className="space-y-3">
         <h2
           id="gpu-nodes-heading"
