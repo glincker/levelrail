@@ -43,7 +43,7 @@ export function DashboardUrlCard() {
       </CardHeader>
       <CardContent>
         <form
-          className="space-y-4"
+          className="space-y-5"
           onSubmit={(e) => {
             e.preventDefault()
             update.mutate(
@@ -83,7 +83,11 @@ export function DashboardUrlCard() {
               <AlertDescription>{update.error.message}</AlertDescription>
             </Alert>
           ) : null}
-          <Button type="submit" disabled={update.isPending || draft === null}>
+          <Button
+            type="submit"
+            size="sm"
+            disabled={update.isPending || draft === null}
+          >
             {update.isPending ? 'Saving...' : 'Save'}
           </Button>
         </form>
