@@ -23,6 +23,13 @@
   --vp-button-brand-hover-bg: var(--vp-c-brand-2);
   --vp-button-brand-active-bg: var(--vp-c-brand-2);
   --vp-button-brand-text: #fff;
+
+  /* Metallic headline gradient: a charcoal-to-mid-grey sheen in light mode,
+     flipped to white-to-mid-grey in .dark below. Kept as tokens so
+     .text-metallic and the hero's second line share one recipe instead of
+     each hardcoding a gradient. */
+  --metallic-grad-from: #3f3f46;
+  --metallic-grad-to: #82828c;
 }
 
 .dark {
@@ -50,16 +57,54 @@
   --vp-button-brand-text: #0b0e14;
 
   --vp-code-block-bg: #10141c;
+
+  --metallic-grad-from: #ffffff;
+  --metallic-grad-to: #8b8b94;
 }
 
 /* Home page redesign (index.md only). Everything below the brand tokens
    above is scoped to .VPHome so the rest of the docs site (Diátaxis
    content pages) is untouched. */
 
-.VPHome .VPHero .name .clip {
+/* Note: default theme markup puts both classes on one span
+   (class="name clip"), not nested, so this must be a compound selector
+   (no space) or the rule never matches and the name silently falls back
+   to VitePress's own flat --vp-c-brand-1 text color. */
+.VPHome .VPHero .name.clip {
   background: linear-gradient(135deg, var(--vp-c-brand-3) 0%, var(--vp-c-brand-1) 60%);
-  background-clip: text;
   -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Metallic headline gradient: reusable for major headline moments, used
+   sparingly (reference: one hero line, not every heading). Applied here to
+   the homepage hero's second line; --metallic-grad-* flips light/dark above
+   so it degrades to a legible charcoal sheen instead of vanishing in light
+   mode. */
+.text-metallic,
+.VPHome .VPHero .text {
+  background: linear-gradient(180deg, var(--metallic-grad-from) 0%, var(--metallic-grad-to) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+@supports not (background-clip: text) and not (-webkit-background-clip: text) {
+  .VPHome .VPHero .name.clip {
+    background: none;
+    color: var(--vp-c-brand-1);
+    -webkit-text-fill-color: currentColor;
+  }
+
+  .text-metallic,
+  .VPHome .VPHero .text {
+    background: none;
+    color: var(--metallic-grad-from);
+    -webkit-text-fill-color: currentColor;
+  }
 }
 
 .VPHome .VPHero {
