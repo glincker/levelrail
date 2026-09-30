@@ -48,7 +48,7 @@ Tones: `neutral | success | warning | danger | info | accent`. Tokens live in `i
 
 - One focal point per screen; answer the question in the first viewport.
 - Prefer a number, sparkline, pill or icon over a sentence. One short sentence at most.
-- Put help copy in an `InfoTip`, not inline.
+- Put help copy in an `InfoTip`, not inline. Pass `helpPath`/`helpLabel` to add a docs link below the copy; it renders nothing if that path has no bundled or hosted page.
 - Use `Suggestion` with a one-click action for anything the app can fix itself.
 - Show skeletons while loading and an `EmptyState` (`@/components/ui/empty-state`) with a next action when empty.
 - Use `RelativeTime` with `live` for times that should keep updating.
