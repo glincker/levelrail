@@ -14,7 +14,7 @@ Whichever one gets you a running control plane, [Deploy your first app](#deploy-
 ## Start self-hosted
 
 ```
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
+curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
 This downloads the latest release binary, installs Docker if it's missing, and starts the control plane as a systemd service. Before running it on a real server, check the [requirements checklist](installing.md#requirements): supported OS, a practical RAM/CPU/disk starting point, and which ports need to be open. Every option (pinning a version, running as a Docker container instead, upgrading, uninstalling) is in [Installing](installing.md).

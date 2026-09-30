@@ -33,7 +33,7 @@ As a practical starting point, not a hard requirement: 1 vCPU / 1 GB RAM / 10 GB
 ## Option 1: install.sh (recommended)
 
 ```
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
+curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
 This is the same script linked from the root [README](../README.md). It:
@@ -84,22 +84,22 @@ Common scenarios:
 
 ::: code-group
 ```bash [Pin a specific release]
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+curl -fsSL https://levelrail.com/install.sh \
   | sudo LEVELRAIL_VERSION=v0.2.0-beta.5 sh
 ```
 
 ```bash [Custom data directory]
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+curl -fsSL https://levelrail.com/install.sh \
   | sudo LEVELRAIL_DATA_DIR=/data/levelrail sh
 ```
 
 ```bash [Configure UFW automatically]
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+curl -fsSL https://levelrail.com/install.sh \
   | sudo LEVELRAIL_CONFIGURE_UFW=1 sh
 ```
 
 ```bash [Ignore a failed preflight check]
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+curl -fsSL https://levelrail.com/install.sh \
   | sudo sh -s -- --force
 ```
 :::
@@ -111,7 +111,7 @@ Each release publishes `checksums.txt` (SHA-256 of every CLI, agent and control 
 `install.sh` always verifies the SHA-256 checksum and refuses to install on a mismatch. It also verifies the signature when `cosign` is installed and the release ships a bundle. Set `APP_INSTALL_VERIFY=require` to fail unless the signature verifies (no cosign, no bundle, or a bad signature all abort), or `APP_INSTALL_VERIFY=off` to skip only the signature step.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+curl -fsSL https://levelrail.com/install.sh \
   | sudo APP_INSTALL_VERIFY=require sh
 ```
 
@@ -248,7 +248,7 @@ The live database is kept beside the restored one as `.before-restore-<timestamp
 Run the `upgrade` subcommand. It replaces the binary with the newest release, keeps your unit file (and any `systemctl edit` overrides) and data, restarts the service, and waits for it to come back healthy.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh -s upgrade
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s upgrade
 ```
 
 Re-running the installer without arguments also works: it repairs the installation and rewrites the unit file.
@@ -256,7 +256,7 @@ Re-running the installer without arguments also works: it repairs the installati
 To pin a specific release instead of the latest:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
+curl -fsSL https://levelrail.com/install.sh \
   | sudo LEVELRAIL_VERSION=v0.1.0 sh
 ```
 
@@ -284,10 +284,10 @@ The named volume holding `/var/lib/levelrail-data` persists across recreation.
 
 ```bash
 # removes the service, unit file, and binary; keeps /var/lib/levelrail-data
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh -s uninstall
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s uninstall
 
 # also deletes the data directory (database, master key, certificates)
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh -s uninstall --purge
+curl -fsSL https://levelrail.com/install.sh | sudo sh -s uninstall --purge
 ```
 
 ::: warning

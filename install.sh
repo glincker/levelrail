@@ -1,5 +1,5 @@
 #!/bin/sh
-# curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
+# curl -fsSL https://levelrail.com/install.sh | sudo sh
 #
 # Installs the levelrail control plane binary, a systemd unit, and Docker
 # (if missing) on a single Linux host.
