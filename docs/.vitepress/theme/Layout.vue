@@ -6,6 +6,9 @@ const { Layout } = DefaultTheme
 
 <template>
   <Layout>
+    <template #home-hero-info-before>
+      <p class="hero-eyebrow">Self-hosted &middot; Apache 2.0</p>
+    </template>
     <template #layout-bottom>
       <div class="site-footer-extra">
         <div class="site-footer-extra__inner">
