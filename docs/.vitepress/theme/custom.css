@@ -330,7 +330,7 @@
 }
 
 .quickstart-shell {
-  margin-top: 20px;
+  margin-top: 24px;
   padding: 10px;
   border: 1px solid var(--vp-c-divider);
   border-radius: 20px;
@@ -352,6 +352,11 @@
   .compare-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .compare-grid,
+  .steps-grid {
+    gap: 16px;
+  }
 }
 
 @media (min-width: 960px) {
@@ -361,12 +366,25 @@
   }
 }
 
+/* Same hairline-card language as .VPFeature and .screenshot-frame: hover
+   lift and an amber border/glow, so this section doesn't read as static
+   next to the rest of the page's card grids. */
 .compare-card,
 .step-card {
   padding: 22px 24px;
   border: 1px solid var(--vp-c-divider);
   border-radius: 16px;
   background: var(--vp-c-bg-soft);
+  transition: border-color 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.compare-card:hover,
+.step-card:hover {
+  border-color: var(--vp-c-brand-1);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px -12px rgba(217, 119, 6, 0.35);
 }
 
 .compare-card p:first-child strong,
@@ -427,8 +445,10 @@ a.trust-strip__item:hover {
   display: block;
 }
 
+/* text-2, not text-3: this sits over the hero's amber gradient, and
+   text-3 falls under WCAG AA contrast at this size against that backdrop. */
 .trust-strip__item--text {
-  color: var(--vp-c-text-3);
+  color: var(--vp-c-text-2);
   max-width: 46ch;
 }
 
@@ -472,7 +492,9 @@ a.trust-strip__item:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .VPHome .VPFeature,
-  .screenshot-frame {
+  .screenshot-frame,
+  .compare-card,
+  .step-card {
     transition: none;
   }
 }
@@ -571,7 +593,7 @@ a.trust-strip__item:hover {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--vp-c-text-3);
+  color: var(--vp-c-text-2);
   margin: 0 0 2px;
 }
 
@@ -587,7 +609,7 @@ a.trust-strip__item:hover {
 
 .site-footer-extra__blurb {
   font-size: 13px;
-  color: var(--vp-c-text-3);
+  color: var(--vp-c-text-2);
   margin: 0;
 }
 
