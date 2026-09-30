@@ -6,7 +6,7 @@ const description =
   'A self-hosted deployment platform whose agent talks to Docker’s own Engine API directly, ' +
   'no SSH or CLI shelling, with metrics and log storage built into the core.'
 
-const siteUrl = 'https://levelrail.glinr.com'
+const siteUrl = 'https://levelrail.com'
 
 // Defined once and reused for both the sidebar itself and
 // pageToSection below (canonicalUrl/BreadcrumbList in transformHead),
