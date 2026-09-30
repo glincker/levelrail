@@ -22,54 +22,104 @@ const sidebarGroups = [
     items: [
       { text: 'Installing', link: '/installing' },
       { text: 'Troubleshooting', link: '/troubleshooting' },
-      { text: 'Deploy failures', link: '/deploy-failures' },
-      { text: 'Docker', link: '/docker' },
-      { text: 'Domains and ingress', link: '/domains-and-ingress' },
-      { text: 'Deployments page', link: '/deployments-page' },
-      { text: 'Load balancing', link: '/load-balancing' },
-      { text: 'ACME verification runbook', link: '/acme-verification-runbook' },
-      { text: 'Feature flags', link: '/feature-flags' },
-      { text: 'Master key rotation', link: '/master-key-rotation' },
-      { text: 'Control plane backup', link: '/control-plane-backup' },
-      { text: 'Disaster recovery', link: '/disaster-recovery' },
-      { text: 'Resilience', link: '/resilience' },
       {
-        text: 'Migrating from Coolify, Dokploy, or CapRover',
-        link: '/migrating-from-coolify-dokploy-and-caprover',
+        text: 'Deploying',
+        collapsed: true,
+        items: [
+          { text: 'Deploying apps', link: '/deploying-apps' },
+          { text: 'Deploy safety', link: '/deploy-safety' },
+          { text: 'Deploy failures', link: '/deploy-failures' },
+          { text: 'Scheduled deploys', link: '/scheduled-deploys' },
+          { text: 'Deployments page', link: '/deployments-page' },
+          { text: 'Screenshots', link: '/screenshots' },
+          { text: 'Docker', link: '/docker' },
+        ],
       },
-      { text: 'Migrating from Vercel', link: '/migrating-from-vercel' },
-      { text: 'Deploying from GitHub Actions', link: '/github-actions' },
-      { text: 'Pipelines', link: '/pipelines' },
-      { text: 'Platform as code', link: '/platform-as-code' },
-      { text: 'Screenshots', link: '/screenshots' },
-      { text: 'Deploying apps', link: '/deploying-apps' },
-      { text: 'Deploy safety', link: '/deploy-safety' },
-      { text: 'Scheduled deploys', link: '/scheduled-deploys' },
-      { text: 'Managing databases', link: '/managing-databases' },
-      { text: 'Observability', link: '/observability' },
-      { text: 'Public status page', link: '/status-page' },
-      { text: 'Multi-node', link: '/multi-node' },
-      { text: 'Multi-node quickstart', link: '/multi-node-quickstart' },
-      { text: 'Node provisioning', link: '/node-provisioning' },
       {
-        text: 'Multi-cloud provisioning quickstart',
-        link: '/multi-cloud-provisioning',
+        text: 'Networking and multi-node',
+        collapsed: true,
+        items: [
+          { text: 'Domains and ingress', link: '/domains-and-ingress' },
+          { text: 'Load balancing', link: '/load-balancing' },
+          { text: 'ACME verification runbook', link: '/acme-verification-runbook' },
+          { text: 'Multi-node', link: '/multi-node' },
+          { text: 'Multi-node quickstart', link: '/multi-node-quickstart' },
+          { text: 'Node provisioning', link: '/node-provisioning' },
+          {
+            text: 'Multi-cloud provisioning quickstart',
+            link: '/multi-cloud-provisioning',
+          },
+          { text: 'Network topology', link: '/network-topology' },
+        ],
       },
-      { text: 'AI models', link: '/ai-models' },
       {
-        text: 'Projects and organizations',
-        link: '/projects-and-organizations',
+        text: 'Databases and storage',
+        collapsed: true,
+        items: [
+          { text: 'Managing databases', link: '/managing-databases' },
+          {
+            text: 'Connecting apps to databases',
+            link: '/connecting-apps-to-databases',
+          },
+          { text: 'Backups and storage', link: '/backups-and-storage' },
+          { text: 'Object storage', link: '/object-storage' },
+          { text: 'Control plane backup', link: '/control-plane-backup' },
+          { text: 'Disaster recovery', link: '/disaster-recovery' },
+        ],
       },
-        {
-        text: 'Managing apps at scale',
-        link: '/managing-apps-at-scale',
+      {
+        text: 'CI/CD and automation',
+        collapsed: true,
+        items: [
+          { text: 'Deploying from GitHub Actions', link: '/github-actions' },
+          { text: 'Pipelines', link: '/pipelines' },
+          { text: 'Platform as code', link: '/platform-as-code' },
+          { text: 'Git integrations', link: '/git-integrations' },
+        ],
       },
-      { text: 'Identity and access', link: '/identity-and-access' },
-      { text: 'Git integrations', link: '/git-integrations' },
-      { text: 'Backups and storage', link: '/backups-and-storage' },
-      { text: 'Object storage', link: '/object-storage' },
-      { text: 'Templates and registry', link: '/templates-and-registry' },
-      { text: 'Starter kit templates', link: '/templates' },
+      {
+        text: 'Security and access',
+        collapsed: true,
+        items: [
+          { text: 'Feature flags', link: '/feature-flags' },
+          { text: 'Master key rotation', link: '/master-key-rotation' },
+          { text: 'Identity and access', link: '/identity-and-access' },
+          {
+            text: 'Projects and organizations',
+            link: '/projects-and-organizations',
+          },
+        ],
+      },
+      {
+        text: 'Scale and operations',
+        collapsed: true,
+        items: [
+          { text: 'Managing apps at scale', link: '/managing-apps-at-scale' },
+          { text: 'Resilience', link: '/resilience' },
+          { text: 'Observability', link: '/observability' },
+          { text: 'Public status page', link: '/status-page' },
+          { text: 'AI models', link: '/ai-models' },
+        ],
+      },
+      {
+        text: 'Templates and catalog',
+        collapsed: true,
+        items: [
+          { text: 'Templates and registry', link: '/templates-and-registry' },
+          { text: 'Starter kit templates', link: '/templates' },
+        ],
+      },
+      {
+        text: 'Migrating from other platforms',
+        collapsed: true,
+        items: [
+          {
+            text: 'Migrating from Coolify, Dokploy, or CapRover',
+            link: '/migrating-from-coolify-dokploy-and-caprover',
+          },
+          { text: 'Migrating from Vercel', link: '/migrating-from-vercel' },
+        ],
+      },
     ],
   },
   {
@@ -127,10 +177,18 @@ const sidebarGroups = [
 // itself so the breadcrumb's middle segment can never list a section a
 // page doesn't actually appear under in the real sidebar.
 const pageToSection = new Map<string, string>()
-for (const group of sidebarGroups) {
-  for (const item of group.items) {
-    pageToSection.set(item.link.replace(/^\//, ''), group.text)
+function collectPages(items: typeof sidebarGroups[number]['items'], sectionText: string) {
+  for (const item of items) {
+    if ('link' in item) {
+      pageToSection.set(item.link.replace(/^\//, ''), sectionText)
+    }
+    if ('items' in item) {
+      collectPages(item.items, sectionText)
+    }
   }
+}
+for (const group of sidebarGroups) {
+  collectPages(group.items, group.text)
 }
 
 export default withMermaid({

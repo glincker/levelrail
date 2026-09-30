@@ -19,49 +19,6 @@ curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh 
 
 This downloads the latest release binary, installs Docker if it's missing, and starts the control plane as a systemd service. Before running it on a real server, check the [requirements checklist](installing.md#requirements): supported OS, a practical RAM/CPU/disk starting point, and which ports need to be open. Every option (pinning a version, running as a Docker container instead, upgrading, uninstalling) is in [Installing](installing.md).
 
-## Building from source
-
-Building from source is the path for contributing code, running an unreleased commit, or trying Levelrail out locally without provisioning a server. See the repo's [CONTRIBUTING.md](../CONTRIBUTING.md) for branch and commit conventions and how to run the test suite before opening a PR.
-
-### Requirements
-
-- Go 1.26+
-- Docker (a running daemon is required; the control plane and agent talk to the Docker Engine API directly and never shell out to the `docker` CLI)
-- Node.js and npm (only if building the frontend from source; a recent LTS release works, no pinned version)
-
-### Build the binaries
-
-The control plane and node agent are separate Go binaries:
-
-```
-# control plane
-go build ./cmd/levelrail
-
-# node agent
-go build ./cmd/levelrail-agent
-```
-
-There's also a CLI, a thin scriptable HTTP client for the control plane's API:
-
-```
-go build ./cmd/levelrail-cli
-```
-
-### Frontend
-
-The frontend lives in `web/` as a separate Vite project. It's embedded into the control plane binary via `embed.FS` at build time, so production deployments don't run a separate Node process.
-
-```
-cd web
-npm install
-npm run dev       # Vite dev server
-npm run build      # type-check and produce a production build in dist/
-```
-
-See `web/README.md` for lint, format, typecheck, preview, and other commands plus conventions.
-
-The control plane binary listens on `:8080` by default.
-
 ## Deploy your first app
 
 Here's the path from local setup to a live app:
@@ -278,6 +235,49 @@ levelrail-cli completion fish > ~/.config/fish/completions/levelrail-cli.fish
 :::
 
 Run `levelrail-cli completion -h` for the same instructions from the CLI itself.
+
+## Building from source
+
+Building from source is the path for contributing code, running an unreleased commit, or trying Levelrail out locally without provisioning a server. See the repo's [CONTRIBUTING.md](../CONTRIBUTING.md) for branch and commit conventions and how to run the test suite before opening a PR.
+
+### Requirements
+
+- Go 1.26+
+- Docker (a running daemon is required; the control plane and agent talk to the Docker Engine API directly and never shell out to the `docker` CLI)
+- Node.js and npm (only if building the frontend from source; a recent LTS release works, no pinned version)
+
+### Build the binaries
+
+The control plane and node agent are separate Go binaries:
+
+```
+# control plane
+go build ./cmd/levelrail
+
+# node agent
+go build ./cmd/levelrail-agent
+```
+
+There's also a CLI, a thin scriptable HTTP client for the control plane's API:
+
+```
+go build ./cmd/levelrail-cli
+```
+
+### Frontend
+
+The frontend lives in `web/` as a separate Vite project. It's embedded into the control plane binary via `embed.FS` at build time, so production deployments don't run a separate Node process.
+
+```
+cd web
+npm install
+npm run dev       # Vite dev server
+npm run build      # type-check and produce a production build in dist/
+```
+
+See `web/README.md` for lint, format, typecheck, preview, and other commands plus conventions.
+
+The control plane binary listens on `:8080` by default.
 
 ## The "Get set up" checklist
 

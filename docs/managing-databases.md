@@ -134,6 +134,8 @@ Attach an already-created database to an app using `PUT /api/v1/apps/{name}/data
 
 You don't need to deploy from an `app.yaml` with a `{ from: "<database>.<field>" }` env var to do this.
 
+This flow attaches at most one database per app. If an app needs more than one, or you want to see cross-node reachability before connecting, use [Connecting apps to databases](connecting-apps-to-databases.md) instead, a newer, separate mechanism that allows arbitrarily many connections per app.
+
 **Fields**
 
 - `database_name`: Required
