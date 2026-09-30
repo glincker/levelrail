@@ -14,17 +14,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
-// isManagedContainer reports whether c is a Levelrail-managed container:
-// it carries this platform's own instance label (spec.InstanceLabelKey,
-// stamped on every container any control-plane instance creates) and its
-// name still matches a real app or database record in desired (the
-// desiredContainerNameSet an app's row produces). A container with no
-// such label was never created by this platform; one that has the label
-// but whose name has fallen out of desired is a Levelrail container
-// whose owning app or database row was deleted without the container
-// itself being cleaned up. Either way, false means orphaned: no
-// reconciler is converging it, so the stop/remove/claim routes below are
-// safe to act on it directly.
+// A container is managed if it carries this platform's instance label
+// and its name still has a live app/database record; otherwise orphaned.
 func isManagedContainer(c docker.ContainerState, desired map[string]bool) bool {
 	if c.Labels[spec.InstanceLabelKey] == "" {
 		return false
@@ -32,9 +23,6 @@ func isManagedContainer(c docker.ContainerState, desired map[string]bool) bool {
 	return desired[c.Name]
 }
 
-// lookupSystemContainer finds one container by its exact name among
-// containers (docker.ContainerState.Name, an exact match, not
-// ListByPrefix's own prefix semantics).
 func lookupSystemContainer(name string, containers []docker.ContainerState) (docker.ContainerState, bool) {
 	for _, c := range containers {
 		if c.Name == name {
@@ -44,14 +32,8 @@ func lookupSystemContainer(name string, containers []docker.ContainerState) (doc
 	return docker.ContainerState{}, false
 }
 
-// requireOrphanedContainer resolves the container named by the
-// {name} path value and confirms it is genuinely orphaned (not
-// isManagedContainer), writing the appropriate error response and
-// returning ok=false otherwise: 404 if no such container exists, 409 if
-// it's Levelrail-managed. Every mutating route below calls this rather
-// than trusting a client-supplied "is this orphaned" flag, so a stale or
-// forged request can never stop, remove, or claim a container the
-// reconciler still owns.
+// Re-derives orphaned status server-side rather than trusting the
+// client: 404 if no such container, 409 if it's Levelrail-managed.
 func (rt *Router) requireOrphanedContainer(w http.ResponseWriter, r *http.Request, name string) (docker.ContainerState, bool) {
 	containers, err := rt.containers.ListByPrefix(r.Context(), "")
 	if err != nil {
@@ -75,15 +57,9 @@ func (rt *Router) requireOrphanedContainer(w http.ResponseWriter, r *http.Reques
 	return c, true
 }
 
-// orphanedContainerStopTimeout mirrors every reconciler controller's own
-// defaultStopTimeout (e.g. internal/reconcile/database's), so a manual
-// stop through this route waits the same grace period a reconciler-
-// driven one already would.
+// Matches every reconciler controller's own defaultStopTimeout.
 const orphanedContainerStopTimeout = 10 * time.Second
 
-// handleStopOrphanedContainer handles POST
-// /api/v1/system/containers/{name}/stop: stops (does not remove) one
-// orphaned container. 501 if no OrphanedContainerManager is configured.
 func (rt *Router) handleStopOrphanedContainer(w http.ResponseWriter, r *http.Request) {
 	if rt.containers == nil || rt.orphanedContainers == nil {
 		writeError(w, http.StatusNotImplemented, "container management is not configured on this control plane")
@@ -103,11 +79,6 @@ func (rt *Router) handleStopOrphanedContainer(w http.ResponseWriter, r *http.Req
 	writeJSON(w, http.StatusOK, map[string]string{"status": "stopped"})
 }
 
-// handleRemoveOrphanedContainer handles POST
-// /api/v1/system/containers/{name}/remove: stops and removes one
-// orphaned container (Remove's force=true stops it first if still
-// running, the same Engine API behavior Runtime.Remove's own doc
-// comment documents). 501 if no OrphanedContainerManager is configured.
 func (rt *Router) handleRemoveOrphanedContainer(w http.ResponseWriter, r *http.Request) {
 	if rt.containers == nil || rt.orphanedContainers == nil {
 		writeError(w, http.StatusNotImplemented, "container management is not configured on this control plane")
@@ -127,30 +98,18 @@ func (rt *Router) handleRemoveOrphanedContainer(w http.ResponseWriter, r *http.R
 	writeJSON(w, http.StatusOK, map[string]string{"status": "removed"})
 }
 
-// appNameInvalidChars matches everything a derived app name may not
-// contain, mirroring web/src/components/CreateAppFields.tsx's own
-// imageSlugFrom: lowercase, [a-z0-9-] only.
+// Mirrors web/src/components/CreateAppFields.tsx's own imageSlugFrom.
 var appNameInvalidChars = regexp.MustCompile(`[^a-z0-9-]+`)
 
-// deriveAppNameFromContainer turns an orphaned container's own name into
-// a candidate app name: lowercased, non [a-z0-9-] runs collapsed to a
-// single dash, leading/trailing dashes trimmed. Returns "" if nothing
-// usable is left, which callers treat as "ask the operator for a name."
+// Returns "" if nothing usable is left, callers then ask the operator for a name.
 func deriveAppNameFromContainer(containerName string) string {
 	slug := appNameInvalidChars.ReplaceAllString(strings.ToLower(containerName), "-")
 	return strings.Trim(slug, "-")
 }
 
-// defaultClaimPort is used when an orphaned container reports no port
-// binding at all, so validateAppResource's port>0 requirement is always
-// satisfiable; the operator can still change it on the app afterward.
 const defaultClaimPort = 80
 
-// containerClaimPort picks the port a claimed app deploys with: the
-// orphaned container's own first published container port, so a
-// container that actually serves traffic on, say, 3000 doesn't silently
-// become an app listening on 80. Falls back to defaultClaimPort when the
-// container published nothing (e.g. it isn't running right now).
+// The container's own first published port, so it doesn't silently become an app on 80.
 func containerClaimPort(c docker.ContainerState) int {
 	if len(c.Ports) > 0 && c.Ports[0].ContainerPort > 0 {
 		return c.Ports[0].ContainerPort
@@ -158,28 +117,13 @@ func containerClaimPort(c docker.ContainerState) int {
 	return defaultClaimPort
 }
 
-// claimOrphanedContainerRequest is POST
-// /api/v1/system/containers/{name}/claim's body: an optional app name
-// override. Omitted (or blank), the derived name from
-// deriveAppNameFromContainer is used instead.
 type claimOrphanedContainerRequest struct {
 	Name string `json:"name"`
 }
 
-// handleClaimOrphanedContainer handles POST
-// /api/v1/system/containers/{name}/claim: creates a real Levelrail app
-// (store.DesiredService row) with Image set to the orphaned container's
-// own image, build.type: image's exact shape (a prebuilt image already
-// in a registry, internal/spec.go), not an attempt to adopt the
-// container's live process or filesystem state. The reconciler creates
-// its own fresh container for the new app on its first reconcile pass;
-// this handler never touches the orphaned container itself.
-//
-// Reuses handleCreateApp directly via a constructed *http.Request rather
-// than duplicating its validation, secret-handling, node-placement, and
-// desired-state-save logic: this endpoint's only real job is deriving
-// the right appResource from an orphaned container, not reimplementing
-// app creation.
+// Creates a real app (build.type: image) from the container's own image,
+// it does not adopt the container's live state. Reuses handleCreateApp
+// directly instead of duplicating its validation/secrets/placement logic.
 func (rt *Router) handleClaimOrphanedContainer(w http.ResponseWriter, r *http.Request) {
 	if rt.containers == nil {
 		writeError(w, http.StatusNotImplemented, "container listing is not configured on this control plane")

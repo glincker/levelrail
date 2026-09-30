@@ -14,9 +14,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// fakeOrphanedContainerManager is a hand-written fake for
-// OrphanedContainerManager, the same convention fakeOrphanedVolumeManager
-// (volumes_orphaned_test.go) already establishes in this package.
 type fakeOrphanedContainerManager struct {
 	stopped   []string
 	removed   []string
@@ -40,21 +37,13 @@ func (f *fakeOrphanedContainerManager) Remove(_ context.Context, id string, _ bo
 	return nil
 }
 
-// newTestRouterWithOrphanedContainers wires both halves the orphaned-
-// container routes need: ContainerLister to find the target and
-// OrphanedContainerManager to act on it, matching how cmd/levelrail's
-// own main.go wires both from the same *docker.Client.
 func newTestRouterWithOrphanedContainers(t *testing.T, lister ContainerLister, mgr OrphanedContainerManager) (*Router, *store.DB) {
 	t.Helper()
 	db := openTestDB(t)
 	return NewRouter(discardLogger(), testBrand(), db, WithContainerLister(lister), WithOrphanedContainerManager(mgr)), db
 }
 
-// managedContainerName is the exact container name seedWebAppForTest's
-// service ("web", "img:v1") converges to, so tests can build a
-// docker.ContainerState for it that isManagedContainer correctly
-// recognizes as managed, the same formula
-// TestHandleSystemPrune_KeepListProtectsDesiredContainers already uses.
+// The name seedWebAppForTest's service ("web", "img:v1") converges to.
 func managedContainerName() string {
 	return application.ContainerName("web", "img:v1", "")
 }
@@ -82,10 +71,6 @@ func TestHandleStopOrphanedContainer_NotFound(t *testing.T) {
 	}
 }
 
-// TestHandleStopOrphanedContainer_ManagedContainer_Conflict proves the
-// server re-checks ownership itself: a container carrying this
-// platform's instance label whose name still matches a live desired
-// service must be rejected with 409, regardless of what a client sends.
 func TestHandleStopOrphanedContainer_ManagedContainer_Conflict(t *testing.T) {
 	name := managedContainerName()
 	lister := &fakeContainerLister{containers: []docker.ContainerState{
@@ -124,11 +109,7 @@ func TestHandleStopOrphanedContainer_Success(t *testing.T) {
 	}
 }
 
-// TestHandleStopOrphanedContainer_LabeledButNoDesiredRecord_Stops proves
-// the other orphan shape: a container carrying this platform's own
-// instance label, but whose owning app was deleted from the store, is
-// still orphaned (isManagedContainer requires both the label and a
-// matching desired-state name) and so is stoppable.
+// Labeled but its owning app was deleted: still orphaned, so still stoppable.
 func TestHandleStopOrphanedContainer_LabeledButNoDesiredRecord_Stops(t *testing.T) {
 	lister := &fakeContainerLister{containers: []docker.ContainerState{
 		{ID: "leftover-id", Name: "web-deadbeef01", Labels: map[string]string{spec.InstanceLabelKey: "inst_a"}},
@@ -195,10 +176,7 @@ func TestOrphanedContainerRoutes_RequireAuth(t *testing.T) {
 	})
 }
 
-// TestOrphanedContainerStopRemove_PlainWriteToken_Forbidden proves
-// stop/remove sit behind AbilityRoot, not AbilityWrite: these are raw,
-// fleet-wide docker-level mutations, the same tier system/prune and
-// orphaned-volume cleanup already require.
+// Stop/remove sit behind AbilityRoot, not AbilityWrite.
 func TestOrphanedContainerStopRemove_PlainWriteToken_Forbidden(t *testing.T) {
 	lister := &fakeContainerLister{containers: []docker.ContainerState{{ID: "orphan-id", Name: "leftover-nginx"}}}
 	rt, db := newTestRouterWithOrphanedContainers(t, lister, &fakeOrphanedContainerManager{})
@@ -309,10 +287,6 @@ func TestHandleClaimOrphanedContainer_ManagedContainer_Conflict(t *testing.T) {
 	}
 }
 
-// TestHandleListContainers_ManagedField is GET /api/v1/system/containers'
-// own new coverage: a labeled container whose name matches desired state
-// reports managed:true, one that's unlabeled or labeled-but-undesired
-// reports managed:false.
 func TestHandleListContainers_ManagedField(t *testing.T) {
 	managedName := managedContainerName()
 	lister := &fakeContainerLister{containers: []docker.ContainerState{
