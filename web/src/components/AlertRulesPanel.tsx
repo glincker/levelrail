@@ -128,6 +128,9 @@ function formatCondition(rule: AlertRule): string {
   if (rule.kind === 'node_cert_expiring') {
     return "any node's agent certificate close to expiry or expired (platform-wide)"
   }
+  if (rule.kind === 'version_skew') {
+    return "running build behind the configured update channel's latest release"
+  }
   if (rule.kind === 'node_resource_usage') {
     return 'any node over its summed CPU or memory threshold (platform-wide)'
   }
@@ -189,6 +192,9 @@ function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'node_cert_expiring') {
     return `${rule.last_value.toFixed(1)} days left (soonest node certificate)`
+  }
+  if (rule.kind === 'version_skew') {
+    return rule.last_value ? 'update available' : 'up to date'
   }
   if (rule.kind === 'node_resource_usage') {
     // Only the CPU signal is tracked here; memory has no comparable unit

@@ -41,6 +41,7 @@ export type AlertRuleKind =
   | 'node_cert_expiring'
   | 'log_archive_stale'
   | 'slo_burn'
+  | 'version_skew'
 
 export type SloObjective = 'availability' | 'latency'
 
