@@ -38,6 +38,7 @@ type ingressSettingsResource struct {
 	ACMEEnabled      bool   `json:"acme_enabled"`
 	ACMEEmail        string `json:"acme_email,omitempty"`
 	ACMEDirectoryURL string `json:"acme_directory_url,omitempty"`
+	HSTSEnabled      bool   `json:"hsts_enabled"`
 }
 
 func toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource {
@@ -46,6 +47,7 @@ func toIngressSettingsResource(s store.IngressSettings) ingressSettingsResource 
 		ACMEEnabled:      s.ACMEEnabled,
 		ACMEEmail:        s.ACMEEmail,
 		ACMEDirectoryURL: s.ACMEDirectoryURL,
+		HSTSEnabled:      s.HSTSEnabled,
 	}
 }
 
@@ -147,13 +149,32 @@ func (rt *Router) handleUpdateIngressSettings(w http.ResponseWriter, r *http.Req
 		ACMEEnabled:      req.ACMEEnabled,
 		ACMEEmail:        strings.TrimSpace(req.ACMEEmail),
 		ACMEDirectoryURL: strings.TrimSpace(req.ACMEDirectoryURL),
+		HSTSEnabled:      req.HSTSEnabled,
 	}
 	if err := rt.ingressSettings.UpdateIngressSettings(r.Context(), settings); err != nil {
 		rt.logger.Error("api: update ingress settings failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rt.hstsDBEnabled.Store(settings.HSTSEnabled)
 	writeJSON(w, http.StatusOK, toIngressSettingsResource(settings))
+}
+
+// hstsEnabledFromDB reports ingress_settings.hsts_enabled, Router.hstsDBEnabled's
+// own cached value. The first call in the process's lifetime loads it from
+// the database (hstsDBLoaded); handleUpdateIngressSettings keeps it fresh
+// after that, so this never blocks a request on a database read past the
+// very first one.
+func (rt *Router) hstsEnabledFromDB(ctx context.Context) bool {
+	rt.hstsDBLoaded.Do(func() {
+		settings, err := rt.ingressSettings.GetIngressSettings(ctx)
+		if err != nil {
+			rt.logger.Error("api: load initial hsts setting failed", slog.String("error", err.Error()))
+			return
+		}
+		rt.hstsDBEnabled.Store(settings.HSTSEnabled)
+	})
+	return rt.hstsDBEnabled.Load()
 }
 
 // ingressDomainCheckResponse is GET /api/v1/settings/ingress/check's wire

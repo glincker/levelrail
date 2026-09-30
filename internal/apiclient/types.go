@@ -2807,6 +2807,7 @@ type IngressSettingsResource struct {
 	ACMEEnabled      bool   `json:"acme_enabled"`
 	ACMEEmail        string `json:"acme_email,omitempty"`
 	ACMEDirectoryURL string `json:"acme_directory_url,omitempty"`
+	HSTSEnabled      bool   `json:"hsts_enabled"`
 }
 
 // DashboardURLResource mirrors internal/api's dashboardURLResource (GET/PUT /api/v1/settings/dashboard-url).

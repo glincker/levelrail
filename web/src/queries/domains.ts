@@ -67,6 +67,7 @@ export interface IngressSettings {
   acme_enabled: boolean
   acme_email?: string
   acme_directory_url?: string
+  hsts_enabled: boolean
 }
 
 export async function fetchIngressSettings(): Promise<IngressSettings> {
@@ -74,7 +75,10 @@ export async function fetchIngressSettings(): Promise<IngressSettings> {
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `fetch ingress settings failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `fetch ingress settings failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as IngressSettings
@@ -108,7 +112,10 @@ export async function updateIngressSettings(
   if (!res.ok) {
     throw new ApiError(
       res.status,
-      await readErrorMessage(res, `update ingress settings failed: ${res.status}`),
+      await readErrorMessage(
+        res,
+        `update ingress settings failed: ${res.status}`,
+      ),
     )
   }
   return (await res.json()) as IngressSettings

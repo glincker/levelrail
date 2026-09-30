@@ -37,6 +37,14 @@ type IngressSettings struct {
 	// this migration's own comment for why an operator would point this
 	// at Let's Encrypt's staging directory instead.
 	ACMEDirectoryURL string
+	// HSTSEnabled sends Strict-Transport-Security for the dashboard's own
+	// responses (migrations/0254_ingress_settings_hsts.sql). False (the
+	// default) matches api.Router.hstsEnabled's existing default: see
+	// that field's doc comment for why this stays opt-in. The
+	// APP_ENABLE_HSTS env var still works and takes precedence when set,
+	// so existing deployments that already export it keep behaving
+	// exactly as before (see cmd/levelrail/main.go's hstsEnabled).
+	HSTSEnabled bool
 }
 
 // GetIngressSettings returns the single ingress_settings row. Always
@@ -50,12 +58,13 @@ func (db *DB) GetIngressSettings(ctx context.Context) (IngressSettings, error) {
 		acmeEnabled      int
 		acmeEmail        sql.NullString
 		acmeDirectoryURL sql.NullString
+		hstsEnabled      int
 	)
 	err := db.QueryRowContext(ctx, `
-		SELECT primary_domain, acme_enabled, acme_email, acme_directory_url
+		SELECT primary_domain, acme_enabled, acme_email, acme_directory_url, hsts_enabled
 		FROM ingress_settings
 		WHERE id = 1
-	`).Scan(&primaryDomain, &acmeEnabled, &acmeEmail, &acmeDirectoryURL)
+	`).Scan(&primaryDomain, &acmeEnabled, &acmeEmail, &acmeDirectoryURL, &hstsEnabled)
 	if err != nil {
 		return IngressSettings{}, fmt.Errorf("store: get ingress settings: %w", err)
 	}
@@ -64,6 +73,7 @@ func (db *DB) GetIngressSettings(ctx context.Context) (IngressSettings, error) {
 	s.ACMEEnabled = acmeEnabled != 0
 	s.ACMEEmail = acmeEmail.String
 	s.ACMEDirectoryURL = acmeDirectoryURL.String
+	s.HSTSEnabled = hstsEnabled != 0
 	return s, nil
 }
 
@@ -85,16 +95,21 @@ func (db *DB) UpdateIngressSettings(ctx context.Context, s IngressSettings) erro
 	if s.ACMEEnabled {
 		acmeEnabled = 1
 	}
+	hstsEnabled := 0
+	if s.HSTSEnabled {
+		hstsEnabled = 1
+	}
 
 	_, err := db.ExecContext(ctx, `
 		UPDATE ingress_settings
-		SET primary_domain = ?, acme_enabled = ?, acme_email = ?, acme_directory_url = ?
+		SET primary_domain = ?, acme_enabled = ?, acme_email = ?, acme_directory_url = ?, hsts_enabled = ?
 		WHERE id = 1
 	`,
 		sql.NullString{String: s.PrimaryDomain, Valid: s.PrimaryDomain != ""},
 		acmeEnabled,
 		sql.NullString{String: s.ACMEEmail, Valid: s.ACMEEmail != ""},
 		sql.NullString{String: s.ACMEDirectoryURL, Valid: s.ACMEDirectoryURL != ""},
+		hstsEnabled,
 	)
 	if err != nil {
 		return fmt.Errorf("store: update ingress settings: %w", err)

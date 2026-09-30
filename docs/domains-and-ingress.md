@@ -136,7 +136,9 @@ This feature is built and unit-tested, but NOT verified issuing a real certifica
 
 ### HSTS (HTTP Strict Transport Security)
 
-Set `APP_ENABLE_HSTS=true` on the control plane to send `Strict-Transport-Security` on every response. HSTS defaults to off on purpose.
+Turn on **Enable HSTS** under **Settings > Domains** to send `Strict-Transport-Security` on every response, no restart required. HSTS defaults to off on purpose.
+
+Setting the `APP_ENABLE_HSTS=true` environment variable still works the same way it always has, for anyone who already relies on it. The two are additive: HSTS is sent if either the dashboard toggle or the environment variable is on, so upgrading never turns HSTS off for a deployment that already had it on.
 
 ::: warning
 HSTS tells browsers to refuse plain HTTP and refuse certificate warnings on this host for 180 days. Enabling it before ACME is working (while still on self-signed certificates) can lock you out of your own dashboard. Only enable it once real, browser-trusted certificates are issuing.
