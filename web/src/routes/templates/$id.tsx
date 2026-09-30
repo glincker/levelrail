@@ -19,7 +19,7 @@ import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { PageSpinner } from '@/components/ui/page-spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 
 // Standalone, linkable page for a single catalog template, the one place
 // besides the in-wizard preview step (BrowseTemplatesFields) a template
@@ -33,7 +33,7 @@ export const Route = createFileRoute('/templates/$id')({
   loader: ({ context: { queryClient }, params: { id } }) =>
     queryClient.ensureQueryData(serviceTemplateQueryOptions(id)),
   component: TemplateDetailRoute,
-  pendingComponent: PageSpinner,
+  pendingComponent: TemplateDetailSkeleton,
   errorComponent: TemplateDetailError,
 })
 
@@ -43,7 +43,7 @@ function TemplateDetailRoute() {
   const deployTemplateNow = useDeployTemplateNow()
 
   if (!template) {
-    return <PageSpinner />
+    return <TemplateDetailSkeleton />
   }
 
   const CategoryIcon = CATEGORY_ICONS[template.category] ?? PackageIcon
@@ -137,6 +137,30 @@ function TemplateDetailRoute() {
             {deploying ? 'Deploying...' : 'Deploy now'}
           </Button>
         )}
+      </div>
+    </div>
+  )
+}
+
+// Mirrors the real page's back link, logo/title/badges card, and the
+// deploy button row.
+function TemplateDetailSkeleton() {
+  return (
+    <div className="mx-auto max-w-2xl space-y-6" aria-hidden="true">
+      <Skeleton className="h-4 w-32" />
+      <div className="flex items-start gap-4 rounded-lg border border-border bg-card p-4">
+        <Skeleton className="size-12 shrink-0 rounded-md" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+          <Skeleton className="h-4 w-56" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+      </div>
+      <div className="flex justify-end">
+        <Skeleton className="h-9 w-36 rounded-md" />
       </div>
     </div>
   )

@@ -35,7 +35,7 @@ import { DeployQuickLinks } from '../../../../../components/DeployQuickLinks'
 import { DeployStageTimeline } from '../../../../../components/DeployStageTimeline'
 import { ConditionsPanel } from '../../../../../components/ConditionsPanel'
 import { SupplyChainSection } from '../../../../../components/SupplyChainSection'
-import { PageSpinner } from '@/components/ui/page-spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 
 // 'image' attempts (a bare image-tag redeploy/rollback) have no build
 // step, so they never produce log lines: see types/deployAttempt.ts's
@@ -61,7 +61,7 @@ export const Route = createFileRoute('/apps/$name/deploys/$deployId/logs')({
   loader: ({ context: { queryClient }, params: { name } }) =>
     queryClient.ensureQueryData(deployAttemptsQueryOptions(name)),
   component: DeployLogsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: DeployLogsSkeleton,
 })
 
 function DeployLogsPage() {
@@ -242,6 +242,37 @@ function DeployLogsPage() {
           />
         </div>
       )}
+    </div>
+  )
+}
+
+// The live log stream itself isn't worth faking line by line, so this
+// mirrors just the outer chrome: header, meta card, two collapsed
+// pipeline sections, a full-width terminal block.
+function DeployLogsSkeleton() {
+  return (
+    <div className="flex h-full flex-col gap-4" aria-hidden="true">
+      <Skeleton className="h-4 w-56" />
+      <div className="flex items-center justify-between gap-3">
+        <div className="space-y-1.5">
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-3 w-40" />
+        </div>
+        <Skeleton className="h-5 w-20 rounded-full" />
+      </div>
+
+      <div className="space-y-2 rounded-lg border border-border p-4">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-2/3" />
+      </div>
+
+      <div className="space-y-3">
+        <Skeleton className="h-12 w-full rounded-lg" />
+        <Skeleton className="h-12 w-full rounded-lg" />
+      </div>
+
+      <Skeleton className="h-[40vh] w-full rounded-lg" />
     </div>
   )
 }
