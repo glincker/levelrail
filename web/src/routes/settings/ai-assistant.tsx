@@ -6,7 +6,10 @@ import {
   useAiAssistantSettings,
 } from '../../queries/aiAssistantSettings'
 import { AiAssistantSettingsCard } from '../../components/AiAssistantSettingsCard'
-import { PageSpinner } from '../../components/ui/page-spinner'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '../../components/settings/SettingsSkeletons'
 
 export const Route = createFileRoute('/settings/ai-assistant')({
   beforeLoad: ({ context: { queryClient } }) =>
@@ -14,8 +17,17 @@ export const Route = createFileRoute('/settings/ai-assistant')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(aiAssistantSettingsQueryOptions()),
   component: AiAssistantSettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: AiAssistantSettingsSkeleton,
 })
+
+function AiAssistantSettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton icon />
+      <SettingsCardSkeleton rows={3} />
+    </div>
+  )
+}
 
 function AiAssistantSettingsPage() {
   const { data: settings } = useAiAssistantSettings()

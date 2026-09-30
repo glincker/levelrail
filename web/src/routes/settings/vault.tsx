@@ -5,7 +5,10 @@ import {
   useVaultSettings,
 } from '../../queries/vault'
 import { VaultSettingsCard } from '../../components/VaultSettingsCard'
-import { PageSpinner } from '../../components/ui/page-spinner'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '../../components/settings/SettingsSkeletons'
 
 // Instance-level, not scoped to one app: lives under routes/settings/
 // next to cloudflare-tunnel.tsx and registry.tsx, the same reasoning
@@ -19,8 +22,17 @@ export const Route = createFileRoute('/settings/vault')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(vaultSettingsQueryOptions()),
   component: VaultSettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: VaultSettingsSkeleton,
 })
+
+function VaultSettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton icon />
+      <SettingsCardSkeleton rows={3} />
+    </div>
+  )
+}
 
 function VaultSettingsPage() {
   const { data: settings } = useVaultSettings()

@@ -6,7 +6,10 @@ import { toast } from '@/components/ui/toast'
 import { GitHubAppConnectionCard } from '../../components/GitHubAppConnectionCard'
 import { githubAppStatusQueryOptions } from '../../queries/githubApp'
 import { ingressSettingsQueryOptions } from '../../queries/domains'
-import { PageSpinner } from '@/components/ui/page-spinner'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '@/components/settings/SettingsSkeletons'
 
 // Account-level, not scoped to one app: lives under routes/settings/
 // next to backup-targets.tsx and tokens.tsx, the same reasoning those
@@ -27,8 +30,17 @@ export const Route = createFileRoute('/settings/github-app')({
       queryClient.ensureQueryData(ingressSettingsQueryOptions()),
     ]),
   component: GitHubAppSettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: GitHubAppSettingsSkeleton,
 })
+
+function GitHubAppSettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton icon />
+      <SettingsCardSkeleton rows={1} rowVariant="status" />
+    </div>
+  )
+}
 
 function GitHubAppSettingsPage() {
   // Primed by the loader; read here too so this route re-renders if a

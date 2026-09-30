@@ -6,7 +6,10 @@ import { toast } from '@/components/ui/toast'
 import { GitLabAppConnectionCard } from '../../components/GitLabAppConnectionCard'
 import { GitLabAppProjectsCard } from '../../components/GitLabAppProjectsCard'
 import { gitlabAppStatusQueryOptions } from '../../queries/gitlabApp'
-import { PageSpinner } from '@/components/ui/page-spinner'
+import {
+  SettingsCardSkeleton,
+  SettingsHeaderSkeleton,
+} from '@/components/settings/SettingsSkeletons'
 
 // Account-level, mirroring routes/settings/github-app.tsx's own
 // structure and placement.
@@ -14,8 +17,18 @@ export const Route = createFileRoute('/settings/gitlab-app')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(gitlabAppStatusQueryOptions()),
   component: GitLabAppSettingsPage,
-  pendingComponent: PageSpinner,
+  pendingComponent: GitLabAppSettingsSkeleton,
 })
+
+function GitLabAppSettingsSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <SettingsHeaderSkeleton icon />
+      <SettingsCardSkeleton rows={1} rowVariant="status" />
+      <SettingsCardSkeleton headerIcon rows={3} rowVariant="list" />
+    </div>
+  )
+}
 
 function GitLabAppSettingsPage() {
   useSuspenseQuery(gitlabAppStatusQueryOptions())
@@ -46,8 +59,8 @@ function GitLabAppSettingsPage() {
         <div>
           <h1 className="text-lg font-semibold text-foreground">GitLab App</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Connect a GitLab OAuth Application, gitlab.com or self-hosted,
-            for project browsing and webhook-driven deploys.
+            Connect a GitLab OAuth Application, gitlab.com or self-hosted, for
+            project browsing and webhook-driven deploys.
           </p>
         </div>
       </div>
