@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -60,7 +61,7 @@ func (rt *Router) requireOrphanedContainer(w http.ResponseWriter, r *http.Reques
 // Matches every reconciler controller's own defaultStopTimeout.
 const orphanedContainerStopTimeout = 10 * time.Second
 
-func (rt *Router) handleStopOrphanedContainer(w http.ResponseWriter, r *http.Request) {
+func (rt *Router) handleOrphanedContainerAction(w http.ResponseWriter, r *http.Request, verb, pastTense string, do func(context.Context, string) error) {
 	if rt.containers == nil || rt.orphanedContainers == nil {
 		writeError(w, http.StatusNotImplemented, "container management is not configured on this control plane")
 		return
@@ -70,32 +71,25 @@ func (rt *Router) handleStopOrphanedContainer(w http.ResponseWriter, r *http.Req
 	if !ok {
 		return
 	}
-	if err := rt.orphanedContainers.Stop(r.Context(), c.ID, orphanedContainerStopTimeout); err != nil {
-		rt.logger.Error("api: stop orphaned container failed", slog.String("error", err.Error()), slog.String("container", name))
+	if err := do(r.Context(), c.ID); err != nil {
+		rt.logger.Error("api: "+verb+" orphaned container failed", slog.String("error", err.Error()), slog.String("container", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	rt.logger.Info("api: stopped orphaned container", slog.String("container", name))
-	writeJSON(w, http.StatusOK, map[string]string{"status": "stopped"})
+	rt.logger.Info("api: "+pastTense+" orphaned container", slog.String("container", name))
+	writeJSON(w, http.StatusOK, map[string]string{"status": pastTense})
+}
+
+func (rt *Router) handleStopOrphanedContainer(w http.ResponseWriter, r *http.Request) {
+	rt.handleOrphanedContainerAction(w, r, "stop", "stopped", func(ctx context.Context, id string) error {
+		return rt.orphanedContainers.Stop(ctx, id, orphanedContainerStopTimeout)
+	})
 }
 
 func (rt *Router) handleRemoveOrphanedContainer(w http.ResponseWriter, r *http.Request) {
-	if rt.containers == nil || rt.orphanedContainers == nil {
-		writeError(w, http.StatusNotImplemented, "container management is not configured on this control plane")
-		return
-	}
-	name := r.PathValue("name")
-	c, ok := rt.requireOrphanedContainer(w, r, name)
-	if !ok {
-		return
-	}
-	if err := rt.orphanedContainers.Remove(r.Context(), c.ID, true); err != nil {
-		rt.logger.Error("api: remove orphaned container failed", slog.String("error", err.Error()), slog.String("container", name))
-		writeError(w, http.StatusInternalServerError, "internal error")
-		return
-	}
-	rt.logger.Info("api: removed orphaned container", slog.String("container", name))
-	writeJSON(w, http.StatusOK, map[string]string{"status": "removed"})
+	rt.handleOrphanedContainerAction(w, r, "remove", "removed", func(ctx context.Context, id string) error {
+		return rt.orphanedContainers.Remove(ctx, id, true)
+	})
 }
 
 // Mirrors web/src/components/CreateAppFields.tsx's own imageSlugFrom.
