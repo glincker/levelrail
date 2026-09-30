@@ -6,6 +6,7 @@ import {
   BracketsCurlyIcon,
   ClockCountdownIcon,
   CloudArrowUpIcon,
+  CloudIcon,
   CpuIcon,
   DatabaseIcon,
   FlagIcon,
@@ -17,12 +18,15 @@ import {
   GlobeIcon,
   HardDrivesIcon,
   HeartbeatIcon,
+  KeyIcon,
+  PackageIcon,
   PlugsConnectedIcon,
   PulseIcon,
   RobotIcon,
   RocketLaunchIcon,
   ScrollIcon,
   ShareNetworkIcon,
+  ShieldCheckIcon,
   SlidersHorizontalIcon,
   SquaresFourIcon,
   StackIcon,
@@ -53,6 +57,10 @@ export type GlobalTo =
   | '/approvals'
   | '/alerts'
   | '/settings'
+  | '/settings/iam-policies'
+  | '/settings/registry'
+  | '/settings/registry-credentials'
+  | '/settings/node-providers'
   | '/help'
 
 export type GlobalBadge = 'failing-apps' | 'approvals'
@@ -149,6 +157,36 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/loadbalancers',
         icon: <ArrowsSplitIcon />,
         feature: 'load-balancer',
+      },
+      {
+        id: 'registry',
+        label: 'Container registry',
+        to: '/settings/registry',
+        icon: <PackageIcon />,
+      },
+      {
+        id: 'registry-credentials',
+        label: 'Registry credentials',
+        to: '/settings/registry-credentials',
+        icon: <KeyIcon />,
+      },
+      {
+        id: 'node-providers',
+        label: 'Cloud node providers',
+        to: '/settings/node-providers',
+        icon: <CloudIcon />,
+      },
+    ],
+  },
+  {
+    id: 'access',
+    label: 'Access control',
+    items: [
+      {
+        id: 'iam-policies',
+        label: 'IAM policies',
+        to: '/settings/iam-policies',
+        icon: <ShieldCheckIcon />,
       },
     ],
   },
