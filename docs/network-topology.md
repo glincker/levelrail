@@ -6,6 +6,8 @@ description: Read the whole-mesh network topology view, how nodes group into zon
 
 The **Network** page shows every node, app, database, and load-balanced service on the mesh at once, grouped by node, with a line drawn between each app and the database it connects to. It's a read-only picture built from the same data the rest of the dashboard already has: nothing here needs its own configuration to start working.
 
+![Levelrail network topology view showing a node zone with its apps, mesh addresses, and a load-balanced service](assets/screenshots/network-topology.png)
+
 ```mermaid
 graph TB
   CP["Control plane<br/>GET /api/v1/network/topology"]
