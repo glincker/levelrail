@@ -1,19 +1,18 @@
 import type { ReactNode } from 'react'
 import {
-  ArrowRightIcon,
   CheckCircleIcon,
   CheckIcon,
   CircleIcon,
   CircleNotchIcon,
   CopyIcon,
-  InfoIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { WizardStepFooter } from '../kit/WizardStepFooter'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import type { StepGate, SubStepState } from '../../lib/setupWizard'
 
-/** StepFooter renders Continue plus, when it is disabled, the reason why. */
+/** StepFooter renders Continue plus, when it is disabled, the reason why. Standalone footer for the full-page setup wizard, not inside a Dialog. */
 export function StepFooter({
   gate,
   onContinue,
@@ -28,40 +27,16 @@ export function StepFooter({
   pending?: boolean
 }) {
   return (
-    <div className="space-y-2 border-t border-border pt-4">
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        {onSkip ? (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onSkip}
-            disabled={pending}
-          >
-            Skip this step
-          </Button>
-        ) : null}
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={!gate.canContinue || pending}
-          aria-describedby={
-            gate.canContinue ? undefined : 'setup-continue-reason'
-          }
-        >
-          {continueLabel}
-          <ArrowRightIcon />
-        </Button>
-      </div>
-      {gate.canContinue ? null : (
-        <p
-          id="setup-continue-reason"
-          aria-live="polite"
-          className="flex items-start justify-end gap-1.5 text-right text-xs text-muted-foreground"
-        >
-          <InfoIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-          {gate.reason}
-        </p>
-      )}
+    <div className="border-t border-border pt-4">
+      <WizardStepFooter
+        canContinue={gate.canContinue}
+        reason={gate.canContinue ? undefined : gate.reason}
+        onContinue={onContinue}
+        onSkip={onSkip}
+        continueLabel={continueLabel}
+        pending={pending}
+        reasonId="setup-continue-reason"
+      />
     </div>
   )
 }

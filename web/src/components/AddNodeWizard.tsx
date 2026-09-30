@@ -218,6 +218,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
         onBack={() => setStep('method')}
         onContinue={() => setStep('size')}
         continueDisabled={!region}
+        continueReason="Select a region to continue."
       >
         {regions.isLoading ? (
           <SkeletonList rows={3} />
@@ -256,6 +257,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
           setStep('details')
         }}
         continueDisabled={!size}
+        continueReason="Select a size to continue."
       >
         {sizes.isLoading ? (
           <SkeletonList rows={3} />
@@ -309,6 +311,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
         onBack={() => setStep('size')}
         onContinue={() => setStep('confirm')}
         continueDisabled={!/^[a-z][a-z0-9-]*$/.test(name)}
+        continueReason="Name must start with a lowercase letter and use only lowercase letters, digits, and hyphens."
       >
         <Field>
           <FieldLabel htmlFor="node-provision-name">Name</FieldLabel>
