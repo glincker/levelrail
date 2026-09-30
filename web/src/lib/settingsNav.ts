@@ -14,6 +14,7 @@ import {
   WebhooksLogoIcon,
   CloudArrowUpIcon,
   CloudCheckIcon,
+  DatabaseIcon,
   EnvelopeIcon,
   GearIcon,
   GlobeIcon,
@@ -241,6 +242,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: GearIcon,
         title: 'General',
         description: 'System status and configuration.',
+      },
+      {
+        to: '/settings/control-plane-backup',
+        icon: DatabaseIcon,
+        title: 'Control plane backup',
+        description:
+          'Snapshots, off-box backups, key escrow and restore drills for this instance.',
       },
       {
         to: '/settings/system-status',
