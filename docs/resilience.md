@@ -10,6 +10,21 @@ The honest answer has two different halves, because the control plane is one pro
 
 Everything below was verified live against a real control plane binary, real Docker containers, a real node agent process, and a real `SIGKILL`, not read off the architecture and assumed to be true. The tests are `test/e2e/break_glass_control_plane_death_test.go` and `test/e2e/break_glass_agent_reconnect_test.go`; run them yourself with `go test -run TestBreakGlass -v ./test/e2e/...` (needs a local Docker daemon).
 
+```mermaid
+flowchart TD
+  K["Control plane killed<br/>(SIGKILL, panic, OOM)"]
+  K --> C1["App containers<br/>keep running, keep serving<br/>(Docker owns them, not the process)"]
+  K --> C2["Caddy ingress dies instantly<br/>(embedded in the same process)"]
+  K --> C3["Node agent's gRPC stream breaks<br/>reconnects with backoff, 1s to 30s<br/>never touches its containers"]
+  C2 --> W["Domain-based HTTPS routing down<br/>until a new process reconciles ingress"]
+  R["Control plane restarts"] --> P["First reconcile pass runs immediately"]
+  P --> P1["Healthy containers left alone<br/>(ensureReplicaRunning is a no-op)"]
+  P --> P2["Ingress reconciled again,<br/>routing resumes"]
+  P --> P3["Services on a still-disconnected<br/>agent are skipped this pass,<br/>not torn down"]
+  W -.->|bounded by restart time| R
+  C3 -.->|agent finds control plane again| R
+```
+
 ## What survives
 
 **A running app container is not a child of the control plane process.** Docker owns its lifecycle, not `levelrail`. When the control plane is killed:

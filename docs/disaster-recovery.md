@@ -6,6 +6,32 @@ description: Encrypted off-box backups of the control plane database, master key
 
 If the machine running the control plane dies, your apps keep running but you lose the thing that manages them: apps, domains, users, tokens, deploy history and every stored secret. Local [snapshots](/control-plane-backup) sit on the same disk, so they do not help. This page covers the off-box path: encrypted backups in an S3 compatible bucket, an escrow copy of the master key, a tested restore, and a drill that keeps proving it works.
 
+```mermaid
+flowchart LR
+  subgraph Backup["Scheduled, on the server"]
+    S["Cron schedule<br/>(APP_CONTROL_PLANE_OFFBOX_SCHEDULE)"] --> V["VACUUM INTO snapshot<br/>+ integrity_check"]
+    V --> E["Encrypt to your age<br/>public keys"]
+    E --> U["Upload .db.age + manifest<br/>to S3 / R2 / B2 / MinIO"]
+  end
+  subgraph Escrow["Set up once, kept offline"]
+    MK["Master key +<br/>agent CA key"] --> EB["escrow.age<br/>(encrypted to your keys)"]
+  end
+  subgraph Drill["Weekly, proves it works"]
+    U --> D["Restore drill:<br/>download, decrypt, integrity_check"]
+    D --> R1{"Drill identity set?"}
+    R1 -->|yes| Full["Full check: pass or fail"]
+    R1 -->|no| Partial["Partial: checksum + manifest only"]
+  end
+  subgraph Restore["When you actually need it"]
+    EB -.->|recover offline| MK2["Master key + agent CA<br/>on new machine"]
+    U --> Dl["Download newest<br/>complete backup"]
+    Dl --> Dec["Verify + decrypt<br/>(needs backup-identity.txt)"]
+    MK2 --> Dec
+    Dec --> Rs["levelrail restore"]
+    Rs --> Rec["Control plane starts,<br/>reconciler converges"]
+  end
+```
+
 Two things are needed to recover, and they are deliberately kept apart:
 
 | Piece | What it is | Where it lives |
