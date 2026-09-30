@@ -241,44 +241,30 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wafByDomain, err := rt.domainWAF.ListDomainWAF(r.Context())
-	if err != nil {
-		rt.internalError(w, "api: list domains: waf", err)
+	wafEnabled, ok := fetchDomainStatusSet(w, rt, r, "waf", rt.domainWAF.ListDomainWAF,
+		func(d store.DomainWAF) string {
+			if d.WAFEnabled {
+				return d.Domain
+			}
+			return ""
+		})
+	if !ok {
 		return
 	}
-	redirects, err := rt.domainRedirect.ListDomainRedirects(r.Context())
-	if err != nil {
-		rt.internalError(w, "api: list domains: redirects", err)
+	hasRedirect, ok := fetchDomainStatusSet(w, rt, r, "redirects", rt.domainRedirect.ListDomainRedirects,
+		func(d store.DomainRedirect) string { return d.Domain })
+	if !ok {
 		return
 	}
-	maintenance, err := rt.domainMaintenance.ListDomainMaintenance(r.Context())
-	if err != nil {
-		rt.internalError(w, "api: list domains: maintenance", err)
+	inMaintenance, ok := fetchDomainStatusSet(w, rt, r, "maintenance", rt.domainMaintenance.ListDomainMaintenance,
+		func(domain string) string { return domain })
+	if !ok {
 		return
 	}
-	basicAuth, err := rt.domainBasicAuth.ListDomainBasicAuth(r.Context())
-	if err != nil {
-		rt.internalError(w, "api: list domains: basic auth", err)
+	hasBasicAuth, ok := fetchDomainStatusSet(w, rt, r, "basic auth", rt.domainBasicAuth.ListDomainBasicAuth,
+		func(d store.DomainBasicAuth) string { return d.Domain })
+	if !ok {
 		return
-	}
-
-	wafEnabled := make(map[string]bool, len(wafByDomain))
-	for _, d := range wafByDomain {
-		if d.WAFEnabled {
-			wafEnabled[d.Domain] = true
-		}
-	}
-	hasRedirect := make(map[string]bool, len(redirects))
-	for _, d := range redirects {
-		hasRedirect[d.Domain] = true
-	}
-	inMaintenance := make(map[string]bool, len(maintenance))
-	for _, d := range maintenance {
-		inMaintenance[d] = true
-	}
-	hasBasicAuth := make(map[string]bool, len(basicAuth))
-	for _, d := range basicAuth {
-		hasBasicAuth[d.Domain] = true
 	}
 
 	out := make([]domainResource, 0, len(domains))
@@ -296,4 +282,33 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// fetchDomainStatusSet fetches a per-domain status list and reduces it
+// to a set of domain names, so handleListDomains's four status flags
+// share one fetch-error-handle-reduce path instead of four near-identical
+// copies. domainOf returns "" for a row that shouldn't count (e.g. a WAF
+// row present but not actually enabled), which the empty-key check below
+// skips. ok is false only after an error response has already been
+// written, so every caller's own handling is just `if !ok { return }`.
+func fetchDomainStatusSet[T any](
+	w http.ResponseWriter,
+	rt *Router,
+	r *http.Request,
+	label string,
+	fetch func(context.Context) ([]T, error),
+	domainOf func(T) string,
+) (set map[string]bool, ok bool) {
+	items, err := fetch(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: list domains: "+label, err)
+		return nil, false
+	}
+	set = make(map[string]bool, len(items))
+	for _, item := range items {
+		if domain := domainOf(item); domain != "" {
+			set[domain] = true
+		}
+	}
+	return set, true
 }
