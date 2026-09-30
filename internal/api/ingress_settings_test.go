@@ -168,6 +168,92 @@ func TestHandleUpdateIngressSettings_AcceptsValidConfig(t *testing.T) {
 	}
 }
 
+// TestHandleUpdateIngressSettings_HSTSRoundTrip covers hsts_enabled's
+// default (false, same seeded-default shape every other ingress setting
+// field has) and that a PUT persists it for a later GET to see, matching
+// TestHandleUpdateIngressSettings_AcceptsValidConfig's own round-trip
+// shape for the pre-existing fields.
+func TestHandleUpdateIngressSettings_HSTSRoundTrip(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress", ""))
+	var initial ingressSettingsResource
+	if err := json.Unmarshal(getRec.Body.Bytes(), &initial); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if initial.HSTSEnabled {
+		t.Errorf("HSTSEnabled = true on a fresh control plane, want the seeded default false")
+	}
+
+	putRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(putRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/ingress", `{"hsts_enabled":true}`))
+	if putRec.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, want %d, body = %s", putRec.Code, http.StatusOK, putRec.Body.String())
+	}
+	var putGot ingressSettingsResource
+	if err := json.Unmarshal(putRec.Body.Bytes(), &putGot); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !putGot.HSTSEnabled {
+		t.Errorf("PUT response HSTSEnabled = false, want true")
+	}
+
+	rereadRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rereadRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress", ""))
+	var reread ingressSettingsResource
+	if err := json.Unmarshal(rereadRec.Body.Bytes(), &reread); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !reread.HSTSEnabled {
+		t.Errorf("GET after PUT HSTSEnabled = false, want the persisted true")
+	}
+}
+
+// TestHSTSDBOverride_TogglesHeader covers the actual point of
+// hsts_enabled: enabling it from the dashboard, with APP_ENABLE_HSTS
+// left unset, makes Strict-Transport-Security appear on the very next
+// request, no restart needed (Router.hstsDBEnabled's own doc comment).
+func TestHSTSDBOverride_TogglesHeader(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+
+	before := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(before, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress", ""))
+	if got := before.Header().Get("Strict-Transport-Security"); got != "" {
+		t.Errorf("Strict-Transport-Security = %q before enabling hsts_enabled, want unset", got)
+	}
+
+	putRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(putRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/ingress", `{"hsts_enabled":true}`))
+	if putRec.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, want %d, body = %s", putRec.Code, http.StatusOK, putRec.Body.String())
+	}
+
+	after := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(after, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress", ""))
+	got := after.Header().Get("Strict-Transport-Security")
+	if got == "" {
+		t.Fatal("Strict-Transport-Security unset after enabling hsts_enabled, want it set without a restart")
+	}
+	if !strings.Contains(got, "includeSubDomains") {
+		t.Errorf("Strict-Transport-Security = %q, want includeSubDomains", got)
+	}
+
+	disableRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(disableRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/ingress", `{"hsts_enabled":false}`))
+	if disableRec.Code != http.StatusOK {
+		t.Fatalf("disable status = %d, want %d, body = %s", disableRec.Code, http.StatusOK, disableRec.Body.String())
+	}
+
+	afterDisable := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(afterDisable, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress", ""))
+	if got := afterDisable.Header().Get("Strict-Transport-Security"); got != "" {
+		t.Errorf("Strict-Transport-Security = %q after disabling hsts_enabled, want unset", got)
+	}
+}
+
 func TestHandleUpdateIngressSettings_CanDisableAndClear(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

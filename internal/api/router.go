@@ -75,6 +75,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/statuspage"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
@@ -195,7 +196,25 @@ type Router struct {
 	// escape hatch on the next visit, turning a certificate warning into
 	// a hard lockout, so this stays opt-in (APP_ENABLE_HSTS) rather than
 	// inferred. Set via WithHSTS.
+	//
+	// This is the env-var half of HSTS's two knobs; ingress_settings.hsts_enabled
+	// (the dashboard toggle, see hstsDBEnabled below) is the other. The
+	// two are OR'd, never one overriding the other: a deployment that
+	// already exports APP_ENABLE_HSTS keeps HSTS on across an upgrade
+	// even though the new database column defaults to false, and an
+	// operator can additionally turn HSTS on from the dashboard without
+	// touching the environment. See securityHeadersMiddleware and
+	// hstsDBOverrideMiddleware for where each half is applied.
 	hstsEnabled bool
+	// hstsDBEnabled caches ingress_settings.hsts_enabled so the dashboard
+	// toggle takes effect on the next request, not the next restart, the
+	// same "no restart needed" expectation every other ingress setting
+	// already gives an operator. Lazily populated by hstsEnabledFromDB on
+	// first use (hstsDBLoaded) and kept fresh by
+	// handleUpdateIngressSettings on every write, so the request hot path
+	// never itself blocks on a database read.
+	hstsDBEnabled atomic.Bool
+	hstsDBLoaded  sync.Once
 	// allowInsecureLogin disables the plain-HTTP login refusal (APP_ALLOW_INSECURE_LOGIN).
 	allowInsecureLogin bool
 	// lookupHost resolves a hostname's A/AAAA addresses for

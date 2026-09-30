@@ -4,9 +4,13 @@ import { z } from 'zod'
 import { CheckIcon, CopyIcon, GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import type { CertificateStatus } from '../queries/certificates'
 import type { IngressSettings } from '../queries/domains'
-import { useIngressDomainCheck, useUpdateIngressSettings } from '../queries/domains'
+import {
+  useIngressDomainCheck,
+  useUpdateIngressSettings,
+} from '../queries/domains'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import { DomainCheckPanel } from './DomainDnsCheck'
+import { InfoTip } from './kit/InfoTip'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -42,6 +46,7 @@ const ingressSettingsSchema = z
     acmeEnabled: z.boolean(),
     acmeEmail: z.string().trim(),
     acmeDirectoryUrl: z.string().trim(),
+    hstsEnabled: z.boolean(),
   })
   .superRefine((data, ctx) => {
     if (data.primaryDomain && !domainPattern.test(data.primaryDomain)) {
@@ -95,9 +100,15 @@ function IngressDomainCheck({ domain }: { domain: string }) {
           onClick={() => {
             copy(data.expected_host ?? '')
           }}
-          aria-label={copied ? 'Advertised host copied' : 'Copy advertised host'}
+          aria-label={
+            copied ? 'Advertised host copied' : 'Copy advertised host'
+          }
         >
-          {copied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />}
+          {copied ? (
+            <CheckIcon className="size-3.5" />
+          ) : (
+            <CopyIcon className="size-3.5" />
+          )}
         </Button>
         <Badge variant={data.host_inferred ? 'muted' : 'success'}>
           {data.host_inferred
@@ -123,17 +134,17 @@ function toFieldValues(settings: IngressSettings): IngressSettingsFormValues {
     acmeEnabled: settings.acme_enabled,
     acmeEmail: settings.acme_email ?? '',
     acmeDirectoryUrl: settings.acme_directory_url ?? '',
+    hstsEnabled: settings.hsts_enabled,
   }
 }
 
-function toIngressSettings(
-  values: IngressSettingsFormValues,
-): IngressSettings {
+function toIngressSettings(values: IngressSettingsFormValues): IngressSettings {
   return {
     primary_domain: values.primaryDomain,
     acme_enabled: values.acmeEnabled,
     acme_email: values.acmeEmail,
     acme_directory_url: values.acmeDirectoryUrl,
+    hsts_enabled: values.hstsEnabled,
   }
 }
 
@@ -191,9 +202,9 @@ export function IngressSettingsCard({
           Platform ingress
         </CardTitle>
         <CardDescription>
-          The dashboard&apos;s own domain, and whether certificates are
-          issued by a real ACME certificate authority instead of this
-          platform&apos;s offline, self-signed one.
+          The dashboard&apos;s own domain, and whether certificates are issued
+          by a real ACME certificate authority instead of this platform&apos;s
+          offline, self-signed one.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -205,9 +216,7 @@ export function IngressSettingsCard({
         >
           <FieldGroup className="gap-2">
             <Field>
-              <FieldLabel htmlFor="primary-domain">
-                Primary domain
-              </FieldLabel>
+              <FieldLabel htmlFor="primary-domain">Primary domain</FieldLabel>
               <Input
                 id="primary-domain"
                 {...register('primaryDomain')}
@@ -215,8 +224,8 @@ export function IngressSettingsCard({
                 placeholder="dashboard.example.com"
               />
               <FieldDescription>
-                Routes the dashboard itself through a real domain, in
-                addition to its existing address.
+                Routes the dashboard itself through a real domain, in addition
+                to its existing address.
               </FieldDescription>
               <FieldError errors={[formState.errors.primaryDomain]} />
             </Field>
@@ -253,11 +262,11 @@ export function IngressSettingsCard({
               </FieldLabel>
             </Field>
             <FieldDescription className="mt-1">
-              When off (the default), every domain uses this
-              platform&apos;s offline, self-signed issuer. When on, every
-              routed domain gets a real certificate from Let&apos;s
-              Encrypt (or the directory below), which requires the domain
-              to actually resolve to this server on ports 80/443.
+              When off (the default), every domain uses this platform&apos;s
+              offline, self-signed issuer. When on, every routed domain gets a
+              real certificate from Let&apos;s Encrypt (or the directory below),
+              which requires the domain to actually resolve to this server on
+              ports 80/443.
             </FieldDescription>
 
             <Controller
@@ -277,8 +286,8 @@ export function IngressSettingsCard({
                         placeholder="ops@example.com"
                       />
                       <FieldDescription>
-                        Required by the certificate authority to reach you
-                        about an issue with your certificates.
+                        Required by the certificate authority to reach you about
+                        an issue with your certificates.
                       </FieldDescription>
                       <FieldError errors={[formState.errors.acmeEmail]} />
                     </Field>
@@ -293,10 +302,10 @@ export function IngressSettingsCard({
                         placeholder="https://acme-v02.api.letsencrypt.org/directory"
                       />
                       <FieldDescription>
-                        Leave blank to use Let&apos;s Encrypt&apos;s
-                        production directory. While testing, point this at
-                        Let&apos;s Encrypt&apos;s staging directory
-                        instead, to avoid production rate limits:{' '}
+                        Leave blank to use Let&apos;s Encrypt&apos;s production
+                        directory. While testing, point this at Let&apos;s
+                        Encrypt&apos;s staging directory instead, to avoid
+                        production rate limits:{' '}
                         <span className="font-mono">
                           https://acme-staging-v02.api.letsencrypt.org/directory
                         </span>
@@ -309,6 +318,41 @@ export function IngressSettingsCard({
                 )
               }
             />
+          </div>
+
+          <div className="rounded-md border border-border p-3">
+            <Field orientation="horizontal">
+              <Controller
+                control={control}
+                name="hstsEnabled"
+                render={({ field }) => (
+                  <Switch
+                    id="hsts-enabled"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+              <FieldLabel
+                htmlFor="hsts-enabled"
+                className="flex items-center gap-1.5"
+              >
+                Enable HSTS
+                <InfoTip label="About HSTS">
+                  Tells browsers to always use HTTPS for this dashboard, for as
+                  long as the cache duration below runs, even if a user types or
+                  bookmarks a plain http:// link. Turn this on only once your
+                  primary domain and certificate are stable. If DNS or the
+                  certificate breaks afterward, browsers that already cached
+                  this will refuse to fall back to HTTP until the cache expires,
+                  locking you out rather than showing a certificate warning you
+                  could click through.
+                </InfoTip>
+              </FieldLabel>
+            </Field>
+            <FieldDescription className="mt-1">
+              Off by default. Sent for 180 days at a time once enabled.
+            </FieldDescription>
           </div>
 
           <div className="flex items-center gap-2">

@@ -78,6 +78,35 @@ func TestUpdateIngressSettings_ClearsFields(t *testing.T) {
 	}
 }
 
+// TestUpdateAndGetIngressSettings_HSTSRoundTrip covers hsts_enabled
+// (migrations/0254_ingress_settings_hsts.sql) on its own: default false,
+// and a round trip that leaves every other field untouched.
+func TestUpdateAndGetIngressSettings_HSTSRoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	got, err := db.GetIngressSettings(ctx)
+	if err != nil {
+		t.Fatalf("GetIngressSettings() error = %v", err)
+	}
+	if got.HSTSEnabled {
+		t.Errorf("HSTSEnabled = true on a fresh row, want the migration-seeded default false")
+	}
+
+	want := IngressSettings{PrimaryDomain: "dashboard.example.com", HSTSEnabled: true}
+	if err := db.UpdateIngressSettings(ctx, want); err != nil {
+		t.Fatalf("UpdateIngressSettings() error = %v", err)
+	}
+
+	got, err = db.GetIngressSettings(ctx)
+	if err != nil {
+		t.Fatalf("GetIngressSettings() error = %v", err)
+	}
+	if got != want {
+		t.Errorf("GetIngressSettings() = %+v, want %+v", got, want)
+	}
+}
+
 func TestUpdateIngressSettings_MultipleUpdatesStaySingleRow(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

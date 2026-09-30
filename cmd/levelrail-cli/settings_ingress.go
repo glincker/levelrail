@@ -36,11 +36,13 @@ func runSettingsIngress(prog string, args []string, stdout, stderr io.Writer, lo
 func settingsIngressUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s settings ingress get [flags]
-  %[1]s settings ingress set [--primary-domain DOMAIN] [--acme-enabled] [--acme-email EMAIL] [flags]
+  %[1]s settings ingress set [--primary-domain DOMAIN] [--acme-enabled] [--acme-email EMAIL] [--hsts-enabled] [flags]
 
 Configures the platform-wide primary domain and ACME (Let's Encrypt)
 certificate automation. --acme-email is required whenever --acme-enabled
-is set.
+is set. --hsts-enabled sends Strict-Transport-Security; only enable it
+once a real, browser-trusted certificate is issuing (see
+docs/domains-and-ingress.md).
 
 Run "%[1]s settings ingress <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -62,11 +64,12 @@ func runSettingsIngressGet(prog string, args []string, stdout, stderr io.Writer,
 func runSettingsIngressSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "settings ingress set", "print the updated ingress settings as JSON to stdout and nothing else", stderr)
 	var primaryDomain, acmeEmail, acmeDirectoryURL string
-	var acmeEnabled bool
+	var acmeEnabled, hstsEnabled bool
 	fs.StringVar(&primaryDomain, "primary-domain", "", "hostname the dashboard itself is reachable at")
 	fs.BoolVar(&acmeEnabled, "acme-enabled", false, "enable automatic TLS certificate issuance/renewal")
 	fs.StringVar(&acmeEmail, "acme-email", "", "ACME account contact address (required when --acme-enabled is set)")
 	fs.StringVar(&acmeDirectoryURL, "acme-directory-url", "", "ACME directory URL override (empty uses Caddy's own default, Let's Encrypt production)")
+	fs.BoolVar(&hstsEnabled, "hsts-enabled", false, "send Strict-Transport-Security (only once a real, browser-trusted certificate is issuing)")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings ingress set [flags]\n\nConfigures the primary domain and ACME settings.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -84,6 +87,7 @@ func runSettingsIngressSet(prog string, args []string, stdout, stderr io.Writer,
 		ACMEEnabled:      acmeEnabled,
 		ACMEEmail:        acmeEmail,
 		ACMEDirectoryURL: acmeDirectoryURL,
+		HSTSEnabled:      hstsEnabled,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set ingress settings: %w", err))
@@ -97,4 +101,5 @@ func printIngressSettingsHuman(out io.Writer, s ingressSettingsResource) {
 	_, _ = fmt.Fprintf(out, "acme_enabled:       %v\n", s.ACMEEnabled)
 	_, _ = fmt.Fprintf(out, "acme_email:         %s\n", s.ACMEEmail)
 	_, _ = fmt.Fprintf(out, "acme_directory_url: %s\n", s.ACMEDirectoryURL)
+	_, _ = fmt.Fprintf(out, "hsts_enabled:       %v\n", s.HSTSEnabled)
 }

@@ -52,6 +52,27 @@ func TestRun_SettingsIngress_Set(t *testing.T) {
 	}
 }
 
+func TestRun_SettingsIngress_Set_HSTSEnabled(t *testing.T) {
+	var gotBody ingressSettingsResource
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(gotBody)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{
+		"settings", "ingress", "set", "--hsts-enabled", "--api-url", srv.URL,
+	})
+
+	if !gotBody.HSTSEnabled {
+		t.Errorf("request body HSTSEnabled = false, want true")
+	}
+	if !strings.Contains(stdout, "hsts_enabled:       true") {
+		t.Errorf("stdout = %q, want hsts_enabled line", stdout)
+	}
+}
+
 func TestRun_SettingsIngress_Set_APIError(t *testing.T) {
 	srv := newJSONErrorServer(t, http.StatusBadRequest, `{"error":"acme_email is required when acme_enabled is true"}`)
 
