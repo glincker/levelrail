@@ -4,9 +4,14 @@ description: Organize apps and databases into optional projects, organizations, 
 
 # Projects, organizations, and environments
 
-The optional grouping hierarchy for apps and databases.
+Group your apps and databases into projects, file projects under organizations, and tag app environments (staging, production, and so on) so they share config and get deployment gates, all optional and added only when you need the structure.
 
-Implementation: `internal/api/projects.go`, `organizations.go`, `environments.go`, `project_env.go`, `organization_env.go`, `environment_env.go`, `project_stop_start.go`, `project_restart.go`.
+::: details For contributors: where this lives in the source
+- `internal/api/projects.go`, `organizations.go`, `environments.go` - CRUD handlers
+- `project_env.go`, `organization_env.go`, `environment_env.go` - shared env var layering
+- `project_stop_start.go`, `project_restart.go` - project-wide lifecycle actions
+- `internal/reconcile/application/controller.go`'s `resolveEnv` - where the env layers actually merge
+:::
 
 ## Why this exists
 
@@ -78,15 +83,15 @@ Moving an app or database to a project, or an app to an environment, is a separa
 
 To remove a resource, pass an empty string: `"project_id": ""`.
 
-All endpoints validate the target ID first. A typo'd or deleted ID gets a 400, not a silent write. This mirrors `PUT /apps/{name}/node` for node placement and is gated by `AbilityWrite`, not `AbilityRoot` (organizational edit, not infrastructure change).
+All endpoints validate the target ID first. A typo'd or deleted ID gets a 400, not a silent write. This mirrors `PUT /apps/{name}/node` for node placement and needs only the `write` ability, not `root` (organizational edit, not infrastructure change).
 
 ### Dashboard UX for moving
 
 Moves happen from the resource's own Overview page, not from the project/environment page:
 
-- App: `AppOverview.tsx` renders `MoveToProjectDialog` and `MoveToEnvironmentDialog`
-- Database: `routes/databases/$name/overview.tsx` renders `MoveToProjectDialog`
-- Project: `routes/projects/$id/index.tsx` renders `MoveToOrganizationDialog`
+- An app's Overview page has "Move to project" and "Change environment" actions.
+- A database's Overview page has a "Move to project" action.
+- A project's detail page has a "Move to organization" action.
 
 Project and environment detail pages are read-only for membership. They list what's filed there and link back to each member's Overview page to move it.
 
@@ -113,8 +118,6 @@ flowchart TD
   
   style G fill:#f0e8f8,stroke:#333,stroke-width:2px
 ```
-
-Implemented in `internal/reconcile/application/controller.go` (`resolveEnv`).
 
 ### What an app actually sees
 
@@ -219,7 +222,7 @@ The project detail page shows:
 - "Stop project" / "Start project" pair (always both buttons, not a toggle)
 - "Restart all" button (disabled when the project has no apps)
 
-Neither requires a confirm dialog. Stopping is not destructive (desired state survives), and restart is non-destructive like `RestartAppButton`.
+Neither requires a confirm dialog. Stopping is not destructive (desired state survives), and restart is non-destructive, the same as restarting a single app.
 
 ## Protected environments
 
@@ -253,9 +256,9 @@ Omitting `--confirm` doesn't fail. The client catches the 409, prints the server
 
 ### Dashboard
 
-The deploy/rollback/promote flow shows `ProtectedEnvironmentNotice`, an amber warning box. Check the checkbox "I understand and want to proceed." to enable the button (same pattern as Redis's no-auth warning).
+The deploy/rollback/promote flow shows an amber warning box. Check the checkbox "I understand and want to proceed." to enable the button (same pattern as Redis's no-auth warning).
 
-Toggle `protected` on the environment detail page (`ProtectedEnvironmentToggle`), backed by `PATCH /api/v1/environments/{id}`. That's the only field that endpoint changes.
+Toggle `protected` on the environment detail page, backed by `PATCH /api/v1/environments/{id}`. That's the only field that endpoint changes.
 
 ## Promote and clone dialogs
 
@@ -265,7 +268,7 @@ Toggle `protected` on the environment detail page (`ProtectedEnvironmentToggle`)
 
 ## Cloning an environment
 
-`POST /api/v1/environments/{id}/clone` (implementation: `internal/api/environment_clone.go`) copies a whole environment: every app tagged with it, plus its own shared env vars, into a brand-new environment in the same project. This is a different operation from `POST /apps/{name}/promote`, which only ever moves one app's image tag onto an existing sibling app. Cloning creates new apps and a new environment from scratch, and actually deploys them through the normal reconcile path, the same as creating an app through the API directly.
+`POST /api/v1/environments/{id}/clone` copies a whole environment: every app tagged with it, plus its own shared env vars, into a brand-new environment in the same project. This is a different operation from `POST /apps/{name}/promote`, which only ever moves one app's image tag onto an existing sibling app. Cloning creates new apps and a new environment from scratch, and actually deploys them through the normal reconcile path, the same as creating an app through the API directly.
 
 `GET /api/v1/environments/{id}/clone/preview?new_environment_name={name}` shows what a clone would create without applying it: each tagged app's suggested new name, current image, current domains (which will **not** be copied), declared secret env var names, and scheduled task count, plus the source environment's own shared env var keys.
 
@@ -279,7 +282,7 @@ Toggle `protected` on the environment detail page (`ProtectedEnvironmentToggle`)
 | Secret/vault env **declarations** (names and required flags, not values) | | Git build source and node placement |
 | Secret **values**, per-app and environment-shared alike | | Off by default; every declared secret is created with no value (same as a brand-new required secret) unless the request sets `copy_secret_values: true` |
 
-This mirrors `promote.go`'s own precedent (`promotePreviewUnsnapshottedFields`) of being deliberate about what crosses an environment boundary unprompted: config crosses freely, secret plaintext only on explicit opt-in.
+This follows the same precedent promoting an app between environments already sets: config crosses freely, secret plaintext only on explicit opt-in.
 
 ### Request shape
 
@@ -296,7 +299,7 @@ POST /api/v1/environments/env_src123/clone
 
 `apps` is optional per source app: omit an entry entirely and that app clones under its own auto-suggested name (`<source>-<slugified new environment name>`) with no domains assigned. Only list apps whose default name or domain assignment needs to change.
 
-A name collision with an existing app (auto-suggested or explicit) fails the whole request with `409 Conflict` before anything is written; nothing is partially created because of a name clash. A requested domain already claimed by another service (including the source app itself) fails the same way, the same `*store.ErrDomainTaken` `SaveDesiredService` itself returns.
+A name collision with an existing app (auto-suggested or explicit) fails the whole request with `409 Conflict` before anything is written; nothing is partially created because of a name clash. A requested domain already claimed by another service (including the source app itself) fails the same way, the same conflict a duplicate domain assignment anywhere else in the platform returns.
 
 ### CLI
 
@@ -309,7 +312,7 @@ levelrail-cli apps environments clone <id> --new-name NAME \
 
 ### Dashboard
 
-The environment detail page (`/projects/$id/environments/$envId`) has a "Clone environment..." button next to the protected toggle and delete action, opening `CloneEnvironmentDialog`. It shows the same preview as the API (suggested names, domains not copied, secret/scheduled-task counts), lets you override a name or assign domains per app, and has an explicit "Also copy real secret values" checkbox that defaults unchecked.
+The environment detail page has a "Clone environment..." button next to the protected toggle and delete action, opening a clone dialog. It shows the same preview as the API (suggested names, domains not copied, secret/scheduled-task counts), lets you override a name or assign domains per app, and has an explicit "Also copy real secret values" checkbox that defaults unchecked.
 
 ## Dashboard pages
 
