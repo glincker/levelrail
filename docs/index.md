@@ -53,6 +53,46 @@ That install script checks the host, installs Docker if it's missing, and starts
 
 </section>
 
+<section class="landing-section landing-section--steps">
+
+## How it works
+
+<div class="steps-grid">
+
+<div class="step-card">
+
+<span class="step-card__index">01</span>
+
+**Push to your git repo**
+
+GitHub, GitLab, or Bitbucket webhooks trigger a deploy on every push, with preview environments per pull request.
+
+</div>
+
+<div class="step-card">
+
+<span class="step-card__index">02</span>
+
+**Build**
+
+A Dockerfile, a Compose file, or Railpack auto-detection builds through BuildKit, with remote cache and live log streaming.
+
+</div>
+
+<div class="step-card">
+
+<span class="step-card__index">03</span>
+
+**Live app**
+
+TLS from the embedded Caddy ingress, node-local metrics and logs, and rollback to a pinned prior image, with no extra setup.
+
+</div>
+
+</div>
+
+</section>
+
 <section class="landing-section landing-section--compare">
 
 ## How it compares
@@ -118,46 +158,6 @@ SQLite in WAL mode, an embedded Caddy, and an embedded dashboard: one binary on 
 <div class="ethos-card">
 
 <p class="ethos-quote">&ldquo;Not a Kubernetes competitor. Not a Vercel competitor. The target user runs between 3 and 50 services on between 1 and 10 machines and does not want to learn Kubernetes.&rdquo;</p>
-
-</div>
-
-</section>
-
-<section class="landing-section landing-section--steps">
-
-## How it works
-
-<div class="steps-grid">
-
-<div class="step-card">
-
-<span class="step-card__index">01</span>
-
-**Push to your git repo**
-
-GitHub, GitLab, or Bitbucket webhooks trigger a deploy on every push, with preview environments per pull request.
-
-</div>
-
-<div class="step-card">
-
-<span class="step-card__index">02</span>
-
-**Build**
-
-A Dockerfile, a Compose file, or Railpack auto-detection builds through BuildKit, with remote cache and live log streaming.
-
-</div>
-
-<div class="step-card">
-
-<span class="step-card__index">03</span>
-
-**Live app**
-
-TLS from the embedded Caddy ingress, node-local metrics and logs, and rollback to a pinned prior image, with no extra setup.
-
-</div>
 
 </div>
 
