@@ -4,13 +4,14 @@ description: Creating, deploying, rolling back, and managing app lifecycle, heal
 
 # Deploying and managing apps
 
-An app is one `store.DesiredService` row: an image, a port, and everything the application controller needs to converge a running container to it.
+Push an image or a git repo at the API, CLI, or dashboard wizard, and Levelrail turns it into a running container with health checks, rollback, and a full deploy history, no separate deploy tool needed. This page covers everything you do to an app after that first deploy: rolling back, promoting between environments, restarting, setting resource limits, and running one-off commands or scheduled tasks against it.
 
-**Relevant packages and files:**
-
+::: details For contributors: where this lives in the source
 - Backend: `internal/api/apps.go`, `apps_multi.go`, `apps_compose.go`, `deploys.go`, `promote.go`, `exec.go`, `resources_live_apply.go`, `scheduled_tasks.go`
 - CLI: `cmd/levelrail-cli/apps*.go`
 - Dashboard: `web/src/routes/apps/$name/*.tsx`
+- An app is one `store.DesiredService` row: an image, a port, and everything the application controller needs to converge a running container to it.
+:::
 
 ## Scope
 
@@ -81,18 +82,22 @@ Fields managed separately (`node_id`, `project_id`, `environment_id`, `storage_t
 
 Every state-changing action funnels through these:
 
-| Action | Function | Behavior |
+| Action | What happens | Function |
 | --- | --- | --- |
-| Redeploy | `setDesiredImage` | Overwrites `Image`, clears `EnvDirty`, saves. Deploy, rollback, and promote all use this. |
-| Suspend/resume | `UpdateServiceSuspended` | Flips `Suspended`. The reconciler stops or restarts the container on its next pass. |
-| Restart | `RestartService` | Mints a fresh `restart_nonce` (folded into the container name hash). Makes "same image, new nonce" look like an image change to the cutover logic. This is the only way to force recreation without changing the image. |
-| Delete | `DeleteDesiredService` | Removes the desired-state row. The handler tears down the app's current containers in a background goroutine and deletes the `store.App` row if this was its last service. |
+| Redeploy | Points the app at the new image and clears any pending "restart needed" flag. Deploy, rollback, and promote all work this way. | `setDesiredImage` |
+| Suspend/resume | Stops or restarts the container on the reconciler's next pass. | `UpdateServiceSuspended` |
+| Restart | Your app restarts with a fresh container, same image, no config change needed. This is the only way to force recreation without changing the image. | `RestartService` |
+| Delete | Removes the app from desired state; its containers are torn down in the background. | `DeleteDesiredService` |
 
 ### Environment drift tracking
 
-`EnvDirty` tracks when env vars change without an image change. Saving new env vars sets this flag, and it stays set until a redeploy or restart lands.
+Changing env vars without redeploying leaves your running container out of sync with what's saved. Levelrail tracks this and stays flagged until a redeploy or restart actually lands.
 
 The dashboard shows this as an amber "Environment changes pending restart" banner at the top of the app's Overview page with a one-click restart action.
+
+::: details For contributors: internal names
+Restart mints a fresh `restart_nonce` (folded into the container name hash), making "same image, new nonce" look like an image change to the cutover logic. The pending-restart flag is `EnvDirty` on the desired-state row.
+:::
 
 ### Pending changes
 

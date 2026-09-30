@@ -21,7 +21,7 @@ Every other platform in this category (and every hosted observability vendor) ce
 This platform keeps metrics and logs where they are collected: each node's own SQLite-backed store (the same `modernc.org/sqlite` used elsewhere in the control plane). The control plane queries agents on demand instead of ingesting continuously.
 
 ::: tip
-Right now there is exactly one node (control plane and agent share a process, see `internal/agent`'s in-memory transport), so "federated query" fans out to a single source. But the query interface (`TelemetryQuerier` in `internal/api/metrics.go`) is already shaped for Phase 3's real multi-node federation. Nothing changes when a second node appears, only how many sources the querier asks.
+Right now there is exactly one node (control plane and agent share a process, see `internal/agent`'s in-memory transport), so "federated query" fans out to a single source. Nothing changes for you when a second node appears: the same queries and dashboards keep working, just against more sources.
 :::
 
 

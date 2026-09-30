@@ -4,9 +4,11 @@ description: Balance traffic across an app's replicas with health checks, retrie
 
 # Load balancing across replicas
 
-Set `replicas: 3` and the control plane starts three containers. A load balancer decides which of them answers each request. It is built on the same embedded Caddy that already terminates TLS for your domains, so there is no extra container and no separate config surface: the ingress reconciler feeds Caddy's `reverse_proxy` upstream pool.
+Set `replicas: 3` and the control plane starts three containers. Without a load balancer, your domain only ever routes to one of them (the first replica); turn on load balancing from the app's Load balancer tab, the CLI, or `app.yaml`, and the domain routes to every running replica instead, with health checks, retries, and sticky sessions available out of the box. There's no extra container to run and no separate config surface to learn: it uses the same embedded Caddy that already terminates TLS for your domains.
 
-Without a load balancer, a domain routes to one container (the first replica). Turn it on and the domain routes to every running replica.
+::: details For contributors: where this lives in the source
+The ingress reconciler feeds Caddy's `reverse_proxy` upstream pool directly, in-process.
+:::
 
 ## Where to find it
 

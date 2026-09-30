@@ -153,6 +153,16 @@ SQLite in WAL mode, an embedded Caddy, and an embedded dashboard: one binary on 
 
 </section>
 
+<section class="landing-section landing-section--ethos">
+
+<div class="ethos-card">
+
+<p class="ethos-quote">&ldquo;Not a Kubernetes competitor. Not a Vercel competitor. The target user runs between 3 and 50 services on between 1 and 10 machines and does not want to learn Kubernetes.&rdquo;</p>
+
+</div>
+
+</section>
+
 <section class="landing-section landing-section--screenshots">
 
 ## See it running

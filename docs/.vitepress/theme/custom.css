@@ -420,6 +420,49 @@
   color: var(--vp-c-brand-1);
 }
 
+/* Ethos pull-quote: one deliberate warm-brown/cream/terracotta accent
+   card, a serif break from the rest of the page's amber "Rail signal"
+   theme, same spacing rhythm as .compare-card/.step-card either side of
+   it. Own custom properties so it doesn't touch the site-wide palette. */
+.ethos-card {
+  --panel: #211914;
+  --ink: #eee6d0;
+  --accent-card: #c95c3f;
+  position: relative;
+  overflow: hidden;
+  container-type: inline-size;
+  margin-top: 8px;
+  padding: 44px 32px;
+  border-radius: 20px;
+  background: var(--panel);
+  text-align: center;
+}
+
+.ethos-card::before {
+  content: '';
+  position: absolute;
+  inset: -16% 5% -12%;
+  background:
+    radial-gradient(ellipse at 24% 48%, var(--accent-card), transparent 44%),
+    radial-gradient(ellipse at 58% 62%, rgb(238 230 208 / 0.16), transparent 52%);
+  opacity: 0.16;
+  filter: blur(1.8cqw);
+  pointer-events: none;
+}
+
+.ethos-quote {
+  position: relative;
+  max-width: 62ch;
+  margin: 0 auto;
+  color: var(--ink);
+  font-family: 'Iowan Old Style', Baskerville, 'Times New Roman', serif;
+  font-size: clamp(20px, 2.6vw, 28px);
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
 /* Trust strip: license, live star count, and a data-ownership line right
    under the hero CTAs. */
 .trust-strip {

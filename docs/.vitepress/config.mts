@@ -176,14 +176,22 @@ const sidebarGroups = [
 // for transformHead's BreadcrumbList below. Built from sidebarGroups
 // itself so the breadcrumb's middle segment can never list a section a
 // page doesn't actually appear under in the real sidebar.
+// pageDepth tracks nesting (1 = a group's direct item, 2+ = inside a
+// collapsed subgroup), reused by the sitemap's priority below.
 const pageToSection = new Map<string, string>()
-function collectPages(items: typeof sidebarGroups[number]['items'], sectionText: string) {
+const pageDepth = new Map<string, number>()
+function collectPages(
+  items: typeof sidebarGroups[number]['items'],
+  sectionText: string,
+  depth = 1,
+) {
   for (const item of items) {
     if ('link' in item) {
       pageToSection.set(item.link.replace(/^\//, ''), sectionText)
+      pageDepth.set(item.link.replace(/^\//, ''), depth)
     }
     if ('items' in item) {
-      collectPages(item.items, sectionText)
+      collectPages(item.items, sectionText, depth + 1)
     }
   }
 }
@@ -191,32 +199,46 @@ for (const group of sidebarGroups) {
   collectPages(group.items, group.text)
 }
 
+// Base sitemap priority per top-level sidebar section; a page one or
+// more collapsed subgroups deep gets a small penalty on top of this.
+const sectionPriority: Record<string, number> = {
+  Tutorials: 0.9,
+  'How-to guides': 0.7,
+  Reference: 0.6,
+  Explanation: 0.6,
+  Status: 0.4,
+  'Design proposals': 0.3,
+  'Docs index': 0.3,
+}
+function sitemapPriority(url: string): number {
+  if (url === '') return 1.0
+  if (url === 'getting-started') return 0.9
+  if (url.startsWith('changelog/') && url !== 'changelog/') return 0.3
+  const section = pageToSection.get(url)
+  if (!section) return 0.4
+  const base = sectionPriority[section] ?? 0.5
+  const depth = pageDepth.get(url) ?? 1
+  return depth > 1 ? Math.max(0.3, base - 0.1) : base
+}
+
 export default withMermaid({
   title: 'Levelrail',
   description,
+
+  // lastUpdated also drives the sitemap's lastmod below (VitePress reads
+  // each page's own last git-commit date once this is on).
+  lastUpdated: true,
 
   // TODO: revisit once glinr.com/levelrail (a path, not this subdomain)
   // becomes possible, per the root CLAUDE.md's stated long-term target.
   sitemap: {
     hostname: siteUrl,
+    transformItems: (items) =>
+      items.map((item) => ({ ...item, priority: sitemapPriority(item.url) })),
   },
 
   head: [
-    [
-      'meta',
-      {
-        property: 'og:image',
-        content: `${siteUrl}/assets/screenshots/app-overview.png`,
-      },
-    ],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
-    [
-      'meta',
-      {
-        name: 'twitter:image',
-        content: `${siteUrl}/assets/screenshots/app-overview.png`,
-      },
-    ],
     ['meta', { name: 'theme-color', content: '#0b0e14' }],
     ['link', { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }],
     [
@@ -312,14 +334,19 @@ export default withMermaid({
     const canonicalUrl = `${siteUrl}/${path}`
     const title = pageData.frontmatter.title || pageData.title || 'Levelrail'
     const pageDescription = pageData.frontmatter.description || pageData.description || description
+    // Homepage keeps its own product screenshot; every other page gets one
+    // shared generic docs card rather than all pages sharing the homepage's.
+    const ogImage = `${siteUrl}/assets/${path === '' ? 'screenshots/app-overview.png' : 'og-docs.png'}`
     const head: [string, Record<string, string>, string?][] = [
       ['link', { rel: 'canonical', href: canonicalUrl }],
       ['meta', { property: 'og:type', content: pageData.params?.tag ? 'article' : 'website' }],
       ['meta', { property: 'og:title', content: title }],
       ['meta', { property: 'og:description', content: pageDescription }],
       ['meta', { property: 'og:url', content: canonicalUrl }],
+      ['meta', { property: 'og:image', content: ogImage }],
       ['meta', { name: 'twitter:title', content: title }],
       ['meta', { name: 'twitter:description', content: pageDescription }],
+      ['meta', { name: 'twitter:image', content: ogImage }],
       ...changelogHead(pageData, siteUrl),
     ]
 

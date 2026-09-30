@@ -48,7 +48,7 @@ flowchart LR
 7. Log in through the real `/login` form
 8. Capture screenshots with `shot-scraper`
 
-It cleans up after itself on exit (including on failure): the deployed apps are deleted, the control plane process is stopped, and the scratch directory is removed. It's safe to re-run any time; each run picks a free local port rather than assuming one is available, and overwrites the five PNGs in place.
+It cleans up after itself on exit (including on failure): the deployed apps are deleted, the control plane process is stopped, and the scratch directory is removed. It's safe to re-run any time; each run picks a free local port rather than assuming one is available, and overwrites the configured PNGs in place.
 
 Set `KEEP_SCRATCH=1` to leave the scratch directory (binaries, data dir, server log, session state) in place after a run, useful for debugging a failed capture.
 :::
@@ -70,7 +70,7 @@ All credentials are freshly created for each run and never leave the scratch dat
 ## Files
 
 - `scripts/screenshots/shots.yml`: the `shot-scraper multi` config, one entry per PNG.
-- `scripts/screenshots/login_state.py`: logs into a running control plane through the real login form and saves the session as a Playwright storage state file, reused across all five shots.
+- `scripts/screenshots/login_state.py`: logs into a running control plane through the real login form and saves the session as a Playwright storage state file, reused across every shot.
 - `scripts/screenshots/capture.sh`: orchestrates the whole pipeline.
 
 ## See also
