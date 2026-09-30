@@ -50,7 +50,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 51 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 57 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -113,6 +113,12 @@ Endpoints for:
 | DELETE | /api/v1/settings/ai-assistant | AbilityRoot | handleDeleteAIAssistantSettings |
 | GET | /api/v1/settings/deploy-freeze | AbilityRead | handleGetGlobalDeployFreeze |
 | PUT | /api/v1/settings/deploy-freeze | AbilityRoot | handlePutGlobalDeployFreeze |
+| GET | /api/v1/auth/passkeys | Session | handleListPasskeys |
+| POST | /api/v1/auth/passkeys/register/begin | Session | handleBeginPasskeyRegistration |
+| POST | /api/v1/auth/passkeys/register/finish | Session | handleFinishPasskeyRegistration |
+| DELETE | /api/v1/auth/passkeys/{id} | Session | handleDeletePasskey |
+| POST | /api/v1/auth/passkey-login/begin | Public | handleBeginPasskeyLogin |
+| POST | /api/v1/auth/passkey-login/finish | Public | handleFinishPasskeyLogin |
 
 :::
 
