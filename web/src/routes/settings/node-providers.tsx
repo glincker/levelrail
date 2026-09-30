@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { CloudIcon } from '@phosphor-icons/react/dist/ssr'
 import { nodeProviderListQueryOptions } from '../../queries/nodeProvision'
 import { NodeProviderCredentialsCard } from '../../components/NodeProviderCredentialsCard'
 import {
@@ -19,11 +20,16 @@ export const Route = createFileRoute('/settings/node-providers')({
   pendingComponent: NodeProvidersSettingsSkeleton,
 })
 
+// A fixed approximation of the real providers.map grid, matching
+// OAuthSettingsSkeleton's own comment for the same reasoning.
 function NodeProvidersSettingsSkeleton() {
   return (
     <div className="space-y-6" aria-hidden="true">
-      <SettingsHeaderSkeleton />
-      <SettingsCardSkeleton rows={3} />
+      <SettingsHeaderSkeleton icon />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <SettingsCardSkeleton description={false} rows={1} />
+        <SettingsCardSkeleton description={false} rows={1} />
+      </div>
     </div>
   )
 }
@@ -31,14 +37,20 @@ function NodeProvidersSettingsSkeleton() {
 function NodeProvidersSettingsPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">
-          Cloud node providers
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Store an API token per provider so the Nodes page can create servers
-          automatically.
-        </p>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <CloudIcon className="size-4" />
+        </div>
+        <div>
+          <h1 className="text-lg font-semibold text-foreground">
+            Cloud node providers
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            API tokens for creating servers automatically from the Nodes page.
+            Used only to create and inspect VMs, day to day operation never
+            touches SSH.
+          </p>
+        </div>
       </div>
       <NodeProviderCredentialsCard />
     </div>

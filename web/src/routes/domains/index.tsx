@@ -115,10 +115,12 @@ function DomainsPage() {
     [sortedDomains, certByDomain],
   )
 
+  // Taller than the 60px other list pages use: this row's certificate
+  // column can stack two badges (status + renewal-stalled), not just one.
   const virtualizer = useVirtualizer({
     count: sortedDomains.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 60,
+    estimateSize: () => 76,
     overscan: 8,
   })
 

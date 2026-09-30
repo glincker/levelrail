@@ -31,8 +31,8 @@ describe('NodeProviderCredentialsCard', () => {
 
   it('shows connected/not connected state per provider', () => {
     render(<NodeProviderCredentialsCard />)
-    expect(screen.getByText('connected')).toBeVisible()
-    expect(screen.getAllByText('not connected')).toHaveLength(2)
+    expect(screen.getByText('Connected')).toBeVisible()
+    expect(screen.getAllByText('Not connected')).toHaveLength(2)
   })
 
   it('submits a new token for the chosen provider', () => {
