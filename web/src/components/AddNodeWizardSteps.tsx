@@ -7,6 +7,7 @@ import { DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { StatusPill } from './kit/StatusPill'
+import { WizardStepFooter } from './kit/WizardStepFooter'
 import type { NodeProvisionStatus } from '../types/nodeProvision'
 import type { SSHNodeProvisionStatus } from '../types/nodeSSHProvision'
 
@@ -19,6 +20,7 @@ export function StepShell({
   onBack,
   onContinue,
   continueDisabled,
+  continueReason,
   continueLabel = 'Continue',
   children,
 }: {
@@ -26,6 +28,8 @@ export function StepShell({
   onBack: () => void
   onContinue: () => void
   continueDisabled?: boolean
+  /** Explains why Continue is disabled; ignored while continueDisabled is falsy. */
+  continueReason?: string
   continueLabel?: string
   children: React.ReactNode
 }) {
@@ -33,22 +37,27 @@ export function StepShell({
     <>
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={onBack}
             aria-label="Back"
-            className="text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeftIcon className="size-4" />
-          </button>
+            <ArrowLeftIcon />
+          </Button>
           {title}
         </DialogTitle>
       </DialogHeader>
       <div className="space-y-4">{children}</div>
       <DialogFooter>
-        <Button type="button" onClick={onContinue} disabled={continueDisabled}>
-          {continueLabel}
-        </Button>
+        <WizardStepFooter
+          canContinue={!continueDisabled}
+          reason={continueDisabled ? continueReason : undefined}
+          onContinue={onContinue}
+          continueLabel={continueLabel}
+          reasonId="add-node-continue-reason"
+        />
       </DialogFooter>
     </>
   )

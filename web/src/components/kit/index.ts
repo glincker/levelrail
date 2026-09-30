@@ -26,3 +26,7 @@ export {
 export { Timeline, type TimelineProps, type TimelineItem } from './Timeline'
 export { RelativeTime, type RelativeTimeProps } from './RelativeTime'
 export { useReducedMotion } from './useReducedMotion'
+export {
+  WizardStepFooter,
+  type WizardStepFooterProps,
+} from './WizardStepFooter'
