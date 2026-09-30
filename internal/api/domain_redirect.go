@@ -21,6 +21,10 @@ type DomainRedirectStore interface {
 	GetDomainRedirect(ctx context.Context, domain string) (store.DomainRedirect, bool, error)
 	SetDomainRedirect(ctx context.Context, domain, targetURL string, statusCode int) error
 	DeleteDomainRedirect(ctx context.Context, domain string) error
+	// ListDomainRedirects backs GET /api/v1/domains's has_redirect flag:
+	// one bulk read instead of a per-domain GetDomainRedirect call,
+	// avoiding an N+1 query over the domain list.
+	ListDomainRedirects(ctx context.Context) ([]store.DomainRedirect, error)
 }
 
 // domainRedirectResource is the wire shape for GET/PUT/DELETE

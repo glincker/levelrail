@@ -24,10 +24,15 @@ export const domainKeys = {
 }
 
 // Domain mirrors internal/api/ingress_settings.go's domainResource wire
-// shape exactly.
+// shape exactly. The four flags are read-only status visibility: this
+// page never writes them, see DomainRow.tsx's own doc comment for why.
 export interface Domain {
   domain: string
   service_name: string
+  waf_enabled: boolean
+  has_redirect: boolean
+  maintenance_enabled: boolean
+  has_basic_auth: boolean
 }
 
 export async function fetchDomains(): Promise<Domain[]> {

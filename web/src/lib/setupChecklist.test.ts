@@ -10,7 +10,16 @@ function cert(domain: string, status: CertificateStatus['status']) {
 const allDone: SetupChecklistInput = {
   gitProviders: [{ provider: 'github', connected: true }] as never,
   apps: [{ name: 'web' }] as never,
-  domains: [{ domain: 'a.example.com', service_name: 'web' }],
+  domains: [
+    {
+      domain: 'a.example.com',
+      service_name: 'web',
+      waf_enabled: false,
+      has_redirect: false,
+      maintenance_enabled: false,
+      has_basic_auth: false,
+    },
+  ],
   certificates: [cert('a.example.com', 'healthy')],
   backupTargets: [{ id: 't' }] as never,
   controlPlaneBackups: [{ name: 'b' }] as never,
