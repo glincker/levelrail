@@ -1,19 +1,32 @@
 import { useState } from 'react'
-import { CloudIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  CloudIcon,
+  DropIcon,
+  HardDrivesIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import type { Icon } from '@phosphor-icons/react'
 import {
   Card,
+  CardAction,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { toast } from '@/components/ui/toast'
 import { StatusPill } from './kit/StatusPill'
 import { HelpLink } from '@/components/HelpLink'
+import { SettingsCardSkeleton } from '@/components/settings/SettingsSkeletons'
 import {
   useNodeProviders,
   useSetNodeProviderCredential,
@@ -26,6 +39,14 @@ const PROVIDER_LABELS: Record<string, string> = {
   aws: 'AWS',
   azure: 'Azure',
   gcp: 'Google Cloud',
+}
+
+// Phosphor has no brand marks for these providers. Hetzner and
+// DigitalOcean each get an icon tied to a real product detail (bare
+// metal racks, "Droplets") instead of every row sharing CloudIcon.
+const PROVIDER_ICONS: Record<string, Icon> = {
+  hetzner: HardDrivesIcon,
+  digitalocean: DropIcon,
 }
 
 // Hetzner and DigitalOcean take a plain API token; Azure and GCP take a
@@ -46,40 +67,46 @@ const PROVIDER_PLACEHOLDER: Record<string, string> = {
 
 // Instance-level cloud provider credentials for "nodes provision" and the
 // nodes page's own Add node wizard: GET/POST /api/v1/node-providers. One
-// mini-form per known provider, the same "list of independent cards"
-// shape RegistryCredentialTable establishes for a different multi-
-// credential resource, simplified here since there are only ever two
-// rows and neither can be deleted (only replaced).
+// card per known provider, the same "one Card per credential" shape
+// OAuthProviderCard and EmailSettingsCard already establish.
 export function NodeProviderCredentialsCard() {
   const providers = useNodeProviders()
+
+  if (providers.isLoading) {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2">
+        <SettingsCardSkeleton description={false} rows={1} />
+        <SettingsCardSkeleton description={false} rows={1} />
+      </div>
+    )
+  }
+
+  if (providers.isError) {
+    return (
+      <Alert variant="destructive">
+        <WarningIcon />
+        <AlertDescription>{providers.error.message}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  const data = providers.data ?? []
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+          No cloud providers are configured on this control plane.
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CloudIcon className="size-4" />
-          Cloud node provisioning
-        </CardTitle>
-        <CardDescription>
-          API tokens for creating servers automatically from the Nodes page.
-          Used only to create and inspect VMs; day to day operation never
-          touches SSH.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {providers.isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        ) : providers.isError ? (
-          <Alert variant="destructive">
-            <WarningIcon />
-            <AlertDescription>{providers.error.message}</AlertDescription>
-          </Alert>
-        ) : (
-          (providers.data ?? []).map((p) => (
-            <ProviderForm key={p.provider} provider={p} />
-          ))
-        )}
-      </CardContent>
-    </Card>
+    <div className="grid gap-4 sm:grid-cols-2">
+      {data.map((p) => (
+        <ProviderForm key={p.provider} provider={p} />
+      ))}
+    </div>
   )
 }
 
@@ -94,6 +121,7 @@ function ProviderForm({ provider }: { provider: NodeProviderResource }) {
   const setCredential = useSetNodeProviderCredential()
   const label = PROVIDER_LABELS[provider.provider] ?? provider.provider
   const fieldLabel = PROVIDER_FIELD_LABEL[provider.provider] ?? 'API token'
+  const ProviderIcon = PROVIDER_ICONS[provider.provider] ?? CloudIcon
 
   const canSubmit = isAWS
     ? useAmbient || (token !== '' && secretAccessKey !== '')
@@ -121,183 +149,199 @@ function ProviderForm({ provider }: { provider: NodeProviderResource }) {
           setToken('')
           setSecretAccessKey('')
           setSessionToken('')
+          toast.add({ title: `${label} credential saved.`, type: 'success' })
         },
       },
     )
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-3 rounded-lg border border-border p-3"
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-foreground">{label}</span>
-        <StatusPill
-          tone={provider.has_token ? 'success' : 'neutral'}
-          label={provider.has_token ? 'connected' : 'not connected'}
-          size="sm"
-        />
-      </div>
-      {!isAWS ? (
-        <Field>
-          <FieldLabel htmlFor={`node-provider-token-${provider.provider}`}>
-            {fieldLabel}
-          </FieldLabel>
-          <Input
-            id={`node-provider-token-${provider.provider}`}
-            type="password"
-            autoComplete="off"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder={
-              provider.has_token
-                ? '••••••••••••'
-                : (PROVIDER_PLACEHOLDER[provider.provider] ??
-                  `Paste your ${label} API token`)
-            }
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ProviderIcon className="size-4" />
+          {label}
+        </CardTitle>
+        <CardAction>
+          <StatusPill
+            tone={provider.has_token ? 'success' : 'neutral'}
+            label={provider.has_token ? 'Connected' : 'Not connected'}
+            size="sm"
           />
-          <FieldDescription>
-            {provider.has_token
-              ? 'A token is already stored. Paste a new one to replace it.'
-              : 'Never echoed back once saved.'}
-            {provider.provider === 'azure' ? (
-              <>
-                {' '}
-                Prefer workload identity federation over a long-lived
-                client_secret? Use a &quot;federated_token_file&quot; key
-                instead, see{' '}
-                <HelpLink
-                  path="/node-provisioning#azure-workload-identity-federation"
-                  label="Azure workload identity federation"
-                  variant="inline"
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <FieldGroup className="gap-3">
+            {!isAWS ? (
+              <Field>
+                <FieldLabel
+                  htmlFor={`node-provider-token-${provider.provider}`}
+                >
+                  {fieldLabel}
+                </FieldLabel>
+                <Input
+                  id={`node-provider-token-${provider.provider}`}
+                  type="password"
+                  autoComplete="off"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  placeholder={
+                    provider.has_token
+                      ? '••••••••••••'
+                      : (PROVIDER_PLACEHOLDER[provider.provider] ??
+                        `Paste your ${label} API token`)
+                  }
                 />
-                .
+                <FieldDescription>
+                  {provider.has_token
+                    ? 'A token is already stored. Paste a new one to replace it.'
+                    : 'Never echoed back once saved.'}
+                  {provider.provider === 'azure' ? (
+                    <>
+                      {' '}
+                      Prefer workload identity federation over a long-lived
+                      client_secret? Use a &quot;federated_token_file&quot; key
+                      instead, see{' '}
+                      <HelpLink
+                        path="/node-provisioning#azure-workload-identity-federation"
+                        label="Azure workload identity federation"
+                        variant="inline"
+                      />
+                      .
+                    </>
+                  ) : null}
+                </FieldDescription>
+              </Field>
+            ) : null}
+            {isAWS ? (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id={`node-provider-aws-ambient-${provider.provider}`}
+                  checked={useAmbient}
+                  onCheckedChange={(v) => setUseAmbient(v === true)}
+                />
+                <FieldLabel
+                  htmlFor={`node-provider-aws-ambient-${provider.provider}`}
+                  className="font-normal"
+                >
+                  Use this control plane&apos;s own AWS identity (env vars,
+                  shared config, or an EC2 instance profile) instead of a stored
+                  key
+                </FieldLabel>
+              </div>
+            ) : null}
+            {!isAWS || !useAmbient ? (
+              <Field>
+                <FieldLabel
+                  htmlFor={`node-provider-token-${provider.provider}`}
+                >
+                  {isAWS ? 'Access key ID' : 'API token'}
+                </FieldLabel>
+                <Input
+                  id={`node-provider-token-${provider.provider}`}
+                  type="password"
+                  autoComplete="off"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  placeholder={
+                    provider.has_token
+                      ? '••••••••••••'
+                      : isAWS
+                        ? 'AKIA...'
+                        : `Paste your ${label} API token`
+                  }
+                />
+                <FieldDescription>
+                  {provider.has_token
+                    ? 'A credential is already stored. Fill in a new one to replace it.'
+                    : 'Never echoed back once saved.'}
+                </FieldDescription>
+              </Field>
+            ) : null}
+            {isAWS && !useAmbient ? (
+              <Field>
+                <FieldLabel
+                  htmlFor={`node-provider-aws-secret-${provider.provider}`}
+                >
+                  Secret access key
+                </FieldLabel>
+                <Input
+                  id={`node-provider-aws-secret-${provider.provider}`}
+                  type="password"
+                  autoComplete="off"
+                  value={secretAccessKey}
+                  onChange={(e) => setSecretAccessKey(e.target.value)}
+                />
+              </Field>
+            ) : null}
+            {isAWS ? (
+              <>
+                <Field>
+                  <FieldLabel
+                    htmlFor={`node-provider-aws-session-token-${provider.provider}`}
+                  >
+                    Session token (optional)
+                  </FieldLabel>
+                  <Input
+                    id={`node-provider-aws-session-token-${provider.provider}`}
+                    type="password"
+                    autoComplete="off"
+                    value={sessionToken}
+                    onChange={(e) => setSessionToken(e.target.value)}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel
+                    htmlFor={`node-provider-aws-region-${provider.provider}`}
+                  >
+                    Region (optional)
+                  </FieldLabel>
+                  <Input
+                    id={`node-provider-aws-region-${provider.provider}`}
+                    value={region}
+                    onChange={(e) => setRegion(e.target.value)}
+                    placeholder="us-east-1"
+                    className="font-mono text-xs"
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel
+                    htmlFor={`node-provider-aws-role-arn-${provider.provider}`}
+                  >
+                    Role ARN (optional)
+                  </FieldLabel>
+                  <Input
+                    id={`node-provider-aws-role-arn-${provider.provider}`}
+                    value={roleARN}
+                    onChange={(e) => setRoleARN(e.target.value)}
+                    placeholder="arn:aws:iam::123456789012:role/example-provisioner"
+                    className="font-mono text-xs"
+                  />
+                  <FieldDescription>
+                    When set, assumed via STS before use: the credential above
+                    then only needs sts:AssumeRole on this role, not direct EC2
+                    permissions.
+                  </FieldDescription>
+                </Field>
               </>
             ) : null}
-          </FieldDescription>
-        </Field>
-      ) : null}
-      {isAWS ? (
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id={`node-provider-aws-ambient-${provider.provider}`}
-            checked={useAmbient}
-            onCheckedChange={(v) => setUseAmbient(v === true)}
-          />
-          <FieldLabel
-            htmlFor={`node-provider-aws-ambient-${provider.provider}`}
-            className="font-normal"
+          </FieldGroup>
+          {setCredential.isError ? (
+            <Alert variant="destructive">
+              <WarningIcon />
+              <AlertDescription>{setCredential.error.message}</AlertDescription>
+            </Alert>
+          ) : null}
+          <Button
+            type="submit"
+            size="sm"
+            disabled={!canSubmit || setCredential.isPending}
           >
-            Use this control plane&apos;s own AWS identity (env vars, shared
-            config, or an EC2 instance profile) instead of a stored key
-          </FieldLabel>
-        </div>
-      ) : null}
-      {!isAWS || !useAmbient ? (
-        <Field>
-          <FieldLabel htmlFor={`node-provider-token-${provider.provider}`}>
-            {isAWS ? 'Access key ID' : 'API token'}
-          </FieldLabel>
-          <Input
-            id={`node-provider-token-${provider.provider}`}
-            type="password"
-            autoComplete="off"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder={
-              provider.has_token
-                ? '••••••••••••'
-                : isAWS
-                  ? 'AKIA...'
-                  : `Paste your ${label} API token`
-            }
-          />
-          <FieldDescription>
-            {provider.has_token
-              ? 'A credential is already stored. Fill in a new one to replace it.'
-              : 'Never echoed back once saved.'}
-          </FieldDescription>
-        </Field>
-      ) : null}
-      {isAWS && !useAmbient ? (
-        <Field>
-          <FieldLabel htmlFor={`node-provider-aws-secret-${provider.provider}`}>
-            Secret access key
-          </FieldLabel>
-          <Input
-            id={`node-provider-aws-secret-${provider.provider}`}
-            type="password"
-            autoComplete="off"
-            value={secretAccessKey}
-            onChange={(e) => setSecretAccessKey(e.target.value)}
-          />
-        </Field>
-      ) : null}
-      {isAWS ? (
-        <>
-          <Field>
-            <FieldLabel
-              htmlFor={`node-provider-aws-session-token-${provider.provider}`}
-            >
-              Session token (optional)
-            </FieldLabel>
-            <Input
-              id={`node-provider-aws-session-token-${provider.provider}`}
-              type="password"
-              autoComplete="off"
-              value={sessionToken}
-              onChange={(e) => setSessionToken(e.target.value)}
-            />
-          </Field>
-          <Field>
-            <FieldLabel
-              htmlFor={`node-provider-aws-region-${provider.provider}`}
-            >
-              Region (optional)
-            </FieldLabel>
-            <Input
-              id={`node-provider-aws-region-${provider.provider}`}
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              placeholder="us-east-1"
-              className="font-mono text-xs"
-            />
-          </Field>
-          <Field>
-            <FieldLabel
-              htmlFor={`node-provider-aws-role-arn-${provider.provider}`}
-            >
-              Role ARN (optional)
-            </FieldLabel>
-            <Input
-              id={`node-provider-aws-role-arn-${provider.provider}`}
-              value={roleARN}
-              onChange={(e) => setRoleARN(e.target.value)}
-              placeholder="arn:aws:iam::123456789012:role/example-provisioner"
-              className="font-mono text-xs"
-            />
-            <FieldDescription>
-              When set, assumed via STS before use: the credential above then
-              only needs sts:AssumeRole on this role, not direct EC2
-              permissions.
-            </FieldDescription>
-          </Field>
-        </>
-      ) : null}
-      {setCredential.isError ? (
-        <Alert variant="destructive">
-          <WarningIcon />
-          <AlertDescription>{setCredential.error.message}</AlertDescription>
-        </Alert>
-      ) : null}
-      <Button
-        type="submit"
-        size="sm"
-        disabled={!canSubmit || setCredential.isPending}
-      >
-        {setCredential.isPending ? 'Saving...' : 'Save'}
-      </Button>
-    </form>
+            {setCredential.isPending ? 'Saving...' : 'Save'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
