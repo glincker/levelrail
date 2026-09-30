@@ -223,10 +223,18 @@ type DomainStore interface {
 	ListServiceDomains(ctx context.Context) ([]store.ServiceDomain, error)
 }
 
-// domainResource is one row of GET /api/v1/domains.
+// domainResource is one row of GET /api/v1/domains. The four status
+// flags are read-only visibility into per-domain settings that are
+// otherwise only configurable from the owning app's own Domains tab
+// (DomainEditor.tsx): this page stays deliberately read-only, see
+// DomainRow.tsx's own doc comment for why.
 type domainResource struct {
-	Domain      string `json:"domain"`
-	ServiceName string `json:"service_name"`
+	Domain             string `json:"domain"`
+	ServiceName        string `json:"service_name"`
+	WAFEnabled         bool   `json:"waf_enabled"`
+	HasRedirect        bool   `json:"has_redirect"`
+	MaintenanceEnabled bool   `json:"maintenance_enabled"`
+	HasBasicAuth       bool   `json:"has_basic_auth"`
 }
 
 // handleListDomains handles GET /api/v1/domains: every service_domains
@@ -235,6 +243,11 @@ type domainResource struct {
 // AbilityRead, same as GET /api/v1/apps: no new ability tier, this is a
 // plain read of data every app-domain edit through DomainEditor already
 // exposes per-app, just aggregated across every app in one call.
+//
+// The four status flags are populated from the same List* bulk reads
+// the ingress reconciler already uses (internal/reconcile/ingress),
+// each one queried once here rather than per domain, so this stays a
+// fixed number of queries regardless of how many domains exist.
 func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 	domains, err := rt.domains.ListServiceDomains(r.Context())
 	if err != nil {
@@ -248,12 +261,60 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: list domains: visibility", err)
 		return
 	}
+
+	wafByDomain, err := rt.domainWAF.ListDomainWAF(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: list domains: waf", err)
+		return
+	}
+	redirects, err := rt.domainRedirect.ListDomainRedirects(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: list domains: redirects", err)
+		return
+	}
+	maintenance, err := rt.domainMaintenance.ListDomainMaintenance(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: list domains: maintenance", err)
+		return
+	}
+	basicAuth, err := rt.domainBasicAuth.ListDomainBasicAuth(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: list domains: basic auth", err)
+		return
+	}
+
+	wafEnabled := make(map[string]bool, len(wafByDomain))
+	for _, d := range wafByDomain {
+		if d.WAFEnabled {
+			wafEnabled[d.Domain] = true
+		}
+	}
+	hasRedirect := make(map[string]bool, len(redirects))
+	for _, d := range redirects {
+		hasRedirect[d.Domain] = true
+	}
+	inMaintenance := make(map[string]bool, len(maintenance))
+	for _, d := range maintenance {
+		inMaintenance[d] = true
+	}
+	hasBasicAuth := make(map[string]bool, len(basicAuth))
+	for _, d := range basicAuth {
+		hasBasicAuth[d.Domain] = true
+	}
+
 	out := make([]domainResource, 0, len(domains))
 	for _, d := range domains {
 		if !canSee(d.ServiceName) {
 			continue
 		}
-		out = append(out, domainResource{Domain: d.Domain, ServiceName: d.ServiceName})
+		out = append(out, domainResource{
+			Domain:             d.Domain,
+			ServiceName:        d.ServiceName,
+			WAFEnabled:         wafEnabled[d.Domain],
+			HasRedirect:        hasRedirect[d.Domain],
+			MaintenanceEnabled: inMaintenance[d.Domain],
+			HasBasicAuth:       hasBasicAuth[d.Domain],
+		})
 	}
 	writeJSON(w, http.StatusOK, out)
 }
