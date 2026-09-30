@@ -23,20 +23,6 @@ const { Layout } = DefaultTheme
         >
           Apache 2.0
         </a>
-        <a
-          class="trust-strip__item trust-strip__item--stars"
-          href="https://github.com/glincker/levelrail/stargazers"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <img
-            src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&label=stars&color=f59e0b"
-            alt="GitHub stars"
-            width="104"
-            height="20"
-            loading="lazy"
-          />
-        </a>
         <span class="trust-strip__item trust-strip__item--text">
           Runs on your own servers: secrets, metrics, and logs stay node-local, nothing shipped to a third party.
         </span>

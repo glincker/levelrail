@@ -484,10 +484,6 @@ a.trust-strip__item:hover {
   color: var(--vp-c-brand-1);
 }
 
-.trust-strip__item--stars img {
-  display: block;
-}
-
 /* text-2, not text-3: this sits over the hero's amber gradient, and
    text-3 falls under WCAG AA contrast at this size against that backdrop. */
 .trust-strip__item--text {
