@@ -122,14 +122,15 @@ export function SSHEnrollFields({
     <>
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={onBack}
             aria-label="Back"
-            className="text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeftIcon className="size-4" />
-          </button>
+            <ArrowLeftIcon />
+          </Button>
           Connect over SSH
         </DialogTitle>
         <DialogDescription>

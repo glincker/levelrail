@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+  ArrowLeftIcon,
   CheckIcon,
   CopyIcon,
   PlusIcon,
@@ -219,6 +220,17 @@ export function ManualEnrollFields({
         <>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
+              {onBack ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={onBack}
+                  aria-label="Back"
+                >
+                  <ArrowLeftIcon />
+                </Button>
+              ) : null}
               <HardDrivesIcon className="size-4 text-muted-foreground" />
               Add node
             </DialogTitle>
@@ -239,11 +251,6 @@ export function ManualEnrollFields({
           ) : null}
 
           <DialogFooter>
-            {onBack ? (
-              <Button type="button" variant="outline" onClick={onBack}>
-                Back
-              </Button>
-            ) : null}
             <Button
               type="button"
               disabled={createJoinToken.isPending}
