@@ -96,3 +96,7 @@ Apache 2.0 licensed. Source at https://github.com/glincker/levelrail.
 - [Changelog](https://levelrail.com/changelog/): every Levelrail release with highlights, fixes, and upgrade notes.
 - [VPS smoke test](https://levelrail.com/vps-smoke): checks a real install end to end on a VPS you already have.
 - [Git provider integrations design proposal](https://levelrail.com/design/git-provider-integrations): a design document, not yet shipped behavior.
+
+The full text of every page above (except Changelog, which changes too
+often to be worth inlining) is concatenated at
+https://levelrail.com/llms-full.txt.

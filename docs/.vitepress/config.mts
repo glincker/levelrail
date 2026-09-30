@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 import { buildEnd, changelogHead, changelogPageData } from './changelog.mts'
+import { buildLlmsFullTxt } from './llmsFull.mts'
+import { writeRawMarkdown } from './rawMarkdown.mts'
 
 const description =
   'A self-hosted deployment platform whose agent talks to Docker’s own Engine API directly, ' +
@@ -317,6 +319,14 @@ export default withMermaid({
       message: 'Released under the Apache 2.0 License.',
       copyright: 'Copyright © GLINCKER',
     },
+
+    lastUpdated: {
+      formatOptions: { dateStyle: 'medium' },
+    },
+
+    // Read by PageActions.vue so the "open in <AI tool>" links and the
+    // raw-markdown fetch don't hardcode the domain a second time.
+    siteUrl,
   },
 
   // Per-page canonical link and BreadcrumbList: VitePress doesn't add
@@ -327,7 +337,11 @@ export default withMermaid({
     return changelogPageData(pageData)
   },
 
-  buildEnd: (config) => buildEnd(config, siteUrl),
+  buildEnd: async (config) => {
+    await buildEnd(config, siteUrl)
+    buildLlmsFullTxt(config, siteUrl)
+    writeRawMarkdown(config)
+  },
 
   transformHead({ pageData }) {
     const path = pageData.relativePath.replace(/\.md$/, '').replace(/(^|\/)index$/, '$1')
@@ -379,6 +393,11 @@ export default withMermaid({
       lineColor: '#a1a1aa',
       secondaryColor: '#10141c',
       tertiaryColor: '#0b0e14',
+      fontSize: '16px',
+    },
+    flowchart: {
+      useMaxWidth: false,
+      padding: 16,
     },
   },
 })
