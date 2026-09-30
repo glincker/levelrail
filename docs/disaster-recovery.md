@@ -16,6 +16,18 @@ Two things are needed to recover, and they are deliberately kept apart:
 
 The database alone restores your apps and users but leaves every secret unreadable. The master key alone restores nothing. Without the agent CA key a restored control plane generates a new CA, so every node agent has to be re-enrolled; the escrow bundle carries it so they reconnect on their own.
 
+```mermaid
+graph LR
+    A["Control plane<br/>database"] -->|encrypted with age| B["Backup file<br/>in your bucket"]
+    C["Master key +<br/>agent CA key"] -->|encrypted with age| D["Escrow bundle<br/>stored offline"]
+    B --> E["Restore"]
+    D --> E
+    E --> F["New control plane,<br/>fully recovered"]
+    style B fill:#bbf
+    style D fill:#fcf
+    style F fill:#9f9
+```
+
 ## Threat model
 
 | Threat | Outcome |
@@ -142,10 +154,9 @@ The command checks, in order: the manifest, the ciphertext SHA-256 and size agai
 
 `--force-install-id` accepts a backup from a different install (moving to a new install id on purpose). `--endpoint`, `--region` and `--path-style` describe the bucket; credentials come from `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 
-### The walkthrough, as commands and the tests behind them
+Every step above, and the failure cases (an interrupted restore, a tampered backup, a wrong key, a newer schema, a mismatched install), is exercised by a test that runs in CI against an in-memory S3 server and generated keys.
 
-Every step is exercised by a test that runs in CI against an in-memory S3 server and generated keys.
-
+::: details For contributors: which test covers which step
 | Step | Command | Covered by |
 | --- | --- | --- |
 | Make a key pair | `control-plane-backups keys generate` | `TestCLI_ControlPlaneDR_KeysGenerateAndEscrowRoundTrip` |
@@ -158,6 +169,7 @@ Every step is exercised by a test that runs in CI against an in-memory S3 server
 | Crash safety | interrupted restore | `TestRestore_CrashBetweenTempWriteAndRenameKeepsOldDatabase` |
 | Tampering and wrong key | bit flip, other identity | `TestRestore_TamperAndWrongIdentity`, `TestRestore_TamperWithMatchingManifestStillFailsDecrypt` |
 | Newer schema, other install | refusal | `TestRestore_NewerSchemaRefused`, `TestRestore_InstallIDGuard` |
+:::
 
 ## Restore drills
 

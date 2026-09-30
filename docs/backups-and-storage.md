@@ -38,14 +38,14 @@ This design means:
 Credentials never round-trip through the API. For backup targets:
 
 - `access_key_id` and `secret_access_key` are accepted only in create/update request bodies.
-- Credentials are written to `internal/secrets` *before* the `backup_targets` row is saved, not after.
-- This ensures credentials are never orphaned if the database write fails.
+- Credentials are written to the secrets store *before* the backup target record itself is saved, not after.
+- This ensures credentials are never orphaned if the save fails.
 - `GET` and `PUT` responses never echo credential fields back.
 
 Registry credentials follow the same pattern:
 
 - Only the `password` field is accepted in the request body.
-- It's written before the `registry_credentials` row, never echoed back.
+- It's written to the secrets store before the credential record itself, never echoed back.
 - When you reference a registry credential in `app.yaml` by name, the deploy can authenticate without the password being stored in the file.
 
 ## Testing a connection before it's needed
@@ -97,8 +97,8 @@ A backup target doesn't know or care what it's backing up. Both databases and ap
 Both trigger endpoints work the same way:
 
 1. Validate `target_id` against a real backup target.
-2. Create a `store.BackupHistory` row.
-3. Start the dump-and-upload (or volume-tar-and-upload) in a background goroutine.
+2. Create a backup history record.
+3. Start the dump-and-upload (or volume-tar-and-upload) in the background.
 4. Return `202 Accepted` immediately.
 
 Poll the history endpoint to check whether the backup finished (status starts at `running`).
@@ -107,22 +107,19 @@ Poll the history endpoint to check whether the backup finished (status starts at
 
 ### How schedules are stored
 
-**Database schedules** are stored alongside the database resource itself (`backup_target_id`, `backup_schedule`, `backup_retain`, `backup_retain_days` columns on `desired_databases`).
+**Database schedules** are stored alongside the database resource itself (its target, cron schedule, and retention settings).
 
-**App volume schedules** are stored in their own `service_volume_backups` row. A service can declare multiple named volumes in `app.yaml`, so there's no single "the app" resource to attach one schedule to.
+**App volume schedules** are stored separately, one record per named volume. A service can declare multiple named volumes in `app.yaml`, so there's no single "the app" resource to attach one schedule to.
 
 Both use:
-- Same cron validation (`internal/cronexpr.Parse`) - checked at request time, so a bad cron string returns `400` immediately.
+- Same cron validation, checked at request time, so a bad cron string returns `400` immediately.
 - Same retention fields.
 - Same check that the target must exist before saving.
 
 On the dashboard: a database's schedule form lives on that database's
-overview page (`BackupScheduleForm.tsx`, `BackupsSection.tsx`), and an
-app volume's lives on that app's Volumes tab (`VolumeBackupScheduleForm.tsx`,
-`AppVolumeBackupsSection.tsx`). Backup targets themselves are configured
-once, account-wide, at Settings -> Backup targets
-(`routes/settings/backup-targets.tsx`), never from a database or app
-page directly.
+overview page, and an app volume's lives on that app's Volumes tab.
+Backup targets themselves are configured once, account-wide, at Settings
+-> Backup targets, never from a database or app page directly.
 
 ## Instance-wide backup visibility
 
@@ -163,8 +160,8 @@ Only succeeded backups are considered for deletion. Running or failed attempts a
 
 Pruning runs after every scheduled backup, not after manually triggered ones:
 
-1. `runScheduled` (databases) or `runScheduledVolume` (app volumes) completes successfully.
-2. `PruneBackupHistory` or `PruneServiceVolumeBackupHistory` removes old backups immediately after.
+1. The scheduled backup (database or app volume) completes successfully.
+2. Old backups beyond the retention policy are removed immediately after.
 3. Pruning failures are logged, not surfaced as backup failures. The backup already succeeded and is durably recorded, so a cleanup issue afterward should not retroactively fail it.
 
 The dashboard's schedule form defaults a new database's "keep last N
@@ -387,8 +384,8 @@ Repositories and tags are read from the running registry container's Docker Regi
 | `DELETE` | `/api/v1/apps/{name}/volumes/{volume}/backup-schedule` | `write:sensitive` |
 
 Every write-tier endpoint above returns `501` if the control plane has
-no master key configured (`internal/secrets.Manager` never wired up):
-none of these resources can hold a working credential without one.
+no master key configured: none of these resources can hold a working
+credential without one.
 
 ## CLI
 
@@ -439,7 +436,7 @@ region, so `aws` must omit it).
 
 **No secret deletion**
 - Deleting a backup target or registry credential leaves its secrets behind in the store, unreferenced and unreachable through the API but not erased at rest.
-- Adding secret deletion requires its own change to `internal/secrets`, not bundled into either resource.
+- Adding secret deletion requires its own change to the secrets storage layer, not bundled into either resource.
 
 **No registry credential expiry enforcement**
 - `expires_at` on a registry credential is informational only (drives a health/expiring_soon/expired badge, like TLS certificates).
