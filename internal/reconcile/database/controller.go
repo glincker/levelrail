@@ -435,10 +435,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"MARIADB_USER":          c.mariadbCreds.Username,
 			"MARIADB_PASSWORD":      c.mariadbCreds.Password,
 		}
-		// MariaDB is a MySQL-protocol-compatible fork: same data
-		// directory and port as the mysql image, reused directly rather
-		// than duplicating identical constants under a new name.
-		return c.reconcileEngine(ctx, desired, env, nil, mysqlDataPath, mysqlContainerPort, nil)
+		// Same data path/port/slow-query flags as mysql, MariaDB is a compatible fork.
+		command := mysqlCommand(c.effectiveSlowQueryThresholdMs())
+		return c.reconcileEngine(ctx, desired, env, command, mysqlDataPath, mysqlContainerPort, nil)
 
 	case store.EngineKeyDB:
 		// KeyDB is a Redis-protocol-compatible drop-in fork: same
