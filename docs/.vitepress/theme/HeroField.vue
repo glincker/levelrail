@@ -320,11 +320,9 @@ onMounted(() => {
   window.addEventListener('mousemove', handleMouseMove, { passive: true })
   document.addEventListener('visibilitychange', handleVisibilityChange)
 
-  if (reduced) {
-    drawFrame(0)
-  } else {
-    startLoop()
-  }
+  // startLoop() no-ops while document.hidden; paint frame 0 regardless.
+  drawFrame(0)
+  if (!reduced) startLoop()
 })
 
 onUnmounted(() => {
