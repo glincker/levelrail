@@ -46,7 +46,7 @@ features:
 ::: code-group
 
 ```bash [Install]
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
+curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
 ```yaml [app.yaml]

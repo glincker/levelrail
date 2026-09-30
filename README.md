@@ -43,7 +43,7 @@ in [docs/installing.md](docs/installing.md).
 **Linux server, recommended:**
 
 ```
-curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
+curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
 Checks the host first, installs Docker if it's missing, sets up a
