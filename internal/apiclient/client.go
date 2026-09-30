@@ -3194,6 +3194,20 @@ func (c *Client) UpdateIngressSettings(ctx context.Context, req IngressSettingsR
 	return out, err
 }
 
+// GetUpdateSettings calls GET /api/v1/updates/settings.
+func (c *Client) GetUpdateSettings(ctx context.Context) (UpdateSettingsResource, error) {
+	var out UpdateSettingsResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/updates/settings", nil, &out)
+	return out, err
+}
+
+// SetUpdateSettings calls PUT /api/v1/updates/settings.
+func (c *Client) SetUpdateSettings(ctx context.Context, req UpdateSettingsResource) (UpdateSettingsResource, error) {
+	var out UpdateSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/updates/settings", req, &out)
+	return out, err
+}
+
 // GetDashboardURL calls GET /api/v1/settings/dashboard-url.
 func (c *Client) GetDashboardURL(ctx context.Context) (DashboardURLResource, error) {
 	var out DashboardURLResource

@@ -34,6 +34,8 @@ func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSettingsDashboardURL(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ai-assistant":
 		return runSettingsAIAssistant(prog, args[1:], stdout, stderr, lookupEnv)
+	case "updates":
+		return runSettingsUpdates(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown settings subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, settingsUsage(prog))
@@ -54,6 +56,8 @@ func settingsUsage(prog string) string {
   %[1]s settings ai-assistant get [flags]                 show the current BYOK AI assistant settings
   %[1]s settings ai-assistant set --model NAME --api-key KEY [flags]   configure the BYOK AI assistant
   %[1]s settings ai-assistant clear [flags]               disable the AI assistant and forget the stored key
+  %[1]s settings updates get [flags]                      show the current release channel and auto-update-check setting
+  %[1]s settings updates set --channel CHANNEL [--auto-update] [flags]   configure the release channel and auto-update checking
 
 Instance-wide configuration, gated at AbilityRoot server-side on every
 write. <provider> for "settings oauth set" is one of "google", "github",
