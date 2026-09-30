@@ -72,7 +72,7 @@ levelrail-cli control-plane-backups verify <name>
 levelrail-cli control-plane-backups delete <name>
 ```
 
-Without `--out`, `download` writes the raw bytes to stdout. The same operations are available in the dashboard under Backups, and over the API (see the [API reference](/api-reference)):
+Without `--out`, `download` writes the raw bytes to stdout. The same operations are available in the dashboard under Settings, Control plane backup, and over the API (see the [API reference](/api-reference)):
 
 | Method | Path |
 | --- | --- |
