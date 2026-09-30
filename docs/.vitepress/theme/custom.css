@@ -170,6 +170,28 @@
   }
 }
 
+/* The hero visual is a fixed, full-viewport WebGL canvas (HeroField.vue),
+   not a boxed side image, so the default theme's reserved image column
+   should take up no layout space of its own: zero its box out and let the
+   canvas show through via position: fixed instead. */
+.VPHome .VPHero .image {
+  margin: 0;
+  min-height: 0;
+}
+
+.VPHome .VPHero .image-container {
+  width: 0;
+  height: 0;
+  /* The default theme's own transform here would make this element the
+     containing block for the canvas's position: fixed, collapsing it to
+     this box instead of the viewport. */
+  transform: none;
+}
+
+.VPHome .VPHero .image-bg {
+  display: none;
+}
+
 .VPHome .VPHero .name,
 .VPHome .VPHero .text {
   letter-spacing: -0.02em;

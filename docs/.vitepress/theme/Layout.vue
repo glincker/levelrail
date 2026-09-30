@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import DefaultTheme from 'vitepress/theme'
+import HeroField from './HeroField.vue'
 
 const { Layout } = DefaultTheme
 </script>
@@ -8,6 +9,9 @@ const { Layout } = DefaultTheme
   <Layout>
     <template #home-hero-info-before>
       <p class="hero-eyebrow">Self-hosted &middot; Apache 2.0</p>
+    </template>
+    <template #home-hero-image>
+      <HeroField />
     </template>
     <template #layout-bottom>
       <div class="site-footer-extra">
