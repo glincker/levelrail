@@ -10,6 +10,24 @@ plane, and `levelrail-agent`, the node agent) plus a CLI
 control plane running on a real Linux host, how to verify it worked,
 and how to upgrade or remove it afterward.
 
+<CardGroup :cols="3">
+<Card title="install.sh" href="#option-1-install-sh-recommended">
+
+**Recommended.** One command provisions Docker, a systemd unit, and the control plane on a real Linux server.
+
+</Card>
+<Card title="Docker" href="#option-2-docker">
+
+Already running everything else as containers? Pull the published images instead.
+
+</Card>
+<Card title="Build from source" href="#option-3-build-from-source">
+
+For contributors, unreleased commits, or trying Levelrail locally without a server.
+
+</Card>
+</CardGroup>
+
 ## Requirements
 
 Confirm these before you provision a server.
