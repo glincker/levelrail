@@ -712,6 +712,14 @@ func WithOrphanedVolumeManager(m OrphanedVolumeManager) Option {
 	return func(rt *Router) { rt.orphanedVolumes = m }
 }
 
+// WithOrphanedContainerManager enables POST
+// /api/v1/system/containers/{name}/stop and .../remove. Without one
+// configured (the default), both routes return 501, the same
+// "not configured" shape WithOrphanedVolumeManager's absence produces.
+func WithOrphanedContainerManager(m OrphanedContainerManager) Option {
+	return func(rt *Router) { rt.orphanedContainers = m }
+}
+
 // WithExecRuntime enables POST /apps/{name}/exec (exec.go's
 // handleExecApp). Without one configured (the default), that route
 // returns 501, the same "not configured" shape WithDockerPruner's

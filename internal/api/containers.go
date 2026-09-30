@@ -17,28 +17,34 @@ type containerPortResource struct {
 
 // containerResource is GET /api/v1/system/containers' wire shape: every
 // container Docker knows about on this node, whether or not Levelrail
-// manages it. Deliberately read-only (no id, no stop/restart action on
-// this route): a container this platform's own reconciler manages will
-// simply be recreated to match desired state if stopped out-of-band, so
-// any control action belongs on the existing per-app
-// stop/start/restart/exec routes, which update desired state correctly,
-// not a raw docker-level mutation here that would fight the reconciler.
-// This endpoint exists purely for visibility, "what is actually running
-// on this box right now, and on what port," including containers this
-// platform didn't create.
+// manages it. This route itself stays read-only: a Managed container is
+// controlled from its own app page's stop/start/restart/exec routes,
+// which update desired state correctly, not a raw docker-level mutation
+// here that would fight the reconciler. An orphaned (Managed: false)
+// container has no desired state to fight, so it gets its own
+// stop/remove/claim routes instead (containers_orphaned.go).
 type containerResource struct {
 	Name    string                  `json:"name"`
 	Image   string                  `json:"image"`
 	Running bool                    `json:"running"`
 	Ports   []containerPortResource `json:"ports"`
+	// Managed reports whether this is a Levelrail-managed container: it
+	// carries this platform's own instance label and its name still
+	// matches a real app or database record in current desired state
+	// (isManagedContainer, containers_orphaned.go). False covers both a
+	// container this platform never created and one it created whose
+	// owning app/database was since deleted without the container being
+	// cleaned up; the orphaned-container routes (containers_orphaned.go)
+	// only ever act on the latter kind.
+	Managed bool `json:"managed"`
 }
 
-func toContainerResource(c docker.ContainerState) containerResource {
+func toContainerResource(c docker.ContainerState, managed bool) containerResource {
 	ports := make([]containerPortResource, 0, len(c.Ports))
 	for _, p := range c.Ports {
 		ports = append(ports, containerPortResource{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: p.Protocol})
 	}
-	return containerResource{Name: c.Name, Image: c.Image, Running: c.Running, Ports: ports}
+	return containerResource{Name: c.Name, Image: c.Image, Running: c.Running, Ports: ports, Managed: managed}
 }
 
 // handleListContainers handles GET /api/v1/system/containers. 501 if no
@@ -56,10 +62,15 @@ func (rt *Router) handleListContainers(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: list containers failed", err)
 		return
 	}
+	desired, err := rt.desiredContainerNameSet(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: list containers: compute desired container names failed", err)
+		return
+	}
 
 	out := make([]containerResource, 0, len(containers))
 	for _, c := range containers {
-		out = append(out, toContainerResource(c))
+		out = append(out, toContainerResource(c, isManagedContainer(c, desired)))
 	}
 	writeJSON(w, http.StatusOK, out)
 }

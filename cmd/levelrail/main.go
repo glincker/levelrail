@@ -2013,6 +2013,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDockerDiskUsager(client),
 		api.WithDockerPruner(client),
 		api.WithOrphanedVolumeManager(client),
+		api.WithOrphanedContainerManager(client),
 		api.WithRegistryAuthTester(client),
 		api.WithDBPinger(db),
 		api.WithAgentCAFingerprint(agentCAFingerprint),

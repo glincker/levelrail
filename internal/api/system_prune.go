@@ -129,6 +129,21 @@ func (rt *Router) desiredContainerNames(ctx context.Context) ([]string, error) {
 	return names, nil
 }
 
+// desiredContainerNameSet is desiredContainerNames as a lookup set,
+// for handleListContainers and containers_orphaned.go's orphan checks,
+// which only ever need membership, never the ordered list itself.
+func (rt *Router) desiredContainerNameSet(ctx context.Context) (map[string]bool, error) {
+	names, err := rt.desiredContainerNames(ctx)
+	if err != nil {
+		return nil, err
+	}
+	set := make(map[string]bool, len(names))
+	for _, n := range names {
+		set[n] = true
+	}
+	return set, nil
+}
+
 // desiredServiceContainerNames is every replica target name svc's
 // current desired state could produce, mirroring
 // internal/reconcile/application's own replicaContainerName (unexported
