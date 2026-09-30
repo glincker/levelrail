@@ -63,6 +63,9 @@ export const GROUP_ORDER = [
   'Settings',
   'Apps',
   'Databases',
+  'Nodes',
+  'Templates',
+  'Domains',
 ] as const
 
 const nav = (
