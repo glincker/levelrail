@@ -64,6 +64,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/updatecheck"
+	"github.com/GLINCKER/levelrail/internal/upgrade"
 	"github.com/GLINCKER/levelrail/internal/vault"
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/internal/webhook"
@@ -237,6 +239,15 @@ const (
 	// need for minute-granularity checks, unlike a cron schedule that can
 	// legitimately fire every minute.
 	defaultPreviewSweepInterval = 1 * time.Hour
+
+	// defaultUpdateCheckInterval is how often
+	// internal/updatecheck.Scheduler checks the configured release
+	// channel's latest release, env-overridable via
+	// APP_UPDATE_CHECK_INTERVAL (updateCheckInterval below). An hour,
+	// the same order of magnitude as defaultOSPatchCheckInterval above:
+	// a GitHub release check is real outbound network cost with no
+	// benefit to polling faster than an operator could plausibly react.
+	defaultUpdateCheckInterval = 1 * time.Hour
 
 	// defaultAuditLogSweepInterval is how often api.Router.RunAuditLogSweeper
 	// checks for audit_log rows past the retention window
@@ -844,6 +855,7 @@ func run(logger *slog.Logger) error {
 		db, backupMissingGracePeriod(logger), alertingNewNotifier, logger)
 	alertingEngine.SetLogArchive(objectstore.HealthSource{Store: db})
 	alertingEngine.SetNodeCertThresholds(nodeCertThresholds())
+	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers())
 	alertingEngine.SetChanges(changes.New(db, db, db, logger), alertDashboardLink())
 	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))
 	go func() {
@@ -922,6 +934,17 @@ func run(logger *slog.Logger) error {
 	go func() {
 		if err := appScheduleScheduler.Run(ctx, appScheduleSchedulerInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("scheduled deploy scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	// Update check: internal/updatecheck.Scheduler checks, on its own
+	// tick, the configured release channel (store.UpdateSettings,
+	// migrations/0258_update_settings.sql) for a newer release, only
+	// when an operator has opted into auto_update_enabled.
+	updateCheckScheduler := updatecheck.NewScheduler(db, logger)
+	go func() {
+		if err := updateCheckScheduler.Run(ctx, updateCheckInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("update check scheduler stopped", slog.String("error", err.Error()))
 		}
 	}()
 
@@ -2741,6 +2764,22 @@ func inviteTTL(logger *slog.Logger) time.Duration {
 	if err != nil {
 		logger.Warn("invalid APP_INVITE_TTL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
+	}
+	return d
+}
+
+// updateCheckInterval reads APP_UPDATE_CHECK_INTERVAL as a Go duration
+// string, the same env-var-with-default shape backupSchedulerInterval
+// already uses.
+func updateCheckInterval(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_UPDATE_CHECK_INTERVAL")
+	if raw == "" {
+		return defaultUpdateCheckInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_UPDATE_CHECK_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return defaultUpdateCheckInterval
 	}
 	return d
 }
