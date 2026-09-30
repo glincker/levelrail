@@ -464,7 +464,9 @@ function GeneralSettingsPage() {
                 <CloudArrowUpIcon className="size-4" />
               </div>
               <div>
-                <CardTitle>Control plane backups and disaster recovery</CardTitle>
+                <CardTitle>
+                  Control plane backups and disaster recovery
+                </CardTitle>
                 <CardDescription>
                   Snapshots of this instance&apos;s own database, off-box
                   encrypted backups, and restore drills.
