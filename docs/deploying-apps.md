@@ -6,6 +6,8 @@ description: Creating, deploying, rolling back, and managing app lifecycle, heal
 
 Push an image or a git repo at the API, CLI, or dashboard wizard, and Levelrail turns it into a running container with health checks, rollback, and a full deploy history, no separate deploy tool needed. This page covers everything you do to an app after that first deploy: rolling back, promoting between environments, restarting, setting resource limits, and running one-off commands or scheduled tasks against it.
 
+![Levelrail app overview page with health status, setup checklist, and recent activity](assets/screenshots/app-overview-page.png)
+
 ::: details For contributors: where this lives in the source
 - Backend: `internal/api/apps.go`, `apps_multi.go`, `apps_compose.go`, `deploys.go`, `promote.go`, `exec.go`, `resources_live_apply.go`, `scheduled_tasks.go`
 - CLI: `cmd/levelrail-cli/apps*.go`
