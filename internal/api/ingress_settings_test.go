@@ -449,6 +449,65 @@ func TestHandleListDomains(t *testing.T) {
 	}
 }
 
+// TestHandleListDomains_StatusFlags proves the four read-only status
+// flags (waf_enabled, has_redirect, maintenance_enabled, has_basic_auth)
+// round-trip correctly per domain, each sourced from its own table via
+// a bulk List* read rather than a per-domain lookup, and that a domain
+// with none of them configured reports all four false.
+func TestHandleListDomains_StatusFlags(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Domains: []string{"configured.example.com", "plain.example.com"},
+	}); err != nil {
+		t.Fatalf("seed service: %v", err)
+	}
+
+	if err := db.SetDomainWAF(ctx, "configured.example.com", true, store.DomainWAFModeBlock, 0, 0); err != nil {
+		t.Fatalf("set domain waf: %v", err)
+	}
+	if err := db.SetDomainRedirect(ctx, "configured.example.com", "https://target.example.com", store.DomainRedirectPermanent); err != nil {
+		t.Fatalf("set domain redirect: %v", err)
+	}
+	if err := db.SetDomainMaintenance(ctx, "configured.example.com"); err != nil {
+		t.Fatalf("set domain maintenance: %v", err)
+	}
+	if err := db.SetDomainBasicAuth(ctx, "configured.example.com", "admin"); err != nil {
+		t.Fatalf("set domain basic auth: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/domains", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var got []domainResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	want := map[string]domainResource{
+		"configured.example.com": {
+			Domain: "configured.example.com", ServiceName: "web",
+			WAFEnabled: true, HasRedirect: true, MaintenanceEnabled: true, HasBasicAuth: true,
+		},
+		"plain.example.com": {
+			Domain: "plain.example.com", ServiceName: "web",
+		},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("GET /domains = %+v, want %d rows", got, len(want))
+	}
+	for _, row := range got {
+		if row != want[row.Domain] {
+			t.Errorf("GET /domains[%q] = %+v, want %+v", row.Domain, row, want[row.Domain])
+		}
+	}
+}
+
 func TestHandleListDomains_Empty(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

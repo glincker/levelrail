@@ -84,6 +84,8 @@ Add or change a domain either by:
 - Editing `domains:` in `app.yaml` and redeploying, or
 - Using the dashboard's per-app **Domains** tab to add a domain inline and view DNS and certificate status
 
+The dashboard's cross-app **Domains** page lists every domain across every app with its certificate status, plus read-only badges for WAF, redirect, maintenance mode, and basic auth when configured; editing those settings still happens on the owning app's own Domains tab.
+
 List all domains currently routed:
 
 ```
