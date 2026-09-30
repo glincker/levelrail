@@ -36,6 +36,33 @@ features:
 
 <div class="vp-doc" style="max-width: 1152px; margin: 0 auto; padding: 0 24px 64px;">
 
+## Quickstart
+
+::: code-group
+
+```bash [Install]
+curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh | sudo sh
+```
+
+```yaml [app.yaml]
+version: 1
+services:
+  web:
+    build:
+      type: dockerfile
+    port: 8080
+```
+
+:::
+
+Then deploy it:
+
+```bash
+levelrail-cli apps create --name your-app --file app.yaml --repo https://github.com/your-org/your-app
+```
+
+That is a running app with HTTPS, logs, and rollback. The full walkthrough, including the setup wizard and database attachment, is in [Getting started](/getting-started).
+
 ## See it running
 
 <div class="screenshot-grid">
