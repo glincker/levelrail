@@ -79,8 +79,15 @@ export function AppSidebar() {
               render={<Link to="/" />}
               className="gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/40 data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-sidebar-accent"
             >
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-                {(brand.ShortName || brand.Name || 'L').charAt(0)}
+              <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#0B0E14] text-sm font-bold text-primary-foreground">
+                {brand.LogoSVG ? (
+                  <span
+                    className="flex size-6 items-center justify-center [&_svg]:size-full"
+                    dangerouslySetInnerHTML={{ __html: brand.LogoSVG }}
+                  />
+                ) : (
+                  (brand.ShortName || brand.Name || 'L').charAt(0)
+                )}
               </span>
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-sm font-semibold">

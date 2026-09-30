@@ -57,3 +57,10 @@ test-results/
 
 # AI tool scratch notes must never be committed
 .jules/
+
+# superpowers brainstorming scratch files
+.superpowers/
+
+# AI tool scratch notes must never be committed
+.agents/
+skills-lock.json
