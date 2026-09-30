@@ -23,6 +23,7 @@ short_name: Levelrail
 binary_name: levelrail
 domain: glinr.com/levelrail
 support_url: https://github.com/GLINCKER/levelrail/issues
+support_email: support@levelrail.com
 docs_url: https://glinr.com/levelrail/docs
 `
 
@@ -52,6 +53,25 @@ docs_url: https://glinr.com/levelrail/docs
 			check: func(t *testing.T, b *Brand) {
 				if b.Name != "Override" {
 					t.Errorf("Name = %q, want Override", b.Name)
+				}
+			},
+		},
+		{
+			name: "support email loads from file and can be overridden",
+			yaml: valid,
+			check: func(t *testing.T, b *Brand) {
+				if b.SupportEmail != "support@levelrail.com" {
+					t.Errorf("SupportEmail = %q, want support@levelrail.com", b.SupportEmail)
+				}
+			},
+		},
+		{
+			name: "support email env override wins over file",
+			yaml: valid,
+			env:  map[string]string{"APP_BRAND_SUPPORT_EMAIL": "support@glincker.com"},
+			check: func(t *testing.T, b *Brand) {
+				if b.SupportEmail != "support@glincker.com" {
+					t.Errorf("SupportEmail = %q, want support@glincker.com", b.SupportEmail)
 				}
 			},
 		},

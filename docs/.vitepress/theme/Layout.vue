@@ -28,6 +28,7 @@ const { Layout } = DefaultTheme
             <a href="https://github.com/glincker/levelrail" target="_blank" rel="noreferrer">GitHub</a>
             <a href="https://github.com/glincker/levelrail/issues" target="_blank" rel="noreferrer">Issues</a>
             <a href="https://github.com/glincker/levelrail/discussions" target="_blank" rel="noreferrer">Discussions</a>
+            <a href="mailto:support@levelrail.com">support@levelrail.com</a>
           </div>
           <div class="site-footer-extra__col">
             <p class="site-footer-extra__heading">Levelrail</p>
@@ -37,6 +38,7 @@ const { Layout } = DefaultTheme
             <a href="https://glincker.com" target="_blank" rel="noreferrer" class="site-footer-extra__badge">
               A GLINCKER project
             </a>
+            <a href="mailto:support@glincker.com">support@glincker.com</a>
           </div>
         </div>
       </div>

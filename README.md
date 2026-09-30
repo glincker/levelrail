@@ -315,6 +315,7 @@ commit conventions, and how to run tests and the linter locally.
 - [docs/](docs/README.md) -- the same content as plain Markdown, for browsing directly on GitHub
 - [GitHub Discussions](https://github.com/glincker/levelrail/discussions) -- questions, ideas, show and tell
 - [GLINR Discord](https://discord.gg/Ar5pcaZB99) -- live chat with maintainers and other users, with a dedicated `#levelrail` forum channel for questions and support
+- [support@levelrail.com](mailto:support@levelrail.com) -- direct email support
 
 <a href="https://discord.gg/Ar5pcaZB99"><img src="https://discord.com/api/guilds/829168897080557579/widget.png?style=banner2" alt="Join the GLINR Discord" /></a>
 

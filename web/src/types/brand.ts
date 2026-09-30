@@ -13,6 +13,10 @@ export interface Brand {
   BinaryName: string
   Domain: string
   SupportURL: string
+  // Optional: existing mock Brand objects across web/src/**/*.test.tsx predate
+  // this field and don't set it, so it stays optional rather than forcing a
+  // sweep of every test fixture for a field most of them never read.
+  SupportEmail?: string
   PrimaryColor: string
   LogoSVG: string
   DocsURL: string
