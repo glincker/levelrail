@@ -76,6 +76,28 @@ if [ -n "$dash_hits" ]; then
 	fail=1
 fi
 
+echo "pre-commit: comment density (new Go lines only, >8 consecutive)"
+staged_go_files_density=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' | grep -v '^docs-local/')
+bloat_hits=""
+for f in $staged_go_files_density; do
+	[ -f "$f" ] || continue
+	max_run=$(git diff --cached -U0 -- "$f" | awk '
+		/^\+\+\+/ { next }
+		/^\+[[:space:]]*\/\// { run++; if (run > max) max = run; next }
+		/^\+/ { run = 0 }
+		{ if (!/^\+/) run = 0 }
+		END { print max + 0 }
+	')
+	if [ "${max_run:-0}" -gt 8 ]; then
+		bloat_hits="$bloat_hits $f(${max_run}-line block)"
+	fi
+done
+if [ -n "$bloat_hits" ]; then
+	echo "long new comment block(s):$bloat_hits"
+	echo "Comment the why in 1-3 lines (CLAUDE.md, Comments). Design history goes in the commit message or an ADR, not inline."
+	fail=1
+fi
+
 echo "pre-commit: go build"
 if ! go build ./... 2>&1; then
 	fail=1
