@@ -19,6 +19,7 @@ import {
   type GlobalNavItem,
 } from './navModel'
 import { useExperimentalFeatures } from '@/hooks/useExperimental'
+import { ProjectsNavItem } from './ProjectsNavTree'
 import { useNavCounts } from './useNavCounts'
 import { usePersistedToggles } from './usePersistedToggles'
 
@@ -79,14 +80,22 @@ export function GlobalNav() {
         {visibleGlobalGroups(experimental).map((group) => {
           const menu = (
             <SidebarMenu>
-              {group.items.map((item) => (
-                <NavLinkItem
-                  key={item.id}
-                  item={item}
-                  pathname={pathname}
-                  counts={counts}
-                />
-              ))}
+              {group.items.map((item) =>
+                item.id === 'projects' ? (
+                  <ProjectsNavItem
+                    key={item.id}
+                    item={item}
+                    pathname={pathname}
+                  />
+                ) : (
+                  <NavLinkItem
+                    key={item.id}
+                    item={item}
+                    pathname={pathname}
+                    counts={counts}
+                  />
+                ),
+              )}
             </SidebarMenu>
           )
           if (rail) {

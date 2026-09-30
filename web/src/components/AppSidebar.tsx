@@ -77,13 +77,18 @@ export function AppSidebar() {
             <SidebarMenuButton
               size="lg"
               render={<Link to="/" />}
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/40 data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-sidebar-accent"
             >
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
                 {(brand.ShortName || brand.Name || 'L').charAt(0)}
               </span>
-              <span className="truncate text-sm font-semibold">
-                {brand.ShortName || brand.Name}
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-sm font-semibold">
+                  {brand.ShortName || brand.Name}
+                </span>
+                <span className="truncate text-[11px] text-sidebar-foreground/60">
+                  Control plane
+                </span>
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
