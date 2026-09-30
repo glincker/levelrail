@@ -4,12 +4,14 @@ description: Authentication, authorization, roles, IAM policies, and audit loggi
 
 # Identity and access: users, roles, and IAM policies
 
-Who can sign in, what they can do once they're in, and a record of what
-they actually did. Packages: `internal/api/{auth,users,roles,abilities,
-iam,iam_handlers,invites,tokens,twofactor,oauth,oauth_settings,
-device_auth,audit,audit_retention}.go`, `cmd/levelrail-cli/{users,iam,
-invites,tokens,auth}*.go`, `web/src/routes/settings/{users,iam-policies,
-security,tokens,oauth,cli-access,audit-log}.tsx`.
+Create a teammate with a curated role, scope a CI token down to one app, turn on two-factor auth, or review who changed what: this page covers who can sign in, what they can do once they're in, and a record of what they actually did.
+
+::: details For contributors: where this lives in the source
+- Backend: `internal/api/{auth,users,roles,abilities,iam,iam_handlers,invites,tokens,twofactor,oauth,oauth_settings,device_auth,audit,audit_retention}.go`
+- CLI: `cmd/levelrail-cli/{users,iam,invites,tokens,auth}*.go`
+- Dashboard: `web/src/routes/settings/{users,iam-policies,security,tokens,oauth,cli-access,audit-log}.tsx`
+- OAuth sign-in decision logic: `completeOAuthSignin` in `internal/api/oauth.go`
+:::
 
 ## Why two permission models instead of one
 
@@ -188,7 +190,7 @@ Three providers are supported: `google`, `github`, `oidc` (generic OpenID Connec
 
 Settings are per-provider rows (`GET`/`PUT /api/v1/settings/oauth[/{provider}]`), gated at `AbilityRoot` to change. Enabling a provider requires a client ID and a client secret (OIDC also requires an issuer URL). The secret is write-only over the API; `GET` only reveals `has_client_secret`.
 
-**Sign-in behavior** (`completeOAuthSignin`, `internal/api/oauth.go`)
+**Sign-in behavior**
 
 ```mermaid
 flowchart TD
