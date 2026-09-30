@@ -369,6 +369,7 @@ jobs:
           for t in ${{ needs.image-channel.outputs.tags }}; do
             tag_args+=(-t "ghcr.io/glincker/levelrail:$t")
           done
+          # shellcheck disable=SC2046 # deliberate: each digest file becomes its own argument
           docker buildx imagetools create "${tag_args[@]}" \
             $(printf 'ghcr.io/glincker/levelrail@sha256:%s ' *)
 
@@ -486,6 +487,7 @@ jobs:
           for t in ${{ needs.image-channel.outputs.tags }}; do
             tag_args+=(-t "ghcr.io/glincker/levelrail-agent:$t")
           done
+          # shellcheck disable=SC2046 # deliberate: each digest file becomes its own argument
           docker buildx imagetools create "${tag_args[@]}" \
             $(printf 'ghcr.io/glincker/levelrail-agent@sha256:%s ' *)
 
