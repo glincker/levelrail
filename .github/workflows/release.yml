@@ -228,8 +228,47 @@ jobs:
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
           echo "primary_tag=$(echo "$tags" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
+  image-changes:
+    name: Detect image-relevant changes
+    # Only a plain main push (the rolling :edge build) is worth scoping:
+    # a real release (tag or workflow_dispatch) always builds.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      levelrail: ${{ steps.detect.outputs.levelrail }}
+      agent: ${{ steps.detect.outputs.agent }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect
+        id: detect
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          scripts/ci-changes.sh "$BEFORE" HEAD 2>/dev/null > /tmp/ci-changes.env
+          . /tmp/ci-changes.env
+          changed="$(git diff --name-only "$BEFORE" HEAD)"
+          levelrail=false
+          agent=false
+          if [ "$go" = true ] || [ "$web" != none ] || echo "$changed" | grep -qx 'Dockerfile.levelrail'; then
+            levelrail=true
+          fi
+          if [ "$go" = true ] || echo "$changed" | grep -qx 'Dockerfile.levelrail-agent'; then
+            agent=true
+          fi
+          echo "levelrail=$levelrail" >> "$GITHUB_OUTPUT"
+          echo "agent=$agent" >> "$GITHUB_OUTPUT"
+
   build-image-levelrail:
     name: Build levelrail image (${{ matrix.platform }})
+    needs: image-changes
+    if: >-
+      github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+      || (needs.image-changes.result == 'success' && needs.image-changes.outputs.levelrail == 'true')
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     permissions:
@@ -299,6 +338,7 @@ jobs:
     name: Merge and tag levelrail image
     runs-on: ubuntu-latest
     needs: [build-image-levelrail, image-channel]
+    if: needs.build-image-levelrail.result == 'success'
     timeout-minutes: 10
     permissions:
       contents: read
@@ -329,6 +369,7 @@ jobs:
           for t in ${{ needs.image-channel.outputs.tags }}; do
             tag_args+=(-t "ghcr.io/glincker/levelrail:$t")
           done
+          # shellcheck disable=SC2046 # deliberate: each digest file becomes its own argument
           docker buildx imagetools create "${tag_args[@]}" \
             $(printf 'ghcr.io/glincker/levelrail@sha256:%s ' *)
 
@@ -349,6 +390,10 @@ jobs:
 
   build-image-levelrail-agent:
     name: Build levelrail-agent image (${{ matrix.platform }})
+    needs: image-changes
+    if: >-
+      github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+      || (needs.image-changes.result == 'success' && needs.image-changes.outputs.agent == 'true')
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     permissions:
@@ -411,6 +456,7 @@ jobs:
     name: Merge and tag levelrail-agent image
     runs-on: ubuntu-latest
     needs: [build-image-levelrail-agent, image-channel]
+    if: needs.build-image-levelrail-agent.result == 'success'
     timeout-minutes: 10
     permissions:
       contents: read
@@ -441,6 +487,7 @@ jobs:
           for t in ${{ needs.image-channel.outputs.tags }}; do
             tag_args+=(-t "ghcr.io/glincker/levelrail-agent:$t")
           done
+          # shellcheck disable=SC2046 # deliberate: each digest file becomes its own argument
           docker buildx imagetools create "${tag_args[@]}" \
             $(printf 'ghcr.io/glincker/levelrail-agent@sha256:%s ' *)
 
