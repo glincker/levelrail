@@ -289,7 +289,7 @@ export default withMermaid({
   ignoreDeadLinks: [/\.\.\//],
 
   themeConfig: {
-    logo: undefined,
+    logo: '/favicon.svg',
 
     nav: [
       { text: 'Guide', link: '/getting-started' },

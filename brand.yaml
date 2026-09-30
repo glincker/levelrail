@@ -10,7 +10,10 @@ support_email: support@levelrail.com
 docs_url: https://levelrail.com
 discussions_url: https://github.com/GLINCKER/levelrail/discussions
 repo_url: https://github.com/GLINCKER/levelrail
-# primary_color and logo_svg are intentionally unset pending visual identity
-# work. Leave blank rather than guessing a palette.
-primary_color: ""
-logo_svg: ""
+# Visual identity locked 2026-09-30. Petrol-blue, hue 195: checked against
+# every direct self-hosted-PaaS competitor's real brand hex (thesvg's icon
+# catalog), distinct from Railway/Coolify/Fly.io/Zeabur's purple cluster,
+# Supabase/Linode's green, DigitalOcean/Dokku's blue, and specifically
+# Netlify's near-identical teal (#00C7B7, same 175 hue as an earlier draft).
+primary_color: "#107292"
+logo_svg: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\"><title>Levelrail</title><rect x=\"30\" y=\"178\" width=\"196\" height=\"44\" rx=\"14\" fill=\"#06232C\"/><rect x=\"30\" y=\"172\" width=\"196\" height=\"44\" rx=\"14\" fill=\"#084F67\"/><rect x=\"58\" y=\"130\" width=\"140\" height=\"44\" rx=\"14\" fill=\"#06232C\"/><rect x=\"58\" y=\"124\" width=\"140\" height=\"44\" rx=\"14\" fill=\"#107292\"/><rect x=\"86\" y=\"82\" width=\"84\" height=\"44\" rx=\"14\" fill=\"#06232C\"/><rect x=\"86\" y=\"76\" width=\"84\" height=\"44\" rx=\"14\" fill=\"#58B1CE\"/></svg>"
