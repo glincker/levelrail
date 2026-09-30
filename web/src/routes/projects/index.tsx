@@ -10,6 +10,7 @@ import {
 } from '../../components/ProjectRow'
 import { CreateProjectDialog } from '../../components/CreateProjectDialog'
 import { EmptyState } from '../../components/ui/empty-state'
+import { PageHeader } from '../../components/shell/PageHeader'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useProjects() (suspense), mirroring routes/nodes/index.tsx
@@ -52,23 +53,22 @@ function ProjectListPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-baseline justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Projects</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Optional labels to group related apps and databases. An app or
-            database with no project is just as valid, it still shows up on its
-            own list either way.
-          </p>
-        </div>
-        <div className="flex items-baseline gap-3">
-          {projects.length > 0 ? (
-            <span className="text-sm text-muted-foreground">
-              {projects.length} {projects.length === 1 ? 'project' : 'projects'}
-            </span>
-          ) : null}
-          <CreateProjectDialog />
-        </div>
+      <div className="mb-4">
+        <PageHeader
+          title="Projects"
+          description="Optional labels to group related apps and databases. An app or database with no project is just as valid, it still shows up on its own list either way."
+          actions={
+            <>
+              {projects.length > 0 ? (
+                <span className="text-sm text-muted-foreground">
+                  {projects.length}{' '}
+                  {projects.length === 1 ? 'project' : 'projects'}
+                </span>
+              ) : null}
+              <CreateProjectDialog />
+            </>
+          }
+        />
       </div>
       {projects.length === 0 ? (
         <EmptyState
@@ -121,8 +121,8 @@ function ProjectListPage() {
 function ProjectListPending() {
   return (
     <div>
-      <div className="mb-4 flex items-baseline justify-between">
-        <h1 className="text-lg font-semibold text-foreground">Projects</h1>
+      <div className="mb-4">
+        <PageHeader title="Projects" />
       </div>
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <ListHeader />
