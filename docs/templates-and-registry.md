@@ -6,7 +6,11 @@ description: Deploy ready-made services from a curated catalog using Docker Comp
 
 Deploy a curated set of ready-made services (n8n, Uptime Kuma, Postgres-backed apps, etc.) in one step, without hand-writing a Compose file.
 
-**Package:** `internal/catalog/catalog.go`, `internal/api/service_templates.go`, `cmd/levelrail-cli/templates.go`
+::: details For contributors: where this lives in the source
+- `internal/catalog/catalog.go` - template definitions and catalog assembly
+- `internal/api/service_templates.go` - API handlers
+- `cmd/levelrail-cli/templates.go` - CLI commands
+:::
 
 ## Why this exists
 

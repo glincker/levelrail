@@ -1,8 +1,7 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import {
   BookOpenIcon,
   CheckCircleIcon,
-  CloudArrowUpIcon,
   WarningCircleIcon,
   XCircleIcon,
   EnvelopeIcon,
@@ -62,7 +61,7 @@ export const Route = createFileRoute('/settings/general')({
 })
 
 // Approximates this page's own card sequence (platform info, feature
-// configuration, disk usage, Docker storage, orphaned volumes, backups,
+// configuration, disk usage, Docker storage, orphaned volumes,
 // certificates, master key, secret binding, more settings) closely
 // enough to avoid a layout jump, without pixel-matching every card:
 // several of these only render once a particular backend feature is
@@ -81,7 +80,6 @@ function GeneralSettingsSkeleton() {
         rowVariant="line"
       />
       <SettingsCardSkeleton headerIcon rows={1} rowVariant="line" />
-      <SettingsCardSkeleton headerIcon headerAction rows={0} />
       <SettingsCardSkeleton headerIcon rows={3} rowVariant="list" />
       <SettingsCardSkeleton headerIcon headerAction rows={0} />
       <SettingsCardSkeleton headerIcon rows={1} rowVariant="line" />
@@ -508,35 +506,6 @@ function GeneralSettingsPage() {
       )}
 
       <OrphanedVolumesCard />
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                <CloudArrowUpIcon className="size-4" />
-              </div>
-              <div>
-                <CardTitle>
-                  Control plane backups and disaster recovery
-                </CardTitle>
-                <CardDescription>
-                  Snapshots of this instance&apos;s own database, off-box
-                  encrypted backups, and restore drills.
-                </CardDescription>
-              </div>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              render={<Link to="/backups" />}
-              nativeButton={false}
-            >
-              Open Backups
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
 
       <CertificatesCard />
 

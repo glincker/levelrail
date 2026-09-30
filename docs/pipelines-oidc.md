@@ -6,6 +6,20 @@ description: Mint short-lived OIDC tokens for pipeline jobs, and wire AWS, GCP, 
 
 A pipeline job normally reaches a cloud provider with a long-lived credential stored as a secret. OIDC federation replaces that with a short-lived, signed token the control plane mints per job run, verified by the provider against a published public key. Nothing long-lived ever sits in a secret or a job's environment.
 
+```mermaid
+sequenceDiagram
+  participant Job as Pipeline job<br/>(oidc: audience)
+  participant CP as Control plane<br/>(OIDC issuer)
+  participant Provider as AWS / GCP / Vault
+
+  CP->>Job: mint token at job start<br/>(PIPELINE_OIDC_TOKEN, ES256, 10m TTL)
+  Job->>Provider: assume role / exchange token<br/>with PIPELINE_OIDC_TOKEN
+  Provider->>CP: GET /.well-known/jwks.json<br/>(fetch public key)
+  CP-->>Provider: signing public key
+  Provider->>Provider: verify signature, aud, sub<br/>against trust policy
+  Provider-->>Job: short-lived cloud credentials
+```
+
 ## Enabling it
 
 Set `APP_OIDC_ISSUER_URL` on the control plane to a real, reachable HTTPS URL, typically the same URL the dashboard is served on:

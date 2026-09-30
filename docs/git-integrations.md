@@ -6,10 +6,10 @@ description: Connecting GitHub, GitLab, Bitbucket, and Gitea for automatic git-t
 
 Connect a git provider once at the control-plane level, then point any number of apps at repos it can see.
 
-**Relevant packages:**
-
+::: details For contributors: where this lives in the source
 - Backend: `internal/api/github_app*.go`, `gitlab_app*.go`, `bitbucket_app*.go`, `gitea_app*.go`, `git_webhook.go`, `webhook_deliveries.go`, `preview_environments*.go`
 - Webhooks: `internal/webhook`
+:::
 
 ## Provider connections vs. git sources
 

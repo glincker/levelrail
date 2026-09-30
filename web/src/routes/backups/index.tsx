@@ -15,8 +15,6 @@ import {
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { HelpLink } from '../../components/HelpLink'
-import { ControlPlaneBackupsCard } from '../../components/ControlPlaneBackupsCard'
-import { ControlPlaneDrCard } from '../../components/ControlPlaneDrCard'
 import { formatBytes, formatDate } from '../../lib/format'
 import { useBackupTargetsOptional } from '../../queries/backupTargets'
 import {
@@ -176,13 +174,18 @@ function AllBackupsPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Every backup attempt across every database and app volume, newest
             first. Manage a database's or app's own schedule and targets from
-            its own page.
+            its own page. This instance's own control plane backup and disaster
+            recovery settings live under{' '}
+            <Link
+              to="/settings/control-plane-backup"
+              className="text-foreground underline-offset-2 hover:underline"
+            >
+              Settings
+            </Link>
+            .
           </p>
         </div>
       </div>
-
-      <ControlPlaneBackupsCard />
-      <ControlPlaneDrCard />
 
       {history.length === 0 ? (
         noBackupTarget ? (

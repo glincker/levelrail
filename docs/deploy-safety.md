@@ -9,6 +9,21 @@ content is serving": digest-truthful deploys, a stale-deploy guard,
 deploy freeze windows, and a short hold of the previous release after a
 cutover.
 
+```mermaid
+flowchart TD
+  T["Deploy triggered<br/>(push, release, pipeline, freeze release)"] --> S{"Stale-deploy guard<br/>(sequence number + commit order)"}
+  S -->|superseded or stale commit| Drop["Marked superseded, no-op"]
+  S -->|ok| W{"Freeze window active?"}
+  W -->|yes, no override| Held["Held (frozen),<br/>replayed once the window ends"]
+  W -->|no, or override with reason| B["Build, start new container(s)"]
+  B --> R{"Readiness probe"}
+  R -->|fail| Keep1["Previous release keeps serving"]
+  R -->|pass| D{"Digest-truthful check<br/>(running image ID vs pinned digest)"}
+  D -->|mismatch| Keep2["Ready: False, ImageDigestMismatch<br/>previous release keeps serving"]
+  D -->|match| Cutover["Cut traffic to the new release<br/>(blue-green / rolling)"]
+  Cutover --> Hold["Previous release held briefly<br/>(instant rollback window)"]
+```
+
 ## Digest-truthful deploys
 
 A floating tag such as `nginx:latest`, `main` or `1.27` names different

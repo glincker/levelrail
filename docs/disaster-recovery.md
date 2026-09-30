@@ -6,6 +6,32 @@ description: Encrypted off-box backups of the control plane database, master key
 
 If the machine running the control plane dies, your apps keep running but you lose the thing that manages them: apps, domains, users, tokens, deploy history and every stored secret. Local [snapshots](/control-plane-backup) sit on the same disk, so they do not help. This page covers the off-box path: encrypted backups in an S3 compatible bucket, an escrow copy of the master key, a tested restore, and a drill that keeps proving it works.
 
+```mermaid
+flowchart LR
+  subgraph Backup["Scheduled, on the server"]
+    S["Cron schedule<br/>(APP_CONTROL_PLANE_OFFBOX_SCHEDULE)"] --> V["VACUUM INTO snapshot<br/>+ integrity_check"]
+    V --> E["Encrypt to your age<br/>public keys"]
+    E --> U["Upload .db.age + manifest<br/>to S3 / R2 / B2 / MinIO"]
+  end
+  subgraph Escrow["Set up once, kept offline"]
+    MK["Master key +<br/>agent CA key"] --> EB["escrow.age<br/>(encrypted to your keys)"]
+  end
+  subgraph Drill["Weekly, proves it works"]
+    U --> D["Restore drill:<br/>download, decrypt, integrity_check"]
+    D --> R1{"Drill identity set?"}
+    R1 -->|yes| Full["Full check: pass or fail"]
+    R1 -->|no| Partial["Partial: checksum + manifest only"]
+  end
+  subgraph Restore["When you actually need it"]
+    EB -.->|recover offline| MK2["Master key + agent CA<br/>on new machine"]
+    U --> Dl["Download newest<br/>complete backup"]
+    Dl --> Dec["Verify + decrypt<br/>(needs backup-identity.txt)"]
+    MK2 --> Dec
+    Dec --> Rs["levelrail restore"]
+    Rs --> Rec["Control plane starts,<br/>reconciler converges"]
+  end
+```
+
 Two things are needed to recover, and they are deliberately kept apart:
 
 | Piece | What it is | Where it lives |
@@ -15,6 +41,18 @@ Two things are needed to recover, and they are deliberately kept apart:
 | The agent CA key | Signs node agent certificates. It lives in the data directory (`agent-ca.crt`, `agent-ca.key`), not in the database | Your escrow bundle, stored offline |
 
 The database alone restores your apps and users but leaves every secret unreadable. The master key alone restores nothing. Without the agent CA key a restored control plane generates a new CA, so every node agent has to be re-enrolled; the escrow bundle carries it so they reconnect on their own.
+
+```mermaid
+graph LR
+    A["Control plane<br/>database"] -->|encrypted with age| B["Backup file<br/>in your bucket"]
+    C["Master key +<br/>agent CA key"] -->|encrypted with age| D["Escrow bundle<br/>stored offline"]
+    B --> E["Restore"]
+    D --> E
+    E --> F["New control plane,<br/>fully recovered"]
+    style B fill:#bbf
+    style D fill:#fcf
+    style F fill:#9f9
+```
 
 ## Threat model
 
@@ -32,7 +70,7 @@ What the drill identity changes: if you set `APP_CONTROL_PLANE_DRILL_IDENTITY_FI
 
 ## Set it up
 
-The dashboard has a guided checklist under Backups, Disaster recovery. The same steps on the CLI:
+The dashboard has a guided checklist under Settings, Control plane backup. The same steps on the CLI:
 
 1. Add a storage destination (Settings, Storage, or see [object storage](/object-storage)). Use a bucket with versioning enabled.
 2. Make a key pair on your own machine, not the server:
@@ -142,10 +180,9 @@ The command checks, in order: the manifest, the ciphertext SHA-256 and size agai
 
 `--force-install-id` accepts a backup from a different install (moving to a new install id on purpose). `--endpoint`, `--region` and `--path-style` describe the bucket; credentials come from `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 
-### The walkthrough, as commands and the tests behind them
+Every step above, and the failure cases (an interrupted restore, a tampered backup, a wrong key, a newer schema, a mismatched install), is exercised by a test that runs in CI against an in-memory S3 server and generated keys.
 
-Every step is exercised by a test that runs in CI against an in-memory S3 server and generated keys.
-
+::: details For contributors: which test covers which step
 | Step | Command | Covered by |
 | --- | --- | --- |
 | Make a key pair | `control-plane-backups keys generate` | `TestCLI_ControlPlaneDR_KeysGenerateAndEscrowRoundTrip` |
@@ -158,6 +195,7 @@ Every step is exercised by a test that runs in CI against an in-memory S3 server
 | Crash safety | interrupted restore | `TestRestore_CrashBetweenTempWriteAndRenameKeepsOldDatabase` |
 | Tampering and wrong key | bit flip, other identity | `TestRestore_TamperAndWrongIdentity`, `TestRestore_TamperWithMatchingManifestStillFailsDecrypt` |
 | Newer schema, other install | refusal | `TestRestore_NewerSchemaRefused`, `TestRestore_InstallIDGuard` |
+:::
 
 ## Restore drills
 
