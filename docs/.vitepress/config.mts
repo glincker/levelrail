@@ -249,6 +249,15 @@ export default withMermaid({
   cleanUrls: true,
   appearance: 'dark',
 
+  // mermaid's transitive fastdom dep is plain CJS with no default export;
+  // esbuild's auto-interop misses it, so force it explicitly.
+  vite: {
+    optimizeDeps: {
+      include: ['mermaid > fastdom', 'mermaid > fastdom/extensions/fastdom-promised.js'],
+      needsInterop: ['mermaid > fastdom', 'mermaid > fastdom/extensions/fastdom-promised.js'],
+    },
+  },
+
   // A handful of docs link up to files outside docs/ (root README.md,
   // CHANGELOG.md, /adr) that exist in the repo but sit outside this
   // site's srcDir, by design: docs/README.md documents that these pages
