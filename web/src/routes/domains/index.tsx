@@ -16,6 +16,9 @@ import {
   DomainRow,
   RowSkeleton,
 } from '../../components/DomainRow'
+import { DomainAttentionStrip } from '../../components/DomainAttentionStrip'
+import type { DomainAttentionEntry } from '../../components/DomainAttentionStrip'
+import { certAttentionRank, sortByCertAttention } from '../../lib/certStatus'
 import { CloudflareDnsCard } from '../../components/CloudflareDnsCard'
 import { Route53DnsCard } from '../../components/Route53DnsCard'
 import { IngressSettingsCard } from '../../components/IngressSettingsCard'
@@ -89,8 +92,30 @@ function DomainsPage() {
     return m
   }, [certificates])
 
+  // Domains with a stalled renewal or non-healthy cert sort first (soonest
+  // expiry first within that group), so they surface without scrolling on
+  // a platform with many domains. Sorted before useVirtualizer sees it, so
+  // virtualization measures the final row order.
+  const sortedDomains = useMemo(
+    () =>
+      sortByCertAttention(domains, (domain) => certByDomain.get(domain.domain)),
+    [domains, certByDomain],
+  )
+
+  const attentionEntries = useMemo(
+    () =>
+      sortedDomains.reduce<DomainAttentionEntry[]>((entries, domain) => {
+        const cert = certByDomain.get(domain.domain)
+        if (cert && certAttentionRank(cert) < 2) {
+          entries.push({ domain, cert })
+        }
+        return entries
+      }, []),
+    [sortedDomains, certByDomain],
+  )
+
   const virtualizer = useVirtualizer({
-    count: domains.length,
+    count: sortedDomains.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 60,
     overscan: 8,
@@ -119,6 +144,8 @@ function DomainsPage() {
       <CloudflareDnsCard settings={cloudflareDns} />
 
       <Route53DnsCard settings={route53Dns} />
+
+      <DomainAttentionStrip entries={attentionEntries} />
 
       <div>
         <div className="mb-3 flex items-center gap-2">
@@ -167,7 +194,7 @@ function DomainsPage() {
               }}
             >
               {virtualizer.getVirtualItems().map((row) => {
-                const domain = domains[row.index]
+                const domain = sortedDomains[row.index]
                 if (!domain) {
                   return null
                 }
