@@ -175,6 +175,12 @@ export function CreateResourceWizard({
   // available via the toggle for whoever prefers it once step 2's form
   // is showing.
   const [fullscreen, setFullscreen] = useState(true)
+  // Only meaningful while selected === 'browse-templates': the catalog
+  // grid wants the full fullscreen width to show multiple columns, but
+  // its own configure-form/results view should keep the same narrow
+  // reading width every other step 2 form uses. See BrowseTemplatesFields'
+  // onViewChange doc comment.
+  const [templateView, setTemplateView] = useState<'grid' | 'detail'>('grid')
   const [search, setSearch] = useState('')
   // Set once the import front door has produced a plan preview; shown in
   // place of the picker until the operator goes back or deploys.
@@ -240,6 +246,7 @@ export function CreateResourceWizard({
       // local form state off this same `open` prop.
       setSelected(initialSelected ?? null)
       setFullscreen(true)
+      setTemplateView('grid')
       setSearch('')
       setCategory('all')
       setImportState(null)
@@ -426,11 +433,16 @@ export function CreateResourceWizard({
         ) : (
           // `display: contents` when compact makes this wrapper invisible
           // to layout. Full screen swaps it for a real flex column that
-          // caps line length to a sane reading width.
+          // caps line length to a sane reading width, except the template
+          // catalog's own grid view, which wants the fullscreen width to
+          // show multiple columns instead of being squeezed into a form's
+          // reading width (see BrowseTemplatesFields' onViewChange).
           <div
             className={
               fullscreen
-                ? 'mx-auto flex w-full max-w-2xl flex-col gap-4 py-4'
+                ? selected === 'browse-templates' && templateView === 'grid'
+                  ? 'mx-auto flex w-full max-w-6xl flex-col gap-4 py-4'
+                  : 'mx-auto flex w-full max-w-2xl flex-col gap-4 py-4'
                 : 'contents'
             }
           >
@@ -489,6 +501,7 @@ export function CreateResourceWizard({
                 open={open}
                 onCreated={handleCreated}
                 initialTemplateId={initialTemplateId}
+                onViewChange={setTemplateView}
               />
             ) : null}
             {!isFixedOption(selected) ? (

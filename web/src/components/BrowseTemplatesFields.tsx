@@ -66,6 +66,7 @@ export function BrowseTemplatesFields({
   open,
   onCreated,
   initialTemplateId,
+  onViewChange,
 }: {
   /** The owning dialog's own open state, used only to reset this
    *  component's local state on close. See CreateAppFields's identical
@@ -79,6 +80,10 @@ export function BrowseTemplatesFields({
    *  "Configure and deploy" button) that already knows which template it
    *  wants. Undefined keeps the normal grid-first behavior. */
   initialTemplateId?: string
+  /** Reports which of this component's own two views is showing, so the
+   *  owning wizard can widen its fullscreen layout for the wide catalog
+   *  grid without also widening the narrow configure-form/results view. */
+  onViewChange?: (view: 'grid' | 'detail') => void
 }) {
   // Not reset via the `open` effect below: CreateResourceWizard's own
   // step-2 branch unmounts this component entirely when the dialog
@@ -112,6 +117,13 @@ export function BrowseTemplatesFields({
     // deployCompose identity churn on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
+
+  useEffect(() => {
+    onViewChange?.(templateId || deployCompose.isSuccess ? 'detail' : 'grid')
+    // Only reacting to the two states that actually change which view
+    // renders below, not to onViewChange identity churn on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateId, deployCompose.isSuccess])
 
   useEffect(() => {
     if (templateDetail.data) {
