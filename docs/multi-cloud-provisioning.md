@@ -6,6 +6,23 @@ description: Quick reference for choosing a cloud provider and adding a provisio
 
 [Node provisioning](/node-provisioning) covers how cloud provisioning works end to end: the join-token flow it drives, the cloud-init script, status polling, and the known gaps per provider. This page is the short version: what the five supported providers are, what credential each one needs, roughly what they cost, and the fastest path to a running node.
 
+```mermaid
+sequenceDiagram
+  participant Op as Operator (CLI)
+  participant CP as Control plane
+  participant Prov as Cloud provider
+
+  Op->>CP: nodes providers set-credential --provider hetzner
+  CP-->>Op: credential stored (encrypted)
+  Op->>CP: nodes provision --provider hetzner --region --size --name
+  CP->>Prov: create server (cloud-init carries a join token)
+  Prov-->>CP: server accepted
+  loop poll until ready
+    Op->>CP: nodes provisions show <id>
+    CP-->>Op: creating -> booting -> enrolling -> ready
+  end
+```
+
 ## Providers at a glance
 
 | Provider | Auth mode | Setup before the first server |

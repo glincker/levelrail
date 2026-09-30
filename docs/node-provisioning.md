@@ -13,6 +13,26 @@ already uses. Provisioning does not replace it, it drives it: mint a token,
 hand it to a fresh cloud VM's first-boot script, and let the agent enroll
 the same way it always does.
 
+```mermaid
+sequenceDiagram
+  participant Op as Operator
+  participant CP as Control plane
+  participant Prov as Cloud provider API
+  participant VM as New VM (cloud-init)
+  participant Agent as levelrail-agent
+
+  Op->>CP: POST /api/v1/nodes/provision
+  CP->>CP: mint join token (same path as POST /api/v1/nodes/join-tokens)
+  CP->>Prov: create server, cloud-init script as user-data
+  Prov-->>VM: boot server
+  VM->>VM: cloud-init installs Docker (get.docker.com) if missing
+  VM->>Agent: start agent container with join token + CA fingerprint
+  Agent->>CP: exchange token for client cert, dial control plane
+  CP-->>CP: node enrolled, matched to the provision by name
+  Op->>CP: GET /api/v1/node-provisions/{id}
+  CP-->>Op: creating -> booting -> enrolling -> ready (or failed)
+```
+
 ## Supported providers
 
 - **Hetzner Cloud** (`https://docs.hetzner.cloud`)

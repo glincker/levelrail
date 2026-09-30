@@ -6,6 +6,26 @@ description: Read the whole-mesh network topology view, how nodes group into zon
 
 The **Network** page shows every node, app, database, and load-balanced service on the mesh at once, grouped by node, with a line drawn between each app and the database it connects to. It's a read-only picture built from the same data the rest of the dashboard already has: nothing here needs its own configuration to start working.
 
+```mermaid
+graph TB
+  CP["Control plane<br/>GET /api/v1/network/topology"]
+  subgraph Z1["Zone: node eu-1 (online)"]
+    A1["App: web"]
+    A2["App: worker"]
+  end
+  subgraph Z2["Zone: node us-1 (online, cordoned)"]
+    D1["Database: main"]
+  end
+  subgraph ZU["Zone: Unplaced"]
+    R1["Resources on a node<br/>the control plane no longer knows about"]
+  end
+  CP --> Z1
+  CP --> Z2
+  CP --> ZU
+  A1 -.->|app to database connection| D1
+  A2 -.->|"no mesh address (unreachable)"| D1
+```
+
 ## Zones
 
 Each node renders as its own zone panel, labeled with the node's optional **Region** field (set on the node's detail page under **Region**; free text, not validated against a provider list) or its name if no region is set. Resources placed on a node your control plane no longer knows about (for example, a deleted node) land in a synthetic **Unplaced** zone instead of being dropped.

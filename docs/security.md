@@ -6,6 +6,19 @@ description: How Levelrail handles secrets, sessions, TLS, and access control, a
 
 This page is a map, not a duplicate. Each topic below has its own detailed page; this one explains how the pieces fit together and links out.
 
+```mermaid
+flowchart TD
+  MK["Master key<br/>(in memory only, never written to disk)"]
+  MK -->|wraps| D1["App A's DEK"]
+  MK -->|wraps| D2["App B's DEK"]
+  MK -->|wraps| D3["Backup target's DEK"]
+  D1 -->|encrypts, AES-256-GCM| V1["secret: true env vars,<br/>bound to (app, key) slot"]
+  D2 -->|encrypts, AES-256-GCM| V2["secret: true env vars,<br/>bound to (app, key) slot"]
+  D3 -->|encrypts, AES-256-GCM| V3["storage credentials,<br/>bound to their slot"]
+  V1 -.->|decrypted only| CT["container create time"]
+  V2 -.->|decrypted only| CT
+```
+
 ## Secrets: envelope encryption
 
 Every owner of secrets (an app, a backup target, the email settings, and so on) gets its own random data encryption key (DEK), and each of its values (an app env var marked `secret: true`, email credentials, API tokens) is encrypted under that DEK with AES-256-GCM. Every DEK is wrapped under one master key held in memory by the control plane, never written to disk in plaintext.

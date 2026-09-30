@@ -6,6 +6,13 @@ description: The short path to a second server, what real verification exists be
 
 This page is an entry point, not a new source of truth. Provisioning, enrollment, and resilience each have their own detailed page; this one links them together and states plainly what is and is not verified today, per [docs/feature-status.md](/feature-status).
 
+```mermaid
+flowchart TD
+  A["1. Get a second machine<br/>(bring your own, or provision from a cloud console)"] --> B["2. Enroll it<br/>(join token -> agent -> pending -> online)"]
+  B --> C["3. What's verified today<br/>(real agents, real Docker daemons:<br/>enroll, cordon, drain, placement pinning)"]
+  C --> D["4. What survives a control plane crash<br/>(agent keeps its containers running,<br/>reconnects with backoff)"]
+```
+
 ## 1. Get a second machine
 
 Two paths work:

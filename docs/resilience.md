@@ -30,6 +30,21 @@ graph LR
     style G fill:#9f9
 ```
 
+```mermaid
+flowchart TD
+  K["Control plane killed<br/>(SIGKILL, panic, OOM)"]
+  K --> C1["App containers<br/>keep running, keep serving<br/>(Docker owns them, not the process)"]
+  K --> C2["Caddy ingress dies instantly<br/>(embedded in the same process)"]
+  K --> C3["Node agent's gRPC stream breaks<br/>reconnects with backoff, 1s to 30s<br/>never touches its containers"]
+  C2 --> W["Domain-based HTTPS routing down<br/>until a new process reconciles ingress"]
+  R["Control plane restarts"] --> P["First reconcile pass runs immediately"]
+  P --> P1["Healthy containers left alone<br/>(ensureReplicaRunning is a no-op)"]
+  P --> P2["Ingress reconciled again,<br/>routing resumes"]
+  P --> P3["Services on a still-disconnected<br/>agent are skipped this pass,<br/>not torn down"]
+  W -.->|bounded by restart time| R
+  C3 -.->|agent finds control plane again| R
+```
+
 ## What survives
 
 **A running app container is not a child of the control plane process.** Docker owns its lifecycle, not `levelrail`. When the control plane is killed:
