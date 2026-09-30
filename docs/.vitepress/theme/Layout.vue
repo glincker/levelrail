@@ -1,12 +1,24 @@
 <script setup lang="ts">
 import DefaultTheme from 'vitepress/theme'
+import { useSidebar } from 'vitepress/theme'
 import HeroField from './HeroField.vue'
+import CustomTopNav from './CustomTopNav.vue'
+import CustomSidebar from './CustomSidebar.vue'
+import PageActions from './PageActions.vue'
 
 const { Layout } = DefaultTheme
+const { hasSidebar } = useSidebar()
 </script>
 
 <template>
   <Layout>
+    <template v-if="hasSidebar" #layout-top>
+      <CustomTopNav />
+      <CustomSidebar />
+    </template>
+    <template v-if="hasSidebar" #doc-before>
+      <PageActions />
+    </template>
     <template #home-hero-info-before>
       <p class="hero-eyebrow">Self-hosted &middot; Apache 2.0</p>
     </template>

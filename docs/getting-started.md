@@ -6,8 +6,18 @@ description: Start self-hosted with install.sh, or build Levelrail from source f
 
 There are two ways to get a Levelrail control plane running:
 
-- **Self-hosting on a real server** with `install.sh`, covered right below and in full in [Installing](installing.md).
-- **Building from source**, for contributing code, running an unreleased commit, or trying Levelrail out on your own machine without provisioning a server. Covered in [Building from source](#building-from-source).
+<CardGroup :cols="2">
+<Card title="Self-hosting on a real server" href="installing.html">
+
+With `install.sh`, covered right below and in full in [Installing](installing.md).
+
+</Card>
+<Card title="Building from source" href="#building-from-source">
+
+For contributing code, running an unreleased commit, or trying Levelrail out on your own machine without provisioning a server.
+
+</Card>
+</CardGroup>
 
 Whichever one gets you a running control plane, [Deploy your first app](#deploy-your-first-app) below works the same either way.
 
