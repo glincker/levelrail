@@ -517,6 +517,7 @@ type Store interface {
 	OrganizationStore
 	EnvironmentStore
 	IngressSettingsStore
+	UpdateSettingsStore
 	DomainStore
 	DomainBasicAuthStore
 	DomainMaintenanceStore
