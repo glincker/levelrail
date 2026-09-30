@@ -8,6 +8,21 @@ The control plane keeps everything it knows (apps, domains, tokens, users, encry
 
 This is separate from [database and volume backups](/backups-and-storage), which protect the data of the apps you deploy.
 
+```mermaid
+flowchart TD
+  A["Interval elapses<br/>(APP_CONTROL_PLANE_BACKUP_INTERVAL, default 24h)"] --> B["VACUUM INTO<br/>a new snapshot file"]
+  U["Before an upgrade with<br/>pending migrations"] --> B
+  B --> C["integrity_check<br/>+ SHA-256 hash"]
+  C --> D["Write to<br/>&lt;data dir&gt;/control-plane-backups/"]
+  D --> E["Retain newest N<br/>(APP_CONTROL_PLANE_BACKUP_RETAIN)"]
+  D -.->|on demand| F["verify: checksum,<br/>integrity, schema_version"]
+  D -.->|stop control plane| G["restore-db /<br/>restore-snapshot"]
+  G --> H["Current db moved aside as<br/>.before-restore-&lt;timestamp&gt;"]
+  H --> I["Start control plane,<br/>reconciler converges"]
+```
+
+Snapshots here stay on the same disk as the database; see [disaster recovery](/disaster-recovery) for the off-box, encrypted path that survives losing the machine entirely.
+
 ## What is in a backup, and what is not
 
 | In a backup | Not in a backup |

@@ -8,6 +8,16 @@ A pipeline is a YAML file that describes what should happen when code changes: r
 
 Each pipeline belongs to one app. Open **Pipelines** in an app's sidebar, use the CLI (`levelrail pipelines ...`), or the API under `/api/v1/apps/{name}/pipelines`.
 
+```mermaid
+flowchart LR
+  P["Push to main"] --> T["test stage<br/>go test ./..."]
+  T -->|success| B["build stage<br/>builds image, records output"]
+  B --> A{"approval gate<br/>(deploy ability)"}
+  A -->|approved| D["deploy stage<br/>blue-green, waits for ready"]
+  A -->|rejected| Cancel["run cancelled"]
+  D --> N["notify<br/>deploy notification targets"]
+```
+
 ## A first pipeline
 
 ```yaml
