@@ -12,7 +12,8 @@ import { DeleteDatabaseDialog } from '../../components/DeleteDatabaseDialog'
 import { StopStartDatabaseButton } from '../../components/StopStartDatabaseButton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { PageSpinner } from '@/components/ui/page-spinner'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 
 // Database detail layout route, mirroring routes/apps/$name.tsx's own
 // split (the Databases fast-follow to that same treatment): this file
@@ -38,7 +39,7 @@ export const Route = createFileRoute('/databases/$name')({
       queryClient.ensureQueryData(databaseStatusQueryOptions(name)),
     ]),
   component: DatabaseDetailLayout,
-  pendingComponent: PageSpinner,
+  pendingComponent: DatabaseDetailSkeleton,
   errorComponent: DatabaseDetailError,
 })
 
@@ -70,6 +71,59 @@ function DatabaseDetailLayout() {
       </div>
 
       <Outlet />
+    </div>
+  )
+}
+
+// Mirrors this layout's real header plus routes/databases/$name/overview.tsx's
+// own card stack (Overview dl, conditions, public access, backups, restore),
+// since the loader here blocks that whole outlet, not just the header.
+function DatabaseDetailSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <Skeleton className="h-4 w-40" />
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-9 w-20 rounded-md" />
+          <Skeleton className="h-9 w-20 rounded-md" />
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <Skeleton className="h-4 w-20" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {Array.from({ length: 5 }, (_, i) => (
+              <div key={i} className="space-y-1">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {Array.from({ length: 3 }, (_, i) => (
+        <Card key={i}>
+          <CardHeader>
+            <CardTitle>
+              <Skeleton className="h-4 w-32" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </CardContent>
+        </Card>
+      ))}
     </div>
   )
 }
