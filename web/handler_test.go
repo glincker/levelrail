@@ -56,3 +56,27 @@ func TestHandlerFromFS_UnknownPath_FallsBackToIndex(t *testing.T) {
 		})
 	}
 }
+
+func TestHandlerFromFS_SetsSecurityHeaders(t *testing.T) {
+	h := handlerFromFS(fstest.MapFS{
+		"dist/index.html":        &fstest.MapFile{Data: []byte("<html>shell</html>")},
+		"dist/assets/app-123.js": &fstest.MapFile{Data: []byte("console.log(1)")},
+	})
+	want := map[string]string{
+		"X-Content-Type-Options":  "nosniff",
+		"X-Frame-Options":         "DENY",
+		"Referrer-Policy":         "strict-origin-when-cross-origin",
+		"Content-Security-Policy": dashboardCSP,
+	}
+	for _, path := range []string{"/", "/apps/web", "/assets/app-123.js"} {
+		t.Run(path, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+			for k, v := range want {
+				if got := rec.Header().Get(k); got != v {
+					t.Errorf("%s = %q, want %q", k, got, v)
+				}
+			}
+		})
+	}
+}
