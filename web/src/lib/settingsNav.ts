@@ -60,6 +60,15 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'Account',
         description: 'Profile and password.',
       },
+      // Access-control surface bigger than its old spot implied: kept near
+      // the top of Account rather than buried after CLI access.
+      {
+        to: '/settings/iam-policies',
+        icon: ShieldCheckIcon,
+        title: 'IAM policies',
+        description:
+          'Resource-scoped Allow/Deny access, layered on top of a token’s own abilities.',
+      },
       {
         to: '/settings/security',
         icon: ShieldIcon,
@@ -84,13 +93,6 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'CLI access',
         description:
           'Approve or deny logins started with levelrail-cli auth login.',
-      },
-      {
-        to: '/settings/iam-policies',
-        icon: ShieldCheckIcon,
-        title: 'IAM policies',
-        description:
-          'Resource-scoped Allow/Deny access, layered on top of a token’s own abilities.',
       },
     ],
   },
@@ -118,7 +120,7 @@ export const settingsNavSections: SettingsNavSection[] = [
     ],
   },
   {
-    heading: 'Integrations',
+    heading: 'Git providers',
     items: [
       {
         to: '/settings/github-app',
@@ -146,6 +148,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         description:
           'Self-hosted Gitea repository access for git-based deploys.',
       },
+    ],
+  },
+  {
+    heading: 'Notifications & status',
+    items: [
       {
         to: '/settings/notification-channels',
         icon: WebhooksLogoIcon,
@@ -159,6 +166,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         description:
           'Optional public page with component status, uptime and incidents.',
       },
+    ],
+  },
+  {
+    heading: 'Storage & backups',
+    items: [
       {
         to: '/settings/backup-targets',
         icon: CloudArrowUpIcon,
@@ -172,6 +184,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         description:
           'AWS S3, R2, B2, MinIO, Wasabi buckets for log archives and backups.',
       },
+    ],
+  },
+  {
+    // Named to avoid colliding with "Infrastructure as code" under Platform.
+    heading: 'Registries & nodes',
+    items: [
       {
         to: '/settings/registry-credentials',
         icon: PackageIcon,
@@ -186,17 +204,16 @@ export const settingsNavSections: SettingsNavSection[] = [
           'Hetzner and DigitalOcean tokens for automatic node provisioning.',
       },
       {
-        to: '/settings/import-platform',
-        icon: DownloadSimpleIcon,
-        title: 'Import from another platform',
-        description: 'Bring apps over from Coolify, Dokploy or CapRover.',
-      },
-      {
         to: '/settings/registry',
         icon: HardDrivesIcon,
         title: 'Container registry',
         description: 'Built-in image registry for multi-node build caching.',
       },
+    ],
+  },
+  {
+    heading: 'Platform extras',
+    items: [
       {
         to: '/settings/email',
         icon: EnvelopeIcon,
@@ -225,6 +242,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         description:
           'Bring your own LLM API key for the platform chat assistant.',
         feature: 'ai-chat',
+      },
+      {
+        to: '/settings/import-platform',
+        icon: DownloadSimpleIcon,
+        title: 'Import from another platform',
+        description: 'Bring apps over from Coolify, Dokploy or CapRover.',
       },
     ],
   },
