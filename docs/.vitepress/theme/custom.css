@@ -668,7 +668,7 @@ a.trust-strip__item:hover {
 .custom-footer__giant {
   position: absolute;
   left: 50%;
-  bottom: -4vw;
+  bottom: 4vw;
   transform: translateX(-50%);
   z-index: -1;
   font-family: 'Hanken Grotesk', var(--vp-font-family-base);
@@ -691,8 +691,16 @@ a.trust-strip__item:hover {
   max-width: 1152px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 32px;
+}
+
+/* Below this, two columns squeeze fixed-width content (the GLINCKER
+   pill) past the column edge: stack single-column until there is room. */
+@media (min-width: 480px) {
+  .custom-footer__inner {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (min-width: 768px) {
@@ -740,6 +748,7 @@ a.trust-strip__item:hover {
 .custom-footer__badge {
   display: inline-flex;
   width: fit-content;
+  max-width: 100%;
   align-items: center;
   padding: 4px 10px;
   border-radius: 999px;
