@@ -10,6 +10,13 @@ const description =
 
 const siteUrl = 'https://levelrail.com'
 
+// public/favicon.svg is served byte-for-byte at a fixed path (no content
+// hash), behind GitHub Pages' CDN on top of the browser's own cache, so a
+// redeploy alone doesn't guarantee a visitor sees the new file. Bump this
+// whenever favicon.svg's actual content changes; it's appended everywhere
+// the file is referenced below.
+const faviconVersion = 2
+
 // Defined once and reused for both the sidebar itself and
 // pageToSection below (canonicalUrl/BreadcrumbList in transformHead),
 // so the two never drift out of sync.
@@ -242,7 +249,7 @@ export default withMermaid({
   head: [
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'theme-color', content: '#0b0e14' }],
-    ['link', { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }],
+    ['link', { rel: 'icon', href: `/favicon.svg?v=${faviconVersion}`, type: 'image/svg+xml' }],
     [
       'script',
       { type: 'application/ld+json' },
@@ -289,7 +296,7 @@ export default withMermaid({
   ignoreDeadLinks: [/\.\.\//],
 
   themeConfig: {
-    logo: '/favicon.svg',
+    logo: `/favicon.svg?v=${faviconVersion}`,
 
     nav: [
       { text: 'Guide', link: '/getting-started' },
