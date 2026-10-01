@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/ticker"
 	"github.com/GLINCKER/levelrail/internal/upgrade"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
@@ -117,21 +118,7 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 	return nil
 }
 
-// Run calls Tick on interval until ctx is done, matching the shape of
-// every other periodic loop in this codebase (backup.Scheduler.Run,
-// alerting.Engine.Run, telemetry.Collector.Run).
+// Run calls Tick on interval until ctx is done.
 func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			if err := s.Tick(ctx); err != nil {
-				s.log().Warn("updatecheck: scheduler tick failed", slog.String("error", err.Error()))
-			}
-		}
-	}
+	return ticker.Run(ctx, interval, s.log(), "updatecheck", s.Tick)
 }
