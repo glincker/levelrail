@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { ServiceTemplateGrid } from '../../components/ServiceTemplateGrid'
+import { PageHeader } from '../../components/shell/PageHeader'
 import { Button } from '@/components/ui/button'
 import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
 
@@ -23,26 +24,21 @@ function TemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-baseline justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">
-            Service templates
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Curated, one-click services from the catalog. Pick one to see what
-            it deploys.
-          </p>
-        </div>
-        <CreateResourceWizard
-          initialSelected="browse-templates"
-          trigger={
-            <Button size="sm" variant="outline">
-              <PlusIcon />
-              New from a template
-            </Button>
-          }
-        />
-      </div>
+      <PageHeader
+        title="Service templates"
+        description="Curated, one-click services from the catalog. Pick one to see what it deploys."
+        actions={
+          <CreateResourceWizard
+            initialSelected="browse-templates"
+            trigger={
+              <Button size="sm" variant="outline">
+                <PlusIcon />
+                New from a template
+              </Button>
+            }
+          />
+        }
+      />
       <ServiceTemplateGrid
         onSelect={(id) => {
           void navigate({ to: '/templates/$id', params: { id } })

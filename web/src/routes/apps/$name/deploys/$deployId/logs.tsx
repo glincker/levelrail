@@ -24,6 +24,7 @@ import {
 import type { ReconcileCondition } from '../../../../../types/deploy'
 import { stripAnsiCodes } from '../../../../../lib/ansi'
 import { Breadcrumbs } from '../../../../../components/Breadcrumbs'
+import { PageHeader } from '../../../../../components/shell/PageHeader'
 import { LogConnectionBadge } from '../../../../../components/LogConnectionBadge'
 import { LogTerminal } from '../../../../../components/LogTerminal'
 import { BuildLogHints } from '../../../../../components/BuildLogHints'
@@ -94,21 +95,19 @@ function DeployLogsPage() {
         appName={name}
         page="Deploy logs"
       />
-      <header className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
+      <PageHeader
+        title={
+          <span className="inline-flex items-center gap-1.5">
             <TerminalIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
             Deploy
-          </h1>
-          <p className="truncate text-xs text-muted-foreground">
-            {name} / deploy {deployId}
-          </p>
-        </div>
-        <LogConnectionBadge state={connectionState} />
-      </header>
+          </span>
+        }
+        description={`${name} / deploy ${deployId}`}
+        actions={<LogConnectionBadge state={connectionState} />}
+      />
 
       {attempt && stages ? (
         <>

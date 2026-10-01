@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { UserIcon } from '@phosphor-icons/react/dist/ssr'
 import { sessionQueryOptions, useSession } from '../../queries/security'
 import { ChangePasswordCard } from '../../components/ChangePasswordCard'
+import { PageHeader } from '../../components/shell/PageHeader'
 import { Field, FieldDescription, FieldLabel } from '../../components/ui/field'
 import {
   Card,
@@ -40,12 +41,7 @@ function AccountSettingsSkeleton() {
 function AccountSettingsPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Account</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Profile and password.
-        </p>
-      </div>
+      <PageHeader title="Account" description="Profile and password." />
 
       <ProfileCard />
       <ChangePasswordCard />

@@ -12,6 +12,7 @@ import {
 import { summarizeAppStatus } from '../../lib/appStatus'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
+import { PageHeader } from '../../components/shell/PageHeader'
 import { CloneAppDialog } from '../../components/CloneAppDialog'
 import { DeleteAppDialog } from '../../components/DeleteAppDialog'
 import { DeployTriggerForm } from '../../components/DeployTriggerForm'
@@ -131,23 +132,28 @@ function AppDetailLayout() {
       </div>
       {isOverview ? null : (
         <>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold text-foreground">
-                {app.name}
-              </h1>
-              <Badge variant={status.variant}>{status.label}</Badge>
-              <ConvergenceIndicator conditions={conditions} />
-            </div>
-            <div className="flex items-center gap-2">
-              <StopStartAppButton name={app.name} suspended={app.suspended} />
-              <RestartAppButton name={app.name} />
-              <RedeployAppButton name={app.name} image={app.image} />
-              <PromoteAppDialog appName={app.name} projectId={app.project_id} />
-              <CloneAppDialog name={app.name} />
-              <DeleteAppDialog name={app.name} />
-            </div>
-          </div>
+          <PageHeader
+            title={app.name}
+            status={
+              <>
+                <Badge variant={status.variant}>{status.label}</Badge>
+                <ConvergenceIndicator conditions={conditions} />
+              </>
+            }
+            actions={
+              <>
+                <StopStartAppButton name={app.name} suspended={app.suspended} />
+                <RestartAppButton name={app.name} />
+                <RedeployAppButton name={app.name} image={app.image} />
+                <PromoteAppDialog
+                  appName={app.name}
+                  projectId={app.project_id}
+                />
+                <CloneAppDialog name={app.name} />
+                <DeleteAppDialog name={app.name} />
+              </>
+            }
+          />
 
           <TagsControl appName={app.name} tags={app.tags} />
         </>

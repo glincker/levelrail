@@ -14,6 +14,7 @@ import {
   RowSkeleton,
 } from '../../components/ProjectRow'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
+import { PageHeader } from '../../components/shell/PageHeader'
 import { DeleteOrganizationDialog } from '../../components/DeleteOrganizationDialog'
 import { OrganizationEnvEditor } from '../../components/OrganizationEnvEditor'
 import { SharedEnvSecretsCard } from '../../components/SharedEnvSecretsCard'
@@ -58,16 +59,18 @@ function OrganizationDetailPage() {
     <div className="space-y-6">
       <div>
         <Breadcrumbs organizationId={id} />
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-lg font-semibold text-foreground">
-            {organization.name}
-          </h1>
-          <DeleteOrganizationDialog
-            id={organization.id}
-            name={organization.name}
-            onDeleted={() => {
-              void navigate({ to: '/settings/organizations' })
-            }}
+        <div className="mt-1">
+          <PageHeader
+            title={organization.name}
+            actions={
+              <DeleteOrganizationDialog
+                id={organization.id}
+                name={organization.name}
+                onDeleted={() => {
+                  void navigate({ to: '/settings/organizations' })
+                }}
+              />
+            }
           />
         </div>
       </div>

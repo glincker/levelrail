@@ -5,6 +5,7 @@ import {
   useNetworkTopology,
 } from '../../queries/networkTopology'
 import { NetworkTopologyView } from '../../components/network/NetworkTopologyView'
+import { PageHeader } from '../../components/shell/PageHeader'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -32,12 +33,10 @@ function NetworkPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Network</h1>
-        <p className="text-sm text-muted-foreground">
-          Everything on the mesh, grouped by node. Zone {topology.zone}.
-        </p>
-      </div>
+      <PageHeader
+        title="Network"
+        description={`Everything on the mesh, grouped by node. Zone ${topology.zone}.`}
+      />
 
       {empty ? (
         <EmptyState

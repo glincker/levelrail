@@ -14,6 +14,7 @@ import {
 import { environmentEnvQueryOptions } from '../../../../queries/environmentEnv'
 import { appListQueryOptions } from '../../../../queries/apps'
 import { Breadcrumbs } from '../../../../components/Breadcrumbs'
+import { PageHeader } from '../../../../components/shell/PageHeader'
 import { DeleteEnvironmentDialog } from '../../../../components/DeleteEnvironmentDialog'
 import { CloneEnvironmentDialog } from '../../../../components/CloneEnvironmentDialog'
 import { ProtectedEnvironmentToggle } from '../../../../components/ProtectedEnvironmentToggle'
@@ -93,32 +94,38 @@ function EnvironmentDetailPage() {
     <div className="space-y-6">
       <div>
         <Breadcrumbs projectId={id} environmentId={envId} />
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="flex items-center gap-2 text-lg font-semibold text-foreground">
-            <StackSimpleIcon className="size-4 text-muted-foreground" />
-            {environment.name}
-          </h1>
-          <div className="flex items-center gap-4">
-            <ProtectedEnvironmentToggle
-              id={environment.id}
-              name={environment.name}
-              protectedFlag={environment.protected}
-              projectId={id}
-            />
-            <CloneEnvironmentDialog
-              environmentId={environment.id}
-              environmentName={environment.name}
-              projectId={id}
-            />
-            <DeleteEnvironmentDialog
-              id={environment.id}
-              name={environment.name}
-              projectId={id}
-              onDeleted={() => {
-                void navigate({ to: '/projects/$id', params: { id } })
-              }}
-            />
-          </div>
+        <div className="mt-1">
+          <PageHeader
+            title={
+              <span className="inline-flex items-center gap-2">
+                <StackSimpleIcon className="size-4 text-muted-foreground" />
+                {environment.name}
+              </span>
+            }
+            actions={
+              <>
+                <ProtectedEnvironmentToggle
+                  id={environment.id}
+                  name={environment.name}
+                  protectedFlag={environment.protected}
+                  projectId={id}
+                />
+                <CloneEnvironmentDialog
+                  environmentId={environment.id}
+                  environmentName={environment.name}
+                  projectId={id}
+                />
+                <DeleteEnvironmentDialog
+                  id={environment.id}
+                  name={environment.name}
+                  projectId={id}
+                  onDeleted={() => {
+                    void navigate({ to: '/projects/$id', params: { id } })
+                  }}
+                />
+              </>
+            }
+          />
         </div>
       </div>
 

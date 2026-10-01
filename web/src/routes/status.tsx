@@ -7,6 +7,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { toast } from '@/components/ui/toast'
 import { useAttentionItems } from '../queries/attention'
 import { useRestartApp } from '../queries/apps'
@@ -164,12 +165,10 @@ export function StatusPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">Status</h1>
-        <p className="text-sm text-muted-foreground">
-          Everything that needs attention right now. Refreshes every 30 seconds.
-        </p>
-      </div>
+      <PageHeader
+        title="Status"
+        description="Everything that needs attention right now. Refreshes every 30 seconds."
+      />
 
       {isLoading ? (
         <div

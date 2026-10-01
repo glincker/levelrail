@@ -4,6 +4,7 @@ import {
   useEmailSettings,
 } from '../../queries/emailSettings'
 import { EmailSettingsCard } from '../../components/EmailSettingsCard'
+import { PageHeader } from '../../components/shell/PageHeader'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
@@ -30,12 +31,10 @@ function EmailSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Email</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          The backend that sends alert notifications and password-reset links.
-        </p>
-      </div>
+      <PageHeader
+        title="Email"
+        description="The backend that sends alert notifications and password-reset links."
+      />
 
       <EmailSettingsCard settings={settings} />
     </div>

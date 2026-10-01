@@ -22,6 +22,7 @@ import { NodeMeshCard } from '../../components/NodeMeshCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
 import { NodeEventsCard } from '../../components/NodeEventsCard'
+import { PageHeader } from '../../components/shell/PageHeader'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge, type badgeVariants } from '@/components/ui/badge'
@@ -116,22 +117,26 @@ function NodeDetailPage() {
           <ArrowLeftIcon className="size-3" />
           Nodes
         </Link>
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-lg font-semibold text-foreground">
-              {node.name}
-            </h1>
-            <Badge variant={STATUS_BADGE_VARIANT[node.status]}>
-              {STATUS_LABEL[node.status]}
-            </Badge>
-            {node.schedulable ? null : (
-              <Badge variant="warning">Cordoned</Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <CordonNodeDialog node={node} />
-            <DrainNodeDialog node={node} />
-          </div>
+        <div className="mt-1">
+          <PageHeader
+            title={node.name}
+            status={
+              <>
+                <Badge variant={STATUS_BADGE_VARIANT[node.status]}>
+                  {STATUS_LABEL[node.status]}
+                </Badge>
+                {node.schedulable ? null : (
+                  <Badge variant="warning">Cordoned</Badge>
+                )}
+              </>
+            }
+            actions={
+              <>
+                <CordonNodeDialog node={node} />
+                <DrainNodeDialog node={node} />
+              </>
+            }
+          />
         </div>
       </div>
 

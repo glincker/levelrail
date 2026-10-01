@@ -1,6 +1,10 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { DatabaseIcon, PackageIcon, FolderIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  DatabaseIcon,
+  PackageIcon,
+  FolderIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   projectDetailQueryOptions,
   useProject,
@@ -19,6 +23,7 @@ import {
   RowSkeleton as DatabaseRowSkeleton,
 } from '../../../components/DatabaseRow'
 import { Breadcrumbs } from '../../../components/Breadcrumbs'
+import { PageHeader } from '../../../components/shell/PageHeader'
 import { DeleteProjectDialog } from '../../../components/DeleteProjectDialog'
 import { PauseResumeProjectButton } from '../../../components/PauseResumeProjectButton'
 import { MoveToOrganizationDialog } from '../../../components/MoveToOrganizationDialog'
@@ -84,26 +89,31 @@ function ProjectDetailPage() {
     <div className="space-y-6">
       <div>
         <Breadcrumbs projectId={id} />
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-lg font-semibold text-foreground">
-            {project.name}
-          </h1>
-          <div className="flex items-center gap-2">
-            {isEmpty ? null : (
-              <PauseResumeProjectButton id={project.id} name={project.name} />
-            )}
-            <RestartProjectButton
-              id={project.id}
-              disabled={projectApps.length === 0}
-            />
-            <DeleteProjectDialog
-              id={project.id}
-              name={project.name}
-              onDeleted={() => {
-                void navigate({ to: '/projects' })
-              }}
-            />
-          </div>
+        <div className="mt-1">
+          <PageHeader
+            title={project.name}
+            actions={
+              <>
+                {isEmpty ? null : (
+                  <PauseResumeProjectButton
+                    id={project.id}
+                    name={project.name}
+                  />
+                )}
+                <RestartProjectButton
+                  id={project.id}
+                  disabled={projectApps.length === 0}
+                />
+                <DeleteProjectDialog
+                  id={project.id}
+                  name={project.name}
+                  onDeleted={() => {
+                    void navigate({ to: '/projects' })
+                  }}
+                />
+              </>
+            }
+          />
         </div>
         <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
           <span>Organization:</span>
