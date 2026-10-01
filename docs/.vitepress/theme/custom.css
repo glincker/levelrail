@@ -1118,6 +1118,22 @@ a.vp-card:hover {
   margin-bottom: 0;
 }
 
+/* VitePress's own default VPNav still renders on two surfaces CustomTopNav
+   doesn't cover: the homepage (no sidebar, so the hasSidebar guard in
+   Layout.vue never swaps it in) and mobile (<960px, see the has-sidebar
+   media query below). Match its logo/wordmark sizing to CustomTopNav's own
+   so the mark isn't noticeably smaller depending on which page you land
+   on. VitePress reads --vp-nav-logo-height on the logo img itself. */
+:root {
+  --vp-nav-logo-height: 36px;
+}
+
+.VPNavBarTitle .title {
+  font-family: 'Hanken Grotesk', var(--vp-font-family-base);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
 /* CustomTopNav.vue + CustomSidebar.vue: fully custom components (not
    overrides of VitePress's own VPNav/VPSidebar, which are hidden above),
    so every property here is this file's own to define -- no fighting
@@ -1162,13 +1178,13 @@ a.vp-card:hover {
 .custom-nav__brand-text {
   font-family: 'Hanken Grotesk', var(--vp-font-family-base);
   font-weight: 800;
-  font-size: 18px;
+  font-size: 20px;
   letter-spacing: -0.01em;
 }
 
 .custom-nav__brand-mark {
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
 }
 

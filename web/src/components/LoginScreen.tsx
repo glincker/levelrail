@@ -20,6 +20,7 @@ import { OAuthErrorBanner } from './OAuthErrorBanner'
 import { SignInFlow } from './SignInFlow'
 import { InsecureConnectionBanner } from './InsecureConnectionBanner'
 import { ThemeToggle } from './ThemeToggle'
+import { BrandMarkGlyph } from './BrandMarkGlyph'
 
 // internal/api/devmode.go's fixed pair; release builds ignore dev mode entirely (ADR 013).
 const DEV_MODE_USERNAME = 'dev'
@@ -63,8 +64,7 @@ export function LoginScreen({ setup }: { setup?: string }) {
     <div className="relative flex min-h-[70vh] flex-col items-center justify-center gap-6 overflow-hidden px-4">
       {/* Decorative only: a soft amber wash reusing the docs site's own
           "rail signal" brand accent, scoped to this page, not the
-          app-wide shadcn tokens (brand.yaml's primary_color is still
-          deliberately unset pending a real identity decision). */}
+          app-wide shadcn tokens. */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem]"
@@ -81,7 +81,7 @@ export function LoginScreen({ setup }: { setup?: string }) {
           aria-hidden="true"
           className="flex size-10 items-center justify-center rounded-lg bg-foreground text-base font-semibold text-background shadow-[0_0_0_4px_rgb(245_158_11_/_0.12)]"
         >
-          {brandLabel.charAt(0).toUpperCase()}
+          <BrandMarkGlyph />
         </div>
         <span className="text-sm font-medium text-foreground">
           {brandLabel}

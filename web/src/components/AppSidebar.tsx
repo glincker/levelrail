@@ -16,6 +16,7 @@ import { useBrand } from '../hooks/useBrand'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { useLogout } from '../queries/auth'
 import { GlobalNav } from './shell/GlobalNav'
+import { BrandMarkGlyph } from './BrandMarkGlyph'
 
 // Lazy: exactly one of these three renders at a time (mutually exclusive
 // by pathname below), so a session that never visits /databases or
@@ -80,14 +81,7 @@ export function AppSidebar() {
               className="gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/40 data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-sidebar-accent"
             >
               <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#0B0E14] text-sm font-bold text-primary-foreground">
-                {brand.LogoSVG ? (
-                  <span
-                    className="flex size-6 items-center justify-center [&_svg]:size-full"
-                    dangerouslySetInnerHTML={{ __html: brand.LogoSVG }}
-                  />
-                ) : (
-                  (brand.ShortName || brand.Name || 'L').charAt(0)
-                )}
+                <BrandMarkGlyph svgWrapperClassName="flex size-6 items-center justify-center [&_svg]:size-full" />
               </span>
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-sm font-semibold">
