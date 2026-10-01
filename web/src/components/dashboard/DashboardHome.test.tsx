@@ -1,5 +1,5 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DashboardHome } from './DashboardHome'
@@ -110,6 +110,14 @@ describe('DashboardHome', () => {
     expect(screen.getByText('Deploy a template')).toBeInTheDocument()
     expect(screen.getByText('Connect Git')).toBeInTheDocument()
     expect(screen.queryByText('Add a node')).not.toBeInTheDocument()
+    expect(screen.getByText('What Acme does')).toBeInTheDocument()
+    expect(
+      screen.getByText(/Rolling, recreate, or blue-green strategy/),
+    ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('tab', { name: /Eight managed databases/ }),
+    )
+    expect(screen.getByText(/ClickHouse/)).toBeInTheDocument()
   })
 
   it('populated with no attention shows a healthy pill, tiles and app quick start', async () => {
