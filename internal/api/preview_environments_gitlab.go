@@ -32,7 +32,7 @@ func (rt *Router) previewGitLabTarget(ctx context.Context, appName string, gs st
 	projectPath, ok = gitlabProjectPathFromURL(gs.RepoURL, conn.InstanceURL)
 	if !ok {
 		rt.logger.Info("api: preview gitlab notification skipped: repo_url is not on the connected gitlab instance",
-			slog.String("app_name", appName), slog.String("repo_url", gs.RepoURL))
+			slog.String("app_name", appName), slog.String("repo_url", redactURLCredentials(gs.RepoURL)))
 		return "", "", "", false
 	}
 	return conn.InstanceURL, accessToken, projectPath, true

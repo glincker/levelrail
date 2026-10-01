@@ -234,7 +234,7 @@ func (rt *Router) tokenForRepo(ctx context.Context, repoURL string) string {
 	if err != nil {
 		if !errors.Is(err, errGitHubAppNotConnected) && !errors.Is(err, errGitHubAppNotInstalled) {
 			rt.logger.Error("api: mint github app installation token failed, falling back to an unauthenticated clone that will likely fail for a private repo",
-				slog.String("error", err.Error()), slog.String("repo_url", repoURL))
+				slog.String("error", err.Error()), slog.String("repo_url", redactURLCredentials(repoURL)))
 		}
 		return ""
 	}

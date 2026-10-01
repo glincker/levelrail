@@ -171,7 +171,7 @@ func (rt *Router) handleConnectGiteaApp(w http.ResponseWriter, r *http.Request) 
 		ClientID:    req.ClientID,
 		CreatedAt:   time.Now().UTC().Format(time.RFC3339),
 	}); err != nil {
-		rt.internalError(w, "api: save gitea app connection failed", err, slog.String("instance_url", req.InstanceURL))
+		rt.internalError(w, "api: save gitea app connection failed", err, slog.String("instance_url", redactURLCredentials(req.InstanceURL)))
 		return
 	}
 
