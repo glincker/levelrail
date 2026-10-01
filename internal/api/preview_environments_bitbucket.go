@@ -28,7 +28,7 @@ func (rt *Router) previewBitbucketTarget(ctx context.Context, appName string, gs
 	fullName, ok = bitbucketFullNameFromURL(gs.RepoURL)
 	if !ok {
 		rt.logger.Info("api: preview bitbucket notification skipped: repo_url is not on bitbucket.org",
-			slog.String("app_name", appName), slog.String("repo_url", gs.RepoURL))
+			slog.String("app_name", appName), slog.String("repo_url", redactURLCredentials(gs.RepoURL)))
 		return "", "", false
 	}
 	return accessToken, fullName, true

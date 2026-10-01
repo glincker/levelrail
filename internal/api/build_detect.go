@@ -60,7 +60,7 @@ func (rt *Router) handleDetectFramework(w http.ResponseWriter, r *http.Request) 
 
 	result, err := rt.detect(r.Context(), build.DetectRequest{RepoURL: req.RepoURL, Ref: req.Ref})
 	if err != nil {
-		rt.logger.Warn("api: detect framework failed", slog.String("error", err.Error()), slog.String("repo_url", req.RepoURL))
+		rt.logger.Warn("api: detect framework failed", slog.String("error", err.Error()), slog.String("repo_url", redactURLCredentials(req.RepoURL)))
 		writeJSON(w, http.StatusOK, detectFrameworkResponse{Detected: false})
 		return
 	}

@@ -111,7 +111,7 @@ func (rt *Router) handleListGitBranches(w http.ResponseWriter, r *http.Request) 
 
 	branches, err := rt.listBranches(r.Context(), req.RepoURL)
 	if err != nil {
-		rt.logger.Warn("api: list git branches failed", slog.String("error", err.Error()), slog.String("repo_url", req.RepoURL))
+		rt.logger.Warn("api: list git branches failed", slog.String("error", err.Error()), slog.String("repo_url", redactURLCredentials(req.RepoURL)))
 		writeError(w, http.StatusBadRequest, "could not list branches, confirm the repository is public and the URL is correct")
 		return
 	}
