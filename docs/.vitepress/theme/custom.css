@@ -288,12 +288,11 @@
   box-shadow: 0 12px 32px -12px rgba(217, 119, 6, 0.35);
 }
 
-/* Mid-page parallax: continues the hero's amber horizon and ridge line
-   past the feature grid and into the quickstart/screenshot sections.
-   Both layers share one background-attachment: fixed image, so as the
-   page scrolls the two sections read as windows onto the same fixed
-   backdrop, the classic fixed-attachment parallax trick, no scroll
-   listener needed. */
+/* Mid-page parallax: continues the hero's amber glow past the feature grid
+   and into the quickstart/screenshot sections. Both layers share one
+   background-attachment: fixed image, so as the page scrolls the two
+   sections read as windows onto the same fixed backdrop, the classic
+   fixed-attachment parallax trick, no scroll listener needed. */
 .VPHome .VPFeatures {
   position: relative;
 }
@@ -306,12 +305,11 @@
   z-index: -1;
   pointer-events: none;
   background-image: radial-gradient(ellipse at 50% 0%, rgba(245, 158, 11, 0.1) 0%, transparent 60%),
-    linear-gradient(180deg, transparent 0%, rgba(11, 14, 20, 0.55) 70%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 220' preserveAspectRatio='none'%3E%3Cpath d='M0,150 L120,118 L240,158 L360,96 L480,138 L600,74 L720,128 L840,84 L960,148 L1080,104 L1200,158 L1320,116 L1440,148 L1440,220 L0,220 Z' fill='%231c140b'/%3E%3Cpath d='M0,150 L120,118 L240,158 L360,96 L480,138 L600,74 L720,128 L840,84 L960,148 L1080,104 L1200,158 L1320,116 L1440,148' fill='none' stroke='%23d97706' stroke-opacity='0.45' stroke-width='2'/%3E%3C/svg%3E");
-  background-repeat: no-repeat, no-repeat, no-repeat;
-  background-position: center top, center top, center 60px;
-  background-size: cover, cover, cover;
-  background-attachment: fixed, fixed, fixed;
+    linear-gradient(180deg, transparent 0%, rgba(11, 14, 20, 0.55) 70%);
+  background-repeat: no-repeat, no-repeat;
+  background-position: center top, center top;
+  background-size: cover, cover;
+  background-attachment: fixed, fixed;
   opacity: 0.22;
 }
 
@@ -983,19 +981,27 @@ a.vp-card:hover {
 .custom-nav__brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
-  font-size: 15px;
-  font-weight: 700;
   color: var(--vp-c-text-1);
   text-decoration: none !important;
 }
 
+/* Hanken Grotesk: closest free (Fontsource, no license cost) cousin to
+   Anthropic Styrene's confident, tall-x-height rhythm -- self-hosted via
+   @fontsource/hanken-grotesk (theme/index.ts), same pattern as the
+   JetBrains Mono weights above it. */
+.custom-nav__brand-text {
+  font-family: 'Hanken Grotesk', var(--vp-font-family-base);
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
 .custom-nav__brand-mark {
-  width: 20px;
-  height: 20px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--vp-c-brand-3), var(--vp-c-brand-1));
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
 }
 
 .custom-nav__links {

@@ -14,8 +14,15 @@ function toggleDark() {
   <header class="custom-nav">
     <div class="custom-nav__inner">
       <a class="custom-nav__brand" href="/">
-        <span class="custom-nav__brand-mark" aria-hidden="true" />
-        {{ site.title }}
+        <svg class="custom-nav__brand-mark" viewBox="0 0 256 256" aria-hidden="true">
+          <rect x="18" y="176" width="220" height="46" rx="15" fill="#06232C"/>
+          <rect x="18" y="168" width="220" height="46" rx="15" fill="#084F67"/>
+          <rect x="48" y="128" width="160" height="46" rx="15" fill="#06232C"/>
+          <rect x="48" y="120" width="160" height="46" rx="15" fill="#107292"/>
+          <rect x="78" y="80" width="100" height="46" rx="15" fill="#06232C"/>
+          <rect x="78" y="72" width="100" height="46" rx="15" fill="#58B1CE"/>
+        </svg>
+        <span class="custom-nav__brand-text">{{ site.title }}</span>
       </a>
 
       <nav class="custom-nav__links" aria-label="Main">
