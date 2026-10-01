@@ -18,6 +18,7 @@ import {
   CpuIcon,
   GlobeIcon,
   ArchiveIcon,
+  RocketLaunchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -110,6 +111,11 @@ const KIND_OPTIONS: {
   },
   { value: 'log_archive_stale', label: 'Log archive stale', Icon: ArchiveIcon },
   { value: 'slo_burn', label: 'SLO burn rate', Icon: GaugeIcon },
+  {
+    value: 'version_skew',
+    label: 'Version update available',
+    Icon: RocketLaunchIcon,
+  },
 ]
 
 const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
@@ -141,6 +147,7 @@ const editAlertRuleSchema = z
       'control_plane_backup_stale',
       'log_archive_stale',
       'slo_burn',
+      'version_skew',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -167,7 +174,8 @@ const editAlertRuleSchema = z
       data.kind === 'node_offline' ||
       data.kind === 'node_cert_expiring' ||
       data.kind === 'control_plane_backup_stale' ||
-      data.kind === 'log_archive_stale'
+      data.kind === 'log_archive_stale' ||
+      data.kind === 'version_skew'
     ) {
       return
     }
@@ -506,7 +514,8 @@ export function EditAlertRuleDialog({
           kind === 'node_disk_space' ||
           kind === 'node_resource_usage' ||
           kind === 'node_offline' ||
-          kind === 'node_cert_expiring' ? (
+          kind === 'node_cert_expiring' ||
+          kind === 'version_skew' ? (
             <p className="text-sm text-muted-foreground">
               This kind watches every certificate or node on the whole control
               plane platform-wide, needing no metric or threshold of its own.

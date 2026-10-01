@@ -92,6 +92,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/importplan"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/upgrade"
 )
 
 // Router wires every internal/api handler onto one http.Handler.
@@ -259,6 +260,18 @@ type Router struct {
 	// updatesCache caches fetchLatestRelease's result; always non-nil,
 	// constructed in NewRouter.
 	updatesCache *updatesCache
+	// updateSettings is the update_settings store surface (migrations/0258),
+	// always set, same "core Store interface" shape as ingressSettings above.
+	updateSettings UpdateSettingsStore
+	// upgradeFetchers is the beta/edge channel lookup, defaulted to
+	// upgrade.DefaultFetchers() in NewRouter, overridable in tests the
+	// same way fetchLatestRelease is above.
+	upgradeFetchers upgrade.Fetchers
+	// channelUpdatesCache caches upgradeFetchers' result for whichever
+	// channel update_settings currently names; always non-nil,
+	// constructed in NewRouter. Separate from updatesCache above so the
+	// stable channel's existing cache/behavior stays untouched.
+	channelUpdatesCache *upgrade.Cache
 	// certExpiryWarningWindow overrides alerting.DefaultCertExpiryWarningWindow
 	// for GET /api/v1/certificates's "expiring_soon" threshold, and for a
 	// kind=cert_expiry alert rule's own evaluation (cmd/levelrail/main.go
@@ -591,6 +604,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		deviceFlow:                  newLoginLimiter(),
 		fetchLatestRelease:          defaultFetchLatestRelease,
 		updatesCache:                newUpdatesCache(),
+		updateSettings:              s,
+		upgradeFetchers:             upgrade.DefaultFetchers(),
+		channelUpdatesCache:         upgrade.NewCache(),
 		auditLog:                    s,
 		scheduledTasks:              s,
 		featureFlags:                s,

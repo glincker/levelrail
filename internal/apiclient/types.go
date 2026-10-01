@@ -2816,6 +2816,14 @@ type DashboardURLResource struct {
 	DashboardURL string `json:"dashboard_url"`
 }
 
+// UpdateSettingsResource mirrors internal/api's updateSettingsResource
+// (GET/PUT /api/v1/updates/settings): which release channel to compare
+// against and whether to check for it in the background.
+type UpdateSettingsResource struct {
+	Channel           string `json:"channel"`
+	AutoUpdateEnabled bool   `json:"auto_update_enabled"`
+}
+
 // SetupStatusResource mirrors GET /api/v1/auth/setup-status.
 type SetupStatusResource struct {
 	NeedsSetup bool `json:"needs_setup"`

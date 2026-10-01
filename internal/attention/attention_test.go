@@ -37,6 +37,24 @@ func TestBuild(t *testing.T) {
 	}
 }
 
+func TestBuild_UpdateAvailable(t *testing.T) {
+	t.Parallel()
+	latest := "v1.1.0"
+	got := Build(Input{Updates: apiclient.UpdatesResource{
+		CurrentVersion: "v1.0.0", LatestVersion: &latest, UpdateAvailable: true,
+	}})
+	if len(got) != 1 {
+		t.Fatalf("len = %d, want 1: %+v", len(got), got)
+	}
+	if got[0].Kind != "update" || got[0].Severity != Warning {
+		t.Errorf("item = %+v, want kind=update severity=warning", got[0])
+	}
+
+	if got := Build(Input{Updates: apiclient.UpdatesResource{CurrentVersion: "v1.0.0"}}); len(got) != 0 {
+		t.Errorf("no update available: len = %d, want 0: %+v", len(got), got)
+	}
+}
+
 func TestBuild_DiskAndFailedDeploys(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

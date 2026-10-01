@@ -267,6 +267,7 @@ type (
 	emailSettingsResource              = apiclient.EmailSettingsResource
 	ingressSettingsResource            = apiclient.IngressSettingsResource
 	dashboardURLResource               = apiclient.DashboardURLResource
+	updateSettingsResource             = apiclient.UpdateSettingsResource
 	aiAssistantSettingsResource        = apiclient.AIAssistantSettingsResource
 	updateAIAssistantSettingsRequest   = apiclient.UpdateAIAssistantSettingsRequest
 	appStorageResource                 = apiclient.AppStorageResource

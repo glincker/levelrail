@@ -4,6 +4,7 @@ import type { CertificateStatus } from '../queries/certificates'
 import type { DoctorReport } from '../queries/systemDoctor'
 import type { DiskPressure } from './diskPressure'
 import type { FailedDeploy } from '../queries/failedDeploys'
+import type { UpdateStatus } from '../queries/updates'
 import { certExpiryLabel } from './certStatus'
 import { formatAge, formatBytes } from './format'
 import { nodeAgentAttentionItems } from './nodeAgentAttention'
@@ -32,6 +33,7 @@ export function buildAttentionItems({
   doctor,
   disk,
   failedDeploys = [],
+  updates,
 }: {
   apps?: AppListEntry[]
   nodes?: NodeResource[]
@@ -39,6 +41,7 @@ export function buildAttentionItems({
   doctor?: DoctorReport
   disk?: DiskPressure
   failedDeploys?: FailedDeploy[]
+  updates?: UpdateStatus
 }): AttentionItem[] {
   const items: AttentionItem[] = []
 
@@ -119,6 +122,18 @@ export function buildAttentionItems({
         target: { kind: 'system' },
       })
     }
+  }
+
+  if (updates?.update_available) {
+    items.push({
+      id: 'update',
+      severity: 'warning',
+      title: 'A new version is available',
+      detail: updates.latest_version
+        ? `${updates.latest_version} (running ${updates.current_version})`
+        : `running ${updates.current_version}`,
+      target: { kind: 'system' },
+    })
   }
 
   return items.sort(
