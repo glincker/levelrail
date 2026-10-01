@@ -335,79 +335,123 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 60%);
 }
 
-/* Comparison strip and 3-step "how it works": reuse the same hairline-card
-   language as .VPFeature and .screenshot-frame above instead of a new
-   pattern. */
-.compare-grid,
-.steps-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
+/* How it compares: two-column before/after contrast instead of a
+   symmetric card grid, so the claims read as a falsifiable comparison
+   rather than six interchangeable feature blurbs. */
+.compare-table {
+  display: flex;
+  flex-direction: column;
   margin-top: 24px;
-}
-
-@media (min-width: 640px) {
-  .compare-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .compare-grid,
-  .steps-grid {
-    gap: 16px;
-  }
-}
-
-@media (min-width: 960px) {
-  .compare-grid,
-  .steps-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-/* Same hairline-card language as .VPFeature and .screenshot-frame: hover
-   lift and an amber border/glow, so this section doesn't read as static
-   next to the rest of the page's card grids. */
-.compare-card,
-.step-card {
-  padding: 22px 24px;
   border: 1px solid var(--vp-c-divider);
   border-radius: 16px;
-  background: var(--vp-c-bg-soft);
-  transition: border-color 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
 }
 
-.compare-card:hover,
-.step-card:hover {
-  border-color: var(--vp-c-brand-1);
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px -12px rgba(217, 119, 6, 0.35);
+.compare-table__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--vp-c-divider);
 }
 
-.compare-card p:first-child strong,
-.step-card p:nth-child(2) strong {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+.compare-table__row + .compare-table__row {
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+.compare-table__cell--label {
+  grid-column: 1 / -1;
+  padding: 14px 20px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--vp-c-brand-1);
+  background: var(--vp-c-bg-soft);
 }
 
-.compare-card p:last-child,
-.step-card p:last-child {
-  margin: 8px 0 0;
+.compare-table__row--head .compare-table__cell--label {
+  display: none;
+}
+
+.compare-table__row--head .compare-table__cell {
+  padding: 12px 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.compare-table__row--head .compare-table__cell--before {
+  color: var(--vp-c-text-3);
+  background: var(--vp-c-bg-soft);
+}
+
+.compare-table__row--head .compare-table__cell--after {
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-bg-soft);
+}
+
+.compare-table__cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px 20px 20px;
   font-size: 14px;
   line-height: 22px;
+  background: var(--vp-c-bg-soft);
+}
+
+.compare-table__cell--before {
   color: var(--vp-c-text-2);
 }
 
-.step-card__index {
-  display: inline-block;
-  font-size: 13px;
-  font-weight: 600;
+.compare-table__cell--after {
+  color: var(--vp-c-text-1);
+  background: color-mix(in srgb, var(--vp-c-brand-soft) 55%, var(--vp-c-bg-soft));
+}
+
+/* min-width: 0 lets this flex item wrap its own text (including the
+   inline <code> word) instead of growing to fit it on one line. */
+.compare-table__cell-text {
+  min-width: 0;
+}
+
+.compare-table__icon {
+  flex-shrink: 0;
+  margin-top: 3px;
+  width: 15px;
+  height: 15px;
+}
+
+.compare-table__icon--before {
   color: var(--vp-c-text-3);
-  font-variant-numeric: tabular-nums;
+}
+
+.compare-table__icon--after {
+  color: var(--vp-c-brand-1);
+}
+
+@media (min-width: 640px) {
+  .compare-table__row {
+    grid-template-columns: 160px 1fr 1fr;
+  }
+
+  .compare-table__cell--label {
+    grid-column: auto;
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    font-size: 13px;
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--vp-c-text-1);
+  }
+
+  .compare-table__row--head .compare-table__cell--label {
+    display: flex;
+    background: var(--vp-c-bg-soft);
+  }
 }
 
 .compare-cta {
@@ -418,47 +462,45 @@
   color: var(--vp-c-brand-1);
 }
 
-/* Ethos pull-quote: one deliberate warm-brown/cream/terracotta accent
-   card, a serif break from the rest of the page's amber "Rail signal"
-   theme, same spacing rhythm as .compare-card/.step-card either side of
-   it. Own custom properties so it doesn't touch the site-wide palette. */
-.ethos-card {
-  --panel: #211914;
-  --ink: #eee6d0;
-  --accent-card: #c95c3f;
+/* Positioning statement: the project's own real tagline enlarged as a
+   standalone typographic moment, not styled as an attributed testimonial
+   (there is no customer quote yet, and there won't be an invented one). */
+.statement-block {
   position: relative;
-  overflow: hidden;
-  container-type: inline-size;
   margin-top: 8px;
-  padding: 44px 32px;
-  border-radius: 20px;
-  background: var(--panel);
+  padding: 56px 24px;
   text-align: center;
 }
 
-.ethos-card::before {
+.statement-block::before {
   content: '';
   position: absolute;
-  inset: -16% 5% -12%;
-  background:
-    radial-gradient(ellipse at 24% 48%, var(--accent-card), transparent 44%),
-    radial-gradient(ellipse at 58% 62%, rgb(238 230 208 / 0.16), transparent 52%);
-  opacity: 0.16;
-  filter: blur(1.8cqw);
+  inset: -20% 10% -20%;
+  z-index: -1;
+  background: radial-gradient(ellipse at 50% 50%, var(--vp-c-brand-soft), transparent 60%);
   pointer-events: none;
 }
 
-.ethos-quote {
-  position: relative;
-  max-width: 62ch;
+/* .statement-block .statement-text, not just .statement-text: the default
+   theme's .vp-doc p { line-height: 28px } outranks a single-class selector
+   and otherwise collapses these two lines into each other. */
+.statement-block .statement-text {
+  max-width: 42ch;
   margin: 0 auto;
-  color: var(--ink);
-  font-family: 'Iowan Old Style', Baskerville, 'Times New Roman', serif;
-  font-size: clamp(20px, 2.6vw, 28px);
-  font-weight: 400;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
+  font-weight: 800;
+  font-size: clamp(28px, 4.4vw, 46px);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--vp-c-text-1);
   text-wrap: balance;
+}
+
+.statement-block .statement-context {
+  max-width: 54ch;
+  margin: 18px auto 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--vp-c-text-2);
 }
 
 /* Trust strip: license, live star count, and a data-ownership line right
@@ -502,11 +544,15 @@ a.trust-strip__item:hover {
   }
 }
 
+/* Browser-chrome frame: real window furniture (traffic-light dots, a fake
+   URL bar) instead of a flat full-bleed screenshot, plus a lifted shadow
+   so each image reads as a window sitting above the page. */
 .screenshot-frame {
-  padding: 6px;
   border: 1px solid var(--vp-c-divider);
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 60%);
+  border-radius: 14px;
+  background: var(--vp-c-bg-soft);
+  box-shadow: 0 24px 48px -28px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
   transition: border-color 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1);
@@ -515,7 +561,45 @@ a.trust-strip__item:hover {
 .screenshot-frame:hover {
   border-color: var(--vp-c-brand-1);
   transform: translateY(-3px);
-  box-shadow: 0 16px 40px -16px rgba(217, 119, 6, 0.35);
+  box-shadow: 0 28px 56px -24px rgba(217, 119, 6, 0.3);
+}
+
+.screenshot-frame__chrome {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg-elv, var(--vp-c-bg-alt));
+}
+
+.screenshot-frame__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--vp-c-divider);
+}
+
+.screenshot-frame__dot--red {
+  background: #f1595c;
+}
+
+.screenshot-frame__dot--yellow {
+  background: #f3bb4b;
+}
+
+.screenshot-frame__dot--green {
+  background: #5fb95b;
+}
+
+.screenshot-frame__url {
+  margin-left: 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--vp-c-bg-soft);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  color: var(--vp-c-text-3);
 }
 
 .screenshot-grid img {
@@ -524,7 +608,6 @@ a.trust-strip__item:hover {
   height: auto;
   aspect-ratio: 8 / 5;
   object-fit: cover;
-  border-radius: 13px;
 }
 
 @media (prefers-reduced-motion: reduce) {
