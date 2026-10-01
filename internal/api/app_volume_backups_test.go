@@ -195,6 +195,61 @@ func TestHandleVolumeBackupSchedule_SetGetClear(t *testing.T) {
 	}
 }
 
+func TestHandleSetVolumeBackupSchedule_SqlitePath_RoundTripsAndFlowsToTrigger(t *testing.T) {
+	runner := newFakeVolumeBackupRunner()
+	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
+	cookie := loginTestSession(t, rt, db)
+	seedServiceWithVolume(t, db)
+	seedBackupTargetForAPI(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/volumes/data/backup-schedule", `{"target_id":"bkt_test1","schedule":"0 3 * * *","sqlite_path":"app/data.db"}`))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var put volumeBackupScheduleResource
+	if err := json.NewDecoder(rec.Body).Decode(&put); err != nil {
+		t.Fatalf("decode PUT response: %v", err)
+	}
+	if put.SqlitePath != "app/data.db" {
+		t.Errorf("PUT response sqlite_path = %q, want %q", put.SqlitePath, "app/data.db")
+	}
+
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/volumes/data/backup-schedule", ""))
+	var got volumeBackupScheduleResource
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode GET response: %v", err)
+	}
+	if got.SqlitePath != "app/data.db" {
+		t.Errorf("GET response sqlite_path = %q, want %q", got.SqlitePath, "app/data.db")
+	}
+
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/volumes/data/backups", `{"target_id":"bkt_test1"}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("trigger status = %d, want %d, body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+	call := runner.awaitCall(t)
+	if call.sqlitePath != "app/data.db" {
+		t.Errorf("RunVolumeBackup sqlitePath = %q, want the schedule's configured path", call.sqlitePath)
+	}
+}
+
+func TestHandleSetVolumeBackupSchedule_InvalidSqlitePath_Returns400(t *testing.T) {
+	runner := newFakeVolumeBackupRunner()
+	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
+	cookie := loginTestSession(t, rt, db)
+	seedServiceWithVolume(t, db)
+	seedBackupTargetForAPI(t, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/volumes/data/backup-schedule", `{"target_id":"bkt_test1","schedule":"0 3 * * *","sqlite_path":"../escape.db"}`))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
 func TestHandleListVolumeBackupHistory_Success(t *testing.T) {
 	runner := newFakeVolumeBackupRunner()
 	rt, db := newTestRouterWithVolumeBackupRunner(t, runner)
