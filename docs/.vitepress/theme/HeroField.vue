@@ -18,6 +18,8 @@ let uMouse: WebGLUniformLocation | null = null
 let uRes: WebGLUniformLocation | null = null
 
 let motionQuery: MediaQueryList | null = null
+let visibilityObserver: IntersectionObserver | null = null
+let offscreen = false
 
 const VS = `
 attribute vec2 a_pos;
@@ -85,7 +87,8 @@ float stars(vec2 uv, float density){
     float size = 0.025 + h * 0.045;
     float d = length(sub - vec2(hash2(cell + 100.0), hash2(cell + 200.0)));
     float star = brightness * smoothstep(size, 0.0, d);
-    star *= 0.5 + 0.5 * sin(u_time * (1.0 + h * 3.0) + h * 6.28);
+    // Floor at 0.35, not 0: stars twinkle (dim/brighten), never fully vanish.
+    star *= 0.65 + 0.35 * sin(u_time * (1.0 + h * 3.0) + h * 6.28);
     return star;
 }
 
@@ -214,7 +217,7 @@ function compileShader(context: WebGLRenderingContext, type: number, source: str
 function resizeCanvas() {
   const canvas = canvasRef.value
   if (!canvas || !gl) return
-  const dpr = Math.min(window.devicePixelRatio || 1, 2)
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
   canvas.width = Math.floor(window.innerWidth * dpr)
   canvas.height = Math.floor(window.innerHeight * dpr)
   gl.viewport(0, 0, canvas.width, canvas.height)
@@ -237,9 +240,18 @@ function tick(time: number) {
 }
 
 function startLoop() {
-  if (running || reduced || document.hidden) return
+  if (running || reduced || document.hidden || offscreen) return
   running = true
   rafId = requestAnimationFrame(tick)
+}
+
+function handleIntersect(entries: IntersectionObserverEntry[]) {
+  offscreen = !entries[0]?.isIntersecting
+  if (offscreen) {
+    stopLoop()
+  } else {
+    startLoop()
+  }
 }
 
 function stopLoop() {
@@ -320,6 +332,12 @@ onMounted(() => {
   window.addEventListener('mousemove', handleMouseMove, { passive: true })
   document.addEventListener('visibilitychange', handleVisibilityChange)
 
+  // Scrolling the hero off-screen (anywhere past the fold) stops the loop
+  // entirely instead of paying for 5 noise-layer fragment shader passes
+  // the user can't see.
+  visibilityObserver = new IntersectionObserver(handleIntersect, { threshold: 0 })
+  visibilityObserver.observe(canvas)
+
   // startLoop() no-ops while document.hidden; paint frame 0 regardless.
   drawFrame(0)
   if (!reduced) startLoop()
@@ -331,6 +349,7 @@ onUnmounted(() => {
   window.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('visibilitychange', handleVisibilityChange)
   motionQuery?.removeEventListener('change', handleMotionChange)
+  visibilityObserver?.disconnect()
 
   if (gl) {
     gl.getExtension('WEBGL_lose_context')?.loseContext()
