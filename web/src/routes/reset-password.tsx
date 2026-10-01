@@ -49,7 +49,7 @@ function ResetPasswordPage() {
       <div className="flex flex-col items-center gap-2 text-center">
         <div
           aria-hidden="true"
-          className="flex size-10 items-center justify-center rounded-lg bg-foreground text-base font-semibold text-background"
+          className="flex size-10 items-center justify-center rounded-lg text-base font-semibold"
         >
           <BrandMarkGlyph />
         </div>
