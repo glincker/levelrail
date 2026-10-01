@@ -20,6 +20,7 @@ import { SharedEnvSecretsCard } from '../../components/SharedEnvSecretsCard'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { EmptyState } from '../../components/ui/empty-state'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Organization detail route: the org's own name plus every project
 // currently filed under it, the sibling-navigation surface an operator
@@ -56,12 +57,10 @@ function OrganizationDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Breadcrumbs organizationId={id} />
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-lg font-semibold text-foreground">
-            {organization.name}
-          </h1>
+      <PageHeader
+        breadcrumb={<Breadcrumbs organizationId={id} />}
+        title={organization.name}
+        actions={
           <DeleteOrganizationDialog
             id={organization.id}
             name={organization.name}
@@ -69,8 +68,8 @@ function OrganizationDetailPage() {
               void navigate({ to: '/settings/organizations' })
             }}
           />
-        </div>
-      </div>
+        }
+      />
 
       <OrganizationEnvEditor organizationId={id} />
       <SharedEnvSecretsCard scope="organization" id={id} />

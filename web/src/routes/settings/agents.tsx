@@ -6,6 +6,7 @@ import { useBrand } from '../../hooks/useBrand'
 import { AgentConnectCard } from '../../components/agents/AgentConnectCard'
 import { AgentTokensCard } from '../../components/agents/AgentTokensCard'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 export const Route = createFileRoute('/settings/agents')({
   loader: ({ context: { queryClient } }) =>
@@ -23,13 +24,10 @@ function AgentsPage() {
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <PlugsConnectedIcon className="size-4" />
         </div>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Agents</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Connect an AI agent to this instance through MCP, and manage the
-            tokens it uses.
-          </p>
-        </div>
+        <PageHeader
+          title="Agents"
+          description="Connect an AI agent to this instance through MCP, and manage the tokens it uses."
+        />
       </div>
       <AgentConnectCard
         serverKey={brand.ShortName.toLowerCase()}
@@ -44,7 +42,7 @@ function AgentsPage() {
 function AgentsPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">Agents</h1>
+      <PageHeader title="Agents" />
       <TableSkeleton columnCount={6} />
     </div>
   )

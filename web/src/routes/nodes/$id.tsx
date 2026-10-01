@@ -33,6 +33,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/shell/PageHeader'
 import type { VariantProps } from 'class-variance-authority'
 
 // Node detail route, mirroring routes/databases/$name.tsx's shape: three
@@ -108,32 +109,34 @@ function NodeDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link
-          to="/nodes"
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeftIcon className="size-3" />
-          Nodes
-        </Link>
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-lg font-semibold text-foreground">
-              {node.name}
-            </h1>
+      <PageHeader
+        breadcrumb={
+          <Link
+            to="/nodes"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeftIcon className="size-3" />
+            Nodes
+          </Link>
+        }
+        title={node.name}
+        status={
+          <>
             <Badge variant={STATUS_BADGE_VARIANT[node.status]}>
               {STATUS_LABEL[node.status]}
             </Badge>
             {node.schedulable ? null : (
               <Badge variant="warning">Cordoned</Badge>
             )}
-          </div>
-          <div className="flex items-center gap-2">
+          </>
+        }
+        actions={
+          <>
             <CordonNodeDialog node={node} />
             <DrainNodeDialog node={node} />
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>

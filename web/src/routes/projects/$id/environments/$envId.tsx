@@ -24,6 +24,7 @@ import { routeErrorMessage } from '../../../../lib/apiError'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Environment detail route: the one place an operator can see every app
 // tagged with a specific staging/production-style label, plus jump to a
@@ -91,13 +92,15 @@ function EnvironmentDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Breadcrumbs projectId={id} environmentId={envId} />
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+      <PageHeader
+        breadcrumb={<Breadcrumbs projectId={id} environmentId={envId} />}
+        title={
+          <span className="flex items-center gap-2">
             <StackSimpleIcon className="size-4 text-muted-foreground" />
             {environment.name}
-          </h1>
+          </span>
+        }
+        actions={
           <div className="flex items-center gap-4">
             <ProtectedEnvironmentToggle
               id={environment.id}
@@ -119,8 +122,8 @@ function EnvironmentDetailPage() {
               }}
             />
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <EnvironmentEnvEditor environmentId={envId} />
       <SharedEnvSecretsCard scope="environment" id={envId} />

@@ -5,6 +5,7 @@ import { backupTargetListQueryOptions } from '../../queries/backupTargets'
 import { BackupTargetTable } from '../../components/BackupTargetTable'
 import { CreateBackupTargetDialog } from '../../components/CreateBackupTargetDialog'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Account-level, not scoped to one app or database, so it lives under
 // routes/settings/ next to tokens.tsx rather than under routes/apps/ or
@@ -37,16 +38,10 @@ function BackupTargetsPage() {
           <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <CloudArrowUpIcon className="size-4" />
           </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">
-              Backup targets
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              S3-compatible buckets connected as backup destinations for managed
-              databases. AWS S3, Cloudflare R2, or any other S3-compatible
-              endpoint.
-            </p>
-          </div>
+          <PageHeader
+            title="Backup targets"
+            description="S3-compatible buckets connected as backup destinations for managed databases. AWS S3, Cloudflare R2, or any other S3-compatible endpoint."
+          />
         </div>
         <CreateBackupTargetDialog />
       </div>
@@ -64,7 +59,7 @@ function BackupTargetsPage() {
 function BackupTargetsPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">Backup targets</h1>
+      <PageHeader title="Backup targets" />
       <TableSkeleton columnCount={6} />
     </div>
   )

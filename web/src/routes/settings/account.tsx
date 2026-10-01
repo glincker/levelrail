@@ -14,6 +14,7 @@ import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '../../components/settings/SettingsSkeletons'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Two independent cards: profile (read-only) and change-password
 // (ChangePasswordCard.tsx, split out so TanStack Router's
@@ -40,12 +41,7 @@ function AccountSettingsSkeleton() {
 function AccountSettingsPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Account</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Profile and password.
-        </p>
-      </div>
+      <PageHeader title="Account" description="Profile and password." />
 
       <ProfileCard />
       <ChangePasswordCard />

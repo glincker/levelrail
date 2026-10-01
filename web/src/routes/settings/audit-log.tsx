@@ -32,6 +32,7 @@ import { AgentFilterChips } from '../../components/AgentFilterChips'
 import { collectAgentNames } from '../../lib/agentNames'
 import { tokenListQueryOptions } from '../../queries/tokens'
 import { EmptyState } from '../../components/ui/empty-state'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // ALL_CLIENT_KINDS is the filter dropdown's "no filter" sentinel: Base
 // UI's Select cannot use an empty string as an item value (it reads as
@@ -181,13 +182,10 @@ function AuditLogSettingsPage() {
           <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <ClockCounterClockwiseIcon className="size-4" />
           </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">Audit log</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Who changed what: every write, deploy, or root-tier request,
-              newest first. Read-only requests aren't recorded here.
-            </p>
-          </div>
+          <PageHeader
+            title="Audit log"
+            description="Who changed what: every write, deploy, or root-tier request, newest first. Read-only requests aren't recorded here."
+          />
         </div>
         <div className="flex items-center gap-2">
           <Select
@@ -295,7 +293,7 @@ function AuditLogSettingsPage() {
 function AuditLogSettingsPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">Audit log</h1>
+      <PageHeader title="Audit log" />
       <TableSkeleton columnCount={8} rowCount={8} />
     </div>
   )
