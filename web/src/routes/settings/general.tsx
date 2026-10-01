@@ -2,16 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import {
   BookOpenIcon,
   CheckCircleIcon,
-  WarningCircleIcon,
   XCircleIcon,
   EnvelopeIcon,
-  HardDriveIcon,
   LifebuoyIcon,
   GearIcon,
-  KeyIcon,
-  ShieldCheckIcon,
   SparkleIcon,
-  StackIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
@@ -22,30 +17,27 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { useBrand } from '../../hooks/useBrand'
-import { formatBytes } from '../../lib/format'
 import {
   systemStatusQueryOptions,
   useSystemStatus,
 } from '../../queries/systemStatus'
-import type { DockerDiskUsage, SystemStatus } from '../../queries/systemStatus'
-import {
-  certificatesQueryOptions,
-  useCertificates,
-} from '../../queries/certificates'
-import type { CertificateStatus } from '../../queries/certificates'
+import { certificatesQueryOptions } from '../../queries/certificates'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { DockerCleanupFallbackCard } from '../../components/DockerCleanupFallbackCard'
-import { CleanUpDockerDialog } from '../../components/CleanUpDockerDialog'
 import { OrphanedVolumesCard } from '../../components/OrphanedVolumesCard'
-import { RotateMasterKeyDialog } from '../../components/RotateMasterKeyDialog'
 import { SecretBindingCard } from '../../components/SecretBindingCard'
-import { HelpLink } from '@/components/HelpLink'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '@/components/settings/SettingsSkeletons'
+import {
+  DiskUsageCard,
+  DiskUsageSkeleton,
+} from '@/components/settings/DiskUsageCard'
+import { DockerDiskUsageCard } from '@/components/settings/DockerDiskUsageCard'
+import { CertificatesCard } from '@/components/settings/CertificatesCard'
+import { MasterKeyCard } from '@/components/settings/MasterKeyCard'
 
 // Platform info comes from the already-warm /api/v1/brand cache via
 // useBrand() (primed by routes/__root.tsx's loader). Build version lives
@@ -88,26 +80,6 @@ function GeneralSettingsSkeleton() {
   )
 }
 
-function DiskUsageSkeleton() {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <Skeleton className="size-8 shrink-0 rounded-lg" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-3.5 w-56" />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <Skeleton className="h-2 w-full rounded-full" />
-        <Skeleton className="h-3.5 w-48" />
-      </CardContent>
-    </Card>
-  )
-}
-
 function ConfiguredRow({
   label,
   configured,
@@ -137,250 +109,6 @@ function ConfiguredRow({
   )
 }
 
-// Only rendered when the backend actually reported disk usage
-// (data_dir_total_bytes/data_dir_free_bytes are omitempty on the wire:
-// no WithDataDir configured, or the statfs call itself failed), so this
-// never shows a fabricated 0/0 bar.
-function DiskUsageCard({ status }: { status: SystemStatus }) {
-  if (!status.data_dir_total_bytes || !status.data_dir_free_bytes) {
-    return null
-  }
-  const usedBytes = status.data_dir_total_bytes - status.data_dir_free_bytes
-  const usedPercent = Math.round(
-    (usedBytes / status.data_dir_total_bytes) * 100,
-  )
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <HardDriveIcon className="size-4" />
-          </div>
-          <div>
-            <CardTitle>Data directory</CardTitle>
-            <CardDescription>
-              Disk usage where apps, databases, and control plane state live.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <Progress value={usedPercent} />
-        <p className="text-sm text-muted-foreground">
-          {formatBytes(usedBytes)} used of{' '}
-          {formatBytes(status.data_dir_total_bytes)} ({usedPercent}%)
-        </p>
-      </CardContent>
-    </Card>
-  )
-}
-
-// the button actually performs.
-function DockerUsageRow({
-  label,
-  totalBytes,
-  reclaimableBytes,
-}: {
-  label: string
-  totalBytes: number
-  reclaimableBytes: number
-}) {
-  return (
-    <div className="flex items-center justify-between py-1.5 text-sm">
-      <span className="text-foreground">{label}</span>
-      <span className="text-muted-foreground">
-        {formatBytes(totalBytes)}
-        {reclaimableBytes > 0 ? (
-          <span className="ml-1.5 text-xs">
-            ({formatBytes(reclaimableBytes)} reclaimable)
-          </span>
-        ) : null}
-      </span>
-    </div>
-  )
-}
-
-function DockerDiskUsageCard({ usage }: { usage: DockerDiskUsage }) {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <StackIcon className="size-4" />
-            </div>
-            <div>
-              <CardTitle>Docker storage</CardTitle>
-              <CardDescription>
-                Space claimed by images, containers, volumes, and build cache on
-                this daemon.
-              </CardDescription>
-            </div>
-          </div>
-          <CleanUpDockerDialog />
-        </div>
-      </CardHeader>
-      <CardContent className="divide-y divide-border">
-        <DockerUsageRow
-          label="Images"
-          totalBytes={usage.images_total_bytes}
-          reclaimableBytes={usage.images_reclaimable_bytes}
-        />
-        <DockerUsageRow
-          label="Containers"
-          totalBytes={usage.containers_total_bytes}
-          reclaimableBytes={usage.containers_reclaimable_bytes}
-        />
-        <DockerUsageRow
-          label="Volumes"
-          totalBytes={usage.volumes_total_bytes}
-          reclaimableBytes={usage.volumes_reclaimable_bytes}
-        />
-        <DockerUsageRow
-          label="Build cache"
-          totalBytes={usage.build_cache_total_bytes}
-          reclaimableBytes={usage.build_cache_reclaimable_bytes}
-        />
-      </CardContent>
-      <CardContent className="pt-0">
-        <p className="text-xs text-muted-foreground">
-          &ldquo;Reclaimable&rdquo; includes every currently unused resource,
-          Docker&apos;s own accounting. Clean up now is more conservative: it
-          only removes dangling images and anonymous volumes, never a tagged
-          image kept for rollback or a named database volume, so the amount
-          actually freed can be less than the reclaimable figure above.
-        </p>
-      </CardContent>
-    </Card>
-  )
-}
-
-// certStatusMeta maps internal/api/certificates.go's three Status
-// values to a Badge variant and label. No fourth "renewal failed" state:
-// this codebase's TLS automation only drives Caddy's offline internal
-// issuer today (real ACME is a separate, still-open gap), so expiry is
-// the one honest signal the backend actually has, see
-// queries/certificates.ts's own CertificateStatus doc comment.
-const certStatusMeta: Record<
-  CertificateStatus['status'],
-  { label: string; variant: 'success' | 'warning' | 'destructive' }
-> = {
-  healthy: { label: 'Healthy', variant: 'success' },
-  expiring_soon: { label: 'Expiring soon', variant: 'warning' },
-  expired: { label: 'Expired', variant: 'destructive' },
-}
-
-function CertificateRow({ cert }: { cert: CertificateStatus }) {
-  // Deliberately no "N days left" countdown here: computing that needs
-  // Date.now() at render time, which react-hooks/purity flags as an
-  // impure render call (the "now" it captures would silently go stale
-  // between renders anyway). The absolute date plus the badge's
-  // healthy/expiring_soon/expired state already carries the same
-  // information without it.
-  const notAfter = new Date(cert.not_after)
-  const meta = certStatusMeta[cert.status]
-  const StatusIcon =
-    cert.status === 'healthy'
-      ? CheckCircleIcon
-      : cert.status === 'expiring_soon'
-        ? WarningCircleIcon
-        : XCircleIcon
-
-  return (
-    <div className="flex items-center justify-between gap-3 py-2 text-sm">
-      <div className="min-w-0">
-        <p className="truncate font-medium text-foreground">{cert.domain}</p>
-        <p className="text-xs text-muted-foreground">
-          {cert.status === 'expired' ? 'Expired' : 'Expires'}{' '}
-          {notAfter.toLocaleDateString()}
-        </p>
-      </div>
-      <Badge variant={meta.variant}>
-        <StatusIcon />
-        {meta.label}
-      </Badge>
-    </div>
-  )
-}
-
-// CertificatesCard closes the gap this file's own prior comment left
-// open: this route used to mention TLS only in the marketing paragraph
-// above, with zero live status anywhere. This project treats "a
-// cert renewal fails silently at 3am" as its central risk;
-// this card is the read-only surface that makes an at-risk certificate
-// visible before that happens, not a management UI: renewal is
-// automatic (see internal/ingress), so there is nothing to click here.
-function CertificatesCard() {
-  const { data: certificates } = useCertificates()
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <ShieldCheckIcon className="size-4" />
-          </div>
-          <div>
-            <CardTitle>TLS certificates</CardTitle>
-            <CardDescription>
-              Automatic HTTPS certificate status per domain.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent
-        className={certificates.length > 0 ? 'divide-y divide-border' : ''}
-      >
-        {certificates.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No certificates issued yet.
-          </p>
-        ) : (
-          certificates.map((cert) => (
-            <CertificateRow key={cert.domain} cert={cert} />
-          ))
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-// Only rendered when status.secrets_configured (master key rotation
-// requires one already loaded, same 501-if-not-configured shape
-// useRotateMasterKey's own doc comment establishes): showing the
-// rotate action when there's no master key to rotate would just be a
-// button that always fails, the same reasoning DiskUsageCard's own
-// early return applies to a different missing-precondition case.
-function MasterKeyCard() {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <KeyIcon className="size-4" />
-            </div>
-            <div>
-              <CardTitle className="flex items-center gap-1.5">
-                Master key
-                <HelpLink
-                  path="/master-key-rotation"
-                  label="Master key rotation guide"
-                />
-              </CardTitle>
-              <CardDescription>
-                Rotate the envelope-encryption key every stored secret depends
-                on.
-              </CardDescription>
-            </div>
-          </div>
-          <RotateMasterKeyDialog />
-        </div>
-      </CardHeader>
-    </Card>
-  )
-}
-
 function GeneralSettingsPage() {
   const brand = useBrand()
   const { data: status } = useSystemStatus()
@@ -388,12 +116,10 @@ function GeneralSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">General</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          System status and configuration.
-        </p>
-      </div>
+      <PageHeader
+        title="General"
+        description="System status and configuration."
+      />
 
       <Card>
         <CardHeader>

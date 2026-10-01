@@ -590,8 +590,9 @@ func run(logger *slog.Logger) error {
 			// this identical value, one implementation serving both
 			// resource kinds through the same upload/history/scheduling
 			// pipeline.
-			VolumeArchiver: &backup.ContainerVolumeArchiver{Runtime: client},
-			Uploader:       backup.S3Uploader{},
+			VolumeArchiver:    &backup.ContainerVolumeArchiver{Runtime: client},
+			SqliteSnapshotter: &backup.ContainerSqliteSnapshotter{Runtime: client},
+			Uploader:          backup.S3Uploader{},
 		}
 		backupVerifyRunner = &backup.VerifyRunner{
 			Store:      db,
@@ -3328,7 +3329,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 
 	controllers := make([]reconcile.Controller, 0, len(services))
 	for _, svc := range services {
-		svcRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, svc.NodeID)
+		svcRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, svc.NodeID))
 		if err != nil {
 			deps.logger.Warn("skipping service for this reconcile pass: node transport unavailable",
 				slog.String("service", svc.Name), slog.String("node_id", svc.NodeID), slog.String("error", err.Error()))
@@ -3349,7 +3350,7 @@ func appControllersFor(deps dynamicSourceDeps, services []store.DesiredService) 
 func databaseControllersFor(ctx context.Context, deps dynamicSourceDeps, databases []store.DesiredDatabase) []reconcile.Controller {
 	controllers := make([]reconcile.Controller, 0, len(databases))
 	for _, desired := range databases {
-		dbRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, desired.NodeID)
+		dbRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, runtimeNodeID(deps, desired.NodeID))
 		if err != nil {
 			deps.logger.Warn("skipping database for this reconcile pass: node transport unavailable",
 				slog.String("database", desired.Name), slog.String("node_id", desired.NodeID), slog.String("error", err.Error()))
@@ -3456,6 +3457,17 @@ func resolveNodeTransport(local docker.Runtime, registry *agent.Registry, nodeID
 		return local, nil
 	}
 	return registry.Get(nodeID)
+}
+
+// runtimeNodeID maps this process's own mesh node ID back to the local
+// sentinel (""), the same translation modelRuntimeNode already does for
+// model controllers (models_wiring.go): resolveNodeTransport only treats
+// "" as local.
+func runtimeNodeID(deps dynamicSourceDeps, nodeID string) string {
+	if nodeID == "" || nodeID == localNodeIDOf(deps) {
+		return ""
+	}
+	return nodeID
 }
 
 // bootstrapAdmin creates the first admin from APP_ADMIN_USERNAME and

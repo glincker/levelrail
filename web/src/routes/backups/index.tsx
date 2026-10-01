@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import { HelpLink } from '../../components/HelpLink'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { formatBytes, formatDate } from '../../lib/format'
 import { useBackupTargetsOptional } from '../../queries/backupTargets'
 import {
@@ -163,28 +163,26 @@ function AllBackupsPage() {
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <CloudArrowUpIcon className="size-4" aria-hidden="true" />
         </div>
-        <div className="flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <h1 className="text-lg font-semibold text-foreground">Backups</h1>
-            <HelpLink
-              path="/backups-and-storage"
-              label="Backups and storage guide"
-            />
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Every backup attempt across every database and app volume, newest
-            first. Manage a database's or app's own schedule and targets from
-            its own page. This instance's own control plane backup and disaster
-            recovery settings live under{' '}
-            <Link
-              to="/settings/control-plane-backup"
-              className="text-foreground underline-offset-2 hover:underline"
-            >
-              Settings
-            </Link>
-            .
-          </p>
-        </div>
+        <PageHeader
+          title="Backups"
+          helpPath="/backups-and-storage"
+          helpLabel="Backups and storage guide"
+          description={
+            <>
+              Every backup attempt across every database and app volume, newest
+              first. Manage a database's or app's own schedule and targets from
+              its own page. This instance's own control plane backup and
+              disaster recovery settings live under{' '}
+              <Link
+                to="/settings/control-plane-backup"
+                className="text-foreground underline-offset-2 hover:underline"
+              >
+                Settings
+              </Link>
+              .
+            </>
+          }
+        />
       </div>
 
       {history.length === 0 ? (
@@ -311,7 +309,7 @@ function AllBackupsPage() {
 function AllBackupsPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">Backups</h1>
+      <PageHeader title="Backups" />
       <TableSkeleton columnCount={9} rowCount={8} />
     </div>
   )

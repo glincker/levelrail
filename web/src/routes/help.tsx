@@ -8,6 +8,7 @@ import { QuestionIcon } from '@phosphor-icons/react/dist/ssr'
 import { HelpSearchBox } from '../components/HelpSearchBox'
 import { DocsOnThisPage } from '../components/DocsOnThisPage'
 import { loadDocsManifest } from '../lib/docsManifestLoader'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Bundled help layout: every page under it renders from /docs, imported
 // at build time (see lib/docsContent.ts and vite-plugins/docsManifest.mjs),
@@ -34,10 +35,14 @@ function HelpLayout() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <QuestionIcon className="size-5 text-muted-foreground" />
-        <h1 className="text-lg font-semibold text-foreground">Help</h1>
-      </div>
+      <PageHeader
+        title={
+          <span className="flex items-center gap-2">
+            <QuestionIcon className="size-5 text-muted-foreground" />
+            Help
+          </span>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
         <nav className="space-y-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto">

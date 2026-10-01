@@ -6,6 +6,7 @@ import { TokenTable } from '../../components/TokenTable'
 import { CreateTokenDialog } from '../../components/CreateTokenDialog'
 import { useBrand } from '../../hooks/useBrand'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Account-level, not scoped to one app, so it lives under
 // routes/settings/ rather than routes/apps/, for API token management.
@@ -33,40 +34,34 @@ function TokensPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <KeyIcon className="size-4" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">
-              API tokens
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Scoped, revocable credentials for the CLI, CI, and MCP
-              integrations. Session login only mints tokens: a token can never
-              mint or revoke another token on its own behalf.
-            </p>
-            {/* Dokploy's API-keys screen links straight to /swagger from
-                this same header: the moment someone has a credential
-                is the moment they most want to know what to do with it.
-                brand.DocsURL is a real field on the /api/v1/brand response
-                (part of the rebrandability contract), not an invented
-                route, so this only renders when the running instance
-                actually configured one. */}
-            {brand.DocsURL ? (
-              <a
-                href={brand.DocsURL}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-1 inline-block text-sm text-primary underline underline-offset-4 hover:no-underline"
-              >
-                View API docs
-              </a>
-            ) : null}
-          </div>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <KeyIcon className="size-4" />
         </div>
-        <CreateTokenDialog />
+        <div className="min-w-0 flex-1">
+          <PageHeader
+            title="API tokens"
+            description="Scoped, revocable credentials for the CLI, CI, and MCP integrations. Session login only mints tokens: a token can never mint or revoke another token on its own behalf."
+            actions={<CreateTokenDialog />}
+          />
+          {/* Dokploy's API-keys screen links straight to /swagger from
+              this same header: the moment someone has a credential
+              is the moment they most want to know what to do with it.
+              brand.DocsURL is a real field on the /api/v1/brand response
+              (part of the rebrandability contract), not an invented
+              route, so this only renders when the running instance
+              actually configured one. */}
+          {brand.DocsURL ? (
+            <a
+              href={brand.DocsURL}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 inline-block text-sm text-primary underline underline-offset-4 hover:no-underline"
+            >
+              View API docs
+            </a>
+          ) : null}
+        </div>
       </div>
       <TokenTable tokens={tokens} />
     </div>

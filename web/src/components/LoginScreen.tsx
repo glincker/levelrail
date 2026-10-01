@@ -79,7 +79,7 @@ export function LoginScreen({ setup }: { setup?: string }) {
       <div className="flex flex-col items-center gap-2 text-center">
         <div
           aria-hidden="true"
-          className="flex size-10 items-center justify-center rounded-lg bg-foreground text-base font-semibold text-background shadow-[0_0_0_4px_rgb(245_158_11_/_0.12)]"
+          className="flex size-10 items-center justify-center rounded-lg text-base font-semibold shadow-[0_0_0_4px_rgb(245_158_11_/_0.12)]"
         >
           <BrandMarkGlyph />
         </div>

@@ -353,7 +353,7 @@ func TestHandleCreateAlertRule_BackupMissingVolumeSuccess(t *testing.T) {
 	if err := db.SaveBackupTarget(context.Background(), store.BackupTarget{ID: "tgt_1", Name: "s3", Provider: "aws", Bucket: "backups"}); err != nil {
 		t.Fatalf("seed backup target: %v", err)
 	}
-	if err := db.SetServiceVolumeBackupSchedule(context.Background(), "web", "uploads", "tgt_1", "0 3 * * *", 7, 0); err != nil {
+	if err := db.SetServiceVolumeBackupSchedule(context.Background(), "web", "uploads", "tgt_1", "0 3 * * *", 7, 0, ""); err != nil {
 		t.Fatalf("seed service volume backup schedule: %v", err)
 	}
 

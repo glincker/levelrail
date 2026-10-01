@@ -25,6 +25,7 @@ import { TagsControl } from '../../components/TagsControl'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Matches the 18 real section routes under /apps/$name/* (see
 // AppScopedSidebar.tsx's own nav, the source of truth for these labels):
@@ -131,23 +132,28 @@ function AppDetailLayout() {
       </div>
       {isOverview ? null : (
         <>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold text-foreground">
-                {app.name}
-              </h1>
-              <Badge variant={status.variant}>{status.label}</Badge>
-              <ConvergenceIndicator conditions={conditions} />
-            </div>
-            <div className="flex items-center gap-2">
-              <StopStartAppButton name={app.name} suspended={app.suspended} />
-              <RestartAppButton name={app.name} />
-              <RedeployAppButton name={app.name} image={app.image} />
-              <PromoteAppDialog appName={app.name} projectId={app.project_id} />
-              <CloneAppDialog name={app.name} />
-              <DeleteAppDialog name={app.name} />
-            </div>
-          </div>
+          <PageHeader
+            title={app.name}
+            status={
+              <>
+                <Badge variant={status.variant}>{status.label}</Badge>
+                <ConvergenceIndicator conditions={conditions} />
+              </>
+            }
+            actions={
+              <>
+                <StopStartAppButton name={app.name} suspended={app.suspended} />
+                <RestartAppButton name={app.name} />
+                <RedeployAppButton name={app.name} image={app.image} />
+                <PromoteAppDialog
+                  appName={app.name}
+                  projectId={app.project_id}
+                />
+                <CloneAppDialog name={app.name} />
+                <DeleteAppDialog name={app.name} />
+              </>
+            }
+          />
 
           <TagsControl appName={app.name} tags={app.tags} />
         </>

@@ -22,6 +22,7 @@ import { ApiError } from '../../lib/apiError'
 import { useContainers } from '../../queries/containers'
 import type { ContainerPort, ContainerResource } from '../../queries/containers'
 import { ContainerRowActions } from '../../components/ContainerRowActions'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Web equivalent of "levelrail-cli containers": GET
 // /api/v1/system/containers, every container Docker knows about on this
@@ -82,13 +83,10 @@ function ContainersPage() {
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <StackIcon className="size-4" />
         </div>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Containers</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Every container on this node, whether or not it&apos;s managed by
-            this platform.
-          </p>
-        </div>
+        <PageHeader
+          title="Containers"
+          description="Every container on this node, whether or not it's managed by this platform."
+        />
       </div>
 
       {isLoading ? <ListSkeleton rows={5} /> : null}

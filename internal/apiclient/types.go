@@ -1024,6 +1024,7 @@ type VolumeBackupScheduleResource struct {
 	Schedule    string `json:"schedule,omitempty"`
 	Retain      int    `json:"retain,omitempty"`
 	RetainDays  int    `json:"retain_days,omitempty"`
+	SqlitePath  string `json:"sqlite_path,omitempty"`
 }
 
 // SetVolumeBackupScheduleRequest mirrors internal/api's
@@ -1033,6 +1034,7 @@ type SetVolumeBackupScheduleRequest struct {
 	Schedule   string `json:"schedule"`
 	Retain     int    `json:"retain,omitempty"`
 	RetainDays int    `json:"retain_days,omitempty"`
+	SqlitePath string `json:"sqlite_path,omitempty"`
 }
 
 // CloneRestoreResource mirrors internal/api's cloneRestoreResource

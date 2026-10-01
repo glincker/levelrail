@@ -22,6 +22,7 @@ import {
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { IacExportCard } from '../../components/IacExportCard'
 import { IacPlanView, IacResultView } from '../../components/IacPlanView'
 import { IacIssuesError, useApplyIac, usePlanIac } from '../../queries/iac'
@@ -107,15 +108,10 @@ function InfrastructureSettingsPage() {
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <FileCodeIcon className="size-4" />
         </div>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">
-            Infrastructure as code
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Describe projects, environments, apps, domains and databases as
-            YAML, review the plan, then apply it.
-          </p>
-        </div>
+        <PageHeader
+          title="Infrastructure as code"
+          description="Describe projects, environments, apps, domains and databases as YAML, review the plan, then apply it."
+        />
       </div>
 
       <Card>

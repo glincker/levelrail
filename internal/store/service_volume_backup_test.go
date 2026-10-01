@@ -125,7 +125,7 @@ func TestServiceVolumeBackupSchedule_SetGetClear(t *testing.T) {
 		t.Fatalf("GetServiceVolumeBackupSchedule() before any Set error = %v, want ErrServiceVolumeBackupNotFound", err)
 	}
 
-	if err := db.SetServiceVolumeBackupSchedule(ctx, "web", "data", target.ID, "0 3 * * *", 7, 30); err != nil {
+	if err := db.SetServiceVolumeBackupSchedule(ctx, "web", "data", target.ID, "0 3 * * *", 7, 30, ""); err != nil {
 		t.Fatalf("SetServiceVolumeBackupSchedule() error = %v", err)
 	}
 
@@ -149,7 +149,7 @@ func TestServiceVolumeBackupSchedule_SetGetClear(t *testing.T) {
 	// layer implements "clear the schedule": ListScheduledServiceVolumes
 	// must then stop returning it, the same "" sentinel
 	// SetDatabaseBackupSchedule already establishes for databases.
-	if err := db.SetServiceVolumeBackupSchedule(ctx, "web", "data", "", "", 0, 0); err != nil {
+	if err := db.SetServiceVolumeBackupSchedule(ctx, "web", "data", "", "", 0, 0, ""); err != nil {
 		t.Fatalf("SetServiceVolumeBackupSchedule() clear error = %v", err)
 	}
 	scheduled, err = db.ListScheduledServiceVolumes(ctx)
