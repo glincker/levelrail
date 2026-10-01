@@ -3,6 +3,7 @@ import { Toast as ToastPrimitive } from '@base-ui/react/toast'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { recordToastHistory } from '@/components/shell/toastHistory'
 import {
   XIcon,
   CheckCircleIcon,
@@ -12,7 +13,25 @@ import {
   SpinnerIcon,
 } from '@phosphor-icons/react/dist/ssr'
 
-const toast = ToastPrimitive.createToastManager()
+const baseToast = ToastPrimitive.createToastManager()
+
+// Error toasts auto-dismiss and leave no record, so mirror them into the
+// notification center's history. Every other method passes through untouched.
+const toast: typeof baseToast = {
+  ...baseToast,
+  add: (options) => {
+    if (options.type === 'error' && typeof options.title === 'string') {
+      recordToastHistory({
+        title: options.title,
+        description:
+          typeof options.description === 'string'
+            ? options.description
+            : undefined,
+      })
+    }
+    return baseToast.add(options)
+  },
+}
 
 function ToastProvider({ ...props }: ToastPrimitive.Provider.Props) {
   return <ToastPrimitive.Provider {...props} />

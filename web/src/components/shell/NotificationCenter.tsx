@@ -22,6 +22,7 @@ import {
   type ShellNotification,
 } from './notifications'
 import { setReadIds, useReadIds } from './readStore'
+import { clearToastHistory, useToastHistory } from './toastHistory'
 
 const SEVERITY_DOT: Record<ShellNotification['severity'], string> = {
   critical: 'bg-destructive',
@@ -38,10 +39,12 @@ export function NotificationCenter() {
     refetchInterval: pollUnlessMissing(30_000),
   })
   const { ids, set } = useReadIds()
+  const toastHistory = useToastHistory()
   const list = buildNotifications({
     failedDeploys: failed.data,
     approvals: approvals.data,
     activity: activity.events,
+    toastHistory: [...toastHistory],
   })
   const unread = unreadCount(list, set)
   const groups = groupNotifications(list)
@@ -101,8 +104,17 @@ export function NotificationCenter() {
           <div className="flex max-h-96 flex-col gap-2 overflow-y-auto">
             {groups.map((g) => (
               <section key={g.group} aria-label={g.label}>
-                <h3 className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                <h3 className="flex items-center justify-between px-2 py-1 text-xs font-medium text-muted-foreground">
                   {g.label}
+                  {g.group === 'recent' ? (
+                    <button
+                      type="button"
+                      className="text-xs font-normal underline-offset-2 hover:underline"
+                      onClick={() => clearToastHistory()}
+                    >
+                      Clear
+                    </button>
+                  ) : null}
                 </h3>
                 <ul>
                   {g.items.map((n) => (

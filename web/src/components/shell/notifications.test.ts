@@ -47,6 +47,48 @@ describe('notifications', () => {
     ])
   })
 
+  it('maps toast history into the recent group with critical severity', () => {
+    const withToasts = buildNotifications({
+      toastHistory: [
+        { id: 't1', title: 'Deploy failed', timestamp: Date.now() },
+        {
+          id: 't2',
+          title: 'Build failed',
+          description: 'out of disk space',
+          timestamp: Date.now(),
+        },
+      ],
+    })
+    expect(withToasts).toEqual([
+      expect.objectContaining({
+        id: 'toast:t1',
+        group: 'recent',
+        severity: 'critical',
+        title: 'Deploy failed',
+      }),
+      expect.objectContaining({
+        id: 'toast:t2',
+        group: 'recent',
+        severity: 'critical',
+        title: 'Build failed',
+        detail: 'out of disk space',
+      }),
+    ])
+    expect(groupNotifications(withToasts).map((g) => g.group)).toEqual([
+      'recent',
+    ])
+  })
+
+  it('tracks read state for recent toast notifications like any other group', () => {
+    const withToasts = buildNotifications({
+      toastHistory: [{ id: 't1', title: 'Deploy failed', timestamp: 0 }],
+    })
+    expect(unreadCount(withToasts, new Set())).toBe(1)
+    const read = markAllRead(new Set(), withToasts)
+    expect(read).toContain('toast:t1')
+    expect(unreadCount(withToasts, new Set(read))).toBe(0)
+  })
+
   it('counts unread and marks all read', () => {
     expect(unreadCount(list, new Set())).toBe(3)
     expect(unreadCount(list, new Set(['deploy:d1']))).toBe(2)

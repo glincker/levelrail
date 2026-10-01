@@ -1,14 +1,17 @@
 import type { ActivityEvent } from '../../queries/activity'
 import type { FailedDeploy } from '../../queries/failedDeploys'
 import type { DeployApprovalResource } from '../../types/deployApproval'
+import type { ToastHistoryEntry } from './toastHistory'
 import { formatAge } from '../../lib/format'
 
-export type NotificationGroup = 'deploys' | 'alerts' | 'approvals' | 'system'
+export type NotificationGroup =
+  'deploys' | 'alerts' | 'approvals' | 'recent' | 'system'
 
 export const GROUP_ORDER: NotificationGroup[] = [
   'approvals',
   'deploys',
   'alerts',
+  'recent',
   'system',
 ]
 
@@ -16,6 +19,7 @@ export const GROUP_LABELS: Record<NotificationGroup, string> = {
   approvals: 'Approvals',
   deploys: 'Deploys',
   alerts: 'Alerts',
+  recent: 'Recent alerts',
   system: 'System',
 }
 
@@ -32,6 +36,7 @@ export function buildNotifications(src: {
   failedDeploys?: FailedDeploy[]
   approvals?: DeployApprovalResource[]
   activity?: ActivityEvent[]
+  toastHistory?: ToastHistoryEntry[]
 }): ShellNotification[] {
   const out: ShellNotification[] = []
   for (const a of src.approvals ?? []) {
@@ -62,6 +67,16 @@ export function buildNotifications(src: {
       title: e.title,
       detail: e.detail,
       href: e.href,
+    })
+  }
+  for (const t of src.toastHistory ?? []) {
+    out.push({
+      id: `toast:${t.id}`,
+      group: 'recent',
+      severity: 'critical',
+      title: t.title,
+      detail: t.description || formatAge(new Date(t.timestamp).toISOString()),
+      href: '/',
     })
   }
   return out
