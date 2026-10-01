@@ -51,10 +51,34 @@ type spaHandler struct {
 // (/apps, /apps/foo, /apps/foo/env, ...) has no matching file on disk,
 // only the app shell that renders them.
 func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	setDashboardSecurityHeaders(w.Header())
 	name := strings.TrimPrefix(r.URL.Path, "/")
 	if _, err := fs.Stat(h.dist, name); err != nil {
 		http.ServeFileFS(w, r, h.dist, "index.html")
 		return
 	}
 	h.fileServer.ServeHTTP(w, r)
+}
+
+// dashboardCSP mirrors internal/api's contentSecurityPolicy; img-src also
+// allows https: because bundled docs pages embed remote badge images.
+const dashboardCSP = "default-src 'self'; " +
+	"script-src 'self'; " +
+	"style-src 'self' 'unsafe-inline'; " +
+	"img-src 'self' data: https:; " +
+	"font-src 'self' data:; " +
+	"connect-src 'self'; " +
+	"object-src 'none'; " +
+	"base-uri 'self'; " +
+	"form-action 'self'; " +
+	"frame-ancestors 'none'"
+
+// setDashboardSecurityHeaders guards the HTML document itself: the API's
+// header middleware never wraps this handler, so without it the dashboard
+// could be framed (clickjacking) and ran with no CSP at all.
+func setDashboardSecurityHeaders(h http.Header) {
+	h.Set("X-Content-Type-Options", "nosniff")
+	h.Set("X-Frame-Options", "DENY")
+	h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+	h.Set("Content-Security-Policy", dashboardCSP)
 }
