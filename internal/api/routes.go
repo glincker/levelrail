@@ -55,9 +55,20 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// AbilityRead like system/status above.
 	mux.HandleFunc("GET /api/v1/system/doctor", rt.requireAbility(AbilityRead, rt.handleSystemDoctor))
 	// Every container on this node, Levelrail-managed or not (containers.go's
-	// own doc comment on why this is read-only, no stop/restart action
-	// here), AbilityRead like system/status above.
+	// own doc comment on why a Managed one stays read-only here),
+	// AbilityRead like system/status above.
 	mux.HandleFunc("GET /api/v1/system/containers", rt.requireAbility(AbilityRead, rt.handleListContainers))
+	// Orphaned containers only (containers_orphaned.go's
+	// requireOrphanedContainer re-confirms this server-side on every
+	// call, never trusting the client). Stop/remove are raw docker-level
+	// mutations fleet-wide, not scoped to one app's own desired state:
+	// AbilityRoot, the same tier system/prune and orphaned volume
+	// cleanup already sit behind. Claim creates an ordinary app through
+	// the same path POST /api/v1/apps itself uses, so it stays
+	// AbilityWrite, that route's own tier.
+	mux.HandleFunc("POST /api/v1/system/containers/{name}/stop", rt.requireAbility(AbilityRoot, rt.handleStopOrphanedContainer))
+	mux.HandleFunc("POST /api/v1/system/containers/{name}/remove", rt.requireAbility(AbilityRoot, rt.handleRemoveOrphanedContainer))
+	mux.HandleFunc("POST /api/v1/system/containers/{name}/claim", rt.requireAbility(AbilityWrite, rt.handleClaimOrphanedContainer))
 	// POST /system/prune deletes real Docker resources (stopped
 	// containers, dangling images, anonymous volumes, unused build
 	// cache) fleet-wide, not scoped to one app: AbilityRoot, the same

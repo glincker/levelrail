@@ -728,6 +728,27 @@ type OrphanedVolumeManager interface {
 	RemoveVolume(ctx context.Context, name string) error
 }
 
+// OrphanedContainerManager is the surface POST
+// /api/v1/system/containers/{name}/stop and .../remove need: stop or
+// remove one container by ID. Unlike ContainerLister, which only reads,
+// this is the mutating half, the same read/destructive-action split
+// DockerDiskUsager/DockerPruner and OrphanedVolumeManager's own
+// list/remove pair already establish. Deliberately narrower than
+// docker.Runtime (just the two methods these routes call), the same
+// "consumer-defined boundary, no second divergent surface" reasoning
+// DockerPinger/ImageLister give; *docker.Client satisfies this
+// structurally via Stop and Remove (internal/docker/client.go).
+//
+// isManagedContainer (containers_orphaned.go), not this package's
+// callers of this interface, decides which containers these methods may
+// ever be invoked against: every route calling it re-confirms a
+// container is genuinely orphaned before calling Stop/Remove, never
+// trusting a client-supplied flag.
+type OrphanedContainerManager interface {
+	Stop(ctx context.Context, id string, timeout time.Duration) error
+	Remove(ctx context.Context, id string, force bool) error
+}
+
 // RegistryAuthTester is the surface POST
 // /api/v1/registry-credentials/{id}/test needs: ask the control plane's
 // own local Docker daemon to authenticate against a registry host with a
