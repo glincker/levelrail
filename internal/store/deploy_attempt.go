@@ -2,14 +2,14 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // DeployAttempt is one row-per-attempt entry in the deploy_attempts
@@ -284,23 +284,13 @@ const (
 // otherwise-opaque random ID, useful in logs and URLs.
 const deployAttemptIDPrefix = "dep_"
 
-// NewDeployAttemptID generates an opaque, URL-safe deploy-attempt
-// identifier, minted the same way internal/api/tokens.go's
-// randomTokenID mints an API token ID (fixed-length crypto/rand bytes,
-// base64 URL encoding, a short prefix). Exported and placed in this
-// package, unlike
-// randomTokenID which stays private to internal/api: more than one
-// package needs to mint one of these. The plain image-tag and manual
-// build triggers both live in internal/api, but the git webhook
-// receiver (internal/webhook) is a separate package needing the
-// identical scheme, and duplicating the byte-length/encoding choice in
-// two places would risk them silently drifting apart.
+// NewDeployAttemptID mints a random deployAttemptIDPrefix ID via idgen.
 func NewDeployAttemptID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New(deployAttemptIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("store: generate deploy attempt id: %w", err)
 	}
-	return deployAttemptIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // SaveDeployAttempt inserts a new deploy attempt row. Unlike

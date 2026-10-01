@@ -2,12 +2,12 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // Statuses recorded on an app_schedule_history row.
@@ -52,14 +52,13 @@ type AppScheduleHistoryEntry struct {
 	CreatedAt    time.Time
 }
 
-// NewAppScheduleHistoryID mints an opaque history entry ID, the same
-// shape NewAppEventID already establishes.
+// NewAppScheduleHistoryID mints a random appScheduleHistoryIDPrefix ID via idgen.
 func NewAppScheduleHistoryID() (string, error) {
-	var b [8]byte
-	if _, err := rand.Read(b[:]); err != nil {
+	id, err := idgen.New(appScheduleHistoryIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("store: mint app schedule history id: %w", err)
 	}
-	return appScheduleHistoryIDPrefix + hex.EncodeToString(b[:]), nil
+	return id, nil
 }
 
 // GetAppSchedule returns serviceName's configured schedule, or

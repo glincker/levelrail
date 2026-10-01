@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/provision"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/version"
@@ -740,12 +739,11 @@ func nodeProvisionTimeout() time.Duration {
 	return envDurationOr(nodeProvisionTimeoutEnv, defaultNodeProvisionTimeout)
 }
 
-// randomNodeProvisionID mirrors randomBackupTargetID/randomNodeJoinTokenID's
-// exact shape: 9 random bytes, URL-safe base64, a short type prefix.
+// randomNodeProvisionID mints a random "npv_" ID via idgen.
 func randomNodeProvisionID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("npv_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate node provision id: %w", err)
 	}
-	return "npv_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

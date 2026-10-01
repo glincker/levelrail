@@ -2,9 +2,7 @@ package alerting
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -12,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/netguard"
 )
 
@@ -47,17 +46,13 @@ type DeployTarget struct {
 // adapted to this table.
 const deployTargetIDPrefix = "dnt_"
 
-// NewDeployTargetID generates a random, URL-safe deploy-target
-// identifier, the same shape NewRuleID already mints for alert_rules:
-// exported so internal/api can assign one when creating a target from a
-// request body that doesn't include one, the identical "ID is never
-// caller-chosen data" reasoning NewRuleID's own doc comment gives.
+// NewDeployTargetID mints a random deployTargetIDPrefix ID via idgen.
 func NewDeployTargetID() (string, error) {
-	b := make([]byte, 12)
-	if _, err := rand.Read(b); err != nil {
+	id, err := idgen.New(deployTargetIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("alerting: generate deploy target id: %w", err)
 	}
-	return deployTargetIDPrefix + hex.EncodeToString(b), nil
+	return id, nil
 }
 
 // SaveDeployTarget creates or fully replaces a deploy target's

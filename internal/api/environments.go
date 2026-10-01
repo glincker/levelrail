@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -223,13 +222,13 @@ func (rt *Router) checkEnvironmentProtection(ctx context.Context, w http.Respons
 	return e, true, true
 }
 
-// randomEnvironmentID mirrors randomProjectID exactly.
+// randomEnvironmentID mints a random "env_" ID via idgen.
 func randomEnvironmentID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("env_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate environment id: %w", err)
 	}
-	return "env_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // EnvironmentStore is the store surface the environments handlers need.

@@ -2,12 +2,12 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // previewEnvironmentIDPrefix mirrors deployAttemptIDPrefix's own
@@ -15,15 +15,13 @@ import (
 // opaque random ID.
 const previewEnvironmentIDPrefix = "prev_"
 
-// NewPreviewEnvironmentID mints a random preview environment ID, the
-// same fixed-length crypto/rand-plus-base64 scheme NewDeployAttemptID
-// already establishes for an analogous webhook-minted identifier.
+// NewPreviewEnvironmentID mints a random previewEnvironmentIDPrefix ID via idgen.
 func NewPreviewEnvironmentID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New(previewEnvironmentIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("store: generate preview environment id: %w", err)
 	}
-	return previewEnvironmentIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // Preview environment statuses (migrations/0064_preview_environments.sql).

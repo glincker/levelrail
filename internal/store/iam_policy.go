@@ -2,12 +2,12 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // Policy is one IAM-style policy document (iam.go's Document type holds
@@ -52,24 +52,22 @@ var (
 	ErrPolicyNameExists = errors.New("store: iam policy name already exists")
 )
 
-// NewPolicyID mints a random policy ID, the same fixed-length
-// crypto/rand-plus-base64 scheme NewDeployAttemptID already establishes.
+// NewPolicyID mints a random "pol_" ID via idgen.
 func NewPolicyID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("pol_")
+	if err != nil {
 		return "", fmt.Errorf("store: generate policy id: %w", err)
 	}
-	return "pol_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
-// NewPolicyAttachmentID mints a random attachment ID, same scheme as
-// NewPolicyID.
+// NewPolicyAttachmentID mints a random "pola_" ID via idgen.
 func NewPolicyAttachmentID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("pola_")
+	if err != nil {
 		return "", fmt.Errorf("store: generate policy attachment id: %w", err)
 	}
-	return "pola_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // SavePolicy creates a new policy. Policies are never updated in place

@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -324,14 +323,11 @@ func (rt *Router) handleDetachAppTag(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// randomTagID mirrors randomFeatureFlagID's exact shape (9 random
-// bytes, URL-safe base64, a short type prefix), duplicated rather than
-// shared for the same "different resource, different ID space" reason
-// randomFeatureFlagID's own doc comment gives.
+// randomTagID mints a random "tag_" ID via idgen.
 func randomTagID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("tag_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate tag id: %w", err)
 	}
-	return "tag_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

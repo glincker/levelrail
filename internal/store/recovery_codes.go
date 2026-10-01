@@ -2,10 +2,10 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // ReplaceUserRecoveryCodes atomically deletes every existing recovery
@@ -91,10 +91,11 @@ func (db *DB) DeleteUserRecoveryCodes(ctx context.Context, userID string) error 
 	return nil
 }
 
+// randomRecoveryCodeID mints a random "rc_" ID via idgen.
 func randomRecoveryCodeID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("rc_")
+	if err != nil {
 		return "", fmt.Errorf("generate recovery code row id: %w", err)
 	}
-	return "rc_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -367,13 +366,11 @@ func (rt *Router) handleListPITRRestoreHistory(w http.ResponseWriter, r *http.Re
 	writeJSON(w, http.StatusOK, out)
 }
 
-// randomPITRRestoreHistoryID mirrors randomRestoreHistoryID's exact
-// shape (restore.go), with its own "pitr_" prefix so a PITR restore
-// history ID is never visually confusable with an ordinary restore's.
+// randomPITRRestoreHistoryID mints a random "pitr_" ID via idgen.
 func randomPITRRestoreHistoryID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("pitr_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate pitr restore history id: %w", err)
 	}
-	return "pitr_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cronexpr"
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -351,14 +350,11 @@ func (rt *Router) handleRunScheduledTaskNow(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusAccepted, toScheduledTaskResource(task))
 }
 
-// randomScheduledTaskID mirrors randomBackupTargetID's exact shape (9
-// random bytes, URL-safe base64, a short type prefix). Duplicated rather
-// than shared, the same "different resource, different ID space"
-// reasoning randomBackupTargetID's own doc comment gives.
+// randomScheduledTaskID mints a random "sct_" ID via idgen.
 func randomScheduledTaskID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("sct_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate scheduled task id: %w", err)
 	}
-	return "sct_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

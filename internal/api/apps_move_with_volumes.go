@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -343,10 +342,11 @@ func (rt *Router) handleGetAppVolumeMove(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, toAppVolumeMoveResource(m))
 }
 
+// randomAppVolumeMoveID mints a random "avm_" ID via idgen.
 func randomAppVolumeMoveID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("avm_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate app volume move id: %w", err)
 	}
-	return "avm_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

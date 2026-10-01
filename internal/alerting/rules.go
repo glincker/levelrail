@@ -2,12 +2,12 @@ package alerting
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // Kind distinguishes what a Rule evaluates.
@@ -187,17 +187,13 @@ type Rule struct {
 // ErrRuleNotFound is returned by GetRule when no rule has that ID.
 var ErrRuleNotFound = errors.New("alerting: rule not found")
 
-// NewRuleID generates a random, URL-safe rule identifier. Exported so
-// internal/api can assign one when creating a rule from a request body
-// that doesn't include one, matching how a rule's ID is never
-// caller-chosen data (avoids a client picking a colliding or
-// predictable ID).
+// NewRuleID mints a random "rule_" ID via idgen.
 func NewRuleID() (string, error) {
-	b := make([]byte, 12)
-	if _, err := rand.Read(b); err != nil {
+	id, err := idgen.New("rule_")
+	if err != nil {
 		return "", fmt.Errorf("alerting: generate rule id: %w", err)
 	}
-	return hex.EncodeToString(b), nil
+	return id, nil
 }
 
 // SaveRule creates or fully replaces a rule's configuration. Does not

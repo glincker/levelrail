@@ -1,10 +1,10 @@
 package api
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"net/http"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // registerStorageRoutes wires storage destinations and log archive. Reads
@@ -34,10 +34,11 @@ func (rt *Router) registerStorageRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/log-archive/objects/download", rt.requireAbility(AbilityRead, rt.handleDownloadLogArchiveObject))
 }
 
+// randomLogArchiveID mints a random ID with the given prefix via idgen.
 func randomLogArchiveID(prefix string) (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New(prefix)
+	if err != nil {
 		return "", fmt.Errorf("api: generate %s id: %w", prefix, err)
 	}
-	return prefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

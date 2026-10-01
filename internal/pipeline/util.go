@@ -2,8 +2,6 @@ package pipeline
 
 import (
 	"bufio"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"regexp"
@@ -11,12 +9,16 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
+// randomID mints an unprefixed random ID via idgen.
 func randomID() string {
-	b := make([]byte, 12)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
+	// Unprefixed: shortID keeps only the first 8 chars for container names.
+	// crypto/rand cannot fail on supported Go versions (1.24+).
+	id, _ := idgen.New("")
+	return id
 }
 
 func shortID(id string) string {

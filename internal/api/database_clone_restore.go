@@ -2,14 +2,13 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -239,14 +238,11 @@ func (rt *Router) handleListCloneRestores(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusOK, out)
 }
 
-// randomCloneRestoreID mirrors randomRestoreHistoryID's exact shape, with
-// its own "clr_" prefix so a clone-restore ID is never visually
-// confusable with a restore-history ID ("rsh_") or a backup-history ID
-// ("bkh_") in a log line or error message.
+// randomCloneRestoreID mints a random "clr_" ID via idgen.
 func randomCloneRestoreID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("clr_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate clone restore id: %w", err)
 	}
-	return "clr_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

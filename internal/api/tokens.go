@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -196,14 +195,11 @@ func MintAgentAPIToken(ctx context.Context, tokens TokenStore, name string, abil
 	return plaintext, rec, nil
 }
 
-// randomTokenID generates a short, URL-safe, non-secret identifier for
-// a token row: distinct from the token's own secret value (hashToken
-// covers that), this is just a stable handle a client uses to name the
-// token in list/revoke calls, safe to log and display.
+// randomTokenID mints a token row's non-secret "tok_" handle via idgen.
 func randomTokenID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("tok_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate token id: %w", err)
 	}
-	return "tok_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

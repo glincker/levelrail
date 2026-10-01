@@ -2,13 +2,13 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // AI chat role values. "tool" carries a tool_result turn (either an
@@ -99,17 +99,13 @@ type AIChatConfirmation struct {
 	ResolvedAt *time.Time
 }
 
-// newAIChatID mints an opaque, random identifier prefixed for the kind of
-// row it names, the same shape NewDeployAttemptID already establishes for
-// deploy attempts: no database-assigned sequence, so an id is know-able
-// (and usable as a confirmation_id in an SSE event) before any row is
-// persisted.
+// newAIChatID mints a random ID with the given prefix via idgen.
 func newAIChatID(prefix string) (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New(prefix)
+	if err != nil {
 		return "", fmt.Errorf("store: generate %s id: %w", prefix, err)
 	}
-	return prefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // NewAIChatSessionID mints a session id.

@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -161,17 +160,13 @@ func (rt *Router) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// randomProjectID mirrors randomBackupTargetID/randomTokenID exactly:
-// 9 random bytes, URL-safe base64, a short type prefix. Duplicated
-// rather than shared, the same "different resource, different ID
-// space, nothing depends on them being interchangeable" reasoning those
-// functions' own doc comments already give each other.
+// randomProjectID mints a random "proj_" ID via idgen.
 func randomProjectID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("proj_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate project id: %w", err)
 	}
-	return "proj_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // validateProjectID checks a candidate project_id the same way

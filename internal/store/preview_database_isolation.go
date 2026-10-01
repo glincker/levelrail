@@ -2,23 +2,22 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"fmt"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 const previewDatabaseIsolationIDPrefix = "pdbi_"
 
-// NewPreviewDatabaseIsolationID mints a random tracking row ID, the same
-// scheme NewPreviewEphemeralDatabaseID already establishes.
+// NewPreviewDatabaseIsolationID mints a random previewDatabaseIsolationIDPrefix ID via idgen.
 func NewPreviewDatabaseIsolationID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New(previewDatabaseIsolationIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("store: generate preview database isolation id: %w", err)
 	}
-	return previewDatabaseIsolationIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // Preview database isolation statuses (migrations/0232_preview_database_isolations.sql).

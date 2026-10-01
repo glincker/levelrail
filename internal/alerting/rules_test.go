@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -33,6 +34,9 @@ func TestNewRuleID_UniqueAndNonEmpty(t *testing.T) {
 	}
 	if a == b {
 		t.Error("two calls to NewRuleID() returned the same ID")
+	}
+	if !strings.HasPrefix(a, "rule_") {
+		t.Errorf("NewRuleID() = %q, want rule_ prefix", a)
 	}
 }
 

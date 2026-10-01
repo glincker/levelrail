@@ -2,13 +2,13 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"runtime/debug"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // requestIDContextKey is unexported, the standard "don't collide with
@@ -23,12 +23,10 @@ type requestIDContextKey struct{}
 // through rather than replaced.
 const requestIDHeader = "X-Request-Id"
 
-// newRequestID mints an opaque, URL-safe correlation ID, the same
-// crypto/rand-plus-base64 shape randomTokenID (tokens.go) already
-// establishes for a different kind of ID.
+// newRequestID mints a random "req_" ID via idgen.
 func newRequestID() string {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("req_")
+	if err != nil {
 		// crypto/rand failing at all is a sign of a broken host, not
 		// something a request ID's own generation should ever surface
 		// as a 500: fall back to a fixed, obviously-synthetic value so
@@ -36,7 +34,7 @@ func newRequestID() string {
 		// itself failing.
 		return "req_unavailable"
 	}
-	return "req_" + base64.RawURLEncoding.EncodeToString(buf)
+	return id
 }
 
 // requestIDFromContext returns the current request's ID, or "" if

@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -356,14 +355,11 @@ func featureFlagBucket(flagID, identifier string) uint32 {
 	return h.Sum32() % 100
 }
 
-// randomFeatureFlagID mirrors randomScheduledTaskID's exact shape (9
-// random bytes, URL-safe base64, a short type prefix). Duplicated rather
-// than shared, the same "different resource, different ID space"
-// reasoning randomScheduledTaskID's own doc comment gives.
+// randomFeatureFlagID mints a random "ff_" ID via idgen.
 func randomFeatureFlagID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("ff_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate feature flag id: %w", err)
 	}
-	return "ff_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

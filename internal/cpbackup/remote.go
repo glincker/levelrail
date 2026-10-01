@@ -2,13 +2,13 @@ package cpbackup
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 const (
@@ -28,12 +28,13 @@ type Remote struct {
 	Modified time.Time `json:"-"`
 }
 
+// newInstallID mints a random "inst-" ID via idgen.
 func newInstallID() (string, error) {
-	b := make([]byte, 8)
-	if _, err := rand.Read(b); err != nil {
+	id, err := idgen.New("inst-")
+	if err != nil {
 		return "", fmt.Errorf("generate install id: %w", err)
 	}
-	return "inst-" + hex.EncodeToString(b), nil
+	return id, nil
 }
 
 func installPrefix(installID string) string { return Prefix + "/" + installID + "/" }

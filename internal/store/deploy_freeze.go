@@ -2,11 +2,11 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // DeployFreezeScopeGlobal applies a freeze window to every app.
@@ -106,10 +106,11 @@ func (db *DB) ReplaceDeployFreezeWindows(ctx context.Context, scope string, wind
 	return out, nil
 }
 
+// newFreezeWindowID mints a random "frz_" ID via idgen.
 func newFreezeWindowID() (string, error) {
-	buf := make([]byte, 8)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("frz_")
+	if err != nil {
 		return "", fmt.Errorf("store: generate freeze window id: %w", err)
 	}
-	return "frz_" + hex.EncodeToString(buf), nil
+	return id, nil
 }

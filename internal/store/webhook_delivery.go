@@ -2,13 +2,13 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // MaxWebhookDeliveryPayloadBytes bounds how much of a webhook delivery's
@@ -60,16 +60,13 @@ type WebhookDelivery struct {
 
 const webhookDeliveryIDPrefix = "whd_"
 
-// NewWebhookDeliveryID generates an opaque, URL-safe webhook-delivery
-// identifier, the same mint scheme NewDeployAttemptID already
-// establishes (fixed-length crypto/rand bytes, base64 URL encoding, a
-// short prefix).
+// NewWebhookDeliveryID mints a random webhookDeliveryIDPrefix ID via idgen.
 func NewWebhookDeliveryID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New(webhookDeliveryIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("store: generate webhook delivery id: %w", err)
 	}
-	return webhookDeliveryIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // SaveWebhookDelivery inserts a new webhook delivery row, truncating

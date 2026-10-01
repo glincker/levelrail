@@ -2,13 +2,12 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -212,15 +211,11 @@ func (rt *Router) checkedByFromRequest(r *http.Request) string {
 	return "unknown"
 }
 
-// randomBackupVerificationID mirrors randomBackupHistoryID's exact shape,
-// the same "different resource, different ID space" reasoning that
-// function's own doc comment gives, with its own "bkv_" prefix so a
-// verification ID and the backup history ID it names are never visually
-// confusable.
+// randomBackupVerificationID mints a random "bkv_" ID via idgen.
 func randomBackupVerificationID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("bkv_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate backup verification id: %w", err)
 	}
-	return "bkv_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

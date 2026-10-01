@@ -2,27 +2,25 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // branchEnvOverrideIDPrefix mirrors previewEnvironmentIDPrefix's own
 // scheme: a short, greppable prefix on an otherwise opaque random ID.
 const branchEnvOverrideIDPrefix = "benv_"
 
-// NewBranchEnvOverrideID mints a random branch env override ID, the
-// same crypto/rand-plus-base64 scheme NewPreviewEnvironmentID already
-// establishes.
+// NewBranchEnvOverrideID mints a random branchEnvOverrideIDPrefix ID via idgen.
 func NewBranchEnvOverrideID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New(branchEnvOverrideIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("store: generate branch env override id: %w", err)
 	}
-	return branchEnvOverrideIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // ErrBranchEnvOverrideNotFound means no row exists for the id a caller

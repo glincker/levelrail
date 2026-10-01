@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -12,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -102,10 +101,11 @@ func deploymentStateFor(status int, message string) githubapp.DeploymentState {
 	return githubapp.DeploymentSuccess
 }
 
+// newForgeDeploymentID mints a random "fdep_" ID via idgen.
 func newForgeDeploymentID() string {
-	buf := make([]byte, 9)
-	_, _ = rand.Read(buf)
-	return "fdep_" + hex.EncodeToString(buf)
+	// crypto/rand cannot fail on supported Go versions (1.24+).
+	id, _ := idgen.New("fdep_")
+	return id
 }
 
 func (d *forgeDeployment) post(ctx context.Context, state githubapp.DeploymentState, description string) string {

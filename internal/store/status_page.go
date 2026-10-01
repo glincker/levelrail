@@ -2,13 +2,13 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // StatusPageSettings is the single settings row for the public status page.
@@ -71,13 +71,13 @@ var (
 	ErrStatusIncidentNotFound  = errors.New("store: status incident not found")
 )
 
-// NewStatusID mints an identifier with the given prefix.
+// NewStatusID mints a random ID with the given prefix via idgen.
 func NewStatusID(prefix string) (string, error) {
-	b := make([]byte, 10)
-	if _, err := rand.Read(b); err != nil {
+	id, err := idgen.New(prefix)
+	if err != nil {
 		return "", fmt.Errorf("store: generate status id: %w", err)
 	}
-	return prefix + hex.EncodeToString(b), nil
+	return id, nil
 }
 
 func statusTime(t time.Time) string { return t.UTC().Format(time.RFC3339Nano) }

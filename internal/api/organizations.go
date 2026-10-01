@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -146,13 +145,13 @@ func (rt *Router) handleSetProjectOrganization(w http.ResponseWriter, r *http.Re
 	writeJSON(w, http.StatusOK, toProjectResource(p))
 }
 
-// randomOrganizationID mirrors randomProjectID exactly.
+// randomOrganizationID mints a random "org_" ID via idgen.
 func randomOrganizationID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("org_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate organization id: %w", err)
 	}
-	return "org_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // OrganizationStore is the store surface the organizations handlers need.

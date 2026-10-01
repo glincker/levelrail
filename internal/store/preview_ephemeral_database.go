@@ -2,24 +2,22 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"fmt"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 const previewEphemeralDatabaseIDPrefix = "pedb_"
 
-// NewPreviewEphemeralDatabaseID mints a random ephemeral database
-// tracking row ID, the same scheme NewPreviewEnvironmentID already
-// establishes for its own webhook-minted identifier.
+// NewPreviewEphemeralDatabaseID mints a random previewEphemeralDatabaseIDPrefix ID via idgen.
 func NewPreviewEphemeralDatabaseID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New(previewEphemeralDatabaseIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("store: generate preview ephemeral database id: %w", err)
 	}
-	return previewEphemeralDatabaseIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // Preview ephemeral database statuses (migrations/0092_preview_ephemeral_databases.sql).

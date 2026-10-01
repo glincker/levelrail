@@ -6,6 +6,8 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 const (
@@ -37,11 +39,11 @@ func KeyMatches(plaintext, storedHash string) bool {
 	return subtle.ConstantTimeCompare([]byte(HashAPIKey(plaintext)), []byte(storedHash)) == 1
 }
 
-// NewKeyID returns a random identifier for a virtual key.
+// NewKeyID mints a random "key-" ID via idgen.
 func NewKeyID() (string, error) {
-	buf := make([]byte, 8)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("key-")
+	if err != nil {
 		return "", fmt.Errorf("models: generate key id: %w", err)
 	}
-	return "key-" + hex.EncodeToString(buf), nil
+	return id, nil
 }

@@ -2,8 +2,6 @@ package backup
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cronexpr"
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -527,30 +526,20 @@ func scheduledBackupContainerName(dbName string) string {
 	return "db-" + dbName
 }
 
-// randomScheduledBackupHistoryID mirrors internal/api/backups.go's own
-// randomBackupHistoryID exactly (9 random bytes, URL-safe base64, the
-// same "bkh_" prefix): a scheduled run and a manually triggered one
-// write to the identical backup_history table and should be visually
-// indistinguishable as backup history entries, since from
-// store.BackupHistory's own perspective they are the same kind of row,
-// only the trigger differs. Duplicated rather than imported, the same
-// boundary reasoning scheduledBackupContainerName's own doc comment
-// gives.
+// randomScheduledBackupHistoryID mints a random "bkh_" ID via idgen.
 func randomScheduledBackupHistoryID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("bkh_")
+	if err != nil {
 		return "", fmt.Errorf("backup: generate scheduled backup history id: %w", err)
 	}
-	return "bkh_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
-// randomScheduledBackupVerificationID mirrors api's own
-// randomBackupVerificationID (backup_verify.go): 9 random bytes,
-// URL-safe base64, "bkv_" prefix.
+// randomScheduledBackupVerificationID mints a random "bkv_" ID via idgen.
 func randomScheduledBackupVerificationID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("bkv_")
+	if err != nil {
 		return "", fmt.Errorf("backup: generate scheduled backup verification id: %w", err)
 	}
-	return "bkv_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

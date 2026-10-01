@@ -2,11 +2,11 @@ package alerting
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // History event names.
@@ -60,13 +60,13 @@ type HistoryFilter struct {
 	Limit   int
 }
 
-// NewHistoryID generates a random history identifier.
+// NewHistoryID mints a random "ah_" ID via idgen.
 func NewHistoryID() (string, error) {
-	b := make([]byte, 12)
-	if _, err := rand.Read(b); err != nil {
+	id, err := idgen.New("ah_")
+	if err != nil {
 		return "", fmt.Errorf("alerting: generate history id: %w", err)
 	}
-	return "ah_" + hex.EncodeToString(b), nil
+	return id, nil
 }
 
 // RecordHistory appends one entry. Insert-only.

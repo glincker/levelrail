@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/gpu"
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -643,15 +642,11 @@ func (rt *Router) mintNodeJoinToken(ctx context.Context, ttl time.Duration) (min
 	return mintedJoinToken{plaintext: plaintext, expiresAt: rec.ExpiresAt}, nil
 }
 
-// randomNodeJoinTokenID generates a short, URL-safe, non-secret
-// identifier for a join-token row, the exact shape randomTokenID
-// (tokens.go) already establishes for API tokens, duplicated rather than
-// shared: the two ID spaces are for genuinely different resources and
-// nothing depends on them being interchangeable.
+// randomNodeJoinTokenID mints a random "njt_" ID via idgen.
 func randomNodeJoinTokenID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("njt_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate node join token id: %w", err)
 	}
-	return "njt_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

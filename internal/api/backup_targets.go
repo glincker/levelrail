@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +11,7 @@ import (
 
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -417,16 +416,11 @@ func backupTargetTestErrorMessage(err error) string {
 	return fmt.Sprintf("could not reach backup target: %s", err.Error())
 }
 
-// randomBackupTargetID mirrors randomNodeJoinTokenID's exact shape
-// (internal/api/nodes.go): 9 random bytes, URL-safe base64, a short
-// type prefix. Duplicated rather than shared, the same "different
-// resource, different ID space, nothing depends on them being
-// interchangeable" reasoning randomNodeJoinTokenID's own doc comment
-// gives for not sharing with randomTokenID either.
+// randomBackupTargetID mints a random "bkt_" ID via idgen.
 func randomBackupTargetID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("bkt_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate backup target id: %w", err)
 	}
-	return "bkt_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

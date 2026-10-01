@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cronexpr"
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -463,15 +462,11 @@ func (rt *Router) handleClearBackupSchedule(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// randomBackupHistoryID mirrors randomBackupTargetID's exact shape
-// (backup_targets.go), which itself mirrors randomNodeJoinTokenID
-// (internal/api/nodes.go): 9 random bytes, URL-safe base64, a short type
-// prefix. Duplicated rather than shared, the same "different resource,
-// different ID space" reasoning both of those give.
+// randomBackupHistoryID mints a random "bkh_" ID via idgen.
 func randomBackupHistoryID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("bkh_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate backup history id: %w", err)
 	}
-	return "bkh_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/integrations"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -291,14 +290,11 @@ func (rt *Router) handleDetachAppIntegration(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// randomAppIntegrationID mirrors randomScheduledTaskID's exact shape (9
-// random bytes, URL-safe base64, a short type prefix). Duplicated rather
-// than shared, the same "different resource, different ID space"
-// reasoning randomScheduledTaskID's own doc comment gives.
+// randomAppIntegrationID mints a random "appint_" ID via idgen.
 func randomAppIntegrationID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("appint_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate app integration id: %w", err)
 	}
-	return "appint_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

@@ -15,8 +15,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // sessionCookieName is deliberately generic, not a brand-derived string:
@@ -141,15 +143,13 @@ func randomToken() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-// randomOpaqueID generates an opaque, URL-safe identifier with the given
-// prefix, the same shape store.NewDeployAttemptID/randomTokenID use.
-// Kept private to this package: only internal/api mints user/identity IDs.
+// randomOpaqueID mints a random ID with the given prefix via idgen.
 func randomOpaqueID(prefix string) (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New(prefix)
+	if err != nil {
 		return "", fmt.Errorf("api: generate %sid: %w", prefix, err)
 	}
-	return prefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 type loginRequest struct {

@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +12,7 @@ import (
 	cerrdefs "github.com/containerd/errdefs"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -389,11 +388,11 @@ func registryAuthTestErrorMessage(err error) string {
 	return fmt.Sprintf("could not reach registry: %s", err.Error())
 }
 
-// randomRegistryCredentialID mirrors randomBackupTargetID's exact shape.
+// randomRegistryCredentialID mints a random "regcred_" ID via idgen.
 func randomRegistryCredentialID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("regcred_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate registry credential id: %w", err)
 	}
-	return "regcred_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

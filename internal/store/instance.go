@@ -2,26 +2,24 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"fmt"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // instanceIDPrefix mirrors NewDeployAttemptID/NewAuditEntryID's own
 // "short, greppable tag on an otherwise-opaque random ID" convention.
 const instanceIDPrefix = "inst_"
 
-// NewInstanceID generates an opaque, URL-safe control-plane instance
-// identifier, minted the same way NewAuditEntryID mints its own (fixed-
-// length crypto/rand bytes, base64 URL encoding, a short prefix).
+// NewInstanceID mints a random instanceIDPrefix ID via idgen.
 func NewInstanceID() (string, error) {
-	buf := make([]byte, 16)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New(instanceIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("store: generate instance id: %w", err)
 	}
-	return instanceIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // GetOrCreateInstanceID returns this control-plane instance's own

@@ -2,11 +2,11 @@ package alerting
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // NotificationDelivery is one recorded attempt to send through a
@@ -25,13 +25,13 @@ type NotificationDelivery struct {
 
 const notificationDeliveryIDPrefix = "ndl_"
 
-// NewNotificationDeliveryID mirrors NewNotificationChannelID's exact shape.
+// NewNotificationDeliveryID mints a random notificationDeliveryIDPrefix ID via idgen.
 func NewNotificationDeliveryID() (string, error) {
-	b := make([]byte, 12)
-	if _, err := rand.Read(b); err != nil {
+	id, err := idgen.New(notificationDeliveryIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("alerting: generate notification delivery id: %w", err)
 	}
-	return notificationDeliveryIDPrefix + hex.EncodeToString(b), nil
+	return id, nil
 }
 
 // RecordNotificationDelivery persists one delivery attempt. Insert-only:

@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"math/big"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // DeviceAuthRequest is one CLI-login-from-terminal request (RFC
@@ -41,15 +43,13 @@ const (
 // GetDeviceAuthRequestByUserCode when no row matches.
 var ErrDeviceAuthRequestNotFound = errors.New("store: device auth request not found")
 
-// NewDeviceAuthRequestID mints a random device auth request ID, the
-// same crypto/rand-plus-base64 scheme NewDeployAttemptID/NewPolicyID
-// already establish.
+// NewDeviceAuthRequestID mints a random "dar_" ID via idgen.
 func NewDeviceAuthRequestID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("dar_")
+	if err != nil {
 		return "", fmt.Errorf("store: generate device auth request id: %w", err)
 	}
-	return "dar_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // NewDeviceCode mints a long, opaque, unguessable code the CLI polls

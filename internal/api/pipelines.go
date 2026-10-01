@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/pathfilter"
 	"github.com/GLINCKER/levelrail/internal/pipeline"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -184,10 +183,12 @@ func (rt *Router) runnerReady(w http.ResponseWriter) bool {
 
 var pipelineNameRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`)
 
+// newPipelineID mints an unprefixed random ID via idgen.
 func newPipelineID() string {
-	b := make([]byte, 12)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
+	// Unprefixed: pipeline container names keep only an ID's first 8 chars.
+	// crypto/rand cannot fail on supported Go versions (1.24+).
+	id, _ := idgen.New("")
+	return id
 }
 
 func (rt *Router) writePipelineIssues(w http.ResponseWriter, issues []pipeline.Issue) {

@@ -2,14 +2,14 @@ package alerting
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // Rule severities, used by silence matchers and shown in history.
@@ -178,13 +178,13 @@ func (s Silence) Status(now time.Time) string {
 // ErrSilenceNotFound is returned when no silence has that ID.
 var ErrSilenceNotFound = errors.New("alerting: silence not found")
 
-// NewSilenceID generates a random silence identifier.
+// NewSilenceID mints a random "sil_" ID via idgen.
 func NewSilenceID() (string, error) {
-	b := make([]byte, 12)
-	if _, err := rand.Read(b); err != nil {
+	id, err := idgen.New("sil_")
+	if err != nil {
 		return "", fmt.Errorf("alerting: generate silence id: %w", err)
 	}
-	return "sil_" + hex.EncodeToString(b), nil
+	return id, nil
 }
 
 // Validate checks the silence's matchers and time range.

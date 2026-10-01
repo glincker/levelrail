@@ -2,11 +2,11 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"fmt"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // ErrDeployApprovalNotFound is returned by GetDeployApproval when id
@@ -90,14 +90,13 @@ type DeployApproval struct {
 // greppable tag on an otherwise-opaque random ID" convention.
 const deployApprovalIDPrefix = "apr_"
 
-// NewDeployApprovalID generates an opaque, URL-safe deploy approval
-// identifier, minted the same way NewAuditEntryID mints its own.
+// NewDeployApprovalID mints a random deployApprovalIDPrefix ID via idgen.
 func NewDeployApprovalID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New(deployApprovalIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("store: generate deploy approval id: %w", err)
 	}
-	return deployApprovalIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // SaveDeployApproval inserts a new deploy_approvals row, insert-only:

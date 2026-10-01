@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/sshprovision"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/version"
@@ -405,11 +404,11 @@ func findNodeByName(nodes []store.Node, name string) (store.Node, bool) {
 	return store.Node{}, false
 }
 
-// randomSSHNodeProvisionID mirrors randomNodeProvisionID's exact shape.
+// randomSSHNodeProvisionID mints a random "sshp_" ID via idgen.
 func randomSSHNodeProvisionID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("sshp_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate ssh node provision id: %w", err)
 	}
-	return "sshp_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

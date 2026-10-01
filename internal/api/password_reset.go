@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,8 +9,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/store"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // passwordResetTokenTTL: upper end of the common 15-30 minute range,
@@ -25,12 +25,13 @@ const passwordResetSendTimeout = 30 * time.Second
 
 const passwordResetTokenIDPrefix = "prt_"
 
+// randomPasswordResetTokenID mints a random passwordResetTokenIDPrefix ID via idgen.
 func randomPasswordResetTokenID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New(passwordResetTokenIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("api: generate password reset token id: %w", err)
 	}
-	return passwordResetTokenIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // forgotPasswordIPKey and forgotPasswordEmailKey are two independent

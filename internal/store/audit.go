@@ -2,11 +2,11 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // AuditEntry is one recorded request that passed internal/api's
@@ -56,15 +56,13 @@ func FormatAuditTime(t time.Time) string {
 // tag on an otherwise-opaque random ID" convention.
 const auditEntryIDPrefix = "aud_"
 
-// NewAuditEntryID generates an opaque, URL-safe audit entry identifier,
-// minted the same way NewDeployAttemptID mints its own (fixed-length
-// crypto/rand bytes, base64 URL encoding, a short prefix).
+// NewAuditEntryID mints a random auditEntryIDPrefix ID via idgen.
 func NewAuditEntryID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New(auditEntryIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("store: generate audit entry id: %w", err)
 	}
-	return auditEntryIDPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }
 
 // SaveAuditEntry inserts a new audit log row. Insert-only, like

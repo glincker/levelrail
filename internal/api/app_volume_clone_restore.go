@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -12,6 +11,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -205,14 +205,11 @@ func randomHexSuffix() (string, error) {
 	return hex.EncodeToString(buf), nil
 }
 
-// randomVolumeCloneRestoreID mirrors randomCloneRestoreID's exact shape,
-// with its own "vcr_" prefix so a volume clone-restore ID is never
-// visually confusable with a database clone-restore ID ("clr_") or a
-// restore-history ID ("rsh_") in a log line or error message.
+// randomVolumeCloneRestoreID mints a random "vcr_" ID via idgen.
 func randomVolumeCloneRestoreID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("vcr_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate volume clone restore id: %w", err)
 	}
-	return "vcr_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

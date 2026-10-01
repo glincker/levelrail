@@ -2,14 +2,13 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -188,17 +187,11 @@ func (rt *Router) handleListRestoreHistory(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusOK, out)
 }
 
-// randomRestoreHistoryID mirrors randomBackupHistoryID's exact shape,
-// the same "different resource, different ID space" reasoning that
-// function's own doc comment gives, with its own "rsh_" prefix so a
-// restore history ID and a backup history ID are never visually
-// confusable in a log line or an error message even though the two
-// often appear together (a restore attempt's own ID and the backup_id it
-// names).
+// randomRestoreHistoryID mints a random "rsh_" ID via idgen.
 func randomRestoreHistoryID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	id, err := idgen.New("rsh_")
+	if err != nil {
 		return "", fmt.Errorf("api: generate restore history id: %w", err)
 	}
-	return "rsh_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return id, nil
 }

@@ -2,15 +2,14 @@ package alerting
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/idgen"
 	"github.com/GLINCKER/levelrail/internal/netguard"
 )
 
@@ -33,13 +32,13 @@ var ErrNotificationChannelNotFound = errors.New("alerting: notification channel 
 
 const notificationChannelIDPrefix = "chn_"
 
-// NewNotificationChannelID mirrors NewDeployTargetID's exact shape.
+// NewNotificationChannelID mints a random notificationChannelIDPrefix ID via idgen.
 func NewNotificationChannelID() (string, error) {
-	b := make([]byte, 12)
-	if _, err := rand.Read(b); err != nil {
+	id, err := idgen.New(notificationChannelIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("alerting: generate notification channel id: %w", err)
 	}
-	return notificationChannelIDPrefix + hex.EncodeToString(b), nil
+	return id, nil
 }
 
 // SaveNotificationChannel creates or fully replaces a channel's

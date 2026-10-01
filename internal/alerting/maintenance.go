@@ -2,9 +2,7 @@ package alerting
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +10,7 @@ import (
 	_ "time/tzdata" // window timezones must resolve on minimal container images
 
 	"github.com/GLINCKER/levelrail/internal/cronexpr"
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // Maintenance window scopes.
@@ -131,13 +130,13 @@ func (w MaintenanceWindow) Covers(c AlertContext) bool {
 // ErrMaintenanceWindowNotFound is returned when no window has that ID.
 var ErrMaintenanceWindowNotFound = errors.New("alerting: maintenance window not found")
 
-// NewMaintenanceWindowID generates a random window identifier.
+// NewMaintenanceWindowID mints a random "mw_" ID via idgen.
 func NewMaintenanceWindowID() (string, error) {
-	b := make([]byte, 12)
-	if _, err := rand.Read(b); err != nil {
+	id, err := idgen.New("mw_")
+	if err != nil {
 		return "", fmt.Errorf("alerting: generate maintenance window id: %w", err)
 	}
-	return "mw_" + hex.EncodeToString(b), nil
+	return id, nil
 }
 
 // SaveMaintenanceWindow creates or fully replaces a window.

@@ -2,14 +2,14 @@ package store
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/idgen"
 )
 
 // App event kinds recorded in app_events. Deploys and rollbacks are not
@@ -52,13 +52,13 @@ type AppEventCursor struct {
 	ID string
 }
 
-// NewAppEventID mints an opaque event ID.
+// NewAppEventID mints a random appEventIDPrefix ID via idgen.
 func NewAppEventID() (string, error) {
-	var b [8]byte
-	if _, err := rand.Read(b[:]); err != nil {
+	id, err := idgen.New(appEventIDPrefix)
+	if err != nil {
 		return "", fmt.Errorf("store: mint app event id: %w", err)
 	}
-	return appEventIDPrefix + hex.EncodeToString(b[:]), nil
+	return id, nil
 }
 
 // AddAppEvent records e, minting its ID and timestamp when unset.
