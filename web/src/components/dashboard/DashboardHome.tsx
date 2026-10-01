@@ -17,6 +17,7 @@ import { FleetTiles } from './FleetTiles'
 import { NeedsAttention } from './NeedsAttention'
 import { RecentActivity } from './RecentActivity'
 import { QuickStart } from './QuickStart'
+import { PlatformCapabilities } from './PlatformCapabilities'
 
 const RecentAlertsCard = lazy(() =>
   import('../RecentAlertsCard').then((m) => ({ default: m.RecentAlertsCard })),
@@ -89,6 +90,7 @@ export function DashboardHome({
           }
         />
         <QuickStart hasApps={false} />
+        <PlatformCapabilities />
       </div>
     )
   }
