@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
   <title>Levelrail</title>
-  <rect x="18" y="176" width="220" height="46" rx="15" fill="#06232C"/>
-  <rect x="18" y="168" width="220" height="46" rx="15" fill="#084F67"/>
-  <rect x="48" y="128" width="160" height="46" rx="15" fill="#06232C"/>
-  <rect x="48" y="120" width="160" height="46" rx="15" fill="#107292"/>
-  <rect x="78" y="80" width="100" height="46" rx="15" fill="#06232C"/>
-  <rect x="78" y="72" width="100" height="46" rx="15" fill="#58B1CE"/>
+  <rect x="10" y="174" width="236" height="68" rx="22" fill="#06232C"/>
+  <rect x="10" y="162" width="236" height="68" rx="22" fill="#084F67"/>
+  <rect x="42" y="103" width="172" height="68" rx="22" fill="#06232C"/>
+  <rect x="42" y="91" width="172" height="68" rx="22" fill="#107292"/>
+  <rect x="75" y="32" width="106" height="68" rx="22" fill="#06232C"/>
+  <rect x="75" y="20" width="106" height="68" rx="22" fill="#58B1CE"/>
 </svg>
