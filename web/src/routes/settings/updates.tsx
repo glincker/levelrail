@@ -32,6 +32,7 @@ import {
 } from '../../queries/updates'
 import type { UpdateChannel, UpdateStatus } from '../../queries/updates'
 import { UpgradePreflight } from '../../components/settings/UpgradePreflight'
+import { PageHeader } from '../../components/shell/PageHeader'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
@@ -80,12 +81,10 @@ function UpdatesSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Updates</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Current version, release channel, and available releases.
-        </p>
-      </div>
+      <PageHeader
+        title="Updates"
+        description="Current version, release channel, and available releases."
+      />
 
       <Card>
         <CardHeader>

@@ -21,6 +21,7 @@ import {
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { HelpLink } from '@/components/HelpLink'
+import { PageHeader } from '@/components/shell/PageHeader'
 import {
   systemDoctorQueryOptions,
   useSystemDoctor,
@@ -187,33 +188,33 @@ function SystemStatusPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <HeartbeatIcon className="size-4" />
-          </div>
-          <div>
-            <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
-              System status
-              <HelpLink path="/troubleshooting" label="Troubleshooting guide" />
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Preflight checks: Docker, disk, ports, database, firewall, and
-              outbound network reachability.
-            </p>
-          </div>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <HeartbeatIcon className="size-4" />
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            void refetch()
-          }}
-          disabled={isFetching}
-        >
-          <ArrowsClockwiseIcon className={isFetching ? 'animate-spin' : ''} />
-          Re-run checks
-        </Button>
+        <div className="min-w-0 flex-1">
+          <PageHeader
+            title="System status"
+            description="Preflight checks: Docker, disk, ports, database, firewall, and outbound network reachability."
+            helpPath="/troubleshooting"
+            helpLabel="Troubleshooting guide"
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  void refetch()
+                }}
+                disabled={isFetching}
+              >
+                <ArrowsClockwiseIcon
+                  className={isFetching ? 'animate-spin' : ''}
+                />
+                Re-run checks
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       <SummaryBanner ok={data.ok} checks={data.checks} />

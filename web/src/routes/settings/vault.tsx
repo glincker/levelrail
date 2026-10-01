@@ -5,6 +5,7 @@ import {
   useVaultSettings,
 } from '../../queries/vault'
 import { VaultSettingsCard } from '../../components/VaultSettingsCard'
+import { PageHeader } from '../../components/shell/PageHeader'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
@@ -43,12 +44,10 @@ function VaultSettingsPage() {
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <VaultIcon className="size-4" />
         </div>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Vault</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Resolve app secrets live from an external HashiCorp Vault instance.
-          </p>
-        </div>
+        <PageHeader
+          title="Vault"
+          description="Resolve app secrets live from an external HashiCorp Vault instance."
+        />
       </div>
 
       <VaultSettingsCard settings={settings} />

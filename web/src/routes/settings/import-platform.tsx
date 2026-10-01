@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { PlatformImportCard } from '../../components/PlatformImportCard'
 
 // Needs write:sensitive server-side (the source credential travels in the
@@ -10,16 +11,10 @@ export const Route = createFileRoute('/settings/import-platform')({
 function ImportPlatformPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">
-          Import from another platform
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Bring apps and databases over from Coolify, Dokploy or CapRover.
-          Databases and volumes start empty, and re-running skips what was
-          already imported.
-        </p>
-      </div>
+      <PageHeader
+        title="Import from another platform"
+        description="Bring apps and databases over from Coolify, Dokploy or CapRover. Databases and volumes start empty, and re-running skips what was already imported."
+      />
       <PlatformImportCard />
     </div>
   )

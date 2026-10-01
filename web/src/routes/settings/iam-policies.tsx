@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { policyListQueryOptions } from '../../queries/iamPolicies'
 import { PolicyTable } from '../../components/PolicyTable'
 import { PolicyFormDialog } from '../../components/PolicyFormDialog'
@@ -27,24 +28,19 @@ function IamPoliciesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <ShieldCheckIcon className="size-4" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">
-              IAM policies
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              A policy is additive on top of a token or user&apos;s existing
-              abilities: an explicit Deny always overrides, an explicit
-              Allow can grant access narrower than a token&apos;s global
-              scope without widening it.
-            </p>
-          </div>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <ShieldCheckIcon className="size-4" />
         </div>
-        <PolicyFormDialog trigger={<Button>Create policy</Button>} />
+        <div className="min-w-0 flex-1">
+          <PageHeader
+            title="IAM policies"
+            description="A policy is additive on top of a token or user's existing abilities: an explicit Deny always overrides, an explicit Allow can grant access narrower than a token's global scope without widening it."
+            actions={
+              <PolicyFormDialog trigger={<Button>Create policy</Button>} />
+            }
+          />
+        </div>
       </div>
       <PolicyTable policies={policies} />
     </div>

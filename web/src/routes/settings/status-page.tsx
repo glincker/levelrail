@@ -4,6 +4,7 @@ import { StatusComponentsPanel } from '../../components/StatusComponentsPanel'
 import { StatusIncidentsPanel } from '../../components/StatusIncidentsPanel'
 import { StatusPageSettingsPanel } from '../../components/StatusPageSettingsPanel'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Opt-in public status page. Off until switched on; the public page only
 // ever shows the public names and statuses chosen here.
@@ -18,14 +19,10 @@ function StatusPageSettingsRoute() {
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <BroadcastIcon className="size-4" aria-hidden="true" />
         </div>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Status page</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            A read-only public page with component status, 90 day uptime bars,
-            incidents and maintenance announcements. It exposes nothing but the
-            public names and statuses you choose.
-          </p>
-        </div>
+        <PageHeader
+          title="Status page"
+          description="A read-only public page with component status, 90 day uptime bars, incidents and maintenance announcements. It exposes nothing but the public names and statuses you choose."
+        />
       </div>
       <Tabs defaultValue="settings">
         <TabsList>
