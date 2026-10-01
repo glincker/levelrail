@@ -98,6 +98,12 @@ onMounted(() => {
 
   attachMagnetic(backToTopRef.value)
   attachMagnetic(creditsRef.value)
+
+  // Self-hosted fonts finish loading after mount and can reflow page
+  // height, leaving ScrollTrigger's cached trigger points stale.
+  if (typeof document !== 'undefined' && document.fonts) {
+    document.fonts.ready.then(() => ScrollTrigger.refresh())
+  }
 })
 
 onUnmounted(() => {
