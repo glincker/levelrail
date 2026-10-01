@@ -6,6 +6,7 @@ import {
 } from '../../queries/deviceAuth'
 import { DeviceAuthRequestTable } from '../../components/DeviceAuthRequestTable'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 interface CliAccessSearch {
   user_code?: string
@@ -45,16 +46,10 @@ function CliAccessPage() {
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <TerminalWindowIcon className="size-4" />
         </div>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">
-            CLI access
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Approve or deny a login started with levelrail-cli auth login
-            --device. Run that command in a terminal, then match the code it
-            prints against the code shown below before approving it.
-          </p>
-        </div>
+        <PageHeader
+          title="CLI access"
+          description="Approve or deny a login started with levelrail-cli auth login --device. Run that command in a terminal, then match the code it prints against the code shown below before approving it."
+        />
       </div>
       <DeviceAuthRequestTable
         requests={requests}
@@ -67,7 +62,7 @@ function CliAccessPage() {
 function CliAccessPending() {
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-foreground">CLI access</h1>
+      <PageHeader title="CLI access" />
       <TableSkeleton columnCount={5} />
     </div>
   )

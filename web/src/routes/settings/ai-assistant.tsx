@@ -10,6 +10,7 @@ import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '../../components/settings/SettingsSkeletons'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 export const Route = createFileRoute('/settings/ai-assistant')({
   beforeLoad: ({ context: { queryClient } }) =>
@@ -38,14 +39,10 @@ function AiAssistantSettingsPage() {
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <RobotIcon className="size-4" />
         </div>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">
-            AI Assistant
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Bring your own LLM API key to power the chat assistant.
-          </p>
-        </div>
+        <PageHeader
+          title="AI Assistant"
+          description="Bring your own LLM API key to power the chat assistant."
+        />
       </div>
 
       <AiAssistantSettingsCard settings={settings} />

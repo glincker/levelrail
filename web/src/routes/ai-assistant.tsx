@@ -9,6 +9,7 @@ import { AiChatPanel } from '../components/AiChatPanel'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 export const Route = createFileRoute('/ai-assistant')({
   beforeLoad: ({ context: { queryClient } }) =>
@@ -24,13 +25,10 @@ function AiAssistantPage() {
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col gap-4">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Reads logs, metrics, and deploy history automatically. Always asks
-          before deploying, rolling back, or restarting anything.
-        </p>
-      </div>
+      <PageHeader
+        title="AI Assistant"
+        description="Reads logs, metrics, and deploy history automatically. Always asks before deploying, rolling back, or restarting anything."
+      />
 
       {settings.configured ? (
         <AiChatPanel />

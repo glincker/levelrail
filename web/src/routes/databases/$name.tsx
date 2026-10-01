@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Database detail layout route, mirroring routes/apps/$name.tsx's own
 // split (the Databases fast-follow to that same treatment): this file
@@ -54,21 +55,19 @@ function DatabaseDetailLayout() {
       <div>
         <Breadcrumbs projectId={database.project_id} page={database.name} />
       </div>
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold text-foreground">
-            {database.name}
-          </h1>
-          <Badge variant={status.variant}>{status.label}</Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          <StopStartDatabaseButton
-            name={database.name}
-            suspended={Boolean(database.suspended)}
-          />
-          <DeleteDatabaseDialog name={database.name} />
-        </div>
-      </div>
+      <PageHeader
+        title={database.name}
+        status={<Badge variant={status.variant}>{status.label}</Badge>}
+        actions={
+          <>
+            <StopStartDatabaseButton
+              name={database.name}
+              suspended={Boolean(database.suspended)}
+            />
+            <DeleteDatabaseDialog name={database.name} />
+          </>
+        }
+      />
 
       <Outlet />
     </div>

@@ -36,6 +36,7 @@ import { DeployStageTimeline } from '../../../../../components/DeployStageTimeli
 import { ConditionsPanel } from '../../../../../components/ConditionsPanel'
 import { SupplyChainSection } from '../../../../../components/SupplyChainSection'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // 'image' attempts (a bare image-tag redeploy/rollback) have no build
 // step, so they never produce log lines: see types/deployAttempt.ts's
@@ -94,21 +95,19 @@ function DeployLogsPage() {
         appName={name}
         page="Deploy logs"
       />
-      <header className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="flex items-center gap-1.5 text-lg font-semibold text-foreground">
+      <PageHeader
+        title={
+          <span className="flex items-center gap-1.5">
             <TerminalIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
             Deploy
-          </h1>
-          <p className="truncate text-xs text-muted-foreground">
-            {name} / deploy {deployId}
-          </p>
-        </div>
-        <LogConnectionBadge state={connectionState} />
-      </header>
+          </span>
+        }
+        description={`${name} / deploy ${deployId}`}
+        actions={<LogConnectionBadge state={connectionState} />}
+      />
 
       {attempt && stages ? (
         <>

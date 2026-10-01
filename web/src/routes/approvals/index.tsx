@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/components/ui/toast'
+import { PageHeader } from '@/components/shell/PageHeader'
 import {
   deployApprovalListQueryOptions,
   useApproveDeployApproval,
@@ -128,16 +129,10 @@ function DeployApprovalsPage() {
           <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <GavelIcon className="size-4" aria-hidden="true" />
           </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">
-              Deploy approvals
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              The two-person gate a deploy or promote into a protected
-              environment goes through. The same user or token that requested
-              one cannot also approve or reject it.
-            </p>
-          </div>
+          <PageHeader
+            title="Deploy approvals"
+            description="The two-person gate a deploy or promote into a protected environment goes through. The same user or token that requested one cannot also approve or reject it."
+          />
         </div>
         <Select value={status} onValueChange={(v) => setStatus(v ?? 'pending')}>
           <SelectTrigger className="w-40">
@@ -268,11 +263,7 @@ function DeployApprovalsPage() {
 function DeployApprovalsPending() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">
-          Deploy approvals
-        </h1>
-      </div>
+      <PageHeader title="Deploy approvals" />
       <TableSkeleton columnCount={7} rowCount={5} />
     </div>
   )

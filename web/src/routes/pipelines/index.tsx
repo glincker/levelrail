@@ -12,6 +12,7 @@ import { PipelinesEmptyState } from '../../components/PipelinesEmptyState'
 import { hasActiveFilters } from '../../lib/pipelineOverview'
 import { usePipelineRunRows } from '../../queries/pipelineOverview'
 import type { PipelineOverviewFilters as Filters } from '../../types/pipelineOverview'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 export const Route = createFileRoute('/pipelines/')({
   component: PipelinesPage,
@@ -31,12 +32,10 @@ function PipelinesPage() {
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <TreeStructureIcon className="size-4" aria-hidden="true" />
         </div>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Pipelines</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Recent CI/CD runs across every app you can read.
-          </p>
-        </div>
+        <PageHeader
+          title="Pipelines"
+          description="Recent CI/CD runs across every app you can read."
+        />
       </div>
 
       {showEmpty ? (
