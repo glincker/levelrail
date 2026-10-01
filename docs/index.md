@@ -20,19 +20,20 @@ hero:
 
 features:
   - title: Zero-downtime deploys
-    details: Rolling, recreate, or blue-green strategy, gated on real readiness and liveness probes, with rollback to pinned prior images always available.
+    details: 'Rolling, recreate, or blue-green strategy, gated on real readiness and liveness probes, with rollback to pinned prior images always available.<span class="feature-proof feature-proof--chips"><span class="feature-chip">rolling</span><span class="feature-chip">recreate</span><span class="feature-chip">blue-green</span></span>'
   - title: Observability built in
-    details: Node-local metrics at 15s resolution and full-text log search, no separate Grafana or Loki install. Deploy markers overlay directly on metric charts.
+    details: 'Node-local metrics at 15s resolution and full-text log search, no separate Grafana or Loki install. Deploy markers overlay directly on metric charts.<span class="feature-proof feature-proof--stat"><span class="feature-stat-value">15s</span><span class="feature-stat-label">metric resolution</span></span>'
   - title: Eight managed database engines
-    details: Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse, with scheduled backups, restore, and automatic post-backup verification.
+    details: 'Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse, with scheduled backups, restore, and automatic post-backup verification.<span class="feature-proof feature-proof--chips feature-proof--chips-wrap"><span class="feature-chip feature-chip--mono">postgres</span><span class="feature-chip feature-chip--mono">redis</span><span class="feature-chip feature-chip--mono">mysql</span><span class="feature-chip feature-chip--mono">mongodb</span><span class="feature-chip feature-chip--mono">mariadb</span><span class="feature-chip feature-chip--mono">keydb</span><span class="feature-chip feature-chip--mono">dragonfly</span><span class="feature-chip feature-chip--mono">clickhouse</span></span>'
   - title: Multi-node from day one
+    icon: '<svg width="64" height="36" viewBox="0 0 64 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><line x1="8" y1="9" x2="32" y2="28" stroke="currentColor" stroke-width="1.5" opacity="0.45"/><line x1="32" y1="28" x2="56" y2="9" stroke="currentColor" stroke-width="1.5" opacity="0.45"/><line x1="8" y1="9" x2="56" y2="9" stroke="currentColor" stroke-width="1.5" opacity="0.3"/><line x1="32" y1="28" x2="32" y2="7" stroke="currentColor" stroke-width="1.5" opacity="0.3" stroke-dasharray="2 3"/><circle cx="8" cy="9" r="3.5" fill="currentColor"/><circle cx="56" cy="9" r="3.5" fill="currentColor"/><circle cx="32" cy="28" r="3.5" fill="currentColor"/><circle cx="32" cy="7" r="2.5" fill="currentColor" opacity="0.55"/></svg>'
     details: WireGuard mesh, internal DNS across nodes, cordon and drain, no inbound ports required on any managed server.
   - title: Know what needs attention
-    details: A Status page and an attention CLI command list failing apps, offline nodes, expiring certificates, and doctor findings, with a disk pressure banner and stalled certificate renewal detection.
+    details: 'A Status page and an attention CLI command list failing apps, offline nodes, expiring certificates, and doctor findings, with a disk pressure banner and stalled certificate renewal detection.<span class="feature-proof feature-proof--status"><span class="feature-status"><span class="feature-dot feature-dot--bad"></span>app failing</span><span class="feature-status"><span class="feature-dot feature-dot--warn"></span>cert expiring</span><span class="feature-status"><span class="feature-dot feature-dot--off"></span>node offline</span></span>'
   - title: Resource-scoped IAM
-    details: AWS-IAM-shaped Allow/Deny policies scoped to a specific app or database, with a full audit log and CSV export, in the free Apache 2.0 core.
+    details: 'AWS-IAM-shaped Allow/Deny policies scoped to a specific app or database, with a full audit log and CSV export, in the free Apache 2.0 core.<span class="feature-proof feature-proof--code"><code class="feature-code-line">allow: app:web:deploy</code></span>'
   - title: AI-ready API
-    details: 144 MCP tools (beta) backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a crashloop directly.
+    details: '144 MCP tools (beta) backed by the same HTTP API the dashboard runs on, so AI tools can list apps, read logs, and diagnose a crashloop directly.<span class="feature-proof feature-proof--code"><code class="feature-code-line">mcp.call("get_logs", app="web")</code></span>'
 ---
 
 <script setup lang="ts">
