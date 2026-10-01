@@ -37,6 +37,8 @@ features:
 
 <script setup lang="ts">
 import TerminalDemo from './.vitepress/theme/TerminalDemo.vue'
+import HowItWorksFlow from './.vitepress/theme/HowItWorksFlow.vue'
+import { PhCheck, PhX } from '@phosphor-icons/vue'
 </script>
 
 <div class="vp-doc landing-body">
@@ -57,39 +59,9 @@ That install script checks the host, installs Docker if it's missing, and starts
 
 ## How it works
 
-<div class="steps-grid">
+Four steps, the same ones the reconciler itself runs on every deploy. Click a step to see what it actually does.
 
-<div class="step-card">
-
-<span class="step-card__index">01</span>
-
-**Push to your git repo**
-
-GitHub, GitLab, or Bitbucket webhooks trigger a deploy on every push, with preview environments per pull request.
-
-</div>
-
-<div class="step-card">
-
-<span class="step-card__index">02</span>
-
-**Build**
-
-A Dockerfile, a Compose file, or Railpack auto-detection builds through BuildKit, with remote cache and live log streaming.
-
-</div>
-
-<div class="step-card">
-
-<span class="step-card__index">03</span>
-
-**Live app**
-
-TLS from the embedded Caddy ingress, node-local metrics and logs, and rollback to a pinned prior image, with no extra setup.
-
-</div>
-
-</div>
+<HowItWorksFlow />
 
 </section>
 
@@ -97,54 +69,38 @@ TLS from the embedded Caddy ingress, node-local metrics and logs, and rollback t
 
 ## How it compares
 
-<div class="compare-grid">
+Most self-hosted PaaS tools in this category drive remote servers by SSHing in and shelling out `docker` CLI commands, then parsing text output. That's the source of most of the flakiness and the idle CPU burn, because it forces polling loops. Levelrail doesn't do that.
 
-<div class="compare-card">
+<div class="compare-table">
 
-**Server management**
-
-An agent dials out over mTLS and talks to the Docker Engine API directly. Nothing shells out to the `docker` CLI.
-
+<div class="compare-table__row compare-table__row--head" role="presentation">
+<span class="compare-table__cell compare-table__cell--label"></span>
+<span class="compare-table__cell compare-table__cell--before">SSH + shell out</span>
+<span class="compare-table__cell compare-table__cell--after">Levelrail</span>
 </div>
 
-<div class="compare-card">
-
-**Orchestration**
-
-A level-triggered reconciler diffs desired against observed state and writes a status condition with a reason after every pass.
-
+<div class="compare-table__row">
+<span class="compare-table__cell compare-table__cell--label">Server management</span>
+<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">SSHes into every node and shells out <code>docker</code> CLI commands, then parses text output.</span></span>
+<span class="compare-table__cell compare-table__cell--after"><PhCheck class="compare-table__icon compare-table__icon--after" weight="bold" /><span class="compare-table__cell-text">The agent dials out over mTLS and talks to the Docker Engine API directly. Nothing shells out to the <code>docker</code> CLI.</span></span>
 </div>
 
-<div class="compare-card">
-
-**Observability**
-
-Node-local metrics at 15 second resolution and full-text log search are built in, no separate Grafana or Loki install.
-
+<div class="compare-table__row">
+<span class="compare-table__cell compare-table__cell--label">Orchestration</span>
+<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">Ad hoc polling loops, with no recorded reason for why a resource is in its current state.</span></span>
+<span class="compare-table__cell compare-table__cell--after"><PhCheck class="compare-table__icon compare-table__icon--after" weight="bold" /><span class="compare-table__cell-text">A level-triggered reconciler diffs desired against observed state and writes a status condition with a reason after every pass.</span></span>
 </div>
 
-<div class="compare-card">
-
-**Multi-node networking**
-
-A WireGuard mesh and internal DNS connect nodes, with no inbound ports required on any managed server.
-
+<div class="compare-table__row">
+<span class="compare-table__cell compare-table__cell--label">Observability</span>
+<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">Bolted on: install Grafana or Loki yourself, then wire them up to get metrics and logs.</span></span>
+<span class="compare-table__cell compare-table__cell--after"><PhCheck class="compare-table__icon compare-table__icon--after" weight="bold" /><span class="compare-table__cell-text">Node-local metrics at 15 second resolution and full-text log search are built in, no separate install.</span></span>
 </div>
 
-<div class="compare-card">
-
-**Rollback**
-
-Prior images are pinned, so garbage collection cannot remove a rollback target.
-
-</div>
-
-<div class="compare-card">
-
-**Footprint**
-
-SQLite in WAL mode, an embedded Caddy, and an embedded dashboard: one binary on one node.
-
+<div class="compare-table__row">
+<span class="compare-table__cell compare-table__cell--label">Footprint</span>
+<span class="compare-table__cell compare-table__cell--before"><PhX class="compare-table__icon compare-table__icon--before" weight="bold" /><span class="compare-table__cell-text">A stack of separate services: reverse proxy, metrics store, log store, dashboard.</span></span>
+<span class="compare-table__cell compare-table__cell--after"><PhCheck class="compare-table__icon compare-table__icon--after" weight="bold" /><span class="compare-table__cell-text">SQLite in WAL mode, an embedded Caddy ingress, and an embedded dashboard: one binary on one node.</span></span>
 </div>
 
 </div>
@@ -153,11 +109,13 @@ SQLite in WAL mode, an embedded Caddy, and an embedded dashboard: one binary on 
 
 </section>
 
-<section class="landing-section landing-section--ethos">
+<section class="landing-section landing-section--statement">
 
-<div class="ethos-card">
+<div class="statement-block">
 
-<p class="ethos-quote">&ldquo;Not a Kubernetes competitor. Not a Vercel competitor. The target user runs between 3 and 50 services on between 1 and 10 machines and does not want to learn Kubernetes.&rdquo;</p>
+<p class="statement-text">Not a Kubernetes competitor.<br>Not a Vercel competitor.</p>
+
+<p class="statement-context">The target user runs between 3 and 50 services on between 1 and 10 machines, and doesn't want to learn Kubernetes.</p>
 
 </div>
 
@@ -168,10 +126,22 @@ SQLite in WAL mode, an embedded Caddy, and an embedded dashboard: one binary on 
 ## See it running
 
 <div class="screenshot-grid">
-  <div class="screenshot-frame"><img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list showing all services across nodes at a glance" loading="lazy" width="1280" height="800"></div>
-  <div class="screenshot-frame"><img src="/assets/screenshots/deploy-history.png" alt="Levelrail deploy history view with one-click rollback" loading="lazy" width="1280" height="800"></div>
-  <div class="screenshot-frame"><img src="/assets/screenshots/logs.png" alt="Levelrail live log viewer with full-text search" loading="lazy" width="1280" height="800"></div>
-  <div class="screenshot-frame"><img src="/assets/screenshots/nodes.png" alt="Levelrail nodes list showing node health and placement" loading="lazy" width="1280" height="700"></div>
+  <div class="screenshot-frame">
+    <div class="screenshot-frame__chrome" aria-hidden="true"><span class="screenshot-frame__dot screenshot-frame__dot--red"></span><span class="screenshot-frame__dot screenshot-frame__dot--yellow"></span><span class="screenshot-frame__dot screenshot-frame__dot--green"></span><span class="screenshot-frame__url">levelrail.local/apps</span></div>
+    <img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list showing all services across nodes at a glance" loading="lazy" width="1280" height="800">
+  </div>
+  <div class="screenshot-frame">
+    <div class="screenshot-frame__chrome" aria-hidden="true"><span class="screenshot-frame__dot screenshot-frame__dot--red"></span><span class="screenshot-frame__dot screenshot-frame__dot--yellow"></span><span class="screenshot-frame__dot screenshot-frame__dot--green"></span><span class="screenshot-frame__url">levelrail.local/apps/web/deploys</span></div>
+    <img src="/assets/screenshots/deploy-history.png" alt="Levelrail deploy history view with one-click rollback" loading="lazy" width="1280" height="800">
+  </div>
+  <div class="screenshot-frame">
+    <div class="screenshot-frame__chrome" aria-hidden="true"><span class="screenshot-frame__dot screenshot-frame__dot--red"></span><span class="screenshot-frame__dot screenshot-frame__dot--yellow"></span><span class="screenshot-frame__dot screenshot-frame__dot--green"></span><span class="screenshot-frame__url">levelrail.local/apps/web/logs</span></div>
+    <img src="/assets/screenshots/logs.png" alt="Levelrail live log viewer with full-text search" loading="lazy" width="1280" height="800">
+  </div>
+  <div class="screenshot-frame">
+    <div class="screenshot-frame__chrome" aria-hidden="true"><span class="screenshot-frame__dot screenshot-frame__dot--red"></span><span class="screenshot-frame__dot screenshot-frame__dot--yellow"></span><span class="screenshot-frame__dot screenshot-frame__dot--green"></span><span class="screenshot-frame__url">levelrail.local/nodes</span></div>
+    <img src="/assets/screenshots/nodes.png" alt="Levelrail nodes list showing node health and placement" loading="lazy" width="1280" height="700">
+  </div>
 </div>
 
 </section>
