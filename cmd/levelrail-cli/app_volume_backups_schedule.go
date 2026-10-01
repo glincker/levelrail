@@ -42,12 +42,13 @@ Run "%[1]s app-volume-backups schedule <subcommand> -h" for a subcommand's own f
 
 func runAppVolumeBackupsScheduleSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups schedule set", "print the saved schedule as JSON to stdout and nothing else", stderr)
-	var targetID, cron string
+	var targetID, cron, sqlitePath string
 	var retain, retainDays int
 	fs.StringVar(&targetID, "target", "", "backup target id to back up to (required)")
 	fs.StringVar(&cron, "cron", "", "standard 5-field cron expression: minute hour day-of-month month day-of-week (required)")
 	fs.IntVar(&retain, "retain", 0, "number of past backups to keep before older ones are deleted (0: no limit)")
 	fs.IntVar(&retainDays, "retain-days", 0, "delete backups older than this many days (0: no limit), independent of --retain")
+	fs.StringVar(&sqlitePath, "sqlite-path", "", "path within the volume to a SQLite .db file: backs it up via sqlite3 .backup instead of a raw volume archive")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s app-volume-backups schedule set <app> <volume> --target ID --cron EXPR [flags]\n\nConfigures a recurring backup, replacing any previously configured\nschedule for <app>/<volume>.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -78,13 +79,18 @@ func runAppVolumeBackupsScheduleSet(prog string, args []string, stdout, stderr i
 		Schedule:   cron,
 		Retain:     retain,
 		RetainDays: retainDays,
+		SqlitePath: sqlitePath,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set backup schedule for %s/%s: %w", name, volume, err))
 	}
 
 	return writeScheduledTaskResult(stdout, stderr, of, schedule, func() {
-		_, _ = fmt.Fprintf(stdout, "backup schedule %q set for %s/%s (target %s, retain %d, retain_days %d)\n", schedule.Schedule, name, volume, schedule.TargetID, schedule.Retain, schedule.RetainDays)
+		suffix := ""
+		if schedule.SqlitePath != "" {
+			suffix = fmt.Sprintf(", sqlite path %q", schedule.SqlitePath)
+		}
+		_, _ = fmt.Fprintf(stdout, "backup schedule %q set for %s/%s (target %s, retain %d, retain_days %d%s)\n", schedule.Schedule, name, volume, schedule.TargetID, schedule.Retain, schedule.RetainDays, suffix)
 	})
 }
 

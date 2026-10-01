@@ -47,6 +47,9 @@ type Runner struct {
 	// calls RunVolumeBackup, the same "optional capability" shape this
 	// codebase already uses for Scheduler.Deleter/Verifier.
 	VolumeArchiver VolumeArchiver
+	// SqliteSnapshotter backs RunVolumeBackup when a volume's sqlite_path
+	// is set; nil is valid the same way VolumeArchiver's nil is.
+	SqliteSnapshotter SqliteSnapshotter
 	// WorkDir is the directory RunBackup/RunVolumeBackup's disk-space
 	// preflight checks (checkDiskSpace) before starting. Empty falls back
 	// to APP_DATA_DIR (resolveWorkDir), and empty even then skips the
@@ -159,13 +162,17 @@ func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, con
 // full; this only differs in what it dumps (VolumeArchiver.Archive
 // instead of Dumper.Dump) and what identifies the row
 // (ServiceName/VolumeName/ResourceKind instead of DatabaseName).
-func (r *Runner) RunVolumeBackup(ctx context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID string) error {
+func (r *Runner) RunVolumeBackup(ctx context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID, sqlitePath string) error {
 	if err := checkDiskSpace(resolveWorkDir(r.WorkDir)); err != nil {
 		return err
 	}
 
 	startedAt := r.now()
-	objectKey := fmt.Sprintf("volumes/%s/%s/%s.tar", serviceName, volumeName, startedAt.UTC().Format("20060102T150405Z"))
+	ext := "tar"
+	if sqlitePath != "" {
+		ext = "db"
+	}
+	objectKey := fmt.Sprintf("volumes/%s/%s/%s.%s", serviceName, volumeName, startedAt.UTC().Format("20060102T150405Z"), ext)
 
 	if err := r.Store.StartBackupHistory(ctx, store.BackupHistory{
 		ID:           historyID,
@@ -179,7 +186,14 @@ func (r *Runner) RunVolumeBackup(ctx context.Context, historyID, serviceName, vo
 		return fmt.Errorf("backup: start history %q: %w", historyID, err)
 	}
 
-	size, checksum, runErr := r.runArchiveAndUpload(ctx, dockerVolumeName, targetID, objectKey)
+	var size int64
+	var checksum string
+	var runErr error
+	if sqlitePath != "" {
+		size, checksum, runErr = r.runSqliteSnapshotAndUpload(ctx, dockerVolumeName, sqlitePath, targetID, objectKey)
+	} else {
+		size, checksum, runErr = r.runArchiveAndUpload(ctx, dockerVolumeName, targetID, objectKey)
+	}
 
 	status := store.BackupStatusSucceeded
 	errMsg := ""
@@ -214,6 +228,30 @@ func (r *Runner) runArchiveAndUpload(ctx context.Context, dockerVolumeName, targ
 	counted := &countingReader{r: archive, hash: sha256.New()}
 	if err := r.Uploader.Upload(ctx, dest, objectKey, counted, -1); err != nil {
 		return counted.n, "", fmt.Errorf("upload volume backup for %q to target %q: %w", dockerVolumeName, targetID, err)
+	}
+	return counted.n, hex.EncodeToString(counted.hash.Sum(nil)), nil
+}
+
+// runSqliteSnapshotAndUpload is RunVolumeBackup's sqlite_path branch:
+// same shape as runArchiveAndUpload, SqliteSnapshotter.Snapshot standing
+// in for VolumeArchiver.Archive.
+func (r *Runner) runSqliteSnapshotAndUpload(ctx context.Context, dockerVolumeName, sqlitePath, targetID, objectKey string) (size int64, checksum string, err error) {
+	dest, err := r.ResolveDestination(ctx, targetID)
+	if err != nil {
+		return 0, "", err
+	}
+
+	snapshot, err := r.SqliteSnapshotter.Snapshot(ctx, dockerVolumeName, sqlitePath)
+	if err != nil {
+		return 0, "", fmt.Errorf("snapshot sqlite volume %q: %w", dockerVolumeName, err)
+	}
+	defer func() {
+		_ = snapshot.Close()
+	}()
+
+	counted := &countingReader{r: snapshot, hash: sha256.New()}
+	if err := r.Uploader.Upload(ctx, dest, objectKey, counted, -1); err != nil {
+		return counted.n, "", fmt.Errorf("upload sqlite backup for %q to target %q: %w", dockerVolumeName, targetID, err)
 	}
 	return counted.n, hex.EncodeToString(counted.hash.Sum(nil)), nil
 }

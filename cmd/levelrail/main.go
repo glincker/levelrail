@@ -590,8 +590,9 @@ func run(logger *slog.Logger) error {
 			// this identical value, one implementation serving both
 			// resource kinds through the same upload/history/scheduling
 			// pipeline.
-			VolumeArchiver: &backup.ContainerVolumeArchiver{Runtime: client},
-			Uploader:       backup.S3Uploader{},
+			VolumeArchiver:    &backup.ContainerVolumeArchiver{Runtime: client},
+			SqliteSnapshotter: &backup.ContainerSqliteSnapshotter{Runtime: client},
+			Uploader:          backup.S3Uploader{},
 		}
 		backupVerifyRunner = &backup.VerifyRunner{
 			Store:      db,

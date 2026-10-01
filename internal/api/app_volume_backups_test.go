@@ -21,15 +21,15 @@ type fakeVolumeBackupRunner struct {
 }
 
 type volumeBackupRunCall struct {
-	historyID, serviceName, volumeName, dockerVolumeName, targetID string
+	historyID, serviceName, volumeName, dockerVolumeName, targetID, sqlitePath string
 }
 
 func newFakeVolumeBackupRunner() *fakeVolumeBackupRunner {
 	return &fakeVolumeBackupRunner{calls: make(chan volumeBackupRunCall, 4)}
 }
 
-func (f *fakeVolumeBackupRunner) RunVolumeBackup(_ context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID string) error {
-	f.calls <- volumeBackupRunCall{historyID, serviceName, volumeName, dockerVolumeName, targetID}
+func (f *fakeVolumeBackupRunner) RunVolumeBackup(_ context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID, sqlitePath string) error {
+	f.calls <- volumeBackupRunCall{historyID, serviceName, volumeName, dockerVolumeName, targetID, sqlitePath}
 	return f.err
 }
 

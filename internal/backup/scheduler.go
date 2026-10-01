@@ -55,7 +55,7 @@ type ScheduledBackupRunner interface {
 	// RunVolumeBackup matches api.ServiceVolumeBackupRunner's shape
 	// (internal/api/app_volume_backups.go); *Runner satisfies both, the
 	// volume counterpart of RunBackup's own doc comment.
-	RunVolumeBackup(ctx context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID string) error
+	RunVolumeBackup(ctx context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID, sqlitePath string) error
 	// ResolveDestination resolves a backup target ID into a live
 	// Destination (*Runner.ResolveDestination, runner.go), the same
 	// resolution RunBackup does internally before every upload. Needed
@@ -407,7 +407,7 @@ func (s *Scheduler) runScheduledVolume(ctx context.Context, v store.ServiceVolum
 		return fmt.Errorf("generate history id: %w", err)
 	}
 
-	if runErr := s.Runner.RunVolumeBackup(ctx, historyID, v.ServiceName, v.VolumeName, dockerVolumeName, v.BackupTargetID); runErr != nil {
+	if runErr := s.Runner.RunVolumeBackup(ctx, historyID, v.ServiceName, v.VolumeName, dockerVolumeName, v.BackupTargetID, v.SqlitePath); runErr != nil {
 		s.log().Error("backup: scheduled volume run failed",
 			slog.String("service_volume", label), slog.String("id", historyID), slog.String("error", runErr.Error()))
 		return runErr

@@ -106,7 +106,7 @@ type fakeScheduledRunner struct {
 	resolveResult Destination
 
 	volumeCalls []struct {
-		historyID, service, volume, dockerVolume, targetID string
+		historyID, service, volume, dockerVolume, targetID, sqlitePath string
 	}
 	volumeFailFor map[string]error
 }
@@ -125,12 +125,12 @@ func (f *fakeScheduledRunner) RunBackup(_ context.Context, historyID, databaseNa
 	return nil
 }
 
-func (f *fakeScheduledRunner) RunVolumeBackup(_ context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID string) error {
+func (f *fakeScheduledRunner) RunVolumeBackup(_ context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID, sqlitePath string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.volumeCalls = append(f.volumeCalls, struct {
-		historyID, service, volume, dockerVolume, targetID string
-	}{historyID, serviceName, volumeName, dockerVolumeName, targetID})
+		historyID, service, volume, dockerVolume, targetID, sqlitePath string
+	}{historyID, serviceName, volumeName, dockerVolumeName, targetID, sqlitePath})
 	if f.volumeFailFor != nil {
 		if err, ok := f.volumeFailFor[serviceName+"/"+volumeName]; ok {
 			return err
