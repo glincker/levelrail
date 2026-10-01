@@ -71,41 +71,56 @@ func TestHandleStopOrphanedContainer_NotFound(t *testing.T) {
 	}
 }
 
-func TestHandleStopOrphanedContainer_ManagedContainer_Conflict(t *testing.T) {
+func TestHandleOrphanedContainerAction_ManagedContainer_Conflict(t *testing.T) {
 	name := managedContainerName()
-	lister := &fakeContainerLister{containers: []docker.ContainerState{
-		{ID: "c1", Name: name, Labels: map[string]string{spec.InstanceLabelKey: "inst_a"}},
-	}}
-	mgr := &fakeOrphanedContainerManager{}
-	rt, db := newTestRouterWithOrphanedContainers(t, lister, mgr)
-	seedWebAppForTest(t, db)
-	cookie := loginTestSession(t, rt, db)
+	for _, action := range []string{"stop", "remove"} {
+		t.Run(action, func(t *testing.T) {
+			lister := &fakeContainerLister{containers: []docker.ContainerState{
+				{ID: "c1", Name: name, Labels: map[string]string{spec.InstanceLabelKey: "inst_a"}},
+			}}
+			mgr := &fakeOrphanedContainerManager{}
+			rt, db := newTestRouterWithOrphanedContainers(t, lister, mgr)
+			seedWebAppForTest(t, db)
+			cookie := loginTestSession(t, rt, db)
 
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/system/containers/"+name+"/stop", ""))
-	if rec.Code != http.StatusConflict {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusConflict, rec.Body.String())
-	}
-	if len(mgr.stopped) != 0 {
-		t.Errorf("stopped = %v, want none: a managed container must never be stopped by this route", mgr.stopped)
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/system/containers/"+name+"/"+action, ""))
+			if rec.Code != http.StatusConflict {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+			}
+			if len(mgr.stopped) != 0 || len(mgr.removed) != 0 {
+				t.Errorf("stopped = %v, removed = %v, want none: a managed container must never be mutated", mgr.stopped, mgr.removed)
+			}
+		})
 	}
 }
 
-func TestHandleStopOrphanedContainer_Success(t *testing.T) {
-	lister := &fakeContainerLister{containers: []docker.ContainerState{
-		{ID: "orphan-id", Name: "leftover-nginx", Running: true},
-	}}
-	mgr := &fakeOrphanedContainerManager{}
-	rt, db := newTestRouterWithOrphanedContainers(t, lister, mgr)
-	cookie := loginTestSession(t, rt, db)
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/system/containers/leftover-nginx/stop", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+func TestHandleOrphanedContainerAction_Success(t *testing.T) {
+	cases := []struct {
+		action string
+		get    func(*fakeOrphanedContainerManager) []string
+	}{
+		{"stop", func(m *fakeOrphanedContainerManager) []string { return m.stopped }},
+		{"remove", func(m *fakeOrphanedContainerManager) []string { return m.removed }},
 	}
-	if len(mgr.stopped) != 1 || mgr.stopped[0] != "orphan-id" {
-		t.Errorf("stopped = %v, want [orphan-id]", mgr.stopped)
+	for _, tc := range cases {
+		t.Run(tc.action, func(t *testing.T) {
+			lister := &fakeContainerLister{containers: []docker.ContainerState{
+				{ID: "orphan-id", Name: "leftover-nginx", Running: true},
+			}}
+			mgr := &fakeOrphanedContainerManager{}
+			rt, db := newTestRouterWithOrphanedContainers(t, lister, mgr)
+			cookie := loginTestSession(t, rt, db)
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/system/containers/leftover-nginx/"+tc.action, ""))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+			}
+			if got := tc.get(mgr); len(got) != 1 || got[0] != "orphan-id" {
+				t.Errorf("%s = %v, want [orphan-id]", tc.action, got)
+			}
+		})
 	}
 }
 
@@ -125,44 +140,6 @@ func TestHandleStopOrphanedContainer_LabeledButNoDesiredRecord_Stops(t *testing.
 	}
 	if len(mgr.stopped) != 1 || mgr.stopped[0] != "leftover-id" {
 		t.Errorf("stopped = %v, want [leftover-id]", mgr.stopped)
-	}
-}
-
-func TestHandleRemoveOrphanedContainer_Success(t *testing.T) {
-	lister := &fakeContainerLister{containers: []docker.ContainerState{
-		{ID: "orphan-id", Name: "leftover-nginx"},
-	}}
-	mgr := &fakeOrphanedContainerManager{}
-	rt, db := newTestRouterWithOrphanedContainers(t, lister, mgr)
-	cookie := loginTestSession(t, rt, db)
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/system/containers/leftover-nginx/remove", ""))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
-	}
-	if len(mgr.removed) != 1 || mgr.removed[0] != "orphan-id" {
-		t.Errorf("removed = %v, want [orphan-id]", mgr.removed)
-	}
-}
-
-func TestHandleRemoveOrphanedContainer_ManagedContainer_Conflict(t *testing.T) {
-	name := managedContainerName()
-	lister := &fakeContainerLister{containers: []docker.ContainerState{
-		{ID: "c1", Name: name, Labels: map[string]string{spec.InstanceLabelKey: "inst_a"}},
-	}}
-	mgr := &fakeOrphanedContainerManager{}
-	rt, db := newTestRouterWithOrphanedContainers(t, lister, mgr)
-	seedWebAppForTest(t, db)
-	cookie := loginTestSession(t, rt, db)
-
-	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/system/containers/"+name+"/remove", ""))
-	if rec.Code != http.StatusConflict {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusConflict, rec.Body.String())
-	}
-	if len(mgr.removed) != 0 {
-		t.Errorf("removed = %v, want none", mgr.removed)
 	}
 }
 
