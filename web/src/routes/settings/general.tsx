@@ -23,6 +23,7 @@ import {
   useSystemStatus,
 } from '../../queries/systemStatus'
 import { certificatesQueryOptions } from '../../queries/certificates'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { DockerCleanupFallbackCard } from '../../components/DockerCleanupFallbackCard'
 import { OrphanedVolumesCard } from '../../components/OrphanedVolumesCard'
 import { SecretBindingCard } from '../../components/SecretBindingCard'
@@ -115,12 +116,10 @@ function GeneralSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">General</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          System status and configuration.
-        </p>
-      </div>
+      <PageHeader
+        title="General"
+        description="System status and configuration."
+      />
 
       <Card>
         <CardHeader>

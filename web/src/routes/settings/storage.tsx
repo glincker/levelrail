@@ -12,6 +12,7 @@ import { ApiError } from '../../lib/apiError'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { CreateStorageDestinationDialog } from '../../components/CreateStorageDestinationDialog'
 import { StorageDestinationTable } from '../../components/StorageDestinationTable'
 import { LogArchivePanel } from '../../components/LogArchivePanel'
@@ -33,23 +34,17 @@ function StoragePage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <CloudArrowUpIcon className="size-4" aria-hidden="true" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">
-              Storage destinations
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              S3-compatible object storage for log archives and backups. AWS S3,
-              Cloudflare R2, Backblaze B2, MinIO, Wasabi, or any custom
-              endpoint.
-            </p>
-          </div>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <CloudArrowUpIcon className="size-4" aria-hidden="true" />
         </div>
-        {notConfigured ? null : <CreateStorageDestinationDialog />}
+        <div className="min-w-0 flex-1">
+          <PageHeader
+            title="Storage destinations"
+            description="S3-compatible object storage for log archives and backups. AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, or any custom endpoint."
+            actions={notConfigured ? null : <CreateStorageDestinationDialog />}
+          />
+        </div>
       </div>
 
       {notConfigured ? (

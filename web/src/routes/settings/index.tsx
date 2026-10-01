@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useExperimentalFeatures } from '../../hooks/useExperimental'
 import { visibleSettingsSections } from '../../lib/settingsNav'
+import { PageHeader } from '../../components/shell/PageHeader'
 import {
   Card,
   CardHeader,
@@ -16,12 +17,10 @@ function SettingsHubPage() {
   const experimental = useExperimentalFeatures()
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Account, team, and platform configuration.
-        </p>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Account, team, and platform configuration."
+      />
 
       {visibleSettingsSections(experimental).map((section) => (
         <div key={section.heading} className="space-y-3">

@@ -4,6 +4,7 @@ import {
   useRegistrySettings,
 } from '../../queries/registry'
 import { RegistrySettingsCard } from '../../components/RegistrySettingsCard'
+import { PageHeader } from '../../components/shell/PageHeader'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
@@ -38,15 +39,10 @@ function RegistrySettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">
-          Container registry
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Levelrail&apos;s own built-in image registry for multi-node build
-          caching and image distribution.
-        </p>
-      </div>
+      <PageHeader
+        title="Container registry"
+        description="Levelrail's own built-in image registry for multi-node build caching and image distribution."
+      />
 
       <RegistrySettingsCard settings={settings} />
     </div>

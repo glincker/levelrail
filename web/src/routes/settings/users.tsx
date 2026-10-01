@@ -12,6 +12,7 @@ import { InvitesTable } from '../../components/InvitesTable'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { hasAbility } from '../../types/token'
 import type { CreateInviteResponse } from '../../queries/invites'
 
@@ -65,30 +66,29 @@ function UsersSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <UsersIcon className="size-4" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">Users</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Everyone with access to this platform, and what each account can
-              do.
-            </p>
-          </div>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <UsersIcon className="size-4" />
         </div>
-        {canInvite ? (
-          <div className="flex items-center gap-2">
-            {canInvite ? (
-              <InviteMemberDialog
-                callerAbilities={ownAbilities}
-                onCreated={handleInviteCreated}
-              />
-            ) : null}
-            {isRoot ? <CreateUserDialog /> : null}
-          </div>
-        ) : null}
+        <div className="min-w-0 flex-1">
+          <PageHeader
+            title="Users"
+            description="Everyone with access to this platform, and what each account can do."
+            actions={
+              canInvite ? (
+                <div className="flex items-center gap-2">
+                  {canInvite ? (
+                    <InviteMemberDialog
+                      callerAbilities={ownAbilities}
+                      onCreated={handleInviteCreated}
+                    />
+                  ) : null}
+                  {isRoot ? <CreateUserDialog /> : null}
+                </div>
+              ) : null
+            }
+          />
+        </div>
       </div>
       <UserTable users={users} />
 

@@ -14,6 +14,7 @@ import { CATEGORY_ICONS } from '../../components/ServiceTemplateGrid'
 import { TemplateLogo } from '../../components/TemplateLogo'
 import { RamFitBadge } from '../../components/RamFitBadge'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { formatBytes } from '../../lib/format'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -68,13 +69,11 @@ function TemplateDetailRoute() {
           }
         />
         <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-lg font-semibold text-foreground">
-              {template.name}
-            </h1>
-            <Badge variant="outline">{template.category}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">{template.slogan}</p>
+          <PageHeader
+            title={template.name}
+            status={<Badge variant="outline">{template.category}</Badge>}
+            description={template.slogan}
+          />
           {template.documentation_url ? (
             <a
               href={template.documentation_url}

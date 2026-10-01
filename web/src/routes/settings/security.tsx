@@ -50,6 +50,7 @@ import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '@/components/settings/SettingsSkeletons'
+import { PageHeader } from '@/components/shell/PageHeader'
 
 // Loader-primed the same way routes/settings/tokens.tsx primes
 // tokenListQueryOptions: the component below only ever reads that warm
@@ -95,12 +96,10 @@ function SecuritySettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Security</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Sessions and login protection.
-        </p>
-      </div>
+      <PageHeader
+        title="Security"
+        description="Sessions and login protection."
+      />
 
       <Card>
         <CardHeader>

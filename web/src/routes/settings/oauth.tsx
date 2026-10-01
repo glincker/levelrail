@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { oauthSettingsQueryOptions } from '../../queries/oauth'
 import { OAuthProviderCard } from '../../components/OAuthProviderCard'
 import {
@@ -43,16 +44,10 @@ function OAuthSettingsPage() {
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <KeyIcon className="size-4" />
         </div>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">
-            OAuth sign-in
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Let people sign in with Google, GitHub, Microsoft, or a self-hosted
-            identity provider instead of a password. Every signed-in account has
-            identical access, there are no roles yet.
-          </p>
-        </div>
+        <PageHeader
+          title="OAuth sign-in"
+          description="Let people sign in with Google, GitHub, Microsoft, or a self-hosted identity provider instead of a password. Every signed-in account has identical access, there are no roles yet."
+        />
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {settings.map((s) => (
