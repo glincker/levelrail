@@ -50,6 +50,8 @@ System endpoints for:
 | POST | /api/v1/system/containers/{name}/stop | AbilityRoot | handleStopOrphanedContainer |
 | POST | /api/v1/system/containers/{name}/remove | AbilityRoot | handleRemoveOrphanedContainer |
 | POST | /api/v1/system/containers/{name}/claim | AbilityWrite | handleClaimOrphanedContainer |
+| GET | /api/v1/updates/settings | AbilityRoot | handleGetUpdateSettings |
+| PUT | /api/v1/updates/settings | AbilityRoot | handleUpdateSettings |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
