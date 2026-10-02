@@ -23,6 +23,7 @@ import {
   PackageIcon,
   DownloadSimpleIcon,
   TerminalWindowIcon,
+  CodeIcon,
   HeartbeatIcon,
   StackIcon,
   HardDrivesIcon,
@@ -93,6 +94,13 @@ export const settingsNavSections: SettingsNavSection[] = [
         title: 'CLI access',
         description:
           'Approve or deny logins started with levelrail-cli auth login.',
+      },
+      {
+        to: '/settings/api-explorer',
+        icon: CodeIcon,
+        title: 'API explorer',
+        description:
+          'Browse and try real endpoints without leaving the dashboard.',
       },
     ],
   },

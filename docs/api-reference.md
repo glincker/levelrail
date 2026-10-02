@@ -839,6 +839,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/firewall-rules | AbilityRead | handleListFirewallRules |
 | POST | /api/v1/firewall-rules | AbilityWriteSensitive | handleCreateFirewallRule |
 | DELETE | /api/v1/firewall-rules/{id} | AbilityWriteSensitive | handleDeleteFirewallRule |
+| GET | /api/v1/openapi.json | AbilityRead | handleOpenAPISpec |
 
 ## See also
 

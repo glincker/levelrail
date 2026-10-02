@@ -161,6 +161,8 @@ type (
 	systemStatusResource        = apiclient.SystemStatusResource
 	doctorCheckResource         = apiclient.DoctorCheckResource
 	systemDoctorResource        = apiclient.SystemDoctorResource
+	openAPISpecResource         = apiclient.OpenAPISpecResource
+	openAPIRouteResource        = apiclient.OpenAPIRouteResource
 	containerResource           = apiclient.ContainerResource
 	containerPortResource       = apiclient.ContainerPortResource
 	updatesResource             = apiclient.UpdatesResource
