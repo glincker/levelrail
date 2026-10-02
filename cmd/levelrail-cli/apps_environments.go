@@ -39,6 +39,8 @@ func runAppsEnvironments(prog string, args []string, stdout, stderr io.Writer, l
 		return runAppsEnvironmentsClonePreview(prog, args[1:], stdout, stderr, lookupEnv)
 	case "clone":
 		return runAppsEnvironmentsClone(prog, args[1:], stdout, stderr, lookupEnv)
+	case "env-diff":
+		return runAppsEnvironmentsEnvDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps environments subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsEnvironmentsUsage(prog))
@@ -56,6 +58,7 @@ func appsEnvironmentsUsage(prog string) string {
   %[1]s apps environments env-set <id> --var KEY=VALUE [flags]                     replace an environment's shared env vars
   %[1]s apps environments clone-preview <id> --new-name NAME [flags]              preview cloning an environment's whole app set
   %[1]s apps environments clone <id> --new-name NAME [flags]                        clone an environment's whole app set into a new one
+  %[1]s apps environments env-diff <project-id> <env-a> <env-b> [flags]       diff two environments' resolved effective env vars
 
 Tag an app with an environment via "%[1]s apps set-environment". An
 environment's shared env vars sit between its project's own shared env
@@ -355,6 +358,102 @@ Flags:
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                     print the resulting env vars as a JSON object to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+// runAppsEnvironmentsEnvDiff implements "apps environments env-diff
+// <project-id> <env-a> <env-b>": GET .../environments/compare
+// (internal/api/environment_compare.go's handleCompareEnvironmentEnv).
+// A secret-marked value is never shown, on either side or in the diff.
+func runAppsEnvironmentsEnvDiff(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps environments env-diff", "print the comparison as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsEnvDiffUsage(prog)) }
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	rest, argOK := requireArgs(fs, stderr, prog, "apps environments env-diff", "a project id and two environment ids", 3)
+	if !argOK {
+		return exitUsage
+	}
+	projectID, envA, envB := rest[0], rest[1], rest[2]
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	cmp, err := client.CompareEnvironmentEnv(context.Background(), projectID, envA, envB)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("compare environments %q and %q for project %q: %w", envA, envB, projectID, err))
+	}
+
+	if err := renderResult(stdout, of.Format, of.Query, cmp, func() { printEnvironmentCompareHuman(stdout, cmp) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+// printEnvironmentCompareHuman renders cmp as a readable drift report:
+// each differing key, its status, and (for a non-secret key) its two
+// values, mirroring printDeployCompareHuman's own before/after shape.
+func printEnvironmentCompareHuman(w io.Writer, cmp environmentCompareResource) {
+	_, _ = fmt.Fprintf(w, "a: %s (%s)\n", cmp.A.Environment.Name, cmp.A.Environment.ID)
+	_, _ = fmt.Fprintf(w, "b: %s (%s)\n", cmp.B.Environment.Name, cmp.B.Environment.ID)
+
+	if len(cmp.Diff) == 0 {
+		_, _ = fmt.Fprint(w, "\nno env var keys differ\n")
+		return
+	}
+
+	_, _ = fmt.Fprint(w, "\ndiff:\n")
+	tw := tabwriter.NewWriter(w, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "KEY\tSTATUS\tA\tB")
+	for _, d := range cmp.Diff {
+		a, b := d.A, d.B
+		if d.Secret {
+			a, b = "(secret)", "(secret)"
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", d.Key, environmentEnvDiffStatusLabel(d.Status), deployCompareValueLabel(a), deployCompareValueLabel(b))
+	}
+	_ = tw.Flush()
+}
+
+func environmentEnvDiffStatusLabel(status string) string {
+	switch status {
+	case "only_in_a":
+		return "only in a"
+	case "only_in_b":
+		return "only in b"
+	case "changed":
+		return "changed"
+	case "masked":
+		return "masked (secret)"
+	default:
+		return status
+	}
+}
+
+func appsEnvironmentsEnvDiffUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s apps environments env-diff <project-id> <env-a> <env-b> [flags]
+
+Diffs two of a project's environments' resolved effective env vars
+(organization, then project, then each environment's own vars, same
+precedence "apps deploy" itself resolves): which keys only one side has,
+and which plain keys both sides have with different values. A
+secret-marked key never shows its value, on either side; one present on
+both sides is reported as masked rather than changed or same, since this
+control plane cannot tell whether the two differ without decrypting
+them.
+
+Flags:
+  --token string          API token (default: %[2]s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                    print the comparison as JSON to stdout, nothing else
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help

@@ -2248,6 +2248,22 @@ func (c *Client) ListEnvironments(ctx context.Context, projectID string) ([]Envi
 	return out, err
 }
 
+// CompareEnvironmentEnv calls GET
+// /api/v1/projects/{id}/environments/compare?a=...&b=...: each of
+// environment a and b's resolved effective env vars, secret values
+// always redacted, plus the keys that differ between them.
+func (c *Client) CompareEnvironmentEnv(ctx context.Context, projectID, a, b string) (EnvironmentCompareResource, error) {
+	path := environmentsCollectionPath(projectID) + "/compare"
+	q := url.Values{}
+	q.Set("a", a)
+	q.Set("b", b)
+	path += "?" + q.Encode()
+
+	var out EnvironmentCompareResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
 // PreviewEnvironmentClone calls GET /api/v1/environments/{id}/clone/preview:
 // what cloning id into a new environment named newEnvironmentName would
 // most likely create, without applying it or reserving any name.

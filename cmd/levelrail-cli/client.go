@@ -209,6 +209,10 @@ type (
 	environmentCloneRequest          = apiclient.EnvironmentCloneRequest
 	environmentCloneAppInput         = apiclient.EnvironmentCloneAppInput
 	environmentCloneResultResource   = apiclient.EnvironmentCloneResultResource
+	environmentEnvEntryResource      = apiclient.EnvironmentEnvEntryResource
+	environmentEnvDiffEntry          = apiclient.EnvironmentEnvDiffEntry
+	environmentCompareSide           = apiclient.EnvironmentCompareSide
+	environmentCompareResource       = apiclient.EnvironmentCompareResource
 	previewEnvironmentResource       = apiclient.PreviewEnvironmentResource
 	previewEphemeralDatabaseResource = apiclient.PreviewEphemeralDatabaseResource
 	previewDatabaseIsolationResource = apiclient.PreviewDatabaseIsolationResource
