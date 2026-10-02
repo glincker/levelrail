@@ -450,6 +450,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/preflight", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePreflightApp))
 	mux.HandleFunc("POST /api/v1/preflight", rt.requireAbility(AbilityWrite, rt.handlePreflightNew))
 
+	// Live app.yaml validation (apps_validate_spec.go): read-only, same
+	// AbilityRead/POST shape as preflight above. Never saves or deploys
+	// anything, only runs the submitted body through internal/spec's own
+	// Parse-time checks for an editor's earlier, friendlier feedback.
+	mux.HandleFunc("POST /api/v1/apps/{name}/validate-spec", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleValidateSpec))
+
 	// Read-only resource right-sizing suggestion
 	// (resource_recommendation.go): synthesizes the app's historical
 	// CPU/memory usage and current limits into a deterministic
