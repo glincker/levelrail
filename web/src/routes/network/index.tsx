@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ShareNetworkIcon } from '@phosphor-icons/react/dist/ssr'
+import { ShareNetworkIcon, WifiSlashIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   networkTopologyQueryOptions,
   useNetworkTopology,
 } from '../../queries/networkTopology'
+import { MeshPeersPanel } from '../../components/network/MeshPeersPanel'
 import { NetworkTopologyView } from '../../components/network/NetworkTopologyView'
 import { routeErrorMessage } from '../../lib/apiError'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import type { NetworkTopologyResponse } from '../../types/networkTopology'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shell/PageHeader'
@@ -30,6 +32,7 @@ function NetworkPage() {
     topology.nodes.length === 0 &&
     topology.apps.length === 0 &&
     topology.databases.length === 0
+  const localNodeId = topology.nodes.find((n) => n.is_local)?.id
 
   return (
     <div className="space-y-4">
@@ -37,6 +40,8 @@ function NetworkPage() {
         title="Network"
         description={`Everything on the mesh, grouped by node. Zone ${topology.zone}.`}
       />
+
+      <MeshDisabledNotice topology={topology} />
 
       {empty ? (
         <EmptyState
@@ -55,7 +60,38 @@ function NetworkPage() {
       ) : (
         <NetworkTopologyView topology={topology} />
       )}
+
+      <MeshPeersPanel localNodeId={localNodeId} />
     </div>
+  )
+}
+
+// Surfaces topology.mesh_enabled explicitly rather than leaving an
+// operator to infer it from missing mesh addresses on the resource
+// cards: a control plane with mesh networking off (APP_MESH_ENABLED
+// unset, the default) still renders a perfectly normal-looking topology
+// for a single node, so this distinguishes "expected, this is one node"
+// from "worth knowing about, there are N registered nodes that cannot
+// reach each other over the mesh."
+function MeshDisabledNotice({
+  topology,
+}: {
+  topology: NetworkTopologyResponse
+}) {
+  if (topology.mesh_enabled) {
+    return null
+  }
+  const multiNode = topology.nodes.length > 1
+  return (
+    <Alert variant={multiNode ? 'destructive' : 'default'}>
+      <WifiSlashIcon />
+      <AlertTitle>Mesh networking is not enabled</AlertTitle>
+      <AlertDescription>
+        {multiNode
+          ? `${topology.nodes.length} nodes are registered, but this control plane has no WireGuard mesh running, so apps and databases placed on different nodes may not be able to reach each other by internal DNS. Set APP_MESH_ENABLED=1 to bring it up.`
+          : "Expected for a single-node deployment: everything here resolves locally, so there's no mesh cost to pay. Set APP_MESH_ENABLED=1 if this control plane will manage more than one node."}
+      </AlertDescription>
+    </Alert>
   )
 }
 

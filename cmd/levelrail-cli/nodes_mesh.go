@@ -154,15 +154,73 @@ mesh" and its "rotation" field to see when every reachable peer has
 caught up. A brief reconnect blip on this node's mesh traffic is possible
 until it does.
 
-Only the node running the target control plane itself can be rotated
-today; rotating a remote node returns a 501 explaining why (the agent
-wire extension key rotation needs for a remote node does not exist yet).
+Works for any node currently connected to this control plane, local or
+remote.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print the rotation result as JSON to stdout, nothing else
+  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
+  --query string           JMESPath expression to filter the result before printing
+  -h, --help               show this help
+`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+// runNodesRejoinMesh implements "nodes rejoin-mesh <id>": POST
+// /api/v1/nodes/{id}/mesh/rejoin, mirroring runNodesRotateKey's own
+// single-id, no-body POST shape.
+func runNodesRejoinMesh(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes rejoin-mesh", "print the rejoin result as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesRejoinMeshUsage(prog)) }
+
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+
+	id, ok := requireOneArg(fs, stderr, prog, "nodes rejoin-mesh", "node id")
+	if !ok {
+		return exitUsage
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	result, err := client.RejoinNodeMesh(context.Background(), id)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("rejoin mesh for node %q: %w", id, err))
+	}
+
+	if err := renderResult(stdout, of.Format, of.Query, result, func() {
+		if result.Requested {
+			_, _ = fmt.Fprintf(stdout, "node %q: mesh resync requested now\n", id)
+		} else {
+			_, _ = fmt.Fprintf(stdout, "node %q: no reconcile nudger configured, mesh converges on its next scheduled pass\n", id)
+		}
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+func nodesRejoinMeshUsage(prog string) string {
+	return fmt.Sprintf(`Usage:
+  %[1]s nodes rejoin-mesh <id> [flags]
+
+Forces an immediate whole-fleet mesh reconcile pass rather than waiting
+for the next scheduled resync, for a peer that looks stuck in "%[1]s
+nodes mesh" (never handshaked, or stale). <id> is only used to confirm
+the node exists: internal/reconcile/mesh has no per-node reconcile
+operation, so this nudges the same full pass every mesh-affecting change
+already nudges, not something scoped to just that one node.
+
+Flags:
+  --token string          API token (default: %[2]s env var, then the credentials file)
+  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
+  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
+  --json                    print the rejoin result as JSON to stdout, nothing else
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help

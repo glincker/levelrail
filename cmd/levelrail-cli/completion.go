@@ -174,7 +174,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"list": nil, "get": nil, "delete": nil, "join-token": nil,
 		"cordon": nil, "uncordon": nil, "drain": nil, "workloads": nil,
 		"health": nil, "patch-status": nil, "events": nil, "metrics": nil, "resource-usage": nil,
-		"mesh": nil, "rotate-key": nil, "reenroll-token": nil, "revoke-cert": nil,
+		"mesh": nil, "rotate-key": nil, "rejoin-mesh": nil, "reenroll-token": nil, "revoke-cert": nil,
 		"providers":      {subs: map[string]*cmdNode{"list": nil, "set-credential": nil}},
 		"provision":      nil,
 		"provisions":     {subs: map[string]*cmdNode{"list": nil, "show": nil}},

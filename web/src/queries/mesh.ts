@@ -15,7 +15,11 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
-import type { MeshStatusResource, RotateKeyResponse } from '../types/mesh'
+import type {
+  MeshStatusResource,
+  RejoinMeshResponse,
+  RotateKeyResponse,
+} from '../types/mesh'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { nodeKeys } from './nodes'
 
@@ -79,6 +83,40 @@ export function useRotateNodeMeshKey() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: rotateNodeMeshKey,
+    onSuccess: (_result, id) => {
+      void queryClient.invalidateQueries({ queryKey: meshKeys.status() })
+      void queryClient.invalidateQueries({ queryKey: nodeKeys.detail(id) })
+    },
+  })
+}
+
+// POST /api/v1/nodes/{id}/mesh/rejoin (internal/api/mesh.go's
+// handleRejoinNodeMesh): forces an immediate fleet-wide mesh reconcile
+// pass rather than waiting for the next scheduled resync, for a peer
+// that looks stuck (never handshaked, or stale). Invalidates mesh status
+// the same way rotateNodeMeshKey does; the pass itself runs
+// asynchronously, so the fresh peer data may take one more status
+// refetch to show a healthy handshake.
+export async function rejoinNodeMesh(id: string): Promise<RejoinMeshResponse> {
+  const res = await fetch(
+    `/api/v1/nodes/${encodeURIComponent(id)}/mesh/rejoin`,
+    {
+      method: 'POST',
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `rejoin mesh failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as RejoinMeshResponse
+}
+
+export function useRejoinNodeMesh() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: rejoinNodeMesh,
     onSuccess: (_result, id) => {
       void queryClient.invalidateQueries({ queryKey: meshKeys.status() })
       void queryClient.invalidateQueries({ queryKey: nodeKeys.detail(id) })

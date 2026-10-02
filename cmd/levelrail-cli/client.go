@@ -174,6 +174,7 @@ type (
 	meshPeerResource            = apiclient.MeshPeerResource
 	meshRotationResource        = apiclient.MeshRotationResource
 	rotateKeyResponse           = apiclient.RotateKeyResponse
+	rejoinMeshResponse          = apiclient.RejoinMeshResponse
 
 	nodeProviderResource             = apiclient.NodeProviderResource
 	nodeProviderRegionResource       = apiclient.NodeProviderRegionResource
