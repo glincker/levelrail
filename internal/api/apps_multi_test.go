@@ -382,6 +382,24 @@ func TestHandleDeploySpec_MissingRepoURL_Rejected(t *testing.T) {
 	}
 }
 
+// TestHandleDeploySpec_FetchFails_LogsRedactedRepoURL proves a fetch
+// failure is reported as a 400 and that the error-path log line still
+// runs (it must never leak a credential embedded in repo_url).
+func TestHandleDeploySpec_FetchFails_LogsRedactedRepoURL(t *testing.T) {
+	builder := &fakeBuilder{tag: "img:sha"}
+	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("", errors.New("clone failed")))
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/deploy-spec", multiDeployBody()))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+	if builder.multiCalls != 0 {
+		t.Errorf("builder.multiCalls = %d, want 0: a failed fetch must never reach the builder", builder.multiCalls)
+	}
+}
+
 func TestHandleDeploySpec_NoServices_Rejected(t *testing.T) {
 	builder := &fakeBuilder{tag: "img:sha"}
 	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))

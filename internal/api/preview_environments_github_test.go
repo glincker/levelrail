@@ -250,3 +250,19 @@ func TestNotifyPreviewSuccess_NoPrimaryDomain(t *testing.T) {
 		t.Errorf("notifyPreviewSuccess created %d comments, want 0 (comments go through upsertPreviewComment)", len(fakeClient.commentCalls))
 	}
 }
+
+// TestPreviewGitHubTarget_RepoNotOnConnectedInstance proves a connected,
+// installed GitHub App with post_pr_comments on still no-ops (and logs,
+// with repo_url redacted) when the app's repo_url isn't hosted on the
+// connected installation's own instance.
+func TestPreviewGitHubTarget_RepoNotOnConnectedInstance(t *testing.T) {
+	rt, _, _, _ := setUpPreviewAppWithGitHubNotifications(t, true)
+
+	_, _, _, _, ok := rt.previewGitHubTarget(context.Background(), "web", store.GitSource{ //nolint:gosec // test fixture URL, not a real credential
+		PostPRComments: true,
+		RepoURL:        "https://user:tok@gitlab.example.com/org/web.git",
+	})
+	if ok {
+		t.Error("previewGitHubTarget ok = true, want false for a repo_url not on the connected github instance")
+	}
+}

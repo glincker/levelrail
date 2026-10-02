@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,6 +13,19 @@ import (
 	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// failingGiteaAppStore wraps a real *store.DB so Get/DeleteGiteaAppConnection
+// behave normally, but SaveGiteaAppConnection always fails: the handler's
+// own "save failed" error path (logged with a redacted instance_url) has
+// no other trigger than a real store error.
+type failingGiteaAppStore struct {
+	*store.DB
+	saveErr error
+}
+
+func (f *failingGiteaAppStore) SaveGiteaAppConnection(context.Context, store.GiteaAppConnection) error {
+	return f.saveErr
+}
 
 // fakeGiteaAppSecrets is a hand-written fake for GiteaAppSecrets, the
 // same pattern fakeGitLabAppSecrets already establishes.
@@ -247,6 +261,23 @@ func TestHandleConnectGiteaApp_Success(t *testing.T) {
 	got, err := secrets.Resolve(context.Background(), store.GiteaAppSecretsKey(), giteaAppClientSecretKey)
 	if err != nil || got != "csecret" {
 		t.Errorf("stored client_secret = %q, err = %v, want csecret", got, err)
+	}
+}
+
+// TestHandleConnectGiteaApp_SaveFails_LogsRedactedInstanceURL proves a
+// store failure saving the connection is reported as a 500 and that the
+// error-path log line still runs (it must never leak credentials
+// embedded in instance_url).
+func TestHandleConnectGiteaApp_SaveFails_LogsRedactedInstanceURL(t *testing.T) {
+	rt, db := newTestRouterWithGiteaApp(t, newFakeGiteaAppSecrets(), &fakeGiteaAppClient{})
+	cookie := loginTestSession(t, rt, db)
+	rt.giteaApp = &failingGiteaAppStore{DB: db, saveErr: errors.New("save failed")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/gitea-app",
+		`{"instance_url":"https://user:tok@git.example.com","client_id":"cid","client_secret":"csecret"}`))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
 	}
 }
 

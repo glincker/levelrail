@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // giteaPullRequestBody builds a pull_request event payload carrying
@@ -180,6 +181,24 @@ func TestHandlePullRequestWebhook_Gitea_PostPRComments_Teardown_PostsComment(t *
 	}
 	if n := len(fakeClient.prComments.updates); n == 0 || !strings.Contains(fakeClient.prComments.updates[n-1].Body, "Preview environment: removed") {
 		t.Errorf("teardown updates = %+v, want the last edit to say removed", fakeClient.prComments.updates)
+	}
+}
+
+// TestPreviewGiteaTarget_RepoNotOnConnectedInstance proves a connected,
+// authorized Gitea application with post_pr_comments on still no-ops
+// (and logs, with repo_url redacted) when the app's repo_url isn't
+// hosted on the connected instance.
+func TestPreviewGiteaTarget_RepoNotOnConnectedInstance(t *testing.T) {
+	giteaSecrets := authorizedGiteaSecrets(t)
+	rt, db := newTestRouterWithGiteaAndGitSource(t, giteaSecrets, &fakeGiteaAppClient{}, newFakeGitSourceSecrets())
+	seedGiteaAppConnection(t, db) // instance_url: https://git.example.com
+
+	_, _, _, ok := rt.previewGiteaTarget(context.Background(), "web", store.GitSource{ //nolint:gosec // test fixture URL, not a real credential
+		PostPRComments: true,
+		RepoURL:        "https://user:tok@github.com/org/web.git",
+	})
+	if ok {
+		t.Error("previewGiteaTarget ok = true, want false for a repo_url not on the connected gitea instance")
 	}
 }
 
