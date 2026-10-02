@@ -44,6 +44,10 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// on the login screen itself).
 	mux.HandleFunc("GET /api/v1/brand", rt.handleBrand)
 	mux.HandleFunc("GET /api/v1/dev-mode", rt.handleDevMode)
+	// Route metadata for the in-app API explorer (web/src/routes/settings/api-explorer.tsx):
+	// AbilityRead, same tier as system/status, since this is the API
+	// surface's own shape, not resource data.
+	mux.HandleFunc("GET /api/v1/openapi.json", rt.requireAbility(AbilityRead, rt.handleOpenAPISpec))
 
 	// System status (General settings page): configured/not-configured
 	// signals plus disk usage, AbilityRead like everything else an

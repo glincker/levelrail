@@ -2257,6 +2257,30 @@ type SystemDoctorResource struct {
 	Checks []DoctorCheckResource `json:"checks"`
 }
 
+// OpenAPIRouteResource mirrors internal/api's openAPISpecRoute exactly:
+// one registered route plus, for a hand-annotated few, a worked
+// request/response example (see internal/api/openapi.go).
+type OpenAPIRouteResource struct {
+	Method       string          `json:"method"`
+	Path         string          `json:"path"`
+	Ability      string          `json:"ability"`
+	Group        string          `json:"group"`
+	Handler      string          `json:"handler"`
+	Description  string          `json:"description,omitempty"`
+	RequestBody  json.RawMessage `json:"requestBody,omitempty"`
+	ResponseBody json.RawMessage `json:"responseBody,omitempty"`
+}
+
+// OpenAPISpecResource mirrors internal/api's openAPISpec: the "levelrail-cli
+// api-docs" and web API explorer's shared data source, generated at build
+// time by scripts/gen-api-reference from the routes*.go registrations.
+type OpenAPISpecResource struct {
+	Version      int                    `json:"version"`
+	Count        int                    `json:"count"`
+	ExampleCount int                    `json:"exampleCount"`
+	Routes       []OpenAPIRouteResource `json:"routes"`
+}
+
 // PipelineOIDCResource mirrors internal/api's oidcInfoResource: whether
 // pipeline jobs can mint OIDC tokens on this control plane, and the URLs
 // an operator wires into a cloud provider's OIDC trust policy.

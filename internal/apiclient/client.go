@@ -2749,6 +2749,14 @@ func (c *Client) GetSystemDoctor(ctx context.Context) (SystemDoctorResource, err
 	return out, err
 }
 
+// GetOpenAPISpec calls GET /api/v1/openapi.json: the route metadata
+// behind "levelrail-cli api-docs" and the web dashboard's API explorer.
+func (c *Client) GetOpenAPISpec(ctx context.Context) (OpenAPISpecResource, error) {
+	var out OpenAPISpecResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/openapi.json", nil, &out)
+	return out, err
+}
+
 // GetPipelineOIDCInfo calls GET /api/v1/pipelines/oidc: whether pipeline
 // jobs can mint OIDC tokens on this control plane, and the URLs an
 // operator wires into a cloud provider's OIDC trust policy.
