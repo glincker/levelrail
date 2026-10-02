@@ -468,6 +468,7 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/metrics | AbilityRoot | handleQueryNodeMetrics |
 | GET | /api/v1/nodes/{id}/patch-status | AbilityRoot | handleGetNodePatchStatus |
 | GET | /api/v1/nodes/{id}/events | AbilityRoot | handleListNodeEvents |
+| GET | /api/v1/nodes/{id}/capacity-forecast | AbilityRoot | handleNodeCapacityForecast |
 | POST | /api/v1/nodes/{id}/reenroll-token | AbilityRoot | handleCreateNodeReenrollToken |
 | POST | /api/v1/nodes/{id}/revoke-cert | AbilityRoot | handleRevokeNodeCert |
 | POST | /api/v1/nodes/{id}/mesh/rotate-key | AbilityRoot | handleRotateNodeMeshKey |

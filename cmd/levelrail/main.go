@@ -2141,6 +2141,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			nodeCPUThreshold(logger), nodeMemoryThreshold(logger),
 		),
 		api.WithResourceRecommendationLookback(resourceRecommendationLookback(logger)),
+		api.WithCapacityForecastLookback(capacityForecastLookback(logger)),
 		api.WithPreviewTTL(previewTTL(logger)),
 		api.WithPreviewLimits(previewLimits(logger)),
 		api.WithPreviewStuckAfter(previewStuckAfter(logger)),
@@ -3068,6 +3069,25 @@ func resourceRecommendationLookback(logger *slog.Logger) time.Duration {
 	d, err := time.ParseDuration(raw)
 	if err != nil {
 		logger.Warn("invalid APP_RESOURCE_RECOMMENDATION_LOOKBACK, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return d
+}
+
+// capacityForecastLookback reads APP_CAPACITY_FORECAST_LOOKBACK as a Go
+// duration string, the same env-var-with-default shape
+// resourceRecommendationLookback above already uses for its own
+// duration-typed option. Returns 0 (api's own signal to fall back to
+// its internal default, api.defaultCapacityForecastLookback) when unset
+// or unparseable, logging a warning in the latter case.
+func capacityForecastLookback(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_CAPACITY_FORECAST_LOOKBACK")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_CAPACITY_FORECAST_LOOKBACK, using the default", slog.String("value", raw), slog.String("error", err.Error()))
 		return 0
 	}
 	return d

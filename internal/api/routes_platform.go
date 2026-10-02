@@ -418,6 +418,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// series, same AbilityRoot boundary as every other node route.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/patch-status", rt.requireAbility(AbilityRoot, rt.handleGetNodePatchStatus))
 	mux.HandleFunc("GET /api/v1/nodes/{id}/events", rt.requireAbility(AbilityRoot, rt.handleListNodeEvents))
+	// Rough disk/memory exhaustion projection (node_capacity_forecast.go),
+	// a read-and-suggest layer over the same host samples
+	// patch-status/metrics above read, same AbilityRoot boundary and
+	// nil-telemetry 501 shape as every other node route.
+	mux.HandleFunc("GET /api/v1/nodes/{id}/capacity-forecast", rt.requireAbility(AbilityRoot, rt.handleNodeCapacityForecast))
 	// Agent certificate lifecycle (node_cert.go, ADR 021).
 	mux.HandleFunc("POST /api/v1/nodes/{id}/reenroll-token", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleCreateNodeReenrollToken))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/revoke-cert", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleRevokeNodeCert))

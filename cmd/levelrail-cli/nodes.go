@@ -49,6 +49,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesMetrics(prog, rest, stdout, stderr, lookupEnv)
 	case "resource-usage":
 		return runNodesResourceUsage(prog, rest, stdout, stderr, lookupEnv)
+	case "capacity-forecast":
+		return runNodesCapacityForecast(prog, rest, stdout, stderr, lookupEnv)
 	case "mesh":
 		return runNodesMesh(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-key":
@@ -91,6 +93,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes events <id> [--limit N] [flags]                        show a node's recent online/offline/cordon transitions
   %[1]s nodes metrics <id> --metric NAME [flags]                     query a node's metric time series
   %[1]s nodes resource-usage [flags]                                 show every node's latest CPU/memory/disk usage, plus a fleet rollup
+  %[1]s nodes capacity-forecast <id> [flags]                        project disk/memory usage forward, roughly how many days until full
   %[1]s nodes mesh [flags]                                           show this control plane's live WireGuard mesh state and peers
   %[1]s nodes rotate-key <id> [flags]                                rotate a node's WireGuard key (local or remote)
   %[1]s nodes rejoin-mesh <id> [flags]                               force an immediate mesh resync for a peer that looks stuck

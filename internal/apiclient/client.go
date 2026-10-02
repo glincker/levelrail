@@ -2753,6 +2753,19 @@ func (c *Client) GetNodePatchStatus(ctx context.Context, id string) (NodePatchSt
 	return out, err
 }
 
+// GetNodeCapacityForecast calls GET /api/v1/nodes/{id}/capacity-forecast
+// (internal/api/node_capacity_forecast.go's
+// handleNodeCapacityForecast): a rough "days until full at the current
+// trend" projection for id's disk and memory, derived from a
+// deterministic linear-trend fit over recent usage history, never from
+// an external model. Disk/Memory come back nil when the fitted trend is
+// flat or improving, or there isn't enough history yet.
+func (c *Client) GetNodeCapacityForecast(ctx context.Context, id string) (NodeCapacityForecastResource, error) {
+	var out NodeCapacityForecastResource
+	err := c.do(ctx, http.MethodGet, nodePath(id)+"/capacity-forecast", nil, &out)
+	return out, err
+}
+
 // ListNodeEvents calls GET /api/v1/nodes/{id}/events: the node's recent
 // status transitions, newest first. limit <= 0 uses the server default.
 func (c *Client) ListNodeEvents(ctx context.Context, id string, limit int) ([]NodeStatusEventResource, error) {
