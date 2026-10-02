@@ -80,6 +80,7 @@ Four main types, plus two Levelrail-specific categories:
 | --- | --- |
 | [observability.md](observability.md) | Node-local metrics and log storage, federated queries, and the alert engine |
 | [deployments-page.md](deployments-page.md) | The cross-app Deployments page: live feed, filters, details drawer, actions and keyboard shortcuts |
+| [cost-estimate.md](cost-estimate.md) | The per-app "what this would cost elsewhere" estimate: the formula, reference providers, and how to correct the rates for your own region |
 
 #### Multi-Node Setup
 

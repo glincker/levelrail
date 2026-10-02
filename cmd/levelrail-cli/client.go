@@ -126,6 +126,8 @@ type (
 	diagnosisSignal                  = apiclient.DiagnosisSignal
 	resourceRecommendationResource   = apiclient.ResourceRecommendationResource
 	dimensionRecommendationResource  = apiclient.DimensionRecommendationResource
+	costEstimateResource             = apiclient.CostEstimateResource
+	costEstimateProviderResource     = apiclient.CostEstimateProviderResource
 
 	backupTargetResource            = apiclient.BackupTargetResource
 	createBackupTargetRequest       = apiclient.CreateBackupTargetRequest
