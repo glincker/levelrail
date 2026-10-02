@@ -112,7 +112,7 @@ function TemplateDetailRoute() {
         </Alert>
       ) : null}
 
-      <div className="flex justify-end">
+      <div className="flex flex-col items-end gap-1.5">
         {template.requires_configuration ? (
           <CreateResourceWizard
             initialSelected="browse-templates"
@@ -125,16 +125,22 @@ function TemplateDetailRoute() {
             }
           />
         ) : (
-          <Button
-            type="button"
-            disabled={deploying}
-            onClick={() => {
-              deployTemplateNow.deploy(template.id)
-            }}
-          >
-            <RocketLaunchIcon />
-            {deploying ? 'Deploying...' : 'Deploy now'}
-          </Button>
+          <>
+            <Button
+              type="button"
+              disabled={deploying}
+              onClick={() => {
+                deployTemplateNow.deploy(template.id)
+              }}
+            >
+              <RocketLaunchIcon />
+              {deploying ? 'Deploying...' : 'Deploy now'}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Deploys as a trial instance you can stop and delete anytime from
+              its own page.
+            </p>
+          </>
         )}
       </div>
     </div>

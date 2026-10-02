@@ -1170,6 +1170,50 @@ func TestSaveDesiredService_RedeployDoesNotResetAppID(t *testing.T) {
 	}
 }
 
+func TestSaveDesiredService_IsTrial_WrittenOnInsert(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "myapp-web", Image: "img:v1", IsTrial: true}); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "myapp-web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if !got.IsTrial {
+		t.Errorf("IsTrial = false, want true")
+	}
+}
+
+// TestSaveDesiredService_RedeployDoesNotResetIsTrial mirrors
+// TestSaveDesiredService_RedeployDoesNotResetAppID: IsTrial is fixed at
+// creation, an ordinary redeploy carries no opinion on it at all.
+func TestSaveDesiredService_RedeployDoesNotResetIsTrial(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "myapp-web", Image: "img:v1", IsTrial: true}); err != nil {
+		t.Fatalf("initial SaveDesiredService() error = %v", err)
+	}
+
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "myapp-web", Image: "img:v2"}); err != nil {
+		t.Fatalf("redeploy SaveDesiredService() error = %v", err)
+	}
+
+	got, err := db.GetDesiredService(ctx, "myapp-web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	if got.Image != "img:v2" {
+		t.Errorf("Image = %q, want img:v2 (the redeploy itself must still take effect)", got.Image)
+	}
+	if !got.IsTrial {
+		t.Errorf("IsTrial = false, want true (a redeploy must not silently clear trial status)")
+	}
+}
+
 // TestListDesiredServicesByNode is the drain and
 // delete-guard primitive: find what's placed on a node without
 // listing every service and filtering client-side.

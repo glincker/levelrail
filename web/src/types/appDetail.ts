@@ -190,6 +190,11 @@ export interface AppDetail {
   // (useStopApp/useStartApp), the same node_id/project_id shape above.
   // No omitempty on the Go side (always present, never ambiguous).
   suspended: boolean
+  // is_trial carries `omitempty` on the Go side: true only for a service
+  // deployed through the template catalog's one-click "Deploy now" path
+  // (internal/api/service_templates.go's handleDeployServiceTemplateNow).
+  // Response-only and never flips after create, drives TrialAppBanner.
+  is_trial?: boolean
   // log_drain carries `omitempty` on the Go side and is response-only
   // (internal/api/apps.go's appResource own doc comment): forwards this
   // app's container logs to an external HTTP or syslog sink, additive
