@@ -302,6 +302,8 @@ Endpoints for:
 | GET | /api/v1/previews | AbilityRead | handleListAllPreviews |
 | POST | /api/v1/apps/{name}/previews/{number}/approve | AbilityWriteSensitive | handleApprovePreviewEnvironment |
 | POST | /api/v1/apps/{name}/git-source/rotate-webhook-secret | AbilityWriteSensitive | handleRotateGitSourceWebhookSecret |
+| POST | /api/v1/webhooks/slack/interactions | Public | handleSlackInteraction |
+| POST | /api/v1/webhooks/discord/interactions | Public | handleDiscordInteraction |
 
 ## Telemetry
 
@@ -436,6 +438,8 @@ Endpoints for:
 | GET | /api/v1/projects/{id}/env/secrets | AbilityRead | handleListProjectEnvSecretKeys |
 | PUT | /api/v1/projects/{id}/env/secrets/{key} | AbilityWrite | handleSetProjectEnvSecret |
 | DELETE | /api/v1/projects/{id}/env/secrets/{key} | AbilityWrite | handleDeleteProjectEnvSecret |
+| GET | /api/v1/projects/{id}/environments/compare | AbilityRead | handleCompareEnvironmentEnv |
+| GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
 | GET | /api/v1/projects/{id}/environments/compare | AbilityRead | handleCompareEnvironmentEnv |
 | GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
 <<<<<<< HEAD
