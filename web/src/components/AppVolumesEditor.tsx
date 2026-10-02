@@ -1,7 +1,12 @@
+import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { TrashIcon, HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  TrashIcon,
+  HardDrivesIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,6 +16,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import {
   Field,
   FieldError,
@@ -44,6 +58,73 @@ const newVolumeSchema = z.object({
 })
 
 type NewVolumeFormValues = z.infer<typeof newVolumeSchema>
+
+// Detaching stops the container from mounting this path on its next
+// restart, so a confirm step matters even though the volume itself
+// (and its data) is untouched in Docker.
+function DetachVolumeButton({
+  volume,
+  disabled,
+  onConfirm,
+}: {
+  volume: AppVolume
+  disabled: boolean
+  onConfirm: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            disabled={disabled}
+            aria-label={`Detach ${volume.name}`}
+          />
+        }
+      >
+        <TrashIcon
+          className="size-4 text-muted-foreground"
+          aria-hidden="true"
+        />
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-1.5 text-destructive">
+            <WarningIcon className="size-4" aria-hidden="true" />
+            Detach &ldquo;{volume.name}&rdquo;?
+          </DialogTitle>
+          <DialogDescription>
+            {volume.container_path} stops being mounted on this app&apos;s next
+            redeploy or restart. The volume itself is not deleted and can be
+            reattached later.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => {
+              setOpen(false)
+              onConfirm()
+            }}
+          >
+            Detach
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 // Attach (or remove) a named Docker volume on this service outside a
 // redeploy, via PUT /api/v1/apps/{name}/volumes (queries/appVolumes.ts).
@@ -108,7 +189,7 @@ export function AppVolumesEditor({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <HardDrivesIcon className="size-4" />
+          <HardDrivesIcon className="size-4" aria-hidden="true" />
           Volumes
         </CardTitle>
         <CardDescription>
@@ -130,18 +211,13 @@ export function AppVolumesEditor({
                     {v.container_path}
                   </span>
                 </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
+                <DetachVolumeButton
+                  volume={v}
                   disabled={setVolumes.isPending}
-                  onClick={() => {
+                  onConfirm={() => {
                     removeVolume(v.name)
                   }}
-                  aria-label={`Detach ${v.name}`}
-                >
-                  <TrashIcon className="size-4 text-muted-foreground" />
-                </Button>
+                />
               </li>
             ))}
           </ul>

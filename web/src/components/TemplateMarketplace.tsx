@@ -117,7 +117,10 @@ function CategorySidebar({
   onChange: (category: string) => void
 }) {
   return (
-    <nav className="hidden md:sticky md:top-4 md:block md:self-start">
+    <nav
+      aria-label="Template categories"
+      className="hidden md:sticky md:top-4 md:block md:self-start"
+    >
       <p className="px-2 pb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
         Categories
       </p>
@@ -189,7 +192,7 @@ function CategoryChips({
 }) {
   return (
     <div
-      role="tablist"
+      role="group"
       aria-label="Filter templates by category"
       className="flex gap-2 overflow-x-auto pb-1 md:hidden"
     >
@@ -293,7 +296,7 @@ function MarketplaceCard({
           onDeployNow(template)
         }}
       >
-        <RocketLaunchIcon />
+        <RocketLaunchIcon aria-hidden="true" />
         {deploying
           ? 'Deploying...'
           : template.requires_configuration
@@ -464,7 +467,7 @@ export function TemplateMarketplace({
         <LoadingGrid />
       ) : templatesQuery.isError ? (
         <Alert variant="destructive">
-          <WarningIcon />
+          <WarningIcon aria-hidden="true" />
           <AlertDescription>{templatesQuery.error.message}</AlertDescription>
         </Alert>
       ) : (
@@ -505,7 +508,7 @@ export function TemplateMarketplace({
                         setCategory(ALL_CATEGORIES)
                       }}
                     >
-                      <XIcon />
+                      <XIcon aria-hidden="true" />
                       Clear filters
                     </Button>
                   ) : undefined

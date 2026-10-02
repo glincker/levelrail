@@ -92,7 +92,10 @@ function FirewallPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
-              <ShieldIcon className="size-4 text-muted-foreground" />
+              <ShieldIcon
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
               Live firewall status
             </CardTitle>
           </CardHeader>
@@ -166,14 +169,14 @@ function ActionBadge({ action }: { action: FirewallRuleAction }) {
   if (action === 'deny') {
     return (
       <Badge variant="destructive" className="gap-1">
-        <ProhibitIcon className="size-3" />
+        <ProhibitIcon className="size-3" aria-hidden="true" />
         Deny
       </Badge>
     )
   }
   return (
     <Badge variant="success" className="gap-1">
-      <CheckCircleIcon className="size-3" />
+      <CheckCircleIcon className="size-3" aria-hidden="true" />
       Allow
     </Badge>
   )
@@ -205,7 +208,7 @@ function CloseWarning({
   }
   return (
     <Alert variant="destructive">
-      <WarningIcon />
+      <WarningIcon aria-hidden="true" />
       <AlertTitle>
         {action === 'deny'
           ? 'This rule will close a port'
@@ -267,7 +270,7 @@ function AddFirewallRuleDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button />}>
-        <PlusIcon />
+        <PlusIcon aria-hidden="true" />
         Add rule
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -362,7 +365,7 @@ function AddFirewallRuleDialog() {
 
           {createRule.isError ? (
             <Alert variant="destructive">
-              <WarningIcon />
+              <WarningIcon aria-hidden="true" />
               <AlertDescription>{createRule.error.message}</AlertDescription>
             </Alert>
           ) : null}
@@ -418,13 +421,16 @@ function DeleteFirewallRuleDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <TrashIcon />
+        <TrashIcon aria-hidden="true" />
         Remove
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <WarningIcon className="size-4 text-destructive" />
+            <WarningIcon
+              className="size-4 text-destructive"
+              aria-hidden="true"
+            />
             Remove this rule?
           </DialogTitle>
           <DialogDescription>
@@ -435,7 +441,7 @@ function DeleteFirewallRuleDialog({
         </DialogHeader>
         {deleteRule.isError ? (
           <Alert variant="destructive">
-            <WarningIcon />
+            <WarningIcon aria-hidden="true" />
             <AlertDescription>{deleteRule.error.message}</AlertDescription>
           </Alert>
         ) : null}

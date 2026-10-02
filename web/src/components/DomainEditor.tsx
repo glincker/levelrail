@@ -103,7 +103,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GlobeIcon className="size-4" />
+          <GlobeIcon className="size-4" aria-hidden="true" />
           Domains
         </CardTitle>
         <CardDescription>
@@ -168,7 +168,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                           remove(index)
                         }}
                       >
-                        <XIcon />
+                        <XIcon aria-hidden="true" />
                         <span className="sr-only">Remove domain</span>
                       </Button>
                     </Field>
@@ -248,7 +248,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                 append({ value: '' })
               }}
             >
-              <PlusIcon />
+              <PlusIcon aria-hidden="true" />
               Add domain
             </Button>
             <Button type="submit" size="sm" disabled={updateApp.isPending}>

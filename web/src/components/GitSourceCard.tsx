@@ -1072,6 +1072,8 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                     const rowIssues = rowName ? issuesForService(rowName) : []
                     const isDuplicate =
                       rowName !== '' && duplicateNames.has(rowName)
+                    const hasRowProblem = isDuplicate || rowIssues.length > 0
+                    const rowErrorId = `service-row-error-${index}`
                     return (
                       <div key={index} className="space-y-1">
                         <div className="flex items-start gap-2">
@@ -1088,6 +1090,10 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                             }}
                             disabled={connectMutation.isPending}
                             aria-label="Service name"
+                            aria-invalid={hasRowProblem}
+                            aria-describedby={
+                              hasRowProblem ? rowErrorId : undefined
+                            }
                           />
                           <Select
                             value={row.buildType}
@@ -1157,11 +1163,19 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                           </Button>
                         </div>
                         {isDuplicate ? (
-                          <p className="text-xs text-destructive">
+                          <p
+                            id={rowErrorId}
+                            role="alert"
+                            className="text-xs text-destructive"
+                          >
                             Another row already uses this service name.
                           </p>
                         ) : rowIssues.length > 0 ? (
-                          <ul className="space-y-0.5">
+                          <ul
+                            id={rowErrorId}
+                            role="alert"
+                            className="space-y-0.5"
+                          >
                             {rowIssues.map((issue, i) => (
                               <li key={i} className="text-xs text-destructive">
                                 {issue.message}
@@ -1183,12 +1197,15 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                     Add service
                   </Button>
                   {specValidation.isFetching ? (
-                    <p className="text-xs text-muted-foreground">
+                    <p
+                      className="text-xs text-muted-foreground"
+                      aria-live="polite"
+                    >
                       Checking against the app spec schema...
                     </p>
                   ) : null}
                   {unmatchedSpecIssues.length > 0 ? (
-                    <ul className="space-y-0.5">
+                    <ul className="space-y-0.5" role="alert">
                       {unmatchedSpecIssues.map((issue, i) => (
                         <li key={i} className="text-xs text-destructive">
                           {issue.path ? `${issue.path}: ` : ''}

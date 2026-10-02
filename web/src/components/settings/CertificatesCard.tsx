@@ -59,7 +59,7 @@ function CertificateRow({ cert }: { cert: CertificateStatus }) {
         </p>
       </div>
       <Badge variant={meta.variant}>
-        <StatusIcon />
+        <StatusIcon aria-hidden="true" />
         {meta.label}
       </Badge>
     </div>
@@ -80,7 +80,7 @@ export function CertificatesCard() {
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <ShieldCheckIcon className="size-4" />
+            <ShieldCheckIcon className="size-4" aria-hidden="true" />
           </div>
           <div>
             <CardTitle>TLS certificates</CardTitle>

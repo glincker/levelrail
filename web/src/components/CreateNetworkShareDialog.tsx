@@ -151,7 +151,10 @@ export function CreateNetworkShareDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <HardDrivesIcon className="size-4 text-muted-foreground" />
+                <HardDrivesIcon
+                  className="size-4 text-muted-foreground"
+                  aria-hidden="true"
+                />
                 Add network share
               </DialogTitle>
             </DialogHeader>
@@ -181,7 +184,10 @@ export function CreateNetworkShareDialog() {
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <HardDrivesIcon className="size-4 text-muted-foreground" />
+                <HardDrivesIcon
+                  className="size-4 text-muted-foreground"
+                  aria-hidden="true"
+                />
                 Add network share
               </DialogTitle>
               <DialogDescription>
@@ -294,9 +300,9 @@ export function CreateNetworkShareDialog() {
                         className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
                       >
                         {revealPassword ? (
-                          <EyeSlashIcon className="size-4" />
+                          <EyeSlashIcon className="size-4" aria-hidden="true" />
                         ) : (
-                          <EyeIcon className="size-4" />
+                          <EyeIcon className="size-4" aria-hidden="true" />
                         )}
                       </button>
                     </div>
@@ -324,7 +330,7 @@ export function CreateNetworkShareDialog() {
 
               {generalError ? (
                 <Alert variant="destructive">
-                  <WarningIcon />
+                  <WarningIcon aria-hidden="true" />
                   <AlertDescription>{generalError}</AlertDescription>
                 </Alert>
               ) : null}
