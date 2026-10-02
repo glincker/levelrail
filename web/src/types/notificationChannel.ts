@@ -19,6 +19,7 @@ export type NotificationChannelKind =
   | 'opsgenie'
   | 'webex'
   | 'googlechat'
+  | 'webpush'
 
 export interface NotificationChannel {
   id: string

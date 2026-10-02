@@ -403,7 +403,7 @@ flowchart LR
   - Domain health (periodic DNS check against every domain, catches silently repointed CNAMEs)
   - Backup missing (when scheduled backup trails its cron schedule, catches silently stopped backups)
   
-  Each evaluator is independent. Seventeen notification channel kinds supported: webhook, Slack, Discord, email, Telegram, Pushover, PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark, Rocket.Chat, Opsgenie, Webex, and Google Chat, plus separate deploy-outcome notifications.
+  Each evaluator is independent. Eighteen notification channel kinds supported: webhook, Slack, Discord, email, Telegram, Pushover, PagerDuty, Microsoft Teams, Resend, Gotify, Ntfy, Mattermost, Lark, Rocket.Chat, Opsgenie, Webex, Google Chat, and browser push, plus separate deploy-outcome notifications.
   
   Every channel, including email, retries transient failures up to 3 times with short backoff rather than dropping alerts on one-off hiccups: HTTP-based channels on transport errors or 5xx/429 responses, email on transport errors or an SMTP 4xx reply.
   

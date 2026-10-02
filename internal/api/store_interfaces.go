@@ -558,6 +558,7 @@ type Store interface {
 	InviteStore
 	RecoveryCodeStore
 	PasskeyStore
+	PushSubscriptions
 	AuditStore
 	ScheduledTaskStore
 	FeatureFlagStore

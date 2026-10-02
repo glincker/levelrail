@@ -382,6 +382,8 @@ type Router struct {
 	notificationChannels           NotificationChannels             // nil is valid: notification-channel routes return 501, same shape as deployNotifyTargets above
 	notificationChannelTester      NotificationChannelTester        // nil is valid: the test-send routes return 501, same shape as deployNotifier above
 	notificationDeliveries         NotificationDeliveryStore        // nil is valid: the deliveries route returns 501, and test-send simply doesn't record history, same shape as notificationChannelTester above
+	pushSubscriptions              PushSubscriptions                // always set, same "core Store interface" shape as passkeys below: registering/listing/deleting a browser subscription needs no secrets configuration, only actually sending to one does
+	pushVAPIDPublicKey             string                           // "" means browser push is not configured on this control plane (no master key set), same nil-secretsManager hazard as every Secrets-flavored dependency
 	gitSources                     GitSourceStore                   // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
 	appSchedules                   AppScheduleStore                 // always set, same "core Store interface" shape as gitSources above
 	resolveBranchSHA               resolveBranchSHAFunc             // remote branch head resolver for TriggerScheduledDeploy; always non-nil, defaulted to resolveRemoteBranchSHA in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape listBranches above already uses
@@ -595,6 +597,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		mfaPending:                  newMFAPendingStore(),
 		mfaVerify:                   newLoginLimiter(),
 		passkeys:                    s,
+		pushSubscriptions:           s,
 		passkeyRegSessions:          newPasskeyCeremonyStore(),
 		passkeyLoginSessions:        newPasskeyCeremonyStore(),
 		passkeyLogin:                newLoginLimiter(),

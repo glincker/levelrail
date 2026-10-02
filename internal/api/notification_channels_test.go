@@ -21,7 +21,7 @@ func newTestRouterWithNotificationChannels(t *testing.T) (*Router, *store.DB, *a
 	t.Helper()
 	db := openTestDB(t)
 	adb := newTestAlertingDB(t)
-	tester := alerting.NewDeployDispatcher(adb, nil, nil, nil)
+	tester := alerting.NewDeployDispatcher(adb, nil, nil, nil, nil)
 	rt := NewRouter(nil, testBrand(), db,
 		WithNotificationChannels(adb), WithNotificationChannelTester(tester), WithNotificationDeliveries(adb))
 	return rt, db, adb
@@ -131,6 +131,30 @@ func TestHandleCreateNotificationChannel_NewKindsAccepted(t *testing.T) {
 				t.Errorf("Kind = %q, want %q", got.Kind, tt.kind)
 			}
 		})
+	}
+}
+
+// TestHandleCreateNotificationChannel_WebpushKind_EmptyNotifyURLAccepted
+// is why webpush doesn't go through the table test above: every
+// registered browser subscription is the destination, so unlike every
+// other kind, an empty notify_url must be accepted rather than rejected.
+func TestHandleCreateNotificationChannel_WebpushKind_EmptyNotifyURLAccepted(t *testing.T) {
+	rt, db, _ := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"Browser push","kind":"webpush"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/notification-channels", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got notificationChannelResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Kind != "webpush" || got.NotifyURL != "" {
+		t.Errorf("got = %+v, want kind=webpush with an empty notify_url", got)
 	}
 }
 

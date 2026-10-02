@@ -79,6 +79,7 @@ var validNotifyKinds = []alerting.NotifyKind{
 	alerting.NotifyEmail, alerting.NotifyPushover, alerting.NotifyPagerDuty, alerting.NotifyTeams,
 	alerting.NotifyResend, alerting.NotifyNtfy, alerting.NotifyGotify, alerting.NotifyMattermost, alerting.NotifyLark,
 	alerting.NotifyRocketChat, alerting.NotifyOpsgenie, alerting.NotifyWebex, alerting.NotifyGoogleChat,
+	alerting.NotifyWebpush,
 }
 
 // validateNotifyKind is shared by channel creation and the test-send
@@ -97,12 +98,15 @@ func (req createNotificationChannelRequest) toChannel(id string) (alerting.Notif
 	if req.Name == "" {
 		return alerting.NotificationChannel{}, errors.New("name is required")
 	}
-	if req.NotifyURL == "" {
-		return alerting.NotificationChannel{}, errors.New("notify_url is required")
-	}
 	kind, err := validateNotifyKind(req.Kind)
 	if err != nil {
 		return alerting.NotificationChannel{}, err
+	}
+	// Browser push has no per-channel destination URL: every registered
+	// browser subscription (Settings -> Notification channels -> Browser
+	// push) is the destination, managed separately from this row.
+	if req.NotifyURL == "" && kind != alerting.NotifyWebpush {
+		return alerting.NotificationChannel{}, errors.New("notify_url is required")
 	}
 	enabled := true
 	if req.Enabled != nil {
@@ -270,7 +274,7 @@ func (rt *Router) handleTestNotificationChannel(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if req.NotifyURL == "" {
+	if req.NotifyURL == "" && kind != alerting.NotifyWebpush {
 		writeError(w, http.StatusBadRequest, "notify_url is required")
 		return
 	}

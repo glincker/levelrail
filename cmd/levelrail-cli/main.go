@@ -100,6 +100,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runRegistry(prog, args[1:], stdout, stderr, lookupEnv)
 	case "channels":
 		return runChannels(prog, args[1:], stdout, stderr, lookupEnv)
+	case "push-subscriptions":
+		return runPushSubscriptions(prog, args[1:], stdout, stderr, lookupEnv)
 	case "alerts":
 		return runAlerts(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status-page":
@@ -232,6 +234,7 @@ Usage:
   %[1]s cloudflare-tunnel get|set|disconnect [flags]   expose the control plane through a Cloudflare Tunnel
   %[1]s vault get|set|disconnect [flags]               configure resolving app secrets from an external HashiCorp Vault
   %[1]s channels list|create|delete|test [flags]           manage notification channels (Slack, Discord, Telegram, email, Pushover, webhook)
+  %[1]s push-subscriptions list|revoke [flags]             list or revoke registered browser push subscriptions
   %[1]s alerts silences|silence|maintenance|history        mute alerts, schedule maintenance windows, review alert history
   %[1]s status-page get|set|preview|components|incidents    manage the opt-in public status page
   %[1]s shared-env list|set|delete --scope SCOPE --id ID [flags]   manage project/organization/environment-scoped shared env vars, plain or secret

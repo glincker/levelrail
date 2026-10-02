@@ -236,7 +236,7 @@ type deployGenericPayload struct {
 // the same way NewNotifier does for a Rule: an unknown or empty
 // NotifyKind falls back to the generic JSON shape (deployGenericPayload)
 // so a notification still goes out somewhere.
-func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Sender, t DeployTarget, ev DeployOutcome) error {
+func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Sender, pushSender PushSender, t DeployTarget, ev DeployOutcome) error {
 	if client == nil {
 		client = netguard.NewClient()
 	}
@@ -346,6 +346,18 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
 		}
 		return nil
+	case NotifyWebpush:
+		if pushSender == nil {
+			return fmt.Errorf("alerting: notify deploy outcome: browser push is not configured on this control plane")
+		}
+		title := fmt.Sprintf("Deploy succeeded: %s", ev.AppName)
+		if !ev.Succeeded {
+			title = fmt.Sprintf("Deploy FAILED: %s", ev.AppName)
+		}
+		if err := pushSender.Send(ctx, title, summaryDeployText(ev)); err != nil {
+			return fmt.Errorf("alerting: notify deploy outcome: %w", err)
+		}
+		return nil
 	default: // NotifyGeneric and any unknown/typo'd kind
 		// deployGenericPayload has the identical field names/types/order
 		// as DeployOutcome (only its json struct tags differ, which a
@@ -363,23 +375,25 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 // internal/api, the three real deploy-trigger call sites this task's own
 // task description names.
 type DeployDispatcher struct {
-	db     *DB
-	client *http.Client
-	sender email.Sender
-	logger *slog.Logger
+	db         *DB
+	client     *http.Client
+	sender     email.Sender
+	pushSender PushSender
+	logger     *slog.Logger
 }
 
 // NewDeployDispatcher builds a DeployDispatcher. client and logger
 // default if nil; sender may be nil (an email-kind target then fails
-// with a clear "not configured" error).
-func NewDeployDispatcher(db *DB, client *http.Client, sender email.Sender, logger *slog.Logger) *DeployDispatcher {
+// with a clear "not configured" error), and pushSender may be nil with
+// the identical failure shape for a webpush-kind target.
+func NewDeployDispatcher(db *DB, client *http.Client, sender email.Sender, pushSender PushSender, logger *slog.Logger) *DeployDispatcher {
 	if client == nil {
 		client = netguard.NewClient()
 	}
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &DeployDispatcher{db: db, client: client, sender: sender, logger: logger}
+	return &DeployDispatcher{db: db, client: client, sender: sender, pushSender: pushSender, logger: logger}
 }
 
 // Dispatch sends ev to every enabled DeployTarget scoped to
@@ -420,7 +434,7 @@ func (d *DeployDispatcher) Dispatch(ctx context.Context, resourceID string, ev D
 		if !t.Enabled {
 			continue
 		}
-		sendErr := sendDeployOutcome(ctx, d.client, d.sender, t, ev)
+		sendErr := sendDeployOutcome(ctx, d.client, d.sender, d.pushSender, t, ev)
 		if sendErr != nil {
 			d.logger.Error("alerting: deploy outcome notification failed",
 				slog.String("target_id", t.ID), slog.String("resource_id", resourceID),

@@ -419,10 +419,19 @@ Override on the control plane with `APP_SLO_<TIER>_FACTOR`, `APP_SLO_<TIER>_LONG
 
 Channels are global, connect-once destinations (Settings -> Notification channels). Attach them to alert rules by `channel_id` instead of retyping webhook URLs per rule.
 
-**Supported kinds** (17 total, map to payload builders in `internal/alerting/notify.go`):
-`generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`
+**Supported kinds** (18 total, map to payload builders in `internal/alerting/notify.go`):
+`generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`, `webpush`
 
-For most kinds, `notify_url` is a webhook URL. A few pack multiple credentials into that one field (e.g., Pushover's user key and app token; PagerDuty's routing key). `email` is the exception: it sends through the control plane's SMTP sender (Settings -> Email, or env vars `APP_SMTP_HOST`/`APP_SMTP_PORT`/`APP_SMTP_USERNAME`/`APP_SMTP_PASSWORD`/`APP_SMTP_FROM`). Returns "email is not configured" if neither path is set up.
+For most kinds, `notify_url` is a webhook URL. A few pack multiple credentials into that one field (e.g., Pushover's user key and app token; PagerDuty's routing key). `email` and `webpush` are exceptions: `email` sends through the control plane's SMTP sender (Settings -> Email, or env vars `APP_SMTP_HOST`/`APP_SMTP_PORT`/`APP_SMTP_USERNAME`/`APP_SMTP_PASSWORD`/`APP_SMTP_FROM`), and `webpush` ignores `notify_url` entirely (it has none): the destination is every browser subscription registered under Settings -> Notification channels -> Browser push, not a single URL a channel row can name. Both return a clear "not configured" error if the control plane has no master key set.
+
+**Browser push (`webpush`)**
+
+Sends a real OS-level notification to every browser that has registered, using the Web Push protocol (RFC 8030/8291) with a VAPID keypair this control plane generates once and stores through `internal/secrets` (service `webpush`), the same envelope encryption every other channel secret would use if it needed one. Unlike every other kind, it works even when no dashboard tab is open or focused.
+
+- `GET /api/v1/settings/push-subscriptions/vapid-public-key` returns the public half, which the dashboard passes to the browser's `PushManager.subscribe`.
+- `POST /api/v1/settings/push-subscriptions` registers a subscription (endpoint plus the two subscribe-time keys) for the logged-in account; `GET`/`DELETE` list and revoke the caller's own registered browsers.
+- Returns 501 ("not configured") on every one of these routes, and on a `webpush`-kind send, when the control plane has no master key set: the VAPID private key can only ever be stored through `internal/secrets`.
+- `levelrail-cli push-subscriptions list` / `revoke <id>` manage registrations from the CLI; there is no `register` subcommand, since a subscription's endpoint and keys only ever come from a real browser's Push API.
 
 **Retries**
 
@@ -600,12 +609,15 @@ levelrail-cli channels update <id> --name NAME --kind KIND [flags]
 levelrail-cli channels delete <id>
 levelrail-cli channels test <id>
 levelrail-cli channels deliveries <id> [--limit N]
+
+levelrail-cli push-subscriptions list
+levelrail-cli push-subscriptions revoke <id>
 ```
 
 `--kind` for channels accepts: `generic`, `slack`, `discord`,
 `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`,
 `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`,
-`googlechat`.
+`googlechat`, `webpush`.
 
 ## Not built yet (deliberate gaps)
 
