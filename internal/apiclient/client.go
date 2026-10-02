@@ -1569,6 +1569,17 @@ func (c *Client) DeleteGitSource(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/git-source", nil, nil)
 }
 
+// RotateGitSourceWebhookSecret calls POST
+// /api/v1/apps/{name}/git-source/rotate-webhook-secret: mints a fresh
+// webhook secret without touching repo_url/branch/build config. The
+// returned resource's WebhookSecret is populated this one time, the
+// caller's only chance to see it.
+func (c *Client) RotateGitSourceWebhookSecret(ctx context.Context, name string) (GitSourceResource, error) {
+	var out GitSourceResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/git-source/rotate-webhook-secret", nil, &out)
+	return out, err
+}
+
 // ListWebhookDeliveries calls GET /api/v1/apps/{name}/webhook-deliveries:
 // recent inbound git-provider webhook requests for name, newest first.
 func (c *Client) ListWebhookDeliveries(ctx context.Context, name string, opts ListWebhookDeliveriesOptions) ([]WebhookDeliveryResource, error) {

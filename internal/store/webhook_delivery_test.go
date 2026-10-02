@@ -106,6 +106,40 @@ func TestSaveWebhookDelivery_TruncatesOversizedPayload(t *testing.T) {
 	}
 }
 
+func TestDeleteWebhookDeliveriesOlderThan(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	old := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	recent := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	seed := func(id string, receivedAt time.Time) {
+		if err := db.SaveWebhookDelivery(ctx, WebhookDelivery{
+			ID: id, ServiceName: "web", Provider: "github", EventType: "push",
+			ReceivedAt: receivedAt,
+		}); err != nil {
+			t.Fatalf("SaveWebhookDelivery(%q) error = %v", id, err)
+		}
+	}
+	seed("whd_old", old)
+	seed("whd_recent", recent)
+
+	cutoff := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+	n, err := db.DeleteWebhookDeliveriesOlderThan(ctx, cutoff)
+	if err != nil {
+		t.Fatalf("DeleteWebhookDeliveriesOlderThan() error = %v", err)
+	}
+	if n != 1 {
+		t.Fatalf("deleted = %d, want 1", n)
+	}
+
+	if _, err := db.GetWebhookDelivery(ctx, "whd_old"); !errors.Is(err, ErrWebhookDeliveryNotFound) {
+		t.Errorf("GetWebhookDelivery(whd_old) error = %v, want ErrWebhookDeliveryNotFound", err)
+	}
+	if _, err := db.GetWebhookDelivery(ctx, "whd_recent"); err != nil {
+		t.Errorf("GetWebhookDelivery(whd_recent) error = %v, want nil (should survive the purge)", err)
+	}
+}
+
 func TestListWebhookDeliveries_NewestFirstAndScoped(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

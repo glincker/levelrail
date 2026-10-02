@@ -344,6 +344,18 @@ levelrail-cli apps webhook-deliveries replay storefront whd_8e11...
 
 Replay re-runs the exact same logic (`processGitPushWebhookPayload`) against the stored payload and header fields. This can trigger a real build and deploy. It does not re-verify the original signature (the caller already authenticated at `AbilityDeploy` tier). It does not write a second delivery row (the replay is already in the audit log).
 
+Delivery rows are retained for 30 days by default (`APP_WEBHOOK_DELIVERY_RETENTION_DAYS`), swept on an interval (`APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL`, default one hour). This is debug/replay data for an operator actively troubleshooting a webhook, not a compliance trail, so the default window is shorter than the audit log's.
+
+### Rotating the webhook secret
+
+Suspect a leaked secret, or just want a clean rotation on a schedule? `POST /api/v1/apps/{name}/git-source/rotate-webhook-secret` mints a fresh secret without touching `repo_url`, `branch`, build config, services, or the deploy token: the narrow alternative to disconnecting and reconnecting, which would also throw those away. The old secret stops verifying the instant this returns, so update the repository's webhook settings with the new value before the next delivery.
+
+```bash
+levelrail-cli apps git-source rotate-secret storefront
+```
+
+The dashboard's git source card has a matching "Rotate secret" button, next to Edit and Disconnect, that shows the new value once in a confirm dialog.
+
 ### Dashboard
 
 Each app's **Source** tab (`/apps/{name}/source`) shows a "Recent webhook deliveries" panel, alongside the git source card and preview environments card.

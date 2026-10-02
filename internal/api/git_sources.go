@@ -74,9 +74,10 @@ const (
 
 // gitSourceResource is the wire shape for a connected git source.
 // WebhookSecret is the one field that's ever populated on the way out: a
-// generated-at-connect-time value, present only in handleSetGitSource's
-// own create-time response (never on GET, never on an update PUT), the
-// same "shown once, at mint time" shape handleCreateNodeJoinToken's own
+// generated-at-connect-time (or generated-at-rotation-time) value,
+// present only in handleSetGitSource's own create-time response and
+// handleRotateGitSourceWebhookSecret's response (never on GET, never on
+// an update PUT), the same "shown once, at mint time" shape handleCreateNodeJoinToken's own
 // plaintext token response already establishes for a different
 // generated-once credential in this codebase. Unlike a node join token,
 // this value is also kept (envelope-encrypted) for later use, since this
@@ -639,6 +640,59 @@ func (rt *Router) connectGitSource(ctx context.Context, name string, p connectGi
 		resource.WebhookSecret = webhookSecretPlain
 	}
 	return connectGitSourceResult{Resource: resource, Creating: creating}, nil
+}
+
+// handleRotateGitSourceWebhookSecret handles POST
+// /api/v1/apps/{name}/git-source/rotate-webhook-secret: mints a fresh
+// secret without touching repo_url/branch/build config, the narrow
+// alternative to DELETE-then-PUT. WebhookSecret is populated once, same
+// as handleSetGitSource's create path; the old secret stops verifying
+// the instant this returns.
+func (rt *Router) handleRotateGitSourceWebhookSecret(w http.ResponseWriter, r *http.Request) {
+	if rt.gitSourceSecrets == nil {
+		writeError(w, http.StatusNotImplemented, "git sources are not configured on this control plane (no master key set)")
+		return
+	}
+
+	name := r.PathValue("name")
+
+	gs, err := rt.gitSources.GetGitSource(r.Context(), name)
+	if errors.Is(err, store.ErrGitSourceNotFound) {
+		writeError(w, http.StatusNotFound, "no git source connected for this app")
+		return
+	}
+	if err != nil {
+		rt.logger.Error("api: rotate git source webhook secret: load git source failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	newSecret, err := randomWebhookSecret()
+	if err != nil {
+		rt.logger.Error("api: rotate git source webhook secret: generate secret failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	key := store.GitSourceSecretsKey(name)
+	if err := rt.gitSourceSecrets.SetValue(r.Context(), key, gitSourceSecretKey, newSecret); err != nil {
+		rt.logger.Error("api: rotate git source webhook secret: save secret failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	hasToken, err := rt.gitSourceSecrets.Exists(r.Context(), key, gitSourceTokenKey)
+	if err != nil {
+		rt.logger.Error("api: rotate git source webhook secret: check deploy token failed", slog.String("error", err.Error()), slog.String("name", name))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	resource := toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(r.Context(), name))
+	resource.WebhookSecret = newSecret
+
+	rt.logger.Info("api: git source webhook secret rotated", slog.String("name", name))
+	writeJSON(w, http.StatusOK, resource)
 }
 
 // handleDeleteGitSource handles DELETE /api/v1/apps/{name}/git-source.

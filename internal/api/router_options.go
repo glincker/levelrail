@@ -827,6 +827,17 @@ func WithAuditLogRetention(d time.Duration) Option {
 	return func(rt *Router) { rt.auditLogRetention = d }
 }
 
+// WithWebhookDeliveryRetention overrides how long a webhook_deliveries
+// row survives before PurgeOldWebhookDeliveries removes it. Without one
+// configured (or passed as 0), defaultWebhookDeliveryRetention (30 days)
+// applies. Same "no hardcoded thresholds, use env vars" shape as
+// WithAuditLogRetention: this package never reads the environment
+// directly, cmd/levelrail/main.go reads APP_WEBHOOK_DELIVERY_RETENTION_DAYS
+// and passes the parsed duration here.
+func WithWebhookDeliveryRetention(d time.Duration) Option {
+	return func(rt *Router) { rt.webhookDeliveryRetention = d }
+}
+
 // WithSecretRotationWarnAge overrides how old a secret's last-set value
 // can get before it is flagged as due for rotation (GET
 // /apps/{name}/secrets, GET .../env/all, and the doctor's stale_secrets
