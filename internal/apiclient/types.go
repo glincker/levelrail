@@ -2147,6 +2147,13 @@ type RotateKeyResponse struct {
 	NewPublicKey string `json:"new_public_key"`
 }
 
+// RejoinMeshResponse mirrors internal/api's rejoinMeshResponse
+// (POST /api/v1/nodes/{id}/mesh/rejoin).
+type RejoinMeshResponse struct {
+	NodeID    string `json:"node_id"`
+	Requested bool   `json:"requested"`
+}
+
 // SystemStatusResource mirrors internal/api's systemStatusResponse
 // (internal/api/status.go): DockerConnected/DockerError are this
 // control plane's own local Docker daemon reachability, not a per-node

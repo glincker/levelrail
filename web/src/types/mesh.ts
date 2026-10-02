@@ -54,3 +54,13 @@ export interface RotateKeyResponse {
   old_public_key: string
   new_public_key: string
 }
+
+// Wire type for POST /api/v1/nodes/{id}/mesh/rejoin
+// (internal/api/mesh.go's rejoinMeshResponse). `requested` is false only
+// when this control plane has no ReconcileNudger configured at all: the
+// fleet still converges on its next scheduled pass, see that handler's
+// own doc comment.
+export interface RejoinMeshResponse {
+  node_id: string
+  requested: boolean
+}

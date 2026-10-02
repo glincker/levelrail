@@ -53,6 +53,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesMesh(prog, rest, stdout, stderr, lookupEnv)
 	case "rotate-key":
 		return runNodesRotateKey(prog, rest, stdout, stderr, lookupEnv)
+	case "rejoin-mesh":
+		return runNodesRejoinMesh(prog, rest, stdout, stderr, lookupEnv)
 	case "reenroll-token":
 		return runNodesReenrollToken(prog, rest, stdout, stderr, lookupEnv)
 	case "revoke-cert":
@@ -90,7 +92,8 @@ func nodesUsage(prog string) string {
   %[1]s nodes metrics <id> --metric NAME [flags]                     query a node's metric time series
   %[1]s nodes resource-usage [flags]                                 show every node's latest CPU/memory/disk usage, plus a fleet rollup
   %[1]s nodes mesh [flags]                                           show this control plane's live WireGuard mesh state and peers
-  %[1]s nodes rotate-key <id> [flags]                                rotate a node's WireGuard key (only the local node today)
+  %[1]s nodes rotate-key <id> [flags]                                rotate a node's WireGuard key (local or remote)
+  %[1]s nodes rejoin-mesh <id> [flags]                               force an immediate mesh resync for a peer that looks stuck
   %[1]s nodes reenroll-token <id> [flags]                            mint a one-time token to re-issue a node's agent certificate, shown once
   %[1]s nodes revoke-cert <id> [flags]                               revoke a node's agent certificate and disconnect it
   %[1]s nodes providers list|set-credential [flags]                  manage cloud provider credentials (hetzner, digitalocean)

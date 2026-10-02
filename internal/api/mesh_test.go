@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
@@ -266,5 +267,85 @@ func TestHandleRotateNodeMeshKey_RemoteNodeNotConnected(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/node_b/mesh/rotate-key", ""))
 	if rec.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
+	}
+}
+
+func TestHandleRejoinNodeMesh_NotEnabled(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/node_a/mesh/rejoin", ""))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNotImplemented, rec.Body.String())
+	}
+}
+
+func TestHandleRejoinNodeMesh_NodeNotFound(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rt.SetMesh(&fakeMeshStatus{}, nil)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/nope/mesh/rejoin", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNotFound, rec.Body.String())
+	}
+}
+
+// TestHandleRejoinNodeMesh_NoNudger covers the default test router, which
+// has no ReconcileNudger configured: the request still succeeds, it just
+// reports requested=false (this file's own header on what that means).
+func TestHandleRejoinNodeMesh_NoNudger(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+	rt.SetMesh(&fakeMeshStatus{}, nil)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/node_a/mesh/rejoin", ""))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+	var got rejoinMeshResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.NodeID != "node_a" || got.Requested {
+		t.Errorf("got %+v, want node_id=node_a requested=false", got)
+	}
+}
+
+// fakeNudge is a minimal ReconcileNudger test double.
+type fakeNudge struct {
+	count int
+}
+
+func (f *fakeNudge) Nudge() { f.count++ }
+
+func TestHandleRejoinNodeMesh_WithNudger(t *testing.T) {
+	db := openTestDB(t)
+	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
+	nudger := &fakeNudge{}
+	rt := NewRouter(logger, testBrand(), db, WithReconcileNudger(nudger))
+	cookie := loginTestSession(t, rt, db)
+	seedNode(t, db, "node_a", "alpha")
+	rt.SetMesh(&fakeMeshStatus{}, nil)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/node_a/mesh/rejoin", ""))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusAccepted, rec.Body.String())
+	}
+	var got rejoinMeshResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.Requested {
+		t.Errorf("got requested=false, want true")
+	}
+	if nudger.count != 1 {
+		t.Errorf("nudge count = %d, want 1", nudger.count)
 	}
 }

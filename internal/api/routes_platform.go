@@ -346,6 +346,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// above.
 	mux.HandleFunc("GET /api/v1/mesh", rt.requireAbility(AbilityRoot, rt.handleGetMeshStatus))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/mesh/rotate-key", rt.requireAbility(AbilityRoot, rt.handleRotateNodeMeshKey))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/mesh/rejoin", rt.requireAbility(AbilityRoot, rt.handleRejoinNodeMesh))
 	// Network topology: a read-only, whole-mesh summary (nodes, apps,
 	// databases, load balancers, app-to-database connections). Unlike
 	// every other node/mesh route above, AbilityRead rather than

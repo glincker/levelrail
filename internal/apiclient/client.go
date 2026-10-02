@@ -2603,12 +2603,23 @@ func (c *Client) GetMeshStatus(ctx context.Context) (MeshStatusResource, error) 
 
 // RotateNodeMeshKey calls POST /api/v1/nodes/{id}/mesh/rotate-key:
 // generates a fresh WireGuard keypair for id and makes it live
-// immediately. Only actually succeeds for the node running the target
-// control plane itself today; see internal/api/mesh.go's own doc
-// comment for why remote-node rotation isn't possible yet.
+// immediately. Works for any node currently connected to the target
+// control plane, local or remote (internal/api/mesh.go's own doc
+// comment).
 func (c *Client) RotateNodeMeshKey(ctx context.Context, id string) (RotateKeyResponse, error) {
 	var out RotateKeyResponse
 	err := c.do(ctx, http.MethodPost, nodePath(id)+"/mesh/rotate-key", nil, &out)
+	return out, err
+}
+
+// RejoinNodeMesh calls POST /api/v1/nodes/{id}/mesh/rejoin: forces an
+// immediate fleet-wide mesh reconcile pass instead of waiting for the
+// next scheduled resync. See internal/api/mesh.go's own doc comment: id
+// is only used to validate the node exists, the resync itself always
+// covers the whole fleet.
+func (c *Client) RejoinNodeMesh(ctx context.Context, id string) (RejoinMeshResponse, error) {
+	var out RejoinMeshResponse
+	err := c.do(ctx, http.MethodPost, nodePath(id)+"/mesh/rejoin", nil, &out)
 	return out, err
 }
 

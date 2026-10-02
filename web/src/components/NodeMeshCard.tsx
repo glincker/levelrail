@@ -8,6 +8,7 @@ import {
 import { useMeshStatus } from '../queries/mesh'
 import type { MeshPeerResource } from '../types/mesh'
 import { ApiError } from '../lib/apiError'
+import { RejoinMeshButton } from './RejoinMeshButton'
 import { RotateMeshKeyDialog } from './RotateMeshKeyDialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -139,7 +140,10 @@ export function NodeMeshCard({
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle>WireGuard mesh</CardTitle>
-          <RotateMeshKeyDialog nodeId={nodeId} nodeName={nodeName} />
+          <div className="flex flex-wrap items-center gap-2">
+            <RejoinMeshButton nodeId={nodeId} nodeName={nodeName} />
+            <RotateMeshKeyDialog nodeId={nodeId} nodeName={nodeName} />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
