@@ -1275,7 +1275,11 @@ type ServiceTemplateListItem struct {
 
 // ServiceTemplateDetail mirrors internal/api's serviceTemplateDetail:
 // GET /api/v1/service-templates/{id}'s response, including the full
-// compose.yaml body.
+// compose.yaml body. Also what a custom template id (ListCustomTemplates
+// below) resolves to, through the same endpoint: Category reads
+// "Custom" and RecommendedMemoryBytes/RequiresGPU are always zero for
+// those, see resolveTemplate's own doc comment
+// (internal/api/service_templates.go).
 type ServiceTemplateDetail struct {
 	ID                     string `json:"id"`
 	Name                   string `json:"name"`
@@ -1285,6 +1289,43 @@ type ServiceTemplateDetail struct {
 	Compose                string `json:"compose"`
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
 	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
+	RequiresConfiguration  bool   `json:"requires_configuration,omitempty"`
+}
+
+// SaveAppAsTemplateRequest mirrors internal/api's
+// saveAppAsTemplateRequest: POST /api/v1/apps/{name}/save-as-template's
+// body.
+type SaveAppAsTemplateRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+}
+
+// CustomTemplateListItem mirrors internal/api's customTemplateListItem:
+// one entry in GET /api/v1/templates/custom, without the full compose
+// body (see CustomTemplateDetail).
+type CustomTemplateListItem struct {
+	ID                    string `json:"id"`
+	Name                  string `json:"name"`
+	Description           string `json:"description"`
+	SourceApp             string `json:"source_app,omitempty"`
+	RequiresConfiguration bool   `json:"requires_configuration"`
+	CreatedAt             string `json:"created_at"`
+}
+
+// CustomTemplateDetail mirrors internal/api's customTemplateDetail:
+// POST /api/v1/apps/{name}/save-as-template's own response, including
+// the derived compose.yaml body and which env var keys ended up
+// required (never which secret values: see compose.
+// FromDesiredServices' own doc comment for why there never are any).
+type CustomTemplateDetail struct {
+	ID                    string   `json:"id"`
+	Name                  string   `json:"name"`
+	Description           string   `json:"description"`
+	SourceApp             string   `json:"source_app,omitempty"`
+	Compose               string   `json:"compose"`
+	RequiresConfiguration bool     `json:"requires_configuration"`
+	RequiredEnvKeys       []string `json:"required_env_keys,omitempty"`
+	CreatedAt             string   `json:"created_at"`
 }
 
 // SetSecretRequest mirrors internal/api's setSecretRequest

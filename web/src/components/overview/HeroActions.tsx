@@ -7,6 +7,7 @@ import {
   CopyIcon,
   DotsThreeIcon,
   GitBranchIcon,
+  PackageIcon,
   PauseIcon,
   PlayIcon,
   RocketLaunchIcon,
@@ -18,6 +19,7 @@ import { cn } from '@/lib/utils'
 import { CloneAppDialog } from '../CloneAppDialog'
 import { DeleteAppDialog } from '../DeleteAppDialog'
 import { PromoteAppDialog } from '../PromoteAppDialog'
+import { SaveAsTemplateDialog } from '../SaveAsTemplateDialog'
 import type { AppDetail } from '../../types/appDetail'
 import type { DeployTab } from './DeploySheet'
 import { useOverviewActions } from './useOverviewActions'
@@ -34,6 +36,7 @@ export function HeroActions({
   const actions = useOverviewActions(app, url)
   const [promoteOpen, setPromoteOpen] = useState(false)
   const [cloneOpen, setCloneOpen] = useState(false)
+  const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   return (
@@ -145,6 +148,12 @@ export function HeroActions({
             onSelect: () => setCloneOpen(true),
           },
           {
+            id: 'save-as-template',
+            label: 'Save as template...',
+            icon: <PackageIcon />,
+            onSelect: () => setSaveAsTemplateOpen(true),
+          },
+          {
             id: 'delete',
             label: 'Delete...',
             icon: <TrashIcon />,
@@ -168,6 +177,14 @@ export function HeroActions({
         control={{
           open: cloneOpen,
           onOpenChange: setCloneOpen,
+          hideTrigger: true,
+        }}
+      />
+      <SaveAsTemplateDialog
+        appName={app.name}
+        control={{
+          open: saveAsTemplateOpen,
+          onOpenChange: setSaveAsTemplateOpen,
           hideTrigger: true,
         }}
       />

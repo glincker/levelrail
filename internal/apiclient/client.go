@@ -1723,11 +1723,42 @@ func (c *Client) ListServiceTemplates(ctx context.Context) ([]ServiceTemplateLis
 }
 
 // GetServiceTemplate calls GET /api/v1/service-templates/{id}: one
-// catalog entry, including its full compose.yaml body.
+// catalog entry, including its full compose.yaml body. Also resolves an
+// operator-defined custom template id (resolveTemplate,
+// internal/api/service_templates.go), so this is the same call whether
+// id came from ListServiceTemplates or ListCustomTemplates below.
 func (c *Client) GetServiceTemplate(ctx context.Context, id string) (ServiceTemplateDetail, error) {
 	var out ServiceTemplateDetail
 	err := c.do(ctx, http.MethodGet, "/api/v1/service-templates/"+PathEscape(id), nil, &out)
 	return out, err
+}
+
+// SaveAppAsTemplate calls POST /api/v1/apps/{name}/save-as-template
+// (internal/api/service_templates_custom.go): derives a compose.yaml
+// from name's current desired state and saves it as a reusable,
+// operator-defined template. No secret, database, or vault-backed env
+// value is ever captured, only the key name (see compose.
+// FromDesiredServices' own doc comment); result.RequiredEnvKeys lists
+// exactly which keys will need a real value before this template can
+// deploy.
+func (c *Client) SaveAppAsTemplate(ctx context.Context, name string, req SaveAppAsTemplateRequest) (CustomTemplateDetail, error) {
+	var out CustomTemplateDetail
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/save-as-template", req, &out)
+	return out, err
+}
+
+// ListCustomTemplates calls GET /api/v1/templates/custom: every
+// operator-defined template, without each one's compose body (see
+// GetServiceTemplate for the full body).
+func (c *Client) ListCustomTemplates(ctx context.Context) ([]CustomTemplateListItem, error) {
+	var out []CustomTemplateListItem
+	err := c.do(ctx, http.MethodGet, "/api/v1/templates/custom", nil, &out)
+	return out, err
+}
+
+// DeleteCustomTemplate calls DELETE /api/v1/templates/custom/{id}.
+func (c *Client) DeleteCustomTemplate(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/templates/custom/"+PathEscape(id), nil, nil)
 }
 
 // backupTargetsCollectionPath builds /api/v1/backup-targets, and
