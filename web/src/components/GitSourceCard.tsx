@@ -42,6 +42,7 @@ import {
   GitRepoSourcePicker,
   type GitRepoSourceValue,
 } from './GitRepoSourcePicker'
+import { RotateWebhookSecretDialog } from './RotateWebhookSecretDialog'
 import { ApiError } from '../lib/apiError'
 import type { AppDetail } from '../types/appDetail'
 import type {
@@ -1188,7 +1189,8 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
               </div>
               <FieldDescription>
                 The webhook secret was only ever shown once, at connect time.
-                Disconnect and reconnect to rotate it.
+                Rotate it below to mint a new one, or disconnect and reconnect
+                to also change the repository or branch.
               </FieldDescription>
             </Field>
 
@@ -1203,6 +1205,7 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
               >
                 Edit
               </Button>
+              <RotateWebhookSecretDialog appName={app.name} />
               <Button
                 type="button"
                 size="sm"

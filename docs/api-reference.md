@@ -294,6 +294,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/git-source/deploy-settings | AbilityWriteSensitive | handleSetGitDeploySettings |
 | GET | /api/v1/previews | AbilityRead | handleListAllPreviews |
 | POST | /api/v1/apps/{name}/previews/{number}/approve | AbilityWriteSensitive | handleApprovePreviewEnvironment |
+| POST | /api/v1/apps/{name}/git-source/rotate-webhook-secret | AbilityWriteSensitive | handleRotateGitSourceWebhookSecret |
 
 ## Telemetry
 

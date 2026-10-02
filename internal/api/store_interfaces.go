@@ -241,6 +241,10 @@ type WebhookDeliveryStore interface {
 	SaveWebhookDelivery(ctx context.Context, d store.WebhookDelivery) error
 	GetWebhookDelivery(ctx context.Context, id string) (*store.WebhookDelivery, error)
 	ListWebhookDeliveries(ctx context.Context, serviceName string, limit int, before *time.Time) ([]store.WebhookDelivery, error)
+	// DeleteWebhookDeliveriesOlderThan backs the retention sweep
+	// (webhook_delivery_retention.go), the same age-based deletion
+	// AuditStore.DeleteAuditEntriesOlderThan already provides for audit_log.
+	DeleteWebhookDeliveriesOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
 }
 
 // DeployLogQuerier is the telemetry-side read surface

@@ -257,6 +257,14 @@ const (
 	// retention window needs no minute-granularity checks.
 	defaultAuditLogSweepInterval = 1 * time.Hour
 
+	// defaultWebhookDeliverySweepInterval is how often
+	// api.Router.RunWebhookDeliverySweeper checks for webhook_deliveries
+	// rows past the retention window (api.defaultWebhookDeliveryRetention,
+	// 30 days), env-overridable via APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL
+	// (webhookDeliverySweepInterval below). Same reasoning as
+	// defaultAuditLogSweepInterval just above.
+	defaultWebhookDeliverySweepInterval = 1 * time.Hour
+
 	// defaultDeployApprovalSweepInterval is how often
 	// api.Router.RunDeployApprovalExpirySweep checks pending deploy
 	// approvals against their TTL (api.defaultDeployApprovalTTL, 24
@@ -980,6 +988,17 @@ func run(logger *slog.Logger) error {
 	go func() {
 		if err := apiRouter.RunAuditLogSweeper(ctx, auditLogSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("audit log sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	// Webhook delivery retention sweep (api.Router.RunWebhookDeliverySweeper,
+	// internal/api/webhook_delivery_retention.go): deletes
+	// webhook_deliveries rows past the retention window on its own tick,
+	// the same reasoning as the audit log sweeper just above applied to
+	// the one inbound-webhook history table that otherwise only ever grows.
+	go func() {
+		if err := apiRouter.RunWebhookDeliverySweeper(ctx, webhookDeliverySweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("webhook delivery sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
 
@@ -2073,6 +2092,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithPreviewStuckAfter(previewStuckAfter(logger)),
 		api.WithInviteTTL(inviteTTL(logger)),
 		api.WithAuditLogRetention(auditLogRetention(logger)),
+		api.WithWebhookDeliveryRetention(webhookDeliveryRetention(logger)),
 		api.WithDeployApprovalTTL(deployApprovalTTL(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithDeployLogQuerier(telemetryDB),
@@ -2825,6 +2845,43 @@ func auditLogRetention(logger *slog.Logger) time.Duration {
 		return 0
 	}
 	return time.Duration(days) * 24 * time.Hour
+}
+
+// webhookDeliveryRetention reads APP_WEBHOOK_DELIVERY_RETENTION_DAYS, the
+// same env-var-with-default shape auditLogRetention above uses for
+// api.WithAuditLogRetention, applied here to
+// api.WithWebhookDeliveryRetention. Returns 0 (api's own signal to fall
+// back to its internal default, api.defaultWebhookDeliveryRetention, 30
+// days) when unset or unparseable.
+func webhookDeliveryRetention(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_WEBHOOK_DELIVERY_RETENTION_DAYS")
+	if raw == "" {
+		return 0
+	}
+	days, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		logger.Warn("invalid APP_WEBHOOK_DELIVERY_RETENTION_DAYS, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return 0
+	}
+	return time.Duration(days) * 24 * time.Hour
+}
+
+// webhookDeliverySweepInterval reads APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL
+// as a Go duration string, the same env-var-with-default shape
+// auditLogSweepInterval above uses: api.Router.RunWebhookDeliverySweeper
+// takes its interval directly with no built-in fallback of its own, so
+// this resolves the real value once, here.
+func webhookDeliverySweepInterval(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL")
+	if raw == "" {
+		return defaultWebhookDeliverySweepInterval
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		logger.Warn("invalid APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+		return defaultWebhookDeliverySweepInterval
+	}
+	return d
 }
 
 // secretRotationWarnAge reads APP_SECRET_ROTATION_WARN_DAYS, the same

@@ -169,6 +169,15 @@ func TestClient_GitSourceLifecycle(t *testing.T) {
 			wantPath:   "/api/v1/apps/web/git-source",
 		},
 		{
+			name: "RotateGitSourceWebhookSecret",
+			call: func(c *Client) error {
+				_, err := c.RotateGitSourceWebhookSecret(context.Background(), "web")
+				return err
+			},
+			wantMethod: http.MethodPost,
+			wantPath:   "/api/v1/apps/web/git-source/rotate-webhook-secret",
+		},
+		{
 			name:       "DeleteGitSource",
 			call:       func(c *Client) error { return c.DeleteGitSource(context.Background(), "web") },
 			wantMethod: http.MethodDelete,

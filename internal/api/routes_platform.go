@@ -31,6 +31,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitSource))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source/deploy-settings", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitDeploySettings))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteGitSource))
+	// Rotate webhook secret (git_sources.go): mints a fresh secret without
+	// touching repo_url/branch/build config, the narrow alternative to a
+	// full DELETE-then-PUT reconnect. Same AbilityWriteSensitive tier as
+	// PUT .../git-source, since it's the identical class of credential
+	// write.
+	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/rotate-webhook-secret", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateGitSourceWebhookSecret))
 
 	// Scheduled deploys (app_schedule.go): a per-app cron schedule that
 	// redeploys the latest commit on a branch, checked by

@@ -588,7 +588,84 @@ func TestGitSourceRoutes_RequireAuth(t *testing.T) {
 		{http.MethodGet, "/api/v1/apps/web/git-source"},
 		{http.MethodPut, "/api/v1/apps/web/git-source"},
 		{http.MethodDelete, "/api/v1/apps/web/git-source"},
+		{http.MethodPost, "/api/v1/apps/web/git-source/rotate-webhook-secret"},
 	})
+}
+
+func TestHandleRotateGitSourceWebhookSecret_Success(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+
+	createRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(createRec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source",
+		`{"repo_url":"https://github.com/org/web.git","branch":"main","build_type":"dockerfile"}`))
+	var created gitSourceResource
+	if err := json.NewDecoder(createRec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/git-source/rotate-webhook-secret", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var rotated gitSourceResource
+	if err := json.NewDecoder(rec.Body).Decode(&rotated); err != nil {
+		t.Fatalf("decode rotate response: %v", err)
+	}
+	if rotated.WebhookSecret == "" {
+		t.Fatal("WebhookSecret = \"\", want a non-empty rotated secret in the response")
+	}
+	if rotated.WebhookSecret == created.WebhookSecret {
+		t.Error("rotated WebhookSecret equals the original, want a freshly generated value")
+	}
+	if rotated.RepoURL != created.RepoURL || rotated.Branch != created.Branch || rotated.BuildType != created.BuildType {
+		t.Errorf("rotate changed connection fields: got %+v, want them unchanged from %+v", rotated, created)
+	}
+
+	resolved, err := secrets.Resolve(context.Background(), store.GitSourceSecretsKey("web"), gitSourceSecretKey)
+	if err != nil {
+		t.Fatalf("Resolve(webhook_secret) error = %v", err)
+	}
+	if resolved != rotated.WebhookSecret {
+		t.Errorf("stored webhook secret = %q, want it to match the rotate response %q", resolved, rotated.WebhookSecret)
+	}
+
+	getRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(getRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/git-source", ""))
+	var got gitSourceResource
+	if err := json.NewDecoder(getRec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode get response: %v", err)
+	}
+	if got.WebhookSecret != "" {
+		t.Errorf("GET WebhookSecret = %q, want empty: never returned outside create/rotate", got.WebhookSecret)
+	}
+}
+
+func TestHandleRotateGitSourceWebhookSecret_NotFound(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/ghost/git-source/rotate-webhook-secret", ""))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestHandleRotateGitSourceWebhookSecret_NotConfigured(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db)
+	cookie := loginTestSession(t, rt, db)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/web/git-source/rotate-webhook-secret", ""))
+	if rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotImplemented)
+	}
 }
 
 func TestNormalizeGitSourceBuildType(t *testing.T) {

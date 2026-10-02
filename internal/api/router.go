@@ -308,6 +308,11 @@ type Router struct {
 	// PurgeOldAuditEntries removes it. 0 means "use the default", set via
 	// WithAuditLogRetention.
 	auditLogRetention time.Duration
+	// webhookDeliveryRetention overrides defaultWebhookDeliveryRetention
+	// (webhook_delivery_retention.go): how long a webhook_deliveries row
+	// survives before PurgeOldWebhookDeliveries removes it. 0 means "use
+	// the default", set via WithWebhookDeliveryRetention.
+	webhookDeliveryRetention time.Duration
 	// secretRotationWarnAge overrides defaultSecretRotationWarnAge
 	// (secret_rotation.go): how old a secret's last-set value can get
 	// before GET /apps/{name}/secrets, GET .../env/all, and the doctor's
