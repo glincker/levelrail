@@ -185,6 +185,12 @@ type appResource struct {
 	// for a fanned-out service. See GET /api/v1/apps/{name}/group
 	// (apps_group.go) for the sibling-services read this enables.
 	AppID string `json:"app_id,omitempty"`
+	// IsTrial marks a service deployed via the one-click template
+	// "Deploy now" path (store.DesiredService.IsTrial,
+	// migrations/0264_service_is_trial.sql). Response-only: set only by
+	// handleDeployServiceTemplateNow at create time, never through this
+	// endpoint.
+	IsTrial bool `json:"is_trial,omitempty"`
 	// LogDrain is response-only, the same boundary NodeID/ProjectID/
 	// StorageTargetID already establish above: set it via PUT/DELETE
 	// /api/v1/apps/{name}/log-drain (apps_log_drain.go) instead.
@@ -304,6 +310,7 @@ func toAppResource(svc store.DesiredService) appResource {
 		DatabaseAttachment:  attachment,
 		Suspended:           svc.Suspended,
 		AppID:               svc.AppID,
+		IsTrial:             svc.IsTrial,
 		LogDrain:            svc.LogDrain,
 		PreviewEnvOverrides: svc.PreviewEnvOverrides,
 		EnvDirty:            svc.EnvDirty,

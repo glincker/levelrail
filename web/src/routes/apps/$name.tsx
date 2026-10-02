@@ -22,6 +22,7 @@ import { RestartAppButton } from '../../components/RestartAppButton'
 import { StopStartAppButton } from '../../components/StopStartAppButton'
 import { ConvergenceIndicator } from '../../components/ConvergenceIndicator'
 import { TagsControl } from '../../components/TagsControl'
+import { TrialAppBanner } from '../../components/TrialAppBanner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -158,6 +159,8 @@ function AppDetailLayout() {
           <TagsControl appName={app.name} tags={app.tags} />
         </>
       )}
+
+      {app.is_trial ? <TrialAppBanner name={app.name} /> : null}
 
       <PendingDeployApprovalBanner appName={app.name} />
 

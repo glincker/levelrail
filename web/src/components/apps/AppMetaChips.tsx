@@ -1,4 +1,8 @@
-import { GlobeIcon, PackageIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  FlaskIcon,
+  GlobeIcon,
+  PackageIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { TemplateLogo } from '../TemplateLogo'
 import { logoIdForImage } from '../../lib/imageLogo'
@@ -21,6 +25,15 @@ export function AppMetaChips({ app }: { app: AppListEntry }) {
   const extra = (app.domains?.length ?? 0) - 1
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-1">
+      {app.is_trial ? (
+        <Badge
+          variant="outline"
+          className="gap-1 px-1.5 py-0 text-[10px] text-violet-700 dark:text-violet-300"
+        >
+          <FlaskIcon className="size-3 shrink-0" aria-hidden="true" />
+          Trial
+        </Badge>
+      ) : null}
       {app.environment_name ? (
         <Badge variant="muted" className="px-1.5 py-0 text-[10px]">
           {app.environment_name}

@@ -145,6 +145,11 @@ func TestHandleDeployCompose_CreatesAppAndServices(t *testing.T) {
 	if len(services) != 2 {
 		t.Fatalf("ListServicesByApp() returned %d services, want 2", len(services))
 	}
+	for _, svc := range services {
+		if svc.IsTrial {
+			t.Errorf("service %q IsTrial = true, want false: an ordinary compose deploy must never be marked a trial", svc.Name)
+		}
+	}
 }
 
 // TestHandleDeployCompose_PullPolicyPropagates checks that a service's

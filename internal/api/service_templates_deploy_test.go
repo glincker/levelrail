@@ -61,6 +61,14 @@ func TestHandleDeployServiceTemplateNow_Success(t *testing.T) {
 	if _, err := db.GetAppByName(context.Background(), got.AppID); err != nil {
 		t.Errorf("GetAppByName(%q) error = %v, want the one-click deploy to have created it", got.AppID, err)
 	}
+
+	svc, err := db.GetDesiredService(context.Background(), got.Services[0].Name)
+	if err != nil {
+		t.Fatalf("GetDesiredService(%q) error = %v", got.Services[0].Name, err)
+	}
+	if !svc.IsTrial {
+		t.Errorf("IsTrial = false, want true: the one-click path always marks its service a trial")
+	}
 }
 
 // TestHandleDeployServiceTemplateNow_RepeatDeploysGetDistinctNames

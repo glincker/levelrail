@@ -63,7 +63,7 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, ok := rt.deployComposeBody(w, r, name, body)
+	resp, ok := rt.deployComposeBody(w, r, name, body, false)
 	if !ok {
 		return
 	}
@@ -76,11 +76,14 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 // resolve magic vars, translate to desired services, save, and prune
 // whatever the previous deploy under this name no longer declares. name
 // is the store.App this becomes (App.ID == App.Name), body is a
-// compose.yaml document. On failure it writes the response itself
+// compose.yaml document. isTrial marks every resulting service
+// store.DesiredService.IsTrial (handleDeployCompose always passes
+// false; only the one-click template path opts in), never read from the
+// request body itself. On failure it writes the response itself
 // (matching writeError/internalError's own w-owns-the-response
 // convention) and returns ok == false; the caller has nothing left to
 // do but return.
-func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name string, body []byte) (composeDeployResponse, bool) {
+func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name string, body []byte, isTrial bool) (composeDeployResponse, bool) {
 	file, err := compose.Parse(body)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -116,6 +119,7 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	for i := range services {
 		key := strings.TrimPrefix(services[i].Name, name+"-")
 		services[i].SecretEnv = append(services[i].SecretEnv, store.SecretEnvRefsFromNames(secretEnv[key])...)
+		services[i].IsTrial = isTrial
 	}
 
 	// Loaded before this deploy writes anything: staleComposeServices
