@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
-import { ServiceTemplateGrid } from '../../components/ServiceTemplateGrid'
+import { TemplateMarketplace } from '../../components/TemplateMarketplace'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
@@ -10,10 +10,11 @@ import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
 // in-wizard picker BrowseTemplatesFields owns: this route has no dialog
 // to sit inside, so it's the natural landing target for a template
 // card's name/logo link and for sharing the catalog itself outside the
-// app (no auth-walled dialog to open first). Search/filter/category
-// logic and card rendering are not duplicated: both this page and the
-// wizard's step render the same ServiceTemplateGrid, only the
-// select/deploy callbacks differ per caller.
+// app (no auth-walled dialog to open first). This page gets the full
+// browse/discover treatment (category rail, search, virtualized grid)
+// via TemplateMarketplace; the in-wizard step keeps the compact
+// ServiceTemplateGrid it already had, since a dialog has no room for a
+// sidebar. Only the select/deploy callbacks differ per caller.
 export const Route = createFileRoute('/templates/')({
   component: TemplatesPage,
 })
@@ -39,7 +40,7 @@ function TemplatesPage() {
           />
         }
       />
-      <ServiceTemplateGrid
+      <TemplateMarketplace
         onSelect={(id) => {
           void navigate({ to: '/templates/$id', params: { id } })
         }}
