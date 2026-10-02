@@ -139,6 +139,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsBulk(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin) //nolint:gosec // same guard as below
 	case "clone":
 		return runAppsClone(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "save-as-template":
+		return runAppsSaveAsTemplate(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "images":
 		return runAppsImages(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "storage":
@@ -243,6 +245,7 @@ func appsUsage(prog string) string {
   %[1]s apps git-source <verb> [flags]   connect a repo for auto-deploy-on-push
   %[1]s apps webhook-deliveries <verb> [flags]   inspect and replay recent inbound git webhook requests
   %[1]s apps clone <name> <new-name> [flags]   duplicate an app's desired state under a new name
+  %[1]s apps save-as-template <name> [flags]   save an app's current desired state as a reusable one-click template
   %[1]s apps images <name> [flags]   list locally-present image tags under an app's current image repo
   %[1]s apps storage <verb> [flags]   attach/detach a connected bucket as this app's object storage
   %[1]s apps database <verb> [flags]   attach/detach a managed database as this app's connection-env-var source

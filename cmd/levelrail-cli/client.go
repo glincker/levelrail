@@ -298,6 +298,7 @@ type (
 	giteaAppRepoResource               = apiclient.GiteaAppRepoResource
 	serviceTemplateListItem            = apiclient.ServiceTemplateListItem
 	serviceTemplateDetail              = apiclient.ServiceTemplateDetail
+	customTemplateListItem             = apiclient.CustomTemplateListItem
 	staticSiteResource                 = apiclient.StaticSiteResource
 
 	tagResource         = apiclient.TagResource

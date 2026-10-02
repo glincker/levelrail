@@ -308,6 +308,13 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// since deployComposeBody is the same create-and-deploy core.
 	mux.HandleFunc("POST /api/v1/service-templates/{id}/deploy", rt.requireAbility(AbilityDeploy, rt.handleDeployServiceTemplateNow))
 
+	// Custom templates (service_templates_custom.go): operator-defined
+	// templates captured from a running app. Deploy reuses the
+	// service-templates/{id}/deploy route above, no second deploy path.
+	mux.HandleFunc("GET /api/v1/templates/custom", rt.requireAbility(AbilityRead, rt.handleListCustomTemplates))
+	mux.HandleFunc("DELETE /api/v1/templates/custom/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteCustomTemplate))
+	mux.HandleFunc("POST /api/v1/apps/{name}/save-as-template", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSaveAppAsTemplate))
+
 	// Clone: duplicates an app's desired state under a new name.
 	// AbilityWrite, the same gate POST /api/v1/apps itself uses, since a
 	// clone is a creation shaped as "copy {name}" rather than "start
