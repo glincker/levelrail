@@ -23,8 +23,20 @@ type NotificationChannel struct {
 	Kind      NotifyKind
 	NotifyURL string
 	Enabled   bool
-	CreatedAt string
-	UpdatedAt string
+	// InteractiveApprovals opts this channel into Approve/Deny buttons on
+	// a deploy-approval-requested message (chat_approval.go), Slack and
+	// Discord kinds only. Off by default: it needs InteractiveSecret set,
+	// and a real Slack app or Discord application configured on the
+	// other end, not just an incoming-webhook URL.
+	InteractiveApprovals bool
+	// InteractiveSecret verifies an inbound button click really came
+	// from this channel's own configured app: a Slack signing secret
+	// (HMAC-SHA256 over the request) for NotifySlack, or a Discord
+	// application's Ed25519 public key (hex) for NotifyDiscord. Empty
+	// for every other kind.
+	InteractiveSecret string
+	CreatedAt         string
+	UpdatedAt         string
 }
 
 // ErrNotificationChannelNotFound is returned by GetNotificationChannel
@@ -47,15 +59,21 @@ func NewNotificationChannelID() (string, error) {
 func (db *DB) SaveNotificationChannel(ctx context.Context, c NotificationChannel) error {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO notification_channels (id, name, kind, notify_url, enabled, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO notification_channels (
+			id, name, kind, notify_url, enabled,
+			interactive_approvals, interactive_secret, created_at, updated_at
+		)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET
 			name = excluded.name,
 			kind = excluded.kind,
 			notify_url = excluded.notify_url,
 			enabled = excluded.enabled,
+			interactive_approvals = excluded.interactive_approvals,
+			interactive_secret = excluded.interactive_secret,
 			updated_at = excluded.updated_at
-	`, c.ID, c.Name, string(c.Kind), c.NotifyURL, boolToInt(c.Enabled), now, now)
+	`, c.ID, c.Name, string(c.Kind), c.NotifyURL, boolToInt(c.Enabled),
+		boolToInt(c.InteractiveApprovals), c.InteractiveSecret, now, now)
 	if err != nil {
 		return fmt.Errorf("alerting: save notification channel %q: %w", c.ID, err)
 	}
@@ -118,20 +136,24 @@ func (db *DB) DeleteNotificationChannel(ctx context.Context, id string) error {
 }
 
 const notificationChannelSelectColumns = `
-	SELECT id, name, kind, notify_url, enabled, created_at, updated_at
+	SELECT id, name, kind, notify_url, enabled,
+		interactive_approvals, interactive_secret, created_at, updated_at
 	FROM notification_channels`
 
 func scanNotificationChannel(scan func(dest ...any) error) (*NotificationChannel, error) {
 	var (
-		c          NotificationChannel
-		kind       string
-		enabledInt int
+		c              NotificationChannel
+		kind           string
+		enabledInt     int
+		interactiveInt int
 	)
-	if err := scan(&c.ID, &c.Name, &kind, &c.NotifyURL, &enabledInt, &c.CreatedAt, &c.UpdatedAt); err != nil {
+	if err := scan(&c.ID, &c.Name, &kind, &c.NotifyURL, &enabledInt,
+		&interactiveInt, &c.InteractiveSecret, &c.CreatedAt, &c.UpdatedAt); err != nil {
 		return nil, err
 	}
 	c.Kind = NotifyKind(kind)
 	c.Enabled = enabledInt != 0
+	c.InteractiveApprovals = interactiveInt != 0
 	return &c, nil
 }
 

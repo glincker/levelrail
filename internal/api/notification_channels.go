@@ -51,14 +51,22 @@ type notificationChannelResource struct {
 	Kind      string `json:"kind"`
 	NotifyURL string `json:"notify_url"`
 	Enabled   bool   `json:"enabled"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	// InteractiveApprovals and HasInteractiveSecret describe the
+	// Slack/Discord-only opt-in (chat_interactions.go): the secret
+	// itself is write-only, the same "never echo a credential back"
+	// rule WebhookSecret's own doc comment establishes for git sources.
+	InteractiveApprovals bool   `json:"interactive_approvals"`
+	HasInteractiveSecret bool   `json:"has_interactive_secret"`
+	CreatedAt            string `json:"created_at"`
+	UpdatedAt            string `json:"updated_at"`
 }
 
 func toNotificationChannelResource(c alerting.NotificationChannel) notificationChannelResource {
 	return notificationChannelResource{
 		ID: c.ID, Name: c.Name, Kind: string(c.Kind), NotifyURL: c.NotifyURL,
-		Enabled: c.Enabled, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
+		Enabled: c.Enabled, InteractiveApprovals: c.InteractiveApprovals,
+		HasInteractiveSecret: c.InteractiveSecret != "",
+		CreatedAt:            c.CreatedAt, UpdatedAt: c.UpdatedAt,
 	}
 }
 
@@ -70,7 +78,18 @@ type createNotificationChannelRequest struct {
 	Kind      string `json:"kind"`
 	NotifyURL string `json:"notify_url"`
 	Enabled   *bool  `json:"enabled,omitempty"`
+	// InteractiveApprovals/InteractiveSecret are the Slack/Discord-only
+	// opt-in (chat_interactions.go). Unlike every other field here, a
+	// blank InteractiveSecret on an update keeps the channel's existing
+	// one rather than clearing it: see toChannel's own doc comment.
+	InteractiveApprovals bool   `json:"interactive_approvals,omitempty"`
+	InteractiveSecret    string `json:"interactive_secret,omitempty"`
 }
+
+// notificationChannelsSupportingInteractiveApprovals is InteractiveApprovals'
+// own allow-list: a Slack signing secret or Discord Ed25519 public key
+// means nothing for any other channel kind.
+var notificationChannelsSupportingInteractiveApprovals = []alerting.NotifyKind{alerting.NotifySlack, alerting.NotifyDiscord}
 
 // validNotifyKinds is shared by validateNotifyKind and every place that
 // needs to list them (usage strings, error messages).
@@ -94,7 +113,12 @@ func validateNotifyKind(kind string) (alerting.NotifyKind, error) {
 	return "", fmt.Errorf("kind must be one of %q", validNotifyKinds)
 }
 
-func (req createNotificationChannelRequest) toChannel(id string) (alerting.NotificationChannel, error) {
+// toChannel validates req and builds the channel to save.
+// existingSecret is "" on create, or the channel's own already-stored
+// InteractiveSecret on update; a blank req.InteractiveSecret then means
+// "keep what's already there," not "clear it," unlike every other field
+// here.
+func (req createNotificationChannelRequest) toChannel(id, existingSecret string) (alerting.NotificationChannel, error) {
 	if req.Name == "" {
 		return alerting.NotificationChannel{}, errors.New("name is required")
 	}
@@ -112,8 +136,30 @@ func (req createNotificationChannelRequest) toChannel(id string) (alerting.Notif
 	if req.Enabled != nil {
 		enabled = *req.Enabled
 	}
+	secret := req.InteractiveSecret
+	if secret == "" {
+		secret = existingSecret
+	}
+	if req.InteractiveApprovals {
+		supported := false
+		for _, k := range notificationChannelsSupportingInteractiveApprovals {
+			if kind == k {
+				supported = true
+				break
+			}
+		}
+		if !supported {
+			return alerting.NotificationChannel{}, fmt.Errorf("interactive_approvals is only supported for %q", notificationChannelsSupportingInteractiveApprovals)
+		}
+		if secret == "" {
+			return alerting.NotificationChannel{}, errors.New("interactive_secret is required when interactive_approvals is true")
+		}
+	} else {
+		secret = ""
+	}
 	return alerting.NotificationChannel{
 		ID: id, Name: req.Name, Kind: kind, NotifyURL: req.NotifyURL, Enabled: enabled,
+		InteractiveApprovals: req.InteractiveApprovals, InteractiveSecret: secret,
 	}, nil
 }
 
@@ -157,7 +203,7 @@ func (rt *Router) handleCreateNotificationChannel(w http.ResponseWriter, r *http
 		return
 	}
 
-	channel, err := req.toChannel(id)
+	channel, err := req.toChannel(id, "")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -186,10 +232,12 @@ func (rt *Router) handleUpdateNotificationChannel(w http.ResponseWriter, r *http
 	}
 
 	id := r.PathValue("id")
-	if _, err := rt.notificationChannels.GetNotificationChannel(r.Context(), id); errors.Is(err, alerting.ErrNotificationChannelNotFound) {
+	existing, err := rt.notificationChannels.GetNotificationChannel(r.Context(), id)
+	if errors.Is(err, alerting.ErrNotificationChannelNotFound) {
 		writeError(w, http.StatusNotFound, "notification channel not found")
 		return
-	} else if err != nil {
+	}
+	if err != nil {
 		rt.logger.Error("api: update notification channel: load channel failed", slog.String("error", err.Error()), slog.String("id", id))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
@@ -201,7 +249,7 @@ func (rt *Router) handleUpdateNotificationChannel(w http.ResponseWriter, r *http
 		return
 	}
 
-	channel, err := req.toChannel(id)
+	channel, err := req.toChannel(id, existing.InteractiveSecret)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return

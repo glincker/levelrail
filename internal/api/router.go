@@ -390,6 +390,7 @@ type Router struct {
 	notificationChannels         NotificationChannels             // nil is valid: notification-channel routes return 501, same shape as deployNotifyTargets above
 	notificationChannelTester    NotificationChannelTester        // nil is valid: the test-send routes return 501, same shape as deployNotifier above
 	notificationDeliveries       NotificationDeliveryStore        // nil is valid: the deliveries route returns 501, and test-send simply doesn't record history, same shape as notificationChannelTester above
+	approvalChatNotifier         ApprovalChatNotifier             // nil is valid: requestDeployApproval simply doesn't post an interactive chat message, same "optional signal, absence is not an error" shape as deployNotifier above
 	pushSubscriptions            PushSubscriptions                // always set, same "core Store interface" shape as passkeys below: registering/listing/deleting a browser subscription needs no secrets configuration, only actually sending to one does
 	pushVAPIDPublicKey           string                           // "" means browser push is not configured on this control plane (no master key set), same nil-secretsManager hazard as every Secrets-flavored dependency
 	gitSources                   GitSourceStore                   // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does

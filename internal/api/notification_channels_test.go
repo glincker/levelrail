@@ -189,6 +189,8 @@ func TestHandleCreateNotificationChannel_ValidationFailures(t *testing.T) {
 		{"missing notify_url", `{"name":"x","kind":"slack"}`},
 		{"bad kind", `{"name":"x","kind":"bogus","notify_url":"https://example.com"}`},
 		{"malformed body", `{not json`},
+		{"interactive approvals on a generic channel", `{"name":"x","kind":"generic","notify_url":"https://example.com","interactive_approvals":true,"interactive_secret":"s"}`},
+		{"interactive approvals with no secret", `{"name":"x","kind":"slack","notify_url":"https://example.com","interactive_approvals":true}`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -198,6 +200,74 @@ func TestHandleCreateNotificationChannel_ValidationFailures(t *testing.T) {
 				t.Errorf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
 			}
 		})
+	}
+}
+
+// TestHandleCreateNotificationChannel_InteractiveApprovals proves the
+// secret is accepted and stored but never echoed back on the wire.
+func TestHandleCreateNotificationChannel_InteractiveApprovals(t *testing.T) {
+	rt, db, adb := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+
+	body := `{"name":"Team Slack","kind":"slack","notify_url":"https://hooks.slack.com/services/x","interactive_approvals":true,"interactive_secret":"shh"}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/notification-channels", body))
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+
+	var got notificationChannelResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !got.InteractiveApprovals || !got.HasInteractiveSecret {
+		t.Errorf("got = %+v, want interactive_approvals and has_interactive_secret both true", got)
+	}
+	if strings.Contains(rec.Body.String(), "shh") {
+		t.Error("response body must never echo the stored secret")
+	}
+
+	saved, err := adb.GetNotificationChannel(context.Background(), got.ID)
+	if err != nil {
+		t.Fatalf("GetNotificationChannel: %v", err)
+	}
+	if saved.InteractiveSecret != "shh" {
+		t.Errorf("InteractiveSecret = %q, want %q", saved.InteractiveSecret, "shh")
+	}
+}
+
+// TestHandleUpdateNotificationChannel_KeepsSecretWhenBlank proves a
+// blank interactive_secret on update keeps the channel's existing one
+// rather than clearing it (toChannel's own doc comment), so renaming a
+// channel or toggling Enabled doesn't force resending the Slack signing
+// secret or Discord public key every time.
+func TestHandleUpdateNotificationChannel_KeepsSecretWhenBlank(t *testing.T) {
+	rt, db, adb := newTestRouterWithNotificationChannels(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := adb.SaveNotificationChannel(context.Background(), alerting.NotificationChannel{
+		ID: "chn_1", Name: "Team Slack", Kind: alerting.NotifySlack,
+		NotifyURL: "https://hooks.slack.com/services/x", Enabled: true,
+		InteractiveApprovals: true, InteractiveSecret: "original-secret",
+	}); err != nil {
+		t.Fatalf("seed channel: %v", err)
+	}
+
+	body := `{"name":"Team Slack (renamed)","kind":"slack","notify_url":"https://hooks.slack.com/services/x","interactive_approvals":true}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/notification-channels/chn_1", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	saved, err := adb.GetNotificationChannel(context.Background(), "chn_1")
+	if err != nil {
+		t.Fatalf("GetNotificationChannel: %v", err)
+	}
+	if saved.InteractiveSecret != "original-secret" {
+		t.Errorf("InteractiveSecret = %q, want the original secret kept", saved.InteractiveSecret)
+	}
+	if saved.Name != "Team Slack (renamed)" {
+		t.Errorf("Name = %q, want the renamed value to have applied", saved.Name)
 	}
 }
 

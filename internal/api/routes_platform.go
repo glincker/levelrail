@@ -291,6 +291,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/deploy-approvals/{id}/approve", rt.requireAbility(AbilityDeploy, rt.handleApproveDeployApproval))
 	mux.HandleFunc("POST /api/v1/deploy-approvals/{id}/reject", rt.requireAbility(AbilityDeploy, rt.handleRejectDeployApproval))
 
+	// Chat-interactive deploy approval (chat_interactions.go): a
+	// Slack/Discord button click posts back here, unauthenticated like
+	// POST .../webhooks/github/{name} above; its own signature check
+	// (Slack HMAC, Discord Ed25519) stands in for auth, and the decision
+	// itself runs through the exact same functions the gated routes
+	// above call.
+	mux.HandleFunc("POST /api/v1/webhooks/slack/interactions", rt.handleSlackInteraction)
+	mux.HandleFunc("POST /api/v1/webhooks/discord/interactions", rt.handleDiscordInteraction)
+
 	// Shared env vars every service tagged with this environment inherits
 	// (environment_env.go): the tier between organizations/{id}/env and
 	// projects/{id}/env above and a service's own env below.
