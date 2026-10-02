@@ -13,7 +13,7 @@ import type { ReconcileCondition } from '../types/deploy'
 import type { EnvironmentResource } from '../types/environment'
 import { useApp } from '../queries/apps'
 import { isPendingApproval, useTriggerDeploy } from '../queries/deploys'
-import { useCancelDeploy, useRollbackToDeploy } from '../queries/deployControl'
+import { useRollbackToDeploy } from '../queries/deployControl'
 import { useProtectedEnvironment } from '../queries/environments'
 import { formatDeployDuration } from '../lib/deployDuration'
 import { computeDeployStages } from '../lib/deployStages'
@@ -23,6 +23,7 @@ import {
   DEPLOY_ATTEMPT_STATUS_TONE,
 } from '../lib/deployAttemptPresentation'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
+import { CancelDeployDialog } from './CancelDeployDialog'
 import { ActionMenu, InfoTip, StatusPill } from './kit'
 import { DigestChip, RolloutChip } from './DeployDigestChips'
 import { DeployPreviewThumb } from './DeployPreviewThumb'
@@ -217,7 +218,7 @@ function DeployAttemptRow({
 }) {
   const triggerDeploy = useTriggerDeploy(appName)
   const rollbackTo = useRollbackToDeploy(appName)
-  const cancelDeploy = useCancelDeploy(appName)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const isCancelable =
     attempt.status === 'queued' ||
     attempt.status === 'running' ||
@@ -272,19 +273,6 @@ function DeployAttemptRow({
     )
   }
 
-  const handleCancel = () => {
-    cancelDeploy.mutate(attempt.id, {
-      onSuccess: () =>
-        toast.add({ title: 'Deploy canceled.', type: 'success' }),
-      onError: (error) =>
-        toast.add({
-          title: 'Could not cancel the deploy.',
-          description: error.message,
-          type: 'error',
-        }),
-    })
-  }
-
   const menuItems = [
     ...(attempt.status === 'succeeded'
       ? [
@@ -311,8 +299,9 @@ function DeployAttemptRow({
                 : 'Removes it from the queue',
             icon: <ProhibitIcon className="size-4" />,
             tone: 'danger' as const,
-            disabled: cancelDeploy.isPending,
-            onSelect: handleCancel,
+            onSelect: () => {
+              setCancelDialogOpen(true)
+            },
           },
         ]
       : []),
@@ -449,6 +438,16 @@ function DeployAttemptRow({
           />
         ) : null}
       </div>
+
+      {isCancelable ? (
+        <CancelDeployDialog
+          appName={appName}
+          deployId={attempt.id}
+          running={attempt.status === 'running'}
+          open={cancelDialogOpen}
+          onOpenChange={setCancelDialogOpen}
+        />
+      ) : null}
     </li>
   )
 }
