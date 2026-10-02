@@ -1644,6 +1644,28 @@ type RegistryCredentialResource struct {
 	ExpiryStatus string     `json:"expiry_status,omitempty"`
 }
 
+// FirewallRuleResource mirrors internal/api's firewallRuleResource.
+type FirewallRuleResource struct {
+	ID         string `json:"id"`
+	NodeID     string `json:"node_id"`
+	Port       int    `json:"port"`
+	Protocol   string `json:"protocol"`
+	SourceCIDR string `json:"source_cidr,omitempty"`
+	Action     string `json:"action"`
+	Label      string `json:"label,omitempty"`
+	CreatedAt  string `json:"created_at"`
+}
+
+// CreateFirewallRuleRequest mirrors internal/api's
+// createFirewallRuleRequest.
+type CreateFirewallRuleRequest struct {
+	Port       int    `json:"port"`
+	Protocol   string `json:"protocol,omitempty"`
+	SourceCIDR string `json:"source_cidr,omitempty"`
+	Action     string `json:"action,omitempty"`
+	Label      string `json:"label,omitempty"`
+}
+
 // CreateRegistryCredentialRequest mirrors internal/api's
 // createRegistryCredentialRequest: Password is required here, unlike
 // UpdateRegistryCredentialRequest where it's optional.

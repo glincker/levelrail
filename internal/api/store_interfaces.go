@@ -502,6 +502,7 @@ type Store interface {
 	StaticSiteStore
 	BackupTargetStore
 	RegistryCredentialStore
+	FirewallRuleStore
 	BackupHistoryStore
 	BackupVerificationStore
 	RestoreHistoryStore

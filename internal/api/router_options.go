@@ -45,6 +45,16 @@ func WithRegistryCredentialSecrets(s RegistryCredentialSecretsSetter) Option {
 	return func(rt *Router) { rt.registryCredentialSecrets = s }
 }
 
+// WithFirewallRequiredPorts overrides the ports POST
+// /api/v1/firewall-rules refuses to deny or CIDR-restrict, defaulting to
+// firewall.DefaultRequiredPorts. Pass this instance's actually
+// configured management API, agent gRPC, and ingress ports whenever any
+// of them were moved off their default address: a lockout check against
+// the wrong port number is no check at all.
+func WithFirewallRequiredPorts(ports []int) Option {
+	return func(rt *Router) { rt.firewallRequiredPorts = ports }
+}
+
 // WithEmailSecrets enables PUT /api/v1/settings/email. Without one
 // configured (the default), that route returns 501; GET works regardless.
 func WithEmailSecrets(s EmailSecretsStore) Option {

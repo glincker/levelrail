@@ -114,6 +114,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runBackupTargets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "registry-credentials":
 		return runRegistryCredentials(prog, args[1:], stdout, stderr, lookupEnv)
+	case "firewall":
+		return runFirewall(prog, args[1:], stdout, stderr, lookupEnv)
 	case "flags":
 		return runFlags(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tags":
@@ -237,6 +239,7 @@ Usage:
   %[1]s storage providers|list|add|test|delete [flags]   manage S3-compatible storage destinations (AWS S3, R2, B2, MinIO, Wasabi, custom)
   %[1]s logs archive set|status|remove, logs dump|ls|fetch [flags]   archive node-local logs to a storage destination
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
+  %[1]s firewall list|allow|deny|delete [flags]                 manage declarative host firewall rules
   %[1]s registry status|enable|disable [flags]                 manage Levelrail's own built-in container registry
   %[1]s flags create|list|get|set|delete [flags]              manage feature flags, read live by a running app via GET /api/v1/flags/evaluate/{key}
   %[1]s pipelines list|validate|save|delete|run|runs|logs|cancel|approve [flags]   CI/CD pipelines: run, watch, approve, cancel
