@@ -129,7 +129,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 121 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 122 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -262,6 +262,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/connections | AbilityWrite | handleCreateAppConnection |
 | DELETE | /api/v1/apps/{name}/connections/{env_var} | AbilityWrite | handleDeleteAppConnection |
 | GET | /api/v1/apps/{name}/connectable-databases | AbilityRead | handleListConnectableDatabases |
+| POST | /api/v1/apps/{name}/validate-spec | AbilityRead | handleValidateSpec |
 
 :::
 
@@ -461,10 +462,11 @@ Endpoints for:
 | POST | /api/v1/nodes/provision | AbilityRoot | handleCreateNodeProvision |
 | PUT | /api/v1/nodes/{id}/region | AbilityRoot | handleSetNodeRegion |
 | POST | /api/v1/nodes/ssh-provision | AbilityRoot | handleCreateSSHNodeProvision |
+| POST | /api/v1/nodes/{id}/mesh/rejoin | AbilityRoot | handleRejoinNodeMesh |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 47 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+::: details 52 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -524,6 +526,11 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/branch-env | AbilityWriteSensitive | handleSetAppBranchEnv |
 | DELETE | /api/v1/apps/{name}/branch-env/{id} | AbilityWrite | handleDeleteAppBranchEnv |
 | PATCH | /api/v1/apps/{name}/domains | AbilityWrite | handleEditAppDomains |
+| POST | /api/v1/apps/{name}/domains/{domain}/cert/renew | AbilityRoot | handleRenewDomainCertificate |
+| GET | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRead | handleListDNSRecords |
+| POST | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleCreateDNSRecord |
+| PUT | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleUpdateDNSRecord |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/dns-records | AbilityRoot | handleDeleteDNSRecord |
 
 :::
 
@@ -658,6 +665,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/volumes/{volume}/restore-as-new | AbilityWriteSensitive | handleVolumeCloneRestore |
 | GET | /api/v1/apps/{name}/volumes/{volume}/clone-restores | AbilityRead | handleListVolumeCloneRestores |
 | DELETE | /api/v1/apps/{name}/volumes/{volume}/backups/{historyId} | AbilityWriteSensitive | handleDeleteVolumeBackup |
+| PUT | /api/v1/apps/{name}/volumes | AbilityWrite | handleSetAppVolumes |
 
 ## App Storage / Database Attach
 
@@ -822,6 +830,15 @@ Routes that do not fit an existing group.
 | GET | /api/v1/network/topology | AbilityRead | handleGetNetworkTopology |
 | GET | /api/v1/ssh-node-provisions | AbilityRoot | handleListSSHNodeProvisions |
 | GET | /api/v1/ssh-node-provisions/{id} | AbilityRoot | handleGetSSHNodeProvision |
+| GET | /api/v1/network-shares | AbilityRead | handleListNetworkShares |
+| POST | /api/v1/network-shares | AbilityWriteSensitive | handleCreateNetworkShare |
+| GET | /api/v1/network-shares/{id} | AbilityRead | handleGetNetworkShare |
+| PUT | /api/v1/network-shares/{id} | AbilityWriteSensitive | handleUpdateNetworkShare |
+| DELETE | /api/v1/network-shares/{id} | AbilityWriteSensitive | handleDeleteNetworkShare |
+| POST | /api/v1/network-shares/{id}/test | AbilityRead | handleTestNetworkShare |
+| GET | /api/v1/firewall-rules | AbilityRead | handleListFirewallRules |
+| POST | /api/v1/firewall-rules | AbilityWriteSensitive | handleCreateFirewallRule |
+| DELETE | /api/v1/firewall-rules/{id} | AbilityWriteSensitive | handleDeleteFirewallRule |
 
 ## See also
 
