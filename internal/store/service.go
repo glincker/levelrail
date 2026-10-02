@@ -897,6 +897,22 @@ func (db *DB) UpdateServiceEgressPolicy(ctx context.Context, name string, policy
 	`, policy)
 }
 
+// UpdateServiceVolumes replaces svc's named-volume list as a whole,
+// without SaveDesiredService's full-record replace: the dedicated
+// dual-write path Volumes lacked until now, mirroring
+// UpdateServiceEgressPolicy (app.yaml's volumes: block also sets this,
+// via the ordinary SaveDesiredService replace). A nil slice persists as
+// "[]", matching SaveDesiredService's own nil-to-empty handling, so a
+// service with no volumes always reads back an empty slice, never nil.
+func (db *DB) UpdateServiceVolumes(ctx context.Context, name string, volumes []ServiceVolume) error {
+	if volumes == nil {
+		volumes = []ServiceVolume{}
+	}
+	return db.updateServiceJSONColumn(ctx, name, "volumes", `
+		UPDATE desired_services SET volumes = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, volumes)
+}
+
 // UpdateServiceHealth replaces svc's readiness/liveness config as a whole
 // (health nil clears it), without SaveDesiredService's full-record replace.
 func (db *DB) UpdateServiceHealth(ctx context.Context, name string, health *ServiceHealth) error {

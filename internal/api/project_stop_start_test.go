@@ -231,6 +231,9 @@ func (f *fakeProjectLifecycleAppStore) SetServicePreviewEnvOverride(context.Cont
 func (f *fakeProjectLifecycleAppStore) UpdateServiceEgressPolicy(context.Context, string, *store.ServiceEgressPolicy) error {
 	return nil
 }
+func (f *fakeProjectLifecycleAppStore) UpdateServiceVolumes(context.Context, string, []store.ServiceVolume) error {
+	return nil
+}
 func (f *fakeProjectLifecycleAppStore) UpdateServiceDatabaseAttachment(context.Context, string, *store.DatabaseAttachment) error {
 	return nil
 }

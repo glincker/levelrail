@@ -107,6 +107,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"egress":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"build-cache":        {subs: map[string]*cmdNode{"show": nil, "set": nil, "clear": nil, "remove": nil}},
 		"health":             {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
+		"volumes":            {subs: map[string]*cmdNode{"get": nil, "attach": nil, "detach": nil}},
 		"integrations":       {subs: map[string]*cmdNode{"catalog": nil, "list": nil, "add": nil, "remove": nil}},
 	}},
 	"models":    {subs: map[string]*cmdNode{"list": nil, "get": nil, "deploy": nil, "logs": nil, "delete": nil, "restart": nil, "rotate-key": nil, "metrics": nil, "fit": nil, "residency": nil, "swap-group": nil, "wake": nil, "sleep": nil, "gpus": nil, "preflight": nil, "cache": {subs: map[string]*cmdNode{"list": nil, "prune": nil}}, "keys": {subs: map[string]*cmdNode{"list": nil, "create": nil, "revoke": nil, "rotate": nil}}, "usage": nil}},

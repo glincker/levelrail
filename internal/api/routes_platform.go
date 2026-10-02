@@ -932,6 +932,11 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppHealth))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppHealth))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/health", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleClearAppHealth))
+	// Attach/detach a named Docker volume outside a redeploy
+	// (apps_volumes_attach.go): AbilityWrite, the same tier health above
+	// uses, since this is an ordinary declarative resource, not a secret
+	// or network-exfiltration surface like egress-policy/storage.
+	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetAppVolumes))
 	// Read-only, not scoped to any one app: the static list of env var
 	// names attaching storage can inject, backed by
 	// application.StorageEnvKeys rather than a hardcoded list, see
