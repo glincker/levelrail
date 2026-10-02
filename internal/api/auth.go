@@ -198,6 +198,7 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	user, err := rt.auth.GetUserByEmail(r.Context(), req.Email)
 	if errors.Is(err, store.ErrUserNotFound) {
+		burnBcryptCompare(req.Password)
 		rt.logins.recordFailure(key)
 		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
@@ -210,6 +211,7 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if user.PasswordHash == nil {
 		// No password to check against: treat like a wrong password so
 		// the response never reveals which sign-in methods an account has.
+		burnBcryptCompare(req.Password)
 		rt.logins.recordFailure(key)
 		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
@@ -238,6 +240,27 @@ func (rt *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, loginResponse{Email: user.Email, DisplayName: user.DisplayName})
+}
+
+// dummyPasswordHash is a bcrypt hash of random bytes nobody knows, at the
+// same cost real hashes use.
+var dummyPasswordHash = sync.OnceValue(func() []byte {
+	secret := make([]byte, 32)
+	_, _ = rand.Read(secret)
+	hash, err := bcrypt.GenerateFromPassword(secret, bcrypt.DefaultCost)
+	if err != nil {
+		return nil
+	}
+	return hash
+})
+
+// burnBcryptCompare spends one bcrypt comparison so a login for an unknown
+// or passwordless account takes as long as a wrong password, closing the
+// response-time oracle for which emails have an account.
+func burnBcryptCompare(password string) {
+	if hash := dummyPasswordHash(); hash != nil {
+		_ = bcrypt.CompareHashAndPassword(hash, []byte(password))
+	}
 }
 
 // establishSession is the one place a session cookie gets created and

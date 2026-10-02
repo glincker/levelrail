@@ -38,7 +38,7 @@ func (rt *Router) previewGitHubTarget(ctx context.Context, appName string, gs st
 	owner, repo, ok = githubOwnerRepoFromURL(gs.RepoURL, instanceURL)
 	if !ok {
 		rt.logger.Info("api: preview github notification skipped: repo_url is not on the connected github instance",
-			slog.String("app_name", appName), slog.String("repo_url", gs.RepoURL))
+			slog.String("app_name", appName), slog.String("repo_url", redactURLCredentials(gs.RepoURL)))
 		return "", "", "", "", false
 	}
 	return instanceURL, token, owner, repo, true

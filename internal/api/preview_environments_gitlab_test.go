@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // gitlabPullRequestBody builds a Merge Request Hook payload carrying
@@ -185,6 +186,24 @@ func TestHandlePullRequestWebhook_GitLab_PostPRComments_Teardown_PostsNote(t *te
 	}
 	if n := len(fakeClient.prComments.updates); n == 0 || !strings.Contains(fakeClient.prComments.updates[n-1].Body, "Preview environment: removed") {
 		t.Errorf("teardown updates = %+v, want the last edit to say removed", fakeClient.prComments.updates)
+	}
+}
+
+// TestPreviewGitLabTarget_RepoNotOnConnectedInstance proves a connected,
+// authorized GitLab application with post_pr_comments on still no-ops
+// (and logs, with repo_url redacted) when the app's repo_url isn't
+// hosted on the connected instance.
+func TestPreviewGitLabTarget_RepoNotOnConnectedInstance(t *testing.T) {
+	gitlabSecrets := authorizedGitLabSecrets(t)
+	rt, db := newTestRouterWithGitLabAndGitSource(t, gitlabSecrets, &fakeGitLabAppClient{}, newFakeGitSourceSecrets())
+	seedGitLabAppConnection(t, db) // instance_url: https://gitlab.example.com
+
+	_, _, _, ok := rt.previewGitLabTarget(context.Background(), "web", store.GitSource{ //nolint:gosec // test fixture URL, not a real credential
+		PostPRComments: true,
+		RepoURL:        "https://user:tok@github.com/org/web.git",
+	})
+	if ok {
+		t.Error("previewGitLabTarget ok = true, want false for a repo_url not on the connected gitlab instance")
 	}
 }
 

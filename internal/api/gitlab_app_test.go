@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,6 +13,19 @@ import (
 	"github.com/GLINCKER/levelrail/internal/gitprovider"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// failingGitLabAppStore wraps a real *store.DB so Get/DeleteGitLabAppConnection
+// behave normally, but SaveGitLabAppConnection always fails: the handler's
+// own "save failed" error path (logged with a redacted instance_url) has
+// no other trigger than a real store error.
+type failingGitLabAppStore struct {
+	*store.DB
+	saveErr error
+}
+
+func (f *failingGitLabAppStore) SaveGitLabAppConnection(context.Context, store.GitLabAppConnection) error {
+	return f.saveErr
+}
 
 // fakeGitLabAppSecrets is a hand-written fake for GitLabAppSecrets, the
 // same pattern fakeGitHubAppSecrets already establishes, extended with
@@ -247,6 +261,23 @@ func TestHandleConnectGitLabApp_Success(t *testing.T) {
 	got, err := secrets.Resolve(context.Background(), store.GitLabAppSecretsKey(), gitLabAppClientSecretKey)
 	if err != nil || got != "csecret" {
 		t.Errorf("stored client_secret = %q, err = %v, want csecret", got, err)
+	}
+}
+
+// TestHandleConnectGitLabApp_SaveFails_LogsRedactedInstanceURL proves a
+// store failure saving the connection is reported as a 500 and that the
+// error-path log line still runs (it must never leak credentials
+// embedded in instance_url).
+func TestHandleConnectGitLabApp_SaveFails_LogsRedactedInstanceURL(t *testing.T) {
+	rt, db := newTestRouterWithGitLabApp(t, newFakeGitLabAppSecrets(), &fakeGitLabAppClient{})
+	cookie := loginTestSession(t, rt, db)
+	rt.gitlabApp = &failingGitLabAppStore{DB: db, saveErr: errors.New("save failed")}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/gitlab-app",
+		`{"instance_url":"https://user:tok@gitlab.example.com","client_id":"cid","client_secret":"csecret"}`))
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusInternalServerError, rec.Body.String())
 	}
 }
 

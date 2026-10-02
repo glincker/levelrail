@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // bitbucketPullRequestBody builds a pullrequest:* event payload
@@ -187,6 +188,24 @@ func TestHandlePullRequestWebhook_Bitbucket_PostPRComments_Teardown_PostsComment
 	}
 	if n := len(fakeClient.prComments.updates); n == 0 || !strings.Contains(fakeClient.prComments.updates[n-1].Body, "Preview environment: removed") {
 		t.Errorf("teardown updates = %+v, want the last edit to say removed", fakeClient.prComments.updates)
+	}
+}
+
+// TestPreviewBitbucketTarget_RepoNotOnBitbucket proves a connected,
+// authorized Bitbucket consumer with post_pr_comments on still no-ops
+// (and logs, with repo_url redacted) when the app's repo_url isn't
+// actually hosted on bitbucket.org.
+func TestPreviewBitbucketTarget_RepoNotOnBitbucket(t *testing.T) {
+	bitbucketSecrets := authorizedBitbucketSecrets(t)
+	rt, db := newTestRouterWithBitbucketAndGitSource(t, bitbucketSecrets, &fakeBitbucketAppClient{}, newFakeGitSourceSecrets())
+	seedBitbucketAppConnection(t, db)
+
+	_, _, ok := rt.previewBitbucketTarget(context.Background(), "web", store.GitSource{ //nolint:gosec // test fixture URL, not a real credential
+		PostPRComments: true,
+		RepoURL:        "https://user:tok@github.com/org/web.git",
+	})
+	if ok {
+		t.Error("previewBitbucketTarget ok = true, want false for a repo_url not on bitbucket.org")
 	}
 }
 

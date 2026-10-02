@@ -92,7 +92,7 @@ func (rt *Router) runManualBuild(m manualBuildRun) {
 		}
 		sourceDir, commit, cleanup, err := rt.fetch(ctx, m.repoURL, m.ref, token)
 		if err != nil {
-			rt.logger.Error("api: trigger build: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", m.repoURL), slog.String("ref", m.ref))
+			rt.logger.Error("api: trigger build: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", redactURLCredentials(m.repoURL)), slog.String("ref", m.ref))
 			rt.emitStep(id, "detecting", "failed")
 			m.finish(err)
 			return
@@ -128,9 +128,9 @@ func (rt *Router) runManualBuild(m manualBuildRun) {
 		}
 		// Logged, not returned: a build failure can carry internal detail
 		// (daemon paths, registry hosts) and no HTTP response is left to write.
-		rt.logger.Error("api: trigger build failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", m.repoURL), slog.String("ref", m.ref))
+		rt.logger.Error("api: trigger build failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", redactURLCredentials(m.repoURL)), slog.String("ref", m.ref))
 		return
 	}
-	rt.logger.Info("api: manual build triggered", slog.String("name", name), slog.String("repo_url", m.repoURL), slog.String("ref", m.ref), slog.String("build_type", m.buildType), slog.String("tag", tag))
+	rt.logger.Info("api: manual build triggered", slog.String("name", name), slog.String("repo_url", redactURLCredentials(m.repoURL)), slog.String("ref", m.ref), slog.String("build_type", m.buildType), slog.String("tag", tag))
 	rt.nudgeReconciler()
 }

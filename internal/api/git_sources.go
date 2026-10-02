@@ -546,7 +546,7 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 	if result.Creating {
 		status = http.StatusCreated
 	}
-	rt.logger.Info("api: git source connected", slog.String("name", name), slog.String("repo_url", req.RepoURL), slog.Bool("creating", result.Creating))
+	rt.logger.Info("api: git source connected", slog.String("name", name), slog.String("repo_url", redactURLCredentials(req.RepoURL)), slog.Bool("creating", result.Creating))
 	writeJSON(w, status, result.Resource)
 }
 
