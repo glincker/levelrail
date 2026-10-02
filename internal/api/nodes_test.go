@@ -944,6 +944,9 @@ func (f *fakeDrainAppStore) SetServicePreviewEnvOverride(context.Context, string
 func (f *fakeDrainAppStore) UpdateServiceEgressPolicy(context.Context, string, *store.ServiceEgressPolicy) error {
 	return nil
 }
+func (f *fakeDrainAppStore) UpdateServiceVolumes(context.Context, string, []store.ServiceVolume) error {
+	return nil
+}
 
 type fakeDrainDatabaseStore struct{}
 

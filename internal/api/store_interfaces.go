@@ -151,6 +151,12 @@ type AppStore interface {
 	UpdateServiceEgressPolicy(ctx context.Context, name string, policy *store.ServiceEgressPolicy) error
 	// UpdateServiceHealth backs PUT /api/v1/apps/{name}/health (apps_health.go).
 	UpdateServiceHealth(ctx context.Context, name string, health *store.ServiceHealth) error
+	// UpdateServiceVolumes backs PUT /api/v1/apps/{name}/volumes
+	// (apps_volumes_attach.go): the UI/CLI-facing way to attach or
+	// remove a named Docker volume outside a redeploy, mirroring
+	// UpdateServiceEgressPolicy's own dual write path. See
+	// store.DB.UpdateServiceVolumes's own doc comment.
+	UpdateServiceVolumes(ctx context.Context, name string, volumes []store.ServiceVolume) error
 	// SetServiceBranchEnvOverride, DeleteServiceBranchEnvOverride, and
 	// ListServiceBranchEnvOverrides back POST/DELETE/GET
 	// /api/v1/apps/{name}/branch-env (apps_branch_env.go): a narrower,

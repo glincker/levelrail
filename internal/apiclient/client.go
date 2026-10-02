@@ -412,6 +412,15 @@ func (c *Client) ClearAppEgressPolicy(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/egress-policy", nil, nil)
 }
 
+// SetAppVolumes calls PUT /api/v1/apps/{name}/volumes: attaches (or
+// removes) a named Docker volume outside a redeploy, replacing name's
+// whole desired volume list with req.Volumes.
+func (c *Client) SetAppVolumes(ctx context.Context, name string, req SetAppVolumesRequest) (SetAppVolumesResponse, error) {
+	var out SetAppVolumesResponse
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(name)+"/volumes", req, &out)
+	return out, err
+}
+
 // CreateTag calls POST /api/v1/tags.
 func (c *Client) CreateTag(ctx context.Context, name string) (TagResource, error) {
 	var out TagResource

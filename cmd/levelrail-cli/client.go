@@ -95,6 +95,8 @@ type (
 	pitrRestoreHistoryResource       = apiclient.PITRRestoreHistoryResource
 	triggerPITRRestoreRequest        = apiclient.TriggerPITRRestoreRequest
 	appVolumeResource                = apiclient.AppVolumeResource
+	setAppVolumesRequest             = apiclient.SetAppVolumesRequest
+	setAppVolumesResponse            = apiclient.SetAppVolumesResponse
 	appVolumeMoveResource            = apiclient.AppVolumeMoveResource
 	appVolumeMoveStepResource        = apiclient.AppVolumeMoveStepResource
 	appBindMountResource             = apiclient.AppBindMountResource

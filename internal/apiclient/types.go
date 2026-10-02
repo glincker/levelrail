@@ -222,6 +222,19 @@ type AppVolumeResource struct {
 	ContainerPath string `json:"container_path"`
 }
 
+// SetAppVolumesRequest mirrors internal/api's setAppVolumesRequest
+// (apps_volumes_attach.go): the service's whole desired volume list,
+// full-replace like SetAppEgressPolicyRequest.
+type SetAppVolumesRequest struct {
+	Volumes []AppVolumeResource `json:"volumes"`
+}
+
+// SetAppVolumesResponse mirrors internal/api's setAppVolumesResponse.
+type SetAppVolumesResponse struct {
+	Name    string              `json:"name"`
+	Volumes []AppVolumeResource `json:"volumes,omitempty"`
+}
+
 // AppBindMountResource mirrors internal/api's appBindMountResource
 // (app_volumes.go): one of an app's bind-mounted host directories.
 type AppBindMountResource struct {

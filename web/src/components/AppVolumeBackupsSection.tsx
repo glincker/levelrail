@@ -170,7 +170,7 @@ function NoVolumesDeclared() {
         aria-hidden="true"
       />
       <p className="text-sm text-muted-foreground">
-        This app has no named volumes declared in app.yaml.
+        This app has no named volumes. Attach one above to back it up.
       </p>
     </div>
   )
