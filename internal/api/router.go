@@ -382,6 +382,7 @@ type Router struct {
 	notificationChannels           NotificationChannels             // nil is valid: notification-channel routes return 501, same shape as deployNotifyTargets above
 	notificationChannelTester      NotificationChannelTester        // nil is valid: the test-send routes return 501, same shape as deployNotifier above
 	notificationDeliveries         NotificationDeliveryStore        // nil is valid: the deliveries route returns 501, and test-send simply doesn't record history, same shape as notificationChannelTester above
+	approvalChatNotifier           ApprovalChatNotifier             // nil is valid: requestDeployApproval simply doesn't post an interactive chat message, same "optional signal, absence is not an error" shape as deployNotifier above
 	gitSources                     GitSourceStore                   // always set, same "core Store interface" shape as backupTargets above: listing/getting/deleting a git source needs no secrets configuration, only connecting one does
 	appSchedules                   AppScheduleStore                 // always set, same "core Store interface" shape as gitSources above
 	resolveBranchSHA               resolveBranchSHAFunc             // remote branch head resolver for TriggerScheduledDeploy; always non-nil, defaulted to resolveRemoteBranchSHA in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape listBranches above already uses

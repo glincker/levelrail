@@ -477,6 +477,16 @@ func WithNotificationDeliveries(d NotificationDeliveryStore) Option {
 	return func(rt *Router) { rt.notificationDeliveries = d }
 }
 
+// WithApprovalChatNotifier enables posting an interactive Approve/Deny
+// message (deploy_approval_chat_notify.go) when a deploy approval is
+// requested, to every notification channel that opted into
+// InteractiveApprovals. Without one, requestDeployApproval simply
+// doesn't post anything, the same "optional signal" shape as
+// WithDeployNotifier.
+func WithApprovalChatNotifier(n ApprovalChatNotifier) Option {
+	return func(rt *Router) { rt.approvalChatNotifier = n }
+}
+
 // WithDataDir enables disk-usage reporting on GET /api/v1/system/status.
 // path should be the same APP_DATA_DIR the control plane itself was
 // started with. Without one configured (the default), the status

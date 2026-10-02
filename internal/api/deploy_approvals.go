@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -128,6 +129,7 @@ func (rt *Router) requestDeployApproval(w http.ResponseWriter, r *http.Request, 
 		rt.internalError(w, "api: request deploy approval failed", err, slog.String("service", serviceName))
 		return deployApprovalResource{}, false
 	}
+	rt.notifyApprovalRequested(r.Context(), a)
 	return toDeployApprovalResource(a), true
 }
 
@@ -226,42 +228,79 @@ type rejectDeployApprovalRequest struct {
 }
 
 // deployApprovalDecisionError is a stable, client-safe reason a
-// decide-path handler couldn't proceed: distinct from a 500, this is
-// always the caller's own request being invalid given the approval's
-// current state, mirroring unknownRoleError/unknownAbilityError's own
-// "name the specific problem" shape.
-type deployApprovalDecisionError struct{ reason string }
+// decide-path couldn't proceed: distinct from a 500, this is always the
+// caller's own request being invalid given the approval's current
+// state, mirroring unknownRoleError/unknownAbilityError's own "name the
+// specific problem" shape. status is the HTTP status an *http.Request
+// caller maps it to (writeApprovalDecideError); the chat-interaction
+// webhook handlers (chat_interactions.go) read only reason, since a
+// Slack/Discord response has no HTTP-status-to-the-original-client
+// semantics to preserve.
+type deployApprovalDecisionError struct {
+	status int
+	reason string
+}
 
 func (e *deployApprovalDecisionError) Error() string { return e.reason }
 
-// loadDecidableApproval loads id, expires it if stale, and reports
+// writeApprovalDecideError maps err to an HTTP response: a
+// *deployApprovalDecisionError writes its own stable status/reason,
+// anything else is an unexpected failure logged via internalError. The
+// one error-to-response translation both handleApproveDeployApproval
+// and handleRejectDeployApproval use for every error
+// loadDecidableApprovalAs/applyAndDecideApproval/rejectApproval can
+// return.
+func (rt *Router) writeApprovalDecideError(w http.ResponseWriter, context, id string, err error) {
+	var de *deployApprovalDecisionError
+	if errors.As(err, &de) {
+		writeError(w, de.status, de.reason)
+		return
+	}
+	rt.internalError(w, context, err, slog.String("id", id))
+}
+
+// loadDecidableApprovalAs loads id, expires it if stale, and reports
 // whether it's still decidable (status pending) by a decider distinct
-// from its own requester. Writes its own 404/409/500 response and
-// returns ok=false otherwise, the same "writes its own failure
-// response" contract requestDeployApproval above establishes.
-func (rt *Router) loadDecidableApproval(w http.ResponseWriter, r *http.Request, id string) (store.DeployApproval, bool) {
-	a, err := rt.deployApprovals.GetDeployApproval(r.Context(), id)
+// from its own requester, identified by deciderType/deciderID rather
+// than resolved from an *http.Request: the shared core both
+// loadDecidableApproval (a session/token caller, via rt.currentActor)
+// and the chat-interaction webhook handlers (chat_interactions.go, a
+// signature-verified Slack/Discord button click with no session or
+// token of its own, see chatApprovalActorType) call, so the dashboard
+// and chat approval paths can never diverge on what "still decidable"
+// means.
+func (rt *Router) loadDecidableApprovalAs(ctx context.Context, id, deciderType, deciderID string) (store.DeployApproval, error) {
+	a, err := rt.deployApprovals.GetDeployApproval(ctx, id)
 	if errors.Is(err, store.ErrDeployApprovalNotFound) {
-		writeError(w, http.StatusNotFound, "deploy approval not found")
-		return store.DeployApproval{}, false
+		return store.DeployApproval{}, &deployApprovalDecisionError{http.StatusNotFound, "deploy approval not found"}
 	}
 	if err != nil {
-		rt.internalError(w, "api: load deploy approval failed", err, slog.String("id", id))
-		return store.DeployApproval{}, false
+		return store.DeployApproval{}, fmt.Errorf("api: load deploy approval failed: %w", err)
 	}
-	a = rt.expireIfStale(r.Context(), a)
+	a = rt.expireIfStale(ctx, a)
 	if a.Status != store.DeployApprovalStatusPending {
-		writeError(w, http.StatusConflict, "deploy approval "+id+" is no longer pending (status: "+a.Status+")")
-		return store.DeployApproval{}, false
+		return store.DeployApproval{}, &deployApprovalDecisionError{http.StatusConflict, "deploy approval " + id + " is no longer pending (status: " + a.Status + ")"}
 	}
+	if deciderType == a.RequestedByType && deciderID == a.RequestedBy {
+		return store.DeployApproval{}, &deployApprovalDecisionError{http.StatusForbidden, "the same user or token that requested this deploy cannot approve or reject it; a different privileged user must decide"}
+	}
+	return a, nil
+}
 
+// loadDecidableApproval is loadDecidableApprovalAs for a session/token
+// caller: resolves the decider from r first (rt.currentActor), writing
+// its own 401/404/409/403/500 response and returning ok=false on any
+// failure, the same "writes its own failure response" contract
+// requestDeployApproval above establishes.
+func (rt *Router) loadDecidableApproval(w http.ResponseWriter, r *http.Request, id string) (store.DeployApproval, bool) {
 	deciderType, deciderID, _, ok := rt.currentActor(r)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "authentication required")
 		return store.DeployApproval{}, false
 	}
-	if deciderType == a.RequestedByType && deciderID == a.RequestedBy {
-		writeError(w, http.StatusForbidden, "the same user or token that requested this deploy cannot approve or reject it; a different privileged user must decide")
+	a, err := rt.loadDecidableApprovalAs(r.Context(), id, deciderType, deciderID)
+	if err != nil {
+		rt.writeApprovalDecideError(w, "api: load deploy approval failed", id, err)
 		return store.DeployApproval{}, false
 	}
 	return a, true
@@ -271,11 +310,10 @@ func (rt *Router) loadDecidableApproval(w http.ResponseWriter, r *http.Request, 
 // POST /api/v1/deploy-approvals/{id}/approve: AbilityDeploy-gated
 // (routes.go), same tier as triggering the deploy itself would have
 // needed, plus loadDecidableApproval's own same-actor rejection above.
-// Approving actually runs the gated action through the exact path an
-// unprotected deploy/promote already uses (executeConfirmedDeploy,
-// deploys.go; setDesiredImage+recordInstantDeployAttempt, promote.go),
-// so an approved request converges through reconcile identically to any
-// other deploy.
+// Approving actually runs applyAndDecideApproval below, the exact same
+// function the chat-interaction webhook path (chat_interactions.go)
+// calls for a verified Slack/Discord button click: the two never
+// diverge on what "approved" actually does.
 func (rt *Router) handleApproveDeployApproval(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	a, ok := rt.loadDecidableApproval(w, r, id)
@@ -283,14 +321,29 @@ func (rt *Router) handleApproveDeployApproval(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	svc, err := rt.apps.GetDesiredService(r.Context(), a.ServiceName)
-	if errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusConflict, "app "+a.ServiceName+" no longer exists")
+	deciderType, deciderID, deciderName, _ := rt.currentActor(r)
+	resp, err := rt.applyAndDecideApproval(r.Context(), a, deciderType, deciderID, deciderName)
+	if err != nil {
+		rt.writeApprovalDecideError(w, "api: approve deploy approval failed", id, err)
 		return
 	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// applyAndDecideApproval runs a's gated action through the exact path
+// an unprotected deploy/promote already uses (executeConfirmedDeploy,
+// deploys.go; setDesiredImage+recordInstantDeployAttempt, promote.go),
+// then records the decision. Shared by handleApproveDeployApproval and
+// the chat-interaction webhook path (chat_interactions.go), so a
+// dashboard click and a verified Slack/Discord click can never apply an
+// approval differently.
+func (rt *Router) applyAndDecideApproval(ctx context.Context, a store.DeployApproval, deciderType, deciderID, deciderName string) (deployApprovalDecisionResponse, error) {
+	svc, err := rt.apps.GetDesiredService(ctx, a.ServiceName)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		return deployApprovalDecisionResponse{}, &deployApprovalDecisionError{http.StatusConflict, "app " + a.ServiceName + " no longer exists"}
+	}
 	if err != nil {
-		rt.internalError(w, "api: approve deploy approval: load app failed", err, slog.String("id", id))
-		return
+		return deployApprovalDecisionResponse{}, fmt.Errorf("api: approve deploy approval: load app failed: %w", err)
 	}
 
 	var updated store.DesiredService
@@ -299,68 +352,62 @@ func (rt *Router) handleApproveDeployApproval(w http.ResponseWriter, r *http.Req
 		target := *svc
 		if a.IncludeEnv {
 			if err := applyPromoteEnvSnapshot(&target, a.PromoteEnv); err != nil {
-				rt.internalError(w, "api: approve deploy approval: read env snapshot failed", err, slog.String("id", id))
-				return
+				return deployApprovalDecisionResponse{}, fmt.Errorf("api: approve deploy approval: read env snapshot failed: %w", err)
 			}
 		}
-		updated, err = rt.setDesiredImage(r.Context(), target, a.Image)
+		updated, err = rt.setDesiredImage(ctx, target, a.Image)
 		if err == nil {
-			rt.recordInstantDeployAttempt(r.Context(), updated, a.Image, store.DeployAttemptSourcePromote)
+			rt.recordInstantDeployAttempt(ctx, updated, a.Image, store.DeployAttemptSourcePromote)
 			rt.nudgeReconciler()
 		}
 	default:
-		note, ok := rt.approvalFreezeGate(w, r, a)
-		if !ok {
-			return
+		note, gateErr := rt.approvalFreezeNote(ctx, a)
+		if gateErr != nil {
+			return deployApprovalDecisionResponse{}, gateErr
 		}
-		updated, err = rt.executeConfirmedDeploy(r.Context(), *svc, a.Image, confirmedDeployOptions{pull: a.Pull, reason: note})
+		updated, err = rt.executeConfirmedDeploy(ctx, *svc, a.Image, confirmedDeployOptions{pull: a.Pull, reason: note})
 	}
 	if err != nil && a.Pull && a.Action != store.DeployApprovalActionPromote {
-		rt.logger.Error("api: approve deploy approval: fresh pull failed", slog.String("error", err.Error()), slog.String("id", id))
-		writeError(w, http.StatusBadGateway, "could not resolve the image from its registry; the approval is still pending, retry later or reject it and request again without pull")
-		return
+		rt.logger.Error("api: approve deploy approval: fresh pull failed", slog.String("error", err.Error()), slog.String("id", a.ID))
+		return deployApprovalDecisionResponse{}, &deployApprovalDecisionError{http.StatusBadGateway, "could not resolve the image from its registry; the approval is still pending, retry later or reject it and request again without pull"}
 	}
 	if err != nil {
-		rt.internalError(w, "api: approve deploy approval: apply failed", err, slog.String("id", id))
-		return
+		return deployApprovalDecisionResponse{}, fmt.Errorf("api: approve deploy approval: apply failed: %w", err)
 	}
 
-	deciderType, deciderID, deciderName, _ := rt.currentActor(r)
 	decidedAt := store.FormatAuditTime(time.Now())
-	if _, err := rt.deployApprovals.DecideDeployApproval(r.Context(), id, store.DeployApprovalStatusApproved, deciderType, deciderID, deciderName, "", decidedAt); err != nil {
-		rt.logger.Warn("api: record deploy approval decision failed", slog.String("error", err.Error()), slog.String("id", id))
+	if _, err := rt.deployApprovals.DecideDeployApproval(ctx, a.ID, store.DeployApprovalStatusApproved, deciderType, deciderID, deciderName, "", decidedAt); err != nil {
+		rt.logger.Warn("api: record deploy approval decision failed", slog.String("error", err.Error()), slog.String("id", a.ID))
 	}
 
-	final, err := rt.deployApprovals.GetDeployApproval(r.Context(), id)
+	final, err := rt.deployApprovals.GetDeployApproval(ctx, a.ID)
 	if err != nil {
-		rt.internalError(w, "api: approve deploy approval: reload failed", err, slog.String("id", id))
-		return
+		return deployApprovalDecisionResponse{}, fmt.Errorf("api: approve deploy approval: reload failed: %w", err)
 	}
-	writeJSON(w, http.StatusOK, deployApprovalDecisionResponse{
-		Approval: toDeployApprovalResource(final),
-		App:      toAppResource(updated),
-	})
+	return deployApprovalDecisionResponse{Approval: toDeployApprovalResource(final), App: toAppResource(updated)}, nil
 }
 
-// approvalFreezeGate refuses to apply an approved deploy during a freeze
-// unless the original request carried an override.
-func (rt *Router) approvalFreezeGate(w http.ResponseWriter, r *http.Request, a store.DeployApproval) (string, bool) {
+// approvalFreezeNote refuses to apply an approved deploy during a
+// freeze unless the original request carried an override, returning a
+// *deployApprovalDecisionError (423 for an HTTP caller) rather than
+// writing a response directly: see applyAndDecideApproval's own doc
+// comment for why this needs to be callable from both the HTTP handler
+// and the chat-interaction webhook path.
+func (rt *Router) approvalFreezeNote(ctx context.Context, a store.DeployApproval) (string, error) {
 	if rt.deploySafety == nil {
-		return "", true
+		return "", nil
 	}
-	status, err := deploy.CheckFreeze(r.Context(), rt.deploySafety, a.ServiceName, time.Now())
+	status, err := deploy.CheckFreeze(ctx, rt.deploySafety, a.ServiceName, time.Now())
 	if err != nil {
-		rt.internalError(w, "api: approve deploy approval: check freeze failed", err, slog.String("id", a.ID))
-		return "", false
+		return "", fmt.Errorf("api: approve deploy approval: check freeze failed: %w", err)
 	}
 	if !status.Frozen {
-		return "", true
+		return "", nil
 	}
 	if a.FreezeOverride == "" {
-		writeError(w, http.StatusLocked, (&deploy.FrozenError{Status: status}).Error()+"; this request did not override the freeze, reject it and request again with override_freeze and override_reason")
-		return "", false
+		return "", &deployApprovalDecisionError{http.StatusLocked, (&deploy.FrozenError{Status: status}).Error() + "; this request did not override the freeze, reject it and request again with override_freeze and override_reason"}
 	}
-	return a.FreezeOverride, true
+	return a.FreezeOverride, nil
 }
 
 // deployApprovalDecisionResponse is POST .../approve's response: the
@@ -393,23 +440,36 @@ func (rt *Router) handleRejectDeployApproval(w http.ResponseWriter, r *http.Requ
 	}
 
 	deciderType, deciderID, deciderName, _ := rt.currentActor(r)
-	decidedAt := store.FormatAuditTime(time.Now())
-	ok, err := rt.deployApprovals.DecideDeployApproval(r.Context(), id, store.DeployApprovalStatusRejected, deciderType, deciderID, deciderName, req.Reason, decidedAt)
+	resource, err := rt.rejectApproval(r.Context(), id, deciderType, deciderID, deciderName, req.Reason)
 	if err != nil {
-		rt.internalError(w, "api: reject deploy approval failed", err, slog.String("id", id))
+		rt.writeApprovalDecideError(w, "api: reject deploy approval failed", id, err)
 		return
+	}
+	writeJSON(w, http.StatusOK, resource)
+}
+
+// rejectApproval records id as rejected, attributed to
+// deciderType/deciderID/deciderName, and reloads it: the same function
+// handleRejectDeployApproval (a session/token caller, already past
+// loadDecidableApproval) and the chat-interaction webhook path
+// (chat_interactions.go, already past its own signature check and
+// loadDecidableApprovalAs) both call, matching applyAndDecideApproval's
+// own "one shared function, two callers" shape for approve.
+func (rt *Router) rejectApproval(ctx context.Context, id, deciderType, deciderID, deciderName, reason string) (deployApprovalResource, error) {
+	decidedAt := store.FormatAuditTime(time.Now())
+	ok, err := rt.deployApprovals.DecideDeployApproval(ctx, id, store.DeployApprovalStatusRejected, deciderType, deciderID, deciderName, reason, decidedAt)
+	if err != nil {
+		return deployApprovalResource{}, fmt.Errorf("api: reject deploy approval failed: %w", err)
 	}
 	if !ok {
-		writeError(w, http.StatusConflict, "deploy approval "+id+" is no longer pending")
-		return
+		return deployApprovalResource{}, &deployApprovalDecisionError{http.StatusConflict, "deploy approval " + id + " is no longer pending"}
 	}
 
-	final, err := rt.deployApprovals.GetDeployApproval(r.Context(), id)
+	final, err := rt.deployApprovals.GetDeployApproval(ctx, id)
 	if err != nil {
-		rt.internalError(w, "api: reject deploy approval: reload failed", err, slog.String("id", id))
-		return
+		return deployApprovalResource{}, fmt.Errorf("api: reject deploy approval: reload failed: %w", err)
 	}
-	writeJSON(w, http.StatusOK, toDeployApprovalResource(final))
+	return toDeployApprovalResource(final), nil
 }
 
 // RunDeployApprovalExpirySweep calls expireIfStale-style cleanup across

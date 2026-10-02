@@ -2042,6 +2042,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithNotificationChannels(alertingDB),
 		api.WithNotificationChannelTester(deployDispatcher),
 		api.WithNotificationDeliveries(alertingDB),
+		api.WithApprovalChatNotifier(deployDispatcher),
 		api.WithFirewallRequiredPorts(platformRequiredPorts()),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
