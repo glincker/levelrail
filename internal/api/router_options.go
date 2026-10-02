@@ -488,6 +488,15 @@ func WithNotificationDeliveries(d NotificationDeliveryStore) Option {
 	return func(rt *Router) { rt.notificationDeliveries = d }
 }
 
+// WithPushVAPIDPublicKey enables browser push notifications: GET
+// .../push-subscriptions/vapid-public-key returns publicKey, and POST
+// .../push-subscriptions accepts new registrations. Without one
+// configured (the default, no master key set), both return 501: the
+// VAPID private key half can only ever be stored through secretsManager.
+func WithPushVAPIDPublicKey(publicKey string) Option {
+	return func(rt *Router) { rt.pushVAPIDPublicKey = publicKey }
+}
+
 // WithDataDir enables disk-usage reporting on GET /api/v1/system/status.
 // path should be the same APP_DATA_DIR the control plane itself was
 // started with. Without one configured (the default), the status

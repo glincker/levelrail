@@ -1548,6 +1548,15 @@ type NotificationDeliveryResource struct {
 	CreatedAt string `json:"created_at"`
 }
 
+// PushSubscriptionResource mirrors internal/api's
+// pushSubscriptionResource (internal/api/push_subscriptions.go): one
+// browser registered for the "webpush" notification-channel kind.
+type PushSubscriptionResource struct {
+	ID        string `json:"id"`
+	UserAgent string `json:"user_agent"`
+	CreatedAt string `json:"created_at"`
+}
+
 // ScheduledTaskResource mirrors internal/api's scheduledTaskResource
 // (internal/api/scheduled_tasks.go). Command is a real argv (no shell),
 // and LastRun* describe only the single most recent run in place: there

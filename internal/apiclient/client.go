@@ -1988,6 +1988,22 @@ func (c *Client) ListNotificationDeliveries(ctx context.Context, id string, limi
 	return out, err
 }
 
+// ListPushSubscriptions calls GET /api/v1/settings/push-subscriptions:
+// every browser the caller's own account has registered for the
+// "webpush" notification-channel kind.
+func (c *Client) ListPushSubscriptions(ctx context.Context) ([]PushSubscriptionResource, error) {
+	var out []PushSubscriptionResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/push-subscriptions", nil, &out)
+	return out, err
+}
+
+// DeletePushSubscription calls DELETE
+// /api/v1/settings/push-subscriptions/{id}: revokes one registered
+// browser.
+func (c *Client) DeletePushSubscription(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/settings/push-subscriptions/"+PathEscape(id), nil, nil)
+}
+
 // GetLogDrain calls GET /api/v1/apps/{name}/log-drain: the app's
 // currently configured external log-forwarding sink. Returns *APIError
 // with StatusCode 404 (via errors.As) if the app doesn't exist or has no

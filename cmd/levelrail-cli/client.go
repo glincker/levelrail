@@ -143,6 +143,7 @@ type (
 	updateNotificationChannelRequest = apiclient.UpdateNotificationChannelRequest
 	testNotificationChannelRequest   = apiclient.TestNotificationChannelRequest
 	notificationDeliveryResource     = apiclient.NotificationDeliveryResource
+	pushSubscriptionResource         = apiclient.PushSubscriptionResource
 	logDrainResource                 = apiclient.LogDrainResource
 	setLogDrainRequest               = apiclient.SetLogDrainRequest
 

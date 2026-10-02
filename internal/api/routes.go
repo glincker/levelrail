@@ -163,6 +163,15 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/passkey-login/begin", rt.handleBeginPasskeyLogin)
 	mux.HandleFunc("POST /api/v1/auth/passkey-login/finish", rt.handleFinishPasskeyLogin)
 
+	// Browser push notification subscriptions (push_subscriptions.go):
+	// one admin account's registered browsers, the delivery target for
+	// the "webpush" notification-channel kind. Self-service like
+	// passkeys above, so requireAuth not requireAbility.
+	mux.HandleFunc("GET /api/v1/settings/push-subscriptions/vapid-public-key", rt.requireAuth(rt.handleGetPushVAPIDPublicKey))
+	mux.HandleFunc("GET /api/v1/settings/push-subscriptions", rt.requireAuth(rt.handleListPushSubscriptions))
+	mux.HandleFunc("POST /api/v1/settings/push-subscriptions", rt.requireAuth(rt.handleCreatePushSubscription))
+	mux.HandleFunc("DELETE /api/v1/settings/push-subscriptions/{id}", rt.requireAuth(rt.handleDeletePushSubscription))
+
 	// Multi-user: creating another local-password user (see
 	// handleRegister's own doc comment) is AbilityRoot, not merely
 	// requireAuth: the caller also picks the new user's Abilities, so

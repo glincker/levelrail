@@ -137,7 +137,7 @@ func scanNotificationChannel(scan func(dest ...any) error) (*NotificationChannel
 
 // sendTestNotification sends a fixed connectivity-check message via
 // kind, reusing sendDeployOutcome's own per-channel payload logic.
-func sendTestNotification(ctx context.Context, client *http.Client, sender email.Sender, kind NotifyKind, notifyURL string) error {
+func sendTestNotification(ctx context.Context, client *http.Client, sender email.Sender, pushSender PushSender, kind NotifyKind, notifyURL string) error {
 	if client == nil {
 		client = netguard.NewClient()
 	}
@@ -219,6 +219,14 @@ func sendTestNotification(ctx context.Context, client *http.Client, sender email
 			return fmt.Errorf("alerting: test notification: %w", err)
 		}
 		return nil
+	case NotifyWebpush:
+		if pushSender == nil {
+			return fmt.Errorf("alerting: test notification: browser push is not configured on this control plane")
+		}
+		if err := pushSender.Send(ctx, "Levelrail", testText); err != nil {
+			return fmt.Errorf("alerting: test notification: %w", err)
+		}
+		return nil
 	default: // NotifyGeneric and any unknown/typo'd kind
 		return postJSON(ctx, client, notifyURL, map[string]string{"message": testText})
 	}
@@ -229,5 +237,5 @@ func sendTestNotification(ctx context.Context, client *http.Client, sender email
 // passing test predicts a real deploy notification will send the same
 // way.
 func (d *DeployDispatcher) SendTest(ctx context.Context, kind NotifyKind, notifyURL string) error {
-	return sendTestNotification(ctx, d.client, d.sender, kind, notifyURL)
+	return sendTestNotification(ctx, d.client, d.sender, d.pushSender, kind, notifyURL)
 }

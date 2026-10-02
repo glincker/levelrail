@@ -5,6 +5,7 @@ import { z } from 'zod'
 import {
   BellRingingIcon,
   CheckCircleIcon,
+  DeviceMobileIcon,
   EnvelopeSimpleIcon,
   PaperPlaneTiltIcon,
   PlusCircleIcon,
@@ -27,6 +28,7 @@ import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
 import { BrandIcon } from './BrandIcon'
+import { BrowserPushField } from './BrowserPushField'
 import {
   CHANNEL_KIND_BRAND_ICON,
   CHANNEL_KIND_LABEL,
@@ -58,6 +60,7 @@ const KIND_ORDER: NotificationChannelKind[] = [
   'resend',
   'ntfy',
   'gotify',
+  'webpush',
 ]
 
 // Destination placeholder and setup-guide link per kind: each URL is the
@@ -122,6 +125,9 @@ const KIND_META: Record<
     placeholder: 'https://chat.googleapis.com/v1/spaces/.../messages?key=...',
     href: 'https://developers.google.com/workspace/chat/quickstart/webhooks',
   },
+  // No destination URL at all: BrowserPushField renders in its place
+  // below, and resolveNotifyUrl always sends "" for this kind.
+  webpush: { placeholder: '' },
 }
 
 const createChannelSchema = z
@@ -145,6 +151,7 @@ const createChannelSchema = z
       'opsgenie',
       'webex',
       'googlechat',
+      'webpush',
     ]),
     notifyUrl: z.string().trim(),
     pushoverUserKey: z.string().trim(),
@@ -223,6 +230,12 @@ const createChannelSchema = z
       }
       return
     }
+    // webpush has no destination field at all: readiness (has this
+    // browser actually subscribed yet) is tracked as component state,
+    // not a form field, and enforced in onSubmit below instead.
+    if (data.kind === 'webpush') {
+      return
+    }
     if (!data.notifyUrl) {
       ctx.addIssue({
         code: 'custom',
@@ -287,6 +300,11 @@ function resolveNotifyUrl(values: CreateChannelForm): string {
   if (values.kind === 'opsgenie') {
     return buildOpsgenieNotifyUrl(values.opsgenieApiKey.trim())
   }
+  // webpush: every registered browser subscription is the destination,
+  // so notify_url is unused server-side; the empty string is valid.
+  if (values.kind === 'webpush') {
+    return ''
+  }
   return values.notifyUrl.trim()
 }
 
@@ -295,6 +313,7 @@ function resolveNotifyUrl(values: CreateChannelForm): string {
 export function CreateNotificationChannelDialog() {
   const [open, setOpen] = useState(false)
   const [verified, setVerified] = useState(false)
+  const [webpushReady, setWebpushReady] = useState(false)
   const createChannel = useCreateNotificationChannel()
   const testChannel = useTestNotificationChannel()
   const { control, register, handleSubmit, formState, reset, watch } =
@@ -319,13 +338,16 @@ export function CreateNotificationChannelDialog() {
           ? Boolean(resendApiKey.trim() && resendTo.trim())
           : kind === 'opsgenie'
             ? Boolean(opsgenieApiKey.trim())
-            : Boolean(notifyUrl.trim())
+            : kind === 'webpush'
+              ? webpushReady
+              : Boolean(notifyUrl.trim())
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
       reset(DEFAULT_VALUES)
       setVerified(false)
+      setWebpushReady(false)
       createChannel.reset()
       testChannel.reset()
     }
@@ -425,6 +447,11 @@ export function CreateNotificationChannelDialog() {
                           />
                         ) : option === 'pushover' ? (
                           <BellRingingIcon
+                            className="size-5"
+                            aria-hidden="true"
+                          />
+                        ) : option === 'webpush' ? (
+                          <DeviceMobileIcon
                             className="size-5"
                             aria-hidden="true"
                           />
@@ -584,6 +611,8 @@ export function CreateNotificationChannelDialog() {
                 error message on failure. Nothing else about your app.
               </FieldHint>
             </Field>
+          ) : kind === 'webpush' ? (
+            <BrowserPushField onReadyChange={setWebpushReady} />
           ) : (
             <Field>
               <FieldLabel htmlFor="channel-notify-url">

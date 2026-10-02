@@ -52,14 +52,29 @@ const KIND_ORDER = [
   'resend',
   'ntfy',
   'gotify',
+  'webpush',
 ] as const
 
-const editChannelSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required'),
-  kind: z.enum(KIND_ORDER),
-  notifyUrl: z.string().trim().min(1, 'Destination is required'),
-  enabled: z.boolean(),
-})
+const editChannelSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Name is required'),
+    kind: z.enum(KIND_ORDER),
+    notifyUrl: z.string().trim(),
+    enabled: z.boolean(),
+  })
+  .superRefine((data, ctx) => {
+    // webpush has no destination to edit: every registered browser
+    // subscription is the destination, managed from the Browser push
+    // field in the create dialog instead.
+    if (data.kind === 'webpush' || data.notifyUrl) {
+      return
+    }
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Destination is required',
+      path: ['notifyUrl'],
+    })
+  })
 
 type EditChannelForm = z.infer<typeof editChannelSchema>
 
@@ -228,31 +243,45 @@ export function EditNotificationChannelDialog({
             <FieldError errors={[formState.errors.name]} />
           </Field>
 
-          <Field>
-            <FieldLabel htmlFor="edit-channel-notify-url">
-              {kind === 'email'
-                ? 'Notify email address'
-                : kind === 'pagerduty'
-                  ? 'Integration/Routing Key'
-                  : 'Destination (webhook URL or credential)'}
-            </FieldLabel>
-            <Input
-              id="edit-channel-notify-url"
-              {...register('notifyUrl', {
-                onChange: () => {
-                  setVerified(false)
-                },
-              })}
-            />
-            <FieldError errors={[formState.errors.notifyUrl]} />
-          </Field>
+          {kind === 'webpush' ? (
+            <Field>
+              <FieldLabel>Destination</FieldLabel>
+              <p className="text-xs text-muted-foreground">
+                Every browser registered under Settings -&gt; Notification
+                channels -&gt; Browser push receives this channel&apos;s
+                notifications. There is no per-channel URL to edit.
+              </p>
+            </Field>
+          ) : (
+            <Field>
+              <FieldLabel htmlFor="edit-channel-notify-url">
+                {kind === 'email'
+                  ? 'Notify email address'
+                  : kind === 'pagerduty'
+                    ? 'Integration/Routing Key'
+                    : 'Destination (webhook URL or credential)'}
+              </FieldLabel>
+              <Input
+                id="edit-channel-notify-url"
+                {...register('notifyUrl', {
+                  onChange: () => {
+                    setVerified(false)
+                  },
+                })}
+              />
+              <FieldError errors={[formState.errors.notifyUrl]} />
+            </Field>
+          )}
 
           <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              disabled={testChannel.isPending || !notifyUrl.trim()}
+              disabled={
+                testChannel.isPending ||
+                (kind !== 'webpush' && !notifyUrl.trim())
+              }
               onClick={handleTest}
             >
               <PaperPlaneTiltIcon className="size-3.5" aria-hidden="true" />
