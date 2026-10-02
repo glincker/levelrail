@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -22,6 +23,10 @@ type DomainTLSCertStore interface {
 	GetDomainTLSCert(ctx context.Context, domain string) (store.DomainTLSCert, bool, error)
 	SetDomainTLSCert(ctx context.Context, domain string, uploadedAt, expiresAt time.Time) error
 	DeleteDomainTLSCert(ctx context.Context, domain string) error
+	// ListDomainTLSCerts backs handleListCertificates' Source field (api/
+	// certificates.go): every domain with a custom cert on file, so the
+	// certificate center page can tell "custom" apart from "acme" per row.
+	ListDomainTLSCerts(ctx context.Context) ([]store.DomainTLSCert, error)
 }
 
 // DomainTLSCertSecrets is the surface these handlers need from
@@ -201,4 +206,54 @@ func (rt *Router) handleClearDomainTLSCert(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	writeJSON(w, http.StatusOK, domainTLSCertResource{Domain: domain})
+}
+
+// renewCertificateResponse is POST .../cert/renew's response body.
+type renewCertificateResponse struct {
+	Domain string `json:"domain"`
+	// HadStoredCertificate is true when a previously-issued certificate
+	// was found and removed to force re-issuance; false when the renew
+	// request found none (either domain has never been issued one yet,
+	// or ingress hasn't reconciled it yet), still a valid "request it now"
+	// call, not an error.
+	HadStoredCertificate bool   `json:"had_stored_certificate"`
+	Status               string `json:"status"`
+}
+
+// handleRenewDomainCertificate handles POST
+// /api/v1/apps/{name}/domains/{domain}/cert/renew: clears domain's stored
+// certificate and nudges the reconciler, so the next pass re-obtains one
+// (ACME or internal, whichever that domain's policy uses) within seconds
+// instead of waiting for the normal resync interval. AbilityRoot, same
+// tier as PUT/DELETE .../tls-cert: real infra, real blast radius.
+func (rt *Router) handleRenewDomainCertificate(w http.ResponseWriter, r *http.Request) {
+	domain, ok := rt.requireOwnedDomain(w, r)
+	if !ok {
+		return
+	}
+
+	if _, found, err := rt.domainTLSCert.GetDomainTLSCert(r.Context(), domain); err != nil {
+		rt.logger.Error("api: renew domain certificate: get domain tls cert failed", slog.String("error", err.Error()), slog.String("domain", domain))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	} else if found {
+		writeError(w, http.StatusConflict, fmt.Sprintf("domain %q uses an operator-uploaded certificate; renewal only applies to automatic ACME/internal issuance. Remove the custom certificate first.", domain))
+		return
+	}
+
+	hadCert, err := alerting.DeleteCertificateForDomain(r.Context(), rt.certs, rt.certs, domain)
+	if err != nil {
+		rt.logger.Error("api: renew domain certificate failed", slog.String("error", err.Error()), slog.String("domain", domain))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	rt.nudgeReconciler()
+	rt.logger.Info("api: domain certificate renewal requested", slog.String("domain", domain), slog.Bool("had_stored_certificate", hadCert))
+
+	writeJSON(w, http.StatusAccepted, renewCertificateResponse{
+		Domain:               domain,
+		HadStoredCertificate: hadCert,
+		Status:               "renewal_requested",
+	})
 }

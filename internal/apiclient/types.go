@@ -2754,6 +2754,20 @@ type CertificateResource struct {
 	Status    string    `json:"status"`
 	// Renewal is "ok" or "stalled".
 	Renewal string `json:"renewal"`
+	// Apps is every app or static site owning Domain; see
+	// certificateStatus.Apps's own doc comment.
+	Apps []string `json:"apps,omitempty"`
+	// Source is "acme" or "custom"; see certificateStatus.Source.
+	Source string `json:"source"`
+}
+
+// RenewCertificateResource mirrors internal/api's
+// renewCertificateResponse (internal/api/domain_tls_cert.go): POST
+// .../cert/renew's response body.
+type RenewCertificateResource struct {
+	Domain               string `json:"domain"`
+	HadStoredCertificate bool   `json:"had_stored_certificate"`
+	Status               string `json:"status"`
 }
 
 // OAuthProviderSettingsResource mirrors internal/api's

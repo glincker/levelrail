@@ -43,6 +43,7 @@ function cert(
     not_before: '2026-01-01T00:00:00Z',
     not_after: '2026-12-01T00:00:00Z',
     status: 'healthy',
+    source: 'acme',
     ...overrides,
   }
 }

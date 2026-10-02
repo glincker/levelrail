@@ -295,6 +295,13 @@ export const settingsNavSections: SettingsNavSection[] = [
           'Platform ingress: dashboard domain and ACME certificates.',
       },
       {
+        to: '/settings/certificates',
+        icon: ShieldCheckIcon,
+        title: 'TLS certificates',
+        description:
+          'Every domain’s certificate in one place: expiry, issuer, renew now, and custom certificate upload.',
+      },
+      {
         to: '/settings/infrastructure',
         icon: FileCodeIcon,
         title: 'Infrastructure as code',

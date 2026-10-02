@@ -480,6 +480,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetDomainTLSCert))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/tls-cert", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleClearDomainTLSCert))
 
+	// Force re-issuance of domain's automatic certificate (domain_tls_cert.go's
+	// handleRenewDomainCertificate): deletes the stored certmagic entry
+	// and nudges the reconciler. AbilityRoot, same tier as PUT/DELETE
+	// .../tls-cert above: real infra, real blast radius.
+	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/cert/renew", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleRenewDomainCertificate))
+
 	// Opt-in WAF and rate limiting (domain_waf.go): OWASP Coraza and
 	// Caddy's rate_limit handler on one app-owned domain, enforced on
 	// the next ingress reconcile pass. GET is AbilityRead, matching the

@@ -161,6 +161,25 @@ func TestRun_DomainsTLSCertClear(t *testing.T) {
 	}
 }
 
+func TestRun_DomainsTLSCertRenew(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := newEchoServer(t, &gotMethod, &gotPath, renewCertificateResource{
+		Domain: "app.example.com", HadStoredCertificate: true, Status: "renewal_requested",
+	})
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"domains", "tls-cert", "renew", "web", "app.example.com", "--api-url", srv.URL})
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != "/api/v1/apps/web/domains/app.example.com/cert/renew" {
+		t.Errorf("path = %q, want /api/v1/apps/web/domains/app.example.com/cert/renew", gotPath)
+	}
+	if !strings.Contains(stdout, `certificate renewal requested for domain "app.example.com"`) {
+		t.Errorf("stdout = %q, want a renewal confirmation", stdout)
+	}
+}
+
 func TestRun_DomainsTLSCert_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"domains", "tls-cert", "-h"}, &stdout, &stderr, envMap())
