@@ -272,6 +272,7 @@ type (
 	updateAIAssistantSettingsRequest   = apiclient.UpdateAIAssistantSettingsRequest
 	appStorageResource                 = apiclient.AppStorageResource
 	certificateResource                = apiclient.CertificateResource
+	renewCertificateResource           = apiclient.RenewCertificateResource
 	gitProviderResource                = apiclient.GitProviderResource
 	gitHubAppStatusResource            = apiclient.GitHubAppStatusResource
 	gitLabAppStatusResource            = apiclient.GitLabAppStatusResource

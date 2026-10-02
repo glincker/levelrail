@@ -123,7 +123,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"basic-auth":     {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"maintenance":    {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
 		"redirect":       {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
-		"tls-cert":       {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},
+		"tls-cert":       {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil, "renew": nil}},
 		"check":          nil,
 		"certificates":   nil,
 		"waf":            {subs: map[string]*cmdNode{"get": nil, "set": nil, "clear": nil}},

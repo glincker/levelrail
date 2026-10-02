@@ -1042,6 +1042,17 @@ func (c *Client) ClearDomainTLSCert(ctx context.Context, name, domain string) (D
 	return out, err
 }
 
+// RenewDomainCertificate calls POST
+// /api/v1/apps/{name}/domains/{domain}/cert/renew: forces re-issuance of
+// domain's automatically-managed certificate (ACME or internal; not valid
+// for a domain with a BYO certificate uploaded, see
+// handleRenewDomainCertificate's own doc comment).
+func (c *Client) RenewDomainCertificate(ctx context.Context, name, domain string) (RenewCertificateResource, error) {
+	var out RenewCertificateResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/domains/"+PathEscape(domain)+"/cert/renew", nil, &out)
+	return out, err
+}
+
 // domainWAFPath builds /api/v1/apps/{name}/domains/{domain}/waf, shared
 // by all three domain WAF/rate-limit methods below, mirroring
 // domainAuthPath's identical shape for a different per-domain toggle.

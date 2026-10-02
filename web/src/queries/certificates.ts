@@ -28,6 +28,13 @@ export interface CertificateStatus {
   not_after: string
   status: 'healthy' | 'expiring_soon' | 'expired'
   renewal?: 'ok' | 'stalled'
+  // apps is every app or static site owning domain; empty when domain
+  // matches none of them.
+  apps?: string[]
+  // source is "custom" for an operator-uploaded certificate
+  // (setDomainTLSCert), "acme" for Caddy's automatic ACME/internal
+  // issuance.
+  source: 'acme' | 'custom'
 }
 
 export async function fetchCertificates(): Promise<CertificateStatus[]> {

@@ -2,28 +2,25 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// CertStore is the store surface handleListCertificates needs: the same
-// two read methods internal/ingress.SQLiteStorage already calls through
-// its own CertStore interface, narrowed further since this handler never
-// writes, deletes, or locks. *store.DB satisfies this structurally, the
-// same consumer-defined-interface convention every other Store
-// sub-interface in this package follows. Identical in shape to
-// alerting.CertSource (a kind=cert_expiry rule's own read surface): the
-// certificate-listing computation itself lives once, in
-// alerting.ListCertificates, and this handler just maps its result to
-// the wire shape below, so the dashboard's TLS card and an alert rule
-// can never silently disagree about a certificate's status.
+// CertStore is the store surface handleListCertificates and
+// handleRenewDomainCertificate need: the two read methods
+// internal/ingress.SQLiteStorage also uses, plus the delete method renew
+// needs to clear a domain's stored certificate. *store.DB satisfies this
+// structurally, same as every other Store sub-interface in this package.
 type CertStore interface {
 	ListCertStorageKeys(ctx context.Context, prefix string, recursive bool) ([]string, error)
 	GetCertStorageValue(ctx context.Context, key string) (*store.CertStorageValue, error)
+	DeleteCertStorageValue(ctx context.Context, key string) error
 }
 
 // certificateStatus is one issued certificate's wire shape: what
@@ -59,6 +56,19 @@ type certificateStatus struct {
 	// expired, or has sat in expiring_soon with an unchanged NotAfter past
 	// the stalled threshold (alerting.CertRenewalStates).
 	Renewal string `json:"renewal"`
+	// Apps is every app or static site that owns Domain, from
+	// domainOwners; empty when Domain matches none of them (a certificate
+	// for a hostname no longer configured on any app). The certificate
+	// center page (web/src/routes/settings/certificates.tsx) uses this to
+	// build the app-scoped renew/upload URL for this row.
+	Apps []string `json:"apps,omitempty"`
+	// Source is "custom" when domain_tls_cert has an operator-uploaded
+	// certificate for Domain (handleSetDomainTLSCert), "acme" otherwise:
+	// Caddy's automatic ACME/internal issuance. A "custom" certificate's
+	// NotAfter/Status above still come from the stored leaf itself, same
+	// computation either way; only the renew action's availability
+	// differs (see handleRenewDomainCertificate).
+	Source string `json:"source"`
 }
 
 // CertObservationSource lists the expiry observations kind=cert_expiry
@@ -108,10 +118,20 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 		rt.internalError(w, "api: list certificates: domain owners", err)
 		return
 	}
+	customDomains, err := rt.customTLSCertDomains(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: list certificates: custom tls cert domains", err)
+		return
+	}
+
 	out := make([]certificateStatus, 0, len(infos))
 	for _, info := range infos {
 		if !certVisible(info.Domain, info.SANs, owners, canSee) {
 			continue
+		}
+		source := "acme"
+		if customDomains[strings.ToLower(info.Domain)] {
+			source = "custom"
 		}
 		out = append(out, certificateStatus{
 			Domain:    info.Domain,
@@ -121,7 +141,24 @@ func (rt *Router) handleListCertificates(w http.ResponseWriter, r *http.Request)
 			NotAfter:  info.NotAfter,
 			Status:    info.Status,
 			Renewal:   renewal[info.Domain],
+			Apps:      owners[strings.ToLower(info.Domain)],
+			Source:    source,
 		})
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// customTLSCertDomains returns the lowercased set of domains with an
+// operator-uploaded (BYO) certificate currently on file
+// (domain_tls_cert), for handleListCertificates' Source field.
+func (rt *Router) customTLSCertDomains(ctx context.Context) (map[string]bool, error) {
+	rows, err := rt.domainTLSCert.ListDomainTLSCerts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list domain tls certs: %w", err)
+	}
+	out := make(map[string]bool, len(rows))
+	for _, row := range rows {
+		out[strings.ToLower(row.Domain)] = true
+	}
+	return out, nil
 }
