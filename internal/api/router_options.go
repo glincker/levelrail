@@ -45,6 +45,14 @@ func WithRegistryCredentialSecrets(s RegistryCredentialSecretsSetter) Option {
 	return func(rt *Router) { rt.registryCredentialSecrets = s }
 }
 
+// WithNetworkShareSecrets enables POST/PUT /api/v1/network-shares for a
+// cifs share. Without one configured (the default), those return 501;
+// GET, DELETE, and an nfs share's create/update work regardless, the
+// same shape WithRegistryCredentialSecrets establishes.
+func WithNetworkShareSecrets(s NetworkShareSecretsSetter) Option {
+	return func(rt *Router) { rt.networkShareSecrets = s }
+}
+
 // WithEmailSecrets enables PUT /api/v1/settings/email. Without one
 // configured (the default), that route returns 501; GET works regardless.
 func WithEmailSecrets(s EmailSecretsStore) Option {

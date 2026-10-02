@@ -606,6 +606,17 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteRegistryCredential))
 	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryCredential))
 
+	// Network shares (network_shares.go): an NFS/CIFS export mountable
+	// as a Docker local-driver volume. Same ability tiers as registry
+	// credentials just above: POST/PUT/DELETE handle a live CIFS
+	// password, test is a read-only reachability dial.
+	mux.HandleFunc("GET /api/v1/network-shares", rt.requireAbility(AbilityRead, rt.handleListNetworkShares))
+	mux.HandleFunc("POST /api/v1/network-shares", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateNetworkShare))
+	mux.HandleFunc("GET /api/v1/network-shares/{id}", rt.requireAbility(AbilityRead, rt.handleGetNetworkShare))
+	mux.HandleFunc("PUT /api/v1/network-shares/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateNetworkShare))
+	mux.HandleFunc("DELETE /api/v1/network-shares/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteNetworkShare))
+	mux.HandleFunc("POST /api/v1/network-shares/{id}/test", rt.requireAbility(AbilityRead, rt.handleTestNetworkShare))
+
 	// Registry credential browsing (registry_catalog.go): repository/tag
 	// lookup for a stored external credential, the same generic catalog
 	// client GET /api/v1/registry/repositories and /api/v1/registry/tags

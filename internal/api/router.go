@@ -336,6 +336,8 @@ type Router struct {
 	backupSecrets                  BackupSecretsSetter              // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
 	registryCredentials            RegistryCredentialStore          // always set, same "core Store interface" shape as backupTargets above
 	registryCredentialSecrets      RegistryCredentialSecretsSetter  // nil is valid: POST /api/v1/registry-credentials returns 501, same shape as backupSecrets above
+	networkShares                  NetworkShareStore                // always set, same "core Store interface" shape as registryCredentials above
+	networkShareSecrets            NetworkShareSecretsSetter        // nil is valid: POST /api/v1/network-shares (for a cifs share) returns 501, same shape as registryCredentialSecrets above
 	backupHistory                  BackupHistoryStore               // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
 	backupRunner                   BackupRunner                     // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above
 	backupDownloader               BackupDownloader                 // nil is valid: GET .../backups/{historyId}/download returns 501, same shape as backupRunner above
@@ -549,6 +551,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainChecks:                newDomainCheckCache(),
 		backupTargets:               s,
 		registryCredentials:         s,
+		networkShares:               s,
 		backupHistory:               s,
 		backupVerifications:         s,
 		restoreHistory:              s,
