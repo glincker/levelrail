@@ -302,6 +302,9 @@ type (
 	nodeResourceUsageResource  = apiclient.NodeResourceUsageResource
 	fleetResourceUsageRollup   = apiclient.FleetResourceUsageRollup
 	fleetResourceUsageResource = apiclient.FleetResourceUsageResource
+
+	capacityForecastMetric       = apiclient.CapacityForecastMetric
+	nodeCapacityForecastResource = apiclient.NodeCapacityForecastResource
 )
 
 // NewClient builds a Client, identifying every request as this CLI's own

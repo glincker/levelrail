@@ -2523,6 +2523,35 @@ type ResourceRecommendationResource struct {
 	OOMExcerpt     string                          `json:"oom_excerpt,omitempty"`
 }
 
+// CapacityForecastMetric mirrors internal/api's capacityForecastMetric:
+// one resource's (disk or memory) rough days-until-full projection from
+// internal/forecast's ordinary-least-squares trend fit. Absent (nil)
+// from NodeCapacityForecastResource whenever the fitted trend is flat
+// or improving, or there isn't enough history yet, never a zero-value
+// struct with DaysUntilFull: 0.
+type CapacityForecastMetric struct {
+	CurrentUsedBytes float64   `json:"current_used_bytes"`
+	TotalBytes       float64   `json:"total_bytes"`
+	SlopeBytesPerDay float64   `json:"slope_bytes_per_day"`
+	DaysUntilFull    float64   `json:"days_until_full"`
+	ProjectedFullAt  time.Time `json:"projected_full_at"`
+	SampleCount      int       `json:"sample_count"`
+	CoverageWindow   string    `json:"coverage_window"`
+}
+
+// NodeCapacityForecastResource mirrors internal/api's
+// nodeCapacityForecastResponse: GET
+// /api/v1/nodes/{id}/capacity-forecast's wire shape. Note is always
+// present, a plain-English restatement of this being a rough trend
+// projection, not a guarantee.
+type NodeCapacityForecastResource struct {
+	NodeID         string                  `json:"node_id"`
+	LookbackWindow string                  `json:"lookback_window"`
+	Disk           *CapacityForecastMetric `json:"disk,omitempty"`
+	Memory         *CapacityForecastMetric `json:"memory,omitempty"`
+	Note           string                  `json:"note"`
+}
+
 // AlertRuleResource mirrors internal/api's ruleResource
 // (internal/api/alerts.go). Threshold-kind fields (Metric, Comparator,
 // Threshold, ForDuration) and crashloop-kind fields

@@ -915,6 +915,18 @@ func WithResourceRecommendationLookback(d time.Duration) Option {
 	return func(rt *Router) { rt.resourceRecommendationLookback = d }
 }
 
+// WithCapacityForecastLookback overrides how far back GET
+// /api/v1/nodes/{id}/capacity-forecast looks for disk/memory history
+// (handleNodeCapacityForecast). Without one configured (or passed as
+// 0), defaultCapacityForecastLookback (14 days) applies. Same "no
+// hardcoded thresholds, use env vars" shape as
+// WithResourceRecommendationLookback: this package never reads the
+// environment directly, cmd/levelrail/main.go reads
+// APP_CAPACITY_FORECAST_LOOKBACK and passes the parsed duration here.
+func WithCapacityForecastLookback(d time.Duration) Option {
+	return func(rt *Router) { rt.capacityForecastLookback = d }
+}
+
 // WithPublicHost sets the IP or hostname GET
 // /api/v1/apps/{name}/domains/{domain}/check tells an operator to point
 // their DNS record at (domain_check.go's advertisedHost). Without one

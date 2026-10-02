@@ -134,7 +134,7 @@ All command groups available:
 
 **nodes**
 
-`list`, `get`, `delete`, `join-token`, `cordon`, `uncordon`, `drain`, `workloads`, `health`, `patch-status`, `metrics`, `events` (connection history).
+`list`, `get`, `delete`, `join-token`, `cordon`, `uncordon`, `drain`, `workloads`, `health`, `patch-status`, `metrics`, `events` (connection history), `resource-usage`, `capacity-forecast`.
 
 **iam**
 
