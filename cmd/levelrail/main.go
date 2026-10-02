@@ -40,6 +40,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/GLINCKER/levelrail/internal/firewall"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
@@ -52,6 +53,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/cloudflaretunnel"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	firewallreconcile "github.com/GLINCKER/levelrail/internal/reconcile/firewall"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	meshreconcile "github.com/GLINCKER/levelrail/internal/reconcile/mesh"
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
@@ -2040,6 +2042,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithNotificationChannels(alertingDB),
 		api.WithNotificationChannelTester(deployDispatcher),
 		api.WithNotificationDeliveries(alertingDB),
+		api.WithFirewallRequiredPorts(platformRequiredPorts()),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithAutoPlacement(autoPlacementEnabled(logger)),
 		api.WithHSTS(hstsEnabled(logger)),
@@ -2497,6 +2500,23 @@ func ingressPortFromAddr(addr string) int {
 		return 0
 	}
 	return port
+}
+
+// platformRequiredPorts is this instance's actually configured
+// management API, agent gRPC, and ingress ports, passed to both
+// api.WithFirewallRequiredPorts and firewallreconcile.WithRequiredPorts
+// so a firewall rule can never close one of them, whatever these were
+// moved to via APP_HTTP_ADDR/APP_AGENT_ADDR/APP_INGRESS_HTTP_ADDR/
+// APP_INGRESS_HTTPS_ADDR. ingressPortFromAddr's own "0 on unparseable"
+// degrade is harmless here: Validate's port-match loop simply never
+// matches 0.
+func platformRequiredPorts() []int {
+	return []int{
+		ingressPortFromAddr(httpAddr()),
+		ingressPortFromAddr(agentAddr()),
+		ingressPortFromAddr(ingressHTTPAddr()),
+		ingressPortFromAddr(ingressHTTPSAddr()),
+	}
 }
 
 // dashboardDialAddr normalizes httpAddr's listen address (e.g. ":8080",
@@ -3337,6 +3357,13 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			registryCreds = deps.secretsManager
 		}
 		controllers = append(controllers, registryreconcile.New(deps.db, registryCreds, deps.runtime, registryreconcile.WithContainerPrefix(deps.networkPrefix)))
+
+		// Firewall rules: same platform-wide-singleton,
+		// local-runtime-unconditional shape as the registry controller
+		// above. requiredPorts mirrors api.WithFirewallRequiredPorts so
+		// the write-time refusal and this reconcile-time, defense-in-depth
+		// skip never disagree about what counts as "required."
+		controllers = append(controllers, firewallreconcile.New(deps.db, firewall.New(), firewallreconcile.WithRequiredPorts(platformRequiredPorts()), firewallreconcile.WithLogger(deps.logger)))
 
 		if deps.meshCfg != nil {
 			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger)))

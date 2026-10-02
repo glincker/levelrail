@@ -513,6 +513,7 @@ type Store interface {
 	BackupTargetStore
 	RegistryCredentialStore
 	NetworkShareStore
+	FirewallRuleStore
 	BackupHistoryStore
 	BackupVerificationStore
 	RestoreHistoryStore

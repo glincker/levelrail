@@ -281,6 +281,13 @@ export const settingsNavSections: SettingsNavSection[] = [
           'Preflight checks: Docker, disk, ports, database, and firewall.',
       },
       {
+        to: '/settings/firewall',
+        icon: ShieldIcon,
+        title: 'Firewall',
+        description:
+          'Allow or deny rules by port, protocol, and source, reconciled onto this node.',
+      },
+      {
         to: '/settings/containers',
         icon: StackIcon,
         title: 'Containers',

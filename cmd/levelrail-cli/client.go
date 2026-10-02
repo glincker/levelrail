@@ -133,6 +133,8 @@ type (
 	registryCredentialResource      = apiclient.RegistryCredentialResource
 	createRegistryCredentialRequest = apiclient.CreateRegistryCredentialRequest
 	updateRegistryCredentialRequest = apiclient.UpdateRegistryCredentialRequest
+	firewallRuleResource            = apiclient.FirewallRuleResource
+	createFirewallRuleRequest       = apiclient.CreateFirewallRuleRequest
 
 	notificationChannelResource      = apiclient.NotificationChannelResource
 	createNotificationChannelRequest = apiclient.CreateNotificationChannelRequest

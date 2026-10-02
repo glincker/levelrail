@@ -1785,6 +1785,35 @@ func (c *Client) TestBackupTarget(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodPost, backupTargetPath(id)+"/test", nil, nil)
 }
 
+// firewallRulesCollectionPath builds /api/v1/firewall-rules, and
+// firewallRulePath builds that same path plus /{id}.
+func firewallRulesCollectionPath() string {
+	return "/api/v1/firewall-rules"
+}
+
+func firewallRulePath(id string) string {
+	return firewallRulesCollectionPath() + "/" + PathEscape(id)
+}
+
+// CreateFirewallRule calls POST /api/v1/firewall-rules.
+func (c *Client) CreateFirewallRule(ctx context.Context, req CreateFirewallRuleRequest) (FirewallRuleResource, error) {
+	var out FirewallRuleResource
+	err := c.do(ctx, http.MethodPost, firewallRulesCollectionPath(), req, &out)
+	return out, err
+}
+
+// ListFirewallRules calls GET /api/v1/firewall-rules.
+func (c *Client) ListFirewallRules(ctx context.Context) ([]FirewallRuleResource, error) {
+	var out []FirewallRuleResource
+	err := c.do(ctx, http.MethodGet, firewallRulesCollectionPath(), nil, &out)
+	return out, err
+}
+
+// DeleteFirewallRule calls DELETE /api/v1/firewall-rules/{id}.
+func (c *Client) DeleteFirewallRule(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, firewallRulePath(id), nil, nil)
+}
+
 // registryCredentialsCollectionPath builds /api/v1/registry-credentials,
 // and registryCredentialPath builds that same path plus /{id}.
 func registryCredentialsCollectionPath() string {
