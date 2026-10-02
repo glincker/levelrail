@@ -31,6 +31,7 @@ const BASE_DOCS: ShortcutDoc[] = [
   { keys: ['?'], description: 'Show keyboard shortcuts' },
   { keys: ['/'], description: 'Focus the search field on this page' },
   { keys: ['Esc'], description: 'Close a dialog, or leave the search field' },
+  { keys: ['Ctrl/Cmd', 'B'], description: 'Toggle the sidebar' },
 ]
 
 // Shortcuts whose gated feature is off are left out.

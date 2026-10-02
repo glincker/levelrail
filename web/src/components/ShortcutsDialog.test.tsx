@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ShortcutsDialog } from './ShortcutsDialog'
 import { SHORTCUT_DOCS } from '@/lib/shortcuts'
+import { registerPageActions } from '@/lib/pageActions'
 
 let experimentalOn: string[] = ['ai-models', 'load-balancer']
 vi.mock('@/hooks/useExperimental', () => ({
@@ -33,5 +34,22 @@ describe('ShortcutsDialog', () => {
     expect(screen.queryByText('Go to Load balancers')).not.toBeInTheDocument()
     expect(screen.getByText('Go to Backups')).toBeInTheDocument()
     experimentalOn = ['ai-models', 'load-balancer']
+  })
+
+  it('shows a "this page" group for the current page\'s hinted actions', () => {
+    const unregister = registerPageActions([
+      { key: 'copy', label: 'Copy URL', icon: null, run: vi.fn(), hint: ['C'] },
+      { key: 'noop', label: 'No hint action', icon: null, run: vi.fn() },
+    ])
+    render(<ShortcutsDialog open onOpenChange={vi.fn()} />)
+    expect(screen.getByText('This page')).toBeInTheDocument()
+    expect(screen.getByText('Copy URL')).toBeInTheDocument()
+    expect(screen.queryByText('No hint action')).not.toBeInTheDocument()
+    unregister()
+  })
+
+  it('leaves out the "this page" group when no page registered hinted actions', () => {
+    render(<ShortcutsDialog open onOpenChange={vi.fn()} />)
+    expect(screen.queryByText('This page')).not.toBeInTheDocument()
   })
 })
