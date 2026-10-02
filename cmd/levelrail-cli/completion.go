@@ -158,6 +158,7 @@ var cliCommandTree = map[string]*cmdNode{
 		"incidents":  {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil}},
 	}},
 	"channels":             {subs: map[string]*cmdNode{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil}},
+	"push-subscriptions":   {subs: map[string]*cmdNode{"list": nil, "revoke": nil}},
 	"shared-env":           {subs: map[string]*cmdNode{"list": nil, "set": nil, "delete": nil}},
 	"backup-targets":       {subs: map[string]*cmdNode{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
 	"firewall":             {subs: map[string]*cmdNode{"list": nil, "allow": nil, "deny": nil, "delete": nil}},
